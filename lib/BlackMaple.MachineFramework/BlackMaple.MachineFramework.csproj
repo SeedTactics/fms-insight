@@ -1,0 +1,61 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageId>BlackMaple.MachineFramework</PackageId>
+    <AssemblyName>BlackMaple.MachineFramework</AssemblyName>
+    <VersionPrefix>3.11.1</VersionPrefix>
+
+    <Title>SeedTactics Utility Library for MachineWatch Plugins</Title>
+    <Company>Black Maple Software, LLC</Company>
+    <Product>SeedTactics</Product>
+    <Copyright>Black Maple Software, LLC</Copyright>
+    <Authors>John Lenz</Authors>
+    <PackageLicenseUrl>https://opensource.org/licenses/BSD-3-Clause</PackageLicenseUrl>
+    <PackageProjectUrl>https://www.seedtactics.com</PackageProjectUrl>
+
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../BlackMaple.MachineWatchInterface/BlackMaple.MachineWatchInterface.csproj" />
+  </ItemGroup>
+
+  <Choose>
+      <When Condition="$(OS) == 'Unix'">
+          <PropertyGroup>
+              <TargetFramework>netstandard2.0</TargetFramework>
+          </PropertyGroup>
+      </When>
+
+      <When Condition="$(OS) == 'Windows_NT'">
+          <PropertyGroup>
+              <TargetFrameworks>net35;net461;netstandard2.0</TargetFrameworks>
+          </PropertyGroup>
+      </When>
+  </Choose>
+
+  <PropertyGroup Condition="$(TargetFramework) == 'net35'">
+    <FrameworkPathOverride>C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v3.5\Profile\Client</FrameworkPathOverride>
+  </PropertyGroup>
+
+  <Choose>
+    <When Condition="$(TargetFramework) == 'net35' OR $(TargetFramework) == 'net461'">
+      <ItemGroup>
+        <PackageReference Include="System.Data.SQLite.Core" Version="1.0.105.2" />
+      </ItemGroup>
+      <PropertyGroup>
+        <DefineConstants>$(DefineConstants);SYSTEM_DATA_SQLITE</DefineConstants>
+      </PropertyGroup>
+    </When>
+
+    <When Condition="$(TargetFramework) == 'netstandard2.0'">
+      <ItemGroup>
+        <PackageReference Include="System.Data.Common" Version="4.3.*" />
+        <PackageReference Include="Microsoft.Data.Sqlite" Version="2.*" />
+      </ItemGroup>
+      <PropertyGroup>
+        <DefineConstants>$(DefineConstants);MICROSOFT_DATA_SQLITE</DefineConstants>
+      </PropertyGroup>
+    </When>
+  </Choose>
+</Project>

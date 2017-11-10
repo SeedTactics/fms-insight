@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>BlackMaple.MachineWatchInterface</AssemblyName>
+    <PackageId>BlackMaple.MachineWatchInterface</PackageId>
+    <VersionPrefix>3.11.0</VersionPrefix>
+
+    <Title>SeedTactics Interface to MachineWatch</Title>
+    <Company>Black Maple Software, LLC</Company>
+    <Product>SeedTactics</Product>
+    <Copyright>Black Maple Software, LLC</Copyright>
+    <Authors>John Lenz</Authors>
+    <PackageLicenseUrl>https://opensource.org/licenses/BSD-3-Clause</PackageLicenseUrl>
+    <PackageProjectUrl>https://www.seedtactics.com</PackageProjectUrl>
+
+    <OutputType>Library</OutputType>
+	<EnableDefaultCompileItems>False</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
+
+    <Compile Include="types/*.cs"/>
+    <Compile Include="api/*.cs"/>
+  </ItemGroup>
+
+  <Choose>
+      <When Condition="$(OS) == 'Unix'">
+          <PropertyGroup>
+              <TargetFramework>netstandard2.0</TargetFramework>
+          </PropertyGroup>
+      </When>
+      <When Condition="$(OS) == 'Windows_NT'">
+          <PropertyGroup>
+              <TargetFrameworks>net35;net461;netstandard2.0</TargetFrameworks>
+          </PropertyGroup>
+      </When>
+  </Choose>
+
+  <PropertyGroup Condition="$(TargetFramework) == 'net35'">
+    <FrameworkPathOverride Condition="'$(TargetFramework)' == 'net35' AND '$(OS)' == 'Windows_NT'">C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v3.5\Profile\Client</FrameworkPathOverride>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../BlackMaple.MachineWatchInterface/BlackMaple.MachineWatchInterface.csproj" />
+    <ProjectReference Include="../BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.*" />
+    <PackageReference Include="xunit" Version="2.2.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.2.0" />
+    <PackageReference Include="System.Runtime.Serialization.Primitives" Version="*" />
+    <PackageReference Include="Newtonsoft.Json" Version="10.*" />
+    <PackageReference Include="System.Data.Common" Version="4.3.*" />
+    <PackageReference Include="System.Reflection" Version="4.3.*" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="2.*" />
+
+    <PackageReference Include="FluentAssertions" Version="4.*"/>
+  </ItemGroup>
+
+</Project>
