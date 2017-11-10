@@ -5,8 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../BlackMaple.MachineWatchInterface/BlackMaple.MachineWatchInterface.csproj" />
-    <ProjectReference Include="../BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj" />
+    <ProjectReference Include="../lib/BlackMaple.MachineWatchInterface/BlackMaple.MachineWatchInterface.csproj" />
+    <ProjectReference Include="../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj" />
   </ItemGroup>
 
   <ItemGroup>
