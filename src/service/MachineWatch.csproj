@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageId>BlackMaple.MachineWatchService</PackageId>
+    <AssemblyName>MachineWatch</AssemblyName>
+    <VersionPrefix>3.0.0</VersionPrefix>
+
+    <Title>SeedTactics Machine Watch Service and Server</Title>
+    <Company>Black Maple Software, LLC</Company>
+    <Product>SeedTactics</Product>
+    <Copyright>Black Maple Software, LLC</Copyright>
+    <Authors>John Lenz</Authors>
+    <PackageLicenseUrl>https://opensource.org/licenses/BSD-3-Clause</PackageLicenseUrl>
+    <PackageProjectUrl>https://www.seedtactics.com</PackageProjectUrl>
+
+    <TargetFrameworks>net35</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../core/BlackMaple.MachineWatchInterface/BlackMaple.MachineWatchInterface.csproj"/>
+    <ProjectReference Include="../core/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj"/>
+
+    <Reference Include="System.ServiceProcess"/>
+    <Reference Include="System.Configuration"/>
+    <Reference Include="System.Configuration.Install"/>
+  </ItemGroup>
+
+  <PropertyGroup Condition="$(TargetFramework) == 'net35'">
+    <FrameworkPathOverride>C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v3.5\Profile\Client</FrameworkPathOverride>
+  </PropertyGroup>
+
+</Project>
