@@ -40,7 +40,7 @@ namespace BlackMaple.MachineWatchInterface
         void Init(string dataDirectory);
         void Halt();
 
-#if NET35
+#if NET35 || NET461
         //Trace listeners are registered before Init is called
         //so that errors during Init can be recorded.
         IEnumerable<System.Diagnostics.TraceSource> TraceSources();
@@ -63,7 +63,7 @@ namespace BlackMaple.MachineWatchInterface
         //A new class will be created when the service starts again
         void Halt();
 
-#if NET35
+#if NET35 || NET461
         System.Diagnostics.TraceSource TraceSource { get; }
 #endif
     }

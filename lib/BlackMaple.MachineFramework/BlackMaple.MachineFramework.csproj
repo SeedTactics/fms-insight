@@ -14,6 +14,13 @@
     <PackageProjectUrl>https://www.seedtactics.com</PackageProjectUrl>
     <RepositoryUrl>https://bitbucket.org/blackmaple/machinewatch</RepositoryUrl>
     <RepositoryType>hg</RepositoryType>
+    <Description>
+      Machine Watch is a generic conduit which allows SeedTactic software to monitor and control the cell.
+      The communication between the MachineWatch server and the cell happens via a plugin, and
+      this package implements some common code to help implement plugins.
+
+      For documentation and source code, visit [the bitbucket project](https://bitbucket.org/blackmaple/machinewatch).
+    </Description>
 
     <OutputType>Library</OutputType>
   </PropertyGroup>
