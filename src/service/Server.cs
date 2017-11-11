@@ -116,7 +116,25 @@ namespace BlackMaple.MachineWatch
                 settingsServer = new SettingStore(dataDir);
 
                 //Configure .NET Remoting
-                RemotingConfiguration.Configure(AppDomain.CurrentDomain.SetupInformation.ConfigurationFile, false);
+                if (System.IO.File.Exists(AppDomain.CurrentDomain.SetupInformation.ConfigurationFile))
+                {
+                    RemotingConfiguration.Configure(AppDomain.CurrentDomain.SetupInformation.ConfigurationFile, false);
+                }
+                else
+                {
+                    var clientFormatter = new System.Runtime.Remoting.Channels.BinaryClientFormatterSinkProvider();
+                    var serverFormatter = new System.Runtime.Remoting.Channels.BinaryServerFormatterSinkProvider();
+                    serverFormatter.TypeFilterLevel = System.Runtime.Serialization.Formatters.TypeFilterLevel.Full;
+                    var props = new System.Collections.Hashtable();
+                    props["port"] = 8086;
+                    System.Runtime.Remoting.Channels.ChannelServices.RegisterChannel(new System.Runtime.Remoting.Channels.Tcp.TcpChannel(props, clientFormatter, serverFormatter), false);
+                
+                    System.Runtime.Remoting.Lifetime.LifetimeServices.LeaseTime = TimeSpan.FromMinutes(3);
+                    System.Runtime.Remoting.Lifetime.LifetimeServices.SponsorshipTimeout = TimeSpan.FromMinutes(2);
+                    System.Runtime.Remoting.Lifetime.LifetimeServices.RenewOnCallTime = TimeSpan.FromMinutes(1);
+                    System.Runtime.Remoting.Lifetime.LifetimeServices.LeaseManagerPollTime = TimeSpan.FromSeconds(10);
+                    System.Runtime.Remoting.RemotingConfiguration.CustomErrorsMode = System.Runtime.Remoting.CustomErrorsModes.Off;
+                }
 
                 plugin.serverBackend.Init(dataDir);
 

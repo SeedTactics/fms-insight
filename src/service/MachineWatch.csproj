@@ -29,6 +29,7 @@
     <ProjectReference Include="../../lib/BlackMaple.MachineWatchInterface/BlackMaple.MachineWatchInterface.csproj"/>
     <ProjectReference Include="../../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj"/>
 
+    <Reference Include="System.Runtime.Remoting"/>
     <Reference Include="System.ServiceProcess"/>
     <Reference Include="System.Configuration"/>
     <Reference Include="System.Configuration.Install"/>
