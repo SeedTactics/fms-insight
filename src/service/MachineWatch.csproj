@@ -12,6 +12,8 @@
     <Authors>John Lenz</Authors>
     <PackageLicenseUrl>https://opensource.org/licenses/BSD-3-Clause</PackageLicenseUrl>
     <PackageProjectUrl>https://www.seedtactics.com</PackageProjectUrl>
+    <RepositoryURL>https://bitbucket.org/blackmaple/machinewatch</RepositoryURL>
+    <RepositoryType>hg</RepositoryType>
 
     <TargetFrameworks>net35</TargetFrameworks>
     <OutputType>Exe</OutputType>

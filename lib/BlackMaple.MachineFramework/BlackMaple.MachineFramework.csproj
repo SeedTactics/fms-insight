@@ -3,7 +3,7 @@
   <PropertyGroup>
     <PackageId>BlackMaple.MachineFramework</PackageId>
     <AssemblyName>BlackMaple.MachineFramework</AssemblyName>
-    <VersionPrefix>3.11.1</VersionPrefix>
+    <VersionPrefix>3.11.2</VersionPrefix>
 
     <Title>SeedTactics Utility Library for MachineWatch Plugins</Title>
     <Company>Black Maple Software, LLC</Company>
@@ -12,6 +12,8 @@
     <Authors>John Lenz</Authors>
     <PackageLicenseUrl>https://opensource.org/licenses/BSD-3-Clause</PackageLicenseUrl>
     <PackageProjectUrl>https://www.seedtactics.com</PackageProjectUrl>
+    <RepositoryURL>https://bitbucket.org/blackmaple/machinewatch</RepositoryURL>
+    <RepositoryType>hg</RepositoryType>
 
     <OutputType>Library</OutputType>
   </PropertyGroup>
