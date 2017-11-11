@@ -12,7 +12,7 @@
     <Authors>John Lenz</Authors>
     <PackageLicenseUrl>https://opensource.org/licenses/BSD-3-Clause</PackageLicenseUrl>
     <PackageProjectUrl>https://www.seedtactics.com</PackageProjectUrl>
-    <RepositoryURL>https://bitbucket.org/blackmaple/machinewatch</RepositoryURL>
+    <RepositoryUrl>https://bitbucket.org/blackmaple/machinewatch</RepositoryUrl>
     <RepositoryType>hg</RepositoryType>
 
     <OutputType>Library</OutputType>
