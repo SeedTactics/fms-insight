@@ -29,9 +29,9 @@ directory, but a compiled version is on NuGet as
 
 Follow the following steps:
 
-1. Add a reference to [BlackMaple.MachineWatchInterface](https://www.nuget.org/packages/BlackMaple.MachineWatchInterface/).
+* Add a reference to [BlackMaple.MachineWatchInterface](https://www.nuget.org/packages/BlackMaple.MachineWatchInterface/).
 
-2. In the `main` function or other bootstrap code, add the following
+* In the `main` function or other bootstrap code, add the following
 
 ~~~ {.csharp}
 var clientFormatter = New Runtime.Remoting.Channels.BinaryClientFormatterSinkProvider();
@@ -46,10 +46,10 @@ System.Runtime.Remoting.Channels.ChannelServices.RegisterChannel(
 
 (We are currently using .NET Remoting but are working on a version of the server which uses REST HTTP.)
 
-3. Allow the user to enter a computer name for the computer running Machine Watch (and perhaps a port).
+* Allow the user to enter a computer name for the computer running Machine Watch (and perhaps a port).
    If no port is entered, default to port 8086.
 
-4. Access one of the exposed interfaces such as `IJobServerV2` via Remoting:
+* Access one of the exposed interfaces such as `IJobServerV2` via Remoting:
 
 ~~~ {.csproj}
 var jobServer = (BlackMaple.MachineWatchInterface.IJobServerV2)
