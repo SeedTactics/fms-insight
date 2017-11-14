@@ -3,7 +3,7 @@
   <PropertyGroup>
     <PackageId>BlackMaple.MachineFramework</PackageId>
     <AssemblyName>BlackMaple.MachineFramework</AssemblyName>
-    <VersionPrefix>3.11.3</VersionPrefix>
+    <VersionPrefix>3.11.4</VersionPrefix>
 
     <Title>SeedTactics Utility Library for MachineWatch Plugins</Title>
     <Company>Black Maple Software, LLC</Company>
