@@ -3,7 +3,7 @@
   <PropertyGroup>
     <PackageId>BlackMaple.MachineWatchService</PackageId>
     <AssemblyName>MachineWatch</AssemblyName>
-    <VersionPrefix>3.0.1</VersionPrefix>
+    <VersionPrefix>3.0.2</VersionPrefix>
 
     <Title>SeedTactics Machine Watch Service and Server</Title>
     <Company>Black Maple Software, LLC</Company>

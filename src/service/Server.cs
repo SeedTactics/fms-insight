@@ -120,7 +120,7 @@ namespace BlackMaple.MachineWatch
                 {
                     RemotingConfiguration.Configure(AppDomain.CurrentDomain.SetupInformation.ConfigurationFile, false);
                 }
-                else
+                if (System.Runtime.Remoting.Channels.ChannelServices.RegisteredChannels.Count() == 0)
                 {
                     var clientFormatter = new System.Runtime.Remoting.Channels.BinaryClientFormatterSinkProvider();
                     var serverFormatter = new System.Runtime.Remoting.Channels.BinaryServerFormatterSinkProvider();
