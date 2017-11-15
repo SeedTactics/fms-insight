@@ -3,7 +3,7 @@
   <PropertyGroup>
     <PackageId>BlackMaple.MachineWatchService</PackageId>
     <AssemblyName>MachineWatch</AssemblyName>
-    <VersionPrefix>3.0.2</VersionPrefix>
+    <VersionPrefix>3.0.3</VersionPrefix>
 
     <Title>SeedTactics Machine Watch Service and Server</Title>
     <Company>Black Maple Software, LLC</Company>
@@ -45,7 +45,7 @@
       <When Condition="$(OS) == 'Windows_NT'">
           <PropertyGroup>
               <TargetFrameworks>net35;net461</TargetFrameworks>
-              <DefineConstants>USE_TRACE</DefineConstants>
+              <DefineConstants>TRACE</DefineConstants>
           </PropertyGroup>
       </When>
   </Choose>
