@@ -76,7 +76,7 @@ namespace BlackMaple.MachineWatch
             }
         }
 
-        public Server(MachineWatchPlugin p)
+        public Server(MachineWatchPlugin p, bool forceTrace = false)
         {
             plugin = p;
 
@@ -105,7 +105,7 @@ namespace BlackMaple.MachineWatch
             try
             {
                 var eventTrace = new TraceSource("EventServer", SourceLevels.All);
-                trace = new Tracing(logPath, plugin?.serverBackend, eventTrace, plugin?.workers);
+                trace = new Tracing(logPath, plugin?.serverBackend, eventTrace, plugin?.workers, forceTrace);
 
                 if (plugin == null)
                 {

@@ -49,8 +49,9 @@ namespace BlackMaple.MachineWatch
 
         public Tracing(string appPath,
             IServerBackend backend,
-                                         TraceSource eventServer,
-                                         IEnumerable<IBackgroundWorker> workers)
+            TraceSource eventServer,
+            IEnumerable<IBackgroundWorker> workers,
+            bool forceTrace)
         {
             this.AppPath = appPath;
 
@@ -63,7 +64,7 @@ namespace BlackMaple.MachineWatch
             System.Diagnostics.Trace.AutoFlush = true;
 
             infoLog = null;
-            if (System.Configuration.ConfigurationManager.AppSettings["Output Trace Log"] == "1")
+            if (forceTrace || System.Configuration.ConfigurationManager.AppSettings["Output Trace Log"] == "1")
             {
                 file = IO.Path.Combine(AppPath, "trace.log");
                 infoLog = new TraceListenerWithTime(file);
