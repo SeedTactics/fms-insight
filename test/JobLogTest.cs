@@ -247,70 +247,80 @@ namespace MachineWatchTest
         {
             Assert.Equal(0, _jobLog.CurrentPalletLog("pal1").Count);
             Assert.Equal(0, _jobLog.CurrentPalletLog("pal2").Count);
+            Assert.Equal(DateTime.MinValue, _jobLog.LastPalletCycleTime("pal1"));
 
-            var logs = new List<LogEntry>();
+            var pal1Initial = new List<LogEntry>();
             var pal1Cycle = new List<LogEntry>();
             var pal2Cycle = new List<LogEntry>();
 
             var mat1 = new LogMaterial(1, "unique", 1, "part1", 2, "face1");
             var mat2 = new LogMaterial(17, "unique2", 2, "part2", 2, "face2");
 
+            DateTime pal1InitialTime = DateTime.UtcNow.AddHours(-4);
+
             // *********** Add load cycle on pal1
-            logs.Add(new LogEntry(0, new LogMaterial[] { mat1, mat2 },
-          "pal1", LogType.LoadUnloadCycle, "Load", 2,
+            pal1Initial.Add(new LogEntry(0, new LogMaterial[] { mat1, mat2 },
+                "pal1", LogType.LoadUnloadCycle, "Load", 2,
                 "prog1",
                 true, //start of event
-                DateTime.UtcNow,
+                pal1InitialTime,
                 "result",
                 false)); //end of route
-            logs.Add(new LogEntry(0, new LogMaterial[] { mat1, mat2 },
-          "pal1", LogType.LoadUnloadCycle, "Load", 2,
+            pal1Initial.Add(new LogEntry(0, new LogMaterial[] { mat1, mat2 },
+                "pal1", LogType.LoadUnloadCycle, "Load", 2,
                 "prog1",
                 false, //start of event
-                DateTime.UtcNow,
+                pal1InitialTime.AddMinutes(5),
                 "result",
                 false)); //end of route
 
             // *********** Add machine cycle on pal1
-            logs.Add(new LogEntry(0, new LogMaterial[] { mat1, mat2 },
-          "pal1", LogType.MachineCycle, "MC", 2,
+            pal1Initial.Add(new LogEntry(0, new LogMaterial[] { mat1, mat2 },
+                "pal1", LogType.MachineCycle, "MC", 2,
                 "prog1",
                 true, //start of event
-                DateTime.UtcNow,
+                pal1InitialTime.AddMinutes(10),
                 "result",
                 false)); //end of route
-            logs.Add(new LogEntry(0, new LogMaterial[] { mat1, mat2 },
-          "pal1", LogType.MachineCycle, "MC", 2,
+            pal1Initial.Add(new LogEntry(0, new LogMaterial[] { mat1, mat2 },
+                "pal1", LogType.MachineCycle, "MC", 2,
                 "prog1",
                 false, //start of event
-                DateTime.UtcNow,
+                pal1InitialTime.AddMinutes(20),
                 "result",
                 true)); //end of route
                         // ***********  End of Route for pal1
 
-            AddLog(logs);
+            AddLog(pal1Initial);
 
-            CheckLog(logs, _jobLog.CurrentPalletLog("pal1"), DateTime.UtcNow.AddHours(-10));
+            CheckLog(pal1Initial, _jobLog.CurrentPalletLog("pal1"), DateTime.UtcNow.AddHours(-10));
             Assert.Equal(0, _jobLog.CurrentPalletLog("pal2").Count);
 
-            _jobLog.CompletePalletCycle("pal1", DateTime.UtcNow, "");
+            _jobLog.CompletePalletCycle("pal1", pal1InitialTime.AddMinutes(25), "");
 
+            pal1Initial.Add(new LogEntry(0, new LogMaterial[] {}, "pal1", LogType.PalletCycle, "Pallet Cycle", 1,
+                "", false, pal1InitialTime.AddMinutes(25), "PalletCycle", false, TimeSpan.Zero, TimeSpan.Zero));
+
+            Assert.Equal(pal1InitialTime.AddMinutes(25), _jobLog.LastPalletCycleTime("pal1"));
+            CheckLog(pal1Initial, _jobLog.GetLogEntries(DateTime.UtcNow.AddHours(-10), DateTime.UtcNow), DateTime.UtcNow.AddHours(-50));
             Assert.Equal(0, _jobLog.CurrentPalletLog("pal1").Count);
             Assert.Equal(0, _jobLog.CurrentPalletLog("pal2").Count);
 
+            DateTime pal2CycleTime = DateTime.UtcNow.AddHours(-3);
+
             // *********** Add pal2 load event
             pal2Cycle.Add(new LogEntry(0, new LogMaterial[] { mat1, mat2 },
-          "pal2", LogType.LoadUnloadCycle, "Load", 2,
+                "pal2", LogType.LoadUnloadCycle, "Load", 2,
                 "prog1",
                 true, //start of event
-                DateTime.UtcNow,
+                pal2CycleTime,
                 "result",
                 false)); //end of route
             pal2Cycle.Add(new LogEntry(0, new LogMaterial[] { mat1, mat2 },
-          "pal2", LogType.LoadUnloadCycle, "Load", 2,
+                "pal2", LogType.LoadUnloadCycle, "Load", 2,
                 "prog1",
                 false, //start of event
-                DateTime.UtcNow,
+                pal2CycleTime.AddMinutes(10),
                 "result",
                 false)); //end of route
 
@@ -319,28 +329,30 @@ namespace MachineWatchTest
             Assert.Equal(0, _jobLog.CurrentPalletLog("pal1").Count);
             CheckLog(pal2Cycle, _jobLog.CurrentPalletLog("pal2"), DateTime.UtcNow.AddHours(-10));
 
+            DateTime pal1CycleTime = DateTime.UtcNow.AddHours(-2);
+
             // ********** Add pal1 load event
             pal1Cycle.Add(new LogEntry(0, new LogMaterial[] { mat1, mat2 },
-          "pal1", LogType.LoadUnloadCycle, "Load", 2,
+                "pal1", LogType.LoadUnloadCycle, "Load", 2,
                 "prog1",
                 true, //start of event
-                DateTime.UtcNow,
+                pal1CycleTime,
                 "result",
                 false)); //end of route
             pal1Cycle.Add(new LogEntry(0, new LogMaterial[] { mat1, mat2 },
-          "pal1", LogType.LoadUnloadCycle, "Load", 2,
+                "pal1", LogType.LoadUnloadCycle, "Load", 2,
                 "prog1",
                 false, //start of event
-                DateTime.UtcNow,
+                pal1CycleTime.AddMinutes(15),
                 "result",
                 false)); //end of route
 
             // *********** Add pal1 start of machining
             pal1Cycle.Add(new LogEntry(0, new LogMaterial[] { mat1, mat2 },
-          "pal1", LogType.MachineCycle, "MC", 4,
+                "pal1", LogType.MachineCycle, "MC", 4,
                 "prog1",
                 true, //start of event
-                DateTime.UtcNow,
+                pal1CycleTime.AddMinutes(20),
                 "result",
                 false)); //end of route
 
@@ -351,10 +363,10 @@ namespace MachineWatchTest
 
             //********  Complete the pal1 machining
             pal1Cycle.Add(new LogEntry(0, new LogMaterial[] { mat1, mat2 },
-          "pal1", LogType.MachineCycle, "MC", 4,
+                "pal1", LogType.MachineCycle, "MC", 4,
                 "prog1",
                 false, //start of event
-                DateTime.UtcNow,
+                pal1CycleTime.AddMinutes(30),
                 "result",
                 true)); //end of route
 
@@ -363,9 +375,16 @@ namespace MachineWatchTest
             CheckLog(pal1Cycle, _jobLog.CurrentPalletLog("pal1"), DateTime.UtcNow.AddHours(-10));
             CheckLog(pal2Cycle, _jobLog.CurrentPalletLog("pal2"), DateTime.UtcNow.AddHours(-10));
 
-            _jobLog.CompletePalletCycle("pal1", DateTime.UtcNow, "");
+            _jobLog.CompletePalletCycle("pal1", pal1CycleTime.AddMinutes(40), "");
 
+            var elapsed = pal1CycleTime.AddMinutes(40).Subtract(pal1InitialTime.AddMinutes(25));
+            pal1Cycle.Add(new LogEntry(0, new LogMaterial[] {}, "pal1", LogType.PalletCycle, "Pallet Cycle", 1,
+                "", false, pal1CycleTime.AddMinutes(40), "PalletCycle", false, elapsed, TimeSpan.Zero));
+
+            Assert.Equal(pal1CycleTime.AddMinutes(40), _jobLog.LastPalletCycleTime("pal1"));
             Assert.Equal(0, _jobLog.CurrentPalletLog("pal1").Count);
+            CheckLog(pal1Cycle, _jobLog.GetLogEntries(pal1CycleTime.AddMinutes(-5), DateTime.UtcNow), DateTime.UtcNow.AddHours(-50));
+
             CheckLog(pal2Cycle, _jobLog.CurrentPalletLog("pal2"), DateTime.UtcNow.AddHours(-10));
         }
 
@@ -495,7 +514,7 @@ namespace MachineWatchTest
 
             var palCycle = new LogEntry(0, new LogMaterial[] { }, "pal1",
               LogType.PalletCycle, "Pallet Cycle", 1, "", false,
-              t.AddMinutes(45), "PalletCycle", false);
+              t.AddMinutes(45), "PalletCycle", false, TimeSpan.Zero, TimeSpan.Zero);
 
             mat["key1"] = new LogMaterial[] { mat1, mat2 };
 
@@ -566,7 +585,7 @@ namespace MachineWatchTest
 
             var palCycle = new LogEntry(0, new LogMaterial[] { }, "pal1",
             LogType.PalletCycle, "Pallet Cycle", 1, "", false,
-              t.AddMinutes(45), "PalletCycle", false);
+              t.AddMinutes(45), "PalletCycle", false, TimeSpan.Zero, TimeSpan.Zero);
 
             mat["key1"] = new LogMaterial[] { mat1, mat2 };
 

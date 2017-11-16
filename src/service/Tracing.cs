@@ -73,7 +73,7 @@ namespace BlackMaple.MachineWatch
                 machineTrace.TraceEvent(TraceEventType.Information, 0, "Machine Watch is starting");
             }
 
-            #if TRACE
+            #if USE_TRACE
             foreach (var s in backend.TraceSources())
             {
                 if (!traceSources.Contains(s))

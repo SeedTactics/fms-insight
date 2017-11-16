@@ -683,6 +683,23 @@ namespace BlackMaple.MachineFramework
             }
         }
 
+        public DateTime LastPalletCycleTime(string pallet)
+        {
+            lock (_lock)
+            {
+                var cmd = _connection.CreateCommand();
+                cmd.CommandText = "SELECT TimeUTC FROM stations where Pallet = $pal AND Result = 'PalletCycle' " +
+                                     "ORDER BY Counter DESC LIMIT 1";
+                cmd.Parameters.Add("pal", SqliteType.Text).Value = pallet;
+                
+                var date = cmd.ExecuteScalar();
+                if (date == null || date == DBNull.Value)
+                    return DateTime.MinValue;
+                else
+                    return new DateTime((long)date, DateTimeKind.Utc);
+            }
+        }
+
         //Loads the log for the current pallet cycle, which is all events from the last Result = "PalletCycle"
         public List<MachineWatchInterface.LogEntry> CurrentPalletLog(string pallet)
         {
@@ -1596,15 +1613,26 @@ namespace BlackMaple.MachineFramework
                 try
                 {
 
+                    var lastTimeCmd = _connection.CreateCommand();
+                    lastTimeCmd.CommandText = "SELECT TimeUTC FROM stations where Pallet = $pal AND Result = 'PalletCycle' " +
+                                            "ORDER BY Counter DESC LIMIT 1";
+                    lastTimeCmd.Parameters.Add("pal", SqliteType.Text).Value = pal;
+                
+                    var elapsedTime = TimeSpan.Zero;
+                    var lastCycleTime = lastTimeCmd.ExecuteScalar();
+                    if (lastCycleTime != null && lastCycleTime != DBNull.Value)
+                        elapsedTime = timeUTC.Subtract(new DateTime((long)lastCycleTime, DateTimeKind.Utc));
+
                     // Add the pallet cycle
                     var addCmd = _connection.CreateCommand();
                     addCmd.Transaction = trans;
                     addCmd.CommandText = "INSERT INTO stations(Pallet, StationLoc, StationName, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, ForeignID)" +
-                        "VALUES ($pal,$loc,'Pallet Cycle',1,'',0,$time,'PalletCycle',0,NULL,NULL,$foreign)";
+                        "VALUES ($pal,$loc,'Pallet Cycle',1,'',0,$time,'PalletCycle',0,$elapsed,NULL,$foreign)";
                     addCmd.Parameters.Add("pal", SqliteType.Text).Value = pal;
                     addCmd.Parameters.Add("loc", SqliteType.Integer).Value = (int)MachineWatchInterface.LogType.PalletCycle;
                     addCmd.Parameters.Add("time", SqliteType.Integer).Value = timeUTC.Ticks;
                     addCmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignID;
+                    addCmd.Parameters.Add("elapsed", SqliteType.Integer).Value = elapsedTime.Ticks;
                     addCmd.ExecuteNonQuery();
 
                     if (mat == null)
