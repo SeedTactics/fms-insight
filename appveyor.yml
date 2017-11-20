@@ -1,0 +1,25 @@
+version: '{build}'
+image: Visual Studio 2017
+
+build_script:
+- ps: |
+    c:\python36\python.exe build.py
+    if ($(hg id -t -r '.^') -ne "") {
+        Set-AppveyorBuildVariable "BMS_RELEASE_TO_NUGET" "true"
+    }
+
+test_script:
+- ps: dotnet test test
+
+artifacts:
+- path: '**/*.nupkg'
+
+deploy:
+- provider: NuGet
+  on:
+    branch: default
+    BMS_RELEASE_TO_NUGET: true
+  skip_symbols: false
+  artifact: /.*\.nupkg/
+  api_key:
+    secure: kj0pW91vWRjFl99SLY/sageGAghMFfmqFpNdJd7y+Q73eoImzcsnPCZYlwYxKIhs
