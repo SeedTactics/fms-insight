@@ -1,5 +1,7 @@
 # Machine Watch
 
+[![Build status](https://ci.appveyor.com/api/projects/status/qhvrw56g6syoep9w?svg=true)](https://ci.appveyor.com/project/wuzzeb/machinewatch)
+
 Machine Watch is a service application that runs on an FMS cell controller. Machine Watch does not
 implement any complex logic or control itself; instead Machine Watch is a generic conduit which
 allows other software to communicate with the cell. Machine Watch provides two main services.
@@ -20,6 +22,8 @@ The [SeedTactics documentation](https://www.seedtactics.com/guide/machine-watch)
 and using a Machine Watch server.
 
 ### Writing a program to communicate with Machine Watch
+
+[![NuGet Stats](https://img.shields.io/nuget/v/BlackMaple.MachineWatchInterface.svg)](https://www.nuget.org/packages/BlackMaple.MachineWatchInterface)
 
 If you want to write a client program to communicate with Machine Watch over the network, use the
 `BlackMaple.MachineWatchInterface` assembly.  The source code for this assembly is in the
@@ -62,6 +66,8 @@ For details on the interfaces and data available, see the
 [source code](https://bitbucket.org/blackmaple/machinewatch/src/tip/lib/BlackMaple.MachineWatchInterface/).
 
 ### Writing a plugin for a cell controller
+
+[![NuGet Stats](https://img.shields.io/nuget/v/BlackMaple.MachineFramework.svg)](https://www.nuget.org/packages/BlackMaple.MachineFramework)
 
 First, read the [integrations document](https://bitbucket.org/blackmaple/machinewatch/src/tip/integration.md) which
 describes at a high level the data and communication between Machine Watch and the cell controller.
