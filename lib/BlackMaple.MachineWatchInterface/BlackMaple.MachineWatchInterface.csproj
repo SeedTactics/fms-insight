@@ -3,7 +3,6 @@
   <PropertyGroup>
     <AssemblyName>BlackMaple.MachineWatchInterface</AssemblyName>
     <PackageId>BlackMaple.MachineWatchInterface</PackageId>
-    <VersionPrefix>3.11.1</VersionPrefix>
 
     <Title>SeedTactics Interface to MachineWatch</Title>
     <Company>Black Maple Software, LLC</Company>
