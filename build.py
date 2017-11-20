@@ -22,7 +22,7 @@ if curtag.startswith("mwi-"):
     ver = curtag.replace("mwi-", "")
     run("dotnet pack -c Release --include-symbols /p:VersionPrefix=" + ver,
         "lib/BlackMaple.MachineWatchInterface")
-elif sys.argv[1] == "--alpha-mwi":
+elif len(sys.argv) >= 2 and sys.argv[1] == "--alpha-mwi":
     tag = subprocess.check_output(["hg", "id", "-t", "-r", "ancestors(.) and tag('re:mwi')"]).decode("utf-8")
     parts = tag.replace("mwi-", "").split(".")
     ver = parts[0] + "." + parts[1] + "." + str(int(parts[2]) + 1)
