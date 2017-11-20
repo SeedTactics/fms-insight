@@ -44,7 +44,10 @@ if curtag.startswith("framework-"):
     freplace("test/test.csproj",
             r'<ProjectReference Include="../lib/BlackMaple.MachineWatchInterface[^>]+>',
              '<PackageReference Include="BlackMaple.MachineWatchInterface" Version="' + mwiver + '.*"/>')
-    
+    freplace("src/service/MachineWatch.csproj",
+            r'<ProjectReference Include="../BlackMaple.MachineWatchInterface[^>]+>',
+             '<PackageReference Include="BlackMaple.MachineWatchInterface" Version="' + mwiver + '.*"/>')
+
     # Pack framework
     ver = curtag.replace("framework-", "")
     run("dotnet pack -c Release --include-symbols /p:VersionPrefix=" + ver,
