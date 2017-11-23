@@ -8,10 +8,10 @@ build_script:
     if ($tag.StartsWith("mwi")) {
         dotnet pack -c Release /p:VersionPrefix=$(ver mwi) lib/BlackMaple.MachineWatchInterface
         Set-AppveyorBuildVariable "BMS_RELEASE_TO_NUGET" "true"
-    } else if ($tag.StartsWith("framework")) {
+    } elseif ($tag.StartsWith("framework")) {
         dotnet pack -c Release /p:VersionPrefix=$(ver framework) lib/BlackMaple.MachineFramework
         Set-AppveyorBuildVariable "BMS_RELEASE_TO_NUGET" "true"
-    } else if ($tag.StartsWith("service")) {
+    } elseif ($tag.StartsWith("service")) {
         dotnet pack -c Release /p:VersionPrefix=$(ver service) src/service
         Set-AppveyorBuildVariable "BMS_RELEASE_TO_NUGET" "true"
     } else {
