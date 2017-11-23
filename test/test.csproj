@@ -6,20 +6,8 @@
 
   <ItemGroup>
     <ProjectReference Include="../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj" />
+    <ProjectReference Include="../lib/BlackMaple.MachineWatchInterface/BlackMaple.MachineWatchInterface.csproj" />
   </ItemGroup>
-
-  <Choose>
-    <When Condition="$(Configuration) == 'Debug'">
-      <ItemGroup>
-        <ProjectReference Include="../BlackMaple.MachineWatchInterface/BlackMaple.MachineWatchInterface.csproj" />
-      </ItemGroup>
-    </When>
-    <Otherwise>
-      <ItemGroup>
-        <PackageReference Include="BlackMaple.MachineWatchInterface" Version="4.*"/>
-      </ItemGroup>
-    </Otherwise>
-  </Choose>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.*" />
