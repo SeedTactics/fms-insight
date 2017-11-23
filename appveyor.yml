@@ -15,9 +15,18 @@ build_script:
         dotnet pack -c Release /p:VersionPrefix=$(ver service) src/service
         Set-AppveyorBuildVariable "BMS_RELEASE_TO_NUGET" "true"
     } else {
-        dotnet build /p:VersionPrefix=$(ver mwi) lib/BlackMaple.MachineWatchInterface
-        dotnet build /p:VersionPrefix=$(ver framework) lib/BlackMaple.MachineFramework
-        dotnet build /p:VersionPrefix=$(ver service) src/service
+        dotnet build `
+            /p:VersionPrefix=$(ver mwi) `
+            --version-suffix pre.$Env:APPVEYOR_BUILD_NUMBER `
+            lib/BlackMaple.MachineWatchInterface
+        dotnet build `
+            /p:VersionPrefix=$(ver framework) `
+            --version-suffix pre.$Env:APPVEYOR_BUILD_NUMBER `
+            lib/BlackMaple.MachineFramework
+        dotnet build `
+            /p:VersionPrefix=$(ver service) `
+            --version-suffix pre.$Env:APPVEYOR_BUILD_NUMBER `
+            src/service
     }
 
 test_script:
