@@ -6,13 +6,25 @@ build_script:
     $tag = $(hg id -t -r '.^')
     function ver ($x) { c:\python36\python.exe version.py $x }
     if ($tag.StartsWith("mwi")) {
-        dotnet pack -c Release /p:VersionPrefix=$(ver mwi) lib/BlackMaple.MachineWatchInterface
+        dotnet pack `
+            --include-symbols `
+            -c Release `
+            /p:VersionPrefix=$(ver mwi) `
+            lib/BlackMaple.MachineWatchInterface
         Set-AppveyorBuildVariable "BMS_RELEASE_TO_NUGET" "true"
     } elseif ($tag.StartsWith("framework")) {
-        dotnet pack -c Release /p:VersionPrefix=$(ver framework) lib/BlackMaple.MachineFramework
+        dotnet pack `
+            --include-symbols `
+            -c Release `
+            /p:VersionPrefix=$(ver framework) `
+            lib/BlackMaple.MachineFramework
         Set-AppveyorBuildVariable "BMS_RELEASE_TO_NUGET" "true"
     } elseif ($tag.StartsWith("service")) {
-        dotnet pack -c Release /p:VersionPrefix=$(ver service) src/service
+        dotnet pack `
+            --include-symbols `
+            -c Release `
+            /p:VersionPrefix=$(ver service) `
+            src/service
         Set-AppveyorBuildVariable "BMS_RELEASE_TO_NUGET" "true"
     } else {
         dotnet build `
