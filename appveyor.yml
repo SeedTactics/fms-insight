@@ -3,9 +3,21 @@ image: Visual Studio 2017
 
 build_script:
 - ps: |
-    c:\python36\python.exe build.py
-    if ($(hg id -t -r '.^') -ne "") {
+    tag = $(hg id -t -r '.^')
+    function ver ($x) { c:\python36\python.exe version.py $x }
+    if ($tag.StartsWith("mwi")) {
+        dotnet pack -c Release /p:VersionPrefix=$(ver mwi) lib/BlackMaple.MachineWatchInterface
         Set-AppveyorBuildVariable "BMS_RELEASE_TO_NUGET" "true"
+    } else if ($tag.StartsWith("framework")) {
+        dotnet pack -c Release /p:VersionPrefix=$(ver framework) lib/BlackMaple.MachineFramework
+        Set-AppveyorBuildVariable "BMS_RELEASE_TO_NUGET" "true"
+    } else if ($tag.StartsWith("service")) {
+        dotnet pack -c Release /p:VersionPrefix=$(ver service) src/service
+        Set-AppveyorBuildVariable "BMS_RELEASE_TO_NUGET" "true"
+    } else {
+        dotnet build /p:VersionPrefix=$(ver mwi) lib/BlackMaple.MachineWatchInterface
+        dotnet build /p:VersionPrefix=$(ver framework) lib/BlackMaple.MachineFramework
+        dotnet build /p:VersionPrefix=$(ver service) src/service
     }
 
 test_script:

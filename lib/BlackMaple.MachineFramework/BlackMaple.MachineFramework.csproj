@@ -24,9 +24,18 @@
     <OutputType>Library</OutputType>
   </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="../BlackMaple.MachineWatchInterface/BlackMaple.MachineWatchInterface.csproj" />
-  </ItemGroup>
+  <Choose>
+    <When Condition="$(Configuration) == 'Debug'">
+      <ItemGroup>
+        <ProjectReference Include="../BlackMaple.MachineWatchInterface/BlackMaple.MachineWatchInterface.csproj" />
+      </ItemGroup>
+    </When>
+    <Otherwise>
+      <ItemGroup>
+        <PackageReference Include="BlackMaple.MachineWatchInterface" Version="4.*"/>
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
 
   <Choose>
       <When Condition="$(OS) == 'Unix'">

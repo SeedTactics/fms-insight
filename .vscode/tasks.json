@@ -1,0 +1,41 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "pack:mwi",
+            "command": "dotnet pack /p:VersionPrefix=`${workspaceFolder}/version.py mwi` --include-symbols --version-suffix=alpha`date -u +%Y%m%d%H%M%S` -o ${workspaceFolder}/../nugetpackages",
+            "options": {
+                "cwd": "${workspaceFolder}/lib/BlackMaple.MachineWatchInterface"
+            },
+            "type": "shell",
+            "presentation": {
+                "reveal": "silent"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "pack:framework",
+            "command": "dotnet pack /p:VersionPrefix=`${workspaceFolder}/version.py framework` --include-symbols --version-suffix=alpha`date -u +%Y%m%d%H%M%S` -o ${workspaceFolder}/../nugetpackages",
+            "options": {
+                "cwd": "${workspaceFolder}/lib/BlackMaple.MachineFramework"
+            },
+            "type": "shell",
+            "presentation": {
+                "reveal": "silent"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "pack:service",
+            "command": "dotnet pack /p:VersionPrefix=`${workspaceFolder}/version.py service` --include-symbols --version-suffix=alpha`date -u +%Y%m%d%H%M%S` -o ${workspaceFolder}/../nugetpackages",
+            "options": {
+                "cwd": "${workspaceFolder}/src/service"
+            },
+            "type": "shell",
+            "presentation": {
+                "reveal": "silent"
+            },
+            "problemMatcher": "$msCompile"
+        }
+    ]
+}

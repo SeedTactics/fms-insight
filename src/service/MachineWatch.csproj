@@ -26,7 +26,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../lib/BlackMaple.MachineWatchInterface/BlackMaple.MachineWatchInterface.csproj"/>
     <ProjectReference Include="../../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj"/>
 
     <Reference Include="System.Runtime.Remoting"/>
@@ -35,6 +34,18 @@
     <Reference Include="System.Configuration.Install"/>
   </ItemGroup>
 
+  <Choose>
+    <When Condition="$(Configuration) == 'Debug'">
+      <ItemGroup>
+        <ProjectReference Include="../BlackMaple.MachineWatchInterface/BlackMaple.MachineWatchInterface.csproj" />
+      </ItemGroup>
+    </When>
+    <Otherwise>
+      <ItemGroup>
+        <PackageReference Include="BlackMaple.MachineWatchInterface" Version="4.*"/>
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
 
   <Choose>
       <When Condition="$(OS) == 'Unix'">
