@@ -3,7 +3,7 @@ image: Visual Studio 2017
 
 build_script:
 - ps: |
-    tag = $(hg id -t -r '.^')
+    $tag = $(hg id -t -r '.^')
     function ver ($x) { c:\python36\python.exe version.py $x }
     if ($tag.StartsWith("mwi")) {
         dotnet pack -c Release /p:VersionPrefix=$(ver mwi) lib/BlackMaple.MachineWatchInterface
