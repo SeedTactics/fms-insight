@@ -33,7 +33,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
+
+#if !NET35
 using System.Threading.Tasks;
+#endif
 
 namespace BlackMaple.MachineWatchInterface
 {
@@ -55,6 +58,7 @@ namespace BlackMaple.MachineWatchInterface
         void SetSerialSettings(SerialSettings s);
     }
 
+    #if !NET35
     public interface ILogDatabaseAsync
     {
       Task<List<LogEntry>> GetLogEntries(DateTime startUTC, DateTime endUTC);
@@ -114,5 +118,6 @@ namespace BlackMaple.MachineWatchInterface
         public Task SetSerialSettings(SerialSettings s)
           => Task.Run(() => _d.SetSerialSettings(s));
     }
+    #endif
 }
 
