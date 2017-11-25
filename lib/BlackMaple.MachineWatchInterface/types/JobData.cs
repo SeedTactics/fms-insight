@@ -1192,7 +1192,7 @@ namespace BlackMaple.MachineWatchInterface
     [SerializableAttribute]
     public struct HistoricData
     {
-        public IDictionary<string, JobCurrentInformation> Jobs;
+        public IDictionary<string, JobPlan> Jobs;
         public ICollection<SimulatedStationUtilization> StationUse;
     }
 
@@ -1213,22 +1213,4 @@ namespace BlackMaple.MachineWatchInterface
         public string Part;
         public int Quantity;
     }
-
-    [SerializableAttribute]
-    public struct AddJobsResult
-    {
-        //AddedSuccessfully = true means the jobs have been validated and saved on disk.
-        //If not, the reason for failure is passed in ErrorWhileAddingJobs;
-        public bool AddedSuccessfully;
-        public string ErrorWhileAddingJobs;
-
-        //SuccessfullyCopiedToSystem = true means the jobs have been copied down into the system.
-        //(MachineWatch is allowed to delay copying jobs into the system until after they have
-        //been successfully added).  If the copy fails, the reason will be passed in
-        //ErrorWhileCopyingJobsToSystem, but even with the error Machine Watch will keep attempting
-        //to copy the jobs.
-        public bool SuccessfullyCopiedToSystem;
-        public string ErrorWhileCopyingJobsToSystem;
-    }
-
 }

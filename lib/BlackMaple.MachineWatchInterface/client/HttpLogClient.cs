@@ -39,11 +39,78 @@ using System.Net.Http;
 
 namespace BlackMaple.MachineWatchInterface
 {
-    public class HttpLogClient : MachineWatchHttpClient
+    public class HttpLogClient : MachineWatchHttpClient, ILogDatabaseAsync
     {
         public HttpLogClient(string host, string token) : base(host, token)
         {}
 
+        private async Task<List<LogEntry>> GetCycles(string path)
+        {
+            return await RecvJson<List<LogEntry>>(HttpMethod.Get, path);
+        }
+
+        public Task<List<LogEntry>> GetCompletedPartLogs(DateTime startUTC, DateTime endUTC)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<List<LogEntry>> GetLogEntries(DateTime startUTC, DateTime endUTC)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<List<LogEntry>> GetLogForMaterial(long materialID)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<List<LogEntry>> GetLogForSerial(string serial)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<List<LogEntry>> GetLogForWorkorder(string workorder)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<List<LogEntry>> GetLogFromCounter(long lastSeenCounter)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<List<WorkorderSummary>> GetWorkorderSummaries(IEnumerable<string> workorderIds)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<LogEntry> RecordFinalizedWorkorder(string workorder)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<LogEntry> RecordSerialForMaterialID(LogMaterial material, string serial)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<LogEntry> RecordWorkorderForMaterialID(LogMaterial material, string workorder)
+        {
+            throw new NotImplementedException();
+        }
+
+
+        public Task<SerialSettings> GetSerialSettings()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task SetSerialSettings(SerialSettings s)
+        {
+            throw new NotImplementedException();
+        }
+
+        /*
         public async Task AddStationCycle(LogEntry cycle)
         {
             await SendJson(HttpMethod.Put, "/api/log", cycle);
@@ -55,10 +122,6 @@ namespace BlackMaple.MachineWatchInterface
               (HttpMethod.Put, "/api/log/serial/" + WebUtility.UrlEncode(serial), mat);
         }
 
-        private async Task<List<LogEntry>> GetCycles(string path)
-        {
-            return await RecvJson<List<LogEntry>>(HttpMethod.Get, path);
-        }
 
         public async Task<List<LogEntry>> GetLogForMaterial(long materialID)
         {
@@ -81,5 +144,6 @@ namespace BlackMaple.MachineWatchInterface
         {
             return await GetCycles("/api/log/recent?lastSeenCounter=" + lastSeenCounter.ToString());
         }
+        */
     }
 }

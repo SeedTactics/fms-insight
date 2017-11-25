@@ -2,6 +2,19 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "test",
+            "command": "dotnet test",
+            "options": {
+                "cwd": "${workspaceFolder}/test"
+            },
+            "group": "test",
+            "type": "shell",
+            "presentation": {
+                "reveal": "always"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
             "label": "pack:mwi",
             "command": "dotnet pack /p:VersionPrefix=`${workspaceFolder}/version.py mwi` --include-symbols --version-suffix=alpha`date -u +%Y%m%d%H%M%S` -o ${workspaceFolder}/../nugetpackages",
             "options": {

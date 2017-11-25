@@ -44,12 +44,12 @@ namespace BlackMaple.MachineWatchInterface
         //so that errors during Init can be recorded.
         IEnumerable<System.Diagnostics.TraceSource> TraceSources();
 
-        // These can return NULL if no backend is used.
-        IJobServerV2 JobServer();
-        IPalletServer PalletServer();
+        ILogDatabase LogDatabase();
+        IJobDatabase JobDatabase();
+        IJobControl JobControl();
         IInspectionControl InspectionControl();
-        ILogServerV2 LogServer();
-        ICellConfiguration CellConfiguration();
+
+        IOldJobDecrement OldJobDecrement();
     }
 
     public interface IBackgroundWorker

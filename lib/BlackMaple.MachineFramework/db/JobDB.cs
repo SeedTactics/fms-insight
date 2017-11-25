@@ -42,7 +42,7 @@ using Microsoft.Data.Sqlite;
 namespace BlackMaple.MachineFramework
 {
     //database backend for the job db
-    public class JobDB
+    public class JobDB : BlackMaple.MachineWatchInterface.IJobDatabase
     {
 
         #region Database Open/Update
@@ -757,6 +757,14 @@ namespace BlackMaple.MachineFramework
             return LoadJobsHelper(cmd).Jobs.ToDictionary(x => x.UniqueStr, x => x);
         }
 
+        public BlackMaple.MachineWatchInterface.HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC)
+        {
+            var ret = default(BlackMaple.MachineWatchInterface.HistoricData);
+            ret.Jobs = LoadJobs(startUTC, endUTC);
+            ret.StationUse = LoadSimulatedStationUse(startUTC, endUTC);
+            return ret;
+        }
+
         public BlackMaple.MachineWatchInterface.JobsAndExtraParts LoadJobsAfterScheduleId(string schId)
         {
             var cmd = _connection.CreateCommand();
@@ -1130,7 +1138,7 @@ namespace BlackMaple.MachineFramework
                 }
             }
         }
-        public void AddJobs(BlackMaple.MachineWatchInterface.NewJobs newJobs)
+        public void AddJobs(BlackMaple.MachineWatchInterface.NewJobs newJobs, string expectedPreviousScheduleId)
         {
             foreach (var j in newJobs.Jobs)
             {
@@ -1142,6 +1150,14 @@ namespace BlackMaple.MachineFramework
                 var trans = _connection.BeginTransaction();
                 try
                 {
+                    if (!string.IsNullOrEmpty(expectedPreviousScheduleId))
+                    {
+                        var last = LatestScheduleId(trans);
+                        if (last != expectedPreviousScheduleId)
+                        {
+                            throw new Exception(string.Format("Mismatch in previous schedule: expected '{0}' but got '{1}'", expectedPreviousScheduleId, last));
+                        }
+                    }
                     foreach (var job in newJobs.Jobs)
                     {
                         AddJob(trans, job);

@@ -31,23 +31,25 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
 using System.Collections.Generic;
 
 namespace BlackMaple.MachineWatchInterface
 {
-    public interface IPalletServer
+    public interface IInspectionControl
     {
-        // Update pallet status
-        void SetHold(string pal, bool hold);
-        void MarkMaterialLoadedOntoPallet(string pal, string face, long matID);
-        void MarkLoadUnloadInstructionsCompleted(string pal);
-        void RejectLoadUnloadInstructions(string pal);
-        void StartManualPalletMove(string pal, PalletLocation target);
-        void ScrapMaterialFromPallet(string pal, int materialID);
+        ///Forces the given materialID to be inspected
+        void ForceInspection(long materialID, string inspectionType);
 
-        // Override pallet status
-        void OverridePalletLocation(string pal, PalletLocation currentLocation);
-        void OverrideFixtureOnPallet(string pal, string fixture);
+        ///Forces the next piece that runs on the given location to be inspected
+        void NextPieceInspection(MachineWatchInterface.PalletLocation palLoc, string inspType);
+
+        //allow editing of counts.  Uses lists of InspectCount structure
+        List<InspectCount> LoadInspectCounts();
+        void SetInspectCounts(IEnumerable<InspectCount> countUpdates);
+
+        List<string> LoadGlobalInspectionTypes();
+        InspectionType LoadGlobalInspectionType(string ty);
+        void SetGlobalInspectionType(InspectionType ty);
+        void DeleteGlobalInspectionType(string ty);
     }
 }

@@ -40,7 +40,7 @@ using Microsoft.Data.Sqlite;
 
 namespace BlackMaple.MachineFramework
 {
-    public class JobLogDB : MachineWatchInterface.ILogServerV2
+    public class JobLogDB : MachineWatchInterface.ILogDatabase
     {
 
         #region Database Create/Update

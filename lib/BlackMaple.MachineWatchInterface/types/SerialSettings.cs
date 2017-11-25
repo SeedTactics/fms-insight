@@ -45,7 +45,7 @@ namespace BlackMaple.MachineWatchInterface
         SerialDeposit          // deposit serial into machine file to be scribed on part
     }
 
-    [Serializable]
+    [Serializable]    
     public class SerialSettings
     {
         public SerialType SerialType {get;}
@@ -73,23 +73,4 @@ namespace BlackMaple.MachineWatchInterface
             ProgramTemplate = progTemplate;
         }
     }
-
-    public interface ILogServerV2
-    {
-        List<LogEntry> GetLogEntries(DateTime startUTC, DateTime endUTC);
-        List<LogEntry> GetLog(long lastSeenCounter);
-        List<LogEntry> GetLogForMaterial(long materialID);
-        List<LogEntry> GetLogForSerial(string serial);
-        List<LogEntry> GetLogForWorkorder(string workorder);
-        List<LogEntry> GetCompletedPartLogs(DateTime startUTC, DateTime endUTC);
-        List<WorkorderSummary> GetWorkorderSummaries(IEnumerable<string> workorderIds);
-
-        LogEntry RecordSerialForMaterialID(LogMaterial mat, string serial);
-        LogEntry RecordWorkorderForMaterialID(LogMaterial mat, string workorder);
-        LogEntry RecordFinalizedWorkorder(string workorder);
-
-        SerialSettings GetSerialSettings();
-        void SetSerialSettings(SerialSettings s);
-    }
 }
-

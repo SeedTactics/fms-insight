@@ -141,29 +141,29 @@ namespace BlackMaple.MachineWatch
                 foreach (IBackgroundWorker w in plugin.workers)
                     w.Init(plugin.serverBackend);
 
-                var jobServer = plugin.serverBackend.JobServer();
-                var palServer = plugin.serverBackend.PalletServer();
+                var jobDb = plugin.serverBackend.JobDatabase();
+                var logDb = plugin.serverBackend.LogDatabase();
                 var inspServer = plugin.serverBackend.InspectionControl();
-                var logServer = plugin.serverBackend.LogServer();
-                var configServer = plugin.serverBackend.CellConfiguration();
+                var jobControl = plugin.serverBackend.JobControl();
+                var oldJob = plugin.serverBackend.OldJobDecrement();
 
                 singletons = new RemoteSingletons();
 
-                singletons.RemoteSingleton(typeof(IJobServerV2),
-                                           "JobServerV2",
-                                           jobServer);
-                singletons.RemoteSingleton(typeof(IPalletServer),
-                                           "PalletServer",
-                                           palServer);
+                singletons.RemoteSingleton(typeof(IJobDatabase),
+                                           "JobDB",
+                                           jobDb);
+                singletons.RemoteSingleton(typeof(ILogDatabase),
+                                           "LogDB",
+                                           logDb);
                 singletons.RemoteSingleton(typeof(IInspectionControl),
                                            "InspectionControl",
                                            inspServer);
-                singletons.RemoteSingleton(typeof(ICellConfiguration),
-                                           "CellConfiguration",
-                                           configServer);
-                singletons.RemoteSingleton(typeof(ILogServerV2),
-                                           "LogServerV2",
-                                           logServer);
+                singletons.RemoteSingleton(typeof(IJobControl),
+                                           "JobControl",
+                                           jobControl);
+                singletons.RemoteSingleton(typeof(IOldJobDecrement),
+                                           "OldJobDecrement",
+                                           oldJob);
                 singletons.RemoteSingleton(typeof(IMachineWatchVersion),
                            "Version",
                            plugin.serverVersion);

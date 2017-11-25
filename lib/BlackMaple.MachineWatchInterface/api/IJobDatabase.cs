@@ -31,28 +31,20 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using System;
 using System.Collections.Generic;
 
 namespace BlackMaple.MachineWatchInterface
 {
-    public interface IInspectionControl
+    public interface IJobDatabase
     {
-        //Forces the given materialID to be inspected
-        void ForceInspection(long materialID, string inspectionType);
-
-        //Forces the next piece that runs on the given location to be inspected
-        void NextPieceInspection(MachineWatchInterface.PalletLocation palLoc, string inspType);
-
-        //allow editing of counts.  Uses lists of InspectCount structure
-        List<InspectCount> LoadInspectCounts();
-        void SetInspectCounts(IEnumerable<InspectCount> countUpdates);
-
-        List<string> LoadGlobalInspectionTypes();
-
-        InspectionType LoadGlobalInspectionType(string ty);
-
-        void SetGlobalInspectionType(InspectionType ty);
-
-        void DeleteGlobalInspectionType(string ty);
+        ///Load all jobs, station, and tool utilization which intersect the given date range.
+        HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC);
+        
+        ///Loads all jobs which have a unique strictly larger than the given unique
+        JobsAndExtraParts LoadJobsAfterScheduleId(string scheduleId);
+        
+        ///Loads all jobs for the most recent schedule
+        JobsAndExtraParts LoadMostRecentSchedule();
     }
 }
