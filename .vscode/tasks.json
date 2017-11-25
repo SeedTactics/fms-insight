@@ -16,7 +16,7 @@
         },
         {
             "label": "pack:mwi",
-            "command": "dotnet pack /p:VersionPrefix=`${workspaceFolder}/version.py mwi` --include-symbols --version-suffix=alpha`date -u +%Y%m%d%H%M%S` -o ${workspaceFolder}/../nugetpackages",
+            "command": "dotnet pack /p:VersionPrefix=$(python ${workspaceFolder}/version.py mwi) --include-symbols --version-suffix=alpha$(date -u +%Y%m%d%H%M%S) -o ${workspaceFolder}/../nugetpackages",
             "options": {
                 "cwd": "${workspaceFolder}/lib/BlackMaple.MachineWatchInterface"
             },
@@ -28,7 +28,7 @@
         },
         {
             "label": "pack:framework",
-            "command": "dotnet pack /p:VersionPrefix=`${workspaceFolder}/version.py framework` --include-symbols --version-suffix=alpha`date -u +%Y%m%d%H%M%S` -o ${workspaceFolder}/../nugetpackages",
+            "command": "dotnet pack /p:VersionPrefix=$(python ${workspaceFolder}/version.py framework) --include-symbols --version-suffix=alpha$(date -u +%Y%m%d%H%M%S) -o ${workspaceFolder}/../nugetpackages",
             "options": {
                 "cwd": "${workspaceFolder}/lib/BlackMaple.MachineFramework"
             },
@@ -40,7 +40,7 @@
         },
         {
             "label": "pack:service",
-            "command": "dotnet pack /p:VersionPrefix=`${workspaceFolder}/version.py service` --include-symbols --version-suffix=alpha`date -u +%Y%m%d%H%M%S` -o ${workspaceFolder}/../nugetpackages",
+            "command": "dotnet pack /p:VersionPrefix=$(python ${workspaceFolder}/version.py service) --include-symbols --version-suffix=alpha$(date -u +%Y%m%d%H%M%S) -o ${workspaceFolder}/../nugetpackages",
             "options": {
                 "cwd": "${workspaceFolder}/src/service"
             },
