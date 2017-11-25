@@ -46,12 +46,12 @@ namespace MachineWatchTest {
 
     public InspectionTest()
 		{
-      var logConn = new SqliteConnection("Data Source=:memory:");
+      var logConn = SqliteExtensions.ConnectMemory();
       logConn.Open();
       _jobLog = new JobLogDB(logConn);
       _jobLog.CreateTables();
 
-      var inspConn = new SqliteConnection("Data Source=:memory:");
+      var inspConn = SqliteExtensions.ConnectMemory();
       inspConn.Open();
 			_insp = new InspectionDB(_jobLog, inspConn);
       _insp.CreateTables();

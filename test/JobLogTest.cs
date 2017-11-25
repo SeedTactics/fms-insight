@@ -47,8 +47,7 @@ namespace MachineWatchTest
 
         public JobLogTest()
         {
-            var connection = new SqliteConnection("Data Source=:memory:");
-            //var connection = new SqliteConnection("Data Source=test.db");
+            var connection = BlackMaple.MachineFramework.SqliteExtensions.ConnectMemory();
             connection.Open();
             _jobLog = new JobLogDB(connection);
             _jobLog.CreateTables();

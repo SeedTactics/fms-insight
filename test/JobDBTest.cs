@@ -47,7 +47,7 @@ namespace MachineWatchTest
 
         public JobDBTest()
         {
-            var connection = new SqliteConnection("Data Source=:memory:");
+            var connection = SqliteExtensions.ConnectMemory();
             connection.Open();
             _jobDB = new JobDB(connection);
             _jobDB.CreateTables();
