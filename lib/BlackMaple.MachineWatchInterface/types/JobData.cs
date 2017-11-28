@@ -1061,6 +1061,8 @@ namespace BlackMaple.MachineWatchInterface
             get { return _extraParts; }
         }
 
+        public IList<JobPlan> JobsNotCopiedToSystem { get { return _notCopied; } }
+
         public CurrentStatus(IEnumerable<JobCurrentInformation> jobs,
                              IDictionary<string, PalletStatus> pals,
                              string latestSchId,
@@ -1079,19 +1081,22 @@ namespace BlackMaple.MachineWatchInterface
         public CurrentStatus(IDictionary<string, JobCurrentInformation> jobs,
                              IDictionary<string, PalletStatus> pals,
                              string latestSchId,
-                             IDictionary<string, int> extraParts)
+                             IDictionary<string, int> extraParts,
+                             IEnumerable<JobPlan> notCopied)
         {
             _jobs = new Dictionary<string, JobCurrentInformation>(jobs);
             _pals = new Dictionary<string, PalletStatus>(pals);
             _alarms = new List<string>();
             LatestScheduleId = latestSchId;
             _extraParts = new Dictionary<string, int>(extraParts);
+            _notCopied = new List<JobPlan>(notCopied);
         }
 
         private Dictionary<string, JobCurrentInformation> _jobs;
         private Dictionary<string, PalletStatus> _pals;
         private List<string> _alarms;
         private Dictionary<string, int> _extraParts;
+        private List<JobPlan> _notCopied;
     }
 
     [SerializableAttribute]
@@ -1126,48 +1131,19 @@ namespace BlackMaple.MachineWatchInterface
         public Dictionary<string, int> ExtraParts;
         public bool ArchiveCompletedJobs;
 
-        public NewJobs(IEnumerable<JobPlan> newJobs,
-                       bool updateGlobalTag,
-                       string newGlobalTag,
-                       bool archiveCompletedJobs)
-        {
-            this.Jobs = newJobs.ToList();
-            this.StationUse = new List<SimulatedStationUtilization>();
-            this.ExtraParts = new Dictionary<string, int>();
-            if (updateGlobalTag)
-                this.ScheduleId = newGlobalTag;
-            else
-                this.ScheduleId = null;
-            this.ArchiveCompletedJobs = archiveCompletedJobs;
-        }
-
-        public NewJobs(IEnumerable<JobPlan> newJobs,
-                       IEnumerable<SimulatedStationUtilization> stationUse,
-                       bool updateGlobalTag,
-                       string newGlobalTag,
-                       bool archiveCompletedJobs)
-        {
-            this.Jobs = newJobs.ToList();
-            this.StationUse = stationUse.ToList();
-            this.ExtraParts = new Dictionary<string, int>();
-            if (updateGlobalTag)
-                this.ScheduleId = newGlobalTag;
-            else
-                this.ScheduleId = null;
-            this.ArchiveCompletedJobs = archiveCompletedJobs;
-        }
-
         public NewJobs(string scheduleId,
                        IEnumerable<JobPlan> newJobs,
-                       IEnumerable<SimulatedStationUtilization> stationUse,
-                       Dictionary<string, int> extraParts,
-                       bool archiveCompletedJobs)
+                       IEnumerable<SimulatedStationUtilization> stationUse = null,
+                       Dictionary<string, int> extraParts = null,
+                       bool archiveCompletedJobs = false)
         {
             this.ScheduleId = scheduleId;
             this.Jobs = newJobs.ToList();
-            this.StationUse = stationUse.ToList();
-            this.ExtraParts = extraParts;
-            this.ArchiveCompletedJobs = archiveCompletedJobs;   
+            this.StationUse =
+                stationUse == null ? new List<SimulatedStationUtilization>() : stationUse.ToList();
+            this.ExtraParts =
+                extraParts == null ? new Dictionary<string, int>() : extraParts;
+            this.ArchiveCompletedJobs = archiveCompletedJobs;
         }
     }
 

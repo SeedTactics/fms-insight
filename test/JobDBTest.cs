@@ -509,7 +509,7 @@ namespace MachineWatchTest
             job3.SetPlannedCyclesOnFirstProcess(1, 4);
             job3.SetPlannedCyclesOnFirstProcess(2, 5);
 
-            _jobDB.AddJobs(new NewJobs(new JobPlan[] { job1, job2, job3 }, new SimulatedStationUtilization[] { }, false, "tag2", false), null);
+            _jobDB.AddJobs(new NewJobs("tag2", new JobPlan[] { job1, job2, job3 }), null);
 
             CheckJobs(job1, job2, job3, job2.ScheduleId, theExtraParts);
 
