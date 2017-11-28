@@ -53,13 +53,13 @@ System.Runtime.Remoting.Channels.ChannelServices.RegisterChannel(
 * Allow the user to enter a computer name for the computer running Machine Watch (and perhaps a port).
    If no port is entered, default to port 8086.
 
-* Access one of the exposed interfaces such as `IJobServerV2` via Remoting:
+* Access one of the exposed interfaces such as `ILogDatabase` via Remoting:
 
 ~~~ {.csproj}
-var jobServer = (BlackMaple.MachineWatchInterface.IJobServerV2)
+var jobServer = (BlackMaple.MachineWatchInterface.ILogDatabase)
     System.Runtime.Remoting.RemotingServices.Connect(
-      typeof(BlackMaple.MachineWatchInterface.IJobServerV2),
-      "tcp://" + locationAndPort + "/JobServerV2");
+      typeof(BlackMaple.MachineWatchInterface.ILogDatabase),
+      "tcp://" + locationAndPort + "/LogDatabase");
 ~~~
 
 For details on the interfaces and data available, see the
