@@ -64,6 +64,7 @@ var jobServer = (BlackMaple.MachineWatchInterface.ILogDatabase)
 
 For details on the interfaces and data available, see the
 [source code](https://bitbucket.org/blackmaple/machinewatch/src/tip/lib/BlackMaple.MachineWatchInterface/).
+In particular, the `api` subdirectory contains the network interfaces.
 
 ### Writing a plugin for a cell controller
 
