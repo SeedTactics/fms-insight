@@ -1623,17 +1623,20 @@ namespace BlackMaple.MachineFramework
                     if (lastCycleTime != null && lastCycleTime != DBNull.Value)
                         elapsedTime = timeUTC.Subtract(new DateTime((long)lastCycleTime, DateTimeKind.Utc));
 
-                    // Add the pallet cycle
                     var addCmd = _connection.CreateCommand();
                     addCmd.Transaction = trans;
-                    addCmd.CommandText = "INSERT INTO stations(Pallet, StationLoc, StationName, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, ForeignID)" +
-                        "VALUES ($pal,$loc,'Pallet Cycle',1,'',0,$time,'PalletCycle',0,$elapsed,NULL,$foreign)";
-                    addCmd.Parameters.Add("pal", SqliteType.Text).Value = pal;
-                    addCmd.Parameters.Add("loc", SqliteType.Integer).Value = (int)MachineWatchInterface.LogType.PalletCycle;
-                    addCmd.Parameters.Add("time", SqliteType.Integer).Value = timeUTC.Ticks;
-                    addCmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignID;
-                    addCmd.Parameters.Add("elapsed", SqliteType.Integer).Value = elapsedTime.Ticks;
-                    addCmd.ExecuteNonQuery();
+                    if (lastCycleTime == null || lastCycleTime == DBNull.Value || elapsedTime != TimeSpan.Zero)
+                    {
+                        // Add the pallet cycle
+                        addCmd.CommandText = "INSERT INTO stations(Pallet, StationLoc, StationName, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, ForeignID)" +
+                            "VALUES ($pal,$loc,'Pallet Cycle',1,'',0,$time,'PalletCycle',0,$elapsed,NULL,$foreign)";
+                        addCmd.Parameters.Add("pal", SqliteType.Text).Value = pal;
+                        addCmd.Parameters.Add("loc", SqliteType.Integer).Value = (int)MachineWatchInterface.LogType.PalletCycle;
+                        addCmd.Parameters.Add("time", SqliteType.Integer).Value = timeUTC.Ticks;
+                        addCmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignID;
+                        addCmd.Parameters.Add("elapsed", SqliteType.Integer).Value = elapsedTime.Ticks;
+                        addCmd.ExecuteNonQuery();
+                    }
 
                     if (mat == null)
                     {

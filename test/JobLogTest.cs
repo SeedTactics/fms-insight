@@ -375,6 +375,7 @@ namespace MachineWatchTest
             CheckLog(pal2Cycle, _jobLog.CurrentPalletLog("pal2"), DateTime.UtcNow.AddHours(-10));
 
             _jobLog.CompletePalletCycle("pal1", pal1CycleTime.AddMinutes(40), "");
+            _jobLog.CompletePalletCycle("pal1", pal1CycleTime.AddMinutes(40), ""); //filter duplicates
 
             var elapsed = pal1CycleTime.AddMinutes(40).Subtract(pal1InitialTime.AddMinutes(25));
             pal1Cycle.Add(new LogEntry(0, new LogMaterial[] {}, "pal1", LogType.PalletCycle, "Pallet Cycle", 1,
