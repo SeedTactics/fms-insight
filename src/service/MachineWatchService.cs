@@ -92,6 +92,7 @@ namespace BlackMaple.MachineWatch
             IServerBackend serverBackend = null;
             var workers = new List<IBackgroundWorker>();
             System.Reflection.AssemblyName assName = null;
+            System.Diagnostics.FileVersionInfo assFileVer = null;
 
             foreach (string ass in assemblies)
             {
@@ -106,6 +107,7 @@ namespace BlackMaple.MachineWatch
                         {
                             serverBackend = (IServerBackend)Activator.CreateInstance(t);
                             assName = asm.GetName();
+                            assFileVer = System.Diagnostics.FileVersionInfo.GetVersionInfo(asm.Location);
                         }
 
                         if (iface.Equals(typeof(IBackgroundWorker)))
@@ -117,7 +119,7 @@ namespace BlackMaple.MachineWatch
             }
 
             return serverBackend == null ? null :
-                new Server.MachineWatchPlugin(serverBackend, assName, workers);
+                new Server.MachineWatchPlugin(serverBackend, assName, assFileVer, workers);
         }
 
         protected override void OnStart(string[] args)

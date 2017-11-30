@@ -53,9 +53,9 @@ namespace BlackMaple.MachineWatch
         {
             private string _ver;
             private string _plugin;
-            public MachineWatchVersion(System.Reflection.AssemblyName n)
+            public MachineWatchVersion(System.Reflection.AssemblyName n, System.Diagnostics.FileVersionInfo v)
             {
-                _ver = n.Version.ToString();
+                _ver = v.ProductVersion;
                 _plugin = n.Name;
             }
             public string Version() { return _ver; }
@@ -68,10 +68,10 @@ namespace BlackMaple.MachineWatch
             public IMachineWatchVersion serverVersion { get; }
             public IEnumerable<IBackgroundWorker> workers { get; }
 
-            public MachineWatchPlugin(IServerBackend b, System.Reflection.AssemblyName n, IEnumerable<IBackgroundWorker> ws)
+            public MachineWatchPlugin(IServerBackend b, System.Reflection.AssemblyName n, System.Diagnostics.FileVersionInfo v, IEnumerable<IBackgroundWorker> ws)
             {
                 serverBackend = b;
-                serverVersion = new MachineWatchVersion(n);
+                serverVersion = new MachineWatchVersion(n, v);
                 workers = ws;
             }
         }
