@@ -1061,8 +1061,6 @@ namespace BlackMaple.MachineWatchInterface
             get { return _extraParts; }
         }
 
-        public IList<JobPlan> JobsNotCopiedToSystem { get { return _notCopied; } }
-
         public CurrentStatus(IEnumerable<JobCurrentInformation> jobs,
                              IDictionary<string, PalletStatus> pals,
                              string latestSchId,
@@ -1081,22 +1079,19 @@ namespace BlackMaple.MachineWatchInterface
         public CurrentStatus(IDictionary<string, JobCurrentInformation> jobs,
                              IDictionary<string, PalletStatus> pals,
                              string latestSchId,
-                             IDictionary<string, int> extraParts,
-                             IEnumerable<JobPlan> notCopied)
+                             IDictionary<string, int> extraParts)
         {
             _jobs = new Dictionary<string, JobCurrentInformation>(jobs);
             _pals = new Dictionary<string, PalletStatus>(pals);
             _alarms = new List<string>();
             LatestScheduleId = latestSchId;
             _extraParts = new Dictionary<string, int>(extraParts);
-            _notCopied = new List<JobPlan>(notCopied);
         }
 
         private Dictionary<string, JobCurrentInformation> _jobs;
         private Dictionary<string, PalletStatus> _pals;
         private List<string> _alarms;
         private Dictionary<string, int> _extraParts;
-        private List<JobPlan> _notCopied;
     }
 
     [SerializableAttribute]
