@@ -160,7 +160,7 @@ namespace BlackMaple.MachineWatchInterface
         [JsonProperty]
         public readonly string Counter;
 
-        //For each completed material, the counter is inremented.  If the counter is equal to MaxVal,
+        //For each completed material, the counter is incremented.  If the counter is equal to MaxVal,
         //we signal an inspection and reset the counter to 0.
         [JsonProperty]
         public readonly int MaxVal;
@@ -366,7 +366,7 @@ namespace BlackMaple.MachineWatchInterface
         //general info about the route
 
         //The overall starting time of the period when we expect the job to run.
-        //Note that the job might not immedietly start at this point, the expected
+        //Note that the job might not immediately start at this point, the expected
         //start time from the simulation is passed per path in the SimulatedStartingTime
         public DateTime RouteStartingTimeUTC
         {
@@ -1126,11 +1126,15 @@ namespace BlackMaple.MachineWatchInterface
         public Dictionary<string, int> ExtraParts;
         public bool ArchiveCompletedJobs;
 
+        [OptionalField]
+        public byte[] DebugMessage;
+
         public NewJobs(string scheduleId,
                        IEnumerable<JobPlan> newJobs,
                        IEnumerable<SimulatedStationUtilization> stationUse = null,
                        Dictionary<string, int> extraParts = null,
-                       bool archiveCompletedJobs = false)
+                       bool archiveCompletedJobs = false,
+                       byte[] debugMsg = null)
         {
             this.ScheduleId = scheduleId;
             this.Jobs = newJobs.ToList();
@@ -1139,6 +1143,7 @@ namespace BlackMaple.MachineWatchInterface
             this.ExtraParts =
                 extraParts == null ? new Dictionary<string, int>() : extraParts;
             this.ArchiveCompletedJobs = archiveCompletedJobs;
+            this.DebugMessage = debugMsg;
         }
     }
 

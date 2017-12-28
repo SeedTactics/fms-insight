@@ -384,7 +384,8 @@ namespace MachineWatchTest
             var simStationUse = RandSimStationUse();
             var theExtraParts = RandExtraParts();
 
-			var newJob2 = new NewJobs(job2.ScheduleId, new JobPlan[] { job2 }, simStationUse, theExtraParts, true);
+            byte[] debug = {23, 53, 13, 6, 4, 12, 4, 12, 75, 8, 34, 177, 6, 23, 74};
+			var newJob2 = new NewJobs(job2.ScheduleId, new JobPlan[] { job2 }, simStationUse, theExtraParts, true, debug);
 			try {
 				_jobDB.AddJobs(newJob2, "badsch");
 				Assert.True(false, "Expecting addjobs to throw exception");

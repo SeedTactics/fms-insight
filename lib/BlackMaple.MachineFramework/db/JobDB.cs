@@ -86,7 +86,7 @@ namespace BlackMaple.MachineFramework
             _connection.Close();
         }
 
-        private const int Version = 10;
+        private const int Version = 11;
 
         public void CreateTables()
         {
@@ -171,6 +171,9 @@ namespace BlackMaple.MachineFramework
 
             cmd.CommandText = "CREATE INDEX decrement_snapshot_time ON decrement_snapshots(TimeUTC)";
             cmd.ExecuteNonQuery();
+
+            cmd.CommandText = "CREATE TABLE schedule_debug(ScheduleId TEXT PRIMARY KEY, DebugMessage BLOB)";
+            cmd.ExecuteNonQuery();
         }
 
 
@@ -221,7 +224,7 @@ namespace BlackMaple.MachineFramework
 
             try
             {
-                //add upgrade code here, in seperate functions
+                //add upgrade code here, in separate functions
 
                 if (curVersion < 1) Ver0ToVer1(trans);
                 if (curVersion < 2) Ver1ToVer2(trans);
@@ -233,6 +236,7 @@ namespace BlackMaple.MachineFramework
                 if (curVersion < 8) Ver7ToVer8(trans);
                 if (curVersion < 9) Ver8ToVer9(trans);
                 if (curVersion < 10) Ver9ToVer10(trans);
+                if (curVersion < 11) Ver10ToVer11(trans);
 
                 //update the version in the database
                 cmd.Transaction = trans;
@@ -411,6 +415,16 @@ namespace BlackMaple.MachineFramework
             {
                 cmd.Transaction = trans;
                 cmd.CommandText = "ALTER TABLE sim_station_use ADD PlanDownTime INTEGER";
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        private void Ver10ToVer11(IDbTransaction trans)
+        {
+            using (IDbCommand cmd = _connection.CreateCommand())
+            {
+                cmd.Transaction = trans;
+                cmd.CommandText = "CREATE TABLE schedule_debug(ScheduleId TEXT PRIMARY KEY, DebugMessage BLOB)";
                 cmd.ExecuteNonQuery();
             }
         }
@@ -1168,6 +1182,17 @@ namespace BlackMaple.MachineFramework
                     if (!string.IsNullOrEmpty(newJobs.ScheduleId) && newJobs.ExtraParts != null)
                     {
                         AddExtraParts(trans, newJobs.ScheduleId, newJobs.ExtraParts);
+                    }
+
+                    if (!string.IsNullOrEmpty(newJobs.ScheduleId) && newJobs.DebugMessage != null)
+                    {
+                        using (var cmd = _connection.CreateCommand())
+                        {
+                            cmd.CommandText = "INSERT OR REPLACE INTO schedule_debug(ScheduleId, DebugMessage) VALUES ($sid,$debug)";
+                            cmd.Parameters.Add("sid", SqliteType.Text).Value = newJobs.ScheduleId;
+                            cmd.Parameters.Add("debug", SqliteType.Text).Value = newJobs.DebugMessage;
+                            cmd.ExecuteNonQuery();
+                        }
                     }
 
                     trans.Commit();

@@ -53,9 +53,9 @@ namespace BlackMaple.MachineWatchInterface
         //Remove all planned parts from all jobs in the system.
         //
         //The function does 2 things:
-        // - Check for planned but not yet machined quantites and if found remove them
+        // - Check for planned but not yet machined quantities and if found remove them
         //   and store locally in the machine watch database with a new DecrementId.
-        // - Load all decremented quantites (including the potentially new quantites)
+        // - Load all decremented quantities (including the potentially new quantities)
         //   strictly after the given decrement ID.
         //Thus this function can be called multiple times to receive the same data.
         List<JobAndDecrementQuantity> DecrementJobQuantites(string loadDecrementsStrictlyAfterDecrementId);
