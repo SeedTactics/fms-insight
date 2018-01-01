@@ -270,7 +270,7 @@ namespace BlackMaple.MachineWatchInterface
 
             if (UserHold) {
                 isOnHold = true;
-                nextTransitionUTC = new DateTime(2000, 1, 1);
+                nextTransitionUTC = DateTime.MaxValue;
                 return;
             }
 
@@ -340,7 +340,7 @@ namespace BlackMaple.MachineWatchInterface
             ReasonForUserHold = "";
 
             HoldUnholdPattern = new List<TimeSpan>();
-            HoldUnholdPatternStartUTC = DateTime.MaxValue;
+            HoldUnholdPatternStartUTC = new DateTime(2000, 1, 1);
             HoldUnholdPatternRepeats = false;
         }
 
