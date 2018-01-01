@@ -340,7 +340,7 @@ namespace BlackMaple.MachineWatchInterface
             ReasonForUserHold = "";
 
             HoldUnholdPattern = new List<TimeSpan>();
-            HoldUnholdPatternStartUTC = DateTime.UtcNow;
+            HoldUnholdPatternStartUTC = DateTime.MaxValue;
             HoldUnholdPatternRepeats = false;
         }
 
