@@ -35,7 +35,6 @@ using System.Threading.Tasks;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
-using Newtonsoft.Json;
 
 namespace BlackMaple.MachineWatchInterface
 {
@@ -57,16 +56,6 @@ namespace BlackMaple.MachineWatchInterface
             var msg = new HttpRequestMessage(method, "https://" + _host + path);
             msg.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _token);
             var resp = await _client.SendAsync(msg);
-            resp.EnsureSuccessStatusCode();            
-        }
-
-        protected async Task SendJson<T>(HttpMethod method, string path, T body)
-        {
-            var msg = new HttpRequestMessage(method, "https://" + _host + path);
-            msg.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _token);
-            msg.Content = new StringContent(JsonConvert.SerializeObject(body).ToString(),
-                Encoding.UTF8, "application/json");
-            var resp = await _client.SendAsync(msg);
             resp.EnsureSuccessStatusCode();
         }
 
@@ -76,20 +65,31 @@ namespace BlackMaple.MachineWatchInterface
             msg.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _token);
             var response = await _client.SendAsync(msg);
             response.EnsureSuccessStatusCode();
-            var str = await response.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<T>(str);            
+            var ser = new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(T));
+            var stream = await response.Content.ReadAsStreamAsync();
+            return (T)ser.ReadObject(stream);
         }
 
         protected async Task<Ret> SendRecvJson<T, Ret>(HttpMethod method, string path, T body)
         {
             var msg = new HttpRequestMessage(method, "https://" + _host + path);
             msg.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _token);
-            msg.Content = new StringContent(JsonConvert.SerializeObject(body).ToString(),
-                Encoding.UTF8, "application/json");
+
+            using (var ms = new System.IO.MemoryStream())
+            {
+                var ser = new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(T));
+                ser.WriteObject(ms, body);
+                msg.Content = new StringContent(
+                    System.Text.Encoding.UTF8.GetString(ms.ToArray()),
+                    Encoding.UTF8, "application/json");
+            }
+
             var resp = await _client.SendAsync(msg);
             resp.EnsureSuccessStatusCode();
-            var str = await resp.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<Ret>(str);                        
+
+            var deser = new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(Ret));
+            var stream = await resp.Content.ReadAsStreamAsync();
+            return (Ret)deser.ReadObject(stream);
         }
     }
 }

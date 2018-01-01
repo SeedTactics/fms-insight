@@ -33,11 +33,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
-using Newtonsoft.Json;
+using System.Runtime.Serialization;
 
 namespace BlackMaple.MachineWatchInterface
 {
-    [SerializableAttribute()]
+    [Serializable]
     public enum PalletLocationTypeEnum
     {
         Unkown /* sic */ = 0,
@@ -53,15 +53,14 @@ namespace BlackMaple.MachineWatchInterface
         OrderAssignment
     }
 
-    [SerializableAttribute(), JsonObject(MemberSerialization.OptIn)]
+    [Serializable, DataContract]
     public struct PalletLocation : IComparable
     {
 
-        [JsonProperty(PropertyName = "loc", Required = Required.Always)]
-        [JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
+        [DataMember(Name = "loc")]
         public PalletLocationTypeEnum Location;
 
-        [JsonProperty(PropertyName = "num", Required = Required.Always)]
+        [DataMember(Name = "num")]
         public int Num;
 
         public PalletLocation(PalletLocationTypeEnum l, int n)
@@ -90,35 +89,35 @@ namespace BlackMaple.MachineWatchInterface
         Machining
     }
 
-    [SerializableAttribute()]
+    [Serializable, DataContract]
     public class PalletStatus
     {
-        public readonly string Pallet;
-        public readonly string FixtureOnPallet;
-        public readonly bool OnHold;
-        public readonly PalletLocation CurrentPalletLocation;
-        public readonly List<Material> MaterialOnPallet;
-        public readonly PalletStatusEnum Status;
+        [DataMember] public readonly string Pallet;
+        [DataMember] public readonly string FixtureOnPallet;
+        [DataMember] public readonly bool OnHold;
+        [DataMember] public readonly PalletLocation CurrentPalletLocation;
+        [DataMember] public readonly List<Material> MaterialOnPallet;
+        [DataMember] public readonly PalletStatusEnum Status;
 
         // If the pallet status is AtLoadUnload, the following list will be filled in with
         // the material to unload.  This material will still exist in the MaterialOnPallet list
-        public readonly List<Material> MaterialToUnload;
+        [DataMember] public readonly List<Material> MaterialToUnload;
 
         // If the pallet status is AtLoadUnload, the following list will be filled in with
         // new material to load.  None of this material will exist in the MaterialOnPallet list.
-        public readonly List<Material> MaterialToLoad;
+        [DataMember] public readonly List<Material> MaterialToLoad;
 
         // The new fixture to load if the status is AtLoadUnload.  An empty string means no change of fixture.
-        public readonly string NewFixture;
+        [DataMember] public readonly string NewFixture;
 
         // If the pallet status is Machining, we record the material currently in execution.  This will
         // be a sublist of MaterialOnPallet.  Only material currently executing appears in this list.
-        public readonly List<MaterialInExe> MaterialInExecution;
+        [DataMember] public readonly List<MaterialInExe> MaterialInExecution;
 
-        //If CurrentPalletLocation is Cart, the following two fields will be filled in.  
+        //If CurrentPalletLocation is Cart, the following two fields will be filled in.
         //If the percentage is unknown, -1 is returned.
-        public PalletLocation TargetLocation;
-        public decimal PercentMoveCompleted;
+        [DataMember] public PalletLocation TargetLocation;
+        [DataMember] public decimal PercentMoveCompleted;
 
         private PalletStatus(string pal, string fix, bool hold, PalletLocation curLoc, PalletStatusEnum status, string newFix)
         {
@@ -154,15 +153,15 @@ namespace BlackMaple.MachineWatchInterface
             return new PalletStatus(pal, fixture, hold, loc, PalletStatusEnum.Machining, "");
         }
 
-        [SerializableAttribute()]
+        [Serializable, DataContract]
         public class Material
         {
-            public string JobUnique;
-            public string PartName;
-            public long MaterialID;
-            public int Process;
-            public int Path;
-            public string FaceName;
+            [DataMember] public string JobUnique;
+            [DataMember] public string PartName;
+            [DataMember] public long MaterialID;
+            [DataMember] public int Process;
+            [DataMember] public int Path;
+            [DataMember] public string FaceName;
 
             public Material(string job, string part, long matID, int proc, int path, string face)
             {
@@ -176,14 +175,14 @@ namespace BlackMaple.MachineWatchInterface
 
         }
 
-        [SerializableAttribute()]
+        [Serializable, DataContract]
         public class MaterialInExe : Material
         {
-            public string Program;
+            [DataMember] public string Program;
 
             //Time times can be 0 if machine watch does not know the elapsed or expected remaining time.
-            public TimeSpan ElapsedMachiningTime;
-            public TimeSpan ExpectedRemainingMachiningTime;
+            [DataMember] public TimeSpan ElapsedMachiningTime;
+            [DataMember] public TimeSpan ExpectedRemainingMachiningTime;
 
             public MaterialInExe(string job, string part, long matID, int proc, int path, string face)
                 : base(job, part, matID, proc, path, face)

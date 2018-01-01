@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
-using Newtonsoft.Json;
 using System.Linq;
 using System.Runtime.Serialization;
 
@@ -41,7 +40,7 @@ namespace BlackMaple.MachineWatchInterface
 {
 
     //stores information about a single "stop" of the pallet in a route
-    [SerializableAttribute, JsonObject(MemberSerialization.OptIn)]
+    [Serializable, DataContract]
     public class JobMachiningStop
     {
         public string StationGroup
@@ -84,16 +83,16 @@ namespace BlackMaple.MachineWatchInterface
             return _programs.Keys;
         }
 
-        [SerializableAttribute]
+        [Serializable, DataContract]
         public struct ProgramEntry : IComparable<ProgramEntry>
         {
-            public int StationNum;
-            public string Program;
+            [DataMember] public int StationNum;
+            [DataMember] public string Program;
 
-            internal ProgramEntry(int s, string prog)
+            internal ProgramEntry(int stationNum, string program)
             {
-                StationNum = s;
-                Program = prog;
+                StationNum = stationNum;
+                Program = program;
             }
 
             public override string ToString()
@@ -132,23 +131,23 @@ namespace BlackMaple.MachineWatchInterface
             _tools = new Dictionary<string, TimeSpan>(stop._tools);
         }
 
-        [JsonProperty(PropertyName="Stations")]
+        [DataMember(Name="Stations")]
         private Dictionary<int, string> _programs;
 
-        [JsonProperty(PropertyName="Tools")]
+        [DataMember(Name="Tools")]
         private Dictionary<string, TimeSpan> _tools; //key is tool, value is expected cutting time
 
-        [JsonProperty(PropertyName="StationGroup")]
+        [DataMember(Name="StationGroup")]
         private string _statGroup;
 
-        [JsonProperty(PropertyName="ExpectedCycleTime")]
+        [DataMember(Name="ExpectedCycleTime")]
         private TimeSpan _expectedCycleTime;
     }
 
-    [SerializableAttribute, JsonObject(MemberSerialization.OptIn)]
+    [Serializable, DataContract]
     public class JobInspectionData
     {
-        [JsonProperty]
+        [DataMember]
         public readonly string InspectionType;
 
         //There are two possible ways of triggering an exception: counts and frequencies.
@@ -157,26 +156,26 @@ namespace BlackMaple.MachineWatchInterface
         //   the frequency as a number between 0 and 1.
 
         //Every time a material completes, the counter string is expanded (see below).
-        [JsonProperty]
+        [DataMember]
         public readonly string Counter;
 
         //For each completed material, the counter is incremented.  If the counter is equal to MaxVal,
         //we signal an inspection and reset the counter to 0.
-        [JsonProperty]
+        [DataMember]
         public readonly int MaxVal;
 
         //The random frequency of inspection
-        [JsonProperty]
+        [DataMember]
         public readonly double RandomFreq;
 
         //If the last inspection signaled for this counter was longer than TimeInterval,
         //signal an inspection.  This can be disabled by using TimeSpan.Zero
-        [JsonProperty]
+        [DataMember]
         public readonly TimeSpan TimeInterval;
 
         //If set to -1, the entire job should be inspected once the job completes.
         //If set to a positive number, only that process should have the inspection triggered.
-        [JsonProperty]
+        [DataMember]
         public readonly int InspectSingleProcess;
 
         public JobInspectionData(string iType, string ctr, int max, TimeSpan interval, int inspSingleProc = -1)
@@ -226,27 +225,27 @@ namespace BlackMaple.MachineWatchInterface
         }
     }
 
-    [SerializableAttribute, JsonObject(MemberSerialization.OptIn)]
+    [Serializable, DataContract]
     public class JobHoldPattern
     {
         // All of the following hold types are an OR, meaning if any one of them says a hold is in effect,
         // the job is on hold.
 
-        [JsonProperty]
+        [DataMember]
         public bool UserHold;
 
-        [JsonProperty]
+        [DataMember]
         public string ReasonForUserHold;
 
         //A list of timespans the job should be on hold/not on hold.
         //During the first timespan, the job is on hold.
-        [JsonProperty]
+        [DataMember]
         public readonly IList<TimeSpan> HoldUnholdPattern;
 
-        [JsonProperty]
+        [DataMember]
         public DateTime HoldUnholdPatternStartUTC;
 
-        [JsonProperty]
+        [DataMember]
         public bool HoldUnholdPatternRepeats;
 
         public bool IsJobOnHold
@@ -355,7 +354,7 @@ namespace BlackMaple.MachineWatchInterface
         }
     }
 
-    [SerializableAttribute, JsonObject(MemberSerialization.OptIn)]
+    [Serializable, DataContract]
     public class JobPlan
     {
         public string UniqueStr
@@ -819,56 +818,56 @@ namespace BlackMaple.MachineWatchInterface
             }
         }
 
-        [JsonProperty(PropertyName="RouteStartUTC")]
+        [DataMember(Name="RouteStartUTC")]
         private DateTime _routeStartUTC;
 
-        [JsonProperty(PropertyName="RouteEndUTC")]
+        [DataMember(Name="RouteEndUTC")]
         private DateTime _routeEndUTC;
 
-        [JsonProperty(PropertyName="Archived")]
+        [DataMember(Name="Archived")]
         private bool _archived;
 
-        [JsonProperty(PropertyName="CopiedToSystem")]
+        [DataMember(Name="CopiedToSystem")]
         private bool _copiedToSystem;
 
-        [JsonProperty(PropertyName="PartName")]
+        [DataMember(Name="PartName")]
         private string _partName;
 
-        [JsonProperty(PropertyName="Comment")]
+        [DataMember(Name="Comment")]
         private string _comment;
 
-        [JsonProperty(PropertyName="Unique")]
+        [DataMember(Name="Unique")]
         private string _uniqueStr;
 
-        [JsonProperty(PropertyName="Priority")]
+        [DataMember(Name="Priority")]
         private int _priority;
 
-        [JsonProperty(PropertyName="ScheduleId", Required=Required.AllowNull)]
+        [DataMember(Name="ScheduleId", IsRequired=false)]
         private string _scheduleId;
 
-        [JsonProperty(PropertyName="Bookings")]
+        [DataMember(Name="Bookings")]
         private List<string> _scheduledIds;
 
-        [JsonProperty(PropertyName="ManuallyCreated")]
+        [DataMember(Name="ManuallyCreated")]
         private bool _manuallyCreated;
 
-        [JsonProperty(PropertyName="CreateMarkingData")]
+        [DataMember(Name="CreateMarkingData")]
         private bool _createMarker;
 
-        [JsonProperty(PropertyName="Inspections")]
+        [DataMember(Name = "Inspections")]
         private IList<JobInspectionData> _inspections;
 
-        [JsonProperty(PropertyName="HoldEntireJob")]
+        [DataMember(Name="HoldEntireJob")]
         private JobHoldPattern _holdJob;
 
-        [JsonProperty(PropertyName="CyclesOnFirstProcess")]
+        [DataMember(Name="CyclesOnFirstProcess")]
         private int[] _pCycles;
 
-        [SerializableAttribute, JsonObject(MemberSerialization.OptIn)]
+        [Serializable, DataContract]
         public struct FixtureFace : IComparable<FixtureFace>
         {
-            [JsonProperty] public string Fixture;
-            [JsonProperty] public string Face;
+            [DataMember] public string Fixture;
+            [DataMember] public string Face;
 
             public int CompareTo(FixtureFace o)
             {
@@ -884,28 +883,28 @@ namespace BlackMaple.MachineWatchInterface
             }
         }
 
-        [SerializableAttribute, JsonObject(MemberSerialization.OptIn)]
+        [Serializable, DataContract]
         public struct SimulatedProduction
         {
-            [JsonProperty] public DateTime TimeUTC;
-            [JsonProperty] public int Quantity; //total quantity simulated to be completed at TimeUTC
+            [DataMember] public DateTime TimeUTC;
+            [DataMember] public int Quantity; //total quantity simulated to be completed at TimeUTC
         }
 
-        [SerializableAttribute, JsonObject(MemberSerialization.OptIn)]
+        [Serializable, DataContract]
         private struct ProcPathInfo
         {
-            [JsonProperty] public int PathGroup;
-            [JsonProperty] public IList<string> Pallets;
-            [JsonProperty] public IList<FixtureFace> Fixtures;
-            [JsonProperty] public IList<int> Load;
-            [JsonProperty] public IList<int> Unload;
-            [JsonProperty] public IList<JobMachiningStop> Stops;
-            [JsonProperty] public IList<SimulatedProduction> SimulatedProduction;
-            [JsonProperty] public DateTime SimulatedStartingUTC;
-            [JsonProperty] public TimeSpan SimulatedAverageFlowTime; // average time a part takes to complete the entire sequence
-            [JsonProperty] public JobHoldPattern HoldMachining;
-            [JsonProperty] public JobHoldPattern HoldLoadUnload;
-            [JsonProperty] public int PartsPerPallet;
+            [DataMember] public int PathGroup;
+            [DataMember] public IList<string> Pallets;
+            [DataMember] public IList<FixtureFace> Fixtures;
+            [DataMember] public IList<int> Load;
+            [DataMember] public IList<int> Unload;
+            [DataMember] public IList<JobMachiningStop> Stops;
+            [DataMember] public IList<SimulatedProduction> SimulatedProduction;
+            [DataMember] public DateTime SimulatedStartingUTC;
+            [DataMember] public TimeSpan SimulatedAverageFlowTime; // average time a part takes to complete the entire sequence
+            [DataMember] public JobHoldPattern HoldMachining;
+            [DataMember] public JobHoldPattern HoldLoadUnload;
+            [DataMember] public int PartsPerPallet;
 
             public ProcPathInfo(ProcPathInfo other)
             {
@@ -942,7 +941,7 @@ namespace BlackMaple.MachineWatchInterface
             }
         }
 
-        [JsonProperty(PropertyName="ProcsAndPaths")]
+        [DataMember(Name="ProcsAndPaths")]
         private ProcPathInfo[][] _procPath;
     }
 

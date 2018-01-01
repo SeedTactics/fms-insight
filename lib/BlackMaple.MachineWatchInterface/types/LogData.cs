@@ -34,29 +34,29 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using Newtonsoft.Json;
+using System.Runtime.Serialization;
 
 namespace BlackMaple.MachineWatchInterface
 {
-    [SerializableAttribute, JsonObject(MemberSerialization.OptIn)]
+    [Serializable, DataContract]
     public class LogMaterial
     {
-        [JsonProperty(PropertyName = "id", Required = Required.Always)]
+        [DataMember(Name = "id")]
         public long MaterialID { get; private set; }
 
-        [JsonProperty(PropertyName = "uniq", Required = Required.Always)]
+        [DataMember(Name = "uniq")]
         public string JobUniqueStr { get; private set; }
 
-        [JsonProperty(PropertyName = "part", Required = Required.Always)]
+        [DataMember(Name = "part")]
         public string PartName { get; private set; }
 
-        [JsonProperty(PropertyName = "proc", Required = Required.Always)]
+        [DataMember(Name = "proc")]
         public int Process { get; private set; }
 
-        [JsonProperty(PropertyName = "numproc", Required = Required.Always)]
+        [DataMember(Name = "numproc")]
         public int NumProcesses { get; private set; }
 
-        [JsonProperty(PropertyName = "face", DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate), DefaultValue("")]
+        [DataMember(Name = "face")]
         public string Face { get; private set; }
 
         public LogMaterial(long matID, string uniq, int proc, string part, int numProc, string face = "")
@@ -68,9 +68,6 @@ namespace BlackMaple.MachineWatchInterface
             NumProcesses = numProc;
             Face = face;
         }
-
-        [JsonConstructor]
-        private LogMaterial() { }
     }
 
     public enum LogType
@@ -85,49 +82,49 @@ namespace BlackMaple.MachineWatchInterface
         FinalizeWorkorder = 102
     }
 
-    [SerializableAttribute, JsonObject(MemberSerialization.OptIn)]
+    [Serializable, DataContract]
     public class LogEntry
     {
-        [JsonProperty(PropertyName = "counter", Required = Required.Always)]
+        [DataMember(Name = "counter")]
         public long Counter { get; private set; }
 
-        [JsonProperty(PropertyName = "material", Required = Required.Always)]
+        [DataMember(Name = "material")]
         public IEnumerable<LogMaterial> Material { get; private set; }
 
-        [JsonProperty(PropertyName = "type", Required = Required.Always)]
+        [DataMember(Name = "type")]
         public LogType LogType { get; private set; }
 
-        [JsonProperty(PropertyName = "startofcycle", DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate), DefaultValue(false)]
+        [DataMember(Name = "startofcycle")]
         public bool StartOfCycle { get; private set; }
 
-        [JsonProperty(PropertyName = "endUTC", Required = Required.Always)]
+        [DataMember(Name = "endUTC")]
         public DateTime EndTimeUTC { get; private set; }
 
-        [JsonProperty(PropertyName = "loc", Required = Required.Always)]
+        [DataMember(Name = "loc")]
         public string LocationName {get; private set;}
 
-        [JsonProperty(PropertyName = "locnum", Required = Required.Always)]
+        [DataMember(Name = "locnum")]
         public int LocationNum {get; private set;}
 
-        [JsonProperty(PropertyName = "pal", Required = Required.Always)]
+        [DataMember(Name = "pal")]
         public string Pallet { get; private set; }
 
-        [JsonProperty(PropertyName = "program", Required = Required.Always)]
+        [DataMember(Name = "program")]
         public string Program { get; private set; }
 
-        [JsonProperty(PropertyName = "result", DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate), DefaultValue("")]
+        [DataMember(Name = "result")]
         public string Result { get; private set; }
 
-        [JsonProperty(PropertyName = "endofroute", DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate), DefaultValue(false)]
+        [DataMember(Name = "endofroute")]
         public bool EndOfRoute { get; private set; }
 
-        [JsonProperty(PropertyName = "elapsed")]
+        [DataMember(Name = "elapsed")]
         public TimeSpan ElapsedTime { get; private set; } //time from cycle-start to cycle-stop
 
-        [JsonProperty(PropertyName = "active")]
+        [DataMember(Name = "active")]
         public TimeSpan ActiveOperationTime { get; private set; } //time that the machining or operation is actually active
 
-        [JsonProperty(PropertyName = "details")]
+        [DataMember(Name = "details")]
         private Dictionary<string, string> _details;
         public IDictionary<string, string> ProgramDetails { get { return _details; } }
 
@@ -137,7 +134,7 @@ namespace BlackMaple.MachineWatchInterface
             string pal,
             LogType ty,
             string locName,
-            int locNum,                          
+            int locNum,
             string prog,
             bool start,
             DateTime endTime,
@@ -153,7 +150,7 @@ namespace BlackMaple.MachineWatchInterface
             string pal,
             LogType ty,
             string locName,
-            int locNum,                            
+            int locNum,
             string prog,
             bool start,
             DateTime endTime,
@@ -198,9 +195,6 @@ namespace BlackMaple.MachineWatchInterface
 
         public LogEntry(LogEntry copy) : this(copy, copy.Counter) { }
 
-        [JsonConstructor]
-        private LogEntry() { }
-
         public bool ShouldSerializeElapsedTime()
         {
             return ElapsedTime != TimeSpan.FromMinutes(-1);
@@ -217,16 +211,16 @@ namespace BlackMaple.MachineWatchInterface
         }
     }
 
-    [Serializable, JsonObject(MemberSerialization.OptIn)]
+    [Serializable, DataContract]
     public class WorkorderPartSummary
     {
-        [JsonProperty(PropertyName="name", Required=Required.Always)]
+        [DataMember(Name="name")]
         public string Part {get;set;}
 
-        [JsonProperty(PropertyName="completed-qty", Required=Required.Always)]
+        [DataMember(Name="completed-qty")]
         public int PartsCompleted {get;set;}
 
-        [JsonProperty(PropertyName="elapsed-station-time", Required=Required.AllowNull)]
+        [DataMember(Name="elapsed-station-time")]
         private Dictionary<string, TimeSpan> _elapsedStatTime;
 
         public Dictionary<string, TimeSpan> ElapsedStationTime
@@ -238,7 +232,7 @@ namespace BlackMaple.MachineWatchInterface
             }
         }
 
-        [JsonProperty(PropertyName="active-stat-time", Required=Required.AllowNull)]
+        [DataMember(Name="active-stat-time")]
         private Dictionary<string, TimeSpan> _activeStatTime;
 
         public Dictionary<string, TimeSpan> ActiveStationTime
@@ -251,13 +245,13 @@ namespace BlackMaple.MachineWatchInterface
         }
     }
 
-    [Serializable, JsonObject(MemberSerialization.OptIn)]
+    [Serializable, DataContract]
     public class WorkorderSummary
     {
-        [JsonProperty(PropertyName="id", Required=Required.Always)]
+        [DataMember(Name="id")]
         public string WorkorderId {get;set;}
 
-        [JsonProperty(PropertyName="parts", Required=Required.Always)]
+        [DataMember(Name="parts")]
         private List<WorkorderPartSummary> _parts;
 
         public List<WorkorderPartSummary> Parts
@@ -269,7 +263,7 @@ namespace BlackMaple.MachineWatchInterface
             }
         }
 
-        [JsonProperty(PropertyName="serials", Required=Required.AllowNull)]
+        [DataMember(Name="serials")]
         private List<string> _serials;
 
         public List<string> Serials
@@ -281,7 +275,7 @@ namespace BlackMaple.MachineWatchInterface
             }
         }
 
-        [JsonProperty(PropertyName="finalized", Required=Required.AllowNull)]
+        [DataMember(Name="finalized")]
         public DateTime? FinalizedTimeUTC {get;set;}
     }
 }
