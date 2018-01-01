@@ -270,7 +270,7 @@ namespace BlackMaple.MachineWatchInterface
 
             if (UserHold) {
                 isOnHold = true;
-                nextTransitionUTC = DateTime.MaxValue;
+                nextTransitionUTC = new DateTime(2000, 1, 1);
                 return;
             }
 
