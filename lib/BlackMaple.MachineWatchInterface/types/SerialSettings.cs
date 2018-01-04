@@ -33,28 +33,29 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 
 namespace BlackMaple.MachineWatchInterface
 {
-    [Serializable]
+    [Serializable, DataContract]
     public enum SerialType
     {
-        NoSerials,
-        OneSerialPerMaterial,  // assign a different serial to each piece of material
-        OneSerialPerCycle,     // assign a single serial to all the material on each cycle
-        SerialDeposit          // deposit serial into machine file to be scribed on part
+        [EnumMember] NoSerials,
+        [EnumMember] OneSerialPerMaterial,  // assign a different serial to each piece of material
+        [EnumMember] OneSerialPerCycle,     // assign a single serial to all the material on each cycle
+        [EnumMember] SerialDeposit          // deposit serial into machine file to be scribed on part
     }
 
-    [Serializable]    
+    [Serializable, DataContract]
     public class SerialSettings
     {
-        public SerialType SerialType {get;}
-        public int SerialLength {get;}
+        [DataMember] public SerialType SerialType {get;}
+        [DataMember] public int SerialLength {get;}
 
         //settings only for serial deposit
-        public int DepositOnProcess {get;}
-        public string FilenameTemplate {get;}
-        public string ProgramTemplate {get;}
+        [DataMember] public int DepositOnProcess {get;}
+        [DataMember] public string FilenameTemplate {get;}
+        [DataMember] public string ProgramTemplate {get;}
 
         public SerialSettings(SerialType t, int len)
         {

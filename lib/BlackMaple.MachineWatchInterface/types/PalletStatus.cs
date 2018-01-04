@@ -37,20 +37,20 @@ using System.Runtime.Serialization;
 
 namespace BlackMaple.MachineWatchInterface
 {
-    [Serializable]
+    [Serializable, DataContract(Name="PalletLocationType")]
     public enum PalletLocationTypeEnum
     {
-        Unkown /* sic */ = 0,
-        LoadUnload,
-        Machine,
-        MachineInbound,
-        Buffer,
-        Cart,
-        PartMarker,
-        Inspection,
-        Washer,
-        Deburr,
-        OrderAssignment
+        [EnumMember] Unkown /* sic */ = 0,
+        [EnumMember] LoadUnload,
+        [EnumMember] Machine,
+        [EnumMember] MachineInbound,
+        [EnumMember] Buffer,
+        [EnumMember] Cart,
+        [EnumMember] PartMarker,
+        [EnumMember] Inspection,
+        [EnumMember] Washer,
+        [EnumMember] Deburr,
+        [EnumMember] OrderAssignment
     }
 
     [Serializable, DataContract]
@@ -81,12 +81,12 @@ namespace BlackMaple.MachineWatchInterface
         }
     }
 
-    [SerializableAttribute()]
+    [Serializable, DataContract(Name="PalletStatus")]
     public enum PalletStatusEnum
     {
-        WaitingForInstructions = 0,
-        AtLoadUnload,
-        Machining
+        [EnumMember] WaitingForInstructions = 0,
+        [EnumMember] AtLoadUnload,
+        [EnumMember] Machining
     }
 
     [Serializable, DataContract]

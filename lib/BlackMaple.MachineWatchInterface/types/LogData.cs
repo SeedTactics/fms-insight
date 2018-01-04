@@ -70,16 +70,17 @@ namespace BlackMaple.MachineWatchInterface
         }
     }
 
+    [Serializable, DataContract]
     public enum LogType
     {
-        LoadUnloadCycle = 1, //numbers are for backwards compatibility with old type enumeration
-        MachineCycle = 2,
-        PartMark = 6,
-        Inspection = 7,
-        OrderAssignment = 10,
-        GeneralMessage = 100,
-        PalletCycle = 101,
-        FinalizeWorkorder = 102
+        [EnumMember] LoadUnloadCycle = 1, //numbers are for backwards compatibility with old type enumeration
+        [EnumMember] MachineCycle = 2,
+        [EnumMember] PartMark = 6,
+        [EnumMember] Inspection = 7,
+        [EnumMember] OrderAssignment = 10,
+        [EnumMember] GeneralMessage = 100,
+        [EnumMember] PalletCycle = 101,
+        [EnumMember] FinalizeWorkorder = 102
     }
 
     [Serializable, DataContract]

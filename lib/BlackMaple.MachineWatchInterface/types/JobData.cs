@@ -945,20 +945,20 @@ namespace BlackMaple.MachineWatchInterface
         private ProcPathInfo[][] _procPath;
     }
 
-    [SerializableAttribute]
+    [SerializableAttribute, DataContract]
     public class JobCurrentInformation : JobPlan
     {
-        [SerializableAttribute]
+        [SerializableAttribute, DataContract]
         public struct Material
         {
             //can be -1 if the job manager does not track material
-            public readonly long MaterialId;
-            public readonly int Process;
-            public readonly int Path;
+            [DataMember] public readonly long MaterialId;
+            [DataMember] public readonly int Process;
+            [DataMember] public readonly int Path;
 
-            public readonly string Pallet;
-            public readonly string Fixture;
-            public readonly string FaceName;
+            [DataMember] public readonly string Pallet;
+            [DataMember] public readonly string Fixture;
+            [DataMember] public readonly string FaceName;
 
             public Material(long matID, int proc, int path, string pal, string fix, string face)
             {
@@ -1030,12 +1030,12 @@ namespace BlackMaple.MachineWatchInterface
             _totalComplete = 0;
         }
 
-        private List<Material> _material;
-        private int[] _completedProc1;
-        private int _totalComplete;
+        [DataMember(Name="Material")] private List<Material> _material;
+        [DataMember(Name="CompletedProc1")] private int[] _completedProc1;
+        [DataMember(Name="TotalComplete")] private int _totalComplete;
     }
 
-    [SerializableAttribute]
+    [SerializableAttribute, DataContract]
     public class CurrentStatus
     {
         public IDictionary<string, JobCurrentInformation> Jobs
@@ -1053,7 +1053,7 @@ namespace BlackMaple.MachineWatchInterface
             get { return _alarms; }
         }
 
-        public string LatestScheduleId {get;}
+        [DataMember] public string LatestScheduleId {get;}
 
         public IDictionary<string, int> ExtraPartsForLatestSchedule
         {
@@ -1087,22 +1087,26 @@ namespace BlackMaple.MachineWatchInterface
             _extraParts = new Dictionary<string, int>(extraParts);
         }
 
+        [DataMember(Name="Jobs")]
         private Dictionary<string, JobCurrentInformation> _jobs;
+        [DataMember(Name="Pallets")]
         private Dictionary<string, PalletStatus> _pals;
+        [DataMember(Name="Alarms")]
         private List<string> _alarms;
+        [DataMember(Name="ExtraParts")]
         private Dictionary<string, int> _extraParts;
     }
 
-    [SerializableAttribute]
+    [SerializableAttribute, DataContract]
     public class SimulatedStationUtilization
     {
-        public string SimulationId; // a unique string shared between all utilization structs that are part of the same simulation
-        public string StationGroup;
-        public int StationNum;
-        public DateTime StartUTC;
-        public DateTime EndUTC;
-        public TimeSpan UtilizationTime; //time between StartUTC and EndUTC the station is busy.
-        public TimeSpan PlannedDownTime; //time between StartUTC and EndUTC the station is planned to be down.
+        [DataMember] public string SimulationId; // a unique string shared between all utilization structs that are part of the same simulation
+        [DataMember] public string StationGroup;
+        [DataMember] public int StationNum;
+        [DataMember] public DateTime StartUTC;
+        [DataMember] public DateTime EndUTC;
+        [DataMember] public TimeSpan UtilizationTime; //time between StartUTC and EndUTC the station is busy.
+        [DataMember] public TimeSpan PlannedDownTime; //time between StartUTC and EndUTC the station is planned to be down.
 
         public SimulatedStationUtilization(string id, string group, int num, DateTime start, DateTime endT, TimeSpan u, TimeSpan d)
         {
@@ -1116,16 +1120,16 @@ namespace BlackMaple.MachineWatchInterface
         }
     }
 
-    [SerializableAttribute]
+    [Serializable, DataContract]
     public struct NewJobs
     {
-        public string ScheduleId;
-        public List<JobPlan> Jobs;
-        public List<SimulatedStationUtilization> StationUse;
-        public Dictionary<string, int> ExtraParts;
-        public bool ArchiveCompletedJobs;
+        [DataMember] public string ScheduleId;
+        [DataMember] public List<JobPlan> Jobs;
+        [DataMember] public List<SimulatedStationUtilization> StationUse;
+        [DataMember] public Dictionary<string, int> ExtraParts;
+        [DataMember] public bool ArchiveCompletedJobs;
 
-        [OptionalField]
+        [OptionalField, DataMember(IsRequired=false)]
         public byte[] DebugMessage;
 
         public NewJobs(string scheduleId,
@@ -1146,11 +1150,11 @@ namespace BlackMaple.MachineWatchInterface
         }
     }
 
-    [SerializableAttribute()]
+    [Serializable, DataContract]
     public class JobAndPath : IEquatable<JobAndPath>
     {
-        public readonly string UniqueStr;
-        public readonly int Path;
+        [DataMember] public readonly string UniqueStr;
+        [DataMember] public readonly int Path;
 
         public JobAndPath(string unique, int path)
         {
@@ -1164,28 +1168,28 @@ namespace BlackMaple.MachineWatchInterface
         }
     }
 
-    [SerializableAttribute]
+    [Serializable, DataContract]
     public struct HistoricData
     {
-        public IDictionary<string, JobPlan> Jobs;
-        public ICollection<SimulatedStationUtilization> StationUse;
+        [DataMember] public IDictionary<string, JobPlan> Jobs;
+        [DataMember] public ICollection<SimulatedStationUtilization> StationUse;
     }
 
-    [SerializableAttribute]
+    [Serializable, DataContract]
     public struct JobsAndExtraParts
     {
-        public string LatestScheduleId;
-        public List<JobPlan> Jobs;
-        public Dictionary<string, int> ExtraParts;
+        [DataMember] public string LatestScheduleId;
+        [DataMember] public List<JobPlan> Jobs;
+        [DataMember] public Dictionary<string, int> ExtraParts;
     }
 
-    [SerializableAttribute]
+    [Serializable, DataContract]
     public struct JobAndDecrementQuantity
     {
-        public string DecrementId;
-        public string JobUnique;
-        public DateTime TimeUTC;
-        public string Part;
-        public int Quantity;
+        [DataMember] public string DecrementId;
+        [DataMember] public string JobUnique;
+        [DataMember] public DateTime TimeUTC;
+        [DataMember] public string Part;
+        [DataMember] public int Quantity;
     }
 }

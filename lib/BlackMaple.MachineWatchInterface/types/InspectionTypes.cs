@@ -33,15 +33,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 
 namespace BlackMaple.MachineWatchInterface
 {
-    [SerializableAttribute()]
+    [Serializable, DataContract]
     public struct InspectCount
     {
-        public string Counter;
-        public int Value;
-        public DateTime LastUTC;
+        [DataMember] public string Counter;
+        [DataMember] public int Value;
+        [DataMember] public DateTime LastUTC;
     }
 
     ///<summary>An inspection type with the rules for how inspections should be signaled</summary>
@@ -63,7 +64,7 @@ namespace BlackMaple.MachineWatchInterface
     ///  If instead both TrackPartName and TrackPalletName are True (and TrackStationName is still
     ///  False), then Machine Watch will keep separate quantities for each possible combination of
     ///  part name and pallet name.  For example, Machine Watch will keep track that there have
-    ///  been 15 parts with name ABC on pallet 12 since a part ABC which ran on pallet 12 was inspected.  
+    ///  been 15 parts with name ABC on pallet 12 since a part ABC which ran on pallet 12 was inspected.
     ///  Inspections and completed ABC parts on different pallets will go into a separate tracking,
     ///  so for example if an ABC part from pallet 5 was inspected, it won't have an impact on the
     ///  tracking of the (ABC, pallet 12) combination.  Thus, an ABC from pallet 12 will eventually
@@ -77,19 +78,20 @@ namespace BlackMaple.MachineWatchInterface
     ///  path through the system is periodically inspected.
     ///  </para>
     ///</remarks>
-    [SerializableAttribute] public class InspectionType
+    [Serializable, DataContract]
+    public class InspectionType
     {
         ///<summary>Inspection name: unique identifier for this inspection type</summary>
-        public string Name { get; set; }
+        [DataMember] public string Name { get; set; }
 
         ///<summary>Whether to track the part name when tracking quantities and time</summary>
-        public bool TrackPartName { get; set; }
+        [DataMember] public bool TrackPartName { get; set; }
 
         ///<summary>Whether to track the pallet name when tracking quantities and time</summary>
-        public bool TrackPalletName { get; set; }
+        [DataMember] public bool TrackPalletName { get; set; }
 
         ///<summary>Whether to track the pallet name when tracking quantities and time</summary>
-        public bool TrackStationName { get; set; }
+        [DataMember] public bool TrackStationName { get; set; }
 
         ///<summary>Whether this inspection type is for a single process or the part as a whole</summary>
         ///<remarks>
@@ -97,7 +99,7 @@ namespace BlackMaple.MachineWatchInterface
         ///  A positive value means the inspection should be triggered on the specific process number.
         ///  </para>
         ///</remarks>
-        public int InspectSingleProcess { get; set; }
+        [DataMember] public int InspectSingleProcess { get; set; }
 
         ///<summary>The default count of completed parts to trigger an inspection</summary>
         ///<remarks>
@@ -110,8 +112,8 @@ namespace BlackMaple.MachineWatchInterface
         ///  This value is used if no <c>InspectionFrequencyOverride</c> is found.
         ///  </para>
         ///</remarks>
-        public int DefaultCountToTriggerInspection { get; set; }
-        
+        [DataMember] public int DefaultCountToTriggerInspection { get; set; }
+
         ///<summary>The default time before an inspection is triggered</summary>
         ///<remarks>
         ///  <para>
@@ -123,7 +125,7 @@ namespace BlackMaple.MachineWatchInterface
         ///  This value is used if no <c>InspectionFrequencyOverride</c> is found.
         ///  </para>
         ///</remarks>
-        public TimeSpan DefaultDeadline { get; set; }
+        [DataMember] public TimeSpan DefaultDeadline { get; set; }
 
         ///<summary>The default random frequency (between 0 and 1) for inspections</summary>
         ///<remarks>
@@ -138,7 +140,7 @@ namespace BlackMaple.MachineWatchInterface
         ///  This value is used if no <c>InspectionFrequencyOverride</c> is found.
         ///  </para>
         ///</remarks>
-        public double DefaultRandomFreq {get; set;}
+        [DataMember] public double DefaultRandomFreq {get; set;}
 
         ///<summary>This allows specific overrides of the inspection triggers</summary>
         ///<remarks>
@@ -147,7 +149,7 @@ namespace BlackMaple.MachineWatchInterface
         ///  and the default random frequency can be overriden.
         ///  </para>
         ///</remarks>
-        public List<InspectionFrequencyOverride> Overrides;
+        [DataMember] public List<InspectionFrequencyOverride> Overrides;
 
         public JobInspectionData ConvertToJobInspection(string part, int numProc)
         {
@@ -175,7 +177,7 @@ namespace BlackMaple.MachineWatchInterface
                     cntr += ",S" + JobInspectionData.StationFormatFlag(i, 1);
                 }
             }
-            
+
 
             if (maxCnt == 0)
                 return new JobInspectionData(Name, cntr, randFreq, deadline, InspectSingleProcess);
@@ -210,11 +212,12 @@ namespace BlackMaple.MachineWatchInterface
     }
 
     ///<summary>Overrides for inspection triggers for a specific part name</summary>
-    [SerializableAttribute] public class InspectionFrequencyOverride
+    [Serializable, DataContract]
+    public class InspectionFrequencyOverride
     {
-        public string Part { get; set; }
-        public int CountBeforeInspection { get; set; }
-        public TimeSpan Deadline { get; set; }
-        public double RandomFreq { get; set; }
+        [DataMember] public string Part { get; set; }
+        [DataMember] public int CountBeforeInspection { get; set; }
+        [DataMember] public TimeSpan Deadline { get; set; }
+        [DataMember] public double RandomFreq { get; set; }
     }
 }
