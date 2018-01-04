@@ -37,7 +37,6 @@ using Xunit;
 using Microsoft.Data.Sqlite;
 using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
-using Newtonsoft.Json;
 
 namespace MachineWatchTest
 {
@@ -58,6 +57,7 @@ namespace MachineWatchTest
             _jobLog.Close();
         }
 
+        /*
         public class IgnoreEmptyCollection : Newtonsoft.Json.Serialization.DefaultContractResolver
         {
             public static IgnoreEmptyCollection Instance = new IgnoreEmptyCollection();
@@ -92,19 +92,17 @@ namespace MachineWatchTest
                                                 });
             Console.WriteLine("XXXXX " + str);
 
-            /*
-            var settings = new System.Runtime.Serialization.Json.DataContractJsonSerializerSettings {
-                DateTimeFormat = new System.Runtime.Serialization.DateTimeFormat("yyyy-MM-ddTHH:mm:ssZ"),
-            };
-            var serializer = new System.Runtime.Serialization.Json.DataContractJsonSerializer(log.GetType(), settings);
-            System.IO.MemoryStream ms = new System.IO.MemoryStream();
-            serializer.WriteObject(ms, log);
-            Console.WriteLine("YYYYYY" + ": " + System.Text.Encoding.UTF8.GetString(ms.ToArray()));
-            */
+            //var settings = new System.Runtime.Serialization.Json.DataContractJsonSerializerSettings {
+            //    DateTimeFormat = new System.Runtime.Serialization.DateTimeFormat("yyyy-MM-ddTHH:mm:ssZ"),
+            //};
+            //var serializer = new System.Runtime.Serialization.Json.DataContractJsonSerializer(log.GetType(), settings);
+            //System.IO.MemoryStream ms = new System.IO.MemoryStream();
+            //serializer.WriteObject(ms, log);
+            //Console.WriteLine("YYYYYY" + ": " + System.Text.Encoding.UTF8.GetString(ms.ToArray()));
             var stat = JsonConvert.DeserializeObject<LogEntry>(str);
             var str2 = JsonConvert.SerializeObject(stat, Formatting.Indented);
             Console.WriteLine("XXXXX " + str2);
-        }
+    }*/
 
         [Fact]
         public void MaterialIDs()
@@ -669,8 +667,8 @@ namespace MachineWatchTest
                              t.AddMinutes(17), "UNLOAD", true,
 							 TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(6))
 			);
-		
-						
+
+
 			//now record serial and workorder
 			_jobLog.RecordSerialForMaterialID(mat1_proc2, "serial1");
             _jobLog.RecordSerialForMaterialID(mat2_proc1, "serial2");
@@ -689,7 +687,7 @@ namespace MachineWatchTest
 			Assert.Equal(2, summary.Count);
 
             //work1 contains part1 from mat1 and mat3, and part2 from mat4
-			Assert.Equal("work1", summary[0].WorkorderId);            
+			Assert.Equal("work1", summary[0].WorkorderId);
             Assert.False(summary[0].FinalizedTimeUTC.HasValue);
 			Assert.Equal(new[] {"serial1", "serial3", "serial4"}, summary[0].Serials);
             var work1Parts = summary[0].Parts;
