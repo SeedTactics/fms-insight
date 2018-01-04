@@ -43,13 +43,14 @@ namespace MachineWatchTest
 {
     public class JobDBTest : IDisposable
     {
+        private SqliteConnection _jobConn;
         private JobDB _jobDB;
 
         public JobDBTest()
         {
-            var connection = SqliteExtensions.ConnectMemory();
-            connection.Open();
-            _jobDB = new JobDB(connection);
+            _jobConn = SqliteExtensions.ConnectMemory();
+            _jobConn.Open();
+            _jobDB = new JobDB(_jobConn);
             _jobDB.CreateTables();
         }
 
@@ -384,8 +385,7 @@ namespace MachineWatchTest
             var simStationUse = RandSimStationUse();
             var theExtraParts = RandExtraParts();
 
-            byte[] debug = {23, 53, 13, 6, 4, 12, 4, 12, 75, 8, 34, 177, 6, 23, 74};
-			var newJob2 = new NewJobs(job2.ScheduleId, new JobPlan[] { job2 }, simStationUse, theExtraParts, true, debug);
+			var newJob2 = new NewJobs(job2.ScheduleId, new JobPlan[] { job2 }, simStationUse, theExtraParts, true);
 			try {
 				_jobDB.AddJobs(newJob2, "badsch");
 				Assert.True(false, "Expecting addjobs to throw exception");
@@ -510,7 +510,9 @@ namespace MachineWatchTest
             job3.SetPlannedCyclesOnFirstProcess(1, 4);
             job3.SetPlannedCyclesOnFirstProcess(2, 5);
 
-            _jobDB.AddJobs(new NewJobs("tag2", new JobPlan[] { job1, job2, job3 }), null);
+            byte[] debug = {23, 53, 13, 6, 4, 12, 4, 12, 75, 8, 34, 177, 6, 23, 74};
+            _jobDB.AddJobs(new NewJobs("tag2", new JobPlan[] { job1, job2, job3 }, debugMsg: debug), null);
+            Assert.Equal(debug, LoadDebugData("tag2"));
 
             CheckJobs(job1, job2, job3, job2.ScheduleId, theExtraParts);
 
@@ -974,6 +976,14 @@ namespace MachineWatchTest
             var lst2 = new List<T>(e2);
             lst2.Sort();
             Assert.Equal(lst1, lst2);
+        }
+
+        private byte[] LoadDebugData(string schId)
+        {
+            var cmd = _jobConn.CreateCommand();
+            cmd.CommandText = "SELECT DebugMessage FROM schedule_debug WHERE ScheduleId = @sch";
+            cmd.Parameters.Add("sch", SqliteType.Text).Value = schId;
+            return (byte[])cmd.ExecuteScalar();
         }
     }
 }

@@ -1190,7 +1190,7 @@ namespace BlackMaple.MachineFramework
                         {
                             cmd.CommandText = "INSERT OR REPLACE INTO schedule_debug(ScheduleId, DebugMessage) VALUES ($sid,$debug)";
                             cmd.Parameters.Add("sid", SqliteType.Text).Value = newJobs.ScheduleId;
-                            cmd.Parameters.Add("debug", SqliteType.Text).Value = newJobs.DebugMessage;
+                            cmd.Parameters.Add("debug", SqliteType.Blob).Value = newJobs.DebugMessage;
                             cmd.ExecuteNonQuery();
                         }
                     }

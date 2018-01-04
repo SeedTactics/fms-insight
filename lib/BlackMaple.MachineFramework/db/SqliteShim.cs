@@ -41,7 +41,8 @@ namespace BlackMaple.MachineFramework
     {
         Text,
         Integer,
-        Real
+        Real,
+        Blob
     }
 
     public static class SqliteExtensions
@@ -55,6 +56,8 @@ namespace BlackMaple.MachineFramework
                     return p.Add(paramVal, DbType.Int64);
                 case SqliteType.Real:
                     return p.Add(paramVal, DbType.Double);
+                case SqliteType.Blob:
+                    return p.Add(paramVal, DbType.Binary);
             }
             return null;
         }
