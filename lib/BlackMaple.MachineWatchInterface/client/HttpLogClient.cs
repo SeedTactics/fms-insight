@@ -1,4 +1,4 @@
-/* Copyright (c) 2017, John Lenz
+/* Copyright (c) 2018, John Lenz
 
 All rights reserved.
 
@@ -51,99 +51,79 @@ namespace BlackMaple.MachineWatchInterface
 
         public Task<List<LogEntry>> GetCompletedPartLogs(DateTime startUTC, DateTime endUTC)
         {
-            throw new NotImplementedException();
+            return GetCycles(
+                "/api/v1/log/cycles/completed-parts?startUTC=" +
+                startUTC.ToString("yyyy-MM-ddTHH:mm:ssZ") +
+                "&endUTC=" +
+                endUTC.ToString("yyyy-MM-ddTHH:mm:ssZ"));
         }
 
         public Task<List<LogEntry>> GetLogEntries(DateTime startUTC, DateTime endUTC)
         {
-            throw new NotImplementedException();
+            return GetCycles(
+                "/api/v1/log/cycles/all?startUTC=" +
+                startUTC.ToString("yyyy-MM-ddTHH:mm:ssZ") +
+                "&endUTC=" +
+                endUTC.ToString("yyyy-MM-ddTHH:mm:ssZ"));
         }
 
         public Task<List<LogEntry>> GetLogForMaterial(long materialID)
         {
-            throw new NotImplementedException();
+            return GetCycles("/api/v1/log/cycles/material/" + materialID.ToString());
         }
 
         public Task<List<LogEntry>> GetLogForSerial(string serial)
         {
-            throw new NotImplementedException();
+            return GetCycles("/api/v1/log/cycles/serial/" +
+                WebUtility.UrlEncode(serial.ToString()));
         }
 
         public Task<List<LogEntry>> GetLogForWorkorder(string workorder)
         {
-            throw new NotImplementedException();
+            return GetCycles("/api/v1/log/cycles/workorder/" +
+                WebUtility.UrlEncode(workorder.ToString()));
         }
 
         public Task<List<LogEntry>> GetLogFromCounter(long lastSeenCounter)
         {
-            throw new NotImplementedException();
+            return GetCycles("/api/v1/log/cycles/recent?lastSeenCounter=" + lastSeenCounter.ToString());
         }
 
         public Task<List<WorkorderSummary>> GetWorkorderSummaries(IEnumerable<string> workorderIds)
         {
-            throw new NotImplementedException();
+            return SendRecvJson<IEnumerable<string>, List<WorkorderSummary>>(
+                HttpMethod.Get,
+                "/api/v1/log/workorders", workorderIds);
         }
 
         public Task<LogEntry> RecordFinalizedWorkorder(string workorder)
         {
-            throw new NotImplementedException();
+            return SendRecvJson<bool, LogEntry>(HttpMethod.Post,
+                "/api/v1/log/workorder/finalized", true);
         }
 
         public Task<LogEntry> RecordSerialForMaterialID(LogMaterial material, string serial)
         {
-            throw new NotImplementedException();
+            return SendRecvJson<LogMaterial, LogEntry>(HttpMethod.Post,
+                "/api/v1/log/material/serial/" + WebUtility.UrlEncode(serial),
+                material);
         }
 
         public Task<LogEntry> RecordWorkorderForMaterialID(LogMaterial material, string workorder)
         {
-            throw new NotImplementedException();
+            return SendRecvJson<LogMaterial, LogEntry>(HttpMethod.Post,
+                "/api/v1/log/material/workorder/" + WebUtility.UrlEncode(workorder),
+                material);
         }
-
 
         public Task<SerialSettings> GetSerialSettings()
         {
-            throw new NotImplementedException();
+            return RecvJson<SerialSettings>(HttpMethod.Get, "/api/v1/log/serial-settings");
         }
 
         public Task SetSerialSettings(SerialSettings s)
         {
-            throw new NotImplementedException();
+            return SendJson<SerialSettings>(HttpMethod.Put, "/api/v1/log/serial-settings", s);
         }
-
-        /*
-        public async Task AddStationCycle(LogEntry cycle)
-        {
-            await SendJson(HttpMethod.Put, "/api/log", cycle);
-        }
-
-        public async Task<LogEntry> RecordSerialForMaterialID(LogMaterial mat, string serial)
-        {
-            return await SendRecvJson<LogMaterial, LogEntry>
-              (HttpMethod.Put, "/api/log/serial/" + WebUtility.UrlEncode(serial), mat);
-        }
-
-
-        public async Task<List<LogEntry>> GetLogForMaterial(long materialID)
-        {
-            return await GetCycles("/api/log/material/" + materialID.ToString());
-        }
-
-        public async Task<List<LogEntry>> GetLogForSerial(string serial)
-        {
-            return await GetCycles("/api/log/serial/" + WebUtility.UrlEncode(serial.ToString()));
-        }
-
-        public async Task<List<LogEntry>> GetStationCycleLog(DateTime startUTC, DateTime endUTC)
-        {
-            return await GetCycles("/api/log?startUTC=" +
-               startUTC.ToString("yyyy-MM-ddTHH:mm:ssZ") +
-               "&endUTC=" + endUTC.ToString("yyyy-MM-ddTHH:mm:ssZ"));
-        }
-
-        public async Task<List<LogEntry>> GetStationCycleLog(long lastSeenCounter)
-        {
-            return await GetCycles("/api/log/recent?lastSeenCounter=" + lastSeenCounter.ToString());
-        }
-        */
     }
 }

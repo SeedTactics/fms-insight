@@ -82,8 +82,8 @@ namespace BlackMaple.MachineWatchInterface
       private ILogDatabase _d;
       public LogDatabaseAsyncConverter(ILogDatabase d) => _d = d;
 
-        public async Task<List<LogEntry>> GetCompletedPartLogs(DateTime startUTC, DateTime endUTC)
-          => await Task.Run(() => _d.GetCompletedPartLogs(startUTC, endUTC));
+        public Task<List<LogEntry>> GetCompletedPartLogs(DateTime startUTC, DateTime endUTC)
+          => Task.Run(() => _d.GetCompletedPartLogs(startUTC, endUTC));
 
         public Task<List<LogEntry>> GetLogEntries(DateTime startUTC, DateTime endUTC)
           => Task.Run(() => _d.GetLogEntries(startUTC, endUTC));

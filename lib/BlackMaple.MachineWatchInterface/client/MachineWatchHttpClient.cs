@@ -1,4 +1,4 @@
-/* Copyright (c) 2017, John Lenz
+/* Copyright (c) 2018, John Lenz
 
 All rights reserved.
 
@@ -59,6 +59,24 @@ namespace BlackMaple.MachineWatchInterface
             resp.EnsureSuccessStatusCode();
         }
 
+        protected async Task SendJson<T>(HttpMethod method, string path, T body)
+        {
+            var msg = new HttpRequestMessage(method, "https://" + _host + path);
+            msg.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _token);
+
+            using (var ms = new System.IO.MemoryStream())
+            {
+                var ser = new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(T));
+                ser.WriteObject(ms, body);
+                msg.Content = new StringContent(
+                    System.Text.Encoding.UTF8.GetString(ms.ToArray()),
+                    Encoding.UTF8, "application/json");
+            }
+
+            var response = await _client.SendAsync(msg);
+            response.EnsureSuccessStatusCode();
+        }
+
         protected async Task<T> RecvJson<T>(HttpMethod method, string path)
         {
             var msg = new HttpRequestMessage(method, "https://" + _host + path);
@@ -87,9 +105,9 @@ namespace BlackMaple.MachineWatchInterface
             var resp = await _client.SendAsync(msg);
             resp.EnsureSuccessStatusCode();
 
-            var deser = new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(Ret));
+            var deSer = new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(Ret));
             var stream = await resp.Content.ReadAsStreamAsync();
-            return (Ret)deser.ReadObject(stream);
+            return (Ret)deSer.ReadObject(stream);
         }
     }
 }
