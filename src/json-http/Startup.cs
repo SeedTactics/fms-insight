@@ -1,4 +1,4 @@
-﻿/* Copyright (c) 2017, John Lenz
+﻿/* Copyright (c) 2018, John Lenz
 
 All rights reserved.
 
@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
+using System.Collections.Generic;
 using BlackMaple.MachineWatchInterface;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -44,17 +45,17 @@ namespace MachineWatchApiServer
 {
     public class StubBackend : BlackMaple.MachineWatchInterface.IServerBackend
     {
-        public ICellConfiguration CellConfiguration()
+        public void Init(string dataDirectory)
         {
             throw new NotImplementedException();
+        }
+
+        public IEnumerable<System.Diagnostics.TraceSource> TraceSources()
+        {
+            return new System.Diagnostics.TraceSource[] {};
         }
 
         public void Halt()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Init(string dataDirectory, IEvents events)
         {
             throw new NotImplementedException();
         }
@@ -64,17 +65,22 @@ namespace MachineWatchApiServer
             throw new NotImplementedException();
         }
 
-        public IJobServerV2 JobServer()
+        public IJobControl JobControl()
         {
             throw new NotImplementedException();
         }
 
-        public ILogServerV2 LogServer()
+        public ILogDatabase LogDatabase()
         {
             throw new NotImplementedException();
         }
 
-        public IPalletServer PalletServer()
+        public IJobDatabase JobDatabase()
+        {
+            throw new NotImplementedException();
+        }
+
+        public IOldJobDecrement OldJobDecrement()
         {
             throw new NotImplementedException();
         }
@@ -82,17 +88,12 @@ namespace MachineWatchApiServer
 
     public class Startup
     {
-        public Startup(IHostingEnvironment env)
-        {
-            var builder = new ConfigurationBuilder()
-                .SetBasePath(env.ContentRootPath)
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
-                .AddEnvironmentVariables();
-            Configuration = builder.Build();
-        }
+        public IConfiguration Configuration { get; }
 
-        public IConfigurationRoot Configuration { get; }
+        public Startup(IConfiguration config)
+        {
+            Configuration = config;
+        }
 
         public BlackMaple.MachineWatchInterface.IServerBackend FindBackend()
         {
@@ -108,14 +109,22 @@ namespace MachineWatchApiServer
             services.AddSwaggerGen(c =>
                 {
                     c.SwaggerDoc("v1", new Info { Title = "Machine Watch", Version = "v1" });
+                    c.CustomSchemaIds(type => {
+                        if (type == typeof(PalletStatus.Material))
+                            return "PalletMaterial";
+                        else
+                            return type.Name;
+                    });
                 });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
-            loggerFactory.AddConsole(Configuration.GetSection("Logging"));
-            loggerFactory.AddDebug();
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
 
             app.UseMvc();
             app.UseSwagger();

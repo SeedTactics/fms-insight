@@ -1,4 +1,4 @@
-/* Copyright (c) 2017, John Lenz
+/* Copyright (c) 2018, John Lenz
 
 All rights reserved.
 
@@ -38,50 +38,86 @@ using BlackMaple.MachineWatchInterface;
 
 namespace MachineWatchApiServer.Controllers
 {
-    [Route("api/[controller]")]
-    public class LogController : Controller
+    [Route("api/v1/[controller]")]
+    public class logController : Controller
     {
-        private ILogServerV2 _server;
+        private ILogDatabase _server;
 
-        public LogController(IServerBackend backend)
+        public logController(IServerBackend backend)
         {
-            _server = backend.LogServer();
+            _server = backend.LogDatabase();
         }
 
-        [HttpGet]
+        [HttpGet("events/all")]
         public List<LogEntry> Get([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
         {
             return _server.GetLogEntries(startUTC, endUTC);
         }
 
-        [HttpPost]
-        public void Add([FromBody] LogEntry cycle)
+        [HttpGet("events/all-completed-parts")]
+        public List<LogEntry> GetCompletedParts([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
         {
-            _server.AddLogEntry(cycle);
+            return _server.GetCompletedPartLogs(startUTC, endUTC);
         }
 
-        [HttpGet("recent")]
+        [HttpGet("events/recent")]
         public List<LogEntry> Recent([FromQuery] long lastSeenCounter)
         {
             return _server.GetLog(lastSeenCounter);
         }
 
-        [HttpGet("material/{materialID}")]
-        public List<LogEntry> Material(long materialID)
+        [HttpGet("events/for-material/{materialID}")]
+        public List<LogEntry> LogForMaterial(long materialID)
         {
             return _server.GetLogForMaterial(materialID);
         }
 
-        [HttpGet("serial/{serial}")]
-        public List<LogEntry> Serial(string serial)
+        [HttpGet("events/for-serial/{serial}")]
+        public List<LogEntry> LogForSerial(string serial)
         {
             return _server.GetLogForSerial(serial);
         }
 
-        [HttpPost("serial/{serial}")]
-        public LogEntry AddToSerial(string serial, [FromBody] LogMaterial mat)
+        [HttpGet("events/for-workorder/{workorder}")]
+        public List<LogEntry> LogForWorkorder(string workorder)
+        {
+            return _server.GetLogForWorkorder(workorder);
+        }
+
+        [HttpGet("workorders")]
+        public List<WorkorderSummary> GetWorkorders([FromBody] IEnumerable<string> workorderIds)
+        {
+            return _server.GetWorkorderSummaries(workorderIds);
+        }
+
+        [HttpPost("serial/{serial}/material")]
+        public LogEntry SetSerial(string serial, [FromBody] LogMaterial mat)
         {
             return _server.RecordSerialForMaterialID(mat, serial);
+        }
+
+        [HttpPost("workorder/{workorder}/material")]
+        public LogEntry SetWorkorder(string workorder, [FromBody] LogMaterial mat)
+        {
+            return _server.RecordWorkorderForMaterialID(mat, workorder);
+        }
+
+        [HttpPut("workorder/{workorder}/finalize")]
+        public LogEntry FinalizeWorkorder(string workorder)
+        {
+            return _server.RecordFinalizedWorkorder(workorder);
+        }
+
+        [HttpGet("settings/serials")]
+        public SerialSettings GetSerialSettings()
+        {
+            return _server.GetSerialSettings();
+        }
+
+        [HttpPut("settings/serials")]
+        public void SetSerialSettings([FromBody] SerialSettings settings)
+        {
+            _server.SetSerialSettings(settings);
         }
     }
 }

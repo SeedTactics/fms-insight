@@ -1,4 +1,4 @@
-/* Copyright (c) 2017, John Lenz
+/* Copyright (c) 2018, John Lenz
 
 All rights reserved.
 
@@ -37,15 +37,28 @@ using BlackMaple.MachineWatchInterface;
 
 namespace MachineWatchApiServer.Controllers
 {
-    [Route("api/[controller]")]
-    public class InspectionController : Controller
+    [Route("api/v1/[controller]")]
+    public class inspectionController : Controller
     {
         private IInspectionControl _server;
 
-        public InspectionController(IServerBackend backend)
+        public inspectionController(IServerBackend backend)
         {
             _server = backend.InspectionControl();
         }
+
+        [HttpPut ("material/{materialID}/{inspectionType}")]
+        public void ForceInspection(long materialID, string inspectionType)
+        {
+            _server.ForceInspection(materialID, inspectionType);
+        }
+
+        [HttpPut ("pallet/{pallet}/{location}/{inspectionType}")]
+        public void NextPieceInspection(int pallet, PalletLocationTypeEnum location, string inspectionType)
+        {
+            _server.NextPieceInspection(new PalletLocation(location, pallet), inspectionType);
+        }
+
 
         [HttpGet("counts")]
         public List<InspectCount> GetCounts()
@@ -57,18 +70,6 @@ namespace MachineWatchApiServer.Controllers
         public void SetCounts([FromBody] List<InspectCount> newCounts)
         {
             _server.SetInspectCounts(newCounts);
-        }
-
-        [HttpPut ("material/{materialID}/{inspectionType}")]
-        public void ForceInspection(long materialID, string inspectionType)        
-        {
-            _server.ForceInspection(materialID, inspectionType);
-        }
-
-        [HttpPut ("pallet/{pallet}/{location}/{inspectionType}")]
-        public void NextPieceInspection(int pallet, PalletLocationTypeEnum location, string inspectionType)
-        {
-            _server.NextPieceInspection(new PalletLocation(location, pallet), inspectionType);
         }
 
         [HttpGet ("types")]
