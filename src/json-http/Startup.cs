@@ -39,53 +39,11 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Converters;
 using Swashbuckle.AspNetCore.Swagger;
 
 namespace MachineWatchApiServer
 {
-    public class StubBackend : BlackMaple.MachineWatchInterface.IServerBackend
-    {
-        public void Init(string dataDirectory)
-        {
-            throw new NotImplementedException();
-        }
-
-        public IEnumerable<System.Diagnostics.TraceSource> TraceSources()
-        {
-            return new System.Diagnostics.TraceSource[] {};
-        }
-
-        public void Halt()
-        {
-            throw new NotImplementedException();
-        }
-
-        public IInspectionControl InspectionControl()
-        {
-            throw new NotImplementedException();
-        }
-
-        public IJobControl JobControl()
-        {
-            throw new NotImplementedException();
-        }
-
-        public ILogDatabase LogDatabase()
-        {
-            throw new NotImplementedException();
-        }
-
-        public IJobDatabase JobDatabase()
-        {
-            throw new NotImplementedException();
-        }
-
-        public IOldJobDecrement OldJobDecrement()
-        {
-            throw new NotImplementedException();
-        }
-    }
-
     public class Startup
     {
         public IConfiguration Configuration { get; }
@@ -95,17 +53,27 @@ namespace MachineWatchApiServer
             Configuration = config;
         }
 
-        public BlackMaple.MachineWatchInterface.IServerBackend FindBackend()
-        {
-            return new StubBackend();
-        }
-
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
             // Add framework services.
-            services.AddSingleton<BlackMaple.MachineWatchInterface.IServerBackend>(FindBackend());
-            services.AddMvc();
+            var dataDir = Configuration["DataDir"];
+
+            var pluginFile = Configuration["PluginFile"];
+            Plugin plugin;
+            if (!string.IsNullOrEmpty(pluginFile))
+                plugin = new Plugin(dataDir, pluginFile);
+            else
+                plugin = new Plugin(dataDir);
+
+            plugin.Backend.Init(dataDir);
+
+            services.AddSingleton<Plugin>(plugin);
+            services.AddSingleton<BlackMaple.MachineWatchInterface.IServerBackend>(plugin.Backend);
+            services.AddMvc()
+                .AddJsonOptions(options => {
+                    options.SerializerSettings.Converters.Add(new StringEnumConverter());
+                });
             services.AddSwaggerGen(c =>
                 {
                     c.SwaggerDoc("v1", new Info { Title = "Machine Watch", Version = "v1" });
@@ -119,7 +87,7 @@ namespace MachineWatchApiServer
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplicationLifetime lifetime, Plugin plugin)
         {
             if (env.IsDevelopment())
             {
@@ -132,6 +100,10 @@ namespace MachineWatchApiServer
                 {
                     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Machine Watch V1");
                 });
+
+            lifetime.ApplicationStopping.Register(() => {
+                plugin?.Backend?.Halt();
+            });
         }
     }
 }
