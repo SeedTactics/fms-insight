@@ -40,11 +40,13 @@ namespace BlackMaple.MachineWatchInterface
     {
         ///Load all jobs, station, and tool utilization which intersect the given date range.
         HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC);
-        
+
         ///Loads all jobs which have a unique strictly larger than the given unique
         JobsAndExtraParts LoadJobsAfterScheduleId(string scheduleId);
-        
+
         ///Loads all jobs for the most recent schedule
         JobsAndExtraParts LoadMostRecentSchedule();
+
+        List<PartWorkorder> MostRecentUnfilledWorkordersForPart(string part);
     }
 }

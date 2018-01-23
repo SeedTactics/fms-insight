@@ -175,7 +175,7 @@ namespace BlackMaple.MachineFramework
             cmd.CommandText = "CREATE TABLE schedule_debug(ScheduleId TEXT PRIMARY KEY, DebugMessage BLOB)";
             cmd.ExecuteNonQuery();
 
-            cmd.CommandText = "CREATE TABLE unfilled_workorders(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER NOT NULL, DueDate INTEGER NOT NULL, Priority INTEGER NOT NULL, PRIMARY KEY(ScheduleId, Workorder, Part))";
+            cmd.CommandText = "CREATE TABLE unfilled_workorders(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER NOT NULL, DueDate INTEGER NOT NULL, Priority INTEGER NOT NULL, PRIMARY KEY(ScheduleId, Part, Workorder))";
             cmd.ExecuteNonQuery();
         }
 
@@ -438,7 +438,7 @@ namespace BlackMaple.MachineFramework
             using (IDbCommand cmd = _connection.CreateCommand())
             {
                 cmd.Transaction = transaction;
-                cmd.CommandText = "CREATE TABLE unfilled_workorders(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER NOT NULL, DueDate INTEGER NOT NULL, Priority INTEGER NOT NULL, PRIMARY KEY(ScheduleId, Workorder, Part))";
+                cmd.CommandText = "CREATE TABLE unfilled_workorders(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER NOT NULL, DueDate INTEGER NOT NULL, Priority INTEGER NOT NULL, PRIMARY KEY(ScheduleId, Part, Workorder))";
                 cmd.ExecuteNonQuery();
             }
         }
@@ -789,6 +789,34 @@ namespace BlackMaple.MachineFramework
                 }
             }
             return ret;
+        }
+
+        public List<MachineWatchInterface.PartWorkorder> MostRecentUnfilledWorkordersForPart(string part)
+        {
+            lock (_lock)
+            {
+                var cmd = _connection.CreateCommand();
+
+                var ret = new List<MachineWatchInterface.PartWorkorder>();
+                cmd.CommandText = "SELECT Workorder, Part, Quantity, DueDate, Priority FROM unfilled_workorders " +
+                  "WHERE ScheduleId IN (SELECT MAX(ScheduleId) FROM jobs WHERE ScheduleId IS NOT NULL) AND Part = $part";
+                cmd.Parameters.Add("part", SqliteType.Text).Value = part;
+
+                using (IDataReader reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        ret.Add(new MachineWatchInterface.PartWorkorder() {
+                            WorkorderId = reader.GetString(0),
+                            Part = reader.GetString(1),
+                            Quantity = reader.GetInt32(2),
+                            DueDate = new DateTime(reader.GetInt64(3)),
+                            Priority = reader.GetInt32(4)
+                        });
+                    }
+                }
+                return ret;
+            }
         }
 
         public MachineWatchInterface.JobsAndExtraParts LoadJobs()

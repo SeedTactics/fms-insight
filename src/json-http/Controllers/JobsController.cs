@@ -68,6 +68,12 @@ namespace MachineWatchApiServer.Controllers
             return _db.LoadMostRecentSchedule();
         }
 
+        [HttpGet("unfilled-workorders/by-part/{part}")]
+        public IList<PartWorkorder> MostRecentUnfilledWorkordersForPart(string part)
+        {
+            return _db.MostRecentUnfilledWorkordersForPart(part);
+        }
+
         [HttpGet("status")]
         public CurrentStatus CurrentStatus()
         {

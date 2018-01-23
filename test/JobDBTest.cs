@@ -431,6 +431,10 @@ namespace MachineWatchTest
             CheckWorkordersEqual(unfilledWorks, newAfter.CurrentUnfilledWorkorders);
             CheckPlanEqual(job2, newAfter.Jobs[0], true);
             Assert.Equal(0, _jobDB.LoadJobsAfterScheduleId(job2.ScheduleId).Jobs.Count);
+            CheckWorkordersEqual(
+                new [] {unfilledWorks[0]},
+                _jobDB.MostRecentUnfilledWorkordersForPart(unfilledWorks[0].Part)
+            );
 
             recent = _jobDB.LoadMostRecentSchedule();
             Assert.Equal(theExtraParts, recent.ExtraParts);
