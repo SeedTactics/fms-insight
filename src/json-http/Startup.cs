@@ -82,6 +82,7 @@ namespace MachineWatchApiServer
 
             services.AddSingleton<Plugin>(plugin);
             services.AddSingleton<BlackMaple.MachineWatchInterface.IServerBackend>(plugin.Backend);
+
             services.AddMvcCore()
                 .AddApiExplorer()
                 .AddFormatterMappings()
@@ -89,6 +90,7 @@ namespace MachineWatchApiServer
                 .AddJsonOptions(options => {
                     options.SerializerSettings.Converters.Add(new StringEnumConverter());
                 });
+
             services.AddSwaggerGen(c =>
                 {
                     c.SwaggerDoc("v1", new Info { Title = "Machine Watch", Version = "v1" });
