@@ -64,7 +64,19 @@ namespace MachineWatchApiServer
             if (!string.IsNullOrEmpty(pluginFile))
                 plugin = new Plugin(dataDir, pluginFile);
             else
-                plugin = new Plugin(dataDir);
+            {
+                #if DEBUG
+                plugin = new Plugin(
+                    settingsPath: dataDir,
+                    backend: new MockBackend(),
+                    info: new PluginInfo() {
+                        Name = "mock-machinewatch",
+                        Version = "1.2.3.4"
+                    });
+                #else
+                    throw new Exception("Must specify plugin");
+                #endif
+            }
 
             plugin.Backend.Init(dataDir);
 

@@ -102,7 +102,7 @@ namespace MachineWatchApiServer.Controllers
             return _server.RecordWorkorderForMaterialID(mat, workorder);
         }
 
-        [HttpPut("workorder/{workorder}/finalize")]
+        [HttpPost("workorder/{workorder}/finalize")]
         public LogEntry FinalizeWorkorder(string workorder)
         {
             return _server.RecordFinalizedWorkorder(workorder);
