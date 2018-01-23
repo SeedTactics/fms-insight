@@ -82,7 +82,10 @@ namespace MachineWatchApiServer
 
             services.AddSingleton<Plugin>(plugin);
             services.AddSingleton<BlackMaple.MachineWatchInterface.IServerBackend>(plugin.Backend);
-            services.AddMvc()
+            services.AddMvcCore()
+                .AddApiExplorer()
+                .AddFormatterMappings()
+                .AddJsonFormatters()
                 .AddJsonOptions(options => {
                     options.SerializerSettings.Converters.Add(new StringEnumConverter());
                 });
@@ -101,12 +104,8 @@ namespace MachineWatchApiServer
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplicationLifetime lifetime, Plugin plugin)
         {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
-
             app.UseMvc();
+            app.UseStaticFiles();
             app.UseSwagger();
             app.UseSwaggerUI(c =>
                 {

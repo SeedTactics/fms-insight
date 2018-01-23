@@ -39,7 +39,7 @@ using BlackMaple.MachineWatchInterface;
 namespace MachineWatchApiServer.Controllers
 {
     [Route("api/v1/[controller]")]
-    public class logController : Controller
+    public class logController : ControllerBase
     {
         private ILogDatabase _server;
 

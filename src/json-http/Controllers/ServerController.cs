@@ -38,7 +38,7 @@ using BlackMaple.MachineWatchInterface;
 namespace MachineWatchApiServer.Controllers
 {
     [Route("api/v1/[controller]")]
-    public class serverController : Controller
+    public class serverController : ControllerBase
     {
         private Plugin _plugin;
         private Dictionary<string, string> _memorySettings;

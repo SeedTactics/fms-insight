@@ -38,7 +38,7 @@ using BlackMaple.MachineWatchInterface;
 namespace MachineWatchApiServer.Controllers
 {
     [Route("api/v1/[controller]")]
-    public class inspectionController : Controller
+    public class inspectionController : ControllerBase
     {
         private IInspectionControl _server;
 

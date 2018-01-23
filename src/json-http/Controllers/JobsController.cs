@@ -39,7 +39,7 @@ using BlackMaple.MachineWatchInterface;
 namespace MachineWatchApiServer.Controllers
 {
     [Route("api/v1/[controller]")]
-    public class jobsController : Controller
+    public class jobsController : ControllerBase
     {
         private IJobDatabase _db;
         private IJobControl _control;
