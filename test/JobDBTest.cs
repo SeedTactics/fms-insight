@@ -343,6 +343,24 @@ namespace MachineWatchTest
             return ret;
         }
 
+        private static List<PartWorkorder> RandUnfilledWorkorders()
+        {
+            var rnd = new Random();
+            var ret = new List<PartWorkorder>();
+            for (int i = 0; i < 3; i++)
+            {
+                ret.Add(new PartWorkorder()
+                    {
+                        WorkorderId = "work" + rnd.Next(0, 10000).ToString(),
+                        Part = "part" + rnd.Next(0, 10000).ToString(),
+                        Quantity = rnd.Next(10000),
+                        DueDate = new DateTime(2018, rnd.Next(1, 12), rnd.Next(1, 20)),
+                        Priority = rnd.Next(10000)
+                    });
+            }
+            return ret;
+        }
+
         private static IEnumerable<JobPlan.SimulatedProduction> RandSimProduction()
         {
             var rnd = new Random();
@@ -372,7 +390,7 @@ namespace MachineWatchTest
 
             _jobDB.AddJob(job1);
 
-            CheckJobs(job1, null, null, job1.ScheduleId, null);
+            CheckJobs(job1, null, null, job1.ScheduleId, null, null);
             Assert.Empty(_jobDB.LoadExtraPartsForScheduleId(job1.ScheduleId));
             var recent = _jobDB.LoadMostRecentSchedule();
             Assert.Empty(recent.ExtraParts);
@@ -384,8 +402,9 @@ namespace MachineWatchTest
 
             var simStationUse = RandSimStationUse();
             var theExtraParts = RandExtraParts();
+            var unfilledWorks = RandUnfilledWorkorders();
 
-			var newJob2 = new NewJobs(job2.ScheduleId, new JobPlan[] { job2 }, simStationUse, theExtraParts, true);
+			var newJob2 = new NewJobs(job2.ScheduleId, new JobPlan[] { job2 }, simStationUse, theExtraParts, true, workorders:unfilledWorks);
 			try {
 				_jobDB.AddJobs(newJob2, "badsch");
 				Assert.True(false, "Expecting addjobs to throw exception");
@@ -395,12 +414,12 @@ namespace MachineWatchTest
 					 		 e.Message);
 			}
 
-            CheckJobs(job1, null, null, job1.ScheduleId, null);
+            CheckJobs(job1, null, null, job1.ScheduleId, null, null);
 
             _jobDB.AddJobs(newJob2, job1.ScheduleId);
 
             Assert.Equal(theExtraParts, _jobDB.LoadExtraPartsForScheduleId(job2.ScheduleId));
-            CheckJobs(job1, job2, null, job2.ScheduleId, theExtraParts);
+            CheckJobs(job1, job2, null, job2.ScheduleId, theExtraParts, unfilledWorks);
             CheckJobsDate(job1, job2, null);
             CheckSimStationUse(simStationUse);
             Assert.True(_jobDB.DoesJobExist(job1.UniqueStr));
@@ -409,12 +428,14 @@ namespace MachineWatchTest
             Assert.Equal(1, newAfter.Jobs.Count);
             Assert.Equal(job2.ScheduleId, newAfter.LatestScheduleId);
             Assert.Equal(theExtraParts, newAfter.ExtraParts);
+            CheckWorkordersEqual(unfilledWorks, newAfter.CurrentUnfilledWorkorders);
             CheckPlanEqual(job2, newAfter.Jobs[0], true);
             Assert.Equal(0, _jobDB.LoadJobsAfterScheduleId(job2.ScheduleId).Jobs.Count);
 
             recent = _jobDB.LoadMostRecentSchedule();
             Assert.Equal(theExtraParts, recent.ExtraParts);
             Assert.Equal(job2.ScheduleId, recent.LatestScheduleId);
+            CheckWorkordersEqual(unfilledWorks, recent.CurrentUnfilledWorkorders);
             CheckPlanEqual(job2, recent.Jobs[0], true);
 
             job2.SetPlannedCyclesOnFirstProcess(1, 563);
@@ -422,21 +443,21 @@ namespace MachineWatchTest
 
             _jobDB.UpdateJob(job2);
 
-            CheckJobs(job1, job2, null, job2.ScheduleId, theExtraParts);
+            CheckJobs(job1, job2, null, job2.ScheduleId, theExtraParts, unfilledWorks);
 
-            CheckJobs(job1, job2, null, job2.ScheduleId, theExtraParts);
+            CheckJobs(job1, job2, null, job2.ScheduleId, theExtraParts, unfilledWorks);
 
             _jobDB.UpdateJob("Unique1", 32, "newcomm");
             job1.Comment = "newcomm";
             job1.Priority = 32;
 
-            CheckJobs(job1, job2, null, job2.ScheduleId, theExtraParts);
+            CheckJobs(job1, job2, null, job2.ScheduleId, theExtraParts, unfilledWorks);
 
             _jobDB.UpdateJob("Unique1", 64, "hello");
             job1.Comment = "hello";
             job1.Priority = 64;
 
-            CheckJobs(job1, job2, null, job2.ScheduleId, theExtraParts);
+            CheckJobs(job1, job2, null, job2.ScheduleId, theExtraParts, unfilledWorks);
 
             job1.HoldEntireJob.UserHold = false;
             job1.HoldEntireJob.ReasonForUserHold = "this is the reason";
@@ -446,7 +467,7 @@ namespace MachineWatchTest
             job1.HoldEntireJob.HoldUnholdPattern.Add(TimeSpan.FromSeconds(1255));
             _jobDB.UpdateJobHold("Unique1", job1.HoldEntireJob);
 
-            CheckJobs(job1, job2, null, job2.ScheduleId, theExtraParts);
+            CheckJobs(job1, job2, null, job2.ScheduleId, theExtraParts, unfilledWorks);
 
             job1.HoldMachining(1, 1).UserHold = true;
             job1.HoldMachining(1, 1).ReasonForUserHold = "abnceasd";
@@ -455,7 +476,7 @@ namespace MachineWatchTest
             job1.HoldMachining(1, 1).HoldUnholdPattern.Clear();
             _jobDB.UpdateJobMachiningHold("Unique1", 1, 1, job1.HoldMachining(1, 1));
 
-            CheckJobs(job1, job2, null, job2.ScheduleId, theExtraParts);
+            CheckJobs(job1, job2, null, job2.ScheduleId, theExtraParts, unfilledWorks);
 
             job1.HoldLoadUnload(2, 3).UserHold = false;
             job1.HoldLoadUnload(2, 3).ReasonForUserHold = "agrwerg";
@@ -467,7 +488,7 @@ namespace MachineWatchTest
             job1.HoldLoadUnload(2, 3).HoldUnholdPattern.Add(TimeSpan.FromSeconds(6743));
             _jobDB.UpdateJobLoadUnloadHold("Unique1", 2, 3, job1.HoldLoadUnload(2, 3));
 
-            CheckJobs(job1, job2, null, job2.ScheduleId, theExtraParts);
+            CheckJobs(job1, job2, null, job2.ScheduleId, theExtraParts, unfilledWorks);
 
             Assert.Null(_jobDB.LoadJob("aguheriheg"));
 
@@ -479,14 +500,14 @@ namespace MachineWatchTest
             //mark job2 copied
             _jobDB.MarkJobCopiedToSystem("Unique2");
             job2.JobCopiedToSystem = true;
-            CheckJobs(job1, job2, null, job2.ScheduleId, theExtraParts);
+            CheckJobs(job1, job2, null, job2.ScheduleId, theExtraParts, unfilledWorks);
             notCopied = _jobDB.LoadJobsNotCopiedToSystem(DateTime.UtcNow.AddHours(-4), DateTime.UtcNow.AddHours(-3));
             Assert.Equal(0, notCopied.Jobs.Count);
 
             //Archive job2
             _jobDB.ArchiveJob(job2.UniqueStr);
             job2.Archived = true;
-            CheckJobs(job1, null, null, job2.ScheduleId, theExtraParts);
+            CheckJobs(job1, null, null, job2.ScheduleId, theExtraParts, unfilledWorks);
             CheckJobsDate(job1, job2, null);
 
             //delete job1
@@ -514,7 +535,7 @@ namespace MachineWatchTest
             _jobDB.AddJobs(new NewJobs("tag2", new JobPlan[] { job1, job2, job3 }, debugMsg: debug), null);
             Assert.Equal(debug, LoadDebugData("tag2"));
 
-            CheckJobs(job1, job2, job3, job2.ScheduleId, theExtraParts);
+            CheckJobs(job1, job2, job3, job2.ScheduleId, theExtraParts, unfilledWorks);
 
             for (int i = 0; i < 4; i++)
             {
@@ -527,7 +548,7 @@ namespace MachineWatchTest
             _jobDB.ArchiveCompletedJobs();
             job2.Archived = true;
 
-            CheckJobs(job1, job3, null, job2.ScheduleId, theExtraParts);
+            CheckJobs(job1, job3, null, job2.ScheduleId, theExtraParts, unfilledWorks);
             CheckJobsDate(job1, job2, job3);
 
             for (int i = 0; i < 4; i++)
@@ -539,7 +560,7 @@ namespace MachineWatchTest
 
             _jobDB.ArchiveCompletedJobs();
 
-            CheckJobs(job1, job3, null, job2.ScheduleId, theExtraParts);
+            CheckJobs(job1, job3, null, job2.ScheduleId, theExtraParts, unfilledWorks);
             CheckJobsDate(job1, job2, job3);
 
             _jobDB.AddCompletedMaterial(job3.UniqueStr, 240);
@@ -547,7 +568,7 @@ namespace MachineWatchTest
             _jobDB.ArchiveCompletedJobs();
             job3.Archived = true;
 
-            CheckJobs(job1, null, null, job2.ScheduleId, theExtraParts);
+            CheckJobs(job1, null, null, job2.ScheduleId, theExtraParts, unfilledWorks);
             CheckJobsDate(job1, job2, job3);
         }
 
@@ -691,7 +712,7 @@ namespace MachineWatchTest
             Assert.Empty(_jobDB.LoadDecrementQuantitiesAfter(new DateTime(2017, 2, 1)));
         }
 
-        private void CheckJobs(JobPlan job1, JobPlan job2, JobPlan job3, string schId, Dictionary<string, int> extraParts)
+        private void CheckJobs(JobPlan job1, JobPlan job2, JobPlan job3, string schId, Dictionary<string, int> extraParts, IEnumerable<PartWorkorder> works)
         {
             CheckJobEqual(job1, _jobDB.LoadJob(job1.UniqueStr), true);
             if ((job2 != null)) CheckJobEqual(job2, _jobDB.LoadJob(job2.UniqueStr), true);
@@ -702,6 +723,9 @@ namespace MachineWatchTest
             Assert.Equal(schId == null ? "" : schId, jobsAndExtra.LatestScheduleId);
             Assert.Equal(extraParts == null ? new Dictionary<string, int>() : extraParts,
              jobsAndExtra.ExtraParts);
+
+            if (works == null) works = new List<PartWorkorder>();
+            CheckWorkordersEqual(works, jobsAndExtra.CurrentUnfilledWorkorders);
 
             if (job2 == null)
             {
@@ -967,6 +991,24 @@ namespace MachineWatchTest
             {
                 Assert.True(false, "i2 has extra stuff");
             }
+        }
+
+        public static void CheckWorkordersEqual(IEnumerable<PartWorkorder> expected, IEnumerable<PartWorkorder> actual)
+        {
+            var expectedWorks = expected.OrderBy(w => (w.WorkorderId, w.Part)).ToList();
+            var actualWorks = actual.OrderBy(w => (w.WorkorderId, w.Part)).ToList();
+            Assert.Equal(expectedWorks.Count, actualWorks.Count);
+            for (int i = 0; i < expectedWorks.Count; i++)
+                CheckWorkorderEqual(expectedWorks[i], actualWorks[i]);
+        }
+
+        public static void CheckWorkorderEqual(PartWorkorder w1, PartWorkorder w2)
+        {
+            Assert.Equal(w1.WorkorderId, w2.WorkorderId);
+            Assert.Equal(w1.Part, w2.Part);
+            Assert.Equal(w1.Quantity, w2.Quantity);
+            Assert.Equal(w1.DueDate, w2.DueDate);
+            Assert.Equal(w1.Priority, w2.Priority);
         }
 
         public static void EqualSort<T>(IEnumerable<T> e1, IEnumerable<T> e2)

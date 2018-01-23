@@ -1121,6 +1121,16 @@ namespace BlackMaple.MachineWatchInterface
     }
 
     [Serializable, DataContract]
+    public class PartWorkorder
+    {
+        [DataMember] public string WorkorderId {get;set;}
+        [DataMember] public string Part {get;set;}
+        [DataMember] public int Quantity {get;set;}
+        [DataMember] public DateTime DueDate {get;set;}
+        [DataMember] public int Priority {get;set;}
+    }
+
+    [Serializable, DataContract]
     public struct NewJobs
     {
         [DataMember] public string ScheduleId;
@@ -1132,12 +1142,16 @@ namespace BlackMaple.MachineWatchInterface
         [OptionalField, DataMember(IsRequired=false)]
         public byte[] DebugMessage;
 
+        [OptionalField, DataMember(IsRequired=false)]
+        public List<PartWorkorder> CurrentUnfilledWorkorders;
+
         public NewJobs(string scheduleId,
                        IEnumerable<JobPlan> newJobs,
                        IEnumerable<SimulatedStationUtilization> stationUse = null,
                        Dictionary<string, int> extraParts = null,
                        bool archiveCompletedJobs = false,
-                       byte[] debugMsg = null)
+                       byte[] debugMsg = null,
+                       IEnumerable<PartWorkorder> workorders = null)
         {
             this.ScheduleId = scheduleId;
             this.Jobs = newJobs.ToList();
@@ -1147,6 +1161,7 @@ namespace BlackMaple.MachineWatchInterface
                 extraParts == null ? new Dictionary<string, int>() : extraParts;
             this.ArchiveCompletedJobs = archiveCompletedJobs;
             this.DebugMessage = debugMsg;
+            this.CurrentUnfilledWorkorders = workorders?.ToList();
         }
     }
 
@@ -1181,6 +1196,9 @@ namespace BlackMaple.MachineWatchInterface
         [DataMember] public string LatestScheduleId;
         [DataMember] public List<JobPlan> Jobs;
         [DataMember] public Dictionary<string, int> ExtraParts;
+
+        [OptionalField, DataMember(IsRequired=false)]
+        public List<PartWorkorder> CurrentUnfilledWorkorders;
     }
 
     [Serializable, DataContract]

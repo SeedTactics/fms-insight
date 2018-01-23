@@ -86,7 +86,7 @@ namespace BlackMaple.MachineFramework
             _connection.Close();
         }
 
-        private const int Version = 11;
+        private const int Version = 12;
 
         public void CreateTables()
         {
@@ -174,6 +174,9 @@ namespace BlackMaple.MachineFramework
 
             cmd.CommandText = "CREATE TABLE schedule_debug(ScheduleId TEXT PRIMARY KEY, DebugMessage BLOB)";
             cmd.ExecuteNonQuery();
+
+            cmd.CommandText = "CREATE TABLE unfilled_workorders(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER NOT NULL, DueDate INTEGER NOT NULL, Priority INTEGER NOT NULL, PRIMARY KEY(ScheduleId, Workorder, Part))";
+            cmd.ExecuteNonQuery();
         }
 
 
@@ -237,6 +240,7 @@ namespace BlackMaple.MachineFramework
                 if (curVersion < 9) Ver8ToVer9(trans);
                 if (curVersion < 10) Ver9ToVer10(trans);
                 if (curVersion < 11) Ver10ToVer11(trans);
+                if (curVersion < 12) Ver11ToVer12(trans);
 
                 //update the version in the database
                 cmd.Transaction = trans;
@@ -425,6 +429,16 @@ namespace BlackMaple.MachineFramework
             {
                 cmd.Transaction = trans;
                 cmd.CommandText = "CREATE TABLE schedule_debug(ScheduleId TEXT PRIMARY KEY, DebugMessage BLOB)";
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        private void Ver11ToVer12(IDbTransaction transaction)
+        {
+            using (IDbCommand cmd = _connection.CreateCommand())
+            {
+                cmd.Transaction = transaction;
+                cmd.CommandText = "CREATE TABLE unfilled_workorders(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER NOT NULL, DueDate INTEGER NOT NULL, Priority INTEGER NOT NULL, PRIMARY KEY(ScheduleId, Workorder, Part))";
                 cmd.ExecuteNonQuery();
             }
         }
@@ -754,6 +768,29 @@ namespace BlackMaple.MachineFramework
             }
         }
 
+        private List<MachineWatchInterface.PartWorkorder> LoadMostRecentUnfilledWorkorders(IDbTransaction trans)
+        {
+            var cmd = _connection.CreateCommand();
+            ((IDbCommand)cmd).Transaction = trans;
+
+            var ret = new List<MachineWatchInterface.PartWorkorder>();
+            cmd.CommandText = "SELECT Workorder, Part, Quantity, DueDate, Priority FROM unfilled_workorders WHERE ScheduleId IN (SELECT MAX(ScheduleId) FROM jobs WHERE ScheduleId IS NOT NULL)";
+            using (IDataReader reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    ret.Add(new MachineWatchInterface.PartWorkorder() {
+                        WorkorderId = reader.GetString(0),
+                        Part = reader.GetString(1),
+                        Quantity = reader.GetInt32(2),
+                        DueDate = new DateTime(reader.GetInt64(3)),
+                        Priority = reader.GetInt32(4)
+                    });
+                }
+            }
+            return ret;
+        }
+
         public MachineWatchInterface.JobsAndExtraParts LoadJobs()
         {
             var cmd = _connection.CreateCommand();
@@ -818,6 +855,7 @@ namespace BlackMaple.MachineFramework
                     cmd.Transaction = trans;
 					ret.Jobs = LoadJobsHelper(cmd, trans);
                     ret.ExtraParts = LoadMostRecentExtraParts(trans);
+                    ret.CurrentUnfilledWorkorders = LoadMostRecentUnfilledWorkorders(trans);
 
                     trans.Commit();
                 }
@@ -905,6 +943,7 @@ namespace BlackMaple.MachineFramework
 
 					ret.Jobs = LoadJobsHelper(cmd, trans);
                     ret.ExtraParts = LoadMostRecentExtraParts(trans);
+                    ret.CurrentUnfilledWorkorders = LoadMostRecentUnfilledWorkorders(trans);
                     ret.LatestScheduleId = LatestScheduleId(trans);
 
                     trans.Commit();
@@ -1182,6 +1221,11 @@ namespace BlackMaple.MachineFramework
                     if (!string.IsNullOrEmpty(newJobs.ScheduleId) && newJobs.ExtraParts != null)
                     {
                         AddExtraParts(trans, newJobs.ScheduleId, newJobs.ExtraParts);
+                    }
+
+                    if (!string.IsNullOrEmpty(newJobs.ScheduleId) && newJobs.CurrentUnfilledWorkorders != null)
+                    {
+                        AddUnfilledWorkorders(trans, newJobs.ScheduleId, newJobs.CurrentUnfilledWorkorders);
                     }
 
                     if (!string.IsNullOrEmpty(newJobs.ScheduleId) && newJobs.DebugMessage != null)
@@ -1615,6 +1659,30 @@ namespace BlackMaple.MachineFramework
             {
                 cmd.Parameters[1].Value = p.Key;
                 cmd.Parameters[2].Value = p.Value;
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        private void AddUnfilledWorkorders(IDbTransaction trans, string scheduleId, IEnumerable<MachineWatchInterface.PartWorkorder> workorders)
+        {
+            var cmd = _connection.CreateCommand();
+            ((IDbCommand)cmd).Transaction = trans;
+
+            cmd.CommandText = "INSERT OR REPLACE INTO unfilled_workorders(ScheduleId, Workorder, Part, Quantity, DueDate, Priority) VALUES ($sid,$work,$part,$qty,$due,$pri)";
+            cmd.Parameters.Clear();
+            cmd.Parameters.Add("sid", SqliteType.Text).Value = scheduleId;
+            cmd.Parameters.Add("work", SqliteType.Text);
+            cmd.Parameters.Add("part", SqliteType.Text);
+            cmd.Parameters.Add("qty", SqliteType.Integer);
+            cmd.Parameters.Add("due", SqliteType.Integer);
+            cmd.Parameters.Add("pri", SqliteType.Integer);
+            foreach (var w in workorders)
+            {
+                cmd.Parameters[1].Value = w.WorkorderId;
+                cmd.Parameters[2].Value = w.Part;
+                cmd.Parameters[3].Value = w.Quantity;
+                cmd.Parameters[4].Value = w.DueDate.Ticks;
+                cmd.Parameters[5].Value = w.Priority;
                 cmd.ExecuteNonQuery();
             }
         }
