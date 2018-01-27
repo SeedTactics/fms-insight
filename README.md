@@ -27,7 +27,7 @@ and using a Machine Watch server.
 
 If you want to write a client program to communicate with Machine Watch over the network, use the
 `BlackMaple.MachineWatchInterface` assembly.  The source code for this assembly is in the
-[lib/BlackMaple.MachineWatchInterface](https://bitbucket.org/blackmaple/machinewatch/src/tip/lib/BlackMaple.MachineWatchInterface/)
+[lib/BlackMaple.MachineWatchInterface](https://bitbucket.org/blackmaple/machinewatch/src/tip/server/lib/BlackMaple.MachineWatchInterface/)
 directory, but a compiled version is on NuGet as
 [BlackMaple.MachineWatchInterface](https://www.nuget.org/packages/BlackMaple.MachineWatchInterface/).
 
@@ -63,7 +63,7 @@ var jobServer = (BlackMaple.MachineWatchInterface.ILogDatabase)
 ~~~
 
 For details on the interfaces and data available, see the
-[source code](https://bitbucket.org/blackmaple/machinewatch/src/tip/lib/BlackMaple.MachineWatchInterface/).
+[source code](https://bitbucket.org/blackmaple/machinewatch/src/tip/server/lib/BlackMaple.MachineWatchInterface/).
 In particular, the `api` subdirectory contains the network interface.
 
 ### Writing a plugin for a cell controller
@@ -75,14 +75,14 @@ describes at a high level the data and communication between Machine Watch and t
 
 When Machine Watch starts, it searches the `plugins/` directory inside the AppDomain base directory for assemblies.
 The first assembly which contains a type which implements the
-[IServerBackend](https://bitbucket.org/blackmaple/machinewatch/src/tip/lib/BlackMaple.MachineFramework/BackendInterfaces.cs)
+[IServerBackend](https://bitbucket.org/blackmaple/machinewatch/src/tip/server/lib/BlackMaple.MachineFramework/BackendInterfaces.cs)
 interface is loaded and used for communication between the service and the cell controller (the type must have a zero-argument constructor).
 In addition, any types which implement the
-[IBackgroundWorker](https://bitbucket.org/blackmaple/machinewatch/src/tip/lib/BlackMaple.MachineFramework/BackendInterfaces.cs) interface
+[IBackgroundWorker](https://bitbucket.org/blackmaple/machinewatch/src/tip/server/lib/BlackMaple.MachineFramework/BackendInterfaces.cs) interface
 are loaded and started.  There must be only one `IServerBackend` but can be multiple `IBackgroundWorker`s.
 
 The `BlackMaple.MachineFramework` assembly assists with implementing this interface.  It contains code to store jobs and log data
 in SQLite databases, make inspection decisions, and more.  It doesn't have to be used, but it does make implementing plugins easier.
 The source code is here in the
-[lib/BlackMaple.MachineFramework](https://bitbucket.org/blackmaple/machinewatch/src/tip/lib/BlackMaple.MachineFramework/)
+[lib/BlackMaple.MachineFramework](https://bitbucket.org/blackmaple/machinewatch/src/tip/server/lib/BlackMaple.MachineFramework/)
 directory, but is also available on NuGet at [BlackMaple.MachineFramework](https://www.nuget.org/packages/BlackMaple.MachineFramework/).
