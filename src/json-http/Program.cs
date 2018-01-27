@@ -47,7 +47,18 @@ namespace MachineWatchApiServer
     {
         public static void Main(string[] args)
         {
-            BuildWebHost(args).Run();
+            var host = BuildWebHost(args);
+
+            #if USE_SERVICE
+                var pathToExe = Process.GetCurrentProcess().MainModule.FileName;
+                var pathToContentRoot = Path.GetDirectoryName(pathToExe);
+                Microsoft.AspNetCore.Hosting.WindowsServices.WebHostWindowsServiceExtensions
+                    .RunAsService(
+                        host.UseContentRoot(pathToContentRoot)
+                    );
+            #else
+                host.Run();
+            #endif
         }
 
         public static IWebHost BuildWebHost(string[] args) =>

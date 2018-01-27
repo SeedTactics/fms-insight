@@ -60,9 +60,10 @@ namespace MachineWatchApiServer
             var dataDir = Configuration["DataDir"];
 
             var pluginFile = Configuration["PluginFile"];
-            Plugin plugin;
+            var workerDir = Configuration["WorkerDirectory"];
+            IPlugin plugin;
             if (!string.IsNullOrEmpty(pluginFile))
-                plugin = new Plugin(dataDir, pluginFile);
+                plugin = new Plugin(dataDir, pluginFile, workerDir);
             else
             {
                 #if DEBUG
@@ -79,8 +80,22 @@ namespace MachineWatchApiServer
             }
 
             plugin.Backend.Init(dataDir);
+            foreach (var w in plugin.Workers) w.Init(plugin.Backend);
 
-            services.AddSingleton<Plugin>(plugin);
+            #if USE_SERVICE
+            var machServer =
+                new BlackMaple.MachineWatch.Server(
+                    p: new ServicePlugin(plugin),
+                    forceTrace: false,
+                    callInit: false
+                );
+            services.AddSingleton<BlackMaple.MachineWatch.Server>(machServer);
+            lifetime.ApplicationStopping.Register(() => {
+                machServer.Dispose();
+            });
+            #endif
+
+            services.AddSingleton<IPlugin>(plugin);
             services.AddSingleton<BlackMaple.MachineWatchInterface.IServerBackend>(plugin.Backend);
 
             services.AddMvcCore()
@@ -104,7 +119,7 @@ namespace MachineWatchApiServer
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplicationLifetime lifetime, Plugin plugin)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplicationLifetime lifetime, IPlugin plugin)
         {
             app.UseMvc();
             app.UseStaticFiles();
@@ -115,7 +130,10 @@ namespace MachineWatchApiServer
                 });
 
             lifetime.ApplicationStopping.Register(() => {
-                plugin?.Backend?.Halt();
+                if (plugin == null) return;
+                plugin.Backend?.Halt();
+                foreach (var w in plugin.Workers)
+                    w.Halt();
             });
         }
     }

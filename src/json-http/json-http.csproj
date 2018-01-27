@@ -1,9 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <PropertyGroup>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore" Version="2.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.0.1" />
@@ -26,5 +22,24 @@
       </ItemGroup>
     </Otherwise>
   </Choose>
+
+  <Choose>
+    <When Condition="$(OS) == 'Windows_NT'">
+      <PropertyGroup>
+        <TargetFramework>net461</TargetFramework>
+        <DefineConstants>$(DefineConstants);USE_SERVICE</DefineConstants>
+      </PropertyGroup>
+      <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.Hosting.WindowsServices" Version="1.1.0" />
+        <ProjectReference Include="../service/MachineWatch.csproj"/>
+      </ItemGroup>
+    </When>
+    <When Condition="$(OS) == 'Unix'">
+        <PropertyGroup>
+            <TargetFramework>netcoreapp2</TargetFramework>
+        </PropertyGroup>
+    </When>
+  </Choose>
+
 
 </Project>

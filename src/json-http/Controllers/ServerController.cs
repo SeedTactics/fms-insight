@@ -40,10 +40,10 @@ namespace MachineWatchApiServer.Controllers
     [Route("api/v1/[controller]")]
     public class serverController : ControllerBase
     {
-        private Plugin _plugin;
+        private IPlugin _plugin;
         private Dictionary<string, string> _memorySettings;
 
-        public serverController(Plugin p)
+        public serverController(IPlugin p)
         {
             _plugin = p;
             if (string.IsNullOrEmpty(p.SettingsPath))

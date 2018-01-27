@@ -44,10 +44,18 @@ namespace BlackMaple.MachineWatch
 {
     public class Server : IDisposable
     {
-        private readonly MachineWatchPlugin plugin;
+        private readonly IMachineWatchPlugin plugin;
         private readonly SettingStore settingsServer;
         private readonly Tracing trace;
         private readonly RemoteSingletons singletons;
+        private readonly bool CallInitAndHalt;
+
+        public interface IMachineWatchPlugin
+        {
+            IServerBackend serverBackend { get; }
+            IMachineWatchVersion serverVersion { get; }
+            IEnumerable<IBackgroundWorker> workers { get; }
+        }
 
         private class MachineWatchVersion : IMachineWatchVersion
         {
@@ -62,7 +70,8 @@ namespace BlackMaple.MachineWatch
             public string PluginName() { return _plugin; }
         }
 
-        public class MachineWatchPlugin
+
+        public class MachineWatchPlugin : IMachineWatchPlugin
         {
             public IServerBackend serverBackend { get; }
             public IMachineWatchVersion serverVersion { get; }
@@ -76,9 +85,10 @@ namespace BlackMaple.MachineWatch
             }
         }
 
-        public Server(MachineWatchPlugin p, bool forceTrace = false)
+        public Server(IMachineWatchPlugin p, bool forceTrace = false, bool callInit = true)
         {
             plugin = p;
+            CallInitAndHalt = callInit;
 
             string logPath, dataDir;
 
@@ -128,7 +138,7 @@ namespace BlackMaple.MachineWatch
                     var props = new System.Collections.Hashtable();
                     props["port"] = 8086;
                     System.Runtime.Remoting.Channels.ChannelServices.RegisterChannel(new System.Runtime.Remoting.Channels.Tcp.TcpChannel(props, clientFormatter, serverFormatter), false);
-                
+
                     System.Runtime.Remoting.Lifetime.LifetimeServices.LeaseTime = TimeSpan.FromMinutes(3);
                     System.Runtime.Remoting.Lifetime.LifetimeServices.SponsorshipTimeout = TimeSpan.FromMinutes(2);
                     System.Runtime.Remoting.Lifetime.LifetimeServices.RenewOnCallTime = TimeSpan.FromMinutes(1);
@@ -136,10 +146,12 @@ namespace BlackMaple.MachineWatch
                     System.Runtime.Remoting.RemotingConfiguration.CustomErrorsMode = System.Runtime.Remoting.CustomErrorsModes.Off;
                 }
 
-                plugin.serverBackend.Init(dataDir);
-
-                foreach (IBackgroundWorker w in plugin.workers)
-                    w.Init(plugin.serverBackend);
+                if (callInit)
+                {
+                    plugin.serverBackend.Init(dataDir);
+                    foreach (IBackgroundWorker w in plugin.workers)
+                        w.Init(plugin.serverBackend);
+                }
 
                 var jobDb = plugin.serverBackend.JobDatabase();
                 var logDb = plugin.serverBackend.LogDatabase();
@@ -187,11 +199,14 @@ namespace BlackMaple.MachineWatch
             {
                 try
                 {
-                    foreach (IBackgroundWorker w in plugin.workers)
-                        w.Halt();
+                    if (CallInitAndHalt)
+                    {
+                        foreach (IBackgroundWorker w in plugin.workers)
+                            w.Halt();
 
-                    if (plugin.serverBackend != null)
-                        plugin.serverBackend.Halt();
+                        if (plugin.serverBackend != null)
+                            plugin.serverBackend.Halt();
+                    }
                 }
                 catch
                 {

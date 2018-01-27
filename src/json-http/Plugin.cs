@@ -52,13 +52,22 @@ namespace MachineWatchApiServer
         [DataMember] public string Version {get;set;}
     }
 
-    public class Plugin : AssemblyLoadContext
+    public interface IPlugin
     {
-        public PluginInfo PluginInfo {get; private set;}
-        public string SettingsPath {get;private set;}
-        public IServerBackend Backend {get;private set;}
+        PluginInfo PluginInfo {get;}
+        string SettingsPath {get;}
+        IServerBackend Backend {get;}
+        IList<IBackgroundWorker> Workers {get;}
+    }
 
-        private string depPath;
+    public class Plugin : AssemblyLoadContext, IPlugin
+    {
+        public PluginInfo PluginInfo {get; protected set;}
+        public string SettingsPath {get; protected set;}
+        public IServerBackend Backend {get; protected set;}
+        public IList<IBackgroundWorker> Workers {get;} = new List<IBackgroundWorker>();
+
+        private string pluginDirectory;
 
         public Plugin(string settingsPath, IServerBackend backend, PluginInfo info)
         {
@@ -67,11 +76,17 @@ namespace MachineWatchApiServer
             Backend = backend;
         }
 
-        public Plugin(string settingsPath, string pluginFile)
+        public Plugin(string settingsPath, string pluginFile, string workerDir)
         {
             SettingsPath = settingsPath;
-            depPath = Path.GetDirectoryName(pluginFile);
+            pluginDirectory = Path.GetDirectoryName(pluginFile);
+            LoadPlugin(pluginFile);
+            LoadWorkers(workerDir);
+        }
 
+#if NETCOREAPP2_0
+        private void LoadPlugin(string pluginFile)
+        {
             var a = LoadFromAssemblyPath(Path.GetFullPath(pluginFile));
             foreach (var t in a.GetTypes())
             {
@@ -100,7 +115,7 @@ namespace MachineWatchApiServer
                 return Assembly.Load(new AssemblyName(compileLibs.First().Name));
             }
 
-            var depFullPath = Path.Combine(depPath, assemblyName.Name + ".dll");
+            var depFullPath = Path.Combine(pluginDirectory, assemblyName.Name + ".dll");
             if (File.Exists(depFullPath))
             {
                 return LoadFromAssemblyPath(depFullPath);
@@ -108,6 +123,76 @@ namespace MachineWatchApiServer
 
             return Assembly.Load(assemblyName);
         }
+
+        private void LoadWorkers(string workerDir)
+        {
+            //not currently implemented for core
+        }
+#endif
+
+#if NET40
+        private void LoadPlugin(string pluginFile)
+        {
+            var asm = System.Reflection.Assembly.LoadFrom(pluginFile);
+            foreach (var t in asm.GetTypes())
+            {
+                foreach (var iFace in t.GetInterfaces())
+                {
+                    if (iFace.Equals(typeof(IServerBackend)))
+                    {
+                        Backend = (IServerBackend)Activator.CreateInstance(t);
+                        PluginInfo = new PluginInfo()
+                        {
+                            Name = asm.GetName(),
+                            Version = System.Diagnostics.FileVersionInfo.GetVersionInfo(asm.Location)
+                        };
+                        return;
+                    }
+                }
+            }
+            throw new Exception("Plugin does not contain implementation of IServerBackend");
+        }
+
+        private void LoadWorkers(string workerDir)
+        {
+            foreach (var dll in Directory.GetFiles(Path.GetDirectoryName(workerDir), "*.dll"))
+            {
+                foreach (var t in asm.GetTypes())
+                {
+                    foreach (var iFace in t.GetInterfaces())
+                    {
+                        if (iFace.Equals(typeof(IBackgroundWorker)))
+                        {
+                            Workers.Add((IBackgroundWorker)Activator.CreateInstance(t));
+                        }
+                    }
+                }
+            }
+        }
+#endif
     }
+
+#if USE_SERVICE
+    public class ServicePlugin :
+        BlackMaple.MachineWatch.Server.IMachineWatchPlugin,
+        IMachineWatchVersion
+    {
+        private IPlugin _plugin;
+
+        IServerBackend BlackMaple.MachineWatch.Server.IMachineWatchPlugin.serverBackend
+            => _plugin.Backend;
+        IMachineWatchVersion BlackMaple.MachineWatch.Server.IMachineWatchPlugin.serverVersion
+            => this;
+        IEnumerable<IBackgroundWorker> BlackMaple.MachineWatch.Server.IMachineWatchPlugin.Workers
+            => _plugin.Workers;
+        string IMachineWatchVersion.Version => _plugin.PluginInfo.Version;
+        string IMachineWatchVersion.PluginName => _plugin.PluginInfo.Name;
+
+        public FrameworkPlugin(IPlugin p)
+        {
+            _plugin = p;
+        }
+    }
+#endif
 
 }
