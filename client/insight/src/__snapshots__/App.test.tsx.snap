@@ -1,0 +1,167 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`renders a snapshot 1`] = `
+<div
+  className="App"
+>
+  <Hidden
+    implementation="js"
+    lgDown={false}
+    lgUp={false}
+    mdDown={false}
+    mdUp={false}
+    smDown={true}
+    smUp={false}
+    xlDown={false}
+    xlUp={false}
+    xsDown={false}
+    xsUp={false}
+  >
+    <WithStyles(AppBar)
+      position="static"
+    >
+      <WithStyles(Toolbar)>
+        <WithStyles(Typography)
+          style={
+            Object {
+              "margin-right": "2em",
+            }
+          }
+          type="title"
+        >
+          Insight
+        </WithStyles(Typography)>
+        <WithStyles(Tabs)
+          fullWidth={false}
+          onChange={[Function]}
+          style={
+            Object {
+              "align-self": "flex-end",
+              "flex-grow": "1",
+            }
+          }
+          value="/"
+        >
+          <WithStyles(Tab)
+            component={[Function]}
+            label="Dashboard"
+            to="/"
+            value="/"
+          />
+          <WithStyles(Tab)
+            component={[Function]}
+            label="Station Monitor"
+            to="/station"
+            value="/station"
+          />
+          <WithStyles(Tab)
+            component={[Function]}
+            label="Cost/Piece"
+            to="/cost"
+            value="/cost"
+          />
+          <WithStyles(Tab)
+            component={[Function]}
+            label="Efficiency"
+            to="/efficiency"
+            value="/efficiency"
+          />
+        </WithStyles(Tabs)>
+        <Connect(LoadingIcon) />
+      </WithStyles(Toolbar)>
+    </WithStyles(AppBar)>
+  </Hidden>
+  <Hidden
+    implementation="js"
+    lgDown={false}
+    lgUp={false}
+    mdDown={false}
+    mdUp={true}
+    smDown={false}
+    smUp={false}
+    xlDown={false}
+    xlUp={false}
+    xsDown={false}
+    xsUp={false}
+  >
+    <WithStyles(AppBar)
+      position="static"
+    >
+      <WithStyles(Toolbar)>
+        <WithStyles(Typography)
+          type="title"
+        >
+          Insight
+        </WithStyles(Typography)>
+        <div
+          style={
+            Object {
+              "flex-grow": "1",
+            }
+          }
+        />
+        <Connect(LoadingIcon) />
+      </WithStyles(Toolbar)>
+      <WithStyles(Tabs)
+        fullWidth={true}
+        onChange={[Function]}
+        style={Object {}}
+        value="/"
+      >
+        <WithStyles(Tab)
+          component={[Function]}
+          label="Dashboard"
+          to="/"
+          value="/"
+        />
+        <WithStyles(Tab)
+          component={[Function]}
+          label="Station Monitor"
+          to="/station"
+          value="/station"
+        />
+        <WithStyles(Tab)
+          component={[Function]}
+          label="Cost/Piece"
+          to="/cost"
+          value="/cost"
+        />
+        <WithStyles(Tab)
+          component={[Function]}
+          label="Efficiency"
+          to="/efficiency"
+          value="/efficiency"
+        />
+      </WithStyles(Tabs)>
+    </WithStyles(AppBar)>
+  </Hidden>
+  <main
+    style={
+      Object {
+        "margin": "8px",
+      }
+    }
+  >
+    <Route
+      component={[Function]}
+      exact={true}
+      path="/"
+    />
+    <Route
+      component={[Function]}
+      exact={true}
+      path="/station"
+    />
+    <Route
+      component={[Function]}
+      exact={true}
+      path="/cost"
+    />
+    <Route
+      component={[Function]}
+      exact={true}
+      path="/efficiency"
+    />
+  </main>
+</div>
+`;
