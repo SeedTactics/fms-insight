@@ -1125,8 +1125,6 @@ namespace BlackMaple.MachineWatchInterface
             get { return _extraParts; }
         }
 
-        public IDictionary<string, QueueSize> QueueSizes => _queueSizes;
-
         public CurrentStatus(IEnumerable<JobCurrentInformation> jobs,
                              IDictionary<string, PalletStatus> pals,
                              string latestSchId,
@@ -1145,15 +1143,13 @@ namespace BlackMaple.MachineWatchInterface
         public CurrentStatus(IDictionary<string, JobCurrentInformation> jobs,
                              IDictionary<string, PalletStatus> pals,
                              string latestSchId,
-                             IDictionary<string, int> extraParts,
-                             IDictionary<string, QueueSize> queues)
+                             IDictionary<string, int> extraParts)
         {
             _jobs = new Dictionary<string, JobCurrentInformation>(jobs);
             _pals = new Dictionary<string, PalletStatus>(pals);
             _alarms = new List<string>();
             LatestScheduleId = latestSchId;
             _extraParts = new Dictionary<string, int>(extraParts);
-            _queueSizes = new Dictionary<string, QueueSize>(queues);
         }
 
         [DataMember(Name="Jobs", IsRequired=true)]
@@ -1167,9 +1163,6 @@ namespace BlackMaple.MachineWatchInterface
 
         [DataMember(Name="ExtraParts", IsRequired=false, EmitDefaultValue=false)]
         private Dictionary<string, int> _extraParts;
-
-        [OptionalField, DataMember(IsRequired=false, Name="QueueSizes", EmitDefaultValue=false)]
-        private Dictionary<string, QueueSize> _queueSizes;
     }
 
     [SerializableAttribute, DataContract]
