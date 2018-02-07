@@ -4043,6 +4043,10 @@ npmlog@^4.0.2:
     gauge "~2.7.3"
     set-blocking "~2.0.0"
 
+nswag@^11.14.0:
+  version "11.14.0"
+  resolved "https://registry.yarnpkg.com/nswag/-/nswag-11.14.0.tgz#2ee4d305f098204c1eb16d82abd1fce6df65ce42"
+
 nth-check@~1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/nth-check/-/nth-check-1.0.1.tgz#9929acdf628fc2c41098deab82ac580cf149aae4"
