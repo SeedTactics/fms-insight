@@ -43,7 +43,7 @@ export interface State {
     readonly system_active_hours_per_week: number;
 }
 
-const initial: State = {
+export const initial: State = {
     loading_events: false,
     loading_error: null,
     last_week_of_events: [],
