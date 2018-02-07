@@ -685,6 +685,38 @@ namespace BlackMaple.MachineWatchInterface
                 throw new IndexOutOfRangeException("Invalid process or path number");
             }
         }
+        public string GetInputQueue(int process, int path)
+        {
+            if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process)) {
+                return _procPath[process - 1][path - 1].InputQueue;
+            } else {
+                throw new IndexOutOfRangeException("Invalid process or path number");
+            }
+        }
+        public string GetOutputQueue(int process, int path)
+        {
+            if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process)) {
+                return _procPath[process - 1][path - 1].OutputQueue;
+            } else {
+                throw new IndexOutOfRangeException("Invalid process or path number");
+            }
+        }
+        public void SetInputQueue(int process, int path, string queue)
+        {
+            if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process)) {
+                _procPath[process - 1][path - 1].InputQueue = queue;
+            } else {
+                throw new IndexOutOfRangeException("Invalid process or path number");
+            }
+        }
+        public void SetOutputQueue(int process, int path, string queue)
+        {
+            if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process)) {
+                _procPath[process - 1][path - 1].OutputQueue = queue;
+            } else {
+                throw new IndexOutOfRangeException("Invalid process or path number");
+            }
+        }
 
         //Inspection information
         public IEnumerable<JobInspectionData> GetInspections()
@@ -905,6 +937,8 @@ namespace BlackMaple.MachineWatchInterface
             [DataMember] public JobHoldPattern HoldMachining;
             [DataMember] public JobHoldPattern HoldLoadUnload;
             [DataMember] public int PartsPerPallet;
+            [DataMember(IsRequired = false), OptionalField] public string InputQueue;
+            [DataMember(IsRequired = false), OptionalField] public string OutputQueue;
 
             public ProcPathInfo(ProcPathInfo other)
             {
@@ -921,6 +955,8 @@ namespace BlackMaple.MachineWatchInterface
                     HoldMachining = new JobHoldPattern();
                     HoldLoadUnload = new JobHoldPattern();
                     PartsPerPallet = 1;
+                    InputQueue = null;
+                    OutputQueue = null;
                 } else {
                     PathGroup = other.PathGroup;
                     Pallets = new List<string>(other.Pallets);
@@ -937,6 +973,8 @@ namespace BlackMaple.MachineWatchInterface
                     HoldMachining = new JobHoldPattern(other.HoldMachining);
                     HoldLoadUnload = new JobHoldPattern(other.HoldLoadUnload);
                     PartsPerPallet = other.PartsPerPallet;
+                    InputQueue = other.InputQueue;
+                    OutputQueue = other.OutputQueue;
                 }
             }
         }
@@ -1060,6 +1098,8 @@ namespace BlackMaple.MachineWatchInterface
             get { return _extraParts; }
         }
 
+        public IDictionary<string, QueueSize> QueueSizes => _queueSizes;
+
         public CurrentStatus(IEnumerable<JobCurrentInformation> jobs,
                              IDictionary<string, PalletStatus> pals,
                              string latestSchId,
@@ -1078,13 +1118,15 @@ namespace BlackMaple.MachineWatchInterface
         public CurrentStatus(IDictionary<string, JobCurrentInformation> jobs,
                              IDictionary<string, PalletStatus> pals,
                              string latestSchId,
-                             IDictionary<string, int> extraParts)
+                             IDictionary<string, int> extraParts,
+                             IDictionary<string, QueueSize> queues)
         {
             _jobs = new Dictionary<string, JobCurrentInformation>(jobs);
             _pals = new Dictionary<string, PalletStatus>(pals);
             _alarms = new List<string>();
             LatestScheduleId = latestSchId;
             _extraParts = new Dictionary<string, int>(extraParts);
+            _queueSizes = new Dictionary<string, QueueSize>(queues);
         }
 
         [DataMember(Name="Jobs")]
@@ -1095,6 +1137,8 @@ namespace BlackMaple.MachineWatchInterface
         private List<string> _alarms;
         [DataMember(Name="ExtraParts")]
         private Dictionary<string, int> _extraParts;
+        [OptionalField, DataMember(IsRequired=false, Name="QueueSizes")]
+        private Dictionary<string, QueueSize> _queueSizes;
     }
 
     [SerializableAttribute, DataContract]
@@ -1131,6 +1175,18 @@ namespace BlackMaple.MachineWatchInterface
     }
 
     [Serializable, DataContract]
+    public struct QueueSize
+    {
+        //once an output queue grows to this size, stop loading new parts
+        //which are destined for this queue
+        [DataMember] public int MaxSizeBeforeStopLoading {get;set;}
+
+        //once an output queue grows to this size, stop unloading parts
+        //and keep them in the buffer inside the cell
+        [DataMember] public int MaxSizeBeforeStopUnloading {get;set;}
+    }
+
+    [Serializable, DataContract]
     public struct NewJobs
     {
         [DataMember] public string ScheduleId;
@@ -1145,13 +1201,17 @@ namespace BlackMaple.MachineWatchInterface
         [OptionalField, DataMember(IsRequired=false)]
         public List<PartWorkorder> CurrentUnfilledWorkorders;
 
+        [OptionalField, DataMember(IsRequired=false)]
+        public Dictionary<string, QueueSize> QueueSizes;
+
         public NewJobs(string scheduleId,
                        IEnumerable<JobPlan> newJobs,
                        IEnumerable<SimulatedStationUtilization> stationUse = null,
                        Dictionary<string, int> extraParts = null,
                        bool archiveCompletedJobs = false,
                        byte[] debugMsg = null,
-                       IEnumerable<PartWorkorder> workorders = null)
+                       IEnumerable<PartWorkorder> workorders = null,
+                       Dictionary<string, QueueSize> queues = null)
         {
             this.ScheduleId = scheduleId;
             this.Jobs = newJobs.ToList();
@@ -1162,6 +1222,8 @@ namespace BlackMaple.MachineWatchInterface
             this.ArchiveCompletedJobs = archiveCompletedJobs;
             this.DebugMessage = debugMsg;
             this.CurrentUnfilledWorkorders = workorders?.ToList();
+            this.QueueSizes =
+                queues == null ? new Dictionary<string, QueueSize>() : queues;
         }
     }
 

@@ -86,7 +86,7 @@ namespace BlackMaple.MachineFramework
             _connection.Close();
         }
 
-        private const int Version = 12;
+        private const int Version = 13;
 
         public void CreateTables()
         {
@@ -115,7 +115,7 @@ namespace BlackMaple.MachineFramework
             cmd.CommandText = "CREATE TABLE planqty(UniqueStr TEXT, Path INTEGER, PlanQty INTEGER NOT NULL, PRIMARY KEY(UniqueStr, Path))";
             cmd.ExecuteNonQuery();
 
-            cmd.CommandText = "CREATE TABLE pathdata(UniqueStr TEXT, Process INTEGER, Path INTEGER, StartingUTC INTEGER, PartsPerPallet INTEGER, PathGroup INTEGER, SimAverageFlowTime INTEGER, PRIMARY KEY(UniqueStr,Process,Path))";
+            cmd.CommandText = "CREATE TABLE pathdata(UniqueStr TEXT, Process INTEGER, Path INTEGER, StartingUTC INTEGER, PartsPerPallet INTEGER, PathGroup INTEGER, SimAverageFlowTime INTEGER, InputQueue TEXT, OutputQueue TEXT, PRIMARY KEY(UniqueStr,Process,Path))";
             cmd.ExecuteNonQuery();
 
             cmd.CommandText = "CREATE TABLE pallets(UniqueStr TEXT, Process INTEGER, Path INTEGER, Pallet TEXT, PRIMARY KEY(UniqueStr,Process,Path,Pallet))";
@@ -241,6 +241,7 @@ namespace BlackMaple.MachineFramework
                 if (curVersion < 10) Ver9ToVer10(trans);
                 if (curVersion < 11) Ver10ToVer11(trans);
                 if (curVersion < 12) Ver11ToVer12(trans);
+                if (curVersion < 13) Ver12ToVer13(trans);
 
                 //update the version in the database
                 cmd.Transaction = trans;
@@ -442,6 +443,17 @@ namespace BlackMaple.MachineFramework
                 cmd.ExecuteNonQuery();
             }
         }
+
+        private void Ver12ToVer13(IDbTransaction transaction)
+        {
+            using (IDbCommand cmd = _connection.CreateCommand())
+            {
+                cmd.CommandText = "ALTER TABLE pathdata ADD InputQueue TEXT";
+                cmd.ExecuteNonQuery();
+                cmd.CommandText = "ALTER TABLE pathdata ADD OutputQueue TEXT";
+                cmd.ExecuteNonQuery();
+            }
+        }
         #endregion
 
         #region "Loading Jobs"
@@ -531,7 +543,7 @@ namespace BlackMaple.MachineFramework
             }
 
             //path data
-            cmd.CommandText = "SELECT Process, Path, StartingUTC, PartsPerPallet, PathGroup, SimAverageFlowTime FROM pathdata WHERE UniqueStr = $uniq";
+            cmd.CommandText = "SELECT Process, Path, StartingUTC, PartsPerPallet, PathGroup, SimAverageFlowTime, InputQueue, OutputQueue FROM pathdata WHERE UniqueStr = $uniq";
             using (var reader = cmd.ExecuteReader())
             {
                 while (reader.Read())
@@ -547,6 +559,10 @@ namespace BlackMaple.MachineFramework
                     {
                         job.SetSimulatedAverageFlowTime(proc, path, TimeSpan.FromTicks(reader.GetInt64(5)));
                     }
+                    if (!reader.IsDBNull(6))
+                        job.SetInputQueue(proc, path, reader.GetString(6));
+                    if (!reader.IsDBNull(7))
+                        job.SetOutputQueue(proc, path, reader.GetString(7));
                 }
             }
 
@@ -1442,8 +1458,8 @@ namespace BlackMaple.MachineFramework
                 }
             }
 
-            cmd.CommandText = "INSERT INTO pathdata(UniqueStr, Process, Path, StartingUTC, PartsPerPallet, PathGroup,SimAverageFlowTime) " +
-          "VALUES ($uniq,$proc,$path,$start,$ppp,$group,$flow)";
+            cmd.CommandText = "INSERT INTO pathdata(UniqueStr, Process, Path, StartingUTC, PartsPerPallet, PathGroup,SimAverageFlowTime,InputQueue,OutputQueue) " +
+          "VALUES ($uniq,$proc,$path,$start,$ppp,$group,$flow,$iq,$oq)";
             cmd.Parameters.Clear();
             cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
             cmd.Parameters.Add("proc", SqliteType.Integer);
@@ -1452,6 +1468,8 @@ namespace BlackMaple.MachineFramework
             cmd.Parameters.Add("ppp", SqliteType.Integer);
             cmd.Parameters.Add("group", SqliteType.Integer);
             cmd.Parameters.Add("flow", SqliteType.Integer);
+            cmd.Parameters.Add("iq", SqliteType.Text);
+            cmd.Parameters.Add("oq", SqliteType.Text);
             for (int i = 1; i <= job.NumProcesses; i++)
             {
                 for (int j = 1; j <= job.GetNumPaths(i); j++)
@@ -1462,6 +1480,16 @@ namespace BlackMaple.MachineFramework
                     cmd.Parameters[4].Value = job.PartsPerPallet(i, j);
                     cmd.Parameters[5].Value = job.GetPathGroup(i, j);
                     cmd.Parameters[6].Value = job.GetSimulatedAverageFlowTime(i, j).Ticks;
+                    var iq = job.GetInputQueue(i, j);
+                    if (string.IsNullOrEmpty(iq))
+                        cmd.Parameters[7].Value = DBNull.Value;
+                    else
+                        cmd.Parameters[7].Value = iq;
+                    var oq = job.GetOutputQueue(i, j);
+                    if (string.IsNullOrEmpty(oq))
+                        cmd.Parameters[8].Value = DBNull.Value;
+                    else
+                        cmd.Parameters[8].Value = oq;
                     cmd.ExecuteNonQuery();
                 }
             }
