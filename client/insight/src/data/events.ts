@@ -90,7 +90,7 @@ function remove_old_entries(now: Date, st: State): State {
     let hours = st.station_active_hours_past_week;
     let oneWeekAgo = moment(now).add(-1, 'w').toDate();
     let newEvts = st.last_week_of_events.filter(e => {
-        if (e.endUTC === undefined || e.endUTC < oneWeekAgo) {
+        if (e.endUTC < oneWeekAgo) {
             if (e.startofcycle) { return false; }
             let name = stat_name(e);
             if (!name) { return false; }

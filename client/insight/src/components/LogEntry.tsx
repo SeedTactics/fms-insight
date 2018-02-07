@@ -87,8 +87,8 @@ function displayMat(mats: ReadonlyArray<api.ILogMaterial>) {
   let mat = '';
   mats.forEach(m => {
     if (mat.length > 0) { mat += ', '; }
-    if ((m.numproc || 0) > 1) {
-      mat += m.part + '[' + (m.proc || 1).toString() + ']';
+    if (m.numproc > 1) {
+      mat += m.part + '[' + m.proc.toString() + ']';
     } else {
       mat += m.part;
     }
@@ -113,9 +113,9 @@ function display(entry: api.ILogEntry): string {
           oper = 'End unload';
         }
       }
-      return oper + ' of ' + displayMat(entry.material || []) +
+      return oper + ' of ' + displayMat(entry.material) +
         ' on pallet ' + entry.pal +
-        ' at station ' + (entry.locnum || 0).toString();
+        ' at station ' + entry.locnum.toString();
 
     case api.LogEntryType.MachineCycle:
       let msg;
@@ -124,44 +124,44 @@ function display(entry: api.ILogEntry): string {
       } else {
         msg = 'Cycle end';
       }
-      msg += ' of ' + displayMat(entry.material || []) +
+      msg += ' of ' + displayMat(entry.material) +
         ' on pallet ' + entry.pal +
-        ' at machine ' + (entry.locnum || 0).toString();
+        ' at machine ' + entry.locnum.toString();
       if (entry.program && entry.program !== '') {
         msg += ' with program ' + entry.program;
       }
       return msg;
 
     case api.LogEntryType.PartMark:
-      return displayMat(entry.material || []) +
+      return displayMat(entry.material) +
         ' marked with ' + entry.result;
 
     case api.LogEntryType.OrderAssignment:
-      return displayMat(entry.material || []) +
+      return displayMat(entry.material) +
         ' assigned to workorder ' + entry.result;
 
     case api.LogEntryType.PalletCycle:
       return 'Pallet ' + entry.pal + ' completed route';
 
     case api.LogEntryType.Inspection:
-      let infos = (entry.program || '').split(',');
+      let infos = (entry.program).split(',');
       let inspName = 'unknown';
       if (infos.length >= 2 && infos[1] && infos[1] !== '') {
         inspName = infos[1];
       }
       let inspected = entry.result === 'true' || entry.result === 'True';
       if (inspected) {
-        return displayMat(entry.material || []) +
+        return displayMat(entry.material) +
           ' signaled for inspection ' + inspName;
       } else {
-        return displayMat(entry.material || []) +
+        return displayMat(entry.material) +
           ' skipped inspection ' + inspName;
       }
 
     case api.LogEntryType.FinalizeWorkorder:
       return 'Finalize workorder ' + entry.result;
 
-    default: return entry.result || '';
+    default: return entry.result;
   }
 }
 

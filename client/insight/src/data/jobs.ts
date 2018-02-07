@@ -74,8 +74,8 @@ export function reducer(s: State, a: Action): State {
                 case PledgeStatus.Completed:
                     return {...s,
                         loading: false,
-                        current_jobs: Object.values(a.pledge.result.jobs || {}),
-                        current_pallets: Object.values(a.pledge.result.pallets || {})
+                        current_jobs: Object.values(a.pledge.result.jobs),
+                        current_pallets: Object.values(a.pledge.result.pallets)
                     };
                 case PledgeStatus.Error:
                     return s;
