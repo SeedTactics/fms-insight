@@ -40,9 +40,9 @@ namespace BlackMaple.MachineWatchInterface
     [Serializable, DataContract]
     public struct InspectCount
     {
-        [DataMember] public string Counter;
-        [DataMember] public int Value;
-        [DataMember] public DateTime LastUTC;
+        [DataMember(IsRequired=true)] public string Counter;
+        [DataMember(IsRequired=true)] public int Value;
+        [DataMember(IsRequired=true)] public DateTime LastUTC;
     }
 
     ///<summary>An inspection type with the rules for how inspections should be signaled</summary>
@@ -82,16 +82,16 @@ namespace BlackMaple.MachineWatchInterface
     public class InspectionType
     {
         ///<summary>Inspection name: unique identifier for this inspection type</summary>
-        [DataMember] public string Name { get; set; }
+        [DataMember(IsRequired=true)] public string Name { get; set; }
 
         ///<summary>Whether to track the part name when tracking quantities and time</summary>
-        [DataMember] public bool TrackPartName { get; set; }
+        [DataMember(IsRequired=true)] public bool TrackPartName { get; set; }
 
         ///<summary>Whether to track the pallet name when tracking quantities and time</summary>
-        [DataMember] public bool TrackPalletName { get; set; }
+        [DataMember(IsRequired=true)] public bool TrackPalletName { get; set; }
 
         ///<summary>Whether to track the pallet name when tracking quantities and time</summary>
-        [DataMember] public bool TrackStationName { get; set; }
+        [DataMember(IsRequired=true)] public bool TrackStationName { get; set; }
 
         ///<summary>Whether this inspection type is for a single process or the part as a whole</summary>
         ///<remarks>
@@ -99,7 +99,7 @@ namespace BlackMaple.MachineWatchInterface
         ///  A positive value means the inspection should be triggered on the specific process number.
         ///  </para>
         ///</remarks>
-        [DataMember] public int InspectSingleProcess { get; set; }
+        [DataMember(IsRequired=true)] public int InspectSingleProcess { get; set; }
 
         ///<summary>The default count of completed parts to trigger an inspection</summary>
         ///<remarks>
@@ -112,7 +112,7 @@ namespace BlackMaple.MachineWatchInterface
         ///  This value is used if no <c>InspectionFrequencyOverride</c> is found.
         ///  </para>
         ///</remarks>
-        [DataMember] public int DefaultCountToTriggerInspection { get; set; }
+        [DataMember(IsRequired=true)] public int DefaultCountToTriggerInspection { get; set; }
 
         ///<summary>The default time before an inspection is triggered</summary>
         ///<remarks>
@@ -125,7 +125,7 @@ namespace BlackMaple.MachineWatchInterface
         ///  This value is used if no <c>InspectionFrequencyOverride</c> is found.
         ///  </para>
         ///</remarks>
-        [DataMember] public TimeSpan DefaultDeadline { get; set; }
+        [DataMember(IsRequired=true)] public TimeSpan DefaultDeadline { get; set; }
 
         ///<summary>The default random frequency (between 0 and 1) for inspections</summary>
         ///<remarks>
@@ -140,7 +140,7 @@ namespace BlackMaple.MachineWatchInterface
         ///  This value is used if no <c>InspectionFrequencyOverride</c> is found.
         ///  </para>
         ///</remarks>
-        [DataMember] public double DefaultRandomFreq {get; set;}
+        [DataMember(IsRequired=true)] public double DefaultRandomFreq {get; set;}
 
         ///<summary>This allows specific overrides of the inspection triggers</summary>
         ///<remarks>
@@ -149,7 +149,7 @@ namespace BlackMaple.MachineWatchInterface
         ///  and the default random frequency can be overriden.
         ///  </para>
         ///</remarks>
-        [DataMember] public List<InspectionFrequencyOverride> Overrides;
+        [DataMember(IsRequired=true)] public List<InspectionFrequencyOverride> Overrides;
 
         public JobInspectionData ConvertToJobInspection(string part, int numProc)
         {
@@ -215,9 +215,9 @@ namespace BlackMaple.MachineWatchInterface
     [Serializable, DataContract]
     public class InspectionFrequencyOverride
     {
-        [DataMember] public string Part { get; set; }
-        [DataMember] public int CountBeforeInspection { get; set; }
-        [DataMember] public TimeSpan Deadline { get; set; }
-        [DataMember] public double RandomFreq { get; set; }
+        [DataMember(IsRequired=true)] public string Part { get; set; }
+        [DataMember(IsRequired=true)] public int CountBeforeInspection { get; set; }
+        [DataMember(IsRequired=true)] public TimeSpan Deadline { get; set; }
+        [DataMember(IsRequired=true)] public double RandomFreq { get; set; }
     }
 }

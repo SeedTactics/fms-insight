@@ -86,8 +86,8 @@ namespace BlackMaple.MachineWatchInterface
         [Serializable, DataContract]
         public struct ProgramEntry : IComparable<ProgramEntry>
         {
-            [DataMember] public int StationNum;
-            [DataMember] public string Program;
+            [DataMember(IsRequired=true)] public int StationNum;
+            [DataMember(IsRequired=true)] public string Program;
 
             internal ProgramEntry(int stationNum, string program)
             {
@@ -131,23 +131,23 @@ namespace BlackMaple.MachineWatchInterface
             _tools = new Dictionary<string, TimeSpan>(stop._tools);
         }
 
-        [DataMember(Name="Stations")]
+        [DataMember(Name="Stations", IsRequired=true)]
         private Dictionary<int, string> _programs;
 
-        [DataMember(Name="Tools")]
+        [DataMember(Name="Tools", IsRequired=true)]
         private Dictionary<string, TimeSpan> _tools; //key is tool, value is expected cutting time
 
-        [DataMember(Name="StationGroup")]
+        [DataMember(Name="StationGroup", IsRequired=true)]
         private string _statGroup;
 
-        [DataMember(Name="ExpectedCycleTime")]
+        [DataMember(Name="ExpectedCycleTime", IsRequired=true)]
         private TimeSpan _expectedCycleTime;
     }
 
     [Serializable, DataContract]
     public class JobInspectionData
     {
-        [DataMember]
+        [DataMember(IsRequired=true)]
         public readonly string InspectionType;
 
         //There are two possible ways of triggering an exception: counts and frequencies.
@@ -156,26 +156,26 @@ namespace BlackMaple.MachineWatchInterface
         //   the frequency as a number between 0 and 1.
 
         //Every time a material completes, the counter string is expanded (see below).
-        [DataMember]
+        [DataMember(IsRequired=true)]
         public readonly string Counter;
 
         //For each completed material, the counter is incremented.  If the counter is equal to MaxVal,
         //we signal an inspection and reset the counter to 0.
-        [DataMember]
+        [DataMember(IsRequired=true)]
         public readonly int MaxVal;
 
         //The random frequency of inspection
-        [DataMember]
+        [DataMember(IsRequired=true)]
         public readonly double RandomFreq;
 
         //If the last inspection signaled for this counter was longer than TimeInterval,
         //signal an inspection.  This can be disabled by using TimeSpan.Zero
-        [DataMember]
+        [DataMember(IsRequired=true)]
         public readonly TimeSpan TimeInterval;
 
         //If set to -1, the entire job should be inspected once the job completes.
         //If set to a positive number, only that process should have the inspection triggered.
-        [DataMember]
+        [DataMember(IsRequired=true)]
         public readonly int InspectSingleProcess;
 
         public JobInspectionData(string iType, string ctr, int max, TimeSpan interval, int inspSingleProc = -1)
@@ -231,21 +231,21 @@ namespace BlackMaple.MachineWatchInterface
         // All of the following hold types are an OR, meaning if any one of them says a hold is in effect,
         // the job is on hold.
 
-        [DataMember]
+        [DataMember(IsRequired=true)]
         public bool UserHold;
 
-        [DataMember]
+        [DataMember(IsRequired=true)]
         public string ReasonForUserHold;
 
         //A list of timespans the job should be on hold/not on hold.
         //During the first timespan, the job is on hold.
-        [DataMember]
+        [DataMember(IsRequired=true)]
         public readonly IList<TimeSpan> HoldUnholdPattern;
 
-        [DataMember]
+        [DataMember(IsRequired=true)]
         public DateTime HoldUnholdPatternStartUTC;
 
-        [DataMember]
+        [DataMember(IsRequired=true)]
         public bool HoldUnholdPatternRepeats;
 
         public bool IsJobOnHold
@@ -850,56 +850,56 @@ namespace BlackMaple.MachineWatchInterface
             }
         }
 
-        [DataMember(Name="RouteStartUTC")]
+        [DataMember(Name="RouteStartUTC", IsRequired=true)]
         private DateTime _routeStartUTC;
 
-        [DataMember(Name="RouteEndUTC")]
+        [DataMember(Name="RouteEndUTC", IsRequired=true)]
         private DateTime _routeEndUTC;
 
-        [DataMember(Name="Archived")]
+        [DataMember(Name="Archived", IsRequired=true)]
         private bool _archived;
 
-        [DataMember(Name="CopiedToSystem")]
+        [DataMember(Name="CopiedToSystem", IsRequired=true)]
         private bool _copiedToSystem;
 
-        [DataMember(Name="PartName")]
+        [DataMember(Name="PartName", IsRequired=true)]
         private string _partName;
 
-        [DataMember(Name="Comment")]
+        [DataMember(Name="Comment", IsRequired=false, EmitDefaultValue=false)]
         private string _comment;
 
-        [DataMember(Name="Unique")]
+        [DataMember(Name="Unique", IsRequired=true)]
         private string _uniqueStr;
 
-        [DataMember(Name="Priority")]
+        [DataMember(Name="Priority", IsRequired=true)]
         private int _priority;
 
-        [DataMember(Name="ScheduleId", IsRequired=false)]
+        [DataMember(Name="ScheduleId", IsRequired=false, EmitDefaultValue=false)]
         private string _scheduleId;
 
-        [DataMember(Name="Bookings")]
+        [DataMember(Name="Bookings", IsRequired=false, EmitDefaultValue=false)]
         private List<string> _scheduledIds;
 
-        [DataMember(Name="ManuallyCreated")]
+        [DataMember(Name="ManuallyCreated", IsRequired=true)]
         private bool _manuallyCreated;
 
-        [DataMember(Name="CreateMarkingData")]
+        [DataMember(Name="CreateMarkingData", IsRequired=true)]
         private bool _createMarker;
 
-        [DataMember(Name = "Inspections")]
+        [DataMember(Name = "Inspections", IsRequired=false, EmitDefaultValue=false)]
         private IList<JobInspectionData> _inspections;
 
-        [DataMember(Name="HoldEntireJob")]
+        [DataMember(Name="HoldEntireJob", IsRequired=true)]
         private JobHoldPattern _holdJob;
 
-        [DataMember(Name="CyclesOnFirstProcess")]
+        [DataMember(Name="CyclesOnFirstProcess", IsRequired=true)]
         private int[] _pCycles;
 
         [Serializable, DataContract]
         public struct FixtureFace : IComparable<FixtureFace>
         {
-            [DataMember] public string Fixture;
-            [DataMember] public string Face;
+            [DataMember(IsRequired=true)] public string Fixture;
+            [DataMember(IsRequired=true)] public string Face;
 
             public int CompareTo(FixtureFace o)
             {
@@ -918,27 +918,54 @@ namespace BlackMaple.MachineWatchInterface
         [Serializable, DataContract]
         public struct SimulatedProduction
         {
-            [DataMember] public DateTime TimeUTC;
-            [DataMember] public int Quantity; //total quantity simulated to be completed at TimeUTC
+            [DataMember(IsRequired=true)] public DateTime TimeUTC;
+            [DataMember(IsRequired=true)] public int Quantity; //total quantity simulated to be completed at TimeUTC
         }
 
         [Serializable, DataContract]
         private struct ProcPathInfo
         {
-            [DataMember] public int PathGroup;
-            [DataMember] public IList<string> Pallets;
-            [DataMember] public IList<FixtureFace> Fixtures;
-            [DataMember] public IList<int> Load;
-            [DataMember] public IList<int> Unload;
-            [DataMember] public IList<JobMachiningStop> Stops;
-            [DataMember] public IList<SimulatedProduction> SimulatedProduction;
-            [DataMember] public DateTime SimulatedStartingUTC;
-            [DataMember] public TimeSpan SimulatedAverageFlowTime; // average time a part takes to complete the entire sequence
-            [DataMember] public JobHoldPattern HoldMachining;
-            [DataMember] public JobHoldPattern HoldLoadUnload;
-            [DataMember] public int PartsPerPallet;
-            [DataMember(IsRequired = false), OptionalField] public string InputQueue;
-            [DataMember(IsRequired = false), OptionalField] public string OutputQueue;
+            [DataMember(IsRequired=true)]
+            public int PathGroup;
+
+            [DataMember(IsRequired=true)]
+            public IList<string> Pallets;
+
+            [DataMember(IsRequired=false, EmitDefaultValue=false)]
+            public IList<FixtureFace> Fixtures;
+
+            [DataMember(IsRequired=true)]
+            public IList<int> Load;
+
+            [DataMember(IsRequired=true)]
+            public IList<int> Unload;
+
+            [DataMember(IsRequired=true)]
+            public IList<JobMachiningStop> Stops;
+
+            [DataMember(IsRequired=false, EmitDefaultValue=false)]
+            public IList<SimulatedProduction> SimulatedProduction;
+
+            [DataMember(IsRequired=true)]
+            public DateTime SimulatedStartingUTC;
+
+            [DataMember(IsRequired=true)]
+            public TimeSpan SimulatedAverageFlowTime; // average time a part takes to complete the entire sequence
+
+            [DataMember(IsRequired=true)]
+            public JobHoldPattern HoldMachining;
+
+            [DataMember(IsRequired=true)]
+            public JobHoldPattern HoldLoadUnload;
+
+            [DataMember(IsRequired=true)]
+            public int PartsPerPallet;
+
+            [DataMember(IsRequired = false, EmitDefaultValue=false), OptionalField]
+            public string InputQueue;
+
+            [DataMember(IsRequired = false, EmitDefaultValue=false), OptionalField]
+            public string OutputQueue;
 
             public ProcPathInfo(ProcPathInfo other)
             {
@@ -979,7 +1006,7 @@ namespace BlackMaple.MachineWatchInterface
             }
         }
 
-        [DataMember(Name="ProcsAndPaths")]
+        [DataMember(Name="ProcsAndPaths", IsRequired=true)]
         private ProcPathInfo[][] _procPath;
     }
 
@@ -990,13 +1017,13 @@ namespace BlackMaple.MachineWatchInterface
         public struct Material
         {
             //can be -1 if the job manager does not track material
-            [DataMember] public readonly long MaterialId;
-            [DataMember] public readonly int Process;
-            [DataMember] public readonly int Path;
+            [DataMember(IsRequired=true)] public readonly long MaterialId;
+            [DataMember(IsRequired=true)] public readonly int Process;
+            [DataMember(IsRequired=true)] public readonly int Path;
 
-            [DataMember] public readonly string Pallet;
-            [DataMember] public readonly string Fixture;
-            [DataMember] public readonly string FaceName;
+            [DataMember(IsRequired=true)] public readonly string Pallet;
+            [DataMember(IsRequired=true)] public readonly string Fixture;
+            [DataMember(IsRequired=true)] public readonly string FaceName;
 
             public Material(long matID, int proc, int path, string pal, string fix, string face)
             {
@@ -1068,9 +1095,9 @@ namespace BlackMaple.MachineWatchInterface
             _totalComplete = 0;
         }
 
-        [DataMember(Name="Material")] private List<Material> _material;
-        [DataMember(Name="CompletedProc1")] private int[] _completedProc1;
-        [DataMember(Name="TotalComplete")] private int _totalComplete;
+        [DataMember(Name="Material", IsRequired=true)] private List<Material> _material;
+        [DataMember(Name="CompletedProc1", IsRequired=true)] private int[] _completedProc1;
+        [DataMember(Name="TotalComplete", IsRequired=true)] private int _totalComplete;
     }
 
     [SerializableAttribute, DataContract]
@@ -1091,7 +1118,7 @@ namespace BlackMaple.MachineWatchInterface
             get { return _alarms; }
         }
 
-        [DataMember] public string LatestScheduleId {get;}
+        [DataMember(IsRequired=false, EmitDefaultValue=false)] public string LatestScheduleId {get;}
 
         public IDictionary<string, int> ExtraPartsForLatestSchedule
         {
@@ -1129,28 +1156,32 @@ namespace BlackMaple.MachineWatchInterface
             _queueSizes = new Dictionary<string, QueueSize>(queues);
         }
 
-        [DataMember(Name="Jobs")]
+        [DataMember(Name="Jobs", IsRequired=true)]
         private Dictionary<string, JobCurrentInformation> _jobs;
-        [DataMember(Name="Pallets")]
+
+        [DataMember(Name="Pallets", IsRequired=true)]
         private Dictionary<string, PalletStatus> _pals;
-        [DataMember(Name="Alarms")]
+
+        [DataMember(Name="Alarms", IsRequired=false, EmitDefaultValue=false)]
         private List<string> _alarms;
-        [DataMember(Name="ExtraParts")]
+
+        [DataMember(Name="ExtraParts", IsRequired=false, EmitDefaultValue=false)]
         private Dictionary<string, int> _extraParts;
-        [OptionalField, DataMember(IsRequired=false, Name="QueueSizes")]
+
+        [OptionalField, DataMember(IsRequired=false, Name="QueueSizes", EmitDefaultValue=false)]
         private Dictionary<string, QueueSize> _queueSizes;
     }
 
     [SerializableAttribute, DataContract]
     public class SimulatedStationUtilization
     {
-        [DataMember] public string SimulationId; // a unique string shared between all utilization structs that are part of the same simulation
-        [DataMember] public string StationGroup;
-        [DataMember] public int StationNum;
-        [DataMember] public DateTime StartUTC;
-        [DataMember] public DateTime EndUTC;
-        [DataMember] public TimeSpan UtilizationTime; //time between StartUTC and EndUTC the station is busy.
-        [DataMember] public TimeSpan PlannedDownTime; //time between StartUTC and EndUTC the station is planned to be down.
+        [DataMember(IsRequired=true)] public string SimulationId; // a unique string shared between all utilization structs that are part of the same simulation
+        [DataMember(IsRequired=true)] public string StationGroup;
+        [DataMember(IsRequired=true)] public int StationNum;
+        [DataMember(IsRequired=true)] public DateTime StartUTC;
+        [DataMember(IsRequired=true)] public DateTime EndUTC;
+        [DataMember(IsRequired=true)] public TimeSpan UtilizationTime; //time between StartUTC and EndUTC the station is busy.
+        [DataMember(IsRequired=true)] public TimeSpan PlannedDownTime; //time between StartUTC and EndUTC the station is planned to be down.
 
         public SimulatedStationUtilization(string id, string group, int num, DateTime start, DateTime endT, TimeSpan u, TimeSpan d)
         {
@@ -1167,11 +1198,11 @@ namespace BlackMaple.MachineWatchInterface
     [Serializable, DataContract]
     public class PartWorkorder
     {
-        [DataMember] public string WorkorderId {get;set;}
-        [DataMember] public string Part {get;set;}
-        [DataMember] public int Quantity {get;set;}
-        [DataMember] public DateTime DueDate {get;set;}
-        [DataMember] public int Priority {get;set;}
+        [DataMember(IsRequired=true)] public string WorkorderId {get;set;}
+        [DataMember(IsRequired=true)] public string Part {get;set;}
+        [DataMember(IsRequired=true)] public int Quantity {get;set;}
+        [DataMember(IsRequired=true)] public DateTime DueDate {get;set;}
+        [DataMember(IsRequired=true)] public int Priority {get;set;}
     }
 
     [Serializable, DataContract]
@@ -1179,29 +1210,29 @@ namespace BlackMaple.MachineWatchInterface
     {
         //once an output queue grows to this size, stop loading new parts
         //which are destined for this queue
-        [DataMember] public int MaxSizeBeforeStopLoading {get;set;}
+        [DataMember(IsRequired=true)] public int MaxSizeBeforeStopLoading {get;set;}
 
         //once an output queue grows to this size, stop unloading parts
         //and keep them in the buffer inside the cell
-        [DataMember] public int MaxSizeBeforeStopUnloading {get;set;}
+        [DataMember(IsRequired=true)] public int MaxSizeBeforeStopUnloading {get;set;}
     }
 
     [Serializable, DataContract]
     public struct NewJobs
     {
-        [DataMember] public string ScheduleId;
-        [DataMember] public List<JobPlan> Jobs;
-        [DataMember] public List<SimulatedStationUtilization> StationUse;
-        [DataMember] public Dictionary<string, int> ExtraParts;
-        [DataMember] public bool ArchiveCompletedJobs;
+        [DataMember(IsRequired=true)] public string ScheduleId;
+        [DataMember(IsRequired=true)] public List<JobPlan> Jobs;
+        [DataMember(IsRequired=true)] public List<SimulatedStationUtilization> StationUse;
+        [DataMember(IsRequired=true)] public Dictionary<string, int> ExtraParts;
+        [DataMember(IsRequired=true)] public bool ArchiveCompletedJobs;
 
-        [OptionalField, DataMember(IsRequired=false)]
+        [OptionalField, DataMember(IsRequired=false, EmitDefaultValue=false)]
         public byte[] DebugMessage;
 
-        [OptionalField, DataMember(IsRequired=false)]
+        [OptionalField, DataMember(IsRequired=false, EmitDefaultValue=false)]
         public List<PartWorkorder> CurrentUnfilledWorkorders;
 
-        [OptionalField, DataMember(IsRequired=false)]
+        [OptionalField, DataMember(IsRequired=false, EmitDefaultValue=false)]
         public Dictionary<string, QueueSize> QueueSizes;
 
         public NewJobs(string scheduleId,
@@ -1230,8 +1261,8 @@ namespace BlackMaple.MachineWatchInterface
     [Serializable, DataContract]
     public class JobAndPath : IEquatable<JobAndPath>
     {
-        [DataMember] public readonly string UniqueStr;
-        [DataMember] public readonly int Path;
+        [DataMember(IsRequired=true)] public readonly string UniqueStr;
+        [DataMember(IsRequired=true)] public readonly int Path;
 
         public JobAndPath(string unique, int path)
         {
@@ -1248,16 +1279,16 @@ namespace BlackMaple.MachineWatchInterface
     [Serializable, DataContract]
     public struct HistoricData
     {
-        [DataMember] public IDictionary<string, JobPlan> Jobs;
-        [DataMember] public ICollection<SimulatedStationUtilization> StationUse;
+        [DataMember(IsRequired=true)] public IDictionary<string, JobPlan> Jobs;
+        [DataMember(IsRequired=true)] public ICollection<SimulatedStationUtilization> StationUse;
     }
 
     [Serializable, DataContract]
     public struct JobsAndExtraParts
     {
-        [DataMember] public string LatestScheduleId;
-        [DataMember] public List<JobPlan> Jobs;
-        [DataMember] public Dictionary<string, int> ExtraParts;
+        [DataMember(IsRequired=true)] public string LatestScheduleId;
+        [DataMember(IsRequired=true)] public List<JobPlan> Jobs;
+        [DataMember(IsRequired=true)] public Dictionary<string, int> ExtraParts;
 
         [OptionalField, DataMember(IsRequired=false)]
         public List<PartWorkorder> CurrentUnfilledWorkorders;
@@ -1266,10 +1297,10 @@ namespace BlackMaple.MachineWatchInterface
     [Serializable, DataContract]
     public struct JobAndDecrementQuantity
     {
-        [DataMember] public string DecrementId;
-        [DataMember] public string JobUnique;
-        [DataMember] public DateTime TimeUTC;
-        [DataMember] public string Part;
-        [DataMember] public int Quantity;
+        [DataMember(IsRequired=true)] public string DecrementId;
+        [DataMember(IsRequired=true)] public string JobUnique;
+        [DataMember(IsRequired=true)] public DateTime TimeUTC;
+        [DataMember(IsRequired=true)] public string Part;
+        [DataMember(IsRequired=true)] public int Quantity;
     }
 }

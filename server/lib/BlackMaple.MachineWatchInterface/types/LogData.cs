@@ -41,22 +41,22 @@ namespace BlackMaple.MachineWatchInterface
     [Serializable, DataContract]
     public class LogMaterial
     {
-        [DataMember(Name = "id")]
+        [DataMember(Name = "id", IsRequired=true)]
         public long MaterialID { get; private set; }
 
-        [DataMember(Name = "uniq")]
+        [DataMember(Name = "uniq", IsRequired=true)]
         public string JobUniqueStr { get; private set; }
 
-        [DataMember(Name = "part")]
+        [DataMember(Name = "part", IsRequired=true)]
         public string PartName { get; private set; }
 
-        [DataMember(Name = "proc")]
+        [DataMember(Name = "proc", IsRequired=true)]
         public int Process { get; private set; }
 
-        [DataMember(Name = "numproc")]
+        [DataMember(Name = "numproc", IsRequired=true)]
         public int NumProcesses { get; private set; }
 
-        [DataMember(Name = "face")]
+        [DataMember(Name = "face", IsRequired=true)]
         public string Face { get; private set; }
 
         public LogMaterial(long matID, string uniq, int proc, string part, int numProc, string face = "")
@@ -86,46 +86,46 @@ namespace BlackMaple.MachineWatchInterface
     [Serializable, DataContract]
     public class LogEntry
     {
-        [DataMember(Name = "counter")]
+        [DataMember(Name = "counter", IsRequired=true)]
         public long Counter { get; private set; }
 
-        [DataMember(Name = "material")]
+        [DataMember(Name = "material", IsRequired=true)]
         public IEnumerable<LogMaterial> Material { get; private set; }
 
-        [DataMember(Name = "type")]
+        [DataMember(Name = "type", IsRequired=true)]
         public LogType LogType { get; private set; }
 
-        [DataMember(Name = "startofcycle")]
+        [DataMember(Name = "startofcycle", IsRequired=true)]
         public bool StartOfCycle { get; private set; }
 
-        [DataMember(Name = "endUTC")]
+        [DataMember(Name = "endUTC", IsRequired=true)]
         public DateTime EndTimeUTC { get; private set; }
 
-        [DataMember(Name = "loc")]
+        [DataMember(Name = "loc", IsRequired=true)]
         public string LocationName {get; private set;}
 
-        [DataMember(Name = "locnum")]
+        [DataMember(Name = "locnum", IsRequired=true)]
         public int LocationNum {get; private set;}
 
-        [DataMember(Name = "pal")]
+        [DataMember(Name = "pal", IsRequired=true)]
         public string Pallet { get; private set; }
 
-        [DataMember(Name = "program")]
+        [DataMember(Name = "program", IsRequired=true)]
         public string Program { get; private set; }
 
-        [DataMember(Name = "result")]
+        [DataMember(Name = "result", IsRequired=true)]
         public string Result { get; private set; }
 
-        [DataMember(Name = "endofroute")]
+        [DataMember(Name = "endofroute", IsRequired=true)]
         public bool EndOfRoute { get; private set; }
 
-        [DataMember(Name = "elapsed")]
+        [DataMember(Name = "elapsed", IsRequired=true)]
         public TimeSpan ElapsedTime { get; private set; } //time from cycle-start to cycle-stop
 
-        [DataMember(Name = "active")]
+        [DataMember(Name = "active", IsRequired=true)]
         public TimeSpan ActiveOperationTime { get; private set; } //time that the machining or operation is actually active
 
-        [DataMember(Name = "details")]
+        [DataMember(Name = "details", IsRequired=false, EmitDefaultValue=false)]
         private Dictionary<string, string> _details;
         public IDictionary<string, string> ProgramDetails { get { return _details; } }
 
@@ -215,13 +215,13 @@ namespace BlackMaple.MachineWatchInterface
     [Serializable, DataContract]
     public class WorkorderPartSummary
     {
-        [DataMember(Name="name")]
+        [DataMember(Name="name", IsRequired=true)]
         public string Part {get;set;}
 
-        [DataMember(Name="completed-qty")]
+        [DataMember(Name="completed-qty", IsRequired=true)]
         public int PartsCompleted {get;set;}
 
-        [DataMember(Name="elapsed-station-time")]
+        [DataMember(Name="elapsed-station-time", IsRequired=true)]
         private Dictionary<string, TimeSpan> _elapsedStatTime;
 
         public Dictionary<string, TimeSpan> ElapsedStationTime
@@ -233,7 +233,7 @@ namespace BlackMaple.MachineWatchInterface
             }
         }
 
-        [DataMember(Name="active-stat-time")]
+        [DataMember(Name="active-stat-time", IsRequired=true)]
         private Dictionary<string, TimeSpan> _activeStatTime;
 
         public Dictionary<string, TimeSpan> ActiveStationTime
@@ -249,10 +249,10 @@ namespace BlackMaple.MachineWatchInterface
     [Serializable, DataContract]
     public class WorkorderSummary
     {
-        [DataMember(Name="id")]
+        [DataMember(Name="id", IsRequired=true)]
         public string WorkorderId {get;set;}
 
-        [DataMember(Name="parts")]
+        [DataMember(Name="parts", IsRequired=true)]
         private List<WorkorderPartSummary> _parts;
 
         public List<WorkorderPartSummary> Parts
@@ -264,7 +264,7 @@ namespace BlackMaple.MachineWatchInterface
             }
         }
 
-        [DataMember(Name="serials")]
+        [DataMember(Name="serials", IsRequired=true)]
         private List<string> _serials;
 
         public List<string> Serials
@@ -276,7 +276,7 @@ namespace BlackMaple.MachineWatchInterface
             }
         }
 
-        [DataMember(Name="finalized")]
+        [DataMember(Name="finalized", IsRequired=false, EmitDefaultValue=false)]
         public DateTime? FinalizedTimeUTC {get;set;}
     }
 }

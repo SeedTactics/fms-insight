@@ -49,13 +49,13 @@ namespace BlackMaple.MachineWatchInterface
     [Serializable, DataContract]
     public class SerialSettings
     {
-        [DataMember] public SerialType SerialType {get;}
-        [DataMember] public int SerialLength {get;}
+        [DataMember(IsRequired=true)] public SerialType SerialType {get;}
+        [DataMember(IsRequired=true)] public int SerialLength {get;}
 
         //settings only for serial deposit
-        [DataMember] public int DepositOnProcess {get;}
-        [DataMember] public string FilenameTemplate {get;}
-        [DataMember] public string ProgramTemplate {get;}
+        [DataMember(IsRequired=false, EmitDefaultValue=false)] public int DepositOnProcess {get;}
+        [DataMember(IsRequired=false, EmitDefaultValue=false)] public string FilenameTemplate {get;}
+        [DataMember(IsRequired=false, EmitDefaultValue=false)] public string ProgramTemplate {get;}
 
         public SerialSettings(SerialType t, int len)
         {
