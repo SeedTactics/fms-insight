@@ -117,6 +117,7 @@ namespace MachineWatchApiServer
                     Title = "MachineWatch",
                     Version = "v1",
                     DefaultEnumHandling = NJsonSchema.EnumHandling.String,
+                    DefaultPropertyNameHandling = NJsonSchema.PropertyNameHandling.Default,
                     PostProcess = document => {
                         document.Host = "";
                         document.BasePath = "/";

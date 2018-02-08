@@ -923,19 +923,19 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "counter",
-        "value",
-        "lastUTC"
+        "Counter",
+        "Value",
+        "LastUTC"
       ],
       "properties": {
-        "counter": {
+        "Counter": {
           "type": "string"
         },
-        "value": {
+        "Value": {
           "type": "integer",
           "format": "int32"
         },
-        "lastUTC": {
+        "LastUTC": {
           "type": "string",
           "format": "date-time"
         }
@@ -955,48 +955,48 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "overrides",
-        "name",
-        "trackPartName",
-        "trackPalletName",
-        "trackStationName",
-        "inspectSingleProcess",
-        "defaultCountToTriggerInspection",
-        "defaultDeadline",
-        "defaultRandomFreq"
+        "Overrides",
+        "Name",
+        "TrackPartName",
+        "TrackPalletName",
+        "TrackStationName",
+        "InspectSingleProcess",
+        "DefaultCountToTriggerInspection",
+        "DefaultDeadline",
+        "DefaultRandomFreq"
       ],
       "properties": {
-        "overrides": {
+        "Overrides": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/InspectionFrequencyOverride"
           }
         },
-        "name": {
+        "Name": {
           "type": "string"
         },
-        "trackPartName": {
+        "TrackPartName": {
           "type": "boolean"
         },
-        "trackPalletName": {
+        "TrackPalletName": {
           "type": "boolean"
         },
-        "trackStationName": {
+        "TrackStationName": {
           "type": "boolean"
         },
-        "inspectSingleProcess": {
+        "InspectSingleProcess": {
           "type": "integer",
           "format": "int32"
         },
-        "defaultCountToTriggerInspection": {
+        "DefaultCountToTriggerInspection": {
           "type": "integer",
           "format": "int32"
         },
-        "defaultDeadline": {
+        "DefaultDeadline": {
           "type": "string",
           "format": "time-span"
         },
-        "defaultRandomFreq": {
+        "DefaultRandomFreq": {
           "type": "number",
           "format": "double"
         }
@@ -1006,24 +1006,24 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "part",
-        "countBeforeInspection",
-        "deadline",
-        "randomFreq"
+        "Part",
+        "CountBeforeInspection",
+        "Deadline",
+        "RandomFreq"
       ],
       "properties": {
-        "part": {
+        "Part": {
           "type": "string"
         },
-        "countBeforeInspection": {
+        "CountBeforeInspection": {
           "type": "integer",
           "format": "int32"
         },
-        "deadline": {
+        "Deadline": {
           "type": "string",
           "format": "time-span"
         },
-        "randomFreq": {
+        "RandomFreq": {
           "type": "number",
           "format": "double"
         }
@@ -1033,17 +1033,17 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "jobs",
-        "stationUse"
+        "Jobs",
+        "StationUse"
       ],
       "properties": {
-        "jobs": {
+        "Jobs": {
           "type": "object",
           "additionalProperties": {
             "$ref": "#/definitions/JobPlan"
           }
         },
-        "stationUse": {
+        "StationUse": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/SimulatedStationUtilization"
@@ -1060,79 +1060,79 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "routeStartUTC",
-        "routeEndUTC",
-        "archived",
-        "copiedToSystem",
-        "partName",
-        "unique",
-        "priority",
-        "manuallyCreated",
-        "createMarkingData",
-        "holdEntireJob",
-        "cyclesOnFirstProcess",
-        "procsAndPaths"
+        "RouteStartUTC",
+        "RouteEndUTC",
+        "Archived",
+        "CopiedToSystem",
+        "PartName",
+        "Unique",
+        "Priority",
+        "ManuallyCreated",
+        "CreateMarkingData",
+        "HoldEntireJob",
+        "CyclesOnFirstProcess",
+        "ProcsAndPaths"
       ],
       "properties": {
-        "routeStartUTC": {
+        "RouteStartUTC": {
           "type": "string",
           "format": "date-time"
         },
-        "routeEndUTC": {
+        "RouteEndUTC": {
           "type": "string",
           "format": "date-time"
         },
-        "archived": {
+        "Archived": {
           "type": "boolean"
         },
-        "copiedToSystem": {
+        "CopiedToSystem": {
           "type": "boolean"
         },
-        "partName": {
+        "PartName": {
           "type": "string"
         },
-        "comment": {
+        "Comment": {
           "type": "string"
         },
-        "unique": {
+        "Unique": {
           "type": "string"
         },
-        "priority": {
+        "Priority": {
           "type": "integer",
           "format": "int32"
         },
-        "scheduleId": {
+        "ScheduleId": {
           "type": "string"
         },
-        "bookings": {
+        "Bookings": {
           "type": "array",
           "items": {
             "type": "string"
           }
         },
-        "manuallyCreated": {
+        "ManuallyCreated": {
           "type": "boolean"
         },
-        "createMarkingData": {
+        "CreateMarkingData": {
           "type": "boolean"
         },
-        "inspections": {
+        "Inspections": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/JobInspectionData"
           }
         },
-        "holdEntireJob": {
+        "HoldEntireJob": {
           "$ref": "#/definitions/JobHoldPattern"
         },
-        "cyclesOnFirstProcess": {
+        "CyclesOnFirstProcess": {
           "type": "array",
           "items": {
             "type": "integer",
             "format": "int32"
           }
         },
-        "procsAndPaths": {
+        "ProcsAndPaths": {
           "type": "array",
           "items": {
             "type": "array",
@@ -1147,33 +1147,33 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "inspectionType",
-        "counter",
-        "maxVal",
-        "randomFreq",
-        "timeInterval",
-        "inspectSingleProcess"
+        "InspectionType",
+        "Counter",
+        "MaxVal",
+        "RandomFreq",
+        "TimeInterval",
+        "InspectSingleProcess"
       ],
       "properties": {
-        "inspectionType": {
+        "InspectionType": {
           "type": "string"
         },
-        "counter": {
+        "Counter": {
           "type": "string"
         },
-        "maxVal": {
+        "MaxVal": {
           "type": "integer",
           "format": "int32"
         },
-        "randomFreq": {
+        "RandomFreq": {
           "type": "number",
           "format": "double"
         },
-        "timeInterval": {
+        "TimeInterval": {
           "type": "string",
           "format": "time-span"
         },
-        "inspectSingleProcess": {
+        "InspectSingleProcess": {
           "type": "integer",
           "format": "int32"
         }
@@ -1183,31 +1183,31 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "userHold",
-        "reasonForUserHold",
-        "holdUnholdPattern",
-        "holdUnholdPatternStartUTC",
-        "holdUnholdPatternRepeats"
+        "UserHold",
+        "ReasonForUserHold",
+        "HoldUnholdPattern",
+        "HoldUnholdPatternStartUTC",
+        "HoldUnholdPatternRepeats"
       ],
       "properties": {
-        "userHold": {
+        "UserHold": {
           "type": "boolean"
         },
-        "reasonForUserHold": {
+        "ReasonForUserHold": {
           "type": "string"
         },
-        "holdUnholdPattern": {
+        "HoldUnholdPattern": {
           "type": "array",
           "items": {
             "type": "string",
             "format": "time-span"
           }
         },
-        "holdUnholdPatternStartUTC": {
+        "HoldUnholdPatternStartUTC": {
           "type": "string",
           "format": "date-time"
         },
-        "holdUnholdPatternRepeats": {
+        "HoldUnholdPatternRepeats": {
           "type": "boolean"
         }
       }
@@ -1216,82 +1216,82 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "pathGroup",
-        "pallets",
-        "load",
-        "unload",
-        "stops",
-        "simulatedStartingUTC",
-        "simulatedAverageFlowTime",
-        "holdMachining",
-        "holdLoadUnload",
-        "partsPerPallet"
+        "PathGroup",
+        "Pallets",
+        "Load",
+        "Unload",
+        "Stops",
+        "SimulatedStartingUTC",
+        "SimulatedAverageFlowTime",
+        "HoldMachining",
+        "HoldLoadUnload",
+        "PartsPerPallet"
       ],
       "properties": {
-        "pathGroup": {
+        "PathGroup": {
           "type": "integer",
           "format": "int32"
         },
-        "pallets": {
+        "Pallets": {
           "type": "array",
           "items": {
             "type": "string"
           }
         },
-        "fixtures": {
+        "Fixtures": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/FixtureFace"
           }
         },
-        "load": {
+        "Load": {
           "type": "array",
           "items": {
             "type": "integer",
             "format": "int32"
           }
         },
-        "unload": {
+        "Unload": {
           "type": "array",
           "items": {
             "type": "integer",
             "format": "int32"
           }
         },
-        "stops": {
+        "Stops": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/JobMachiningStop"
           }
         },
-        "simulatedProduction": {
+        "SimulatedProduction": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/SimulatedProduction"
           }
         },
-        "simulatedStartingUTC": {
+        "SimulatedStartingUTC": {
           "type": "string",
           "format": "date-time"
         },
-        "simulatedAverageFlowTime": {
+        "SimulatedAverageFlowTime": {
           "type": "string",
           "format": "time-span"
         },
-        "holdMachining": {
+        "HoldMachining": {
           "$ref": "#/definitions/JobHoldPattern"
         },
-        "holdLoadUnload": {
+        "HoldLoadUnload": {
           "$ref": "#/definitions/JobHoldPattern"
         },
-        "partsPerPallet": {
+        "PartsPerPallet": {
           "type": "integer",
           "format": "int32"
         },
-        "inputQueue": {
+        "InputQueue": {
           "type": "string"
         },
-        "outputQueue": {
+        "OutputQueue": {
           "type": "string"
         }
       },
@@ -1305,14 +1305,14 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "fixture",
-        "face"
+        "Fixture",
+        "Face"
       ],
       "properties": {
-        "fixture": {
+        "Fixture": {
           "type": "string"
         },
-        "face": {
+        "Face": {
           "type": "string"
         }
       },
@@ -1326,29 +1326,29 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "stations",
-        "tools",
-        "stationGroup",
-        "expectedCycleTime"
+        "Stations",
+        "Tools",
+        "StationGroup",
+        "ExpectedCycleTime"
       ],
       "properties": {
-        "stations": {
+        "Stations": {
           "type": "object",
           "additionalProperties": {
             "type": "string"
           }
         },
-        "tools": {
+        "Tools": {
           "type": "object",
           "additionalProperties": {
             "type": "string",
             "format": "time-span"
           }
         },
-        "stationGroup": {
+        "StationGroup": {
           "type": "string"
         },
-        "expectedCycleTime": {
+        "ExpectedCycleTime": {
           "type": "string",
           "format": "time-span"
         }
@@ -1358,15 +1358,15 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "timeUTC",
-        "quantity"
+        "TimeUTC",
+        "Quantity"
       ],
       "properties": {
-        "timeUTC": {
+        "TimeUTC": {
           "type": "string",
           "format": "date-time"
         },
-        "quantity": {
+        "Quantity": {
           "type": "integer",
           "format": "int32"
         }
@@ -1381,38 +1381,38 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "simulationId",
-        "stationGroup",
-        "stationNum",
-        "startUTC",
-        "endUTC",
-        "utilizationTime",
-        "plannedDownTime"
+        "SimulationId",
+        "StationGroup",
+        "StationNum",
+        "StartUTC",
+        "EndUTC",
+        "UtilizationTime",
+        "PlannedDownTime"
       ],
       "properties": {
-        "simulationId": {
+        "SimulationId": {
           "type": "string"
         },
-        "stationGroup": {
+        "StationGroup": {
           "type": "string"
         },
-        "stationNum": {
+        "StationNum": {
           "type": "integer",
           "format": "int32"
         },
-        "startUTC": {
+        "StartUTC": {
           "type": "string",
           "format": "date-time"
         },
-        "endUTC": {
+        "EndUTC": {
           "type": "string",
           "format": "date-time"
         },
-        "utilizationTime": {
+        "UtilizationTime": {
           "type": "string",
           "format": "time-span"
         },
-        "plannedDownTime": {
+        "PlannedDownTime": {
           "type": "string",
           "format": "time-span"
         }
@@ -1422,28 +1422,28 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "latestScheduleId",
-        "jobs",
-        "extraParts"
+        "LatestScheduleId",
+        "Jobs",
+        "ExtraParts"
       ],
       "properties": {
-        "latestScheduleId": {
+        "LatestScheduleId": {
           "type": "string"
         },
-        "jobs": {
+        "Jobs": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/JobPlan"
           }
         },
-        "extraParts": {
+        "ExtraParts": {
           "type": "object",
           "additionalProperties": {
             "type": "integer",
             "format": "int32"
           }
         },
-        "currentUnfilledWorkorders": {
+        "CurrentUnfilledWorkorders": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/PartWorkorder"
@@ -1460,28 +1460,28 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "workorderId",
-        "part",
-        "quantity",
-        "dueDate",
-        "priority"
+        "WorkorderId",
+        "Part",
+        "Quantity",
+        "DueDate",
+        "Priority"
       ],
       "properties": {
-        "workorderId": {
+        "WorkorderId": {
           "type": "string"
         },
-        "part": {
+        "Part": {
           "type": "string"
         },
-        "quantity": {
+        "Quantity": {
           "type": "integer",
           "format": "int32"
         },
-        "dueDate": {
+        "DueDate": {
           "type": "string",
           "format": "date-time"
         },
-        "priority": {
+        "Priority": {
           "type": "integer",
           "format": "int32"
         }
@@ -1491,36 +1491,36 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "jobs",
-        "pallets",
-        "material"
+        "Jobs",
+        "Pallets",
+        "Material"
       ],
       "properties": {
-        "jobs": {
+        "Jobs": {
           "type": "object",
           "additionalProperties": {
             "$ref": "#/definitions/InProcessJob"
           }
         },
-        "pallets": {
+        "Pallets": {
           "type": "object",
           "additionalProperties": {
             "$ref": "#/definitions/PalletStatus"
           }
         },
-        "material": {
+        "Material": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/InProcessMaterial"
           }
         },
-        "alarms": {
+        "Alarms": {
           "type": "array",
           "items": {
             "type": "string"
           }
         },
-        "latestScheduleId": {
+        "LatestScheduleId": {
           "type": "string"
         }
       }
@@ -1529,18 +1529,18 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "completedProc1",
-        "totalCompleteOnFinalProcess"
+        "CompletedProc1",
+        "TotalCompleteOnFinalProcess"
       ],
       "properties": {
-        "completedProc1": {
+        "CompletedProc1": {
           "type": "array",
           "items": {
             "type": "integer",
             "format": "int32"
           }
         },
-        "totalCompleteOnFinalProcess": {
+        "TotalCompleteOnFinalProcess": {
           "type": "integer",
           "format": "int32"
         }
@@ -1555,31 +1555,31 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "pallet",
-        "fixtureOnPallet",
-        "onHold",
-        "currentPalletLocation"
+        "Pallet",
+        "FixtureOnPallet",
+        "OnHold",
+        "CurrentPalletLocation"
       ],
       "properties": {
-        "pallet": {
+        "Pallet": {
           "type": "string"
         },
-        "fixtureOnPallet": {
+        "FixtureOnPallet": {
           "type": "string"
         },
-        "onHold": {
+        "OnHold": {
           "type": "boolean"
         },
-        "currentPalletLocation": {
+        "CurrentPalletLocation": {
           "$ref": "#/definitions/PalletLocation"
         },
-        "newFixture": {
+        "NewFixture": {
           "type": "string"
         },
-        "targetLocation": {
+        "TargetLocation": {
           "$ref": "#/definitions/PalletLocation"
         },
-        "percentMoveCompleted": {
+        "PercentMoveCompleted": {
           "type": "number",
           "format": "decimal"
         }
@@ -1611,37 +1611,37 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "materialID",
-        "jobUnique",
-        "partName",
-        "process",
-        "path",
-        "location",
-        "action"
+        "MaterialID",
+        "JobUnique",
+        "PartName",
+        "Process",
+        "Path",
+        "Location",
+        "Action"
       ],
       "properties": {
-        "materialID": {
+        "MaterialID": {
           "type": "integer",
           "format": "int64"
         },
-        "jobUnique": {
+        "JobUnique": {
           "type": "string"
         },
-        "partName": {
+        "PartName": {
           "type": "string"
         },
-        "process": {
+        "Process": {
           "type": "integer",
           "format": "int32"
         },
-        "path": {
+        "Path": {
           "type": "integer",
           "format": "int32"
         },
-        "location": {
+        "Location": {
           "$ref": "#/definitions/InProcessMaterialLocation"
         },
-        "action": {
+        "Action": {
           "$ref": "#/definitions/InProcessMaterialAction"
         }
       }
@@ -1650,24 +1650,24 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "type",
-        "face"
+        "Type",
+        "Face"
       ],
       "properties": {
-        "type": {
+        "Type": {
           "$ref": "#/definitions/LocType"
         },
-        "pallet": {
+        "Pallet": {
           "type": "string"
         },
-        "fixture": {
+        "Fixture": {
           "type": "string"
         },
-        "face": {
+        "Face": {
           "type": "integer",
           "format": "int32"
         },
-        "currentQueue": {
+        "CurrentQueue": {
           "type": "string"
         }
       }
@@ -1690,31 +1690,31 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "type",
-        "loadOntoFace"
+        "Type",
+        "LoadOntoFace"
       ],
       "properties": {
-        "type": {
+        "Type": {
           "$ref": "#/definitions/ActionType"
         },
-        "loadOntoPallet": {
+        "LoadOntoPallet": {
           "type": "string"
         },
-        "loadOntoFace": {
+        "LoadOntoFace": {
           "type": "integer",
           "format": "int32"
         },
-        "unloadIntoQueue": {
+        "UnloadIntoQueue": {
           "type": "string"
         },
-        "program": {
+        "Program": {
           "type": "string"
         },
-        "elapsedMachiningTime": {
+        "ElapsedMachiningTime": {
           "type": "string",
           "format": "time-span"
         },
-        "expectedRemainingMachiningTime": {
+        "ExpectedRemainingMachiningTime": {
           "type": "string",
           "format": "time-span"
         }
@@ -1740,49 +1740,49 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "scheduleId",
-        "jobs",
-        "stationUse",
-        "extraParts",
-        "archiveCompletedJobs"
+        "ScheduleId",
+        "Jobs",
+        "StationUse",
+        "ExtraParts",
+        "ArchiveCompletedJobs"
       ],
       "properties": {
-        "scheduleId": {
+        "ScheduleId": {
           "type": "string"
         },
-        "jobs": {
+        "Jobs": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/JobPlan"
           }
         },
-        "stationUse": {
+        "StationUse": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/SimulatedStationUtilization"
           }
         },
-        "extraParts": {
+        "ExtraParts": {
           "type": "object",
           "additionalProperties": {
             "type": "integer",
             "format": "int32"
           }
         },
-        "archiveCompletedJobs": {
+        "ArchiveCompletedJobs": {
           "type": "boolean"
         },
-        "debugMessage": {
+        "DebugMessage": {
           "type": "string",
           "format": "byte"
         },
-        "currentUnfilledWorkorders": {
+        "CurrentUnfilledWorkorders": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/PartWorkorder"
           }
         },
-        "queueSizes": {
+        "QueueSizes": {
           "type": "object",
           "additionalProperties": {
             "$ref": "#/definitions/QueueSize"
@@ -1799,15 +1799,15 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "maxSizeBeforeStopLoading",
-        "maxSizeBeforeStopUnloading"
+        "MaxSizeBeforeStopLoading",
+        "MaxSizeBeforeStopUnloading"
       ],
       "properties": {
-        "maxSizeBeforeStopLoading": {
+        "MaxSizeBeforeStopLoading": {
           "type": "integer",
           "format": "int32"
         },
-        "maxSizeBeforeStopUnloading": {
+        "MaxSizeBeforeStopUnloading": {
           "type": "integer",
           "format": "int32"
         }
@@ -1822,27 +1822,27 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "decrementId",
-        "jobUnique",
-        "timeUTC",
-        "part",
-        "quantity"
+        "DecrementId",
+        "JobUnique",
+        "TimeUTC",
+        "Part",
+        "Quantity"
       ],
       "properties": {
-        "decrementId": {
+        "DecrementId": {
           "type": "string"
         },
-        "jobUnique": {
+        "JobUnique": {
           "type": "string"
         },
-        "timeUTC": {
+        "TimeUTC": {
           "type": "string",
           "format": "date-time"
         },
-        "part": {
+        "Part": {
           "type": "string"
         },
-        "quantity": {
+        "Quantity": {
           "type": "integer",
           "format": "int32"
         }
@@ -2053,26 +2053,26 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "serialType",
-        "serialLength",
-        "depositOnProcess"
+        "SerialType",
+        "SerialLength",
+        "DepositOnProcess"
       ],
       "properties": {
-        "serialType": {
+        "SerialType": {
           "$ref": "#/definitions/SerialType"
         },
-        "serialLength": {
+        "SerialLength": {
           "type": "integer",
           "format": "int32"
         },
-        "depositOnProcess": {
+        "DepositOnProcess": {
           "type": "integer",
           "format": "int32"
         },
-        "filenameTemplate": {
+        "FilenameTemplate": {
           "type": "string"
         },
-        "programTemplate": {
+        "ProgramTemplate": {
           "type": "string"
         }
       }
@@ -2097,10 +2097,10 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "name": {
+        "Name": {
           "type": "string"
         },
-        "version": {
+        "Version": {
           "type": "string"
         }
       },

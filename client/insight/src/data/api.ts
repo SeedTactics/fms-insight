@@ -1319,9 +1319,9 @@ export class InspectCount extends ValueType implements IInspectCount {
     init(data?: any) {
         super.init(data);
         if (data) {
-            this.counter = data["counter"];
-            this.value = data["value"];
-            this.lastUTC = data["lastUTC"] ? new Date(data["lastUTC"].toString()) : <any>undefined;
+            this.counter = data["Counter"];
+            this.value = data["Value"];
+            this.lastUTC = data["LastUTC"] ? new Date(data["LastUTC"].toString()) : <any>undefined;
         }
     }
 
@@ -1334,9 +1334,9 @@ export class InspectCount extends ValueType implements IInspectCount {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["counter"] = this.counter;
-        data["value"] = this.value;
-        data["lastUTC"] = this.lastUTC ? this.lastUTC.toISOString() : <any>undefined;
+        data["Counter"] = this.counter;
+        data["Value"] = this.value;
+        data["LastUTC"] = this.lastUTC ? this.lastUTC.toISOString() : <any>undefined;
         super.toJSON(data);
         return data;
     }
@@ -1370,19 +1370,19 @@ export class InspectionType implements IInspectionType {
 
     init(data?: any) {
         if (data) {
-            if (data["overrides"] && data["overrides"].constructor === Array) {
+            if (data["Overrides"] && data["Overrides"].constructor === Array) {
                 this.overrides = [];
-                for (let item of data["overrides"])
+                for (let item of data["Overrides"])
                     this.overrides.push(InspectionFrequencyOverride.fromJS(item));
             }
-            this.name = data["name"];
-            this.trackPartName = data["trackPartName"];
-            this.trackPalletName = data["trackPalletName"];
-            this.trackStationName = data["trackStationName"];
-            this.inspectSingleProcess = data["inspectSingleProcess"];
-            this.defaultCountToTriggerInspection = data["defaultCountToTriggerInspection"];
-            this.defaultDeadline = data["defaultDeadline"];
-            this.defaultRandomFreq = data["defaultRandomFreq"];
+            this.name = data["Name"];
+            this.trackPartName = data["TrackPartName"];
+            this.trackPalletName = data["TrackPalletName"];
+            this.trackStationName = data["TrackStationName"];
+            this.inspectSingleProcess = data["InspectSingleProcess"];
+            this.defaultCountToTriggerInspection = data["DefaultCountToTriggerInspection"];
+            this.defaultDeadline = data["DefaultDeadline"];
+            this.defaultRandomFreq = data["DefaultRandomFreq"];
         }
     }
 
@@ -1396,18 +1396,18 @@ export class InspectionType implements IInspectionType {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         if (this.overrides && this.overrides.constructor === Array) {
-            data["overrides"] = [];
+            data["Overrides"] = [];
             for (let item of this.overrides)
-                data["overrides"].push(item.toJSON());
+                data["Overrides"].push(item.toJSON());
         }
-        data["name"] = this.name;
-        data["trackPartName"] = this.trackPartName;
-        data["trackPalletName"] = this.trackPalletName;
-        data["trackStationName"] = this.trackStationName;
-        data["inspectSingleProcess"] = this.inspectSingleProcess;
-        data["defaultCountToTriggerInspection"] = this.defaultCountToTriggerInspection;
-        data["defaultDeadline"] = this.defaultDeadline;
-        data["defaultRandomFreq"] = this.defaultRandomFreq;
+        data["Name"] = this.name;
+        data["TrackPartName"] = this.trackPartName;
+        data["TrackPalletName"] = this.trackPalletName;
+        data["TrackStationName"] = this.trackStationName;
+        data["InspectSingleProcess"] = this.inspectSingleProcess;
+        data["DefaultCountToTriggerInspection"] = this.defaultCountToTriggerInspection;
+        data["DefaultDeadline"] = this.defaultDeadline;
+        data["DefaultRandomFreq"] = this.defaultRandomFreq;
         return data;
     }
 }
@@ -1441,10 +1441,10 @@ export class InspectionFrequencyOverride implements IInspectionFrequencyOverride
 
     init(data?: any) {
         if (data) {
-            this.part = data["part"];
-            this.countBeforeInspection = data["countBeforeInspection"];
-            this.deadline = data["deadline"];
-            this.randomFreq = data["randomFreq"];
+            this.part = data["Part"];
+            this.countBeforeInspection = data["CountBeforeInspection"];
+            this.deadline = data["Deadline"];
+            this.randomFreq = data["RandomFreq"];
         }
     }
 
@@ -1457,10 +1457,10 @@ export class InspectionFrequencyOverride implements IInspectionFrequencyOverride
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["part"] = this.part;
-        data["countBeforeInspection"] = this.countBeforeInspection;
-        data["deadline"] = this.deadline;
-        data["randomFreq"] = this.randomFreq;
+        data["Part"] = this.part;
+        data["CountBeforeInspection"] = this.countBeforeInspection;
+        data["Deadline"] = this.deadline;
+        data["RandomFreq"] = this.randomFreq;
         return data;
     }
 }
@@ -1483,16 +1483,16 @@ export class HistoricData extends ValueType implements IHistoricData {
     init(data?: any) {
         super.init(data);
         if (data) {
-            if (data["jobs"]) {
+            if (data["Jobs"]) {
                 this.jobs = {};
-                for (let key in data["jobs"]) {
-                    if (data["jobs"].hasOwnProperty(key))
-                        this.jobs[key] = data["jobs"][key] ? JobPlan.fromJS(data["jobs"][key]) : new JobPlan();
+                for (let key in data["Jobs"]) {
+                    if (data["Jobs"].hasOwnProperty(key))
+                        this.jobs[key] = data["Jobs"][key] ? JobPlan.fromJS(data["Jobs"][key]) : new JobPlan();
                 }
             }
-            if (data["stationUse"] && data["stationUse"].constructor === Array) {
+            if (data["StationUse"] && data["StationUse"].constructor === Array) {
                 this.stationUse = [];
-                for (let item of data["stationUse"])
+                for (let item of data["StationUse"])
                     this.stationUse.push(SimulatedStationUtilization.fromJS(item));
             }
         }
@@ -1508,16 +1508,16 @@ export class HistoricData extends ValueType implements IHistoricData {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         if (this.jobs) {
-            data["jobs"] = {};
+            data["Jobs"] = {};
             for (let key in this.jobs) {
                 if (this.jobs.hasOwnProperty(key))
-                    data["jobs"][key] = this.jobs[key];
+                    data["Jobs"][key] = this.jobs[key];
             }
         }
         if (this.stationUse && this.stationUse.constructor === Array) {
-            data["stationUse"] = [];
+            data["StationUse"] = [];
             for (let item of this.stationUse)
-                data["stationUse"].push(item.toJSON());
+                data["StationUse"].push(item.toJSON());
         }
         super.toJSON(data);
         return data;
@@ -1558,36 +1558,36 @@ export class JobPlan implements IJobPlan {
 
     init(data?: any) {
         if (data) {
-            this.routeStartUTC = data["routeStartUTC"] ? new Date(data["routeStartUTC"].toString()) : <any>undefined;
-            this.routeEndUTC = data["routeEndUTC"] ? new Date(data["routeEndUTC"].toString()) : <any>undefined;
-            this.archived = data["archived"];
-            this.copiedToSystem = data["copiedToSystem"];
-            this.partName = data["partName"];
-            this.comment = data["comment"];
-            this.unique = data["unique"];
-            this.priority = data["priority"];
-            this.scheduleId = data["scheduleId"];
-            if (data["bookings"] && data["bookings"].constructor === Array) {
+            this.routeStartUTC = data["RouteStartUTC"] ? new Date(data["RouteStartUTC"].toString()) : <any>undefined;
+            this.routeEndUTC = data["RouteEndUTC"] ? new Date(data["RouteEndUTC"].toString()) : <any>undefined;
+            this.archived = data["Archived"];
+            this.copiedToSystem = data["CopiedToSystem"];
+            this.partName = data["PartName"];
+            this.comment = data["Comment"];
+            this.unique = data["Unique"];
+            this.priority = data["Priority"];
+            this.scheduleId = data["ScheduleId"];
+            if (data["Bookings"] && data["Bookings"].constructor === Array) {
                 this.bookings = [];
-                for (let item of data["bookings"])
+                for (let item of data["Bookings"])
                     this.bookings.push(item);
             }
-            this.manuallyCreated = data["manuallyCreated"];
-            this.createMarkingData = data["createMarkingData"];
-            if (data["inspections"] && data["inspections"].constructor === Array) {
+            this.manuallyCreated = data["ManuallyCreated"];
+            this.createMarkingData = data["CreateMarkingData"];
+            if (data["Inspections"] && data["Inspections"].constructor === Array) {
                 this.inspections = [];
-                for (let item of data["inspections"])
+                for (let item of data["Inspections"])
                     this.inspections.push(JobInspectionData.fromJS(item));
             }
-            this.holdEntireJob = data["holdEntireJob"] ? JobHoldPattern.fromJS(data["holdEntireJob"]) : new JobHoldPattern();
-            if (data["cyclesOnFirstProcess"] && data["cyclesOnFirstProcess"].constructor === Array) {
+            this.holdEntireJob = data["HoldEntireJob"] ? JobHoldPattern.fromJS(data["HoldEntireJob"]) : new JobHoldPattern();
+            if (data["CyclesOnFirstProcess"] && data["CyclesOnFirstProcess"].constructor === Array) {
                 this.cyclesOnFirstProcess = [];
-                for (let item of data["cyclesOnFirstProcess"])
+                for (let item of data["CyclesOnFirstProcess"])
                     this.cyclesOnFirstProcess.push(item);
             }
-            if (data["procsAndPaths"] && data["procsAndPaths"].constructor === Array) {
+            if (data["ProcsAndPaths"] && data["ProcsAndPaths"].constructor === Array) {
                 this.procsAndPaths = [];
-                for (let item of data["procsAndPaths"])
+                for (let item of data["ProcsAndPaths"])
                     this.procsAndPaths.push(item);
             }
         }
@@ -1602,37 +1602,37 @@ export class JobPlan implements IJobPlan {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["routeStartUTC"] = this.routeStartUTC ? this.routeStartUTC.toISOString() : <any>undefined;
-        data["routeEndUTC"] = this.routeEndUTC ? this.routeEndUTC.toISOString() : <any>undefined;
-        data["archived"] = this.archived;
-        data["copiedToSystem"] = this.copiedToSystem;
-        data["partName"] = this.partName;
-        data["comment"] = this.comment;
-        data["unique"] = this.unique;
-        data["priority"] = this.priority;
-        data["scheduleId"] = this.scheduleId;
+        data["RouteStartUTC"] = this.routeStartUTC ? this.routeStartUTC.toISOString() : <any>undefined;
+        data["RouteEndUTC"] = this.routeEndUTC ? this.routeEndUTC.toISOString() : <any>undefined;
+        data["Archived"] = this.archived;
+        data["CopiedToSystem"] = this.copiedToSystem;
+        data["PartName"] = this.partName;
+        data["Comment"] = this.comment;
+        data["Unique"] = this.unique;
+        data["Priority"] = this.priority;
+        data["ScheduleId"] = this.scheduleId;
         if (this.bookings && this.bookings.constructor === Array) {
-            data["bookings"] = [];
+            data["Bookings"] = [];
             for (let item of this.bookings)
-                data["bookings"].push(item);
+                data["Bookings"].push(item);
         }
-        data["manuallyCreated"] = this.manuallyCreated;
-        data["createMarkingData"] = this.createMarkingData;
+        data["ManuallyCreated"] = this.manuallyCreated;
+        data["CreateMarkingData"] = this.createMarkingData;
         if (this.inspections && this.inspections.constructor === Array) {
-            data["inspections"] = [];
+            data["Inspections"] = [];
             for (let item of this.inspections)
-                data["inspections"].push(item.toJSON());
+                data["Inspections"].push(item.toJSON());
         }
-        data["holdEntireJob"] = this.holdEntireJob ? this.holdEntireJob.toJSON() : <any>undefined;
+        data["HoldEntireJob"] = this.holdEntireJob ? this.holdEntireJob.toJSON() : <any>undefined;
         if (this.cyclesOnFirstProcess && this.cyclesOnFirstProcess.constructor === Array) {
-            data["cyclesOnFirstProcess"] = [];
+            data["CyclesOnFirstProcess"] = [];
             for (let item of this.cyclesOnFirstProcess)
-                data["cyclesOnFirstProcess"].push(item);
+                data["CyclesOnFirstProcess"].push(item);
         }
         if (this.procsAndPaths && this.procsAndPaths.constructor === Array) {
-            data["procsAndPaths"] = [];
+            data["ProcsAndPaths"] = [];
             for (let item of this.procsAndPaths)
-                data["procsAndPaths"].push(item);
+                data["ProcsAndPaths"].push(item);
         }
         return data;
     }
@@ -1676,12 +1676,12 @@ export class JobInspectionData implements IJobInspectionData {
 
     init(data?: any) {
         if (data) {
-            this.inspectionType = data["inspectionType"];
-            this.counter = data["counter"];
-            this.maxVal = data["maxVal"];
-            this.randomFreq = data["randomFreq"];
-            this.timeInterval = data["timeInterval"];
-            this.inspectSingleProcess = data["inspectSingleProcess"];
+            this.inspectionType = data["InspectionType"];
+            this.counter = data["Counter"];
+            this.maxVal = data["MaxVal"];
+            this.randomFreq = data["RandomFreq"];
+            this.timeInterval = data["TimeInterval"];
+            this.inspectSingleProcess = data["InspectSingleProcess"];
         }
     }
 
@@ -1694,12 +1694,12 @@ export class JobInspectionData implements IJobInspectionData {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["inspectionType"] = this.inspectionType;
-        data["counter"] = this.counter;
-        data["maxVal"] = this.maxVal;
-        data["randomFreq"] = this.randomFreq;
-        data["timeInterval"] = this.timeInterval;
-        data["inspectSingleProcess"] = this.inspectSingleProcess;
+        data["InspectionType"] = this.inspectionType;
+        data["Counter"] = this.counter;
+        data["MaxVal"] = this.maxVal;
+        data["RandomFreq"] = this.randomFreq;
+        data["TimeInterval"] = this.timeInterval;
+        data["InspectSingleProcess"] = this.inspectSingleProcess;
         return data;
     }
 }
@@ -1731,15 +1731,15 @@ export class JobHoldPattern implements IJobHoldPattern {
 
     init(data?: any) {
         if (data) {
-            this.userHold = data["userHold"];
-            this.reasonForUserHold = data["reasonForUserHold"];
-            if (data["holdUnholdPattern"] && data["holdUnholdPattern"].constructor === Array) {
+            this.userHold = data["UserHold"];
+            this.reasonForUserHold = data["ReasonForUserHold"];
+            if (data["HoldUnholdPattern"] && data["HoldUnholdPattern"].constructor === Array) {
                 this.holdUnholdPattern = [];
-                for (let item of data["holdUnholdPattern"])
+                for (let item of data["HoldUnholdPattern"])
                     this.holdUnholdPattern.push(item);
             }
-            this.holdUnholdPatternStartUTC = data["holdUnholdPatternStartUTC"] ? new Date(data["holdUnholdPatternStartUTC"].toString()) : <any>undefined;
-            this.holdUnholdPatternRepeats = data["holdUnholdPatternRepeats"];
+            this.holdUnholdPatternStartUTC = data["HoldUnholdPatternStartUTC"] ? new Date(data["HoldUnholdPatternStartUTC"].toString()) : <any>undefined;
+            this.holdUnholdPatternRepeats = data["HoldUnholdPatternRepeats"];
         }
     }
 
@@ -1752,15 +1752,15 @@ export class JobHoldPattern implements IJobHoldPattern {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["userHold"] = this.userHold;
-        data["reasonForUserHold"] = this.reasonForUserHold;
+        data["UserHold"] = this.userHold;
+        data["ReasonForUserHold"] = this.reasonForUserHold;
         if (this.holdUnholdPattern && this.holdUnholdPattern.constructor === Array) {
-            data["holdUnholdPattern"] = [];
+            data["HoldUnholdPattern"] = [];
             for (let item of this.holdUnholdPattern)
-                data["holdUnholdPattern"].push(item);
+                data["HoldUnholdPattern"].push(item);
         }
-        data["holdUnholdPatternStartUTC"] = this.holdUnholdPatternStartUTC ? this.holdUnholdPatternStartUTC.toISOString() : <any>undefined;
-        data["holdUnholdPatternRepeats"] = this.holdUnholdPatternRepeats;
+        data["HoldUnholdPatternStartUTC"] = this.holdUnholdPatternStartUTC ? this.holdUnholdPatternStartUTC.toISOString() : <any>undefined;
+        data["HoldUnholdPatternRepeats"] = this.holdUnholdPatternRepeats;
         return data;
     }
 }
@@ -1796,44 +1796,44 @@ export class ProcPathInfo extends ValueType implements IProcPathInfo {
     init(data?: any) {
         super.init(data);
         if (data) {
-            this.pathGroup = data["pathGroup"];
-            if (data["pallets"] && data["pallets"].constructor === Array) {
+            this.pathGroup = data["PathGroup"];
+            if (data["Pallets"] && data["Pallets"].constructor === Array) {
                 this.pallets = [];
-                for (let item of data["pallets"])
+                for (let item of data["Pallets"])
                     this.pallets.push(item);
             }
-            if (data["fixtures"] && data["fixtures"].constructor === Array) {
+            if (data["Fixtures"] && data["Fixtures"].constructor === Array) {
                 this.fixtures = [];
-                for (let item of data["fixtures"])
+                for (let item of data["Fixtures"])
                     this.fixtures.push(FixtureFace.fromJS(item));
             }
-            if (data["load"] && data["load"].constructor === Array) {
+            if (data["Load"] && data["Load"].constructor === Array) {
                 this.load = [];
-                for (let item of data["load"])
+                for (let item of data["Load"])
                     this.load.push(item);
             }
-            if (data["unload"] && data["unload"].constructor === Array) {
+            if (data["Unload"] && data["Unload"].constructor === Array) {
                 this.unload = [];
-                for (let item of data["unload"])
+                for (let item of data["Unload"])
                     this.unload.push(item);
             }
-            if (data["stops"] && data["stops"].constructor === Array) {
+            if (data["Stops"] && data["Stops"].constructor === Array) {
                 this.stops = [];
-                for (let item of data["stops"])
+                for (let item of data["Stops"])
                     this.stops.push(JobMachiningStop.fromJS(item));
             }
-            if (data["simulatedProduction"] && data["simulatedProduction"].constructor === Array) {
+            if (data["SimulatedProduction"] && data["SimulatedProduction"].constructor === Array) {
                 this.simulatedProduction = [];
-                for (let item of data["simulatedProduction"])
+                for (let item of data["SimulatedProduction"])
                     this.simulatedProduction.push(SimulatedProduction.fromJS(item));
             }
-            this.simulatedStartingUTC = data["simulatedStartingUTC"] ? new Date(data["simulatedStartingUTC"].toString()) : <any>undefined;
-            this.simulatedAverageFlowTime = data["simulatedAverageFlowTime"];
-            this.holdMachining = data["holdMachining"] ? JobHoldPattern.fromJS(data["holdMachining"]) : new JobHoldPattern();
-            this.holdLoadUnload = data["holdLoadUnload"] ? JobHoldPattern.fromJS(data["holdLoadUnload"]) : new JobHoldPattern();
-            this.partsPerPallet = data["partsPerPallet"];
-            this.inputQueue = data["inputQueue"];
-            this.outputQueue = data["outputQueue"];
+            this.simulatedStartingUTC = data["SimulatedStartingUTC"] ? new Date(data["SimulatedStartingUTC"].toString()) : <any>undefined;
+            this.simulatedAverageFlowTime = data["SimulatedAverageFlowTime"];
+            this.holdMachining = data["HoldMachining"] ? JobHoldPattern.fromJS(data["HoldMachining"]) : new JobHoldPattern();
+            this.holdLoadUnload = data["HoldLoadUnload"] ? JobHoldPattern.fromJS(data["HoldLoadUnload"]) : new JobHoldPattern();
+            this.partsPerPallet = data["PartsPerPallet"];
+            this.inputQueue = data["InputQueue"];
+            this.outputQueue = data["OutputQueue"];
         }
     }
 
@@ -1846,44 +1846,44 @@ export class ProcPathInfo extends ValueType implements IProcPathInfo {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["pathGroup"] = this.pathGroup;
+        data["PathGroup"] = this.pathGroup;
         if (this.pallets && this.pallets.constructor === Array) {
-            data["pallets"] = [];
+            data["Pallets"] = [];
             for (let item of this.pallets)
-                data["pallets"].push(item);
+                data["Pallets"].push(item);
         }
         if (this.fixtures && this.fixtures.constructor === Array) {
-            data["fixtures"] = [];
+            data["Fixtures"] = [];
             for (let item of this.fixtures)
-                data["fixtures"].push(item.toJSON());
+                data["Fixtures"].push(item.toJSON());
         }
         if (this.load && this.load.constructor === Array) {
-            data["load"] = [];
+            data["Load"] = [];
             for (let item of this.load)
-                data["load"].push(item);
+                data["Load"].push(item);
         }
         if (this.unload && this.unload.constructor === Array) {
-            data["unload"] = [];
+            data["Unload"] = [];
             for (let item of this.unload)
-                data["unload"].push(item);
+                data["Unload"].push(item);
         }
         if (this.stops && this.stops.constructor === Array) {
-            data["stops"] = [];
+            data["Stops"] = [];
             for (let item of this.stops)
-                data["stops"].push(item.toJSON());
+                data["Stops"].push(item.toJSON());
         }
         if (this.simulatedProduction && this.simulatedProduction.constructor === Array) {
-            data["simulatedProduction"] = [];
+            data["SimulatedProduction"] = [];
             for (let item of this.simulatedProduction)
-                data["simulatedProduction"].push(item.toJSON());
+                data["SimulatedProduction"].push(item.toJSON());
         }
-        data["simulatedStartingUTC"] = this.simulatedStartingUTC ? this.simulatedStartingUTC.toISOString() : <any>undefined;
-        data["simulatedAverageFlowTime"] = this.simulatedAverageFlowTime;
-        data["holdMachining"] = this.holdMachining ? this.holdMachining.toJSON() : <any>undefined;
-        data["holdLoadUnload"] = this.holdLoadUnload ? this.holdLoadUnload.toJSON() : <any>undefined;
-        data["partsPerPallet"] = this.partsPerPallet;
-        data["inputQueue"] = this.inputQueue;
-        data["outputQueue"] = this.outputQueue;
+        data["SimulatedStartingUTC"] = this.simulatedStartingUTC ? this.simulatedStartingUTC.toISOString() : <any>undefined;
+        data["SimulatedAverageFlowTime"] = this.simulatedAverageFlowTime;
+        data["HoldMachining"] = this.holdMachining ? this.holdMachining.toJSON() : <any>undefined;
+        data["HoldLoadUnload"] = this.holdLoadUnload ? this.holdLoadUnload.toJSON() : <any>undefined;
+        data["PartsPerPallet"] = this.partsPerPallet;
+        data["InputQueue"] = this.inputQueue;
+        data["OutputQueue"] = this.outputQueue;
         super.toJSON(data);
         return data;
     }
@@ -1917,8 +1917,8 @@ export class FixtureFace extends ValueType implements IFixtureFace {
     init(data?: any) {
         super.init(data);
         if (data) {
-            this.fixture = data["fixture"];
-            this.face = data["face"];
+            this.fixture = data["Fixture"];
+            this.face = data["Face"];
         }
     }
 
@@ -1931,8 +1931,8 @@ export class FixtureFace extends ValueType implements IFixtureFace {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["fixture"] = this.fixture;
-        data["face"] = this.face;
+        data["Fixture"] = this.fixture;
+        data["Face"] = this.face;
         super.toJSON(data);
         return data;
     }
@@ -1960,22 +1960,22 @@ export class JobMachiningStop implements IJobMachiningStop {
 
     init(data?: any) {
         if (data) {
-            if (data["stations"]) {
+            if (data["Stations"]) {
                 this.stations = {};
-                for (let key in data["stations"]) {
-                    if (data["stations"].hasOwnProperty(key))
-                        this.stations[key] = data["stations"][key];
+                for (let key in data["Stations"]) {
+                    if (data["Stations"].hasOwnProperty(key))
+                        this.stations[key] = data["Stations"][key];
                 }
             }
-            if (data["tools"]) {
+            if (data["Tools"]) {
                 this.tools = {};
-                for (let key in data["tools"]) {
-                    if (data["tools"].hasOwnProperty(key))
-                        this.tools[key] = data["tools"][key];
+                for (let key in data["Tools"]) {
+                    if (data["Tools"].hasOwnProperty(key))
+                        this.tools[key] = data["Tools"][key];
                 }
             }
-            this.stationGroup = data["stationGroup"];
-            this.expectedCycleTime = data["expectedCycleTime"];
+            this.stationGroup = data["StationGroup"];
+            this.expectedCycleTime = data["ExpectedCycleTime"];
         }
     }
 
@@ -1989,21 +1989,21 @@ export class JobMachiningStop implements IJobMachiningStop {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         if (this.stations) {
-            data["stations"] = {};
+            data["Stations"] = {};
             for (let key in this.stations) {
                 if (this.stations.hasOwnProperty(key))
-                    data["stations"][key] = this.stations[key];
+                    data["Stations"][key] = this.stations[key];
             }
         }
         if (this.tools) {
-            data["tools"] = {};
+            data["Tools"] = {};
             for (let key in this.tools) {
                 if (this.tools.hasOwnProperty(key))
-                    data["tools"][key] = this.tools[key];
+                    data["Tools"][key] = this.tools[key];
             }
         }
-        data["stationGroup"] = this.stationGroup;
-        data["expectedCycleTime"] = this.expectedCycleTime;
+        data["StationGroup"] = this.stationGroup;
+        data["ExpectedCycleTime"] = this.expectedCycleTime;
         return data;
     }
 }
@@ -2026,8 +2026,8 @@ export class SimulatedProduction extends ValueType implements ISimulatedProducti
     init(data?: any) {
         super.init(data);
         if (data) {
-            this.timeUTC = data["timeUTC"] ? new Date(data["timeUTC"].toString()) : <any>undefined;
-            this.quantity = data["quantity"];
+            this.timeUTC = data["TimeUTC"] ? new Date(data["TimeUTC"].toString()) : <any>undefined;
+            this.quantity = data["Quantity"];
         }
     }
 
@@ -2040,8 +2040,8 @@ export class SimulatedProduction extends ValueType implements ISimulatedProducti
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["timeUTC"] = this.timeUTC ? this.timeUTC.toISOString() : <any>undefined;
-        data["quantity"] = this.quantity;
+        data["TimeUTC"] = this.timeUTC ? this.timeUTC.toISOString() : <any>undefined;
+        data["Quantity"] = this.quantity;
         super.toJSON(data);
         return data;
     }
@@ -2072,13 +2072,13 @@ export class SimulatedStationUtilization implements ISimulatedStationUtilization
 
     init(data?: any) {
         if (data) {
-            this.simulationId = data["simulationId"];
-            this.stationGroup = data["stationGroup"];
-            this.stationNum = data["stationNum"];
-            this.startUTC = data["startUTC"] ? new Date(data["startUTC"].toString()) : <any>undefined;
-            this.endUTC = data["endUTC"] ? new Date(data["endUTC"].toString()) : <any>undefined;
-            this.utilizationTime = data["utilizationTime"];
-            this.plannedDownTime = data["plannedDownTime"];
+            this.simulationId = data["SimulationId"];
+            this.stationGroup = data["StationGroup"];
+            this.stationNum = data["StationNum"];
+            this.startUTC = data["StartUTC"] ? new Date(data["StartUTC"].toString()) : <any>undefined;
+            this.endUTC = data["EndUTC"] ? new Date(data["EndUTC"].toString()) : <any>undefined;
+            this.utilizationTime = data["UtilizationTime"];
+            this.plannedDownTime = data["PlannedDownTime"];
         }
     }
 
@@ -2091,13 +2091,13 @@ export class SimulatedStationUtilization implements ISimulatedStationUtilization
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["simulationId"] = this.simulationId;
-        data["stationGroup"] = this.stationGroup;
-        data["stationNum"] = this.stationNum;
-        data["startUTC"] = this.startUTC ? this.startUTC.toISOString() : <any>undefined;
-        data["endUTC"] = this.endUTC ? this.endUTC.toISOString() : <any>undefined;
-        data["utilizationTime"] = this.utilizationTime;
-        data["plannedDownTime"] = this.plannedDownTime;
+        data["SimulationId"] = this.simulationId;
+        data["StationGroup"] = this.stationGroup;
+        data["StationNum"] = this.stationNum;
+        data["StartUTC"] = this.startUTC ? this.startUTC.toISOString() : <any>undefined;
+        data["EndUTC"] = this.endUTC ? this.endUTC.toISOString() : <any>undefined;
+        data["UtilizationTime"] = this.utilizationTime;
+        data["PlannedDownTime"] = this.plannedDownTime;
         return data;
     }
 }
@@ -2125,22 +2125,22 @@ export class JobsAndExtraParts extends ValueType implements IJobsAndExtraParts {
     init(data?: any) {
         super.init(data);
         if (data) {
-            this.latestScheduleId = data["latestScheduleId"];
-            if (data["jobs"] && data["jobs"].constructor === Array) {
+            this.latestScheduleId = data["LatestScheduleId"];
+            if (data["Jobs"] && data["Jobs"].constructor === Array) {
                 this.jobs = [];
-                for (let item of data["jobs"])
+                for (let item of data["Jobs"])
                     this.jobs.push(JobPlan.fromJS(item));
             }
-            if (data["extraParts"]) {
+            if (data["ExtraParts"]) {
                 this.extraParts = {};
-                for (let key in data["extraParts"]) {
-                    if (data["extraParts"].hasOwnProperty(key))
-                        this.extraParts[key] = data["extraParts"][key];
+                for (let key in data["ExtraParts"]) {
+                    if (data["ExtraParts"].hasOwnProperty(key))
+                        this.extraParts[key] = data["ExtraParts"][key];
                 }
             }
-            if (data["currentUnfilledWorkorders"] && data["currentUnfilledWorkorders"].constructor === Array) {
+            if (data["CurrentUnfilledWorkorders"] && data["CurrentUnfilledWorkorders"].constructor === Array) {
                 this.currentUnfilledWorkorders = [];
-                for (let item of data["currentUnfilledWorkorders"])
+                for (let item of data["CurrentUnfilledWorkorders"])
                     this.currentUnfilledWorkorders.push(PartWorkorder.fromJS(item));
             }
         }
@@ -2155,23 +2155,23 @@ export class JobsAndExtraParts extends ValueType implements IJobsAndExtraParts {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["latestScheduleId"] = this.latestScheduleId;
+        data["LatestScheduleId"] = this.latestScheduleId;
         if (this.jobs && this.jobs.constructor === Array) {
-            data["jobs"] = [];
+            data["Jobs"] = [];
             for (let item of this.jobs)
-                data["jobs"].push(item.toJSON());
+                data["Jobs"].push(item.toJSON());
         }
         if (this.extraParts) {
-            data["extraParts"] = {};
+            data["ExtraParts"] = {};
             for (let key in this.extraParts) {
                 if (this.extraParts.hasOwnProperty(key))
-                    data["extraParts"][key] = this.extraParts[key];
+                    data["ExtraParts"][key] = this.extraParts[key];
             }
         }
         if (this.currentUnfilledWorkorders && this.currentUnfilledWorkorders.constructor === Array) {
-            data["currentUnfilledWorkorders"] = [];
+            data["CurrentUnfilledWorkorders"] = [];
             for (let item of this.currentUnfilledWorkorders)
-                data["currentUnfilledWorkorders"].push(item.toJSON());
+                data["CurrentUnfilledWorkorders"].push(item.toJSON());
         }
         super.toJSON(data);
         return data;
@@ -2203,11 +2203,11 @@ export class PartWorkorder implements IPartWorkorder {
 
     init(data?: any) {
         if (data) {
-            this.workorderId = data["workorderId"];
-            this.part = data["part"];
-            this.quantity = data["quantity"];
-            this.dueDate = data["dueDate"] ? new Date(data["dueDate"].toString()) : <any>undefined;
-            this.priority = data["priority"];
+            this.workorderId = data["WorkorderId"];
+            this.part = data["Part"];
+            this.quantity = data["Quantity"];
+            this.dueDate = data["DueDate"] ? new Date(data["DueDate"].toString()) : <any>undefined;
+            this.priority = data["Priority"];
         }
     }
 
@@ -2220,11 +2220,11 @@ export class PartWorkorder implements IPartWorkorder {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["workorderId"] = this.workorderId;
-        data["part"] = this.part;
-        data["quantity"] = this.quantity;
-        data["dueDate"] = this.dueDate ? this.dueDate.toISOString() : <any>undefined;
-        data["priority"] = this.priority;
+        data["WorkorderId"] = this.workorderId;
+        data["Part"] = this.part;
+        data["Quantity"] = this.quantity;
+        data["DueDate"] = this.dueDate ? this.dueDate.toISOString() : <any>undefined;
+        data["Priority"] = this.priority;
         return data;
     }
 }
@@ -2255,31 +2255,31 @@ export class CurrentStatus implements ICurrentStatus {
 
     init(data?: any) {
         if (data) {
-            if (data["jobs"]) {
+            if (data["Jobs"]) {
                 this.jobs = {};
-                for (let key in data["jobs"]) {
-                    if (data["jobs"].hasOwnProperty(key))
-                        this.jobs[key] = data["jobs"][key] ? InProcessJob.fromJS(data["jobs"][key]) : new InProcessJob();
+                for (let key in data["Jobs"]) {
+                    if (data["Jobs"].hasOwnProperty(key))
+                        this.jobs[key] = data["Jobs"][key] ? InProcessJob.fromJS(data["Jobs"][key]) : new InProcessJob();
                 }
             }
-            if (data["pallets"]) {
+            if (data["Pallets"]) {
                 this.pallets = {};
-                for (let key in data["pallets"]) {
-                    if (data["pallets"].hasOwnProperty(key))
-                        this.pallets[key] = data["pallets"][key] ? PalletStatus.fromJS(data["pallets"][key]) : new PalletStatus();
+                for (let key in data["Pallets"]) {
+                    if (data["Pallets"].hasOwnProperty(key))
+                        this.pallets[key] = data["Pallets"][key] ? PalletStatus.fromJS(data["Pallets"][key]) : new PalletStatus();
                 }
             }
-            if (data["material"] && data["material"].constructor === Array) {
+            if (data["Material"] && data["Material"].constructor === Array) {
                 this.material = [];
-                for (let item of data["material"])
+                for (let item of data["Material"])
                     this.material.push(InProcessMaterial.fromJS(item));
             }
-            if (data["alarms"] && data["alarms"].constructor === Array) {
+            if (data["Alarms"] && data["Alarms"].constructor === Array) {
                 this.alarms = [];
-                for (let item of data["alarms"])
+                for (let item of data["Alarms"])
                     this.alarms.push(item);
             }
-            this.latestScheduleId = data["latestScheduleId"];
+            this.latestScheduleId = data["LatestScheduleId"];
         }
     }
 
@@ -2293,30 +2293,30 @@ export class CurrentStatus implements ICurrentStatus {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         if (this.jobs) {
-            data["jobs"] = {};
+            data["Jobs"] = {};
             for (let key in this.jobs) {
                 if (this.jobs.hasOwnProperty(key))
-                    data["jobs"][key] = this.jobs[key];
+                    data["Jobs"][key] = this.jobs[key];
             }
         }
         if (this.pallets) {
-            data["pallets"] = {};
+            data["Pallets"] = {};
             for (let key in this.pallets) {
                 if (this.pallets.hasOwnProperty(key))
-                    data["pallets"][key] = this.pallets[key];
+                    data["Pallets"][key] = this.pallets[key];
             }
         }
         if (this.material && this.material.constructor === Array) {
-            data["material"] = [];
+            data["Material"] = [];
             for (let item of this.material)
-                data["material"].push(item.toJSON());
+                data["Material"].push(item.toJSON());
         }
         if (this.alarms && this.alarms.constructor === Array) {
-            data["alarms"] = [];
+            data["Alarms"] = [];
             for (let item of this.alarms)
-                data["alarms"].push(item);
+                data["Alarms"].push(item);
         }
-        data["latestScheduleId"] = this.latestScheduleId;
+        data["LatestScheduleId"] = this.latestScheduleId;
         return data;
     }
 }
@@ -2340,12 +2340,12 @@ export class InProcessJob extends JobPlan implements IInProcessJob {
     init(data?: any) {
         super.init(data);
         if (data) {
-            if (data["completedProc1"] && data["completedProc1"].constructor === Array) {
+            if (data["CompletedProc1"] && data["CompletedProc1"].constructor === Array) {
                 this.completedProc1 = [];
-                for (let item of data["completedProc1"])
+                for (let item of data["CompletedProc1"])
                     this.completedProc1.push(item);
             }
-            this.totalCompleteOnFinalProcess = data["totalCompleteOnFinalProcess"];
+            this.totalCompleteOnFinalProcess = data["TotalCompleteOnFinalProcess"];
         }
     }
 
@@ -2359,11 +2359,11 @@ export class InProcessJob extends JobPlan implements IInProcessJob {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         if (this.completedProc1 && this.completedProc1.constructor === Array) {
-            data["completedProc1"] = [];
+            data["CompletedProc1"] = [];
             for (let item of this.completedProc1)
-                data["completedProc1"].push(item);
+                data["CompletedProc1"].push(item);
         }
-        data["totalCompleteOnFinalProcess"] = this.totalCompleteOnFinalProcess;
+        data["TotalCompleteOnFinalProcess"] = this.totalCompleteOnFinalProcess;
         super.toJSON(data);
         return data;
     }
@@ -2394,13 +2394,13 @@ export class PalletStatus implements IPalletStatus {
 
     init(data?: any) {
         if (data) {
-            this.pallet = data["pallet"];
-            this.fixtureOnPallet = data["fixtureOnPallet"];
-            this.onHold = data["onHold"];
-            this.currentPalletLocation = data["currentPalletLocation"] ? PalletLocation.fromJS(data["currentPalletLocation"]) : new PalletLocation();
-            this.newFixture = data["newFixture"];
-            this.targetLocation = data["targetLocation"] ? PalletLocation.fromJS(data["targetLocation"]) : <any>undefined;
-            this.percentMoveCompleted = data["percentMoveCompleted"];
+            this.pallet = data["Pallet"];
+            this.fixtureOnPallet = data["FixtureOnPallet"];
+            this.onHold = data["OnHold"];
+            this.currentPalletLocation = data["CurrentPalletLocation"] ? PalletLocation.fromJS(data["CurrentPalletLocation"]) : new PalletLocation();
+            this.newFixture = data["NewFixture"];
+            this.targetLocation = data["TargetLocation"] ? PalletLocation.fromJS(data["TargetLocation"]) : <any>undefined;
+            this.percentMoveCompleted = data["PercentMoveCompleted"];
         }
     }
 
@@ -2413,13 +2413,13 @@ export class PalletStatus implements IPalletStatus {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["pallet"] = this.pallet;
-        data["fixtureOnPallet"] = this.fixtureOnPallet;
-        data["onHold"] = this.onHold;
-        data["currentPalletLocation"] = this.currentPalletLocation ? this.currentPalletLocation.toJSON() : <any>undefined;
-        data["newFixture"] = this.newFixture;
-        data["targetLocation"] = this.targetLocation ? this.targetLocation.toJSON() : <any>undefined;
-        data["percentMoveCompleted"] = this.percentMoveCompleted;
+        data["Pallet"] = this.pallet;
+        data["FixtureOnPallet"] = this.fixtureOnPallet;
+        data["OnHold"] = this.onHold;
+        data["CurrentPalletLocation"] = this.currentPalletLocation ? this.currentPalletLocation.toJSON() : <any>undefined;
+        data["NewFixture"] = this.newFixture;
+        data["TargetLocation"] = this.targetLocation ? this.targetLocation.toJSON() : <any>undefined;
+        data["PercentMoveCompleted"] = this.percentMoveCompleted;
         return data;
     }
 }
@@ -2491,13 +2491,13 @@ export class InProcessMaterial implements IInProcessMaterial {
 
     init(data?: any) {
         if (data) {
-            this.materialID = data["materialID"];
-            this.jobUnique = data["jobUnique"];
-            this.partName = data["partName"];
-            this.process = data["process"];
-            this.path = data["path"];
-            this.location = data["location"] ? InProcessMaterialLocation.fromJS(data["location"]) : new InProcessMaterialLocation();
-            this.action = data["action"] ? InProcessMaterialAction.fromJS(data["action"]) : new InProcessMaterialAction();
+            this.materialID = data["MaterialID"];
+            this.jobUnique = data["JobUnique"];
+            this.partName = data["PartName"];
+            this.process = data["Process"];
+            this.path = data["Path"];
+            this.location = data["Location"] ? InProcessMaterialLocation.fromJS(data["Location"]) : new InProcessMaterialLocation();
+            this.action = data["Action"] ? InProcessMaterialAction.fromJS(data["Action"]) : new InProcessMaterialAction();
         }
     }
 
@@ -2510,13 +2510,13 @@ export class InProcessMaterial implements IInProcessMaterial {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["materialID"] = this.materialID;
-        data["jobUnique"] = this.jobUnique;
-        data["partName"] = this.partName;
-        data["process"] = this.process;
-        data["path"] = this.path;
-        data["location"] = this.location ? this.location.toJSON() : <any>undefined;
-        data["action"] = this.action ? this.action.toJSON() : <any>undefined;
+        data["MaterialID"] = this.materialID;
+        data["JobUnique"] = this.jobUnique;
+        data["PartName"] = this.partName;
+        data["Process"] = this.process;
+        data["Path"] = this.path;
+        data["Location"] = this.location ? this.location.toJSON() : <any>undefined;
+        data["Action"] = this.action ? this.action.toJSON() : <any>undefined;
         return data;
     }
 }
@@ -2549,11 +2549,11 @@ export class InProcessMaterialLocation implements IInProcessMaterialLocation {
 
     init(data?: any) {
         if (data) {
-            this.type = data["type"];
-            this.pallet = data["pallet"];
-            this.fixture = data["fixture"];
-            this.face = data["face"];
-            this.currentQueue = data["currentQueue"];
+            this.type = data["Type"];
+            this.pallet = data["Pallet"];
+            this.fixture = data["Fixture"];
+            this.face = data["Face"];
+            this.currentQueue = data["CurrentQueue"];
         }
     }
 
@@ -2566,11 +2566,11 @@ export class InProcessMaterialLocation implements IInProcessMaterialLocation {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["type"] = this.type;
-        data["pallet"] = this.pallet;
-        data["fixture"] = this.fixture;
-        data["face"] = this.face;
-        data["currentQueue"] = this.currentQueue;
+        data["Type"] = this.type;
+        data["Pallet"] = this.pallet;
+        data["Fixture"] = this.fixture;
+        data["Face"] = this.face;
+        data["CurrentQueue"] = this.currentQueue;
         return data;
     }
 }
@@ -2609,13 +2609,13 @@ export class InProcessMaterialAction implements IInProcessMaterialAction {
 
     init(data?: any) {
         if (data) {
-            this.type = data["type"];
-            this.loadOntoPallet = data["loadOntoPallet"];
-            this.loadOntoFace = data["loadOntoFace"];
-            this.unloadIntoQueue = data["unloadIntoQueue"];
-            this.program = data["program"];
-            this.elapsedMachiningTime = data["elapsedMachiningTime"];
-            this.expectedRemainingMachiningTime = data["expectedRemainingMachiningTime"];
+            this.type = data["Type"];
+            this.loadOntoPallet = data["LoadOntoPallet"];
+            this.loadOntoFace = data["LoadOntoFace"];
+            this.unloadIntoQueue = data["UnloadIntoQueue"];
+            this.program = data["Program"];
+            this.elapsedMachiningTime = data["ElapsedMachiningTime"];
+            this.expectedRemainingMachiningTime = data["ExpectedRemainingMachiningTime"];
         }
     }
 
@@ -2628,13 +2628,13 @@ export class InProcessMaterialAction implements IInProcessMaterialAction {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["type"] = this.type;
-        data["loadOntoPallet"] = this.loadOntoPallet;
-        data["loadOntoFace"] = this.loadOntoFace;
-        data["unloadIntoQueue"] = this.unloadIntoQueue;
-        data["program"] = this.program;
-        data["elapsedMachiningTime"] = this.elapsedMachiningTime;
-        data["expectedRemainingMachiningTime"] = this.expectedRemainingMachiningTime;
+        data["Type"] = this.type;
+        data["LoadOntoPallet"] = this.loadOntoPallet;
+        data["LoadOntoFace"] = this.loadOntoFace;
+        data["UnloadIntoQueue"] = this.unloadIntoQueue;
+        data["Program"] = this.program;
+        data["ElapsedMachiningTime"] = this.elapsedMachiningTime;
+        data["ExpectedRemainingMachiningTime"] = this.expectedRemainingMachiningTime;
         return data;
     }
 }
@@ -2673,36 +2673,36 @@ export class NewJobs extends ValueType implements INewJobs {
     init(data?: any) {
         super.init(data);
         if (data) {
-            this.scheduleId = data["scheduleId"];
-            if (data["jobs"] && data["jobs"].constructor === Array) {
+            this.scheduleId = data["ScheduleId"];
+            if (data["Jobs"] && data["Jobs"].constructor === Array) {
                 this.jobs = [];
-                for (let item of data["jobs"])
+                for (let item of data["Jobs"])
                     this.jobs.push(JobPlan.fromJS(item));
             }
-            if (data["stationUse"] && data["stationUse"].constructor === Array) {
+            if (data["StationUse"] && data["StationUse"].constructor === Array) {
                 this.stationUse = [];
-                for (let item of data["stationUse"])
+                for (let item of data["StationUse"])
                     this.stationUse.push(SimulatedStationUtilization.fromJS(item));
             }
-            if (data["extraParts"]) {
+            if (data["ExtraParts"]) {
                 this.extraParts = {};
-                for (let key in data["extraParts"]) {
-                    if (data["extraParts"].hasOwnProperty(key))
-                        this.extraParts[key] = data["extraParts"][key];
+                for (let key in data["ExtraParts"]) {
+                    if (data["ExtraParts"].hasOwnProperty(key))
+                        this.extraParts[key] = data["ExtraParts"][key];
                 }
             }
-            this.archiveCompletedJobs = data["archiveCompletedJobs"];
-            this.debugMessage = data["debugMessage"];
-            if (data["currentUnfilledWorkorders"] && data["currentUnfilledWorkorders"].constructor === Array) {
+            this.archiveCompletedJobs = data["ArchiveCompletedJobs"];
+            this.debugMessage = data["DebugMessage"];
+            if (data["CurrentUnfilledWorkorders"] && data["CurrentUnfilledWorkorders"].constructor === Array) {
                 this.currentUnfilledWorkorders = [];
-                for (let item of data["currentUnfilledWorkorders"])
+                for (let item of data["CurrentUnfilledWorkorders"])
                     this.currentUnfilledWorkorders.push(PartWorkorder.fromJS(item));
             }
-            if (data["queueSizes"]) {
+            if (data["QueueSizes"]) {
                 this.queueSizes = {};
-                for (let key in data["queueSizes"]) {
-                    if (data["queueSizes"].hasOwnProperty(key))
-                        this.queueSizes[key] = data["queueSizes"][key] ? QueueSize.fromJS(data["queueSizes"][key]) : new QueueSize();
+                for (let key in data["QueueSizes"]) {
+                    if (data["QueueSizes"].hasOwnProperty(key))
+                        this.queueSizes[key] = data["QueueSizes"][key] ? QueueSize.fromJS(data["QueueSizes"][key]) : new QueueSize();
                 }
             }
         }
@@ -2717,36 +2717,36 @@ export class NewJobs extends ValueType implements INewJobs {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["scheduleId"] = this.scheduleId;
+        data["ScheduleId"] = this.scheduleId;
         if (this.jobs && this.jobs.constructor === Array) {
-            data["jobs"] = [];
+            data["Jobs"] = [];
             for (let item of this.jobs)
-                data["jobs"].push(item.toJSON());
+                data["Jobs"].push(item.toJSON());
         }
         if (this.stationUse && this.stationUse.constructor === Array) {
-            data["stationUse"] = [];
+            data["StationUse"] = [];
             for (let item of this.stationUse)
-                data["stationUse"].push(item.toJSON());
+                data["StationUse"].push(item.toJSON());
         }
         if (this.extraParts) {
-            data["extraParts"] = {};
+            data["ExtraParts"] = {};
             for (let key in this.extraParts) {
                 if (this.extraParts.hasOwnProperty(key))
-                    data["extraParts"][key] = this.extraParts[key];
+                    data["ExtraParts"][key] = this.extraParts[key];
             }
         }
-        data["archiveCompletedJobs"] = this.archiveCompletedJobs;
-        data["debugMessage"] = this.debugMessage;
+        data["ArchiveCompletedJobs"] = this.archiveCompletedJobs;
+        data["DebugMessage"] = this.debugMessage;
         if (this.currentUnfilledWorkorders && this.currentUnfilledWorkorders.constructor === Array) {
-            data["currentUnfilledWorkorders"] = [];
+            data["CurrentUnfilledWorkorders"] = [];
             for (let item of this.currentUnfilledWorkorders)
-                data["currentUnfilledWorkorders"].push(item.toJSON());
+                data["CurrentUnfilledWorkorders"].push(item.toJSON());
         }
         if (this.queueSizes) {
-            data["queueSizes"] = {};
+            data["QueueSizes"] = {};
             for (let key in this.queueSizes) {
                 if (this.queueSizes.hasOwnProperty(key))
-                    data["queueSizes"][key] = this.queueSizes[key];
+                    data["QueueSizes"][key] = this.queueSizes[key];
             }
         }
         super.toJSON(data);
@@ -2776,8 +2776,8 @@ export class QueueSize extends ValueType implements IQueueSize {
     init(data?: any) {
         super.init(data);
         if (data) {
-            this.maxSizeBeforeStopLoading = data["maxSizeBeforeStopLoading"];
-            this.maxSizeBeforeStopUnloading = data["maxSizeBeforeStopUnloading"];
+            this.maxSizeBeforeStopLoading = data["MaxSizeBeforeStopLoading"];
+            this.maxSizeBeforeStopUnloading = data["MaxSizeBeforeStopUnloading"];
         }
     }
 
@@ -2790,8 +2790,8 @@ export class QueueSize extends ValueType implements IQueueSize {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["maxSizeBeforeStopLoading"] = this.maxSizeBeforeStopLoading;
-        data["maxSizeBeforeStopUnloading"] = this.maxSizeBeforeStopUnloading;
+        data["MaxSizeBeforeStopLoading"] = this.maxSizeBeforeStopLoading;
+        data["MaxSizeBeforeStopUnloading"] = this.maxSizeBeforeStopUnloading;
         super.toJSON(data);
         return data;
     }
@@ -2816,11 +2816,11 @@ export class JobAndDecrementQuantity extends ValueType implements IJobAndDecreme
     init(data?: any) {
         super.init(data);
         if (data) {
-            this.decrementId = data["decrementId"];
-            this.jobUnique = data["jobUnique"];
-            this.timeUTC = data["timeUTC"] ? new Date(data["timeUTC"].toString()) : <any>undefined;
-            this.part = data["part"];
-            this.quantity = data["quantity"];
+            this.decrementId = data["DecrementId"];
+            this.jobUnique = data["JobUnique"];
+            this.timeUTC = data["TimeUTC"] ? new Date(data["TimeUTC"].toString()) : <any>undefined;
+            this.part = data["Part"];
+            this.quantity = data["Quantity"];
         }
     }
 
@@ -2833,11 +2833,11 @@ export class JobAndDecrementQuantity extends ValueType implements IJobAndDecreme
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["decrementId"] = this.decrementId;
-        data["jobUnique"] = this.jobUnique;
-        data["timeUTC"] = this.timeUTC ? this.timeUTC.toISOString() : <any>undefined;
-        data["part"] = this.part;
-        data["quantity"] = this.quantity;
+        data["DecrementId"] = this.decrementId;
+        data["JobUnique"] = this.jobUnique;
+        data["TimeUTC"] = this.timeUTC ? this.timeUTC.toISOString() : <any>undefined;
+        data["Part"] = this.part;
+        data["Quantity"] = this.quantity;
         super.toJSON(data);
         return data;
     }
@@ -3180,11 +3180,11 @@ export class SerialSettings implements ISerialSettings {
 
     init(data?: any) {
         if (data) {
-            this.serialType = data["serialType"];
-            this.serialLength = data["serialLength"];
-            this.depositOnProcess = data["depositOnProcess"];
-            this.filenameTemplate = data["filenameTemplate"];
-            this.programTemplate = data["programTemplate"];
+            this.serialType = data["SerialType"];
+            this.serialLength = data["SerialLength"];
+            this.depositOnProcess = data["DepositOnProcess"];
+            this.filenameTemplate = data["FilenameTemplate"];
+            this.programTemplate = data["ProgramTemplate"];
         }
     }
 
@@ -3197,11 +3197,11 @@ export class SerialSettings implements ISerialSettings {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["serialType"] = this.serialType;
-        data["serialLength"] = this.serialLength;
-        data["depositOnProcess"] = this.depositOnProcess;
-        data["filenameTemplate"] = this.filenameTemplate;
-        data["programTemplate"] = this.programTemplate;
+        data["SerialType"] = this.serialType;
+        data["SerialLength"] = this.serialLength;
+        data["DepositOnProcess"] = this.depositOnProcess;
+        data["FilenameTemplate"] = this.filenameTemplate;
+        data["ProgramTemplate"] = this.programTemplate;
         return data;
     }
 }
@@ -3232,8 +3232,8 @@ export class PluginInfo extends ValueType implements IPluginInfo {
     init(data?: any) {
         super.init(data);
         if (data) {
-            this.name = data["name"];
-            this.version = data["version"];
+            this.name = data["Name"];
+            this.version = data["Version"];
         }
     }
 
@@ -3246,8 +3246,8 @@ export class PluginInfo extends ValueType implements IPluginInfo {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["name"] = this.name;
-        data["version"] = this.version;
+        data["Name"] = this.name;
+        data["Version"] = this.version;
         super.toJSON(data);
         return data;
     }
