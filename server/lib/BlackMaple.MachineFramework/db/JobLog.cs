@@ -464,7 +464,15 @@ namespace BlackMaple.MachineFramework
                 else
                 {
                     ty = MachineWatchInterface.LogType.GeneralMessage;
-                    locName = ((MachineWatchInterface.PalletLocationTypeEnum)logType).ToString();
+                    switch (logType)
+                    {
+                        case 3: locName = "Machine"; break;
+                        case 4: locName = "Buffer"; break;
+                        case 5: locName = "Cart"; break;
+                        case 8: locName = "Wash"; break;
+                        case 9: locName = "Deburr"; break;
+                        default: locName = "Unknown"; break;
+                    }
                 }
 
                 var matLst = new List<MachineWatchInterface.LogMaterial>();
@@ -691,7 +699,7 @@ namespace BlackMaple.MachineFramework
                 cmd.CommandText = "SELECT TimeUTC FROM stations where Pallet = $pal AND Result = 'PalletCycle' " +
                                      "ORDER BY Counter DESC LIMIT 1";
                 cmd.Parameters.Add("pal", SqliteType.Text).Value = pallet;
-                
+
                 var date = cmd.ExecuteScalar();
                 if (date == null || date == DBNull.Value)
                     return DateTime.MinValue;
@@ -1039,12 +1047,12 @@ namespace BlackMaple.MachineFramework
                                 //for each log entry, we search for a matching route stop in the job
                                 //if we find one, we replace the counter in the program
                                 string pal = reader.GetString(0);
-                                MachineWatchInterface.PalletLocationTypeEnum palLoc = (MachineWatchInterface.PalletLocationTypeEnum)reader.GetInt32(1);
+                                var palLoc = (MachineWatchInterface.LogType)reader.GetInt32(1);
                                 int statNum = reader.GetInt32(2);
 
                                 newCounter = newCounter.Replace(MachineWatchInterface.JobInspectionData.PalletFormatFlag(proc), pal);
 
-                                if (palLoc == MachineWatchInterface.PalletLocationTypeEnum.LoadUnload)
+                                if (palLoc == MachineWatchInterface.LogType.LoadUnloadCycle)
                                 {
                                     if (!foundLoad && !foundMach)
                                     {
@@ -1059,7 +1067,7 @@ namespace BlackMaple.MachineFramework
                                     }
 
                                 }
-                                else if (palLoc == MachineWatchInterface.PalletLocationTypeEnum.Machine)
+                                else if (palLoc == MachineWatchInterface.LogType.MachineCycle)
                                 {
                                     foundMach = true;
                                     for (int i = 0; i < stops.Length; i++)
@@ -1617,7 +1625,7 @@ namespace BlackMaple.MachineFramework
                     lastTimeCmd.CommandText = "SELECT TimeUTC FROM stations where Pallet = $pal AND Result = 'PalletCycle' " +
                                             "ORDER BY Counter DESC LIMIT 1";
                     lastTimeCmd.Parameters.Add("pal", SqliteType.Text).Value = pal;
-                
+
                     var elapsedTime = TimeSpan.Zero;
                     var lastCycleTime = lastTimeCmd.ExecuteScalar();
                     if (lastCycleTime != null && lastCycleTime != DBNull.Value)

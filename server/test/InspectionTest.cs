@@ -141,7 +141,7 @@ namespace MachineWatchTest {
 			//the lastutc should be 2 minutes too short, so only inspections from the counter should take place
 
 			Assert.False(_insp.MakeInspectionDecision(1, job, inspProg));
-			Assert.False(_insp.MakeInspectionDecision(1, job, inspProg));			
+			Assert.False(_insp.MakeInspectionDecision(1, job, inspProg));
 			CheckCount("counter1", 1);
 			CheckLastUTC("counter1", cnt.LastUTC);
 
@@ -226,7 +226,7 @@ namespace MachineWatchTest {
 			cnt.LastUTC = DateTime.UtcNow.AddHours(-10);
 			_insp.SetInspectCounts(new InspectCount[] {cnt});
 
-			PalletLocation palLoc = new PalletLocation(PalletLocationTypeEnum.Machine, 1);
+			PalletLocation palLoc = new PalletLocation(PalletLocationEnum.Machine, 1);
 
 			_insp.NextPieceInspection(palLoc, "insp1");
 			_insp.CheckMaterialForNextPeiceInspection(palLoc, 1);

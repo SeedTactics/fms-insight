@@ -1,4 +1,4 @@
-/* Copyright (c) 2017, John Lenz
+/* Copyright (c) 2018, John Lenz
 
 All rights reserved.
 
@@ -1011,161 +1011,6 @@ namespace BlackMaple.MachineWatchInterface
     }
 
     [SerializableAttribute, DataContract]
-    public class JobCurrentInformation : JobPlan
-    {
-        [SerializableAttribute, DataContract]
-        public struct Material
-        {
-            //can be -1 if the job manager does not track material
-            [DataMember(IsRequired=true)] public readonly long MaterialId;
-            [DataMember(IsRequired=true)] public readonly int Process;
-            [DataMember(IsRequired=true)] public readonly int Path;
-
-            [DataMember(IsRequired=true)] public readonly string Pallet;
-            [DataMember(IsRequired=true)] public readonly string Fixture;
-            [DataMember(IsRequired=true)] public readonly string FaceName;
-
-            public Material(long matID, int proc, int path, string pal, string fix, string face)
-            {
-                MaterialId = matID;
-                Process = proc;
-                Path = path;
-                Pallet = pal;
-                Fixture = fix;
-                FaceName = face;
-            }
-        }
-
-        public IList<Material> MaterialInExecution
-        {
-            get { return _material; }
-        }
-        public void AddMaterial(Material mat)
-        {
-            _material.Add(mat);
-        }
-
-        public int GetCompletedOnFirstProcess(int path)
-        {
-            if (path >= 1 && path <= GetNumPaths(1)) {
-                return _completedProc1[path - 1];
-            } else {
-                throw new IndexOutOfRangeException("Invalid path number");
-            }
-        }
-        public void SetCompletedOnFirstProcess(int path, int comp)
-        {
-            if (path >= 1 && path <= GetNumPaths(1)) {
-                _completedProc1[path - 1] = comp;
-            } else {
-                throw new IndexOutOfRangeException("Invalid path number");
-            }
-        }
-        public int GetCompletedOnFinalProcess()
-        {
-            return _totalComplete;
-        }
-        public void SetCompletedOnFinalProcess(int comp)
-        {
-            _totalComplete = comp;
-        }
-        public void IncrementCompletedOnFinalProcess(int comp)
-        {
-            _totalComplete += comp;
-        }
-
-        public JobCurrentInformation(string unique, int numProc) : this(unique, numProc, null)
-        {
-
-        }
-        public JobCurrentInformation(string unique, int numProc, int[] numPaths) : base(unique, numProc, numPaths)
-        {
-            _material = new List<Material>();
-            _completedProc1 = new int[GetNumPaths(1)];
-            for (int i = 0; i < _completedProc1.Length; i++)
-                _completedProc1[i] = 0;
-            _totalComplete = 0;
-        }
-        public JobCurrentInformation(JobPlan job) : base(job)
-        {
-            _material = new List<Material>();
-            _completedProc1 = new int[GetNumPaths(1)];
-            for (int i = 0; i < _completedProc1.Length; i++)
-                _completedProc1[i] = 0;
-            _totalComplete = 0;
-        }
-
-        [DataMember(Name="Material", IsRequired=true)] private List<Material> _material;
-        [DataMember(Name="CompletedProc1", IsRequired=true)] private int[] _completedProc1;
-        [DataMember(Name="TotalComplete", IsRequired=true)] private int _totalComplete;
-    }
-
-    [SerializableAttribute, DataContract]
-    public class CurrentStatus
-    {
-        public IDictionary<string, JobCurrentInformation> Jobs
-        {
-            get { return _jobs; }
-        }
-
-        public IDictionary<string, PalletStatus> Pallets
-        {
-            get { return _pals; }
-        }
-
-        public IList<string> Alarms
-        {
-            get { return _alarms; }
-        }
-
-        [DataMember(IsRequired=false, EmitDefaultValue=false)] public string LatestScheduleId {get;}
-
-        public IDictionary<string, int> ExtraPartsForLatestSchedule
-        {
-            get { return _extraParts; }
-        }
-
-        public CurrentStatus(IEnumerable<JobCurrentInformation> jobs,
-                             IDictionary<string, PalletStatus> pals,
-                             string latestSchId,
-                             IDictionary<string, int> extraParts)
-        {
-            _jobs = new Dictionary<string, JobCurrentInformation>();
-            _pals = new Dictionary<string, PalletStatus>(pals);
-            _alarms = new List<string>();
-            LatestScheduleId = latestSchId;
-            _extraParts = new Dictionary<string, int>(extraParts);
-
-            foreach (var j in jobs)
-                _jobs.Add(j.UniqueStr, j);
-        }
-
-        public CurrentStatus(IDictionary<string, JobCurrentInformation> jobs,
-                             IDictionary<string, PalletStatus> pals,
-                             string latestSchId,
-                             IDictionary<string, int> extraParts)
-        {
-            _jobs = new Dictionary<string, JobCurrentInformation>(jobs);
-            _pals = new Dictionary<string, PalletStatus>(pals);
-            _alarms = new List<string>();
-            LatestScheduleId = latestSchId;
-            _extraParts = new Dictionary<string, int>(extraParts);
-        }
-
-        [DataMember(Name="Jobs", IsRequired=true)]
-        private Dictionary<string, JobCurrentInformation> _jobs;
-
-        [DataMember(Name="Pallets", IsRequired=true)]
-        private Dictionary<string, PalletStatus> _pals;
-
-        [DataMember(Name="Alarms", IsRequired=false, EmitDefaultValue=false)]
-        private List<string> _alarms;
-
-        [DataMember(Name="ExtraParts", IsRequired=false, EmitDefaultValue=false)]
-        private Dictionary<string, int> _extraParts;
-    }
-
-    [SerializableAttribute, DataContract]
     public class SimulatedStationUtilization
     {
         [DataMember(IsRequired=true)] public string SimulationId; // a unique string shared between all utilization structs that are part of the same simulation
@@ -1252,24 +1097,6 @@ namespace BlackMaple.MachineWatchInterface
     }
 
     [Serializable, DataContract]
-    public class JobAndPath : IEquatable<JobAndPath>
-    {
-        [DataMember(IsRequired=true)] public readonly string UniqueStr;
-        [DataMember(IsRequired=true)] public readonly int Path;
-
-        public JobAndPath(string unique, int path)
-        {
-            UniqueStr = unique;
-            Path = path;
-        }
-
-        public bool Equals(JobAndPath other)
-        {
-            return (UniqueStr == other.UniqueStr && Path == other.Path);
-        }
-    }
-
-    [Serializable, DataContract]
     public struct HistoricData
     {
         [DataMember(IsRequired=true)] public IDictionary<string, JobPlan> Jobs;
@@ -1285,15 +1112,5 @@ namespace BlackMaple.MachineWatchInterface
 
         [OptionalField, DataMember(IsRequired=false)]
         public List<PartWorkorder> CurrentUnfilledWorkorders;
-    }
-
-    [Serializable, DataContract]
-    public struct JobAndDecrementQuantity
-    {
-        [DataMember(IsRequired=true)] public string DecrementId;
-        [DataMember(IsRequired=true)] public string JobUnique;
-        [DataMember(IsRequired=true)] public DateTime TimeUTC;
-        [DataMember(IsRequired=true)] public string Part;
-        [DataMember(IsRequired=true)] public int Quantity;
     }
 }

@@ -54,7 +54,7 @@ namespace MachineWatchApiServer.Controllers
         }
 
         [HttpPut ("pallet/{pallet}/{location}/{inspectionType}")]
-        public void NextPieceInspection(int pallet, PalletLocationTypeEnum location, string inspectionType)
+        public void NextPieceInspection(int pallet, PalletLocationEnum location, string inspectionType)
         {
             _server.NextPieceInspection(new PalletLocation(location, pallet), inspectionType);
         }

@@ -472,18 +472,17 @@ namespace MachineWatchApiServer
     {
         public static CurrentStatus SampleCurrentStatus()
         {
-            var jobs = new Dictionary<string, JobCurrentInformation>();
+            var st = new CurrentStatus();
 
-            var job1 = new JobCurrentInformation(RandomJob("uniq1"));
-            job1.SetCompletedOnFinalProcess(rng.Next(1, 10));
-            jobs.Add(job1.UniqueStr, job1);
+            var job1 = new InProcessJob(RandomJob("uniq1"));
+            job1.TotalCompleteOnFinalProcess = rng.Next(1, 10);
+            st.Jobs.Add(job1.UniqueStr, job1);
 
-            var pals = new Dictionary<string, PalletStatus>();
-            pals.Add("1", CreatePallet1Data());
+            st.LatestScheduleId = job1.ScheduleId;
 
-            return new CurrentStatus(
-                jobs.Values, pals, job1.ScheduleId,
-                new Dictionary<string, int>());
+            st.Pallets.Add("1", CreatePallet1Data());
+
+            return st;
         }
 
         public static JobPlan AddJobToHistory(JobDB db, string uniq, Action<JobPlan> modify = null)
@@ -667,15 +666,53 @@ namespace MachineWatchApiServer
 
         private static PalletStatus CreatePallet1Data()
         {
-            var status = PalletStatus.CreateAtLoadUnload("1", "fix1", false,
-                new PalletLocation(PalletLocationTypeEnum.LoadUnload, 1), "");
+            return new PalletStatus("1", "fix1", false,
+                new PalletLocation(PalletLocationEnum.LoadUnload, 1),
+                "");
+        }
 
-            status.MaterialToUnload.Add(new PalletStatus.Material(
-                "job1", "part1", matID: 1, proc: 1, path: 1, face: "1"));
-            status.MaterialToLoad.Add(new PalletStatus.Material(
-                "job1", "part2", matID: 5, proc: 1, path: 1, face: "1"));
+        private static IEnumerable<InProcessMaterial> InProcMaterial()
+        {
+            var ret = new List<InProcessMaterial>();
 
-            return status;
+            ret.Add(new InProcessMaterial() {
+                MaterialID = 1,
+                JobUnique = "job1",
+                PartName = "part1",
+                Process = 1,
+                Path = 1,
+
+                Location = new InProcessMaterialLocation() {
+                    Type = InProcessMaterialLocation.LocType.OnPallet,
+                    Pallet = "1",
+                    Fixture = "fix1",
+                    Face = 1
+                },
+
+                Action = new InProcessMaterialAction() {
+                    Type = InProcessMaterialAction.ActionType.Unloading,
+                }
+            });
+
+            ret.Add(new InProcessMaterial() {
+                MaterialID = -1,
+                JobUnique = "job1",
+                PartName = "part1",
+                Process = 1,
+                Path = 1,
+
+                Location = new InProcessMaterialLocation() {
+                    Type = InProcessMaterialLocation.LocType.Free
+                },
+
+                Action = new InProcessMaterialAction() {
+                    Type = InProcessMaterialAction.ActionType.Loading,
+                    LoadOntoPallet = "1",
+                    LoadOntoFace = 1
+                }
+            });
+
+            return ret;
         }
 
         private static string RandomString(int length)

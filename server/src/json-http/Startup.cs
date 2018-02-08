@@ -109,12 +109,6 @@ namespace MachineWatchApiServer
             services.AddSwaggerGen(c =>
                 {
                     c.SwaggerDoc("v1", new Info { Title = "Machine Watch", Version = "v1" });
-                    c.CustomSchemaIds(type => {
-                        if (type == typeof(PalletStatus.Material))
-                            return "PalletMaterial";
-                        else
-                            return type.Name;
-                    });
                 });
         }
 
