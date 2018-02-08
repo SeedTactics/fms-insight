@@ -35,7 +35,7 @@ import { ConsumingPledge, PledgeStatus } from './pledge';
 
 export interface State {
     readonly loading: boolean;
-    readonly current_jobs: ReadonlyArray<Readonly<api.IJobCurrentInformation>>; // TODO: DeepReadonly
+    readonly current_jobs: ReadonlyArray<Readonly<api.IInProcessJob>>; // TODO: DeepReadonly
     readonly current_pallets: ReadonlyArray<Readonly<api.IPalletStatus>>; // TODO: DeepReadonly
 }
 
@@ -57,10 +57,10 @@ export type Action =
   ;
 
 export function newJobs() {
-    var client = new api.Client();
+    var client = new api.JobsClient();
     return {
         type: ActionType.NewCurrentStatus,
-        pledge: client.apiV1JobsStatusGet()
+        pledge: client.currentStatus()
     };
 }
 

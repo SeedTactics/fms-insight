@@ -65,21 +65,21 @@ export type Action =
   ;
 
 export function requestLastWeek() /*: Action<ActionUse.CreatingAction> */ {
-    var client = new api.Client();
+    var client = new api.LogClient();
     var now = moment.utc();
     var nowDate = now.toDate();
     var oneWeekAgo = now.add(-1, 'w');
     return {
         type: ActionType.RequestLastWeek,
         now: nowDate,
-        pledge: client.apiV1LogEventsAllGet(oneWeekAgo.toDate(), nowDate)
+        pledge: client.get(oneWeekAgo.toDate(), nowDate)
     };
 }
 
 function stat_name(e: api.ILogEntry): string | null {
     switch (e.type) {
-        case api.LogEntryType.LoadUnloadCycle:
-        case api.LogEntryType.MachineCycle:
+        case api.LogType.LoadUnloadCycle:
+        case api.LogType.MachineCycle:
             return e.loc + ' #' + e.locnum;
         default:
             return null;

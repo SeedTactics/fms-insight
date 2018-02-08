@@ -98,7 +98,7 @@ function displayMat(mats: ReadonlyArray<api.ILogMaterial>) {
 
 function display(entry: api.ILogEntry): string {
   switch (entry.type) {
-    case api.LogEntryType.LoadUnloadCycle:
+    case api.LogType.LoadUnloadCycle:
       let oper;
       if (entry.result === 'LOAD') {
         if (entry.startofcycle) {
@@ -117,7 +117,7 @@ function display(entry: api.ILogEntry): string {
         ' on pallet ' + entry.pal +
         ' at station ' + entry.locnum.toString();
 
-    case api.LogEntryType.MachineCycle:
+    case api.LogType.MachineCycle:
       let msg;
       if (entry.startofcycle) {
         msg = 'Cycle start';
@@ -132,18 +132,18 @@ function display(entry: api.ILogEntry): string {
       }
       return msg;
 
-    case api.LogEntryType.PartMark:
+    case api.LogType.PartMark:
       return displayMat(entry.material) +
         ' marked with ' + entry.result;
 
-    case api.LogEntryType.OrderAssignment:
+    case api.LogType.OrderAssignment:
       return displayMat(entry.material) +
         ' assigned to workorder ' + entry.result;
 
-    case api.LogEntryType.PalletCycle:
+    case api.LogType.PalletCycle:
       return 'Pallet ' + entry.pal + ' completed route';
 
-    case api.LogEntryType.Inspection:
+    case api.LogType.Inspection:
       let infos = (entry.program).split(',');
       let inspName = 'unknown';
       if (infos.length >= 2 && infos[1] && infos[1] !== '') {
@@ -158,7 +158,7 @@ function display(entry: api.ILogEntry): string {
           ' skipped inspection ' + inspName;
       }
 
-    case api.LogEntryType.FinalizeWorkorder:
+    case api.LogType.FinalizeWorkorder:
       return 'Finalize workorder ' + entry.result;
 
     default: return entry.result;

@@ -6,42 +6,39 @@
 //----------------------
 // ReSharper disable InconsistentNaming
 
-export class Client {
+export class InspectionClient {
     private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
     private baseUrl: string;
-    protected jsonParseReviver: (key: string, value: any) => any = undefined;
+    protected jsonParseReviver: (key: string, value: any) => any = <any>undefined;
 
     constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
         this.http = http ? http : <any>window;
         this.baseUrl = baseUrl ? baseUrl : "";
     }
 
-    /**
-     * @return Success
-     */
-    apiV1InspectionMaterialByMaterialIDByInspectionTypePut(materialID: number, inspectionType: string): Promise<void> {
+    forceInspection(materialID: number, inspectionType: string): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/inspection/material/{materialID}/{inspectionType}";
         if (materialID === undefined || materialID === null)
             throw new Error("The parameter 'materialID' must be defined.");
-        url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID)); 
+        url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID));
         if (inspectionType === undefined || inspectionType === null)
             throw new Error("The parameter 'inspectionType' must be defined.");
-        url_ = url_.replace("{inspectionType}", encodeURIComponent("" + inspectionType)); 
+        url_ = url_.replace("{inspectionType}", encodeURIComponent("" + inspectionType));
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
             method: "PUT",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1InspectionMaterialByMaterialIDByInspectionTypePut(_response);
+            return this.processForceInspection(_response);
         });
     }
 
-    protected processApiV1InspectionMaterialByMaterialIDByInspectionTypePut(response: Response): Promise<void> {
+    protected processForceInspection(response: Response): Promise<void> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
@@ -56,35 +53,32 @@ export class Client {
         return Promise.resolve<void>(<any>null);
     }
 
-    /**
-     * @return Success
-     */
-    apiV1InspectionPalletByPalletByLocationByInspectionTypePut(pallet: number, location: Location, inspectionType: string): Promise<void> {
+    nextPieceInspection(pallet: number, location: PalletLocationEnum, inspectionType: string): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/inspection/pallet/{pallet}/{location}/{inspectionType}";
         if (pallet === undefined || pallet === null)
             throw new Error("The parameter 'pallet' must be defined.");
-        url_ = url_.replace("{pallet}", encodeURIComponent("" + pallet)); 
+        url_ = url_.replace("{pallet}", encodeURIComponent("" + pallet));
         if (location === undefined || location === null)
             throw new Error("The parameter 'location' must be defined.");
-        url_ = url_.replace("{location}", encodeURIComponent("" + location)); 
+        url_ = url_.replace("{location}", encodeURIComponent("" + location));
         if (inspectionType === undefined || inspectionType === null)
             throw new Error("The parameter 'inspectionType' must be defined.");
-        url_ = url_.replace("{inspectionType}", encodeURIComponent("" + inspectionType)); 
+        url_ = url_.replace("{inspectionType}", encodeURIComponent("" + inspectionType));
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
             method: "PUT",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1InspectionPalletByPalletByLocationByInspectionTypePut(_response);
+            return this.processNextPieceInspection(_response);
         });
     }
 
-    protected processApiV1InspectionPalletByPalletByLocationByInspectionTypePut(response: Response): Promise<void> {
+    protected processNextPieceInspection(response: Response): Promise<void> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
@@ -99,27 +93,24 @@ export class Client {
         return Promise.resolve<void>(<any>null);
     }
 
-    /**
-     * @return Success
-     */
-    apiV1InspectionCountsGet(): Promise<InspectCount[]> {
+    getCounts(): Promise<InspectCount[]> {
         let url_ = this.baseUrl + "/api/v1/inspection/counts";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
             method: "GET",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
                 "Accept": "application/json"
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1InspectionCountsGet(_response);
+            return this.processGetCounts(_response);
         });
     }
 
-    protected processApiV1InspectionCountsGet(response: Response): Promise<InspectCount[]> {
+    protected processGetCounts(response: Response): Promise<InspectCount[]> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
@@ -141,11 +132,7 @@ export class Client {
         return Promise.resolve<InspectCount[]>(<any>null);
     }
 
-    /**
-     * @newCounts (optional) 
-     * @return Success
-     */
-    apiV1InspectionCountsPut(newCounts: InspectCount[]): Promise<void> {
+    setCounts(newCounts: InspectCount[]): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/inspection/counts";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -155,16 +142,16 @@ export class Client {
             body: content_,
             method: "PUT",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1InspectionCountsPut(_response);
+            return this.processSetCounts(_response);
         });
     }
 
-    protected processApiV1InspectionCountsPut(response: Response): Promise<void> {
+    protected processSetCounts(response: Response): Promise<void> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
@@ -179,27 +166,24 @@ export class Client {
         return Promise.resolve<void>(<any>null);
     }
 
-    /**
-     * @return Success
-     */
-    apiV1InspectionTypesGet(): Promise<string[]> {
+    getGlobalInspectionTypes(): Promise<string[]> {
         let url_ = this.baseUrl + "/api/v1/inspection/types";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
             method: "GET",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
                 "Accept": "application/json"
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1InspectionTypesGet(_response);
+            return this.processGetGlobalInspectionTypes(_response);
         });
     }
 
-    protected processApiV1InspectionTypesGet(response: Response): Promise<string[]> {
+    protected processGetGlobalInspectionTypes(response: Response): Promise<string[]> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
@@ -221,37 +205,34 @@ export class Client {
         return Promise.resolve<string[]>(<any>null);
     }
 
-    /**
-     * @return Success
-     */
-    apiV1InspectionTypeByTyGet(ty: string): Promise<InspectionType> {
+    getGlobalInspectionType(ty: string): Promise<InspectionType> {
         let url_ = this.baseUrl + "/api/v1/inspection/type/{ty}";
         if (ty === undefined || ty === null)
             throw new Error("The parameter 'ty' must be defined.");
-        url_ = url_.replace("{ty}", encodeURIComponent("" + ty)); 
+        url_ = url_.replace("{ty}", encodeURIComponent("" + ty));
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
             method: "GET",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
                 "Accept": "application/json"
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1InspectionTypeByTyGet(_response);
+            return this.processGetGlobalInspectionType(_response);
         });
     }
 
-    protected processApiV1InspectionTypeByTyGet(response: Response): Promise<InspectionType> {
+    protected processGetGlobalInspectionType(response: Response): Promise<InspectionType> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
             return response.text().then((_responseText) => {
             let result200: any = null;
             let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = resultData200 ? InspectionType.fromJS(resultData200) : new InspectionType();
+            result200 = resultData200 ? InspectionType.fromJS(resultData200) : <any>null;
             return result200;
             });
         } else if (status !== 200 && status !== 204) {
@@ -262,15 +243,11 @@ export class Client {
         return Promise.resolve<InspectionType>(<any>null);
     }
 
-    /**
-     * @ity (optional) 
-     * @return Success
-     */
-    apiV1InspectionTypeByTyPut(ty: string, ity: InspectionType): Promise<void> {
+    setGlobalInspection(ty: string, ity: InspectionType): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/inspection/type/{ty}";
         if (ty === undefined || ty === null)
             throw new Error("The parameter 'ty' must be defined.");
-        url_ = url_.replace("{ty}", encodeURIComponent("" + ty)); 
+        url_ = url_.replace("{ty}", encodeURIComponent("" + ty));
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(ity);
@@ -279,16 +256,16 @@ export class Client {
             body: content_,
             method: "PUT",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1InspectionTypeByTyPut(_response);
+            return this.processSetGlobalInspection(_response);
         });
     }
 
-    protected processApiV1InspectionTypeByTyPut(response: Response): Promise<void> {
+    protected processSetGlobalInspection(response: Response): Promise<void> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
@@ -303,29 +280,26 @@ export class Client {
         return Promise.resolve<void>(<any>null);
     }
 
-    /**
-     * @return Success
-     */
-    apiV1InspectionTypeByTyDelete(ty: string): Promise<void> {
+    deleteGlobalInspection(ty: string): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/inspection/type/{ty}";
         if (ty === undefined || ty === null)
             throw new Error("The parameter 'ty' must be defined.");
-        url_ = url_.replace("{ty}", encodeURIComponent("" + ty)); 
+        url_ = url_.replace("{ty}", encodeURIComponent("" + ty));
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
             method: "DELETE",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1InspectionTypeByTyDelete(_response);
+            return this.processDeleteGlobalInspection(_response);
         });
     }
 
-    protected processApiV1InspectionTypeByTyDelete(response: Response): Promise<void> {
+    protected processDeleteGlobalInspection(response: Response): Promise<void> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
@@ -339,36 +313,44 @@ export class Client {
         }
         return Promise.resolve<void>(<any>null);
     }
+}
 
-    /**
-     * @return Success
-     */
-    apiV1JobsHistoryGet(startUTC: Date, endUTC: Date): Promise<HistoricData> {
+export class JobsClient {
+    private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
+    private baseUrl: string;
+    protected jsonParseReviver: (key: string, value: any) => any = <any>undefined;
+
+    constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
+        this.http = http ? http : <any>window;
+        this.baseUrl = baseUrl ? baseUrl : "";
+    }
+
+    history(startUTC: Date, endUTC: Date): Promise<HistoricData> {
         let url_ = this.baseUrl + "/api/v1/jobs/history?";
         if (startUTC === undefined || startUTC === null)
             throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
         else
-            url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toJSON() : "") + "&"; 
+            url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toJSON() : "") + "&";
         if (endUTC === undefined || endUTC === null)
             throw new Error("The parameter 'endUTC' must be defined and cannot be null.");
         else
-            url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toJSON() : "") + "&"; 
+            url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toJSON() : "") + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
             method: "GET",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
                 "Accept": "application/json"
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1JobsHistoryGet(_response);
+            return this.processHistory(_response);
         });
     }
 
-    protected processApiV1JobsHistoryGet(response: Response): Promise<HistoricData> {
+    protected processHistory(response: Response): Promise<HistoricData> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
@@ -386,30 +368,28 @@ export class Client {
         return Promise.resolve<HistoricData>(<any>null);
     }
 
-    /**
-     * @afterScheduleId (optional) 
-     * @return Success
-     */
-    apiV1JobsRecentGet(afterScheduleId: string): Promise<JobsAndExtraParts> {
+    recent(afterScheduleId: string): Promise<JobsAndExtraParts> {
         let url_ = this.baseUrl + "/api/v1/jobs/recent?";
-        if (afterScheduleId !== undefined)
-            url_ += "afterScheduleId=" + encodeURIComponent("" + afterScheduleId) + "&"; 
+        if (afterScheduleId === undefined)
+            throw new Error("The parameter 'afterScheduleId' must be defined.");
+        else
+            url_ += "afterScheduleId=" + encodeURIComponent("" + afterScheduleId) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
             method: "GET",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
                 "Accept": "application/json"
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1JobsRecentGet(_response);
+            return this.processRecent(_response);
         });
     }
 
-    protected processApiV1JobsRecentGet(response: Response): Promise<JobsAndExtraParts> {
+    protected processRecent(response: Response): Promise<JobsAndExtraParts> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
@@ -427,27 +407,24 @@ export class Client {
         return Promise.resolve<JobsAndExtraParts>(<any>null);
     }
 
-    /**
-     * @return Success
-     */
-    apiV1JobsLatestScheduleGet(): Promise<JobsAndExtraParts> {
+    latestSchedule(): Promise<JobsAndExtraParts> {
         let url_ = this.baseUrl + "/api/v1/jobs/latest-schedule";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
             method: "GET",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
                 "Accept": "application/json"
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1JobsLatestScheduleGet(_response);
+            return this.processLatestSchedule(_response);
         });
     }
 
-    protected processApiV1JobsLatestScheduleGet(response: Response): Promise<JobsAndExtraParts> {
+    protected processLatestSchedule(response: Response): Promise<JobsAndExtraParts> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
@@ -465,30 +442,27 @@ export class Client {
         return Promise.resolve<JobsAndExtraParts>(<any>null);
     }
 
-    /**
-     * @return Success
-     */
-    apiV1JobsUnfilledWorkordersByPartByPartGet(part: string): Promise<PartWorkorder[]> {
+    mostRecentUnfilledWorkordersForPart(part: string): Promise<PartWorkorder[]> {
         let url_ = this.baseUrl + "/api/v1/jobs/unfilled-workorders/by-part/{part}";
         if (part === undefined || part === null)
             throw new Error("The parameter 'part' must be defined.");
-        url_ = url_.replace("{part}", encodeURIComponent("" + part)); 
+        url_ = url_.replace("{part}", encodeURIComponent("" + part));
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
             method: "GET",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
                 "Accept": "application/json"
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1JobsUnfilledWorkordersByPartByPartGet(_response);
+            return this.processMostRecentUnfilledWorkordersForPart(_response);
         });
     }
 
-    protected processApiV1JobsUnfilledWorkordersByPartByPartGet(response: Response): Promise<PartWorkorder[]> {
+    protected processMostRecentUnfilledWorkordersForPart(response: Response): Promise<PartWorkorder[]> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
@@ -510,34 +484,31 @@ export class Client {
         return Promise.resolve<PartWorkorder[]>(<any>null);
     }
 
-    /**
-     * @return Success
-     */
-    apiV1JobsStatusGet(): Promise<CurrentStatus> {
+    currentStatus(): Promise<CurrentStatus> {
         let url_ = this.baseUrl + "/api/v1/jobs/status";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
             method: "GET",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
                 "Accept": "application/json"
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1JobsStatusGet(_response);
+            return this.processCurrentStatus(_response);
         });
     }
 
-    protected processApiV1JobsStatusGet(response: Response): Promise<CurrentStatus> {
+    protected processCurrentStatus(response: Response): Promise<CurrentStatus> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
             return response.text().then((_responseText) => {
             let result200: any = null;
             let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = resultData200 ? CurrentStatus.fromJS(resultData200) : new CurrentStatus();
+            result200 = resultData200 ? CurrentStatus.fromJS(resultData200) : <any>null;
             return result200;
             });
         } else if (status !== 200 && status !== 204) {
@@ -548,11 +519,7 @@ export class Client {
         return Promise.resolve<CurrentStatus>(<any>null);
     }
 
-    /**
-     * @jobs (optional) 
-     * @return Success
-     */
-    apiV1JobsCheckValidGet(jobs: JobPlan[]): Promise<string[]> {
+    checkValid(jobs: JobPlan[]): Promise<string[]> {
         let url_ = this.baseUrl + "/api/v1/jobs/check-valid";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -562,17 +529,17 @@ export class Client {
             body: content_,
             method: "GET",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
                 "Accept": "application/json"
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1JobsCheckValidGet(_response);
+            return this.processCheckValid(_response);
         });
     }
 
-    protected processApiV1JobsCheckValidGet(response: Response): Promise<string[]> {
+    protected processCheckValid(response: Response): Promise<string[]> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
@@ -594,15 +561,12 @@ export class Client {
         return Promise.resolve<string[]>(<any>null);
     }
 
-    /**
-     * @newJobs (optional) 
-     * @expectedPreviousScheduleId (optional) 
-     * @return Success
-     */
-    apiV1JobsAddPost(newJobs: NewJobs, expectedPreviousScheduleId: string): Promise<void> {
+    add(newJobs: NewJobs, expectedPreviousScheduleId: string): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/jobs/add?";
-        if (expectedPreviousScheduleId !== undefined)
-            url_ += "expectedPreviousScheduleId=" + encodeURIComponent("" + expectedPreviousScheduleId) + "&"; 
+        if (expectedPreviousScheduleId === undefined)
+            throw new Error("The parameter 'expectedPreviousScheduleId' must be defined.");
+        else
+            url_ += "expectedPreviousScheduleId=" + encodeURIComponent("" + expectedPreviousScheduleId) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(newJobs);
@@ -611,16 +575,16 @@ export class Client {
             body: content_,
             method: "POST",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1JobsAddPost(_response);
+            return this.processAdd(_response);
         });
     }
 
-    protected processApiV1JobsAddPost(response: Response): Promise<void> {
+    protected processAdd(response: Response): Promise<void> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
@@ -635,33 +599,28 @@ export class Client {
         return Promise.resolve<void>(<any>null);
     }
 
-    /**
-     * @loadDecrementsStrictlyAfterDecrementId (optional) 
-     * @loadDecrementsAfterTimeUTC (optional) 
-     * @return Success
-     */
-    apiV1JobsPlannedCyclesDelete(loadDecrementsStrictlyAfterDecrementId: string, loadDecrementsAfterTimeUTC: Date): Promise<JobAndDecrementQuantity[]> {
+    decrementQuantities(loadDecrementsStrictlyAfterDecrementId: string, loadDecrementsAfterTimeUTC: Date): Promise<JobAndDecrementQuantity[]> {
         let url_ = this.baseUrl + "/api/v1/jobs/planned-cycles?";
         if (loadDecrementsStrictlyAfterDecrementId !== undefined)
-            url_ += "loadDecrementsStrictlyAfterDecrementId=" + encodeURIComponent("" + loadDecrementsStrictlyAfterDecrementId) + "&"; 
+            url_ += "loadDecrementsStrictlyAfterDecrementId=" + encodeURIComponent("" + loadDecrementsStrictlyAfterDecrementId) + "&";
         if (loadDecrementsAfterTimeUTC !== undefined)
-            url_ += "loadDecrementsAfterTimeUTC=" + encodeURIComponent(loadDecrementsAfterTimeUTC ? "" + loadDecrementsAfterTimeUTC.toJSON() : "") + "&"; 
+            url_ += "loadDecrementsAfterTimeUTC=" + encodeURIComponent(loadDecrementsAfterTimeUTC ? "" + loadDecrementsAfterTimeUTC.toJSON() : "") + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
             method: "DELETE",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
                 "Accept": "application/json"
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1JobsPlannedCyclesDelete(_response);
+            return this.processDecrementQuantities(_response);
         });
     }
 
-    protected processApiV1JobsPlannedCyclesDelete(response: Response): Promise<JobAndDecrementQuantity[]> {
+    protected processDecrementQuantities(response: Response): Promise<JobAndDecrementQuantity[]> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
@@ -682,36 +641,44 @@ export class Client {
         }
         return Promise.resolve<JobAndDecrementQuantity[]>(<any>null);
     }
+}
 
-    /**
-     * @return Success
-     */
-    apiV1LogEventsAllGet(startUTC: Date, endUTC: Date): Promise<LogEntry[]> {
+export class LogClient {
+    private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
+    private baseUrl: string;
+    protected jsonParseReviver: (key: string, value: any) => any = <any>undefined;
+
+    constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
+        this.http = http ? http : <any>window;
+        this.baseUrl = baseUrl ? baseUrl : "";
+    }
+
+    get(startUTC: Date, endUTC: Date): Promise<LogEntry[]> {
         let url_ = this.baseUrl + "/api/v1/log/events/all?";
         if (startUTC === undefined || startUTC === null)
             throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
         else
-            url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toJSON() : "") + "&"; 
+            url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toJSON() : "") + "&";
         if (endUTC === undefined || endUTC === null)
             throw new Error("The parameter 'endUTC' must be defined and cannot be null.");
         else
-            url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toJSON() : "") + "&"; 
+            url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toJSON() : "") + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
             method: "GET",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
                 "Accept": "application/json"
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1LogEventsAllGet(_response);
+            return this.processGet(_response);
         });
     }
 
-    protected processApiV1LogEventsAllGet(response: Response): Promise<LogEntry[]> {
+    protected processGet(response: Response): Promise<LogEntry[]> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
@@ -733,35 +700,32 @@ export class Client {
         return Promise.resolve<LogEntry[]>(<any>null);
     }
 
-    /**
-     * @return Success
-     */
-    apiV1LogEventsAllCompletedPartsGet(startUTC: Date, endUTC: Date): Promise<LogEntry[]> {
+    getCompletedParts(startUTC: Date, endUTC: Date): Promise<LogEntry[]> {
         let url_ = this.baseUrl + "/api/v1/log/events/all-completed-parts?";
         if (startUTC === undefined || startUTC === null)
             throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
         else
-            url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toJSON() : "") + "&"; 
+            url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toJSON() : "") + "&";
         if (endUTC === undefined || endUTC === null)
             throw new Error("The parameter 'endUTC' must be defined and cannot be null.");
         else
-            url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toJSON() : "") + "&"; 
+            url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toJSON() : "") + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
             method: "GET",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
                 "Accept": "application/json"
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1LogEventsAllCompletedPartsGet(_response);
+            return this.processGetCompletedParts(_response);
         });
     }
 
-    protected processApiV1LogEventsAllCompletedPartsGet(response: Response): Promise<LogEntry[]> {
+    protected processGetCompletedParts(response: Response): Promise<LogEntry[]> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
@@ -783,31 +747,28 @@ export class Client {
         return Promise.resolve<LogEntry[]>(<any>null);
     }
 
-    /**
-     * @return Success
-     */
-    apiV1LogEventsRecentGet(lastSeenCounter: number): Promise<LogEntry[]> {
+    recent(lastSeenCounter: number): Promise<LogEntry[]> {
         let url_ = this.baseUrl + "/api/v1/log/events/recent?";
         if (lastSeenCounter === undefined || lastSeenCounter === null)
             throw new Error("The parameter 'lastSeenCounter' must be defined and cannot be null.");
         else
-            url_ += "lastSeenCounter=" + encodeURIComponent("" + lastSeenCounter) + "&"; 
+            url_ += "lastSeenCounter=" + encodeURIComponent("" + lastSeenCounter) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
             method: "GET",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
                 "Accept": "application/json"
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1LogEventsRecentGet(_response);
+            return this.processRecent(_response);
         });
     }
 
-    protected processApiV1LogEventsRecentGet(response: Response): Promise<LogEntry[]> {
+    protected processRecent(response: Response): Promise<LogEntry[]> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
@@ -829,30 +790,27 @@ export class Client {
         return Promise.resolve<LogEntry[]>(<any>null);
     }
 
-    /**
-     * @return Success
-     */
-    apiV1LogEventsForMaterialByMaterialIDGet(materialID: number): Promise<LogEntry[]> {
+    logForMaterial(materialID: number): Promise<LogEntry[]> {
         let url_ = this.baseUrl + "/api/v1/log/events/for-material/{materialID}";
         if (materialID === undefined || materialID === null)
             throw new Error("The parameter 'materialID' must be defined.");
-        url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID)); 
+        url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID));
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
             method: "GET",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
                 "Accept": "application/json"
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1LogEventsForMaterialByMaterialIDGet(_response);
+            return this.processLogForMaterial(_response);
         });
     }
 
-    protected processApiV1LogEventsForMaterialByMaterialIDGet(response: Response): Promise<LogEntry[]> {
+    protected processLogForMaterial(response: Response): Promise<LogEntry[]> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
@@ -874,30 +832,27 @@ export class Client {
         return Promise.resolve<LogEntry[]>(<any>null);
     }
 
-    /**
-     * @return Success
-     */
-    apiV1LogEventsForSerialBySerialGet(serial: string): Promise<LogEntry[]> {
+    logForSerial(serial: string): Promise<LogEntry[]> {
         let url_ = this.baseUrl + "/api/v1/log/events/for-serial/{serial}";
         if (serial === undefined || serial === null)
             throw new Error("The parameter 'serial' must be defined.");
-        url_ = url_.replace("{serial}", encodeURIComponent("" + serial)); 
+        url_ = url_.replace("{serial}", encodeURIComponent("" + serial));
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
             method: "GET",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
                 "Accept": "application/json"
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1LogEventsForSerialBySerialGet(_response);
+            return this.processLogForSerial(_response);
         });
     }
 
-    protected processApiV1LogEventsForSerialBySerialGet(response: Response): Promise<LogEntry[]> {
+    protected processLogForSerial(response: Response): Promise<LogEntry[]> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
@@ -919,30 +874,27 @@ export class Client {
         return Promise.resolve<LogEntry[]>(<any>null);
     }
 
-    /**
-     * @return Success
-     */
-    apiV1LogEventsForWorkorderByWorkorderGet(workorder: string): Promise<LogEntry[]> {
+    logForWorkorder(workorder: string): Promise<LogEntry[]> {
         let url_ = this.baseUrl + "/api/v1/log/events/for-workorder/{workorder}";
         if (workorder === undefined || workorder === null)
             throw new Error("The parameter 'workorder' must be defined.");
-        url_ = url_.replace("{workorder}", encodeURIComponent("" + workorder)); 
+        url_ = url_.replace("{workorder}", encodeURIComponent("" + workorder));
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
             method: "GET",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
                 "Accept": "application/json"
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1LogEventsForWorkorderByWorkorderGet(_response);
+            return this.processLogForWorkorder(_response);
         });
     }
 
-    protected processApiV1LogEventsForWorkorderByWorkorderGet(response: Response): Promise<LogEntry[]> {
+    protected processLogForWorkorder(response: Response): Promise<LogEntry[]> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
@@ -964,11 +916,7 @@ export class Client {
         return Promise.resolve<LogEntry[]>(<any>null);
     }
 
-    /**
-     * @workorderIds (optional) 
-     * @return Success
-     */
-    apiV1LogWorkordersGet(workorderIds: string[]): Promise<WorkorderSummary[]> {
+    getWorkorders(workorderIds: string[]): Promise<WorkorderSummary[]> {
         let url_ = this.baseUrl + "/api/v1/log/workorders";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -978,17 +926,17 @@ export class Client {
             body: content_,
             method: "GET",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
                 "Accept": "application/json"
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1LogWorkordersGet(_response);
+            return this.processGetWorkorders(_response);
         });
     }
 
-    protected processApiV1LogWorkordersGet(response: Response): Promise<WorkorderSummary[]> {
+    protected processGetWorkorders(response: Response): Promise<WorkorderSummary[]> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
@@ -1010,15 +958,11 @@ export class Client {
         return Promise.resolve<WorkorderSummary[]>(<any>null);
     }
 
-    /**
-     * @mat (optional) 
-     * @return Success
-     */
-    apiV1LogSerialBySerialMaterialPost(serial: string, mat: LogMaterial): Promise<LogEntry> {
+    setSerial(serial: string, mat: LogMaterial): Promise<LogEntry> {
         let url_ = this.baseUrl + "/api/v1/log/serial/{serial}/material";
         if (serial === undefined || serial === null)
             throw new Error("The parameter 'serial' must be defined.");
-        url_ = url_.replace("{serial}", encodeURIComponent("" + serial)); 
+        url_ = url_.replace("{serial}", encodeURIComponent("" + serial));
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(mat);
@@ -1027,24 +971,24 @@ export class Client {
             body: content_,
             method: "POST",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
                 "Accept": "application/json"
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1LogSerialBySerialMaterialPost(_response);
+            return this.processSetSerial(_response);
         });
     }
 
-    protected processApiV1LogSerialBySerialMaterialPost(response: Response): Promise<LogEntry> {
+    protected processSetSerial(response: Response): Promise<LogEntry> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
             return response.text().then((_responseText) => {
             let result200: any = null;
             let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = resultData200 ? LogEntry.fromJS(resultData200) : new LogEntry();
+            result200 = resultData200 ? LogEntry.fromJS(resultData200) : <any>null;
             return result200;
             });
         } else if (status !== 200 && status !== 204) {
@@ -1055,15 +999,11 @@ export class Client {
         return Promise.resolve<LogEntry>(<any>null);
     }
 
-    /**
-     * @mat (optional) 
-     * @return Success
-     */
-    apiV1LogWorkorderByWorkorderMaterialPost(workorder: string, mat: LogMaterial): Promise<LogEntry> {
+    setWorkorder(workorder: string, mat: LogMaterial): Promise<LogEntry> {
         let url_ = this.baseUrl + "/api/v1/log/workorder/{workorder}/material";
         if (workorder === undefined || workorder === null)
             throw new Error("The parameter 'workorder' must be defined.");
-        url_ = url_.replace("{workorder}", encodeURIComponent("" + workorder)); 
+        url_ = url_.replace("{workorder}", encodeURIComponent("" + workorder));
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(mat);
@@ -1072,24 +1012,24 @@ export class Client {
             body: content_,
             method: "POST",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
                 "Accept": "application/json"
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1LogWorkorderByWorkorderMaterialPost(_response);
+            return this.processSetWorkorder(_response);
         });
     }
 
-    protected processApiV1LogWorkorderByWorkorderMaterialPost(response: Response): Promise<LogEntry> {
+    protected processSetWorkorder(response: Response): Promise<LogEntry> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
             return response.text().then((_responseText) => {
             let result200: any = null;
             let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = resultData200 ? LogEntry.fromJS(resultData200) : new LogEntry();
+            result200 = resultData200 ? LogEntry.fromJS(resultData200) : <any>null;
             return result200;
             });
         } else if (status !== 200 && status !== 204) {
@@ -1100,37 +1040,34 @@ export class Client {
         return Promise.resolve<LogEntry>(<any>null);
     }
 
-    /**
-     * @return Success
-     */
-    apiV1LogWorkorderByWorkorderFinalizePost(workorder: string): Promise<LogEntry> {
+    finalizeWorkorder(workorder: string): Promise<LogEntry> {
         let url_ = this.baseUrl + "/api/v1/log/workorder/{workorder}/finalize";
         if (workorder === undefined || workorder === null)
             throw new Error("The parameter 'workorder' must be defined.");
-        url_ = url_.replace("{workorder}", encodeURIComponent("" + workorder)); 
+        url_ = url_.replace("{workorder}", encodeURIComponent("" + workorder));
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
             method: "POST",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
                 "Accept": "application/json"
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1LogWorkorderByWorkorderFinalizePost(_response);
+            return this.processFinalizeWorkorder(_response);
         });
     }
 
-    protected processApiV1LogWorkorderByWorkorderFinalizePost(response: Response): Promise<LogEntry> {
+    protected processFinalizeWorkorder(response: Response): Promise<LogEntry> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
             return response.text().then((_responseText) => {
             let result200: any = null;
             let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = resultData200 ? LogEntry.fromJS(resultData200) : new LogEntry();
+            result200 = resultData200 ? LogEntry.fromJS(resultData200) : <any>null;
             return result200;
             });
         } else if (status !== 200 && status !== 204) {
@@ -1141,34 +1078,31 @@ export class Client {
         return Promise.resolve<LogEntry>(<any>null);
     }
 
-    /**
-     * @return Success
-     */
-    apiV1LogSettingsSerialsGet(): Promise<SerialSettings> {
+    getSerialSettings(): Promise<SerialSettings> {
         let url_ = this.baseUrl + "/api/v1/log/settings/serials";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
             method: "GET",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
                 "Accept": "application/json"
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1LogSettingsSerialsGet(_response);
+            return this.processGetSerialSettings(_response);
         });
     }
 
-    protected processApiV1LogSettingsSerialsGet(response: Response): Promise<SerialSettings> {
+    protected processGetSerialSettings(response: Response): Promise<SerialSettings> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
             return response.text().then((_responseText) => {
             let result200: any = null;
             let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = resultData200 ? SerialSettings.fromJS(resultData200) : new SerialSettings();
+            result200 = resultData200 ? SerialSettings.fromJS(resultData200) : <any>null;
             return result200;
             });
         } else if (status !== 200 && status !== 204) {
@@ -1179,11 +1113,7 @@ export class Client {
         return Promise.resolve<SerialSettings>(<any>null);
     }
 
-    /**
-     * @settings (optional) 
-     * @return Success
-     */
-    apiV1LogSettingsSerialsPut(settings: SerialSettings): Promise<void> {
+    setSerialSettings(settings: SerialSettings): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/log/settings/serials";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -1193,16 +1123,16 @@ export class Client {
             body: content_,
             method: "PUT",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1LogSettingsSerialsPut(_response);
+            return this.processSetSerialSettings(_response);
         });
     }
 
-    protected processApiV1LogSettingsSerialsPut(response: Response): Promise<void> {
+    protected processSetSerialSettings(response: Response): Promise<void> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
@@ -1216,28 +1146,36 @@ export class Client {
         }
         return Promise.resolve<void>(<any>null);
     }
+}
 
-    /**
-     * @return Success
-     */
-    apiV1ServerPluginGet(): Promise<PluginInfo> {
+export class ServerClient {
+    private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
+    private baseUrl: string;
+    protected jsonParseReviver: (key: string, value: any) => any = <any>undefined;
+
+    constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
+        this.http = http ? http : <any>window;
+        this.baseUrl = baseUrl ? baseUrl : "";
+    }
+
+    pluginInfo(): Promise<PluginInfo> {
         let url_ = this.baseUrl + "/api/v1/server/plugin";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
             method: "GET",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
                 "Accept": "application/json"
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1ServerPluginGet(_response);
+            return this.processPluginInfo(_response);
         });
     }
 
-    protected processApiV1ServerPluginGet(response: Response): Promise<PluginInfo> {
+    protected processPluginInfo(response: Response): Promise<PluginInfo> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
@@ -1255,30 +1193,27 @@ export class Client {
         return Promise.resolve<PluginInfo>(<any>null);
     }
 
-    /**
-     * @return Success
-     */
-    apiV1ServerSettingsByIdGet(id: string): Promise<string> {
+    getSettings(id: string): Promise<string> {
         let url_ = this.baseUrl + "/api/v1/server/settings/{id}";
         if (id === undefined || id === null)
             throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id)); 
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
             method: "GET",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
                 "Accept": "application/json"
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1ServerSettingsByIdGet(_response);
+            return this.processGetSettings(_response);
         });
     }
 
-    protected processApiV1ServerSettingsByIdGet(response: Response): Promise<string> {
+    protected processGetSettings(response: Response): Promise<string> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
@@ -1296,15 +1231,11 @@ export class Client {
         return Promise.resolve<string>(<any>null);
     }
 
-    /**
-     * @setting (optional) 
-     * @return Success
-     */
-    apiV1ServerSettingsByIdPut(id: string, setting: string): Promise<void> {
+    setSetting(id: string, setting: string): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/server/settings/{id}";
         if (id === undefined || id === null)
             throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id)); 
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(setting);
@@ -1313,16 +1244,16 @@ export class Client {
             body: content_,
             method: "PUT",
             headers: new Headers({
-                "Content-Type": "application/json", 
+                "Content-Type": "application/json",
             })
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApiV1ServerSettingsByIdPut(_response);
+            return this.processSetSetting(_response);
         });
     }
 
-    protected processApiV1ServerSettingsByIdPut(response: Response): Promise<void> {
+    protected processSetSetting(response: Response): Promise<void> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
@@ -1338,12 +1269,17 @@ export class Client {
     }
 }
 
-export class InspectCount implements IInspectCount {
-    counter: string;
-    value: number;
-    lastUTC: Date;
+export enum PalletLocationEnum {
+    LoadUnload = <any>"LoadUnload",
+    Machine = <any>"Machine",
+    MachineQueue = <any>"MachineQueue",
+    Buffer = <any>"Buffer",
+    Cart = <any>"Cart",
+}
 
-    constructor(data?: IInspectCount) {
+export abstract class ValueType implements IValueType {
+
+    constructor(data?: IValueType) {
         if (data) {
             for (var property in data) {
                 if (data.hasOwnProperty(property))
@@ -1353,6 +1289,35 @@ export class InspectCount implements IInspectCount {
     }
 
     init(data?: any) {
+        if (data) {
+        }
+    }
+
+    static fromJS(data: any): ValueType {
+        data = typeof data === 'object' ? data : {};
+        throw new Error("The abstract class 'ValueType' cannot be instantiated.");
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        return data;
+    }
+}
+
+export interface IValueType {
+}
+
+export class InspectCount extends ValueType implements IInspectCount {
+    counter: string;
+    value: number;
+    lastUTC: Date;
+
+    constructor(data?: IInspectCount) {
+        super(data);
+    }
+
+    init(data?: any) {
+        super.init(data);
         if (data) {
             this.counter = data["counter"];
             this.value = data["value"];
@@ -1372,11 +1337,12 @@ export class InspectCount implements IInspectCount {
         data["counter"] = this.counter;
         data["value"] = this.value;
         data["lastUTC"] = this.lastUTC ? this.lastUTC.toISOString() : <any>undefined;
-        return data; 
+        super.toJSON(data);
+        return data;
     }
 }
 
-export interface IInspectCount {
+export interface IInspectCount extends IValueType {
     counter: string;
     value: number;
     lastUTC: Date;
@@ -1442,7 +1408,7 @@ export class InspectionType implements IInspectionType {
         data["defaultCountToTriggerInspection"] = this.defaultCountToTriggerInspection;
         data["defaultDeadline"] = this.defaultDeadline;
         data["defaultRandomFreq"] = this.defaultRandomFreq;
-        return data; 
+        return data;
     }
 }
 
@@ -1495,7 +1461,7 @@ export class InspectionFrequencyOverride implements IInspectionFrequencyOverride
         data["countBeforeInspection"] = this.countBeforeInspection;
         data["deadline"] = this.deadline;
         data["randomFreq"] = this.randomFreq;
-        return data; 
+        return data;
     }
 }
 
@@ -1506,20 +1472,16 @@ export interface IInspectionFrequencyOverride {
     randomFreq: number;
 }
 
-export class HistoricData implements IHistoricData {
+export class HistoricData extends ValueType implements IHistoricData {
     jobs: { [key: string] : JobPlan; } = {};
     stationUse: SimulatedStationUtilization[] = [];
 
     constructor(data?: IHistoricData) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+        super(data);
     }
 
     init(data?: any) {
+        super.init(data);
         if (data) {
             if (data["jobs"]) {
                 this.jobs = {};
@@ -1557,11 +1519,12 @@ export class HistoricData implements IHistoricData {
             for (let item of this.stationUse)
                 data["stationUse"].push(item.toJSON());
         }
-        return data; 
+        super.toJSON(data);
+        return data;
     }
 }
 
-export interface IHistoricData {
+export interface IHistoricData extends IValueType {
     jobs: { [key: string] : JobPlan; };
     stationUse: SimulatedStationUtilization[];
 }
@@ -1595,36 +1558,36 @@ export class JobPlan implements IJobPlan {
 
     init(data?: any) {
         if (data) {
-            this.routeStartUTC = data["RouteStartUTC"] ? new Date(data["RouteStartUTC"].toString()) : <any>undefined;
-            this.routeEndUTC = data["RouteEndUTC"] ? new Date(data["RouteEndUTC"].toString()) : <any>undefined;
-            this.archived = data["Archived"];
-            this.copiedToSystem = data["CopiedToSystem"];
-            this.partName = data["PartName"];
-            this.comment = data["Comment"];
-            this.unique = data["Unique"];
-            this.priority = data["Priority"];
-            this.scheduleId = data["ScheduleId"];
-            if (data["Bookings"] && data["Bookings"].constructor === Array) {
+            this.routeStartUTC = data["routeStartUTC"] ? new Date(data["routeStartUTC"].toString()) : <any>undefined;
+            this.routeEndUTC = data["routeEndUTC"] ? new Date(data["routeEndUTC"].toString()) : <any>undefined;
+            this.archived = data["archived"];
+            this.copiedToSystem = data["copiedToSystem"];
+            this.partName = data["partName"];
+            this.comment = data["comment"];
+            this.unique = data["unique"];
+            this.priority = data["priority"];
+            this.scheduleId = data["scheduleId"];
+            if (data["bookings"] && data["bookings"].constructor === Array) {
                 this.bookings = [];
-                for (let item of data["Bookings"])
+                for (let item of data["bookings"])
                     this.bookings.push(item);
             }
-            this.manuallyCreated = data["ManuallyCreated"];
-            this.createMarkingData = data["CreateMarkingData"];
-            if (data["Inspections"] && data["Inspections"].constructor === Array) {
+            this.manuallyCreated = data["manuallyCreated"];
+            this.createMarkingData = data["createMarkingData"];
+            if (data["inspections"] && data["inspections"].constructor === Array) {
                 this.inspections = [];
-                for (let item of data["Inspections"])
+                for (let item of data["inspections"])
                     this.inspections.push(JobInspectionData.fromJS(item));
             }
-            this.holdEntireJob = data["HoldEntireJob"] ? JobHoldPattern.fromJS(data["HoldEntireJob"]) : new JobHoldPattern();
-            if (data["CyclesOnFirstProcess"] && data["CyclesOnFirstProcess"].constructor === Array) {
+            this.holdEntireJob = data["holdEntireJob"] ? JobHoldPattern.fromJS(data["holdEntireJob"]) : new JobHoldPattern();
+            if (data["cyclesOnFirstProcess"] && data["cyclesOnFirstProcess"].constructor === Array) {
                 this.cyclesOnFirstProcess = [];
-                for (let item of data["CyclesOnFirstProcess"])
+                for (let item of data["cyclesOnFirstProcess"])
                     this.cyclesOnFirstProcess.push(item);
             }
-            if (data["ProcsAndPaths"] && data["ProcsAndPaths"].constructor === Array) {
+            if (data["procsAndPaths"] && data["procsAndPaths"].constructor === Array) {
                 this.procsAndPaths = [];
-                for (let item of data["ProcsAndPaths"])
+                for (let item of data["procsAndPaths"])
                     this.procsAndPaths.push(item);
             }
         }
@@ -1639,39 +1602,39 @@ export class JobPlan implements IJobPlan {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["RouteStartUTC"] = this.routeStartUTC ? this.routeStartUTC.toISOString() : <any>undefined;
-        data["RouteEndUTC"] = this.routeEndUTC ? this.routeEndUTC.toISOString() : <any>undefined;
-        data["Archived"] = this.archived;
-        data["CopiedToSystem"] = this.copiedToSystem;
-        data["PartName"] = this.partName;
-        data["Comment"] = this.comment;
-        data["Unique"] = this.unique;
-        data["Priority"] = this.priority;
-        data["ScheduleId"] = this.scheduleId;
+        data["routeStartUTC"] = this.routeStartUTC ? this.routeStartUTC.toISOString() : <any>undefined;
+        data["routeEndUTC"] = this.routeEndUTC ? this.routeEndUTC.toISOString() : <any>undefined;
+        data["archived"] = this.archived;
+        data["copiedToSystem"] = this.copiedToSystem;
+        data["partName"] = this.partName;
+        data["comment"] = this.comment;
+        data["unique"] = this.unique;
+        data["priority"] = this.priority;
+        data["scheduleId"] = this.scheduleId;
         if (this.bookings && this.bookings.constructor === Array) {
-            data["Bookings"] = [];
+            data["bookings"] = [];
             for (let item of this.bookings)
-                data["Bookings"].push(item);
+                data["bookings"].push(item);
         }
-        data["ManuallyCreated"] = this.manuallyCreated;
-        data["CreateMarkingData"] = this.createMarkingData;
+        data["manuallyCreated"] = this.manuallyCreated;
+        data["createMarkingData"] = this.createMarkingData;
         if (this.inspections && this.inspections.constructor === Array) {
-            data["Inspections"] = [];
+            data["inspections"] = [];
             for (let item of this.inspections)
-                data["Inspections"].push(item.toJSON());
+                data["inspections"].push(item.toJSON());
         }
-        data["HoldEntireJob"] = this.holdEntireJob ? this.holdEntireJob.toJSON() : <any>undefined;
+        data["holdEntireJob"] = this.holdEntireJob ? this.holdEntireJob.toJSON() : <any>undefined;
         if (this.cyclesOnFirstProcess && this.cyclesOnFirstProcess.constructor === Array) {
-            data["CyclesOnFirstProcess"] = [];
+            data["cyclesOnFirstProcess"] = [];
             for (let item of this.cyclesOnFirstProcess)
-                data["CyclesOnFirstProcess"].push(item);
+                data["cyclesOnFirstProcess"].push(item);
         }
         if (this.procsAndPaths && this.procsAndPaths.constructor === Array) {
-            data["ProcsAndPaths"] = [];
+            data["procsAndPaths"] = [];
             for (let item of this.procsAndPaths)
-                data["ProcsAndPaths"].push(item);
+                data["procsAndPaths"].push(item);
         }
-        return data; 
+        return data;
     }
 }
 
@@ -1692,66 +1655,6 @@ export interface IJobPlan {
     holdEntireJob: JobHoldPattern;
     cyclesOnFirstProcess: number[];
     procsAndPaths: ProcPathInfo[][];
-}
-
-export class SimulatedStationUtilization implements ISimulatedStationUtilization {
-    simulationId: string;
-    stationGroup: string;
-    stationNum: number;
-    startUTC: Date;
-    endUTC: Date;
-    utilizationTime: string;
-    plannedDownTime: string;
-
-    constructor(data?: ISimulatedStationUtilization) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            this.simulationId = data["simulationId"];
-            this.stationGroup = data["stationGroup"];
-            this.stationNum = data["stationNum"];
-            this.startUTC = data["startUTC"] ? new Date(data["startUTC"].toString()) : <any>undefined;
-            this.endUTC = data["endUTC"] ? new Date(data["endUTC"].toString()) : <any>undefined;
-            this.utilizationTime = data["utilizationTime"];
-            this.plannedDownTime = data["plannedDownTime"];
-        }
-    }
-
-    static fromJS(data: any): SimulatedStationUtilization {
-        data = typeof data === 'object' ? data : {};
-        let result = new SimulatedStationUtilization();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["simulationId"] = this.simulationId;
-        data["stationGroup"] = this.stationGroup;
-        data["stationNum"] = this.stationNum;
-        data["startUTC"] = this.startUTC ? this.startUTC.toISOString() : <any>undefined;
-        data["endUTC"] = this.endUTC ? this.endUTC.toISOString() : <any>undefined;
-        data["utilizationTime"] = this.utilizationTime;
-        data["plannedDownTime"] = this.plannedDownTime;
-        return data; 
-    }
-}
-
-export interface ISimulatedStationUtilization {
-    simulationId: string;
-    stationGroup: string;
-    stationNum: number;
-    startUTC: Date;
-    endUTC: Date;
-    utilizationTime: string;
-    plannedDownTime: string;
 }
 
 export class JobInspectionData implements IJobInspectionData {
@@ -1797,7 +1700,7 @@ export class JobInspectionData implements IJobInspectionData {
         data["randomFreq"] = this.randomFreq;
         data["timeInterval"] = this.timeInterval;
         data["inspectSingleProcess"] = this.inspectSingleProcess;
-        return data; 
+        return data;
     }
 }
 
@@ -1858,7 +1761,7 @@ export class JobHoldPattern implements IJobHoldPattern {
         }
         data["holdUnholdPatternStartUTC"] = this.holdUnholdPatternStartUTC ? this.holdUnholdPatternStartUTC.toISOString() : <any>undefined;
         data["holdUnholdPatternRepeats"] = this.holdUnholdPatternRepeats;
-        return data; 
+        return data;
     }
 }
 
@@ -1870,7 +1773,7 @@ export interface IJobHoldPattern {
     holdUnholdPatternRepeats: boolean;
 }
 
-export class ProcPathInfo implements IProcPathInfo {
+export class ProcPathInfo extends ValueType implements IProcPathInfo {
     pathGroup: number;
     pallets: string[] = [];
     fixtures?: FixtureFace[];
@@ -1887,15 +1790,11 @@ export class ProcPathInfo implements IProcPathInfo {
     outputQueue?: string;
 
     constructor(data?: IProcPathInfo) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+        super(data);
     }
 
     init(data?: any) {
+        super.init(data);
         if (data) {
             this.pathGroup = data["pathGroup"];
             if (data["pallets"] && data["pallets"].constructor === Array) {
@@ -1985,11 +1884,12 @@ export class ProcPathInfo implements IProcPathInfo {
         data["partsPerPallet"] = this.partsPerPallet;
         data["inputQueue"] = this.inputQueue;
         data["outputQueue"] = this.outputQueue;
-        return data; 
+        super.toJSON(data);
+        return data;
     }
 }
 
-export interface IProcPathInfo {
+export interface IProcPathInfo extends IValueType {
     pathGroup: number;
     pallets: string[];
     fixtures?: FixtureFace[];
@@ -2006,20 +1906,16 @@ export interface IProcPathInfo {
     outputQueue?: string;
 }
 
-export class FixtureFace implements IFixtureFace {
+export class FixtureFace extends ValueType implements IFixtureFace {
     fixture: string;
     face: string;
 
     constructor(data?: IFixtureFace) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+        super(data);
     }
 
     init(data?: any) {
+        super.init(data);
         if (data) {
             this.fixture = data["fixture"];
             this.face = data["face"];
@@ -2037,11 +1933,12 @@ export class FixtureFace implements IFixtureFace {
         data = typeof data === 'object' ? data : {};
         data["fixture"] = this.fixture;
         data["face"] = this.face;
-        return data; 
+        super.toJSON(data);
+        return data;
     }
 }
 
-export interface IFixtureFace {
+export interface IFixtureFace extends IValueType {
     fixture: string;
     face: string;
 }
@@ -2063,22 +1960,22 @@ export class JobMachiningStop implements IJobMachiningStop {
 
     init(data?: any) {
         if (data) {
-            if (data["Stations"]) {
+            if (data["stations"]) {
                 this.stations = {};
-                for (let key in data["Stations"]) {
-                    if (data["Stations"].hasOwnProperty(key))
-                        this.stations[key] = data["Stations"][key];
+                for (let key in data["stations"]) {
+                    if (data["stations"].hasOwnProperty(key))
+                        this.stations[key] = data["stations"][key];
                 }
             }
-            if (data["Tools"]) {
+            if (data["tools"]) {
                 this.tools = {};
-                for (let key in data["Tools"]) {
-                    if (data["Tools"].hasOwnProperty(key))
-                        this.tools[key] = data["Tools"][key];
+                for (let key in data["tools"]) {
+                    if (data["tools"].hasOwnProperty(key))
+                        this.tools[key] = data["tools"][key];
                 }
             }
-            this.stationGroup = data["StationGroup"];
-            this.expectedCycleTime = data["ExpectedCycleTime"];
+            this.stationGroup = data["stationGroup"];
+            this.expectedCycleTime = data["expectedCycleTime"];
         }
     }
 
@@ -2092,22 +1989,22 @@ export class JobMachiningStop implements IJobMachiningStop {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         if (this.stations) {
-            data["Stations"] = {};
+            data["stations"] = {};
             for (let key in this.stations) {
                 if (this.stations.hasOwnProperty(key))
-                    data["Stations"][key] = this.stations[key];
+                    data["stations"][key] = this.stations[key];
             }
         }
         if (this.tools) {
-            data["Tools"] = {};
+            data["tools"] = {};
             for (let key in this.tools) {
                 if (this.tools.hasOwnProperty(key))
-                    data["Tools"][key] = this.tools[key];
+                    data["tools"][key] = this.tools[key];
             }
         }
-        data["StationGroup"] = this.stationGroup;
-        data["ExpectedCycleTime"] = this.expectedCycleTime;
-        return data; 
+        data["stationGroup"] = this.stationGroup;
+        data["expectedCycleTime"] = this.expectedCycleTime;
+        return data;
     }
 }
 
@@ -2118,20 +2015,16 @@ export interface IJobMachiningStop {
     expectedCycleTime: string;
 }
 
-export class SimulatedProduction implements ISimulatedProduction {
+export class SimulatedProduction extends ValueType implements ISimulatedProduction {
     timeUTC: Date;
     quantity: number;
 
     constructor(data?: ISimulatedProduction) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+        super(data);
     }
 
     init(data?: any) {
+        super.init(data);
         if (data) {
             this.timeUTC = data["timeUTC"] ? new Date(data["timeUTC"].toString()) : <any>undefined;
             this.quantity = data["quantity"];
@@ -2149,22 +2042,26 @@ export class SimulatedProduction implements ISimulatedProduction {
         data = typeof data === 'object' ? data : {};
         data["timeUTC"] = this.timeUTC ? this.timeUTC.toISOString() : <any>undefined;
         data["quantity"] = this.quantity;
-        return data; 
+        super.toJSON(data);
+        return data;
     }
 }
 
-export interface ISimulatedProduction {
+export interface ISimulatedProduction extends IValueType {
     timeUTC: Date;
     quantity: number;
 }
 
-export class JobsAndExtraParts implements IJobsAndExtraParts {
-    latestScheduleId: string;
-    jobs: JobPlan[] = [];
-    extraParts: { [key: string] : number; } = {};
-    currentUnfilledWorkorders?: PartWorkorder[];
+export class SimulatedStationUtilization implements ISimulatedStationUtilization {
+    simulationId: string;
+    stationGroup: string;
+    stationNum: number;
+    startUTC: Date;
+    endUTC: Date;
+    utilizationTime: string;
+    plannedDownTime: string;
 
-    constructor(data?: IJobsAndExtraParts) {
+    constructor(data?: ISimulatedStationUtilization) {
         if (data) {
             for (var property in data) {
                 if (data.hasOwnProperty(property))
@@ -2174,6 +2071,59 @@ export class JobsAndExtraParts implements IJobsAndExtraParts {
     }
 
     init(data?: any) {
+        if (data) {
+            this.simulationId = data["simulationId"];
+            this.stationGroup = data["stationGroup"];
+            this.stationNum = data["stationNum"];
+            this.startUTC = data["startUTC"] ? new Date(data["startUTC"].toString()) : <any>undefined;
+            this.endUTC = data["endUTC"] ? new Date(data["endUTC"].toString()) : <any>undefined;
+            this.utilizationTime = data["utilizationTime"];
+            this.plannedDownTime = data["plannedDownTime"];
+        }
+    }
+
+    static fromJS(data: any): SimulatedStationUtilization {
+        data = typeof data === 'object' ? data : {};
+        let result = new SimulatedStationUtilization();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["simulationId"] = this.simulationId;
+        data["stationGroup"] = this.stationGroup;
+        data["stationNum"] = this.stationNum;
+        data["startUTC"] = this.startUTC ? this.startUTC.toISOString() : <any>undefined;
+        data["endUTC"] = this.endUTC ? this.endUTC.toISOString() : <any>undefined;
+        data["utilizationTime"] = this.utilizationTime;
+        data["plannedDownTime"] = this.plannedDownTime;
+        return data;
+    }
+}
+
+export interface ISimulatedStationUtilization {
+    simulationId: string;
+    stationGroup: string;
+    stationNum: number;
+    startUTC: Date;
+    endUTC: Date;
+    utilizationTime: string;
+    plannedDownTime: string;
+}
+
+export class JobsAndExtraParts extends ValueType implements IJobsAndExtraParts {
+    latestScheduleId: string;
+    jobs: JobPlan[] = [];
+    extraParts: { [key: string] : number; } = {};
+    currentUnfilledWorkorders?: PartWorkorder[];
+
+    constructor(data?: IJobsAndExtraParts) {
+        super(data);
+    }
+
+    init(data?: any) {
+        super.init(data);
         if (data) {
             this.latestScheduleId = data["latestScheduleId"];
             if (data["jobs"] && data["jobs"].constructor === Array) {
@@ -2223,11 +2173,12 @@ export class JobsAndExtraParts implements IJobsAndExtraParts {
             for (let item of this.currentUnfilledWorkorders)
                 data["currentUnfilledWorkorders"].push(item.toJSON());
         }
-        return data; 
+        super.toJSON(data);
+        return data;
     }
 }
 
-export interface IJobsAndExtraParts {
+export interface IJobsAndExtraParts extends IValueType {
     latestScheduleId: string;
     jobs: JobPlan[];
     extraParts: { [key: string] : number; };
@@ -2274,7 +2225,7 @@ export class PartWorkorder implements IPartWorkorder {
         data["quantity"] = this.quantity;
         data["dueDate"] = this.dueDate ? this.dueDate.toISOString() : <any>undefined;
         data["priority"] = this.priority;
-        return data; 
+        return data;
     }
 }
 
@@ -2287,11 +2238,10 @@ export interface IPartWorkorder {
 }
 
 export class CurrentStatus implements ICurrentStatus {
-    jobs: { [key: string] : JobCurrentInformation; } = {};
+    jobs: { [key: string] : InProcessJob; } = {};
     pallets: { [key: string] : PalletStatus; } = {};
+    material: InProcessMaterial[] = [];
     alarms?: string[];
-    extraParts?: { [key: string] : number; };
-    queueSizes?: { [key: string] : QueueSize; };
     latestScheduleId?: string;
 
     constructor(data?: ICurrentStatus) {
@@ -2305,38 +2255,29 @@ export class CurrentStatus implements ICurrentStatus {
 
     init(data?: any) {
         if (data) {
-            if (data["Jobs"]) {
+            if (data["jobs"]) {
                 this.jobs = {};
-                for (let key in data["Jobs"]) {
-                    if (data["Jobs"].hasOwnProperty(key))
-                        this.jobs[key] = data["Jobs"][key] ? JobCurrentInformation.fromJS(data["Jobs"][key]) : new JobCurrentInformation();
+                for (let key in data["jobs"]) {
+                    if (data["jobs"].hasOwnProperty(key))
+                        this.jobs[key] = data["jobs"][key] ? InProcessJob.fromJS(data["jobs"][key]) : new InProcessJob();
                 }
             }
-            if (data["Pallets"]) {
+            if (data["pallets"]) {
                 this.pallets = {};
-                for (let key in data["Pallets"]) {
-                    if (data["Pallets"].hasOwnProperty(key))
-                        this.pallets[key] = data["Pallets"][key] ? PalletStatus.fromJS(data["Pallets"][key]) : new PalletStatus();
+                for (let key in data["pallets"]) {
+                    if (data["pallets"].hasOwnProperty(key))
+                        this.pallets[key] = data["pallets"][key] ? PalletStatus.fromJS(data["pallets"][key]) : new PalletStatus();
                 }
             }
-            if (data["Alarms"] && data["Alarms"].constructor === Array) {
+            if (data["material"] && data["material"].constructor === Array) {
+                this.material = [];
+                for (let item of data["material"])
+                    this.material.push(InProcessMaterial.fromJS(item));
+            }
+            if (data["alarms"] && data["alarms"].constructor === Array) {
                 this.alarms = [];
-                for (let item of data["Alarms"])
+                for (let item of data["alarms"])
                     this.alarms.push(item);
-            }
-            if (data["ExtraParts"]) {
-                this.extraParts = {};
-                for (let key in data["ExtraParts"]) {
-                    if (data["ExtraParts"].hasOwnProperty(key))
-                        this.extraParts[key] = data["ExtraParts"][key];
-                }
-            }
-            if (data["QueueSizes"]) {
-                this.queueSizes = {};
-                for (let key in data["QueueSizes"]) {
-                    if (data["QueueSizes"].hasOwnProperty(key))
-                        this.queueSizes[key] = data["QueueSizes"][key] ? QueueSize.fromJS(data["QueueSizes"][key]) : new QueueSize();
-                }
             }
             this.latestScheduleId = data["latestScheduleId"];
         }
@@ -2352,206 +2293,85 @@ export class CurrentStatus implements ICurrentStatus {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         if (this.jobs) {
-            data["Jobs"] = {};
+            data["jobs"] = {};
             for (let key in this.jobs) {
                 if (this.jobs.hasOwnProperty(key))
-                    data["Jobs"][key] = this.jobs[key];
+                    data["jobs"][key] = this.jobs[key];
             }
         }
         if (this.pallets) {
-            data["Pallets"] = {};
+            data["pallets"] = {};
             for (let key in this.pallets) {
                 if (this.pallets.hasOwnProperty(key))
-                    data["Pallets"][key] = this.pallets[key];
+                    data["pallets"][key] = this.pallets[key];
             }
+        }
+        if (this.material && this.material.constructor === Array) {
+            data["material"] = [];
+            for (let item of this.material)
+                data["material"].push(item.toJSON());
         }
         if (this.alarms && this.alarms.constructor === Array) {
-            data["Alarms"] = [];
+            data["alarms"] = [];
             for (let item of this.alarms)
-                data["Alarms"].push(item);
-        }
-        if (this.extraParts) {
-            data["ExtraParts"] = {};
-            for (let key in this.extraParts) {
-                if (this.extraParts.hasOwnProperty(key))
-                    data["ExtraParts"][key] = this.extraParts[key];
-            }
-        }
-        if (this.queueSizes) {
-            data["QueueSizes"] = {};
-            for (let key in this.queueSizes) {
-                if (this.queueSizes.hasOwnProperty(key))
-                    data["QueueSizes"][key] = this.queueSizes[key];
-            }
+                data["alarms"].push(item);
         }
         data["latestScheduleId"] = this.latestScheduleId;
-        return data; 
+        return data;
     }
 }
 
 export interface ICurrentStatus {
-    jobs: { [key: string] : JobCurrentInformation; };
+    jobs: { [key: string] : InProcessJob; };
     pallets: { [key: string] : PalletStatus; };
+    material: InProcessMaterial[];
     alarms?: string[];
-    extraParts?: { [key: string] : number; };
-    queueSizes?: { [key: string] : QueueSize; };
     latestScheduleId?: string;
 }
 
-export class JobCurrentInformation implements IJobCurrentInformation {
-    material: Material[] = [];
+export class InProcessJob extends JobPlan implements IInProcessJob {
     completedProc1: number[] = [];
-    totalComplete: number;
-    routeStartUTC: Date;
-    routeEndUTC: Date;
-    archived: boolean;
-    copiedToSystem: boolean;
-    partName: string;
-    comment?: string;
-    unique: string;
-    priority: number;
-    scheduleId?: string;
-    bookings?: string[];
-    manuallyCreated: boolean;
-    createMarkingData: boolean;
-    inspections?: JobInspectionData[];
-    holdEntireJob: JobHoldPattern = new JobHoldPattern();
-    cyclesOnFirstProcess: number[] = [];
-    procsAndPaths: ProcPathInfo[][] = [];
+    totalCompleteOnFinalProcess: number;
 
-    constructor(data?: IJobCurrentInformation) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+    constructor(data?: IInProcessJob) {
+        super(data);
     }
 
     init(data?: any) {
+        super.init(data);
         if (data) {
-            if (data["Material"] && data["Material"].constructor === Array) {
-                this.material = [];
-                for (let item of data["Material"])
-                    this.material.push(Material.fromJS(item));
-            }
-            if (data["CompletedProc1"] && data["CompletedProc1"].constructor === Array) {
+            if (data["completedProc1"] && data["completedProc1"].constructor === Array) {
                 this.completedProc1 = [];
-                for (let item of data["CompletedProc1"])
+                for (let item of data["completedProc1"])
                     this.completedProc1.push(item);
             }
-            this.totalComplete = data["TotalComplete"];
-            this.routeStartUTC = data["RouteStartUTC"] ? new Date(data["RouteStartUTC"].toString()) : <any>undefined;
-            this.routeEndUTC = data["RouteEndUTC"] ? new Date(data["RouteEndUTC"].toString()) : <any>undefined;
-            this.archived = data["Archived"];
-            this.copiedToSystem = data["CopiedToSystem"];
-            this.partName = data["PartName"];
-            this.comment = data["Comment"];
-            this.unique = data["Unique"];
-            this.priority = data["Priority"];
-            this.scheduleId = data["ScheduleId"];
-            if (data["Bookings"] && data["Bookings"].constructor === Array) {
-                this.bookings = [];
-                for (let item of data["Bookings"])
-                    this.bookings.push(item);
-            }
-            this.manuallyCreated = data["ManuallyCreated"];
-            this.createMarkingData = data["CreateMarkingData"];
-            if (data["Inspections"] && data["Inspections"].constructor === Array) {
-                this.inspections = [];
-                for (let item of data["Inspections"])
-                    this.inspections.push(JobInspectionData.fromJS(item));
-            }
-            this.holdEntireJob = data["HoldEntireJob"] ? JobHoldPattern.fromJS(data["HoldEntireJob"]) : new JobHoldPattern();
-            if (data["CyclesOnFirstProcess"] && data["CyclesOnFirstProcess"].constructor === Array) {
-                this.cyclesOnFirstProcess = [];
-                for (let item of data["CyclesOnFirstProcess"])
-                    this.cyclesOnFirstProcess.push(item);
-            }
-            if (data["ProcsAndPaths"] && data["ProcsAndPaths"].constructor === Array) {
-                this.procsAndPaths = [];
-                for (let item of data["ProcsAndPaths"])
-                    this.procsAndPaths.push(item);
-            }
+            this.totalCompleteOnFinalProcess = data["totalCompleteOnFinalProcess"];
         }
     }
 
-    static fromJS(data: any): JobCurrentInformation {
+    static fromJS(data: any): InProcessJob {
         data = typeof data === 'object' ? data : {};
-        let result = new JobCurrentInformation();
+        let result = new InProcessJob();
         result.init(data);
         return result;
     }
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        if (this.material && this.material.constructor === Array) {
-            data["Material"] = [];
-            for (let item of this.material)
-                data["Material"].push(item.toJSON());
-        }
         if (this.completedProc1 && this.completedProc1.constructor === Array) {
-            data["CompletedProc1"] = [];
+            data["completedProc1"] = [];
             for (let item of this.completedProc1)
-                data["CompletedProc1"].push(item);
+                data["completedProc1"].push(item);
         }
-        data["TotalComplete"] = this.totalComplete;
-        data["RouteStartUTC"] = this.routeStartUTC ? this.routeStartUTC.toISOString() : <any>undefined;
-        data["RouteEndUTC"] = this.routeEndUTC ? this.routeEndUTC.toISOString() : <any>undefined;
-        data["Archived"] = this.archived;
-        data["CopiedToSystem"] = this.copiedToSystem;
-        data["PartName"] = this.partName;
-        data["Comment"] = this.comment;
-        data["Unique"] = this.unique;
-        data["Priority"] = this.priority;
-        data["ScheduleId"] = this.scheduleId;
-        if (this.bookings && this.bookings.constructor === Array) {
-            data["Bookings"] = [];
-            for (let item of this.bookings)
-                data["Bookings"].push(item);
-        }
-        data["ManuallyCreated"] = this.manuallyCreated;
-        data["CreateMarkingData"] = this.createMarkingData;
-        if (this.inspections && this.inspections.constructor === Array) {
-            data["Inspections"] = [];
-            for (let item of this.inspections)
-                data["Inspections"].push(item.toJSON());
-        }
-        data["HoldEntireJob"] = this.holdEntireJob ? this.holdEntireJob.toJSON() : <any>undefined;
-        if (this.cyclesOnFirstProcess && this.cyclesOnFirstProcess.constructor === Array) {
-            data["CyclesOnFirstProcess"] = [];
-            for (let item of this.cyclesOnFirstProcess)
-                data["CyclesOnFirstProcess"].push(item);
-        }
-        if (this.procsAndPaths && this.procsAndPaths.constructor === Array) {
-            data["ProcsAndPaths"] = [];
-            for (let item of this.procsAndPaths)
-                data["ProcsAndPaths"].push(item);
-        }
-        return data; 
+        data["totalCompleteOnFinalProcess"] = this.totalCompleteOnFinalProcess;
+        super.toJSON(data);
+        return data;
     }
 }
 
-export interface IJobCurrentInformation {
-    material: Material[];
+export interface IInProcessJob extends IJobPlan {
     completedProc1: number[];
-    totalComplete: number;
-    routeStartUTC: Date;
-    routeEndUTC: Date;
-    archived: boolean;
-    copiedToSystem: boolean;
-    partName: string;
-    comment?: string;
-    unique: string;
-    priority: number;
-    scheduleId?: string;
-    bookings?: string[];
-    manuallyCreated: boolean;
-    createMarkingData: boolean;
-    inspections?: JobInspectionData[];
-    holdEntireJob: JobHoldPattern;
-    cyclesOnFirstProcess: number[];
-    procsAndPaths: ProcPathInfo[][];
+    totalCompleteOnFinalProcess: number;
 }
 
 export class PalletStatus implements IPalletStatus {
@@ -2559,12 +2379,7 @@ export class PalletStatus implements IPalletStatus {
     fixtureOnPallet: string;
     onHold: boolean;
     currentPalletLocation: PalletLocation = new PalletLocation();
-    materialOnPallet: PalletMaterial[] = [];
-    status: PalletStatusStatus;
-    materialToUnload?: PalletMaterial[];
-    materialToLoad?: PalletMaterial[];
     newFixture?: string;
-    materialInExecution?: MaterialInExe[];
     targetLocation?: PalletLocation;
     percentMoveCompleted?: number;
 
@@ -2583,28 +2398,7 @@ export class PalletStatus implements IPalletStatus {
             this.fixtureOnPallet = data["fixtureOnPallet"];
             this.onHold = data["onHold"];
             this.currentPalletLocation = data["currentPalletLocation"] ? PalletLocation.fromJS(data["currentPalletLocation"]) : new PalletLocation();
-            if (data["materialOnPallet"] && data["materialOnPallet"].constructor === Array) {
-                this.materialOnPallet = [];
-                for (let item of data["materialOnPallet"])
-                    this.materialOnPallet.push(PalletMaterial.fromJS(item));
-            }
-            this.status = data["status"];
-            if (data["materialToUnload"] && data["materialToUnload"].constructor === Array) {
-                this.materialToUnload = [];
-                for (let item of data["materialToUnload"])
-                    this.materialToUnload.push(PalletMaterial.fromJS(item));
-            }
-            if (data["materialToLoad"] && data["materialToLoad"].constructor === Array) {
-                this.materialToLoad = [];
-                for (let item of data["materialToLoad"])
-                    this.materialToLoad.push(PalletMaterial.fromJS(item));
-            }
             this.newFixture = data["newFixture"];
-            if (data["materialInExecution"] && data["materialInExecution"].constructor === Array) {
-                this.materialInExecution = [];
-                for (let item of data["materialInExecution"])
-                    this.materialInExecution.push(MaterialInExe.fromJS(item));
-            }
             this.targetLocation = data["targetLocation"] ? PalletLocation.fromJS(data["targetLocation"]) : <any>undefined;
             this.percentMoveCompleted = data["percentMoveCompleted"];
         }
@@ -2623,31 +2417,10 @@ export class PalletStatus implements IPalletStatus {
         data["fixtureOnPallet"] = this.fixtureOnPallet;
         data["onHold"] = this.onHold;
         data["currentPalletLocation"] = this.currentPalletLocation ? this.currentPalletLocation.toJSON() : <any>undefined;
-        if (this.materialOnPallet && this.materialOnPallet.constructor === Array) {
-            data["materialOnPallet"] = [];
-            for (let item of this.materialOnPallet)
-                data["materialOnPallet"].push(item.toJSON());
-        }
-        data["status"] = this.status;
-        if (this.materialToUnload && this.materialToUnload.constructor === Array) {
-            data["materialToUnload"] = [];
-            for (let item of this.materialToUnload)
-                data["materialToUnload"].push(item.toJSON());
-        }
-        if (this.materialToLoad && this.materialToLoad.constructor === Array) {
-            data["materialToLoad"] = [];
-            for (let item of this.materialToLoad)
-                data["materialToLoad"].push(item.toJSON());
-        }
         data["newFixture"] = this.newFixture;
-        if (this.materialInExecution && this.materialInExecution.constructor === Array) {
-            data["materialInExecution"] = [];
-            for (let item of this.materialInExecution)
-                data["materialInExecution"].push(item.toJSON());
-        }
         data["targetLocation"] = this.targetLocation ? this.targetLocation.toJSON() : <any>undefined;
         data["percentMoveCompleted"] = this.percentMoveCompleted;
-        return data; 
+        return data;
     }
 }
 
@@ -2656,126 +2429,21 @@ export interface IPalletStatus {
     fixtureOnPallet: string;
     onHold: boolean;
     currentPalletLocation: PalletLocation;
-    materialOnPallet: PalletMaterial[];
-    status: PalletStatusStatus;
-    materialToUnload?: PalletMaterial[];
-    materialToLoad?: PalletMaterial[];
     newFixture?: string;
-    materialInExecution?: MaterialInExe[];
     targetLocation?: PalletLocation;
     percentMoveCompleted?: number;
 }
 
-export class QueueSize implements IQueueSize {
-    maxSizeBeforeStopLoading: number;
-    maxSizeBeforeStopUnloading: number;
-
-    constructor(data?: IQueueSize) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            this.maxSizeBeforeStopLoading = data["maxSizeBeforeStopLoading"];
-            this.maxSizeBeforeStopUnloading = data["maxSizeBeforeStopUnloading"];
-        }
-    }
-
-    static fromJS(data: any): QueueSize {
-        data = typeof data === 'object' ? data : {};
-        let result = new QueueSize();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["maxSizeBeforeStopLoading"] = this.maxSizeBeforeStopLoading;
-        data["maxSizeBeforeStopUnloading"] = this.maxSizeBeforeStopUnloading;
-        return data; 
-    }
-}
-
-export interface IQueueSize {
-    maxSizeBeforeStopLoading: number;
-    maxSizeBeforeStopUnloading: number;
-}
-
-export class Material implements IMaterial {
-    materialId: number;
-    process: number;
-    path: number;
-    pallet: string;
-    fixture: string;
-    faceName: string;
-
-    constructor(data?: IMaterial) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            this.materialId = data["materialId"];
-            this.process = data["process"];
-            this.path = data["path"];
-            this.pallet = data["pallet"];
-            this.fixture = data["fixture"];
-            this.faceName = data["faceName"];
-        }
-    }
-
-    static fromJS(data: any): Material {
-        data = typeof data === 'object' ? data : {};
-        let result = new Material();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["materialId"] = this.materialId;
-        data["process"] = this.process;
-        data["path"] = this.path;
-        data["pallet"] = this.pallet;
-        data["fixture"] = this.fixture;
-        data["faceName"] = this.faceName;
-        return data; 
-    }
-}
-
-export interface IMaterial {
-    materialId: number;
-    process: number;
-    path: number;
-    pallet: string;
-    fixture: string;
-    faceName: string;
-}
-
-export class PalletLocation implements IPalletLocation {
-    loc: PalletLocationLoc;
+export class PalletLocation extends ValueType implements IPalletLocation {
+    loc: PalletLocationEnum;
     num: number;
 
     constructor(data?: IPalletLocation) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+        super(data);
     }
 
     init(data?: any) {
+        super.init(data);
         if (data) {
             this.loc = data["loc"];
             this.num = data["num"];
@@ -2793,24 +2461,26 @@ export class PalletLocation implements IPalletLocation {
         data = typeof data === 'object' ? data : {};
         data["loc"] = this.loc;
         data["num"] = this.num;
-        return data; 
+        super.toJSON(data);
+        return data;
     }
 }
 
-export interface IPalletLocation {
-    loc: PalletLocationLoc;
+export interface IPalletLocation extends IValueType {
+    loc: PalletLocationEnum;
     num: number;
 }
 
-export class PalletMaterial implements IPalletMaterial {
+export class InProcessMaterial implements IInProcessMaterial {
+    materialID: number;
     jobUnique: string;
     partName: string;
-    materialID: number;
     process: number;
     path: number;
-    faceName: string;
+    location: InProcessMaterialLocation = new InProcessMaterialLocation();
+    action: InProcessMaterialAction = new InProcessMaterialAction();
 
-    constructor(data?: IPalletMaterial) {
+    constructor(data?: IInProcessMaterial) {
         if (data) {
             for (var property in data) {
                 if (data.hasOwnProperty(property))
@@ -2821,55 +2491,54 @@ export class PalletMaterial implements IPalletMaterial {
 
     init(data?: any) {
         if (data) {
+            this.materialID = data["materialID"];
             this.jobUnique = data["jobUnique"];
             this.partName = data["partName"];
-            this.materialID = data["materialID"];
             this.process = data["process"];
             this.path = data["path"];
-            this.faceName = data["faceName"];
+            this.location = data["location"] ? InProcessMaterialLocation.fromJS(data["location"]) : new InProcessMaterialLocation();
+            this.action = data["action"] ? InProcessMaterialAction.fromJS(data["action"]) : new InProcessMaterialAction();
         }
     }
 
-    static fromJS(data: any): PalletMaterial {
+    static fromJS(data: any): InProcessMaterial {
         data = typeof data === 'object' ? data : {};
-        let result = new PalletMaterial();
+        let result = new InProcessMaterial();
         result.init(data);
         return result;
     }
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
+        data["materialID"] = this.materialID;
         data["jobUnique"] = this.jobUnique;
         data["partName"] = this.partName;
-        data["materialID"] = this.materialID;
         data["process"] = this.process;
         data["path"] = this.path;
-        data["faceName"] = this.faceName;
-        return data; 
+        data["location"] = this.location ? this.location.toJSON() : <any>undefined;
+        data["action"] = this.action ? this.action.toJSON() : <any>undefined;
+        return data;
     }
 }
 
-export interface IPalletMaterial {
+export interface IInProcessMaterial {
+    materialID: number;
     jobUnique: string;
     partName: string;
-    materialID: number;
     process: number;
     path: number;
-    faceName: string;
+    location: InProcessMaterialLocation;
+    action: InProcessMaterialAction;
 }
 
-export class MaterialInExe implements IMaterialInExe {
-    program: string;
-    elapsedMachiningTime: string;
-    expectedRemainingMachiningTime: string;
-    jobUnique: string;
-    partName: string;
-    materialID: number;
-    process: number;
-    path: number;
-    faceName: string;
+export class InProcessMaterialLocation implements IInProcessMaterialLocation {
+    type: LocType;
+    pallet?: string;
+    fixture?: string;
+    face: number;
+    currentQueue?: string;
 
-    constructor(data?: IMaterialInExe) {
+    constructor(data?: IInProcessMaterialLocation) {
         if (data) {
             for (var property in data) {
                 if (data.hasOwnProperty(property))
@@ -2880,53 +2549,114 @@ export class MaterialInExe implements IMaterialInExe {
 
     init(data?: any) {
         if (data) {
+            this.type = data["type"];
+            this.pallet = data["pallet"];
+            this.fixture = data["fixture"];
+            this.face = data["face"];
+            this.currentQueue = data["currentQueue"];
+        }
+    }
+
+    static fromJS(data: any): InProcessMaterialLocation {
+        data = typeof data === 'object' ? data : {};
+        let result = new InProcessMaterialLocation();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["type"] = this.type;
+        data["pallet"] = this.pallet;
+        data["fixture"] = this.fixture;
+        data["face"] = this.face;
+        data["currentQueue"] = this.currentQueue;
+        return data;
+    }
+}
+
+export interface IInProcessMaterialLocation {
+    type: LocType;
+    pallet?: string;
+    fixture?: string;
+    face: number;
+    currentQueue?: string;
+}
+
+export enum LocType {
+    Free = <any>"Free",
+    OnPallet = <any>"OnPallet",
+    InQueue = <any>"InQueue",
+}
+
+export class InProcessMaterialAction implements IInProcessMaterialAction {
+    type: ActionType;
+    loadOntoPallet?: string;
+    loadOntoFace: number;
+    unloadIntoQueue?: string;
+    program?: string;
+    elapsedMachiningTime?: string;
+    expectedRemainingMachiningTime?: string;
+
+    constructor(data?: IInProcessMaterialAction) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.type = data["type"];
+            this.loadOntoPallet = data["loadOntoPallet"];
+            this.loadOntoFace = data["loadOntoFace"];
+            this.unloadIntoQueue = data["unloadIntoQueue"];
             this.program = data["program"];
             this.elapsedMachiningTime = data["elapsedMachiningTime"];
             this.expectedRemainingMachiningTime = data["expectedRemainingMachiningTime"];
-            this.jobUnique = data["jobUnique"];
-            this.partName = data["partName"];
-            this.materialID = data["materialID"];
-            this.process = data["process"];
-            this.path = data["path"];
-            this.faceName = data["faceName"];
         }
     }
 
-    static fromJS(data: any): MaterialInExe {
+    static fromJS(data: any): InProcessMaterialAction {
         data = typeof data === 'object' ? data : {};
-        let result = new MaterialInExe();
+        let result = new InProcessMaterialAction();
         result.init(data);
         return result;
     }
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
+        data["type"] = this.type;
+        data["loadOntoPallet"] = this.loadOntoPallet;
+        data["loadOntoFace"] = this.loadOntoFace;
+        data["unloadIntoQueue"] = this.unloadIntoQueue;
         data["program"] = this.program;
         data["elapsedMachiningTime"] = this.elapsedMachiningTime;
         data["expectedRemainingMachiningTime"] = this.expectedRemainingMachiningTime;
-        data["jobUnique"] = this.jobUnique;
-        data["partName"] = this.partName;
-        data["materialID"] = this.materialID;
-        data["process"] = this.process;
-        data["path"] = this.path;
-        data["faceName"] = this.faceName;
-        return data; 
+        return data;
     }
 }
 
-export interface IMaterialInExe {
-    program: string;
-    elapsedMachiningTime: string;
-    expectedRemainingMachiningTime: string;
-    jobUnique: string;
-    partName: string;
-    materialID: number;
-    process: number;
-    path: number;
-    faceName: string;
+export interface IInProcessMaterialAction {
+    type: ActionType;
+    loadOntoPallet?: string;
+    loadOntoFace: number;
+    unloadIntoQueue?: string;
+    program?: string;
+    elapsedMachiningTime?: string;
+    expectedRemainingMachiningTime?: string;
 }
 
-export class NewJobs implements INewJobs {
+export enum ActionType {
+    Waiting = <any>"Waiting",
+    Loading = <any>"Loading",
+    Unloading = <any>"Unloading",
+    Machining = <any>"Machining",
+}
+
+export class NewJobs extends ValueType implements INewJobs {
     scheduleId: string;
     jobs: JobPlan[] = [];
     stationUse: SimulatedStationUtilization[] = [];
@@ -2937,15 +2667,11 @@ export class NewJobs implements INewJobs {
     queueSizes?: { [key: string] : QueueSize; };
 
     constructor(data?: INewJobs) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+        super(data);
     }
 
     init(data?: any) {
+        super.init(data);
         if (data) {
             this.scheduleId = data["scheduleId"];
             if (data["jobs"] && data["jobs"].constructor === Array) {
@@ -3023,11 +2749,12 @@ export class NewJobs implements INewJobs {
                     data["queueSizes"][key] = this.queueSizes[key];
             }
         }
-        return data; 
+        super.toJSON(data);
+        return data;
     }
 }
 
-export interface INewJobs {
+export interface INewJobs extends IValueType {
     scheduleId: string;
     jobs: JobPlan[];
     stationUse: SimulatedStationUtilization[];
@@ -3038,7 +2765,44 @@ export interface INewJobs {
     queueSizes?: { [key: string] : QueueSize; };
 }
 
-export class JobAndDecrementQuantity implements IJobAndDecrementQuantity {
+export class QueueSize extends ValueType implements IQueueSize {
+    maxSizeBeforeStopLoading: number;
+    maxSizeBeforeStopUnloading: number;
+
+    constructor(data?: IQueueSize) {
+        super(data);
+    }
+
+    init(data?: any) {
+        super.init(data);
+        if (data) {
+            this.maxSizeBeforeStopLoading = data["maxSizeBeforeStopLoading"];
+            this.maxSizeBeforeStopUnloading = data["maxSizeBeforeStopUnloading"];
+        }
+    }
+
+    static fromJS(data: any): QueueSize {
+        data = typeof data === 'object' ? data : {};
+        let result = new QueueSize();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["maxSizeBeforeStopLoading"] = this.maxSizeBeforeStopLoading;
+        data["maxSizeBeforeStopUnloading"] = this.maxSizeBeforeStopUnloading;
+        super.toJSON(data);
+        return data;
+    }
+}
+
+export interface IQueueSize extends IValueType {
+    maxSizeBeforeStopLoading: number;
+    maxSizeBeforeStopUnloading: number;
+}
+
+export class JobAndDecrementQuantity extends ValueType implements IJobAndDecrementQuantity {
     decrementId: string;
     jobUnique: string;
     timeUTC: Date;
@@ -3046,15 +2810,11 @@ export class JobAndDecrementQuantity implements IJobAndDecrementQuantity {
     quantity: number;
 
     constructor(data?: IJobAndDecrementQuantity) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+        super(data);
     }
 
     init(data?: any) {
+        super.init(data);
         if (data) {
             this.decrementId = data["decrementId"];
             this.jobUnique = data["jobUnique"];
@@ -3078,11 +2838,12 @@ export class JobAndDecrementQuantity implements IJobAndDecrementQuantity {
         data["timeUTC"] = this.timeUTC ? this.timeUTC.toISOString() : <any>undefined;
         data["part"] = this.part;
         data["quantity"] = this.quantity;
-        return data; 
+        super.toJSON(data);
+        return data;
     }
 }
 
-export interface IJobAndDecrementQuantity {
+export interface IJobAndDecrementQuantity extends IValueType {
     decrementId: string;
     jobUnique: string;
     timeUTC: Date;
@@ -3094,7 +2855,7 @@ export class LogEntry implements ILogEntry {
     details?: { [key: string] : string; };
     counter: number;
     material: LogMaterial[] = [];
-    type: LogEntryType;
+    type: LogType;
     startofcycle: boolean;
     endUTC: Date;
     loc: string;
@@ -3177,7 +2938,7 @@ export class LogEntry implements ILogEntry {
         data["endofroute"] = this.endofroute;
         data["elapsed"] = this.elapsed;
         data["active"] = this.active;
-        return data; 
+        return data;
     }
 }
 
@@ -3185,7 +2946,7 @@ export interface ILogEntry {
     details?: { [key: string] : string; };
     counter: number;
     material: LogMaterial[];
-    type: LogEntryType;
+    type: LogType;
     startofcycle: boolean;
     endUTC: Date;
     loc: string;
@@ -3241,7 +3002,7 @@ export class LogMaterial implements ILogMaterial {
         data["proc"] = this.proc;
         data["numproc"] = this.numproc;
         data["face"] = this.face;
-        return data; 
+        return data;
     }
 }
 
@@ -3252,6 +3013,17 @@ export interface ILogMaterial {
     proc: number;
     numproc: number;
     face: string;
+}
+
+export enum LogType {
+    LoadUnloadCycle = <any>"LoadUnloadCycle",
+    MachineCycle = <any>"MachineCycle",
+    PartMark = <any>"PartMark",
+    Inspection = <any>"Inspection",
+    OrderAssignment = <any>"OrderAssignment",
+    GeneralMessage = <any>"GeneralMessage",
+    PalletCycle = <any>"PalletCycle",
+    FinalizeWorkorder = <any>"FinalizeWorkorder",
 }
 
 export class WorkorderSummary implements IWorkorderSummary {
@@ -3307,7 +3079,7 @@ export class WorkorderSummary implements IWorkorderSummary {
         }
         data["id"] = this.id;
         data["finalized"] = this.finalized ? this.finalized.toISOString() : <any>undefined;
-        return data; 
+        return data;
     }
 }
 
@@ -3379,7 +3151,7 @@ export class WorkorderPartSummary implements IWorkorderPartSummary {
         }
         data["name"] = this.name;
         data["completed-qty"] = this.completedQty;
-        return data; 
+        return data;
     }
 }
 
@@ -3391,9 +3163,9 @@ export interface IWorkorderPartSummary {
 }
 
 export class SerialSettings implements ISerialSettings {
-    serialType: SerialSettingsSerialType;
+    serialType: SerialType;
     serialLength: number;
-    depositOnProcess?: number;
+    depositOnProcess: number;
     filenameTemplate?: string;
     programTemplate?: string;
 
@@ -3430,32 +3202,35 @@ export class SerialSettings implements ISerialSettings {
         data["depositOnProcess"] = this.depositOnProcess;
         data["filenameTemplate"] = this.filenameTemplate;
         data["programTemplate"] = this.programTemplate;
-        return data; 
+        return data;
     }
 }
 
 export interface ISerialSettings {
-    serialType: SerialSettingsSerialType;
+    serialType: SerialType;
     serialLength: number;
-    depositOnProcess?: number;
+    depositOnProcess: number;
     filenameTemplate?: string;
     programTemplate?: string;
 }
 
-export class PluginInfo implements IPluginInfo {
+export enum SerialType {
+    NoSerials = <any>"NoSerials",
+    OneSerialPerMaterial = <any>"OneSerialPerMaterial",
+    OneSerialPerCycle = <any>"OneSerialPerCycle",
+    SerialDeposit = <any>"SerialDeposit",
+}
+
+export class PluginInfo extends ValueType implements IPluginInfo {
     name?: string;
     version?: string;
 
     constructor(data?: IPluginInfo) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+        super(data);
     }
 
     init(data?: any) {
+        super.init(data);
         if (data) {
             this.name = data["name"];
             this.version = data["version"];
@@ -3473,73 +3248,22 @@ export class PluginInfo implements IPluginInfo {
         data = typeof data === 'object' ? data : {};
         data["name"] = this.name;
         data["version"] = this.version;
-        return data; 
+        super.toJSON(data);
+        return data;
     }
 }
 
-export interface IPluginInfo {
+export interface IPluginInfo extends IValueType {
     name?: string;
     version?: string;
 }
 
-export enum Location {
-    Unkown = <any>"Unkown", 
-    LoadUnload = <any>"LoadUnload", 
-    Machine = <any>"Machine", 
-    MachineInbound = <any>"MachineInbound", 
-    Buffer = <any>"Buffer", 
-    Cart = <any>"Cart", 
-    PartMarker = <any>"PartMarker", 
-    Inspection = <any>"Inspection", 
-    Washer = <any>"Washer", 
-    Deburr = <any>"Deburr", 
-    OrderAssignment = <any>"OrderAssignment", 
-}
-
-export enum PalletStatusStatus {
-    WaitingForInstructions = <any>"WaitingForInstructions", 
-    AtLoadUnload = <any>"AtLoadUnload", 
-    Machining = <any>"Machining", 
-}
-
-export enum PalletLocationLoc {
-    Unkown = <any>"Unkown", 
-    LoadUnload = <any>"LoadUnload", 
-    Machine = <any>"Machine", 
-    MachineInbound = <any>"MachineInbound", 
-    Buffer = <any>"Buffer", 
-    Cart = <any>"Cart", 
-    PartMarker = <any>"PartMarker", 
-    Inspection = <any>"Inspection", 
-    Washer = <any>"Washer", 
-    Deburr = <any>"Deburr", 
-    OrderAssignment = <any>"OrderAssignment", 
-}
-
-export enum LogEntryType {
-    LoadUnloadCycle = <any>"LoadUnloadCycle", 
-    MachineCycle = <any>"MachineCycle", 
-    PartMark = <any>"PartMark", 
-    Inspection = <any>"Inspection", 
-    OrderAssignment = <any>"OrderAssignment", 
-    GeneralMessage = <any>"GeneralMessage", 
-    PalletCycle = <any>"PalletCycle", 
-    FinalizeWorkorder = <any>"FinalizeWorkorder", 
-}
-
-export enum SerialSettingsSerialType {
-    NoSerials = <any>"NoSerials", 
-    OneSerialPerMaterial = <any>"OneSerialPerMaterial", 
-    OneSerialPerCycle = <any>"OneSerialPerCycle", 
-    SerialDeposit = <any>"SerialDeposit", 
-}
-
 export class SwaggerException extends Error {
     message: string;
-    status: number; 
-    response: string; 
+    status: number;
+    response: string;
     headers: { [key: string]: any; };
-    result: any; 
+    result: any;
 
     constructor(message: string, status: number, response: string, headers: { [key: string]: any; }, result: any) {
         super();

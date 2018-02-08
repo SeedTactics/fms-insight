@@ -40,7 +40,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Converters;
-using Swashbuckle.AspNetCore.Swagger;
+using NSwag.AspNetCore;
 
 namespace MachineWatchApiServer
 {
@@ -105,11 +105,6 @@ namespace MachineWatchApiServer
                 .AddJsonOptions(options => {
                     options.SerializerSettings.Converters.Add(new StringEnumConverter());
                 });
-
-            services.AddSwaggerGen(c =>
-                {
-                    c.SwaggerDoc("v1", new Info { Title = "Machine Watch", Version = "v1" });
-                });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -117,10 +112,15 @@ namespace MachineWatchApiServer
         {
             app.UseMvc();
             app.UseStaticFiles();
-            app.UseSwagger();
-            app.UseSwaggerUI(c =>
-                {
-                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Machine Watch V1");
+            app.UseSwaggerUi3(typeof(Startup).Assembly,
+                new SwaggerUi3Settings() {
+                    Title = "MachineWatch",
+                    Version = "v1",
+                    DefaultEnumHandling = NJsonSchema.EnumHandling.String,
+                    PostProcess = document => {
+                        document.Host = "";
+                        document.BasePath = "/";
+                    }
                 });
 
             lifetime.ApplicationStopping.Register(() => {
