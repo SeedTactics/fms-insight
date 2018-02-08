@@ -45,7 +45,7 @@ export function LoadingIcon({loading}: Props) {
   if (loading) {
     return (
       <Tooltip title="Loading">
-        <CircularProgress/>
+        <CircularProgress color="secondary"/>
       </Tooltip>
     );
   } else {

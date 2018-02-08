@@ -73,7 +73,7 @@ class App extends React.Component {
     const largeAppBar = (
       <AppBar position="static">
         <Toolbar>
-          <Typography type="title" style={{'margin-right': '2em'}}>Insight</Typography>
+          <Typography variant="title" style={{'margin-right': '2em'}}>Insight</Typography>
           {tabs(false)}
           <LoadingIcon/>
         </Toolbar>
@@ -83,7 +83,7 @@ class App extends React.Component {
     const smallAppBar = (
       <AppBar position="static">
         <Toolbar>
-          <Typography type="title">Insight</Typography>
+          <Typography variant="title">Insight</Typography>
           <div style={{'flex-grow': '1'}}/>
           <LoadingIcon/>
         </Toolbar>
