@@ -666,9 +666,11 @@ namespace MachineWatchApiServer
 
         private static PalletStatus CreatePallet1Data()
         {
-            return new PalletStatus("1", "fix1", false,
-                new PalletLocation(PalletLocationEnum.LoadUnload, 1),
-                "");
+            return new PalletStatus() {
+                Pallet = "1",
+                FixtureOnPallet = "fix1",
+                CurrentPalletLocation = new PalletLocation(PalletLocationEnum.LoadUnload, 1)
+            };
         }
 
         private static IEnumerable<InProcessMaterial> InProcMaterial()
