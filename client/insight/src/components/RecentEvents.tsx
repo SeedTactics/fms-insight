@@ -34,24 +34,18 @@ import * as React from 'react';
 import { connect } from 'react-redux';
 import { createSelector } from 'reselect';
 
-import * as events from '../data/events';
 import * as api from '../data/api';
 import { Store } from '../data/store';
 import LogEntry from './LogEntry';
 
 export interface Props {
   events: ReadonlyArray<api.ILogEntry>;
-  loading: boolean;
-  request: () => void;
 }
 
 export function RecentEvents(p: Props) {
   return (
     <div>
-      {
-        p.loading ? <p>Loading</p> : null
-      }
-      <ul>
+      <ul style={{'list-style': 'none'}}>
         {
           p.events.map(e => (
             <li key={e.counter}>
@@ -60,9 +54,6 @@ export function RecentEvents(p: Props) {
           ))
         }
       </ul>
-      <div>
-        <button onClick={p.request}>Load</button>
-      </div>
     </div>
   );
 }
@@ -76,10 +67,6 @@ export default connect(
   (s: Store) => {
     return {
         events: last10Events(s),
-        loading: s.Events.loading_events,
     };
-  },
-  {
-    request: events.requestLastWeek
   }
 )(RecentEvents);

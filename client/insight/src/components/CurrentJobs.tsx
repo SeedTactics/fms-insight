@@ -31,53 +31,37 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
-import Grid from 'material-ui/Grid/Grid';
-import Card, { CardContent, CardHeader } from 'material-ui/Card';
-import Typography from 'material-ui/Typography/Typography';
+import { connect } from 'react-redux';
 
-import StationOEE from './StationOEE';
-import RecentEvents from './RecentEvents';
-import CurrentJobs from './CurrentJobs';
+import * as api from '../data/api';
+import { Store } from '../data/store';
 
-export default function Dashboard() {
+export interface Props {
+  jobs: ReadonlyArray<Readonly<api.IInProcessJob>>;
+}
+
+export function CurrentJobs(p: Props) {
   return (
     <div>
-      <Grid container>
-        <Grid item xs={12} sm={6}>
-          <Card>
-            <CardHeader title="Recent Events"/>
-            <CardContent>
-              <RecentEvents/>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <Card>
-            <CardHeader title="Jobs"/>
-            <CardContent>
-              <CurrentJobs/>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-      <Grid container>
-        <Grid item xs={12} sm={6}>
-          <Card>
-            <CardHeader title="Station OEE"/>
-            <CardContent>
-              <StationOEE/>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <Card>
-            <CardHeader title="Pallets"/>
-            <CardContent>
-              <Typography>Pallets</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+      <ul style={{'list-style': 'none'}}>
+        {
+          p.jobs.map(j => (
+            <li key={j.unique}>
+              <span>
+                {j.partName}: {j.cyclesOnFirstProcess}/{j.totalCompleteOnFinalProcess}
+              </span>
+            </li>
+          ))
+        }
+      </ul>
     </div>
   );
 }
+
+export default connect(
+  (s: Store) => {
+    return {
+        jobs: s.Jobs.current_jobs
+    };
+  }
+)(CurrentJobs);

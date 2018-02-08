@@ -56,7 +56,7 @@ export type Action =
   | {type: ActionType.Other}
   ;
 
-export function newJobs() {
+export function loadCurrentStatus() {
     var client = new api.JobsClient();
     return {
         type: ActionType.NewCurrentStatus,

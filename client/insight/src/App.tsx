@@ -44,6 +44,7 @@ import Efficiency from './components/Efficiency';
 import StationMonitor from './components/StationMonitor';
 import LoadingIcon from './components/LoadingIcon';
 import { requestLastWeek } from './data/events';
+import { loadCurrentStatus } from './data/jobs';
 import store from './data/store';
 
 // tslint:disable
@@ -58,6 +59,7 @@ const tabsStyle = {
 class App extends React.Component {
   componentDidMount() {
     store.dispatch(requestLastWeek());
+    store.dispatch(loadCurrentStatus());
   }
 
   render() {

@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
 import * as api from '../data/api';
+import * as moment from 'moment';
 
 export interface Props {
     entry: api.ILogEntry;
@@ -167,6 +168,8 @@ function display(entry: api.ILogEntry): string {
 
 export default function LogEntry({entry}: Props) {
   return (
-    <span>{display(entry)}</span>
+    <span>
+      <small>{display(entry) + ' (' + moment(entry.endUTC).fromNow() + ')'}</small>
+    </span>
   );
 }
