@@ -49,7 +49,7 @@ export interface State {
     // list of entries sorted by endUTC
     readonly last_30_days_of_events: im.List<Readonly<api.ILogEntry>>; // TODO: deep readonly in typescript 2.8
 
-    // list of station use, sorted by endUTC
+    // list of station use, sorted by date
     readonly last_week_of_hours: im.List<StationInUse>;
 
     readonly system_active_hours_per_week: number;
@@ -121,6 +121,7 @@ function refresh_weekly_hours(now: Date, newEvts: ReadonlyArray<api.ILogEntry>, 
         .map(e => ({
             date: e.endUTC,
             station: stat_name(e) || '',
+            // TODO: calculate estimated active time
             hours: duration(e.active).asHours()
         }));
 
