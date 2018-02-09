@@ -53,7 +53,7 @@ it('sets the system hours', () => {
 
 it('responds to loading', () => {
   let st = events.reducer(
-    events.initial,
+    {...events.initial, loading_error: new Error('hello')},
     {
       type: events.ActionType.RequestLastWeek,
       now: new Date(),
@@ -63,6 +63,7 @@ it('responds to loading', () => {
     }
   );
   expect(st.loading_events).toBe(true);
+  expect(st.loading_error).toBeUndefined();
   expect(st.last_week_of_hours.isEmpty()).toBe(true);
   expect(st.last_30_days_of_events.isEmpty()).toBe(true);
 });

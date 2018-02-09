@@ -61,7 +61,7 @@ export function CurrentJobs(p: Props) {
 export default connect(
   (s: Store) => {
     return {
-        jobs: s.Jobs.current_jobs
+        jobs: Object.values(s.Jobs.current_status.jobs)
     };
   }
 )(CurrentJobs);

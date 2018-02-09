@@ -35,14 +35,17 @@ import { ConsumingPledge, PledgeStatus } from './pledge';
 
 export interface State {
     readonly loading: boolean;
-    readonly current_jobs: ReadonlyArray<Readonly<api.IInProcessJob>>; // TODO: DeepReadonly
-    readonly current_pallets: ReadonlyArray<Readonly<api.IPalletStatus>>; // TODO: DeepReadonly
+    readonly loading_error?: Error;
+    readonly current_status: Readonly<api.ICurrentStatus>; // TODO: DeepReadonly
 }
 
 const initial: State = {
     loading: false,
-    current_jobs: [],
-    current_pallets: []
+    current_status: {
+        jobs: {},
+        pallets: {},
+        material: []
+    }
 };
 
 export enum ActionType {
@@ -70,15 +73,14 @@ export function reducer(s: State, a: Action): State {
         case ActionType.NewCurrentStatus:
             switch (a.pledge.status) {
                 case PledgeStatus.Starting:
-                    return {...s, loading: true};
+                    return {...s, loading: true, loading_error: undefined};
                 case PledgeStatus.Completed:
                     return {...s,
                         loading: false,
-                        current_jobs: Object.values(a.pledge.result.jobs),
-                        current_pallets: Object.values(a.pledge.result.pallets)
+                        current_status: a.pledge.result,
                     };
                 case PledgeStatus.Error:
-                    return s;
+                    return {...s, loading_error: a.pledge.error};
 
                 default: return s;
             }

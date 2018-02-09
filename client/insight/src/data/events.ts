@@ -44,7 +44,7 @@ export interface StationInUse {
 
 export interface State {
     readonly loading_events: boolean;
-    readonly loading_error: Error | null;
+    readonly loading_error?: Error;
 
     // list of entries sorted by endUTC
     readonly last_30_days_of_events: im.List<Readonly<api.ILogEntry>>; // TODO: deep readonly in typescript 2.8
@@ -57,7 +57,6 @@ export interface State {
 
 export const initial: State = {
     loading_events: false,
-    loading_error: null,
     last_30_days_of_events: im.List(),
     last_week_of_hours: im.List(),
     system_active_hours_per_week: 7 * 24
@@ -159,7 +158,7 @@ export function reducer(s: State, a: Action): State {
         case ActionType.RequestLastWeek:
             switch (a.pledge.status) {
                 case PledgeStatus.Starting:
-                    return {...s, loading_events: true, loading_error: null};
+                    return {...s, loading_events: true, loading_error: undefined};
                 case PledgeStatus.Completed:
                     let s2 = refresh_weekly_hours(a.now, a.pledge.result, s);
                     let s3 = refresh_events(a.now, a.pledge.result, s2);
