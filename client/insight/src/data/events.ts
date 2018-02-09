@@ -31,8 +31,9 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as api from './api';
-import * as moment from 'moment';
+import { duration } from 'moment';
 import { PledgeStatus, ConsumingPledge } from './pledge';
+import { addDays } from 'date-fns';
 import * as im from 'immutable';
 
 export interface State {
@@ -66,13 +67,12 @@ export type Action =
 
 export function requestLastWeek() /*: Action<ActionUse.CreatingAction> */ {
     var client = new api.LogClient();
-    var now = moment.utc();
-    var nowDate = now.toDate();
-    var oneWeekAgo = now.add(-1, 'w');
+    var now = new Date();
+    var oneWeekAgo = addDays(now, -7);
     return {
         type: ActionType.RequestLastWeek,
-        now: nowDate,
-        pledge: client.get(oneWeekAgo.toDate(), nowDate)
+        now: now,
+        pledge: client.get(oneWeekAgo, now)
     };
 }
 
@@ -88,13 +88,13 @@ function stat_name(e: api.ILogEntry): string | null {
 
 function remove_old_entries(now: Date, st: State): State {
     let hours = st.station_active_hours_past_week;
-    let oneWeekAgo = moment(now).add(-1, 'w').toDate();
+    let oneWeekAgo = addDays(now, -7);
     let newEvts = st.last_week_of_events.filter(e => {
         if (e.endUTC < oneWeekAgo) {
             if (e.startofcycle) { return false; }
             let name = stat_name(e);
             if (!name) { return false; }
-            let activeHrs = moment.duration(e.active).asHours();
+            let activeHrs = duration(e.active).asHours();
             if (activeHrs > 0) {
                 // TODO: estimate cycle times
                 hours = hours.update(name, 0, old => old - activeHrs);
@@ -116,7 +116,7 @@ function add_new_entries(evts: ReadonlyArray<api.ILogEntry>, st: State): State {
         if (e.startofcycle) { return; }
         let name = stat_name(e);
         if (!name) { return; }
-        let activeHrs = moment.duration(e.active).asHours();
+        let activeHrs = duration(e.active).asHours();
         if (activeHrs > 0) {
             // TODO: estimate cycle times
             hours = hours.update(name, 0, old => old + activeHrs);

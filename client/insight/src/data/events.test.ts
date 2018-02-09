@@ -32,15 +32,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as events from './events';
-import * as faker from 'faker';
-import * as moment from 'moment';
-import { ILogMaterial, ILogEntry, LogType } from './api';
+import { fakeCycle } from './events.fake';
 import { PledgeStatus } from './pledge';
-
-// tslint:disable no-any
+import { addDays } from 'date-fns';
 
 it('creates initial state', () => {
+  // tslint:disable no-any
   let s = events.reducer(undefined as any, undefined as any);
+  // tslint:enable no-any
   expect(s).toBe(events.initial);
 });
 
@@ -51,98 +50,6 @@ it('sets the system hours', () => {
   });
   expect(s.system_active_hours_per_week).toBe(5);
 });
-
-function fakeMaterial(): ILogMaterial {
-  return {
-    id: faker.random.number(),
-    uniq: 'uniq' + faker.random.alphaNumeric(),
-    part: 'part' + faker.random.alphaNumeric(),
-    proc: faker.random.number({max: 4}),
-    numproc: faker.random.number({max: 4}),
-    face: 'face' + faker.random.alphaNumeric()
-  };
-}
-
-function addStartAndEnd(es: ILogEntry[], e: ILogEntry): void {
-  let elapsed = moment.duration(e.elapsed);
-  let startTime = moment.utc(e.endUTC).subtract(elapsed).toDate();
-  let start = {...e,
-    counter: e.counter - 1,
-    startofcycle: false,
-    endUTC: startTime,
-    result: '',
-    program: ''
-  };
-  es.push(start);
-  es.push(e);
-}
-
-function fakeCycle(): ReadonlyArray<ILogEntry> {
-  const pal = 'pal' + faker.random.alphaNumeric();
-  const material = [fakeMaterial()];
-
-  let counter = 1;
-  let time = moment.utc();
-
-  let es: ILogEntry[] = [];
-
-  addStartAndEnd(
-    es,
-    {counter, material, pal,
-      type: LogType.LoadUnloadCycle,
-      startofcycle: false,
-      endUTC: time.toDate(),
-      loc: 'L/U',
-      locnum: 1,
-      result: 'LOAD',
-      program: 'LOAD',
-      endofroute: false,
-      elapsed: '00:05:00',
-      active: '00:05:00'
-    }
-  );
-
-  counter += 2;
-  time.add(30, 'minutes');
-
-  addStartAndEnd(
-    es,
-    {
-      counter, material, pal,
-      type: LogType.MachineCycle,
-      startofcycle: false,
-      endUTC: time.toDate(),
-      loc: 'MC',
-      locnum: 1,
-      result: '',
-      program: 'prog' + faker.random.alphaNumeric(),
-      endofroute: false,
-      elapsed: '00:22:00',
-      active: '00:22:00'
-    }
-  );
-
-  counter += 2;
-  time.add(10, 'minutes');
-
-  addStartAndEnd(
-    es,
-    {counter, material, pal,
-      type: LogType.LoadUnloadCycle,
-      startofcycle: false,
-      endUTC: time.toDate(),
-      loc: 'L/U',
-      locnum: 1,
-      result: 'UNLOAD',
-      program: 'UNLOAD',
-      endofroute: true,
-      elapsed: '00:05:00',
-      active: '00:05:00'
-    }
-  );
-
-  return es;
-}
 
 it('responds to loading', () => {
   let st = events.reducer(
@@ -159,8 +66,28 @@ it('responds to loading', () => {
   expect(st.last_week_of_events).toEqual([]);
 });
 
+it('responds to error', () => {
+  let st = events.reducer(
+    {...events.initial, loading_events: true},
+    {
+      type: events.ActionType.RequestLastWeek,
+      now: new Date(),
+      pledge: {
+        status: PledgeStatus.Error,
+        error: new Error('hello')
+      }
+    }
+  );
+  expect(st.loading_events).toBe(false);
+  expect(st.loading_error).toEqual(new Error('hello'));
+  expect(st.last_week_of_events).toEqual([]);
+});
+
 it('adds new log entries', () => {
-  const entries = fakeCycle();
+  var now = new Date();
+  var twoDaysAgo = addDays(now, -2);
+  const twoDaysAgoCycle = fakeCycle(twoDaysAgo, 24);
+  const todayCycle = fakeCycle(now, 30);
   let st = events.reducer(
     events.initial,
     {
@@ -168,10 +95,44 @@ it('adds new log entries', () => {
       now: new Date(),
       pledge: {
         status: PledgeStatus.Completed,
-        result: entries
+        result: twoDaysAgoCycle.concat(todayCycle)
       }
     });
 
-  expect(st.last_week_of_events).toEqual(entries);
-  // TODO: test hours calc
+  expect(st.last_week_of_events).toEqual(twoDaysAgoCycle.concat(todayCycle));
+
+  // 6 minutes on L/U #1 for each cycle, so total of 12
+  // 24 + 30 minutes on MC #1
+  // 3 minutes on L/U #2 for each cycle, so total of 6
+  expect(st.station_active_hours_past_week.toJS()).toEqual({
+    'L/U #1': 12 / 60,
+    'MC #1': 54 / 60,
+    'L/U #2': 6 / 60
+  });
+
+  // Now add again 6 days from now, so that the twoDaysAgo cycle is removed
+  var sixDays = addDays(now, 6);
+  const sixDaysCycle = fakeCycle(sixDays, 12);
+  st = events.reducer(
+    st,
+    {
+      type: events.ActionType.RequestLastWeek,
+      now: sixDays,
+      pledge: {
+        status: PledgeStatus.Completed,
+        result: sixDaysCycle
+      }
+    });
+
+  // twoDaysAgo should have been filtered out
+  expect(st.last_week_of_events).toEqual(todayCycle.concat(sixDaysCycle));
+
+  // 6 minutes on L/U #1 for each cycle, so total of 12
+  // 30 + 12 minutes on MC #1
+  // 3 minutes on L/U #2 for each cycle, so total of 6
+  expect(st.station_active_hours_past_week.toJS()).toEqual({
+    'L/U #1': 12 / 60,
+    'MC #1': 42 / 60,
+    'L/U #2': 6 / 60
+  });
 });
