@@ -50,9 +50,15 @@ jest.mock('./data/events', () => {
     requestLastWeek: () => 'requestLastWeek'
   };
 });
+jest.mock('./data/jobs', () => {
+  return {
+    loadCurrentStatus: () => 'loadCurrentStatus'
+  };
+});
 
 it('renders a snapshot', () => {
   const val = shallow(<App/>);
   expect(val).toMatchSnapshot();
   expect(store.dispatch).toHaveBeenCalledWith('requestLastWeek');
+  expect(store.dispatch).toHaveBeenCalledWith('loadCurrentStatus');
 });

@@ -27,7 +27,7 @@ exports[`renders a snapshot 1`] = `
               "margin-right": "2em",
             }
           }
-          type="title"
+          variant="title"
         >
           Insight
         </WithStyles(Typography)>
@@ -89,7 +89,7 @@ exports[`renders a snapshot 1`] = `
     >
       <WithStyles(Toolbar)>
         <WithStyles(Typography)
-          type="title"
+          variant="title"
         >
           Insight
         </WithStyles(Typography)>

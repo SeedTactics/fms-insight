@@ -2945,7 +2945,7 @@ export class LogEntry implements ILogEntry {
 export interface ILogEntry {
     details?: { [key: string] : string; };
     counter: number;
-    material: LogMaterial[];
+    material: ILogMaterial[];
     type: LogType;
     startofcycle: boolean;
     endUTC: Date;
