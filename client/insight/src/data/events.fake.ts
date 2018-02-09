@@ -87,7 +87,7 @@ export function fakeCycle(time: Date, machineTime: number): ReadonlyArray<ILogEn
   );
 
   counter += 2;
-  time = addMinutes(time, 30);
+  time = addMinutes(time, machineTime + 3);
 
   const elapsed = '00:' + machineTime.toString() + ':00';
   addStartAndEnd(

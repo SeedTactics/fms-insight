@@ -63,7 +63,8 @@ it('responds to loading', () => {
     }
   );
   expect(st.loading_events).toBe(true);
-  expect(st.last_week_of_events).toEqual([]);
+  expect(st.last_week_of_hours.isEmpty()).toBe(true);
+  expect(st.last_30_days_of_events.isEmpty()).toBe(true);
 });
 
 it('responds to error', () => {
@@ -80,14 +81,20 @@ it('responds to error', () => {
   );
   expect(st.loading_events).toBe(false);
   expect(st.loading_error).toEqual(new Error('hello'));
-  expect(st.last_week_of_events).toEqual([]);
+  expect(st.last_week_of_hours.isEmpty()).toBe(true);
+  expect(st.last_30_days_of_events.isEmpty()).toBe(true);
 });
 
 it('adds new log entries', () => {
   var now = new Date();
+  const todayCycle = fakeCycle(now, 30);
+
   var twoDaysAgo = addDays(now, -2);
   const twoDaysAgoCycle = fakeCycle(twoDaysAgo, 24);
-  const todayCycle = fakeCycle(now, 30);
+
+  var twentySevenDaysAgo = addDays(now, -27);
+  const twentySevenCycle = fakeCycle(twentySevenDaysAgo, 18);
+
   let st = events.reducer(
     events.initial,
     {
@@ -95,22 +102,21 @@ it('adds new log entries', () => {
       now: new Date(),
       pledge: {
         status: PledgeStatus.Completed,
-        result: twoDaysAgoCycle.concat(todayCycle)
+        result: twentySevenCycle.concat(twoDaysAgoCycle, todayCycle)
       }
     });
 
-  expect(st.last_week_of_events).toEqual(twoDaysAgoCycle.concat(todayCycle));
+  expect(st.last_30_days_of_events.toArray()).toEqual(
+    twentySevenCycle.concat(twoDaysAgoCycle, todayCycle)
+  );
 
-  // 6 minutes on L/U #1 for each cycle, so total of 12
-  // 24 + 30 minutes on MC #1
-  // 3 minutes on L/U #2 for each cycle, so total of 6
-  expect(st.station_active_hours_past_week.toJS()).toEqual({
-    'L/U #1': 12 / 60,
-    'MC #1': 54 / 60,
-    'L/U #2': 6 / 60
-  });
+  expect(st.last_week_of_hours
+            .map(e => ({station: e.station, hours: e.hours})) // need to filter date for the snapshot
+            .toArray()
+        ).toMatchSnapshot('hours with two days ago and today');
 
-  // Now add again 6 days from now, so that the twoDaysAgo cycle is removed
+  // Now add again 6 days from now, so that the twoDaysAgo cycle is removed from hours and twenty seven
+  // is removed from all events
   var sixDays = addDays(now, 6);
   const sixDaysCycle = fakeCycle(sixDays, 12);
   st = events.reducer(
@@ -125,14 +131,27 @@ it('adds new log entries', () => {
     });
 
   // twoDaysAgo should have been filtered out
-  expect(st.last_week_of_events).toEqual(todayCycle.concat(sixDaysCycle));
+  expect(st.last_30_days_of_events.toArray()).toEqual(
+    twoDaysAgoCycle.concat(todayCycle, sixDaysCycle)
+  );
 
-  // 6 minutes on L/U #1 for each cycle, so total of 12
-  // 30 + 12 minutes on MC #1
-  // 3 minutes on L/U #2 for each cycle, so total of 6
-  expect(st.station_active_hours_past_week.toJS()).toEqual({
-    'L/U #1': 12 / 60,
-    'MC #1': 42 / 60,
-    'L/U #2': 6 / 60
-  });
+  expect(st.last_week_of_hours
+            .map(e => ({station: e.station, hours: e.hours})) // need to filter date for the snapshot
+            .toArray()
+        ).toMatchSnapshot('hours with today and 6 days from now');
+
+  // empty list should keep lists unchanged and the same object
+  let newSt = events.reducer(
+    st,
+    {
+      type: events.ActionType.RequestLastWeek,
+      now: sixDays,
+      pledge: {
+        status: PledgeStatus.Completed,
+        result: []
+      }
+    }
+  );
+  expect(newSt.last_30_days_of_events).toBe(st.last_30_days_of_events);
+  expect(newSt.last_week_of_hours).toBe(st.last_week_of_hours);
 });

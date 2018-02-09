@@ -34,21 +34,32 @@ import * as api from './api';
 import { duration } from 'moment';
 import { PledgeStatus, ConsumingPledge } from './pledge';
 import { addDays } from 'date-fns';
-import * as im from 'immutable';
+import * as im from 'immutable'; // consider collectable.js at some point?
+
+export interface StationInUse {
+    readonly date: Date;
+    readonly station: string;
+    readonly hours: number;
+}
 
 export interface State {
     readonly loading_events: boolean;
     readonly loading_error: Error | null;
-    readonly last_week_of_events: ReadonlyArray<Readonly<api.ILogEntry>>; // TODO: deep readonly in typescript 2.8
-    readonly station_active_hours_past_week: im.Map<string, number>;
+
+    // list of entries sorted by endUTC
+    readonly last_30_days_of_events: im.List<Readonly<api.ILogEntry>>; // TODO: deep readonly in typescript 2.8
+
+    // list of station use, sorted by endUTC
+    readonly last_week_of_hours: im.List<StationInUse>;
+
     readonly system_active_hours_per_week: number;
 }
 
 export const initial: State = {
     loading_events: false,
     loading_error: null,
-    last_week_of_events: [],
-    station_active_hours_past_week: im.Map(),
+    last_30_days_of_events: im.List(),
+    last_week_of_hours: im.List(),
     system_active_hours_per_week: 7 * 24
 };
 
@@ -65,10 +76,10 @@ export type Action =
   | {type: ActionType.Other}
   ;
 
-export function requestLastWeek() /*: Action<ActionUse.CreatingAction> */ {
+export function requestLastMonth() /*: Action<ActionUse.CreatingAction> */ {
     var client = new api.LogClient();
     var now = new Date();
-    var oneWeekAgo = addDays(now, -7);
+    var oneWeekAgo = addDays(now, -30);
     return {
         type: ActionType.RequestLastWeek,
         now: now,
@@ -86,46 +97,60 @@ function stat_name(e: api.ILogEntry): string | null {
     }
 }
 
-function remove_old_entries(now: Date, st: State): State {
-    let hours = st.station_active_hours_past_week;
-    let oneWeekAgo = addDays(now, -7);
-    let newEvts = st.last_week_of_events.filter(e => {
-        if (e.endUTC < oneWeekAgo) {
+function refresh_weekly_hours(now: Date, newEvts: ReadonlyArray<api.ILogEntry>, st: State): State {
+    let hours = st.last_week_of_hours;
+    const oneWeekAgo = addDays(now, -7);
+
+    // check if no changes needed: no new events and nothing to filter out
+    const minEntry = hours.first();
+    if ((minEntry === undefined || minEntry.date >= oneWeekAgo) && newEvts.length === 0) {
+        return st;
+    }
+
+    // new entries
+    const newEntries =
+        im.Seq(newEvts)
+        .filter(e => {
+            if (e.endUTC < oneWeekAgo) { return false; }
             if (e.startofcycle) { return false; }
             let name = stat_name(e);
             if (!name) { return false; }
             let activeHrs = duration(e.active).asHours();
-            if (activeHrs > 0) {
-                // TODO: estimate cycle times
-                hours = hours.update(name, 0, old => old - activeHrs);
-            }
-            return false;
-        } else {
+            if (activeHrs <=  0) { return false; }
             return true;
-        }
-    });
-    return {...st,
-        station_active_hours_past_week: hours,
-        last_week_of_events: newEvts
-    };
+        })
+        .map(e => ({
+            date: e.endUTC,
+            station: stat_name(e) || '',
+            hours: duration(e.active).asHours()
+        }));
+
+    hours = hours.toSeq()
+        .filter(e => e.date >= oneWeekAgo)
+        .concat(newEntries)
+        .sortBy(e => e.date)
+        .toList();
+
+    return {...st, last_week_of_hours: hours};
 }
 
-function add_new_entries(evts: ReadonlyArray<api.ILogEntry>, st: State): State {
-    let hours = st.station_active_hours_past_week;
-    evts.forEach(e => {
-        if (e.startofcycle) { return; }
-        let name = stat_name(e);
-        if (!name) { return; }
-        let activeHrs = duration(e.active).asHours();
-        if (activeHrs > 0) {
-            // TODO: estimate cycle times
-            hours = hours.update(name, 0, old => old + activeHrs);
-        }
-    });
-    return {...st,
-        station_active_hours_past_week: hours,
-        last_week_of_events: st.last_week_of_events.concat(evts)
-    };
+function refresh_events(now: Date, newEvts: ReadonlyArray<api.ILogEntry>, st: State): State {
+    let evts = st.last_30_days_of_events;
+    let thirtyDaysAgo = addDays(now, -30);
+
+    // check if no changes needed: no new events and nothing to filter out
+    const minEntry = evts.first();
+    if ((minEntry === undefined || minEntry.endUTC >= thirtyDaysAgo) && newEvts.length === 0) {
+        return st;
+    }
+
+    evts = evts.toSeq()
+        .concat(newEvts)
+        .filter(e => e.endUTC >= thirtyDaysAgo)
+        .sortBy(e => e.endUTC)
+        .toList();
+
+    return {...st, last_30_days_of_events: evts};
 }
 
 export function reducer(s: State, a: Action): State {
@@ -136,8 +161,8 @@ export function reducer(s: State, a: Action): State {
                 case PledgeStatus.Starting:
                     return {...s, loading_events: true, loading_error: null};
                 case PledgeStatus.Completed:
-                    let s2 = remove_old_entries(a.now, s);
-                    let s3 = add_new_entries(a.pledge.result, s2);
+                    let s2 = refresh_weekly_hours(a.now, a.pledge.result, s);
+                    let s3 = refresh_events(a.now, a.pledge.result, s2);
                     return {...s3, loading_events: false};
                 case PledgeStatus.Error:
                     return {...s, loading_events: false, loading_error: a.pledge.error};

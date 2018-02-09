@@ -47,7 +47,7 @@ import store from './data/store';
 
 jest.mock('./data/events', () => {
   return {
-    requestLastWeek: () => 'requestLastWeek'
+    requestLastMonth: () => 'requestLastMonth'
   };
 });
 jest.mock('./data/jobs', () => {
@@ -59,6 +59,6 @@ jest.mock('./data/jobs', () => {
 it('renders a snapshot', () => {
   const val = shallow(<App/>);
   expect(val).toMatchSnapshot();
-  expect(store.dispatch).toHaveBeenCalledWith('requestLastWeek');
+  expect(store.dispatch).toHaveBeenCalledWith('requestLastMonth');
   expect(store.dispatch).toHaveBeenCalledWith('loadCurrentStatus');
 });

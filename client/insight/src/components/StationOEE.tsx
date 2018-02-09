@@ -35,16 +35,22 @@ import { connect } from 'react-redux';
 import Table, { TableBody, TableCell, TableHead, TableRow } from 'material-ui/Table';
 import * as im from 'immutable';
 import * as numerable from 'numeral';
+import { createSelector } from 'reselect';
 
 import { Store } from '../data/store';
+import { StationInUse } from '../data/events';
+
+export interface StationHours {
+    readonly station: string;
+    readonly hours: number;
+}
 
 export interface Props {
-  station_active_hours_past_week: im.Map<string, number>;
+  station_active_hours_past_week: im.Seq<number, StationHours>;
   system_active_hours_per_week: number;
 }
 
-export function OEECard(p: Props) {
-  let sorted = p.station_active_hours_past_week.sortBy((v, k) => k);
+export function StationOEE(p: Props) {
   return (
     <div>
       <Table>
@@ -56,12 +62,12 @@ export function OEECard(p: Props) {
         </TableHead>
         <TableBody>
           {
-            sorted.toSeq().map((hours, stat) => (
-              <TableRow key={stat}>
-                <TableCell>{stat}</TableCell>
-                <TableCell>{numerable(hours / p.system_active_hours_per_week).format('0.0%')}</TableCell>
+            p.station_active_hours_past_week.map(stat => (
+              <TableRow key={stat.station}>
+                <TableCell>{stat.station}</TableCell>
+                <TableCell>{numerable(stat.hours / p.system_active_hours_per_week).format('0.0%')}</TableCell>
               </TableRow>
-            )).valueSeq()
+            ))
           }
         </TableBody>
       </Table>
@@ -69,9 +75,27 @@ export function OEECard(p: Props) {
   );
 }
 
+export function stationHoursInLastWeek(use: im.List<StationInUse>): im.Seq<number, StationHours> {
+    const m = new Map<string, number>();
+    use.forEach(s => {
+        m.set(s.station, (m.get(s.station) || 0) + s.hours);
+    });
+    return im.Seq(m)
+        .map((v, k) => ({
+            station: v[0],
+            hours: v[1]
+        }))
+        .sortBy(e => e.station);
+}
+
+const oeeSelector = createSelector(
+  (s: Store) => s.Events.last_week_of_hours,
+  stationHoursInLastWeek
+);
+
 export default connect(
   (s: Store) => ({
-    station_active_hours_past_week: s.Events.station_active_hours_past_week,
+    station_active_hours_past_week: oeeSelector(s),
     system_active_hours_per_week: s.Events.system_active_hours_per_week,
   })
-)(OEECard);
+)(StationOEE);

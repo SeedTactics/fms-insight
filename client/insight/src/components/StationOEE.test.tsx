@@ -30,43 +30,36 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 import * as React from 'react';
-import { connect } from 'react-redux';
-import { createSelector } from 'reselect';
+import { StationOEE, stationHoursInLastWeek } from './StationOEE';
+import * as im from 'immutable';
+import { shallow } from 'enzyme';
 
-import * as api from '../data/api';
-import { Store } from '../data/store';
-import LogEntry from './LogEntry';
+it('calculates station hours', () => {
+  const date = new Date();
+  const hours = [
+    {date, station: 'zzz', hours: 2},
+    {date, station: 'abc', hours: 4},
+    {date, station: 'abc', hours: 10},
+    {date, station: 'zzz', hours: 5},
+    {date, station: 'zzz', hours: 4},
+    {date, station: 'abc', hours: 11},
+  ];
 
-export interface Props {
-  events: ReadonlyArray<api.ILogEntry>;
-}
-
-export function RecentEvents(p: Props) {
-  return (
-    <div>
-      <ul style={{'list-style': 'none'}}>
-        {
-          p.events.map(e => (
-            <li key={e.counter}>
-              <LogEntry entry={e}/>
-            </li>
-          ))
-        }
-      </ul>
-    </div>
+  expect(stationHoursInLastWeek(im.List(hours)).toArray()).toEqual(
+    [
+      {station: 'abc', hours: 4 + 10 + 11},
+      {station: 'zzz', hours: 2 + 5 + 4},
+    ]
   );
-}
+});
 
-const last10Events = createSelector(
-  (s: Store) => s.Events.last_30_days_of_events,
-  e => e.slice(-10).toArray().reverse()
-);
-
-export default connect(
-  (s: Store) => {
-    return {
-        events: last10Events(s),
-    };
-  }
-)(RecentEvents);
+it('displays station hours', () => {
+  const hours = im.Seq([
+    {station: 'abc', hours: 40},
+    {station: 'zzz', hours: 3}
+  ]);
+  const val = shallow(<StationOEE system_active_hours_per_week={100} station_active_hours_past_week={hours}/>);
+  expect(val).toMatchSnapshot('station oee table');
+});

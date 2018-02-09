@@ -1,0 +1,59 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`hours with today and 6 days from now 1`] = `
+Array [
+  Object {
+    "hours": 0.1,
+    "station": "L/U #1",
+  },
+  Object {
+    "hours": 0.5,
+    "station": "MC #1",
+  },
+  Object {
+    "hours": 0.05,
+    "station": "L/U #2",
+  },
+  Object {
+    "hours": 0.1,
+    "station": "L/U #1",
+  },
+  Object {
+    "hours": 0.2,
+    "station": "MC #1",
+  },
+  Object {
+    "hours": 0.05,
+    "station": "L/U #2",
+  },
+]
+`;
+
+exports[`hours with two days ago and today 1`] = `
+Array [
+  Object {
+    "hours": 0.1,
+    "station": "L/U #1",
+  },
+  Object {
+    "hours": 0.4,
+    "station": "MC #1",
+  },
+  Object {
+    "hours": 0.05,
+    "station": "L/U #2",
+  },
+  Object {
+    "hours": 0.1,
+    "station": "L/U #1",
+  },
+  Object {
+    "hours": 0.5,
+    "station": "MC #1",
+  },
+  Object {
+    "hours": 0.05,
+    "station": "L/U #2",
+  },
+]
+`;

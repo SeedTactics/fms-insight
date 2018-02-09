@@ -1,0 +1,44 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`station oee table 1`] = `
+<div>
+  <WithStyles(Table)>
+    <TableHead
+      component="thead"
+    >
+      <WithStyles(TableRow)>
+        <WithStyles(TableCell)>
+          Station
+        </WithStyles(TableCell)>
+        <WithStyles(TableCell)>
+          OEE
+        </WithStyles(TableCell)>
+      </WithStyles(TableRow)>
+    </TableHead>
+    <TableBody
+      component="tbody"
+    >
+      <WithStyles(TableRow)
+        key="abc"
+      >
+        <WithStyles(TableCell)>
+          abc
+        </WithStyles(TableCell)>
+        <WithStyles(TableCell)>
+          40.0%
+        </WithStyles(TableCell)>
+      </WithStyles(TableRow)>
+      <WithStyles(TableRow)
+        key="zzz"
+      >
+        <WithStyles(TableCell)>
+          zzz
+        </WithStyles(TableCell)>
+        <WithStyles(TableCell)>
+          3.0%
+        </WithStyles(TableCell)>
+      </WithStyles(TableRow)>
+    </TableBody>
+  </WithStyles(Table)>
+</div>
+`;
