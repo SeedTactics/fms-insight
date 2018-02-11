@@ -174,40 +174,45 @@ namespace BlackMaple.MachineWatchInterface
     [SerializableAttribute, DataContract]
     public class InProcessJob : JobPlan
     {
-        public int GetCompletedOnFirstProcess(int path)
+        public int GetCompleted(int process, int path)
         {
-            if (path >= 1 && path <= GetNumPaths(1)) {
-                return _completedProc1[path - 1];
+            if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process)) {
+                return _completed[process-1][path-1];
             } else {
-                throw new IndexOutOfRangeException("Invalid path number");
+                throw new IndexOutOfRangeException("Invalid process or path number");
             }
         }
-        public void SetCompletedOnFirstProcess(int path, int comp)
+        public void SetCompleted(int process, int path, int comp)
         {
-            if (path >= 1 && path <= GetNumPaths(1)) {
-                _completedProc1[path - 1] = comp;
+            if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process)) {
+                _completed[process-1][path-1] = comp;
             } else {
-                throw new IndexOutOfRangeException("Invalid path number");
+                throw new IndexOutOfRangeException("Invalid process or path number");
             }
         }
-
-        [DataMember(IsRequired=true)]
-        public int TotalCompleteOnFinalProcess {get;set;}
+        public void AdjustCompleted(int process, int path, Func<int, int> f)
+        {
+            if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process)) {
+                _completed[process-1][path-1] = f(_completed[process-1][path-1]);
+            } else {
+                throw new IndexOutOfRangeException("Invalid process or path number");
+            }
+        }
 
         public InProcessJob(string unique, int numProc, int[] numPaths = null) : base(unique, numProc, numPaths)
         {
-            _completedProc1 = new int[GetNumPaths(1)];
-            for (int i = 0; i < _completedProc1.Length; i++)
-                _completedProc1[i] = 0;
+            _completed = new int[base.NumProcesses][];
+            for (int proc = 1; proc <= base.NumProcesses; proc++)
+                _completed[proc-1] = Enumerable.Repeat(0, base.GetNumPaths(proc)).ToArray();
         }
         public InProcessJob(JobPlan job) : base(job)
         {
-            _completedProc1 = new int[GetNumPaths(1)];
-            for (int i = 0; i < _completedProc1.Length; i++)
-                _completedProc1[i] = 0;
+            _completed = new int[base.NumProcesses][];
+            for (int proc = 1; proc <= base.NumProcesses; proc++)
+                _completed[proc-1] = Enumerable.Repeat(0, base.GetNumPaths(proc)).ToArray();
         }
 
-        [DataMember(Name="CompletedProc1", IsRequired=true)] private int[] _completedProc1;
+        [DataMember(Name="Completed", IsRequired=true)] private int[][] _completed;
     }
 
     [SerializableAttribute, DataContract]

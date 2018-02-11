@@ -93,6 +93,7 @@ namespace MachineWatchApiServer
             DateTime month = new DateTime(today.Year, today.Month, 1);
             sample.AddMonthOfCycles(month, "uniq1", "part1", "pal1", 1, 40, 70);
             sample.AddMonthOfCycles(month, "uniq2", "part2", "pal2", 2, 80, 110);
+            sample.AddMonthOfCycles(month, "uniq1", "part1", "pal2", 3, 72, 72);
             sample.AddEntriesToDatabase();
             SampleJobData.AddJobToHistory(JobDB, "uniq1");
             SampleJobData.AddJobToHistory(JobDB, "uniq2", j => {
@@ -474,11 +475,30 @@ namespace MachineWatchApiServer
         {
             var st = new CurrentStatus();
 
-            var job1 = new InProcessJob(RandomJob("uniq1"));
-            job1.TotalCompleteOnFinalProcess = rng.Next(1, 10);
-            st.Jobs.Add(job1.UniqueStr, job1);
+            var uniqs = new[] {
+                new {name = "part1", uniq="uniq1a"},
+                new {name = "part1", uniq="uniq1b"},
+                new {name = "part2", uniq="uniq2"},
+                new {name = "part3", uniq="uniq3"},
+                new {name = "part4", uniq="uniq4"},
+                new {name = "part5", uniq="uniq5"},
+            };
 
-            st.LatestScheduleId = job1.ScheduleId;
+            foreach (var u in uniqs) {
+                var job1 = new InProcessJob(RandomJob(u.uniq, j => {
+                    j.PartName = u.name;
+                    j.SetPlannedCyclesOnFirstProcess(1, rng.Next(0, 30));
+                    j.SetPlannedCyclesOnFirstProcess(2, rng.Next(0, 30));
+                }));
+                job1.SetCompleted(1, 1, 5);
+                job1.SetCompleted(1, 2, 4);
+                job1.SetCompleted(2, 1, 3);
+                job1.SetCompleted(2, 2, 2);
+                job1.SetCompleted(2, 3, 1);
+                st.Jobs.Add(job1.UniqueStr, job1);
+            }
+
+            st.LatestScheduleId = st.Jobs.FirstOrDefault().Value.ScheduleId;
 
             st.Pallets.Add("1", CreatePallet1Data());
 

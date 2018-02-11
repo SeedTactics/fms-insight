@@ -9,7 +9,7 @@
 export class InspectionClient {
     private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
     private baseUrl: string;
-    protected jsonParseReviver: (key: string, value: any) => any = <any>undefined;
+    protected jsonParseReviver: (key: string, value: any) => any = undefined as any;
 
     constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
         this.http = http ? http : <any>window;
@@ -318,7 +318,7 @@ export class InspectionClient {
 export class JobsClient {
     private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
     private baseUrl: string;
-    protected jsonParseReviver: (key: string, value: any) => any = <any>undefined;
+    protected jsonParseReviver: (key: string, value: any) => any = undefined as any;
 
     constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
         this.http = http ? http : <any>window;
@@ -646,7 +646,7 @@ export class JobsClient {
 export class LogClient {
     private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
     private baseUrl: string;
-    protected jsonParseReviver: (key: string, value: any) => any = <any>undefined;
+    protected jsonParseReviver: (key: string, value: any) => any = undefined as any;
 
     constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
         this.http = http ? http : <any>window;
@@ -1151,7 +1151,7 @@ export class LogClient {
 export class ServerClient {
     private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
     private baseUrl: string;
-    protected jsonParseReviver: (key: string, value: any) => any = <any>undefined;
+    protected jsonParseReviver: (key: string, value: any) => any = undefined as any;
 
     constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
         this.http = http ? http : <any>window;
@@ -2330,8 +2330,7 @@ export interface ICurrentStatus {
 }
 
 export class InProcessJob extends JobPlan implements IInProcessJob {
-    completedProc1: number[] = [];
-    totalCompleteOnFinalProcess: number;
+    completed: number[][] = [];
 
     constructor(data?: IInProcessJob) {
         super(data);
@@ -2340,12 +2339,11 @@ export class InProcessJob extends JobPlan implements IInProcessJob {
     init(data?: any) {
         super.init(data);
         if (data) {
-            if (data["CompletedProc1"] && data["CompletedProc1"].constructor === Array) {
-                this.completedProc1 = [];
-                for (let item of data["CompletedProc1"])
-                    this.completedProc1.push(item);
+            if (data["Completed"] && data["Completed"].constructor === Array) {
+                this.completed = [];
+                for (let item of data["Completed"])
+                    this.completed.push(item);
             }
-            this.totalCompleteOnFinalProcess = data["TotalCompleteOnFinalProcess"];
         }
     }
 
@@ -2358,20 +2356,18 @@ export class InProcessJob extends JobPlan implements IInProcessJob {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        if (this.completedProc1 && this.completedProc1.constructor === Array) {
-            data["CompletedProc1"] = [];
-            for (let item of this.completedProc1)
-                data["CompletedProc1"].push(item);
+        if (this.completed && this.completed.constructor === Array) {
+            data["Completed"] = [];
+            for (let item of this.completed)
+                data["Completed"].push(item);
         }
-        data["TotalCompleteOnFinalProcess"] = this.totalCompleteOnFinalProcess;
         super.toJSON(data);
         return data;
     }
 }
 
 export interface IInProcessJob extends IJobPlan {
-    completedProc1: number[];
-    totalCompleteOnFinalProcess: number;
+    completed: number[][];
 }
 
 export class PalletStatus implements IPalletStatus {

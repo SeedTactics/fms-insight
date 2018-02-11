@@ -1529,20 +1529,18 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "CompletedProc1",
-        "TotalCompleteOnFinalProcess"
+        "Completed"
       ],
       "properties": {
-        "CompletedProc1": {
+        "Completed": {
           "type": "array",
           "items": {
-            "type": "integer",
-            "format": "int32"
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
-        },
-        "TotalCompleteOnFinalProcess": {
-          "type": "integer",
-          "format": "int32"
         }
       },
       "allOf": [

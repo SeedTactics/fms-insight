@@ -48,7 +48,7 @@ export function CurrentJobs(p: Props) {
           p.jobs.map(j => (
             <li key={j.unique}>
               <span>
-                {j.partName}: {j.cyclesOnFirstProcess}/{j.totalCompleteOnFinalProcess}
+                {j.partName}: {j.completed[0][0]}/{j.cyclesOnFirstProcess[0]}
               </span>
             </li>
           ))
