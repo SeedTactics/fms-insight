@@ -32,13 +32,56 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
 import { connect } from 'react-redux';
-import Table, { TableBody, TableCell, TableHead, TableRow } from 'material-ui/Table';
+import Grid from 'material-ui/Grid';
 import * as im from 'immutable';
 import * as numerable from 'numeral';
 import { createSelector } from 'reselect';
 
 import { Store } from '../data/store';
 import { StationInUse } from '../data/events';
+import { VictoryPie, VictoryLabel } from 'victory';
+
+export interface StationOEEProps {
+  station: string;
+  oee: number;
+}
+
+export function StationOEE(p: StationOEEProps) {
+  return (
+    <svg viewBox="0 0 400 400">
+      <VictoryPie
+        standalone={false}
+        width={400}
+        height={400}
+        data={[{x: 1, y: p.oee}, {x: 2, y: 1 - p.oee}]}
+        innerRadius={140}
+        cornerRadius={25}
+        labels={() => ''}
+        style={{
+          data: { fill: (d: {x: number, y: number}) =>
+            d.x === 1 ? '#795548' : '#E0E0E0'
+          }
+        }}
+      />
+      <VictoryLabel
+        textAnchor="middle"
+        verticalAnchor="middle"
+        x={200}
+        y={170}
+        text={p.station}
+        style={{fontSize: 45}}
+      />
+      <VictoryLabel
+        textAnchor="middle"
+        verticalAnchor="middle"
+        x={200}
+        y={230}
+        text={numerable(p.oee).format('0.0%')}
+        style={{fontSize: 30}}
+      />
+    </svg>
+  );
+}
 
 export interface StationHours {
     readonly station: string;
@@ -50,28 +93,17 @@ export interface Props {
   system_active_hours_per_week: number;
 }
 
-export function StationOEE(p: Props) {
+export function StationOEEs(p: Props) {
   return (
-    <div>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Station</TableCell>
-            <TableCell>OEE</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {
-            p.station_active_hours_past_week.map(stat => (
-              <TableRow key={stat.station}>
-                <TableCell>{stat.station}</TableCell>
-                <TableCell>{numerable(stat.hours / p.system_active_hours_per_week).format('0.0%')}</TableCell>
-              </TableRow>
-            ))
-          }
-        </TableBody>
-      </Table>
-    </div>
+    <Grid container justify="space-around">
+      {
+        p.station_active_hours_past_week.map((stat, idx) => (
+          <Grid item xs={6} sm={4} md={2} lg={1} key={idx}>
+            <StationOEE station={stat.station} oee={stat.hours / p.system_active_hours_per_week}/>
+          </Grid>
+        ))
+      }
+    </Grid>
   );
 }
 
@@ -98,4 +130,4 @@ export default connect(
     station_active_hours_past_week: oeeSelector(s),
     system_active_hours_per_week: s.Events.system_active_hours_per_week,
   })
-)(StationOEE);
+)(StationOEEs);

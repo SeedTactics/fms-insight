@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from 'react';
-import { StationOEE, stationHoursInLastWeek } from './StationOEE';
+import { StationOEE, StationOEEs, stationHoursInLastWeek } from './StationOEE';
 import * as im from 'immutable';
 import { shallow } from 'enzyme';
 
@@ -60,6 +60,11 @@ it('displays station hours', () => {
     {station: 'abc', hours: 40},
     {station: 'zzz', hours: 3}
   ]);
-  const val = shallow(<StationOEE system_active_hours_per_week={100} station_active_hours_past_week={hours}/>);
+  const val = shallow(<StationOEEs system_active_hours_per_week={100} station_active_hours_past_week={hours}/>);
   expect(val).toMatchSnapshot('station oee table');
+});
+
+it('displays a single station oee', () => {
+  const val = shallow(<StationOEE station="aaa" oee={0.43}/>);
+  expect(val).toMatchSnapshot('station oee gauge');
 });

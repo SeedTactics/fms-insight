@@ -33,47 +33,29 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from 'react';
 import Grid from 'material-ui/Grid/Grid';
 import Card, { CardContent, CardHeader } from 'material-ui/Card';
-import Typography from 'material-ui/Typography/Typography';
 
-import StationOEE from './StationOEE';
+import StationOEEs from './StationOEE';
 import RecentEvents from './RecentEvents';
 import CurrentJobs from './CurrentJobs';
 
 export default function Dashboard() {
   return (
     <div>
+      <StationOEEs/>
       <Grid container>
         <Grid item xs={12} sm={6}>
           <Card>
-            <CardHeader title="Recent Events"/>
-            <CardContent>
-              <RecentEvents/>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <Card>
-            <CardHeader title="Jobs"/>
+            <CardHeader title="Schedule Progress"/>
             <CardContent>
               <CurrentJobs/>
             </CardContent>
           </Card>
         </Grid>
-      </Grid>
-      <Grid container>
         <Grid item xs={12} sm={6}>
           <Card>
-            <CardHeader title="Station OEE"/>
+            <CardHeader title="Current Status"/>
             <CardContent>
-              <StationOEE/>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <Card>
-            <CardHeader title="Pallets"/>
-            <CardContent>
-              <Typography>Pallets</Typography>
+              <RecentEvents/>
             </CardContent>
           </Card>
         </Grid>
