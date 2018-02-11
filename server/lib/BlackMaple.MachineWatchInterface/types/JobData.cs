@@ -428,7 +428,7 @@ namespace BlackMaple.MachineWatchInterface
         public int GetNumPaths(int process)
         {
             if (process >= 1 && process <= NumProcesses) {
-                return _procPath[process - 1].Length;
+                return _procPath[process - 1].NumPaths;
             } else {
                 throw new IndexOutOfRangeException("Invalid process number");
             }
@@ -444,7 +444,7 @@ namespace BlackMaple.MachineWatchInterface
         public void SetPathGroup(int process, int path, int pgroup)
         {
             if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process)) {
-                _procPath[process - 1][path - 1].PathGroup = pgroup;
+                _procPath[process - 1].Paths[path - 1].PathGroup = pgroup;
             } else {
                 throw new IndexOutOfRangeException("Invalid process or path number");
             }
@@ -503,7 +503,7 @@ namespace BlackMaple.MachineWatchInterface
         public void SetSimulatedStartingTimeUTC(int process, int path, DateTime startUTC)
         {
             if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process)) {
-                _procPath[process - 1][path - 1].SimulatedStartingUTC = startUTC;
+                _procPath[process - 1].Paths[path - 1].SimulatedStartingUTC = startUTC;
             } else {
                 throw new IndexOutOfRangeException("Invalid process or path number");
             }
@@ -519,7 +519,7 @@ namespace BlackMaple.MachineWatchInterface
         public void SetSimulatedProduction(int process, int path, IEnumerable<SimulatedProduction> prod)
         {
             if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process)) {
-                _procPath[process - 1][path - 1].SimulatedProduction = new List<SimulatedProduction>(prod);
+                _procPath[process - 1].Paths[path - 1].SimulatedProduction = new List<SimulatedProduction>(prod);
             } else {
                 throw new IndexOutOfRangeException("Invalid process or path number");
             }
@@ -535,7 +535,7 @@ namespace BlackMaple.MachineWatchInterface
         public void SetSimulatedAverageFlowTime(int process, int path, TimeSpan t)
         {
             if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process)) {
-                _procPath[process - 1][path - 1].SimulatedAverageFlowTime = t;
+                _procPath[process - 1].Paths[path - 1].SimulatedAverageFlowTime = t;
             } else {
                 throw new IndexOutOfRangeException("Invalid process or path number");
             }
@@ -622,7 +622,7 @@ namespace BlackMaple.MachineWatchInterface
         public void SetPartsPerPallet(int process, int path, int partsPerPallet)
         {
             if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process)) {
-                _procPath[process - 1][path - 1].PartsPerPallet = partsPerPallet;
+                _procPath[process - 1].Paths[path - 1].PartsPerPallet = partsPerPallet;
             } else {
                 throw new IndexOutOfRangeException("Invalid process or path number");
             }
@@ -704,7 +704,7 @@ namespace BlackMaple.MachineWatchInterface
         public void SetInputQueue(int process, int path, string queue)
         {
             if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process)) {
-                _procPath[process - 1][path - 1].InputQueue = queue;
+                _procPath[process - 1].Paths[path - 1].InputQueue = queue;
             } else {
                 throw new IndexOutOfRangeException("Invalid process or path number");
             }
@@ -712,7 +712,7 @@ namespace BlackMaple.MachineWatchInterface
         public void SetOutputQueue(int process, int path, string queue)
         {
             if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process)) {
-                _procPath[process - 1][path - 1].OutputQueue = queue;
+                _procPath[process - 1].Paths[path - 1].OutputQueue = queue;
             } else {
                 throw new IndexOutOfRangeException("Invalid process or path number");
             }
@@ -766,19 +766,19 @@ namespace BlackMaple.MachineWatchInterface
             _holdJob = new JobHoldPattern();
             _scheduledIds = new List<string>();
 
-            _procPath = new ProcPathInfo[numProcess][];
+            _procPath = new ProcessInfo[numProcess];
             for (int i = 0; i < numProcess; i++) {
                 if (numPaths == null || i >= numPaths.Length) {
-                    _procPath[i] = new ProcPathInfo[1];
+                    _procPath[i].Paths = new ProcPathInfo[1];
                 } else {
-                    _procPath[i] = new ProcPathInfo[Math.Max(1, numPaths[i])];
+                    _procPath[i].Paths = new ProcPathInfo[Math.Max(1, numPaths[i])];
                 }
-                for (int j = 0; j < _procPath[i].Length; j++) {
-                    _procPath[i][j] = new ProcPathInfo(default(ProcPathInfo));
+                for (int j = 0; j < _procPath[i].NumPaths; j++) {
+                    _procPath[i].Paths[j] = new ProcPathInfo(default(ProcPathInfo));
                 }
             }
-            _pCycles = new int[_procPath[0].Length];
-            for (int path = 0; path < _procPath[0].Length; path++) {
+            _pCycles = new int[_procPath[0].NumPaths];
+            for (int path = 0; path < _procPath[0].NumPaths; path++) {
                 _pCycles[path] = 0;
             }
         }
@@ -803,17 +803,17 @@ namespace BlackMaple.MachineWatchInterface
                 _inspections.Add(new JobInspectionData(insp));
 
             //copy the path info
-            _procPath = new ProcPathInfo[job._procPath.Length][];
+            _procPath = new ProcessInfo[job._procPath.Length];
             for (int i = 0; i < _procPath.Length; i++) {
-                _procPath[i] = new ProcPathInfo[job._procPath[i].Length];
-                for (int j = 0; j < _procPath[i].Length; j++) {
-                    _procPath[i][j] = new ProcPathInfo(job._procPath[i][j]);
+                _procPath[i].Paths = new ProcPathInfo[job._procPath[i].NumPaths];
+                for (int j = 0; j < _procPath[i].NumPaths; j++) {
+                    _procPath[i].Paths[j] = new ProcPathInfo(job._procPath[i][j]);
                 }
             }
 
             //do not copy the planned cycles, since we are creating a new job
-            _pCycles = new int[_procPath[0].Length];
-            for (int path = 0; path < _procPath[0].Length; path++) {
+            _pCycles = new int[_procPath[0].NumPaths];
+            for (int path = 0; path < _procPath[0].NumPaths; path++) {
                 _pCycles[path] = 0;
             }
         }
@@ -837,15 +837,15 @@ namespace BlackMaple.MachineWatchInterface
             foreach (var insp in job._inspections)
                 _inspections.Add(new JobInspectionData(insp));
 
-            _procPath = new ProcPathInfo[job._procPath.Length][];
+            _procPath = new ProcessInfo[job._procPath.Length];
             for (int i = 0; i < _procPath.Length; i++) {
-                _procPath[i] = new ProcPathInfo[job._procPath[i].Length];
-                for (int j = 0; j < _procPath[i].Length; j++) {
-                    _procPath[i][j] = new ProcPathInfo(job._procPath[i][j]);
+                _procPath[i].Paths = new ProcPathInfo[job._procPath[i].NumPaths];
+                for (int j = 0; j < _procPath[i].NumPaths; j++) {
+                    _procPath[i].Paths[j] = new ProcPathInfo(job._procPath[i][j]);
                 }
             }
-            _pCycles = new int[_procPath[0].Length];
-            for (int path = 0; path < _procPath[0].Length; path++) {
+            _pCycles = new int[_procPath[0].NumPaths];
+            for (int path = 0; path < _procPath[0].NumPaths; path++) {
                 _pCycles[path] = job._pCycles[path];
             }
         }
@@ -920,6 +920,15 @@ namespace BlackMaple.MachineWatchInterface
         {
             [DataMember(IsRequired=true)] public DateTime TimeUTC;
             [DataMember(IsRequired=true)] public int Quantity; //total quantity simulated to be completed at TimeUTC
+        }
+
+        [Serializable, DataContract]
+        private struct ProcessInfo
+        {
+            [DataMember(Name="paths", IsRequired=true)]
+            public ProcPathInfo[] Paths;
+            public ProcPathInfo this[int i]  => Paths[i];
+            public int NumPaths => Paths.Length;
         }
 
         [Serializable, DataContract]
@@ -1007,7 +1016,7 @@ namespace BlackMaple.MachineWatchInterface
         }
 
         [DataMember(Name="ProcsAndPaths", IsRequired=true)]
-        private ProcPathInfo[][] _procPath;
+        private ProcessInfo[] _procPath;
     }
 
     [SerializableAttribute, DataContract]

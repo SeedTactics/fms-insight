@@ -1545,7 +1545,7 @@ export class JobPlan implements IJobPlan {
     inspections?: JobInspectionData[];
     holdEntireJob: JobHoldPattern = new JobHoldPattern();
     cyclesOnFirstProcess: number[] = [];
-    procsAndPaths: ProcPathInfo[][] = [];
+    procsAndPaths: ProcessInfo[] = [];
 
     constructor(data?: IJobPlan) {
         if (data) {
@@ -1588,7 +1588,7 @@ export class JobPlan implements IJobPlan {
             if (data["ProcsAndPaths"] && data["ProcsAndPaths"].constructor === Array) {
                 this.procsAndPaths = [];
                 for (let item of data["ProcsAndPaths"])
-                    this.procsAndPaths.push(item);
+                    this.procsAndPaths.push(ProcessInfo.fromJS(item));
             }
         }
     }
@@ -1632,7 +1632,7 @@ export class JobPlan implements IJobPlan {
         if (this.procsAndPaths && this.procsAndPaths.constructor === Array) {
             data["ProcsAndPaths"] = [];
             for (let item of this.procsAndPaths)
-                data["ProcsAndPaths"].push(item);
+                data["ProcsAndPaths"].push(item.toJSON());
         }
         return data;
     }
@@ -1654,7 +1654,7 @@ export interface IJobPlan {
     inspections?: JobInspectionData[];
     holdEntireJob: JobHoldPattern;
     cyclesOnFirstProcess: number[];
-    procsAndPaths: ProcPathInfo[][];
+    procsAndPaths: ProcessInfo[];
 }
 
 export class JobInspectionData implements IJobInspectionData {
@@ -1771,6 +1771,47 @@ export interface IJobHoldPattern {
     holdUnholdPattern: string[];
     holdUnholdPatternStartUTC: Date;
     holdUnholdPatternRepeats: boolean;
+}
+
+export class ProcessInfo extends ValueType implements IProcessInfo {
+    paths: ProcPathInfo[] = [];
+
+    constructor(data?: IProcessInfo) {
+        super(data);
+    }
+
+    init(data?: any) {
+        super.init(data);
+        if (data) {
+            if (data["paths"] && data["paths"].constructor === Array) {
+                this.paths = [];
+                for (let item of data["paths"])
+                    this.paths.push(ProcPathInfo.fromJS(item));
+            }
+        }
+    }
+
+    static fromJS(data: any): ProcessInfo {
+        data = typeof data === 'object' ? data : {};
+        let result = new ProcessInfo();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        if (this.paths && this.paths.constructor === Array) {
+            data["paths"] = [];
+            for (let item of this.paths)
+                data["paths"].push(item.toJSON());
+        }
+        super.toJSON(data);
+        return data;
+    }
+}
+
+export interface IProcessInfo extends IValueType {
+    paths: ProcPathInfo[];
 }
 
 export class ProcPathInfo extends ValueType implements IProcPathInfo {
@@ -2941,7 +2982,7 @@ export class LogEntry implements ILogEntry {
 export interface ILogEntry {
     details?: { [key: string] : string; };
     counter: number;
-    material: ILogMaterial[];
+    material: LogMaterial[];
     type: LogType;
     startofcycle: boolean;
     endUTC: Date;

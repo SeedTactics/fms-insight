@@ -104,6 +104,7 @@ namespace MachineWatchApiServer
                 .AddJsonFormatters()
                 .AddJsonOptions(options => {
                     options.SerializerSettings.Converters.Add(new StringEnumConverter());
+                    options.SerializerSettings.ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver();
                 });
         }
 

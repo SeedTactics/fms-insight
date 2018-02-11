@@ -31,20 +31,20 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { ILogMaterial, ILogEntry, LogType } from './api';
+import { LogMaterial, ILogEntry, LogType } from './api';
 import * as faker from 'faker';
 import { duration } from 'moment';
 import { addSeconds, addMinutes } from 'date-fns';
 
-export function fakeMaterial(): ILogMaterial {
-  return {
+export function fakeMaterial(): LogMaterial {
+  return new LogMaterial({
     id: faker.random.number(),
     uniq: 'uniq' + faker.random.alphaNumeric(),
     part: 'part' + faker.random.alphaNumeric(),
     proc: faker.random.number({max: 4}),
     numproc: faker.random.number({max: 4}),
     face: 'face' + faker.random.alphaNumeric()
-  };
+  });
 }
 
 function addStartAndEnd(es: ILogEntry[], e: ILogEntry): void {

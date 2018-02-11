@@ -32,9 +32,30 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
 import { connect } from 'react-redux';
+import * as im from 'immutable';
+import { duration } from 'moment';
 
 import * as api from '../data/api';
 import { Store } from '../data/store';
+
+export function DisplayJob({ job, proc }: {job: api.IInProcessJob, proc: number}) {
+  const totalPlan = job.cyclesOnFirstProcess.reduce((a, b) => a + b, 0);
+  const completed = job.completed[proc].reduce((a, b) => a + b, 0);
+
+  const stops = job.procsAndPaths[proc].paths[0].stops;
+  let cycleTime = duration();
+  for (let i = 0; i < stops.length; i++) {
+    const x = duration(stops[i].expectedCycleTime);
+    cycleTime = cycleTime.add(x);
+  }
+  return (
+      <li key={job.unique + '-' + proc.toString()}>
+        <span>
+          {job.partName} {proc}: {cycleTime.asHours()}: {completed}/{totalPlan}
+        </span>
+      </li>
+  );
+}
 
 export interface Props {
   jobs: ReadonlyArray<Readonly<api.IInProcessJob>>;
@@ -45,13 +66,11 @@ export function CurrentJobs(p: Props) {
     <div>
       <ul style={{'list-style': 'none'}}>
         {
-          p.jobs.map(j => (
-            <li key={j.unique}>
-              <span>
-                {j.partName}: {j.completed[0][0]}/{j.cyclesOnFirstProcess[0]}
-              </span>
-            </li>
-          ))
+          p.jobs.map(j =>
+            im.Range(0, j.procsAndPaths.length).map(proc =>
+              <DisplayJob key={j.unique + ':' + proc.toString()} job={j} proc={proc}/>
+            )
+          )
         }
       </ul>
     </div>
