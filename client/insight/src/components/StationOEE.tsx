@@ -39,46 +39,56 @@ import { createSelector } from 'reselect';
 
 import { Store } from '../data/store';
 import { StationInUse } from '../data/events';
-import { VictoryPie, VictoryLabel } from 'victory';
 
 export interface StationOEEProps {
   station: string;
   oee: number;
 }
 
+function polarToCartesian(centerX: number, centerY: number, radius: number, angleInRadians: number) {
+  return {
+    x: centerX + (radius * Math.cos(angleInRadians)),
+    y: centerY + (radius * Math.sin(angleInRadians))
+  };
+}
+
+function describeArc(cx: number, cy: number, radius: number, startAngle: number, endAngle: number) {
+
+    const start = polarToCartesian(cx, cy, radius, endAngle);
+    const end = polarToCartesian(cx, cy, radius, startAngle);
+
+    const largeArcFlag = endAngle - startAngle <= Math.PI ? '0' : '1';
+
+    var d = [
+        'M', start.x, start.y,
+        'A', radius, radius, Math.PI / 2, largeArcFlag, '0', end.x, end.y
+    ].join(' ');
+
+    return d;
+}
+
 export function StationOEE(p: StationOEEProps) {
+  const arcPoint = -Math.PI / 2 + 2 * Math.PI * p.oee;
   return (
     <svg viewBox="0 0 400 400">
-      <VictoryPie
-        standalone={false}
-        width={400}
-        height={400}
-        data={[{x: 1, y: p.oee}, {x: 2, y: 1 - p.oee}]}
-        innerRadius={140}
-        cornerRadius={25}
-        labels={() => ''}
-        style={{
-          data: { fill: (d: {x: number, y: number}) =>
-            d.x === 1 ? '#795548' : '#E0E0E0'
-          }
-        }}
+      <path
+        d={describeArc(200, 200, 150, -Math.PI / 2, arcPoint)}
+        fill="transparent"
+        stroke="#795548"
+        stroke-width={10}
       />
-      <VictoryLabel
-        textAnchor="middle"
-        verticalAnchor="middle"
-        x={200}
-        y={170}
-        text={p.station}
-        style={{fontSize: 45}}
+      <path
+        d={describeArc(200, 200, 150, arcPoint, 1.5 * Math.PI)}
+        fill="transparent"
+        stroke="#E0E0E0"
+        stroke-width={10}
       />
-      <VictoryLabel
-        textAnchor="middle"
-        verticalAnchor="middle"
-        x={200}
-        y={230}
-        text={numerable(p.oee).format('0.0%')}
-        style={{fontSize: 30}}
-      />
+      <text x={200} y={190} text-anchor="middle" style={{fontSize: 45}}>
+        {p.station}
+      </text>
+      <text x={200} y={250} text-anchor="middle" style={{fontSize: 30}}>
+        {numerable(p.oee).format('0.0%')}
+      </text>
     </svg>
   );
 }
