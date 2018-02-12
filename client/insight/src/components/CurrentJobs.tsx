@@ -37,8 +37,17 @@ import { duration } from 'moment';
 
 import * as api from '../data/api';
 import { Store } from '../data/store';
+import { FlexibleWidthXYPlot, HorizontalBarSeries, XAxis, YAxis, MarkSeries, VerticalGridLines } from 'react-vis';
 
-export function DisplayJob({ job, proc }: {job: api.IInProcessJob, proc: number}) {
+import 'react-vis/dist/style.css';
+
+interface DataPoint {
+  part: string;
+  completed: number;
+  totalPlan: number;
+}
+
+export function DisplayJob(job: api.IInProcessJob, proc: number): DataPoint {
   const totalPlan = job.cyclesOnFirstProcess.reduce((a, b) => a + b, 0);
   const completed = job.completed[proc].reduce((a, b) => a + b, 0);
 
@@ -48,13 +57,12 @@ export function DisplayJob({ job, proc }: {job: api.IInProcessJob, proc: number}
     const x = duration(stops[i].expectedCycleTime);
     cycleTime = cycleTime.add(x);
   }
-  return (
-      <li key={job.unique + '-' + proc.toString()}>
-        <span>
-          {job.partName} {proc}: {cycleTime.asHours()}: {completed}/{totalPlan}
-        </span>
-      </li>
-  );
+  const cycleTimeHours = cycleTime.asHours();
+  return {
+    part: job.partName + '-' + (proc + 1).toString(),
+    completed: cycleTimeHours * completed,
+    totalPlan: cycleTimeHours * totalPlan
+  };
 }
 
 export interface Props {
@@ -62,17 +70,35 @@ export interface Props {
 }
 
 export function CurrentJobs(p: Props) {
+  const data = im.Seq(p.jobs)
+    .flatMap(j =>
+      im.Range(0, j.procsAndPaths.length).map(proc =>
+        DisplayJob(j, proc)
+      )
+    )
+    .sortBy(pt => pt.part)
+    .reverse()
+    .cacheResult();
+  const completedData =
+    data.map((pt, i) => ({x: pt.completed, y: i, part: pt.part}))
+        .toArray();
+  const planData =
+    data.map((pt, i) => ({x: pt.totalPlan, y: i, part: pt.part}))
+        .toArray();
   return (
     <div>
-      <ul style={{'list-style': 'none'}}>
-        {
-          p.jobs.map(j =>
-            im.Range(0, j.procsAndPaths.length).map(proc =>
-              <DisplayJob key={j.unique + ':' + proc.toString()} job={j} proc={proc}/>
-            )
-          )
-        }
-      </ul>
+      <FlexibleWidthXYPlot
+          height={300}
+          margin={{left: 70, right: 10, top: 10, bottom: 40}}
+          yType="ordinal"
+      >
+        <XAxis/>
+        <YAxis tickFormat={(y: number, i: number) => completedData[i].part}/>
+        <VerticalGridLines color="green"/>
+        <HorizontalBarSeries data={completedData}/>
+        <MarkSeries data={planData}/>
+      </FlexibleWidthXYPlot>
+      <div style={{'textAlign': 'center'}}>Machine Hours</div>
     </div>
   );
 }
