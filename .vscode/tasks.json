@@ -2,10 +2,10 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "test",
+            "label": "server:test",
             "command": "dotnet test",
             "options": {
-                "cwd": "${workspaceFolder}/test"
+                "cwd": "${workspaceFolder}/server/test"
             },
             "group": "test",
             "type": "shell",
@@ -18,7 +18,7 @@
             "label": "pack:mwi",
             "command": "dotnet pack /p:VersionPrefix=$(python ${workspaceFolder}/version.py mwi) --include-symbols --version-suffix=alpha$(date -u +%Y%m%d%H%M%S) -o ${workspaceFolder}/../nugetpackages",
             "options": {
-                "cwd": "${workspaceFolder}/lib/BlackMaple.MachineWatchInterface"
+                "cwd": "${workspaceFolder}/server/lib/BlackMaple.MachineWatchInterface"
             },
             "type": "shell",
             "presentation": {
@@ -30,7 +30,7 @@
             "label": "pack:framework",
             "command": "dotnet pack /p:VersionPrefix=$(python ${workspaceFolder}/version.py framework) --include-symbols --version-suffix=alpha$(date -u +%Y%m%d%H%M%S) -o ${workspaceFolder}/../nugetpackages",
             "options": {
-                "cwd": "${workspaceFolder}/lib/BlackMaple.MachineFramework"
+                "cwd": "${workspaceFolder}/server/lib/BlackMaple.MachineFramework"
             },
             "type": "shell",
             "presentation": {
@@ -42,13 +42,39 @@
             "label": "pack:service",
             "command": "dotnet pack /p:VersionPrefix=$(python ${workspaceFolder}/version.py service) --include-symbols --version-suffix=alpha$(date -u +%Y%m%d%H%M%S) -o ${workspaceFolder}/../nugetpackages",
             "options": {
-                "cwd": "${workspaceFolder}/src/service"
+                "cwd": "${workspaceFolder}/server/src/service"
             },
             "type": "shell",
             "presentation": {
                 "reveal": "silent"
             },
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "server:dev",
+            "command": "dotnet run -p server/src/json-http",
+            "type": "shell",
+            "presentation": {
+                "reveal": "silent",
+                "panel": "dedicated"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "insight:dev",
+            "command": "yarn start",
+            "options": {
+                "cwd": "${workspaceFolder}/client/insight",
+                "env": {
+                    "BROWSER": "no"
+                }
+            },
+            "type": "shell",
+            "presentation": {
+                "reveal": "silent",
+                "panel": "dedicated"
+            },
+            "problemMatcher": []
         }
     ]
 }
