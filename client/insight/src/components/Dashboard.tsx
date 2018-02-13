@@ -45,7 +45,6 @@ export default function Dashboard() {
       <Grid container>
         <Grid item xs={12} sm={6}>
           <Card>
-            <CardHeader title="Schedule Progress"/>
             <CardContent>
               <CurrentJobs/>
             </CardContent>

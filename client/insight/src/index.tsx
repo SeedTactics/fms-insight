@@ -41,6 +41,7 @@ import green from 'material-ui/colors/green';
 import brown from 'material-ui/colors/brown';
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import { createMuiTheme } from 'material-ui/styles';
+import 'react-vis/dist/style.css';
 
 import App from './App';
 import registerServiceWorker from './registerServiceWorker';

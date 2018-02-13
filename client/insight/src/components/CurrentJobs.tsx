@@ -37,9 +37,15 @@ import { duration } from 'moment';
 
 import * as api from '../data/api';
 import { Store } from '../data/store';
-import { FlexibleWidthXYPlot, HorizontalBarSeries, XAxis, YAxis, MarkSeries, VerticalGridLines } from 'react-vis';
-
-import 'react-vis/dist/style.css';
+import {
+  FlexibleWidthXYPlot,
+  HorizontalBarSeries,
+  XAxis,
+  YAxis,
+  CustomSVGSeries,
+  VerticalGridLines,
+  HorizontalGridLines
+} from 'react-vis';
 
 interface DataPoint {
   part: string;
@@ -47,7 +53,7 @@ interface DataPoint {
   totalPlan: number;
 }
 
-export function DisplayJob(job: api.IInProcessJob, proc: number): DataPoint {
+function DisplayJob(job: api.IInProcessJob, proc: number): DataPoint {
   const totalPlan = job.cyclesOnFirstProcess.reduce((a, b) => a + b, 0);
   const completed = job.completed[proc].reduce((a, b) => a + b, 0);
 
@@ -65,12 +71,8 @@ export function DisplayJob(job: api.IInProcessJob, proc: number): DataPoint {
   };
 }
 
-export interface Props {
-  jobs: ReadonlyArray<Readonly<api.IInProcessJob>>;
-}
-
-export function CurrentJobs(p: Props) {
-  const data = im.Seq(p.jobs)
+export function JobsToPoints(jobs: ReadonlyArray<Readonly<api.IInProcessJob>>) {
+  const points = im.Seq(jobs)
     .flatMap(j =>
       im.Range(0, j.procsAndPaths.length).map(proc =>
         DisplayJob(j, proc)
@@ -80,23 +82,37 @@ export function CurrentJobs(p: Props) {
     .reverse()
     .cacheResult();
   const completedData =
-    data.map((pt, i) => ({x: pt.completed, y: i, part: pt.part}))
+    points.map((pt, i) => ({x: pt.completed, y: i, part: pt.part}))
         .toArray();
   const planData =
-    data.map((pt, i) => ({x: pt.totalPlan, y: i, part: pt.part}))
+    points.map((pt, i) => ({x: pt.totalPlan, y: i, part: pt.part}))
         .toArray();
+  return {completedData, planData};
+}
+
+export interface Props {
+  jobs: ReadonlyArray<Readonly<api.IInProcessJob>>;
+}
+
+const targetMark = () => (
+  <rect x="-2" y="-5" width="4" height="10" fill="black"/>
+);
+
+export function CurrentJobs(p: Props) {
+  const {completedData, planData} = JobsToPoints(p.jobs);
   return (
     <div>
       <FlexibleWidthXYPlot
-          height={300}
+          height={500}
           margin={{left: 70, right: 10, top: 10, bottom: 40}}
           yType="ordinal"
       >
         <XAxis/>
         <YAxis tickFormat={(y: number, i: number) => completedData[i].part}/>
-        <VerticalGridLines color="green"/>
+        <HorizontalGridLines/>
+        <VerticalGridLines/>
         <HorizontalBarSeries data={completedData}/>
-        <MarkSeries data={planData}/>
+        <CustomSVGSeries data={planData} customComponent={targetMark}/>
       </FlexibleWidthXYPlot>
       <div style={{'textAlign': 'center'}}>Machine Hours</div>
     </div>

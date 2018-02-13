@@ -7,11 +7,14 @@ declare module 'react-vis' {
 
   export class HorizontalBarSeries extends React.Component<any> {}
   export class VerticalBarSeries extends React.Component<any> {}
+  export class HorizontalRectSeries extends React.Component<any> {}
+  export class MarkSeries extends React.Component<any> {}
+  export class CustomSVGSeries extends React.Component<any> {}
 
   export class VerticalGridLines extends React.Component<any> {}
+  export class HorizontalGridLines extends React.Component<any> {}
 
   export class XAxis extends React.Component<any> {}
   export class YAxis extends React.Component<any> {}
 
-  export class MarkSeries extends React.Component<any> {}
 }
