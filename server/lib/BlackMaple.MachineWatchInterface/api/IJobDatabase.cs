@@ -42,10 +42,10 @@ namespace BlackMaple.MachineWatchInterface
         HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC);
 
         ///Loads all jobs which have a unique strictly larger than the given unique
-        JobsAndExtraParts LoadJobsAfterScheduleId(string scheduleId);
+        PlannedSchedule LoadJobsAfterScheduleId(string scheduleId);
 
         ///Loads all jobs for the most recent schedule
-        JobsAndExtraParts LoadMostRecentSchedule();
+        PlannedSchedule LoadMostRecentSchedule();
 
         List<PartWorkorder> MostRecentUnfilledWorkordersForPart(string part);
     }

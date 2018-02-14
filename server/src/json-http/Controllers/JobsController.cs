@@ -57,13 +57,13 @@ namespace MachineWatchApiServer.Controllers
         }
 
         [HttpGet("recent")]
-        public JobsAndExtraParts Recent([FromQuery]string afterScheduleId)
+        public PlannedSchedule Recent([FromQuery]string afterScheduleId)
         {
             return _db.LoadJobsAfterScheduleId(afterScheduleId);
         }
 
         [HttpGet("latest-schedule")]
-        public JobsAndExtraParts LatestSchedule()
+        public PlannedSchedule LatestSchedule()
         {
             return _db.LoadMostRecentSchedule();
         }

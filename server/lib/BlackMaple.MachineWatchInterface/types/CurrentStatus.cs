@@ -43,7 +43,7 @@ namespace BlackMaple.MachineWatchInterface
     public class InProcessMaterialAction
     {
         // This should be a sum type, and while C# sum types can work with some helper code it doesn't work
-        // well for serialization.  Swagger supports discriminated types but NSWag does not yet.
+        // well for serialization.
 
         [Serializable, DataContract]
         public enum ActionType
@@ -166,7 +166,6 @@ namespace BlackMaple.MachineWatchInterface
         [DataMember(IsRequired=false, EmitDefaultValue=false)] public string NewFixture {get;set;}
 
         //If CurrentPalletLocation is Cart, the following two fields will be filled in.
-        //If the percentage is unknown, -1 is returned.
         [DataMember(IsRequired=false, EmitDefaultValue=false)] public PalletLocation? TargetLocation {get;set;}
         [DataMember(IsRequired=false, EmitDefaultValue=false)] public decimal? PercentMoveCompleted {get;set;}
     }
@@ -222,8 +221,10 @@ namespace BlackMaple.MachineWatchInterface
         public IDictionary<string, PalletStatus> Pallets => _pals;
         public IList<InProcessMaterial> Material => _material;
         public IList<string> Alarms => _alarms;
+        public Dictionary<string, QueueSize> QueueSizes => _queues;
 
-        [DataMember(IsRequired=false, EmitDefaultValue=false)] public string LatestScheduleId {get;set;}
+        [DataMember(IsRequired=false, EmitDefaultValue=false)]
+        public string LatestScheduleId {get;set;}
 
         public CurrentStatus()
         {
@@ -231,6 +232,7 @@ namespace BlackMaple.MachineWatchInterface
             _pals = new Dictionary<string, PalletStatus>();
             _material = new List<InProcessMaterial>();
             _alarms = new List<string>();
+            _queues = new Dictionary<string, QueueSize>();
             LatestScheduleId = null;
         }
 
@@ -245,6 +247,9 @@ namespace BlackMaple.MachineWatchInterface
 
         [DataMember(Name="Alarms", IsRequired=false, EmitDefaultValue=false)]
         private List<string> _alarms;
+
+        [OptionalField, DataMember(IsRequired=false, EmitDefaultValue=false)]
+        public Dictionary<string, QueueSize> _queues;
     }
 
     [Serializable, DataContract]

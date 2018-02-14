@@ -835,7 +835,7 @@ namespace BlackMaple.MachineFramework
             }
         }
 
-        public MachineWatchInterface.JobsAndExtraParts LoadJobs()
+        public MachineWatchInterface.PlannedSchedule LoadJobs()
         {
             var cmd = _connection.CreateCommand();
             cmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Priority, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId FROM jobs WHERE Archived = 0";
@@ -860,7 +860,7 @@ namespace BlackMaple.MachineFramework
             return ret;
         }
 
-        public BlackMaple.MachineWatchInterface.JobsAndExtraParts LoadJobsAfterScheduleId(string schId)
+        public BlackMaple.MachineWatchInterface.PlannedSchedule LoadJobsAfterScheduleId(string schId)
         {
             var cmd = _connection.CreateCommand();
             cmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Priority, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId " +
@@ -869,7 +869,7 @@ namespace BlackMaple.MachineFramework
             return LoadJobsHelper(cmd);
         }
 
-        public MachineWatchInterface.JobsAndExtraParts LoadJobsNotCopiedToSystem(DateTime startUTC, DateTime endUTC)
+        public MachineWatchInterface.PlannedSchedule LoadJobsNotCopiedToSystem(DateTime startUTC, DateTime endUTC)
         {
             var cmd = _connection.CreateCommand();
             cmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Priority, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId " +
@@ -879,7 +879,7 @@ namespace BlackMaple.MachineFramework
             return LoadJobsHelper(cmd);
         }
 
-        public BlackMaple.MachineWatchInterface.JobsAndExtraParts LoadMostRecentSchedule()
+        public BlackMaple.MachineWatchInterface.PlannedSchedule LoadMostRecentSchedule()
         {
             var cmd = _connection.CreateCommand();
 			cmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Priority, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId " +
@@ -887,7 +887,7 @@ namespace BlackMaple.MachineFramework
 
             lock (_lock)
             {
-                var ret = default(BlackMaple.MachineWatchInterface.JobsAndExtraParts);
+                var ret = default(BlackMaple.MachineWatchInterface.PlannedSchedule);
                 ret.Jobs = new List<BlackMaple.MachineWatchInterface.JobPlan>();
                 ret.ExtraParts = new Dictionary<string, int>();
 
@@ -972,11 +972,11 @@ namespace BlackMaple.MachineFramework
 			return ret;
         }
 
-        private MachineWatchInterface.JobsAndExtraParts LoadJobsHelper(IDbCommand cmd)
+        private MachineWatchInterface.PlannedSchedule LoadJobsHelper(IDbCommand cmd)
         {
             lock (_lock)
             {
-                var ret = default(MachineWatchInterface.JobsAndExtraParts);
+                var ret = default(MachineWatchInterface.PlannedSchedule);
                 ret.Jobs = new List<MachineWatchInterface.JobPlan>();
                 ret.ExtraParts = new Dictionary<string, int>();
 

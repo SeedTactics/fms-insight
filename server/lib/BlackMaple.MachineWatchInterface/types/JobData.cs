@@ -1068,9 +1068,13 @@ namespace BlackMaple.MachineWatchInterface
     public struct NewJobs
     {
         [DataMember(IsRequired=true)] public string ScheduleId;
+
         [DataMember(IsRequired=true)] public List<JobPlan> Jobs;
+
         [DataMember(IsRequired=true)] public List<SimulatedStationUtilization> StationUse;
+
         [DataMember(IsRequired=true)] public Dictionary<string, int> ExtraParts;
+
         [DataMember(IsRequired=true)] public bool ArchiveCompletedJobs;
 
         [OptionalField, DataMember(IsRequired=false, EmitDefaultValue=false)]
@@ -1113,7 +1117,7 @@ namespace BlackMaple.MachineWatchInterface
     }
 
     [Serializable, DataContract]
-    public struct JobsAndExtraParts
+    public struct PlannedSchedule
     {
         [DataMember(IsRequired=true)] public string LatestScheduleId;
         [DataMember(IsRequired=true)] public List<JobPlan> Jobs;
