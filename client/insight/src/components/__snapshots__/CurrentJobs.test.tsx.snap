@@ -1,0 +1,92 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`current job graph 1`] = `
+<div>
+  <FlexibleXYPlot
+    height={500}
+    margin={
+      Object {
+        "bottom": 40,
+        "left": 70,
+        "right": 10,
+        "top": 10,
+      }
+    }
+    yType="ordinal"
+  >
+    <XAxis
+      attr="x"
+      attrAxis="y"
+      orientation="bottom"
+    />
+    <YAxis
+      attr="y"
+      attrAxis="x"
+      orientation="left"
+      tickFormat={[Function]}
+    />
+    <HorizontalGridLines
+      attr="y"
+      direction="horizontal"
+    />
+    <VerticalGridLines
+      attr="x"
+      direction="vertical"
+    />
+    <HorizontalBarSeries
+      className=""
+      color="#795548"
+      data={
+        Array [
+          Object {
+            "part": "abc",
+            "x": 10,
+            "y": 1,
+          },
+          Object {
+            "part": "def",
+            "x": 11,
+            "y": 2,
+          },
+          Object {
+            "part": "zzz",
+            "x": 16,
+            "y": 3,
+          },
+        ]
+      }
+      style={Object {}}
+    />
+    <AbstractSeries
+      animation={false}
+      customComponent={[Function]}
+      data={
+        Array [
+          Object {
+            "x": 16,
+            "y": 1,
+          },
+          Object {
+            "x": 17,
+            "y": 2,
+          },
+          Object {
+            "x": 22,
+            "y": 3,
+          },
+        ]
+      }
+      style={Object {}}
+    />
+  </FlexibleXYPlot>
+  <div
+    style={
+      Object {
+        "textAlign": "center",
+      }
+    }
+  >
+    Machine Hours
+  </div>
+</div>
+`;

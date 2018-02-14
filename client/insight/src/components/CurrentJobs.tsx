@@ -34,6 +34,7 @@ import * as React from 'react';
 import { connect } from 'react-redux';
 import * as im from 'immutable';
 import { duration } from 'moment';
+import { createSelector } from 'reselect';
 
 import * as api from '../data/api';
 import { Store } from '../data/store';
@@ -53,7 +54,7 @@ interface DataPoint {
   totalPlan: number;
 }
 
-function DisplayJob(job: api.IInProcessJob, proc: number): DataPoint {
+function displayJob(job: api.IInProcessJob, proc: number): DataPoint {
   const totalPlan = job.cyclesOnFirstProcess.reduce((a, b) => a + b, 0);
   const completed = job.completed[proc].reduce((a, b) => a + b, 0);
 
@@ -71,11 +72,16 @@ function DisplayJob(job: api.IInProcessJob, proc: number): DataPoint {
   };
 }
 
-export function JobsToPoints(jobs: ReadonlyArray<Readonly<api.IInProcessJob>>) {
+export interface Props {
+  completedData: ReadonlyArray<{x: number, y: number, part: string}>;
+  planData: ReadonlyArray<{x: number, y: number}>;
+}
+
+export function jobsToPoints(jobs: ReadonlyArray<Readonly<api.IInProcessJob>>): Props {
   const points = im.Seq(jobs)
     .flatMap(j =>
       im.Range(0, j.procsAndPaths.length).map(proc =>
-        DisplayJob(j, proc)
+        displayJob(j, proc)
       )
     )
     .sortBy(pt => pt.part)
@@ -85,21 +91,16 @@ export function JobsToPoints(jobs: ReadonlyArray<Readonly<api.IInProcessJob>>) {
     points.map((pt, i) => ({x: pt.completed, y: i, part: pt.part}))
         .toArray();
   const planData =
-    points.map((pt, i) => ({x: pt.totalPlan, y: i, part: pt.part}))
+    points.map((pt, i) => ({x: pt.totalPlan, y: i}))
         .toArray();
   return {completedData, planData};
-}
-
-export interface Props {
-  jobs: ReadonlyArray<Readonly<api.IInProcessJob>>;
 }
 
 const targetMark = () => (
   <rect x="-2" y="-5" width="4" height="10" fill="black"/>
 );
 
-export function CurrentJobs(p: Props) {
-  const {completedData, planData} = JobsToPoints(p.jobs);
+export function CurrentJobs({completedData, planData}: Props) {
   return (
     <div>
       <FlexibleWidthXYPlot
@@ -119,10 +120,13 @@ export function CurrentJobs(p: Props) {
   );
 }
 
+const jobsToPointsSelector = createSelector(
+  (s: Store) => s.Jobs.current_status.jobs,
+  js => jobsToPoints(Object.values(js))
+);
+
 export default connect(
   (s: Store) => {
-    return {
-        jobs: Object.values(s.Jobs.current_status.jobs)
-    };
+    return jobsToPointsSelector(s);
   }
 )(CurrentJobs);
