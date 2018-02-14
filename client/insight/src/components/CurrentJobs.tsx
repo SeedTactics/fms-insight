@@ -111,7 +111,7 @@ export function CurrentJobs(p: Props) {
         <YAxis tickFormat={(y: number, i: number) => completedData[i].part}/>
         <HorizontalGridLines/>
         <VerticalGridLines/>
-        <HorizontalBarSeries data={completedData}/>
+        <HorizontalBarSeries data={completedData} color="#795548"/>
         <CustomSVGSeries data={planData} customComponent={targetMark}/>
       </FlexibleWidthXYPlot>
       <div style={{'textAlign': 'center'}}>Machine Hours</div>
