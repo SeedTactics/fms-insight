@@ -38,7 +38,7 @@ import { distanceInWordsToNow } from 'date-fns';
 
 import * as api from '../data/api';
 import { Store } from '../data/store';
-import Table, { TableBody, TableRow, TableCell } from 'material-ui/Table';
+import Table, { TableBody, TableRow, TableCell, TableHead } from 'material-ui/Table';
 
 export interface Status {
   readonly name: string;
@@ -54,14 +54,20 @@ export function MachinePalletStatus(p: Props) {
   let lastMsg: JSX.Element | undefined = undefined;
   if (p.lastEvent !== undefined) {
     lastMsg = (
-      <p>
-        Last event {distanceInWordsToNow(p.lastEvent.endUTC)}
+      <p style={{marginBottom: '-10px', color: '#9E9E9E'}}>
+        <small>Last event {distanceInWordsToNow(p.lastEvent.endUTC)} ago</small>
       </p>
     );
   }
   return (
     <div>
       <Table>
+        <TableHead>
+          <TableRow>
+            <TableCell>Resource</TableCell>
+            <TableCell>Status</TableCell>
+          </TableRow>
+        </TableHead>
         <TableBody>
           {
             p.status.map((s, i) => (
@@ -89,15 +95,15 @@ function buildStatus(status: Readonly<api.ICurrentStatus>): ReadonlyArray<Status
   for (let [name, pal] of Object.entries(status.pallets)) {
     switch (pal.currentPalletLocation.loc) {
       case api.PalletLocationEnum.Buffer:
-        palletLocation.set(name, "Buffer #" + pal.currentPalletLocation.num);
+        palletLocation.set(name, 'Buffer #' + pal.currentPalletLocation.num);
         break;
 
       case api.PalletLocationEnum.Cart:
-        palletLocation.set(name, "Cart");
+        palletLocation.set(name, 'Cart');
         break;
 
       default:
-        palletLocation.set(name, pal.currentPalletLocation.group + " #" + pal.currentPalletLocation.num);
+        palletLocation.set(name, pal.currentPalletLocation.group + ' #' + pal.currentPalletLocation.num);
         break;
     }
   }
@@ -108,32 +114,32 @@ function buildStatus(status: Readonly<api.ICurrentStatus>): ReadonlyArray<Status
   for (let m of status.material) {
     switch (m.action.type) {
       case api.ActionType.Machining:
-        loc = palletLocation.get(m.location.pallet || "");
+        loc = palletLocation.get(m.location.pallet || '');
         if (loc !== undefined) {
-          byStation.set(loc, "Machining " + m.partName + "-" + m.process.toString());
+          byStation.set(loc, 'Machining ' + m.partName + '-' + m.process.toString());
         }
         break;
 
       case api.ActionType.Loading:
-        loc = palletLocation.get(m.location.pallet || "");
+        loc = palletLocation.get(m.location.pallet || '');
         if (loc !== undefined) {
-          loc = loc + " Load";
+          loc = loc + ' Load';
           if (byStation.has(loc)) {
-            byStation.set(loc, byStation.get(loc) + ", " + m.partName + "-" + m.process.toString());
+            byStation.set(loc, byStation.get(loc) + ', ' + m.partName + '-' + m.process.toString());
           } else {
-            byStation.set(loc, "Loading " + m.partName + "-" + m.process.toString());
+            byStation.set(loc, 'Loading ' + m.partName + '-' + m.process.toString());
           }
         }
         break;
 
       case api.ActionType.Unloading:
-        loc = palletLocation.get(m.location.pallet || "");
+        loc = palletLocation.get(m.location.pallet || '');
         if (loc !== undefined) {
-          loc = loc + " Unload";
+          loc = loc + ' Unload';
           if (byStation.has(loc)) {
-            byStation.set(loc, byStation.get(loc) + ", " + m.partName + "-" + m.process.toString());
+            byStation.set(loc, byStation.get(loc) + ', ' + m.partName + '-' + m.process.toString());
           } else {
-            byStation.set(loc, "Unloading " + m.partName + "-" + m.process.toString());
+            byStation.set(loc, 'Unloading ' + m.partName + '-' + m.process.toString());
           }
         }
         break;
@@ -142,12 +148,17 @@ function buildStatus(status: Readonly<api.ICurrentStatus>): ReadonlyArray<Status
     }
   }
 
-
-  return im.Seq.Keyed(byStation)
-    .map((status, name) => ({name, status}))
+  const statSeq = im.Seq.Keyed(byStation)
+    .map((st, name) => ({name, status: st}))
     .sortBy((val, s) => s)
-    .valueSeq()
-    .toArray();
+    .valueSeq();
+
+  const palSeq = im.Seq.Keyed(palletLocation)
+    .map((palLoc, pal) => ({name: 'Pallet ' + pal, status: palLoc}))
+    .sortBy(val => val.name)
+    .valueSeq();
+
+  return statSeq.concat(palSeq).toArray();
 }
 
 export const statusSelector = createSelector(
