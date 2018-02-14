@@ -290,7 +290,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/JobsAndExtraParts"
+              "$ref": "#/definitions/PlannedSchedule"
             },
             "x-nullable": false
           }
@@ -308,7 +308,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/JobsAndExtraParts"
+              "$ref": "#/definitions/PlannedSchedule"
             },
             "x-nullable": false
           }
@@ -418,6 +418,59 @@
             "in": "query",
             "required": true,
             "x-nullable": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/material/{materialID}/queue": {
+      "put": {
+        "tags": [
+          "jobs"
+        ],
+        "operationId": "jobs_SetMaterialInQueue",
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "materialID",
+            "in": "path",
+            "required": true,
+            "x-nullable": false,
+            "format": "int64"
+          },
+          {
+            "name": "queue",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-nullable": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "jobs"
+        ],
+        "operationId": "jobs_RemoveMaterialFromQueue",
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "materialID",
+            "in": "path",
+            "required": true,
+            "x-nullable": false,
+            "format": "int64"
           }
         ],
         "responses": {
@@ -1435,7 +1488,7 @@
         }
       }
     },
-    "JobsAndExtraParts": {
+    "PlannedSchedule": {
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -1535,6 +1588,12 @@
           "type": "array",
           "items": {
             "type": "string"
+          }
+        },
+        "_queues": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/QueueSize"
           }
         },
         "LatestScheduleId": {
@@ -1751,6 +1810,29 @@
         "Machining"
       ]
     },
+    "QueueSize": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "MaxSizeBeforeStopLoading",
+        "MaxSizeBeforeStopUnloading"
+      ],
+      "properties": {
+        "MaxSizeBeforeStopLoading": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "MaxSizeBeforeStopUnloading": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/ValueType"
+        }
+      ]
+    },
     "NewJobs": {
       "type": "object",
       "additionalProperties": false,
@@ -1802,29 +1884,6 @@
           "additionalProperties": {
             "$ref": "#/definitions/QueueSize"
           }
-        }
-      },
-      "allOf": [
-        {
-          "$ref": "#/definitions/ValueType"
-        }
-      ]
-    },
-    "QueueSize": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "MaxSizeBeforeStopLoading",
-        "MaxSizeBeforeStopUnloading"
-      ],
-      "properties": {
-        "MaxSizeBeforeStopLoading": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "MaxSizeBeforeStopUnloading": {
-          "type": "integer",
-          "format": "int32"
         }
       },
       "allOf": [
