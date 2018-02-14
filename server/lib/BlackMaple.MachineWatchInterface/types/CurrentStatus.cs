@@ -127,18 +127,23 @@ namespace BlackMaple.MachineWatchInterface
         [DataMember(Name = "loc", IsRequired=true)]
         public PalletLocationEnum Location {get;set;}
 
+        [DataMember(Name = "group", IsRequired=true)]
+        public string StationGroup {get;set;}
+
         [DataMember(Name = "num", IsRequired=true)]
         public int Num {get;set;}
 
-        public PalletLocation(PalletLocationEnum l)
+        public PalletLocation(PalletLocationEnum l, string group)
         {
             Location = l;
+            StationGroup = group;
             Num = 1;
         }
 
-        public PalletLocation(PalletLocationEnum l, int n)
+        public PalletLocation(PalletLocationEnum l, string group, int n)
         {
             Location = l;
+            StationGroup = group;
             Num = n;
         }
 
@@ -146,6 +151,11 @@ namespace BlackMaple.MachineWatchInterface
         {
             PalletLocation other = (PalletLocation)obj;
             int cmp = Location.CompareTo(other.Location);
+            if (cmp < 0)
+                return -1;
+            if (cmp > 0)
+                return 1;
+            cmp = StationGroup.CompareTo(other.StationGroup);
             if (cmp < 0)
                 return -1;
             if (cmp > 0)

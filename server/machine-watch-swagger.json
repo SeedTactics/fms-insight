@@ -47,7 +47,7 @@
         }
       }
     },
-    "/api/v1/inspection/pallet/{pallet}/{location}/{inspectionType}": {
+    "/api/v1/inspection/next-piece/{inspectionType}": {
       "put": {
         "tags": [
           "inspection"
@@ -55,35 +55,19 @@
         "operationId": "inspection_NextPieceInspection",
         "parameters": [
           {
-            "type": "integer",
-            "name": "pallet",
-            "in": "path",
-            "required": true,
-            "x-nullable": false,
-            "format": "int32"
-          },
-          {
-            "type": "string",
-            "name": "location",
-            "in": "path",
-            "required": true,
-            "x-schema": {
-              "$ref": "#/definitions/PalletLocationEnum"
-            },
-            "x-nullable": false,
-            "enum": [
-              "LoadUnload",
-              "Machine",
-              "MachineQueue",
-              "Buffer",
-              "Cart"
-            ]
-          },
-          {
             "type": "string",
             "name": "inspectionType",
             "in": "path",
             "required": true,
+            "x-nullable": false
+          },
+          {
+            "name": "loc",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/PalletLocation"
+            },
             "x-nullable": false
           }
         ],
@@ -954,6 +938,32 @@
     }
   },
   "definitions": {
+    "PalletLocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "loc",
+        "group",
+        "num"
+      ],
+      "properties": {
+        "loc": {
+          "$ref": "#/definitions/PalletLocationEnum"
+        },
+        "group": {
+          "type": "string"
+        },
+        "num": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/ValueType"
+        }
+      ]
+    },
     "PalletLocationEnum": {
       "type": "string",
       "description": "",
@@ -971,6 +981,11 @@
         "Buffer",
         "Cart"
       ]
+    },
+    "ValueType": {
+      "type": "object",
+      "x-abstract": true,
+      "additionalProperties": false
     },
     "InspectCount": {
       "type": "object",
@@ -998,11 +1013,6 @@
           "$ref": "#/definitions/ValueType"
         }
       ]
-    },
-    "ValueType": {
-      "type": "object",
-      "x-abstract": true,
-      "additionalProperties": false
     },
     "InspectionType": {
       "type": "object",
@@ -1658,28 +1668,6 @@
           "format": "decimal"
         }
       }
-    },
-    "PalletLocation": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "loc",
-        "num"
-      ],
-      "properties": {
-        "loc": {
-          "$ref": "#/definitions/PalletLocationEnum"
-        },
-        "num": {
-          "type": "integer",
-          "format": "int32"
-        }
-      },
-      "allOf": [
-        {
-          "$ref": "#/definitions/ValueType"
-        }
-      ]
     },
     "InProcessMaterial": {
       "type": "object",

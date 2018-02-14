@@ -226,7 +226,7 @@ namespace MachineWatchTest {
 			cnt.LastUTC = DateTime.UtcNow.AddHours(-10);
 			_insp.SetInspectCounts(new InspectCount[] {cnt});
 
-			PalletLocation palLoc = new PalletLocation(PalletLocationEnum.Machine, 1);
+			PalletLocation palLoc = new PalletLocation(PalletLocationEnum.Machine, "MC", 1);
 
 			_insp.NextPieceInspection(palLoc, "insp1");
 			_insp.CheckMaterialForNextPeiceInspection(palLoc, 1);

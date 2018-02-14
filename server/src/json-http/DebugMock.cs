@@ -697,7 +697,7 @@ namespace MachineWatchApiServer
             return new PalletStatus() {
                 Pallet = "1",
                 FixtureOnPallet = "fix1",
-                CurrentPalletLocation = new PalletLocation(PalletLocationEnum.LoadUnload, 1)
+                CurrentPalletLocation = new PalletLocation(PalletLocationEnum.LoadUnload, "Load", 1)
             };
         }
 

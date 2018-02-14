@@ -53,10 +53,10 @@ namespace MachineWatchApiServer.Controllers
             _server.ForceInspection(materialID, inspectionType);
         }
 
-        [HttpPut ("pallet/{pallet}/{location}/{inspectionType}")]
-        public void NextPieceInspection(int pallet, PalletLocationEnum location, string inspectionType)
+        [HttpPut ("next-piece/{inspectionType}")]
+        public void NextPieceInspection(string inspectionType, [FromBody] PalletLocation loc)
         {
-            _server.NextPieceInspection(new PalletLocation(location, pallet), inspectionType);
+            _server.NextPieceInspection(loc, inspectionType);
         }
 
 
