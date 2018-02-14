@@ -61,12 +61,13 @@ namespace BlackMaple.MachineWatchInterface
         List<JobAndDecrementQuantity> DecrementJobQuantites(string loadDecrementsStrictlyAfterDecrementId);
         List<JobAndDecrementQuantity> DecrementJobQuantites(DateTime loadDecrementsAfterTimeUTC);
 
-        //Editing in-process queues
+        //In-process queues
 
+        List<string> GetSerialsInQueue(string queue);
         /// Set or replace a piece of material into a queue.  If it is currently in another queue, it
         /// will be removed from that queue and placed in the target queue.
-        void SetMaterialInQueue(long matID, string queue);
-        void RemoveMaterialFromQueue(long matID);
+        void SetMaterialInQueue(string serial, string queue);
+        void RemoveMaterialFromQueue(string serial);
     }
 
     public interface IOldJobDecrement

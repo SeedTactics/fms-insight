@@ -163,11 +163,18 @@ namespace MachineWatchApiServer
             throw new NotImplementedException();
         }
 
-        public void SetMaterialInQueue(long matID, string queue) {
+        public List<string> GetSerialsInQueue(string queue)
+        {
+            return new List<string>();
+        }
+
+        public void SetMaterialInQueue(string serial, string queue)
+        {
             // do nothing
         }
 
-        public void RemoveMaterialFromQueue(long matID) {
+        public void RemoveMaterialFromQueue(string serial)
+        {
             // do nothing
         }
     }

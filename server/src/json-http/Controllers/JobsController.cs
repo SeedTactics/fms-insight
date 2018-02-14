@@ -92,15 +92,20 @@ namespace MachineWatchApiServer.Controllers
             _control.AddJobs(newJobs, expectedPreviousScheduleId);
         }
 
-        [HttpPut("material/{materialID}/queue")]
-        public void SetMaterialInQueue(long materialID, [FromBody] string queue) {
-            _control.SetMaterialInQueue(materialID, queue);
+        [HttpGet("queue/{queue}/serials")]
+        public List<string> SerialsInQueue(string queue) {
+            return _control.GetSerialsInQueue(queue);
         }
 
-        [HttpDelete("material/{materialID}/queue")]
-        public void RemoveMaterialFromQueue(long materialID)
+        [HttpPut("material/{serial}/queue")]
+        public void SetMaterialInQueue(string serial, [FromBody] string queue) {
+            _control.SetMaterialInQueue(serial, queue);
+        }
+
+        [HttpDelete("material/{serial}/queue")]
+        public void RemoveMaterialFromQueue(string serial)
         {
-            _control.RemoveMaterialFromQueue(materialID);
+            _control.RemoveMaterialFromQueue(serial);
         }
 
         [HttpDelete("planned-cycles")]
