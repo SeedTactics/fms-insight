@@ -162,6 +162,14 @@ namespace MachineWatchApiServer
         {
             throw new NotImplementedException();
         }
+
+        public void SetMaterialInQueue(long matID, string queue) {
+            // do nothing
+        }
+
+        public void RemoveMaterialFromQueue(long matID) {
+            // do nothing
+        }
     }
 
     public class LogEntryGenerator

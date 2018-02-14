@@ -86,11 +86,21 @@ namespace MachineWatchApiServer.Controllers
             return _control.CheckValidRoutes(jobs);
         }
 
-        // POST api/values
         [HttpPost("add")]
         public void Add([FromBody]NewJobs newJobs, [FromQuery] string expectedPreviousScheduleId)
         {
             _control.AddJobs(newJobs, expectedPreviousScheduleId);
+        }
+
+        [HttpPut("material/{materialID}/queue")]
+        public void SetMaterialInQueue(long materialID, [FromBody] string queue) {
+            _control.SetMaterialInQueue(materialID, queue);
+        }
+
+        [HttpDelete("material/{materialID}/queue")]
+        public void RemoveMaterialFromQueue(long materialID)
+        {
+            _control.RemoveMaterialFromQueue(materialID);
         }
 
         [HttpDelete("planned-cycles")]
