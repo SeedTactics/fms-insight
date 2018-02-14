@@ -32,10 +32,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
 import Grid from 'material-ui/Grid/Grid';
-import Card, { CardContent, CardHeader } from 'material-ui/Card';
+import Card, { CardContent } from 'material-ui/Card';
 
 import StationOEEs from './StationOEE';
-import RecentEvents from './RecentEvents';
+import MachinePalletStatus from './MachinePalletStatus';
 import CurrentJobs from './CurrentJobs';
 
 export default function Dashboard() {
@@ -52,9 +52,8 @@ export default function Dashboard() {
         </Grid>
         <Grid item xs={12} sm={6}>
           <Card>
-            <CardHeader title="Current Status"/>
             <CardContent>
-              <RecentEvents/>
+              <MachinePalletStatus/>
             </CardContent>
           </Card>
         </Grid>

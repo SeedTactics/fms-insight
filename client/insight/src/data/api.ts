@@ -53,20 +53,17 @@ export class InspectionClient {
         return Promise.resolve<void>(<any>null);
     }
 
-    nextPieceInspection(pallet: number, location: PalletLocationEnum, inspectionType: string): Promise<void> {
-        let url_ = this.baseUrl + "/api/v1/inspection/pallet/{pallet}/{location}/{inspectionType}";
-        if (pallet === undefined || pallet === null)
-            throw new Error("The parameter 'pallet' must be defined.");
-        url_ = url_.replace("{pallet}", encodeURIComponent("" + pallet));
-        if (location === undefined || location === null)
-            throw new Error("The parameter 'location' must be defined.");
-        url_ = url_.replace("{location}", encodeURIComponent("" + location));
+    nextPieceInspection(inspectionType: string, loc: PalletLocation): Promise<void> {
+        let url_ = this.baseUrl + "/api/v1/inspection/next-piece/{inspectionType}";
         if (inspectionType === undefined || inspectionType === null)
             throw new Error("The parameter 'inspectionType' must be defined.");
         url_ = url_.replace("{inspectionType}", encodeURIComponent("" + inspectionType));
         url_ = url_.replace(/[?&]$/, "");
 
+        const content_ = JSON.stringify(loc);
+
         let options_ = <RequestInit>{
+            body: content_,
             method: "PUT",
             headers: new Headers({
                 "Content-Type": "application/json",
@@ -1340,14 +1337,6 @@ export class ServerClient {
     }
 }
 
-export enum PalletLocationEnum {
-    LoadUnload = <any>"LoadUnload",
-    Machine = <any>"Machine",
-    MachineQueue = <any>"MachineQueue",
-    Buffer = <any>"Buffer",
-    Cart = <any>"Cart",
-}
-
 export abstract class ValueType implements IValueType {
 
     constructor(data?: IValueType) {
@@ -1376,6 +1365,55 @@ export abstract class ValueType implements IValueType {
 }
 
 export interface IValueType {
+}
+
+export class PalletLocation extends ValueType implements IPalletLocation {
+    loc: PalletLocationEnum;
+    group: string;
+    num: number;
+
+    constructor(data?: IPalletLocation) {
+        super(data);
+    }
+
+    init(data?: any) {
+        super.init(data);
+        if (data) {
+            this.loc = data["loc"];
+            this.group = data["group"];
+            this.num = data["num"];
+        }
+    }
+
+    static fromJS(data: any): PalletLocation {
+        data = typeof data === 'object' ? data : {};
+        let result = new PalletLocation();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["loc"] = this.loc;
+        data["group"] = this.group;
+        data["num"] = this.num;
+        super.toJSON(data);
+        return data;
+    }
+}
+
+export interface IPalletLocation extends IValueType {
+    loc: PalletLocationEnum;
+    group: string;
+    num: number;
+}
+
+export enum PalletLocationEnum {
+    LoadUnload = <any>"LoadUnload",
+    Machine = <any>"Machine",
+    MachineQueue = <any>"MachineQueue",
+    Buffer = <any>"Buffer",
+    Cart = <any>"Cart",
 }
 
 export class InspectCount extends ValueType implements IInspectCount {
@@ -2556,43 +2594,6 @@ export interface IPalletStatus {
     newFixture?: string;
     targetLocation?: PalletLocation;
     percentMoveCompleted?: number;
-}
-
-export class PalletLocation extends ValueType implements IPalletLocation {
-    loc: PalletLocationEnum;
-    num: number;
-
-    constructor(data?: IPalletLocation) {
-        super(data);
-    }
-
-    init(data?: any) {
-        super.init(data);
-        if (data) {
-            this.loc = data["loc"];
-            this.num = data["num"];
-        }
-    }
-
-    static fromJS(data: any): PalletLocation {
-        data = typeof data === 'object' ? data : {};
-        let result = new PalletLocation();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["loc"] = this.loc;
-        data["num"] = this.num;
-        super.toJSON(data);
-        return data;
-    }
-}
-
-export interface IPalletLocation extends IValueType {
-    loc: PalletLocationEnum;
-    num: number;
 }
 
 export class InProcessMaterial implements IInProcessMaterial {
