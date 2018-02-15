@@ -411,7 +411,57 @@
         }
       }
     },
-    "/api/v1/jobs/material/{materialID}/queue": {
+    "/queues": {
+      "get": {
+        "tags": [
+          "jobs"
+        ],
+        "operationId": "jobs_QueueNames",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "x-nullable": true
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/queue/{queue}/serials": {
+      "get": {
+        "tags": [
+          "jobs"
+        ],
+        "operationId": "jobs_SerialsInQueue",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "queue",
+            "in": "path",
+            "required": true,
+            "x-nullable": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "x-nullable": true
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/material/{serial}/queue": {
       "put": {
         "tags": [
           "jobs"
@@ -419,12 +469,11 @@
         "operationId": "jobs_SetMaterialInQueue",
         "parameters": [
           {
-            "type": "integer",
-            "name": "materialID",
+            "type": "string",
+            "name": "serial",
             "in": "path",
             "required": true,
-            "x-nullable": false,
-            "format": "int64"
+            "x-nullable": false
           },
           {
             "name": "queue",
@@ -449,12 +498,11 @@
         "operationId": "jobs_RemoveMaterialFromQueue",
         "parameters": [
           {
-            "type": "integer",
-            "name": "materialID",
+            "type": "string",
+            "name": "serial",
             "in": "path",
             "required": true,
-            "x-nullable": false,
-            "format": "int64"
+            "x-nullable": false
           }
         ],
         "responses": {
@@ -1801,10 +1849,6 @@
     "QueueSize": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "MaxSizeBeforeStopLoading",
-        "MaxSizeBeforeStopUnloading"
-      ],
       "properties": {
         "MaxSizeBeforeStopLoading": {
           "type": "integer",
