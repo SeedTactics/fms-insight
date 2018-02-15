@@ -163,19 +163,50 @@ namespace MachineWatchApiServer
             throw new NotImplementedException();
         }
 
+        public List<string> GetQueueNames()
+        {
+            return new List<string> {
+                "queueaaaa",
+                "queuebbbb"
+            };
+        }
+
+        private List<string> aaaQueue = new List<string> {
+            "aaa1",
+            "aaa2",
+            "aaa3"
+        };
+        private List<string> bbbQueue = new List<string> {
+            "bbb1",
+            "bbb2",
+        };
+
         public List<string> GetSerialsInQueue(string queue)
         {
-            return new List<string>();
+            if (queue == "queueaaa") {
+                return aaaQueue.ToList();
+            } else if (queue == "queuebbb") {
+                return bbbQueue.ToList();
+            } else {
+                return new List<string>();
+            }
         }
 
         public void SetMaterialInQueue(string serial, string queue)
         {
-            // do nothing
+            aaaQueue.Remove(serial);
+            bbbQueue.Remove(serial);
+            if (queue == "queueaaa") {
+                aaaQueue.Add(serial);
+            } else if (queue == "queuebbb") {
+                bbbQueue.Add(serial);
+            }
         }
 
         public void RemoveMaterialFromQueue(string serial)
         {
-            // do nothing
+            aaaQueue.Remove(serial);
+            bbbQueue.Remove(serial);
         }
     }
 

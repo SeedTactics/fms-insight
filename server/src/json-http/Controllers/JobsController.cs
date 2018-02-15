@@ -92,6 +92,11 @@ namespace MachineWatchApiServer.Controllers
             _control.AddJobs(newJobs, expectedPreviousScheduleId);
         }
 
+        [HttpGet("/queues")]
+        public List<string> QueueNames() {
+            return _control.GetQueueNames();
+        }
+
         [HttpGet("queue/{queue}/serials")]
         public List<string> SerialsInQueue(string queue) {
             return _control.GetSerialsInQueue(queue);

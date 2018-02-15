@@ -63,6 +63,7 @@ namespace BlackMaple.MachineWatchInterface
 
         //In-process queues
 
+        List<string> GetQueueNames();
         List<string> GetSerialsInQueue(string queue);
         /// Set or replace a piece of material into a queue.  If it is currently in another queue, it
         /// will be removed from that queue and placed in the target queue.
