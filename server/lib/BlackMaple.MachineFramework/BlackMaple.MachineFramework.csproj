@@ -32,7 +32,7 @@
     </When>
     <Otherwise>
       <ItemGroup>
-        <PackageReference Include="BlackMaple.MachineWatchInterface" Version="5.*"/>
+        <PackageReference Include="BlackMaple.MachineWatchInterface" Version="6.*"/>
       </ItemGroup>
     </Otherwise>
   </Choose>
