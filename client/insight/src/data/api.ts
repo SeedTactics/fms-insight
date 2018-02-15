@@ -1964,10 +1964,13 @@ export interface IJobHoldPattern {
 }
 
 export class ProcessInfo extends ValueType implements IProcessInfo {
-    paths: ProcPathInfo[] = [];
+    paths: ProcPathInfo[];
 
     constructor(data?: IProcessInfo) {
         super(data);
+        if (this.paths === undefined) {
+            this.paths = [];
+        }
     }
 
     init(data?: any) {
@@ -2006,11 +2009,11 @@ export interface IProcessInfo extends IValueType {
 
 export class ProcPathInfo extends ValueType implements IProcPathInfo {
     pathGroup: number;
-    pallets: string[] = [];
+    pallets: string[];
     fixtures?: FixtureFace[];
-    load: number[] = [];
-    unload: number[] = [];
-    stops: JobMachiningStop[] = [];
+    load: number[];
+    unload: number[];
+    stops: JobMachiningStop[];
     simulatedProduction?: SimulatedProduction[];
     simulatedStartingUTC: Date;
     simulatedAverageFlowTime: string;

@@ -88,7 +88,7 @@ it('converts events to points', () => {
                   stations: { "1": "progabc" },
                   tools: {},
                   stationGroup: "MC",
-                  expectedCycleTime: "01:11:00",
+                  expectedCycleTime: "01:15:00",
                 })
               ],
               simulatedStartingUTC: new Date(),

@@ -55,10 +55,12 @@ exports[`current job graph 1`] = `
           },
         ]
       }
+      stack={false}
       style={Object {}}
     />
     <AbstractSeries
       animation={false}
+      className=""
       customComponent={[Function]}
       data={
         Array [
@@ -76,6 +78,7 @@ exports[`current job graph 1`] = `
           },
         ]
       }
+      stack={false}
       style={Object {}}
     />
   </FlexibleXYPlot>
@@ -89,4 +92,31 @@ exports[`current job graph 1`] = `
     Machine Hours
   </div>
 </div>
+`;
+
+exports[`points for sample jobs 1`] = `
+Object {
+  "completedData": Array [
+    Object {
+      "part": "part1-2",
+      "x": 16.5,
+      "y": 0,
+    },
+    Object {
+      "part": "part1-1",
+      "x": 51.25,
+      "y": 1,
+    },
+  ],
+  "planData": Array [
+    Object {
+      "x": 61.5,
+      "y": 0,
+    },
+    Object {
+      "x": 102.5,
+      "y": 1,
+    },
+  ],
+}
 `;
