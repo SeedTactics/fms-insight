@@ -1621,7 +1621,9 @@
       "required": [
         "Jobs",
         "Pallets",
-        "Material"
+        "Material",
+        "Alarms",
+        "Queues"
       ],
       "properties": {
         "Jobs": {
@@ -1648,7 +1650,7 @@
             "type": "string"
           }
         },
-        "_queues": {
+        "Queues": {
           "type": "object",
           "additionalProperties": {
             "$ref": "#/definitions/QueueSize"
