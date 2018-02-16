@@ -255,10 +255,10 @@ namespace BlackMaple.MachineWatchInterface
         [DataMember(Name="Material", IsRequired=true)]
         private List<InProcessMaterial> _material;
 
-        [DataMember(Name="Alarms", IsRequired=false, EmitDefaultValue=false)]
+        [DataMember(Name="Alarms", IsRequired=true)]
         private List<string> _alarms;
 
-        [OptionalField, DataMember(IsRequired=false, EmitDefaultValue=false)]
+        [DataMember(Name="Queues", IsRequired=true)]
         public Dictionary<string, QueueSize> _queues;
     }
 
