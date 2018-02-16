@@ -635,53 +635,11 @@ export class JobsClient {
         return Promise.resolve<string[]>(<any>null);
     }
 
-    serialsInQueue(queue: string): Promise<string[]> {
-        let url_ = this.baseUrl + "/api/v1/jobs/queue/{queue}/serials";
-        if (queue === undefined || queue === null)
-            throw new Error("The parameter 'queue' must be defined.");
-        url_ = url_.replace("{queue}", encodeURIComponent("" + queue));
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_ = <RequestInit>{
-            method: "GET",
-            headers: new Headers({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processSerialsInQueue(_response);
-        });
-    }
-
-    protected processSerialsInQueue(response: Response): Promise<string[]> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            if (resultData200 && resultData200.constructor === Array) {
-                result200 = [];
-                for (let item of resultData200)
-                    result200.push(item);
-            }
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<string[]>(<any>null);
-    }
-
-    setMaterialInQueue(serial: string, queue: string): Promise<void> {
-        let url_ = this.baseUrl + "/api/v1/jobs/material/{serial}/queue";
-        if (serial === undefined || serial === null)
-            throw new Error("The parameter 'serial' must be defined.");
-        url_ = url_.replace("{serial}", encodeURIComponent("" + serial));
+    setMaterialInQueue(materialId: number, queue: string): Promise<void> {
+        let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/queue";
+        if (materialId === undefined || materialId === null)
+            throw new Error("The parameter 'materialId' must be defined.");
+        url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId));
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(queue);
@@ -714,11 +672,11 @@ export class JobsClient {
         return Promise.resolve<void>(<any>null);
     }
 
-    removeMaterialFromQueue(serial: string): Promise<void> {
-        let url_ = this.baseUrl + "/api/v1/jobs/material/{serial}/queue";
-        if (serial === undefined || serial === null)
-            throw new Error("The parameter 'serial' must be defined.");
-        url_ = url_.replace("{serial}", encodeURIComponent("" + serial));
+    removeMaterialFromAllQueues(materialId: number): Promise<void> {
+        let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/queue";
+        if (materialId === undefined || materialId === null)
+            throw new Error("The parameter 'materialId' must be defined.");
+        url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId));
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
@@ -729,11 +687,11 @@ export class JobsClient {
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processRemoveMaterialFromQueue(_response);
+            return this.processRemoveMaterialFromAllQueues(_response);
         });
     }
 
-    protected processRemoveMaterialFromQueue(response: Response): Promise<void> {
+    protected processRemoveMaterialFromAllQueues(response: Response): Promise<void> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {

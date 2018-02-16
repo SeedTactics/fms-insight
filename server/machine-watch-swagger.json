@@ -432,36 +432,7 @@
         }
       }
     },
-    "/api/v1/jobs/queue/{queue}/serials": {
-      "get": {
-        "tags": [
-          "jobs"
-        ],
-        "operationId": "jobs_SerialsInQueue",
-        "parameters": [
-          {
-            "type": "string",
-            "name": "queue",
-            "in": "path",
-            "required": true,
-            "x-nullable": false
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            "x-nullable": true
-          }
-        }
-      }
-    },
-    "/api/v1/jobs/material/{serial}/queue": {
+    "/api/v1/jobs/material/{materialId}/queue": {
       "put": {
         "tags": [
           "jobs"
@@ -469,11 +440,12 @@
         "operationId": "jobs_SetMaterialInQueue",
         "parameters": [
           {
-            "type": "string",
-            "name": "serial",
+            "type": "integer",
+            "name": "materialId",
             "in": "path",
             "required": true,
-            "x-nullable": false
+            "x-nullable": false,
+            "format": "int64"
           },
           {
             "name": "queue",
@@ -495,14 +467,15 @@
         "tags": [
           "jobs"
         ],
-        "operationId": "jobs_RemoveMaterialFromQueue",
+        "operationId": "jobs_RemoveMaterialFromAllQueues",
         "parameters": [
           {
-            "type": "string",
-            "name": "serial",
+            "type": "integer",
+            "name": "materialId",
             "in": "path",
             "required": true,
-            "x-nullable": false
+            "x-nullable": false,
+            "format": "int64"
           }
         ],
         "responses": {
