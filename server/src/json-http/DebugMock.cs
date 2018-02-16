@@ -181,42 +181,42 @@ namespace MachineWatchApiServer
             };
         }
 
-        private List<string> aaaQueue = new List<string> {
-            "aaa1",
-            "aaa2",
-            "aaa3"
+        private List<long> aaaQueue = new List<long> {
+            10,
+            11,
+            12
         };
-        private List<string> bbbQueue = new List<string> {
-            "bbb1",
-            "bbb2",
+        private List<long> bbbQueue = new List<long> {
+            20,
+            21,
         };
 
-        public List<string> GetSerialsInQueue(string queue)
+        public List<long> GetSerialsInQueue(string queue)
         {
             if (queue == "queueaaa") {
                 return aaaQueue.ToList();
             } else if (queue == "queuebbb") {
                 return bbbQueue.ToList();
             } else {
-                return new List<string>();
+                return new List<long>();
             }
         }
 
-        public void SetMaterialInQueue(string serial, string queue)
+        public void SetMaterialInQueue(long materialId, string queue)
         {
-            aaaQueue.Remove(serial);
-            bbbQueue.Remove(serial);
+            aaaQueue.Remove(materialId);
+            bbbQueue.Remove(materialId);
             if (queue == "queueaaa") {
-                aaaQueue.Add(serial);
+                aaaQueue.Add(materialId);
             } else if (queue == "queuebbb") {
-                bbbQueue.Add(serial);
+                bbbQueue.Add(materialId);
             }
         }
 
-        public void RemoveMaterialFromQueue(string serial)
+        public void RemoveMaterialFromAllQueues(long materialId)
         {
-            aaaQueue.Remove(serial);
-            bbbQueue.Remove(serial);
+            aaaQueue.Remove(materialId);
+            bbbQueue.Remove(materialId);
         }
     }
 
