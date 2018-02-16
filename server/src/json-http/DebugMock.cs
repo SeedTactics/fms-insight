@@ -42,6 +42,7 @@ using System.Reflection;
 using Microsoft.Extensions.DependencyModel;
 using System.IO;
 using System.Linq;
+using System.Runtime.Serialization.Json;
 
 #if DEBUG
 namespace MachineWatchApiServer
@@ -95,10 +96,19 @@ namespace MachineWatchApiServer
             sample.AddMonthOfCycles(month, "uniq2", "part2", "pal2", 2, 80, 110);
             sample.AddMonthOfCycles(month, "uniq1", "part1", "pal2", 3, 72, 72);
             sample.AddEntriesToDatabase();
-            SampleJobData.AddJobToHistory(JobDB, "uniq1");
-            SampleJobData.AddJobToHistory(JobDB, "uniq2", j => {
-                j.JobCopiedToSystem = false;
-            });
+
+            var mockPath = System.IO.Path.Combine(
+                System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
+                "../../../mock-jobs.json"
+            );
+            using (var file = System.IO.File.OpenRead(mockPath))
+            {
+                var settings = new DataContractJsonSerializerSettings();
+                settings.DateTimeFormat = new DateTimeFormat("yyyy-MM-ddTHH:mm:ssZ");
+                var s = new DataContractJsonSerializer(typeof(BlackMaple.MachineWatchInterface.NewJobs), settings);
+                var newJobs = (BlackMaple.MachineWatchInterface.NewJobs)s.ReadObject(file);
+                JobDB.AddJobs(newJobs, null);
+            }
         }
 
         public IEnumerable<System.Diagnostics.TraceSource> TraceSources()
