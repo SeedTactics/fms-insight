@@ -58,6 +58,8 @@ namespace BlackMaple.MachineWatchInterface
         // If Type = Loading
         [DataMember(IsRequired=false, EmitDefaultValue=false)] public string LoadOntoPallet {get;set;}
         [DataMember(IsRequired=false, EmitDefaultValue=false)] public int LoadOntoFace {get;set;}
+        [DataMember(IsRequired=false, EmitDefaultValue=false)] public int ProcessAfterLoad {get;set;}
+        [DataMember(IsRequired=false, EmitDefaultValue=false)] public int PathAfterLoad {get;set;}
 
         //If Type = Unloading
         [DataMember(IsRequired=false, EmitDefaultValue=false)] public string UnloadIntoQueue {get;set;}
@@ -85,7 +87,6 @@ namespace BlackMaple.MachineWatchInterface
 
         //If Type == OnPallet
         [DataMember(IsRequired=false, EmitDefaultValue=false)] public string Pallet {get;set;}
-        [DataMember(IsRequired=false, EmitDefaultValue=false)] public string Fixture {get;set;}
         [DataMember(IsRequired=false, EmitDefaultValue=false)] public int Face {get;set;}
 
         //If Type == InQueue

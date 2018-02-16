@@ -2698,7 +2698,6 @@ export interface IInProcessMaterial {
 export class InProcessMaterialLocation implements IInProcessMaterialLocation {
     type: LocType;
     pallet?: string;
-    fixture?: string;
     face: number;
     currentQueue?: string;
 
@@ -2715,7 +2714,6 @@ export class InProcessMaterialLocation implements IInProcessMaterialLocation {
         if (data) {
             this.type = data["Type"];
             this.pallet = data["Pallet"];
-            this.fixture = data["Fixture"];
             this.face = data["Face"];
             this.currentQueue = data["CurrentQueue"];
         }
@@ -2732,7 +2730,6 @@ export class InProcessMaterialLocation implements IInProcessMaterialLocation {
         data = typeof data === 'object' ? data : {};
         data["Type"] = this.type;
         data["Pallet"] = this.pallet;
-        data["Fixture"] = this.fixture;
         data["Face"] = this.face;
         data["CurrentQueue"] = this.currentQueue;
         return data;
@@ -2742,7 +2739,6 @@ export class InProcessMaterialLocation implements IInProcessMaterialLocation {
 export interface IInProcessMaterialLocation {
     type: LocType;
     pallet?: string;
-    fixture?: string;
     face: number;
     currentQueue?: string;
 }
@@ -2757,6 +2753,8 @@ export class InProcessMaterialAction implements IInProcessMaterialAction {
     type: ActionType;
     loadOntoPallet?: string;
     loadOntoFace: number;
+    processAfterLoad: number;
+    pathAfterLoad: number;
     unloadIntoQueue?: string;
     program?: string;
     elapsedMachiningTime?: string;
@@ -2776,6 +2774,8 @@ export class InProcessMaterialAction implements IInProcessMaterialAction {
             this.type = data["Type"];
             this.loadOntoPallet = data["LoadOntoPallet"];
             this.loadOntoFace = data["LoadOntoFace"];
+            this.processAfterLoad = data["ProcessAfterLoad"];
+            this.pathAfterLoad = data["PathAfterLoad"];
             this.unloadIntoQueue = data["UnloadIntoQueue"];
             this.program = data["Program"];
             this.elapsedMachiningTime = data["ElapsedMachiningTime"];
@@ -2795,6 +2795,8 @@ export class InProcessMaterialAction implements IInProcessMaterialAction {
         data["Type"] = this.type;
         data["LoadOntoPallet"] = this.loadOntoPallet;
         data["LoadOntoFace"] = this.loadOntoFace;
+        data["ProcessAfterLoad"] = this.processAfterLoad;
+        data["PathAfterLoad"] = this.pathAfterLoad;
         data["UnloadIntoQueue"] = this.unloadIntoQueue;
         data["Program"] = this.program;
         data["ElapsedMachiningTime"] = this.elapsedMachiningTime;
@@ -2807,6 +2809,8 @@ export interface IInProcessMaterialAction {
     type: ActionType;
     loadOntoPallet?: string;
     loadOntoFace: number;
+    processAfterLoad: number;
+    pathAfterLoad: number;
     unloadIntoQueue?: string;
     program?: string;
     elapsedMachiningTime?: string;
