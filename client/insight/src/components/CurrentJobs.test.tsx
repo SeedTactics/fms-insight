@@ -37,7 +37,7 @@ import { shallow } from 'enzyme';
 import { jobsToPoints, CurrentJobs } from './CurrentJobs';
 import * as api from '../data/api';
 
-it("renders the current jobs", () => {
+it('renders the current jobs', () => {
   const completedData = [
     {x: 10, y: 1, part: 'abc'},
     {x: 11, y: 2, part: 'def'},

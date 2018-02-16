@@ -44,7 +44,9 @@ const initial: State = {
     current_status: {
         jobs: {},
         pallets: {},
-        material: []
+        material: [],
+        alarms: [],
+        queues: {}
     }
 };
 
