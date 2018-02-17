@@ -4,6 +4,7 @@ declare module 'react-vis' {
 
   export class XYPlot extends React.Component<any> {}
   export class FlexibleWidthXYPlot extends React.Component<any> {}
+  export class FlexibleXYPlot extends React.Component<any> {}
 
   export class HorizontalBarSeries extends React.Component<any> {}
   export class VerticalBarSeries extends React.Component<any> {}

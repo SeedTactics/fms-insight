@@ -33,5 +33,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from 'react';
 
 export default function StationMonitor() {
-  return <p>Station Monitor Page</p>;
+  return (
+    <main style={{'padding': '8px'}}>
+      <p>Station Monitor Page</p>;
+    </main>
+  );
 }

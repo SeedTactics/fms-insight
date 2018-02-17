@@ -1,97 +1,151 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`current job graph 1`] = `
-<div>
-  <FlexibleXYPlot
-    height={500}
-    margin={
-      Object {
-        "bottom": 40,
-        "left": 70,
-        "right": 10,
-        "top": 10,
-      }
+exports[`current job graph filling viewport 1`] = `
+<FillViewportPlot
+  cnt={3}
+>
+  <XAxis
+    attr="x"
+    attrAxis="y"
+    orientation="bottom"
+  />
+  <YAxis
+    attr="y"
+    attrAxis="x"
+    orientation="left"
+    tickFormat={[Function]}
+  />
+  <HorizontalGridLines
+    attr="y"
+    direction="horizontal"
+  />
+  <VerticalGridLines
+    attr="x"
+    direction="vertical"
+  />
+  <HorizontalBarSeries
+    className=""
+    color="#795548"
+    data={
+      Array [
+        Object {
+          "part": "ddd",
+          "x": 12,
+          "y": 1,
+        },
+        Object {
+          "part": "eee",
+          "x": 7,
+          "y": 2,
+        },
+        Object {
+          "part": "fff",
+          "x": 9,
+          "y": 3,
+        },
+      ]
     }
-    yType="ordinal"
-  >
-    <XAxis
-      attr="x"
-      attrAxis="y"
-      orientation="bottom"
-    />
-    <YAxis
-      attr="y"
-      attrAxis="x"
-      orientation="left"
-      tickFormat={[Function]}
-    />
-    <HorizontalGridLines
-      attr="y"
-      direction="horizontal"
-    />
-    <VerticalGridLines
-      attr="x"
-      direction="vertical"
-    />
-    <HorizontalBarSeries
-      className=""
-      color="#795548"
-      data={
-        Array [
-          Object {
-            "part": "abc",
-            "x": 10,
-            "y": 1,
-          },
-          Object {
-            "part": "def",
-            "x": 11,
-            "y": 2,
-          },
-          Object {
-            "part": "zzz",
-            "x": 16,
-            "y": 3,
-          },
-        ]
-      }
-      stack={false}
-      style={Object {}}
-    />
-    <AbstractSeries
-      animation={false}
-      className=""
-      customComponent={[Function]}
-      data={
-        Array [
-          Object {
-            "x": 16,
-            "y": 1,
-          },
-          Object {
-            "x": 17,
-            "y": 2,
-          },
-          Object {
-            "x": 22,
-            "y": 3,
-          },
-        ]
-      }
-      stack={false}
-      style={Object {}}
-    />
-  </FlexibleXYPlot>
-  <div
-    style={
-      Object {
-        "textAlign": "center",
-      }
+    stack={false}
+    style={Object {}}
+  />
+  <AbstractSeries
+    animation={false}
+    className=""
+    customComponent={[Function]}
+    data={
+      Array [
+        Object {
+          "x": 40,
+          "y": 1,
+        },
+        Object {
+          "x": 33,
+          "y": 2,
+        },
+        Object {
+          "x": 24,
+          "y": 3,
+        },
+      ]
     }
-  >
-    Machine Hours
-  </div>
-</div>
+    stack={false}
+    style={Object {}}
+  />
+</FillViewportPlot>
+`;
+
+exports[`current job graph scrollable 1`] = `
+<ScrollablePlot
+  cnt={3}
+>
+  <XAxis
+    attr="x"
+    attrAxis="y"
+    orientation="bottom"
+  />
+  <YAxis
+    attr="y"
+    attrAxis="x"
+    orientation="left"
+    tickFormat={[Function]}
+  />
+  <HorizontalGridLines
+    attr="y"
+    direction="horizontal"
+  />
+  <VerticalGridLines
+    attr="x"
+    direction="vertical"
+  />
+  <HorizontalBarSeries
+    className=""
+    color="#795548"
+    data={
+      Array [
+        Object {
+          "part": "abc",
+          "x": 10,
+          "y": 1,
+        },
+        Object {
+          "part": "def",
+          "x": 11,
+          "y": 2,
+        },
+        Object {
+          "part": "zzz",
+          "x": 16,
+          "y": 3,
+        },
+      ]
+    }
+    stack={false}
+    style={Object {}}
+  />
+  <AbstractSeries
+    animation={false}
+    className=""
+    customComponent={[Function]}
+    data={
+      Array [
+        Object {
+          "x": 16,
+          "y": 1,
+        },
+        Object {
+          "x": 17,
+          "y": 2,
+        },
+        Object {
+          "x": 22,
+          "y": 3,
+        },
+      ]
+    }
+    stack={false}
+    style={Object {}}
+  />
+</ScrollablePlot>
 `;
 
 exports[`points for sample jobs 1`] = `

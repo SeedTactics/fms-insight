@@ -34,6 +34,8 @@ import * as React from 'react';
 
 export default function CostPerPiece() {
   return (
-    <p>Cost/Piece page</p>
+    <main style={{'padding': '8px'}}>
+      <p>Cost/Piece page</p>;
+    </main>
   );
 }

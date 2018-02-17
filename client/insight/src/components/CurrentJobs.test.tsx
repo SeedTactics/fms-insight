@@ -49,8 +49,24 @@ it('renders the current jobs', () => {
     {x: 22, y: 3}
   ];
   const val = shallow(
-    <CurrentJobs completedData={completedData} planData={planData}/>);
-  expect(val).toMatchSnapshot('current job graph');
+    <CurrentJobs completedData={completedData} planData={planData} fillViewport={false}/>);
+  expect(val).toMatchSnapshot('current job graph scrollable');
+});
+
+it('renders the current jobs with filling viewport', () => {
+  const completedData = [
+    {x: 12, y: 1, part: 'ddd'},
+    {x: 7, y: 2, part: 'eee'},
+    {x: 9, y: 3, part: 'fff'}
+  ];
+  const planData = [
+    {x: 40, y: 1},
+    {x: 33, y: 2},
+    {x: 24, y: 3}
+  ];
+  const val = shallow(
+    <CurrentJobs completedData={completedData} planData={planData} fillViewport={true}/>);
+  expect(val).toMatchSnapshot('current job graph filling viewport');
 });
 
 it('converts events to points', () => {

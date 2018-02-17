@@ -56,13 +56,7 @@ const tabsStyle = {
   'flex-grow': '1'
 };
 
-class App extends React.Component {
-  componentDidMount() {
-    store.dispatch(requestLastMonth());
-    store.dispatch(loadCurrentStatus());
-  }
-
-  render() {
+function Header() {
     const tabs = (full: boolean) => (
       <Tabs fullWidth={full} style={full ? {} : tabsStyle} value={location.pathname} onChange={(e, v) => v}>
         <LinkTab label="Dashboard" component={Link} to="/" value="/"/>
@@ -94,19 +88,31 @@ class App extends React.Component {
     );
 
     return (
-      <div className="App">
+      <nav id="navHeader">
         <Hidden smDown>
           {largeAppBar}
         </Hidden>
         <Hidden mdUp>
           {smallAppBar}
         </Hidden>
-        <main style={{margin: '8px'}}>
-          <Route exact path="/" component={Dashboard}/>
-          <Route exact path="/station" component={StationMonitor}/>
-          <Route exact path="/cost" component={CostPerPiece}/>
-          <Route exact path="/efficiency" component={Efficiency}/>
-        </main>
+      </nav>
+    );
+}
+
+class App extends React.Component {
+  componentDidMount() {
+    store.dispatch(requestLastMonth());
+    store.dispatch(loadCurrentStatus());
+  }
+
+  render() {
+    return (
+      <div id="App">
+        <Header/>
+        <Route exact path="/" component={Dashboard}/>
+        <Route exact path="/station" component={StationMonitor}/>
+        <Route exact path="/cost" component={CostPerPiece}/>
+        <Route exact path="/efficiency" component={Efficiency}/>
       </div>
     );
   }

@@ -40,6 +40,7 @@ import * as api from '../data/api';
 import { Store } from '../data/store';
 import {
   FlexibleWidthXYPlot,
+  FlexibleXYPlot,
   HorizontalBarSeries,
   XAxis,
   YAxis,
@@ -72,12 +73,12 @@ function displayJob(job: api.IInProcessJob, proc: number): DataPoint {
   };
 }
 
-export interface Props {
+export interface DataPoints {
   completedData: ReadonlyArray<{x: number, y: number, part: string}>;
   planData: ReadonlyArray<{x: number, y: number}>;
 }
 
-export function jobsToPoints(jobs: ReadonlyArray<Readonly<api.IInProcessJob>>): Props {
+export function jobsToPoints(jobs: ReadonlyArray<Readonly<api.IInProcessJob>>): DataPoints {
   const points = im.Seq(jobs)
     .flatMap(j =>
       im.Range(0, j.procsAndPaths.length).map(proc =>
@@ -100,23 +101,59 @@ const targetMark = () => (
   <rect x="-2" y="-5" width="4" height="10" fill="black"/>
 );
 
-export function CurrentJobs({completedData, planData}: Props) {
+interface PlotProps {
+  cnt: number;
+  children: JSX.Element[];
+}
+
+function FillViewportPlot({children}: PlotProps) {
+  return (
+    <div style={{'flexGrow': 1, 'display': 'flex', 'flexDirection': 'column'}}>
+      <div style={{'flexGrow': 1, 'position': 'relative'}}>
+        <div style={{'position': 'absolute', 'top': 0, 'left': 0, 'bottom': 0, 'right': 0}}>
+          <FlexibleXYPlot
+              margin={{left: 70, right: 10, top: 10, bottom: 40}}
+              yType="ordinal"
+          >
+            {children}
+          </FlexibleXYPlot>
+        </div>
+      </div>
+      <div style={{'textAlign': 'center', 'marginBottom': '8px', 'color': '#6b6b76'}}>Machine Hours</div>
+    </div>
+  );
+}
+
+function ScrollablePlot({children, cnt}: PlotProps) {
   return (
     <div>
       <FlexibleWidthXYPlot
-          height={500}
+          height={cnt * 40}
           margin={{left: 70, right: 10, top: 10, bottom: 40}}
           yType="ordinal"
       >
-        <XAxis/>
-        <YAxis tickFormat={(y: number, i: number) => completedData[i].part}/>
-        <HorizontalGridLines/>
-        <VerticalGridLines/>
-        <HorizontalBarSeries data={completedData} color="#795548"/>
-        <CustomSVGSeries data={planData} customComponent={targetMark}/>
+        {children}
       </FlexibleWidthXYPlot>
       <div style={{'textAlign': 'center'}}>Machine Hours</div>
     </div>
+  );
+}
+
+export interface Props extends DataPoints {
+  fillViewport: boolean;
+}
+
+export function CurrentJobs({completedData, planData, fillViewport}: Props) {
+  const Plot = fillViewport ? FillViewportPlot : ScrollablePlot;
+  return (
+    <Plot cnt={completedData.length}>
+      <XAxis/>
+      <YAxis tickFormat={(y: number, i: number) => completedData[i].part}/>
+      <HorizontalGridLines/>
+      <VerticalGridLines/>
+      <HorizontalBarSeries data={completedData} color="#795548"/>
+      <CustomSVGSeries data={planData} customComponent={targetMark}/>
+    </Plot>
   );
 }
 

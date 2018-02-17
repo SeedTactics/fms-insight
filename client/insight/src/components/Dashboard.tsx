@@ -33,31 +33,63 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from 'react';
 import Grid from 'material-ui/Grid/Grid';
 import Card, { CardContent } from 'material-ui/Card';
+import Hidden from 'material-ui/Hidden';
 
 import StationOEEs from './StationOEE';
-import MachinePalletStatus from './MachinePalletStatus';
+// import MachinePalletStatus from './MachinePalletStatus';
 import CurrentJobs from './CurrentJobs';
 
-export default function Dashboard() {
+function FillViewportDashboard() {
   return (
-    <div>
-      <StationOEEs/>
+    <main style={{'height': 'calc(100vh - 64px)', 'display': 'flex'}}>
+      <div style={{'flexBasis': '50%', 'padding': '8px', 'display': 'flex', 'flexDirection': 'column'}}>
+        <Card style={{'flexGrow': 1, 'display': 'flex', 'flexDirection': 'column'}}>
+          <CurrentJobs fillViewport={true}/>
+        </Card>
+      </div>
+      <div style={{'flexBasis': '50%', 'padding': '8px', 'display': 'flex', 'flexDirection': 'column'}}>
+        <Card style={{'flexGrow': 1}}>
+          <CardContent style={{'overflow': 'auto'}}>
+            <StationOEEs/>
+          </CardContent>
+        </Card>
+      </div>
+    </main>
+  );
+}
+
+function ScrollableDashboard() {
+  return (
+    <main style={{'padding': '8px'}}>
       <Grid container>
         <Grid item xs={12} sm={6}>
           <Card>
             <CardContent>
-              <CurrentJobs/>
+              <CurrentJobs fillViewport={false}/>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6}>
           <Card>
             <CardContent>
-              <MachinePalletStatus/>
+              <StationOEEs/>
             </CardContent>
           </Card>
         </Grid>
       </Grid>
+    </main>
+  );
+}
+
+export default function Dashboard() {
+  return (
+    <div>
+      <Hidden mdDown>
+        <FillViewportDashboard/>
+      </Hidden>
+      <Hidden lgUp>
+        <ScrollableDashboard/>
+      </Hidden>
     </div>
   );
 }
