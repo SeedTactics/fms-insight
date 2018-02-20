@@ -80,7 +80,9 @@ namespace BlackMaple.MachineWatchInterface
         [EnumMember] OrderAssignment = 10,
         [EnumMember] GeneralMessage = 100,
         [EnumMember] PalletCycle = 101,
-        [EnumMember] FinalizeWorkorder = 102
+        [EnumMember] FinalizeWorkorder = 102,
+        [EnumMember] InspectionResult = 103,
+        [EnumMember] Wash = 104
     }
 
     [Serializable, DataContract]

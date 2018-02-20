@@ -33,11 +33,31 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using BlackMaple.MachineWatchInterface;
 
 namespace MachineWatchApiServer.Controllers
 {
+    [DataContract] public struct NewInspectionCompleted
+    {
+        [DataMember(IsRequired=true)] public LogMaterial Material {get;set;}
+        [DataMember(IsRequired=true)] public int InspectionLocationNum {get;set;}
+        [DataMember(IsRequired=true)] public string InspectionType {get;set;}
+        [DataMember(IsRequired=false)] public Dictionary<string, string> ExtraData {get;set;}
+        [DataMember(IsRequired=true)] public TimeSpan Elapsed {get;set;}
+        [DataMember(IsRequired=true)] public TimeSpan Active {get;set;}
+    }
+
+    [DataContract] public struct NewWash
+    {
+        [DataMember(IsRequired=true)] public LogMaterial Material {get;set;}
+        [DataMember(IsRequired=true)] public int WashLocationNum {get;set;}
+        [DataMember(IsRequired=false)] public Dictionary<string, string> ExtraData {get;set;}
+        [DataMember(IsRequired=true)] public TimeSpan Elapsed {get;set;}
+        [DataMember(IsRequired=true)] public TimeSpan Active {get;set;}
+    }
+
     [Route("api/v1/[controller]")]
     public class logController : ControllerBase
     {
@@ -100,6 +120,31 @@ namespace MachineWatchApiServer.Controllers
         public LogEntry SetWorkorder(string workorder, [FromBody] LogMaterial mat)
         {
             return _server.RecordWorkorderForMaterialID(mat, workorder);
+        }
+
+        [HttpPost("events/inspection-result")]
+        public LogEntry RecordInspectionCompleted([FromBody] NewInspectionCompleted insp)
+        {
+            return _server.RecordInspectionCompleted(
+                insp.Material,
+                insp.InspectionLocationNum,
+                insp.InspectionType,
+                insp.ExtraData == null ? new Dictionary<string, string>() : insp.ExtraData,
+                insp.Elapsed,
+                insp.Active
+            );
+        }
+
+        [HttpPost("events/wash")]
+        public LogEntry RecordInspectionCompleted([FromBody] NewWash insp)
+        {
+            return _server.RecordWashCompleted(
+                insp.Material,
+                insp.WashLocationNum,
+                insp.ExtraData == null ? new Dictionary<string, string>() : insp.ExtraData,
+                insp.Elapsed,
+                insp.Active
+            );
         }
 
         [HttpPost("workorder/{workorder}/finalize")]

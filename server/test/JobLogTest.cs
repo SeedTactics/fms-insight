@@ -1,4 +1,4 @@
-/* Copyright (c) 2017, John Lenz
+/* Copyright (c) 2018, John Lenz
 
 All rights reserved.
 
@@ -208,6 +208,29 @@ namespace MachineWatchTest
 
             CheckLog(logsForMat1, _jobLog.GetLogForJobUnique("uniqformat1"), start);
             Assert.Equal(_jobLog.GetLogForJobUnique("sofusadouf").Count, 0);
+
+            //inspection and wash
+            var inspCompLog = _jobLog.RecordInspectionCompleted(
+                mat1, 5, "insptype1", new Dictionary<string, string> {{"a", "aaa"}, {"b", "bbb"}},
+                TimeSpan.FromMinutes(100), TimeSpan.FromMinutes(5));
+            var expectedInspLog = new LogEntry(-1, new LogMaterial[] { mat1 }, "",
+                LogType.InspectionResult, "Inspection", 5, "insptype1", false, inspCompLog.EndTimeUTC, "", false,
+                TimeSpan.FromMinutes(100), TimeSpan.FromMinutes(5));
+            expectedInspLog.ProgramDetails.Add("a", "aaa");
+            expectedInspLog.ProgramDetails.Add("b", "bbb");
+            logsForMat1.Add(expectedInspLog);
+
+            var washLog = _jobLog.RecordWashCompleted(
+                mat1, 7, new Dictionary<string, string> {{"z", "zzz"}, {"y", "yyy"}},
+                TimeSpan.FromMinutes(44), TimeSpan.FromMinutes(9));
+            var expectedWashLog = new LogEntry(-1, new LogMaterial[] { mat1 }, "",
+                LogType.Wash, "Wash", 7, "", false, washLog.EndTimeUTC, "", false,
+                TimeSpan.FromMinutes(44), TimeSpan.FromMinutes(9));
+            expectedWashLog.ProgramDetails.Add("z", "zzz");
+            expectedWashLog.ProgramDetails.Add("y", "yyy");
+            logsForMat1.Add(expectedWashLog);
+
+            CheckLog(logsForMat1, _jobLog.GetLogForJobUnique("uniqformat1"), start);
         }
 
         /*

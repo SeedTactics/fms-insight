@@ -54,6 +54,20 @@ namespace BlackMaple.MachineWatchInterface
         LogEntry RecordWorkorderForMaterialID(LogMaterial mat, string workorder);
         LogEntry RecordFinalizedWorkorder(string workorder);
 
+        LogEntry RecordInspectionCompleted(
+          LogMaterial mat,
+          int inspectionLocNum,
+          string inspectionType,
+          IDictionary<string, string> extraData,
+          TimeSpan elapsed,
+          TimeSpan active);
+        LogEntry RecordWashCompleted(
+          LogMaterial mat,
+          int washLocNum,
+          IDictionary<string, string> extraData,
+          TimeSpan elapsed,
+          TimeSpan active);
+
         SerialSettings GetSerialSettings();
         void SetSerialSettings(SerialSettings s);
     }

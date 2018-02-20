@@ -1,4 +1,4 @@
-/* Copyright (c) 2017, John Lenz
+/* Copyright (c) 2018, John Lenz
 
 All rights reserved.
 
@@ -1168,17 +1168,17 @@ namespace BlackMaple.MachineFramework
         #endregion
 
         #region Adding
-        public void AddLogEntry(MachineWatchInterface.LogEntry log)
+        public MachineWatchInterface.LogEntry AddLogEntry(MachineWatchInterface.LogEntry log)
         {
-            AddStationCycle(log, null, null);
+            return AddStationCycle(log, null, null);
         }
 
-        public void AddStationCycle(MachineWatchInterface.LogEntry log, string foreignID)
+        public MachineWatchInterface.LogEntry AddStationCycle(MachineWatchInterface.LogEntry log, string foreignID)
         {
-            AddStationCycle(log, foreignID, null);
+            return AddStationCycle(log, foreignID, null);
         }
 
-        public void AddStationCycle(MachineWatchInterface.LogEntry log, string foreignID, string origMessage)
+        public MachineWatchInterface.LogEntry AddStationCycle(MachineWatchInterface.LogEntry log, string foreignID, string origMessage)
         {
             lock (_lock)
             {
@@ -1186,7 +1186,7 @@ namespace BlackMaple.MachineFramework
 
                 try
                 {
-                    AddStationCycle(trans, log, foreignID, origMessage);
+                    log = AddStationCycle(trans, log, foreignID, origMessage);
                     trans.Commit();
                 }
                 catch
@@ -1198,10 +1198,13 @@ namespace BlackMaple.MachineFramework
 
             if (NewStationCycle != null)
                 NewStationCycle(log, foreignID);
+
+            return log;
         }
 
         public void AddStationCycles(IEnumerable<MachineWatchInterface.LogEntry> logs, string foreignID, string origMessage)
         {
+            var results = new List<MachineWatchInterface.LogEntry>();
             lock (_lock)
             {
                 var trans = _connection.BeginTransaction();
@@ -1209,7 +1212,7 @@ namespace BlackMaple.MachineFramework
                 try
                 {
                     foreach (var log in logs)
-                        AddStationCycle(trans, log, foreignID, origMessage);
+                        results.Add(AddStationCycle(trans, log, foreignID, origMessage));
                     trans.Commit();
                 }
                 catch
@@ -1220,11 +1223,11 @@ namespace BlackMaple.MachineFramework
             }
 
             if (NewStationCycle != null)
-                foreach (var log in logs)
+                foreach (var log in results)
                     NewStationCycle(log, foreignID);
         }
 
-        public void AddStationCycle(IDbTransaction trans, MachineWatchInterface.LogEntry log, string foreignID, string origMessage)
+        public MachineWatchInterface.LogEntry AddStationCycle(IDbTransaction trans, MachineWatchInterface.LogEntry log, string foreignID, string origMessage)
         {
             var cmd = _connection.CreateCommand();
             ((IDbCommand)cmd).Transaction = trans;
@@ -1267,6 +1270,7 @@ namespace BlackMaple.MachineFramework
             AddMaterial(ctr, log.Material, trans);
             AddProgramDetail(ctr, log.ProgramDetails, trans);
 
+            return new MachineWatchInterface.LogEntry(log, ctr);
         }
 
         private void AddMaterial(long counter, IEnumerable<MachineWatchInterface.LogMaterial> mat, IDbTransaction trans)
@@ -1376,7 +1380,7 @@ namespace BlackMaple.MachineFramework
                 try
                 {
                     RecordSerialForMaterialID(trans, mat.MaterialID, serial);
-                    AddStationCycle(trans, log, "", "");
+                    log = AddStationCycle(trans, log, "", "");
                     trans.Commit();
                 }
                 catch
@@ -1448,7 +1452,126 @@ namespace BlackMaple.MachineFramework
                 try
                 {
                     RecordWorkorderForMaterialID(trans, mat.MaterialID, workorder);
-                    AddStationCycle(trans, log, "", "");
+                    log = AddStationCycle(trans, log, "", "");
+                    trans.Commit();
+                }
+                catch
+                {
+                    trans.Rollback();
+                    throw;
+                }
+            }
+            if (NewStationCycle != null)
+                NewStationCycle(log, "");
+            return log;
+        }
+
+        public MachineWatchInterface.LogEntry RecordInspectionCompleted(
+            MachineWatchInterface.LogMaterial mat,
+            int inspectionLocNum,
+            string inspectionType,
+            IDictionary<string, string> extraData,
+            TimeSpan elapsed,
+            TimeSpan active)
+        {
+            return RecordInspectionCompleted(
+                mat,
+                inspectionLocNum,
+                inspectionType,
+                extraData,
+                elapsed,
+                active,
+                DateTime.UtcNow
+            );
+        }
+
+        public MachineWatchInterface.LogEntry RecordInspectionCompleted(
+            MachineWatchInterface.LogMaterial mat,
+            int inspectionLocNum,
+            string inspectionType,
+            IDictionary<string, string> extraData,
+            TimeSpan elapsed,
+            TimeSpan active,
+            DateTime endUTC)
+        {
+            var log = new MachineWatchInterface.LogEntry(
+                -1,
+                new MachineWatchInterface.LogMaterial[] { mat },
+                "",
+                MachineWatchInterface.LogType.InspectionResult, "Inspection", inspectionLocNum,
+                inspectionType,
+                false,
+                endUTC,
+                "",
+                false,
+                elapsed,
+                active);
+            foreach (var x in extraData) log.ProgramDetails.Add(x.Key, x.Value);
+
+            lock (_lock)
+            {
+                var trans = _connection.BeginTransaction();
+                try
+                {
+                    log = AddStationCycle(trans, log, "", "");
+                    trans.Commit();
+                }
+                catch
+                {
+                    trans.Rollback();
+                    throw;
+                }
+            }
+            if (NewStationCycle != null)
+                NewStationCycle(log, "");
+            return log;
+        }
+
+        public MachineWatchInterface.LogEntry RecordWashCompleted(
+            MachineWatchInterface.LogMaterial mat,
+            int washLocNum,
+            IDictionary<string, string> extraData,
+            TimeSpan elapsed,
+            TimeSpan active)
+        {
+            return RecordWashCompleted(
+                mat,
+                washLocNum,
+                extraData,
+                elapsed,
+                active,
+                DateTime.UtcNow
+            );
+        }
+
+        public MachineWatchInterface.LogEntry RecordWashCompleted(
+            MachineWatchInterface.LogMaterial mat,
+            int washLocNum,
+            IDictionary<string, string> extraData,
+            TimeSpan elapsed,
+            TimeSpan active,
+            DateTime endUTC)
+        {
+            var log = new MachineWatchInterface.LogEntry(
+                -1,
+                new MachineWatchInterface.LogMaterial[] { mat },
+                "",
+                MachineWatchInterface.LogType.Wash, "Wash", washLocNum,
+                "",
+                false,
+                endUTC,
+                "",
+                false,
+                elapsed,
+                active);
+            foreach (var x in extraData) log.ProgramDetails.Add(x.Key, x.Value);
+
+            lock (_lock)
+            {
+                var trans = _connection.BeginTransaction();
+                try
+                {
+                    log = AddStationCycle(trans, log, "", "");
                     trans.Commit();
                 }
                 catch
@@ -1499,7 +1622,7 @@ namespace BlackMaple.MachineFramework
                 var trans = _connection.BeginTransaction();
                 try
                 {
-                    AddStationCycle(trans, log, "", "");
+                    log = AddStationCycle(trans, log, "", "");
                     trans.Commit();
                 }
                 catch
