@@ -97,6 +97,12 @@ namespace MachineWatchApiServer.Controllers
             return _control.GetQueueNames();
         }
 
+        [HttpPost("job/{jobUnique}/casting")]
+        public void AddCastingToQueue(string jobUnique, [FromQuery] string queue, [FromBody] string serial)
+        {
+            _control.AddCastingToQueue(jobUnique, queue, serial);
+        }
+
         [HttpPut("material/{materialId}/queue")]
         public void SetMaterialInQueue(long materialId, [FromBody] string queue) {
             _control.SetMaterialInQueue(materialId, queue);

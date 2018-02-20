@@ -64,6 +64,9 @@ namespace BlackMaple.MachineWatchInterface
         //In-process queues
 
         List<string> GetQueueNames();
+        /// Add a new casting for the given job into the given queue.  The serial is optional
+        /// and is passed only if the casting has already been marked with a serial.
+        void AddCastingToQueue(string jobUnique, string queue, string serial);
         /// Set or replace a piece of material into a queue.  If it is currently in another queue, it
         /// will be removed from that queue and placed in the target queue.
         void SetMaterialInQueue(long materialId, string queue);

@@ -162,6 +162,8 @@ namespace MachineWatchApiServer
         }
 
         public List<string> GetQueueNames() => MockStatus.GetQueueNames();
+        public void AddCastingToQueue(string jobUnique, string queue, string serial)
+            => MockStatus.AddCastingToQueue(jobUnique, queue, serial);
         public void SetMaterialInQueue(long materialId, string queue)
             => MockStatus.SetMaterialInQueue(materialId, queue);
         public void RemoveMaterialFromAllQueues(long materialId)
@@ -868,6 +870,11 @@ namespace MachineWatchApiServer
             20,
             21,
         };
+
+        public void AddCastingToQueue(string jobUnique, string queue, string serial)
+        {
+
+        }
 
         public void SetMaterialInQueue(long materialId, string queue)
         {
