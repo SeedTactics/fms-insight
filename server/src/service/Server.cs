@@ -159,7 +159,7 @@ namespace BlackMaple.MachineWatch
         }
         #endregion
 
-        private class RemoteSingletons
+        public class RemoteSingletons
         {
             public class WrapperBase : MarshalByRefObject
             {
