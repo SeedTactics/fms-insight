@@ -1,4 +1,4 @@
-﻿/* Copyright (c) 2017, John Lenz
+﻿/* Copyright (c) 2018, John Lenz
 
 All rights reserved.
 
@@ -39,16 +39,17 @@ using System.Diagnostics;
 using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
 using System.Runtime.Remoting;
+using System.Runtime.Remoting.Lifetime;
+using System.Reflection.Emit;
+using System.Reflection;
 
 namespace BlackMaple.MachineWatch
 {
-    public class Server : IDisposable
+    public class RemotingServer : IDisposable
     {
-        private readonly IMachineWatchPlugin plugin;
-        private readonly SettingStore settingsServer;
-        private readonly Tracing trace;
+        public readonly IMachineWatchPlugin plugin;
+        private readonly IStoreSettings settingsServer;
         private readonly RemoteSingletons singletons;
-        private readonly bool CallInitAndHalt;
 
         public interface IMachineWatchPlugin
         {
@@ -85,108 +86,62 @@ namespace BlackMaple.MachineWatch
             }
         }
 
-        public Server(IMachineWatchPlugin p, bool forceTrace = false, bool callInit = true)
+        public RemotingServer(IMachineWatchPlugin p, string dataDir, IStoreSettings settings)
         {
             plugin = p;
-            CallInitAndHalt = callInit;
 
-            string logPath, dataDir;
+            settingsServer = settings;
 
-            var commonData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-
-            //check old cms research data directory
-            dataDir = System.IO.Path.Combine(
-                commonData, System.IO.Path.Combine("CMS Research", "MachineWatch"));
-            if (!System.IO.Directory.Exists(dataDir))
+            //Configure .NET Remoting
+            if (System.IO.File.Exists(AppDomain.CurrentDomain.SetupInformation.ConfigurationFile))
             {
-                //use new seedtactics directory
-                dataDir = System.IO.Path.Combine(
-                    commonData, System.IO.Path.Combine("SeedTactics", "MachineWatch"));
-                if (!System.IO.Directory.Exists(dataDir))
-                    System.IO.Directory.CreateDirectory(dataDir);
+                RemotingConfiguration.Configure(AppDomain.CurrentDomain.SetupInformation.ConfigurationFile, false);
+            }
+            if (System.Runtime.Remoting.Channels.ChannelServices.RegisteredChannels.Count() == 0)
+            {
+                var clientFormatter = new System.Runtime.Remoting.Channels.BinaryClientFormatterSinkProvider();
+                var serverFormatter = new System.Runtime.Remoting.Channels.BinaryServerFormatterSinkProvider();
+                serverFormatter.TypeFilterLevel = System.Runtime.Serialization.Formatters.TypeFilterLevel.Full;
+                var props = new System.Collections.Hashtable();
+                props["port"] = 8086;
+                System.Runtime.Remoting.Channels.ChannelServices.RegisterChannel(new System.Runtime.Remoting.Channels.Tcp.TcpChannel(props, clientFormatter, serverFormatter), false);
 
+                System.Runtime.Remoting.Lifetime.LifetimeServices.LeaseTime = TimeSpan.FromMinutes(3);
+                System.Runtime.Remoting.Lifetime.LifetimeServices.SponsorshipTimeout = TimeSpan.FromMinutes(2);
+                System.Runtime.Remoting.Lifetime.LifetimeServices.RenewOnCallTime = TimeSpan.FromMinutes(1);
+                System.Runtime.Remoting.Lifetime.LifetimeServices.LeaseManagerPollTime = TimeSpan.FromSeconds(10);
+                System.Runtime.Remoting.RemotingConfiguration.CustomErrorsMode = System.Runtime.Remoting.CustomErrorsModes.Off;
             }
 
-            logPath = System.IO.Path.Combine(
-                dataDir, typeof(Server).Assembly.GetName().Version.ToString());
-            if (!System.IO.Directory.Exists(logPath))
-                System.IO.Directory.CreateDirectory(logPath);
+            var jobDb = plugin.serverBackend.JobDatabase();
+            var logDb = plugin.serverBackend.LogDatabase();
+            var inspServer = plugin.serverBackend.InspectionControl();
+            var jobControl = plugin.serverBackend.JobControl();
+            var oldJob = plugin.serverBackend.OldJobDecrement();
 
-            try
-            {
-                var eventTrace = new TraceSource("EventServer", SourceLevels.All);
-                trace = new Tracing(logPath, plugin?.serverBackend, eventTrace, plugin?.workers, forceTrace);
+            singletons = new RemoteSingletons();
 
-                if (plugin == null)
-                {
-                    trace.machineTrace.TraceEvent(TraceEventType.Error, 0, "Unable to find machine watch backend");
-                    return;
-                }
-
-                settingsServer = new SettingStore(dataDir);
-
-                //Configure .NET Remoting
-                if (System.IO.File.Exists(AppDomain.CurrentDomain.SetupInformation.ConfigurationFile))
-                {
-                    RemotingConfiguration.Configure(AppDomain.CurrentDomain.SetupInformation.ConfigurationFile, false);
-                }
-                if (System.Runtime.Remoting.Channels.ChannelServices.RegisteredChannels.Count() == 0)
-                {
-                    var clientFormatter = new System.Runtime.Remoting.Channels.BinaryClientFormatterSinkProvider();
-                    var serverFormatter = new System.Runtime.Remoting.Channels.BinaryServerFormatterSinkProvider();
-                    serverFormatter.TypeFilterLevel = System.Runtime.Serialization.Formatters.TypeFilterLevel.Full;
-                    var props = new System.Collections.Hashtable();
-                    props["port"] = 8086;
-                    System.Runtime.Remoting.Channels.ChannelServices.RegisterChannel(new System.Runtime.Remoting.Channels.Tcp.TcpChannel(props, clientFormatter, serverFormatter), false);
-
-                    System.Runtime.Remoting.Lifetime.LifetimeServices.LeaseTime = TimeSpan.FromMinutes(3);
-                    System.Runtime.Remoting.Lifetime.LifetimeServices.SponsorshipTimeout = TimeSpan.FromMinutes(2);
-                    System.Runtime.Remoting.Lifetime.LifetimeServices.RenewOnCallTime = TimeSpan.FromMinutes(1);
-                    System.Runtime.Remoting.Lifetime.LifetimeServices.LeaseManagerPollTime = TimeSpan.FromSeconds(10);
-                    System.Runtime.Remoting.RemotingConfiguration.CustomErrorsMode = System.Runtime.Remoting.CustomErrorsModes.Off;
-                }
-
-                if (callInit)
-                {
-                    plugin.serverBackend.Init(dataDir);
-                    foreach (IBackgroundWorker w in plugin.workers)
-                        w.Init(plugin.serverBackend);
-                }
-
-                var jobDb = plugin.serverBackend.JobDatabase();
-                var logDb = plugin.serverBackend.LogDatabase();
-                var inspServer = plugin.serverBackend.InspectionControl();
-                var jobControl = plugin.serverBackend.JobControl();
-                var oldJob = plugin.serverBackend.OldJobDecrement();
-
-                singletons = new RemoteSingletons();
-
-                singletons.RemoteSingleton(typeof(IJobDatabase),
-                                           "JobDB",
-                                           jobDb);
-                singletons.RemoteSingleton(typeof(ILogDatabase),
-                                           "LogDB",
-                                           logDb);
-                singletons.RemoteSingleton(typeof(IInspectionControl),
-                                           "InspectionControl",
-                                           inspServer);
-                singletons.RemoteSingleton(typeof(IJobControl),
-                                           "JobControl",
-                                           jobControl);
-                singletons.RemoteSingleton(typeof(IOldJobDecrement),
-                                           "OldJobDecrement",
-                                           oldJob);
-                singletons.RemoteSingleton(typeof(IMachineWatchVersion),
-                           "Version",
-                           plugin.serverVersion);
-                singletons.RemoteSingleton(typeof(IStoreSettings),
-                            "Settings",
-                            settingsServer);
-            }
-            catch (Exception ex)
-            {
-                trace.machineTrace.TraceEvent(TraceEventType.Error, 0, "Error starting machine watch" + Environment.NewLine + ex.ToString());
-            }
+            singletons.RemoteSingleton(typeof(IJobDatabase),
+                                        "JobDB",
+                                        jobDb);
+            singletons.RemoteSingleton(typeof(ILogDatabase),
+                                        "LogDB",
+                                        logDb);
+            singletons.RemoteSingleton(typeof(IInspectionControl),
+                                        "InspectionControl",
+                                        inspServer);
+            singletons.RemoteSingleton(typeof(IJobControl),
+                                        "JobControl",
+                                        jobControl);
+            singletons.RemoteSingleton(typeof(IOldJobDecrement),
+                                        "OldJobDecrement",
+                                        oldJob);
+            singletons.RemoteSingleton(typeof(IMachineWatchVersion),
+                        "Version",
+                        plugin.serverVersion);
+            singletons.RemoteSingleton(typeof(IStoreSettings),
+                        "Settings",
+                        settingsServer);
         }
 
         #region IDisposable Support
@@ -197,30 +152,101 @@ namespace BlackMaple.MachineWatch
         {
             if (!disposedValue)
             {
-                try
-                {
-                    if (CallInitAndHalt)
-                    {
-                        foreach (IBackgroundWorker w in plugin.workers)
-                            w.Halt();
-
-                        if (plugin.serverBackend != null)
-                            plugin.serverBackend.Halt();
-                    }
-                }
-                catch
-                {
-                }
-                finally
-                {
-                    if (singletons != null) singletons.Disconnect();
-                    trace.Dispose();
-                }
-
+                if (singletons != null) singletons.Disconnect();
                 GC.Collect();
                 disposedValue = true;
             }
         }
         #endregion
+
+        private class RemoteSingletons
+        {
+            public class WrapperBase : MarshalByRefObject
+            {
+                internal protected object src = null;
+
+                public override object InitializeLifetimeService()
+                {
+                    ILease lease = (ILease)base.InitializeLifetimeService();
+                    if (lease.CurrentState == LeaseState.Initial) {
+                        lease.InitialLeaseTime = TimeSpan.Zero;
+                    }
+                    return null;
+                }
+
+                public object LoadObject()
+                {
+                    if (src == null)
+                        throw new NotImplementedException();
+                    return src;
+                }
+            }
+
+            private static Type BuildWrapperType(ModuleBuilder module, Type iFace)
+            {
+                var proxy = module.DefineType("Wrap" + iFace.Name + DateTime.UtcNow.Ticks.ToString(),
+                                            TypeAttributes.NotPublic | TypeAttributes.Sealed,
+                                            typeof(WrapperBase),
+                                            new Type[] {iFace});
+                var loadFunc = typeof(WrapperBase).GetMethod("LoadObject");
+
+                foreach (MethodInfo method in iFace.GetMethods()) {
+                    var parameters = method.GetParameters();
+                    var paramTypes = new Type[parameters.Length];
+                    for (int i = 0; i < parameters.Length; i++)
+                        paramTypes[i] = parameters[i].ParameterType;
+
+                    var methodBuilder = proxy.DefineMethod(method.Name,
+                                                        MethodAttributes.Public | MethodAttributes.Virtual,
+                                                        method.ReturnType,
+                                                        paramTypes);
+
+                    var ilGen = methodBuilder.GetILGenerator();
+                    ilGen.Emit(OpCodes.Ldarg_0);
+                    ilGen.Emit(OpCodes.Call, loadFunc);
+                    for (int i = 1; i < parameters.Length + 1; i++)
+                        ilGen.Emit(OpCodes.Ldarg, i);
+                    if (method.IsVirtual)
+                        ilGen.Emit(OpCodes.Callvirt, method);
+                    else
+                        ilGen.Emit(OpCodes.Call, method);
+                    ilGen.Emit(OpCodes.Ret);
+
+                    proxy.DefineMethodOverride(methodBuilder, method);
+                }
+
+                return proxy.CreateType();
+            }
+
+            public RemoteSingletons()
+            {
+                var domain = System.Threading.Thread.GetDomain();
+                var builder = domain.DefineDynamicAssembly(new AssemblyName("Wrappers"),
+                                                        AssemblyBuilderAccess.Run);
+                module = builder.DefineDynamicModule("WrapperModule", false);
+                marshaledObjects = new List<WrapperBase>();
+            }
+
+            public void RemoteSingleton(Type iFace, string uri, object obj)
+            {
+                var newType = BuildWrapperType(module, iFace);
+                WrapperBase newObj = (WrapperBase)Activator.CreateInstance(newType);
+                newObj.src = obj;
+
+                RemotingServices.Marshal(newObj, uri, iFace);
+
+                marshaledObjects.Add(newObj);
+            }
+
+            public void Disconnect()
+            {
+                foreach (var obj in marshaledObjects)
+                    RemotingServices.Disconnect(obj);
+                marshaledObjects.Clear();
+            }
+
+            private ModuleBuilder module;
+            private IList<WrapperBase> marshaledObjects;
+        }
     }
 }

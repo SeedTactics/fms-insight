@@ -41,13 +41,12 @@ namespace MachineWatchApiServer.Controllers
     public class serverController : ControllerBase
     {
         private IPlugin _plugin;
-        private Dictionary<string, string> _memorySettings;
+        private IStoreSettings _settings;
 
-        public serverController(IPlugin p)
+        public serverController(IPlugin p, IStoreSettings s)
         {
+            _settings = s;
             _plugin = p;
-            if (string.IsNullOrEmpty(p.SettingsPath))
-                _memorySettings = new Dictionary<string, string>();
         }
 
         [HttpGet("plugin")]
@@ -59,38 +58,13 @@ namespace MachineWatchApiServer.Controllers
         [HttpGet("settings/{id}")]
         public string GetSettings(string id)
         {
-            if (_memorySettings != null)
-            {
-                if (_memorySettings.ContainsKey(id))
-                    return _memorySettings[id];
-                else
-                    return null;
-
-            } else {
-                var f = System.IO.Path.Combine(
-                    _plugin.SettingsPath,
-                    System.IO.Path.GetFileNameWithoutExtension(id))
-                    + ".json";
-                if (System.IO.File.Exists(f))
-                    return System.IO.File.ReadAllText(f);
-                else
-                    return null;
-            }
+            return _settings.GetSettings(id);
         }
 
         [HttpPut("settings/{id}")]
         public void SetSetting(string id, [FromBody] string setting)
         {
-            if (_memorySettings != null)
-            {
-                _memorySettings[id] = setting;
-            } else {
-                var f = System.IO.Path.Combine(
-                    _plugin.SettingsPath,
-                    System.IO.Path.GetFileNameWithoutExtension(id))
-                    + ".json";
-                System.IO.File.WriteAllText(f, setting);
-            }
+            _settings.SetSettings(id, setting);
         }
     }
 }

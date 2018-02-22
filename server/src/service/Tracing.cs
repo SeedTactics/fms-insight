@@ -41,17 +41,15 @@ namespace BlackMaple.MachineWatch
 {
     public class Tracing : IDisposable
     {
-        private List<TraceSource> traceSources = new List<TraceSource>();
         public TraceSource machineTrace = new TraceSource("Machine Watch", SourceLevels.All);
+        public readonly bool EnableTracing;
+
+        private List<TraceSource> traceSources = new List<TraceSource>();
         private readonly TextWriterTraceListener errorLog;
         private readonly TextWriterTraceListener infoLog;
         private readonly string AppPath;
 
-        public Tracing(string appPath,
-            IServerBackend backend,
-            TraceSource eventServer,
-            IEnumerable<IBackgroundWorker> workers,
-            bool forceTrace)
+        public Tracing(string appPath, bool forceTrace)
         {
             this.AppPath = appPath;
 
@@ -66,12 +64,20 @@ namespace BlackMaple.MachineWatch
             infoLog = null;
             if (forceTrace || System.Configuration.ConfigurationManager.AppSettings["Output Trace Log"] == "1")
             {
+                EnableTracing = true;
                 file = IO.Path.Combine(AppPath, "trace.log");
                 infoLog = new TraceListenerWithTime(file);
                 infoLog.Filter = new System.Diagnostics.EventTypeFilter(SourceLevels.Information);
                 machineTrace.Listeners.Add(infoLog);
                 machineTrace.TraceEvent(TraceEventType.Information, 0, "Machine Watch is starting");
             }
+        }
+
+        public void AddSources(
+            IServerBackend backend,
+            IEnumerable<IBackgroundWorker> workers)
+        {
+            var newSources = new List<TraceSource>();
 
             #if USE_TRACE
             foreach (var s in backend.TraceSources())
@@ -79,6 +85,7 @@ namespace BlackMaple.MachineWatch
                 if (!traceSources.Contains(s))
                 {
                     traceSources.Add(s);
+                    newSources.Add(s);
                 }
             }
 
@@ -88,17 +95,12 @@ namespace BlackMaple.MachineWatch
                 if (s != null && !traceSources.Contains(s))
                 {
                     traceSources.Add(s);
+                    newSources.Add(s);
                 }
             }
             #endif
 
-            if (eventServer != null && !traceSources.Contains(eventServer))
-            {
-                traceSources.Add(eventServer);
-            }
-
-            //add new traces to the Listeners
-            foreach (TraceSource s in traceSources)
+            foreach (TraceSource s in newSources)
             {
                 s.Switch.Level = SourceLevels.All; //Fixes a bug in mono.
                 s.Listeners.Add(errorLog);

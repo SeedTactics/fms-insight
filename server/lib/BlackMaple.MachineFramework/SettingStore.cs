@@ -37,7 +37,7 @@ using System.Linq;
 using System.Text;
 using BlackMaple.MachineWatchInterface;
 
-namespace BlackMaple.MachineWatch
+namespace BlackMaple.MachineFramework
 {
     public class SettingStore : IStoreSettings
     {

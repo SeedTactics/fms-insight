@@ -41,6 +41,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Converters;
 using NSwag.AspNetCore;
+using Serilog;
 
 namespace MachineWatchApiServer
 {
@@ -56,19 +57,43 @@ namespace MachineWatchApiServer
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            // Add framework services.
-            var dataDir = Configuration["DataDir"];
-
+            var dataDir = Configuration["DataDirectory"];
             var pluginFile = Configuration["PluginFile"];
             var workerDir = Configuration["WorkerDirectory"];
+            var enableDebug = Configuration["EnableDebug"];
+
+            var logConfig = new LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .WriteTo.Console(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information);
+
+            #if LOG_TO_EVENTLOG
+            logConfig = logConfig.WriteTo.EventLog(
+                "Machine Watch",
+                manageEventSource: true,
+                restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information);
+            #endif
+
+            if (   !string.IsNullOrEmpty(dataDir)
+                && !string.IsNullOrEmpty(enableDebug)
+                && bool.TryParse(enableDebug, out bool enable)
+                && enable) {
+
+                logConfig = logConfig.WriteTo.File(
+                    new Serilog.Formatting.Compact.CompactJsonFormatter(),
+                    System.IO.Path.Combine(dataDir, "machinewatch-debug.txt"),
+                    rollingInterval: RollingInterval.Day,
+                    restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Debug);
+            }
+
+            Log.Logger = logConfig.CreateLogger();
+
             IPlugin plugin;
             if (!string.IsNullOrEmpty(pluginFile))
-                plugin = new Plugin(dataDir, pluginFile, workerDir);
+                plugin = new Plugin(pluginFile, workerDir);
             else
             {
                 #if DEBUG
                 plugin = new Plugin(
-                    settingsPath: dataDir,
                     backend: new MockBackend(),
                     info: new PluginInfo() {
                         Name = "mock-machinewatch",
@@ -78,25 +103,38 @@ namespace MachineWatchApiServer
                     throw new Exception("Must specify plugin");
                 #endif
             }
-
             plugin.Backend.Init(dataDir);
             foreach (var w in plugin.Workers) w.Init(plugin.Backend);
 
+            #if USE_TRACE
+            System.Diagnostics.Trace.AutoFlush = true;
+            var traceListener = new SerilogTraceListener.SerilogTraceListener();
+            foreach (var s in plugin.Backend.TraceSources)
+            {
+                s.Listeners.Add(traceListener);
+            }
+            foreach (var w in plugin.Workers)
+            {
+                s.Listeners.Add(w.TraceSource);
+            }
+            #endif
+
+            var settings = new BlackMaple.MachineFramework.SettingStore(dataDir);
+
             #if USE_SERVICE
             var machServer =
-                new BlackMaple.MachineWatch.Server(
+                new BlackMaple.MachineWatch.RemotingServer(
                     p: new ServicePlugin(plugin),
-                    forceTrace: false,
-                    callInit: false
+                    dataDir,
+                    settings
                 );
-            services.AddSingleton<BlackMaple.MachineWatch.Server>(machServer);
-            lifetime.ApplicationStopping.Register(() => {
-                machServer.Dispose();
-            });
+            services.AddSingleton<BlackMaple.MachineWatch.RemotingServer>(machServer);
             #endif
 
             services.AddSingleton<IPlugin>(plugin);
-            services.AddSingleton<BlackMaple.MachineWatchInterface.IServerBackend>(plugin.Backend);
+            services.AddSingleton<IStoreSettings>(settings);
+            services.AddSingleton<BlackMaple.MachineWatchInterface.IServerBackend>(
+                plugin.Backend);
 
             services.AddMvcCore()
                 .AddApiExplorer()
@@ -109,7 +147,12 @@ namespace MachineWatchApiServer
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplicationLifetime lifetime, IPlugin plugin)
+        public void Configure(
+            IApplicationBuilder app,
+            IPlugin plugin,
+            IApplicationLifetime lifetime,
+            IHostingEnvironment env,
+            IServiceProvider services)
         {
             app.UseMvc();
             app.UseStaticFiles();
@@ -131,6 +174,13 @@ namespace MachineWatchApiServer
                 foreach (var w in plugin.Workers)
                     w.Halt();
             });
+
+            #if USE_SERVICE
+            lifetime.ApplicationStopping.Register(() => {
+                var machServer = services.GetService<BlackMaple.MachineWatch.RemotingServer>();
+                machServer.Dispose();
+            });
+            #endif
         }
     }
 }

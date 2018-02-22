@@ -55,7 +55,6 @@ namespace MachineWatchApiServer
     public interface IPlugin
     {
         PluginInfo PluginInfo {get;}
-        string SettingsPath {get;}
         IServerBackend Backend {get;}
         IList<IBackgroundWorker> Workers {get;}
     }
@@ -63,22 +62,19 @@ namespace MachineWatchApiServer
     public class Plugin : AssemblyLoadContext, IPlugin
     {
         public PluginInfo PluginInfo {get; protected set;}
-        public string SettingsPath {get; protected set;}
         public IServerBackend Backend {get; protected set;}
         public IList<IBackgroundWorker> Workers {get;} = new List<IBackgroundWorker>();
 
         private string pluginDirectory;
 
-        public Plugin(string settingsPath, IServerBackend backend, PluginInfo info)
+        public Plugin(IServerBackend backend, PluginInfo info)
         {
             PluginInfo = info;
-            SettingsPath = settingsPath;
             Backend = backend;
         }
 
-        public Plugin(string settingsPath, string pluginFile, string workerDir)
+        public Plugin(string pluginFile, string workerDir)
         {
-            SettingsPath = settingsPath;
             pluginDirectory = Path.GetDirectoryName(pluginFile);
             LoadPlugin(pluginFile);
             LoadWorkers(workerDir);

@@ -39,6 +39,7 @@ using System.ServiceProcess;
 using System.Runtime.Remoting;
 using IO = System.IO;
 using BlackMaple.MachineWatchInterface;
+using Serilog;
 
 namespace BlackMaple.MachineWatch
 {
@@ -80,13 +81,14 @@ namespace BlackMaple.MachineWatch
         #endregion
 
         #region Starting And Stopping
-        private Server _server;
+        private RemotingServer _server;
+        private Tracing _trace;
 
-        private Server.MachineWatchPlugin LoadPlugin()
+        private static RemotingServer.MachineWatchPlugin LoadPlugin()
         {
-            //try and load all the plugins we can find		
+            //try and load all the plugins we can find
             List<string> assemblies;
-			string PluginDir = IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "plugins");			
+			string PluginDir = IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "plugins");
 			assemblies = new List<string>(IO.Directory.GetFiles(PluginDir, "*.dll"));
 
             IServerBackend serverBackend = null;
@@ -119,17 +121,101 @@ namespace BlackMaple.MachineWatch
             }
 
             return serverBackend == null ? null :
-                new Server.MachineWatchPlugin(serverBackend, assName, assFileVer, workers);
+                new RemotingServer.MachineWatchPlugin(serverBackend, assName, assFileVer, workers);
+        }
+
+        private static string CalculateDataDir()
+        {
+            var commonData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+
+            //check old cms research data directory
+            var dataDir = System.IO.Path.Combine(
+                commonData, System.IO.Path.Combine("CMS Research", "MachineWatch"));
+            if (!System.IO.Directory.Exists(dataDir))
+            {
+                //use new seedtactics directory
+                dataDir = System.IO.Path.Combine(
+                    commonData, System.IO.Path.Combine("SeedTactics", "MachineWatch"));
+                if (!System.IO.Directory.Exists(dataDir))
+                    System.IO.Directory.CreateDirectory(dataDir);
+
+            }
+            return dataDir;
         }
 
         protected override void OnStart(string[] args)
         {
-            _server = new Server(LoadPlugin());
+            var dataDir = CalculateDataDir();
+
+            var logPath = System.IO.Path.Combine(
+                dataDir, typeof(RemotingServer).Assembly.GetName().Version.ToString());
+            if (!System.IO.Directory.Exists(logPath))
+                System.IO.Directory.CreateDirectory(logPath);
+
+            _trace = new Tracing(logPath, forceTrace:false);
+
+            var logConfig = new LoggerConfiguration();
+
+            if (_trace.EnableTracing)
+            {
+                logConfig = logConfig.MinimumLevel.Debug();
+            } else {
+                logConfig = logConfig.MinimumLevel.Information();
+            }
+
+            Log.Logger = logConfig
+                .WriteTo.File(System.IO.Path.Combine(logPath, "events.txt"), rollingInterval: RollingInterval.Month)
+                .CreateLogger();
+
+            try {
+
+                var plugin = LoadPlugin();
+
+                if (plugin == null)
+                {
+                    throw new Exception("Unable to find Machine Watch plugin");
+                }
+
+                _trace.AddSources(plugin.serverBackend, plugin.workers);
+
+                plugin.serverBackend.Init(dataDir);
+                foreach (IBackgroundWorker w in plugin.workers)
+                    w.Init(plugin.serverBackend);
+
+                // net461 on linux can't reference MachineFramework built using netstandard, and I don't
+                // yet have the latest mono which supports net471 installed yet.  Once net471 mono is installed
+                // the following hack can be removed.
+                IStoreSettings settings = null;
+                #if USE_TRACE
+                settings = new MachineFramework.SettingStore(dataDir);
+                #endif
+
+                _server = new RemotingServer(plugin, dataDir, settings);
+
+            } catch (Exception ex) {
+                _trace.machineTrace.TraceEvent(TraceEventType.Error, 0, ex.ToString());
+                throw ex;
+            }
         }
 
         protected override void OnStop()
         {
-            if (_server != null) _server.Dispose();
+            if (_server != null)
+            {
+                _server.Dispose();
+                try {
+                    foreach (IBackgroundWorker w in _server.plugin.workers)
+                        w.Halt();
+
+                    if (_server.plugin.serverBackend != null)
+                        _server.plugin.serverBackend.Halt();
+                }
+                catch
+                {
+                    //do nothing
+                }
+                _trace.Dispose();
+            }
             _server = null;
         }
         #endregion

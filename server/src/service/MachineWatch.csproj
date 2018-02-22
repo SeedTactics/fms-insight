@@ -30,6 +30,9 @@
     <Reference Include="System.ServiceProcess"/>
     <Reference Include="System.Configuration"/>
     <Reference Include="System.Configuration.Install"/>
+
+    <PackageReference Include="Serilog" Version="2.6.0"/>
+    <PackageReference Include="Serilog.Sinks.File" Version="4.0.0"/>
   </ItemGroup>
 
   <Choose>
