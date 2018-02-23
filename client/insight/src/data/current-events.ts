@@ -51,7 +51,7 @@ const initial: State = {
 };
 
 export enum ActionType {
-    NewCurrentStatus = 'Jobs_NewCurrentStatus',
+    NewCurrentStatus = 'CurStatus_NewCurrentStatus',
     Other = 'Other',
 }
 

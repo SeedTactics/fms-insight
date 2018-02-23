@@ -162,7 +162,7 @@ function buildStatus(status: Readonly<api.ICurrentStatus>): ReadonlyArray<Status
 }
 
 export const statusSelector = createSelector(
-  (s: Store) => s.Jobs.current_status,
+  (s: Store) => s.Current.current_status,
   buildStatus
 );
 

@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { createStore, GenericStoreEnhancer, combineReducers, compose, applyMiddleware } from 'redux';
 
-import * as jobs from './jobs';
+import * as currentEvents from './current-events';
 import * as events from './events';
 import { pledgeMiddleware } from './pledge';
 
@@ -44,14 +44,14 @@ const devTools: GenericStoreEnhancer =
 /* tslint:enable */
 
 export interface Store {
-  readonly Jobs: jobs.State;
+  readonly Current: currentEvents.State;
   readonly Events: events.State;
 }
 
 export default createStore<Store>(
   combineReducers<Store>(
     {
-      Jobs: jobs.reducer,
+      Current: currentEvents.reducer,
       Events: events.reducer
     }
   ),

@@ -158,7 +158,7 @@ export function CurrentJobs({completedData, planData, fillViewport}: Props) {
 }
 
 const jobsToPointsSelector = createSelector(
-  (s: Store) => s.Jobs.current_status.jobs,
+  (s: Store) => s.Current.current_status.jobs,
   js => jobsToPoints(Object.values(js))
 );
 

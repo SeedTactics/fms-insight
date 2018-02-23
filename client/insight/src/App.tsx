@@ -44,7 +44,7 @@ import Efficiency from './components/Efficiency';
 import StationMonitor from './components/StationMonitor';
 import LoadingIcon from './components/LoadingIcon';
 import { requestLastMonth } from './data/events';
-import { loadCurrentStatus } from './data/jobs';
+import { loadCurrentStatus } from './data/current-events';
 import store from './data/store';
 
 // tslint:disable

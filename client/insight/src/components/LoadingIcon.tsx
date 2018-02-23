@@ -55,6 +55,6 @@ export function LoadingIcon({loading}: Props) {
 
 export default connect(
   (st: Store) => ({
-    loading: st.Events.loading_events || st.Jobs.loading
+    loading: st.Events.loading_events || st.Current.loading
   })
 )(LoadingIcon);
