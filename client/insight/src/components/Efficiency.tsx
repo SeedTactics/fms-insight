@@ -31,11 +31,45 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
+import Radio from 'material-ui/Radio';
+import TextField from 'material-ui/TextField';
+import { FormControlLabel } from 'material-ui/Form';
+
+const toolbarStyle = {
+  'display': 'flex',
+  'backgroundColor': '#E0E0E0',
+  'paddingLeft': '24px',
+  'paddingRight': '24px',
+  'minHeight': '2.5em',
+  'alignItems': 'center' as 'center',
+  'justifyContent': 'space-evenly' as 'space-evenly'
+};
+
+function SecondaryToolbar() {
+  return (
+    <nav style={toolbarStyle}>
+      <FormControlLabel
+        control={<Radio/>}
+        label="Last 30 days"
+      />
+      <div>
+        <FormControlLabel
+          control={<Radio/>}
+          label="Select Month"
+        />
+        <TextField type="month"/>
+      </div>
+    </nav>
+  );
+}
 
 export default function Efficiency() {
   return (
-    <main style={{'padding': '8px'}}>
-      <p>Efficiency Page</p>;
-    </main>
+    <>
+      <SecondaryToolbar/>
+      <main style={{'padding': '8px'}}>
+        <p>Efficiency Page</p>
+      </main>
+    </>
   );
 }
