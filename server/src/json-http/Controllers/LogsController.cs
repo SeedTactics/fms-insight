@@ -136,7 +136,7 @@ namespace MachineWatchApiServer.Controllers
         }
 
         [HttpPost("events/wash")]
-        public LogEntry RecordInspectionCompleted([FromBody] NewWash insp)
+        public LogEntry RecordWashCompleted([FromBody] NewWash insp)
         {
             return _server.RecordWashCompleted(
                 insp.Material,

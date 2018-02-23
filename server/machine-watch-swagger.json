@@ -432,6 +432,44 @@
         }
       }
     },
+    "/api/v1/jobs/job/{jobUnique}/unprocessed-material": {
+      "post": {
+        "tags": [
+          "jobs"
+        ],
+        "operationId": "jobs_AddUnprocessedMaterialToQueue",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "jobUnique",
+            "in": "path",
+            "required": true,
+            "x-nullable": false
+          },
+          {
+            "type": "string",
+            "name": "queue",
+            "in": "query",
+            "required": true,
+            "x-nullable": true
+          },
+          {
+            "name": "serial",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-nullable": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/v1/jobs/material/{materialId}/queue": {
       "put": {
         "tags": [
@@ -805,6 +843,62 @@
               "$ref": "#/definitions/LogMaterial"
             },
             "x-nullable": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/LogEntry"
+            },
+            "x-nullable": true
+          }
+        }
+      }
+    },
+    "/api/v1/log/events/inspection-result": {
+      "post": {
+        "tags": [
+          "log"
+        ],
+        "operationId": "log_RecordInspectionCompleted",
+        "parameters": [
+          {
+            "name": "insp",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/NewInspectionCompleted"
+            },
+            "x-nullable": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/LogEntry"
+            },
+            "x-nullable": true
+          }
+        }
+      }
+    },
+    "/api/v1/log/events/wash": {
+      "post": {
+        "tags": [
+          "log"
+        ],
+        "operationId": "log_RecordWashCompleted",
+        "parameters": [
+          {
+            "name": "insp",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/NewWash"
+            },
+            "x-nullable": false
           }
         ],
         "responses": {
@@ -2061,7 +2155,9 @@
         "OrderAssignment",
         "GeneralMessage",
         "PalletCycle",
-        "FinalizeWorkorder"
+        "FinalizeWorkorder",
+        "InspectionResult",
+        "Wash"
       ],
       "enum": [
         "LoadUnloadCycle",
@@ -2071,7 +2167,9 @@
         "OrderAssignment",
         "GeneralMessage",
         "PalletCycle",
-        "FinalizeWorkorder"
+        "FinalizeWorkorder",
+        "InspectionResult",
+        "Wash"
       ]
     },
     "WorkorderSummary": {
@@ -2136,6 +2234,86 @@
           "format": "int32"
         }
       }
+    },
+    "NewInspectionCompleted": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "Material",
+        "InspectionLocationNum",
+        "InspectionType",
+        "Elapsed",
+        "Active"
+      ],
+      "properties": {
+        "Material": {
+          "$ref": "#/definitions/LogMaterial"
+        },
+        "InspectionLocationNum": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "InspectionType": {
+          "type": "string"
+        },
+        "ExtraData": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "Elapsed": {
+          "type": "string",
+          "format": "time-span"
+        },
+        "Active": {
+          "type": "string",
+          "format": "time-span"
+        }
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/ValueType"
+        }
+      ]
+    },
+    "NewWash": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "Material",
+        "WashLocationNum",
+        "Elapsed",
+        "Active"
+      ],
+      "properties": {
+        "Material": {
+          "$ref": "#/definitions/LogMaterial"
+        },
+        "WashLocationNum": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "ExtraData": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "Elapsed": {
+          "type": "string",
+          "format": "time-span"
+        },
+        "Active": {
+          "type": "string",
+          "format": "time-span"
+        }
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/ValueType"
+        }
+      ]
     },
     "SerialSettings": {
       "type": "object",

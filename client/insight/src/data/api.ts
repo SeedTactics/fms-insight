@@ -635,6 +635,47 @@ export class JobsClient {
         return Promise.resolve<string[]>(<any>null);
     }
 
+    addUnprocessedMaterialToQueue(jobUnique: string, queue: string, serial: string): Promise<void> {
+        let url_ = this.baseUrl + "/api/v1/jobs/job/{jobUnique}/unprocessed-material?";
+        if (jobUnique === undefined || jobUnique === null)
+            throw new Error("The parameter 'jobUnique' must be defined.");
+        url_ = url_.replace("{jobUnique}", encodeURIComponent("" + jobUnique));
+        if (queue === undefined)
+            throw new Error("The parameter 'queue' must be defined.");
+        else
+            url_ += "queue=" + encodeURIComponent("" + queue) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(serial);
+
+        let options_ = <RequestInit>{
+            body: content_,
+            method: "POST",
+            headers: new Headers({
+                "Content-Type": "application/json",
+            })
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processAddUnprocessedMaterialToQueue(_response);
+        });
+    }
+
+    protected processAddUnprocessedMaterialToQueue(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(<any>null);
+    }
+
     setMaterialInQueue(materialId: number, queue: string): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/queue";
         if (materialId === undefined || materialId === null)
@@ -1130,6 +1171,82 @@ export class LogClient {
     }
 
     protected processSetWorkorder(response: Response): Promise<LogEntry> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = resultData200 ? LogEntry.fromJS(resultData200) : <any>null;
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<LogEntry>(<any>null);
+    }
+
+    recordInspectionCompleted(insp: NewInspectionCompleted): Promise<LogEntry> {
+        let url_ = this.baseUrl + "/api/v1/log/events/inspection-result";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(insp);
+
+        let options_ = <RequestInit>{
+            body: content_,
+            method: "POST",
+            headers: new Headers({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processRecordInspectionCompleted(_response);
+        });
+    }
+
+    protected processRecordInspectionCompleted(response: Response): Promise<LogEntry> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = resultData200 ? LogEntry.fromJS(resultData200) : <any>null;
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<LogEntry>(<any>null);
+    }
+
+    recordWashCompleted(insp: NewWash): Promise<LogEntry> {
+        let url_ = this.baseUrl + "/api/v1/log/events/wash";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(insp);
+
+        let options_ = <RequestInit>{
+            body: content_,
+            method: "POST",
+            headers: new Headers({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processRecordWashCompleted(_response);
+        });
+    }
+
+    protected processRecordWashCompleted(response: Response): Promise<LogEntry> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
@@ -1693,7 +1810,7 @@ export class JobPlan implements IJobPlan {
     inspections?: JobInspectionData[];
     holdEntireJob: JobHoldPattern = new JobHoldPattern();
     cyclesOnFirstProcess: number[] = [];
-    procsAndPaths: ProcessInfo[] = [];
+    procsAndPaths: ProcessInfo[];
 
     constructor(data?: IJobPlan) {
         if (data) {
@@ -3192,6 +3309,8 @@ export enum LogType {
     GeneralMessage = <any>"GeneralMessage",
     PalletCycle = <any>"PalletCycle",
     FinalizeWorkorder = <any>"FinalizeWorkorder",
+    InspectionResult = <any>"InspectionResult",
+    Wash = <any>"Wash",
 }
 
 export class WorkorderSummary implements IWorkorderSummary {
@@ -3328,6 +3447,132 @@ export interface IWorkorderPartSummary {
     activeStatTime: { [key: string] : string; };
     name: string;
     completedQty: number;
+}
+
+export class NewInspectionCompleted extends ValueType implements INewInspectionCompleted {
+    material: LogMaterial = new LogMaterial();
+    inspectionLocationNum: number;
+    inspectionType: string;
+    extraData?: { [key: string] : string; };
+    elapsed: string;
+    active: string;
+
+    constructor(data?: INewInspectionCompleted) {
+        super(data);
+    }
+
+    init(data?: any) {
+        super.init(data);
+        if (data) {
+            this.material = data["Material"] ? LogMaterial.fromJS(data["Material"]) : new LogMaterial();
+            this.inspectionLocationNum = data["InspectionLocationNum"];
+            this.inspectionType = data["InspectionType"];
+            if (data["ExtraData"]) {
+                this.extraData = {};
+                for (let key in data["ExtraData"]) {
+                    if (data["ExtraData"].hasOwnProperty(key))
+                        this.extraData[key] = data["ExtraData"][key];
+                }
+            }
+            this.elapsed = data["Elapsed"];
+            this.active = data["Active"];
+        }
+    }
+
+    static fromJS(data: any): NewInspectionCompleted {
+        data = typeof data === 'object' ? data : {};
+        let result = new NewInspectionCompleted();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["Material"] = this.material ? this.material.toJSON() : <any>undefined;
+        data["InspectionLocationNum"] = this.inspectionLocationNum;
+        data["InspectionType"] = this.inspectionType;
+        if (this.extraData) {
+            data["ExtraData"] = {};
+            for (let key in this.extraData) {
+                if (this.extraData.hasOwnProperty(key))
+                    data["ExtraData"][key] = this.extraData[key];
+            }
+        }
+        data["Elapsed"] = this.elapsed;
+        data["Active"] = this.active;
+        super.toJSON(data);
+        return data;
+    }
+}
+
+export interface INewInspectionCompleted extends IValueType {
+    material: LogMaterial;
+    inspectionLocationNum: number;
+    inspectionType: string;
+    extraData?: { [key: string] : string; };
+    elapsed: string;
+    active: string;
+}
+
+export class NewWash extends ValueType implements INewWash {
+    material: LogMaterial = new LogMaterial();
+    washLocationNum: number;
+    extraData?: { [key: string] : string; };
+    elapsed: string;
+    active: string;
+
+    constructor(data?: INewWash) {
+        super(data);
+    }
+
+    init(data?: any) {
+        super.init(data);
+        if (data) {
+            this.material = data["Material"] ? LogMaterial.fromJS(data["Material"]) : new LogMaterial();
+            this.washLocationNum = data["WashLocationNum"];
+            if (data["ExtraData"]) {
+                this.extraData = {};
+                for (let key in data["ExtraData"]) {
+                    if (data["ExtraData"].hasOwnProperty(key))
+                        this.extraData[key] = data["ExtraData"][key];
+                }
+            }
+            this.elapsed = data["Elapsed"];
+            this.active = data["Active"];
+        }
+    }
+
+    static fromJS(data: any): NewWash {
+        data = typeof data === 'object' ? data : {};
+        let result = new NewWash();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["Material"] = this.material ? this.material.toJSON() : <any>undefined;
+        data["WashLocationNum"] = this.washLocationNum;
+        if (this.extraData) {
+            data["ExtraData"] = {};
+            for (let key in this.extraData) {
+                if (this.extraData.hasOwnProperty(key))
+                    data["ExtraData"][key] = this.extraData[key];
+            }
+        }
+        data["Elapsed"] = this.elapsed;
+        data["Active"] = this.active;
+        super.toJSON(data);
+        return data;
+    }
+}
+
+export interface INewWash extends IValueType {
+    material: LogMaterial;
+    washLocationNum: number;
+    extraData?: { [key: string] : string; };
+    elapsed: string;
+    active: string;
 }
 
 export class SerialSettings implements ISerialSettings {
