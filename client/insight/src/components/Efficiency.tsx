@@ -31,8 +31,20 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
+import * as im from 'immutable';
 
+import * as api from '../data/api';
 import AnalysisSelectToolbar from './AnalysisSelectToolbar';
+
+export interface StationCycleProps {
+  cycles: im.Map<string, Iterable<Readonly<api.ILogEntry>>>;
+  all_parts: Iterable<string>;
+  selected_parts: im.Set<string>;
+}
+
+export function StationCycles(props: StationCycleProps) {
+  return <p>Station Cycles</p>;
+}
 
 export default function Efficiency() {
   return (
