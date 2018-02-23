@@ -30,17 +30,14 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as api from './api';
-import { duration } from 'moment';
-import { PledgeStatus, ConsumingPledge } from './pledge';
 import { addDays, addMonths, startOfMonth } from 'date-fns';
 import * as im from 'immutable'; // consider collectable.js at some point?
+import { PledgeStatus, ConsumingPledge } from './pledge';
 
-export interface StationInUse {
-    readonly date: Date;
-    readonly station: string;
-    readonly hours: number;
-}
+import * as api from './api';
+import * as oee from './oee';
+
+export { OeeState, StationInUse } from './oee';
 
 export enum AnalysisPeriod {
     Last30Days = 'Last_30_Days',
@@ -51,35 +48,33 @@ export interface State {
     readonly loading_events: boolean;
     readonly loading_error?: Error;
 
-    // list of entries sorted by endUTC
-    readonly last_30_days_of_events: im.List<Readonly<api.ILogEntry>>; // TODO: deep readonly in typescript 2.8
-
-    // list of station use, sorted by date
-    readonly last_week_of_hours: im.List<StationInUse>;
-
-    readonly system_active_hours_per_week: number;
-
     readonly analysis_period: AnalysisPeriod;
     readonly analysis_period_month: Date;
     readonly loading_analysis_period: boolean;
+
+    // list of entries sorted by endUTC
+    readonly last_30_days_of_events: im.List<Readonly<api.ILogEntry>>; // TODO: deep readonly in typescript 2.8
+
+    readonly oee: oee.OeeState;
+
     readonly analysis_period_month_events: im.List<Readonly<api.ILogEntry>>;
 }
 
 export const initial: State = {
     loading_events: false,
-    last_30_days_of_events: im.List(),
-    last_week_of_hours: im.List(),
-    system_active_hours_per_week: 7 * 24,
     analysis_period: AnalysisPeriod.Last30Days,
     analysis_period_month: startOfMonth(new Date()),
     loading_analysis_period: false,
+
+    last_30_days_of_events: im.List(),
+    oee: oee.initial,
     analysis_period_month_events: im.List()
 };
 
 export enum ActionType {
-    RequestLastWeek = 'Events_RequestLastWeek',
+    RequestLast30Days = 'Events_RequestLast30Days',
     SetSystemHours = 'Events_SetSystemHours',
-    LoadAnalysisLast30Days = 'Events_LoadAnalysisLast30Days',
+    SetAnalysisLast30Days = 'Events_SetAnalysisLast30Days',
     LoadAnalysisSpecificMonth = 'Events_LoadAnalysisMonth',
     SetAnalysisMonth = 'Events_SetAnalysisMonth',
     Other = 'Other',
@@ -87,15 +82,15 @@ export enum ActionType {
 
 // TODO: use Plege when typescript 2.8 shows up
 export type Action =
-  | {type: ActionType.RequestLastWeek, now: Date, pledge: ConsumingPledge<ReadonlyArray<Readonly<api.ILogEntry>>>}
+  | {type: ActionType.RequestLast30Days, now: Date, pledge: ConsumingPledge<ReadonlyArray<Readonly<api.ILogEntry>>>}
   | {type: ActionType.SetSystemHours, hours: number}
-  | {type: ActionType.LoadAnalysisLast30Days }
+  | {type: ActionType.SetAnalysisLast30Days }
+  | {type: ActionType.SetAnalysisMonth, month: Date }
   | {
       type: ActionType.LoadAnalysisSpecificMonth,
       month: Date,
       pledge: ConsumingPledge<ReadonlyArray<Readonly<api.ILogEntry>>>
     }
-  | {type: ActionType.SetAnalysisMonth, month: Date }
   | {type: ActionType.Other}
   ;
 
@@ -104,14 +99,14 @@ export function requestLastMonth() /*: Action<ActionUse.CreatingAction> */ {
     var now = new Date();
     var oneWeekAgo = addDays(now, -30);
     return {
-        type: ActionType.RequestLastWeek,
+        type: ActionType.RequestLast30Days,
         now: now,
         pledge: client.get(oneWeekAgo, now)
     };
 }
 
 export function analyzeLast30Days() {
-    return {type: ActionType.LoadAnalysisLast30Days};
+    return {type: ActionType.SetAnalysisLast30Days};
 }
 
 export function analyzeSpecificMonth(month: Date) {
@@ -129,54 +124,6 @@ export function setAnalysisMonth(month: Date) {
         type: ActionType.SetAnalysisMonth,
         month: month
     };
-}
-
-function stat_name(e: api.ILogEntry): string | null {
-    switch (e.type) {
-        case api.LogType.LoadUnloadCycle:
-        case api.LogType.MachineCycle:
-            return e.loc + ' #' + e.locnum;
-        default:
-            return null;
-    }
-}
-
-function refresh_weekly_hours(now: Date, newEvts: ReadonlyArray<api.ILogEntry>, st: State): State {
-    let hours = st.last_week_of_hours;
-    const oneWeekAgo = addDays(now, -7);
-
-    // check if no changes needed: no new events and nothing to filter out
-    const minEntry = hours.first();
-    if ((minEntry === undefined || minEntry.date >= oneWeekAgo) && newEvts.length === 0) {
-        return st;
-    }
-
-    // new entries
-    const newEntries =
-        im.Seq(newEvts)
-        .filter(e => {
-            if (e.endUTC < oneWeekAgo) { return false; }
-            if (e.startofcycle) { return false; }
-            let name = stat_name(e);
-            if (!name) { return false; }
-            let activeHrs = duration(e.active).asHours();
-            if (activeHrs <=  0) { return false; }
-            return true;
-        })
-        .map(e => ({
-            date: e.endUTC,
-            station: stat_name(e) || '',
-            // TODO: calculate estimated active time
-            hours: duration(e.active).asHours()
-        }));
-
-    hours = hours.toSeq()
-        .filter(e => e.date >= oneWeekAgo)
-        .concat(newEntries)
-        .sortBy(e => e.date)
-        .toList();
-
-    return {...st, last_week_of_hours: hours};
 }
 
 function refresh_events(now: Date, newEvts: ReadonlyArray<api.ILogEntry>, st: State): State {
@@ -201,23 +148,27 @@ function refresh_events(now: Date, newEvts: ReadonlyArray<api.ILogEntry>, st: St
 export function reducer(s: State, a: Action): State {
     if (s === undefined) { return initial; }
     switch (a.type) {
-        case ActionType.RequestLastWeek:
+        case ActionType.RequestLast30Days:
             switch (a.pledge.status) {
                 case PledgeStatus.Starting:
                     return {...s, loading_events: true, loading_error: undefined};
                 case PledgeStatus.Completed:
-                    let s2 = refresh_weekly_hours(a.now, a.pledge.result, s);
-                    let s3 = refresh_events(a.now, a.pledge.result, s2);
-                    return {...s3, loading_events: false};
+                    let s2 = refresh_events(a.now, a.pledge.result, s);
+                    return {...s2,
+                        oee: oee.process_events(a.now, a.pledge.result, s2.oee),
+                        loading_events: false
+                    };
                 case PledgeStatus.Error:
                     return {...s, loading_events: false, loading_error: a.pledge.error};
                 default: return s;
             }
 
         case ActionType.SetSystemHours:
-            return {...s, system_active_hours_per_week: a.hours};
+            return {...s,
+                oee: {...s.oee, system_active_hours_per_week: a.hours}
+            };
 
-        case ActionType.LoadAnalysisLast30Days:
+        case ActionType.SetAnalysisLast30Days:
             return {...s,
                 analysis_period: AnalysisPeriod.Last30Days,
                 analysis_period_month_events: im.List()

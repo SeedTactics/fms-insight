@@ -49,14 +49,14 @@ it('sets the system hours', () => {
     type: events.ActionType.SetSystemHours,
     hours: 5
   });
-  expect(s.system_active_hours_per_week).toBe(5);
+  expect(s.oee.system_active_hours_per_week).toBe(5);
 });
 
 it('responds to loading', () => {
   let st = events.reducer(
     {...events.initial, loading_error: new Error('hello')},
     {
-      type: events.ActionType.RequestLastWeek,
+      type: events.ActionType.RequestLast30Days,
       now: new Date(),
       pledge: {
         status: PledgeStatus.Starting
@@ -65,7 +65,7 @@ it('responds to loading', () => {
   );
   expect(st.loading_events).toBe(true);
   expect(st.loading_error).toBeUndefined();
-  expect(st.last_week_of_hours.isEmpty()).toBe(true);
+  expect(st.oee.last_week_of_hours.isEmpty()).toBe(true);
   expect(st.last_30_days_of_events.isEmpty()).toBe(true);
 });
 
@@ -73,7 +73,7 @@ it('responds to error', () => {
   let st = events.reducer(
     {...events.initial, loading_events: true},
     {
-      type: events.ActionType.RequestLastWeek,
+      type: events.ActionType.RequestLast30Days,
       now: new Date(),
       pledge: {
         status: PledgeStatus.Error,
@@ -83,7 +83,7 @@ it('responds to error', () => {
   );
   expect(st.loading_events).toBe(false);
   expect(st.loading_error).toEqual(new Error('hello'));
-  expect(st.last_week_of_hours.isEmpty()).toBe(true);
+  expect(st.oee.last_week_of_hours.isEmpty()).toBe(true);
   expect(st.last_30_days_of_events.isEmpty()).toBe(true);
 });
 
@@ -100,7 +100,7 @@ it('adds new log entries', () => {
   let st = events.reducer(
     events.initial,
     {
-      type: events.ActionType.RequestLastWeek,
+      type: events.ActionType.RequestLast30Days,
       now: new Date(),
       pledge: {
         status: PledgeStatus.Completed,
@@ -112,7 +112,7 @@ it('adds new log entries', () => {
     twentySevenCycle.concat(twoDaysAgoCycle, todayCycle)
   );
 
-  expect(st.last_week_of_hours
+  expect(st.oee.last_week_of_hours
             .map(e => ({station: e.station, hours: e.hours})) // need to filter date for the snapshot
             .toArray()
         ).toMatchSnapshot('hours with two days ago and today');
@@ -124,7 +124,7 @@ it('adds new log entries', () => {
   st = events.reducer(
     st,
     {
-      type: events.ActionType.RequestLastWeek,
+      type: events.ActionType.RequestLast30Days,
       now: sixDays,
       pledge: {
         status: PledgeStatus.Completed,
@@ -137,7 +137,7 @@ it('adds new log entries', () => {
     twoDaysAgoCycle.concat(todayCycle, sixDaysCycle)
   );
 
-  expect(st.last_week_of_hours
+  expect(st.oee.last_week_of_hours
             .map(e => ({station: e.station, hours: e.hours})) // need to filter date for the snapshot
             .toArray()
         ).toMatchSnapshot('hours with today and 6 days from now');
@@ -146,7 +146,7 @@ it('adds new log entries', () => {
   let newSt = events.reducer(
     st,
     {
-      type: events.ActionType.RequestLastWeek,
+      type: events.ActionType.RequestLast30Days,
       now: sixDays,
       pledge: {
         status: PledgeStatus.Completed,
@@ -155,7 +155,7 @@ it('adds new log entries', () => {
     }
   );
   expect(newSt.last_30_days_of_events).toBe(st.last_30_days_of_events);
-  expect(newSt.last_week_of_hours).toBe(st.last_week_of_hours);
+  expect(newSt.oee.last_week_of_hours).toBe(st.oee.last_week_of_hours);
 });
 
 it("starts loading a specific month for analysis", () => {
@@ -207,7 +207,7 @@ it("loads 30 days for analysis", () => {
       analysis_period_month_events: im.List(cycle)
     },
     {
-      type: events.ActionType.LoadAnalysisLast30Days
+      type: events.ActionType.SetAnalysisLast30Days
     }
   );
   expect(st.analysis_period).toBe(events.AnalysisPeriod.Last30Days);
