@@ -50,7 +50,7 @@ jest.mock('./data/events', () => {
     requestLastMonth: () => 'requestLastMonth'
   };
 });
-jest.mock('./data/jobs', () => {
+jest.mock('./data/current-events', () => {
   return {
     loadCurrentStatus: () => 'loadCurrentStatus'
   };

@@ -33,13 +33,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as api from './api';
 import { duration } from 'moment';
 import { PledgeStatus, ConsumingPledge } from './pledge';
-import { addDays } from 'date-fns';
+import { addDays, addMonths, startOfMonth } from 'date-fns';
 import * as im from 'immutable'; // consider collectable.js at some point?
 
 export interface StationInUse {
     readonly date: Date;
     readonly station: string;
     readonly hours: number;
+}
+
+export enum AnalysisPeriod {
+    Last30Days = 'Last_30_Days',
+    SpecificMonth = 'Specific_Month'
 }
 
 export interface State {
@@ -53,18 +58,30 @@ export interface State {
     readonly last_week_of_hours: im.List<StationInUse>;
 
     readonly system_active_hours_per_week: number;
+
+    readonly analysis_period: AnalysisPeriod;
+    readonly analysis_period_month: Date;
+    readonly loading_analysis_period: boolean;
+    readonly analysis_period_month_events: im.List<Readonly<api.ILogEntry>>;
 }
 
 export const initial: State = {
     loading_events: false,
     last_30_days_of_events: im.List(),
     last_week_of_hours: im.List(),
-    system_active_hours_per_week: 7 * 24
+    system_active_hours_per_week: 7 * 24,
+    analysis_period: AnalysisPeriod.Last30Days,
+    analysis_period_month: startOfMonth(new Date()),
+    loading_analysis_period: false,
+    analysis_period_month_events: im.List()
 };
 
 export enum ActionType {
     RequestLastWeek = 'Events_RequestLastWeek',
     SetSystemHours = 'Events_SetSystemHours',
+    LoadAnalysisLast30Days = 'Events_LoadAnalysisLast30Days',
+    LoadAnalysisSpecificMonth = 'Events_LoadAnalysisMonth',
+    SetAnalysisMonth = 'Events_SetAnalysisMonth',
     Other = 'Other',
 }
 
@@ -72,6 +89,13 @@ export enum ActionType {
 export type Action =
   | {type: ActionType.RequestLastWeek, now: Date, pledge: ConsumingPledge<ReadonlyArray<Readonly<api.ILogEntry>>>}
   | {type: ActionType.SetSystemHours, hours: number}
+  | {type: ActionType.LoadAnalysisLast30Days }
+  | {
+      type: ActionType.LoadAnalysisSpecificMonth,
+      month: Date,
+      pledge: ConsumingPledge<ReadonlyArray<Readonly<api.ILogEntry>>>
+    }
+  | {type: ActionType.SetAnalysisMonth, month: Date }
   | {type: ActionType.Other}
   ;
 
@@ -83,6 +107,27 @@ export function requestLastMonth() /*: Action<ActionUse.CreatingAction> */ {
         type: ActionType.RequestLastWeek,
         now: now,
         pledge: client.get(oneWeekAgo, now)
+    };
+}
+
+export function analyzeLast30Days() {
+    return {type: ActionType.LoadAnalysisLast30Days};
+}
+
+export function analyzeSpecificMonth(month: Date) {
+    var client = new api.LogClient();
+    var startOfNextMonth = addMonths(month, 1);
+    return {
+        type: ActionType.LoadAnalysisSpecificMonth,
+        month: month,
+        pledge: client.get(month, startOfNextMonth)
+    };
+}
+
+export function setAnalysisMonth(month: Date) {
+    return {
+        type: ActionType.SetAnalysisMonth,
+        month: month
     };
 }
 
@@ -171,6 +216,42 @@ export function reducer(s: State, a: Action): State {
 
         case ActionType.SetSystemHours:
             return {...s, system_active_hours_per_week: a.hours};
+
+        case ActionType.LoadAnalysisLast30Days:
+            return {...s,
+                analysis_period: AnalysisPeriod.Last30Days,
+                analysis_period_month_events: im.List()
+            };
+
+        case ActionType.LoadAnalysisSpecificMonth:
+            switch (a.pledge.status) {
+                case PledgeStatus.Starting:
+                    return {...s,
+                        analysis_period: AnalysisPeriod.SpecificMonth,
+                        analysis_period_month: a.month,
+                        loading_error: undefined,
+                        loading_analysis_period: true,
+                        analysis_period_month_events: im.List()
+                    };
+
+                case PledgeStatus.Completed:
+                    return {...s,
+                        loading_analysis_period: false,
+                        analysis_period_month_events:
+                            im.List(a.pledge.result).sortBy(e => e.endUTC)
+                    };
+
+                case PledgeStatus.Error:
+                    return {...s,
+                        loading_analysis_period: false,
+                        loading_error: a.pledge.error
+                    };
+
+                default: return s;
+            }
+
+        case ActionType.SetAnalysisMonth:
+            return {...s, analysis_period_month: a.month};
 
         default: return s;
     }

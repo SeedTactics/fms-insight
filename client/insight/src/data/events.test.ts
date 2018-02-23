@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as events from './events';
+import * as im from 'immutable';
 import { fakeCycle } from './events.fake';
 import { PledgeStatus } from './pledge';
 import { addDays } from 'date-fns';
@@ -155,4 +156,60 @@ it('adds new log entries', () => {
   );
   expect(newSt.last_30_days_of_events).toBe(st.last_30_days_of_events);
   expect(newSt.last_week_of_hours).toBe(st.last_week_of_hours);
+});
+
+it("starts loading a specific month for analysis", () => {
+  let st = events.reducer(
+    {...events.initial},
+    {
+      type: events.ActionType.LoadAnalysisSpecificMonth,
+      month: new Date(2018, 2, 1),
+      pledge: {
+        status: PledgeStatus.Starting
+      }
+    }
+  );
+  expect(st.analysis_period).toBe(events.AnalysisPeriod.SpecificMonth);
+  expect(st.analysis_period_month).toEqual(new Date(2018, 2, 1));
+  expect(st.loading_analysis_period).toBe(true);
+});
+
+it("loads a specific month for analysis", () => {
+  const cycle = fakeCycle(new Date(), 3);
+
+  let st = events.reducer(
+    {...events.initial,
+      loading_analysis_period: true,
+      analysis_period_month: new Date(2018, 2, 1),
+      analysis_period: events.AnalysisPeriod.SpecificMonth
+    },
+    {
+      type: events.ActionType.LoadAnalysisSpecificMonth,
+      month: new Date(2018, 2, 1),
+      pledge: {
+        status: PledgeStatus.Completed,
+        result: cycle
+      }
+    }
+  );
+  expect(st.analysis_period).toBe(events.AnalysisPeriod.SpecificMonth);
+  expect(st.loading_analysis_period).toBe(false);
+  expect(st.analysis_period_month).toEqual(new Date(2018, 2, 1));
+  expect(st.analysis_period_month_events.toArray()).toEqual(cycle);
+});
+
+it("loads 30 days for analysis", () => {
+  const cycle = fakeCycle(new Date(), 3);
+
+  let st = events.reducer(
+    {...events.initial,
+      analysis_period: events.AnalysisPeriod.SpecificMonth,
+      analysis_period_month_events: im.List(cycle)
+    },
+    {
+      type: events.ActionType.LoadAnalysisLast30Days
+    }
+  );
+  expect(st.analysis_period).toBe(events.AnalysisPeriod.Last30Days);
+  expect(st.analysis_period_month_events.isEmpty()).toBe(true);
 });

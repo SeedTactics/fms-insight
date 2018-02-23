@@ -1,0 +1,91 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`last 30 selected with january 1`] = `
+<nav
+  style={
+    Object {
+      "alignItems": "center",
+      "backgroundColor": "#E0E0E0",
+      "display": "flex",
+      "justifyContent": "space-evenly",
+      "minHeight": "2.5em",
+      "paddingLeft": "24px",
+      "paddingRight": "24px",
+    }
+  }
+>
+  <WithStyles(FormControlLabel)
+    control={
+      <WithStyles(Radio)
+        checked={true}
+        onChange={[Function]}
+      />
+    }
+    label="Last 30 days"
+  />
+  <div>
+    <WithStyles(FormControlLabel)
+      control={
+        <WithStyles(Radio)
+          checked={false}
+          onChange={[Function]}
+        />
+      }
+      label="Select Month"
+    />
+    <TextField
+      onBlur={[Function]}
+      onChange={[Function]}
+      required={false}
+      select={false}
+      type="month"
+      value="2018-01"
+    />
+  </div>
+</nav>
+`;
+
+exports[`specific month with february 1`] = `
+<nav
+  style={
+    Object {
+      "alignItems": "center",
+      "backgroundColor": "#E0E0E0",
+      "display": "flex",
+      "justifyContent": "space-evenly",
+      "minHeight": "2.5em",
+      "paddingLeft": "24px",
+      "paddingRight": "24px",
+    }
+  }
+>
+  <WithStyles(FormControlLabel)
+    control={
+      <WithStyles(Radio)
+        checked={false}
+        onChange={[Function]}
+      />
+    }
+    label="Last 30 days"
+  />
+  <div>
+    <WithStyles(FormControlLabel)
+      control={
+        <WithStyles(Radio)
+          checked={true}
+          onChange={[Function]}
+        />
+      }
+      label="Select Month"
+    />
+    <TextField
+      onBlur={[Function]}
+      onChange={[Function]}
+      required={false}
+      select={false}
+      type="month"
+      value="2018-02"
+    />
+  </div>
+</nav>
+`;
