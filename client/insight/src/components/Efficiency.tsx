@@ -47,6 +47,7 @@ import { connect } from 'react-redux';
 import * as numerable from 'numeral';
 import Select from 'material-ui/Select';
 import { MenuItem } from 'material-ui/Menu';
+import WorkIcon from 'material-ui-icons/Work';
 
 import AnalysisSelectToolbar from './AnalysisSelectToolbar';
 import * as events from '../data/events';
@@ -166,10 +167,12 @@ export class PartStationCycleChart extends React.Component<PartStationCycleProps
       <Card>
         <CardHeader
           title={
-            <div>
-              <span style={{marginRight: '3em'}}>
+            <div style={{display: 'flex', flexWrap: 'wrap', alignItems: 'center'}}>
+              <WorkIcon style={{marginRight: '10px', color: "#6D4C41"}}/>
+              <div style={{marginRight: '3em'}}>
                 Station Cycles
-              </span>
+              </div>
+              <div style={{flexGrow: 1}}/>
               <Select
                 autoWidth
                 displayEmpty
@@ -186,14 +189,10 @@ export class PartStationCycleChart extends React.Component<PartStationCycleProps
                   )
                 }
               </Select>
-            </div>
-          }
+            </div>}
         />
         <CardContent>
-          {
-            this.state.part === "" ? undefined :
-              <StationCycleChart by_station={this.props.by_part.get(this.state.part, im.Map())}/>
-          }
+          <StationCycleChart by_station={this.props.by_part.get(this.state.part, im.Map())}/>
         </CardContent>
       </Card>
     );
