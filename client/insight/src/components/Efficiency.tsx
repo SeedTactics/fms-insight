@@ -64,6 +64,7 @@ interface StationCycleChartTooltip {
 
 interface StationCycleChartState {
   tooltip?: StationCycleChartTooltip;
+  disabled_stations: { [key: string]: boolean };
 }
 
 function format_hint(tip: StationCycleChartTooltip) {
@@ -75,7 +76,10 @@ function format_hint(tip: StationCycleChartTooltip) {
 }
 
 export class StationCycleChart extends React.Component<StationCycleChartProps, StationCycleChartState> {
-  state = {}  as StationCycleChartState;
+  state = {
+    tooltip: undefined,
+    disabled_stations: {}
+  } as StationCycleChartState;
 
   setClosestPoint = (stat: string) => (point: events.StationCycle) => {
     if (this.state.tooltip === undefined) {
@@ -87,6 +91,15 @@ export class StationCycleChart extends React.Component<StationCycleChartProps, S
 
   clearTooltip = () => {
     this.setState({tooltip: undefined});
+  }
+
+  toggleStation = (station: {title: string}) => {
+    const newState = !!!this.state.disabled_stations[station.title];
+    this.setState({
+      disabled_stations: {...this.state.disabled_stations,
+        [station.title]: newState
+      }
+    });
   }
 
   render() {
@@ -111,6 +124,7 @@ export class StationCycleChart extends React.Component<StationCycleChartProps, S
                 key={stat}
                 data={points}
                 onValueClick={this.setClosestPoint(stat)}
+                {...(this.state.disabled_stations[stat] ? {opacity: 0.2} : null)}
               />
             ).toIndexedSeq()
           }
@@ -121,7 +135,15 @@ export class StationCycleChart extends React.Component<StationCycleChartProps, S
         </FlexibleWidthXYPlot>
 
         <div style={{textAlign: 'center'}}>
-          <DiscreteColorLegend orientation="horizontal" items={stations.keySeq()}/>
+          <DiscreteColorLegend
+            orientation="horizontal"
+            items={
+              stations.keySeq().map(stat =>
+                ({title: stat, disabled: this.state.disabled_stations[stat]})
+              ).toArray()
+            }
+            onItemClick={this.toggleStation}
+          />
         </div>
       </div>
     );
