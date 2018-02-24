@@ -32,26 +32,127 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
 import * as im from 'immutable';
+import { format } from 'date-fns';
+import { MarkSeries,
+         XAxis,
+         YAxis,
+         Hint,
+         FlexibleWidthXYPlot,
+         VerticalGridLines,
+         HorizontalGridLines,
+         DiscreteColorLegend
+       } from 'react-vis';
+import Card, { CardHeader, CardContent } from 'material-ui/Card';
+import { connect } from 'react-redux';
+import * as numerable from 'numeral';
 
-import * as api from '../data/api';
 import AnalysisSelectToolbar from './AnalysisSelectToolbar';
+import * as events from '../data/events';
+import { Store } from '../data/store';
 
-export interface StationCycleProps {
-  cycles: im.Map<string, Iterable<Readonly<api.ILogEntry>>>;
-  all_parts: Iterable<string>;
-  selected_parts: im.Set<string>;
+export interface StationCycleChartProps {
+  by_station: im.Map<string, ReadonlyArray<events.StationCycle>>;
 }
 
-export function StationCycles(props: StationCycleProps) {
-  return <p>Station Cycles</p>;
+interface StationCycleChartTooltip {
+  readonly x: Date;
+  readonly y: number;
+  readonly stat: string;
 }
+
+interface StationCycleChartState {
+  tooltip?: StationCycleChartTooltip;
+}
+
+function format_hint(tip: StationCycleChartTooltip) {
+  return [
+    {title: 'Time', value: format(tip.x, 'MMM D, YYYY, H:mm a')},
+    {title: 'Station', value: tip.stat},
+    {title: 'Cycle Time', value: numerable(tip.y).format('0.0') + " minutes"},
+  ];
+}
+
+export class StationCycleChart extends React.Component<StationCycleChartProps, StationCycleChartState> {
+  state = {}  as StationCycleChartState;
+
+  setClosestPoint = (stat: string) => (point: events.StationCycle) => {
+    if (this.state.tooltip === undefined) {
+      this.setState({tooltip: {...point, stat: stat}});
+    } else {
+      this.setState({tooltip: undefined});
+    }
+  }
+
+  clearTooltip = () => {
+    this.setState({tooltip: undefined});
+  }
+
+  render() {
+    const stations =
+      this.props.by_station.toSeq()
+      .sortBy((points, stat) => stat);
+    return (
+      <div>
+        <FlexibleWidthXYPlot
+            height={window.innerHeight - 250}
+            xType="time"
+            onMouseLeave={this.clearTooltip}
+        >
+          <VerticalGridLines/>
+          <HorizontalGridLines/>
+          <XAxis/>
+          <YAxis/>
+          {
+            stations.map((points, stat) =>
+              <MarkSeries
+                key={stat}
+                data={points}
+                onValueClick={this.setClosestPoint(stat)}
+              />
+            ).toIndexedSeq()
+          }
+          {
+            this.state.tooltip === undefined ? undefined :
+              <Hint value={this.state.tooltip} format={format_hint}/>
+          }
+        </FlexibleWidthXYPlot>
+
+        <div style={{textAlign: 'center'}}>
+          <DiscreteColorLegend orientation="horizontal" items={stations.keySeq()}/>
+        </div>
+      </div>
+    );
+  }
+}
+
+export interface PartStationCycleProps {
+  by_part: im.Map<string, im.Map<string, ReadonlyArray<events.StationCycle>>>;
+}
+
+export function PartStationCycleChart(props: PartStationCycleProps) {
+  const firstPart = props.by_part.keySeq().first() || "";
+  return (
+    <StationCycleChart by_station={props.by_part.get(firstPart, im.Map())}/>
+  );
+}
+
+const ConnectedPartStationCycleChart = connect(
+  (st: Store) => ({
+    by_part: st.Events.last30.station_cycles.by_part_then_stat
+  })
+)(PartStationCycleChart);
 
 export default function Efficiency() {
   return (
     <>
       <AnalysisSelectToolbar/>
-      <main style={{'padding': '8px'}}>
-        <p>Efficiency Page</p>
+      <main style={{'padding': '24px'}}>
+        <Card>
+          <CardHeader title="Station Cycles"/>
+          <CardContent>
+            <ConnectedPartStationCycleChart/>
+          </CardContent>
+        </Card>
       </main>
     </>
   );

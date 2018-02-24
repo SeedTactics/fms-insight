@@ -161,7 +161,10 @@ it("starts loading a specific month for analysis", () => {
 });
 
 it("loads 30 days for analysis", () => {
-  const cycles = stationCycles.process_events(fakeCycle(new Date(), 3), stationCycles.initial);
+  const cycles = stationCycles.process_events(
+    {type: stationCycles.ExpireOldDataType.NoExpire},
+    fakeCycle(new Date(), 3),
+    stationCycles.initial);
 
   let st = events.reducer(
     {...events.initial,

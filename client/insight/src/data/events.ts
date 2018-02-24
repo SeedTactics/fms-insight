@@ -174,7 +174,10 @@ function processRecentEvents(now: Date, evts: Iterable<api.ILogEntry>, s: Last30
             latest_counter: lastCounter,
             latest_event: lastDate,
             oee: oee.process_events(now, evts, s.oee),
-            station_cycles: stationCycles.process_events(evts, s.station_cycles),
+            station_cycles: stationCycles.process_events(
+                {type: stationCycles.ExpireOldDataType.ExpireEarlierThan, d: now},
+                evts,
+                s.station_cycles),
         });
 }
 
@@ -182,7 +185,10 @@ function processSpecificMonth(evts: Iterable<api.ILogEntry>, s: AnalysisMonth): 
     return safeAssign(
         s,
         {
-            station_cycles: stationCycles.process_events(evts, s.station_cycles)
+            station_cycles: stationCycles.process_events(
+                {type: stationCycles.ExpireOldDataType.NoExpire},
+                evts,
+                s.station_cycles)
         }
     );
 }
