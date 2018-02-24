@@ -45,6 +45,9 @@ import { MarkSeries,
 import Card, { CardHeader, CardContent } from 'material-ui/Card';
 import { connect } from 'react-redux';
 import * as numerable from 'numeral';
+import Grid from 'material-ui/Grid';
+import List, { ListItem, ListItemText } from 'material-ui/List';
+import Checkbox from 'material-ui/Checkbox';
 
 import AnalysisSelectToolbar from './AnalysisSelectToolbar';
 import * as events from '../data/events';
@@ -129,11 +132,45 @@ export interface PartStationCycleProps {
   by_part: im.Map<string, im.Map<string, ReadonlyArray<events.StationCycle>>>;
 }
 
-export function PartStationCycleChart(props: PartStationCycleProps) {
-  const firstPart = props.by_part.keySeq().first() || "";
-  return (
-    <StationCycleChart by_station={props.by_part.get(firstPart, im.Map())}/>
-  );
+export class PartStationCycleChart extends React.Component<PartStationCycleProps, {part?: string}> {
+  state = {part: undefined} as {part?: string};
+
+  setPart = (part: string) => () => {
+    this.setState({part});
+  }
+
+  render() {
+    return (
+      <Grid container>
+        <Grid item xs={12} md={2}>
+          <List>
+            {
+              this.props.by_part.keySeq().sort().map(part =>
+                <ListItem
+                  button
+                  key={part}
+                  onClick={this.setPart(part)}
+                >
+                  <Checkbox
+                    checked={this.state.part === part}
+                    tabIndex={-1}
+                    disableRipple
+                  />
+                  <ListItemText primary={part}/>
+                </ListItem>
+              )
+            }
+          </List>
+        </Grid>
+        <Grid item xs={12} md={10}>
+          {
+            this.state.part === undefined ? undefined :
+              <StationCycleChart by_station={this.props.by_part.get(this.state.part, im.Map())}/>
+          }
+        </Grid>
+      </Grid>
+    );
+  }
 }
 
 const ConnectedPartStationCycleChart = connect(
