@@ -47,7 +47,7 @@ import store from './data/store';
 
 jest.mock('./data/events', () => {
   return {
-    requestLastMonth: () => 'requestLastMonth'
+    loadLast30Days: () => 'loadLast30Days'
   };
 });
 jest.mock('./data/current-events', () => {
@@ -59,6 +59,6 @@ jest.mock('./data/current-events', () => {
 it('renders a snapshot', () => {
   const val = shallow(<App/>);
   expect(val).toMatchSnapshot();
-  expect(store.dispatch).toHaveBeenCalledWith('requestLastMonth');
+  expect(store.dispatch).toHaveBeenCalledWith('loadLast30Days');
   expect(store.dispatch).toHaveBeenCalledWith('loadCurrentStatus');
 });

@@ -30,31 +30,27 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from 'react';
-import { connect } from 'react-redux';
-import { CircularProgress } from 'material-ui/Progress';
+import * as api from './api';
+import * as im from 'immutable'; // consider collectable.js at some point?
 
-import { Store } from '../data/store';
-import Tooltip from 'material-ui/Tooltip/Tooltip';
-
-export interface Props {
-  loading: boolean;
+export interface StationCycle {
+    readonly date: Date;
+    readonly part: string;
+    readonly cycle: number;
 }
 
-export function LoadingIcon({loading}: Props) {
-  if (loading) {
-    return (
-      <Tooltip title="Loading">
-        <CircularProgress color="secondary"/>
-      </Tooltip>
-    );
-  } else {
-    return null;
-  }
+export interface StationCycleState {
+    // list of station use, sorted by date
+    readonly by_part: im.Map<string, im.List<StationCycle>>;
 }
 
-export default connect(
-  (st: Store) => ({
-    loading: st.Events.loading_events || st.Current.loading || st.Events.loading_analysis_month
-  })
-)(LoadingIcon);
+export const initial: StationCycleState = {
+  by_part: im.Map()
+};
+
+export function process_events(
+  newEvts: Iterable<api.ILogEntry>,
+  st: StationCycleState): StationCycleState {
+
+    return st;
+}

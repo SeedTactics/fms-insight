@@ -31,18 +31,35 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { addDays, addMonths, startOfMonth } from 'date-fns';
-import * as im from 'immutable'; // consider collectable.js at some point?
 import { PledgeStatus, ConsumingPledge } from './pledge';
+import * as im from 'immutable';
 
 import * as api from './api';
 import * as oee from './oee';
+import * as stationCycles from './station-cycles';
 
 export { OeeState, StationInUse } from './oee';
+export { StationCycleState, StationCycle } from './station-cycles';
 
 export enum AnalysisPeriod {
     Last30Days = 'Last_30_Days',
     SpecificMonth = 'Specific_Month'
 }
+
+export interface Last30Days {
+    readonly latest_event?: Date;
+    readonly latest_counter?: number;
+    readonly oee: oee.OeeState;
+    readonly station_cycles: stationCycles.StationCycleState;
+}
+
+export interface AnalysisMonth {
+    readonly station_cycles: stationCycles.StationCycleState;
+}
+
+const emptyAnalysisMonth = {
+    station_cycles: stationCycles.initial
+};
 
 export interface State {
     readonly loading_events: boolean;
@@ -50,56 +67,55 @@ export interface State {
 
     readonly analysis_period: AnalysisPeriod;
     readonly analysis_period_month: Date;
-    readonly loading_analysis_period: boolean;
+    readonly loading_analysis_month: boolean;
 
-    // list of entries sorted by endUTC
-    readonly last_30_days_of_events: im.List<Readonly<api.ILogEntry>>; // TODO: deep readonly in typescript 2.8
-
-    readonly oee: oee.OeeState;
-
-    readonly analysis_period_month_events: im.List<Readonly<api.ILogEntry>>;
+    readonly last30: Last30Days;
+    readonly selected_month: AnalysisMonth;
 }
 
 export const initial: State = {
     loading_events: false,
     analysis_period: AnalysisPeriod.Last30Days,
     analysis_period_month: startOfMonth(new Date()),
-    loading_analysis_period: false,
+    loading_analysis_month: false,
 
-    last_30_days_of_events: im.List(),
-    oee: oee.initial,
-    analysis_period_month_events: im.List()
+    last30: {
+        oee: oee.initial,
+        station_cycles: stationCycles.initial
+    },
+
+    selected_month: emptyAnalysisMonth,
 };
 
 export enum ActionType {
-    RequestLast30Days = 'Events_RequestLast30Days',
-    SetSystemHours = 'Events_SetSystemHours',
     SetAnalysisLast30Days = 'Events_SetAnalysisLast30Days',
-    LoadAnalysisSpecificMonth = 'Events_LoadAnalysisMonth',
     SetAnalysisMonth = 'Events_SetAnalysisMonth',
+    LoadLast30Days = 'Events_LoadLast30Days',
+    LoadAnalysisSpecificMonth = 'Events_LoadAnalysisMonth',
+    SetSystemHours = 'Events_SetSystemHours',
     Other = 'Other',
 }
 
 // TODO: use Plege when typescript 2.8 shows up
 export type Action =
-  | {type: ActionType.RequestLast30Days, now: Date, pledge: ConsumingPledge<ReadonlyArray<Readonly<api.ILogEntry>>>}
-  | {type: ActionType.SetSystemHours, hours: number}
   | {type: ActionType.SetAnalysisLast30Days }
   | {type: ActionType.SetAnalysisMonth, month: Date }
+  | {type: ActionType.LoadLast30Days, now: Date, pledge: ConsumingPledge<ReadonlyArray<Readonly<api.ILogEntry>>>}
   | {
       type: ActionType.LoadAnalysisSpecificMonth,
       month: Date,
       pledge: ConsumingPledge<ReadonlyArray<Readonly<api.ILogEntry>>>
     }
+  | {type: ActionType.SetSystemHours, hours: number}
   | {type: ActionType.Other}
   ;
 
-export function requestLastMonth() /*: Action<ActionUse.CreatingAction> */ {
+export function loadLast30Days() /*: Action<ActionUse.CreatingAction> */ {
     var client = new api.LogClient();
     var now = new Date();
     var oneWeekAgo = addDays(now, -30);
     return {
-        type: ActionType.RequestLast30Days,
+        type: ActionType.LoadLast30Days,
         now: now,
         pledge: client.get(oneWeekAgo, now)
     };
@@ -126,36 +142,61 @@ export function setAnalysisMonth(month: Date) {
     };
 }
 
-function refresh_events(now: Date, newEvts: ReadonlyArray<api.ILogEntry>, st: State): State {
-    let evts = st.last_30_days_of_events;
-    let thirtyDaysAgo = addDays(now, -30);
-
-    // check if no changes needed: no new events and nothing to filter out
-    const minEntry = evts.first();
-    if ((minEntry === undefined || minEntry.endUTC >= thirtyDaysAgo) && newEvts.length === 0) {
-        return st;
+function safeAssign<T, R extends T>(o: T, n: R): T {
+    let allMatch: boolean = true;
+    for (let k of Object.keys(n)) {
+        // tslint:disable-next-line:no-any
+        if ((o as any)[k] !== (n as any)[k]) {
+            allMatch = false;
+            break;
+        }
     }
+    if (allMatch) {
+        return o;
+    } else {
+        return Object.assign(o, n);
+    }
+}
 
-    evts = evts.toSeq()
-        .concat(newEvts)
-        .filter(e => e.endUTC >= thirtyDaysAgo)
-        .sortBy(e => e.endUTC)
-        .toList();
+function processRecentEvents(now: Date, evts: Iterable<api.ILogEntry>, s: Last30Days): Last30Days {
+    let lastCounter = s.latest_counter;
+    let lastDate = s.latest_event;
+    let lastNewEvent = im.Seq(evts).maxBy(e => e.counter);
+    if (lastNewEvent !== undefined) {
+        if (lastCounter === undefined || lastCounter < lastNewEvent.counter) {
+            lastCounter = lastNewEvent.counter;
+            lastDate = lastNewEvent.endUTC;
+        }
+    }
+    return safeAssign(
+        s,
+        {
+            latest_counter: lastCounter,
+            latest_event: lastDate,
+            oee: oee.process_events(now, evts, s.oee),
+            station_cycles: stationCycles.process_events(evts, s.station_cycles),
+        });
+}
 
-    return {...st, last_30_days_of_events: evts};
+function processSpecificMonth(evts: Iterable<api.ILogEntry>, s: AnalysisMonth): AnalysisMonth {
+    return safeAssign(
+        s,
+        {
+            station_cycles: stationCycles.process_events(evts, s.station_cycles)
+        }
+    );
 }
 
 export function reducer(s: State, a: Action): State {
     if (s === undefined) { return initial; }
     switch (a.type) {
-        case ActionType.RequestLast30Days:
+        case ActionType.LoadLast30Days:
             switch (a.pledge.status) {
                 case PledgeStatus.Starting:
                     return {...s, loading_events: true, loading_error: undefined};
                 case PledgeStatus.Completed:
-                    let s2 = refresh_events(a.now, a.pledge.result, s);
-                    return {...s2,
-                        oee: oee.process_events(a.now, a.pledge.result, s2.oee),
+                    return {...s,
+                        last30: processRecentEvents(a.now, a.pledge.result, s.last30),
                         loading_events: false
                     };
                 case PledgeStatus.Error:
@@ -165,13 +206,15 @@ export function reducer(s: State, a: Action): State {
 
         case ActionType.SetSystemHours:
             return {...s,
-                oee: {...s.oee, system_active_hours_per_week: a.hours}
+                last30: {...s.last30,
+                    oee: {...s.last30.oee, system_active_hours_per_week: a.hours}
+                },
             };
 
         case ActionType.SetAnalysisLast30Days:
             return {...s,
                 analysis_period: AnalysisPeriod.Last30Days,
-                analysis_period_month_events: im.List()
+                selected_month: emptyAnalysisMonth,
             };
 
         case ActionType.LoadAnalysisSpecificMonth:
@@ -181,20 +224,19 @@ export function reducer(s: State, a: Action): State {
                         analysis_period: AnalysisPeriod.SpecificMonth,
                         analysis_period_month: a.month,
                         loading_error: undefined,
-                        loading_analysis_period: true,
-                        analysis_period_month_events: im.List()
+                        loading_analysis_month: true,
+                        selected_month: emptyAnalysisMonth,
                     };
 
                 case PledgeStatus.Completed:
                     return {...s,
-                        loading_analysis_period: false,
-                        analysis_period_month_events:
-                            im.List(a.pledge.result).sortBy(e => e.endUTC)
+                        loading_analysis_month: false,
+                        selected_month: processSpecificMonth(a.pledge.result, s.selected_month)
                     };
 
                 case PledgeStatus.Error:
                     return {...s,
-                        loading_analysis_period: false,
+                        loading_analysis_month: false,
                         loading_error: a.pledge.error
                     };
 

@@ -62,19 +62,21 @@ function stat_name(e: api.ILogEntry): string | null {
     }
 }
 
-export function process_events(now: Date, newEvts: ReadonlyArray<api.ILogEntry>, st: OeeState): OeeState {
+export function process_events(now: Date, newEvts: Iterable<api.ILogEntry>, st: OeeState): OeeState {
     let hours = st.last_week_of_hours;
     const oneWeekAgo = addDays(now, -7);
 
+    const evtsSeq = im.Seq(newEvts);
+
     // check if no changes needed: no new events and nothing to filter out
     const minEntry = hours.first();
-    if ((minEntry === undefined || minEntry.date >= oneWeekAgo) && newEvts.length === 0) {
+    if ((minEntry === undefined || minEntry.date >= oneWeekAgo) && evtsSeq.isEmpty()) {
         return st;
     }
 
     // new entries
     const newEntries =
-        im.Seq(newEvts)
+        evtsSeq
         .filter(e => {
             if (e.endUTC < oneWeekAgo) { return false; }
             if (e.startofcycle) { return false; }

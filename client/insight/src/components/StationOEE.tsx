@@ -131,13 +131,13 @@ export function stationHoursInLastWeek(use: im.List<StationInUse>): im.Seq<numbe
 }
 
 const oeeSelector = createSelector(
-  (s: Store) => s.Events.last_week_of_hours,
+  (s: Store) => s.Events.last30.oee.last_week_of_hours,
   stationHoursInLastWeek
 );
 
 export default connect(
   (s: Store) => ({
     station_active_hours_past_week: oeeSelector(s),
-    system_active_hours_per_week: s.Events.system_active_hours_per_week,
+    system_active_hours_per_week: s.Events.last30.oee.system_active_hours_per_week,
   })
 )(StationOEEs);

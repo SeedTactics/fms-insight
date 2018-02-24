@@ -46,7 +46,7 @@ export interface Status {
 }
 
 export interface Props {
-  lastEvent: Readonly<api.ILogEntry> | undefined;
+  lastEvent: Date | undefined;
   status: ReadonlyArray<Status>;
 }
 
@@ -55,7 +55,7 @@ export function MachinePalletStatus(p: Props) {
   if (p.lastEvent !== undefined) {
     lastMsg = (
       <p style={{marginBottom: '-10px', color: '#9E9E9E'}}>
-        <small>Last event {distanceInWordsToNow(p.lastEvent.endUTC)} ago</small>
+        <small>Last event {distanceInWordsToNow(p.lastEvent)} ago</small>
       </p>
     );
   }
@@ -83,11 +83,6 @@ export function MachinePalletStatus(p: Props) {
     </div>
   );
 }
-
-export const lastEvent = createSelector(
-  (s: Store) => s.Events.last_30_days_of_events,
-  e => e.last()
-);
 
 function buildStatus(status: Readonly<api.ICurrentStatus>): ReadonlyArray<Status> {
   const palletLocation = new Map<string, string>();
@@ -169,7 +164,7 @@ export const statusSelector = createSelector(
 export default connect(
   (s: Store) => {
     return {
-        lastEvent: lastEvent(s),
+        lastEvent: s.Events.last30.latest_event,
         status: statusSelector(s),
     };
   }
