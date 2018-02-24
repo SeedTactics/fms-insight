@@ -97,13 +97,14 @@ export class StationCycleChart extends React.Component<StationCycleChartProps, S
     return (
       <div>
         <FlexibleWidthXYPlot
-            height={window.innerHeight - 250}
+            height={window.innerHeight - 200}
             xType="time"
+            margin={{bottom: 50}}
             onMouseLeave={this.clearTooltip}
         >
           <VerticalGridLines/>
           <HorizontalGridLines/>
-          <XAxis/>
+          <XAxis tickLabelAngle={-45}/>
           <YAxis/>
           {
             stations.map((points, stat) =>
