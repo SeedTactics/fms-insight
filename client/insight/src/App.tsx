@@ -52,8 +52,8 @@ const LinkTab: any = Tab as any;
 // tslint:enable
 
 const tabsStyle = {
-  'align-self': 'flex-end',
-  'flex-grow': '1'
+  'alignSelf': 'flex-end' as 'flex-end',
+  'flexGrow': 1
 };
 
 function Header() {
@@ -69,7 +69,7 @@ function Header() {
     const largeAppBar = (
       <AppBar position="static">
         <Toolbar>
-          <Typography variant="title" style={{'margin-right': '2em'}}>Insight</Typography>
+          <Typography variant="title" style={{'marginRight': '2em'}}>Insight</Typography>
           {tabs(false)}
           <LoadingIcon/>
         </Toolbar>

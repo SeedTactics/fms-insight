@@ -75,15 +75,15 @@ export function StationOEE(p: StationOEEProps) {
         d={describeArc(200, 200, 150, -Math.PI / 2, arcPoint)}
         fill="transparent"
         stroke="#795548"
-        stroke-width={10}
+        strokeWidth={10}
       />
       <path
         d={describeArc(200, 200, 150, arcPoint, 1.5 * Math.PI)}
         fill="transparent"
         stroke="#E0E0E0"
-        stroke-width={10}
+        strokeWidth={10}
       />
-      <text x={200} y={190} text-anchor="middle" style={{fontSize: 45}}>
+      <text x={200} y={190} textAnchor="middle" style={{fontSize: 45}}>
         {p.station}
       </text>
       <text x={200} y={250} text-anchor="middle" style={{fontSize: 30}}>
