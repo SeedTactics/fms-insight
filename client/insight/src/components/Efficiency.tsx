@@ -45,9 +45,8 @@ import { MarkSeries,
 import Card, { CardHeader, CardContent } from 'material-ui/Card';
 import { connect } from 'react-redux';
 import * as numerable from 'numeral';
-import Grid from 'material-ui/Grid';
-import List, { ListItem, ListItemText } from 'material-ui/List';
-import Checkbox from 'material-ui/Checkbox';
+import Select from 'material-ui/Select';
+import { MenuItem } from 'material-ui/Menu';
 
 import AnalysisSelectToolbar from './AnalysisSelectToolbar';
 import * as events from '../data/events';
@@ -133,43 +132,48 @@ export interface PartStationCycleProps {
   by_part: im.Map<string, im.Map<string, ReadonlyArray<events.StationCycle>>>;
 }
 
-export class PartStationCycleChart extends React.Component<PartStationCycleProps, {part?: string}> {
-  state = {part: undefined} as {part?: string};
+export class PartStationCycleChart extends React.Component<PartStationCycleProps, {part: string}> {
+  state = {part: ""};
 
-  setPart = (part: string) => () => {
+  setPart = (part: string) => {
     this.setState({part});
   }
 
   render() {
     return (
-      <Grid container>
-        <Grid item xs={12} md={2}>
-          <List>
-            {
-              this.props.by_part.keySeq().sort().map(part =>
-                <ListItem
-                  button
-                  key={part}
-                  onClick={this.setPart(part)}
-                >
-                  <Checkbox
-                    checked={this.state.part === part}
-                    tabIndex={-1}
-                    disableRipple
-                  />
-                  <ListItemText primary={part}/>
-                </ListItem>
-              )
-            }
-          </List>
-        </Grid>
-        <Grid item xs={12} md={10}>
+      <Card>
+        <CardHeader
+          title={
+            <div>
+              <span style={{marginRight: '3em'}}>
+                Station Cycles
+              </span>
+              <Select
+                autoWidth
+                displayEmpty
+                value={this.state.part}
+                onChange={e => this.setPart(e.target.value)}
+              >
+                {
+                  this.state.part !== "" ? undefined :
+                    <MenuItem key={0} value=""><em>Select Part</em></MenuItem>
+                }
+                {
+                  this.props.by_part.keySeq().sort().map(part =>
+                    <MenuItem key={part} value={part}>{part}</MenuItem>
+                  )
+                }
+              </Select>
+            </div>
+          }
+        />
+        <CardContent>
           {
-            this.state.part === undefined ? undefined :
+            this.state.part === "" ? undefined :
               <StationCycleChart by_station={this.props.by_part.get(this.state.part, im.Map())}/>
           }
-        </Grid>
-      </Grid>
+        </CardContent>
+      </Card>
     );
   }
 }
@@ -185,12 +189,7 @@ export default function Efficiency() {
     <>
       <AnalysisSelectToolbar/>
       <main style={{'padding': '24px'}}>
-        <Card>
-          <CardHeader title="Station Cycles"/>
-          <CardContent>
-            <ConnectedPartStationCycleChart/>
-          </CardContent>
-        </Card>
+        <ConnectedPartStationCycleChart/>
       </main>
     </>
   );
