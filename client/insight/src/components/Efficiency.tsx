@@ -76,7 +76,7 @@ function format_hint(tip: StationCycleChartTooltip) {
   ];
 }
 
-export class StationCycleChart extends React.Component<StationCycleChartProps, StationCycleChartState> {
+export class StationCycleChart extends React.PureComponent<StationCycleChartProps, StationCycleChartState> {
   state = {
     tooltip: undefined,
     disabled_stations: {}
@@ -155,7 +155,7 @@ export interface PartStationCycleProps {
   by_part: im.Map<string, im.Map<string, ReadonlyArray<events.StationCycle>>>;
 }
 
-export class PartStationCycleChart extends React.Component<PartStationCycleProps, {part: string}> {
+export class PartStationCycleChart extends React.PureComponent<PartStationCycleProps, {part: string}> {
   state = {part: ""};
 
   setPart = (part: string) => {

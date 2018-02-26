@@ -61,7 +61,7 @@ export interface AnalysisSelectToolbarProps {
   setMonth: (month: Date) => any;
 }
 
-export class AnalysisSelectToolbar extends React.Component<AnalysisSelectToolbarProps, {temp_month?: Date}> {
+export class AnalysisSelectToolbar extends React.PureComponent<AnalysisSelectToolbarProps, {temp_month?: Date}> {
 
   state = {temp_month: undefined};
 
