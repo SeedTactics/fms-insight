@@ -30,53 +30,29 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from 'react';
-import * as im from 'immutable';
-import { connect } from 'react-redux';
-import WorkIcon from 'material-ui-icons/Work';
 
-import AnalysisSelectToolbar from './AnalysisSelectToolbar';
-import { SelectableCycleChart } from './CycleChart';
-import * as events from '../data/events';
-import { Store } from '../data/store';
-import * as guiState from '../data/gui-state';
-
-export interface PartStationCycleChartProps {
-  points: im.Map<string, im.Map<string, ReadonlyArray<events.StationCycle>>>;
-  selected?: string;
-  setSelected: (s: string) => void;
+export enum ActionType {
+  SetSelectedStationCyclePart = 'Gui_SetSelectedStationCyclePart',
+  Other = 'Other',
 }
 
-export function PartStationCycleChart(props: PartStationCycleChartProps) {
-  return (
-    <SelectableCycleChart
-      select_label="Part"
-      series_label="Station"
-      card_label="Station Cycles"
-      icon={<WorkIcon style={{color: "#6D4C41"}}/>}
-      {...props}
-    />
-  );
+export type Action =
+  | { type: ActionType.SetSelectedStationCyclePart, part: string }
+  | { type: ActionType.Other }
+  ;
+
+export interface State {
+  readonly station_cycle_selected_part?: string;
 }
 
-const ConnectedPartStationCycleChart = connect(
-  (st: Store) => ({
-    points: st.Events.last30.station_cycles.by_part_then_stat,
-    selected: st.Gui.station_cycle_selected_part
-  }),
-  {
-    setSelected: (s: string) =>
-      ({ type: guiState.ActionType.SetSelectedStationCyclePart, part: s})
+export const initial: State = {};
+
+export function reducer(s: State, a: Action): State {
+  if (s === undefined) { return initial; }
+  switch (a.type) {
+    case ActionType.SetSelectedStationCyclePart:
+      return {...s, station_cycle_selected_part: a.part };
+    default:
+      return s;
   }
-)(PartStationCycleChart);
-
-export default function Efficiency() {
-  return (
-    <>
-      <AnalysisSelectToolbar/>
-      <main style={{'padding': '24px'}}>
-        <ConnectedPartStationCycleChart/>
-      </main>
-    </>
-  );
 }

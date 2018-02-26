@@ -157,51 +157,46 @@ export interface SelectableCycleChartProps {
   series_label: string;
   card_label: string;
   icon: JSX.Element;
+  selected?: string;
+  setSelected: (s: string) => void;
 }
 
-export class SelectableCycleChart extends React.PureComponent<SelectableCycleChartProps, {selected: string}> {
-  state = {selected: ""};
-
-  setSelected = (selected: string) => {
-    this.setState({selected});
-  }
-
-  render() {
-    return (
-      <Card>
-        <CardHeader
-          title={
-            <div style={{display: 'flex', flexWrap: 'wrap', alignItems: 'center'}}>
-              {this.props.icon}
-              <div style={{marginLeft: '10px', marginRight: '3em'}}>
-                {this.props.card_label}
-              </div>
-              <div style={{flexGrow: 1}}/>
-              <Select
-                autoWidth
-                displayEmpty
-                value={this.state.selected}
-                onChange={e => this.setSelected(e.target.value)}
-              >
-                {
-                  this.state.selected !== "" ? undefined :
-                    <MenuItem key={0} value=""><em>Select {this.props.select_label}</em></MenuItem>
-                }
-                {
-                  this.props.points.keySeq().sort().map(n =>
-                    <MenuItem key={n} value={n}>{n}</MenuItem>
-                  )
-                }
-              </Select>
-            </div>}
+export function SelectableCycleChart(props: SelectableCycleChartProps) {
+  let validValue = props.selected !== undefined && props.points.has(props.selected);
+  return (
+    <Card>
+      <CardHeader
+        title={
+          <div style={{display: 'flex', flexWrap: 'wrap', alignItems: 'center'}}>
+            {props.icon}
+            <div style={{marginLeft: '10px', marginRight: '3em'}}>
+              {props.card_label}
+            </div>
+            <div style={{flexGrow: 1}}/>
+            <Select
+              autoWidth
+              displayEmpty
+              value={validValue ? props.selected : ""}
+              onChange={e => props.setSelected(e.target.value)}
+            >
+              {
+                validValue ? undefined :
+                  <MenuItem key={0} value=""><em>Select {props.select_label}</em></MenuItem>
+              }
+              {
+                props.points.keySeq().sort().map(n =>
+                  <MenuItem key={n} value={n}>{n}</MenuItem>
+                )
+              }
+            </Select>
+          </div>}
+      />
+      <CardContent>
+        <CycleChart
+          points={props.points.get(props.selected || "", im.Map())}
+          series_label={props.series_label}
         />
-        <CardContent>
-          <CycleChart
-            points={this.props.points.get(this.state.selected, im.Map())}
-            series_label={this.props.series_label}
-          />
-        </CardContent>
-      </Card>
-    );
+      </CardContent>
+    </Card>
+  );
   }
-}

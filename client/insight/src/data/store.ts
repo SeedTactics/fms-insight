@@ -34,6 +34,7 @@ import { createStore, GenericStoreEnhancer, combineReducers, compose, applyMiddl
 
 import * as currentEvents from './current-events';
 import * as events from './events';
+import * as gui from './gui-state';
 import { pledgeMiddleware } from './pledge';
 
 /* tslint:disable */
@@ -46,13 +47,15 @@ const devTools: GenericStoreEnhancer =
 export interface Store {
   readonly Current: currentEvents.State;
   readonly Events: events.State;
+  readonly Gui: gui.State;
 }
 
 export default createStore<Store>(
   combineReducers<Store>(
     {
       Current: currentEvents.reducer,
-      Events: events.reducer
+      Events: events.reducer,
+      Gui: gui.reducer,
     }
   ),
   compose(
