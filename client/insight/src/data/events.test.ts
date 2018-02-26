@@ -92,11 +92,11 @@ it('processes new log events into last30', () => {
   var now = new Date(2018, 1, 2, 3, 4, 5);
 
   // start with cycles from 27 days ago, 2 days ago, and today
-  const todayCycle = fakeCycle(now, 30);
+  const todayCycle = fakeCycle(now, 30, "part111", 1);
   var twoDaysAgo = addDays(now, -2);
-  const twoDaysAgoCycle = fakeCycle(twoDaysAgo, 24);
+  const twoDaysAgoCycle = fakeCycle(twoDaysAgo, 24, "part222", 1);
   var twentySevenDaysAgo = addDays(now, -27);
-  const twentySevenCycle = fakeCycle(twentySevenDaysAgo, 18);
+  const twentySevenCycle = fakeCycle(twentySevenDaysAgo, 18, "part222", 2);
   let st = events.reducer(
     events.initial,
     {
@@ -112,7 +112,7 @@ it('processes new log events into last30', () => {
   // Now add again 6 days from now, so that the twoDaysAgo cycle is removed from hours (which processes only 7 days)
   // and twenty seven is removed from processing 30 days
   var sixDays = addDays(now, 6);
-  const sixDaysCycle = fakeCycle(sixDays, 12);
+  const sixDaysCycle = fakeCycle(sixDays, 12, "part111", 1);
   st = events.reducer(
     st,
     {
@@ -183,11 +183,11 @@ it("loads a specific month for analysis", () => {
   var now = new Date(2018, 1, 2, 3, 4, 5);
 
   // start with cycles from 27 days ago, 2 days ago, and today
-  const todayCycle = fakeCycle(now, 30);
+  const todayCycle = fakeCycle(now, 30, "partAAA", 1);
   var twoDaysAgo = addDays(now, -2);
-  const twoDaysAgoCycle = fakeCycle(twoDaysAgo, 24);
+  const twoDaysAgoCycle = fakeCycle(twoDaysAgo, 24, "partBBB", 2);
   var twentySevenDaysAgo = addDays(now, -27);
-  const twentySevenCycle = fakeCycle(twentySevenDaysAgo, 18);
+  const twentySevenCycle = fakeCycle(twentySevenDaysAgo, 18, "partCCC", 3);
 
   let st = events.reducer(
     {...events.initial,

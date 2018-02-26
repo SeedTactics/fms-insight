@@ -36,12 +36,12 @@ import * as faker from 'faker';
 import { duration } from 'moment';
 import { addSeconds, addMinutes } from 'date-fns';
 
-export function fakeMaterial(): LogMaterial {
+export function fakeMaterial(part?: string, proc?: number): LogMaterial {
   return new LogMaterial({
     id: faker.random.number(),
     uniq: 'uniq' + faker.random.alphaNumeric(),
-    part: 'part' + faker.random.alphaNumeric(),
-    proc: faker.random.number({max: 4}),
+    part: part || 'part' + faker.random.alphaNumeric(),
+    proc: proc || faker.random.number({max: 4}),
     numproc: faker.random.number({max: 4}),
     face: 'face' + faker.random.alphaNumeric()
   });
@@ -61,9 +61,9 @@ function addStartAndEnd(es: ILogEntry[], e: ILogEntry): void {
   es.push(e);
 }
 
-export function fakeCycle(time: Date, machineTime: number): ReadonlyArray<ILogEntry> {
+export function fakeCycle(time: Date, machineTime: number, part?: string, proc?: number): ReadonlyArray<ILogEntry> {
   const pal = 'pal' + faker.random.alphaNumeric();
-  const material = [fakeMaterial()];
+  const material = [fakeMaterial(part, proc)];
 
   let counter = 1;
   time = addMinutes(time, 5);

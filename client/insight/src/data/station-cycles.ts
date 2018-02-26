@@ -99,7 +99,7 @@ export function process_events(
         // filter old events
         parts = parts
           .map(statMap =>
-            statMap.map(es => es.filter(e => e.x < expire.d))
+            statMap.map(es => es.filter(e => e.x >= expire.d))
                    .filter(es => es.length > 0)
           )
           .filter(statMap => !statMap.isEmpty());

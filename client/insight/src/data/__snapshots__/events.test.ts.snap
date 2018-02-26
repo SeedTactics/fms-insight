@@ -40,7 +40,59 @@ Object {
     "system_active_hours_per_week": 168,
   },
   "station_cycles": Object {
-    "by_part": Immutable.Map {
+    "by_part_then_stat": Immutable.Map {
+      part222-1: Immutable.Map {
+            L/U #1: Array [
+                  Object {
+                    "x": 2018-01-31T09:09:05.000Z,
+                    "y": 6,
+                  },
+                ],
+            MC #1: Array [
+                  Object {
+                    "x": 2018-01-31T09:36:05.000Z,
+                    "y": 24,
+                  },
+                ],
+            L/U #2: Array [
+                  Object {
+                    "x": 2018-01-31T09:46:05.000Z,
+                    "y": 3,
+                  },
+                ],
+      },
+      part111-1: Immutable.Map {
+            L/U #1: Array [
+                  Object {
+                    "x": 2018-02-02T09:09:05.000Z,
+                    "y": 6,
+                  },
+                  Object {
+                    "x": 2018-02-08T09:09:05.000Z,
+                    "y": 6,
+                  },
+                ],
+            MC #1: Array [
+                  Object {
+                    "x": 2018-02-02T09:42:05.000Z,
+                    "y": 30,
+                  },
+                  Object {
+                    "x": 2018-02-08T09:24:05.000Z,
+                    "y": 12,
+                  },
+                ],
+            L/U #2: Array [
+                  Object {
+                    "x": 2018-02-02T09:52:05.000Z,
+                    "y": 3,
+                  },
+                  Object {
+                    "x": 2018-02-08T09:34:05.000Z,
+                    "y": 3,
+                  },
+                ],
+      },
 },
   },
 }
@@ -86,7 +138,67 @@ Object {
     "system_active_hours_per_week": 168,
   },
   "station_cycles": Object {
-    "by_part": Immutable.Map {
+    "by_part_then_stat": Immutable.Map {
+      part222-2: Immutable.Map {
+            L/U #1: Array [
+                  Object {
+                    "x": 2018-01-06T09:09:05.000Z,
+                    "y": 6,
+                  },
+                ],
+            MC #1: Array [
+                  Object {
+                    "x": 2018-01-06T09:30:05.000Z,
+                    "y": 18,
+                  },
+                ],
+            L/U #2: Array [
+                  Object {
+                    "x": 2018-01-06T09:40:05.000Z,
+                    "y": 3,
+                  },
+                ],
+      },
+      part222-1: Immutable.Map {
+            L/U #1: Array [
+                  Object {
+                    "x": 2018-01-31T09:09:05.000Z,
+                    "y": 6,
+                  },
+                ],
+            MC #1: Array [
+                  Object {
+                    "x": 2018-01-31T09:36:05.000Z,
+                    "y": 24,
+                  },
+                ],
+            L/U #2: Array [
+                  Object {
+                    "x": 2018-01-31T09:46:05.000Z,
+                    "y": 3,
+                  },
+                ],
+      },
+      part111-1: Immutable.Map {
+            L/U #1: Array [
+                  Object {
+                    "x": 2018-02-02T09:09:05.000Z,
+                    "y": 6,
+                  },
+                ],
+            MC #1: Array [
+                  Object {
+                    "x": 2018-02-02T09:42:05.000Z,
+                    "y": 30,
+                  },
+                ],
+            L/U #2: Array [
+                  Object {
+                    "x": 2018-02-02T09:52:05.000Z,
+                    "y": 3,
+                  },
+                ],
+      },
 },
   },
 }
@@ -95,7 +207,67 @@ Object {
 exports[`selected month with 27 days ago, 2 days ago, and today 1`] = `
 Object {
   "station_cycles": Object {
-    "by_part": Immutable.Map {
+    "by_part_then_stat": Immutable.Map {
+      partCCC-3: Immutable.Map {
+            L/U #1: Array [
+                  Object {
+                    "x": 2018-01-06T09:09:05.000Z,
+                    "y": 6,
+                  },
+                ],
+            MC #1: Array [
+                  Object {
+                    "x": 2018-01-06T09:30:05.000Z,
+                    "y": 18,
+                  },
+                ],
+            L/U #2: Array [
+                  Object {
+                    "x": 2018-01-06T09:40:05.000Z,
+                    "y": 3,
+                  },
+                ],
+      },
+      partBBB-2: Immutable.Map {
+            L/U #1: Array [
+                  Object {
+                    "x": 2018-01-31T09:09:05.000Z,
+                    "y": 6,
+                  },
+                ],
+            MC #1: Array [
+                  Object {
+                    "x": 2018-01-31T09:36:05.000Z,
+                    "y": 24,
+                  },
+                ],
+            L/U #2: Array [
+                  Object {
+                    "x": 2018-01-31T09:46:05.000Z,
+                    "y": 3,
+                  },
+                ],
+      },
+      partAAA-1: Immutable.Map {
+            L/U #1: Array [
+                  Object {
+                    "x": 2018-02-02T09:09:05.000Z,
+                    "y": 6,
+                  },
+                ],
+            MC #1: Array [
+                  Object {
+                    "x": 2018-02-02T09:42:05.000Z,
+                    "y": 30,
+                  },
+                ],
+            L/U #2: Array [
+                  Object {
+                    "x": 2018-02-02T09:52:05.000Z,
+                    "y": 3,
+                  },
+                ],
+      },
 },
   },
 }

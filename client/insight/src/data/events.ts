@@ -113,11 +113,11 @@ export type Action =
 export function loadLast30Days() /*: Action<ActionUse.CreatingAction> */ {
     var client = new api.LogClient();
     var now = new Date();
-    var oneWeekAgo = addDays(now, -30);
+    var thirtyDaysAgo = addDays(now, -30);
     return {
         type: ActionType.LoadLast30Days,
         now: now,
-        pledge: client.get(oneWeekAgo, now)
+        pledge: client.get(thirtyDaysAgo, now)
     };
 }
 
@@ -159,6 +159,7 @@ function safeAssign<T, R extends T>(o: T, n: R): T {
 }
 
 function processRecentEvents(now: Date, evts: Iterable<api.ILogEntry>, s: Last30Days): Last30Days {
+    var thirtyDaysAgo = addDays(now, -30);
     let lastCounter = s.latest_counter;
     let lastDate = s.latest_event;
     let lastNewEvent = im.Seq(evts).maxBy(e => e.counter);
@@ -175,7 +176,7 @@ function processRecentEvents(now: Date, evts: Iterable<api.ILogEntry>, s: Last30
             latest_event: lastDate,
             oee: oee.process_events(now, evts, s.oee),
             station_cycles: stationCycles.process_events(
-                {type: stationCycles.ExpireOldDataType.ExpireEarlierThan, d: now},
+                {type: stationCycles.ExpireOldDataType.ExpireEarlierThan, d: thirtyDaysAgo},
                 evts,
                 s.station_cycles),
         });
