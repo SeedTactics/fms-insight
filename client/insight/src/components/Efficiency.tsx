@@ -32,176 +32,33 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
 import * as im from 'immutable';
-import { format } from 'date-fns';
-import { MarkSeries,
-         XAxis,
-         YAxis,
-         Hint,
-         FlexibleWidthXYPlot,
-         VerticalGridLines,
-         HorizontalGridLines,
-         DiscreteColorLegend
-       } from 'react-vis';
-import Card, { CardHeader, CardContent } from 'material-ui/Card';
 import { connect } from 'react-redux';
-import * as numerable from 'numeral';
-import Select from 'material-ui/Select';
-import { MenuItem } from 'material-ui/Menu';
 import WorkIcon from 'material-ui-icons/Work';
 
 import AnalysisSelectToolbar from './AnalysisSelectToolbar';
+import { SelectableCycleChart } from './CycleChart';
 import * as events from '../data/events';
 import { Store } from '../data/store';
 
-export interface StationCycleChartProps {
-  by_station: im.Map<string, ReadonlyArray<events.StationCycle>>;
+interface PartStationCycleChartProps {
+  points: im.Map<string, im.Map<string, ReadonlyArray<events.StationCycle>>>;
 }
 
-interface StationCycleChartTooltip {
-  readonly x: Date;
-  readonly y: number;
-  readonly stat: string;
-}
-
-interface StationCycleChartState {
-  tooltip?: StationCycleChartTooltip;
-  disabled_stations: { [key: string]: boolean };
-}
-
-function format_hint(tip: StationCycleChartTooltip) {
-  return [
-    {title: 'Time', value: format(tip.x, 'MMM D, YYYY, H:mm a')},
-    {title: 'Station', value: tip.stat},
-    {title: 'Cycle Time', value: numerable(tip.y).format('0.0') + " minutes"},
-  ];
-}
-
-export class StationCycleChart extends React.PureComponent<StationCycleChartProps, StationCycleChartState> {
-  state = {
-    tooltip: undefined,
-    disabled_stations: {}
-  } as StationCycleChartState;
-
-  setClosestPoint = (stat: string) => (point: events.StationCycle) => {
-    if (this.state.tooltip === undefined) {
-      this.setState({tooltip: {...point, stat: stat}});
-    } else {
-      this.setState({tooltip: undefined});
-    }
-  }
-
-  clearTooltip = () => {
-    this.setState({tooltip: undefined});
-  }
-
-  toggleStation = (station: {title: string}) => {
-    const newState = !!!this.state.disabled_stations[station.title];
-    this.setState({
-      disabled_stations: {...this.state.disabled_stations,
-        [station.title]: newState
-      }
-    });
-  }
-
-  render() {
-    const stations =
-      this.props.by_station.toSeq()
-      .sortBy((points, stat) => stat);
-    return (
-      <div>
-        <FlexibleWidthXYPlot
-            height={window.innerHeight - 200}
-            xType="time"
-            margin={{bottom: 50}}
-            onMouseLeave={this.clearTooltip}
-        >
-          <VerticalGridLines/>
-          <HorizontalGridLines/>
-          <XAxis tickLabelAngle={-45}/>
-          <YAxis/>
-          {
-            stations.map((points, stat) =>
-              <MarkSeries
-                key={stat}
-                data={points}
-                onValueClick={this.setClosestPoint(stat)}
-                {...(this.state.disabled_stations[stat] ? {opacity: 0.2} : null)}
-              />
-            ).toIndexedSeq()
-          }
-          {
-            this.state.tooltip === undefined ? undefined :
-              <Hint value={this.state.tooltip} format={format_hint}/>
-          }
-        </FlexibleWidthXYPlot>
-
-        <div style={{textAlign: 'center'}}>
-          <DiscreteColorLegend
-            orientation="horizontal"
-            items={
-              stations.keySeq().map(stat =>
-                ({title: stat, disabled: this.state.disabled_stations[stat]})
-              ).toArray()
-            }
-            onItemClick={this.toggleStation}
-          />
-        </div>
-      </div>
-    );
-  }
-}
-
-export interface PartStationCycleProps {
-  by_part: im.Map<string, im.Map<string, ReadonlyArray<events.StationCycle>>>;
-}
-
-export class PartStationCycleChart extends React.PureComponent<PartStationCycleProps, {part: string}> {
-  state = {part: ""};
-
-  setPart = (part: string) => {
-    this.setState({part});
-  }
-
-  render() {
-    return (
-      <Card>
-        <CardHeader
-          title={
-            <div style={{display: 'flex', flexWrap: 'wrap', alignItems: 'center'}}>
-              <WorkIcon style={{marginRight: '10px', color: "#6D4C41"}}/>
-              <div style={{marginRight: '3em'}}>
-                Station Cycles
-              </div>
-              <div style={{flexGrow: 1}}/>
-              <Select
-                autoWidth
-                displayEmpty
-                value={this.state.part}
-                onChange={e => this.setPart(e.target.value)}
-              >
-                {
-                  this.state.part !== "" ? undefined :
-                    <MenuItem key={0} value=""><em>Select Part</em></MenuItem>
-                }
-                {
-                  this.props.by_part.keySeq().sort().map(part =>
-                    <MenuItem key={part} value={part}>{part}</MenuItem>
-                  )
-                }
-              </Select>
-            </div>}
-        />
-        <CardContent>
-          <StationCycleChart by_station={this.props.by_part.get(this.state.part, im.Map())}/>
-        </CardContent>
-      </Card>
-    );
-  }
+function PartStationCycleChart(props: PartStationCycleChartProps) {
+  return (
+    <SelectableCycleChart
+      points={props.points}
+      select_label="Part"
+      series_label="Station"
+      card_label="Station Cycles"
+      icon={<WorkIcon style={{color: "#6D4C41"}}/>}
+    />
+  );
 }
 
 const ConnectedPartStationCycleChart = connect(
   (st: Store) => ({
-    by_part: st.Events.last30.station_cycles.by_part_then_stat
+    points: st.Events.last30.station_cycles.by_part_then_stat
   })
 )(PartStationCycleChart);
 
