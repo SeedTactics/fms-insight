@@ -61,70 +61,90 @@ function addStartAndEnd(es: ILogEntry[], e: ILogEntry): void {
   es.push(e);
 }
 
-export function fakeCycle(time: Date, machineTime: number, part?: string, proc?: number): ReadonlyArray<ILogEntry> {
-  const pal = 'pal' + faker.random.alphaNumeric();
-  const material = [fakeMaterial(part, proc)];
+export function fakeCycle(
+    time: Date, machineTime: number, part?: string, proc?: number, pallet?: string
+  ): ReadonlyArray<ILogEntry> {
+    const pal = pallet || 'pal' + faker.random.alphaNumeric();
+    const material = [fakeMaterial(part, proc)];
 
-  let counter = 1;
-  time = addMinutes(time, 5);
+    let counter = 1;
+    time = addMinutes(time, 5);
 
-  let es: ILogEntry[] = [];
+    let es: ILogEntry[] = [];
 
-  addStartAndEnd(
-    es,
-    {counter, material, pal,
-      type: LogType.LoadUnloadCycle,
-      startofcycle: false,
-      endUTC: time,
-      loc: 'L/U',
-      locnum: 1,
-      result: 'LOAD',
-      program: 'LOAD',
-      endofroute: false,
-      elapsed: '00:06:00',
-      active: '00:06:00'
-    }
-  );
+    addStartAndEnd(
+      es,
+      {counter, material, pal,
+        type: LogType.LoadUnloadCycle,
+        startofcycle: false,
+        endUTC: time,
+        loc: 'L/U',
+        locnum: 1,
+        result: 'LOAD',
+        program: 'LOAD',
+        endofroute: false,
+        elapsed: '00:06:00',
+        active: '00:06:00'
+      }
+    );
 
-  counter += 2;
-  time = addMinutes(time, machineTime + 3);
+    counter += 2;
+    time = addMinutes(time, machineTime + 3);
 
-  const elapsed = '00:' + machineTime.toString() + ':00';
-  addStartAndEnd(
-    es,
-    {
-      counter, material, pal,
-      type: LogType.MachineCycle,
-      startofcycle: false,
-      endUTC: time,
-      loc: 'MC',
-      locnum: 1,
-      result: '',
-      program: 'prog' + faker.random.alphaNumeric(),
-      endofroute: false,
-      elapsed: elapsed,
-      active: elapsed
-    }
-  );
+    const elapsed = '00:' + machineTime.toString() + ':00';
+    addStartAndEnd(
+      es,
+      {
+        counter, material, pal,
+        type: LogType.MachineCycle,
+        startofcycle: false,
+        endUTC: time,
+        loc: 'MC',
+        locnum: 1,
+        result: '',
+        program: 'prog' + faker.random.alphaNumeric(),
+        endofroute: false,
+        elapsed: elapsed,
+        active: elapsed
+      }
+    );
 
-  counter += 2;
-  time = addMinutes(time, 10);
+    counter += 2;
+    time = addMinutes(time, 10);
 
-  addStartAndEnd(
-    es,
-    {counter, material, pal,
-      type: LogType.LoadUnloadCycle,
-      startofcycle: false,
-      endUTC: time,
-      loc: 'L/U',
-      locnum: 2,
-      result: 'UNLOAD',
-      program: 'UNLOAD',
-      endofroute: true,
-      elapsed: '00:03:00',
-      active: '00:03:00'
-    }
-  );
+    addStartAndEnd(
+      es,
+      {counter, material, pal,
+        type: LogType.LoadUnloadCycle,
+        startofcycle: false,
+        endUTC: time,
+        loc: 'L/U',
+        locnum: 2,
+        result: 'UNLOAD',
+        program: 'UNLOAD',
+        endofroute: true,
+        elapsed: '00:03:00',
+        active: '00:03:00'
+      }
+    );
+
+    es.push(
+      {
+        counter: counter + 1,
+        pal,
+        material: [],
+        type: LogType.PalletCycle,
+        startofcycle: false,
+        endUTC: time,
+        loc: 'L/U',
+        locnum: 2,
+        result: 'PalletCycle',
+        program: '',
+        endofroute: false,
+        elapsed: '00:44:00',
+        active: '-00:01:00',
+      }
+    );
 
   return es;
 }

@@ -35,16 +35,18 @@ import * as im from 'immutable'; // consider collectable.js at some point?
 import { duration } from 'moment';
 
 export interface CycleData {
-    readonly x: Date;
-    readonly y: number; // in minutes
+  readonly x: Date;
+  readonly y: number; // in minutes
 }
 
 export interface CycleState {
-    readonly by_part_then_stat: im.Map<string, im.Map<string, ReadonlyArray<CycleData>>>;
+  readonly by_part_then_stat: im.Map<string, im.Map<string, ReadonlyArray<CycleData>>>;
+  readonly by_pallet: im.Map<string, ReadonlyArray<CycleData>>;
 }
 
 export const initial: CycleState = {
-  by_part_then_stat: im.Map()
+  by_part_then_stat: im.Map(),
+  by_pallet: im.Map(),
 };
 
 export enum ExpireOldDataType {
@@ -81,16 +83,23 @@ export function process_events(
 
     let evtsSeq = im.Seq(newEvts);
     let parts = st.by_part_then_stat;
+    let pals = st.by_pallet;
 
     switch (expire.type) {
       case ExpireOldDataType.ExpireEarlierThan:
 
         // check if nothing to expire and no new data
-        const minEntry = parts
+        const partEntries = parts
           .valueSeq()
           .flatMap(statMap => statMap.valueSeq())
-          .flatMap(cs => cs)
+          .flatMap(cs => cs);
+        const palEntries = pals
+          .valueSeq()
+          .flatMap(cs => cs);
+        const minEntry =
+          palEntries.concat(partEntries)
           .minBy(e => e.x);
+
         if ((minEntry === undefined || minEntry.x >= expire.d) && evtsSeq.isEmpty()) {
             return st;
         }
@@ -103,6 +112,10 @@ export function process_events(
           )
           .filter(statMap => !statMap.isEmpty());
 
+        pals = pals
+          .map(es => es.filter(e => e.x >= expire.d))
+          .filter(es => es.length > 0);
+
         break;
 
       case ExpireOldDataType.NoExpire:
@@ -110,7 +123,7 @@ export function process_events(
         break;
     }
 
-    var newCycles = evtsSeq
+    var newPartCycles = evtsSeq
       .filter(c => !c.startofcycle)
       .flatMap(c => c.material.map(m => ({cycle: c, mat: m})))
       .groupBy(e => part_and_proc(e.mat))
@@ -136,10 +149,28 @@ export function process_events(
             (oldCs, newCs) => oldCs.concat(newCs),
             newStatMap
           ),
-        newCycles
+        newPartCycles
+      );
+
+    var newPalCycles = evtsSeq
+      .filter(c => !c.startofcycle && c.type === api.LogType.PalletCycle && c.pal !== "")
+      .groupBy(c => c.pal)
+      .map(cyclesForPal =>
+        cyclesForPal.map(c => ({
+          x: c.endUTC,
+          y: duration(c.elapsed).asMinutes()
+        }))
+        .valueSeq()
+        .toArray()
+      );
+    pals = pals
+      .mergeWith(
+        (oldCs, newCs) => oldCs.concat(newCs),
+        newPalCycles
       );
 
     return {...st,
-      by_part_then_stat: parts
+      by_part_then_stat: parts,
+      by_pallet: pals,
     };
 }

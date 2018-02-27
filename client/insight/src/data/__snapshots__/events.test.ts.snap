@@ -3,6 +3,24 @@
 exports[`last30 with 2 days ago, today, and 6 days from now 1`] = `
 Object {
   "cycles": Object {
+    "by_pallet": Immutable.Map {
+      palbb: Array [
+            Object {
+              "x": 2018-01-31T09:46:05.000Z,
+              "y": 44,
+            },
+            Object {
+              "x": 2018-02-02T09:52:05.000Z,
+              "y": 44,
+            },
+          ],
+      palcc: Array [
+            Object {
+              "x": 2018-02-08T09:34:05.000Z,
+              "y": 44,
+            },
+          ],
+},
     "by_part_then_stat": Immutable.Map {
       part222-1: Immutable.Map {
             L/U #1: Array [
@@ -58,7 +76,7 @@ Object {
       },
 },
   },
-  "latest_counter": 5,
+  "latest_counter": 6,
   "latest_event": 2018-01-06T09:40:05.000Z,
   "oee": Object {
     "last_week_of_hours": Immutable.List [
@@ -101,6 +119,24 @@ Object {
 exports[`last30 with 27 days ago, 2 days ago, and today 1`] = `
 Object {
   "cycles": Object {
+    "by_pallet": Immutable.Map {
+      palaa: Array [
+            Object {
+              "x": 2018-01-06T09:40:05.000Z,
+              "y": 44,
+            },
+          ],
+      palbb: Array [
+            Object {
+              "x": 2018-01-31T09:46:05.000Z,
+              "y": 44,
+            },
+            Object {
+              "x": 2018-02-02T09:52:05.000Z,
+              "y": 44,
+            },
+          ],
+},
     "by_part_then_stat": Immutable.Map {
       part222-2: Immutable.Map {
             L/U #1: Array [
@@ -164,7 +200,7 @@ Object {
       },
 },
   },
-  "latest_counter": 5,
+  "latest_counter": 6,
   "latest_event": 2018-01-06T09:40:05.000Z,
   "oee": Object {
     "last_week_of_hours": Immutable.List [
@@ -207,6 +243,24 @@ Object {
 exports[`selected month with 27 days ago, 2 days ago, and today 1`] = `
 Object {
   "cycles": Object {
+    "by_pallet": Immutable.Map {
+      paltt: Array [
+            Object {
+              "x": 2018-01-06T09:40:05.000Z,
+              "y": 44,
+            },
+            Object {
+              "x": 2018-01-31T09:46:05.000Z,
+              "y": 44,
+            },
+          ],
+      palss: Array [
+            Object {
+              "x": 2018-02-02T09:52:05.000Z,
+              "y": 44,
+            },
+          ],
+},
     "by_part_then_stat": Immutable.Map {
       partCCC-3: Immutable.Map {
             L/U #1: Array [
