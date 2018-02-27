@@ -36,8 +36,8 @@ import * as im from 'immutable';
 import { duration } from 'moment';
 import { createSelector } from 'reselect';
 
-import * as api from '../data/api';
-import { Store } from '../data/store';
+import * as api from '../../data/api';
+import { Store } from '../../data/store';
 import {
   FlexibleWidthXYPlot,
   FlexibleXYPlot,

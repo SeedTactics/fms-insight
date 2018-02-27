@@ -37,8 +37,8 @@ import * as im from 'immutable';
 import * as numerable from 'numeral';
 import { createSelector } from 'reselect';
 
-import { Store } from '../data/store';
-import { StationInUse } from '../data/events';
+import { Store } from '../../data/store';
+import { StationInUse } from '../../data/events';
 
 export interface StationOEEProps {
   station: string;

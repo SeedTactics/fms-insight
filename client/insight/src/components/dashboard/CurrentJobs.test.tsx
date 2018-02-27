@@ -35,7 +35,7 @@ import * as React from 'react';
 import { shallow } from 'enzyme';
 
 import { jobsToPoints, CurrentJobs } from './CurrentJobs';
-import * as api from '../data/api';
+import * as api from '../../data/api';
 
 it('renders the current jobs', () => {
   const completedData = [

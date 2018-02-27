@@ -38,10 +38,10 @@ import Toolbar from 'material-ui/Toolbar/Toolbar';
 import Hidden from 'material-ui/Hidden/Hidden';
 import { Route, Link } from 'react-router-dom';
 
-import Dashboard from './components/Dashboard';
-import CostPerPiece from './components/CostPerPiece';
-import Efficiency from './components/Efficiency';
-import StationMonitor from './components/StationMonitor';
+import Dashboard from './components/dashboard/Dashboard';
+import CostPerPiece from './components/cost-per-piece/CostPerPiece';
+import Efficiency from './components/efficiency/Efficiency';
+import StationMonitor from './components/station-monitor/StationMonitor';
 import LoadingIcon from './components/LoadingIcon';
 import { loadLast30Days } from './data/events';
 import { loadCurrentStatus } from './data/current-events';

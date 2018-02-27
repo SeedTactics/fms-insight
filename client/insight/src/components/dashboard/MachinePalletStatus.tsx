@@ -36,8 +36,8 @@ import { createSelector } from 'reselect';
 import * as im from 'immutable';
 import { distanceInWordsToNow } from 'date-fns';
 
-import * as api from '../data/api';
-import { Store } from '../data/store';
+import * as api from '../../data/api';
+import { Store } from '../../data/store';
 import Table, { TableBody, TableRow, TableCell, TableHead } from 'material-ui/Table';
 
 export interface Status {

@@ -35,11 +35,11 @@ import * as im from 'immutable';
 import { connect } from 'react-redux';
 import WorkIcon from 'material-ui-icons/Work';
 
-import AnalysisSelectToolbar from './AnalysisSelectToolbar';
+import AnalysisSelectToolbar from '../AnalysisSelectToolbar';
 import { SelectableCycleChart } from './CycleChart';
-import * as events from '../data/events';
-import { Store } from '../data/store';
-import * as guiState from '../data/gui-state';
+import * as events from '../../data/events';
+import { Store } from '../../data/store';
+import * as guiState from '../../data/gui-state';
 
 export interface PartStationCycleChartProps {
   points: im.Map<string, im.Map<string, ReadonlyArray<events.StationCycle>>>;
