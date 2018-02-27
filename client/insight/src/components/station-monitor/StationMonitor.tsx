@@ -35,7 +35,7 @@ import * as React from 'react';
 export default function StationMonitor() {
   return (
     <main style={{'padding': '8px'}}>
-      <p>Station Monitor Page</p>;
+      <p>Station Monitor Page</p>
     </main>
   );
 }

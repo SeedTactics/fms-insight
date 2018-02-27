@@ -1,0 +1,289 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`cycle chart 1`] = `
+<div>
+  <FlexibleXYPlot
+    height={568}
+    margin={
+      Object {
+        "bottom": 50,
+      }
+    }
+    onMouseLeave={[Function]}
+    xType="time"
+  >
+    <VerticalGridLines
+      attr="x"
+      direction="vertical"
+    />
+    <HorizontalGridLines
+      attr="y"
+      direction="horizontal"
+    />
+    <XAxis
+      attr="x"
+      attrAxis="y"
+      orientation="bottom"
+      tickLabelAngle={-45}
+    />
+    <YAxis
+      attr="y"
+      attrAxis="x"
+      orientation="left"
+    />
+    <MarkSeries
+      data={
+        Array [
+          Object {
+            "x": 2018-02-01T06:00:00.000Z,
+            "y": 15,
+          },
+          Object {
+            "x": 2018-02-02T06:00:00.000Z,
+            "y": 66,
+          },
+        ]
+      }
+      getNull={[Function]}
+      key="aaa"
+      onValueClick={[Function]}
+    />
+    <MarkSeries
+      data={
+        Array [
+          Object {
+            "x": 2018-03-02T06:00:00.000Z,
+            "y": 15,
+          },
+          Object {
+            "x": 2018-03-03T06:00:00.000Z,
+            "y": 55,
+          },
+        ]
+      }
+      getNull={[Function]}
+      key="bbb"
+      onValueClick={[Function]}
+    />
+    <MarkSeries
+      data={
+        Array [
+          Object {
+            "x": 2018-04-03T05:00:00.000Z,
+            "y": 15,
+          },
+        ]
+      }
+      getNull={[Function]}
+      key="ccc"
+      onValueClick={[Function]}
+    />
+  </FlexibleXYPlot>
+  <div
+    style={
+      Object {
+        "textAlign": "center",
+      }
+    }
+  >
+    <DiscreteColorLegendItem
+      className=""
+      colors={
+        Array [
+          "#12939A",
+          "#79C7E3",
+          "#1A3177",
+          "#FF9833",
+          "#EF5D28",
+        ]
+      }
+      items={
+        Array [
+          Object {
+            "disabled": undefined,
+            "title": "aaa",
+          },
+          Object {
+            "disabled": undefined,
+            "title": "bbb",
+          },
+          Object {
+            "disabled": undefined,
+            "title": "ccc",
+          },
+        ]
+      }
+      onItemClick={[Function]}
+      orientation="horizontal"
+    />
+  </div>
+</div>
+`;
+
+exports[`selectable cycle chart with nothing selected 1`] = `
+<Card
+  raised={false}
+>
+  <WithStyles(CardHeader)
+    title={
+      <div
+        style={
+          Object {
+            "alignItems": "center",
+            "display": "flex",
+            "flexWrap": "wrap",
+          }
+        }
+      >
+        <pure(Work) />
+        <div
+          style={
+            Object {
+              "marginLeft": "10px",
+              "marginRight": "3em",
+            }
+          }
+        >
+          cardheader
+        </div>
+        <div
+          style={
+            Object {
+              "flexGrow": 1,
+            }
+          }
+        />
+        <WithStyles(Select)
+          autoWidth={true}
+          displayEmpty={true}
+          onChange={[Function]}
+          value=""
+        >
+          <WithStyles(MenuItem)
+            value=""
+          >
+            <em>
+              Select 
+              sellabel
+            </em>
+          </WithStyles(MenuItem)>
+          Array [
+            <WithStyles(MenuItem)
+              value="111"
+          >
+              111
+          </WithStyles(MenuItem)>,
+            <WithStyles(MenuItem)
+              value="222"
+          >
+              222
+          </WithStyles(MenuItem)>,
+          ]
+        </WithStyles(Select)>
+      </div>
+    }
+  />
+  <WithStyles(CardContent)>
+    <CycleChart
+      points={
+        Immutable.Map {
+        }
+      }
+      series_label="serieslabel"
+    />
+  </WithStyles(CardContent)>
+</Card>
+`;
+
+exports[`selectable cycle chart with something selected 1`] = `
+<Card
+  raised={false}
+>
+  <WithStyles(CardHeader)
+    title={
+      <div
+        style={
+          Object {
+            "alignItems": "center",
+            "display": "flex",
+            "flexWrap": "wrap",
+          }
+        }
+      >
+        <pure(Work) />
+        <div
+          style={
+            Object {
+              "marginLeft": "10px",
+              "marginRight": "3em",
+            }
+          }
+        >
+          cardheader
+        </div>
+        <div
+          style={
+            Object {
+              "flexGrow": 1,
+            }
+          }
+        />
+        <WithStyles(Select)
+          autoWidth={true}
+          displayEmpty={true}
+          onChange={[Function]}
+          value="111"
+        >
+          Array [
+            <WithStyles(MenuItem)
+              value="111"
+          >
+              111
+          </WithStyles(MenuItem)>,
+            <WithStyles(MenuItem)
+              value="222"
+          >
+              222
+          </WithStyles(MenuItem)>,
+          ]
+        </WithStyles(Select)>
+      </div>
+    }
+  />
+  <WithStyles(CardContent)>
+    <CycleChart
+      points={
+        Immutable.Map {
+          aaa: Array [
+            Object {
+              "x": 2018-02-01T06:00:00.000Z,
+              "y": 15,
+            },
+            Object {
+              "x": 2018-02-02T06:00:00.000Z,
+              "y": 66,
+            },
+          ],
+          bbb: Array [
+            Object {
+              "x": 2018-03-02T06:00:00.000Z,
+              "y": 53,
+            },
+            Object {
+              "x": 2018-03-03T06:00:00.000Z,
+              "y": 55,
+            },
+          ],
+          ccc: Array [
+            Object {
+              "x": 2018-04-03T05:00:00.000Z,
+              "y": 6,
+            },
+          ],
+        }
+      }
+      series_label="serieslabel"
+    />
+  </WithStyles(CardContent)>
+</Card>
+`;
