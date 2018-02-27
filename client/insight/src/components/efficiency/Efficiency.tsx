@@ -42,7 +42,7 @@ import { Store } from '../../data/store';
 import * as guiState from '../../data/gui-state';
 
 export interface PartStationCycleChartProps {
-  points: im.Map<string, im.Map<string, ReadonlyArray<events.StationCycle>>>;
+  points: im.Map<string, im.Map<string, ReadonlyArray<events.CycleData>>>;
   selected?: string;
   setSelected: (s: string) => void;
 }
@@ -61,7 +61,7 @@ export function PartStationCycleChart(props: PartStationCycleChartProps) {
 
 const ConnectedPartStationCycleChart = connect(
   (st: Store) => ({
-    points: st.Events.last30.station_cycles.by_part_then_stat,
+    points: st.Events.last30.cycles.by_part_then_stat,
     selected: st.Gui.station_cycle_selected_part
   }),
   {

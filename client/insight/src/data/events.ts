@@ -36,10 +36,10 @@ import * as im from 'immutable';
 
 import * as api from './api';
 import * as oee from './events.oee';
-import * as stationCycles from './events.cycles';
+import * as cycles from './events.cycles';
 
 export { OeeState, StationInUse } from './events.oee';
-export { StationCycleState, StationCycle } from './events.cycles';
+export { CycleState, CycleData } from './events.cycles';
 
 export enum AnalysisPeriod {
     Last30Days = 'Last_30_Days',
@@ -50,15 +50,15 @@ export interface Last30Days {
     readonly latest_event?: Date;
     readonly latest_counter?: number;
     readonly oee: oee.OeeState;
-    readonly station_cycles: stationCycles.StationCycleState;
+    readonly cycles: cycles.CycleState;
 }
 
 export interface AnalysisMonth {
-    readonly station_cycles: stationCycles.StationCycleState;
+    readonly cycles: cycles.CycleState;
 }
 
-const emptyAnalysisMonth = {
-    station_cycles: stationCycles.initial
+const emptyAnalysisMonth: AnalysisMonth = {
+    cycles: cycles.initial
 };
 
 export interface State {
@@ -81,7 +81,7 @@ export const initial: State = {
 
     last30: {
         oee: oee.initial,
-        station_cycles: stationCycles.initial
+        cycles: cycles.initial
     },
 
     selected_month: emptyAnalysisMonth,
@@ -175,10 +175,10 @@ function processRecentEvents(now: Date, evts: Iterable<api.ILogEntry>, s: Last30
             latest_counter: lastCounter,
             latest_event: lastDate,
             oee: oee.process_events(now, evts, s.oee),
-            station_cycles: stationCycles.process_events(
-                {type: stationCycles.ExpireOldDataType.ExpireEarlierThan, d: thirtyDaysAgo},
+            cycles: cycles.process_events(
+                {type: cycles.ExpireOldDataType.ExpireEarlierThan, d: thirtyDaysAgo},
                 evts,
-                s.station_cycles),
+                s.cycles),
         });
 }
 
@@ -186,10 +186,10 @@ function processSpecificMonth(evts: Iterable<api.ILogEntry>, s: AnalysisMonth): 
     return safeAssign(
         s,
         {
-            station_cycles: stationCycles.process_events(
-                {type: stationCycles.ExpireOldDataType.NoExpire},
+            cycles: cycles.process_events(
+                {type: cycles.ExpireOldDataType.NoExpire},
                 evts,
-                s.station_cycles)
+                s.cycles)
         }
     );
 }

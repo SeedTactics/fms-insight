@@ -169,7 +169,7 @@ it("loads 30 days for analysis", () => {
   let st = events.reducer(
     {...events.initial,
       analysis_period: events.AnalysisPeriod.SpecificMonth,
-      selected_month: {station_cycles: cycles}
+      selected_month: {cycles}
     },
     {
       type: events.ActionType.SetAnalysisLast30Days

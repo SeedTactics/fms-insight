@@ -34,17 +34,16 @@ import * as api from './api';
 import * as im from 'immutable'; // consider collectable.js at some point?
 import { duration } from 'moment';
 
-export interface StationCycle {
+export interface CycleData {
     readonly x: Date;
     readonly y: number; // in minutes
 }
 
-export interface StationCycleState {
-    // list of station use, sorted by date
-    readonly by_part_then_stat: im.Map<string, im.Map<string, ReadonlyArray<StationCycle>>>;
+export interface CycleState {
+    readonly by_part_then_stat: im.Map<string, im.Map<string, ReadonlyArray<CycleData>>>;
 }
 
-export const initial: StationCycleState = {
+export const initial: CycleState = {
   by_part_then_stat: im.Map()
 };
 
@@ -78,7 +77,7 @@ function stat_name(e: api.ILogEntry): string {
 export function process_events(
   expire: ExpireOldData,
   newEvts: Iterable<api.ILogEntry>,
-  st: StationCycleState): StationCycleState {
+  st: CycleState): CycleState {
 
     let evtsSeq = im.Seq(newEvts);
     let parts = st.by_part_then_stat;
