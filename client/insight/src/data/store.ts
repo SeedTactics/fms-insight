@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { createStore, GenericStoreEnhancer, combineReducers, compose, applyMiddleware } from 'redux';
 
-import * as currentEvents from './current-events';
+import * as currentStatus from './current-status';
 import * as events from './events';
 import * as gui from './gui-state';
 import { pledgeMiddleware } from './pledge';
@@ -45,7 +45,7 @@ const devTools: GenericStoreEnhancer =
 /* tslint:enable */
 
 export interface Store {
-  readonly Current: currentEvents.State;
+  readonly Current: currentStatus.State;
   readonly Events: events.State;
   readonly Gui: gui.State;
 }
@@ -53,7 +53,7 @@ export interface Store {
 export default createStore<Store>(
   combineReducers<Store>(
     {
-      Current: currentEvents.reducer,
+      Current: currentStatus.reducer,
       Events: events.reducer,
       Gui: gui.reducer,
     }

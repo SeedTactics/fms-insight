@@ -35,11 +35,11 @@ import { PledgeStatus, ConsumingPledge } from './pledge';
 import * as im from 'immutable';
 
 import * as api from './api';
-import * as oee from './oee';
-import * as stationCycles from './station-cycles';
+import * as oee from './events.oee';
+import * as stationCycles from './events.cycles';
 
-export { OeeState, StationInUse } from './oee';
-export { StationCycleState, StationCycle } from './station-cycles';
+export { OeeState, StationInUse } from './events.oee';
+export { StationCycleState, StationCycle } from './events.cycles';
 
 export enum AnalysisPeriod {
     Last30Days = 'Last_30_Days',

@@ -30,35 +30,20 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from 'react';
-// import { MemoryRouter } from 'react-router';
-import { shallow } from 'enzyme';
 
-import App from './App';
+import * as gui from './gui-state';
 
-jest.mock('./data/store', () => {
-  return {
-    default: {
-      dispatch: jest.fn()
-    }
-  };
-});
-import store from './data/store';
-
-jest.mock('./data/events', () => {
-  return {
-    loadLast30Days: () => 'loadLast30Days'
-  };
-});
-jest.mock('./data/current-status', () => {
-  return {
-    loadCurrentStatus: () => 'loadCurrentStatus'
-  };
+it('creates initial state', () => {
+  // tslint:disable no-any
+  let s = gui.reducer(undefined as any, undefined as any);
+  // tslint:enable no-any
+  expect(s).toBe(gui.initial);
 });
 
-it('renders a snapshot', () => {
-  const val = shallow(<App/>);
-  expect(val).toMatchSnapshot();
-  expect(store.dispatch).toHaveBeenCalledWith('loadLast30Days');
-  expect(store.dispatch).toHaveBeenCalledWith('loadCurrentStatus');
+it('selects a part for the station cycle', () => {
+  let s = gui.reducer(gui.initial, {
+    type: gui.ActionType.SetSelectedStationCyclePart,
+    part: "abcdef"
+  });
+  expect(s.station_cycle_selected_part).toEqual("abcdef");
 });

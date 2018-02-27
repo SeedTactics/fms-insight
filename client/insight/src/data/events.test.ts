@@ -35,7 +35,7 @@ import { addDays } from 'date-fns';
 
 import { PledgeStatus } from './pledge';
 import * as events from './events';
-import * as stationCycles from './station-cycles';
+import * as stationCycles from './events.cycles';
 import { fakeCycle } from './events.fake';
 
 it('creates initial state', () => {
