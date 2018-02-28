@@ -44,10 +44,10 @@ import { Store } from '../../data/store';
 import * as guiState from '../../data/gui-state';
 
 export interface PartStationCycleChartProps {
-  points: im.Map<string, im.Map<string, ReadonlyArray<events.CycleData>>>;
-  default_date_range?: Date[];
-  selected?: string;
-  setSelected: (s: string) => void;
+  readonly points: im.Map<string, im.Map<string, ReadonlyArray<events.CycleData>>>;
+  readonly default_date_range?: Date[];
+  readonly selected?: string;
+  readonly setSelected: (s: string) => void;
 }
 
 export function PartStationCycleChart(props: PartStationCycleChartProps) {
@@ -87,10 +87,10 @@ const ConnectedPartStationCycleChart = connect(
 )(PartStationCycleChart);
 
 export interface PalletCycleChartProps {
-  points: im.Map<string, ReadonlyArray<events.CycleData>>;
-  default_date_range?: Date[];
-  selected?: string;
-  setSelected: (s: string) => void;
+  readonly points: im.Map<string, ReadonlyArray<events.CycleData>>;
+  readonly default_date_range?: Date[];
+  readonly selected?: string;
+  readonly setSelected: (s: string) => void;
 }
 
 export function PalletCycleChart(props: PalletCycleChartProps) {

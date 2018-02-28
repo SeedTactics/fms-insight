@@ -35,6 +35,7 @@ import { connect } from 'react-redux';
 import * as im from 'immutable';
 import { duration } from 'moment';
 import { createSelector } from 'reselect';
+import * as numerable from 'numeral';
 
 import * as api from '../../data/api';
 import { Store } from '../../data/store';
@@ -46,13 +47,16 @@ import {
   YAxis,
   CustomSVGSeries,
   VerticalGridLines,
-  HorizontalGridLines
+  HorizontalGridLines,
+  Hint
 } from 'react-vis';
 
 interface DataPoint {
-  part: string;
-  completed: number;
-  totalPlan: number;
+  readonly part: string;
+  readonly completed: number;
+  readonly completedCount: number;
+  readonly totalPlan: number;
+  readonly totalCount: number;
 }
 
 function displayJob(job: api.IInProcessJob, proc: number): DataPoint {
@@ -69,13 +73,20 @@ function displayJob(job: api.IInProcessJob, proc: number): DataPoint {
   return {
     part: job.partName + '-' + (proc + 1).toString(),
     completed: cycleTimeHours * completed,
-    totalPlan: cycleTimeHours * totalPlan
+    completedCount: completed,
+    totalPlan: cycleTimeHours * totalPlan,
+    totalCount: totalPlan,
   };
 }
 
+interface CompletedDataPoint extends DataPoint {
+  readonly x: number;
+  readonly y: number;
+}
+
 export interface DataPoints {
-  completedData: ReadonlyArray<{x: number, y: number, part: string}>;
-  planData: ReadonlyArray<{x: number, y: number}>;
+  readonly completedData: ReadonlyArray<CompletedDataPoint>;
+  readonly planData: ReadonlyArray<{x: number, y: number}>;
 }
 
 export function jobsToPoints(jobs: ReadonlyArray<Readonly<api.IInProcessJob>>): DataPoints {
@@ -89,7 +100,7 @@ export function jobsToPoints(jobs: ReadonlyArray<Readonly<api.IInProcessJob>>): 
     .reverse()
     .cacheResult();
   const completedData =
-    points.map((pt, i) => ({x: pt.completed, y: i, part: pt.part}))
+    points.map((pt, i) => ({...pt, x: pt.completed, y: i}))
         .toArray();
   const planData =
     points.map((pt, i) => ({x: pt.totalPlan, y: i}))
@@ -102,8 +113,8 @@ const targetMark = () => (
 );
 
 interface PlotProps {
-  cnt: number;
-  children: JSX.Element[];
+  readonly cnt: number;
+  readonly children: (JSX.Element | undefined)[];
 }
 
 function FillViewportPlot({children}: PlotProps) {
@@ -140,21 +151,51 @@ function ScrollablePlot({children, cnt}: PlotProps) {
 }
 
 export interface Props extends DataPoints {
-  fillViewport: boolean;
+  readonly fillViewport: boolean;
 }
 
-export function CurrentJobs({completedData, planData, fillViewport}: Props) {
-  const Plot = fillViewport ? FillViewportPlot : ScrollablePlot;
-  return (
-    <Plot cnt={completedData.length}>
-      <XAxis/>
-      <YAxis tickFormat={(y: number, i: number) => completedData[i].part}/>
-      <HorizontalGridLines/>
-      <VerticalGridLines/>
-      <HorizontalBarSeries data={completedData} color="#795548"/>
-      <CustomSVGSeries data={planData} customComponent={targetMark}/>
-    </Plot>
-  );
+interface JobState {
+  readonly hoveredJob?: CompletedDataPoint;
+}
+
+function format_hint(j: CompletedDataPoint) {
+  return [
+    {title: "Part", value: j.part},
+    {title: "Completed", value: j.completedCount},
+    {title: "Planned", value: j.totalCount},
+    {title: "Remaining Time", value: numerable(j.totalPlan - j.completed).format('0.0') + " hours"}
+  ];
+}
+
+export class CurrentJobs extends React.PureComponent<Props, JobState> {
+  state: JobState = {};
+
+  setHint = (j: CompletedDataPoint) => {
+    this.setState({hoveredJob: j});
+  }
+
+  render() {
+    const Plot = this.props.fillViewport ? FillViewportPlot : ScrollablePlot;
+    return (
+      <Plot cnt={this.props.completedData.length}>
+        <XAxis/>
+        <YAxis tickFormat={(y: number, i: number) => this.props.completedData[i].part}/>
+        <HorizontalGridLines/>
+        <VerticalGridLines/>
+        <HorizontalBarSeries
+          data={this.props.completedData}
+          color="#795548"
+          onValueMouseOver={this.setHint}
+          onValueMouseOut={() => this.setState({hoveredJob: undefined})}
+        />
+        <CustomSVGSeries data={this.props.planData} customComponent={targetMark}/>
+        {
+          this.state.hoveredJob === undefined ? undefined :
+            <Hint value={this.state.hoveredJob} format={format_hint}/>
+        }
+      </Plot>
+    );
+  }
 }
 
 const jobsToPointsSelector = createSelector(

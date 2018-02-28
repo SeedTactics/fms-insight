@@ -53,9 +53,9 @@ export interface CycleChartPoint {
 }
 
 export interface CycleChartProps {
-  points: im.Map<string, ReadonlyArray<CycleChartPoint>>;
-  series_label: string;
-  default_date_range?: Date[];
+  readonly points: im.Map<string, ReadonlyArray<CycleChartPoint>>;
+  readonly series_label: string;
+  readonly default_date_range?: Date[];
 }
 
 interface CycleChartTooltip {
@@ -65,8 +65,8 @@ interface CycleChartTooltip {
 }
 
 interface CycleChartState {
-  tooltip?: CycleChartTooltip;
-  disabled_series: { [key: string]: boolean };
+  readonly tooltip?: CycleChartTooltip;
+  readonly disabled_series: { [key: string]: boolean };
 }
 
 export class CycleChart extends React.PureComponent<CycleChartProps, CycleChartState> {
@@ -164,14 +164,14 @@ export class CycleChart extends React.PureComponent<CycleChartProps, CycleChartS
 }
 
 export interface SelectableCycleChartProps {
-  points: im.Map<string, im.Map<string, ReadonlyArray<CycleChartPoint>>>;
-  select_label: string;
-  series_label: string;
-  card_label: string;
-  icon: JSX.Element;
-  default_date_range?: Date[];
-  selected?: string;
-  setSelected: (s: string) => void;
+  readonly points: im.Map<string, im.Map<string, ReadonlyArray<CycleChartPoint>>>;
+  readonly select_label: string;
+  readonly series_label: string;
+  readonly card_label: string;
+  readonly icon: JSX.Element;
+  readonly default_date_range?: Date[];
+  readonly selected?: string;
+  readonly setSelected: (s: string) => void;
 }
 
 export function SelectableCycleChart(props: SelectableCycleChartProps) {

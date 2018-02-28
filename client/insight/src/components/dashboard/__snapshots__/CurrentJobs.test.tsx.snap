@@ -1,5 +1,202 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`after mousing out of value 1`] = `
+<ScrollablePlot
+  cnt={3}
+>
+  <XAxis
+    attr="x"
+    attrAxis="y"
+    orientation="bottom"
+  />
+  <YAxis
+    attr="y"
+    attrAxis="x"
+    orientation="left"
+    tickFormat={[Function]}
+  />
+  <HorizontalGridLines
+    attr="y"
+    direction="horizontal"
+  />
+  <VerticalGridLines
+    attr="x"
+    direction="vertical"
+  />
+  <HorizontalBarSeries
+    className=""
+    color="#795548"
+    data={
+      Array [
+        Object {
+          "completed": 5,
+          "completedCount": 1,
+          "part": "abc",
+          "totalCount": 11,
+          "totalPlan": 10,
+          "x": 10,
+          "y": 1,
+        },
+        Object {
+          "completed": 1,
+          "completedCount": 6,
+          "part": "def",
+          "totalCount": 9,
+          "totalPlan": 1,
+          "x": 11,
+          "y": 2,
+        },
+        Object {
+          "completed": 0,
+          "completedCount": 0,
+          "part": "zzz",
+          "totalCount": 6,
+          "totalPlan": 15,
+          "x": 16,
+          "y": 3,
+        },
+      ]
+    }
+    onValueMouseOut={[Function]}
+    onValueMouseOver={[Function]}
+    stack={false}
+    style={Object {}}
+  />
+  <AbstractSeries
+    animation={false}
+    className=""
+    customComponent={[Function]}
+    data={
+      Array [
+        Object {
+          "x": 16,
+          "y": 1,
+        },
+        Object {
+          "x": 17,
+          "y": 2,
+        },
+        Object {
+          "x": 22,
+          "y": 3,
+        },
+      ]
+    }
+    stack={false}
+    style={Object {}}
+  />
+</ScrollablePlot>
+`;
+
+exports[`after mousing over first data point 1`] = `
+<ScrollablePlot
+  cnt={3}
+>
+  <XAxis
+    attr="x"
+    attrAxis="y"
+    orientation="bottom"
+  />
+  <YAxis
+    attr="y"
+    attrAxis="x"
+    orientation="left"
+    tickFormat={[Function]}
+  />
+  <HorizontalGridLines
+    attr="y"
+    direction="horizontal"
+  />
+  <VerticalGridLines
+    attr="x"
+    direction="vertical"
+  />
+  <HorizontalBarSeries
+    className=""
+    color="#795548"
+    data={
+      Array [
+        Object {
+          "completed": 5,
+          "completedCount": 1,
+          "part": "abc",
+          "totalCount": 11,
+          "totalPlan": 10,
+          "x": 10,
+          "y": 1,
+        },
+        Object {
+          "completed": 1,
+          "completedCount": 6,
+          "part": "def",
+          "totalCount": 9,
+          "totalPlan": 1,
+          "x": 11,
+          "y": 2,
+        },
+        Object {
+          "completed": 0,
+          "completedCount": 0,
+          "part": "zzz",
+          "totalCount": 6,
+          "totalPlan": 15,
+          "x": 16,
+          "y": 3,
+        },
+      ]
+    }
+    onValueMouseOut={[Function]}
+    onValueMouseOver={[Function]}
+    stack={false}
+    style={Object {}}
+  />
+  <AbstractSeries
+    animation={false}
+    className=""
+    customComponent={[Function]}
+    data={
+      Array [
+        Object {
+          "x": 16,
+          "y": 1,
+        },
+        Object {
+          "x": 17,
+          "y": 2,
+        },
+        Object {
+          "x": 22,
+          "y": 3,
+        },
+      ]
+    }
+    stack={false}
+    style={Object {}}
+  />
+  <Hint
+    align={
+      Object {
+        "horizontal": "auto",
+        "vertical": "auto",
+      }
+    }
+    format={[Function]}
+    style={Object {}}
+    value={
+      Object {
+        "completed": 5,
+        "completedCount": 1,
+        "part": "abc",
+        "totalCount": 11,
+        "totalPlan": 10,
+        "x": 10,
+        "y": 1,
+      }
+    }
+  />
+</ScrollablePlot>
+`;
+
 exports[`current job graph filling viewport 1`] = `
 <FillViewportPlot
   cnt={3}
@@ -29,22 +226,36 @@ exports[`current job graph filling viewport 1`] = `
     data={
       Array [
         Object {
+          "completed": 4,
+          "completedCount": 6,
           "part": "ddd",
+          "totalCount": 9,
+          "totalPlan": 8,
           "x": 12,
           "y": 1,
         },
         Object {
+          "completed": 2,
+          "completedCount": 3,
           "part": "eee",
+          "totalCount": 100,
+          "totalPlan": 7,
           "x": 7,
           "y": 2,
         },
         Object {
+          "completed": 1,
+          "completedCount": 8,
           "part": "fff",
+          "totalCount": 99,
+          "totalPlan": 3,
           "x": 9,
           "y": 3,
         },
       ]
     }
+    onValueMouseOut={[Function]}
+    onValueMouseOver={[Function]}
     stack={false}
     style={Object {}}
   />
@@ -103,22 +314,36 @@ exports[`current job graph scrollable 1`] = `
     data={
       Array [
         Object {
+          "completed": 5,
+          "completedCount": 1,
           "part": "abc",
+          "totalCount": 11,
+          "totalPlan": 10,
           "x": 10,
           "y": 1,
         },
         Object {
+          "completed": 1,
+          "completedCount": 6,
           "part": "def",
+          "totalCount": 9,
+          "totalPlan": 1,
           "x": 11,
           "y": 2,
         },
         Object {
+          "completed": 0,
+          "completedCount": 0,
           "part": "zzz",
+          "totalCount": 6,
+          "totalPlan": 15,
           "x": 16,
           "y": 3,
         },
       ]
     }
+    onValueMouseOut={[Function]}
+    onValueMouseOver={[Function]}
     stack={false}
     style={Object {}}
   />
@@ -152,12 +377,20 @@ exports[`points for sample jobs 1`] = `
 Object {
   "completedData": Array [
     Object {
+      "completed": 16.5,
+      "completedCount": 22,
       "part": "part1-2",
+      "totalCount": 82,
+      "totalPlan": 61.5,
       "x": 16.5,
       "y": 0,
     },
     Object {
+      "completed": 51.25,
+      "completedCount": 41,
       "part": "part1-1",
+      "totalCount": 82,
+      "totalPlan": 102.5,
       "x": 51.25,
       "y": 1,
     },
