@@ -31,24 +31,35 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+export enum PlannedOrActual {
+  Planned = 'Planned',
+  Actual = 'Actual',
+  PlannedMinusActual = 'PlannedOrActual',
+}
+
 export enum ActionType {
   SetSelectedStationCyclePart = 'Gui_SetSelectedStationCyclePart',
   SetSelectedPalletCycle = 'Gui_SetSelectedPalletCycle',
+  SetStationOeeHeatmapType = 'Gui_SetStationOeeHeatmapType',
   Other = 'Other',
 }
 
 export type Action =
   | { type: ActionType.SetSelectedStationCyclePart, part: string }
   | { type: ActionType.SetSelectedPalletCycle, pallet: string }
+  | { type: ActionType.SetStationOeeHeatmapType, ty: PlannedOrActual }
   | { type: ActionType.Other }
   ;
 
 export interface State {
   readonly station_cycle_selected_part?: string;
   readonly pallet_cycle_selected?: string;
+  readonly station_oee_heatmap_type: PlannedOrActual;
 }
 
-export const initial: State = {};
+export const initial: State = {
+  station_oee_heatmap_type: PlannedOrActual.Actual
+};
 
 export function reducer(s: State, a: Action): State {
   if (s === undefined) { return initial; }
@@ -57,6 +68,8 @@ export function reducer(s: State, a: Action): State {
       return {...s, station_cycle_selected_part: a.part };
     case ActionType.SetSelectedPalletCycle:
       return {...s, pallet_cycle_selected: a.pallet };
+    case ActionType.SetStationOeeHeatmapType:
+      return {...s, station_oee_heatmap_type: a.ty };
     default:
       return s;
   }

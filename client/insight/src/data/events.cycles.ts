@@ -36,7 +36,9 @@ import { duration } from 'moment';
 
 export interface CycleData {
   readonly x: Date;
-  readonly y: number; // in minutes
+  readonly y: number; // cycle time in minutes
+  readonly active: number; // active time in minutes
+  readonly completed: boolean; // did this cycle result in a completed part
 }
 
 export interface CycleState {
@@ -134,7 +136,9 @@ export function process_events(
           .map(cycles =>
             cycles.map(c => ({
               x: c.cycle.endUTC,
-              y: duration(c.cycle.elapsed).asMinutes()
+              y: duration(c.cycle.elapsed).asMinutes(),
+              active: duration(c.cycle.active).asMinutes(),
+              completed: c.cycle.type === api.LogType.LoadUnloadCycle && c.cycle.result === "UNLOAD",
             }))
             .valueSeq()
             .toArray()
@@ -158,7 +162,9 @@ export function process_events(
       .map(cyclesForPal =>
         cyclesForPal.map(c => ({
           x: c.endUTC,
-          y: duration(c.elapsed).asMinutes()
+          y: duration(c.elapsed).asMinutes(),
+          active: duration(c.active).asMinutes(),
+          completed: false,
         }))
         .valueSeq()
         .toArray()

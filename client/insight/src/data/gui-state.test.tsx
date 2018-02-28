@@ -55,3 +55,11 @@ it('selects a pallet for the pallet cycle chart', () => {
   });
   expect(s.pallet_cycle_selected).toEqual("pal555");
 });
+
+it("sets the station oee heatmap type", () => {
+  let s = gui.reducer(gui.initial, {
+    type: gui.ActionType.SetStationOeeHeatmapType,
+    ty: gui.PlannedOrActual.PlannedMinusActual
+  });
+  expect(s.station_oee_heatmap_type).toEqual(gui.PlannedOrActual.PlannedMinusActual);
+});
