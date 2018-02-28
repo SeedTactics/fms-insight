@@ -1,46 +1,135 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`station oee gauge 1`] = `
-<svg
-  viewBox="0 0 400 400"
+exports[`station empty guage 1`] = `
+<WithStyles(Tooltip)
+  classes={
+    Object {
+      "tooltip": "Component-tooltip-1",
+    }
+  }
+  title={
+    <Unknown>
+      <div>
+        <span>
+          Pallet: 
+          Empty
+        </span>
+      </div>
+      <div>
+        <span>
+          Part: 
+          None
+        </span>
+      </div>
+    </Unknown>
+  }
 >
-  <path
-    d="M 263.86689373476094 335.72405786990294 A 150 150 1.5707963267948966 0 0 200 50"
-    fill="transparent"
-    stroke="#795548"
-    strokeWidth={10}
-  />
-  <path
-    d="M 199.99999999999997 50 A 150 150 1.5707963267948966 1 0 263.86689373476094 335.72405786990294"
-    fill="transparent"
-    stroke="#E0E0E0"
-    strokeWidth={10}
-  />
-  <text
-    style={
-      Object {
-        "fontSize": 45,
-      }
-    }
-    textAnchor="middle"
-    x={200}
-    y={190}
+  <svg
+    viewBox="0 0 400 400"
   >
-    aaa
-  </text>
-  <text
-    style={
-      Object {
-        "fontSize": 30,
+    <circle
+      cx={200}
+      cy={200}
+      fill="transparent"
+      r={150}
+      stroke="#E0E0E0"
+      strokeWidth={10}
+    />
+    <text
+      style={
+        Object {
+          "fontSize": 45,
+        }
       }
+      textAnchor="middle"
+      x={200}
+      y={190}
+    >
+      bbb
+    </text>
+    <text
+      style={
+        Object {
+          "fontSize": 30,
+        }
+      }
+      textAnchor="middle"
+      x={200}
+      y={250}
+    >
+      Empty
+    </text>
+  </svg>
+</WithStyles(Tooltip)>
+`;
+
+exports[`station oee gauge 1`] = `
+<WithStyles(Tooltip)
+  classes={
+    Object {
+      "tooltip": "Component-tooltip-1",
     }
-    textAnchor="middle"
-    x={200}
-    y={250}
+  }
+  title={
+    <Unknown>
+      <div>
+        <span>
+          Pallet: 
+          7
+        </span>
+      </div>
+      <div>
+        <span>
+          Part: 
+          None
+        </span>
+      </div>
+    </Unknown>
+  }
+>
+  <svg
+    viewBox="0 0 400 400"
   >
-    43.0%
-  </text>
-</svg>
+    <React.Fragment>
+      <path
+        d="M 263.86689373476094 335.72405786990294 A 150 150 1.5707963267948966 0 0 200 50"
+        fill="transparent"
+        stroke="#795548"
+        strokeWidth={10}
+      />
+      <path
+        d="M 199.99999999999997 50 A 150 150 1.5707963267948966 1 0 263.86689373476094 335.72405786990294"
+        fill="transparent"
+        stroke="#E0E0E0"
+        strokeWidth={10}
+      />
+    </React.Fragment>
+    <text
+      style={
+        Object {
+          "fontSize": 45,
+        }
+      }
+      textAnchor="middle"
+      x={200}
+      y={190}
+    >
+      aaa
+    </text>
+    <text
+      style={
+        Object {
+          "fontSize": 30,
+        }
+      }
+      textAnchor="middle"
+      x={200}
+      y={250}
+    >
+      Pal 7
+    </text>
+  </svg>
+</WithStyles(Tooltip)>
 `;
 
 exports[`station oee table 1`] = `
@@ -50,28 +139,56 @@ exports[`station oee table 1`] = `
 >
   <WithStyles(GridWrapper)
     item={true}
-    key="0"
-    lg={1}
-    md={2}
-    sm={4}
-    xs={6}
+    key="aaa #1"
+    lg={3}
+    md={4}
+    sm={6}
+    xs={12}
   >
-    <StationOEE
-      oee={0.4}
-      station="abc"
+    <WithStyles(Component)
+      oee={0}
+      pallet={
+        Object {
+          "material": Array [],
+          "pallet": Object {
+            "currentPalletLocation": Object {
+              "group": "abc",
+              "loc": "LoadUnload",
+              "num": 1,
+            },
+            "fixtureOnPallet": "",
+            "onHold": false,
+            "pallet": "5",
+          },
+        }
+      }
+      station="aaa #1"
     />
   </WithStyles(GridWrapper)>
   <WithStyles(GridWrapper)
     item={true}
-    key="1"
-    lg={1}
-    md={2}
-    sm={4}
-    xs={6}
+    key="abc #1"
+    lg={3}
+    md={4}
+    sm={6}
+    xs={12}
   >
-    <StationOEE
+    <WithStyles(Component)
+      oee={0.4}
+      station="abc #1"
+    />
+  </WithStyles(GridWrapper)>
+  <WithStyles(GridWrapper)
+    item={true}
+    key="zzz #1"
+    lg={3}
+    md={4}
+    sm={6}
+    xs={12}
+  >
+    <WithStyles(Component)
       oee={0.03}
-      station="zzz"
+      station="zzz #1"
     />
   </WithStyles(GridWrapper)>
 </WithStyles(GridWrapper)>

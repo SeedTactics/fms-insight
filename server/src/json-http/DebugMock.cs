@@ -545,7 +545,7 @@ namespace MachineWatchApiServer
             var pal1 = new PalletStatus() {
                 Pallet = "1",
                 FixtureOnPallet = "fix1",
-                CurrentPalletLocation = new PalletLocation(PalletLocationEnum.LoadUnload, "LoadUnload", 1),
+                CurrentPalletLocation = new PalletLocation(PalletLocationEnum.LoadUnload, "Load", 1),
                 NewFixture = "newfix1"
             };
             var pal2 = new PalletStatus() {
@@ -560,23 +560,23 @@ namespace MachineWatchApiServer
             };
             var pal4 = new PalletStatus() {
                 Pallet = "4",
-                CurrentPalletLocation = new PalletLocation(PalletLocationEnum.Machine, "Machine", 1),
+                CurrentPalletLocation = new PalletLocation(PalletLocationEnum.Machine, "MC", 1),
             };
             var pal5 = new PalletStatus() {
                 Pallet = "5",
-                CurrentPalletLocation = new PalletLocation(PalletLocationEnum.LoadUnload, "LoadUnload", 2),
+                CurrentPalletLocation = new PalletLocation(PalletLocationEnum.LoadUnload, "Load", 2),
             };
             var pal6 = new PalletStatus() {
                 Pallet = "6",
-                CurrentPalletLocation = new PalletLocation(PalletLocationEnum.Machine, "Machine", 2),
+                CurrentPalletLocation = new PalletLocation(PalletLocationEnum.Machine, "MC", 2),
             };
             var pal7 = new PalletStatus() {
                 Pallet = "7",
-                CurrentPalletLocation = new PalletLocation(PalletLocationEnum.MachineQueue, "Machine", 2),
+                CurrentPalletLocation = new PalletLocation(PalletLocationEnum.MachineQueue, "MC", 2),
             };
             var pal8 = new PalletStatus() {
                 Pallet = "8",
-                CurrentPalletLocation = new PalletLocation(PalletLocationEnum.Machine, "Machine", 3),
+                CurrentPalletLocation = new PalletLocation(PalletLocationEnum.Machine, "MC", 3),
             };
 
             //pallet 1 unloading a completed aaa-2, moving aaa-1 to aaa-2, and loading a new aaa-1

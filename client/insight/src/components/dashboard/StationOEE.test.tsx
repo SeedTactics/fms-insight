@@ -36,6 +36,8 @@ import { StationOEE, StationOEEs, stationHoursInLastWeek } from './StationOEE';
 import * as im from 'immutable';
 import { shallow } from 'enzyme';
 
+import * as api from '../../data/api';
+
 it('calculates station hours', () => {
   const date = new Date();
   const hours = [
@@ -49,22 +51,63 @@ it('calculates station hours', () => {
 
   expect(stationHoursInLastWeek(im.List(hours)).toArray()).toEqual(
     [
-      {station: 'abc', hours: 4 + 10 + 11},
-      {station: 'zzz', hours: 2 + 5 + 4},
+      ["zzz", 2 + 5 + 4],
+      ["abc", 4 + 10 + 11],
     ]
   );
 });
 
 it('displays station hours', () => {
-  const hours = im.Seq([
-    {station: 'abc', hours: 40},
-    {station: 'zzz', hours: 3}
-  ]);
-  const val = shallow(<StationOEEs system_active_hours_per_week={100} station_active_hours_past_week={hours}/>);
+  const hours = im.Map({
+    "abc #1": 40,
+    "zzz #1": 3,
+  });
+  const pals = im.Map({
+    "aaa #1": {
+      pal: {
+        pallet: {
+          pallet: "5",
+          fixtureOnPallet: "",
+          onHold: false,
+          currentPalletLocation: new api.PalletLocation({
+            loc: api.PalletLocationEnum.LoadUnload,
+            group: "abc",
+            num: 1
+          }),
+        },
+        material: []
+      },
+    }
+  });
+  const val = shallow(
+    <StationOEEs
+      system_active_hours_per_week={100}
+      station_active_hours_past_week={hours}
+      pallets={pals}
+    />);
   expect(val).toMatchSnapshot('station oee table');
 });
 
 it('displays a single station oee', () => {
-  const val = shallow(<StationOEE station="aaa" oee={0.43}/>);
+  const pal = {
+    pallet: {
+      pallet: "7",
+      fixtureOnPallet: "",
+      onHold: false,
+      currentPalletLocation: new api.PalletLocation({
+        loc: api.PalletLocationEnum.LoadUnload,
+        group: "aaa",
+        num: 1
+      }),
+    },
+    material: []
+  };
+
+  const val = shallow(<StationOEE station="aaa" oee={0.43} pallet={pal}/>).dive();
   expect(val).toMatchSnapshot('station oee gauge');
+});
+
+it('displays a single station without oee', () => {
+  const val = shallow(<StationOEE station="bbb" oee={0.01}/>).dive();
+  expect(val).toMatchSnapshot('station empty guage');
 });

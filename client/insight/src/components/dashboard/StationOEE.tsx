@@ -32,17 +32,27 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
 import { connect } from 'react-redux';
+import { withStyles } from 'material-ui';
 import Grid from 'material-ui/Grid';
 import * as im from 'immutable';
-import * as numerable from 'numeral';
+// import * as numerable from 'numeral';
 import { createSelector } from 'reselect';
+import Tooltip from 'material-ui/Tooltip';
 
 import { Store } from '../../data/store';
 import { StationInUse } from '../../data/events';
+import * as api from '../../data/api';
+
+interface PalletData {
+  pallet: api.IPalletStatus;
+  material: api.IInProcessMaterial[];
+}
 
 export interface StationOEEProps {
   station: string;
   oee: number;
+  pallet?: PalletData;
+  queuedPallet?: PalletData;
 }
 
 function polarToCartesian(centerX: number, centerY: number, radius: number, angleInRadians: number) {
@@ -67,31 +77,88 @@ function describeArc(cx: number, cy: number, radius: number, startAngle: number,
     return d;
 }
 
-export function StationOEE(p: StationOEEProps) {
-  const arcPoint = -Math.PI / 2 + 2 * Math.PI * p.oee;
-  return (
-    <svg viewBox="0 0 400 400">
-      <path
-        d={describeArc(200, 200, 150, -Math.PI / 2, arcPoint)}
-        fill="transparent"
-        stroke="#795548"
-        strokeWidth={10}
-      />
-      <path
-        d={describeArc(200, 200, 150, arcPoint, 1.5 * Math.PI)}
-        fill="transparent"
+function computeCircle(oee: number): JSX.Element {
+  if (oee < 0.02) {
+    return (
+      <circle
+        cx={200}
+        cy={200}
+        r={150}
         stroke="#E0E0E0"
         strokeWidth={10}
+        fill="transparent"
       />
-      <text x={200} y={190} textAnchor="middle" style={{fontSize: 45}}>
-        {p.station}
-      </text>
-      <text x={200} y={250} textAnchor="middle" style={{fontSize: 30}}>
-        {numerable(p.oee).format('0.0%')}
-      </text>
-    </svg>
+    );
+  } else {
+    const arcPoint = -Math.PI / 2 + 2 * Math.PI * oee;
+    return (
+      <>
+        <path
+          d={describeArc(200, 200, 150, -Math.PI / 2, arcPoint)}
+          fill="transparent"
+          stroke="#795548"
+          strokeWidth={10}
+        />
+        <path
+          d={describeArc(200, 200, 150, arcPoint, 1.5 * Math.PI)}
+          fill="transparent"
+          stroke="#E0E0E0"
+          strokeWidth={10}
+        />
+      </>
+    );
+  }
+}
+
+function computeTooltip(p: StationOEEProps): JSX.Element {
+  let pallet: string = "Empty";
+  let material: string = "None";
+  if (p.pallet !== undefined) {
+    pallet = p.pallet.pallet.pallet;
+    if (p.pallet.material.length > 0) {
+      material = p.pallet.material[0].partName;
+    }
+  }
+  return (
+    <>
+      <div><span>Pallet: {pallet}</span></div>
+      <div><span>Part: {material}</span></div>
+    </>
   );
 }
+
+// style values set to match react-vis tooltips
+const tooltipStyle = withStyles(() => ({
+  tooltip: {
+    'backgroundColor': '#3a3a48',
+    'color': '#fff',
+    'fontSize': '12px'
+  }
+}));
+
+export const StationOEE = tooltipStyle<StationOEEProps>(p => {
+  let pallet: string = "Empty";
+  if (p.pallet !== undefined) {
+    pallet = p.pallet.pallet.pallet;
+    if (!isNaN(parseFloat(pallet))) {
+      pallet = "Pal " + pallet;
+    }
+  }
+
+  return (
+    <Tooltip title={computeTooltip(p)} classes={p.classes}>
+      <svg viewBox="0 0 400 400">
+        {computeCircle(p.oee)}
+        <text x={200} y={190} textAnchor="middle" style={{fontSize: 45}}>
+          {p.station}
+        </text>
+        <text x={200} y={250} textAnchor="middle" style={{fontSize: 30}}>
+          {pallet}
+        </text>
+      </svg>
+    </Tooltip>
+  );
+});
 
 export interface StationHours {
     readonly station: string;
@@ -99,35 +166,57 @@ export interface StationHours {
 }
 
 export interface Props {
-  station_active_hours_past_week: im.Seq<number, StationHours>;
+  station_active_hours_past_week: im.Map<string, number>;
+  pallets: im.Map<string, {pal?: PalletData, queued?: PalletData}>;
   system_active_hours_per_week: number;
 }
 
 export function StationOEEs(p: Props) {
+  const stats =
+    im.Set(p.station_active_hours_past_week.keySeq())
+    .union(im.Set(p.pallets.keySeq()))
+    .toSeq()
+    .sortBy(s => s)
+    .cacheResult();
   return (
     <Grid container justify="space-around">
       {
-        p.station_active_hours_past_week.map((stat, idx) => (
-          <Grid item xs={6} sm={4} md={2} lg={1} key={idx}>
-            <StationOEE station={stat.station} oee={stat.hours / p.system_active_hours_per_week}/>
+        stats.map((stat, idx) => (
+          <Grid item xs={12} sm={6} md={4} lg={3} key={idx}>
+            <StationOEE
+              station={stat}
+              oee={p.station_active_hours_past_week.get(stat, 0) / p.system_active_hours_per_week}
+              pallet={p.pallets.get(stat, {pal: undefined}).pal}
+              queuedPallet={p.pallets.get(stat, {queued: undefined}).queued}
+            />
           </Grid>
         ))
       }
     </Grid>
   );
+  // TODO: buffer and cart
 }
 
-export function stationHoursInLastWeek(use: im.List<StationInUse>): im.Seq<number, StationHours> {
+export function stationHoursInLastWeek(use: im.List<StationInUse>): im.Map<string, number> {
     const m = new Map<string, number>();
     use.forEach(s => {
         m.set(s.station, (m.get(s.station) || 0) + s.hours);
     });
-    return im.Seq(m)
-        .map((v, k) => ({
-            station: v[0],
-            hours: v[1]
-        }))
-        .sortBy(e => e.station);
+    return im.Map(m);
+}
+
+export function buildPallets(st: api.ICurrentStatus): im.Map<string, {pal?: PalletData, queued?: PalletData}> {
+  const m = new Map<string, {pal?: PalletData, queued?: PalletData}>();
+  for (let pal of Object.values(st.pallets)) {
+    switch (pal.currentPalletLocation.loc) {
+      case api.PalletLocationEnum.LoadUnload:
+      case api.PalletLocationEnum.Machine:
+        const stat = pal.currentPalletLocation.group + " #" + pal.currentPalletLocation.num.toString();
+        m.set(stat, {pal: {pallet: pal, material: []}});
+        break;
+    }
+  }
+  return im.Map(m);
 }
 
 const oeeSelector = createSelector(
@@ -135,9 +224,15 @@ const oeeSelector = createSelector(
   stationHoursInLastWeek
 );
 
+const palSelector = createSelector(
+  (s: Store) => s.Current.current_status,
+  buildPallets
+);
+
 export default connect(
   (s: Store) => ({
     station_active_hours_past_week: oeeSelector(s),
     system_active_hours_per_week: s.Events.last30.oee.system_active_hours_per_week,
+    pallets: palSelector(s),
   })
 )(StationOEEs);
