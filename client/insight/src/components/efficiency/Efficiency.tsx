@@ -34,6 +34,7 @@ import * as React from 'react';
 import * as im from 'immutable';
 import { connect } from 'react-redux';
 import WorkIcon from 'material-ui-icons/Work';
+import BasketIcon from 'material-ui-icons/ShoppingBasket';
 
 import AnalysisSelectToolbar from '../AnalysisSelectToolbar';
 import { SelectableCycleChart } from './CycleChart';
@@ -70,12 +71,46 @@ const ConnectedPartStationCycleChart = connect(
   }
 )(PartStationCycleChart);
 
+export interface PalletCycleChartProps {
+  points: im.Map<string, ReadonlyArray<events.CycleData>>;
+  selected?: string;
+  setSelected: (s: string) => void;
+}
+
+export function PalletCycleChart(props: PalletCycleChartProps) {
+  const points = props.points.map((cs, pal) => im.Map({[pal]: cs}));
+  return (
+    <SelectableCycleChart
+      select_label="Pallet"
+      series_label="Pallet"
+      card_label="Pallet Cycles"
+      icon={<BasketIcon style={{color: "#6D4C41"}}/>}
+      selected={props.selected}
+      setSelected={props.setSelected}
+      points={points}
+    />
+  );
+}
+
+const ConnectedPalletCycleChart = connect(
+  (s: Store) => ({
+    points: s.Events.last30.cycles.by_pallet,
+    selected: s.Gui.pallet_cycle_selected,
+  }),
+  {
+    setSelected: (p: string) => ({ type: guiState.ActionType.SetSelectedPalletCycle, pallet: p })
+  }
+)(PalletCycleChart);
+
 export default function Efficiency() {
   return (
     <>
       <AnalysisSelectToolbar/>
       <main style={{'padding': '24px'}}>
         <ConnectedPartStationCycleChart/>
+        <div style={{marginTop: '3em'}}>
+          <ConnectedPalletCycleChart/>
+        </div>
       </main>
     </>
   );

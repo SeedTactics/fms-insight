@@ -124,7 +124,7 @@ export class CycleChart extends React.PureComponent<CycleChartProps, CycleChartS
               <MarkSeries
                 key={series}
                 data={points}
-                onValueClick={this.setClosestPoint(series)}
+                onValueClick={this.state.disabled_series[series] ? undefined : this.setClosestPoint(series)}
                 {...(this.state.disabled_series[series] ? {opacity: 0.2} : null)}
               />
             ).toIndexedSeq()
@@ -164,7 +164,7 @@ export interface SelectableCycleChartProps {
 export function SelectableCycleChart(props: SelectableCycleChartProps) {
   let validValue = props.selected !== undefined && props.points.has(props.selected);
   return (
-    <Card>
+    <Card raised>
       <CardHeader
         title={
           <div style={{display: 'flex', flexWrap: 'wrap', alignItems: 'center'}}>

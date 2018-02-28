@@ -122,7 +122,7 @@ exports[`cycle chart 1`] = `
 
 exports[`selectable cycle chart with nothing selected 1`] = `
 <Card
-  raised={false}
+  raised={true}
 >
   <WithStyles(CardHeader)
     title={
@@ -197,7 +197,7 @@ exports[`selectable cycle chart with nothing selected 1`] = `
 
 exports[`selectable cycle chart with something selected 1`] = `
 <Card
-  raised={false}
+  raised={true}
 >
   <WithStyles(CardHeader)
     title={

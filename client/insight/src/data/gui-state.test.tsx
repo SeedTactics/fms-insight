@@ -47,3 +47,11 @@ it('selects a part for the station cycle', () => {
   });
   expect(s.station_cycle_selected_part).toEqual("abcdef");
 });
+
+it('selects a pallet for the pallet cycle chart', () => {
+  let s = gui.reducer(gui.initial, {
+    type: gui.ActionType.SetSelectedPalletCycle,
+    pallet: "pal555"
+  });
+  expect(s.pallet_cycle_selected).toEqual("pal555");
+});

@@ -33,16 +33,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 export enum ActionType {
   SetSelectedStationCyclePart = 'Gui_SetSelectedStationCyclePart',
+  SetSelectedPalletCycle = 'Gui_SetSelectedPalletCycle',
   Other = 'Other',
 }
 
 export type Action =
   | { type: ActionType.SetSelectedStationCyclePart, part: string }
+  | { type: ActionType.SetSelectedPalletCycle, pallet: string }
   | { type: ActionType.Other }
   ;
 
 export interface State {
   readonly station_cycle_selected_part?: string;
+  readonly pallet_cycle_selected?: string;
 }
 
 export const initial: State = {};
@@ -52,6 +55,8 @@ export function reducer(s: State, a: Action): State {
   switch (a.type) {
     case ActionType.SetSelectedStationCyclePart:
       return {...s, station_cycle_selected_part: a.part };
+    case ActionType.SetSelectedPalletCycle:
+      return {...s, pallet_cycle_selected: a.pallet };
     default:
       return s;
   }

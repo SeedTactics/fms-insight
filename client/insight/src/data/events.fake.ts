@@ -146,5 +146,5 @@ export function fakeCycle(
       }
     );
 
-  return es;
+    return es;
 }
