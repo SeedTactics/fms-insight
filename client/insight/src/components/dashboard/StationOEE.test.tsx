@@ -100,7 +100,26 @@ it('displays a single station oee', () => {
         num: 1
       }),
     },
-    material: []
+    material: [
+      {
+        materialID: 10,
+        jobUnique: "aaa",
+        partName: "aaa",
+        process: 2,
+        path: 1,
+        location: new api.InProcessMaterialLocation({
+          type: api.LocType.OnPallet,
+          pallet: "7",
+          face: 1,
+        }),
+        action: new api.InProcessMaterialAction({
+          type: api.ActionType.Loading,
+          loadOntoFace: 1,
+          processAfterLoad: 2,
+          pathAfterLoad: 1,
+        }),
+      }
+    ]
   };
 
   const val = shallow(<StationOEE station="aaa" oee={0.43} pallet={pal}/>).dive();

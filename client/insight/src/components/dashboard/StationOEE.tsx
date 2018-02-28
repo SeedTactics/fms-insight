@@ -111,18 +111,47 @@ function computeCircle(oee: number): JSX.Element {
 }
 
 function computeTooltip(p: StationOEEProps): JSX.Element {
-  let pallet: string = "Empty";
-  let material: string = "None";
-  if (p.pallet !== undefined) {
-    pallet = p.pallet.pallet.pallet;
-    if (p.pallet.material.length > 0) {
-      material = p.pallet.material[0].partName;
+
+  let entries: {title: string, value: string}[] = [];
+
+  if (p.pallet === undefined) {
+    entries.push({title: "Pallet", value: "None"});
+  } else {
+    entries.push({title: "Pallet", value: p.pallet.pallet.pallet});
+
+    for (let mat of p.pallet.material) {
+      const name = mat.partName + "-" + mat.process.toString();
+
+      let matStatus = "";
+      switch (mat.action.type) {
+        case api.ActionType.Loading:
+          matStatus = " (loading)";
+          break;
+        case api.ActionType.Unloading:
+          matStatus = " (unloading)";
+          break;
+        case api.ActionType.Machining:
+          matStatus = " (machining)";
+          break;
+      }
+
+      entries.push({
+        title: "Part",
+        value: name + matStatus
+      });
     }
   }
+
   return (
     <>
-      <div><span>Pallet: {pallet}</span></div>
-      <div><span>Part: {material}</span></div>
+      {
+        entries.map((e, idx) =>
+          <div key={idx}>
+            <span>{e.title}: </span>
+            <span>{e.value}</span>
+          </div>
+        )
+      }
     </>
   );
 }
@@ -206,16 +235,50 @@ export function stationHoursInLastWeek(use: im.List<StationInUse>): im.Map<strin
 }
 
 export function buildPallets(st: api.ICurrentStatus): im.Map<string, {pal?: PalletData, queued?: PalletData}> {
+
+  const matByPallet = new Map<string, api.IInProcessMaterial[]>();
+  for (let mat of st.material) {
+    if (mat.location.type === api.LocType.OnPallet && mat.location.pallet !== undefined) {
+      const mats = matByPallet.get(mat.location.pallet) || [];
+      mats.push(mat);
+      matByPallet.set(mat.location.pallet, mats);
+    }
+  }
+
   const m = new Map<string, {pal?: PalletData, queued?: PalletData}>();
   for (let pal of Object.values(st.pallets)) {
     switch (pal.currentPalletLocation.loc) {
       case api.PalletLocationEnum.LoadUnload:
       case api.PalletLocationEnum.Machine:
         const stat = pal.currentPalletLocation.group + " #" + pal.currentPalletLocation.num.toString();
-        m.set(stat, {pal: {pallet: pal, material: []}});
+        m.set(
+          stat,
+          {...(m.get(stat) ||  {}),
+            pal: {
+              pallet: pal,
+              material: matByPallet.get(pal.pallet) || []
+            }
+          }
+        );
         break;
+
+      case api.PalletLocationEnum.MachineQueue:
+        const stat2 = pal.currentPalletLocation.group + " #" + pal.currentPalletLocation.num.toString();
+        m.set(
+          stat2,
+          {...(m.get(stat2) ||  {}),
+            queued: {
+              pallet: pal,
+              material: matByPallet.get(pal.pallet) || []
+            }
+          }
+        );
+        break;
+
+      // TODO: buffer and cart
     }
   }
+
   return im.Map(m);
 }
 

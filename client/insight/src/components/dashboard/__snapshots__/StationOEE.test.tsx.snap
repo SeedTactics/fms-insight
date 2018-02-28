@@ -11,13 +11,10 @@ exports[`station empty guage 1`] = `
     <Unknown>
       <div>
         <span>
-          Pallet: 
-          Empty
+          Pallet
+          : 
         </span>
-      </div>
-      <div>
         <span>
-          Part: 
           None
         </span>
       </div>
@@ -74,14 +71,20 @@ exports[`station oee gauge 1`] = `
     <Unknown>
       <div>
         <span>
-          Pallet: 
+          Pallet
+          : 
+        </span>
+        <span>
           7
         </span>
       </div>
       <div>
         <span>
-          Part: 
-          None
+          Part
+          : 
+        </span>
+        <span>
+          aaa-2 (loading)
         </span>
       </div>
     </Unknown>
