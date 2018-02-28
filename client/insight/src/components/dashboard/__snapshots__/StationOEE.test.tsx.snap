@@ -34,7 +34,7 @@ exports[`station oee gauge 1`] = `
         "fontSize": 30,
       }
     }
-    text-anchor="middle"
+    textAnchor="middle"
     x={200}
     y={250}
   >

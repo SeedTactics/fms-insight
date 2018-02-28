@@ -86,7 +86,7 @@ export function StationOEE(p: StationOEEProps) {
       <text x={200} y={190} textAnchor="middle" style={{fontSize: 45}}>
         {p.station}
       </text>
-      <text x={200} y={250} text-anchor="middle" style={{fontSize: 30}}>
+      <text x={200} y={250} textAnchor="middle" style={{fontSize: 30}}>
         {numerable(p.oee).format('0.0%')}
       </text>
     </svg>
