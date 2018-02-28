@@ -3,6 +3,7 @@
 exports[`cycle chart 1`] = `
 <div>
   <FlexibleXYPlot
+    dontCheckIfEmpty={true}
     height={568}
     margin={
       Object {
@@ -113,6 +114,77 @@ exports[`cycle chart 1`] = `
           },
         ]
       }
+      onItemClick={[Function]}
+      orientation="horizontal"
+    />
+  </div>
+</div>
+`;
+
+exports[`empty cycle chart 1`] = `
+<div>
+  <FlexibleXYPlot
+    dontCheckIfEmpty={true}
+    height={568}
+    margin={
+      Object {
+        "bottom": 50,
+      }
+    }
+    onMouseLeave={[Function]}
+    xDomain={
+      Array [
+        2018-03-05T06:00:00.000Z,
+        2018-03-10T06:00:00.000Z,
+      ]
+    }
+    xType="time"
+    yDomain={
+      Array [
+        0,
+        60,
+      ]
+    }
+  >
+    <VerticalGridLines
+      attr="x"
+      direction="vertical"
+    />
+    <HorizontalGridLines
+      attr="y"
+      direction="horizontal"
+    />
+    <XAxis
+      attr="x"
+      attrAxis="y"
+      orientation="bottom"
+      tickLabelAngle={-45}
+    />
+    <YAxis
+      attr="y"
+      attrAxis="x"
+      orientation="left"
+    />
+  </FlexibleXYPlot>
+  <div
+    style={
+      Object {
+        "textAlign": "center",
+      }
+    }
+  >
+    <DiscreteColorLegendItem
+      className=""
+      colors={
+        Array [
+          "#12939A",
+          "#79C7E3",
+          "#1A3177",
+          "#FF9833",
+          "#EF5D28",
+        ]
+      }
+      items={Array []}
       onItemClick={[Function]}
       orientation="horizontal"
     />

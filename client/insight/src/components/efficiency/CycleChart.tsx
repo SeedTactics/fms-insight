@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
 import * as im from 'immutable';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { MarkSeries,
          XAxis,
          YAxis,
@@ -55,6 +55,7 @@ export interface CycleChartPoint {
 export interface CycleChartProps {
   points: im.Map<string, ReadonlyArray<CycleChartPoint>>;
   series_label: string;
+  default_date_range?: Date[];
 }
 
 interface CycleChartTooltip {
@@ -107,6 +108,14 @@ export class CycleChart extends React.PureComponent<CycleChartProps, CycleChartS
     const seriesNames =
       this.props.points.toSeq()
       .sortBy((points, s) => s);
+
+    let dateRange = this.props.default_date_range;
+    if (dateRange === undefined) {
+      const now = new Date();
+      const oneMonthAgo = addDays(now, -30);
+      dateRange = [now, oneMonthAgo];
+    }
+
     return (
       <div>
         <FlexibleWidthXYPlot
@@ -114,6 +123,9 @@ export class CycleChart extends React.PureComponent<CycleChartProps, CycleChartS
             xType="time"
             margin={{bottom: 50}}
             onMouseLeave={this.clearTooltip}
+            dontCheckIfEmpty
+            xDomain={this.props.points.isEmpty() ? dateRange : undefined}
+            yDomain={this.props.points.isEmpty() ? [0, 60] : undefined}
         >
           <VerticalGridLines/>
           <HorizontalGridLines/>
@@ -157,6 +169,7 @@ export interface SelectableCycleChartProps {
   series_label: string;
   card_label: string;
   icon: JSX.Element;
+  default_date_range?: Date[];
   selected?: string;
   setSelected: (s: string) => void;
 }
@@ -195,6 +208,7 @@ export function SelectableCycleChart(props: SelectableCycleChartProps) {
         <CycleChart
           points={props.points.get(props.selected || "", im.Map())}
           series_label={props.series_label}
+          default_date_range={props.default_date_range}
         />
       </CardContent>
     </Card>

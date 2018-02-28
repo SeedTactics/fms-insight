@@ -39,7 +39,6 @@ import WorkIcon from 'material-ui-icons/Work';
 import { CycleChart, CycleChartProps, SelectableCycleChartProps, SelectableCycleChart } from './CycleChart';
 
 it('displays a cycle chart', () => {
-
   const props: CycleChartProps = {
     points:
       im.Map({
@@ -52,6 +51,17 @@ it('displays a cycle chart', () => {
 
   const val = shallow(<CycleChart {...props}/>);
   expect(val).toMatchSnapshot('cycle chart');
+});
+
+it("displays an empty chart", () => {
+  const props: CycleChartProps = {
+    points: im.Map(),
+    series_label: "serieslabel",
+    default_date_range: [new Date(2018, 2, 5), new Date(2018, 2, 10)],
+  };
+
+  const val = shallow(<CycleChart {...props}/>);
+  expect(val).toMatchSnapshot('empty cycle chart');
 });
 
 const selectProps: SelectableCycleChartProps = {
