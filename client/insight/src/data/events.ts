@@ -154,7 +154,7 @@ function safeAssign<T, R extends T>(o: T, n: R): T {
     if (allMatch) {
         return o;
     } else {
-        return Object.assign(o, n);
+        return Object.assign({}, o, n);
     }
 }
 

@@ -31,12 +31,14 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { addDays } from 'date-fns';
+import { addDays, addHours } from 'date-fns';
+import { duration } from 'moment';
 
 import { PledgeStatus } from './pledge';
 import * as events from './events';
 import * as stationCycles from './events.cycles';
 import { fakeCycle } from './events.fake';
+import { ILogEntry } from './api';
 
 it('creates initial state', () => {
   // tslint:disable no-any
@@ -208,4 +210,32 @@ it("loads a specific month for analysis", () => {
   expect(st.loading_analysis_month).toBe(false);
   expect(st.analysis_period_month).toEqual(new Date(2018, 1, 1));
   expect(st.selected_month).toMatchSnapshot('selected month with 27 days ago, 2 days ago, and today');
+});
+
+it("bins actual cycles by day", () => {
+  const now = new Date(2018, 2, 5);
+
+  const evts = ([] as ILogEntry[])
+    .concat(
+      fakeCycle(now, 30),
+      fakeCycle(addHours(now, -3), 20),
+      fakeCycle(addHours(now, -15), 15),
+    );
+  const st = events.reducer(
+    events.initial,
+    {
+      type: events.ActionType.LoadLast30Days,
+      now: addDays(now, 1),
+      pledge: {
+        status: PledgeStatus.Completed,
+        result: evts
+      }
+    });
+
+  const byDay = events.binCyclesByDay(
+    st.last30.cycles.by_part_then_stat,
+    c => duration(c.active).asMinutes()
+  );
+
+  expect(byDay).toMatchSnapshot("cycles binned by day and station");
 });

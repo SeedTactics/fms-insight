@@ -1,5 +1,16 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`cycles binned by day and station 1`] = `
+Immutable.Map {
+  Record { day: Mon Mar 05 2018 00:00:00 GMT-0600 (CST), station: "L/U #1" }: 0.0001,
+  Record { day: Mon Mar 05 2018 00:00:00 GMT-0600 (CST), station: "MC #1" }: 0.0005,
+  Record { day: Mon Mar 05 2018 00:00:00 GMT-0600 (CST), station: "L/U #2" }: 0.00005,
+  Record { day: Sun Mar 04 2018 00:00:00 GMT-0600 (CST), station: "L/U #1" }: 0.0002,
+  Record { day: Sun Mar 04 2018 00:00:00 GMT-0600 (CST), station: "MC #1" }: 0.0005833333333333333,
+  Record { day: Sun Mar 04 2018 00:00:00 GMT-0600 (CST), station: "L/U #2" }: 0.0001,
+}
+`;
+
 exports[`last30 with 2 days ago, today, and 6 days from now 1`] = `
 Object {
   "cycles": Object {
