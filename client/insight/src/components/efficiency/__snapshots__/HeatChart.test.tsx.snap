@@ -36,31 +36,37 @@ exports[`heat chart 1`] = `
       Array [
         Object {
           "color": 1,
+          "label": "1",
           "x": 2018-03-01T06:00:00.000Z,
           "y": "aaa",
         },
         Object {
           "color": 2,
+          "label": "2",
           "x": 2018-03-02T06:00:00.000Z,
           "y": "aaa",
         },
         Object {
           "color": 3,
+          "label": "3",
           "x": 2018-03-03T06:00:00.000Z,
           "y": "aaa",
         },
         Object {
           "color": 4,
+          "label": "4",
           "x": 2018-03-01T06:00:00.000Z,
           "y": "bbb",
         },
         Object {
           "color": 5,
+          "label": "5",
           "x": 2018-03-02T06:00:00.000Z,
           "y": "bbb",
         },
         Object {
           "color": 6,
+          "label": "6",
           "x": 2018-03-03T06:00:00.000Z,
           "y": "bbb",
         },
@@ -134,36 +140,42 @@ exports[`selectable heat chart with actual data 1`] = `
   />
   <WithStyles(CardContent)>
     <HeatChart
-      color_label="colorlabel"
+      label_title="colorlabel"
       points={
         Array [
           Object {
             "color": 1,
+            "label": "1",
             "x": 2018-03-01T06:00:00.000Z,
             "y": "aaa",
           },
           Object {
             "color": 2,
+            "label": "2",
             "x": 2018-03-02T06:00:00.000Z,
             "y": "aaa",
           },
           Object {
             "color": 3,
+            "label": "3",
             "x": 2018-03-03T06:00:00.000Z,
             "y": "aaa",
           },
           Object {
             "color": 4,
+            "label": "4",
             "x": 2018-03-01T06:00:00.000Z,
             "y": "bbb",
           },
           Object {
             "color": 5,
+            "label": "5",
             "x": 2018-03-02T06:00:00.000Z,
             "y": "bbb",
           },
           Object {
             "color": 6,
+            "label": "6",
             "x": 2018-03-03T06:00:00.000Z,
             "y": "bbb",
           },
@@ -235,36 +247,42 @@ exports[`selectable heat chart with planned data 1`] = `
   />
   <WithStyles(CardContent)>
     <HeatChart
-      color_label="colorlabel"
+      label_title="colorlabel"
       points={
         Array [
           Object {
             "color": 1,
+            "label": "1",
             "x": 2018-03-01T06:00:00.000Z,
             "y": "aaa",
           },
           Object {
             "color": 2,
+            "label": "2",
             "x": 2018-03-02T06:00:00.000Z,
             "y": "aaa",
           },
           Object {
             "color": 3,
+            "label": "3",
             "x": 2018-03-03T06:00:00.000Z,
             "y": "aaa",
           },
           Object {
             "color": 4,
+            "label": "4",
             "x": 2018-03-01T06:00:00.000Z,
             "y": "bbb",
           },
           Object {
             "color": 5,
+            "label": "5",
             "x": 2018-03-02T06:00:00.000Z,
             "y": "bbb",
           },
           Object {
             "color": 6,
+            "label": "6",
             "x": 2018-03-03T06:00:00.000Z,
             "y": "bbb",
           },

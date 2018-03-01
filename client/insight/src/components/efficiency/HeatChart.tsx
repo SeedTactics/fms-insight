@@ -51,23 +51,24 @@ export interface HeatChartPoint {
   readonly x: Date;
   readonly y: string;
   readonly color: number;
+  readonly label: string;
 }
 
 export interface HeatChartProps {
   readonly points: ReadonlyArray<HeatChartPoint>;
   readonly row_count: number;
-  readonly color_label: string;
+  readonly label_title: string;
 }
 
 interface HeatChartState {
   readonly selected_point?: HeatChartPoint;
 }
 
-const formatHint = (label: string) => (p: HeatChartPoint) => {
+const formatHint = (labelTitle: string) => (p: HeatChartPoint) => {
   return [
     { title: "Station", value: p.y },
     { title: "Day", value: p.x.toDateString() },
-    { title: label, value: numerable(p.color).format('0.0%')}
+    { title: labelTitle, value: p.label }
   ];
 };
 
@@ -96,7 +97,7 @@ export class HeatChart extends React.PureComponent<HeatChartProps, HeatChartStat
         />
         {
           this.state.selected_point === undefined ? undefined :
-            <Hint value={this.state.selected_point} format={formatHint(this.props.color_label)}/>
+            <Hint value={this.state.selected_point} format={formatHint(this.props.label_title)}/>
         }
       </FlexibleWidthXYPlot>
     );
@@ -124,11 +125,15 @@ export function binPointsByDay(
       .flatMap(x => x)
     ))
     .groupBy(p => new groupRecord({x: p.x, y: p.y}))
-    .map((points, group) => ({
-      x: group.x,
-      y: group.y,
-      color: points.reduce((sum, p) => sum + p.color, 0)
-    }))
+    .map((points, group) => {
+      let color = points.reduce((sum, p) => sum + p.color, 0);
+      return {
+        x: group.x,
+        y: group.y,
+        color: color,
+        label: numerable(color).format('0.0%'),
+      };
+    })
     .sortBy(p => p.x)
     .sortBy(p => p.y, (a, b) => a === b ? 0 : a < b ? 1 : -1) // descending
     .valueSeq()
@@ -138,14 +143,27 @@ export function binPointsByDay(
 export interface SelectableHeatChartProps {
   readonly icon: JSX.Element;
   readonly card_label: string;
-  readonly color_label: string;
+  readonly label_title: string;
   readonly planned_or_actual: gui.PlannedOrActual;
   readonly setType: (p: gui.PlannedOrActual) => void;
 
-  readonly points: ReadonlyArray<HeatChartPoint>;
+  readonly planned_points: ReadonlyArray<HeatChartPoint>;
+  readonly actual_points: ReadonlyArray<HeatChartPoint>;
 }
 
 export function SelectableHeatChart(props: SelectableHeatChartProps) {
+  let points: ReadonlyArray<HeatChartPoint> = [];
+  switch (props.planned_or_actual) {
+    case gui.PlannedOrActual.Actual:
+      points = props.actual_points;
+      break;
+    case gui.PlannedOrActual.Planned:
+      points = props.planned_points;
+      break;
+    case gui.PlannedOrActual.PlannedMinusActual:
+      points = [];
+      break;
+  }
   return (
     <Card raised>
       <CardHeader
@@ -185,9 +203,9 @@ export function SelectableHeatChart(props: SelectableHeatChartProps) {
       />
       <CardContent>
         <HeatChart
-          points={props.points}
-          color_label={props.color_label}
-          row_count={im.Seq(props.points).map(p => p.y).toSet().size}
+          points={points}
+          label_title={props.label_title}
+          row_count={im.Seq(points).map(p => p.y).toSet().size}
         />
       </CardContent>
     </Card>

@@ -40,18 +40,18 @@ import { HeatChart, HeatChartProps, SelectableHeatChart, SelectableHeatChartProp
 import * as gui from '../../data/gui-state';
 
 const points = [
-  {x: new Date(2018, 2, 1), y: "aaa", color: 1},
-  {x: new Date(2018, 2, 2), y: "aaa", color: 2},
-  {x: new Date(2018, 2, 3), y: "aaa", color: 3},
-  {x: new Date(2018, 2, 1), y: "bbb", color: 4},
-  {x: new Date(2018, 2, 2), y: "bbb", color: 5},
-  {x: new Date(2018, 2, 3), y: "bbb", color: 6},
+  {x: new Date(2018, 2, 1), y: "aaa", color: 1, label: "1"},
+  {x: new Date(2018, 2, 2), y: "aaa", color: 2, label: "2"},
+  {x: new Date(2018, 2, 3), y: "aaa", color: 3, label: "3"},
+  {x: new Date(2018, 2, 1), y: "bbb", color: 4, label: "4"},
+  {x: new Date(2018, 2, 2), y: "bbb", color: 5, label: "5"},
+  {x: new Date(2018, 2, 3), y: "bbb", color: 6, label: "6"},
 ];
 
 it('displays a cycle chart', () => {
   const props: HeatChartProps = {
     points: points,
-    color_label: "colorlabel",
+    label_title: "colorlabel",
     row_count: 10,
   };
 
@@ -61,8 +61,9 @@ it('displays a cycle chart', () => {
 
 it('displays a selectable heat chart with actual points', () => {
   const props: SelectableHeatChartProps = {
-    points: points,
-    color_label: "colorlabel",
+    actual_points: points,
+    planned_points: [],
+    label_title: "colorlabel",
     card_label: "cardlabel",
     icon: <WorkIcon/>,
     planned_or_actual: gui.PlannedOrActual.Actual,
@@ -75,8 +76,9 @@ it('displays a selectable heat chart with actual points', () => {
 
 it('displays a selectable heat chart with planned points', () => {
   const props: SelectableHeatChartProps = {
-    points: points,
-    color_label: "colorlabel",
+    planned_points: points,
+    actual_points: [],
+    label_title: "colorlabel",
     card_label: "cardlabel",
     icon: <WorkIcon/>,
     planned_or_actual: gui.PlannedOrActual.Planned,
