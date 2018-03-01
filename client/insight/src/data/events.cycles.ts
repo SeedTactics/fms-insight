@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as api from './api';
 import * as im from 'immutable'; // consider collectable.js at some point?
 import { duration } from 'moment';
+import { startOfDay } from 'date-fns';
 
 export interface CycleData {
   readonly x: Date;
@@ -179,4 +180,32 @@ export function process_events(
       by_part_then_stat: parts,
       by_pallet: pals,
     };
+}
+
+type DayAndStation = im.Record<{day: Date, station: string}>;
+const mkDayAndStation = im.Record({day: new Date(), station: ""});
+
+export function binCyclesByDay(
+    byPartThenStat: im.Map<string, im.Map<string, ReadonlyArray<CycleData>>>,
+    extractValue: (c: CycleData) => number
+  ): im.Map<DayAndStation, number> {
+
+  return byPartThenStat.valueSeq()
+    .flatMap(byStation => (
+      byStation.toSeq()
+      .map((points, station) =>
+        im.Seq(points).map(point => ({
+          day: startOfDay(point.x),
+          station: station,
+          value: extractValue(point)
+        }))
+      )
+      .valueSeq()
+      .flatMap(x => x)
+    ))
+    .groupBy(p => new mkDayAndStation({day: p.day, station: p.station}))
+    .map((points, group) =>
+      points.reduce((sum, p) => sum + p.value, 0)
+    )
+    .toMap();
 }

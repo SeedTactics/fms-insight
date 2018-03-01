@@ -293,3 +293,110 @@ exports[`selectable heat chart with planned data 1`] = `
   </WithStyles(CardContent)>
 </Card>
 `;
+
+exports[`selectable heat chart with planned minus actual data 1`] = `
+<Card
+  raised={true}
+>
+  <WithStyles(CardHeader)
+    title={
+      <div
+        style={
+          Object {
+            "alignItems": "center",
+            "display": "flex",
+            "flexWrap": "wrap",
+          }
+        }
+      >
+        <pure(Work) />
+        <div
+          style={
+            Object {
+              "marginLeft": "10px",
+              "marginRight": "3em",
+            }
+          }
+        >
+          cardlabel
+        </div>
+        <div
+          style={
+            Object {
+              "flexGrow": 1,
+            }
+          }
+        />
+        <WithStyles(Select)
+          autoWidth={true}
+          displayEmpty={true}
+          onChange={[Function]}
+          value="PlannedOrActual"
+        >
+          <WithStyles(MenuItem)
+            value="Actual"
+          >
+            Actual
+          </WithStyles(MenuItem)>
+          <WithStyles(MenuItem)
+            value="Planned"
+          >
+            Planned
+          </WithStyles(MenuItem)>
+          <WithStyles(MenuItem)
+            value="PlannedOrActual"
+          >
+            Planned minus Actual
+          </WithStyles(MenuItem)>
+        </WithStyles(Select)>
+      </div>
+    }
+  />
+  <WithStyles(CardContent)>
+    <HeatChart
+      label_title="colorlabel"
+      points={
+        Array [
+          Object {
+            "color": 1,
+            "label": "1",
+            "x": 2018-03-01T06:00:00.000Z,
+            "y": "aaa",
+          },
+          Object {
+            "color": 2,
+            "label": "2",
+            "x": 2018-03-02T06:00:00.000Z,
+            "y": "aaa",
+          },
+          Object {
+            "color": 3,
+            "label": "3",
+            "x": 2018-03-03T06:00:00.000Z,
+            "y": "aaa",
+          },
+          Object {
+            "color": 4,
+            "label": "4",
+            "x": 2018-03-01T06:00:00.000Z,
+            "y": "bbb",
+          },
+          Object {
+            "color": 5,
+            "label": "5",
+            "x": 2018-03-02T06:00:00.000Z,
+            "y": "bbb",
+          },
+          Object {
+            "color": 6,
+            "label": "6",
+            "x": 2018-03-03T06:00:00.000Z,
+            "y": "bbb",
+          },
+        ]
+      }
+      row_count={2}
+    />
+  </WithStyles(CardContent)>
+</Card>
+`;

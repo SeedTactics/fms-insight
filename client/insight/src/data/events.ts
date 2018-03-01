@@ -39,7 +39,7 @@ import * as oee from './events.oee';
 import * as cycles from './events.cycles';
 
 export { OeeState, StationInUse } from './events.oee';
-export { CycleState, CycleData } from './events.cycles';
+export { CycleState, CycleData, binCyclesByDay } from './events.cycles';
 
 export enum AnalysisPeriod {
     Last30Days = 'Last_30_Days',

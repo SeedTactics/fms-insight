@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
 import * as im from 'immutable';
-import { format, startOfDay } from 'date-fns';
+import { format } from 'date-fns';
 import { HeatmapSeries,
          XAxis,
          YAxis,
@@ -40,12 +40,10 @@ import { HeatmapSeries,
          FlexibleWidthXYPlot,
        } from 'react-vis';
 import Card, { CardHeader, CardContent } from 'material-ui/Card';
-import * as numerable from 'numeral';
 import Select from 'material-ui/Select';
 import { MenuItem } from 'material-ui/Menu';
 
 import * as gui from '../../data/gui-state';
-import * as events from '../../data/events';
 
 export interface HeatChartPoint {
   readonly x: Date;
@@ -104,42 +102,6 @@ export class HeatChart extends React.PureComponent<HeatChartProps, HeatChartStat
   }
 }
 
-export function binPointsByDay(
-    byPartThenStat: im.Map<string, im.Map<string, ReadonlyArray<events.CycleData>>>,
-    extractActual: (c: events.CycleData) => number
-  ): ReadonlyArray<HeatChartPoint> {
-
-  const groupRecord = im.Record({x: new Date(), y: ""});
-
-  return byPartThenStat.valueSeq()
-    .flatMap(byStation => (
-      byStation.toSeq()
-      .map((points, station) =>
-        im.Seq(points).map(point => ({
-          x: startOfDay(point.x),
-          y: station,
-          color: extractActual(point)
-        }))
-      )
-      .valueSeq()
-      .flatMap(x => x)
-    ))
-    .groupBy(p => new groupRecord({x: p.x, y: p.y}))
-    .map((points, group) => {
-      let color = points.reduce((sum, p) => sum + p.color, 0);
-      return {
-        x: group.x,
-        y: group.y,
-        color: color,
-        label: numerable(color).format('0.0%'),
-      };
-    })
-    .sortBy(p => p.x)
-    .sortBy(p => p.y, (a, b) => a === b ? 0 : a < b ? 1 : -1) // descending
-    .valueSeq()
-    .toArray();
-}
-
 export interface SelectableHeatChartProps {
   readonly icon: JSX.Element;
   readonly card_label: string;
@@ -149,6 +111,7 @@ export interface SelectableHeatChartProps {
 
   readonly planned_points: ReadonlyArray<HeatChartPoint>;
   readonly actual_points: ReadonlyArray<HeatChartPoint>;
+  readonly planned_minus_actual_points: ReadonlyArray<HeatChartPoint>;
 }
 
 export function SelectableHeatChart(props: SelectableHeatChartProps) {
@@ -161,7 +124,7 @@ export function SelectableHeatChart(props: SelectableHeatChartProps) {
       points = props.planned_points;
       break;
     case gui.PlannedOrActual.PlannedMinusActual:
-      points = [];
+      points = props.planned_minus_actual_points;
       break;
   }
   return (

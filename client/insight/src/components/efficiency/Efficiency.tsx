@@ -37,10 +37,11 @@ import WorkIcon from 'material-ui-icons/Work';
 import BasketIcon from 'material-ui-icons/ShoppingBasket';
 import { addMonths, addDays } from 'date-fns';
 import { createSelector } from 'reselect';
+import * as numeral from 'numeral';
 
 import AnalysisSelectToolbar from '../AnalysisSelectToolbar';
 import { SelectableCycleChart } from './CycleChart';
-import { SelectableHeatChart, HeatChartPoint, binPointsByDay } from './HeatChart';
+import { SelectableHeatChart, HeatChartPoint } from './HeatChart';
 import * as events from '../../data/events';
 import { Store } from '../../data/store';
 import * as guiState from '../../data/gui-state';
@@ -140,14 +141,16 @@ const ConnectedPalletCycleChart = connect(
 export interface StationOeeHeatmapProps {
   readonly planned_or_actual: guiState.PlannedOrActual;
   readonly setType: (p: guiState.PlannedOrActual) => void;
-  readonly points: ReadonlyArray<HeatChartPoint>;
+  readonly actual_points: ReadonlyArray<HeatChartPoint>;
+  readonly planned_points: ReadonlyArray<HeatChartPoint>;
+  readonly planned_minus_actual_points: ReadonlyArray<HeatChartPoint>;
 }
 
 export function StationOeeHeatmap(props: StationOeeHeatmapProps) {
   return (
     <SelectableHeatChart
       card_label="Station OEE"
-      color_label="OEE"
+      label_title="OEE"
       icon={<BasketIcon style={{color: "#6D4C41"}}/>}
       {...props}
     />
@@ -157,8 +160,22 @@ export function StationOeeHeatmap(props: StationOeeHeatmapProps) {
 export const stationOeeActualPointsSelector = createSelector(
   (cycles: events.CycleState) => cycles.by_part_then_stat,
   byPartThenStat => {
-    let pts = binPointsByDay(byPartThenStat, c => c.active);
-    return pts.map(p => ({...p, color: p.color / (24 * 60) }));
+    let pts = events.binCyclesByDay(byPartThenStat, c => c.active);
+    return pts
+      .toSeq()
+      .map((val, dayAndStat) => {
+        const pct = val / (24 * 60);
+        return {
+          x: dayAndStat.get("day", null),
+          y: dayAndStat.get("station", null),
+          color: pct,
+          label: numeral(pct).format('0.0%')
+        };
+      })
+      .valueSeq()
+      .sortBy(p => p.x)
+      .sortBy(p => p.y, (a, b) => a === b ? 0 : a < b ? 1 : -1) // descending
+      .toArray();
   }
 );
 
@@ -184,7 +201,9 @@ const ConnectedStationOeeHeatmap = connect(
   (st: Store) => {
     return {
       planned_or_actual: st.Gui.station_oee_heatmap_type,
-      points: stationOeePoints(st),
+      actual_points: stationOeePoints(st),
+      planned_points: [],
+      planned_minus_actual_points: [],
     };
   },
   {
