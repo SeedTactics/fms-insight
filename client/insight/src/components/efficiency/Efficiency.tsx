@@ -36,9 +36,11 @@ import { connect } from 'react-redux';
 import WorkIcon from 'material-ui-icons/Work';
 import BasketIcon from 'material-ui-icons/ShoppingBasket';
 import { addMonths, addDays } from 'date-fns';
+import { createSelector } from 'reselect';
 
 import AnalysisSelectToolbar from '../AnalysisSelectToolbar';
 import { SelectableCycleChart } from './CycleChart';
+import { SelectableHeatChart, HeatChartPoint, binPointsByDay } from './HeatChart';
 import * as events from '../../data/events';
 import { Store } from '../../data/store';
 import * as guiState from '../../data/gui-state';
@@ -135,6 +137,64 @@ const ConnectedPalletCycleChart = connect(
   }
 )(PalletCycleChart);
 
+export interface StationOeeHeatmapProps {
+  readonly planned_or_actual: guiState.PlannedOrActual;
+  readonly setType: (p: guiState.PlannedOrActual) => void;
+  readonly points: ReadonlyArray<HeatChartPoint>;
+}
+
+export function StationOeeHeatmap(props: StationOeeHeatmapProps) {
+  return (
+    <SelectableHeatChart
+      card_label="Station OEE"
+      color_label="OEE"
+      icon={<BasketIcon style={{color: "#6D4C41"}}/>}
+      {...props}
+    />
+  );
+}
+
+export const stationOeeActualPointsSelector = createSelector(
+  (cycles: events.CycleState) => cycles.by_part_then_stat,
+  byPartThenStat => {
+    let pts = binPointsByDay(byPartThenStat, c => c.active);
+    return pts.map(p => ({...p, color: p.color / (24 * 60) }));
+  }
+);
+
+export function stationOeePoints(st: Store) {
+  let cycles: events.CycleState;
+  if (st.Events.analysis_period === events.AnalysisPeriod.Last30Days) {
+    cycles = st.Events.last30.cycles;
+  } else {
+    cycles = st.Events.selected_month.cycles;
+  }
+
+  switch (st.Gui.station_oee_heatmap_type) {
+    case guiState.PlannedOrActual.Actual:
+      return stationOeeActualPointsSelector(cycles);
+    case guiState.PlannedOrActual.Planned:
+      return [];
+    case guiState.PlannedOrActual.PlannedMinusActual:
+      return [];
+  }
+}
+
+const ConnectedStationOeeHeatmap = connect(
+  (st: Store) => {
+    return {
+      planned_or_actual: st.Gui.station_oee_heatmap_type,
+      points: stationOeePoints(st),
+    };
+  },
+  {
+    setType: (p: guiState.PlannedOrActual) => ({
+      type: guiState.ActionType.SetStationOeeHeatmapType,
+      ty: p
+    })
+  }
+)(StationOeeHeatmap);
+
 export default function Efficiency() {
   return (
     <>
@@ -143,6 +203,9 @@ export default function Efficiency() {
         <ConnectedPartStationCycleChart/>
         <div style={{marginTop: '3em'}}>
           <ConnectedPalletCycleChart/>
+        </div>
+        <div style={{marginTop: '3em'}}>
+          <ConnectedStationOeeHeatmap/>
         </div>
       </main>
     </>
