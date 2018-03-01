@@ -1,0 +1,277 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`heat chart 1`] = `
+<FlexibleXYPlot
+  colorRange={
+    Array [
+      "#E8F5E9",
+      "#1B5E20",
+    ]
+  }
+  height={750}
+  margin={
+    Object {
+      "bottom": 60,
+      "left": 100,
+    }
+  }
+  xType="ordinal"
+  yType="ordinal"
+>
+  <XAxis
+    attr="x"
+    attrAxis="y"
+    orientation="bottom"
+    tickFormat={[Function]}
+    tickLabelAngle={-45}
+  />
+  <YAxis
+    attr="y"
+    attrAxis="x"
+    orientation="left"
+  />
+  <HeatmapSeries
+    className=""
+    data={
+      Array [
+        Object {
+          "color": 1,
+          "x": 2018-03-01T06:00:00.000Z,
+          "y": "aaa",
+        },
+        Object {
+          "color": 2,
+          "x": 2018-03-02T06:00:00.000Z,
+          "y": "aaa",
+        },
+        Object {
+          "color": 3,
+          "x": 2018-03-03T06:00:00.000Z,
+          "y": "aaa",
+        },
+        Object {
+          "color": 4,
+          "x": 2018-03-01T06:00:00.000Z,
+          "y": "bbb",
+        },
+        Object {
+          "color": 5,
+          "x": 2018-03-02T06:00:00.000Z,
+          "y": "bbb",
+        },
+        Object {
+          "color": 6,
+          "x": 2018-03-03T06:00:00.000Z,
+          "y": "bbb",
+        },
+      ]
+    }
+    onValueMouseOut={[Function]}
+    onValueMouseOver={[Function]}
+    stack={false}
+    style={Object {}}
+  />
+</FlexibleXYPlot>
+`;
+
+exports[`selectable heat chart with actual data 1`] = `
+<Card
+  raised={true}
+>
+  <WithStyles(CardHeader)
+    title={
+      <div
+        style={
+          Object {
+            "alignItems": "center",
+            "display": "flex",
+            "flexWrap": "wrap",
+          }
+        }
+      >
+        <pure(Work) />
+        <div
+          style={
+            Object {
+              "marginLeft": "10px",
+              "marginRight": "3em",
+            }
+          }
+        >
+          cardlabel
+        </div>
+        <div
+          style={
+            Object {
+              "flexGrow": 1,
+            }
+          }
+        />
+        <WithStyles(Select)
+          autoWidth={true}
+          displayEmpty={true}
+          onChange={[Function]}
+          value="Actual"
+        >
+          <WithStyles(MenuItem)
+            value="Actual"
+          >
+            Actual
+          </WithStyles(MenuItem)>
+          <WithStyles(MenuItem)
+            value="Planned"
+          >
+            Planned
+          </WithStyles(MenuItem)>
+          <WithStyles(MenuItem)
+            value="PlannedOrActual"
+          >
+            Planned minus Actual
+          </WithStyles(MenuItem)>
+        </WithStyles(Select)>
+      </div>
+    }
+  />
+  <WithStyles(CardContent)>
+    <HeatChart
+      color_label="colorlabel"
+      points={
+        Array [
+          Object {
+            "color": 1,
+            "x": 2018-03-01T06:00:00.000Z,
+            "y": "aaa",
+          },
+          Object {
+            "color": 2,
+            "x": 2018-03-02T06:00:00.000Z,
+            "y": "aaa",
+          },
+          Object {
+            "color": 3,
+            "x": 2018-03-03T06:00:00.000Z,
+            "y": "aaa",
+          },
+          Object {
+            "color": 4,
+            "x": 2018-03-01T06:00:00.000Z,
+            "y": "bbb",
+          },
+          Object {
+            "color": 5,
+            "x": 2018-03-02T06:00:00.000Z,
+            "y": "bbb",
+          },
+          Object {
+            "color": 6,
+            "x": 2018-03-03T06:00:00.000Z,
+            "y": "bbb",
+          },
+        ]
+      }
+      row_count={2}
+    />
+  </WithStyles(CardContent)>
+</Card>
+`;
+
+exports[`selectable heat chart with planned data 1`] = `
+<Card
+  raised={true}
+>
+  <WithStyles(CardHeader)
+    title={
+      <div
+        style={
+          Object {
+            "alignItems": "center",
+            "display": "flex",
+            "flexWrap": "wrap",
+          }
+        }
+      >
+        <pure(Work) />
+        <div
+          style={
+            Object {
+              "marginLeft": "10px",
+              "marginRight": "3em",
+            }
+          }
+        >
+          cardlabel
+        </div>
+        <div
+          style={
+            Object {
+              "flexGrow": 1,
+            }
+          }
+        />
+        <WithStyles(Select)
+          autoWidth={true}
+          displayEmpty={true}
+          onChange={[Function]}
+          value="Planned"
+        >
+          <WithStyles(MenuItem)
+            value="Actual"
+          >
+            Actual
+          </WithStyles(MenuItem)>
+          <WithStyles(MenuItem)
+            value="Planned"
+          >
+            Planned
+          </WithStyles(MenuItem)>
+          <WithStyles(MenuItem)
+            value="PlannedOrActual"
+          >
+            Planned minus Actual
+          </WithStyles(MenuItem)>
+        </WithStyles(Select)>
+      </div>
+    }
+  />
+  <WithStyles(CardContent)>
+    <HeatChart
+      color_label="colorlabel"
+      points={
+        Array [
+          Object {
+            "color": 1,
+            "x": 2018-03-01T06:00:00.000Z,
+            "y": "aaa",
+          },
+          Object {
+            "color": 2,
+            "x": 2018-03-02T06:00:00.000Z,
+            "y": "aaa",
+          },
+          Object {
+            "color": 3,
+            "x": 2018-03-03T06:00:00.000Z,
+            "y": "aaa",
+          },
+          Object {
+            "color": 4,
+            "x": 2018-03-01T06:00:00.000Z,
+            "y": "bbb",
+          },
+          Object {
+            "color": 5,
+            "x": 2018-03-02T06:00:00.000Z,
+            "y": "bbb",
+          },
+          Object {
+            "color": 6,
+            "x": 2018-03-03T06:00:00.000Z,
+            "y": "bbb",
+          },
+        ]
+      }
+      row_count={2}
+    />
+  </WithStyles(CardContent)>
+</Card>
+`;
