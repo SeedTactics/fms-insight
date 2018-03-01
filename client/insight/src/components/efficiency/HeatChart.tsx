@@ -32,16 +32,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
 import * as im from 'immutable';
-import { format, addDays, startOfDay } from 'date-fns';
-import { MarkSeries,
-         HeatmapSeries,
+import { format, startOfDay } from 'date-fns';
+import { HeatmapSeries,
          XAxis,
          YAxis,
          Hint,
          FlexibleWidthXYPlot,
-         VerticalGridLines,
-         HorizontalGridLines,
-         DiscreteColorLegend
        } from 'react-vis';
 import Card, { CardHeader, CardContent } from 'material-ui/Card';
 import * as numerable from 'numeral';
@@ -74,22 +70,26 @@ const formatHint = (label: string) => (p: HeatChartPoint) => {
   ];
 };
 
+function tick_format(d: Date): string {
+  return format(d, "ddd MMM D");
+}
+
 export class HeatChart extends React.PureComponent<HeatChartProps, HeatChartState> {
   state: HeatChartState = {};
 
   render() {
     return (
       <FlexibleWidthXYPlot
-        height={500}
-        xType="time"
+        height={400}
+        xType="ordinal"
         yType="ordinal"
-        margin={{bottom: '50'}}
+        margin={{bottom: 60, left: 100}}
       >
-        <XAxis tickLabelAngle={-45}/>
+        <XAxis tickFormat={tick_format} tickLabelAngle={-45}/>
         <YAxis/>
         <HeatmapSeries
           data={this.props.points}
-          onValueMouseOver={pt => this.setState({selected_point: pt})}
+          onValueMouseOver={(pt: HeatChartPoint) => this.setState({selected_point: pt})}
           onValueMouseOut={() => this.setState({selected_point: undefined})}
         />
         {
@@ -101,19 +101,12 @@ export class HeatChart extends React.PureComponent<HeatChartProps, HeatChartStat
   }
 }
 
-export interface SelectableHeatmapPoints {
-  readonly planned_points: ReadonlyArray<HeatChartPoint>;
-  readonly actual_points: ReadonlyArray<HeatChartPoint>;
-  readonly planned_minus_actual_points: ReadonlyArray<HeatChartPoint>;
-}
-
 export function binPointsByDay(
     byPartThenStat: im.Map<string, im.Map<string, ReadonlyArray<events.CycleData>>>,
     extractActual: (c: events.CycleData) => number
-  ) {
+  ): ReadonlyArray<HeatChartPoint> {
 
-  const actual =
-    byPartThenStat.valueSeq()
+  return byPartThenStat.valueSeq()
     .flatMap(byStation => (
       byStation.toSeq()
       .map((points, station) =>
@@ -134,29 +127,27 @@ export function binPointsByDay(
     }))
     .valueSeq()
     .toArray();
-
-  return {
-    planned_points: [],
-    actual_points: actual,
-    planned_minus_actual_points: []
-  };
 }
 
-export interface SelectableHeatChartProps extends SelectableHeatmapPoints {
+export interface SelectableHeatChartProps {
   readonly icon: JSX.Element;
   readonly card_label: string;
   readonly color_label: string;
   readonly planned_or_actual: gui.PlannedOrActual;
   readonly setType: (p: gui.PlannedOrActual) => void;
+
+  readonly planned_points: ReadonlyArray<HeatChartPoint>;
+  readonly actual_points: ReadonlyArray<HeatChartPoint>;
+  readonly planned_minus_actual_points: ReadonlyArray<HeatChartPoint>;
 }
 
 export function SelectableHeatChart(props: SelectableHeatChartProps) {
-  let points: ReadonlyArray<HeatChartPoint>;
+  let points: ReadonlyArray<HeatChartPoint> = [];
   switch (props.planned_or_actual) {
-    case gui.PlannedOrActual.Actual:
+    case gui.PlannedOrActual.Planned:
       points = props.planned_points;
       break;
-    case gui.PlannedOrActual.Planned:
+    case gui.PlannedOrActual.Actual:
       points = props.actual_points;
       break;
     case gui.PlannedOrActual.PlannedMinusActual:
