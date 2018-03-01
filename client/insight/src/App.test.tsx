@@ -31,34 +31,57 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
-// import { MemoryRouter } from 'react-router';
 import { shallow } from 'enzyme';
 
-import App from './App';
+import { App, AppProps } from './App';
+import * as routes from './data/routes';
 
-jest.mock('./data/store', () => {
+function appProps(current: routes.RouteLocation): AppProps {
   return {
-    default: {
-      dispatch: jest.fn()
-    }
+    route: {current},
+    loadLast30Days: jest.fn(),
+    loadCurrentStatus: jest.fn(),
+    setRoute: jest.fn(),
   };
-});
-import store from './data/store';
+}
 
-jest.mock('./data/events', () => {
-  return {
-    loadLast30Days: () => 'loadLast30Days'
-  };
-});
-jest.mock('./data/current-status', () => {
-  return {
-    loadCurrentStatus: () => 'loadCurrentStatus'
-  };
+it('renders the dashboard', () => {
+  const props = appProps(routes.RouteLocation.Dashboard);
+  const val = shallow(<App {...props}/>);
+  const header = val.find("Header").dive();
+  expect(val).toMatchSnapshot("dashboard");
+  expect(header).toMatchSnapshot("dashboard header");
+
+  // check callbacks
+  expect(props.loadLast30Days).toHaveBeenCalled();
+  expect(props.loadCurrentStatus).toHaveBeenCalled();
+
+  // tslint:disable-next-line:no-any
+  const onTabChange = header.find("WithStyles(Tabs)").first().prop("onChange") as any;
+  onTabChange(null, routes.RouteLocation.CostPerPiece);
+  expect(props.setRoute).toHaveBeenCalledWith(routes.RouteLocation.CostPerPiece);
 });
 
-it('renders a snapshot', () => {
-  const val = shallow(<App/>);
-  expect(val).toMatchSnapshot();
-  expect(store.dispatch).toHaveBeenCalledWith('loadLast30Days');
-  expect(store.dispatch).toHaveBeenCalledWith('loadCurrentStatus');
+it('renders the station monitor', () => {
+  const props = appProps(routes.RouteLocation.StationMonitor);
+  const val = shallow(<App {...props}/>);
+  const header = val.find("Header").dive();
+  expect(val).toMatchSnapshot("station monitor");
+  expect(header).toMatchSnapshot("station monitor header");
+});
+
+it('renders the cost per piece', () => {
+  const props = appProps(routes.RouteLocation.CostPerPiece);
+  const val = shallow(<App {...props}/>);
+  const header = val.find("Header").dive();
+  expect(val).toMatchSnapshot("cost per piece");
+  expect(header).toMatchSnapshot("cost per piece header");
+});
+
+it('renders the efficiency', () => {
+  const props = appProps(routes.RouteLocation.Efficiency);
+  const val = shallow(<App {...props}/>);
+  const header = val.find("Header").dive();
+  expect(val).toMatchSnapshot("efficiency");
+  expect(header).toMatchSnapshot("efficiency header");
 });

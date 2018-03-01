@@ -1,29 +1,537 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`renders a snapshot 1`] = `
+exports[`cost per piece 1`] = `
 <div
   id="App"
 >
-  <Header />
-  <Route
-    component={[Function]}
-    exact={true}
-    path="/"
+  <Header
+    current="ROUTE_CostPerPiece"
+    setRoute={[Function]}
   />
-  <Route
-    component={[Function]}
-    exact={true}
-    path="/station"
-  />
-  <Route
-    component={[Function]}
-    exact={true}
-    path="/cost"
-  />
-  <Route
-    component={[Function]}
-    exact={true}
-    path="/efficiency"
-  />
+  <CostPerPiece />
 </div>
+`;
+
+exports[`cost per piece header 1`] = `
+<nav
+  id="navHeader"
+>
+  <Hidden
+    implementation="js"
+    lgDown={false}
+    lgUp={false}
+    mdDown={false}
+    mdUp={false}
+    smDown={true}
+    smUp={false}
+    xlDown={false}
+    xlUp={false}
+    xsDown={false}
+    xsUp={false}
+  >
+    <WithStyles(AppBar)
+      position="static"
+    >
+      <WithStyles(Toolbar)>
+        <WithStyles(Typography)
+          style={
+            Object {
+              "marginRight": "2em",
+            }
+          }
+          variant="title"
+        >
+          Insight
+        </WithStyles(Typography)>
+        <WithStyles(Tabs)
+          fullWidth={false}
+          onChange={[Function]}
+          style={
+            Object {
+              "alignSelf": "flex-end",
+              "flexGrow": 1,
+            }
+          }
+          value="ROUTE_CostPerPiece"
+        >
+          <WithStyles(Tab)
+            label="Dashboard"
+            value="ROUTE_Dashboard"
+          />
+          <WithStyles(Tab)
+            label="Station Monitor"
+            value="ROUTE_StationMonitor"
+          />
+          <WithStyles(Tab)
+            label="Efficiency"
+            value="ROUTE_Efficiency"
+          />
+          <WithStyles(Tab)
+            label="Cost/Piece"
+            value="ROUTE_CostPerPiece"
+          />
+        </WithStyles(Tabs)>
+        <Connect(LoadingIcon) />
+      </WithStyles(Toolbar)>
+    </WithStyles(AppBar)>
+  </Hidden>
+  <Hidden
+    implementation="js"
+    lgDown={false}
+    lgUp={false}
+    mdDown={false}
+    mdUp={true}
+    smDown={false}
+    smUp={false}
+    xlDown={false}
+    xlUp={false}
+    xsDown={false}
+    xsUp={false}
+  >
+    <WithStyles(AppBar)
+      position="static"
+    >
+      <WithStyles(Toolbar)>
+        <WithStyles(Typography)
+          variant="title"
+        >
+          Insight
+        </WithStyles(Typography)>
+        <div
+          style={
+            Object {
+              "flex-grow": "1",
+            }
+          }
+        />
+        <Connect(LoadingIcon) />
+      </WithStyles(Toolbar)>
+      <WithStyles(Tabs)
+        fullWidth={true}
+        onChange={[Function]}
+        style={Object {}}
+        value="ROUTE_CostPerPiece"
+      >
+        <WithStyles(Tab)
+          label="Dashboard"
+          value="ROUTE_Dashboard"
+        />
+        <WithStyles(Tab)
+          label="Station Monitor"
+          value="ROUTE_StationMonitor"
+        />
+        <WithStyles(Tab)
+          label="Efficiency"
+          value="ROUTE_Efficiency"
+        />
+        <WithStyles(Tab)
+          label="Cost/Piece"
+          value="ROUTE_CostPerPiece"
+        />
+      </WithStyles(Tabs)>
+    </WithStyles(AppBar)>
+  </Hidden>
+</nav>
+`;
+
+exports[`dashboard 1`] = `
+<div
+  id="App"
+>
+  <Header
+    current="ROUTE_Dashboard"
+    setRoute={[Function]}
+  />
+  <Dashboard />
+</div>
+`;
+
+exports[`dashboard header 1`] = `
+<nav
+  id="navHeader"
+>
+  <Hidden
+    implementation="js"
+    lgDown={false}
+    lgUp={false}
+    mdDown={false}
+    mdUp={false}
+    smDown={true}
+    smUp={false}
+    xlDown={false}
+    xlUp={false}
+    xsDown={false}
+    xsUp={false}
+  >
+    <WithStyles(AppBar)
+      position="static"
+    >
+      <WithStyles(Toolbar)>
+        <WithStyles(Typography)
+          style={
+            Object {
+              "marginRight": "2em",
+            }
+          }
+          variant="title"
+        >
+          Insight
+        </WithStyles(Typography)>
+        <WithStyles(Tabs)
+          fullWidth={false}
+          onChange={[Function]}
+          style={
+            Object {
+              "alignSelf": "flex-end",
+              "flexGrow": 1,
+            }
+          }
+          value="ROUTE_Dashboard"
+        >
+          <WithStyles(Tab)
+            label="Dashboard"
+            value="ROUTE_Dashboard"
+          />
+          <WithStyles(Tab)
+            label="Station Monitor"
+            value="ROUTE_StationMonitor"
+          />
+          <WithStyles(Tab)
+            label="Efficiency"
+            value="ROUTE_Efficiency"
+          />
+          <WithStyles(Tab)
+            label="Cost/Piece"
+            value="ROUTE_CostPerPiece"
+          />
+        </WithStyles(Tabs)>
+        <Connect(LoadingIcon) />
+      </WithStyles(Toolbar)>
+    </WithStyles(AppBar)>
+  </Hidden>
+  <Hidden
+    implementation="js"
+    lgDown={false}
+    lgUp={false}
+    mdDown={false}
+    mdUp={true}
+    smDown={false}
+    smUp={false}
+    xlDown={false}
+    xlUp={false}
+    xsDown={false}
+    xsUp={false}
+  >
+    <WithStyles(AppBar)
+      position="static"
+    >
+      <WithStyles(Toolbar)>
+        <WithStyles(Typography)
+          variant="title"
+        >
+          Insight
+        </WithStyles(Typography)>
+        <div
+          style={
+            Object {
+              "flex-grow": "1",
+            }
+          }
+        />
+        <Connect(LoadingIcon) />
+      </WithStyles(Toolbar)>
+      <WithStyles(Tabs)
+        fullWidth={true}
+        onChange={[Function]}
+        style={Object {}}
+        value="ROUTE_Dashboard"
+      >
+        <WithStyles(Tab)
+          label="Dashboard"
+          value="ROUTE_Dashboard"
+        />
+        <WithStyles(Tab)
+          label="Station Monitor"
+          value="ROUTE_StationMonitor"
+        />
+        <WithStyles(Tab)
+          label="Efficiency"
+          value="ROUTE_Efficiency"
+        />
+        <WithStyles(Tab)
+          label="Cost/Piece"
+          value="ROUTE_CostPerPiece"
+        />
+      </WithStyles(Tabs)>
+    </WithStyles(AppBar)>
+  </Hidden>
+</nav>
+`;
+
+exports[`efficiency 1`] = `
+<div
+  id="App"
+>
+  <Header
+    current="ROUTE_Efficiency"
+    setRoute={[Function]}
+  />
+  <Efficiency />
+</div>
+`;
+
+exports[`efficiency header 1`] = `
+<nav
+  id="navHeader"
+>
+  <Hidden
+    implementation="js"
+    lgDown={false}
+    lgUp={false}
+    mdDown={false}
+    mdUp={false}
+    smDown={true}
+    smUp={false}
+    xlDown={false}
+    xlUp={false}
+    xsDown={false}
+    xsUp={false}
+  >
+    <WithStyles(AppBar)
+      position="static"
+    >
+      <WithStyles(Toolbar)>
+        <WithStyles(Typography)
+          style={
+            Object {
+              "marginRight": "2em",
+            }
+          }
+          variant="title"
+        >
+          Insight
+        </WithStyles(Typography)>
+        <WithStyles(Tabs)
+          fullWidth={false}
+          onChange={[Function]}
+          style={
+            Object {
+              "alignSelf": "flex-end",
+              "flexGrow": 1,
+            }
+          }
+          value="ROUTE_Efficiency"
+        >
+          <WithStyles(Tab)
+            label="Dashboard"
+            value="ROUTE_Dashboard"
+          />
+          <WithStyles(Tab)
+            label="Station Monitor"
+            value="ROUTE_StationMonitor"
+          />
+          <WithStyles(Tab)
+            label="Efficiency"
+            value="ROUTE_Efficiency"
+          />
+          <WithStyles(Tab)
+            label="Cost/Piece"
+            value="ROUTE_CostPerPiece"
+          />
+        </WithStyles(Tabs)>
+        <Connect(LoadingIcon) />
+      </WithStyles(Toolbar)>
+    </WithStyles(AppBar)>
+  </Hidden>
+  <Hidden
+    implementation="js"
+    lgDown={false}
+    lgUp={false}
+    mdDown={false}
+    mdUp={true}
+    smDown={false}
+    smUp={false}
+    xlDown={false}
+    xlUp={false}
+    xsDown={false}
+    xsUp={false}
+  >
+    <WithStyles(AppBar)
+      position="static"
+    >
+      <WithStyles(Toolbar)>
+        <WithStyles(Typography)
+          variant="title"
+        >
+          Insight
+        </WithStyles(Typography)>
+        <div
+          style={
+            Object {
+              "flex-grow": "1",
+            }
+          }
+        />
+        <Connect(LoadingIcon) />
+      </WithStyles(Toolbar)>
+      <WithStyles(Tabs)
+        fullWidth={true}
+        onChange={[Function]}
+        style={Object {}}
+        value="ROUTE_Efficiency"
+      >
+        <WithStyles(Tab)
+          label="Dashboard"
+          value="ROUTE_Dashboard"
+        />
+        <WithStyles(Tab)
+          label="Station Monitor"
+          value="ROUTE_StationMonitor"
+        />
+        <WithStyles(Tab)
+          label="Efficiency"
+          value="ROUTE_Efficiency"
+        />
+        <WithStyles(Tab)
+          label="Cost/Piece"
+          value="ROUTE_CostPerPiece"
+        />
+      </WithStyles(Tabs)>
+    </WithStyles(AppBar)>
+  </Hidden>
+</nav>
+`;
+
+exports[`station monitor 1`] = `
+<div
+  id="App"
+>
+  <Header
+    current="ROUTE_StationMonitor"
+    setRoute={[Function]}
+  />
+  <StationMonitor />
+</div>
+`;
+
+exports[`station monitor header 1`] = `
+<nav
+  id="navHeader"
+>
+  <Hidden
+    implementation="js"
+    lgDown={false}
+    lgUp={false}
+    mdDown={false}
+    mdUp={false}
+    smDown={true}
+    smUp={false}
+    xlDown={false}
+    xlUp={false}
+    xsDown={false}
+    xsUp={false}
+  >
+    <WithStyles(AppBar)
+      position="static"
+    >
+      <WithStyles(Toolbar)>
+        <WithStyles(Typography)
+          style={
+            Object {
+              "marginRight": "2em",
+            }
+          }
+          variant="title"
+        >
+          Insight
+        </WithStyles(Typography)>
+        <WithStyles(Tabs)
+          fullWidth={false}
+          onChange={[Function]}
+          style={
+            Object {
+              "alignSelf": "flex-end",
+              "flexGrow": 1,
+            }
+          }
+          value="ROUTE_StationMonitor"
+        >
+          <WithStyles(Tab)
+            label="Dashboard"
+            value="ROUTE_Dashboard"
+          />
+          <WithStyles(Tab)
+            label="Station Monitor"
+            value="ROUTE_StationMonitor"
+          />
+          <WithStyles(Tab)
+            label="Efficiency"
+            value="ROUTE_Efficiency"
+          />
+          <WithStyles(Tab)
+            label="Cost/Piece"
+            value="ROUTE_CostPerPiece"
+          />
+        </WithStyles(Tabs)>
+        <Connect(LoadingIcon) />
+      </WithStyles(Toolbar)>
+    </WithStyles(AppBar)>
+  </Hidden>
+  <Hidden
+    implementation="js"
+    lgDown={false}
+    lgUp={false}
+    mdDown={false}
+    mdUp={true}
+    smDown={false}
+    smUp={false}
+    xlDown={false}
+    xlUp={false}
+    xsDown={false}
+    xsUp={false}
+  >
+    <WithStyles(AppBar)
+      position="static"
+    >
+      <WithStyles(Toolbar)>
+        <WithStyles(Typography)
+          variant="title"
+        >
+          Insight
+        </WithStyles(Typography)>
+        <div
+          style={
+            Object {
+              "flex-grow": "1",
+            }
+          }
+        />
+        <Connect(LoadingIcon) />
+      </WithStyles(Toolbar)>
+      <WithStyles(Tabs)
+        fullWidth={true}
+        onChange={[Function]}
+        style={Object {}}
+        value="ROUTE_StationMonitor"
+      >
+        <WithStyles(Tab)
+          label="Dashboard"
+          value="ROUTE_Dashboard"
+        />
+        <WithStyles(Tab)
+          label="Station Monitor"
+          value="ROUTE_StationMonitor"
+        />
+        <WithStyles(Tab)
+          label="Efficiency"
+          value="ROUTE_Efficiency"
+        />
+        <WithStyles(Tab)
+          label="Cost/Piece"
+          value="ROUTE_CostPerPiece"
+        />
+      </WithStyles(Tabs)>
+    </WithStyles(AppBar)>
+  </Hidden>
+</nav>
 `;

@@ -31,12 +31,12 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
+import { connect } from 'react-redux';
 import AppBar from 'material-ui/AppBar/AppBar';
 import Tabs, { Tab } from 'material-ui/Tabs';
 import Typography from 'material-ui/Typography/Typography';
 import Toolbar from 'material-ui/Toolbar/Toolbar';
 import Hidden from 'material-ui/Hidden/Hidden';
-import { Route, Link } from 'react-router-dom';
 
 import Dashboard from './components/dashboard/Dashboard';
 import CostPerPiece from './components/cost-per-piece/CostPerPiece';
@@ -45,24 +45,31 @@ import StationMonitor from './components/station-monitor/StationMonitor';
 import LoadingIcon from './components/LoadingIcon';
 import { loadLast30Days } from './data/events';
 import { loadCurrentStatus } from './data/current-status';
-import store from './data/store';
-
-// tslint:disable
-const LinkTab: any = Tab as any;
-// tslint:enable
+import * as routes from './data/routes';
+import { Store } from './data/store';
 
 const tabsStyle = {
   'alignSelf': 'flex-end' as 'flex-end',
   'flexGrow': 1
 };
 
-function Header() {
+interface HeaderProps {
+  current: routes.RouteLocation;
+  setRoute: (l: routes.RouteLocation) => void;
+}
+
+function Header(p: HeaderProps) {
     const tabs = (full: boolean) => (
-      <Tabs fullWidth={full} style={full ? {} : tabsStyle} value={location.pathname} onChange={(e, v) => v}>
-        <LinkTab label="Dashboard" component={Link} to="/" value="/"/>
-        <LinkTab label="Station Monitor" component={Link} to="/station" value="/station"/>
-        <LinkTab label="Cost/Piece" component={Link} to="/cost" value="/cost"/>
-        <LinkTab label="Efficiency" component={Link} to="/efficiency" value="/efficiency"/>
+      <Tabs
+        fullWidth={full}
+        style={full ? {} : tabsStyle}
+        value={p.current}
+        onChange={(e, v) => p.setRoute(v)}
+      >
+        <Tab label="Dashboard" value={routes.RouteLocation.Dashboard}/>
+        <Tab label="Station Monitor" value={routes.RouteLocation.StationMonitor}/>
+        <Tab label="Efficiency" value={routes.RouteLocation.Efficiency}/>
+        <Tab label="Cost/Piece" value={routes.RouteLocation.CostPerPiece}/>
       </Tabs>
     );
 
@@ -99,23 +106,57 @@ function Header() {
     );
 }
 
-class App extends React.Component {
+export interface AppProps {
+  route: routes.State;
+  // tslint:disable-next-line:no-any
+  loadLast30Days: () => any;
+  // tslint:disable-next-line:no-any
+  loadCurrentStatus: () => any;
+  // tslint:disable-next-line:no-any
+  setRoute: (r: routes.RouteLocation) => any;
+}
+
+export class App extends React.PureComponent<AppProps> {
   componentDidMount() {
-    store.dispatch(loadLast30Days());
-    store.dispatch(loadCurrentStatus());
+    this.props.loadLast30Days();
+    this.props.loadCurrentStatus();
   }
 
   render() {
+    let page: JSX.Element;
+    switch (this.props.route.current) {
+      case routes.RouteLocation.CostPerPiece:
+        page = <CostPerPiece/>;
+        break;
+      case routes.RouteLocation.Efficiency:
+        page = <Efficiency/>;
+        break;
+      case routes.RouteLocation.StationMonitor:
+        page = <StationMonitor/>;
+        break;
+      case routes.RouteLocation.Dashboard:
+      default:
+        page = <Dashboard/>;
+        break;
+    }
     return (
       <div id="App">
-        <Header/>
-        <Route exact path="/" component={Dashboard}/>
-        <Route exact path="/station" component={StationMonitor}/>
-        <Route exact path="/cost" component={CostPerPiece}/>
-        <Route exact path="/efficiency" component={Efficiency}/>
+        <Header current={this.props.route.current} setRoute={this.props.setRoute}/>
+        {page}
       </div>
     );
   }
 }
 
-export default App;
+export default connect(
+  (s: Store) => ({
+    route: s.Route
+  }),
+  {
+    loadLast30Days,
+    loadCurrentStatus,
+    setRoute: (r: routes.RouteLocation) => ({
+      type: r
+    })
+  }
+)(App);

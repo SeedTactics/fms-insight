@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
-import { BrowserRouter as Router } from 'react-router-dom';
 
 import 'typeface-roboto';
 import Reboot from 'material-ui/Reboot';
@@ -58,9 +57,7 @@ ReactDOM.render(
   <MuiThemeProvider theme={theme}>
     <Reboot/>
     <Provider store={store}>
-      <Router>
-        <App />
-      </Router>
+      <App />
     </Provider>
   </MuiThemeProvider>,
   document.getElementById('root') as HTMLElement

@@ -30,51 +30,43 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { createStore, GenericStoreEnhancer, combineReducers, compose, applyMiddleware } from 'redux';
 
-import * as currentStatus from './current-status';
-import * as events from './events';
-import * as gui from './gui-state';
-import * as routes from './routes';
-import { pledgeMiddleware } from './pledge';
+import { Action } from 'redux-first-router';
 
-import { connectRoutes, LocationState } from 'redux-first-router';
-import createHistory from 'history/createBrowserHistory';
-
-const history = createHistory();
-const router = connectRoutes(history, routes.routeMap);
-
-/* tslint:disable */
-const devTools: GenericStoreEnhancer =
-  (window as any)['__REDUX_DEVTOOLS_EXTENSION__']
-  ? (window as any)['__REDUX_DEVTOOLS_EXTENSION__']()
-  : f => f;
-/* tslint:enable */
-
-export interface Store {
-  readonly Current: currentStatus.State;
-  readonly Events: events.State;
-  readonly Gui: gui.State;
-  readonly Route: routes.State;
-  readonly location: LocationState;
+export enum RouteLocation {
+  Dashboard = 'ROUTE_Dashboard',
+  StationMonitor = 'ROUTE_StationMonitor',
+  CostPerPiece = 'ROUTE_CostPerPiece',
+  Efficiency = 'ROUTE_Efficiency'
 }
 
-export default createStore<Store>(
-  combineReducers<Store>(
-    {
-      Current: currentStatus.reducer,
-      Events: events.reducer,
-      Gui: gui.reducer,
-      Route: routes.reducer,
-      location: router.reducer,
-    }
-  ),
-  compose(
-    router.enhancer,
-    applyMiddleware(
-        pledgeMiddleware,
-        router.middleware
-    ),
-    devTools
-  )
-);
+export const routeMap = {
+  [RouteLocation.Dashboard]: '/',
+  [RouteLocation.StationMonitor]: '/station',
+  [RouteLocation.CostPerPiece]: '/cost',
+  [RouteLocation.Efficiency]: '/efficiency',
+};
+
+export interface State {
+  readonly current: RouteLocation;
+}
+
+export const initial: State = {
+  current: RouteLocation.Dashboard
+};
+
+export function reducer(s: State, a: Action): State {
+  if ( s === undefined) { return initial; }
+  switch (a.type) {
+    case RouteLocation.StationMonitor:
+      return { current: RouteLocation.StationMonitor };
+    case RouteLocation.CostPerPiece:
+      return { current: RouteLocation.CostPerPiece };
+    case RouteLocation.Efficiency:
+      return { current: RouteLocation.Efficiency };
+    case RouteLocation.Dashboard:
+      return { current: RouteLocation.Dashboard };
+    default:
+      return s;
+  }
+}
