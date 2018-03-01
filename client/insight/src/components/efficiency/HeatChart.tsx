@@ -55,6 +55,7 @@ export interface HeatChartPoint {
 
 export interface HeatChartProps {
   readonly points: ReadonlyArray<HeatChartPoint>;
+  readonly row_count: number;
   readonly color_label: string;
 }
 
@@ -80,9 +81,10 @@ export class HeatChart extends React.PureComponent<HeatChartProps, HeatChartStat
   render() {
     return (
       <FlexibleWidthXYPlot
-        height={400}
+        height={this.props.row_count * 75}
         xType="ordinal"
         yType="ordinal"
+        colorRange={["#E8F5E9", "#1B5E20"]}
         margin={{bottom: 60, left: 100}}
       >
         <XAxis tickFormat={tick_format} tickLabelAngle={-45}/>
@@ -106,6 +108,8 @@ export function binPointsByDay(
     extractActual: (c: events.CycleData) => number
   ): ReadonlyArray<HeatChartPoint> {
 
+  const groupRecord = im.Record({x: new Date(), y: ""});
+
   return byPartThenStat.valueSeq()
     .flatMap(byStation => (
       byStation.toSeq()
@@ -119,12 +123,14 @@ export function binPointsByDay(
       .valueSeq()
       .flatMap(x => x)
     ))
-    .groupBy(p => ({x: p.x, y: p.y}))
-    .map((points, {x, y}) => ({
-      x,
-      y,
+    .groupBy(p => new groupRecord({x: p.x, y: p.y}))
+    .map((points, group) => ({
+      x: group.x,
+      y: group.y,
       color: points.reduce((sum, p) => sum + p.color, 0)
     }))
+    .sortBy(p => p.x)
+    .sortBy(p => p.y, (a, b) => a === b ? 0 : a < b ? 1 : -1) // descending
     .valueSeq()
     .toArray();
 }
@@ -181,6 +187,7 @@ export function SelectableHeatChart(props: SelectableHeatChartProps) {
         <HeatChart
           points={props.points}
           color_label={props.color_label}
+          row_count={im.Seq(props.points).map(p => p.y).toSet().size}
         />
       </CardContent>
     </Card>
