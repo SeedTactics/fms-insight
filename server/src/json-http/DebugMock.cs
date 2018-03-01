@@ -93,9 +93,16 @@ namespace MachineWatchApiServer
             var sample = new LogEntryGenerator(LogDB);
             DateTime today = DateTime.Today;
             DateTime month = new DateTime(today.Year, today.Month, 1);
+
+            month = month.ToUniversalTime();
             sample.AddMonthOfCycles(month, "uniq1", "part1", "pal1", 1, 40, 70);
             sample.AddMonthOfCycles(month, "uniq2", "part2", "pal2", 2, 80, 110);
             sample.AddMonthOfCycles(month, "uniq1", "part1", "pal2", 3, 72, 72);
+
+            month = month.AddMonths(-1);
+            sample.AddMonthOfCycles(month, "uniq3", "part1", "pal1", 1, 40, 70);
+            sample.AddMonthOfCycles(month, "uniq4", "part2", "pal2", 2, 80, 110);
+            sample.AddMonthOfCycles(month, "uniq3", "part1", "pal2", 3, 72, 72);
             sample.AddEntriesToDatabase();
 
             var mockPath = System.IO.Path.Combine(
