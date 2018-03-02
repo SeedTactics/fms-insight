@@ -38,7 +38,11 @@ import * as routes from './data/routes';
 
 function appProps(current: routes.RouteLocation): AppProps {
   return {
-    route: {current},
+    route: {
+      current,
+      selected_station_type: routes.SelectedStationType.LoadStation,
+      selected_station_id: 5
+    },
     loadLast30Days: jest.fn(),
     loadCurrentStatus: jest.fn(),
     setRoute: jest.fn(),
@@ -59,7 +63,7 @@ it('renders the dashboard', () => {
   // tslint:disable-next-line:no-any
   const onTabChange = header.find("WithStyles(Tabs)").first().prop("onChange") as any;
   onTabChange(null, routes.RouteLocation.CostPerPiece);
-  expect(props.setRoute).toHaveBeenCalledWith(routes.RouteLocation.CostPerPiece);
+  expect(props.setRoute).toHaveBeenCalledWith(routes.RouteLocation.CostPerPiece, props.route);
 });
 
 it('renders the station monitor', () => {

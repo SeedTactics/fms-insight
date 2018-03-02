@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { Action, NOT_FOUND } from 'redux-first-router';
+import { NOT_FOUND } from 'redux-first-router';
 
 export enum RouteLocation {
   Dashboard = 'ROUTE_Dashboard',
@@ -42,31 +42,67 @@ export enum RouteLocation {
 
 export const routeMap = {
   [RouteLocation.Dashboard]: '/',
-  [RouteLocation.StationMonitor]: '/station',
+  [RouteLocation.StationMonitor]: '/station/:station/:num',
   [RouteLocation.CostPerPiece]: '/cost',
   [RouteLocation.Efficiency]: '/efficiency',
 };
 
+export enum SelectedStationType {
+  LoadStation = 'loadunload',
+  Inspection = 'inspection',
+  Wash = 'wash',
+}
+
+export type Action =
+  | { type: RouteLocation.Dashboard }
+  | { type: RouteLocation.StationMonitor, payload: { station: SelectedStationType, num: number } }
+  | { type: RouteLocation.CostPerPiece }
+  | { type: RouteLocation.Efficiency }
+  | { type: typeof NOT_FOUND }
+  ;
+
+export function switchToStationMonitorPage(curSt: State): Action {
+  return {
+    type: RouteLocation.StationMonitor,
+    payload: { station: curSt.selected_station_type, num: curSt.selected_station_id }
+  };
+}
+
+export function switchToStationMonitor(station: SelectedStationType, num: number): Action {
+  return {
+    type: RouteLocation.StationMonitor,
+    payload: { station, num },
+  };
+}
+
 export interface State {
   readonly current: RouteLocation;
+  readonly selected_station_type: SelectedStationType;
+  readonly selected_station_id: number;
 }
 
 export const initial: State = {
-  current: RouteLocation.Dashboard
+  current: RouteLocation.Dashboard,
+  selected_station_type: SelectedStationType.LoadStation,
+  selected_station_id: 1,
 };
 
 export function reducer(s: State, a: Action): State {
   if ( s === undefined) { return initial; }
   switch (a.type) {
     case RouteLocation.StationMonitor:
-      return { current: RouteLocation.StationMonitor };
+      return {...s,
+        current: RouteLocation.StationMonitor,
+        selected_station_type: a.payload.station,
+        selected_station_id: a.payload.num,
+      };
     case RouteLocation.CostPerPiece:
-      return { current: RouteLocation.CostPerPiece };
+      return {...s, current: RouteLocation.CostPerPiece };
     case RouteLocation.Efficiency:
-      return { current: RouteLocation.Efficiency };
+      return {...s, current: RouteLocation.Efficiency };
     case RouteLocation.Dashboard:
     case NOT_FOUND:
-      return { current: RouteLocation.Dashboard };
+      return {...s, current: RouteLocation.Dashboard };
     default:
       return s;
   }

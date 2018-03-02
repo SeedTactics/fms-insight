@@ -54,8 +54,8 @@ const tabsStyle = {
 };
 
 interface HeaderProps {
-  current: routes.RouteLocation;
-  setRoute: (l: routes.RouteLocation) => void;
+  routeState: routes.State;
+  setRoute: (l: routes.RouteLocation, curState: routes.State) => void;
 }
 
 function Header(p: HeaderProps) {
@@ -63,8 +63,8 @@ function Header(p: HeaderProps) {
       <Tabs
         fullWidth={full}
         style={full ? {} : tabsStyle}
-        value={p.current}
-        onChange={(e, v) => p.setRoute(v)}
+        value={p.routeState.current}
+        onChange={(e, v) => p.setRoute(v, p.routeState)}
       >
         <Tab label="Dashboard" value={routes.RouteLocation.Dashboard}/>
         <Tab label="Station Monitor" value={routes.RouteLocation.StationMonitor}/>
@@ -113,7 +113,7 @@ export interface AppProps {
   // tslint:disable-next-line:no-any
   loadCurrentStatus: () => any;
   // tslint:disable-next-line:no-any
-  setRoute: (r: routes.RouteLocation) => any;
+  setRoute: (r: routes.RouteLocation, curSt: routes.State) => any;
 }
 
 export class App extends React.PureComponent<AppProps> {
@@ -141,7 +141,7 @@ export class App extends React.PureComponent<AppProps> {
     }
     return (
       <div id="App">
-        <Header current={this.props.route.current} setRoute={this.props.setRoute}/>
+        <Header routeState={this.props.route} setRoute={this.props.setRoute}/>
         {page}
       </div>
     );
@@ -155,8 +155,12 @@ export default connect(
   {
     loadLast30Days,
     loadCurrentStatus,
-    setRoute: (r: routes.RouteLocation) => ({
-      type: r
-    })
+    setRoute: (r: routes.RouteLocation, curSt: routes.State) => {
+      if (r === routes.RouteLocation.StationMonitor) {
+        return routes.switchToStationMonitorPage(curSt);
+      } else {
+        return { type: r };
+      }
+    }
   }
 )(App);

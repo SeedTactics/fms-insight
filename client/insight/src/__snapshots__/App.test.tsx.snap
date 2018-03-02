@@ -5,7 +5,13 @@ exports[`cost per piece 1`] = `
   id="App"
 >
   <Header
-    current="ROUTE_CostPerPiece"
+    routeState={
+      Object {
+        "current": "ROUTE_CostPerPiece",
+        "selected_station_id": 5,
+        "selected_station_type": "loadunload",
+      }
+    }
     setRoute={[Function]}
   />
   <CostPerPiece />
@@ -139,7 +145,13 @@ exports[`dashboard 1`] = `
   id="App"
 >
   <Header
-    current="ROUTE_Dashboard"
+    routeState={
+      Object {
+        "current": "ROUTE_Dashboard",
+        "selected_station_id": 5,
+        "selected_station_type": "loadunload",
+      }
+    }
     setRoute={[Function]}
   />
   <Dashboard />
@@ -273,7 +285,13 @@ exports[`efficiency 1`] = `
   id="App"
 >
   <Header
-    current="ROUTE_Efficiency"
+    routeState={
+      Object {
+        "current": "ROUTE_Efficiency",
+        "selected_station_id": 5,
+        "selected_station_type": "loadunload",
+      }
+    }
     setRoute={[Function]}
   />
   <Efficiency />
@@ -407,7 +425,13 @@ exports[`station monitor 1`] = `
   id="App"
 >
   <Header
-    current="ROUTE_StationMonitor"
+    routeState={
+      Object {
+        "current": "ROUTE_StationMonitor",
+        "selected_station_id": 5,
+        "selected_station_type": "loadunload",
+      }
+    }
     setRoute={[Function]}
   />
   <StationMonitor />
