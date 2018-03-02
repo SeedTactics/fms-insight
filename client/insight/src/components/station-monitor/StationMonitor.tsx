@@ -31,130 +31,13 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
-import { connect } from 'react-redux';
-import Select from 'material-ui/Select';
-import { MenuItem } from 'material-ui/Menu';
-import Input from 'material-ui/Input';
-import { Seq, Repeat } from 'immutable';
 
-import * as routes from '../../data/routes';
-import { Store } from '../../data/store';
-
-const toolbarStyle = {
-  'display': 'flex',
-  'backgroundColor': '#E0E0E0',
-  'paddingLeft': '24px',
-  'paddingRight': '24px',
-  'height': '2.5em',
-  'alignItems': 'center' as 'center',
-  'justifyContent': 'space-evenly' as 'space-evenly'
-};
-
-export interface StationToolbarProps {
-  current_route: routes.State;
-  // tslint:disable-next-line:no-any
-  setStationRoute: (station: string, num: number, queues: ReadonlyArray<string>) => any;
-}
-
-export function StationToolbar(props: StationToolbarProps) {
-
-  function setStation(s: string) {
-    props.setStationRoute(
-      s,
-      props.current_route.selected_station_id,
-      props.current_route.station_queues
-    );
-  }
-
-  function setNumber(valStr: string) {
-    const val = parseFloat(valStr);
-    if (!isNaN(val) && isFinite(val)) {
-      props.setStationRoute(
-        props.current_route.selected_station_type,
-        val,
-        props.current_route.station_queues);
-    }
-  }
-
-  let curQueueCount = props.current_route.station_queues.length;
-  if (curQueueCount > 2) {
-    curQueueCount = 4;
-  }
-
-  function setQueueCount(cnt: number) {
-    if (curQueueCount === cnt) { return; }
-
-    let newQueues: string[];
-    const oldCnt = props.current_route.station_queues.length;
-    if (oldCnt < cnt) {
-      newQueues = Seq(props.current_route.station_queues)
-        .concat(Repeat(""))
-        .take(cnt)
-        .toArray();
-    } else {
-      newQueues = Seq(props.current_route.station_queues).take(cnt).toArray();
-    }
-    props.setStationRoute(
-      props.current_route.selected_station_type,
-      props.current_route.selected_station_id,
-      newQueues
-    );
-  }
-
-  return (
-    <nav style={toolbarStyle}>
-      <div>
-        <Select
-          value={props.current_route.selected_station_type}
-          onChange={e => setStation(e.target.value)}
-          autoWidth
-        >
-          <MenuItem value={routes.SelectedStationType.LoadStation}>
-            Load Station
-          </MenuItem>
-          <MenuItem value={routes.SelectedStationType.Inspection}>
-            Inspection
-          </MenuItem>
-          <MenuItem value={routes.SelectedStationType.Wash}>
-            Wash
-          </MenuItem>
-        </Select>
-        <Input
-          type="number"
-          value={props.current_route.selected_station_id}
-          onChange={e => setNumber(e.target.value)}
-          style={{width: '3em', marginLeft: '1em'}}
-        />
-      </div>
-      <div>
-        <Select
-          value={curQueueCount}
-          autoWidth
-          onChange={e => setQueueCount(parseFloat(e.target.value))}
-        >
-          <MenuItem value={0}>No Queues</MenuItem>
-          <MenuItem value={1}>One Queue</MenuItem>
-          <MenuItem value={2}>Two Queues</MenuItem>
-          <MenuItem value={4}>Four Queues</MenuItem>
-        </Select>
-      </div>
-    </nav>
-  );
-}
-
-const ConnectedStationToolbar = connect(
-  (st: Store) => ({
-    current_route: st.Route,
-  }),
-  {
-    setStationRoute: routes.switchToStationMonitor
-  }
-)(StationToolbar);
+import StationToolbar from './StationToolbar';
 
 export default function StationMonitor() {
   return (
     <>
-      <ConnectedStationToolbar/>
+      <StationToolbar/>
       <main style={{'padding': '8px'}}>
         <p>Station Monitor Page</p>
       </main>

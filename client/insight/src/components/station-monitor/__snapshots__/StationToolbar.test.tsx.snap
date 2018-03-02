@@ -1,0 +1,238 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`inspection toolbar 1`] = `
+<nav
+  style={
+    Object {
+      "alignItems": "center",
+      "backgroundColor": "#E0E0E0",
+      "display": "flex",
+      "height": "2.5em",
+      "justifyContent": "space-evenly",
+      "paddingLeft": "24px",
+      "paddingRight": "24px",
+    }
+  }
+>
+  <div>
+    <WithStyles(Select)
+      autoWidth={true}
+      onChange={[Function]}
+      value="inspection"
+    >
+      <WithStyles(MenuItem)
+        value="loadunload"
+      >
+        Load Station
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="inspection"
+      >
+        Inspection
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="wash"
+      >
+        Wash
+      </WithStyles(MenuItem)>
+    </WithStyles(Select)>
+    <WithStyles(Input)
+      onChange={[Function]}
+      style={
+        Object {
+          "marginLeft": "1em",
+          "width": "3em",
+        }
+      }
+      type="number"
+      value={4}
+    />
+  </div>
+  <div>
+    <WithStyles(Select)
+      autoWidth={true}
+      onChange={[Function]}
+      value={1}
+    >
+      <WithStyles(MenuItem)
+        value={0}
+      >
+        No Queues
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value={1}
+      >
+        One Queue
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value={2}
+      >
+        Two Queues
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value={4}
+      >
+        Four Queues
+      </WithStyles(MenuItem)>
+    </WithStyles(Select)>
+  </div>
+</nav>
+`;
+
+exports[`load toolbar 1`] = `
+<nav
+  style={
+    Object {
+      "alignItems": "center",
+      "backgroundColor": "#E0E0E0",
+      "display": "flex",
+      "height": "2.5em",
+      "justifyContent": "space-evenly",
+      "paddingLeft": "24px",
+      "paddingRight": "24px",
+    }
+  }
+>
+  <div>
+    <WithStyles(Select)
+      autoWidth={true}
+      onChange={[Function]}
+      value="inspection"
+    >
+      <WithStyles(MenuItem)
+        value="loadunload"
+      >
+        Load Station
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="inspection"
+      >
+        Inspection
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="wash"
+      >
+        Wash
+      </WithStyles(MenuItem)>
+    </WithStyles(Select)>
+    <WithStyles(Input)
+      onChange={[Function]}
+      style={
+        Object {
+          "marginLeft": "1em",
+          "width": "3em",
+        }
+      }
+      type="number"
+      value={4}
+    />
+  </div>
+  <div>
+    <WithStyles(Select)
+      autoWidth={true}
+      onChange={[Function]}
+      value={4}
+    >
+      <WithStyles(MenuItem)
+        value={0}
+      >
+        No Queues
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value={1}
+      >
+        One Queue
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value={2}
+      >
+        Two Queues
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value={4}
+      >
+        Four Queues
+      </WithStyles(MenuItem)>
+    </WithStyles(Select)>
+  </div>
+</nav>
+`;
+
+exports[`wash toolbar 1`] = `
+<nav
+  style={
+    Object {
+      "alignItems": "center",
+      "backgroundColor": "#E0E0E0",
+      "display": "flex",
+      "height": "2.5em",
+      "justifyContent": "space-evenly",
+      "paddingLeft": "24px",
+      "paddingRight": "24px",
+    }
+  }
+>
+  <div>
+    <WithStyles(Select)
+      autoWidth={true}
+      onChange={[Function]}
+      value="wash"
+    >
+      <WithStyles(MenuItem)
+        value="loadunload"
+      >
+        Load Station
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="inspection"
+      >
+        Inspection
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="wash"
+      >
+        Wash
+      </WithStyles(MenuItem)>
+    </WithStyles(Select)>
+    <WithStyles(Input)
+      onChange={[Function]}
+      style={
+        Object {
+          "marginLeft": "1em",
+          "width": "3em",
+        }
+      }
+      type="number"
+      value={4}
+    />
+  </div>
+  <div>
+    <WithStyles(Select)
+      autoWidth={true}
+      onChange={[Function]}
+      value={0}
+    >
+      <WithStyles(MenuItem)
+        value={0}
+      >
+        No Queues
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value={1}
+      >
+        One Queue
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value={2}
+      >
+        Two Queues
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value={4}
+      >
+        Four Queues
+      </WithStyles(MenuItem)>
+    </WithStyles(Select)>
+  </div>
+</nav>
+`;
