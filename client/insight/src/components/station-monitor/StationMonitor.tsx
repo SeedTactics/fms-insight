@@ -35,6 +35,7 @@ import { connect } from 'react-redux';
 import Select from 'material-ui/Select';
 import { MenuItem } from 'material-ui/Menu';
 import Input from 'material-ui/Input';
+import { Seq, Repeat } from 'immutable';
 
 import * as routes from '../../data/routes';
 import { Store } from '../../data/store';
@@ -52,22 +53,60 @@ const toolbarStyle = {
 export interface StationToolbarProps {
   current_route: routes.State;
   // tslint:disable-next-line:no-any
-  setStationRoute: (station: string, num: number) => any;
+  setStationRoute: (station: string, num: number, queues: ReadonlyArray<string>) => any;
 }
 
 export function StationToolbar(props: StationToolbarProps) {
+
+  function setStation(s: string) {
+    props.setStationRoute(
+      s,
+      props.current_route.selected_station_id,
+      props.current_route.station_queues
+    );
+  }
+
   function setNumber(valStr: string) {
     const val = parseFloat(valStr);
     if (!isNaN(val) && isFinite(val)) {
-      props.setStationRoute(props.current_route.selected_station_type, val);
+      props.setStationRoute(
+        props.current_route.selected_station_type,
+        val,
+        props.current_route.station_queues);
     }
   }
+
+  let curQueueCount = props.current_route.station_queues.length;
+  if (curQueueCount > 2) {
+    curQueueCount = 4;
+  }
+
+  function setQueueCount(cnt: number) {
+    if (curQueueCount === cnt) { return; }
+
+    let newQueues: string[];
+    const oldCnt = props.current_route.station_queues.length;
+    if (oldCnt < cnt) {
+      newQueues = Seq(props.current_route.station_queues)
+        .concat(Repeat(""))
+        .take(cnt)
+        .toArray();
+    } else {
+      newQueues = Seq(props.current_route.station_queues).take(cnt).toArray();
+    }
+    props.setStationRoute(
+      props.current_route.selected_station_type,
+      props.current_route.selected_station_id,
+      newQueues
+    );
+  }
+
   return (
     <nav style={toolbarStyle}>
       <div>
         <Select
           value={props.current_route.selected_station_type}
-          onChange={e => props.setStationRoute(e.target.value, props.current_route.selected_station_id)}
+          onChange={e => setStation(e.target.value)}
           autoWidth
         >
           <MenuItem value={routes.SelectedStationType.LoadStation}>
@@ -88,7 +127,11 @@ export function StationToolbar(props: StationToolbarProps) {
         />
       </div>
       <div>
-        <Select value={0} autoWidth>
+        <Select
+          value={curQueueCount}
+          autoWidth
+          onChange={e => setQueueCount(parseFloat(e.target.value))}
+        >
           <MenuItem value={0}>No Queues</MenuItem>
           <MenuItem value={1}>One Queue</MenuItem>
           <MenuItem value={2}>Two Queues</MenuItem>

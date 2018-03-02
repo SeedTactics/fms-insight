@@ -40,9 +40,15 @@ import { pledgeMiddleware } from './pledge';
 
 import { connectRoutes, LocationState } from 'redux-first-router';
 import createHistory from 'history/createBrowserHistory';
+import * as queryString from 'query-string';
 
 const history = createHistory();
-const router = connectRoutes(history, routes.routeMap);
+const router = connectRoutes(
+  history,
+  routes.routeMap,
+  {
+    querySerializer: queryString
+  });
 
 /* tslint:disable */
 const devTools: GenericStoreEnhancer =

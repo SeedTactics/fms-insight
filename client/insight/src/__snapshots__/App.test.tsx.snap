@@ -10,6 +10,10 @@ exports[`cost per piece 1`] = `
         "current": "ROUTE_CostPerPiece",
         "selected_station_id": 5,
         "selected_station_type": "loadunload",
+        "station_queues": Array [
+          "q1",
+          "q1",
+        ],
       }
     }
     setRoute={[Function]}
@@ -150,6 +154,10 @@ exports[`dashboard 1`] = `
         "current": "ROUTE_Dashboard",
         "selected_station_id": 5,
         "selected_station_type": "loadunload",
+        "station_queues": Array [
+          "q1",
+          "q1",
+        ],
       }
     }
     setRoute={[Function]}
@@ -290,6 +298,10 @@ exports[`efficiency 1`] = `
         "current": "ROUTE_Efficiency",
         "selected_station_id": 5,
         "selected_station_type": "loadunload",
+        "station_queues": Array [
+          "q1",
+          "q1",
+        ],
       }
     }
     setRoute={[Function]}
@@ -430,6 +442,10 @@ exports[`station monitor 1`] = `
         "current": "ROUTE_StationMonitor",
         "selected_station_id": 5,
         "selected_station_type": "loadunload",
+        "station_queues": Array [
+          "q1",
+          "q1",
+        ],
       }
     }
     setRoute={[Function]}

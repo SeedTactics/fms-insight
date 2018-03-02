@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { NOT_FOUND } from 'redux-first-router';
+import { Seq } from 'immutable';
 
 export enum RouteLocation {
   Dashboard = 'ROUTE_Dashboard',
@@ -55,7 +56,13 @@ export enum SelectedStationType {
 
 export type Action =
   | { type: RouteLocation.Dashboard }
-  | { type: RouteLocation.StationMonitor, payload: { station: SelectedStationType, num: number } }
+  | {
+      type: RouteLocation.StationMonitor,
+      payload: { station: SelectedStationType, num: number },
+      meta?: {
+        query?: { queue?: ReadonlyArray<string> }
+      },
+    }
   | { type: RouteLocation.CostPerPiece }
   | { type: RouteLocation.Efficiency }
   | { type: typeof NOT_FOUND }
@@ -64,14 +71,30 @@ export type Action =
 export function switchToStationMonitorPage(curSt: State): Action {
   return {
     type: RouteLocation.StationMonitor,
-    payload: { station: curSt.selected_station_type, num: curSt.selected_station_id }
+    payload: { station: curSt.selected_station_type, num: curSt.selected_station_id },
+    meta: { query: { queue: curSt.station_queues }},
   };
 }
 
-export function switchToStationMonitor(station: SelectedStationType, num: number): Action {
+export function switchToStationMonitor(station: SelectedStationType, num: number, queues: string[]): Action {
   return {
     type: RouteLocation.StationMonitor,
     payload: { station, num },
+    meta: { query: {queue: queues.length === 0 ? undefined : queues } }
+  };
+}
+
+export function setQueue(idx: number, queue: string, curSt: State): Action | undefined {
+  if (idx >= curSt.station_queues.length) { return undefined; }
+  let newQueues = [...curSt.station_queues];
+  newQueues[idx] = queue;
+  return {
+    type: RouteLocation.StationMonitor,
+    payload: {
+      station: curSt.selected_station_type,
+      num: curSt.selected_station_id,
+    },
+    meta: { query: { queue: newQueues } }
   };
 }
 
@@ -79,12 +102,14 @@ export interface State {
   readonly current: RouteLocation;
   readonly selected_station_type: SelectedStationType;
   readonly selected_station_id: number;
+  readonly station_queues: ReadonlyArray<string>;
 }
 
 export const initial: State = {
   current: RouteLocation.Dashboard,
   selected_station_type: SelectedStationType.LoadStation,
   selected_station_id: 1,
+  station_queues: [],
 };
 
 export function reducer(s: State, a: Action): State {
@@ -95,6 +120,7 @@ export function reducer(s: State, a: Action): State {
         current: RouteLocation.StationMonitor,
         selected_station_type: a.payload.station,
         selected_station_id: a.payload.num,
+        station_queues: Seq(((a.meta || {}).query || {}).queue || []).take(4).toArray(),
       };
     case RouteLocation.CostPerPiece:
       return {...s, current: RouteLocation.CostPerPiece };
