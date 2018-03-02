@@ -51,9 +51,9 @@ const toolbarStyle = {
 };
 
 export interface StationToolbarProps {
-  current_route: routes.State;
+  readonly current_route: routes.State;
   // tslint:disable-next-line:no-any
-  setStationRoute: (station: string, num: number, queues: ReadonlyArray<string>) => any;
+  readonly setStationRoute: (station: string, num: number, queues: ReadonlyArray<string>) => any;
 }
 
 export function StationToolbar(props: StationToolbarProps) {
