@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { Action } from 'redux-first-router';
+import { Action, NOT_FOUND } from 'redux-first-router';
 
 export enum RouteLocation {
   Dashboard = 'ROUTE_Dashboard',
@@ -65,6 +65,7 @@ export function reducer(s: State, a: Action): State {
     case RouteLocation.Efficiency:
       return { current: RouteLocation.Efficiency };
     case RouteLocation.Dashboard:
+    case NOT_FOUND:
       return { current: RouteLocation.Dashboard };
     default:
       return s;
