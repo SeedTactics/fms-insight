@@ -162,154 +162,6 @@ export class InspectionClient {
         }
         return Promise.resolve<void>(<any>null);
     }
-
-    getGlobalInspectionTypes(): Promise<string[]> {
-        let url_ = this.baseUrl + "/api/v1/inspection/types";
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_ = <RequestInit>{
-            method: "GET",
-            headers: new Headers({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processGetGlobalInspectionTypes(_response);
-        });
-    }
-
-    protected processGetGlobalInspectionTypes(response: Response): Promise<string[]> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            if (resultData200 && resultData200.constructor === Array) {
-                result200 = [];
-                for (let item of resultData200)
-                    result200.push(item);
-            }
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<string[]>(<any>null);
-    }
-
-    getGlobalInspectionType(ty: string): Promise<InspectionType> {
-        let url_ = this.baseUrl + "/api/v1/inspection/type/{ty}";
-        if (ty === undefined || ty === null)
-            throw new Error("The parameter 'ty' must be defined.");
-        url_ = url_.replace("{ty}", encodeURIComponent("" + ty));
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_ = <RequestInit>{
-            method: "GET",
-            headers: new Headers({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processGetGlobalInspectionType(_response);
-        });
-    }
-
-    protected processGetGlobalInspectionType(response: Response): Promise<InspectionType> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = resultData200 ? InspectionType.fromJS(resultData200) : <any>null;
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<InspectionType>(<any>null);
-    }
-
-    setGlobalInspection(ty: string, ity: InspectionType): Promise<void> {
-        let url_ = this.baseUrl + "/api/v1/inspection/type/{ty}";
-        if (ty === undefined || ty === null)
-            throw new Error("The parameter 'ty' must be defined.");
-        url_ = url_.replace("{ty}", encodeURIComponent("" + ty));
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(ity);
-
-        let options_ = <RequestInit>{
-            body: content_,
-            method: "PUT",
-            headers: new Headers({
-                "Content-Type": "application/json",
-            })
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processSetGlobalInspection(_response);
-        });
-    }
-
-    protected processSetGlobalInspection(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            return;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(<any>null);
-    }
-
-    deleteGlobalInspection(ty: string): Promise<void> {
-        let url_ = this.baseUrl + "/api/v1/inspection/type/{ty}";
-        if (ty === undefined || ty === null)
-            throw new Error("The parameter 'ty' must be defined.");
-        url_ = url_.replace("{ty}", encodeURIComponent("" + ty));
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_ = <RequestInit>{
-            method: "DELETE",
-            headers: new Headers({
-                "Content-Type": "application/json",
-            })
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processDeleteGlobalInspection(_response);
-        });
-    }
-
-    protected processDeleteGlobalInspection(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            return;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(<any>null);
-    }
 }
 
 export class JobsClient {
@@ -596,46 +448,7 @@ export class JobsClient {
         return Promise.resolve<void>(<any>null);
     }
 
-    queueNames(): Promise<string[]> {
-        let url_ = this.baseUrl + "/queues";
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_ = <RequestInit>{
-            method: "GET",
-            headers: new Headers({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processQueueNames(_response);
-        });
-    }
-
-    protected processQueueNames(response: Response): Promise<string[]> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            if (resultData200 && resultData200.constructor === Array) {
-                result200 = [];
-                for (let item of resultData200)
-                    result200.push(item);
-            }
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<string[]>(<any>null);
-    }
-
-    addUnprocessedMaterialToQueue(jobUnique: string, queue: string, serial: string): Promise<void> {
+    addUnprocessedMaterialToQueue(jobUnique: string, queue: string, pos: number, serial: string): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/jobs/job/{jobUnique}/unprocessed-material?";
         if (jobUnique === undefined || jobUnique === null)
             throw new Error("The parameter 'jobUnique' must be defined.");
@@ -644,6 +457,10 @@ export class JobsClient {
             throw new Error("The parameter 'queue' must be defined.");
         else
             url_ += "queue=" + encodeURIComponent("" + queue) + "&";
+        if (pos === undefined || pos === null)
+            throw new Error("The parameter 'pos' must be defined and cannot be null.");
+        else
+            url_ += "pos=" + encodeURIComponent("" + pos) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(serial);
@@ -676,7 +493,7 @@ export class JobsClient {
         return Promise.resolve<void>(<any>null);
     }
 
-    setMaterialInQueue(materialId: number, queue: string): Promise<void> {
+    setMaterialInQueue(materialId: number, queue: QueuePosition): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/queue";
         if (materialId === undefined || materialId === null)
             throw new Error("The parameter 'materialId' must be defined.");
@@ -1301,75 +1118,6 @@ export class LogClient {
         }
         return Promise.resolve<LogEntry>(<any>null);
     }
-
-    getSerialSettings(): Promise<SerialSettings> {
-        let url_ = this.baseUrl + "/api/v1/log/settings/serials";
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_ = <RequestInit>{
-            method: "GET",
-            headers: new Headers({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processGetSerialSettings(_response);
-        });
-    }
-
-    protected processGetSerialSettings(response: Response): Promise<SerialSettings> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = resultData200 ? SerialSettings.fromJS(resultData200) : <any>null;
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<SerialSettings>(<any>null);
-    }
-
-    setSerialSettings(settings: SerialSettings): Promise<void> {
-        let url_ = this.baseUrl + "/api/v1/log/settings/serials";
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(settings);
-
-        let options_ = <RequestInit>{
-            body: content_,
-            method: "PUT",
-            headers: new Headers({
-                "Content-Type": "application/json",
-            })
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processSetSerialSettings(_response);
-        });
-    }
-
-    protected processSetSerialSettings(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            return;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(<any>null);
-    }
 }
 
 export class ServerClient {
@@ -1611,130 +1359,6 @@ export interface IInspectCount extends IValueType {
     counter: string;
     value: number;
     lastUTC: Date;
-}
-
-export class InspectionType implements IInspectionType {
-    overrides: InspectionFrequencyOverride[] = [];
-    name: string;
-    trackPartName: boolean;
-    trackPalletName: boolean;
-    trackStationName: boolean;
-    inspectSingleProcess: number;
-    defaultCountToTriggerInspection: number;
-    defaultDeadline: string;
-    defaultRandomFreq: number;
-
-    constructor(data?: IInspectionType) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            if (data["Overrides"] && data["Overrides"].constructor === Array) {
-                this.overrides = [];
-                for (let item of data["Overrides"])
-                    this.overrides.push(InspectionFrequencyOverride.fromJS(item));
-            }
-            this.name = data["Name"];
-            this.trackPartName = data["TrackPartName"];
-            this.trackPalletName = data["TrackPalletName"];
-            this.trackStationName = data["TrackStationName"];
-            this.inspectSingleProcess = data["InspectSingleProcess"];
-            this.defaultCountToTriggerInspection = data["DefaultCountToTriggerInspection"];
-            this.defaultDeadline = data["DefaultDeadline"];
-            this.defaultRandomFreq = data["DefaultRandomFreq"];
-        }
-    }
-
-    static fromJS(data: any): InspectionType {
-        data = typeof data === 'object' ? data : {};
-        let result = new InspectionType();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        if (this.overrides && this.overrides.constructor === Array) {
-            data["Overrides"] = [];
-            for (let item of this.overrides)
-                data["Overrides"].push(item.toJSON());
-        }
-        data["Name"] = this.name;
-        data["TrackPartName"] = this.trackPartName;
-        data["TrackPalletName"] = this.trackPalletName;
-        data["TrackStationName"] = this.trackStationName;
-        data["InspectSingleProcess"] = this.inspectSingleProcess;
-        data["DefaultCountToTriggerInspection"] = this.defaultCountToTriggerInspection;
-        data["DefaultDeadline"] = this.defaultDeadline;
-        data["DefaultRandomFreq"] = this.defaultRandomFreq;
-        return data;
-    }
-}
-
-export interface IInspectionType {
-    overrides: InspectionFrequencyOverride[];
-    name: string;
-    trackPartName: boolean;
-    trackPalletName: boolean;
-    trackStationName: boolean;
-    inspectSingleProcess: number;
-    defaultCountToTriggerInspection: number;
-    defaultDeadline: string;
-    defaultRandomFreq: number;
-}
-
-export class InspectionFrequencyOverride implements IInspectionFrequencyOverride {
-    part: string;
-    countBeforeInspection: number;
-    deadline: string;
-    randomFreq: number;
-
-    constructor(data?: IInspectionFrequencyOverride) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            this.part = data["Part"];
-            this.countBeforeInspection = data["CountBeforeInspection"];
-            this.deadline = data["Deadline"];
-            this.randomFreq = data["RandomFreq"];
-        }
-    }
-
-    static fromJS(data: any): InspectionFrequencyOverride {
-        data = typeof data === 'object' ? data : {};
-        let result = new InspectionFrequencyOverride();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["Part"] = this.part;
-        data["CountBeforeInspection"] = this.countBeforeInspection;
-        data["Deadline"] = this.deadline;
-        data["RandomFreq"] = this.randomFreq;
-        return data;
-    }
-}
-
-export interface IInspectionFrequencyOverride {
-    part: string;
-    countBeforeInspection: number;
-    deadline: string;
-    randomFreq: number;
 }
 
 export class HistoricData extends ValueType implements IHistoricData {
@@ -2758,6 +2382,9 @@ export class InProcessMaterial implements IInProcessMaterial {
     partName: string;
     process: number;
     path: number;
+    serial?: string;
+    workorderId?: string;
+    signaledInspections: string[] = [];
     location: InProcessMaterialLocation = new InProcessMaterialLocation();
     action: InProcessMaterialAction = new InProcessMaterialAction();
 
@@ -2777,6 +2404,13 @@ export class InProcessMaterial implements IInProcessMaterial {
             this.partName = data["PartName"];
             this.process = data["Process"];
             this.path = data["Path"];
+            this.serial = data["Serial"];
+            this.workorderId = data["WorkorderId"];
+            if (data["SignaledInspections"] && data["SignaledInspections"].constructor === Array) {
+                this.signaledInspections = [];
+                for (let item of data["SignaledInspections"])
+                    this.signaledInspections.push(item);
+            }
             this.location = data["Location"] ? InProcessMaterialLocation.fromJS(data["Location"]) : new InProcessMaterialLocation();
             this.action = data["Action"] ? InProcessMaterialAction.fromJS(data["Action"]) : new InProcessMaterialAction();
         }
@@ -2796,6 +2430,13 @@ export class InProcessMaterial implements IInProcessMaterial {
         data["PartName"] = this.partName;
         data["Process"] = this.process;
         data["Path"] = this.path;
+        data["Serial"] = this.serial;
+        data["WorkorderId"] = this.workorderId;
+        if (this.signaledInspections && this.signaledInspections.constructor === Array) {
+            data["SignaledInspections"] = [];
+            for (let item of this.signaledInspections)
+                data["SignaledInspections"].push(item);
+        }
         data["Location"] = this.location ? this.location.toJSON() : <any>undefined;
         data["Action"] = this.action ? this.action.toJSON() : <any>undefined;
         return data;
@@ -2808,6 +2449,9 @@ export interface IInProcessMaterial {
     partName: string;
     process: number;
     path: number;
+    serial?: string;
+    workorderId?: string;
+    signaledInspections: string[];
     location: InProcessMaterialLocation;
     action: InProcessMaterialAction;
 }
@@ -2817,6 +2461,7 @@ export class InProcessMaterialLocation implements IInProcessMaterialLocation {
     pallet?: string;
     face: number;
     currentQueue?: string;
+    queuePosition: number;
 
     constructor(data?: IInProcessMaterialLocation) {
         if (data) {
@@ -2833,6 +2478,7 @@ export class InProcessMaterialLocation implements IInProcessMaterialLocation {
             this.pallet = data["Pallet"];
             this.face = data["Face"];
             this.currentQueue = data["CurrentQueue"];
+            this.queuePosition = data["QueuePosition"];
         }
     }
 
@@ -2849,6 +2495,7 @@ export class InProcessMaterialLocation implements IInProcessMaterialLocation {
         data["Pallet"] = this.pallet;
         data["Face"] = this.face;
         data["CurrentQueue"] = this.currentQueue;
+        data["QueuePosition"] = this.queuePosition;
         return data;
     }
 }
@@ -2858,6 +2505,7 @@ export interface IInProcessMaterialLocation {
     pallet?: string;
     face: number;
     currentQueue?: string;
+    queuePosition: number;
 }
 
 export enum LocType {
@@ -3087,6 +2735,46 @@ export interface INewJobs extends IValueType {
     queueSizes?: { [key: string] : QueueSize; };
 }
 
+export class QueuePosition implements IQueuePosition {
+    queue: string;
+    position: number;
+
+    constructor(data?: IQueuePosition) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.queue = data["Queue"];
+            this.position = data["Position"];
+        }
+    }
+
+    static fromJS(data: any): QueuePosition {
+        data = typeof data === 'object' ? data : {};
+        let result = new QueuePosition();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["Queue"] = this.queue;
+        data["Position"] = this.position;
+        return data;
+    }
+}
+
+export interface IQueuePosition {
+    queue: string;
+    position: number;
+}
+
 export class JobAndDecrementQuantity extends ValueType implements IJobAndDecrementQuantity {
     decrementId: string;
     jobUnique: string;
@@ -3148,7 +2836,6 @@ export class LogEntry implements ILogEntry {
     pal: string;
     program: string;
     result: string;
-    endofroute: boolean;
     elapsed: string;
     active: string;
 
@@ -3184,7 +2871,6 @@ export class LogEntry implements ILogEntry {
             this.pal = data["pal"];
             this.program = data["program"];
             this.result = data["result"];
-            this.endofroute = data["endofroute"];
             this.elapsed = data["elapsed"];
             this.active = data["active"];
         }
@@ -3220,7 +2906,6 @@ export class LogEntry implements ILogEntry {
         data["pal"] = this.pal;
         data["program"] = this.program;
         data["result"] = this.result;
-        data["endofroute"] = this.endofroute;
         data["elapsed"] = this.elapsed;
         data["active"] = this.active;
         return data;
@@ -3239,7 +2924,6 @@ export interface ILogEntry {
     pal: string;
     program: string;
     result: string;
-    endofroute: boolean;
     elapsed: string;
     active: string;
 }
@@ -3573,65 +3257,6 @@ export interface INewWash extends IValueType {
     extraData?: { [key: string] : string; };
     elapsed: string;
     active: string;
-}
-
-export class SerialSettings implements ISerialSettings {
-    serialType: SerialType;
-    serialLength: number;
-    depositOnProcess: number;
-    filenameTemplate?: string;
-    programTemplate?: string;
-
-    constructor(data?: ISerialSettings) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            this.serialType = data["SerialType"];
-            this.serialLength = data["SerialLength"];
-            this.depositOnProcess = data["DepositOnProcess"];
-            this.filenameTemplate = data["FilenameTemplate"];
-            this.programTemplate = data["ProgramTemplate"];
-        }
-    }
-
-    static fromJS(data: any): SerialSettings {
-        data = typeof data === 'object' ? data : {};
-        let result = new SerialSettings();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["SerialType"] = this.serialType;
-        data["SerialLength"] = this.serialLength;
-        data["DepositOnProcess"] = this.depositOnProcess;
-        data["FilenameTemplate"] = this.filenameTemplate;
-        data["ProgramTemplate"] = this.programTemplate;
-        return data;
-    }
-}
-
-export interface ISerialSettings {
-    serialType: SerialType;
-    serialLength: number;
-    depositOnProcess: number;
-    filenameTemplate?: string;
-    programTemplate?: string;
-}
-
-export enum SerialType {
-    NoSerials = <any>"NoSerials",
-    OneSerialPerMaterial = <any>"OneSerialPerMaterial",
-    OneSerialPerCycle = <any>"OneSerialPerCycle",
-    SerialDeposit = <any>"SerialDeposit",
 }
 
 export class PluginInfo extends ValueType implements IPluginInfo {

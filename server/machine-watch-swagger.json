@@ -124,102 +124,6 @@
         }
       }
     },
-    "/api/v1/inspection/types": {
-      "get": {
-        "tags": [
-          "inspection"
-        ],
-        "operationId": "inspection_GetGlobalInspectionTypes",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            "x-nullable": true
-          }
-        }
-      }
-    },
-    "/api/v1/inspection/type/{ty}": {
-      "get": {
-        "tags": [
-          "inspection"
-        ],
-        "operationId": "inspection_GetGlobalInspectionType",
-        "parameters": [
-          {
-            "type": "string",
-            "name": "ty",
-            "in": "path",
-            "required": true,
-            "x-nullable": false
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/InspectionType"
-            },
-            "x-nullable": true
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "inspection"
-        ],
-        "operationId": "inspection_SetGlobalInspection",
-        "parameters": [
-          {
-            "type": "string",
-            "name": "ty",
-            "in": "path",
-            "required": true,
-            "x-nullable": false
-          },
-          {
-            "name": "ity",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/InspectionType"
-            },
-            "x-nullable": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "inspection"
-        ],
-        "operationId": "inspection_DeleteGlobalInspection",
-        "parameters": [
-          {
-            "type": "string",
-            "name": "ty",
-            "in": "path",
-            "required": true,
-            "x-nullable": false
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
     "/api/v1/jobs/history": {
       "get": {
         "tags": [
@@ -411,27 +315,6 @@
         }
       }
     },
-    "/queues": {
-      "get": {
-        "tags": [
-          "jobs"
-        ],
-        "operationId": "jobs_QueueNames",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            "x-nullable": true
-          }
-        }
-      }
-    },
     "/api/v1/jobs/job/{jobUnique}/unprocessed-material": {
       "post": {
         "tags": [
@@ -452,6 +335,14 @@
             "in": "query",
             "required": true,
             "x-nullable": true
+          },
+          {
+            "type": "integer",
+            "name": "pos",
+            "in": "query",
+            "required": true,
+            "x-nullable": false,
+            "format": "int32"
           },
           {
             "name": "serial",
@@ -490,7 +381,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/definitions/QueuePosition"
             },
             "x-nullable": true
           }
@@ -938,46 +829,6 @@
         }
       }
     },
-    "/api/v1/log/settings/serials": {
-      "get": {
-        "tags": [
-          "log"
-        ],
-        "operationId": "log_GetSerialSettings",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/SerialSettings"
-            },
-            "x-nullable": true
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "log"
-        ],
-        "operationId": "log_SetSerialSettings",
-        "parameters": [
-          {
-            "name": "settings",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/SerialSettings"
-            },
-            "x-nullable": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
     "/api/v1/server/plugin": {
       "get": {
         "tags": [
@@ -1128,84 +979,6 @@
           "$ref": "#/definitions/ValueType"
         }
       ]
-    },
-    "InspectionType": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "Overrides",
-        "Name",
-        "TrackPartName",
-        "TrackPalletName",
-        "TrackStationName",
-        "InspectSingleProcess",
-        "DefaultCountToTriggerInspection",
-        "DefaultDeadline",
-        "DefaultRandomFreq"
-      ],
-      "properties": {
-        "Overrides": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/InspectionFrequencyOverride"
-          }
-        },
-        "Name": {
-          "type": "string"
-        },
-        "TrackPartName": {
-          "type": "boolean"
-        },
-        "TrackPalletName": {
-          "type": "boolean"
-        },
-        "TrackStationName": {
-          "type": "boolean"
-        },
-        "InspectSingleProcess": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "DefaultCountToTriggerInspection": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "DefaultDeadline": {
-          "type": "string",
-          "format": "time-span"
-        },
-        "DefaultRandomFreq": {
-          "type": "number",
-          "format": "double"
-        }
-      }
-    },
-    "InspectionFrequencyOverride": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "Part",
-        "CountBeforeInspection",
-        "Deadline",
-        "RandomFreq"
-      ],
-      "properties": {
-        "Part": {
-          "type": "string"
-        },
-        "CountBeforeInspection": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "Deadline": {
-          "type": "string",
-          "format": "time-span"
-        },
-        "RandomFreq": {
-          "type": "number",
-          "format": "double"
-        }
-      }
     },
     "HistoricData": {
       "type": "object",
@@ -1795,6 +1568,7 @@
         "PartName",
         "Process",
         "Path",
+        "SignaledInspections",
         "Location",
         "Action"
       ],
@@ -1817,6 +1591,18 @@
           "type": "integer",
           "format": "int32"
         },
+        "Serial": {
+          "type": "string"
+        },
+        "WorkorderId": {
+          "type": "string"
+        },
+        "SignaledInspections": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "Location": {
           "$ref": "#/definitions/InProcessMaterialLocation"
         },
@@ -1830,7 +1616,8 @@
       "additionalProperties": false,
       "required": [
         "Type",
-        "Face"
+        "Face",
+        "QueuePosition"
       ],
       "properties": {
         "Type": {
@@ -1845,6 +1632,10 @@
         },
         "CurrentQueue": {
           "type": "string"
+        },
+        "QueuePosition": {
+          "type": "integer",
+          "format": "int32"
         }
       }
     },
@@ -2000,6 +1791,23 @@
         }
       ]
     },
+    "QueuePosition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "Queue",
+        "Position"
+      ],
+      "properties": {
+        "Queue": {
+          "type": "string"
+        },
+        "Position": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
     "JobAndDecrementQuantity": {
       "type": "object",
       "additionalProperties": false,
@@ -2049,7 +1857,6 @@
         "pal",
         "program",
         "result",
-        "endofroute",
         "elapsed",
         "active"
       ],
@@ -2095,9 +1902,6 @@
         },
         "result": {
           "type": "string"
-        },
-        "endofroute": {
-          "type": "boolean"
         },
         "elapsed": {
           "type": "string",
@@ -2313,50 +2117,6 @@
         {
           "$ref": "#/definitions/ValueType"
         }
-      ]
-    },
-    "SerialSettings": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "SerialType",
-        "SerialLength",
-        "DepositOnProcess"
-      ],
-      "properties": {
-        "SerialType": {
-          "$ref": "#/definitions/SerialType"
-        },
-        "SerialLength": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "DepositOnProcess": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "FilenameTemplate": {
-          "type": "string"
-        },
-        "ProgramTemplate": {
-          "type": "string"
-        }
-      }
-    },
-    "SerialType": {
-      "type": "string",
-      "description": "",
-      "x-enumNames": [
-        "NoSerials",
-        "OneSerialPerMaterial",
-        "OneSerialPerCycle",
-        "SerialDeposit"
-      ],
-      "enum": [
-        "NoSerials",
-        "OneSerialPerMaterial",
-        "OneSerialPerCycle",
-        "SerialDeposit"
       ]
     },
     "PluginInfo": {
