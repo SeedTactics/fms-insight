@@ -450,7 +450,7 @@ exports[`station monitor 1`] = `
     }
     setRoute={[Function]}
   />
-  <StationMonitor />
+  <Connect(StationMonitor) />
 </div>
 `;
 
