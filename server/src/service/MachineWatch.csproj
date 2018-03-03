@@ -58,7 +58,7 @@
       </When>
       <When Condition="$(OS) == 'Windows_NT'">
           <PropertyGroup>
-              <TargetFrameworks>net35;net461</TargetFrameworks>
+              <TargetFrameworks>net461</TargetFrameworks>
               <DefineConstants>TRACE;USE_TRACE</DefineConstants>
           </PropertyGroup>
       </When>
