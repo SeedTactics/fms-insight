@@ -39,25 +39,6 @@ it("has the initial state", () => {
   expect(s).toBe(routes.initial);
 });
 
-it("creates a set queue action", () => {
-  const st: routes.State = {
-    current: routes.RouteLocation.StationMonitor,
-    selected_station_type: routes.SelectedStationType.Inspection,
-    selected_station_id: 4,
-    station_queues: ["a", "b", "c"],
-  };
-
-  expect(routes.setQueue(1, "new", st)).toEqual({
-    type: routes.RouteLocation.StationMonitor,
-    payload: { station: routes.SelectedStationType.Inspection, num: 4 },
-    meta: {
-      query: {
-        queue: ["a", "new", "c"]
-      }
-    }
-  });
-});
-
 it("changes to the station page", () => {
   let st = routes.reducer(routes.initial, {
     type: routes.RouteLocation.StationMonitor,

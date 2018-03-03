@@ -51,6 +51,7 @@ it('displays the toolbar for inspection with one queue', () => {
     <StationToolbar
       current_route={basicState}
       setStationRoute={setRoute}
+      queues={{"a": {}, "b": {}}}
     />);
   expect(val).toMatchSnapshot('inspection toolbar');
 });
@@ -66,6 +67,7 @@ it('displays the toolbar for wash with no queues', () => {
     <StationToolbar
       current_route={st}
       setStationRoute={setRoute}
+      queues={{}}
     />);
   expect(val).toMatchSnapshot('wash toolbar');
 });
@@ -81,6 +83,7 @@ it('displays the toolbar for load with three queues', () => {
     <StationToolbar
       current_route={st}
       setStationRoute={setRoute}
+      queues={{"a": {}, "b": {}, "c": {}, "d": {}}}
     />);
   expect(val).toMatchSnapshot('load toolbar');
 });
@@ -92,6 +95,7 @@ it("changes the station", () => {
     <StationToolbar
       current_route={basicState}
       setStationRoute={setRoute}
+      queues={{}}
     />);
 
   // tslint:disable-next-line:no-any
@@ -112,6 +116,7 @@ it("changes the station number", () => {
     <StationToolbar
       current_route={basicState}
       setStationRoute={setRoute}
+      queues={{}}
     />);
 
   // tslint:disable-next-line:no-any
@@ -132,21 +137,22 @@ it("changes the queues", () => {
     <StationToolbar
       current_route={basicState}
       setStationRoute={setRoute}
+      queues={{"a": {}, "b": {}, "c": {}}}
     />);
 
   // tslint:disable-next-line:no-any
   const onChange = val.find("WithStyles(Select)").last().prop("onChange") as any;
 
-  onChange({target: {value: "4"}});
+  onChange({target: {value: ["a", "b"]}});
   expect(setRoute).toHaveBeenCalledWith(
     basicState.selected_station_type,
     basicState.selected_station_id,
-    ["a", "", "", ""]
+    ["a", "b"]
   );
 
   setRoute.mockReset();
 
-  onChange({target: {value: "0"}});
+  onChange({target: {value: []}});
   expect(setRoute).toHaveBeenCalledWith(
     basicState.selected_station_type,
     basicState.selected_station_id,

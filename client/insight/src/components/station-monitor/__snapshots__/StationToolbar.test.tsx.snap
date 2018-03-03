@@ -51,28 +51,25 @@ exports[`inspection toolbar 1`] = `
   <div>
     <WithStyles(Select)
       autoWidth={true}
+      multiple={true}
       onChange={[Function]}
-      value={1}
+      value={
+        Array [
+          "a",
+        ]
+      }
     >
       <WithStyles(MenuItem)
-        value={0}
+        key="0"
+        value="a"
       >
-        No Queues
+        a
       </WithStyles(MenuItem)>
       <WithStyles(MenuItem)
-        value={1}
+        key="1"
+        value="b"
       >
-        One Queue
-      </WithStyles(MenuItem)>
-      <WithStyles(MenuItem)
-        value={2}
-      >
-        Two Queues
-      </WithStyles(MenuItem)>
-      <WithStyles(MenuItem)
-        value={4}
-      >
-        Four Queues
+        b
       </WithStyles(MenuItem)>
     </WithStyles(Select)>
   </div>
@@ -130,28 +127,39 @@ exports[`load toolbar 1`] = `
   <div>
     <WithStyles(Select)
       autoWidth={true}
+      multiple={true}
       onChange={[Function]}
-      value={4}
+      value={
+        Array [
+          "a",
+          "b",
+          "c",
+        ]
+      }
     >
       <WithStyles(MenuItem)
-        value={0}
+        key="0"
+        value="a"
       >
-        No Queues
+        a
       </WithStyles(MenuItem)>
       <WithStyles(MenuItem)
-        value={1}
+        key="1"
+        value="b"
       >
-        One Queue
+        b
       </WithStyles(MenuItem)>
       <WithStyles(MenuItem)
-        value={2}
+        key="2"
+        value="c"
       >
-        Two Queues
+        c
       </WithStyles(MenuItem)>
       <WithStyles(MenuItem)
-        value={4}
+        key="3"
+        value="d"
       >
-        Four Queues
+        d
       </WithStyles(MenuItem)>
     </WithStyles(Select)>
   </div>
@@ -205,34 +213,6 @@ exports[`wash toolbar 1`] = `
       type="number"
       value={4}
     />
-  </div>
-  <div>
-    <WithStyles(Select)
-      autoWidth={true}
-      onChange={[Function]}
-      value={0}
-    >
-      <WithStyles(MenuItem)
-        value={0}
-      >
-        No Queues
-      </WithStyles(MenuItem)>
-      <WithStyles(MenuItem)
-        value={1}
-      >
-        One Queue
-      </WithStyles(MenuItem)>
-      <WithStyles(MenuItem)
-        value={2}
-      >
-        Two Queues
-      </WithStyles(MenuItem)>
-      <WithStyles(MenuItem)
-        value={4}
-      >
-        Four Queues
-      </WithStyles(MenuItem)>
-    </WithStyles(Select)>
   </div>
 </nav>
 `;

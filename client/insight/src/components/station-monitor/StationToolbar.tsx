@@ -35,10 +35,11 @@ import { connect } from 'react-redux';
 import Select from 'material-ui/Select';
 import { MenuItem } from 'material-ui/Menu';
 import Input from 'material-ui/Input';
-import { Seq, Repeat } from 'immutable';
+import { Seq } from 'immutable';
 
 import * as routes from '../../data/routes';
 import { Store } from '../../data/store';
+import * as api from '../../data/api';
 
 const toolbarStyle = {
   'display': 'flex',
@@ -52,15 +53,17 @@ const toolbarStyle = {
 
 export interface StationToolbarProps {
   readonly current_route: routes.State;
+  readonly queues: { [key: string]: api.IQueueSize };
   // tslint:disable-next-line:no-any
-  readonly setStationRoute: (station: string, num: number, queues: ReadonlyArray<string>) => any;
+  readonly setStationRoute: (station: routes.SelectedStationType, num: number, queues: ReadonlyArray<string>) => any;
 }
 
 export function StationToolbar(props: StationToolbarProps) {
+  const queueNames = Object.keys(props.queues).sort();
 
   function setStation(s: string) {
     props.setStationRoute(
-      s,
+      s as routes.SelectedStationType,
       props.current_route.selected_station_id,
       props.current_route.station_queues
     );
@@ -77,27 +80,39 @@ export function StationToolbar(props: StationToolbarProps) {
   }
 
   let curQueueCount = props.current_route.station_queues.length;
-  if (curQueueCount > 2) {
-    curQueueCount = 4;
+  if (curQueueCount > 3) {
+    curQueueCount = 3;
   }
 
-  function setQueueCount(cnt: number) {
-    if (curQueueCount === cnt) { return; }
-
-    let newQueues: string[];
-    const oldCnt = props.current_route.station_queues.length;
-    if (oldCnt < cnt) {
-      newQueues = Seq(props.current_route.station_queues)
-        .concat(Repeat(""))
-        .take(cnt)
-        .toArray();
-    } else {
-      newQueues = Seq(props.current_route.station_queues).take(cnt).toArray();
-    }
+  // the material-ui type bindings specify `e.target.value` to have type string, but
+  // when multiple selects are enabled it is actually a type string[]
+  // tslint:disable-next-line:no-any
+  function setQueues(newQueuesAny: any) {
+    const newQueues: ReadonlyArray<string> = newQueuesAny;
     props.setStationRoute(
       props.current_route.selected_station_type,
       props.current_route.selected_station_id,
-      newQueues
+      Seq(newQueues).take(3).toArray()
+    );
+  }
+
+  let queueSelect: JSX.Element | undefined;
+  if (queueNames.length > 0) {
+    queueSelect = (
+      <div>
+        <Select
+          multiple
+          value={props.current_route.station_queues as string[]}
+          autoWidth
+          onChange={e => setQueues(e.target.value)}
+        >
+          {
+            queueNames.map((q, idx) =>
+              <MenuItem key={idx} value={q}>{q}</MenuItem>
+            )
+          }
+        </Select>
+      </div>
     );
   }
 
@@ -126,18 +141,7 @@ export function StationToolbar(props: StationToolbarProps) {
           style={{width: '3em', marginLeft: '1em'}}
         />
       </div>
-      <div>
-        <Select
-          value={curQueueCount}
-          autoWidth
-          onChange={e => setQueueCount(parseFloat(e.target.value))}
-        >
-          <MenuItem value={0}>No Queues</MenuItem>
-          <MenuItem value={1}>One Queue</MenuItem>
-          <MenuItem value={2}>Two Queues</MenuItem>
-          <MenuItem value={4}>Four Queues</MenuItem>
-        </Select>
-      </div>
+      {queueSelect}
     </nav>
   );
 }
@@ -145,6 +149,7 @@ export function StationToolbar(props: StationToolbarProps) {
 export default connect(
   (st: Store) => ({
     current_route: st.Route,
+    queues: st.Current.current_status.queues,
   }),
   {
     setStationRoute: routes.switchToStationMonitor
