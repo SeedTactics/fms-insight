@@ -35,9 +35,16 @@ using System;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using BlackMaple.MachineWatchInterface;
+using System.Runtime.Serialization;
 
 namespace MachineWatchApiServer.Controllers
 {
+    [DataContract]
+    public class QueuePosition {
+        [DataMember(IsRequired=true)] public string Queue {get;set;}
+        [DataMember(IsRequired=true)] public int Position {get;set;}
+    }
+
     [Route("api/v1/[controller]")]
     public class jobsController : ControllerBase
     {
@@ -92,20 +99,15 @@ namespace MachineWatchApiServer.Controllers
             _control.AddJobs(newJobs, expectedPreviousScheduleId);
         }
 
-        [HttpGet("/queues")]
-        public List<string> QueueNames() {
-            return _control.GetQueueNames();
-        }
-
         [HttpPost("job/{jobUnique}/unprocessed-material")]
-        public void AddUnprocessedMaterialToQueue(string jobUnique, [FromQuery] string queue, [FromBody] string serial)
+        public void AddUnprocessedMaterialToQueue(string jobUnique, [FromQuery] string queue, [FromQuery] int pos, [FromBody] string serial)
         {
-            _control.AddUnprocessedMaterialToQueue(jobUnique, queue, serial);
+            _control.AddUnprocessedMaterialToQueue(jobUnique, queue, pos, serial);
         }
 
         [HttpPut("material/{materialId}/queue")]
-        public void SetMaterialInQueue(long materialId, [FromBody] string queue) {
-            _control.SetMaterialInQueue(materialId, queue);
+        public void SetMaterialInQueue(long materialId, [FromBody] QueuePosition queue) {
+            _control.SetMaterialInQueue(materialId, queue.Queue, queue.Position);
         }
 
         [HttpDelete("material/{materialId}/queue")]

@@ -91,6 +91,9 @@ namespace BlackMaple.MachineWatchInterface
 
         //If Type == InQueue
         [DataMember(IsRequired=false, EmitDefaultValue=false)] public string CurrentQueue {get;set;}
+
+        //If Type == InQueue or Type == Free
+        [DataMember(IsRequired=false, EmitDefaultValue=false)] public int QueuePosition {get;set;}
     }
 
     //Stores information about a piece of material, where it is, and what is happening to it.
@@ -103,6 +106,9 @@ namespace BlackMaple.MachineWatchInterface
         [DataMember(IsRequired=true)] public string PartName {get; set;}
         [DataMember(IsRequired=true)] public int Process {get;set;}  // When in a queue, the process is the last completed process
         [DataMember(IsRequired=true)] public int Path {get;set;}
+        [DataMember(IsRequired=false, EmitDefaultValue=false)] public string Serial {get;set;}
+        [DataMember(IsRequired=false, EmitDefaultValue=false)] public string WorkorderId {get;set;}
+        [DataMember(IsRequired=true)] public List<string> SignaledInspections {get;set;} = new List<string>();
 
         // Where is the material?
         [DataMember(IsRequired=true)] public InProcessMaterialLocation Location {get;set;}

@@ -168,11 +168,10 @@ namespace MachineWatchApiServer
             JobDB.AddJobs(jobs, expectedPreviousScheduleId);
         }
 
-        public List<string> GetQueueNames() => MockStatus.GetQueueNames();
-        public void AddUnprocessedMaterialToQueue(string jobUnique, string queue, string serial)
-            => MockStatus.AddUnprocessedMaterialToQueue(jobUnique, queue, serial);
-        public void SetMaterialInQueue(long materialId, string queue)
-            => MockStatus.SetMaterialInQueue(materialId, queue);
+        public void AddUnprocessedMaterialToQueue(string jobUnique, string queue, int position, string serial)
+            => MockStatus.AddUnprocessedMaterialToQueue(jobUnique, queue, position, serial);
+        public void SetMaterialInQueue(long materialId, string queue, int position)
+            => MockStatus.SetMaterialInQueue(materialId, queue, position);
         public void RemoveMaterialFromAllQueues(long materialId)
             => MockStatus.RemoveMaterialFromAllQueues(materialId);
 
@@ -878,12 +877,12 @@ namespace MachineWatchApiServer
             21,
         };
 
-        public void AddUnprocessedMaterialToQueue(string jobUnique, string queue, string serial)
+        public void AddUnprocessedMaterialToQueue(string jobUnique, string queue, int position, string serial)
         {
 
         }
 
-        public void SetMaterialInQueue(long materialId, string queue)
+        public void SetMaterialInQueue(long materialId, string queue, int position)
         {
             aaaQueue.Remove(materialId);
             bbbQueue.Remove(materialId);

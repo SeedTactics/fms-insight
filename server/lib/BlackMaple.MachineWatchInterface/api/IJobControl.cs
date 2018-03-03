@@ -63,15 +63,17 @@ namespace BlackMaple.MachineWatchInterface
 
         //In-process queues
 
-        List<string> GetQueueNames();
         /// Add a new unprocessed piece of material (typically a casting)
-        /// for the given job into the given queue or just into free material if the queue
-        /// is empty.  The serial is optional and is passed only if the material has already
-        /// been marked with a serial.
-        void AddUnprocessedMaterialToQueue(string jobUnique, string queue, string serial);
-        /// Set or replace a piece of material into a queue.  If it is currently in another queue, it
-        /// will be removed from that queue and placed in the target queue.
-        void SetMaterialInQueue(long materialId, string queue);
+        /// for the given job into the given queue.  The serial is optional
+        /// and is passed only if the material has already been marked with a serial.
+        void AddUnprocessedMaterialToQueue(string jobUnique, string queue, int position, string serial);
+
+        /// Add material into a queue or just into free material if the queue name is the empty string.
+        /// The material will be inserted into the given position, bumping any later material to a
+        /// larger position.  If the material is currently in another queue or a different position,
+        /// it will be removed and placed in the given position.
+        void SetMaterialInQueue(long materialId, string queue, int position);
+
         void RemoveMaterialFromAllQueues(long materialId);
     }
 
