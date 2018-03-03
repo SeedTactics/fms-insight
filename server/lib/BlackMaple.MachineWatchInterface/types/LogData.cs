@@ -118,7 +118,10 @@ namespace BlackMaple.MachineWatchInterface
         [DataMember(Name = "result", IsRequired=true)]
         public string Result { get; private set; }
 
-        [DataMember(Name = "endofroute", IsRequired=true)]
+        // End of route is kept only for backwards compatbility.
+        // Instead, the user who is processing the data should determine what event
+        // to use to determine when the material should be considered "complete"
+        [IgnoreDataMember]
         public bool EndOfRoute { get; private set; }
 
         [DataMember(Name = "elapsed", IsRequired=true)]
