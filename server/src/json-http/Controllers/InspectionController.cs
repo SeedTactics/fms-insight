@@ -72,6 +72,7 @@ namespace MachineWatchApiServer.Controllers
             _server.SetInspectCounts(newCounts);
         }
 
+        /*
         [HttpGet ("types")]
         public List<string> GetGlobalInspectionTypes()
         {
@@ -95,6 +96,7 @@ namespace MachineWatchApiServer.Controllers
         {
             _server.DeleteGlobalInspectionType(ty);
         }
+        */
 
     }
 }

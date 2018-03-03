@@ -153,6 +153,7 @@ namespace MachineWatchApiServer.Controllers
             return _server.RecordFinalizedWorkorder(workorder);
         }
 
+        /*
         [HttpGet("settings/serials")]
         public SerialSettings GetSerialSettings()
         {
@@ -164,5 +165,6 @@ namespace MachineWatchApiServer.Controllers
         {
             _server.SetSerialSettings(settings);
         }
+        */
     }
 }
