@@ -82,27 +82,8 @@ export function PalletFace(props: FaceProps) {
   );
 }
 
-export interface PalletProps {
+export interface LoadStationData {
   readonly byFace: im.Map<number, FaceData>;
-}
-
-export function Pallet(props: PalletProps) {
-  const maxFace = props.byFace.keySeq().max();
-  return (
-    <div style={{marginLeft: '4em', marginRight: '4em'}}>
-      {
-        props.byFace.toSeq().sortBy((data, face) => face).map((data, face) =>
-          <div key={face}>
-            <PalletFace key={0} face={face} currentMaterial={data.currentMaterial}/>
-            {face === maxFace ? undefined : <Divider key={1}/>}
-          </div>
-        ).valueSeq()
-      }
-    </div>
-  );
-}
-
-export interface LoadStationData extends PalletProps {
   readonly pallet?: Readonly<api.IPalletStatus>;
   readonly material: ReadonlyArray<Readonly<api.IInProcessMaterial>>;
 }
@@ -111,7 +92,11 @@ export interface LoadStationProps extends LoadStationData {
   readonly fillViewPort: boolean;
 }
 
-export function selectLoadStationProps(loadNum: number, curSt: Readonly<api.ICurrentStatus>): LoadStationData {
+export function selectLoadStationProps(
+    loadNum: number,
+    queues: ReadonlyArray<string>,
+    curSt: Readonly<api.ICurrentStatus>
+  ): LoadStationData {
   let pal: Readonly<api.IPalletStatus> | undefined;
   for (let p of Object.values(curSt.pallets)) {
     if (p.currentPalletLocation.loc === api.PalletLocationEnum.LoadUnload && p.currentPalletLocation.num === loadNum) {
@@ -145,7 +130,7 @@ export function selectLoadStationProps(loadNum: number, curSt: Readonly<api.ICur
   };
 }
 
-export default function LoadStation(props: LoadStationProps) {
+export function PalletColumn(props: LoadStationProps) {
   let palletStyle: React.CSSProperties = {
     'width': '100%',
   };
@@ -154,20 +139,73 @@ export default function LoadStation(props: LoadStationProps) {
   } else {
     palletStyle.minHeight = '12em';
   }
+
+  const maxFace = props.byFace.keySeq().max();
+
   return (
     <>
-      <div style={{width: '100%', minHeight: '4em'}}>
+      <div style={{width: '100%', minHeight: '70px'}}>
         <RegionLabel label="Castings"/>
       </div>
+
       <Divider/>
+
       <div style={palletStyle}>
         <RegionLabel label="Pallet"/>
-        <Pallet byFace={props.byFace}/>
+        <div style={{marginLeft: '4em', marginRight: '4em'}}>
+          {
+            props.byFace.toSeq().sortBy((data, face) => face).map((data, face) =>
+              <div key={face}>
+                <PalletFace key={0} face={face} currentMaterial={data.currentMaterial}/>
+                {face === maxFace ? undefined : <Divider key={1}/>}
+              </div>
+            ).valueSeq()
+          }
+        </div>
       </div>
+
       <Divider/>
-      <div style={{width: '100%', minHeight: '4em'}}>
+
+      <div style={{width: '100%', minHeight: '70px'}}>
         <RegionLabel label="Completed Material"/>
       </div>
     </>
+  );
+}
+
+export function InProcColumn(props: LoadStationProps): JSX.Element {
+  return (
+    <>
+      <div style={{width: '100%', minHeight: '4em'}}>
+        <RegionLabel label="In Process"/>
+      </div>
+    </>
+  );
+}
+
+export default function LoadStation(props: LoadStationProps) {
+  const palColStyle: React.CSSProperties = {
+    'flexBasis': '60%',
+    'padding': '8px',
+    'display': 'flex',
+    'flexDirection': 'column',
+  };
+  const inProcColStyle: React.CSSProperties = {
+    'flexBasis': '40%',
+    'padding': '8px',
+    'display': 'flex',
+    'flexDirection': 'column',
+    'borderLeft': '1px solid rgba(0, 0, 0, 0.12)',
+  };
+
+  return (
+    <div style={{'width': '100%', 'padding': '8px', 'display': 'flex', 'flexGrow': 1}}>
+      <div style={palColStyle}>
+        <PalletColumn {...props}/>
+      </div>
+      <div style={inProcColStyle}>
+        <InProcColumn {...props}/>
+      </div>
+    </div>
   );
 }

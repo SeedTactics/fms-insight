@@ -33,9 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from 'react';
 import { connect } from 'react-redux';
 import { createSelector } from 'reselect';
-import * as im from 'immutable';
-import Grid from 'material-ui/Grid';
-import Card from 'material-ui/Card';
 import Hidden from 'material-ui/Hidden';
 
 import * as api from '../../data/api';
@@ -52,9 +49,7 @@ export type StationMonitorData =
   ;
 
 export interface StationMonitorProps {
-  readonly material_in_queues: im.Map<string, im.Collection.Indexed<Readonly<api.IInProcessMaterial>>>;
   readonly monitor_data: StationMonitorData;
-  readonly display_queues: boolean;
 }
 
 function monitorElement(data: StationMonitorData, fillViewport: boolean): JSX.Element {
@@ -69,50 +64,17 @@ function monitorElement(data: StationMonitorData, fillViewport: boolean): JSX.El
 }
 
 export function FillViewportMonitor(props: StationMonitorProps) {
-  if (props.display_queues) {
-    return (
-      <main style={{'height': 'calc(100vh - 64px - 2.5em)', 'display': 'flex'}}>
-        <div style={{'flexBasis': '50%', 'padding': '8px', 'display': 'flex', 'flexDirection': 'column'}}>
-          {monitorElement(props.monitor_data, true)}
-        </div>
-        <div style={{'flexBasis': '50%', 'padding': '8px', 'display': 'flex', 'flexDirection': 'column'}}>
-          <Card style={{'flexGrow': 1, 'display': 'flex', 'flexDirection': 'column'}}>
-            Queues
-          </Card>
-        </div>
-      </main>
-    );
-  } else {
-    return (
-      <main style={{'height': 'calc(100vh - 64px - 2.5em)', 'display': 'flex'}}>
-        <div style={{'width': '100%', 'padding': '8px', 'display': 'flex', 'flexDirection': 'column'}}>
-          {monitorElement(props.monitor_data, true)}
-        </div>
-      </main>
-    );
-  }
+  return (
+    <main style={{'height': 'calc(100vh - 64px - 2.5em)', 'display': 'flex', 'flexDirection': 'column'}}>
+      {monitorElement(props.monitor_data, true)}
+    </main>
+  );
 }
 
 export function ScrollableStationMonitor(props: StationMonitorProps) {
-  let main: JSX.Element;
-  if (props.display_queues) {
-    main = (
-      <Grid container>
-        <Grid item xs={12} md={6}>
-          {monitorElement(props.monitor_data, false)}
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <p>Queues</p>
-        </Grid>
-      </Grid>
-    );
-  } else {
-    main = monitorElement(props.monitor_data, false);
-  }
-
   return (
-    <main style={{'padding': '8px'}}>
-      {main}
+    <main style={{padding: '8px'}}>
+      {monitorElement(props.monitor_data, false)}
     </main>
   );
 }
@@ -131,18 +93,6 @@ export function StationMonitor(props: StationMonitorProps) {
   );
 }
 
-export const findMaterialInQueues = createSelector(
-  (st: Store) => st.Current.current_status.material,
-  (st: Store) => st.Route,
-  (material: ReadonlyArray<Readonly<api.IInProcessMaterial>>, route: routes.State) => {
-
-    return im.Seq(material)
-      .filter(m => m.location.type === api.LocType.InQueue)
-      .groupBy(m => m.location.currentQueue || "")
-      .toMap();
-  }
-);
-
 export const buildMonitorData = createSelector(
   (st: Store) => st.Current.current_status,
   (st: Store) => st.Route,
@@ -151,7 +101,7 @@ export const buildMonitorData = createSelector(
       case routes.SelectedStationType.LoadStation:
         return {
           type: routes.SelectedStationType.LoadStation,
-          data: selectLoadStationProps(route.selected_station_id, curStatus)
+          data: selectLoadStationProps(route.selected_station_id, route.station_queues, curStatus)
         };
 
       case routes.SelectedStationType.Wash:
@@ -170,8 +120,6 @@ export const buildMonitorData = createSelector(
 
 export default connect(
   (st: Store) => ({
-    material_in_queues: findMaterialInQueues(st),
     monitor_data: buildMonitorData(st),
-    display_queues: st.Route.station_queues.length > 0,
   })
 )(StationMonitor);
