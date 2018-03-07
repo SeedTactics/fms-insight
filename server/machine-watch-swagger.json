@@ -1708,13 +1708,15 @@
       "x-enumNames": [
         "Waiting",
         "Loading",
-        "Unloading",
+        "UnloadToInProcess",
+        "UnloadToCompletedMaterial",
         "Machining"
       ],
       "enum": [
         "Waiting",
         "Loading",
-        "Unloading",
+        "UnloadToInProcess",
+        "UnloadToCompletedMaterial",
         "Machining"
       ]
     },

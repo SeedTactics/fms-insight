@@ -2638,7 +2638,8 @@ export interface IInProcessMaterialAction {
 export enum ActionType {
     Waiting = <any>"Waiting",
     Loading = <any>"Loading",
-    Unloading = <any>"Unloading",
+    UnloadToInProcess = <any>"UnloadToInProcess",
+    UnloadToCompletedMaterial = <any>"UnloadToCompletedMaterial",
     Machining = <any>"Machining",
 }
 

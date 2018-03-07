@@ -48,7 +48,8 @@ function materialAction(mat: Readonly<api.IInProcessMaterial>): string | undefin
         default:
           return "Load onto face " + mat.action.loadOntoFace.toString();
       }
-    case api.ActionType.Unloading:
+    case api.ActionType.UnloadToInProcess:
+    case api.ActionType.UnloadToCompletedMaterial:
       if (mat.action.unloadIntoQueue) {
         return "Unload into queue " + mat.action.unloadIntoQueue;
       } else {

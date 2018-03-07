@@ -50,7 +50,8 @@ namespace BlackMaple.MachineWatchInterface
         {
             Waiting = 0,
             Loading,
-            Unloading,
+            UnloadToInProcess, // unload, but keep the material around because more processes must be machined
+            UnloadToCompletedMaterial, // unload and the material has been completed
             Machining
         }
         [DataMember(IsRequired=true)] public ActionType Type {get;set;}
@@ -61,7 +62,7 @@ namespace BlackMaple.MachineWatchInterface
         [DataMember(IsRequired=false, EmitDefaultValue=false)] public int ProcessAfterLoad {get;set;}
         [DataMember(IsRequired=false, EmitDefaultValue=false)] public int PathAfterLoad {get;set;}
 
-        //If Type = Unloading
+        //If Type = UnloadToInProcess
         [DataMember(IsRequired=false, EmitDefaultValue=false)] public string UnloadIntoQueue {get;set;}
 
         // If Type = Machining

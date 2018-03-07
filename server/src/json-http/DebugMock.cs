@@ -619,7 +619,7 @@ namespace MachineWatchApiServer
                         Face = 2
                     },
                     Action = new InProcessMaterialAction() {
-                        Type = InProcessMaterialAction.ActionType.Unloading,
+                        Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
                     }
                 },
                 //transfer from aaa-1 to aaa-2
@@ -745,7 +745,7 @@ namespace MachineWatchApiServer
                         Face = 1
                     },
                     Action = new InProcessMaterialAction() {
-                        Type = InProcessMaterialAction.ActionType.Unloading,
+                        Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
                     }
                 },
                 //load new zzz
@@ -1151,7 +1151,7 @@ namespace MachineWatchApiServer
                 },
 
                 Action = new InProcessMaterialAction() {
-                    Type = InProcessMaterialAction.ActionType.Unloading,
+                    Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
                 }
             });
 

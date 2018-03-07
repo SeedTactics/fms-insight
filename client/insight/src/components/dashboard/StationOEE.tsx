@@ -127,7 +127,8 @@ function computeTooltip(p: StationOEEProps): JSX.Element {
         case api.ActionType.Loading:
           matStatus = " (loading)";
           break;
-        case api.ActionType.Unloading:
+        case api.ActionType.UnloadToCompletedMaterial:
+        case api.ActionType.UnloadToInProcess:
           matStatus = " (unloading)";
           break;
         case api.ActionType.Machining:
