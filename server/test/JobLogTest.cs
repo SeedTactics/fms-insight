@@ -699,12 +699,14 @@ namespace MachineWatchTest
 			_jobLog.RecordSerialForMaterialID(mat4, "serial4");
 			_jobLog.RecordSerialForMaterialID(mat5, "serial5");
 			_jobLog.RecordSerialForMaterialID(mat6, "serial6");
+            Assert.Equal("serial1", _jobLog.SerialForMaterialID(mat1_proc2.MaterialID));
 
 			_jobLog.RecordWorkorderForMaterialID(mat1_proc2, "work1");
 			_jobLog.RecordWorkorderForMaterialID(mat3, "work1");
 			_jobLog.RecordWorkorderForMaterialID(mat4, "work1");
 			_jobLog.RecordWorkorderForMaterialID(mat5, "work2");
 			_jobLog.RecordWorkorderForMaterialID(mat6, "work2");
+            Assert.Equal("work2", _jobLog.WorkorderForMaterialID(mat5.MaterialID));
 
 			var summary = _jobLog.GetWorkorderSummaries(new [] {"work1", "work2"});
 			Assert.Equal(2, summary.Count);

@@ -1636,6 +1636,29 @@ namespace BlackMaple.MachineFramework
             return log;
         }
 
+        public string WorkorderForMaterialID(long matID)
+        {
+            lock (_lock)
+            {
+                string workId = "";
+
+                var cmd = _connection.CreateCommand();
+                cmd.CommandText = "SELECT Workorder FROM materialid WHERE MaterialID = $mat";
+                cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
+
+                using (var reader = cmd.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        if (!reader.IsDBNull(0))
+                            workId = reader.GetString(0);
+                    }
+                }
+
+                return workId;
+            }
+        }
+
         #endregion
 
         #region Pending Loads
