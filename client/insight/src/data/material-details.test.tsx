@@ -68,7 +68,7 @@ it('starts a material open', () => {
   const action: mat.Action = {
     type: mat.ActionType.OpenMaterialDialog,
     material: m,
-    events: {
+    pledge: {
       status: PledgeStatus.Starting
     }
   };
@@ -83,7 +83,7 @@ it('finishes material open', () => {
   const action: mat.Action = {
     type: mat.ActionType.OpenMaterialDialog,
     material: m,
-    events: {
+    pledge: {
       status: PledgeStatus.Completed,
       result: evts
     }
@@ -97,7 +97,7 @@ it('handles material error', () => {
   const action: mat.Action = {
     type: mat.ActionType.OpenMaterialDialog,
     material: m,
-    events: {
+    pledge: {
       status: PledgeStatus.Error,
       error: new Error("aaaa")
     }

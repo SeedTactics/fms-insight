@@ -44,7 +44,7 @@ export type Action =
     {
       type: ActionType.OpenMaterialDialog,
       material: Readonly<api.IInProcessMaterial>,
-      events: ConsumingPledge<ReadonlyArray<Readonly<api.ILogEntry>>>
+      pledge: ConsumingPledge<ReadonlyArray<Readonly<api.ILogEntry>>>
     }
   | { type: ActionType.CloseMaterialDialog }
   ;
@@ -54,7 +54,7 @@ export function openMaterialDialog(mat: Readonly<api.IInProcessMaterial>) {
   return {
     type: ActionType.OpenMaterialDialog,
     material: mat,
-    events: client.logForMaterial(mat.materialID)
+    pledge: client.logForMaterial(mat.materialID),
   };
 }
 
@@ -74,7 +74,7 @@ export function reducer(s: State, a: Action): State {
   if (s === undefined) { return initial; }
   switch (a.type) {
     case ActionType.OpenMaterialDialog:
-      switch (a.events.status) {
+      switch (a.pledge.status) {
         case PledgeStatus.Starting:
           return {...s,
             display_material: a.material,
@@ -85,7 +85,7 @@ export function reducer(s: State, a: Action): State {
         case PledgeStatus.Completed:
           return {...s,
             loading_events: false,
-            events: a.events.result
+            events: a.pledge.result
           };
 
         case PledgeStatus.Error:

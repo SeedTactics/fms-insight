@@ -38,9 +38,11 @@ import Hidden from 'material-ui/Hidden';
 import * as api from '../../data/api';
 import * as routes from '../../data/routes';
 import { Store } from '../../data/store';
+import * as matDetails from '../../data/material-details';
 
 import StationToolbar from './StationToolbar';
 import LoadStation from './LoadStation';
+import { ConnectedMaterialDialog } from './Material';
 import { LoadStationData, selectLoadStationProps } from '../../data/load-station';
 
 export type StationMonitorData =
@@ -51,12 +53,19 @@ export type StationMonitorData =
 
 export interface StationMonitorProps {
   readonly monitor_data: StationMonitorData;
+  // tslint:disable-next-line:no-any
+  openMat: (m: Readonly<api.IInProcessMaterial>) => any;
 }
 
-function monitorElement(data: StationMonitorData, fillViewport: boolean): JSX.Element {
+function monitorElement(
+    data: StationMonitorData,
+    fillViewport: boolean,
+    // tslint:disable-next-line:no-any
+    openMat: (m: Readonly<api.IInProcessMaterial>) => any
+  ): JSX.Element {
   switch (data.type) {
     case routes.SelectedStationType.LoadStation:
-      return <LoadStation fillViewPort={fillViewport} {...data.data}/>;
+      return <LoadStation fillViewPort={fillViewport} {...data.data} openMat={openMat}/>;
     case routes.SelectedStationType.Inspection:
       return <p>Inspection</p>;
     case routes.SelectedStationType.Wash:
@@ -67,7 +76,7 @@ function monitorElement(data: StationMonitorData, fillViewport: boolean): JSX.El
 export function FillViewportMonitor(props: StationMonitorProps) {
   return (
     <main style={{'height': 'calc(100vh - 64px - 2.5em)', 'display': 'flex', 'flexDirection': 'column'}}>
-      {monitorElement(props.monitor_data, true)}
+      {monitorElement(props.monitor_data, true, props.openMat)}
     </main>
   );
 }
@@ -75,7 +84,7 @@ export function FillViewportMonitor(props: StationMonitorProps) {
 export function ScrollableStationMonitor(props: StationMonitorProps) {
   return (
     <main style={{padding: '8px'}}>
-      {monitorElement(props.monitor_data, false)}
+      {monitorElement(props.monitor_data, false, props.openMat)}
     </main>
   );
 }
@@ -90,6 +99,7 @@ export function StationMonitor(props: StationMonitorProps) {
       <Hidden lgUp>
         <ScrollableStationMonitor {...props}/>
       </Hidden>
+      <ConnectedMaterialDialog/>
     </div>
   );
 }
@@ -122,5 +132,8 @@ export const buildMonitorData = createSelector(
 export default connect(
   (st: Store) => ({
     monitor_data: buildMonitorData(st),
-  })
+  }),
+  {
+    openMat: matDetails.openMaterialDialog,
+  }
 )(StationMonitor);

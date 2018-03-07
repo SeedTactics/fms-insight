@@ -32,14 +32,25 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from 'react';
+import { connect } from 'react-redux';
 import * as jdenticon from 'jdenticon';
 import Paper from 'material-ui/Paper';
 import Typography from 'material-ui/Typography';
 import ButtonBase from 'material-ui/ButtonBase';
+import Button from 'material-ui/Button';
 import Tooltip from 'material-ui/Tooltip';
 import WarningIcon from 'material-ui-icons/Warning';
+import { CircularProgress } from 'material-ui/Progress';
+import Dialog, {
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+} from 'material-ui/Dialog';
 
 import * as api from '../../data/api';
+import * as matDetails from '../../data/material-details';
+import LogEntry from '../LogEntry';
+import { Store } from '../../data/store';
 
 /*
 function getPosition(el: Element) {
@@ -55,6 +66,19 @@ function getPosition(el: Element) {
     left: box.left + scrollLeft - clientLeft
   };
 }*/
+
+export function PartIdenticon({part}: {part: string}) {
+  const iconSize = 50;
+  // tslint:disable-next-line:no-any
+  const icon = (jdenticon as any).toSvg(part, iconSize);
+
+  return (
+    <div
+      style={{width: iconSize, height: iconSize}}
+      dangerouslySetInnerHTML={{__html: icon}}
+    />
+  );
+}
 
 function materialAction(mat: Readonly<api.IInProcessMaterial>): string | undefined {
   switch (mat.action.type) {
@@ -78,24 +102,19 @@ function materialAction(mat: Readonly<api.IInProcessMaterial>): string | undefin
 
 export interface MaterialProps {
   readonly mat: Readonly<api.IInProcessMaterial>; // TODO: deep readonly
+  // tslint:disable-next-line:no-any
+  onOpen: (m: Readonly<api.IInProcessMaterial>) => any;
 }
 
-export default function Material(props: MaterialProps) {
-  const iconSize = 50;
-  // tslint:disable-next-line:no-any
-  const icon = (jdenticon as any).toSvg(props.mat.partName, iconSize);
-
+export function Material(props: MaterialProps) {
   const action = materialAction(props.mat);
   const inspections = props.mat.signaledInspections.join(", ");
 
   return (
     <Paper elevation={4} style={{minWidth: '10em', padding: '8px'}}>
-      <ButtonBase focusRipple>
+      <ButtonBase focusRipple onClick={() => props.onOpen(props.mat)}>
         <div style={{display: 'flex', textAlign: 'left'}}>
-          <div
-            style={{width: iconSize, height: iconSize}}
-            dangerouslySetInnerHTML={{__html: icon}}
-          />
+          <PartIdenticon part={props.mat.partName}/>
           <div style={{marginLeft: '8px', flexGrow: 1}}>
             <Typography variant="title">
               {props.mat.partName}
@@ -129,3 +148,94 @@ export default function Material(props: MaterialProps) {
     </Paper>
   );
 }
+
+export interface MaterialEventProps {
+  events: ReadonlyArray<Readonly<api.ILogEntry>>;
+}
+
+export function MaterialEvents(props: MaterialEventProps) {
+  return (
+    <ul style={{'list-style': 'none'}}>
+      {
+        props.events.map(e => (
+          <li key={e.counter}>
+            <LogEntry entry={e}/>
+          </li>
+        ))
+      }
+    </ul>
+  );
+}
+
+export interface MaterialDialogProps extends matDetails.State {
+  // tslint:disable-next-line:no-any
+  onClose: () => any;
+}
+
+export function MaterialDialog(props: MaterialDialogProps) {
+  let body: JSX.Element | undefined;
+  if (props.display_material === undefined) {
+    body = <p>None</p>;
+  } else {
+    const mat = props.display_material;
+    body = (
+      <>
+        <DialogTitle disableTypography>
+          <div style={{display: 'flex', textAlign: 'left'}}>
+            <PartIdenticon part={mat.partName}/>
+            <div style={{marginLeft: '8px', flexGrow: 1}}>
+              <Typography variant="title">
+                {mat.partName}
+              </Typography>
+            </div>
+          </div>
+        </DialogTitle>
+        <DialogContent>
+          <div>
+            <small>Serial: {mat.serial || "none"}</small>
+          </div>
+          <div>
+            <small>Workorder: {mat.workorderId || "none"}</small>
+          </div>
+          <div>
+            <small>{materialAction(mat)}</small>
+          </div>
+          <div>
+              {
+                mat.signaledInspections.length === 0 ?
+                  <small>Inspections: none</small> :
+                  <small style={{color: "#F44336"}}>
+                    Inspections: {mat.signaledInspections.length === 0 ? "none" : mat.signaledInspections.join(", ")}
+                  </small>
+              }
+          </div>
+          {props.loading_events ? <CircularProgress color="secondary"/> : <MaterialEvents events={props.events}/>}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={props.onClose} color="primary">
+            Close
+          </Button>
+        </DialogActions>
+      </>
+    );
+  }
+  return (
+    <Dialog
+      open={props.display_material !== undefined}
+      onClose={props.onClose}
+      maxWidth="md"
+    >
+      {body}
+    </Dialog>
+
+  );
+}
+
+export const ConnectedMaterialDialog = connect(
+  (st: Store) => st.MaterialDetails,
+  {
+    onClose: () => ({
+      type: matDetails.ActionType.CloseMaterialDialog
+    }),
+  }
+)(MaterialDialog);

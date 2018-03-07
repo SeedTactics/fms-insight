@@ -36,7 +36,8 @@ import Divider from 'material-ui/Divider';
 import { withStyles } from 'material-ui';
 
 import { MaterialList, LoadStationData } from '../../data/load-station';
-import Material from './Material';
+import { Material } from './Material';
+import * as api from '../../data/api';
 
 const materialStyle = withStyles(() => ({
   container: {
@@ -65,6 +66,8 @@ const materialStyle = withStyles(() => ({
 export interface MaterialDisplayProps {
   readonly material: MaterialList;
   readonly label: string;
+  // tslint:disable-next-line:no-any
+  openMat: (m: Readonly<api.IInProcessMaterial>) => any;
 }
 
 export const MaterialDisplay = materialStyle<MaterialDisplayProps>(props => {
@@ -80,7 +83,7 @@ export const MaterialDisplay = materialStyle<MaterialDisplayProps>(props => {
           <div className={props.classes.material}>
             {
               props.material.map((m, idx) =>
-                <Material key={idx} mat={m}/>
+                <Material key={idx} mat={m} onOpen={props.openMat}/>
               )
             }
           </div>
@@ -91,6 +94,8 @@ export const MaterialDisplay = materialStyle<MaterialDisplayProps>(props => {
 
 export interface LoadStationProps extends LoadStationData {
   readonly fillViewPort: boolean;
+  // tslint:disable-next-line:no-any
+  openMat: (m: Readonly<api.IInProcessMaterial>) => any;
 }
 
 const palletStyles = withStyles(() => ({
@@ -133,7 +138,7 @@ export const PalletColumn = palletStyles<LoadStationProps>(props => {
   let palDetails: JSX.Element;
   if (props.face.size === 1) {
     const mat = props.face.first();
-    palDetails = <MaterialDisplay label={palLabel} material={mat ? mat : []}/>;
+    palDetails = <MaterialDisplay label={palLabel} material={mat ? mat : []} openMat={props.openMat}/>;
   } else {
     palDetails = (
       <>
@@ -144,7 +149,7 @@ export const PalletColumn = palletStyles<LoadStationProps>(props => {
           {
             props.face.toSeq().sortBy((data, face) => face).map((data, face) =>
               <div key={face}>
-                <MaterialDisplay label={"Face " + face.toString()} material={data}/>
+                <MaterialDisplay label={"Face " + face.toString()} material={data} openMat={props.openMat}/>
                 {face === maxFace ? undefined : <Divider key={1}/>}
               </div>
             ).valueSeq()
@@ -156,13 +161,13 @@ export const PalletColumn = palletStyles<LoadStationProps>(props => {
 
   return (
     <>
-      <MaterialDisplay label="Castings" material={props.castings}/>
+      <MaterialDisplay label="Castings" material={props.castings} openMat={props.openMat}/>
       <Divider/>
       <div className={palletClass}>
         {palDetails}
       </div>
       <Divider/>
-      <MaterialDisplay label="Completed Material" material={[]}/>
+      <MaterialDisplay label="Completed Material" material={[]} openMat={props.openMat}/>
     </>
   );
 });
@@ -195,7 +200,7 @@ export default function LoadStation(props: LoadStationProps) {
         <PalletColumn {...props}/>
       </div>
       <div style={inProcColStyle}>
-        <MaterialDisplay label="In Process Material" material={props.free}/>
+        <MaterialDisplay label="In Process Material" material={props.free} openMat={props.openMat}/>
       </div>
     </div>
   );
