@@ -40,7 +40,8 @@ import * as routes from '../../data/routes';
 import { Store } from '../../data/store';
 
 import StationToolbar from './StationToolbar';
-import LoadStation, { LoadStationData, selectLoadStationProps } from './LoadStation';
+import LoadStation from './LoadStation';
+import { LoadStationData, selectLoadStationProps } from '../../data/load-station';
 
 export type StationMonitorData =
   | { type: routes.SelectedStationType.LoadStation, data: LoadStationData }

@@ -32,131 +32,118 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from 'react';
-import * as im from 'immutable';
 import Divider from 'material-ui/Divider';
+import { withStyles } from 'material-ui';
 
-import * as api from '../../data/api';
+import { MaterialList, LoadStationData } from '../../data/load-station';
 import Material from './Material';
 
-function RegionLabel({label}: {label: string}) {
-  const labelStyle = {
+const materialStyle = withStyles(() => ({
+  container: {
+    width: '100%',
+    minHeight: '70px',
+    position: 'relative' as 'relative',
+  },
+  labelContainer: {
+    position: 'absolute' as 'absolute',
+    top: '4px',
+    left: '4px',
+  },
+  label: {
     color: 'rgba(0,0,0,0.5)',
     fontSize: 'small',
-  };
-  return (
-    <div style={{float: 'left'}}>
-      <span style={labelStyle}>
-        {label}
-      </span>
-    </div>
-  );
-}
-
-export interface FaceData {
-  readonly currentMaterial: ReadonlyArray<Readonly<api.IInProcessMaterial>>;
-}
-
-export interface FaceProps extends FaceData {
-  readonly face: number;
-}
-
-export function PalletFace(props: FaceProps) {
-  const matContainerStyle = {
+  },
+  material: {
     marginTop: '8px',
     marginBottom: '8px',
     display: 'flex' as 'flex',
     flexWrap: 'wrap' as 'wrap',
     justifyContent: 'space-around' as 'space-around',
-  };
-  return (
-    <div style={{minHeight: '3em'}}>
-      <RegionLabel label={"Face " + props.face.toString()}/>
-      <div style={matContainerStyle}>
-        {
-          props.currentMaterial.map((m, idx) =>
-            <Material key={idx} mat={m}/>
-          )
-        }
-      </div>
-    </div>
-  );
+  }
+}));
+
+export interface MaterialDisplayProps {
+  readonly material: MaterialList;
+  readonly label: string;
 }
 
-export interface LoadStationData {
-  readonly byFace: im.Map<number, FaceData>;
-  readonly pallet?: Readonly<api.IPalletStatus>;
-  readonly material: ReadonlyArray<Readonly<api.IInProcessMaterial>>;
-}
+export const MaterialDisplay = materialStyle<MaterialDisplayProps>(props => {
+  return (
+    <div className={props.classes.container}>
+      <div className={props.classes.labelContainer}>
+        <span className={props.classes.label}>
+          {props.label}
+        </span>
+      </div>
+      {
+        props.material.length === 0 ? undefined :
+          <div className={props.classes.material}>
+            {
+              props.material.map((m, idx) =>
+                <Material key={idx} mat={m}/>
+              )
+            }
+          </div>
+      }
+    </div>
+  );
+});
 
 export interface LoadStationProps extends LoadStationData {
   readonly fillViewPort: boolean;
 }
 
-export function selectLoadStationProps(
-    loadNum: number,
-    queues: ReadonlyArray<string>,
-    curSt: Readonly<api.ICurrentStatus>
-  ): LoadStationData {
-  let pal: Readonly<api.IPalletStatus> | undefined;
-  for (let p of Object.values(curSt.pallets)) {
-    if (p.currentPalletLocation.loc === api.PalletLocationEnum.LoadUnload && p.currentPalletLocation.num === loadNum) {
-      pal = p;
-      break;
-    }
-  }
-  if (pal === undefined) {
-    return {
-      pallet: undefined,
-      material: [],
-      byFace: im.Map(),
-    };
-  }
+const palletStyles = withStyles(() => ({
+  palletContainerFill: {
+    width: '100%',
+    position: 'relative' as 'relative',
+    flexGrow: 1,
+  },
+  palletContainerScroll: {
+    width: '100%',
+    position: 'relative' as 'relative',
+    minHeight: '12em',
+  },
+  labelContainer: {
+    position: 'absolute' as 'absolute',
+    top: '4px',
+    left: '4px',
+  },
+  label: {
+    color: 'rgba(0,0,0,0.5)',
+    fontSize: 'small',
+  },
+  faceContainer: {
+    marginLeft: '4em',
+    marginRight: '4em',
+  },
+}));
 
-  const byFace = new Map<number, Readonly<api.InProcessMaterial>[]>();
-  for (let mat of curSt.material) {
-    if (mat.location.type === api.LocType.OnPallet && mat.location.pallet === pal.pallet) {
-      if (byFace.has(mat.location.face)) {
-        (byFace.get(mat.location.face) || []).push(mat);
-      } else {
-        byFace.set(mat.location.face, [mat]);
-      }
-    }
-  }
-
-  return {
-    pallet: pal,
-    material: [],
-    byFace: im.Map(byFace).map(ms => ({currentMaterial: ms}))
-  };
-}
-
-export function PalletColumn(props: LoadStationProps) {
-  let palletStyle: React.CSSProperties = {
-    'width': '100%',
-  };
+export const PalletColumn = palletStyles<LoadStationProps>(props => {
+  let palletClass: string;
   if (props.fillViewPort) {
-    palletStyle.flexGrow = 1;
+    palletClass = props.classes.palletContainerFill;
   } else {
-    palletStyle.minHeight = '12em';
+    palletClass = props.classes.palletContainerScroll;
   }
 
-  const maxFace = props.byFace.keySeq().max();
+  const maxFace = props.face.keySeq().max();
 
   return (
     <>
-      <div style={{width: '100%', minHeight: '70px'}}>
-        <RegionLabel label="Castings"/>
-      </div>
+      <MaterialDisplay label="Castings" material={props.castings}/>
 
       <Divider/>
 
-      <div style={palletStyle}>
-        <RegionLabel label="Pallet"/>
-        <div style={{marginLeft: '4em', marginRight: '4em'}}>
+      <div className={palletClass}>
+        <div className={props.classes.labelContainer}>
+          <span className={props.classes.label}>Pallet {props.pallet ? props.pallet.pallet : ""}</span>
+        </div>
+        <div className={props.classes.faceContainer}>
           {
-            props.byFace.toSeq().sortBy((data, face) => face).map((data, face) =>
+            props.face.toSeq().sortBy((data, face) => face).map((data, face) =>
               <div key={face}>
-                <PalletFace key={0} face={face} currentMaterial={data.currentMaterial}/>
+                <MaterialDisplay label={"Face " + face.toString()} material={data}/>
                 {face === maxFace ? undefined : <Divider key={1}/>}
               </div>
             ).valueSeq()
@@ -166,22 +153,10 @@ export function PalletColumn(props: LoadStationProps) {
 
       <Divider/>
 
-      <div style={{width: '100%', minHeight: '70px'}}>
-        <RegionLabel label="Completed Material"/>
-      </div>
+      <MaterialDisplay label="Completed Material" material={[]}/>
     </>
   );
-}
-
-export function InProcColumn(props: LoadStationProps): JSX.Element {
-  return (
-    <>
-      <div style={{width: '100%', minHeight: '4em'}}>
-        <RegionLabel label="In Process"/>
-      </div>
-    </>
-  );
-}
+});
 
 export default function LoadStation(props: LoadStationProps) {
   const palColStyle: React.CSSProperties = {
@@ -197,14 +172,21 @@ export default function LoadStation(props: LoadStationProps) {
     'flexDirection': 'column',
     'borderLeft': '1px solid rgba(0, 0, 0, 0.12)',
   };
+  const containerStyle: React.CSSProperties = {
+    width: '100%',
+    paddingLeft: '8px',
+    paddingRight: '8px',
+    display: 'flex',
+    flexGrow: 1,
+  };
 
   return (
-    <div style={{'width': '100%', 'padding': '8px', 'display': 'flex', 'flexGrow': 1}}>
+    <div style={containerStyle}>
       <div style={palColStyle}>
         <PalletColumn {...props}/>
       </div>
       <div style={inProcColStyle}>
-        <InProcColumn {...props}/>
+        <MaterialDisplay label="In Process Material" material={props.free}/>
       </div>
     </div>
   );
