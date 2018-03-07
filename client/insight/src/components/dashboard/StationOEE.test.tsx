@@ -69,6 +69,7 @@ it('displays station hours', () => {
           pallet: "5",
           fixtureOnPallet: "",
           onHold: false,
+          numFaces: 2,
           currentPalletLocation: new api.PalletLocation({
             loc: api.PalletLocationEnum.LoadUnload,
             group: "abc",
@@ -94,6 +95,7 @@ it('displays a single station oee', () => {
       pallet: "7",
       fixtureOnPallet: "",
       onHold: false,
+      numFaces: 2,
       currentPalletLocation: new api.PalletLocation({
         loc: api.PalletLocationEnum.LoadUnload,
         group: "aaa",

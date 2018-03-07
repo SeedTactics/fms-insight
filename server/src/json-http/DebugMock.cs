@@ -551,37 +551,45 @@ namespace MachineWatchApiServer
             var pal1 = new PalletStatus() {
                 Pallet = "1",
                 FixtureOnPallet = "fix1",
+                NumFaces = 2,
                 CurrentPalletLocation = new PalletLocation(PalletLocationEnum.LoadUnload, "Load", 1),
                 NewFixture = "newfix1"
             };
             var pal2 = new PalletStatus() {
                 Pallet = "2",
+                NumFaces = 2,
                 CurrentPalletLocation = new PalletLocation(PalletLocationEnum.Cart, "Cart", 1),
                 TargetLocation = new PalletLocation(PalletLocationEnum.Buffer, "Buffer", 2),
                 PercentMoveCompleted = (decimal)0.45
             };
             var pal3 = new PalletStatus() {
                 Pallet = "3",
+                NumFaces = 2,
                 CurrentPalletLocation = new PalletLocation(PalletLocationEnum.Buffer, "Buffer", 3),
             };
             var pal4 = new PalletStatus() {
                 Pallet = "4",
+                NumFaces = 2,
                 CurrentPalletLocation = new PalletLocation(PalletLocationEnum.Machine, "MC", 1),
             };
             var pal5 = new PalletStatus() {
                 Pallet = "5",
+                NumFaces = 1,
                 CurrentPalletLocation = new PalletLocation(PalletLocationEnum.LoadUnload, "Load", 2),
             };
             var pal6 = new PalletStatus() {
                 Pallet = "6",
+                NumFaces = 1,
                 CurrentPalletLocation = new PalletLocation(PalletLocationEnum.Machine, "MC", 2),
             };
             var pal7 = new PalletStatus() {
                 Pallet = "7",
+                NumFaces = 1,
                 CurrentPalletLocation = new PalletLocation(PalletLocationEnum.MachineQueue, "MC", 2),
             };
             var pal8 = new PalletStatus() {
                 Pallet = "8",
+                NumFaces = 1,
                 CurrentPalletLocation = new PalletLocation(PalletLocationEnum.Machine, "MC", 3),
             };
 
@@ -1120,6 +1128,7 @@ namespace MachineWatchApiServer
             return new PalletStatus() {
                 Pallet = "1",
                 FixtureOnPallet = "fix1",
+                NumFaces = 2,
                 CurrentPalletLocation = new PalletLocation(PalletLocationEnum.LoadUnload, "Load", 1)
             };
         }

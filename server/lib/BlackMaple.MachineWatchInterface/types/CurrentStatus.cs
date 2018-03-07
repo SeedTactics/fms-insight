@@ -182,6 +182,9 @@ namespace BlackMaple.MachineWatchInterface
         // If the pallet is at a load station and a new fixture should be loaded, this is filled in.
         [DataMember(IsRequired=false, EmitDefaultValue=false)] public string NewFixture {get;set;}
 
+        // num faces on new fixture, or current fixture if no change
+        [DataMember(IsRequired=true)] public int NumFaces {get;set;}
+
         //If CurrentPalletLocation is Cart, the following two fields will be filled in.
         [DataMember(IsRequired=false, EmitDefaultValue=false)] public PalletLocation? TargetLocation {get;set;}
         [DataMember(IsRequired=false, EmitDefaultValue=false)] public decimal? PercentMoveCompleted {get;set;}

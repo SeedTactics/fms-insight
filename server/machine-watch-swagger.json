@@ -1532,7 +1532,8 @@
         "Pallet",
         "FixtureOnPallet",
         "OnHold",
-        "CurrentPalletLocation"
+        "CurrentPalletLocation",
+        "NumFaces"
       ],
       "properties": {
         "Pallet": {
@@ -1549,6 +1550,10 @@
         },
         "NewFixture": {
           "type": "string"
+        },
+        "NumFaces": {
+          "type": "integer",
+          "format": "int32"
         },
         "TargetLocation": {
           "$ref": "#/definitions/PalletLocation"
