@@ -36,8 +36,25 @@ import * as jdenticon from 'jdenticon';
 import Paper from 'material-ui/Paper';
 import Typography from 'material-ui/Typography';
 import ButtonBase from 'material-ui/ButtonBase';
+import Tooltip from 'material-ui/Tooltip';
+import WarningIcon from 'material-ui-icons/Warning';
 
 import * as api from '../../data/api';
+
+/*
+function getPosition(el: Element) {
+  const box = el.getBoundingClientRect();
+  const doc = document.documentElement;
+  const body = document.body;
+  var clientTop  = doc.clientTop  || body.clientTop  || 0;
+  var clientLeft = doc.clientLeft || body.clientLeft || 0;
+  var scrollTop  = window.pageYOffset || doc.scrollTop;
+  var scrollLeft = window.pageXOffset || doc.scrollLeft;
+  return {
+    top: box.top  + scrollTop  - clientTop,
+    left: box.left + scrollLeft - clientLeft
+  };
+}*/
 
 function materialAction(mat: Readonly<api.IInProcessMaterial>): string | undefined {
   switch (mat.action.type) {
@@ -67,7 +84,10 @@ export default function Material(props: MaterialProps) {
   const iconSize = 50;
   // tslint:disable-next-line:no-any
   const icon = (jdenticon as any).toSvg(props.mat.partName, iconSize);
+
   const action = materialAction(props.mat);
+  const inspections = props.mat.signaledInspections.join(", ");
+
   return (
     <Paper elevation={4} style={{minWidth: '10em', padding: '8px'}}>
       <ButtonBase focusRipple>
@@ -96,6 +116,14 @@ export default function Material(props: MaterialProps) {
                 </div>
             }
           </div>
+          {
+            props.mat.signaledInspections.length === 0 ? undefined :
+              <div>
+                <Tooltip title={inspections}>
+                  <WarningIcon/>
+                </Tooltip>
+              </div>
+          }
         </div>
       </ButtonBase>
     </Paper>

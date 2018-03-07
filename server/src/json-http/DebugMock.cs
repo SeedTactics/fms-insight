@@ -613,6 +613,7 @@ namespace MachineWatchApiServer
                     PartName = "aaa",
                     Process = 2,
                     Path = 1,
+                    SignaledInspections = new List<string> {"insp1", "insp2"},
                     Location = new InProcessMaterialLocation() {
                         Type = InProcessMaterialLocation.LocType.OnPallet,
                         Pallet = "1",
