@@ -68,37 +68,21 @@ export function selectLoadStationProps(
   }
   let palName: string = pal.pallet;
 
-  const onPal = im.Seq(curSt.material)
+  let byFace = im.Seq(curSt.material)
     .filter(m => m.location.type === api.LocType.OnPallet
               && m.location.pallet === palName
-    );
-
-  let byFace = onPal
+    )
     .groupBy(m => m.location.face)
     .map(ms => ms.valueSeq().toArray())
     .toMap();
 
   // add missing blank faces
-  const maxFace = onPal
-    .map(m => m.location.face)
-    .max()
-    || 0;
+  const maxFace = pal.numFaces >= 1 ? pal.numFaces : 1;
   for (let face = 1; face <= maxFace; face++) {
     if (!byFace.has(face)) {
       byFace = byFace.set(face, []);
     }
   }
-
-  /*const byFace = new Map<number, Readonly<api.InProcessMaterial>[]>();
-  for (let mat of curSt.material) {
-    if (mat.location.type === api.LocType.OnPallet && mat.location.pallet === palName) {
-      if (byFace.has(mat.location.face)) {
-        (byFace.get(mat.location.face) || []).push(mat);
-      } else {
-        byFace.set(mat.location.face, [mat]);
-      }
-    }
-  }*/
 
   const castings = im.Seq(curSt.material)
     .filter(m => m.action.type === api.ActionType.Loading

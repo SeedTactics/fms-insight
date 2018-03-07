@@ -35,19 +35,38 @@ import * as React from 'react';
 import * as jdenticon from 'jdenticon';
 import Paper from 'material-ui/Paper';
 import Typography from 'material-ui/Typography';
-import { ListItem, ListItemAvatar, ListItemText } from 'material-ui/List';
 import ButtonBase from 'material-ui/ButtonBase';
 
 import * as api from '../../data/api';
+
+function materialAction(mat: Readonly<api.IInProcessMaterial>): string | undefined {
+  switch (mat.action.type) {
+    case api.ActionType.Loading:
+      switch (mat.location.type) {
+        case api.LocType.OnPallet:
+          return "Transfer to face " + mat.action.loadOntoFace.toString();
+        default:
+          return "Load onto face " + mat.action.loadOntoFace.toString();
+      }
+    case api.ActionType.Unloading:
+      if (mat.action.unloadIntoQueue) {
+        return "Unload into queue " + mat.action.unloadIntoQueue;
+      } else {
+        return "Unload from pallet";
+      }
+  }
+  return undefined;
+}
 
 export interface MaterialProps {
   readonly mat: Readonly<api.IInProcessMaterial>; // TODO: deep readonly
 }
 
-export default function ManualMaterial(props: MaterialProps) {
+export default function Material(props: MaterialProps) {
   const iconSize = 50;
   // tslint:disable-next-line:no-any
   const icon = (jdenticon as any).toSvg(props.mat.partName, iconSize);
+  const action = materialAction(props.mat);
   return (
     <Paper elevation={4} style={{minWidth: '10em', padding: '8px'}}>
       <ButtonBase focusRipple>
@@ -61,45 +80,23 @@ export default function ManualMaterial(props: MaterialProps) {
               {props.mat.partName}
             </Typography>
             <div>
-              <small>Serial: 01525AABC7</small>
+              <small>Serial: {props.mat.serial ? props.mat.serial : "none"}</small>
             </div>
-            <div>
-              <small>{props.mat.action.type}</small>
-            </div>
+            {
+              props.mat.workorderId === undefined ? undefined :
+                <div>
+                  <small>Workorder: {props.mat.workorderId}</small>
+                </div>
+            }
+            {
+              action === undefined ? undefined :
+                <div>
+                  <small>{action}</small>
+                </div>
+            }
           </div>
         </div>
       </ButtonBase>
-    </Paper>
-  );
-}
-
-export function ListItemMaterial(props: MaterialProps) {
-  const iconSize = 50;
-  // tslint:disable-next-line:no-any
-  const icon = (jdenticon as any).toSvg(props.mat.partName, iconSize);
-
-  const details: JSX.Element = (
-    <>
-      <div>
-        <small>Serial: 01525AABC7</small>
-      </div>
-      <div>
-        <small>{props.mat.action.type}</small>
-      </div>
-    </>
-  );
-
-  return (
-    <Paper elevation={4} style={{minWidth: '10em', padding: '8px'}}>
-      <ListItem button>
-        <ListItemAvatar>
-          <div
-            style={{width: iconSize, height: iconSize}}
-            dangerouslySetInnerHTML={{__html: icon}}
-          />
-        </ListItemAvatar>
-        <ListItemText primary={props.mat.partName} secondary={details}/>
-      </ListItem>
     </Paper>
   );
 }

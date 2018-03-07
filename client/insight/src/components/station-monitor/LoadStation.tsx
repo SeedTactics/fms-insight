@@ -127,17 +127,18 @@ export const PalletColumn = palletStyles<LoadStationProps>(props => {
     palletClass = props.classes.palletContainerScroll;
   }
 
-  const maxFace = props.face.keySeq().max();
+  const maxFace = props.face.map((m, face) => face).max();
+  const palLabel = "Pallet " + (props.pallet ? props.pallet.pallet : "");
 
-  return (
-    <>
-      <MaterialDisplay label="Castings" material={props.castings}/>
-
-      <Divider/>
-
-      <div className={palletClass}>
+  let palDetails: JSX.Element;
+  if (props.face.size === 1) {
+    const mat = props.face.first();
+    palDetails = <MaterialDisplay label={palLabel} material={mat ? mat : []}/>;
+  } else {
+    palDetails = (
+      <>
         <div className={props.classes.labelContainer}>
-          <span className={props.classes.label}>Pallet {props.pallet ? props.pallet.pallet : ""}</span>
+          <span className={props.classes.label}>{palLabel}</span>
         </div>
         <div className={props.classes.faceContainer}>
           {
@@ -149,10 +150,18 @@ export const PalletColumn = palletStyles<LoadStationProps>(props => {
             ).valueSeq()
           }
         </div>
-      </div>
+      </>
+    );
+  }
 
+  return (
+    <>
+      <MaterialDisplay label="Castings" material={props.castings}/>
       <Divider/>
-
+      <div className={palletClass}>
+        {palDetails}
+      </div>
+      <Divider/>
       <MaterialDisplay label="Completed Material" material={[]}/>
     </>
   );
