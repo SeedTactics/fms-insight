@@ -112,7 +112,11 @@ export const buildMonitorData = createSelector(
       case routes.SelectedStationType.LoadStation:
         return {
           type: routes.SelectedStationType.LoadStation,
-          data: selectLoadStationProps(route.selected_station_id, route.station_queues, curStatus)
+          data: selectLoadStationProps(
+            route.selected_station_id,
+            route.station_queues,
+            route.station_free_material,
+            curStatus)
         };
 
       case routes.SelectedStationType.Wash:

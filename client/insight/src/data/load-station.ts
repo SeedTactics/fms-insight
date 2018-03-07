@@ -40,13 +40,14 @@ export interface LoadStationData {
   readonly pallet?: Readonly<api.IPalletStatus>;
   readonly face: im.Map<number, MaterialList>;
   readonly castings: MaterialList;
-  readonly free: MaterialList;
+  readonly free?: MaterialList;
   readonly queues: im.Map<string, MaterialList>;
 }
 
 export function selectLoadStationProps(
     loadNum: number,
     queues: ReadonlyArray<string>,
+    displayFree: boolean,
     curSt: Readonly<api.ICurrentStatus>
   ): LoadStationData {
 
@@ -90,11 +91,15 @@ export function selectLoadStationProps(
               && m.action.processAfterLoad === 1
               && m.location.type === api.LocType.Free);
 
-  const free = im.Seq(curSt.material)
-    .filter(m => m.action.type === api.ActionType.Loading
-              && m.action.loadOntoPallet === palName
-              && m.action.processAfterLoad > 1
-              && m.location.type === api.LocType.Free);
+  let free: MaterialList | undefined;
+  if (displayFree) {
+    free = im.Seq(curSt.material)
+      .filter(m => m.action.type === api.ActionType.Loading
+                && m.action.loadOntoPallet === palName
+                && m.action.processAfterLoad > 1
+                && m.location.type === api.LocType.Free)
+      .toArray();
+  }
 
   const queueNames = im.Set(queues);
   const queueMat = im.Seq(curSt.material)
@@ -111,7 +116,7 @@ export function selectLoadStationProps(
     pallet: pal,
     face: byFace,
     castings: castings.toArray(),
-    free: free.toArray(),
+    free: free,
     queues: queueMat,
   };
 }

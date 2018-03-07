@@ -42,6 +42,7 @@ const basicState: routes.State = {
   selected_station_type: routes.SelectedStationType.Inspection,
   selected_station_id: 4,
   station_queues: ["a"],
+  station_free_material: false,
 };
 
 it('displays the toolbar for inspection with one queue', () => {
@@ -105,7 +106,8 @@ it("changes the station", () => {
   expect(setRoute).toHaveBeenCalledWith(
     routes.SelectedStationType.Wash,
     basicState.selected_station_id,
-    basicState.station_queues
+    basicState.station_queues,
+    false
   );
 });
 
@@ -126,7 +128,8 @@ it("changes the station number", () => {
   expect(setRoute).toHaveBeenCalledWith(
     basicState.selected_station_type,
     12,
-    basicState.station_queues
+    basicState.station_queues,
+    false
   );
 });
 
@@ -147,7 +150,8 @@ it("changes the queues", () => {
   expect(setRoute).toHaveBeenCalledWith(
     basicState.selected_station_type,
     basicState.selected_station_id,
-    ["a", "b"]
+    ["a", "b"],
+    false
   );
 
   setRoute.mockReset();
@@ -156,6 +160,7 @@ it("changes the queues", () => {
   expect(setRoute).toHaveBeenCalledWith(
     basicState.selected_station_type,
     basicState.selected_station_id,
-    []
+    [],
+    false
   );
 });

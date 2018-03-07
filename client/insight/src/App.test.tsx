@@ -43,6 +43,7 @@ function appProps(current: routes.RouteLocation): AppProps {
       selected_station_type: routes.SelectedStationType.LoadStation,
       selected_station_id: 5,
       station_queues: ["q1", "q1"],
+      station_free_material: false,
     },
     loadLast30Days: jest.fn(),
     loadCurrentStatus: jest.fn(),

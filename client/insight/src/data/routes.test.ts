@@ -53,6 +53,7 @@ it("changes to the station page", () => {
     selected_station_type: routes.SelectedStationType.Wash,
     selected_station_id: 12,
     station_queues: [],
+    station_free_material: false,
   });
 
   // now one with queues
@@ -74,6 +75,30 @@ it("changes to the station page", () => {
     selected_station_type: routes.SelectedStationType.LoadStation,
     selected_station_id: 4,
     station_queues: ["z", "y", "x"],
+    station_free_material: false,
+  });
+
+  // now with free material
+  st = routes.reducer(st, {
+    type: routes.RouteLocation.StationMonitor,
+    payload: {
+      station: routes.SelectedStationType.LoadStation,
+      num: 6,
+    },
+    meta: {
+      query: {
+        queue: ["w"],
+        free: null
+      }
+    },
+  });
+
+  expect(st).toEqual({
+    current: routes.RouteLocation.StationMonitor,
+    selected_station_type: routes.SelectedStationType.LoadStation,
+    selected_station_id: 6,
+    station_queues: ["w"],
+    station_free_material: true,
   });
 
 });
@@ -89,6 +114,7 @@ it("transitions to the cost/piece, dashboard, and efficiency pages", () => {
     selected_station_type: routes.SelectedStationType.Inspection,
     selected_station_id: 2,
     station_queues: ["a", "b"],
+    station_free_material: false,
   };
   for (var page of pages) {
     // tslint:disable-next-line:no-any

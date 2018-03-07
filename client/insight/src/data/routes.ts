@@ -60,7 +60,10 @@ export type Action =
       type: RouteLocation.StationMonitor,
       payload: { station: SelectedStationType, num: number },
       meta?: {
-        query?: { queue?: ReadonlyArray<string> }
+        query?: {
+          queue?: ReadonlyArray<string>,
+          free?: null,
+        }
       },
     }
   | { type: RouteLocation.CostPerPiece }
@@ -72,17 +75,20 @@ export function switchToStationMonitorPage(curSt: State): Action {
   return {
     type: RouteLocation.StationMonitor,
     payload: { station: curSt.selected_station_type, num: curSt.selected_station_id },
-    meta: { query: { queue: curSt.station_queues }},
+    meta: { query: { queue: curSt.station_queues, free: curSt.station_free_material ? null : undefined }},
   };
 }
 
 export function switchToStationMonitor(
-    station: SelectedStationType, num: number, queues: ReadonlyArray<string>
+    station: SelectedStationType, num: number, queues: ReadonlyArray<string>, freeMaterial: boolean
   ): Action {
   return {
     type: RouteLocation.StationMonitor,
     payload: { station, num },
-    meta: { query: {queue: queues.length === 0 ? undefined : queues } }
+    meta: { query: {
+      queue: queues.length === 0 ? undefined : queues,
+      free: freeMaterial ? null : undefined,
+    } }
   };
 }
 
@@ -91,6 +97,7 @@ export interface State {
   readonly selected_station_type: SelectedStationType;
   readonly selected_station_id: number;
   readonly station_queues: ReadonlyArray<string>;
+  readonly station_free_material: boolean;
 }
 
 export const initial: State = {
@@ -98,17 +105,20 @@ export const initial: State = {
   selected_station_type: SelectedStationType.LoadStation,
   selected_station_id: 1,
   station_queues: [],
+  station_free_material: false,
 };
 
 export function reducer(s: State, a: Action): State {
   if ( s === undefined) { return initial; }
   switch (a.type) {
     case RouteLocation.StationMonitor:
+      var query = (a.meta || {}).query || {};
       return {...s,
         current: RouteLocation.StationMonitor,
         selected_station_type: a.payload.station,
         selected_station_id: a.payload.num,
-        station_queues: Seq(((a.meta || {}).query || {}).queue || []).take(3).toArray(),
+        station_queues: Seq(query.queue || []).take(3).toArray(),
+        station_free_material: query.free === null ? true : false
       };
     case RouteLocation.CostPerPiece:
       return {...s, current: RouteLocation.CostPerPiece };

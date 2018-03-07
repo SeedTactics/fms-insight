@@ -54,9 +54,12 @@ const toolbarStyle = {
 export interface StationToolbarProps {
   readonly current_route: routes.State;
   readonly queues: { [key: string]: api.IQueueSize };
-  // tslint:disable-next-line:no-any
-  readonly setStationRoute: (station: routes.SelectedStationType, num: number, queues: ReadonlyArray<string>) => any;
+  readonly setStationRoute:
+    // tslint:disable-next-line:no-any
+    (station: routes.SelectedStationType, num: number, queues: ReadonlyArray<string>, free: boolean) => any;
 }
+
+const freeMaterialSym = "@@insight_free_material@@";
 
 export function StationToolbar(props: StationToolbarProps) {
   const queueNames = Object.keys(props.queues).sort();
@@ -65,7 +68,8 @@ export function StationToolbar(props: StationToolbarProps) {
     props.setStationRoute(
       s as routes.SelectedStationType,
       props.current_route.selected_station_id,
-      props.current_route.station_queues
+      props.current_route.station_queues,
+      props.current_route.station_free_material
     );
   }
 
@@ -75,7 +79,9 @@ export function StationToolbar(props: StationToolbarProps) {
       props.setStationRoute(
         props.current_route.selected_station_type,
         val,
-        props.current_route.station_queues);
+        props.current_route.station_queues,
+        props.current_route.station_free_material
+      );
     }
   }
 
@@ -88,32 +94,19 @@ export function StationToolbar(props: StationToolbarProps) {
   // when multiple selects are enabled it is actually a type string[]
   // tslint:disable-next-line:no-any
   function setQueues(newQueuesAny: any) {
-    const newQueues: ReadonlyArray<string> = newQueuesAny;
+    const newQueues = newQueuesAny as ReadonlyArray<string>;
+    const free = newQueues.includes(freeMaterialSym);
     props.setStationRoute(
       props.current_route.selected_station_type,
       props.current_route.selected_station_id,
-      Seq(newQueues).take(3).toArray()
+      Seq(newQueues).take(3).filter(q => q !== freeMaterialSym).toArray(),
+      free
     );
   }
 
-  let queueSelect: JSX.Element | undefined;
-  if (queueNames.length > 0) {
-    queueSelect = (
-      <div>
-        <Select
-          multiple
-          value={props.current_route.station_queues as string[]}
-          autoWidth
-          onChange={e => setQueues(e.target.value)}
-        >
-          {
-            queueNames.map((q, idx) =>
-              <MenuItem key={idx} value={q}>{q}</MenuItem>
-            )
-          }
-        </Select>
-      </div>
-    );
+  let queues: string[] = [...props.current_route.station_queues];
+  if (props.current_route.station_free_material) {
+    queues.push(freeMaterialSym);
   }
 
   return (
@@ -141,7 +134,21 @@ export function StationToolbar(props: StationToolbarProps) {
           style={{width: '3em', marginLeft: '1em'}}
         />
       </div>
-      {queueSelect}
+      <div>
+        <Select
+          multiple
+          value={queues}
+          autoWidth
+          onChange={e => setQueues(e.target.value)}
+        >
+          <MenuItem key={freeMaterialSym} value={freeMaterialSym}>Free Material</MenuItem>
+          {
+            queueNames.map((q, idx) =>
+              <MenuItem key={idx} value={q}>{q}</MenuItem>
+            )
+          }
+        </Select>
+      </div>
     </nav>
   );
 }

@@ -60,6 +60,12 @@ exports[`inspection toolbar 1`] = `
       }
     >
       <WithStyles(MenuItem)
+        key="@@insight_free_material@@"
+        value="@@insight_free_material@@"
+      >
+        Free Material
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
         key="0"
         value="a"
       >
@@ -138,6 +144,12 @@ exports[`load toolbar 1`] = `
       }
     >
       <WithStyles(MenuItem)
+        key="@@insight_free_material@@"
+        value="@@insight_free_material@@"
+      >
+        Free Material
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
         key="0"
         value="a"
       >
@@ -213,6 +225,21 @@ exports[`wash toolbar 1`] = `
       type="number"
       value={4}
     />
+  </div>
+  <div>
+    <WithStyles(Select)
+      autoWidth={true}
+      multiple={true}
+      onChange={[Function]}
+      value={Array []}
+    >
+      <WithStyles(MenuItem)
+        key="@@insight_free_material@@"
+        value="@@insight_free_material@@"
+      >
+        Free Material
+      </WithStyles(MenuItem)>
+    </WithStyles(Select)>
   </div>
 </nav>
 `;

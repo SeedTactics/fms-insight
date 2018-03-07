@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from 'react';
 import Divider from 'material-ui/Divider';
 import { withStyles } from 'material-ui';
+import * as im from 'immutable';
 
 import { MaterialList, LoadStationData } from '../../data/load-station';
 import { Material } from './Material';
@@ -172,36 +173,79 @@ export const PalletColumn = palletStyles<LoadStationProps>(props => {
   );
 });
 
-export default function LoadStation(props: LoadStationProps) {
-  const palColStyle: React.CSSProperties = {
-    'flexBasis': '60%',
-    'padding': '8px',
-    'display': 'flex',
-    'flexDirection': 'column',
-  };
-  const inProcColStyle: React.CSSProperties = {
-    'flexBasis': '40%',
-    'padding': '8px',
-    'display': 'flex',
-    'flexDirection': 'column',
-    'borderLeft': '1px solid rgba(0, 0, 0, 0.12)',
-  };
-  const containerStyle: React.CSSProperties = {
+const loadStyles = withStyles(() => ({
+  container: {
     width: '100%',
     paddingLeft: '8px',
     paddingRight: '8px',
     display: 'flex',
     flexGrow: 1,
-  };
+  },
+  palCol: {
+    'flexGrow': 1,
+    'padding': '8px',
+    'display': 'flex',
+    'flexDirection': 'column' as 'column',
+  },
+  queueCol: {
+    'width': '16em',
+    'padding': '8px',
+    'display': 'flex',
+    'flexDirection': 'column' as 'column',
+    'borderLeft': '1px solid rgba(0, 0, 0, 0.12)',
+  },
+}));
+
+export default loadStyles<LoadStationProps>(props => {
+  const palProps = {...props, classes: undefined};
+
+  let queues = props.queues
+    .toSeq()
+    .sortBy((mats, q) => q)
+    .map((mats, q) => ({
+      label: q,
+      material: mats,
+      openMat: props.openMat
+    }))
+    .valueSeq();
+
+  let cells: im.Seq.Indexed<MaterialDisplayProps> = queues;
+  if (props.free) {
+    cells = im.Seq([{
+      label: "In Process Material",
+      material: props.free,
+      openMat: props.openMat,
+    }]).concat(queues);
+  }
+
+  const col1 = cells.take(2);
+  const col2 = cells.skip(2).take(2);
 
   return (
-    <div style={containerStyle}>
-      <div style={palColStyle}>
-        <PalletColumn {...props}/>
+    <div className={props.classes.container}>
+      <div className={props.classes.palCol}>
+        <PalletColumn {...palProps}/>
       </div>
-      <div style={inProcColStyle}>
-        <MaterialDisplay label="In Process Material" material={props.free} openMat={props.openMat}/>
-      </div>
+      {
+        col1.size === 0 ? undefined :
+        <div className={props.classes.queueCol}>
+          {
+            col1.map((mat, idx) =>
+              <MaterialDisplay key={idx} {...mat}/>
+            )
+          }
+        </div>
+      }
+      {
+        col2.size === 0 ? undefined :
+        <div className={props.classes.queueCol}>
+          {
+            col2.map((mat, idx) =>
+              <MaterialDisplay key={idx} {...mat}/>
+            )
+          }
+        </div>
+      }
     </div>
   );
-}
+});

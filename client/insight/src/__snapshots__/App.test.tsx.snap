@@ -10,6 +10,7 @@ exports[`cost per piece 1`] = `
         "current": "ROUTE_CostPerPiece",
         "selected_station_id": 5,
         "selected_station_type": "loadunload",
+        "station_free_material": false,
         "station_queues": Array [
           "q1",
           "q1",
@@ -154,6 +155,7 @@ exports[`dashboard 1`] = `
         "current": "ROUTE_Dashboard",
         "selected_station_id": 5,
         "selected_station_type": "loadunload",
+        "station_free_material": false,
         "station_queues": Array [
           "q1",
           "q1",
@@ -298,6 +300,7 @@ exports[`efficiency 1`] = `
         "current": "ROUTE_Efficiency",
         "selected_station_id": 5,
         "selected_station_type": "loadunload",
+        "station_free_material": false,
         "station_queues": Array [
           "q1",
           "q1",
@@ -442,6 +445,7 @@ exports[`station monitor 1`] = `
         "current": "ROUTE_StationMonitor",
         "selected_station_id": 5,
         "selected_station_type": "loadunload",
+        "station_free_material": false,
         "station_queues": Array [
           "q1",
           "q1",
