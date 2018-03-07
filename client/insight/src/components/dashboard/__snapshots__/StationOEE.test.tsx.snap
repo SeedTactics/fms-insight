@@ -160,6 +160,7 @@ exports[`station oee table 1`] = `
               "num": 1,
             },
             "fixtureOnPallet": "",
+            "numFaces": 2,
             "onHold": false,
             "pallet": "5",
           },

@@ -30,60 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { createStore, GenericStoreEnhancer, combineReducers, compose, applyMiddleware } from 'redux';
 
-import * as currentStatus from './current-status';
-import * as events from './events';
-import * as gui from './gui-state';
-import * as routes from './routes';
-import * as mat from './material-details';
-import { pledgeMiddleware } from './pledge';
-
-import { connectRoutes, LocationState } from 'redux-first-router';
-import createHistory from 'history/createBrowserHistory';
-import * as queryString from 'query-string';
-
-const history = createHistory();
-const router = connectRoutes(
-  history,
-  routes.routeMap,
-  {
-    querySerializer: queryString
-  });
-
-/* tslint:disable */
-const devTools: GenericStoreEnhancer =
-  (window as any)['__REDUX_DEVTOOLS_EXTENSION__']
-  ? (window as any)['__REDUX_DEVTOOLS_EXTENSION__']()
-  : f => f;
-/* tslint:enable */
-
-export interface Store {
-  readonly Current: currentStatus.State;
-  readonly Events: events.State;
-  readonly Gui: gui.State;
-  readonly MaterialDetails: mat.State;
-  readonly Route: routes.State;
-  readonly location: LocationState;
-}
-
-export default createStore<Store>(
-  combineReducers<Store>(
-    {
-      Current: currentStatus.reducer,
-      Events: events.reducer,
-      Gui: gui.reducer,
-      MaterialDetails: mat.reducer,
-      Route: routes.reducer,
-      location: router.reducer,
-    }
-  ),
-  compose(
-    router.enhancer,
-    applyMiddleware(
-        pledgeMiddleware,
-        router.middleware
-    ),
-    devTools
-  )
-);
+test.skip('tests the load station computation from current status', () => {
+  return;
+});
