@@ -82,7 +82,6 @@ export function fakeCycle(
         locnum: 1,
         result: 'LOAD',
         program: 'LOAD',
-        endofroute: false,
         elapsed: '00:06:00',
         active: '00:06:00'
       }
@@ -103,7 +102,6 @@ export function fakeCycle(
         locnum: 1,
         result: '',
         program: 'prog' + faker.random.alphaNumeric(),
-        endofroute: false,
         elapsed: elapsed,
         active: elapsed
       }
@@ -122,7 +120,6 @@ export function fakeCycle(
         locnum: 2,
         result: 'UNLOAD',
         program: 'UNLOAD',
-        endofroute: true,
         elapsed: '00:03:00',
         active: '00:03:00'
       }
@@ -140,7 +137,6 @@ export function fakeCycle(
         locnum: 2,
         result: 'PalletCycle',
         program: '',
-        endofroute: false,
         elapsed: '00:44:00',
         active: '-00:01:00',
       }

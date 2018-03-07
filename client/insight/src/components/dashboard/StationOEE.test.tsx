@@ -97,7 +97,7 @@ it('displays a single station oee', () => {
       currentPalletLocation: new api.PalletLocation({
         loc: api.PalletLocationEnum.LoadUnload,
         group: "aaa",
-        num: 1
+        num: 1,
       }),
     },
     material: [
@@ -107,10 +107,12 @@ it('displays a single station oee', () => {
         partName: "aaa",
         process: 2,
         path: 1,
+        signaledInspections: ["a", "b"],
         location: new api.InProcessMaterialLocation({
           type: api.LocType.OnPallet,
           pallet: "7",
           face: 1,
+          queuePosition: 0,
         }),
         action: new api.InProcessMaterialAction({
           type: api.ActionType.Loading,
