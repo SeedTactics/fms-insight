@@ -40,14 +40,79 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace MachineWatchApiServer
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static IConfiguration Configuration {get;} = new ConfigurationBuilder()
+            #if USE_SERVICE
+            .SetBasePath(Path.GetDirectoryName(
+                System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName
+            ))
+            #else
+            .SetBasePath(Directory.GetCurrentDirectory())
+            #endif
+            .AddIniFile("config.ini", optional: true)
+            .AddEnvironmentVariables()
+            .Build();
+
+        private static void EnableSerilog()
         {
-            var host = BuildWebHost(args);
+            var dataDir = Configuration["DataDirectory"];
+            var enableDebug = Configuration["EnableDebug"];
+            var logConfig = new LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .Enrich.FromLogContext()
+                .WriteTo.Console(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information);
+
+            #if LOG_TO_EVENTLOG
+            logConfig = logConfig.WriteTo.EventLog(
+                "Machine Watch",
+                manageEventSource: true,
+                restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information);
+            #endif
+
+            if (   !string.IsNullOrEmpty(dataDir)
+                && !string.IsNullOrEmpty(enableDebug)
+                && bool.TryParse(enableDebug, out bool enable)
+                && enable) {
+
+                logConfig = logConfig.WriteTo.File(
+                    new Serilog.Formatting.Compact.CompactJsonFormatter(),
+                    System.IO.Path.Combine(dataDir, "machinewatch-debug.txt"),
+                    rollingInterval: RollingInterval.Day,
+                    restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Debug);
+            }
+
+            Log.Logger = logConfig.CreateLogger();
+        }
+
+        public static IWebHost BuildWebHost()
+        {
+            #if USE_SERVICE
+            var contentRoot = Path.GetDirectoryName(
+                System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName
+            );
+            #else
+            var contentRoot = Directory.GetCurrentDirectory();
+            #endif
+
+            return new WebHostBuilder()
+                .UseConfiguration(Configuration)
+                .UseKestrel()
+                .UseContentRoot(contentRoot)
+                .UseSerilog()
+                .UseStartup<Startup>()
+                .Build();
+        }
+
+        public static void Main()
+        {
+            EnableSerilog();
+
+            var host = BuildWebHost();
 
             #if USE_SERVICE
                 Microsoft.AspNetCore.Hosting.WindowsServices.WebHostWindowsServiceExtensions
@@ -55,35 +120,6 @@ namespace MachineWatchApiServer
             #else
                 host.Run();
             #endif
-        }
-
-        public static IWebHost BuildWebHost(string[] args)
-        {
-            #if USE_SERVICE
-            var baseDir = Path.GetDirectoryName(
-                System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName
-            );
-            #else
-            var baseDir = Directory.GetCurrentDirectory();
-            #endif
-
-
-            var config = new ConfigurationBuilder()
-                .SetBasePath(baseDir)
-                .AddIniFile("config.ini", optional: true)
-                .AddEnvironmentVariables()
-                .AddCommandLine(args)
-                .Build();
-
-            return new WebHostBuilder()
-                .UseConfiguration(config)
-                .UseKestrel()
-                .UseContentRoot(baseDir)
-                .ConfigureLogging((context, logging) => {
-                    logging.AddConsole();
-                })
-                .UseStartup<Startup>()
-                .Build();
         }
     }
 }

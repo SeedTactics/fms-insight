@@ -60,32 +60,8 @@ namespace MachineWatchApiServer
             var dataDir = Configuration["DataDirectory"];
             var pluginFile = Configuration["PluginFile"];
             var workerDir = Configuration["WorkerDirectory"];
-            var enableDebug = Configuration["EnableDebug"];
 
-            var logConfig = new LoggerConfiguration()
-                .MinimumLevel.Debug()
-                .WriteTo.Console(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information);
-
-            #if LOG_TO_EVENTLOG
-            logConfig = logConfig.WriteTo.EventLog(
-                "Machine Watch",
-                manageEventSource: true,
-                restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information);
-            #endif
-
-            if (   !string.IsNullOrEmpty(dataDir)
-                && !string.IsNullOrEmpty(enableDebug)
-                && bool.TryParse(enableDebug, out bool enable)
-                && enable) {
-
-                logConfig = logConfig.WriteTo.File(
-                    new Serilog.Formatting.Compact.CompactJsonFormatter(),
-                    System.IO.Path.Combine(dataDir, "machinewatch-debug.txt"),
-                    rollingInterval: RollingInterval.Day,
-                    restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Debug);
-            }
-
-            Log.Logger = logConfig.CreateLogger();
+            Log.Information("Starting machine watch");
 
             IPlugin plugin;
             if (!string.IsNullOrEmpty(pluginFile))
