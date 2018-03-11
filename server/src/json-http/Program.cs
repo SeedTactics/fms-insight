@@ -50,20 +50,40 @@ namespace MachineWatchApiServer
             var host = BuildWebHost(args);
 
             #if USE_SERVICE
-                var pathToExe = Process.GetCurrentProcess().MainModule.FileName;
-                var pathToContentRoot = Path.GetDirectoryName(pathToExe);
                 Microsoft.AspNetCore.Hosting.WindowsServices.WebHostWindowsServiceExtensions
-                    .RunAsService(
-                        host.UseContentRoot(pathToContentRoot)
-                    );
+                    .RunAsService();
             #else
                 host.Run();
             #endif
         }
 
-        public static IWebHost BuildWebHost(string[] args) =>
-            WebHost.CreateDefaultBuilder(args)
+        public static IWebHost BuildWebHost(string[] args)
+        {
+            #if USE_SERVICE
+            var baseDir = Path.GetDirectoryName(
+                System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName
+            );
+            #else
+            var baseDir = Directory.GetCurrentDirectory();
+            #endif
+
+
+            var config = new ConfigurationBuilder()
+                .SetBasePath(baseDir)
+                .AddIniFile("config.ini", optional: true)
+                .AddEnvironmentVariables()
+                .AddCommandLine(args)
+                .Build();
+
+            return new WebHostBuilder()
+                .UseConfiguration(config)
+                .UseKestrel()
+                .UseContentRoot(baseDir)
+                .ConfigureLogging((context, logging) => {
+                    logging.AddConsole();
+                })
                 .UseStartup<Startup>()
                 .Build();
+        }
     }
 }
