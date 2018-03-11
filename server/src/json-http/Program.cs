@@ -41,6 +41,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using Serilog.Events;
 
 namespace MachineWatchApiServer
 {
@@ -64,7 +65,7 @@ namespace MachineWatchApiServer
             var enableDebug = Configuration["EnableDebug"];
             var logConfig = new LoggerConfiguration()
                 .MinimumLevel.Debug()
-                .Enrich.FromLogContext()
+                .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
                 .WriteTo.Console(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information);
 
             #if LOG_TO_EVENTLOG
