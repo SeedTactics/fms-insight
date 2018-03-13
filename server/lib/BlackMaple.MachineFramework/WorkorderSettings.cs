@@ -1,4 +1,4 @@
-/* Copyright (c) 2017, John Lenz
+/* Copyright (c) 2018, John Lenz
 
 All rights reserved.
 
@@ -35,43 +35,11 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 
-namespace BlackMaple.MachineWatchInterface
+namespace BlackMaple.MachineFramework
 {
-    [Serializable, DataContract]
-    public enum SerialType
+    public enum WorkorderAssignmentType
     {
-        [EnumMember] NoSerials,
-        [EnumMember] OneSerialPerMaterial,  // assign a different serial to each piece of material
-        [EnumMember] OneSerialPerCycle,     // assign a single serial to all the material on each cycle
-        [EnumMember] SerialDeposit          // deposit serial into machine file to be scribed on part
-    }
-
-    [Serializable, DataContract]
-    public class SerialSettings
-    {
-        [DataMember(IsRequired=true)] public SerialType SerialType {get;}
-        [DataMember(IsRequired=true)] public int SerialLength {get;}
-
-        //settings only for serial deposit
-        [DataMember(IsRequired=false, EmitDefaultValue=false)] public int DepositOnProcess {get;}
-        [DataMember(IsRequired=false, EmitDefaultValue=false)] public string FilenameTemplate {get;}
-        [DataMember(IsRequired=false, EmitDefaultValue=false)] public string ProgramTemplate {get;}
-
-        public SerialSettings(SerialType t, int len)
-        {
-            SerialType = t;
-            SerialLength = len;
-            DepositOnProcess = 1;
-            FilenameTemplate = null;
-            ProgramTemplate = null;
-        }
-        public SerialSettings(int len, int proc, string fileTemplate, string progTemplate)
-        {
-            SerialType = SerialType.SerialDeposit;
-            SerialLength = len;
-            DepositOnProcess = proc;
-            FilenameTemplate = fileTemplate;
-            ProgramTemplate = progTemplate;
-        }
+        NoAutomaticAssignment,
+        AssignDuringUnload,
     }
 }

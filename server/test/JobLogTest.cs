@@ -436,8 +436,7 @@ namespace MachineWatchTest
             Assert.Equal("for4", _jobLog.MaxForeignID());
             var mat = new Dictionary<string, IEnumerable<LogMaterial>>();
             mat["k"] = new LogMaterial[] { };
-            _jobLog.SetSerialSettings(new SerialSettings(SerialType.NoSerials, 0));
-            _jobLog.CompletePalletCycle("p", DateTime.UtcNow, "for3", mat);
+            _jobLog.CompletePalletCycle("p", DateTime.UtcNow, "for3", mat, SerialType.NoAutomaticSerials, 10);
             Assert.Equal("for4", _jobLog.MaxForeignID()); // for4 should be copied
 
             var load1 = _jobLog.StationLogByForeignID("for1");
@@ -561,11 +560,7 @@ namespace MachineWatchTest
                                   "pal1", LogType.PartMark, "Mark", 1, "MARK", false,
               t.AddMinutes(45).AddSeconds(2), serial3, false);
 
-            _jobLog.SetSerialSettings(new SerialSettings(SerialType.OneSerialPerMaterial, 10));
-            Assert.Equal(SerialType.OneSerialPerMaterial, _jobLog.GetSerialSettings().SerialType);
-            Assert.Equal(10, _jobLog.GetSerialSettings().SerialLength);
-
-            _jobLog.CompletePalletCycle("pal1", t.AddMinutes(45), "for3", mat);
+            _jobLog.CompletePalletCycle("pal1", t.AddMinutes(45), "for3", mat, SerialType.AssignOneSerialPerMaterial, 10);
 
             CheckLog(new LogEntry[] { log1, log2, palCycle, nLoad1, nLoad2, ser1, ser2, ser3 },
                      _jobLog.GetLogEntries(t.AddMinutes(-10), t.AddHours(1)), t.AddMinutes(-10));
@@ -628,8 +623,7 @@ namespace MachineWatchTest
                                   "pal1", LogType.PartMark, "Mark", 1, "MARK", false,
               t.AddMinutes(45).AddSeconds(2), serial3, false);
 
-            _jobLog.SetSerialSettings(new SerialSettings(SerialType.OneSerialPerCycle, 10));
-            _jobLog.CompletePalletCycle("pal1", t.AddMinutes(45), "for3", mat);
+            _jobLog.CompletePalletCycle("pal1", t.AddMinutes(45), "for3", mat, SerialType.AssignOneSerialPerCycle, 10);
 
             CheckLog(new LogEntry[] { log1, log2, palCycle, nLoad1, nLoad2, ser1, ser3 },
                      _jobLog.GetLogEntries(t.AddMinutes(-10), t.AddHours(1)), t.AddMinutes(-10));

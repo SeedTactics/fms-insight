@@ -79,7 +79,6 @@ namespace BlackMaple.MachineFramework
                     throw;
                 }
             }
-            LoadSettings();
         }
 
         public void Close()
@@ -88,7 +87,7 @@ namespace BlackMaple.MachineFramework
         }
 
 
-        private const int Version = 15;
+        private const int Version = 16;
 
         public void CreateTables()
         {
@@ -142,9 +141,6 @@ namespace BlackMaple.MachineFramework
 
             cmd.CommandText = "CREATE TABLE program_details(Counter INTEGER, Key TEXT, Value TEXT, " +
                 "PRIMARY KEY(Counter, Key))";
-            cmd.ExecuteNonQuery();
-
-            cmd.CommandText = "CREATE TABLE sersettings(ID INTEGER PRIMARY KEY, SerialType INTEGER, SerialLength INTEGER, DepositProc INTEGER, FilenameTemplate TEXT, ProgramTemplate TEXT)";
             cmd.ExecuteNonQuery();
         }
 
@@ -226,6 +222,8 @@ namespace BlackMaple.MachineFramework
                 if (curVersion < 14) Ver13ToVer14(trans);
 
                 if (curVersion < 15) Ver14ToVer15(trans);
+
+                if (curVersion < 16) Ver15ToVer16(trans);
 
                 //update the version in the database
                 cmd.Transaction = trans;
@@ -383,6 +381,14 @@ namespace BlackMaple.MachineFramework
             IDbCommand cmd = _connection.CreateCommand();
             cmd.Transaction = trans;
             cmd.CommandText = "CREATE INDEX materialid_uniq ON materialid(UniqueStr)";
+            cmd.ExecuteNonQuery();
+        }
+
+        private void Ver15ToVer16(IDbTransaction trans)
+        {
+            IDbCommand cmd = _connection.CreateCommand();
+            cmd.Transaction = trans;
+            cmd.CommandText = "DROP TABLE sersettings";
             cmd.ExecuteNonQuery();
         }
         #endregion
@@ -1749,16 +1755,14 @@ namespace BlackMaple.MachineFramework
             }
         }
 
-        private MachineWatchInterface.SerialSettings _serialSettings =
-            new MachineWatchInterface.SerialSettings(MachineWatchInterface.SerialType.NoSerials, 10);
-
         public void CompletePalletCycle(string pal, DateTime timeUTC, string foreignID)
         {
-            CompletePalletCycle(pal, timeUTC, foreignID, null);
+            CompletePalletCycle(pal, timeUTC, foreignID, null, SerialType.NoAutomaticSerials, 10);
         }
 
         public void CompletePalletCycle(string pal, DateTime timeUTC, string foreignID,
-                                        IDictionary<string, IEnumerable<MachineWatchInterface.LogMaterial>> mat)
+                                        IDictionary<string, IEnumerable<MachineWatchInterface.LogMaterial>> mat,
+                                        SerialType serialType, int serLength)
         {
             lock (_lock)
             {
@@ -1849,7 +1853,7 @@ namespace BlackMaple.MachineFramework
 
                                 AddMaterial(ctr, mat[key], trans);
 
-                                if (_serialSettings.SerialType == MachineWatchInterface.SerialType.OneSerialPerCycle)
+                                if (serialType == SerialType.AssignOneSerialPerCycle)
                                 {
 
                                     // find a material id to use to create the serial
@@ -1866,8 +1870,8 @@ namespace BlackMaple.MachineFramework
                                     {
                                         // add the serial
                                         var serial = ConvertToBase62(matID);
-                                        serial = serial.Substring(0, Math.Min(_serialSettings.SerialLength, serial.Length));
-                                        serial = serial.PadLeft(_serialSettings.SerialLength, '0');
+                                        serial = serial.Substring(0, Math.Min(serLength, serial.Length));
+                                        serial = serial.PadLeft(serLength, '0');
                                         addSerial.Parameters[2].Value = serial;
                                         addSerial.ExecuteNonQuery();
                                         foreach (var m in mat[key])
@@ -1880,14 +1884,14 @@ namespace BlackMaple.MachineFramework
                                     }
 
                                 }
-                                else if (_serialSettings.SerialType == MachineWatchInterface.SerialType.OneSerialPerMaterial)
+                                else if (serialType == SerialType.AssignOneSerialPerMaterial)
                                 {
                                     foreach (var m in mat[key])
                                     {
                                         if (m.MaterialID < 0) continue;
                                         var serial = ConvertToBase62(m.MaterialID);
-                                        serial = serial.Substring(0, Math.Min(_serialSettings.SerialLength, serial.Length));
-                                        serial = serial.PadLeft(_serialSettings.SerialLength, '0');
+                                        serial = serial.Substring(0, Math.Min(serLength, serial.Length));
+                                        serial = serial.PadLeft(serLength, '0');
                                         addSerial.Parameters[2].Value = serial;
                                         addSerial.ExecuteNonQuery();
                                         RecordSerialForMaterialID(trans, m.MaterialID, serial);
@@ -1906,73 +1910,6 @@ namespace BlackMaple.MachineFramework
                     addCmd.ExecuteNonQuery();
 
                     trans.Commit();
-                }
-                catch
-                {
-                    trans.Rollback();
-                    throw;
-                }
-            }
-        }
-
-        private void LoadSettings()
-        {
-            var cmd = _connection.CreateCommand();
-            cmd.CommandText = "SELECT SerialType, SerialLength, DepositProc, FilenameTemplate, ProgramTemplate FROM sersettings WHERE ID = 0";
-            using (var reader = cmd.ExecuteReader())
-            {
-                if (reader.Read())
-                {
-                    var serialType = (MachineWatchInterface.SerialType)reader.GetInt32(0);
-                    var serialLength = reader.GetInt32(1);
-                    if (serialType == MachineWatchInterface.SerialType.SerialDeposit)
-                    {
-                        _serialSettings = new MachineWatchInterface.SerialSettings(
-                            serialLength,
-                            reader.IsDBNull(2) ? 0 : reader.GetInt32(2),
-                            reader.IsDBNull(3) ? null : reader.GetString(3),
-                            reader.IsDBNull(4) ? null : reader.GetString(4)
-                        );
-                    } else {
-                        _serialSettings = new MachineWatchInterface.SerialSettings(serialType, serialLength);
-                    }
-                }
-            }
-        }
-
-        public MachineWatchInterface.SerialSettings GetSerialSettings()
-        {
-            lock (_lock)
-            {
-                return _serialSettings;
-            }
-        }
-
-        public void SetSerialSettings(MachineWatchInterface.SerialSettings s)
-        {
-            lock(_lock)
-            {
-                var trans = _connection.BeginTransaction();
-                try
-                {
-                    var cmd = _connection.CreateCommand();
-                    cmd.Transaction = trans;
-                    cmd.CommandText = "INSERT OR REPLACE INTO sersettings(ID, SerialType, SerialLength,DepositProc,FilenameTemplate,ProgramTemplate) VALUES (0,$ty,$len,$proc,$file,$prog)";
-                    cmd.Parameters.Add("ty", SqliteType.Integer).Value = (int)s.SerialType;
-                    cmd.Parameters.Add("len", SqliteType.Integer).Value = s.SerialLength;
-                    cmd.Parameters.Add("proc", SqliteType.Integer).Value = s.DepositOnProcess;
-                    if (string.IsNullOrEmpty(s.FilenameTemplate))
-                        cmd.Parameters.Add("file", SqliteType.Text).Value = DBNull.Value;
-                    else
-                        cmd.Parameters.Add("file", SqliteType.Text).Value = s.FilenameTemplate;
-                    if (string.IsNullOrEmpty(s.ProgramTemplate))
-                        cmd.Parameters.Add("prog", SqliteType.Text).Value = DBNull.Value;
-                    else
-                        cmd.Parameters.Add("prog", SqliteType.Text).Value = s.ProgramTemplate;
-                    cmd.ExecuteNonQuery();
-                    trans.Commit();
-
-                    _serialSettings = s;
                 }
                 catch
                 {

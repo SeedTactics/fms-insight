@@ -1,4 +1,4 @@
-/* Copyright (c) 2017, John Lenz
+/* Copyright (c) 2018, John Lenz
 
 All rights reserved.
 
@@ -33,40 +33,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 
-#if !NET35
-using System.Threading.Tasks;
-#endif
-
-namespace BlackMaple.MachineWatchInterface
+namespace BlackMaple.MachineFramework
 {
-    public interface ILogDatabase
+    public enum SerialType
     {
-        List<LogEntry> GetLogEntries(DateTime startUTC, DateTime endUTC);
-        List<LogEntry> GetLog(long lastSeenCounter);
-        List<LogEntry> GetLogForMaterial(long materialID);
-        List<LogEntry> GetLogForSerial(string serial);
-        List<LogEntry> GetLogForWorkorder(string workorder);
-        List<LogEntry> GetCompletedPartLogs(DateTime startUTC, DateTime endUTC);
-        List<WorkorderSummary> GetWorkorderSummaries(IEnumerable<string> workorderIds);
+        NoAutomaticSerials,
+        AssignOneSerialPerMaterial,  // assign a different serial to each piece of material
+        AssignOneSerialPerCycle,     // assign a single serial to all the material on each cycle
+    }
 
-        LogEntry RecordSerialForMaterialID(LogMaterial mat, string serial);
-        LogEntry RecordWorkorderForMaterialID(LogMaterial mat, string workorder);
-        LogEntry RecordFinalizedWorkorder(string workorder);
-
-        LogEntry RecordInspectionCompleted(
-          LogMaterial mat,
-          int inspectionLocNum,
-          string inspectionType,
-          IDictionary<string, string> extraData,
-          TimeSpan elapsed,
-          TimeSpan active);
-        LogEntry RecordWashCompleted(
-          LogMaterial mat,
-          int washLocNum,
-          IDictionary<string, string> extraData,
-          TimeSpan elapsed,
-          TimeSpan active);
+    public class SerialSettings
+    {
+        public SerialType SerialType {get;set;}
+        public int SerialLength {get;set;}
     }
 }
-

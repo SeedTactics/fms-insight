@@ -1055,11 +1055,6 @@ namespace BlackMaple.MachineWatchInterface
     [Serializable, DataContract]
     public struct QueueSize
     {
-        //once an output queue grows to this size, stop loading new parts
-        //which are destined for this queue
-        [DataMember(IsRequired=false, EmitDefaultValue=false)]
-        public int? MaxSizeBeforeStopLoading {get;set;}
-
         //once an output queue grows to this size, stop unloading parts
         //and keep them in the buffer inside the cell
         [DataMember(IsRequired=false, EmitDefaultValue=false)]
