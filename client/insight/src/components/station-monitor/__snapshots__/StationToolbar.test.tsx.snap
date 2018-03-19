@@ -42,7 +42,6 @@ exports[`inspection all toolbar 1`] = `
       style={
         Object {
           "marginLeft": "1em",
-          "width": "3em",
         }
       }
       value="@@all_inspection_display@@"
@@ -115,7 +114,6 @@ exports[`inspection i1 selected toolbar 1`] = `
       style={
         Object {
           "marginLeft": "1em",
-          "width": "3em",
         }
       }
       value="@@all_inspection_display@@"

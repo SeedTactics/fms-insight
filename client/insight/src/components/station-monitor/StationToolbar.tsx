@@ -166,7 +166,7 @@ export function StationToolbar(props: StationToolbarProps) {
               key="inspselect"
               value={props.current_route.selected_insp_type || allInspSym}
               onChange={e => setInspType(e.target.value)}
-              style={{width: '3em', marginLeft: '1em'}}
+              style={{marginLeft: '1em'}}
             >
               <MenuItem key={allInspSym} value={allInspSym}><em>All</em></MenuItem>
               {

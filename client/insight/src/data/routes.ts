@@ -46,7 +46,7 @@ export enum RouteLocation {
 export const routeMap = {
   [RouteLocation.Dashboard]: '/',
   [RouteLocation.LoadMonitor]: '/station/loadunload/:num',
-  [RouteLocation.InspectionMonitor]: '/station/inspection/:type',
+  [RouteLocation.InspectionMonitor]: '/station/inspection',
   [RouteLocation.WashMonitor]: '/station/wash',
   [RouteLocation.CostPerPiece]: '/cost',
   [RouteLocation.Efficiency]: '/efficiency',
@@ -66,7 +66,11 @@ export type Action =
     }
   | {
       type: RouteLocation.InspectionMonitor,
-      payload: { type?: string },
+      meta?: {
+        query?: {
+         type?: string
+        }
+      },
     }
   | {
       type: RouteLocation.WashMonitor,
@@ -112,7 +116,7 @@ export function switchToStationMonitorPage(curSt: State): Action {
     case StationMonitorType.Inspection:
       return {
         type: RouteLocation.InspectionMonitor,
-        payload: { type: curSt.selected_insp_type },
+        meta: { query: {type: curSt.selected_insp_type } },
       };
 
     case StationMonitorType.Wash:
@@ -138,7 +142,7 @@ export function displayLoadStation(
 export function displayInspectionType(type: string | undefined): Action {
   return {
     type: RouteLocation.InspectionMonitor,
-    payload: { type },
+    meta: {query: { type }},
   };
 }
 
@@ -161,10 +165,11 @@ export function reducer(s: State, a: Action): State {
         station_free_material: query.free === null ? true : false
       };
     case RouteLocation.InspectionMonitor:
+      var iquery = (a.meta || {}).query || {};
       return {...s,
         current: RouteLocation.InspectionMonitor,
         station_monitor: StationMonitorType.Inspection,
-        selected_insp_type: a.payload.type,
+        selected_insp_type: iquery.type,
       };
     case RouteLocation.WashMonitor:
       return {...s,
