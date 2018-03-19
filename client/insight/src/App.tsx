@@ -53,23 +53,47 @@ const tabsStyle = {
   'flexGrow': 1
 };
 
+enum TabType {
+  Dashboard,
+  StationMonitor,
+  Efficiency,
+  CostPerPiece,
+}
+
 interface HeaderProps {
   routeState: routes.State;
-  setRoute: (l: routes.RouteLocation, curState: routes.State) => void;
+  setRoute: (l: TabType, curState: routes.State) => void;
 }
 
 function Header(p: HeaderProps) {
+    let tabType: TabType = TabType.Dashboard;
+    switch (p.routeState.current) {
+      case routes.RouteLocation.Dashboard:
+        tabType = TabType.Dashboard;
+        break;
+      case routes.RouteLocation.LoadMonitor:
+      case routes.RouteLocation.InspectionMonitor:
+      case routes.RouteLocation.WashMonitor:
+        tabType = TabType.StationMonitor;
+        break;
+      case routes.RouteLocation.Efficiency:
+        tabType = TabType.Efficiency;
+        break;
+      case routes.RouteLocation.CostPerPiece:
+        tabType = TabType.CostPerPiece;
+        break;
+    }
     const tabs = (full: boolean) => (
       <Tabs
         fullWidth={full}
         style={full ? {} : tabsStyle}
-        value={p.routeState.current}
+        value={tabType}
         onChange={(e, v) => p.setRoute(v, p.routeState)}
       >
-        <Tab label="Dashboard" value={routes.RouteLocation.Dashboard}/>
-        <Tab label="Station Monitor" value={routes.RouteLocation.StationMonitor}/>
-        <Tab label="Efficiency" value={routes.RouteLocation.Efficiency}/>
-        <Tab label="Cost/Piece" value={routes.RouteLocation.CostPerPiece}/>
+        <Tab label="Dashboard" value={TabType.Dashboard}/>
+        <Tab label="Station Monitor" value={TabType.StationMonitor}/>
+        <Tab label="Efficiency" value={TabType.Efficiency}/>
+        <Tab label="Cost/Piece" value={TabType.CostPerPiece}/>
       </Tabs>
     );
 
@@ -113,7 +137,7 @@ export interface AppProps {
   // tslint:disable-next-line:no-any
   loadCurrentStatus: () => any;
   // tslint:disable-next-line:no-any
-  setRoute: (r: routes.RouteLocation, curSt: routes.State) => any;
+  setRoute: (r: TabType, curSt: routes.State) => any;
 }
 
 export class App extends React.PureComponent<AppProps> {
@@ -131,7 +155,9 @@ export class App extends React.PureComponent<AppProps> {
       case routes.RouteLocation.Efficiency:
         page = <Efficiency/>;
         break;
-      case routes.RouteLocation.StationMonitor:
+      case routes.RouteLocation.LoadMonitor:
+      case routes.RouteLocation.InspectionMonitor:
+      case routes.RouteLocation.WashMonitor:
         page = <StationMonitor/>;
         break;
       case routes.RouteLocation.Dashboard:
@@ -155,11 +181,16 @@ export default connect(
   {
     loadLast30Days,
     loadCurrentStatus,
-    setRoute: (r: routes.RouteLocation, curSt: routes.State) => {
-      if (r === routes.RouteLocation.StationMonitor) {
-        return routes.switchToStationMonitorPage(curSt);
-      } else {
-        return { type: r };
+    setRoute: (r: TabType, curSt: routes.State) => {
+      switch (r) {
+        case TabType.Dashboard:
+          return { type: routes.RouteLocation.Dashboard };
+        case TabType.Efficiency:
+          return { type: routes.RouteLocation.Efficiency };
+        case TabType.CostPerPiece:
+          return { type: routes.RouteLocation.CostPerPiece };
+        case TabType.StationMonitor:
+          return routes.switchToStationMonitorPage(curSt);
       }
     }
   }

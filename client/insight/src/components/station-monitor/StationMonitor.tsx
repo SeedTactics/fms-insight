@@ -46,9 +46,9 @@ import { ConnectedMaterialDialog } from './Material';
 import { LoadStationData, selectLoadStationProps } from '../../data/load-station';
 
 export type StationMonitorData =
-  | { type: routes.SelectedStationType.LoadStation, data: LoadStationData }
-  | { type: routes.SelectedStationType.Inspection }
-  | { type: routes.SelectedStationType.Wash }
+  | { type: routes.StationMonitorType.LoadUnload, data: LoadStationData }
+  | { type: routes.StationMonitorType.Inspection }
+  | { type: routes.StationMonitorType.Wash }
   ;
 
 export interface StationMonitorProps {
@@ -64,11 +64,11 @@ function monitorElement(
     openMat: (m: Readonly<api.IInProcessMaterial>) => any
   ): JSX.Element {
   switch (data.type) {
-    case routes.SelectedStationType.LoadStation:
+    case routes.StationMonitorType.LoadUnload:
       return <LoadStation fillViewPort={fillViewport} {...data.data} openMat={openMat}/>;
-    case routes.SelectedStationType.Inspection:
+    case routes.StationMonitorType.Inspection:
       return <p>Inspection</p>;
-    case routes.SelectedStationType.Wash:
+    case routes.StationMonitorType.Wash:
       return <p>Wash</p>;
   }
 }
@@ -108,25 +108,25 @@ export const buildMonitorData = createSelector(
   (st: Store) => st.Current.current_status,
   (st: Store) => st.Route,
   (curStatus: Readonly<api.ICurrentStatus>, route: routes.State): StationMonitorData => {
-    switch (route.selected_station_type) {
-      case routes.SelectedStationType.LoadStation:
+    switch (route.station_monitor) {
+      case routes.StationMonitorType.LoadUnload:
         return {
-          type: routes.SelectedStationType.LoadStation,
+          type: routes.StationMonitorType.LoadUnload,
           data: selectLoadStationProps(
-            route.selected_station_id,
+            route.selected_load_id,
             route.station_queues,
             route.station_free_material,
             curStatus)
         };
 
-      case routes.SelectedStationType.Wash:
+      case routes.StationMonitorType.Wash:
         return {
-          type: routes.SelectedStationType.Wash
+          type: routes.StationMonitorType.Wash
         };
 
-      case routes.SelectedStationType.Inspection:
+      case routes.StationMonitorType.Inspection:
         return {
-          type: routes.SelectedStationType.Inspection
+          type: routes.StationMonitorType.Inspection
         };
     }
 

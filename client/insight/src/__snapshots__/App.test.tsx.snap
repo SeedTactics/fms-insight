@@ -8,9 +8,9 @@ exports[`cost per piece 1`] = `
     routeState={
       Object {
         "current": "ROUTE_CostPerPiece",
-        "selected_station_id": 5,
-        "selected_station_type": "loadunload",
+        "selected_load_id": 5,
         "station_free_material": false,
+        "station_monitor": "StationType_LoadUnload",
         "station_queues": Array [
           "q1",
           "q1",
@@ -63,23 +63,23 @@ exports[`cost per piece header 1`] = `
               "flexGrow": 1,
             }
           }
-          value="ROUTE_CostPerPiece"
+          value={3}
         >
           <WithStyles(Tab)
             label="Dashboard"
-            value="ROUTE_Dashboard"
+            value={0}
           />
           <WithStyles(Tab)
             label="Station Monitor"
-            value="ROUTE_StationMonitor"
+            value={1}
           />
           <WithStyles(Tab)
             label="Efficiency"
-            value="ROUTE_Efficiency"
+            value={2}
           />
           <WithStyles(Tab)
             label="Cost/Piece"
-            value="ROUTE_CostPerPiece"
+            value={3}
           />
         </WithStyles(Tabs)>
         <Connect(LoadingIcon) />
@@ -121,23 +121,23 @@ exports[`cost per piece header 1`] = `
         fullWidth={true}
         onChange={[Function]}
         style={Object {}}
-        value="ROUTE_CostPerPiece"
+        value={3}
       >
         <WithStyles(Tab)
           label="Dashboard"
-          value="ROUTE_Dashboard"
+          value={0}
         />
         <WithStyles(Tab)
           label="Station Monitor"
-          value="ROUTE_StationMonitor"
+          value={1}
         />
         <WithStyles(Tab)
           label="Efficiency"
-          value="ROUTE_Efficiency"
+          value={2}
         />
         <WithStyles(Tab)
           label="Cost/Piece"
-          value="ROUTE_CostPerPiece"
+          value={3}
         />
       </WithStyles(Tabs)>
     </WithStyles(AppBar)>
@@ -153,9 +153,9 @@ exports[`dashboard 1`] = `
     routeState={
       Object {
         "current": "ROUTE_Dashboard",
-        "selected_station_id": 5,
-        "selected_station_type": "loadunload",
+        "selected_load_id": 5,
         "station_free_material": false,
+        "station_monitor": "StationType_LoadUnload",
         "station_queues": Array [
           "q1",
           "q1",
@@ -208,23 +208,23 @@ exports[`dashboard header 1`] = `
               "flexGrow": 1,
             }
           }
-          value="ROUTE_Dashboard"
+          value={0}
         >
           <WithStyles(Tab)
             label="Dashboard"
-            value="ROUTE_Dashboard"
+            value={0}
           />
           <WithStyles(Tab)
             label="Station Monitor"
-            value="ROUTE_StationMonitor"
+            value={1}
           />
           <WithStyles(Tab)
             label="Efficiency"
-            value="ROUTE_Efficiency"
+            value={2}
           />
           <WithStyles(Tab)
             label="Cost/Piece"
-            value="ROUTE_CostPerPiece"
+            value={3}
           />
         </WithStyles(Tabs)>
         <Connect(LoadingIcon) />
@@ -266,23 +266,23 @@ exports[`dashboard header 1`] = `
         fullWidth={true}
         onChange={[Function]}
         style={Object {}}
-        value="ROUTE_Dashboard"
+        value={0}
       >
         <WithStyles(Tab)
           label="Dashboard"
-          value="ROUTE_Dashboard"
+          value={0}
         />
         <WithStyles(Tab)
           label="Station Monitor"
-          value="ROUTE_StationMonitor"
+          value={1}
         />
         <WithStyles(Tab)
           label="Efficiency"
-          value="ROUTE_Efficiency"
+          value={2}
         />
         <WithStyles(Tab)
           label="Cost/Piece"
-          value="ROUTE_CostPerPiece"
+          value={3}
         />
       </WithStyles(Tabs)>
     </WithStyles(AppBar)>
@@ -298,9 +298,9 @@ exports[`efficiency 1`] = `
     routeState={
       Object {
         "current": "ROUTE_Efficiency",
-        "selected_station_id": 5,
-        "selected_station_type": "loadunload",
+        "selected_load_id": 5,
         "station_free_material": false,
+        "station_monitor": "StationType_LoadUnload",
         "station_queues": Array [
           "q1",
           "q1",
@@ -353,23 +353,23 @@ exports[`efficiency header 1`] = `
               "flexGrow": 1,
             }
           }
-          value="ROUTE_Efficiency"
+          value={2}
         >
           <WithStyles(Tab)
             label="Dashboard"
-            value="ROUTE_Dashboard"
+            value={0}
           />
           <WithStyles(Tab)
             label="Station Monitor"
-            value="ROUTE_StationMonitor"
+            value={1}
           />
           <WithStyles(Tab)
             label="Efficiency"
-            value="ROUTE_Efficiency"
+            value={2}
           />
           <WithStyles(Tab)
             label="Cost/Piece"
-            value="ROUTE_CostPerPiece"
+            value={3}
           />
         </WithStyles(Tabs)>
         <Connect(LoadingIcon) />
@@ -411,23 +411,168 @@ exports[`efficiency header 1`] = `
         fullWidth={true}
         onChange={[Function]}
         style={Object {}}
-        value="ROUTE_Efficiency"
+        value={2}
       >
         <WithStyles(Tab)
           label="Dashboard"
-          value="ROUTE_Dashboard"
+          value={0}
         />
         <WithStyles(Tab)
           label="Station Monitor"
-          value="ROUTE_StationMonitor"
+          value={1}
         />
         <WithStyles(Tab)
           label="Efficiency"
-          value="ROUTE_Efficiency"
+          value={2}
         />
         <WithStyles(Tab)
           label="Cost/Piece"
-          value="ROUTE_CostPerPiece"
+          value={3}
+        />
+      </WithStyles(Tabs)>
+    </WithStyles(AppBar)>
+  </Hidden>
+</nav>
+`;
+
+exports[`inspection monitor 1`] = `
+<div
+  id="App"
+>
+  <Header
+    routeState={
+      Object {
+        "current": "ROUTE_Inspection",
+        "selected_load_id": 5,
+        "station_free_material": false,
+        "station_monitor": "StationType_Insp",
+        "station_queues": Array [
+          "q1",
+          "q1",
+        ],
+      }
+    }
+    setRoute={[Function]}
+  />
+  <Connect(StationMonitor) />
+</div>
+`;
+
+exports[`inspection monitor header 1`] = `
+<nav
+  id="navHeader"
+>
+  <Hidden
+    implementation="js"
+    lgDown={false}
+    lgUp={false}
+    mdDown={false}
+    mdUp={false}
+    smDown={true}
+    smUp={false}
+    xlDown={false}
+    xlUp={false}
+    xsDown={false}
+    xsUp={false}
+  >
+    <WithStyles(AppBar)
+      position="static"
+    >
+      <WithStyles(Toolbar)>
+        <WithStyles(Typography)
+          style={
+            Object {
+              "marginRight": "2em",
+            }
+          }
+          variant="title"
+        >
+          Insight
+        </WithStyles(Typography)>
+        <WithStyles(Tabs)
+          fullWidth={false}
+          onChange={[Function]}
+          style={
+            Object {
+              "alignSelf": "flex-end",
+              "flexGrow": 1,
+            }
+          }
+          value={1}
+        >
+          <WithStyles(Tab)
+            label="Dashboard"
+            value={0}
+          />
+          <WithStyles(Tab)
+            label="Station Monitor"
+            value={1}
+          />
+          <WithStyles(Tab)
+            label="Efficiency"
+            value={2}
+          />
+          <WithStyles(Tab)
+            label="Cost/Piece"
+            value={3}
+          />
+        </WithStyles(Tabs)>
+        <Connect(LoadingIcon) />
+      </WithStyles(Toolbar)>
+    </WithStyles(AppBar)>
+  </Hidden>
+  <Hidden
+    implementation="js"
+    lgDown={false}
+    lgUp={false}
+    mdDown={false}
+    mdUp={true}
+    smDown={false}
+    smUp={false}
+    xlDown={false}
+    xlUp={false}
+    xsDown={false}
+    xsUp={false}
+  >
+    <WithStyles(AppBar)
+      position="static"
+    >
+      <WithStyles(Toolbar)>
+        <WithStyles(Typography)
+          variant="title"
+        >
+          Insight
+        </WithStyles(Typography)>
+        <div
+          style={
+            Object {
+              "flex-grow": "1",
+            }
+          }
+        />
+        <Connect(LoadingIcon) />
+      </WithStyles(Toolbar)>
+      <WithStyles(Tabs)
+        fullWidth={true}
+        onChange={[Function]}
+        style={Object {}}
+        value={1}
+      >
+        <WithStyles(Tab)
+          label="Dashboard"
+          value={0}
+        />
+        <WithStyles(Tab)
+          label="Station Monitor"
+          value={1}
+        />
+        <WithStyles(Tab)
+          label="Efficiency"
+          value={2}
+        />
+        <WithStyles(Tab)
+          label="Cost/Piece"
+          value={3}
         />
       </WithStyles(Tabs)>
     </WithStyles(AppBar)>
@@ -442,10 +587,10 @@ exports[`station monitor 1`] = `
   <Header
     routeState={
       Object {
-        "current": "ROUTE_StationMonitor",
-        "selected_station_id": 5,
-        "selected_station_type": "loadunload",
+        "current": "ROUTE_LoadMonitor",
+        "selected_load_id": 5,
         "station_free_material": false,
+        "station_monitor": "StationType_LoadUnload",
         "station_queues": Array [
           "q1",
           "q1",
@@ -498,23 +643,23 @@ exports[`station monitor header 1`] = `
               "flexGrow": 1,
             }
           }
-          value="ROUTE_StationMonitor"
+          value={1}
         >
           <WithStyles(Tab)
             label="Dashboard"
-            value="ROUTE_Dashboard"
+            value={0}
           />
           <WithStyles(Tab)
             label="Station Monitor"
-            value="ROUTE_StationMonitor"
+            value={1}
           />
           <WithStyles(Tab)
             label="Efficiency"
-            value="ROUTE_Efficiency"
+            value={2}
           />
           <WithStyles(Tab)
             label="Cost/Piece"
-            value="ROUTE_CostPerPiece"
+            value={3}
           />
         </WithStyles(Tabs)>
         <Connect(LoadingIcon) />
@@ -556,23 +701,168 @@ exports[`station monitor header 1`] = `
         fullWidth={true}
         onChange={[Function]}
         style={Object {}}
-        value="ROUTE_StationMonitor"
+        value={1}
       >
         <WithStyles(Tab)
           label="Dashboard"
-          value="ROUTE_Dashboard"
+          value={0}
         />
         <WithStyles(Tab)
           label="Station Monitor"
-          value="ROUTE_StationMonitor"
+          value={1}
         />
         <WithStyles(Tab)
           label="Efficiency"
-          value="ROUTE_Efficiency"
+          value={2}
         />
         <WithStyles(Tab)
           label="Cost/Piece"
-          value="ROUTE_CostPerPiece"
+          value={3}
+        />
+      </WithStyles(Tabs)>
+    </WithStyles(AppBar)>
+  </Hidden>
+</nav>
+`;
+
+exports[`wash monitor 1`] = `
+<div
+  id="App"
+>
+  <Header
+    routeState={
+      Object {
+        "current": "ROUTE_Wash",
+        "selected_load_id": 5,
+        "station_free_material": false,
+        "station_monitor": "StationType_Wash",
+        "station_queues": Array [
+          "q1",
+          "q1",
+        ],
+      }
+    }
+    setRoute={[Function]}
+  />
+  <Connect(StationMonitor) />
+</div>
+`;
+
+exports[`wash monitor header 1`] = `
+<nav
+  id="navHeader"
+>
+  <Hidden
+    implementation="js"
+    lgDown={false}
+    lgUp={false}
+    mdDown={false}
+    mdUp={false}
+    smDown={true}
+    smUp={false}
+    xlDown={false}
+    xlUp={false}
+    xsDown={false}
+    xsUp={false}
+  >
+    <WithStyles(AppBar)
+      position="static"
+    >
+      <WithStyles(Toolbar)>
+        <WithStyles(Typography)
+          style={
+            Object {
+              "marginRight": "2em",
+            }
+          }
+          variant="title"
+        >
+          Insight
+        </WithStyles(Typography)>
+        <WithStyles(Tabs)
+          fullWidth={false}
+          onChange={[Function]}
+          style={
+            Object {
+              "alignSelf": "flex-end",
+              "flexGrow": 1,
+            }
+          }
+          value={1}
+        >
+          <WithStyles(Tab)
+            label="Dashboard"
+            value={0}
+          />
+          <WithStyles(Tab)
+            label="Station Monitor"
+            value={1}
+          />
+          <WithStyles(Tab)
+            label="Efficiency"
+            value={2}
+          />
+          <WithStyles(Tab)
+            label="Cost/Piece"
+            value={3}
+          />
+        </WithStyles(Tabs)>
+        <Connect(LoadingIcon) />
+      </WithStyles(Toolbar)>
+    </WithStyles(AppBar)>
+  </Hidden>
+  <Hidden
+    implementation="js"
+    lgDown={false}
+    lgUp={false}
+    mdDown={false}
+    mdUp={true}
+    smDown={false}
+    smUp={false}
+    xlDown={false}
+    xlUp={false}
+    xsDown={false}
+    xsUp={false}
+  >
+    <WithStyles(AppBar)
+      position="static"
+    >
+      <WithStyles(Toolbar)>
+        <WithStyles(Typography)
+          variant="title"
+        >
+          Insight
+        </WithStyles(Typography)>
+        <div
+          style={
+            Object {
+              "flex-grow": "1",
+            }
+          }
+        />
+        <Connect(LoadingIcon) />
+      </WithStyles(Toolbar)>
+      <WithStyles(Tabs)
+        fullWidth={true}
+        onChange={[Function]}
+        style={Object {}}
+        value={1}
+      >
+        <WithStyles(Tab)
+          label="Dashboard"
+          value={0}
+        />
+        <WithStyles(Tab)
+          label="Station Monitor"
+          value={1}
+        />
+        <WithStyles(Tab)
+          label="Efficiency"
+          value={2}
+        />
+        <WithStyles(Tab)
+          label="Cost/Piece"
+          value={3}
         />
       </WithStyles(Tabs)>
     </WithStyles(AppBar)>

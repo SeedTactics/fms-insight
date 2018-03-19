@@ -41,26 +41,21 @@ it("has the initial state", () => {
 
 it("changes to the station page", () => {
   let st = routes.reducer(routes.initial, {
-    type: routes.RouteLocation.StationMonitor,
-    payload: {
-      station: routes.SelectedStationType.Wash,
-      num: 12,
-    },
+    type: routes.RouteLocation.WashMonitor,
   });
 
   expect(st).toEqual({
-    current: routes.RouteLocation.StationMonitor,
-    selected_station_type: routes.SelectedStationType.Wash,
-    selected_station_id: 12,
+    current: routes.RouteLocation.WashMonitor,
+    station_monitor: routes.StationMonitorType.Wash,
+    selected_load_id: 1,
     station_queues: [],
     station_free_material: false,
   });
 
   // now one with queues
   st = routes.reducer(st, {
-    type: routes.RouteLocation.StationMonitor,
+    type: routes.RouteLocation.LoadMonitor,
     payload: {
-      station: routes.SelectedStationType.LoadStation,
       num: 4,
     },
     meta: {
@@ -71,18 +66,17 @@ it("changes to the station page", () => {
   });
 
   expect(st).toEqual({
-    current: routes.RouteLocation.StationMonitor,
-    selected_station_type: routes.SelectedStationType.LoadStation,
-    selected_station_id: 4,
+    current: routes.RouteLocation.LoadMonitor,
+    station_monitor: routes.StationMonitorType.LoadUnload,
+    selected_load_id: 4,
     station_queues: ["z", "y", "x"],
     station_free_material: false,
   });
 
   // now with free material
   st = routes.reducer(st, {
-    type: routes.RouteLocation.StationMonitor,
+    type: routes.RouteLocation.LoadMonitor,
     payload: {
-      station: routes.SelectedStationType.LoadStation,
       num: 6,
     },
     meta: {
@@ -94,9 +88,9 @@ it("changes to the station page", () => {
   });
 
   expect(st).toEqual({
-    current: routes.RouteLocation.StationMonitor,
-    selected_station_type: routes.SelectedStationType.LoadStation,
-    selected_station_id: 6,
+    current: routes.RouteLocation.LoadMonitor,
+    station_monitor: routes.StationMonitorType.LoadUnload,
+    selected_load_id: 6,
     station_queues: ["w"],
     station_free_material: true,
   });
@@ -110,9 +104,9 @@ it("transitions to the cost/piece, dashboard, and efficiency pages", () => {
     routes.RouteLocation.Efficiency
   ];
   const initialSt = {
-    current: routes.RouteLocation.StationMonitor,
-    selected_station_type: routes.SelectedStationType.Inspection,
-    selected_station_id: 2,
+    current: routes.RouteLocation.LoadMonitor,
+    station_monitor: routes.StationMonitorType.LoadUnload,
+    selected_load_id: 2,
     station_queues: ["a", "b"],
     station_free_material: false,
   };

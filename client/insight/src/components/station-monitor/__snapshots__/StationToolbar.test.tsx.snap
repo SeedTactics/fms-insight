@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`inspection toolbar 1`] = `
+exports[`inspection all toolbar 1`] = `
 <nav
   style={
     Object {
@@ -18,25 +18,26 @@ exports[`inspection toolbar 1`] = `
     <WithStyles(Select)
       autoWidth={true}
       onChange={[Function]}
-      value="inspection"
+      value="StationType_Insp"
     >
       <WithStyles(MenuItem)
-        value="loadunload"
+        value="StationType_LoadUnload"
       >
         Load Station
       </WithStyles(MenuItem)>
       <WithStyles(MenuItem)
-        value="inspection"
+        value="StationType_Insp"
       >
         Inspection
       </WithStyles(MenuItem)>
       <WithStyles(MenuItem)
-        value="wash"
+        value="StationType_Wash"
       >
         Wash
       </WithStyles(MenuItem)>
     </WithStyles(Select)>
-    <WithStyles(Input)
+    <WithStyles(Select)
+      key="inspselect"
       onChange={[Function]}
       style={
         Object {
@@ -44,41 +45,104 @@ exports[`inspection toolbar 1`] = `
           "width": "3em",
         }
       }
-      type="number"
-      value={4}
-    />
-  </div>
-  <div>
-    <WithStyles(Select)
-      autoWidth={true}
-      multiple={true}
-      onChange={[Function]}
-      value={
-        Array [
-          "a",
-        ]
-      }
+      value="@@all_inspection_display@@"
     >
       <WithStyles(MenuItem)
-        key="@@insight_free_material@@"
-        value="@@insight_free_material@@"
+        key="@@all_inspection_display@@"
+        value="@@all_inspection_display@@"
       >
-        Free Material
+        <em>
+          All
+        </em>
       </WithStyles(MenuItem)>
       <WithStyles(MenuItem)
-        key="0"
-        value="a"
+        key="i1"
+        value="i1"
       >
-        a
+        i1
       </WithStyles(MenuItem)>
       <WithStyles(MenuItem)
-        key="1"
-        value="b"
+        key="i2"
+        value="i2"
       >
-        b
+        i2
       </WithStyles(MenuItem)>
     </WithStyles(Select)>
   </div>
+  <div />
+</nav>
+`;
+
+exports[`inspection i1 selected toolbar 1`] = `
+<nav
+  style={
+    Object {
+      "alignItems": "center",
+      "backgroundColor": "#E0E0E0",
+      "display": "flex",
+      "height": "2.5em",
+      "justifyContent": "space-evenly",
+      "paddingLeft": "24px",
+      "paddingRight": "24px",
+    }
+  }
+>
+  <div>
+    <WithStyles(Select)
+      autoWidth={true}
+      onChange={[Function]}
+      value="StationType_Insp"
+    >
+      <WithStyles(MenuItem)
+        value="StationType_LoadUnload"
+      >
+        Load Station
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="StationType_Insp"
+      >
+        Inspection
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="StationType_Wash"
+      >
+        Wash
+      </WithStyles(MenuItem)>
+    </WithStyles(Select)>
+    <WithStyles(Select)
+      key="inspselect"
+      onChange={[Function]}
+      style={
+        Object {
+          "marginLeft": "1em",
+          "width": "3em",
+        }
+      }
+      value="@@all_inspection_display@@"
+    >
+      <WithStyles(MenuItem)
+        key="@@all_inspection_display@@"
+        value="@@all_inspection_display@@"
+      >
+        <em>
+          All
+        </em>
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        key="i1"
+        value="i1"
+      >
+        i1
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        key="i2"
+        value="i2"
+      >
+        i2
+      </WithStyles(MenuItem)>
+    </WithStyles(Select)>
+  </div>
+  <div />
 </nav>
 `;
 
@@ -100,25 +164,26 @@ exports[`load toolbar 1`] = `
     <WithStyles(Select)
       autoWidth={true}
       onChange={[Function]}
-      value="inspection"
+      value="StationType_LoadUnload"
     >
       <WithStyles(MenuItem)
-        value="loadunload"
+        value="StationType_LoadUnload"
       >
         Load Station
       </WithStyles(MenuItem)>
       <WithStyles(MenuItem)
-        value="inspection"
+        value="StationType_Insp"
       >
         Inspection
       </WithStyles(MenuItem)>
       <WithStyles(MenuItem)
-        value="wash"
+        value="StationType_Wash"
       >
         Wash
       </WithStyles(MenuItem)>
     </WithStyles(Select)>
     <WithStyles(Input)
+      key="loadnumselect"
       onChange={[Function]}
       style={
         Object {
@@ -133,6 +198,7 @@ exports[`load toolbar 1`] = `
   <div>
     <WithStyles(Select)
       autoWidth={true}
+      key="queueselect"
       multiple={true}
       onChange={[Function]}
       value={
@@ -178,6 +244,158 @@ exports[`load toolbar 1`] = `
 </nav>
 `;
 
+exports[`load with no queues 1`] = `
+<nav
+  style={
+    Object {
+      "alignItems": "center",
+      "backgroundColor": "#E0E0E0",
+      "display": "flex",
+      "height": "2.5em",
+      "justifyContent": "space-evenly",
+      "paddingLeft": "24px",
+      "paddingRight": "24px",
+    }
+  }
+>
+  <div>
+    <WithStyles(Select)
+      autoWidth={true}
+      onChange={[Function]}
+      value="StationType_LoadUnload"
+    >
+      <WithStyles(MenuItem)
+        value="StationType_LoadUnload"
+      >
+        Load Station
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="StationType_Insp"
+      >
+        Inspection
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="StationType_Wash"
+      >
+        Wash
+      </WithStyles(MenuItem)>
+    </WithStyles(Select)>
+    <WithStyles(Input)
+      key="loadnumselect"
+      onChange={[Function]}
+      style={
+        Object {
+          "marginLeft": "1em",
+          "width": "3em",
+        }
+      }
+      type="number"
+      value={4}
+    />
+  </div>
+  <div>
+    <WithStyles(Select)
+      autoWidth={true}
+      key="queueselect"
+      multiple={true}
+      onChange={[Function]}
+      value={Array []}
+    >
+      <WithStyles(MenuItem)
+        key="@@insight_free_material@@"
+        value="@@insight_free_material@@"
+      >
+        Free Material
+      </WithStyles(MenuItem)>
+    </WithStyles(Select)>
+  </div>
+</nav>
+`;
+
+exports[`load with one queue 1`] = `
+<nav
+  style={
+    Object {
+      "alignItems": "center",
+      "backgroundColor": "#E0E0E0",
+      "display": "flex",
+      "height": "2.5em",
+      "justifyContent": "space-evenly",
+      "paddingLeft": "24px",
+      "paddingRight": "24px",
+    }
+  }
+>
+  <div>
+    <WithStyles(Select)
+      autoWidth={true}
+      onChange={[Function]}
+      value="StationType_LoadUnload"
+    >
+      <WithStyles(MenuItem)
+        value="StationType_LoadUnload"
+      >
+        Load Station
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="StationType_Insp"
+      >
+        Inspection
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="StationType_Wash"
+      >
+        Wash
+      </WithStyles(MenuItem)>
+    </WithStyles(Select)>
+    <WithStyles(Input)
+      key="loadnumselect"
+      onChange={[Function]}
+      style={
+        Object {
+          "marginLeft": "1em",
+          "width": "3em",
+        }
+      }
+      type="number"
+      value={4}
+    />
+  </div>
+  <div>
+    <WithStyles(Select)
+      autoWidth={true}
+      key="queueselect"
+      multiple={true}
+      onChange={[Function]}
+      value={
+        Array [
+          "a",
+        ]
+      }
+    >
+      <WithStyles(MenuItem)
+        key="@@insight_free_material@@"
+        value="@@insight_free_material@@"
+      >
+        Free Material
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        key="0"
+        value="a"
+      >
+        a
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        key="1"
+        value="b"
+      >
+        b
+      </WithStyles(MenuItem)>
+    </WithStyles(Select)>
+  </div>
+</nav>
+`;
+
 exports[`wash toolbar 1`] = `
 <nav
   style={
@@ -196,50 +414,25 @@ exports[`wash toolbar 1`] = `
     <WithStyles(Select)
       autoWidth={true}
       onChange={[Function]}
-      value="wash"
+      value="StationType_Wash"
     >
       <WithStyles(MenuItem)
-        value="loadunload"
+        value="StationType_LoadUnload"
       >
         Load Station
       </WithStyles(MenuItem)>
       <WithStyles(MenuItem)
-        value="inspection"
+        value="StationType_Insp"
       >
         Inspection
       </WithStyles(MenuItem)>
       <WithStyles(MenuItem)
-        value="wash"
+        value="StationType_Wash"
       >
         Wash
       </WithStyles(MenuItem)>
     </WithStyles(Select)>
-    <WithStyles(Input)
-      onChange={[Function]}
-      style={
-        Object {
-          "marginLeft": "1em",
-          "width": "3em",
-        }
-      }
-      type="number"
-      value={4}
-    />
   </div>
-  <div>
-    <WithStyles(Select)
-      autoWidth={true}
-      multiple={true}
-      onChange={[Function]}
-      value={Array []}
-    >
-      <WithStyles(MenuItem)
-        key="@@insight_free_material@@"
-        value="@@insight_free_material@@"
-      >
-        Free Material
-      </WithStyles(MenuItem)>
-    </WithStyles(Select)>
-  </div>
+  <div />
 </nav>
 `;

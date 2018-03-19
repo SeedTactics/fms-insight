@@ -37,11 +37,19 @@ import { App, AppProps } from './App';
 import * as routes from './data/routes';
 
 function appProps(current: routes.RouteLocation): AppProps {
+  let monitor: routes.StationMonitorType = routes.StationMonitorType.LoadUnload;
+  switch (current) {
+    case routes.RouteLocation.InspectionMonitor:
+      monitor = routes.StationMonitorType.Inspection;
+      break;
+    case routes.RouteLocation.WashMonitor:
+      monitor = routes.StationMonitorType.Wash;
+  }
   return {
     route: {
       current,
-      selected_station_type: routes.SelectedStationType.LoadStation,
-      selected_station_id: 5,
+      station_monitor: monitor,
+      selected_load_id: 5,
       station_queues: ["q1", "q1"],
       station_free_material: false,
     },
@@ -68,12 +76,28 @@ it('renders the dashboard', () => {
   expect(props.setRoute).toHaveBeenCalledWith(routes.RouteLocation.CostPerPiece, props.route);
 });
 
-it('renders the station monitor', () => {
-  const props = appProps(routes.RouteLocation.StationMonitor);
+it('renders the load monitor', () => {
+  const props = appProps(routes.RouteLocation.LoadMonitor);
   const val = shallow(<App {...props}/>);
   const header = val.find("Header").dive();
   expect(val).toMatchSnapshot("station monitor");
   expect(header).toMatchSnapshot("station monitor header");
+});
+
+it('renders the inspection monitor', () => {
+  const props = appProps(routes.RouteLocation.InspectionMonitor);
+  const val = shallow(<App {...props}/>);
+  const header = val.find("Header").dive();
+  expect(val).toMatchSnapshot("inspection monitor");
+  expect(header).toMatchSnapshot("inspection monitor header");
+});
+
+it('renders the wash monitor', () => {
+  const props = appProps(routes.RouteLocation.WashMonitor);
+  const val = shallow(<App {...props}/>);
+  const header = val.find("Header").dive();
+  expect(val).toMatchSnapshot("wash monitor");
+  expect(header).toMatchSnapshot("wash monitor header");
 });
 
 it('renders the cost per piece', () => {
