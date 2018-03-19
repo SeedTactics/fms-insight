@@ -37,6 +37,7 @@ import * as events from './events';
 import * as gui from './gui-state';
 import * as routes from './routes';
 import * as mat from './material-details';
+import * as websocket from './websocket';
 import { pledgeMiddleware } from './pledge';
 
 import { connectRoutes, LocationState } from 'redux-first-router';
@@ -64,10 +65,11 @@ export interface Store {
   readonly Gui: gui.State;
   readonly MaterialDetails: mat.State;
   readonly Route: routes.State;
+  readonly Websocket: websocket.State;
   readonly location: LocationState;
 }
 
-export default createStore<Store>(
+const store = createStore<Store>(
   combineReducers<Store>(
     {
       Current: currentStatus.reducer,
@@ -75,6 +77,7 @@ export default createStore<Store>(
       Gui: gui.reducer,
       MaterialDetails: mat.reducer,
       Route: routes.reducer,
+      Websocket: websocket.reducer,
       location: router.reducer,
     }
   ),
@@ -87,3 +90,7 @@ export default createStore<Store>(
     devTools
   )
 );
+
+websocket.openWebsocket(a => store.dispatch(a), () => store.getState().Events);
+
+export default store;

@@ -90,9 +90,11 @@ export const initial: State = {
 export enum ActionType {
     SetAnalysisLast30Days = 'Events_SetAnalysisLast30Days',
     SetAnalysisMonth = 'Events_SetAnalysisMonth',
-    LoadLast30Days = 'Events_LoadLast30Days',
+    LoadRecentEvents = 'Events_LoadRecentEvents',
     LoadAnalysisSpecificMonth = 'Events_LoadAnalysisMonth',
     SetSystemHours = 'Events_SetSystemHours',
+    ReceiveNewEvents = 'Events_NewEvents',
+    Refresh = 'Events_Refresh',
     Other = 'Other',
 }
 
@@ -100,12 +102,13 @@ export enum ActionType {
 export type Action =
   | {type: ActionType.SetAnalysisLast30Days }
   | {type: ActionType.SetAnalysisMonth, month: Date }
-  | {type: ActionType.LoadLast30Days, now: Date, pledge: ConsumingPledge<ReadonlyArray<Readonly<api.ILogEntry>>>}
+  | {type: ActionType.LoadRecentEvents, now: Date, pledge: ConsumingPledge<ReadonlyArray<Readonly<api.ILogEntry>>>}
   | {
       type: ActionType.LoadAnalysisSpecificMonth,
       month: Date,
       pledge: ConsumingPledge<ReadonlyArray<Readonly<api.ILogEntry>>>
     }
+  | {type: ActionType.ReceiveNewEvents, now: Date, events: ReadonlyArray<Readonly<api.ILogEntry>>}
   | {type: ActionType.SetSystemHours, hours: number}
   | {type: ActionType.Other}
   ;
@@ -115,9 +118,25 @@ export function loadLast30Days() /*: Action<ActionUse.CreatingAction> */ {
     var now = new Date();
     var thirtyDaysAgo = addDays(now, -30);
     return {
-        type: ActionType.LoadLast30Days,
+        type: ActionType.LoadRecentEvents,
         now: now,
         pledge: client.get(thirtyDaysAgo, now)
+    };
+}
+
+export function refreshEvents(lastCounter: number) {
+    var client = new api.LogClient();
+    var now = new Date();
+    return {
+        type: ActionType.LoadRecentEvents,
+        now: now,
+        pledge: client.recent(lastCounter)
+    };
+}
+
+export function receiveNewEvents(events: ReadonlyArray<Readonly<api.ILogEntry>>): Action {
+    return {
+        type: ActionType.ReceiveNewEvents, now: new Date(), events
     };
 }
 
@@ -197,7 +216,7 @@ function processSpecificMonth(evts: Iterable<api.ILogEntry>, s: AnalysisMonth): 
 export function reducer(s: State, a: Action): State {
     if (s === undefined) { return initial; }
     switch (a.type) {
-        case ActionType.LoadLast30Days:
+        case ActionType.LoadRecentEvents:
             switch (a.pledge.status) {
                 case PledgeStatus.Starting:
                     return {...s, loading_events: true, loading_error: undefined};
@@ -210,6 +229,11 @@ export function reducer(s: State, a: Action): State {
                     return {...s, loading_events: false, loading_error: a.pledge.error};
                 default: return s;
             }
+
+        case ActionType.ReceiveNewEvents:
+            return {...s,
+                last30: processRecentEvents(a.now, a.events, s.last30)
+            };
 
         case ActionType.SetSystemHours:
             return {...s,

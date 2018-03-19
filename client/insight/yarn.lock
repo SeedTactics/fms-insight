@@ -75,6 +75,10 @@
   version "16.0.40"
   resolved "https://registry.yarnpkg.com/@types/react/-/react-16.0.40.tgz#caabc2296886f40b67f6fc80f0f3464476461df9"
 
+"@types/reconnectingwebsocket@^1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@types/reconnectingwebsocket/-/reconnectingwebsocket-1.0.1.tgz#56c6f19136ba265c16e7b2dc1bfbb97960a869d5"
+
 "@types/redux-first-router@^1.10.2":
   version "1.10.2"
   resolved "https://registry.yarnpkg.com/@types/redux-first-router/-/redux-first-router-1.10.2.tgz#52810287cb707de6b49f8d4fb470828da4377898"
@@ -5654,6 +5658,10 @@ recompose@^0.26.0:
     fbjs "^0.8.1"
     hoist-non-react-statics "^2.3.1"
     symbol-observable "^1.0.4"
+
+reconnecting-websocket@^3.2.2:
+  version "3.2.2"
+  resolved "https://registry.yarnpkg.com/reconnecting-websocket/-/reconnecting-websocket-3.2.2.tgz#8097514e926e9855e03c39e76efa2e3d1f371bee"
 
 recursive-readdir@2.2.1:
   version "2.2.1"
