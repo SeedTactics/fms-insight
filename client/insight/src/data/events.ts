@@ -94,7 +94,6 @@ export enum ActionType {
     LoadAnalysisSpecificMonth = 'Events_LoadAnalysisMonth',
     SetSystemHours = 'Events_SetSystemHours',
     ReceiveNewEvents = 'Events_NewEvents',
-    Refresh = 'Events_Refresh',
     Other = 'Other',
 }
 
