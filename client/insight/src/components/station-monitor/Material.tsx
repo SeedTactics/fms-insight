@@ -40,6 +40,7 @@ import ButtonBase from 'material-ui/ButtonBase';
 import Button from 'material-ui/Button';
 import Tooltip from 'material-ui/Tooltip';
 import WarningIcon from 'material-ui-icons/Warning';
+import Avatar from 'material-ui/Avatar';
 import { CircularProgress } from 'material-ui/Progress';
 import Dialog, {
   DialogActions,
@@ -135,14 +136,22 @@ export function Material(props: MaterialProps) {
                 </div>
             }
           </div>
-          {
-            props.mat.signaledInspections.length === 0 ? undefined :
-              <div>
-                <Tooltip title={inspections}>
-                  <WarningIcon/>
-                </Tooltip>
-              </div>
-          }
+          <div style={{marginLeft: '4px'}}>
+            {props.mat.serial && props.mat.serial.length >= 1 ?
+              <Avatar style={{width: "30px", height: "30px"}}>
+                {props.mat.serial.substr(props.mat.serial.length - 1, 1)}
+              </Avatar>
+              : undefined
+            }
+            {
+              props.mat.signaledInspections.length === 0 ? undefined :
+                <div>
+                  <Tooltip title={inspections}>
+                    <WarningIcon/>
+                  </Tooltip>
+                </div>
+            }
+          </div>
         </div>
       </ButtonBase>
     </Paper>

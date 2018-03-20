@@ -39,12 +39,11 @@ import * as im from 'immutable';
 import { createSelector } from 'reselect';
 
 import { MaterialList, LoadStationData, selectLoadStationProps } from '../../data/load-station';
-import { Material } from './Material';
+import { Material, ConnectedMaterialDialog } from './Material';
 import * as api from '../../data/api';
 import * as routes from '../../data/routes';
 import { Store } from '../../data/store';
 import * as matDetails from '../../data/material-details';
-import { ConnectedMaterialDialog } from './Material';
 
 const materialStyle = withStyles(() => ({
   container: {
