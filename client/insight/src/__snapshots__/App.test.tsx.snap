@@ -454,7 +454,9 @@ exports[`inspection monitor 1`] = `
     }
     setRoute={[Function]}
   />
-  <Connect(StationMonitor) />
+  <StationMonitor
+    monitor_type="StationType_Insp"
+  />
 </div>
 `;
 
@@ -599,7 +601,9 @@ exports[`station monitor 1`] = `
     }
     setRoute={[Function]}
   />
-  <Connect(StationMonitor) />
+  <StationMonitor
+    monitor_type="StationType_LoadUnload"
+  />
 </div>
 `;
 
@@ -744,7 +748,9 @@ exports[`wash monitor 1`] = `
     }
     setRoute={[Function]}
   />
-  <Connect(StationMonitor) />
+  <StationMonitor
+    monitor_type="StationType_Wash"
+  />
 </div>
 `;
 
