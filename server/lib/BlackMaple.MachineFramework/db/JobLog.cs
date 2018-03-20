@@ -394,8 +394,7 @@ namespace BlackMaple.MachineFramework
         #endregion
 
         #region Event
-        public delegate void NewStationCycleHandler(MachineWatchInterface.LogEntry log, string foreignID);
-        public event NewStationCycleHandler NewStationCycle;
+        public event MachineWatchInterface.NewLogEntryDelegate NewLogEntry;
         #endregion
 
         #region Loading
@@ -1202,8 +1201,8 @@ namespace BlackMaple.MachineFramework
                 }
             }
 
-            if (NewStationCycle != null)
-                NewStationCycle(log, foreignID);
+            if (NewLogEntry != null)
+                NewLogEntry(log, foreignID);
 
             return log;
         }
@@ -1228,9 +1227,9 @@ namespace BlackMaple.MachineFramework
                 }
             }
 
-            if (NewStationCycle != null)
+            if (NewLogEntry != null)
                 foreach (var log in results)
-                    NewStationCycle(log, foreignID);
+                    NewLogEntry(log, foreignID);
         }
 
         public MachineWatchInterface.LogEntry AddStationCycle(IDbTransaction trans, MachineWatchInterface.LogEntry log, string foreignID, string origMessage)
@@ -1395,8 +1394,8 @@ namespace BlackMaple.MachineFramework
                     throw;
                 }
             }
-            if (NewStationCycle != null)
-                NewStationCycle(log, "");
+            if (NewLogEntry != null)
+                NewLogEntry(log, "");
             return log;
         }
 
@@ -1467,8 +1466,8 @@ namespace BlackMaple.MachineFramework
                     throw;
                 }
             }
-            if (NewStationCycle != null)
-                NewStationCycle(log, "");
+            if (NewLogEntry != null)
+                NewLogEntry(log, "");
             return log;
         }
 
@@ -1528,8 +1527,8 @@ namespace BlackMaple.MachineFramework
                     throw;
                 }
             }
-            if (NewStationCycle != null)
-                NewStationCycle(log, "");
+            if (NewLogEntry != null)
+                NewLogEntry(log, "");
             return log;
         }
 
@@ -1586,8 +1585,8 @@ namespace BlackMaple.MachineFramework
                     throw;
                 }
             }
-            if (NewStationCycle != null)
-                NewStationCycle(log, "");
+            if (NewLogEntry != null)
+                NewLogEntry(log, "");
             return log;
         }
 
@@ -1637,8 +1636,8 @@ namespace BlackMaple.MachineFramework
                     throw;
                 }
             }
-            if (NewStationCycle != null)
-                NewStationCycle(log, "");
+            if (NewLogEntry != null)
+                NewLogEntry(log, "");
             return log;
         }
 

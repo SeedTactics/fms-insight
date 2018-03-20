@@ -92,10 +92,11 @@ namespace MachineWatchApiServer.Controllers
       _serSettings = new Newtonsoft.Json.JsonSerializerSettings();
       _serSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
       _serSettings.ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver();
-      //TODO: register HandleLogEvent
+
+      _log.NewLogEntry += HandleLogEvent;
     }
 
-    private void HandleLogEvent(LogEntry e) {
+    private void HandleLogEvent(LogEntry e, string foreignId) {
       var data = Newtonsoft.Json.JsonConvert.SerializeObject(e, Newtonsoft.Json.Formatting.None, _serSettings);
       var encoded = System.Text.Encoding.UTF8.GetBytes(data);
       var buffer = new ArraySegment<Byte>(encoded, 0, encoded.Length);
@@ -138,7 +139,7 @@ namespace MachineWatchApiServer.Controllers
       var tasks = new List<Task>();
       var sockets = _sockets.Clear();
 
-      //TODO: remove HandleLogEvent
+      _log.NewLogEntry -= HandleLogEvent;
 
       foreach (var ws in sockets) {
         var tokenSource = new CancellationTokenSource();

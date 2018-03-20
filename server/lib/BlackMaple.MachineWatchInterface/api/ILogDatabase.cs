@@ -40,6 +40,8 @@ using System.Threading.Tasks;
 
 namespace BlackMaple.MachineWatchInterface
 {
+    public delegate void NewLogEntryDelegate(LogEntry e, string foreignId);
+
     public interface ILogDatabase
     {
         List<LogEntry> GetLogEntries(DateTime startUTC, DateTime endUTC);
@@ -67,6 +69,8 @@ namespace BlackMaple.MachineWatchInterface
           IDictionary<string, string> extraData,
           TimeSpan elapsed,
           TimeSpan active);
+
+        event NewLogEntryDelegate NewLogEntry;
     }
 }
 
