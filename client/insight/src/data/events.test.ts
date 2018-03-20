@@ -90,7 +90,7 @@ it('responds to error', () => {
   expect(st.selected_month).toBe(events.initial.selected_month);
 });
 
-it('processes new log events into last30', () => {
+function procNewEvents(evtsToAction: (now: Date, newEvts: ReadonlyArray<ILogEntry>) => events.Action) {
   var now = new Date(2018, 1, 2, 3, 4, 5);
 
   // start with cycles from 27 days ago, 2 days ago, and today
@@ -117,14 +117,8 @@ it('processes new log events into last30', () => {
   const sixDaysCycle = fakeCycle(sixDays, 12, "part111", 1, 'palcc');
   st = events.reducer(
     st,
-    {
-      type: events.ActionType.LoadRecentEvents,
-      now: sixDays,
-      pledge: {
-        status: PledgeStatus.Completed,
-        result: sixDaysCycle
-      }
-    });
+    evtsToAction(sixDays, sixDaysCycle)
+  );
 
   // twentySevenDaysAgo should have been filtered out
 
@@ -143,6 +137,27 @@ it('processes new log events into last30', () => {
     }
   );
   expect(newSt.last30).toBe(st.last30);
+}
+
+it('processes new log events into last30', () => {
+  procNewEvents((now, evts) =>
+    ({
+      type: events.ActionType.LoadRecentEvents,
+      now,
+      pledge: {
+        status: PledgeStatus.Completed,
+        result: evts
+      }
+    }));
+});
+
+it("refreshes new events into last30", () => {
+  procNewEvents((now, evts) =>
+    ({
+      type: events.ActionType.ReceiveNewEvents,
+      now,
+      events: evts
+    }));
 });
 
 it("starts loading a specific month for analysis", () => {
