@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using BlackMaple.MachineWatchInterface;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -107,12 +108,16 @@ namespace MachineWatchApiServer
             services.AddSingleton<BlackMaple.MachineWatch.RemotingServer>(machServer);
             #endif
 
-            services.AddSingleton<IPlugin>(plugin);
-            services.AddSingleton<IStoreSettings>(settings);
-            services.AddSingleton<BlackMaple.MachineWatchInterface.IServerBackend>(
-                plugin.Backend);
+            services
+                .AddSingleton<IPlugin>(plugin)
+                .AddSingleton<IStoreSettings>(settings)
+                .AddSingleton<BlackMaple.MachineWatchInterface.IServerBackend>(plugin.Backend)
+                .AddSingleton<Controllers.WebsocketManager>(
+                    new Controllers.WebsocketManager(plugin.Backend.LogDatabase())
+                );
 
-            services.AddMvcCore()
+            services
+                .AddMvcCore()
                 .AddApiExplorer()
                 .AddFormatterMappings()
                 .AddJsonFormatters()
@@ -128,10 +133,28 @@ namespace MachineWatchApiServer
             IPlugin plugin,
             IApplicationLifetime lifetime,
             IHostingEnvironment env,
-            IServiceProvider services)
+            IServiceProvider services,
+            Controllers.WebsocketManager wsManager)
         {
             app.UseMvc();
             app.UseStaticFiles();
+
+            app.UseWebSockets();
+            app.Use(async (context, next) => {
+                if (context.Request.Path == "/api/v1/events")
+                {
+                    if (context.WebSockets.IsWebSocketRequest)
+                    {
+                        var ws = await context.WebSockets.AcceptWebSocketAsync();
+                        await wsManager.HandleWebsocket(ws);
+                    } else {
+                        context.Response.StatusCode = 400;
+                    }
+                } else {
+                    await next();
+                }
+            });
+
             app.UseSwaggerUi3(typeof(Startup).Assembly,
                 new SwaggerUi3Settings() {
                     Title = "MachineWatch",
@@ -144,8 +167,10 @@ namespace MachineWatchApiServer
                     }
                 });
 
-            lifetime.ApplicationStopping.Register(() => {
+
+            lifetime.ApplicationStopping.Register(async () => {
                 if (plugin == null) return;
+                await wsManager.CloseAll();
                 plugin.Backend?.Halt();
                 foreach (var w in plugin.Workers)
                     w.Halt();

@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import ReconnectingWebSocket from 'reconnectingwebsocket';
+import ReconnectingWebSocket from 'reconnecting-websocket';
 import * as redux from 'redux';
 import * as events from './events';
 import { LogEntry } from './api';

@@ -2,7 +2,15 @@
   "name": "insight",
   "version": "0.1.0",
   "private": true,
-  "proxy": "http://localhost:5000",
+  "proxy": {
+    "/api/v1/events": {
+      "target": "ws://localhost:5000",
+      "ws": true
+    },
+    "/*": {
+      "target": "http://localhost:5000"
+    }
+  },
   "dependencies": {
     "date-fns": "^1.29.0",
     "history": "^4.7.2",
@@ -44,7 +52,6 @@
     "@types/react-dom": "^16.0.3",
     "@types/react-redux": "^5.0.14",
     "@types/redux-first-router": "^1.10.2",
-    "@types/reconnectingwebsocket": "^1.0.1",
     "enzyme": "^3.3.0",
     "enzyme-adapter-react-16": "^1.1.1",
     "enzyme-to-json": "^3.3.1",

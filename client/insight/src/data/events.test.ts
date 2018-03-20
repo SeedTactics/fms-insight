@@ -59,7 +59,7 @@ it('responds to loading', () => {
   let st = events.reducer(
     {...events.initial, loading_error: new Error('hello')},
     {
-      type: events.ActionType.LoadLast30Days,
+      type: events.ActionType.LoadRecentEvents,
       now: new Date(),
       pledge: {
         status: PledgeStatus.Starting
@@ -76,7 +76,7 @@ it('responds to error', () => {
   let st = events.reducer(
     {...events.initial, loading_events: true},
     {
-      type: events.ActionType.LoadLast30Days,
+      type: events.ActionType.LoadRecentEvents,
       now: new Date(),
       pledge: {
         status: PledgeStatus.Error,
@@ -102,7 +102,7 @@ it('processes new log events into last30', () => {
   let st = events.reducer(
     events.initial,
     {
-      type: events.ActionType.LoadLast30Days,
+      type: events.ActionType.LoadRecentEvents,
       now: now,
       pledge: {
         status: PledgeStatus.Completed,
@@ -118,7 +118,7 @@ it('processes new log events into last30', () => {
   st = events.reducer(
     st,
     {
-      type: events.ActionType.LoadLast30Days,
+      type: events.ActionType.LoadRecentEvents,
       now: sixDays,
       pledge: {
         status: PledgeStatus.Completed,
@@ -134,7 +134,7 @@ it('processes new log events into last30', () => {
   let newSt = events.reducer(
     st,
     {
-      type: events.ActionType.LoadLast30Days,
+      type: events.ActionType.LoadRecentEvents,
       now: sixDays,
       pledge: {
         status: PledgeStatus.Completed,
@@ -224,7 +224,7 @@ it("bins actual cycles by day", () => {
   const st = events.reducer(
     events.initial,
     {
-      type: events.ActionType.LoadLast30Days,
+      type: events.ActionType.LoadRecentEvents,
       now: addDays(now, 1),
       pledge: {
         status: PledgeStatus.Completed,
