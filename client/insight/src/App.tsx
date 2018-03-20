@@ -156,9 +156,13 @@ export class App extends React.PureComponent<AppProps> {
         page = <Efficiency/>;
         break;
       case routes.RouteLocation.LoadMonitor:
+        page = <StationMonitor monitor_type={routes.StationMonitorType.LoadUnload}/>;
+        break;
       case routes.RouteLocation.InspectionMonitor:
+        page = <StationMonitor monitor_type={routes.StationMonitorType.Inspection}/>;
+        break;
       case routes.RouteLocation.WashMonitor:
-        page = <StationMonitor/>;
+        page = <StationMonitor monitor_type={routes.StationMonitorType.Wash}/>;
         break;
       case routes.RouteLocation.Dashboard:
       default:

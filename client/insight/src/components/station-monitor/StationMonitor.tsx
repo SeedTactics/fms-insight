@@ -31,41 +31,24 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
-import { connect } from 'react-redux';
-import { createSelector } from 'reselect';
 import Hidden from 'material-ui/Hidden';
 
-import * as api from '../../data/api';
 import * as routes from '../../data/routes';
-import { Store } from '../../data/store';
-import * as matDetails from '../../data/material-details';
 
 import StationToolbar from './StationToolbar';
 import LoadStation from './LoadStation';
-import { ConnectedMaterialDialog } from './Material';
-import { LoadStationData, selectLoadStationProps } from '../../data/load-station';
-
-export type StationMonitorData =
-  | { type: routes.StationMonitorType.LoadUnload, data: LoadStationData }
-  | { type: routes.StationMonitorType.Inspection }
-  | { type: routes.StationMonitorType.Wash }
-  ;
 
 export interface StationMonitorProps {
-  readonly monitor_data: StationMonitorData;
-  // tslint:disable-next-line:no-any
-  openMat: (m: Readonly<api.IInProcessMaterial>) => any;
+  readonly monitor_type: routes.StationMonitorType;
 }
 
 function monitorElement(
-    data: StationMonitorData,
+    type: routes.StationMonitorType,
     fillViewport: boolean,
-    // tslint:disable-next-line:no-any
-    openMat: (m: Readonly<api.IInProcessMaterial>) => any
   ): JSX.Element {
-  switch (data.type) {
+  switch (type) {
     case routes.StationMonitorType.LoadUnload:
-      return <LoadStation fillViewPort={fillViewport} {...data.data} openMat={openMat}/>;
+      return <LoadStation fillViewPort={fillViewport}/>;
     case routes.StationMonitorType.Inspection:
       return <p>Inspection</p>;
     case routes.StationMonitorType.Wash:
@@ -76,7 +59,7 @@ function monitorElement(
 export function FillViewportMonitor(props: StationMonitorProps) {
   return (
     <main style={{'height': 'calc(100vh - 64px - 2.5em)', 'display': 'flex', 'flexDirection': 'column'}}>
-      {monitorElement(props.monitor_data, true, props.openMat)}
+      {monitorElement(props.monitor_type, true)}
     </main>
   );
 }
@@ -84,12 +67,12 @@ export function FillViewportMonitor(props: StationMonitorProps) {
 export function ScrollableStationMonitor(props: StationMonitorProps) {
   return (
     <main style={{padding: '8px'}}>
-      {monitorElement(props.monitor_data, false, props.openMat)}
+      {monitorElement(props.monitor_type, false)}
     </main>
   );
 }
 
-export function StationMonitor(props: StationMonitorProps) {
+export default function StationMonitor(props: StationMonitorProps) {
   return (
     <div>
       <StationToolbar/>
@@ -99,45 +82,6 @@ export function StationMonitor(props: StationMonitorProps) {
       <Hidden lgUp>
         <ScrollableStationMonitor {...props}/>
       </Hidden>
-      <ConnectedMaterialDialog/>
     </div>
   );
 }
-
-export const buildMonitorData = createSelector(
-  (st: Store) => st.Current.current_status,
-  (st: Store) => st.Route,
-  (curStatus: Readonly<api.ICurrentStatus>, route: routes.State): StationMonitorData => {
-    switch (route.station_monitor) {
-      case routes.StationMonitorType.LoadUnload:
-        return {
-          type: routes.StationMonitorType.LoadUnload,
-          data: selectLoadStationProps(
-            route.selected_load_id,
-            route.station_queues,
-            route.station_free_material,
-            curStatus)
-        };
-
-      case routes.StationMonitorType.Wash:
-        return {
-          type: routes.StationMonitorType.Wash
-        };
-
-      case routes.StationMonitorType.Inspection:
-        return {
-          type: routes.StationMonitorType.Inspection
-        };
-    }
-
-  }
-);
-
-export default connect(
-  (st: Store) => ({
-    monitor_data: buildMonitorData(st),
-  }),
-  {
-    openMat: matDetails.openMaterialDialog,
-  }
-)(StationMonitor);

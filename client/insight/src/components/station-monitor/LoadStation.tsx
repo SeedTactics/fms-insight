@@ -32,13 +32,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from 'react';
+import { connect } from 'react-redux';
 import Divider from 'material-ui/Divider';
 import { withStyles } from 'material-ui';
 import * as im from 'immutable';
+import { createSelector } from 'reselect';
 
-import { MaterialList, LoadStationData } from '../../data/load-station';
+import { MaterialList, LoadStationData, selectLoadStationProps } from '../../data/load-station';
 import { Material } from './Material';
 import * as api from '../../data/api';
+import * as routes from '../../data/routes';
+import { Store } from '../../data/store';
+import * as matDetails from '../../data/material-details';
+import { ConnectedMaterialDialog } from './Material';
 
 const materialStyle = withStyles(() => ({
   container: {
@@ -93,8 +99,9 @@ export const MaterialDisplay = materialStyle<MaterialDisplayProps>(props => {
   );
 });
 
-export interface LoadStationProps extends LoadStationData {
+export interface LoadStationProps {
   readonly fillViewPort: boolean;
+  readonly data: LoadStationData;
   // tslint:disable-next-line:no-any
   openMat: (m: Readonly<api.IInProcessMaterial>) => any;
 }
@@ -133,12 +140,12 @@ export const PalletColumn = palletStyles<LoadStationProps>(props => {
     palletClass = props.classes.palletContainerScroll;
   }
 
-  const maxFace = props.face.map((m, face) => face).max();
-  const palLabel = "Pallet " + (props.pallet ? props.pallet.pallet : "");
+  const maxFace = props.data.face.map((m, face) => face).max();
+  const palLabel = "Pallet " + (props.data.pallet ? props.data.pallet.pallet : "");
 
   let palDetails: JSX.Element;
-  if (props.face.size === 1) {
-    const mat = props.face.first();
+  if (props.data.face.size === 1) {
+    const mat = props.data.face.first();
     palDetails = <MaterialDisplay label={palLabel} material={mat ? mat : []} openMat={props.openMat}/>;
   } else {
     palDetails = (
@@ -148,7 +155,7 @@ export const PalletColumn = palletStyles<LoadStationProps>(props => {
         </div>
         <div className={props.classes.faceContainer}>
           {
-            props.face.toSeq().sortBy((data, face) => face).map((data, face) =>
+            props.data.face.toSeq().sortBy((data, face) => face).map((data, face) =>
               <div key={face}>
                 <MaterialDisplay label={"Face " + face.toString()} material={data} openMat={props.openMat}/>
                 {face === maxFace ? undefined : <Divider key={1}/>}
@@ -162,7 +169,7 @@ export const PalletColumn = palletStyles<LoadStationProps>(props => {
 
   return (
     <>
-      <MaterialDisplay label="Castings" material={props.castings} openMat={props.openMat}/>
+      <MaterialDisplay label="Castings" material={props.data.castings} openMat={props.openMat}/>
       <Divider/>
       <div className={palletClass}>
         {palDetails}
@@ -196,10 +203,10 @@ const loadStyles = withStyles(() => ({
   },
 }));
 
-export default loadStyles<LoadStationProps>(props => {
+export const LoadStation = loadStyles<LoadStationProps>(props => {
   const palProps = {...props, classes: undefined};
 
-  let queues = props.queues
+  let queues = props.data.queues
     .toSeq()
     .sortBy((mats, q) => q)
     .map((mats, q) => ({
@@ -210,10 +217,10 @@ export default loadStyles<LoadStationProps>(props => {
     .valueSeq();
 
   let cells: im.Seq.Indexed<MaterialDisplayProps> = queues;
-  if (props.free) {
+  if (props.data.free) {
     cells = im.Seq([{
       label: "In Process Material",
-      material: props.free,
+      material: props.data.free,
       openMat: props.openMat,
     }]).concat(queues);
   }
@@ -246,6 +253,28 @@ export default loadStyles<LoadStationProps>(props => {
           }
         </div>
       }
+      <ConnectedMaterialDialog/>
     </div>
   );
 });
+
+const buildLoadData = createSelector(
+  (st: Store) => st.Current.current_status,
+  (st: Store) => st.Route,
+  (curStatus: Readonly<api.ICurrentStatus>, route: routes.State): LoadStationData => {
+    return selectLoadStationProps(
+        route.selected_load_id,
+        route.station_queues,
+        route.station_free_material,
+        curStatus);
+  }
+);
+
+export default connect(
+  (st: Store) => ({
+    data: buildLoadData(st)
+  }),
+  {
+    openMat: matDetails.openMaterialDialog,
+  }
+)(LoadStation);
