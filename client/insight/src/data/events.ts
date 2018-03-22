@@ -37,9 +37,11 @@ import * as im from 'immutable';
 import * as api from './api';
 import * as oee from './events.oee';
 import * as cycles from './events.cycles';
+import * as matdetails from './events.matdetails';
 
 export { OeeState, StationInUse } from './events.oee';
 export { CycleState, CycleData, binCyclesByDay } from './events.cycles';
+export { MatDetailState } from './events.matdetails';
 
 export enum AnalysisPeriod {
     Last30Days = 'Last_30_Days',
@@ -51,6 +53,7 @@ export interface Last30Days {
     readonly latest_counter?: number;
     readonly oee: oee.OeeState;
     readonly cycles: cycles.CycleState;
+    readonly mat_details: matdetails.MatDetailState;
 }
 
 export interface AnalysisMonth {
@@ -81,7 +84,8 @@ export const initial: State = {
 
     last30: {
         oee: oee.initial,
-        cycles: cycles.initial
+        cycles: cycles.initial,
+        mat_details: matdetails.initial,
     },
 
     selected_month: emptyAnalysisMonth,
@@ -197,6 +201,7 @@ function processRecentEvents(now: Date, evts: Iterable<api.ILogEntry>, s: Last30
                 {type: cycles.ExpireOldDataType.ExpireEarlierThan, d: thirtyDaysAgo},
                 evts,
                 s.cycles),
+            mat_details: matdetails.process_events(now, evts, s.mat_details)
         });
 }
 
