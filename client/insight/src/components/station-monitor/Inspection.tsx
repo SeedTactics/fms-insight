@@ -32,25 +32,51 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from 'react';
+import * as im from 'immutable';
 import { withStyles } from 'material-ui';
 import Grid from 'material-ui/Grid';
+import { addHours } from 'date-fns';
 import Card, { CardContent, CardHeader } from 'material-ui/Card';
-
-/*
 import { connect } from 'react-redux';
-import Divider from 'material-ui/Divider';
-import * as im from 'immutable';
 import { createSelector } from 'reselect';
 
-import { MaterialList, LoadStationData, selectLoadStationProps } from '../../data/load-station';
-import { Material, ConnectedMaterialDialog } from './Material';
-import * as api from '../../data/api';
-import * as routes from '../../data/routes';
+import { MaterialSummary } from '../../data/events';
 import { Store } from '../../data/store';
-import * as matDetails from '../../data/material-details';
-*/
+import { MatSummary } from './Material';
 
-export interface InspectionProps {
+const matListStyles = withStyles(theme => ({
+  summaryItem: {
+    paddingTop: 6,
+    paddingBottom: 6,
+  },
+}));
+
+export interface InspectionListProps {
+  readonly recent_inspections: ReadonlyArray<MaterialSummary>;
+  readonly focusInspectionType: string;
+}
+
+export const InspectionList = matListStyles<InspectionListProps>(props => {
+  return (
+    <ul style={{listStyle: 'none'}}>
+      {
+        props.recent_inspections.map((mat, i) =>
+          <li key={i} className={props.classes.summaryItem}>
+            <div style={{display: 'inline-block'}}>
+              <MatSummary
+                mat={mat}
+                focusInspectionType={props.focusInspectionType}
+                onOpen={(m: MaterialSummary) => 12}
+              />
+            </div>
+          </li>
+        )
+      }
+    </ul>
+  );
+});
+
+export interface InspectionProps extends InspectionListProps {
   readonly fillViewPort: boolean;
 }
 
@@ -77,15 +103,7 @@ const inspStyles = withStyles(() => ({
   },
 }));
 
-function longText(): string {
-  let ret: string = "";
-  for (let i = 0; i < 300; i++) {
-    ret += "Hello world ";
-  }
-  return ret;
-}
-
-export default inspStyles<InspectionProps>(props => {
+export const Inspection = inspStyles<InspectionProps>(props => {
   return (
     <main className={props.fillViewPort ? props.classes.mainFillViewport : props.classes.mainScrollable}>
       <Grid container style={{flexGrow: 1}}>
@@ -93,7 +111,10 @@ export default inspStyles<InspectionProps>(props => {
           <Card className={props.fillViewPort ? props.classes.stretchCard : undefined}>
             <CardHeader title="Recent Inspections"/>
             <CardContent className={props.fillViewPort ? props.classes.stretchCardContent : undefined}>
-              <p>{longText()}</p>
+              <InspectionList
+                recent_inspections={props.recent_inspections}
+                focusInspectionType={props.focusInspectionType}
+              />
             </CardContent>
           </Card>
         </Grid>
@@ -109,3 +130,31 @@ export default inspStyles<InspectionProps>(props => {
     </main>
   );
 });
+
+export const extractRecentInspections = createSelector(
+  (st: Store) => st.Events.last30.mat_summary.matsById,
+  (st: Store) => st.Route.selected_insp_type,
+  (matDetails: im.Map<number, MaterialSummary>, inspType: string | undefined): ReadonlyArray<MaterialSummary> => {
+    const cutoff = addHours(new Date(), -36);
+    const allDetails = matDetails
+      .valueSeq()
+      .filter(e => e.completed_time !== undefined && e.completed_time >= cutoff);
+
+    const filtered =
+      inspType === undefined
+        ? allDetails.filter(m => m.signaledInspections.length > 0)
+        : allDetails.filter(m => m.signaledInspections.indexOf(inspType) >= 0);
+
+    return filtered
+      .sortBy(e => e.completed_time)
+      .reverse()
+      .toArray();
+  }
+);
+
+export default connect(
+  (st: Store) => ({
+    recent_inspections: extractRecentInspections(st),
+    focusInspectionType: st.Route.selected_insp_type || "",
+  })
+)(Inspection);

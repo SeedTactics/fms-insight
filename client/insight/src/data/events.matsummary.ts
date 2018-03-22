@@ -34,7 +34,7 @@ import * as api from './api';
 import { addDays } from 'date-fns';
 import * as im from 'immutable'; // consider collectable.js at some point?
 
-export interface MaterialDetails {
+export interface MaterialSummary {
   readonly materialID: number;
   readonly jobUnique: string;
   readonly partName: string;
@@ -52,15 +52,15 @@ export interface MaterialDetails {
   readonly completedInspections: ReadonlyArray<string>;
 }
 
-export interface MatDetailState {
-  readonly matsById: im.Map<number, MaterialDetails>;
+export interface MatSummaryState {
+  readonly matsById: im.Map<number, MaterialSummary>;
 }
 
-export const initial: MatDetailState = {
+export const initial: MatSummaryState = {
   matsById: im.Map(),
 };
 
-export function process_events(now: Date, newEvts: Iterable<api.ILogEntry>, st: MatDetailState): MatDetailState {
+export function process_events(now: Date, newEvts: Iterable<api.ILogEntry>, st: MatSummaryState): MatSummaryState {
   const oneWeekAgo = addDays(now, -7);
 
   const evtsSeq = im.Seq(newEvts);
@@ -134,7 +134,7 @@ export function process_events(now: Date, newEvts: Iterable<api.ILogEntry>, st: 
           break;
       }
 
-      mats.set(logMat.id, mat);
+      mats = mats.set(logMat.id, mat);
     }
   });
 

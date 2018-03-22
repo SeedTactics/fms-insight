@@ -39,7 +39,7 @@ import * as im from 'immutable';
 import { createSelector } from 'reselect';
 
 import { MaterialList, LoadStationData, selectLoadStationProps } from '../../data/load-station';
-import { Material, ConnectedMaterialDialog } from './Material';
+import { InProcMaterial, ConnectedMaterialDialog } from './Material';
 import * as api from '../../data/api';
 import * as routes from '../../data/routes';
 import { Store } from '../../data/store';
@@ -88,9 +88,9 @@ export const MaterialDisplay = materialStyle<MaterialDisplayProps>(props => {
         props.material.length === 0 ? undefined :
           <div className={props.classes.material}>
             {
-              props.material.map((m, idx) =>
-                <Material key={idx} mat={m} onOpen={props.openMat}/>
-              )
+              props.material.map((m, idx) => (
+                <InProcMaterial key={idx} mat={m} onOpen={props.openMat}/>
+              ))
             }
           </div>
       }

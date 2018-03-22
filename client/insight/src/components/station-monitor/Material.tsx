@@ -34,24 +34,30 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from 'react';
 import { connect } from 'react-redux';
 import * as jdenticon from 'jdenticon';
-import Paper from 'material-ui/Paper';
 import Typography from 'material-ui/Typography';
 import ButtonBase from 'material-ui/ButtonBase';
 import Button from 'material-ui/Button';
 import Tooltip from 'material-ui/Tooltip';
 import WarningIcon from 'material-ui-icons/Warning';
+import CheckmarkIcon from 'material-ui-icons/Check';
 import Avatar from 'material-ui/Avatar';
+import Paper from 'material-ui/Paper';
 import { CircularProgress } from 'material-ui/Progress';
 import Dialog, {
   DialogActions,
   DialogContent,
   DialogTitle,
 } from 'material-ui/Dialog';
+import { distanceInWordsToNow } from 'date-fns';
+
+import * as im from 'immutable';
 
 import * as api from '../../data/api';
 import * as matDetails from '../../data/material-details';
 import LogEntry from '../LogEntry';
 import { Store } from '../../data/store';
+import { MaterialSummary } from '../../data/events';
+import { withStyles } from 'material-ui';
 
 /*
 function getPosition(el: Element) {
@@ -101,22 +107,44 @@ function materialAction(mat: Readonly<api.IInProcessMaterial>): string | undefin
   return undefined;
 }
 
-export interface MaterialProps {
+const matStyles = withStyles(theme => ({
+  paper: {
+    minWidth: '10em',
+    padding: '8px'
+  },
+  container: {
+    display: 'flex',
+    textAlign: 'left',
+  },
+  mainContent: {
+    marginLeft: '8px',
+    flexGrow: 1,
+  },
+  rightContent: {
+    marginLeft: '4px'
+  },
+  avatar: {
+    width: '30px',
+    height: '30px'
+  }
+}));
+
+export interface InProcMaterialProps {
   readonly mat: Readonly<api.IInProcessMaterial>; // TODO: deep readonly
   // tslint:disable-next-line:no-any
   onOpen: (m: Readonly<api.IInProcessMaterial>) => any;
 }
 
-export function Material(props: MaterialProps) {
+export const InProcMaterial = matStyles<InProcMaterialProps>(props => {
   const action = materialAction(props.mat);
   const inspections = props.mat.signaledInspections.join(", ");
 
   return (
-    <Paper elevation={4} style={{minWidth: '10em', padding: '8px'}}>
+    <Paper elevation={4} className={props.classes.paper}>
       <ButtonBase focusRipple onClick={() => props.onOpen(props.mat)}>
-        <div style={{display: 'flex', textAlign: 'left'}}>
+        <div className={props.classes.container}>
           <PartIdenticon part={props.mat.partName}/>
-          <div style={{marginLeft: '8px', flexGrow: 1}}>
+          <div className={props.classes.mainContent}>
             <Typography variant="title">
               {props.mat.partName}
             </Typography>
@@ -136,11 +164,13 @@ export function Material(props: MaterialProps) {
                 </div>
             }
           </div>
-          <div style={{marginLeft: '4px'}}>
+          <div className={props.classes.rightContent}>
             {props.mat.serial && props.mat.serial.length >= 1 ?
-              <Avatar style={{width: "30px", height: "30px"}}>
-                {props.mat.serial.substr(props.mat.serial.length - 1, 1)}
-              </Avatar>
+              <div>
+                <Avatar className={props.classes.avatar}>
+                  {props.mat.serial.substr(props.mat.serial.length - 1, 1)}
+                </Avatar>
+              </div>
               : undefined
             }
             {
@@ -156,7 +186,103 @@ export function Material(props: MaterialProps) {
       </ButtonBase>
     </Paper>
   );
+});
+
+export interface MaterialSummaryProps {
+  readonly mat: Readonly<MaterialSummary>; // TODO: deep readonly
+  readonly focusInspectionType?: string;
+  // tslint:disable-next-line:no-any
+  onOpen: (m: Readonly<MaterialSummary>) => any;
 }
+
+export const MatSummary = matStyles<MaterialSummaryProps>(props => {
+  function colorForInspType(type: string): string {
+    if (!props.focusInspectionType) {
+      return "black";
+    }
+    if (props.focusInspectionType !== "" && props.focusInspectionType !== type) {
+      return "black";
+    }
+    if (props.mat.completedInspections.indexOf(type) >= 0) {
+      return "black";
+    } else {
+      return "red";
+    }
+  }
+
+  let allInspCompleted: boolean;
+  if (props.focusInspectionType === "") {
+    allInspCompleted = im.Set(props.mat.signaledInspections).subtract(props.mat.completedInspections)
+      .isEmpty();
+  } else {
+    allInspCompleted = props.mat.completedInspections.indexOf(props.focusInspectionType || "") >= 0;
+  }
+
+  return (
+    <Paper elevation={4} className={props.classes.paper}>
+      <ButtonBase
+        focusRipple
+        onClick={() => props.onOpen(props.mat)}
+      >
+        <div className={props.classes.container}>
+          <PartIdenticon part={props.mat.partName}/>
+          <div className={props.classes.mainContent}>
+            <Typography variant="title">
+              {props.mat.partName}
+            </Typography>
+            <div>
+              <small>Serial: {props.mat.serial ? props.mat.serial : "none"}</small>
+            </div>
+            {
+              props.mat.workorderId === undefined ? undefined :
+                <div>
+                  <small>Workorder: {props.mat.workorderId}</small>
+                </div>
+            }
+            {
+              props.mat.completed_time === undefined ? undefined :
+                <div>
+                  <small>Completed {distanceInWordsToNow(props.mat.completed_time)} ago</small>
+                </div>
+            }
+            {
+              props.mat.signaledInspections.length === 0 ? undefined :
+                <div>
+                  <small>Inspections: </small>
+                  {
+                    props.mat.signaledInspections.map((type, i) => (
+                      <small key={i} style={{color: colorForInspType(type)}}>
+                        {type}
+                      </small>
+                    ))
+                  }
+                </div>
+            }
+          </div>
+          <div className={props.classes.rightContent}>
+            {props.mat.serial && props.mat.serial.length >= 1 ?
+              <div>
+                <Avatar className={props.classes.avatar}>
+                  {props.mat.serial.substr(props.mat.serial.length - 1, 1)}
+                </Avatar>
+              </div>
+              : undefined
+            }
+            {
+              props.focusInspectionType !== undefined && allInspCompleted ?
+                <div>
+                  <Tooltip title="All Inspections Completed">
+                    <CheckmarkIcon/>
+                  </Tooltip>
+                </div>
+                : undefined
+            }
+          </div>
+        </div>
+      </ButtonBase>
+    </Paper>
+  );
+});
 
 export interface MaterialEventProps {
   events: ReadonlyArray<Readonly<api.ILogEntry>>;
