@@ -35,7 +35,7 @@ import * as ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
 
 import 'typeface-roboto';
-import Reboot from 'material-ui/Reboot';
+import CssBaseline from 'material-ui/CssBaseline';
 import green from 'material-ui/colors/green';
 import brown from 'material-ui/colors/brown';
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
@@ -55,7 +55,7 @@ const theme = createMuiTheme({
 
 ReactDOM.render(
   <MuiThemeProvider theme={theme}>
-    <Reboot/>
+    <CssBaseline/>
     <Provider store={store}>
       <App />
     </Provider>
