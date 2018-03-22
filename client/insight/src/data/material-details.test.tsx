@@ -32,9 +32,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as mat from './material-details';
-// import { PledgeStatus } from './pledge';
+import { PledgeStatus } from './pledge';
+import { StationMonitorType } from './routes';
 // import * as api from './api';
-// import { fakeCycle } from './events.fake';
+import { fakeCycle } from './events.fake';
 
 it('creates initial state', () => {
   // tslint:disable no-any
@@ -43,82 +44,207 @@ it('creates initial state', () => {
   expect(s).toBe(mat.initial);
 });
 
-/*
-const m: Readonly<api.IInProcessMaterial> = {
-  materialID: 10,
-  jobUnique: "aaa",
+const m: Readonly<mat.MaterialDetail> = {
   partName: "aaa",
-  process: 2,
-  path: 1,
+  serial: "abc",
+  workorderId: "asd",
   signaledInspections: ["a", "b"],
-  location: new api.InProcessMaterialLocation({
-    type: api.LocType.OnPallet,
-    pallet: "7",
-    face: 1,
-    queuePosition: 0,
-  }),
-  action: new api.InProcessMaterialAction({
-    type: api.ActionType.Loading,
-    loadOntoFace: 1,
-    processAfterLoad: 2,
-    pathAfterLoad: 1,
-  }),
+  completedInspections: ["a"],
+  loading_events: true,
+  events: [],
 };
 
-it('starts a material open', () => {
+it('starts an open for load station', () => {
   const action: mat.Action = {
     type: mat.ActionType.OpenMaterialDialog,
-    material: m,
-    pledge: {
-      status: PledgeStatus.Starting
-    }
+    station: StationMonitorType.LoadUnload,
+    initial: m,
+    pledge: { status: PledgeStatus.Starting }
   };
   let s = mat.reducer(mat.initial, action);
-  expect(s.display_material).toBe(m);
-  expect(s.loading_events).toBe(true);
-  expect(s.events).toEqual([]);
+  expect(s.loadstation_display_material).toBe(m);
+  expect(s.inspection_display_material).toBeUndefined();
+  expect(s.wash_display_material).toBeUndefined();
 });
 
-it('finishes material open', () => {
+it('starts an open for wash station', () => {
+  const action: mat.Action = {
+    type: mat.ActionType.OpenMaterialDialog,
+    station: StationMonitorType.Wash,
+    initial: m,
+    pledge: { status: PledgeStatus.Starting }
+  };
+  let s = mat.reducer(mat.initial, action);
+  expect(s.loadstation_display_material).toBeUndefined();
+  expect(s.inspection_display_material).toBeUndefined();
+  expect(s.wash_display_material).toBe(m);
+});
+
+it('starts an open for inspection station', () => {
+  const action: mat.Action = {
+    type: mat.ActionType.OpenMaterialDialog,
+    station: StationMonitorType.Inspection,
+    initial: m,
+    pledge: { status: PledgeStatus.Starting }
+  };
+  let s = mat.reducer(mat.initial, action);
+  expect(s.loadstation_display_material).toBeUndefined();
+  expect(s.inspection_display_material).toBe(m);
+  expect(s.wash_display_material).toBeUndefined();
+});
+
+it('finishes material open for load station', () => {
   const evts = fakeCycle(new Date(), 20);
   const action: mat.Action = {
     type: mat.ActionType.OpenMaterialDialog,
-    material: m,
-    pledge: {
-      status: PledgeStatus.Completed,
-      result: evts
-    }
+    station: StationMonitorType.LoadUnload,
+    initial: m,
+    pledge: { status: PledgeStatus.Completed, result: evts }
   };
-  let s = mat.reducer({...mat.initial, loading_events: true}, action);
-  expect(s.loading_events).toBe(false);
-  expect(s.events).toEqual(evts);
+  let s = mat.reducer({...mat.initial, loadstation_display_material: m}, action);
+  expect(s.loadstation_display_material).toBeDefined();
+  var mats = s.loadstation_display_material || (() => { throw "undefined"; })();
+  expect(mats.loading_events).toBe(false);
+  expect(mats.events).toEqual(evts);
+
+  expect(s.inspection_display_material).toBeUndefined();
+  expect(s.wash_display_material).toBeUndefined();
 });
 
-it('handles material error', () => {
+it('finishes material open for wash station', () => {
+  const evts = fakeCycle(new Date(), 20);
   const action: mat.Action = {
     type: mat.ActionType.OpenMaterialDialog,
-    material: m,
+    station: StationMonitorType.Wash,
+    initial: m,
+    pledge: { status: PledgeStatus.Completed, result: evts }
+  };
+  let s = mat.reducer({...mat.initial, wash_display_material: m}, action);
+  expect(s.wash_display_material).toBeDefined();
+  var mats = s.wash_display_material || (() => { throw "undefined"; })();
+  expect(mats.loading_events).toBe(false);
+  expect(mats.events).toEqual(evts);
+
+  expect(s.inspection_display_material).toBeUndefined();
+  expect(s.loadstation_display_material).toBeUndefined();
+});
+
+it('finishes material open for inspection station', () => {
+  const evts = fakeCycle(new Date(), 20);
+  const action: mat.Action = {
+    type: mat.ActionType.OpenMaterialDialog,
+    station: StationMonitorType.Inspection,
+    initial: m,
+    pledge: { status: PledgeStatus.Completed, result: evts }
+  };
+  let s = mat.reducer({...mat.initial, inspection_display_material: m}, action);
+  expect(s.inspection_display_material).toBeDefined();
+  var mats = s.inspection_display_material || (() => { throw "undefined"; })();
+  expect(mats.loading_events).toBe(false);
+  expect(mats.events).toEqual(evts);
+
+  expect(s.wash_display_material).toBeUndefined();
+  expect(s.loadstation_display_material).toBeUndefined();
+});
+
+it('handles material error for load station', () => {
+  const action: mat.Action = {
+    type: mat.ActionType.OpenMaterialDialog,
+    station: StationMonitorType.LoadUnload,
+    initial: m,
     pledge: {
       status: PledgeStatus.Error,
       error: new Error("aaaa")
     }
   };
-  let s = mat.reducer({...mat.initial, loading_events: true}, action);
-  expect(s.loading_events).toBe(false);
+  let s = mat.reducer({...mat.initial, loadstation_display_material: m}, action);
+
+  expect(s.loadstation_display_material).toBeDefined();
+  var mats = s.loadstation_display_material || (() => { throw "undefined"; })();
+  expect(mats.loading_events).toBe(false);
+  expect(mats.events).toEqual([]);
+
+  expect(s.inspection_display_material).toBeUndefined();
+  expect(s.wash_display_material).toBeUndefined();
 });
 
-it('closes the dialog', () => {
-  let st: mat.State = {
-    display_material: m,
-    loading_events: false,
-    events: fakeCycle(new Date(), 20),
+it('handles material error for wash', () => {
+  const action: mat.Action = {
+    type: mat.ActionType.OpenMaterialDialog,
+    station: StationMonitorType.Wash,
+    initial: m,
+    pledge: {
+      status: PledgeStatus.Error,
+      error: new Error("aaaa")
+    }
   };
+  let s = mat.reducer({...mat.initial, wash_display_material: m}, action);
+
+  expect(s.wash_display_material).toBeDefined();
+  var mats = s.wash_display_material || (() => { throw "undefined"; })();
+  expect(mats.loading_events).toBe(false);
+  expect(mats.events).toEqual([]);
+
+  expect(s.inspection_display_material).toBeUndefined();
+  expect(s.loadstation_display_material).toBeUndefined();
+});
+
+it('handles material error for inspection', () => {
+  const action: mat.Action = {
+    type: mat.ActionType.OpenMaterialDialog,
+    station: StationMonitorType.Inspection,
+    initial: m,
+    pledge: {
+      status: PledgeStatus.Error,
+      error: new Error("aaaa")
+    }
+  };
+  let s = mat.reducer({...mat.initial, inspection_display_material: m}, action);
+
+  expect(s.inspection_display_material).toBeDefined();
+  var mats = s.inspection_display_material || (() => { throw "undefined"; })();
+  expect(mats.loading_events).toBe(false);
+  expect(mats.events).toEqual([]);
+
+  expect(s.wash_display_material).toBeUndefined();
+  expect(s.loadstation_display_material).toBeUndefined();
+});
+
+let fullSt: mat.State = {
+  loadstation_display_material: m,
+  wash_display_material: m,
+  inspection_display_material: m,
+};
+
+it('clears the load station material', () => {
   const action: mat.Action = {
     type: mat.ActionType.CloseMaterialDialog,
+    station: StationMonitorType.LoadUnload,
   };
-  st = mat.reducer(st, action);
-  expect(st.display_material).toBeUndefined();
-  expect(st.loading_events).toBe(false);
-  expect(st.events).toEqual([]);
+  const st = mat.reducer(fullSt, action);
+  expect(st.loadstation_display_material).toBeUndefined();
+  expect(st.wash_display_material).toBe(m);
+  expect(st.inspection_display_material).toBe(m);
 });
-*/
+
+it('clears the wash material', () => {
+  const action: mat.Action = {
+    type: mat.ActionType.CloseMaterialDialog,
+    station: StationMonitorType.Wash,
+  };
+  const st = mat.reducer(fullSt, action);
+  expect(st.wash_display_material).toBeUndefined();
+  expect(st.loadstation_display_material).toBe(m);
+  expect(st.inspection_display_material).toBe(m);
+});
+
+it('clears the inspection material', () => {
+  const action: mat.Action = {
+    type: mat.ActionType.CloseMaterialDialog,
+    station: StationMonitorType.Inspection,
+  };
+  const st = mat.reducer(fullSt, action);
+  expect(st.inspection_display_material).toBeUndefined();
+  expect(st.loadstation_display_material).toBe(m);
+  expect(st.wash_display_material).toBe(m);
+});
