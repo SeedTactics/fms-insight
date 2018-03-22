@@ -180,16 +180,19 @@ export const PalletColumn = palletStyles<LoadStationProps>(props => {
 });
 
 const loadStyles = withStyles(() => ({
-  container: {
-    width: '100%',
-    paddingLeft: '8px',
-    paddingRight: '8px',
-    display: 'flex',
-    flexGrow: 1,
+  mainFillViewport: {
+    'height': 'calc(100vh - 64px - 2.5em)',
+    'display': 'flex',
+    'padding': '8px',
+    'width': '100%',
+  },
+  mainScrollable: {
+    'display': 'flex',
+    'padding': '8px',
+    'width': '100%',
   },
   palCol: {
     'flexGrow': 1,
-    'padding': '8px',
     'display': 'flex',
     'flexDirection': 'column' as 'column',
   },
@@ -228,7 +231,7 @@ export const LoadStation = loadStyles<LoadStationProps>(props => {
   const col2 = cells.skip(2).take(2);
 
   return (
-    <div className={props.classes.container}>
+    <main className={props.fillViewPort ? props.classes.mainFillViewport : props.classes.mainScrollable}>
       <div className={props.classes.palCol}>
         <PalletColumn {...palProps}/>
       </div>
@@ -253,7 +256,7 @@ export const LoadStation = loadStyles<LoadStationProps>(props => {
         </div>
       }
       <ConnectedMaterialDialog/>
-    </div>
+    </main>
   );
 });
 

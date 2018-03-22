@@ -37,6 +37,7 @@ import * as routes from '../../data/routes';
 
 import StationToolbar from './StationToolbar';
 import LoadStation from './LoadStation';
+import Inspection from './Inspection';
 
 export interface StationMonitorProps {
   readonly monitor_type: routes.StationMonitorType;
@@ -50,26 +51,10 @@ function monitorElement(
     case routes.StationMonitorType.LoadUnload:
       return <LoadStation fillViewPort={fillViewport}/>;
     case routes.StationMonitorType.Inspection:
-      return <p>Inspection</p>;
+      return <Inspection fillViewPort={fillViewport}/>;
     case routes.StationMonitorType.Wash:
       return <p>Wash</p>;
   }
-}
-
-export function FillViewportMonitor(props: StationMonitorProps) {
-  return (
-    <main style={{'height': 'calc(100vh - 64px - 2.5em)', 'display': 'flex', 'flexDirection': 'column'}}>
-      {monitorElement(props.monitor_type, true)}
-    </main>
-  );
-}
-
-export function ScrollableStationMonitor(props: StationMonitorProps) {
-  return (
-    <main style={{padding: '8px'}}>
-      {monitorElement(props.monitor_type, false)}
-    </main>
-  );
 }
 
 export default function StationMonitor(props: StationMonitorProps) {
@@ -77,10 +62,10 @@ export default function StationMonitor(props: StationMonitorProps) {
     <div>
       <StationToolbar/>
       <Hidden mdDown>
-        <FillViewportMonitor {...props}/>
+        {monitorElement(props.monitor_type, true)}
       </Hidden>
       <Hidden lgUp>
-        <ScrollableStationMonitor {...props}/>
+        {monitorElement(props.monitor_type, false)}
       </Hidden>
     </div>
   );
