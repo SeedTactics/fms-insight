@@ -37,9 +37,15 @@ import Divider from 'material-ui/Divider';
 import { withStyles } from 'material-ui';
 import * as im from 'immutable';
 import { createSelector } from 'reselect';
+import Button from 'material-ui/Button';
+import Dialog, {
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+} from 'material-ui/Dialog';
 
 import { MaterialList, LoadStationData, selectLoadStationProps } from '../../data/load-station';
-import { InProcMaterial, ConnectedMaterialDialog } from './Material';
+import { InProcMaterial, MaterialDetailTitle, MaterialDetailContent } from './Material';
 import * as api from '../../data/api';
 import * as routes from '../../data/routes';
 import { Store } from '../../data/store';
@@ -179,6 +185,58 @@ export const PalletColumn = palletStyles<LoadStationProps>(props => {
   );
 });
 
+export interface MaterialDialogProps {
+  display_material?: matDetails.MaterialDetail;
+  // tslint:disable-next-line:no-any
+  onClose: () => any;
+}
+
+export function MaterialDialog(props: MaterialDialogProps) {
+  let body: JSX.Element | undefined;
+  if (props.display_material === undefined) {
+    body = <p>None</p>;
+  } else {
+    const mat = props.display_material;
+    body = (
+      <>
+        <DialogTitle disableTypography>
+          <MaterialDetailTitle partName={mat.partName}/>
+        </DialogTitle>
+        <DialogContent>
+          <MaterialDetailContent mat={mat}/>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={props.onClose} color="primary">
+            Close
+          </Button>
+        </DialogActions>
+      </>
+    );
+  }
+  return (
+    <Dialog
+      open={props.display_material !== undefined}
+      onClose={props.onClose}
+      maxWidth="md"
+    >
+      {body}
+    </Dialog>
+
+  );
+}
+
+export const ConnectedMaterialDialog = connect(
+  (st: Store) => ({
+    display_material: st.MaterialDetails.loadstation_display_material
+  }),
+  {
+    onClose: () => ({
+      type: matDetails.ActionType.CloseMaterialDialog,
+      station: routes.StationMonitorType.LoadUnload,
+    }),
+  }
+)(MaterialDialog);
+
 const loadStyles = withStyles(() => ({
   mainFillViewport: {
     'height': 'calc(100vh - 64px - 2.5em)',
@@ -277,6 +335,6 @@ export default connect(
     data: buildLoadData(st)
   }),
   {
-    openMat: matDetails.openMaterialDialog,
+    openMat: matDetails.openLoadunloadMaterialDialog,
   }
 )(LoadStation);

@@ -32,9 +32,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as mat from './material-details';
-import { PledgeStatus } from './pledge';
-import * as api from './api';
-import { fakeCycle } from './events.fake';
+// import { PledgeStatus } from './pledge';
+// import * as api from './api';
+// import { fakeCycle } from './events.fake';
 
 it('creates initial state', () => {
   // tslint:disable no-any
@@ -43,6 +43,7 @@ it('creates initial state', () => {
   expect(s).toBe(mat.initial);
 });
 
+/*
 const m: Readonly<api.IInProcessMaterial> = {
   materialID: 10,
   jobUnique: "aaa",
@@ -120,3 +121,4 @@ it('closes the dialog', () => {
   expect(st.loading_events).toBe(false);
   expect(st.events).toEqual([]);
 });
+*/

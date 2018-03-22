@@ -79,7 +79,8 @@ const store = createStore<Store>(
       Route: routes.reducer,
       Websocket: websocket.reducer,
       location: router.reducer,
-    }
+    // tslint:disable-next-line:no-any
+    } as any // bug in typescript types for combineReducers
   ),
   compose(
     router.enhancer,

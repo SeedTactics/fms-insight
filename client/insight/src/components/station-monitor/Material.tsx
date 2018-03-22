@@ -32,22 +32,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from 'react';
-import { connect } from 'react-redux';
 import * as jdenticon from 'jdenticon';
 import Typography from 'material-ui/Typography';
 import ButtonBase from 'material-ui/ButtonBase';
-import Button from 'material-ui/Button';
 import Tooltip from 'material-ui/Tooltip';
 import WarningIcon from 'material-ui-icons/Warning';
 import CheckmarkIcon from 'material-ui-icons/Check';
 import Avatar from 'material-ui/Avatar';
 import Paper from 'material-ui/Paper';
 import { CircularProgress } from 'material-ui/Progress';
-import Dialog, {
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-} from 'material-ui/Dialog';
 import { distanceInWordsToNow } from 'date-fns';
 
 import * as im from 'immutable';
@@ -55,7 +48,6 @@ import * as im from 'immutable';
 import * as api from '../../data/api';
 import * as matDetails from '../../data/material-details';
 import LogEntry from '../LogEntry';
-import { Store } from '../../data/store';
 import { MaterialSummary } from '../../data/events';
 import { withStyles } from 'material-ui';
 
@@ -251,9 +243,12 @@ export const MatSummary = matStyles<MaterialSummaryProps>(props => {
                   <small>Inspections: </small>
                   {
                     props.mat.signaledInspections.map((type, i) => (
-                      <small key={i} style={{color: colorForInspType(type)}}>
-                        {type}
-                      </small>
+                      <span key={i}>
+                        <small>{i === 0 ? "" : ", "}</small>
+                        <small style={{color: colorForInspType(type)}}>
+                          {type}
+                        </small>
+                      </span>
                     ))
                   }
                 </div>
@@ -290,7 +285,7 @@ export interface MaterialEventProps {
 
 export function MaterialEvents(props: MaterialEventProps) {
   return (
-    <ul style={{'list-style': 'none'}}>
+    <ul style={{'listStyle': 'none'}}>
       {
         props.events.map(e => (
           <li key={e.counter}>
@@ -302,75 +297,56 @@ export function MaterialEvents(props: MaterialEventProps) {
   );
 }
 
-export interface MaterialDialogProps extends matDetails.State {
-  // tslint:disable-next-line:no-any
-  onClose: () => any;
-}
-
-export function MaterialDialog(props: MaterialDialogProps) {
-  let body: JSX.Element | undefined;
-  if (props.display_material === undefined) {
-    body = <p>None</p>;
-  } else {
-    const mat = props.display_material;
-    body = (
-      <>
-        <DialogTitle disableTypography>
-          <div style={{display: 'flex', textAlign: 'left'}}>
-            <PartIdenticon part={mat.partName}/>
-            <div style={{marginLeft: '8px', flexGrow: 1}}>
-              <Typography variant="title">
-                {mat.partName}
-              </Typography>
-            </div>
-          </div>
-        </DialogTitle>
-        <DialogContent>
-          <div>
-            <small>Serial: {mat.serial || "none"}</small>
-          </div>
-          <div>
-            <small>Workorder: {mat.workorderId || "none"}</small>
-          </div>
-          <div>
-            <small>{materialAction(mat)}</small>
-          </div>
-          <div>
-              {
-                mat.signaledInspections.length === 0 ?
-                  <small>Inspections: none</small> :
-                  <small style={{color: "#F44336"}}>
-                    Inspections: {mat.signaledInspections.length === 0 ? "none" : mat.signaledInspections.join(", ")}
-                  </small>
-              }
-          </div>
-          {props.loading_events ? <CircularProgress color="secondary"/> : <MaterialEvents events={props.events}/>}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={props.onClose} color="primary">
-            Close
-          </Button>
-        </DialogActions>
-      </>
-    );
-  }
+export function MaterialDetailTitle({partName}: {partName: string}) {
   return (
-    <Dialog
-      open={props.display_material !== undefined}
-      onClose={props.onClose}
-      maxWidth="md"
-    >
-      {body}
-    </Dialog>
-
+    <div style={{display: 'flex', textAlign: 'left'}}>
+      <PartIdenticon part={partName}/>
+      <div style={{marginLeft: '8px', flexGrow: 1}}>
+        <Typography variant="title">
+          {partName}
+        </Typography>
+      </div>
+    </div>
   );
 }
 
-export const ConnectedMaterialDialog = connect(
-  (st: Store) => st.MaterialDetails,
-  {
-    onClose: () => ({
-      type: matDetails.ActionType.CloseMaterialDialog
-    }),
+export interface MaterialDetailProps {
+  readonly mat: matDetails.MaterialDetail;
+}
+
+export function MaterialDetailContent(props: MaterialDetailProps) {
+  function colorForInspType(type: string): string {
+    if (props.mat.completedInspections && props.mat.completedInspections.indexOf(type) >= 0) {
+      return "black";
+    } else {
+      return "red";
+    }
   }
-)(MaterialDialog);
+  return (
+    <>
+      <div>
+        <small>Serial: {props.mat.serial || "none"}</small>
+      </div>
+      <div>
+        <small>Workorder: {props.mat.workorderId || "none"}</small>
+      </div>
+      <div>
+        <small>Inspections:</small>
+          {
+            props.mat.signaledInspections.length === 0
+              ? <small>None</small>
+              :
+              props.mat.signaledInspections.map((type, i) => (
+                <span key={i}>
+                  <small>{i === 0 ? "" : ", "}</small>
+                  <small style={{color: colorForInspType(type)}}>
+                    {type}
+                  </small>
+                </span>
+              ))
+          }
+      </div>
+      {props.mat.loading_events ? <CircularProgress color="secondary"/> : <MaterialEvents events={props.mat.events}/>}
+    </>
+  );
+}

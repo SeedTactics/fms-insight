@@ -42,7 +42,8 @@ import { createSelector } from 'reselect';
 
 import { MaterialSummary } from '../../data/events';
 import { Store } from '../../data/store';
-import { MatSummary } from './Material';
+import { MatSummary, MaterialDetailTitle, MaterialDetailContent } from './Material';
+import * as matDetails from '../../data/material-details';
 
 const matListStyles = withStyles(theme => ({
   summaryItem: {
@@ -54,6 +55,8 @@ const matListStyles = withStyles(theme => ({
 export interface InspectionListProps {
   readonly recent_inspections: ReadonlyArray<MaterialSummary>;
   readonly focusInspectionType: string;
+  // tslint:disable-next-line:no-any
+  readonly openMat: (mat: MaterialSummary) => any;
 }
 
 export const InspectionList = matListStyles<InspectionListProps>(props => {
@@ -66,7 +69,7 @@ export const InspectionList = matListStyles<InspectionListProps>(props => {
               <MatSummary
                 mat={mat}
                 focusInspectionType={props.focusInspectionType}
-                onOpen={(m: MaterialSummary) => 12}
+                onOpen={props.openMat}
               />
             </div>
           </li>
@@ -76,8 +79,18 @@ export const InspectionList = matListStyles<InspectionListProps>(props => {
   );
 });
 
+export function SelectedMaterial({mat}: {mat: matDetails.MaterialDetail}) {
+  return (
+    <>
+      <MaterialDetailTitle partName={mat.partName}/>
+      <MaterialDetailContent mat={mat}/>
+    </>
+  );
+}
+
 export interface InspectionProps extends InspectionListProps {
   readonly fillViewPort: boolean;
+  readonly display_material: matDetails.MaterialDetail | null;
 }
 
 const inspStyles = withStyles(() => ({
@@ -114,6 +127,7 @@ export const Inspection = inspStyles<InspectionProps>(props => {
               <InspectionList
                 recent_inspections={props.recent_inspections}
                 focusInspectionType={props.focusInspectionType}
+                openMat={props.openMat}
               />
             </CardContent>
           </Card>
@@ -122,7 +136,7 @@ export const Inspection = inspStyles<InspectionProps>(props => {
           <Card className={props.fillViewPort ? props.classes.stretchCard : undefined}>
             <CardHeader title="Selected Material"/>
             <CardContent className={props.fillViewPort ? props.classes.stretchCardContent : undefined}>
-              <p>Selected</p>
+              {props.display_material ? <SelectedMaterial mat={props.display_material}/> : undefined}
             </CardContent>
           </Card>
         </Grid>
@@ -134,9 +148,9 @@ export const Inspection = inspStyles<InspectionProps>(props => {
 export const extractRecentInspections = createSelector(
   (st: Store) => st.Events.last30.mat_summary.matsById,
   (st: Store) => st.Route.selected_insp_type,
-  (matDetails: im.Map<number, MaterialSummary>, inspType: string | undefined): ReadonlyArray<MaterialSummary> => {
+  (mats: im.Map<number, MaterialSummary>, inspType: string | undefined): ReadonlyArray<MaterialSummary> => {
     const cutoff = addHours(new Date(), -36);
-    const allDetails = matDetails
+    const allDetails = mats
       .valueSeq()
       .filter(e => e.completed_time !== undefined && e.completed_time >= cutoff);
 
@@ -156,5 +170,9 @@ export default connect(
   (st: Store) => ({
     recent_inspections: extractRecentInspections(st),
     focusInspectionType: st.Route.selected_insp_type || "",
-  })
+    display_material: st.MaterialDetails.inspection_display_material || null,
+  }),
+  {
+    openMat: matDetails.openInspectionMaterial
+  }
 )(Inspection);

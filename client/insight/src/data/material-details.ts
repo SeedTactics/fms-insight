@@ -33,42 +33,103 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as api from './api';
 import { ConsumingPledge, PledgeStatus } from './pledge';
+import { MaterialSummary } from './events';
+import { StationMonitorType } from './routes';
 
 export enum ActionType {
   OpenMaterialDialog = 'MaterialDetails_Open',
   CloseMaterialDialog = 'MaterialDetails_Close',
 }
 
+export interface MaterialDetail {
+  readonly partName: string;
+  readonly serial?: string;
+  readonly workorderId?: string;
+  readonly signaledInspections: ReadonlyArray<string>;
+  readonly completedInspections: ReadonlyArray<string>;
+
+  readonly loading_events: boolean;
+  readonly events: ReadonlyArray<Readonly<api.ILogEntry>>;
+}
+
 export type Action =
-  |
-    {
+  | {
+      type: ActionType.CloseMaterialDialog,
+      station: StationMonitorType
+    }
+  | {
       type: ActionType.OpenMaterialDialog,
-      material: Readonly<api.IInProcessMaterial>,
+      station: StationMonitorType,
+      initial: MaterialDetail,
       pledge: ConsumingPledge<ReadonlyArray<Readonly<api.ILogEntry>>>
     }
-  | { type: ActionType.CloseMaterialDialog }
   ;
 
-export function openMaterialDialog(mat: Readonly<api.IInProcessMaterial>) {
+export function openLoadunloadMaterialDialog(mat: Readonly<api.IInProcessMaterial>) {
   var client = new api.LogClient();
   return {
     type: ActionType.OpenMaterialDialog,
-    material: mat,
+    station: StationMonitorType.LoadUnload,
+    initial: {
+      partName: mat.partName,
+      serial: mat.serial,
+      workorderId: mat.workorderId,
+      signaledInspections: mat.signaledInspections,
+      completedInspections: [],
+      loading_events: true,
+      events: [],
+    } as MaterialDetail,
+    pledge: client.logForMaterial(mat.materialID),
+  };
+}
+
+export function openInspectionMaterial(mat: MaterialSummary) {
+  var client = new api.LogClient();
+  return {
+    type: ActionType.OpenMaterialDialog,
+    station: StationMonitorType.Inspection,
+    initial: {
+      partName: mat.partName,
+      serial: mat.serial,
+      workorderId: mat.workorderId,
+      signaledInspections: mat.signaledInspections,
+      completedInspections: mat.completedInspections,
+      loading_events: true,
+      events: [],
+    } as MaterialDetail,
+    pledge: client.logForMaterial(mat.materialID),
+  };
+}
+
+export function openWashMaterial(mat: MaterialSummary) {
+  var client = new api.LogClient();
+  return {
+    type: ActionType.OpenMaterialDialog,
+    station: StationMonitorType.Wash,
+    initial: {
+      partName: mat.partName,
+      serial: mat.serial,
+      workorderId: mat.workorderId,
+      signaledInspections: mat.signaledInspections,
+      completedInspections: mat.completedInspections,
+      loading_events: true,
+      events: [],
+    } as MaterialDetail,
     pledge: client.logForMaterial(mat.materialID),
   };
 }
 
 export interface State {
-  readonly display_material?: Readonly<api.IInProcessMaterial>;
-  readonly loading_events: boolean;
-  readonly events: ReadonlyArray<Readonly<api.ILogEntry>>;
+  readonly loadstation_display_material?: MaterialDetail;
+  readonly inspection_display_material?: MaterialDetail;
+  readonly wash_display_material?: MaterialDetail;
 }
 
-export const initial: State = {
-  display_material: undefined,
-  loading_events: false,
-  events: [],
-};
+export const initial: State = {};
+
+function setEvents(e: ReadonlyArray<Readonly<api.ILogEntry>>, d: MaterialDetail): MaterialDetail {
+  return {...d, loading_events: false, events: e};
+}
 
 export function reducer(s: State, a: Action): State {
   if (s === undefined) { return initial; }
@@ -76,32 +137,53 @@ export function reducer(s: State, a: Action): State {
     case ActionType.OpenMaterialDialog:
       switch (a.pledge.status) {
         case PledgeStatus.Starting:
-          return {...s,
-            display_material: a.material,
-            loading_events: true,
-            events: []
-          };
+
+          switch (a.station) {
+            case StationMonitorType.LoadUnload:
+              return {...s, loadstation_display_material: a.initial};
+            case StationMonitorType.Inspection:
+              return {...s, inspection_display_material: a.initial};
+            case StationMonitorType.Wash:
+              return {...s, wash_display_material: a.initial};
+            default: return s;
+          }
 
         case PledgeStatus.Completed:
-          return {...s,
-            loading_events: false,
-            events: a.pledge.result
-          };
+          switch (a.station) {
+            case StationMonitorType.LoadUnload:
+              return {...s, loadstation_display_material: setEvents(a.pledge.result, a.initial)};
+            case StationMonitorType.Inspection:
+              return {...s, inspection_display_material: setEvents(a.pledge.result, a.initial)};
+            case StationMonitorType.Wash:
+              return {...s, wash_display_material: setEvents(a.pledge.result, a.initial)};
+            default: return s;
+          }
 
         case PledgeStatus.Error:
-          return {...s,
-            loading_events: false,
-          };
+          switch (a.station) {
+            case StationMonitorType.LoadUnload:
+              return {...s, loadstation_display_material: setEvents([], a.initial)};
+            case StationMonitorType.Inspection:
+              return {...s, inspection_display_material: setEvents([], a.initial)};
+            case StationMonitorType.Wash:
+              return {...s, wash_display_material: setEvents([], a.initial)};
+            default: return s;
+          }
+
         default:
           return s;
       }
 
     case ActionType.CloseMaterialDialog:
-      return {
-        display_material: undefined,
-        loading_events: false,
-        events: []
-      };
+      switch (a.station) {
+        case StationMonitorType.LoadUnload:
+          return {...s, loadstation_display_material: undefined};
+        case StationMonitorType.Inspection:
+          return {...s, inspection_display_material: undefined};
+        case StationMonitorType.Wash:
+          return {...s, wash_display_material: undefined};
+        default: return s;
+      }
 
     default:
       return s;
