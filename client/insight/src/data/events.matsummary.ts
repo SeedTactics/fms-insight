@@ -54,10 +54,12 @@ export interface MaterialSummary {
 
 export interface MatSummaryState {
   readonly matsById: im.Map<number, MaterialSummary>;
+  readonly inspTypes: im.Set<string>;
 }
 
 export const initial: MatSummaryState = {
   matsById: im.Map(),
+  inspTypes: im.Set(),
 };
 
 export function process_events(now: Date, newEvts: Iterable<api.ILogEntry>, st: MatSummaryState): MatSummaryState {
@@ -72,6 +74,8 @@ export function process_events(now: Date, newEvts: Iterable<api.ILogEntry>, st: 
   }
 
   let mats = st.matsById.filter(e => e.last_event >= oneWeekAgo);
+
+  let inspTypes = new Map<string, boolean>();
 
   evtsSeq
     .filter(e => !e.startofcycle && e.material.length > 0)
@@ -106,12 +110,14 @@ export function process_events(now: Date, newEvts: Iterable<api.ILogEntry>, st: 
             const entries = e.program.split(",");
             if (entries.length >= 2) {
               mat = {...mat, signaledInspections: [...mat.signaledInspections, entries[1]]};
+              inspTypes.set(entries[1], true);
             }
           }
           break;
 
         case api.LogType.InspectionResult:
           mat = {...mat, completedInspections: [...mat.completedInspections, e.program]};
+          inspTypes.set(e.program, true);
           break;
 
         case api.LogType.LoadUnloadCycle:
@@ -138,5 +144,14 @@ export function process_events(now: Date, newEvts: Iterable<api.ILogEntry>, st: 
     }
   });
 
-  return {...st, matsById: mats};
+  var inspTypesSet = st.inspTypes;
+  var newInspTypes = im.Seq.Keyed(inspTypes)
+    .keySeq()
+    .filter(i => !inspTypesSet.contains(i));
+
+  if (!newInspTypes.isEmpty()) {
+    inspTypesSet = inspTypesSet.union(newInspTypes);
+  }
+
+  return {...st, matsById: mats, inspTypes: inspTypesSet};
 }

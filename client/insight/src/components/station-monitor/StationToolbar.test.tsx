@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from 'react';
 import { shallow } from 'enzyme';
+import { Set } from 'immutable';
 
 import { StationToolbar } from './StationToolbar';
 import * as routes from '../../data/routes';
@@ -54,7 +55,7 @@ it('displays the toolbar for load with one queue', () => {
     <StationToolbar
       current_route={basicState}
       queues={{"a": {}, "b": {}}}
-      insp_types={["i1", "i2"]}
+      insp_types={Set(["i1", "i2"])}
       displayLoadStation={displayLoad}
       displayInspection={displayInsp}
       displayWash={displayWash}
@@ -74,7 +75,7 @@ it('displays the load with no queues', () => {
     <StationToolbar
       current_route={st}
       queues={{}}
-      insp_types={["i1", "i2"]}
+      insp_types={Set(["i1", "i2"])}
       displayLoadStation={displayLoad}
       displayInspection={displayInsp}
       displayWash={displayWash}
@@ -96,7 +97,7 @@ it('displays the toolbar for load with three queues', () => {
     <StationToolbar
       current_route={st}
       queues={{"a": {}, "b": {}, "c": {}, "d": {}}}
-      insp_types={["i1", "i2"]}
+      insp_types={Set(["i1", "i2"])}
       displayLoadStation={displayLoad}
       displayInspection={displayInsp}
       displayWash={displayWash}
@@ -118,7 +119,7 @@ it('displays the toolbar for wash', () => {
     <StationToolbar
       current_route={st}
       queues={{}}
-      insp_types={["i1", "i2"]}
+      insp_types={Set(["i1", "i2"])}
       displayLoadStation={displayLoad}
       displayInspection={displayInsp}
       displayWash={displayWash}
@@ -140,7 +141,7 @@ it('displays the toolbar for all inspection', () => {
     <StationToolbar
       current_route={st}
       queues={{}}
-      insp_types={["i1", "i2"]}
+      insp_types={Set(["i1", "i2"])}
       displayLoadStation={displayLoad}
       displayInspection={displayInsp}
       displayWash={displayWash}
@@ -163,7 +164,7 @@ it('displays the toolbar for single inspection type', () => {
     <StationToolbar
       current_route={st}
       queues={{}}
-      insp_types={["i1", "i2"]}
+      insp_types={Set(["i1", "i2"])}
       displayLoadStation={displayLoad}
       displayInspection={displayInsp}
       displayWash={displayWash}
@@ -180,7 +181,7 @@ it("changes the station type", () => {
     <StationToolbar
       current_route={basicState}
       queues={{}}
-      insp_types={[]}
+      insp_types={Set()}
       displayLoadStation={displayLoad}
       displayInspection={displayInsp}
       displayWash={displayWash}
@@ -215,7 +216,7 @@ it("changes the load station number", () => {
     <StationToolbar
       current_route={basicState}
       queues={{}}
-      insp_types={[]}
+      insp_types={Set()}
       displayLoadStation={displayLoad}
       displayInspection={displayInsp}
       displayWash={displayWash}
@@ -244,7 +245,7 @@ it("changes the queues", () => {
     <StationToolbar
       current_route={basicState}
       queues={{}}
-      insp_types={[]}
+      insp_types={Set()}
       displayLoadStation={displayLoad}
       displayInspection={displayInsp}
       displayWash={displayWash}

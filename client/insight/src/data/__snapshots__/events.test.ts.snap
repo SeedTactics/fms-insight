@@ -243,6 +243,7 @@ Object {
   "latest_counter": 6,
   "latest_event": 2018-01-06T09:40:05.000Z,
   "mat_summary": Object {
+    "inspTypes": Immutable.Set [],
     "matsById": Immutable.Map {
       70329: Object {
         "completedInspections": Array [],
@@ -417,6 +418,7 @@ Object {
   "latest_counter": 6,
   "latest_event": 2018-01-06T09:40:05.000Z,
   "mat_summary": Object {
+    "inspTypes": Immutable.Set [],
     "matsById": Immutable.Map {
       29838: Object {
         "completedInspections": Array [],
@@ -594,6 +596,7 @@ Object {
   "latest_counter": 6,
   "latest_event": 2018-01-06T09:40:05.000Z,
   "mat_summary": Object {
+    "inspTypes": Immutable.Set [],
     "matsById": Immutable.Map {
       62822: Object {
         "completedInspections": Array [],
@@ -768,6 +771,7 @@ Object {
   "latest_counter": 6,
   "latest_event": 2018-01-06T09:40:05.000Z,
   "mat_summary": Object {
+    "inspTypes": Immutable.Set [],
     "matsById": Immutable.Map {
       90816: Object {
         "completedInspections": Array [],

@@ -35,7 +35,7 @@ import { connect } from 'react-redux';
 import Select from 'material-ui/Select';
 import { MenuItem } from 'material-ui/Menu';
 import Input from 'material-ui/Input';
-import { Seq } from 'immutable';
+import { Seq, Set } from 'immutable';
 
 import * as routes from '../../data/routes';
 import { Store } from '../../data/store';
@@ -54,7 +54,7 @@ const toolbarStyle = {
 export interface StationToolbarProps {
   readonly current_route: routes.State;
   readonly queues: { [key: string]: api.IQueueSize };
-  readonly insp_types: ReadonlyArray<string>;
+  readonly insp_types: Set<string>;
   readonly displayLoadStation:
     // tslint:disable-next-line:no-any
     (num: number, queues: ReadonlyArray<string>, freeMaterial: boolean) => any;
@@ -170,7 +170,7 @@ export function StationToolbar(props: StationToolbarProps) {
             >
               <MenuItem key={allInspSym} value={allInspSym}><em>All</em></MenuItem>
               {
-                Seq(props.insp_types).sort().map(ty =>
+                props.insp_types.toSeq().sort().map(ty =>
                   <MenuItem key={ty} value={ty}>{ty}</MenuItem>
                 )
               }
@@ -206,7 +206,7 @@ export default connect(
   (st: Store) => ({
     current_route: st.Route,
     queues: st.Current.current_status.queues,
-    insp_types: [],
+    insp_types: st.Events.last30.mat_summary.inspTypes,
   }),
   {
     displayLoadStation: routes.displayLoadStation,
