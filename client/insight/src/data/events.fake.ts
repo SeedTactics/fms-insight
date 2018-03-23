@@ -36,6 +36,8 @@ import * as faker from 'faker';
 import { duration } from 'moment';
 import { addSeconds, addMinutes } from 'date-fns';
 
+faker.seed(0x6f79);
+
 export function fakeMaterial(part?: string, proc?: number): LogMaterial {
   return new LogMaterial({
     id: faker.random.number(),

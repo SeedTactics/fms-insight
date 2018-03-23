@@ -113,6 +113,32 @@ Object {
   },
   "latest_counter": 6,
   "latest_event": 2018-01-06T09:40:05.000Z,
+  "mat_summary": Object {
+    "matsById": Immutable.Map {
+      70329: Object {
+            "completedInspections": Array [],
+            "completed_procs": Array [
+              1,
+            ],
+            "jobUnique": "uniqi",
+            "last_event": 2018-02-02T09:52:05.000Z,
+            "materialID": 70329,
+            "partName": "part111",
+            "signaledInspections": Array [],
+          },
+      58696: Object {
+            "completedInspections": Array [],
+            "completed_procs": Array [
+              1,
+            ],
+            "jobUnique": "uniqw",
+            "last_event": 2018-02-08T09:34:05.000Z,
+            "materialID": 58696,
+            "partName": "part111",
+            "signaledInspections": Array [],
+          },
+},
+  },
   "oee": Object {
     "last_week_of_hours": Immutable.List [
       Object {
@@ -253,6 +279,32 @@ Object {
   },
   "latest_counter": 6,
   "latest_event": 2018-01-06T09:40:05.000Z,
+  "mat_summary": Object {
+    "matsById": Immutable.Map {
+      62822: Object {
+            "completedInspections": Array [],
+            "completed_procs": Array [
+              1,
+            ],
+            "jobUnique": "uniq7",
+            "last_event": 2018-02-02T09:52:05.000Z,
+            "materialID": 62822,
+            "partName": "part111",
+            "signaledInspections": Array [],
+          },
+      57245: Object {
+            "completedInspections": Array [],
+            "completed_procs": Array [
+              1,
+            ],
+            "jobUnique": "uniqr",
+            "last_event": 2018-02-08T09:34:05.000Z,
+            "materialID": 57245,
+            "partName": "part111",
+            "signaledInspections": Array [],
+          },
+},
+  },
   "oee": Object {
     "last_week_of_hours": Immutable.List [
       Object {
@@ -401,6 +453,43 @@ Object {
   },
   "latest_counter": 6,
   "latest_event": 2018-01-06T09:40:05.000Z,
+  "mat_summary": Object {
+    "matsById": Immutable.Map {
+      29838: Object {
+            "completedInspections": Array [],
+            "completed_procs": Array [
+              2,
+            ],
+            "jobUnique": "uniqc",
+            "last_event": 2018-01-06T09:40:05.000Z,
+            "materialID": 29838,
+            "partName": "part222",
+            "signaledInspections": Array [],
+          },
+      19656: Object {
+            "completedInspections": Array [],
+            "completed_procs": Array [
+              1,
+            ],
+            "jobUnique": "uniqz",
+            "last_event": 2018-01-31T09:46:05.000Z,
+            "materialID": 19656,
+            "partName": "part222",
+            "signaledInspections": Array [],
+          },
+      70329: Object {
+            "completedInspections": Array [],
+            "completed_procs": Array [
+              1,
+            ],
+            "jobUnique": "uniqi",
+            "last_event": 2018-02-02T09:52:05.000Z,
+            "materialID": 70329,
+            "partName": "part111",
+            "signaledInspections": Array [],
+          },
+},
+  },
   "oee": Object {
     "last_week_of_hours": Immutable.List [
       Object {
@@ -549,6 +638,43 @@ Object {
   },
   "latest_counter": 6,
   "latest_event": 2018-01-06T09:40:05.000Z,
+  "mat_summary": Object {
+    "matsById": Immutable.Map {
+      90816: Object {
+            "completedInspections": Array [],
+            "completed_procs": Array [
+              2,
+            ],
+            "jobUnique": "uniq9",
+            "last_event": 2018-01-06T09:40:05.000Z,
+            "materialID": 90816,
+            "partName": "part222",
+            "signaledInspections": Array [],
+          },
+      56627: Object {
+            "completedInspections": Array [],
+            "completed_procs": Array [
+              1,
+            ],
+            "jobUnique": "uniqp",
+            "last_event": 2018-01-31T09:46:05.000Z,
+            "materialID": 56627,
+            "partName": "part222",
+            "signaledInspections": Array [],
+          },
+      62822: Object {
+            "completedInspections": Array [],
+            "completed_procs": Array [
+              1,
+            ],
+            "jobUnique": "uniq7",
+            "last_event": 2018-02-02T09:52:05.000Z,
+            "materialID": 62822,
+            "partName": "part111",
+            "signaledInspections": Array [],
+          },
+},
+  },
   "oee": Object {
     "last_week_of_hours": Immutable.List [
       Object {
