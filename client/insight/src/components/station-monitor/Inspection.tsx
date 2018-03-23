@@ -34,9 +34,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from 'react';
 import * as im from 'immutable';
 import { withStyles } from 'material-ui';
-import Grid from 'material-ui/Grid';
 import { addHours } from 'date-fns';
-import Card, { CardContent, CardHeader } from 'material-ui/Card';
+import Grid from 'material-ui/Grid';
+import Card, { CardContent, CardHeader, CardActions } from 'material-ui/Card';
+import Button from 'material-ui/Button';
 import { connect } from 'react-redux';
 import { createSelector } from 'reselect';
 
@@ -91,6 +92,9 @@ export function SelectedMaterial({mat}: {mat: matDetails.MaterialDetail}) {
 export interface InspectionProps extends InspectionListProps {
   readonly fillViewPort: boolean;
   readonly display_material: matDetails.MaterialDetail | null;
+
+  // tslint:disable-next-line:no-any
+  readonly completeInspection: (mat: matDetails.MaterialDetail, inspType: string, success: boolean) => any;
 }
 
 const inspStyles = withStyles(() => ({
@@ -117,6 +121,15 @@ const inspStyles = withStyles(() => ({
 }));
 
 export const Inspection = inspStyles<InspectionProps>(props => {
+
+  function markInspComplete() {
+    if (!props.display_material) {
+      return;
+    }
+
+    props.completeInspection(props.display_material, "MyInspection", true);
+  }
+
   return (
     <main className={props.fillViewPort ? props.classes.mainFillViewport : props.classes.mainScrollable}>
       <Grid container style={{flexGrow: 1}}>
@@ -138,6 +151,15 @@ export const Inspection = inspStyles<InspectionProps>(props => {
             <CardContent className={props.fillViewPort ? props.classes.stretchCardContent : undefined}>
               {props.display_material ? <SelectedMaterial mat={props.display_material}/> : undefined}
             </CardContent>
+            {
+              props.display_material ?
+                <CardActions>
+                  <Button onClick={markInspComplete}>
+                    Mark Inspection Success
+                  </Button>
+                </CardActions>
+                : undefined
+            }
           </Card>
         </Grid>
       </Grid>
@@ -173,6 +195,7 @@ export default connect(
     display_material: st.MaterialDetails.inspection_display_material || null,
   }),
   {
-    openMat: matDetails.openInspectionMaterial
+    openMat: matDetails.openInspectionMaterial,
+    completeInspection: matDetails.completeInspection,
   }
 )(Inspection);

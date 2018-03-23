@@ -46,7 +46,9 @@ export enum ActionType {
 }
 
 export interface MaterialDetail {
+  readonly materialID: number;
   readonly partName: string;
+  readonly jobUnique: string;
   readonly serial?: string;
   readonly workorderId?: string;
   readonly signaledInspections: ReadonlyArray<string>;
@@ -85,7 +87,9 @@ export function openLoadunloadMaterialDialog(mat: Readonly<api.IInProcessMateria
     type: ActionType.OpenMaterialDialog,
     station: StationMonitorType.LoadUnload,
     initial: {
+      materialID: mat.materialID,
       partName: mat.partName,
+      jobUnique: mat.jobUnique,
       serial: mat.serial,
       workorderId: mat.workorderId,
       signaledInspections: mat.signaledInspections,
@@ -104,7 +108,9 @@ export function openInspectionMaterial(mat: MaterialSummary) {
     type: ActionType.OpenMaterialDialog,
     station: StationMonitorType.Inspection,
     initial: {
+      materialID: mat.materialID,
       partName: mat.partName,
+      jobUnique: mat.jobUnique,
       serial: mat.serial,
       workorderId: mat.workorderId,
       signaledInspections: mat.signaledInspections,
@@ -123,7 +129,9 @@ export function openWashMaterial(mat: MaterialSummary) {
     type: ActionType.OpenMaterialDialog,
     station: StationMonitorType.Wash,
     initial: {
+      materialID: mat.materialID,
       partName: mat.partName,
+      jobUnique: mat.jobUnique,
       serial: mat.serial,
       workorderId: mat.workorderId,
       signaledInspections: mat.signaledInspections,
@@ -136,7 +144,7 @@ export function openWashMaterial(mat: MaterialSummary) {
   };
 }
 
-export function completeInspection(mat: MaterialSummary, inspType: string, success: boolean) {
+export function completeInspection(mat: MaterialDetail, inspType: string, success: boolean) {
   var client = new api.LogClient();
   return {
     type: ActionType.CompleteInspection,
@@ -146,8 +154,8 @@ export function completeInspection(mat: MaterialSummary, inspType: string, succe
         id: mat.materialID,
         uniq: mat.jobUnique,
         part: mat.partName,
-        proc: im.Seq(mat.completed_procs).max() || 1,
-        numproc: im.Seq(mat.completed_procs).max() || 1,
+        proc: 1,
+        numproc: 1,
         face: "1",
       }),
       inspectionLocationNum: 1,

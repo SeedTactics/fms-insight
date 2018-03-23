@@ -45,7 +45,9 @@ it('creates initial state', () => {
 });
 
 const m: Readonly<mat.MaterialDetail> = {
+  materialID: 105,
   partName: "aaa",
+  jobUnique: "uniq",
   serial: "abc",
   workorderId: "asd",
   signaledInspections: ["a", "b"],
