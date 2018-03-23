@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`cycle chart 1`] = `
+exports[`displays a cycle chart: cycle chart 1`] = `
 <div>
   <FlexibleXYPlot
     dontCheckIfEmpty={true}
@@ -121,7 +121,150 @@ exports[`cycle chart 1`] = `
 </div>
 `;
 
-exports[`empty cycle chart 1`] = `
+exports[`displays a selectable cycle chart with nothing selected: selectable cycle chart with nothing selected 1`] = `
+<Card
+  raised={true}
+>
+  <WithStyles(CardHeader)
+    title={
+      <div
+        style={
+          Object {
+            "alignItems": "center",
+            "display": "flex",
+            "flexWrap": "wrap",
+          }
+        }
+      >
+        <pure(Work) />
+        <div
+          style={
+            Object {
+              "marginLeft": "10px",
+              "marginRight": "3em",
+            }
+          }
+        >
+          cardheader
+        </div>
+        <div
+          style={
+            Object {
+              "flexGrow": 1,
+            }
+          }
+        />
+        <WithStyles(Select)
+          autoWidth={true}
+          displayEmpty={true}
+          onChange={[Function]}
+          value=""
+        >
+          <WithStyles(MenuItem)
+            value=""
+          >
+            <em>
+              Select 
+              sellabel
+            </em>
+          </WithStyles(MenuItem)>
+          Immutable.Seq […]
+        </WithStyles(Select)>
+      </div>
+    }
+  />
+  <WithStyles(CardContent)>
+    <CycleChart
+      points={Immutable.Map {}}
+      series_label="serieslabel"
+    />
+  </WithStyles(CardContent)>
+</Card>
+`;
+
+exports[`displays a selectable cycle chart with something selected: selectable cycle chart with something selected 1`] = `
+<Card
+  raised={true}
+>
+  <WithStyles(CardHeader)
+    title={
+      <div
+        style={
+          Object {
+            "alignItems": "center",
+            "display": "flex",
+            "flexWrap": "wrap",
+          }
+        }
+      >
+        <pure(Work) />
+        <div
+          style={
+            Object {
+              "marginLeft": "10px",
+              "marginRight": "3em",
+            }
+          }
+        >
+          cardheader
+        </div>
+        <div
+          style={
+            Object {
+              "flexGrow": 1,
+            }
+          }
+        />
+        <WithStyles(Select)
+          autoWidth={true}
+          displayEmpty={true}
+          onChange={[Function]}
+          value="111"
+        >
+          Immutable.Seq […]
+        </WithStyles(Select)>
+      </div>
+    }
+  />
+  <WithStyles(CardContent)>
+    <CycleChart
+      points={
+        Immutable.Map {
+          "aaa": Array [
+            Object {
+              "x": 2018-02-01T06:00:00.000Z,
+              "y": 15,
+            },
+            Object {
+              "x": 2018-02-02T06:00:00.000Z,
+              "y": 66,
+            },
+          ],
+          "bbb": Array [
+            Object {
+              "x": 2018-03-02T06:00:00.000Z,
+              "y": 53,
+            },
+            Object {
+              "x": 2018-03-03T06:00:00.000Z,
+              "y": 55,
+            },
+          ],
+          "ccc": Array [
+            Object {
+              "x": 2018-04-03T05:00:00.000Z,
+              "y": 6,
+            },
+          ],
+        }
+      }
+      series_label="serieslabel"
+    />
+  </WithStyles(CardContent)>
+</Card>
+`;
+
+exports[`displays an empty chart: empty cycle chart 1`] = `
 <div>
   <FlexibleXYPlot
     dontCheckIfEmpty={true}
@@ -190,172 +333,4 @@ exports[`empty cycle chart 1`] = `
     />
   </div>
 </div>
-`;
-
-exports[`selectable cycle chart with nothing selected 1`] = `
-<Card
-  raised={true}
->
-  <WithStyles(CardHeader)
-    title={
-      <div
-        style={
-          Object {
-            "alignItems": "center",
-            "display": "flex",
-            "flexWrap": "wrap",
-          }
-        }
-      >
-        <pure(Work) />
-        <div
-          style={
-            Object {
-              "marginLeft": "10px",
-              "marginRight": "3em",
-            }
-          }
-        >
-          cardheader
-        </div>
-        <div
-          style={
-            Object {
-              "flexGrow": 1,
-            }
-          }
-        />
-        <WithStyles(Select)
-          autoWidth={true}
-          displayEmpty={true}
-          onChange={[Function]}
-          value=""
-        >
-          <WithStyles(MenuItem)
-            value=""
-          >
-            <em>
-              Select 
-              sellabel
-            </em>
-          </WithStyles(MenuItem)>
-          Array [
-            <WithStyles(MenuItem)
-              value="111"
-          >
-              111
-          </WithStyles(MenuItem)>,
-            <WithStyles(MenuItem)
-              value="222"
-          >
-              222
-          </WithStyles(MenuItem)>,
-          ]
-        </WithStyles(Select)>
-      </div>
-    }
-  />
-  <WithStyles(CardContent)>
-    <CycleChart
-      points={
-        Immutable.Map {
-        }
-      }
-      series_label="serieslabel"
-    />
-  </WithStyles(CardContent)>
-</Card>
-`;
-
-exports[`selectable cycle chart with something selected 1`] = `
-<Card
-  raised={true}
->
-  <WithStyles(CardHeader)
-    title={
-      <div
-        style={
-          Object {
-            "alignItems": "center",
-            "display": "flex",
-            "flexWrap": "wrap",
-          }
-        }
-      >
-        <pure(Work) />
-        <div
-          style={
-            Object {
-              "marginLeft": "10px",
-              "marginRight": "3em",
-            }
-          }
-        >
-          cardheader
-        </div>
-        <div
-          style={
-            Object {
-              "flexGrow": 1,
-            }
-          }
-        />
-        <WithStyles(Select)
-          autoWidth={true}
-          displayEmpty={true}
-          onChange={[Function]}
-          value="111"
-        >
-          Array [
-            <WithStyles(MenuItem)
-              value="111"
-          >
-              111
-          </WithStyles(MenuItem)>,
-            <WithStyles(MenuItem)
-              value="222"
-          >
-              222
-          </WithStyles(MenuItem)>,
-          ]
-        </WithStyles(Select)>
-      </div>
-    }
-  />
-  <WithStyles(CardContent)>
-    <CycleChart
-      points={
-        Immutable.Map {
-          aaa: Array [
-            Object {
-              "x": 2018-02-01T06:00:00.000Z,
-              "y": 15,
-            },
-            Object {
-              "x": 2018-02-02T06:00:00.000Z,
-              "y": 66,
-            },
-          ],
-          bbb: Array [
-            Object {
-              "x": 2018-03-02T06:00:00.000Z,
-              "y": 53,
-            },
-            Object {
-              "x": 2018-03-03T06:00:00.000Z,
-              "y": 55,
-            },
-          ],
-          ccc: Array [
-            Object {
-              "x": 2018-04-03T05:00:00.000Z,
-              "y": 6,
-            },
-          ],
-        }
-      }
-      series_label="serieslabel"
-    />
-  </WithStyles(CardContent)>
-</Card>
 `;

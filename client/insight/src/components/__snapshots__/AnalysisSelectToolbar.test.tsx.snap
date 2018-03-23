@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`last 30 selected with january 1`] = `
+exports[`displays the toolbar: last 30 selected with january 1`] = `
 <nav
   style={
     Object {
@@ -45,7 +45,7 @@ exports[`last 30 selected with january 1`] = `
 </nav>
 `;
 
-exports[`specific month with february 1`] = `
+exports[`displays the toolbar: specific month with february 1`] = `
 <nav
   style={
     Object {

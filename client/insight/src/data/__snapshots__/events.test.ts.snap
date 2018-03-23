@@ -1,825 +1,843 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`cycles binned by day and station 1`] = `
+exports[`bins actual cycles by day: cycles binned by day and station 1`] = `
 Immutable.Map {
-  Record { day: Mon Mar 05 2018 00:00:00 GMT-0600 (CST), station: "L/U #1" }: 0.0001,
-  Record { day: Mon Mar 05 2018 00:00:00 GMT-0600 (CST), station: "MC #1" }: 0.0005,
-  Record { day: Mon Mar 05 2018 00:00:00 GMT-0600 (CST), station: "L/U #2" }: 0.00005,
-  Record { day: Sun Mar 04 2018 00:00:00 GMT-0600 (CST), station: "L/U #1" }: 0.0002,
-  Record { day: Sun Mar 04 2018 00:00:00 GMT-0600 (CST), station: "MC #1" }: 0.0005833333333333333,
-  Record { day: Sun Mar 04 2018 00:00:00 GMT-0600 (CST), station: "L/U #2" }: 0.0001,
+  Immutable.Record {
+    "day": 2018-03-05T06:00:00.000Z,
+    "station": "L/U #1",
+  }: 0.0001,
+  Immutable.Record {
+    "day": 2018-03-05T06:00:00.000Z,
+    "station": "MC #1",
+  }: 0.0005,
+  Immutable.Record {
+    "day": 2018-03-05T06:00:00.000Z,
+    "station": "L/U #2",
+  }: 0.00005,
+  Immutable.Record {
+    "day": 2018-03-04T06:00:00.000Z,
+    "station": "L/U #1",
+  }: 0.0002,
+  Immutable.Record {
+    "day": 2018-03-04T06:00:00.000Z,
+    "station": "MC #1",
+  }: 0.0005833333333333333,
+  Immutable.Record {
+    "day": 2018-03-04T06:00:00.000Z,
+    "station": "L/U #2",
+  }: 0.0001,
 }
 `;
 
-exports[`last30 with 2 days ago, today, and 6 days from now 1`] = `
+exports[`loads a specific month for analysis: selected month with 27 days ago, 2 days ago, and today 1`] = `
 Object {
   "cycles": Object {
     "by_pallet": Immutable.Map {
-      palbb: Array [
-            Object {
-              "active": -1,
-              "completed": false,
-              "x": 2018-01-31T09:46:05.000Z,
-              "y": 44,
-            },
-            Object {
-              "active": -1,
-              "completed": false,
-              "x": 2018-02-02T09:52:05.000Z,
-              "y": 44,
-            },
-          ],
-      palcc: Array [
-            Object {
-              "active": -1,
-              "completed": false,
-              "x": 2018-02-08T09:34:05.000Z,
-              "y": 44,
-            },
-          ],
-},
+      "paltt": Array [
+        Object {
+          "active": -1,
+          "completed": false,
+          "x": 2018-01-06T09:40:05.000Z,
+          "y": 44,
+        },
+        Object {
+          "active": -1,
+          "completed": false,
+          "x": 2018-01-31T09:46:05.000Z,
+          "y": 44,
+        },
+      ],
+      "palss": Array [
+        Object {
+          "active": -1,
+          "completed": false,
+          "x": 2018-02-02T09:52:05.000Z,
+          "y": 44,
+        },
+      ],
+    },
     "by_part_then_stat": Immutable.Map {
-      part222-1: Immutable.Map {
-            L/U #1: Array [
-                  Object {
-                    "active": 6,
-                    "completed": false,
-                    "x": 2018-01-31T09:09:05.000Z,
-                    "y": 6,
-                  },
-                ],
-            MC #1: Array [
-                  Object {
-                    "active": 24,
-                    "completed": false,
-                    "x": 2018-01-31T09:36:05.000Z,
-                    "y": 24,
-                  },
-                ],
-            L/U #2: Array [
-                  Object {
-                    "active": 3,
-                    "completed": true,
-                    "x": 2018-01-31T09:46:05.000Z,
-                    "y": 3,
-                  },
-                ],
+      "partCCC-3": Immutable.Map {
+        "L/U #1": Array [
+          Object {
+            "active": 6,
+            "completed": false,
+            "x": 2018-01-06T09:09:05.000Z,
+            "y": 6,
+          },
+        ],
+        "MC #1": Array [
+          Object {
+            "active": 18,
+            "completed": false,
+            "x": 2018-01-06T09:30:05.000Z,
+            "y": 18,
+          },
+        ],
+        "L/U #2": Array [
+          Object {
+            "active": 3,
+            "completed": true,
+            "x": 2018-01-06T09:40:05.000Z,
+            "y": 3,
+          },
+        ],
       },
-      part111-1: Immutable.Map {
-            L/U #1: Array [
-                  Object {
-                    "active": 6,
-                    "completed": false,
-                    "x": 2018-02-02T09:09:05.000Z,
-                    "y": 6,
-                  },
-                  Object {
-                    "active": 6,
-                    "completed": false,
-                    "x": 2018-02-08T09:09:05.000Z,
-                    "y": 6,
-                  },
-                ],
-            MC #1: Array [
-                  Object {
-                    "active": 30,
-                    "completed": false,
-                    "x": 2018-02-02T09:42:05.000Z,
-                    "y": 30,
-                  },
-                  Object {
-                    "active": 12,
-                    "completed": false,
-                    "x": 2018-02-08T09:24:05.000Z,
-                    "y": 12,
-                  },
-                ],
-            L/U #2: Array [
-                  Object {
-                    "active": 3,
-                    "completed": true,
-                    "x": 2018-02-02T09:52:05.000Z,
-                    "y": 3,
-                  },
-                  Object {
-                    "active": 3,
-                    "completed": true,
-                    "x": 2018-02-08T09:34:05.000Z,
-                    "y": 3,
-                  },
-                ],
+      "partBBB-2": Immutable.Map {
+        "L/U #1": Array [
+          Object {
+            "active": 6,
+            "completed": false,
+            "x": 2018-01-31T09:09:05.000Z,
+            "y": 6,
+          },
+        ],
+        "MC #1": Array [
+          Object {
+            "active": 24,
+            "completed": false,
+            "x": 2018-01-31T09:36:05.000Z,
+            "y": 24,
+          },
+        ],
+        "L/U #2": Array [
+          Object {
+            "active": 3,
+            "completed": true,
+            "x": 2018-01-31T09:46:05.000Z,
+            "y": 3,
+          },
+        ],
       },
-},
+      "partAAA-1": Immutable.Map {
+        "L/U #1": Array [
+          Object {
+            "active": 6,
+            "completed": false,
+            "x": 2018-02-02T09:09:05.000Z,
+            "y": 6,
+          },
+        ],
+        "MC #1": Array [
+          Object {
+            "active": 30,
+            "completed": false,
+            "x": 2018-02-02T09:42:05.000Z,
+            "y": 30,
+          },
+        ],
+        "L/U #2": Array [
+          Object {
+            "active": 3,
+            "completed": true,
+            "x": 2018-02-02T09:52:05.000Z,
+            "y": 3,
+          },
+        ],
+      },
+    },
+  },
+}
+`;
+
+exports[`processes new log events into last30: last30 with 2 days ago, today, and 6 days from now 1`] = `
+Object {
+  "cycles": Object {
+    "by_pallet": Immutable.Map {
+      "palbb": Array [
+        Object {
+          "active": -1,
+          "completed": false,
+          "x": 2018-01-31T09:46:05.000Z,
+          "y": 44,
+        },
+        Object {
+          "active": -1,
+          "completed": false,
+          "x": 2018-02-02T09:52:05.000Z,
+          "y": 44,
+        },
+      ],
+      "palcc": Array [
+        Object {
+          "active": -1,
+          "completed": false,
+          "x": 2018-02-08T09:34:05.000Z,
+          "y": 44,
+        },
+      ],
+    },
+    "by_part_then_stat": Immutable.Map {
+      "part222-1": Immutable.Map {
+        "L/U #1": Array [
+          Object {
+            "active": 6,
+            "completed": false,
+            "x": 2018-01-31T09:09:05.000Z,
+            "y": 6,
+          },
+        ],
+        "MC #1": Array [
+          Object {
+            "active": 24,
+            "completed": false,
+            "x": 2018-01-31T09:36:05.000Z,
+            "y": 24,
+          },
+        ],
+        "L/U #2": Array [
+          Object {
+            "active": 3,
+            "completed": true,
+            "x": 2018-01-31T09:46:05.000Z,
+            "y": 3,
+          },
+        ],
+      },
+      "part111-1": Immutable.Map {
+        "L/U #1": Array [
+          Object {
+            "active": 6,
+            "completed": false,
+            "x": 2018-02-02T09:09:05.000Z,
+            "y": 6,
+          },
+          Object {
+            "active": 6,
+            "completed": false,
+            "x": 2018-02-08T09:09:05.000Z,
+            "y": 6,
+          },
+        ],
+        "MC #1": Array [
+          Object {
+            "active": 30,
+            "completed": false,
+            "x": 2018-02-02T09:42:05.000Z,
+            "y": 30,
+          },
+          Object {
+            "active": 12,
+            "completed": false,
+            "x": 2018-02-08T09:24:05.000Z,
+            "y": 12,
+          },
+        ],
+        "L/U #2": Array [
+          Object {
+            "active": 3,
+            "completed": true,
+            "x": 2018-02-02T09:52:05.000Z,
+            "y": 3,
+          },
+          Object {
+            "active": 3,
+            "completed": true,
+            "x": 2018-02-08T09:34:05.000Z,
+            "y": 3,
+          },
+        ],
+      },
+    },
   },
   "latest_counter": 6,
   "latest_event": 2018-01-06T09:40:05.000Z,
   "mat_summary": Object {
     "matsById": Immutable.Map {
       70329: Object {
-            "completedInspections": Array [],
-            "completed_procs": Array [
-              1,
-            ],
-            "jobUnique": "uniqi",
-            "last_event": 2018-02-02T09:52:05.000Z,
-            "materialID": 70329,
-            "partName": "part111",
-            "signaledInspections": Array [],
-          },
+        "completedInspections": Array [],
+        "completed_procs": Array [
+          1,
+        ],
+        "jobUnique": "uniqi",
+        "last_event": 2018-02-02T09:52:05.000Z,
+        "materialID": 70329,
+        "partName": "part111",
+        "signaledInspections": Array [],
+      },
       58696: Object {
-            "completedInspections": Array [],
-            "completed_procs": Array [
-              1,
-            ],
-            "jobUnique": "uniqw",
-            "last_event": 2018-02-08T09:34:05.000Z,
-            "materialID": 58696,
-            "partName": "part111",
-            "signaledInspections": Array [],
-          },
-},
+        "completedInspections": Array [],
+        "completed_procs": Array [
+          1,
+        ],
+        "jobUnique": "uniqw",
+        "last_event": 2018-02-08T09:34:05.000Z,
+        "materialID": 58696,
+        "partName": "part111",
+        "signaledInspections": Array [],
+      },
+    },
   },
   "oee": Object {
     "last_week_of_hours": Immutable.List [
       Object {
-            "date": 2018-02-02T09:09:05.000Z,
-            "hours": 0.1,
-            "station": "L/U #1",
-          },
+        "date": 2018-02-02T09:09:05.000Z,
+        "hours": 0.1,
+        "station": "L/U #1",
+      },
       Object {
-            "date": 2018-02-02T09:42:05.000Z,
-            "hours": 0.5,
-            "station": "MC #1",
-          },
+        "date": 2018-02-02T09:42:05.000Z,
+        "hours": 0.5,
+        "station": "MC #1",
+      },
       Object {
-            "date": 2018-02-02T09:52:05.000Z,
-            "hours": 0.05,
-            "station": "L/U #2",
-          },
+        "date": 2018-02-02T09:52:05.000Z,
+        "hours": 0.05,
+        "station": "L/U #2",
+      },
       Object {
-            "date": 2018-02-08T09:09:05.000Z,
-            "hours": 0.1,
-            "station": "L/U #1",
-          },
+        "date": 2018-02-08T09:09:05.000Z,
+        "hours": 0.1,
+        "station": "L/U #1",
+      },
       Object {
-            "date": 2018-02-08T09:24:05.000Z,
-            "hours": 0.2,
-            "station": "MC #1",
-          },
+        "date": 2018-02-08T09:24:05.000Z,
+        "hours": 0.2,
+        "station": "MC #1",
+      },
       Object {
-            "date": 2018-02-08T09:34:05.000Z,
-            "hours": 0.05,
-            "station": "L/U #2",
-          },
-],
+        "date": 2018-02-08T09:34:05.000Z,
+        "hours": 0.05,
+        "station": "L/U #2",
+      },
+    ],
     "system_active_hours_per_week": 168,
   },
 }
 `;
 
-exports[`last30 with 2 days ago, today, and 6 days from now 2`] = `
+exports[`processes new log events into last30: last30 with 27 days ago, 2 days ago, and today 1`] = `
 Object {
   "cycles": Object {
     "by_pallet": Immutable.Map {
-      palbb: Array [
-            Object {
-              "active": -1,
-              "completed": false,
-              "x": 2018-01-31T09:46:05.000Z,
-              "y": 44,
-            },
-            Object {
-              "active": -1,
-              "completed": false,
-              "x": 2018-02-02T09:52:05.000Z,
-              "y": 44,
-            },
-          ],
-      palcc: Array [
-            Object {
-              "active": -1,
-              "completed": false,
-              "x": 2018-02-08T09:34:05.000Z,
-              "y": 44,
-            },
-          ],
-},
+      "palaa": Array [
+        Object {
+          "active": -1,
+          "completed": false,
+          "x": 2018-01-06T09:40:05.000Z,
+          "y": 44,
+        },
+      ],
+      "palbb": Array [
+        Object {
+          "active": -1,
+          "completed": false,
+          "x": 2018-01-31T09:46:05.000Z,
+          "y": 44,
+        },
+        Object {
+          "active": -1,
+          "completed": false,
+          "x": 2018-02-02T09:52:05.000Z,
+          "y": 44,
+        },
+      ],
+    },
     "by_part_then_stat": Immutable.Map {
-      part222-1: Immutable.Map {
-            L/U #1: Array [
-                  Object {
-                    "active": 6,
-                    "completed": false,
-                    "x": 2018-01-31T09:09:05.000Z,
-                    "y": 6,
-                  },
-                ],
-            MC #1: Array [
-                  Object {
-                    "active": 24,
-                    "completed": false,
-                    "x": 2018-01-31T09:36:05.000Z,
-                    "y": 24,
-                  },
-                ],
-            L/U #2: Array [
-                  Object {
-                    "active": 3,
-                    "completed": true,
-                    "x": 2018-01-31T09:46:05.000Z,
-                    "y": 3,
-                  },
-                ],
+      "part222-2": Immutable.Map {
+        "L/U #1": Array [
+          Object {
+            "active": 6,
+            "completed": false,
+            "x": 2018-01-06T09:09:05.000Z,
+            "y": 6,
+          },
+        ],
+        "MC #1": Array [
+          Object {
+            "active": 18,
+            "completed": false,
+            "x": 2018-01-06T09:30:05.000Z,
+            "y": 18,
+          },
+        ],
+        "L/U #2": Array [
+          Object {
+            "active": 3,
+            "completed": true,
+            "x": 2018-01-06T09:40:05.000Z,
+            "y": 3,
+          },
+        ],
       },
-      part111-1: Immutable.Map {
-            L/U #1: Array [
-                  Object {
-                    "active": 6,
-                    "completed": false,
-                    "x": 2018-02-02T09:09:05.000Z,
-                    "y": 6,
-                  },
-                  Object {
-                    "active": 6,
-                    "completed": false,
-                    "x": 2018-02-08T09:09:05.000Z,
-                    "y": 6,
-                  },
-                ],
-            MC #1: Array [
-                  Object {
-                    "active": 30,
-                    "completed": false,
-                    "x": 2018-02-02T09:42:05.000Z,
-                    "y": 30,
-                  },
-                  Object {
-                    "active": 12,
-                    "completed": false,
-                    "x": 2018-02-08T09:24:05.000Z,
-                    "y": 12,
-                  },
-                ],
-            L/U #2: Array [
-                  Object {
-                    "active": 3,
-                    "completed": true,
-                    "x": 2018-02-02T09:52:05.000Z,
-                    "y": 3,
-                  },
-                  Object {
-                    "active": 3,
-                    "completed": true,
-                    "x": 2018-02-08T09:34:05.000Z,
-                    "y": 3,
-                  },
-                ],
+      "part222-1": Immutable.Map {
+        "L/U #1": Array [
+          Object {
+            "active": 6,
+            "completed": false,
+            "x": 2018-01-31T09:09:05.000Z,
+            "y": 6,
+          },
+        ],
+        "MC #1": Array [
+          Object {
+            "active": 24,
+            "completed": false,
+            "x": 2018-01-31T09:36:05.000Z,
+            "y": 24,
+          },
+        ],
+        "L/U #2": Array [
+          Object {
+            "active": 3,
+            "completed": true,
+            "x": 2018-01-31T09:46:05.000Z,
+            "y": 3,
+          },
+        ],
       },
-},
-  },
-  "latest_counter": 6,
-  "latest_event": 2018-01-06T09:40:05.000Z,
-  "mat_summary": Object {
-    "matsById": Immutable.Map {
-      62822: Object {
-            "completedInspections": Array [],
-            "completed_procs": Array [
-              1,
-            ],
-            "jobUnique": "uniq7",
-            "last_event": 2018-02-02T09:52:05.000Z,
-            "materialID": 62822,
-            "partName": "part111",
-            "signaledInspections": Array [],
+      "part111-1": Immutable.Map {
+        "L/U #1": Array [
+          Object {
+            "active": 6,
+            "completed": false,
+            "x": 2018-02-02T09:09:05.000Z,
+            "y": 6,
           },
-      57245: Object {
-            "completedInspections": Array [],
-            "completed_procs": Array [
-              1,
-            ],
-            "jobUnique": "uniqr",
-            "last_event": 2018-02-08T09:34:05.000Z,
-            "materialID": 57245,
-            "partName": "part111",
-            "signaledInspections": Array [],
+        ],
+        "MC #1": Array [
+          Object {
+            "active": 30,
+            "completed": false,
+            "x": 2018-02-02T09:42:05.000Z,
+            "y": 30,
           },
-},
-  },
-  "oee": Object {
-    "last_week_of_hours": Immutable.List [
-      Object {
-            "date": 2018-02-02T09:09:05.000Z,
-            "hours": 0.1,
-            "station": "L/U #1",
+        ],
+        "L/U #2": Array [
+          Object {
+            "active": 3,
+            "completed": true,
+            "x": 2018-02-02T09:52:05.000Z,
+            "y": 3,
           },
-      Object {
-            "date": 2018-02-02T09:42:05.000Z,
-            "hours": 0.5,
-            "station": "MC #1",
-          },
-      Object {
-            "date": 2018-02-02T09:52:05.000Z,
-            "hours": 0.05,
-            "station": "L/U #2",
-          },
-      Object {
-            "date": 2018-02-08T09:09:05.000Z,
-            "hours": 0.1,
-            "station": "L/U #1",
-          },
-      Object {
-            "date": 2018-02-08T09:24:05.000Z,
-            "hours": 0.2,
-            "station": "MC #1",
-          },
-      Object {
-            "date": 2018-02-08T09:34:05.000Z,
-            "hours": 0.05,
-            "station": "L/U #2",
-          },
-],
-    "system_active_hours_per_week": 168,
-  },
-}
-`;
-
-exports[`last30 with 27 days ago, 2 days ago, and today 1`] = `
-Object {
-  "cycles": Object {
-    "by_pallet": Immutable.Map {
-      palaa: Array [
-            Object {
-              "active": -1,
-              "completed": false,
-              "x": 2018-01-06T09:40:05.000Z,
-              "y": 44,
-            },
-          ],
-      palbb: Array [
-            Object {
-              "active": -1,
-              "completed": false,
-              "x": 2018-01-31T09:46:05.000Z,
-              "y": 44,
-            },
-            Object {
-              "active": -1,
-              "completed": false,
-              "x": 2018-02-02T09:52:05.000Z,
-              "y": 44,
-            },
-          ],
-},
-    "by_part_then_stat": Immutable.Map {
-      part222-2: Immutable.Map {
-            L/U #1: Array [
-                  Object {
-                    "active": 6,
-                    "completed": false,
-                    "x": 2018-01-06T09:09:05.000Z,
-                    "y": 6,
-                  },
-                ],
-            MC #1: Array [
-                  Object {
-                    "active": 18,
-                    "completed": false,
-                    "x": 2018-01-06T09:30:05.000Z,
-                    "y": 18,
-                  },
-                ],
-            L/U #2: Array [
-                  Object {
-                    "active": 3,
-                    "completed": true,
-                    "x": 2018-01-06T09:40:05.000Z,
-                    "y": 3,
-                  },
-                ],
+        ],
       },
-      part222-1: Immutable.Map {
-            L/U #1: Array [
-                  Object {
-                    "active": 6,
-                    "completed": false,
-                    "x": 2018-01-31T09:09:05.000Z,
-                    "y": 6,
-                  },
-                ],
-            MC #1: Array [
-                  Object {
-                    "active": 24,
-                    "completed": false,
-                    "x": 2018-01-31T09:36:05.000Z,
-                    "y": 24,
-                  },
-                ],
-            L/U #2: Array [
-                  Object {
-                    "active": 3,
-                    "completed": true,
-                    "x": 2018-01-31T09:46:05.000Z,
-                    "y": 3,
-                  },
-                ],
-      },
-      part111-1: Immutable.Map {
-            L/U #1: Array [
-                  Object {
-                    "active": 6,
-                    "completed": false,
-                    "x": 2018-02-02T09:09:05.000Z,
-                    "y": 6,
-                  },
-                ],
-            MC #1: Array [
-                  Object {
-                    "active": 30,
-                    "completed": false,
-                    "x": 2018-02-02T09:42:05.000Z,
-                    "y": 30,
-                  },
-                ],
-            L/U #2: Array [
-                  Object {
-                    "active": 3,
-                    "completed": true,
-                    "x": 2018-02-02T09:52:05.000Z,
-                    "y": 3,
-                  },
-                ],
-      },
-},
+    },
   },
   "latest_counter": 6,
   "latest_event": 2018-01-06T09:40:05.000Z,
   "mat_summary": Object {
     "matsById": Immutable.Map {
       29838: Object {
-            "completedInspections": Array [],
-            "completed_procs": Array [
-              2,
-            ],
-            "jobUnique": "uniqc",
-            "last_event": 2018-01-06T09:40:05.000Z,
-            "materialID": 29838,
-            "partName": "part222",
-            "signaledInspections": Array [],
-          },
+        "completedInspections": Array [],
+        "completed_procs": Array [
+          2,
+        ],
+        "jobUnique": "uniqc",
+        "last_event": 2018-01-06T09:40:05.000Z,
+        "materialID": 29838,
+        "partName": "part222",
+        "signaledInspections": Array [],
+      },
       19656: Object {
-            "completedInspections": Array [],
-            "completed_procs": Array [
-              1,
-            ],
-            "jobUnique": "uniqz",
-            "last_event": 2018-01-31T09:46:05.000Z,
-            "materialID": 19656,
-            "partName": "part222",
-            "signaledInspections": Array [],
-          },
+        "completedInspections": Array [],
+        "completed_procs": Array [
+          1,
+        ],
+        "jobUnique": "uniqz",
+        "last_event": 2018-01-31T09:46:05.000Z,
+        "materialID": 19656,
+        "partName": "part222",
+        "signaledInspections": Array [],
+      },
       70329: Object {
-            "completedInspections": Array [],
-            "completed_procs": Array [
-              1,
-            ],
-            "jobUnique": "uniqi",
-            "last_event": 2018-02-02T09:52:05.000Z,
-            "materialID": 70329,
-            "partName": "part111",
-            "signaledInspections": Array [],
-          },
-},
+        "completedInspections": Array [],
+        "completed_procs": Array [
+          1,
+        ],
+        "jobUnique": "uniqi",
+        "last_event": 2018-02-02T09:52:05.000Z,
+        "materialID": 70329,
+        "partName": "part111",
+        "signaledInspections": Array [],
+      },
+    },
   },
   "oee": Object {
     "last_week_of_hours": Immutable.List [
       Object {
-            "date": 2018-01-31T09:09:05.000Z,
-            "hours": 0.1,
-            "station": "L/U #1",
-          },
+        "date": 2018-01-31T09:09:05.000Z,
+        "hours": 0.1,
+        "station": "L/U #1",
+      },
       Object {
-            "date": 2018-01-31T09:36:05.000Z,
-            "hours": 0.4,
-            "station": "MC #1",
-          },
+        "date": 2018-01-31T09:36:05.000Z,
+        "hours": 0.4,
+        "station": "MC #1",
+      },
       Object {
-            "date": 2018-01-31T09:46:05.000Z,
-            "hours": 0.05,
-            "station": "L/U #2",
-          },
+        "date": 2018-01-31T09:46:05.000Z,
+        "hours": 0.05,
+        "station": "L/U #2",
+      },
       Object {
-            "date": 2018-02-02T09:09:05.000Z,
-            "hours": 0.1,
-            "station": "L/U #1",
-          },
+        "date": 2018-02-02T09:09:05.000Z,
+        "hours": 0.1,
+        "station": "L/U #1",
+      },
       Object {
-            "date": 2018-02-02T09:42:05.000Z,
-            "hours": 0.5,
-            "station": "MC #1",
-          },
+        "date": 2018-02-02T09:42:05.000Z,
+        "hours": 0.5,
+        "station": "MC #1",
+      },
       Object {
-            "date": 2018-02-02T09:52:05.000Z,
-            "hours": 0.05,
-            "station": "L/U #2",
-          },
-],
+        "date": 2018-02-02T09:52:05.000Z,
+        "hours": 0.05,
+        "station": "L/U #2",
+      },
+    ],
     "system_active_hours_per_week": 168,
   },
 }
 `;
 
-exports[`last30 with 27 days ago, 2 days ago, and today 2`] = `
+exports[`refreshes new events into last30: last30 with 2 days ago, today, and 6 days from now 1`] = `
 Object {
   "cycles": Object {
     "by_pallet": Immutable.Map {
-      palaa: Array [
-            Object {
-              "active": -1,
-              "completed": false,
-              "x": 2018-01-06T09:40:05.000Z,
-              "y": 44,
-            },
-          ],
-      palbb: Array [
-            Object {
-              "active": -1,
-              "completed": false,
-              "x": 2018-01-31T09:46:05.000Z,
-              "y": 44,
-            },
-            Object {
-              "active": -1,
-              "completed": false,
-              "x": 2018-02-02T09:52:05.000Z,
-              "y": 44,
-            },
-          ],
-},
+      "palbb": Array [
+        Object {
+          "active": -1,
+          "completed": false,
+          "x": 2018-01-31T09:46:05.000Z,
+          "y": 44,
+        },
+        Object {
+          "active": -1,
+          "completed": false,
+          "x": 2018-02-02T09:52:05.000Z,
+          "y": 44,
+        },
+      ],
+      "palcc": Array [
+        Object {
+          "active": -1,
+          "completed": false,
+          "x": 2018-02-08T09:34:05.000Z,
+          "y": 44,
+        },
+      ],
+    },
     "by_part_then_stat": Immutable.Map {
-      part222-2: Immutable.Map {
-            L/U #1: Array [
-                  Object {
-                    "active": 6,
-                    "completed": false,
-                    "x": 2018-01-06T09:09:05.000Z,
-                    "y": 6,
-                  },
-                ],
-            MC #1: Array [
-                  Object {
-                    "active": 18,
-                    "completed": false,
-                    "x": 2018-01-06T09:30:05.000Z,
-                    "y": 18,
-                  },
-                ],
-            L/U #2: Array [
-                  Object {
-                    "active": 3,
-                    "completed": true,
-                    "x": 2018-01-06T09:40:05.000Z,
-                    "y": 3,
-                  },
-                ],
+      "part222-1": Immutable.Map {
+        "L/U #1": Array [
+          Object {
+            "active": 6,
+            "completed": false,
+            "x": 2018-01-31T09:09:05.000Z,
+            "y": 6,
+          },
+        ],
+        "MC #1": Array [
+          Object {
+            "active": 24,
+            "completed": false,
+            "x": 2018-01-31T09:36:05.000Z,
+            "y": 24,
+          },
+        ],
+        "L/U #2": Array [
+          Object {
+            "active": 3,
+            "completed": true,
+            "x": 2018-01-31T09:46:05.000Z,
+            "y": 3,
+          },
+        ],
       },
-      part222-1: Immutable.Map {
-            L/U #1: Array [
-                  Object {
-                    "active": 6,
-                    "completed": false,
-                    "x": 2018-01-31T09:09:05.000Z,
-                    "y": 6,
-                  },
-                ],
-            MC #1: Array [
-                  Object {
-                    "active": 24,
-                    "completed": false,
-                    "x": 2018-01-31T09:36:05.000Z,
-                    "y": 24,
-                  },
-                ],
-            L/U #2: Array [
-                  Object {
-                    "active": 3,
-                    "completed": true,
-                    "x": 2018-01-31T09:46:05.000Z,
-                    "y": 3,
-                  },
-                ],
+      "part111-1": Immutable.Map {
+        "L/U #1": Array [
+          Object {
+            "active": 6,
+            "completed": false,
+            "x": 2018-02-02T09:09:05.000Z,
+            "y": 6,
+          },
+          Object {
+            "active": 6,
+            "completed": false,
+            "x": 2018-02-08T09:09:05.000Z,
+            "y": 6,
+          },
+        ],
+        "MC #1": Array [
+          Object {
+            "active": 30,
+            "completed": false,
+            "x": 2018-02-02T09:42:05.000Z,
+            "y": 30,
+          },
+          Object {
+            "active": 12,
+            "completed": false,
+            "x": 2018-02-08T09:24:05.000Z,
+            "y": 12,
+          },
+        ],
+        "L/U #2": Array [
+          Object {
+            "active": 3,
+            "completed": true,
+            "x": 2018-02-02T09:52:05.000Z,
+            "y": 3,
+          },
+          Object {
+            "active": 3,
+            "completed": true,
+            "x": 2018-02-08T09:34:05.000Z,
+            "y": 3,
+          },
+        ],
       },
-      part111-1: Immutable.Map {
-            L/U #1: Array [
-                  Object {
-                    "active": 6,
-                    "completed": false,
-                    "x": 2018-02-02T09:09:05.000Z,
-                    "y": 6,
-                  },
-                ],
-            MC #1: Array [
-                  Object {
-                    "active": 30,
-                    "completed": false,
-                    "x": 2018-02-02T09:42:05.000Z,
-                    "y": 30,
-                  },
-                ],
-            L/U #2: Array [
-                  Object {
-                    "active": 3,
-                    "completed": true,
-                    "x": 2018-02-02T09:52:05.000Z,
-                    "y": 3,
-                  },
-                ],
+    },
+  },
+  "latest_counter": 6,
+  "latest_event": 2018-01-06T09:40:05.000Z,
+  "mat_summary": Object {
+    "matsById": Immutable.Map {
+      62822: Object {
+        "completedInspections": Array [],
+        "completed_procs": Array [
+          1,
+        ],
+        "jobUnique": "uniq7",
+        "last_event": 2018-02-02T09:52:05.000Z,
+        "materialID": 62822,
+        "partName": "part111",
+        "signaledInspections": Array [],
       },
-},
+      57245: Object {
+        "completedInspections": Array [],
+        "completed_procs": Array [
+          1,
+        ],
+        "jobUnique": "uniqr",
+        "last_event": 2018-02-08T09:34:05.000Z,
+        "materialID": 57245,
+        "partName": "part111",
+        "signaledInspections": Array [],
+      },
+    },
+  },
+  "oee": Object {
+    "last_week_of_hours": Immutable.List [
+      Object {
+        "date": 2018-02-02T09:09:05.000Z,
+        "hours": 0.1,
+        "station": "L/U #1",
+      },
+      Object {
+        "date": 2018-02-02T09:42:05.000Z,
+        "hours": 0.5,
+        "station": "MC #1",
+      },
+      Object {
+        "date": 2018-02-02T09:52:05.000Z,
+        "hours": 0.05,
+        "station": "L/U #2",
+      },
+      Object {
+        "date": 2018-02-08T09:09:05.000Z,
+        "hours": 0.1,
+        "station": "L/U #1",
+      },
+      Object {
+        "date": 2018-02-08T09:24:05.000Z,
+        "hours": 0.2,
+        "station": "MC #1",
+      },
+      Object {
+        "date": 2018-02-08T09:34:05.000Z,
+        "hours": 0.05,
+        "station": "L/U #2",
+      },
+    ],
+    "system_active_hours_per_week": 168,
+  },
+}
+`;
+
+exports[`refreshes new events into last30: last30 with 27 days ago, 2 days ago, and today 1`] = `
+Object {
+  "cycles": Object {
+    "by_pallet": Immutable.Map {
+      "palaa": Array [
+        Object {
+          "active": -1,
+          "completed": false,
+          "x": 2018-01-06T09:40:05.000Z,
+          "y": 44,
+        },
+      ],
+      "palbb": Array [
+        Object {
+          "active": -1,
+          "completed": false,
+          "x": 2018-01-31T09:46:05.000Z,
+          "y": 44,
+        },
+        Object {
+          "active": -1,
+          "completed": false,
+          "x": 2018-02-02T09:52:05.000Z,
+          "y": 44,
+        },
+      ],
+    },
+    "by_part_then_stat": Immutable.Map {
+      "part222-2": Immutable.Map {
+        "L/U #1": Array [
+          Object {
+            "active": 6,
+            "completed": false,
+            "x": 2018-01-06T09:09:05.000Z,
+            "y": 6,
+          },
+        ],
+        "MC #1": Array [
+          Object {
+            "active": 18,
+            "completed": false,
+            "x": 2018-01-06T09:30:05.000Z,
+            "y": 18,
+          },
+        ],
+        "L/U #2": Array [
+          Object {
+            "active": 3,
+            "completed": true,
+            "x": 2018-01-06T09:40:05.000Z,
+            "y": 3,
+          },
+        ],
+      },
+      "part222-1": Immutable.Map {
+        "L/U #1": Array [
+          Object {
+            "active": 6,
+            "completed": false,
+            "x": 2018-01-31T09:09:05.000Z,
+            "y": 6,
+          },
+        ],
+        "MC #1": Array [
+          Object {
+            "active": 24,
+            "completed": false,
+            "x": 2018-01-31T09:36:05.000Z,
+            "y": 24,
+          },
+        ],
+        "L/U #2": Array [
+          Object {
+            "active": 3,
+            "completed": true,
+            "x": 2018-01-31T09:46:05.000Z,
+            "y": 3,
+          },
+        ],
+      },
+      "part111-1": Immutable.Map {
+        "L/U #1": Array [
+          Object {
+            "active": 6,
+            "completed": false,
+            "x": 2018-02-02T09:09:05.000Z,
+            "y": 6,
+          },
+        ],
+        "MC #1": Array [
+          Object {
+            "active": 30,
+            "completed": false,
+            "x": 2018-02-02T09:42:05.000Z,
+            "y": 30,
+          },
+        ],
+        "L/U #2": Array [
+          Object {
+            "active": 3,
+            "completed": true,
+            "x": 2018-02-02T09:52:05.000Z,
+            "y": 3,
+          },
+        ],
+      },
+    },
   },
   "latest_counter": 6,
   "latest_event": 2018-01-06T09:40:05.000Z,
   "mat_summary": Object {
     "matsById": Immutable.Map {
       90816: Object {
-            "completedInspections": Array [],
-            "completed_procs": Array [
-              2,
-            ],
-            "jobUnique": "uniq9",
-            "last_event": 2018-01-06T09:40:05.000Z,
-            "materialID": 90816,
-            "partName": "part222",
-            "signaledInspections": Array [],
-          },
+        "completedInspections": Array [],
+        "completed_procs": Array [
+          2,
+        ],
+        "jobUnique": "uniq9",
+        "last_event": 2018-01-06T09:40:05.000Z,
+        "materialID": 90816,
+        "partName": "part222",
+        "signaledInspections": Array [],
+      },
       56627: Object {
-            "completedInspections": Array [],
-            "completed_procs": Array [
-              1,
-            ],
-            "jobUnique": "uniqp",
-            "last_event": 2018-01-31T09:46:05.000Z,
-            "materialID": 56627,
-            "partName": "part222",
-            "signaledInspections": Array [],
-          },
+        "completedInspections": Array [],
+        "completed_procs": Array [
+          1,
+        ],
+        "jobUnique": "uniqp",
+        "last_event": 2018-01-31T09:46:05.000Z,
+        "materialID": 56627,
+        "partName": "part222",
+        "signaledInspections": Array [],
+      },
       62822: Object {
-            "completedInspections": Array [],
-            "completed_procs": Array [
-              1,
-            ],
-            "jobUnique": "uniq7",
-            "last_event": 2018-02-02T09:52:05.000Z,
-            "materialID": 62822,
-            "partName": "part111",
-            "signaledInspections": Array [],
-          },
-},
+        "completedInspections": Array [],
+        "completed_procs": Array [
+          1,
+        ],
+        "jobUnique": "uniq7",
+        "last_event": 2018-02-02T09:52:05.000Z,
+        "materialID": 62822,
+        "partName": "part111",
+        "signaledInspections": Array [],
+      },
+    },
   },
   "oee": Object {
     "last_week_of_hours": Immutable.List [
       Object {
-            "date": 2018-01-31T09:09:05.000Z,
-            "hours": 0.1,
-            "station": "L/U #1",
-          },
+        "date": 2018-01-31T09:09:05.000Z,
+        "hours": 0.1,
+        "station": "L/U #1",
+      },
       Object {
-            "date": 2018-01-31T09:36:05.000Z,
-            "hours": 0.4,
-            "station": "MC #1",
-          },
+        "date": 2018-01-31T09:36:05.000Z,
+        "hours": 0.4,
+        "station": "MC #1",
+      },
       Object {
-            "date": 2018-01-31T09:46:05.000Z,
-            "hours": 0.05,
-            "station": "L/U #2",
-          },
+        "date": 2018-01-31T09:46:05.000Z,
+        "hours": 0.05,
+        "station": "L/U #2",
+      },
       Object {
-            "date": 2018-02-02T09:09:05.000Z,
-            "hours": 0.1,
-            "station": "L/U #1",
-          },
+        "date": 2018-02-02T09:09:05.000Z,
+        "hours": 0.1,
+        "station": "L/U #1",
+      },
       Object {
-            "date": 2018-02-02T09:42:05.000Z,
-            "hours": 0.5,
-            "station": "MC #1",
-          },
+        "date": 2018-02-02T09:42:05.000Z,
+        "hours": 0.5,
+        "station": "MC #1",
+      },
       Object {
-            "date": 2018-02-02T09:52:05.000Z,
-            "hours": 0.05,
-            "station": "L/U #2",
-          },
-],
+        "date": 2018-02-02T09:52:05.000Z,
+        "hours": 0.05,
+        "station": "L/U #2",
+      },
+    ],
     "system_active_hours_per_week": 168,
-  },
-}
-`;
-
-exports[`selected month with 27 days ago, 2 days ago, and today 1`] = `
-Object {
-  "cycles": Object {
-    "by_pallet": Immutable.Map {
-      paltt: Array [
-            Object {
-              "active": -1,
-              "completed": false,
-              "x": 2018-01-06T09:40:05.000Z,
-              "y": 44,
-            },
-            Object {
-              "active": -1,
-              "completed": false,
-              "x": 2018-01-31T09:46:05.000Z,
-              "y": 44,
-            },
-          ],
-      palss: Array [
-            Object {
-              "active": -1,
-              "completed": false,
-              "x": 2018-02-02T09:52:05.000Z,
-              "y": 44,
-            },
-          ],
-},
-    "by_part_then_stat": Immutable.Map {
-      partCCC-3: Immutable.Map {
-            L/U #1: Array [
-                  Object {
-                    "active": 6,
-                    "completed": false,
-                    "x": 2018-01-06T09:09:05.000Z,
-                    "y": 6,
-                  },
-                ],
-            MC #1: Array [
-                  Object {
-                    "active": 18,
-                    "completed": false,
-                    "x": 2018-01-06T09:30:05.000Z,
-                    "y": 18,
-                  },
-                ],
-            L/U #2: Array [
-                  Object {
-                    "active": 3,
-                    "completed": true,
-                    "x": 2018-01-06T09:40:05.000Z,
-                    "y": 3,
-                  },
-                ],
-      },
-      partBBB-2: Immutable.Map {
-            L/U #1: Array [
-                  Object {
-                    "active": 6,
-                    "completed": false,
-                    "x": 2018-01-31T09:09:05.000Z,
-                    "y": 6,
-                  },
-                ],
-            MC #1: Array [
-                  Object {
-                    "active": 24,
-                    "completed": false,
-                    "x": 2018-01-31T09:36:05.000Z,
-                    "y": 24,
-                  },
-                ],
-            L/U #2: Array [
-                  Object {
-                    "active": 3,
-                    "completed": true,
-                    "x": 2018-01-31T09:46:05.000Z,
-                    "y": 3,
-                  },
-                ],
-      },
-      partAAA-1: Immutable.Map {
-            L/U #1: Array [
-                  Object {
-                    "active": 6,
-                    "completed": false,
-                    "x": 2018-02-02T09:09:05.000Z,
-                    "y": 6,
-                  },
-                ],
-            MC #1: Array [
-                  Object {
-                    "active": 30,
-                    "completed": false,
-                    "x": 2018-02-02T09:42:05.000Z,
-                    "y": 30,
-                  },
-                ],
-            L/U #2: Array [
-                  Object {
-                    "active": 3,
-                    "completed": true,
-                    "x": 2018-02-02T09:52:05.000Z,
-                    "y": 3,
-                  },
-                ],
-      },
-},
   },
 }
 `;

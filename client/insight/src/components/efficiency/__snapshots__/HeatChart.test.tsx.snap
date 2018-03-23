@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`heat chart 1`] = `
+exports[`displays a cycle chart: heat chart 1`] = `
 <FlexibleXYPlot
   colorRange={
     Array [
@@ -80,7 +80,7 @@ exports[`heat chart 1`] = `
 </FlexibleXYPlot>
 `;
 
-exports[`selectable heat chart with actual data 1`] = `
+exports[`displays a selectable heat chart with actual points: selectable heat chart with actual data 1`] = `
 <Card
   raised={true}
 >
@@ -187,7 +187,7 @@ exports[`selectable heat chart with actual data 1`] = `
 </Card>
 `;
 
-exports[`selectable heat chart with planned data 1`] = `
+exports[`displays a selectable heat chart with planned minus actual points: selectable heat chart with planned minus actual data 1`] = `
 <Card
   raised={true}
 >
@@ -224,7 +224,7 @@ exports[`selectable heat chart with planned data 1`] = `
           autoWidth={true}
           displayEmpty={true}
           onChange={[Function]}
-          value="Planned"
+          value="PlannedOrActual"
         >
           <WithStyles(MenuItem)
             value="Actual"
@@ -294,7 +294,7 @@ exports[`selectable heat chart with planned data 1`] = `
 </Card>
 `;
 
-exports[`selectable heat chart with planned minus actual data 1`] = `
+exports[`displays a selectable heat chart with planned points: selectable heat chart with planned data 1`] = `
 <Card
   raised={true}
 >
@@ -331,7 +331,7 @@ exports[`selectable heat chart with planned minus actual data 1`] = `
           autoWidth={true}
           displayEmpty={true}
           onChange={[Function]}
-          value="PlannedOrActual"
+          value="Planned"
         >
           <WithStyles(MenuItem)
             value="Actual"
