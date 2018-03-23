@@ -60,6 +60,7 @@ namespace BlackMaple.MachineWatchInterface
           LogMaterial mat,
           int inspectionLocNum,
           string inspectionType,
+          bool success,
           IDictionary<string, string> extraData,
           TimeSpan elapsed,
           TimeSpan active);

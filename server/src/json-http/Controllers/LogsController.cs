@@ -44,6 +44,7 @@ namespace MachineWatchApiServer.Controllers
         [DataMember(IsRequired=true)] public LogMaterial Material {get;set;}
         [DataMember(IsRequired=true)] public int InspectionLocationNum {get;set;}
         [DataMember(IsRequired=true)] public string InspectionType {get;set;}
+        [DataMember(IsRequired=true)] public bool Success {get;set;}
         [DataMember(IsRequired=false)] public Dictionary<string, string> ExtraData {get;set;}
         [DataMember(IsRequired=true)] public TimeSpan Elapsed {get;set;}
         [DataMember(IsRequired=true)] public TimeSpan Active {get;set;}
@@ -129,6 +130,7 @@ namespace MachineWatchApiServer.Controllers
                 insp.Material,
                 insp.InspectionLocationNum,
                 insp.InspectionType,
+                insp.Success,
                 insp.ExtraData == null ? new Dictionary<string, string>() : insp.ExtraData,
                 insp.Elapsed,
                 insp.Active

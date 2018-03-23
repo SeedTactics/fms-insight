@@ -35,7 +35,7 @@ import * as mat from './material-details';
 import { PledgeStatus } from './pledge';
 import { StationMonitorType } from './routes';
 // import * as api from './api';
-import { fakeCycle } from './events.fake';
+import { fakeCycle, fakeInspComplete, fakeWashComplete } from './events.fake';
 
 it('creates initial state', () => {
   // tslint:disable no-any
@@ -51,6 +51,7 @@ const m: Readonly<mat.MaterialDetail> = {
   signaledInspections: ["a", "b"],
   completedInspections: ["a"],
   loading_events: true,
+  saving_insp_or_wash: false,
   events: [],
 };
 
@@ -247,4 +248,96 @@ it('clears the inspection material', () => {
   expect(st.inspection_display_material).toBeUndefined();
   expect(st.loadstation_display_material).toBe(m);
   expect(st.wash_display_material).toBe(m);
+});
+
+it("starts to complete an inspection cycle", () => {
+  const action: mat.Action = {
+    type: mat.ActionType.CompleteInspection,
+    inspType: "abc",
+    pledge: {
+      status: PledgeStatus.Starting
+    }
+  };
+  const st = mat.reducer({inspection_display_material: m}, action);
+  expect(st.inspection_display_material).toEqual({...m, saving_insp_or_wash: true});
+  expect(st.loadstation_display_material).toBeUndefined();
+  expect(st.wash_display_material).toBeUndefined();
+});
+
+it("starts to complete a wash cycle", () => {
+  const action: mat.Action = {
+    type: mat.ActionType.CompleteWash,
+    pledge: {
+      status: PledgeStatus.Starting
+    }
+  };
+  const st = mat.reducer({wash_display_material: m}, action);
+  expect(st.wash_display_material).toEqual({...m, saving_insp_or_wash: true});
+  expect(st.inspection_display_material).toBeUndefined();
+  expect(st.loadstation_display_material).toBeUndefined();
+});
+
+it("errors for an completed inspection cycle", () => {
+  const action: mat.Action = {
+    type: mat.ActionType.CompleteInspection,
+    inspType: "abc",
+    pledge: {
+      status: PledgeStatus.Error,
+      error: new Error("the error")
+    }
+  };
+  const st = mat.reducer({inspection_display_material: {...m, saving_insp_or_wash: true}}, action);
+  expect(st.inspection_display_material).toEqual(m);
+  expect(st.loadstation_display_material).toBeUndefined();
+  expect(st.wash_display_material).toBeUndefined();
+});
+
+it("errors for an completed wash cycle", () => {
+  const action: mat.Action = {
+    type: mat.ActionType.CompleteWash,
+    pledge: {
+      status: PledgeStatus.Error,
+      error: new Error("the error")
+    }
+  };
+  const st = mat.reducer({wash_display_material: {...m, saving_insp_or_wash: true}}, action);
+  expect(st.wash_display_material).toEqual(m);
+  expect(st.loadstation_display_material).toBeUndefined();
+  expect(st.inspection_display_material).toBeUndefined();
+});
+
+it("succeeds for an completed inspection cycle", () => {
+  const evt = fakeInspComplete();
+  const action: mat.Action = {
+    type: mat.ActionType.CompleteInspection,
+    inspType: "abc",
+    pledge: {
+      status: PledgeStatus.Completed,
+      result: evt,
+    }
+  };
+  const st = mat.reducer({inspection_display_material: {...m, saving_insp_or_wash: true}}, action);
+  expect(st.inspection_display_material).toEqual({...m,
+    events: [evt],
+    completedInspections: [...m.completedInspections, "abc"],
+  });
+  expect(st.loadstation_display_material).toBeUndefined();
+  expect(st.wash_display_material).toBeUndefined();
+});
+
+it("succeeds for an completed wash cycle", () => {
+  const evt = fakeWashComplete();
+  const action: mat.Action = {
+    type: mat.ActionType.CompleteWash,
+    pledge: {
+      status: PledgeStatus.Completed,
+      result: evt,
+    }
+  };
+  const st = mat.reducer({wash_display_material: {...m, saving_insp_or_wash: true}}, action);
+  expect(st.wash_display_material).toEqual({...m,
+    events: [evt],
+  });
+  expect(st.loadstation_display_material).toBeUndefined();
+  expect(st.inspection_display_material).toBeUndefined();
 });

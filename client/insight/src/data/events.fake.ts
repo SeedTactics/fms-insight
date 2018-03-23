@@ -146,3 +146,37 @@ export function fakeCycle(
 
     return es;
 }
+
+export function fakeInspComplete(): ILogEntry {
+  return {
+    counter: 100,
+    material: [fakeMaterial()],
+    pal: faker.random.alphaNumeric(),
+    type: LogType.InspectionResult,
+    startofcycle: false,
+    endUTC: new Date(2017, 9, 5),
+    loc: 'InspectionComplete',
+    locnum: 1,
+    result: 'True',
+    program: 'MyInspType',
+    elapsed: '00:00:00',
+    active: '00:00:00'
+  };
+}
+
+export function fakeWashComplete(): ILogEntry {
+  return {
+    counter: 100,
+    material: [fakeMaterial()],
+    pal: faker.random.alphaNumeric(),
+    type: LogType.Wash,
+    startofcycle: false,
+    endUTC: new Date(2017, 9, 5),
+    loc: 'Wash',
+    locnum: 1,
+    result: '',
+    program: '',
+    elapsed: '00:00:00',
+    active: '00:00:00'
+  };
+}

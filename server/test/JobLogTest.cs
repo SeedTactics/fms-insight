@@ -211,10 +211,10 @@ namespace MachineWatchTest
 
             //inspection and wash
             var inspCompLog = _jobLog.RecordInspectionCompleted(
-                mat1, 5, "insptype1", new Dictionary<string, string> {{"a", "aaa"}, {"b", "bbb"}},
+                mat1, 5, "insptype1", true, new Dictionary<string, string> {{"a", "aaa"}, {"b", "bbb"}},
                 TimeSpan.FromMinutes(100), TimeSpan.FromMinutes(5));
             var expectedInspLog = new LogEntry(-1, new LogMaterial[] { mat1 }, "",
-                LogType.InspectionResult, "Inspection", 5, "insptype1", false, inspCompLog.EndTimeUTC, "", false,
+                LogType.InspectionResult, "Inspection", 5, "insptype1", false, inspCompLog.EndTimeUTC, "True", false,
                 TimeSpan.FromMinutes(100), TimeSpan.FromMinutes(5));
             expectedInspLog.ProgramDetails.Add("a", "aaa");
             expectedInspLog.ProgramDetails.Add("b", "bbb");

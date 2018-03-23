@@ -31,6 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import * as im from 'immutable';
+
 import * as api from './api';
 import { ConsumingPledge, PledgeStatus } from './pledge';
 import { MaterialSummary } from './events';
@@ -39,6 +41,8 @@ import { StationMonitorType } from './routes';
 export enum ActionType {
   OpenMaterialDialog = 'MaterialDetails_Open',
   CloseMaterialDialog = 'MaterialDetails_Close',
+  CompleteInspection = 'MaterialDetails_CompleteInspection',
+  CompleteWash = 'MaterialDetails_CompleteWash',
 }
 
 export interface MaterialDetail {
@@ -49,6 +53,7 @@ export interface MaterialDetail {
   readonly completedInspections: ReadonlyArray<string>;
 
   readonly loading_events: boolean;
+  readonly saving_insp_or_wash: boolean;
   readonly events: ReadonlyArray<Readonly<api.ILogEntry>>;
 }
 
@@ -62,6 +67,15 @@ export type Action =
       station: StationMonitorType,
       initial: MaterialDetail,
       pledge: ConsumingPledge<ReadonlyArray<Readonly<api.ILogEntry>>>
+    }
+  | {
+      type: ActionType.CompleteInspection,
+      inspType: string,
+      pledge: ConsumingPledge<Readonly<api.ILogEntry>>,
+    }
+  | {
+      type: ActionType.CompleteWash,
+      pledge: ConsumingPledge<Readonly<api.ILogEntry>>,
     }
   ;
 
@@ -77,6 +91,7 @@ export function openLoadunloadMaterialDialog(mat: Readonly<api.IInProcessMateria
       signaledInspections: mat.signaledInspections,
       completedInspections: [],
       loading_events: true,
+      saving_insp_or_wash: false,
       events: [],
     } as MaterialDetail,
     pledge: client.logForMaterial(mat.materialID),
@@ -95,6 +110,7 @@ export function openInspectionMaterial(mat: MaterialSummary) {
       signaledInspections: mat.signaledInspections,
       completedInspections: mat.completedInspections,
       loading_events: true,
+      saving_insp_or_wash: false,
       events: [],
     } as MaterialDetail,
     pledge: client.logForMaterial(mat.materialID),
@@ -113,9 +129,53 @@ export function openWashMaterial(mat: MaterialSummary) {
       signaledInspections: mat.signaledInspections,
       completedInspections: mat.completedInspections,
       loading_events: true,
+      saving_insp_or_wash: false,
       events: [],
     } as MaterialDetail,
     pledge: client.logForMaterial(mat.materialID),
+  };
+}
+
+export function completeInspection(mat: MaterialSummary, inspType: string, success: boolean) {
+  var client = new api.LogClient();
+  return {
+    type: ActionType.CompleteInspection,
+    inspType: inspType,
+    pledge: client.recordInspectionCompleted(new api.NewInspectionCompleted({
+      material: new api.LogMaterial({
+        id: mat.materialID,
+        uniq: mat.jobUnique,
+        part: mat.partName,
+        proc: im.Seq(mat.completed_procs).max() || 1,
+        numproc: im.Seq(mat.completed_procs).max() || 1,
+        face: "1",
+      }),
+      inspectionLocationNum: 1,
+      inspectionType: inspType,
+      success,
+      active: '0:0:0',
+      elapsed: '0:0:0',
+    }))
+  };
+}
+
+export function completeWash(mat: MaterialSummary) {
+  var client = new api.LogClient();
+  return {
+    type: ActionType.CompleteWash,
+    pledge: client.recordWashCompleted(new api.NewWash({
+      material: new api.LogMaterial({
+        id: mat.materialID,
+        uniq: mat.jobUnique,
+        part: mat.partName,
+        proc: im.Seq(mat.completed_procs).max() || 1,
+        numproc: im.Seq(mat.completed_procs).max() || 1,
+        face: "1",
+      }),
+      washLocationNum: 1,
+      active: '0:0:0',
+      elapsed: '0:0:0',
+    }))
   };
 }
 
@@ -182,6 +242,79 @@ export function reducer(s: State, a: Action): State {
           return {...s, inspection_display_material: undefined};
         case StationMonitorType.Wash:
           return {...s, wash_display_material: undefined};
+        default: return s;
+      }
+
+    case ActionType.CompleteInspection:
+      switch (a.pledge.status) {
+        case PledgeStatus.Starting:
+          if (s.inspection_display_material === undefined) {
+            return s;
+          } else {
+            const oldMatStart = s.inspection_display_material;
+            return {...s, inspection_display_material: {...oldMatStart,
+              saving_insp_or_wash: true}
+            };
+          }
+        case PledgeStatus.Completed:
+          if (s.inspection_display_material === undefined) {
+            return s;
+          }
+          const oldMatEnd = s.inspection_display_material;
+          return {...s,
+            inspection_display_material: {...oldMatEnd,
+              completedInspections: [...oldMatEnd.completedInspections, a.inspType],
+              events: [...oldMatEnd.events, a.pledge.result],
+              saving_insp_or_wash: false,
+            },
+          };
+
+        case PledgeStatus.Error:
+          if (s.inspection_display_material === undefined) {
+            return s;
+          } else {
+            const oldMatStart = s.inspection_display_material;
+            return {...s, inspection_display_material: {...oldMatStart,
+              saving_insp_or_wash: false}
+            };
+          }
+
+        default: return s;
+      }
+
+    case ActionType.CompleteWash:
+      switch (a.pledge.status) {
+        case PledgeStatus.Starting:
+          if (s.wash_display_material === undefined) {
+            return s;
+          } else {
+            const oldMatStart = s.wash_display_material;
+            return {...s, wash_display_material: {...oldMatStart,
+              saving_insp_or_wash: true}
+            };
+          }
+        case PledgeStatus.Completed:
+          if (s.wash_display_material === undefined) {
+            return s;
+          }
+          const oldMatEnd = s.wash_display_material;
+          return {...s,
+            wash_display_material: {...oldMatEnd,
+              events: [...oldMatEnd.events, a.pledge.result],
+              saving_insp_or_wash: false,
+            },
+          };
+
+        case PledgeStatus.Error:
+          if (s.wash_display_material === undefined) {
+            return s;
+          } else {
+            const oldMatStart = s.wash_display_material;
+            return {...s, wash_display_material: {...oldMatStart,
+              saving_insp_or_wash: false}
+            };
+          }
+
         default: return s;
       }
 

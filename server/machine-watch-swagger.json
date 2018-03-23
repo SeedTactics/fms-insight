@@ -1724,10 +1724,6 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "MaxSizeBeforeStopLoading": {
-          "type": "integer",
-          "format": "int32"
-        },
         "MaxSizeBeforeStopUnloading": {
           "type": "integer",
           "format": "int32"
@@ -2053,6 +2049,7 @@
         "Material",
         "InspectionLocationNum",
         "InspectionType",
+        "Success",
         "Elapsed",
         "Active"
       ],
@@ -2066,6 +2063,9 @@
         },
         "InspectionType": {
           "type": "string"
+        },
+        "Success": {
+          "type": "boolean"
         },
         "ExtraData": {
           "type": "object",

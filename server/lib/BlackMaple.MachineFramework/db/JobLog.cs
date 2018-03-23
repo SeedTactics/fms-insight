@@ -1475,6 +1475,7 @@ namespace BlackMaple.MachineFramework
             MachineWatchInterface.LogMaterial mat,
             int inspectionLocNum,
             string inspectionType,
+            bool success,
             IDictionary<string, string> extraData,
             TimeSpan elapsed,
             TimeSpan active)
@@ -1483,6 +1484,7 @@ namespace BlackMaple.MachineFramework
                 mat,
                 inspectionLocNum,
                 inspectionType,
+                success,
                 extraData,
                 elapsed,
                 active,
@@ -1494,6 +1496,7 @@ namespace BlackMaple.MachineFramework
             MachineWatchInterface.LogMaterial mat,
             int inspectionLocNum,
             string inspectionType,
+            bool success,
             IDictionary<string, string> extraData,
             TimeSpan elapsed,
             TimeSpan active,
@@ -1507,7 +1510,7 @@ namespace BlackMaple.MachineFramework
                 inspectionType,
                 false,
                 endUTC,
-                "",
+                success.ToString(),
                 false,
                 elapsed,
                 active);
