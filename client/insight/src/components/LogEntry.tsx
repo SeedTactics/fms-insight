@@ -169,6 +169,9 @@ function display(entry: api.ILogEntry): string {
         return 'Inspection ' + entry.program + ' Succeeded';
       }
 
+    case api.LogType.Wash:
+      return 'Wash completed';
+
     default: return entry.result;
   }
 }

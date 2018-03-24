@@ -31,8 +31,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as im from 'immutable';
-
 import * as api from './api';
 import { ConsumingPledge, PledgeStatus } from './pledge';
 import { MaterialSummary } from './events';
@@ -167,7 +165,7 @@ export function completeInspection(mat: MaterialDetail, inspType: string, succes
   };
 }
 
-export function completeWash(mat: MaterialSummary) {
+export function completeWash(mat: MaterialDetail) {
   var client = new api.LogClient();
   return {
     type: ActionType.CompleteWash,
@@ -176,8 +174,8 @@ export function completeWash(mat: MaterialSummary) {
         id: mat.materialID,
         uniq: mat.jobUnique,
         part: mat.partName,
-        proc: im.Seq(mat.completed_procs).max() || 1,
-        numproc: im.Seq(mat.completed_procs).max() || 1,
+        proc: 1,
+        numproc: 1,
         face: "1",
       }),
       washLocationNum: 1,

@@ -38,6 +38,7 @@ import * as routes from '../../data/routes';
 import StationToolbar from './StationToolbar';
 import LoadStation from './LoadStation';
 import Inspection from './Inspection';
+import Wash from './Wash';
 
 export interface StationMonitorProps {
   readonly monitor_type: routes.StationMonitorType;
@@ -53,7 +54,7 @@ function monitorElement(
     case routes.StationMonitorType.Inspection:
       return <Inspection fillViewPort={fillViewport}/>;
     case routes.StationMonitorType.Wash:
-      return <p>Wash</p>;
+      return <Wash fillViewPort={fillViewport}/>;
   }
 }
 
