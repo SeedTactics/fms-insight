@@ -49,6 +49,8 @@ namespace BlackMaple.MachineFramework
         private SqliteConnection _connection;
         private object _lock = new object();
 
+        public event MachineWatchInterface.NewJobsDelegate OnNewJobs;
+
         public JobDB() { }
         public JobDB(SqliteConnection c)
         {
@@ -1217,24 +1219,6 @@ namespace BlackMaple.MachineFramework
 
         #region "Adding and deleting"
 
-        public void AddJob(MachineWatchInterface.JobPlan job)
-        {
-            lock (_lock)
-            {
-                var trans = _connection.BeginTransaction();
-
-                try
-                {
-                    AddJob(trans, job);
-                    trans.Commit();
-                }
-                catch
-                {
-                    trans.Rollback();
-                    throw;
-                }
-            }
-        }
         public void AddJobs(BlackMaple.MachineWatchInterface.NewJobs newJobs, string expectedPreviousScheduleId)
         {
             foreach (var j in newJobs.Jobs)
@@ -1291,46 +1275,16 @@ namespace BlackMaple.MachineFramework
                     throw;
                 }
             }
-        }
-        public void AddJobInspections(IEnumerable<MachineWatchInterface.JobPlan> jobs)
-        {
-            lock (_lock)
-            {
-                var trans = _connection.BeginTransaction();
-                try
-                {
-                    foreach (var j in jobs)
-                        AddJobInspection(trans, j);
-                    trans.Commit();
-                }
-                catch
-                {
-                    trans.Rollback();
-                    throw;
-                }
+
+            if (OnNewJobs != null) {
+                OnNewJobs(new MachineWatchInterface.PlannedSchedule() {
+                    LatestScheduleId = newJobs.ScheduleId,
+                    Jobs = newJobs.Jobs,
+                    ExtraParts = newJobs.ExtraParts,
+                    CurrentUnfilledWorkorders = newJobs.CurrentUnfilledWorkorders
+                });
             }
         }
-        public void UpdateJob(MachineWatchInterface.JobPlan job)
-        {
-            lock (_lock)
-            {
-                //just delete, then insert
-                var trans = _connection.BeginTransaction();
-                try
-                {
-                    DeleteJob(trans, job.UniqueStr);
-                    AddJob(trans, job);
-
-                    trans.Commit();
-                }
-                catch
-                {
-                    trans.Rollback();
-                    throw;
-                }
-            }
-        }
-
         private void AddJob(IDbTransaction trans, MachineWatchInterface.JobPlan job)
         {
             var cmd = _connection.CreateCommand();
@@ -1654,26 +1608,10 @@ namespace BlackMaple.MachineFramework
             }
         }
 
-        public void AddSimulatedStations(IEnumerable<MachineWatchInterface.SimulatedStationUtilization> simStats)
-        {
-            lock (_lock)
-            {
-                var trans = _connection.BeginTransaction();
-                try
-                {
-                    AddSimulatedStations(trans, simStats);
-                    trans.Commit();
-                }
-                catch
-                {
-                    trans.Rollback();
-                    throw;
-                }
-            }
-        }
-
         private void AddSimulatedStations(IDbTransaction trans, IEnumerable<MachineWatchInterface.SimulatedStationUtilization> simStats)
         {
+            if (simStats == null) return;
+
             var cmd = _connection.CreateCommand();
             ((IDbCommand)cmd).Transaction = trans;
 
@@ -1776,82 +1714,6 @@ namespace BlackMaple.MachineFramework
                 cmd.Parameters[5].Value = newHold.HoldUnholdPattern[i].Ticks;
                 cmd.ExecuteNonQuery();
             }
-        }
-
-        public void DeleteJob(string UniqueStr)
-        {
-            lock (_lock)
-            {
-                var trans = _connection.BeginTransaction();
-                try
-                {
-                    DeleteJob(trans, UniqueStr);
-                    trans.Commit();
-                }
-                catch
-                {
-                    trans.Rollback();
-                    throw;
-                }
-            }
-        }
-        private void DeleteJob(IDbTransaction trans, string UniqueStr)
-        {
-            var cmd = _connection.CreateCommand();
-            cmd.Parameters.Add("uniq", SqliteType.Text).Value = UniqueStr;
-
-            ((IDbCommand)cmd).Transaction = trans;
-
-            cmd.CommandText = "DELETE FROM jobs WHERE UniqueStr = $uniq";
-            cmd.ExecuteNonQuery();
-
-            cmd.CommandText = "DELETE FROM numpaths WHERE UniqueStr = $uniq";
-            cmd.ExecuteNonQuery();
-
-            cmd.CommandText = "DELETE FROM planqty WHERE UniqueStr = $uniq";
-            cmd.ExecuteNonQuery();
-
-            cmd.CommandText = "DELETE FROM pallets WHERE UniqueStr = $uniq";
-            cmd.ExecuteNonQuery();
-
-            cmd.CommandText = "DELETE FROM fixtures WHERE UniqueStr = $uniq";
-            cmd.ExecuteNonQuery();
-
-            cmd.CommandText = "DELETE FROM pathdata WHERE UniqueStr = $uniq";
-            cmd.ExecuteNonQuery();
-
-            cmd.CommandText = "DELETE FROM stops WHERE UniqueStr = $uniq";
-            cmd.ExecuteNonQuery();
-
-            cmd.CommandText = "DELETE FROM programs WHERE UniqueStr = $uniq";
-            cmd.ExecuteNonQuery();
-
-            cmd.CommandText = "DELETE FROM simulated_production WHERE UniqueStr = $uniq";
-            cmd.ExecuteNonQuery();
-
-            cmd.CommandText = "DELETE FROM tools WHERE UniqueStr = $uniq";
-            cmd.ExecuteNonQuery();
-
-            cmd.CommandText = "DELETE FROM loadunload WHERE UniqueStr = $uniq";
-            cmd.ExecuteNonQuery();
-
-            cmd.CommandText = "DELETE FROM inspections WHERE UniqueStr = $uniq";
-            cmd.ExecuteNonQuery();
-
-            cmd.CommandText = "DELETE FROM holds WHERE UniqueStr = $uniq";
-            cmd.ExecuteNonQuery();
-
-            cmd.CommandText = "DELETE FROM hold_pattern WHERE UniqueStr = $uniq";
-            cmd.ExecuteNonQuery();
-
-            cmd.CommandText = "DELETE FROM material WHERE UniqueStr = $uniq";
-            cmd.ExecuteNonQuery();
-
-            cmd.CommandText = "DELETE FROM first_proc_comp WHERE UniqueStr = $uniq";
-            cmd.ExecuteNonQuery();
-
-            cmd.CommandText = "DELETE FROM scheduled_bookings WHERE UniqueStr = $uniq";
-            cmd.ExecuteNonQuery();
         }
 
         public void ArchiveJob(string UniqueStr)

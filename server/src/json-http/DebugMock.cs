@@ -950,7 +950,7 @@ namespace MachineWatchApiServer
         public static JobPlan AddJobToHistory(JobDB db, string uniq, Action<JobPlan> modify = null)
         {
             var j = RandomJob(uniq, modify);
-            db.AddJob(j);
+            db.AddJobs(new NewJobs() { Jobs = new List<JobPlan> {j} }, null);
             return j;
         }
 

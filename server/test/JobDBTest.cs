@@ -393,7 +393,7 @@ namespace MachineWatchTest
             var job1 = new JobPlan("Unique1", 2, new int[] { 2, 3 });
             SetJob1Data(job1);
 
-            _jobDB.AddJob(job1);
+            _jobDB.AddJobs(new NewJobs {Jobs = new List<JobPlan> {job1}}, null);
 
             CheckJobs(job1, null, null, job1.ScheduleId, null, null);
             Assert.Empty(_jobDB.LoadExtraPartsForScheduleId(job1.ScheduleId));
@@ -446,13 +446,6 @@ namespace MachineWatchTest
             Assert.Equal(job2.ScheduleId, recent.LatestScheduleId);
             CheckWorkordersEqual(unfilledWorks, recent.CurrentUnfilledWorkorders);
             CheckPlanEqual(job2, recent.Jobs[0], true);
-
-            job2.SetPlannedCyclesOnFirstProcess(1, 563);
-            job2.Priority = 675;
-
-            _jobDB.UpdateJob(job2);
-
-            CheckJobs(job1, job2, null, job2.ScheduleId, theExtraParts, unfilledWorks);
 
             CheckJobs(job1, job2, null, job2.ScheduleId, theExtraParts, unfilledWorks);
 
@@ -518,20 +511,17 @@ namespace MachineWatchTest
             job2.Archived = true;
             CheckJobs(job1, null, null, job2.ScheduleId, theExtraParts, unfilledWorks);
             CheckJobsDate(job1, job2, null);
+        }
 
-            //delete job1
-            _jobDB.DeleteJob("Unique1");
-            Assert.Equal(0, _jobDB.LoadJobs().Jobs.Count);
-            CheckJobsDate(null, job2, null);
-            Assert.False(_jobDB.DoesJobExist("Unique1"));
-
-            //delete job2
-            _jobDB.DeleteJob("Unique2");
-            Assert.Equal(0, _jobDB.LoadJobs().Jobs.Count);
-            Assert.Equal(0, _jobDB.LoadJobs(DateTime.UtcNow.AddHours(-100), DateTime.UtcNow.AddMinutes(100)).Count);
-
-            job1 = new JobPlan(new JobPlan(job1, "Test1"));
+        [Fact]
+        public void JobMaterial()
+        {
+            var job1 = new JobPlan("Test1", 2, new int[] { 2, 3 });
+            SetJob1Data(job1);
             job1.SetPlannedCyclesOnFirstProcess(1, 153);
+
+            var job2 = new JobPlan(new JobPlan("Unique2", 3));
+            SetJob2Data(job2);
             job2.SetPlannedCyclesOnFirstProcess(1, 4);
             job2.Archived = false;
 
@@ -544,7 +534,7 @@ namespace MachineWatchTest
             _jobDB.AddJobs(new NewJobs("tag2", new JobPlan[] { job1, job2, job3 }, debugMsg: debug), null);
             Assert.Equal(debug, LoadDebugData("tag2"));
 
-            CheckJobs(job1, job2, job3, job2.ScheduleId, theExtraParts, unfilledWorks);
+            CheckJobs(job1, job2, job3, job2.ScheduleId, null, null);
 
             for (int i = 0; i < 4; i++)
             {
@@ -557,7 +547,7 @@ namespace MachineWatchTest
             _jobDB.ArchiveCompletedJobs();
             job2.Archived = true;
 
-            CheckJobs(job1, job3, null, job2.ScheduleId, theExtraParts, unfilledWorks);
+            CheckJobs(job1, job3, null, job2.ScheduleId, null, null);
             CheckJobsDate(job1, job2, job3);
 
             for (int i = 0; i < 4; i++)
@@ -569,7 +559,7 @@ namespace MachineWatchTest
 
             _jobDB.ArchiveCompletedJobs();
 
-            CheckJobs(job1, job3, null, job2.ScheduleId, theExtraParts, unfilledWorks);
+            CheckJobs(job1, job3, null, job2.ScheduleId, null, null);
             CheckJobsDate(job1, job2, job3);
 
             _jobDB.AddCompletedMaterial(job3.UniqueStr, 240);
@@ -577,7 +567,7 @@ namespace MachineWatchTest
             _jobDB.ArchiveCompletedJobs();
             job3.Archived = true;
 
-            CheckJobs(job1, null, null, job2.ScheduleId, theExtraParts, unfilledWorks);
+            CheckJobs(job1, null, null, job2.ScheduleId, null, null);
             CheckJobsDate(job1, job2, job3);
         }
 
@@ -653,31 +643,6 @@ namespace MachineWatchTest
 
             Assert.Equal(2, _jobDB.GetCompletedCount("whee", 1));
             Assert.Equal(2, _jobDB.GetCompletedCount("whee", 2));
-        }
-
-        [Fact]
-        public void TInspectionStorage()
-        {
-            var job1 = new JobPlan("abc", 1);
-            var job2 = new JobPlan("def", 1);
-
-            job1.AddInspection(new JobInspectionData("type1", "ctr1", 1, TimeSpan.FromMinutes(20), 55));
-            job1.AddInspection(new JobInspectionData("type2", "ctr1", 3, TimeSpan.FromMinutes(56)));
-            job1.AddInspection(new JobInspectionData("type3", "ctr3", 5, TimeSpan.FromMinutes(32), 22));
-            job1.AddInspection(new JobInspectionData("freq1", "ctr5", 0.1234, TimeSpan.FromMinutes(55)));
-
-            job2.AddInspection(new JobInspectionData("type4", "ctr4", 6, TimeSpan.FromMinutes(16)));
-            job2.AddInspection(new JobInspectionData("type1", "ctr2", 7, TimeSpan.FromMinutes(64)));
-            job2.AddInspection(new JobInspectionData("type2", "ctr3", 8, TimeSpan.FromMinutes(166), 66));
-            job2.AddInspection(new JobInspectionData("freq2", "ctr5", 0.5, TimeSpan.FromMinutes(66)));
-            job2.AddInspection(new JobInspectionData("freq3", "ctr2", 0.22, TimeSpan.FromMinutes(77)));
-
-            _jobDB.AddJobInspections(new JobPlan[] { job1, job2 });
-            //Try overwriting
-            _jobDB.AddJobInspections(new JobPlan[] { job1 });
-
-            CheckInspEqual(job1.GetInspections(), _jobDB.LoadInspections("abc"));
-            CheckInspEqual(job2.GetInspections(), _jobDB.LoadInspections("def"));
         }
 
         [Fact]
