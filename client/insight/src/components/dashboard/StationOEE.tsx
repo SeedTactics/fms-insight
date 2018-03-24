@@ -35,7 +35,7 @@ import { connect } from 'react-redux';
 import { withStyles } from 'material-ui';
 import Grid from 'material-ui/Grid';
 import * as im from 'immutable';
-// import * as numerable from 'numeral';
+import * as numeral from 'numeral';
 import { createSelector } from 'reselect';
 import Tooltip from 'material-ui/Tooltip';
 
@@ -113,6 +113,8 @@ function computeCircle(oee: number): JSX.Element {
 function computeTooltip(p: StationOEEProps): JSX.Element {
 
   let entries: {title: string, value: string}[] = [];
+
+  entries.push({title: "OEE", value: numeral(p.oee).format('0.0%')});
 
   if (p.pallet === undefined) {
     entries.push({title: "Pallet", value: "None"});
