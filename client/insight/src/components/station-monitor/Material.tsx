@@ -234,7 +234,7 @@ export const MatSummary = matStyles<MaterialSummaryProps>(props => {
             {
               props.mat.completed_time === undefined ? undefined :
                 <div>
-                  <small>Completed {distanceInWordsToNow(props.mat.completed_time)} ago</small>
+                  <small>Completed {distanceInWordsToNow(props.mat.completed_time, {addSuffix: true})}</small>
                 </div>
             }
             {

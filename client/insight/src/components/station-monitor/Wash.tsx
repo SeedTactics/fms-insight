@@ -40,6 +40,8 @@ import Card, { CardContent, CardHeader, CardActions } from 'material-ui/Card';
 import Button from 'material-ui/Button';
 import { connect } from 'react-redux';
 import { createSelector } from 'reselect';
+import ListIcon from 'material-ui-icons/List';
+import ToysIcon from 'material-ui-icons/Toys';
 
 import { MaterialSummary } from '../../data/events';
 import { Store } from '../../data/store';
@@ -142,7 +144,13 @@ export const Wash = inspStyles<WashProps>(props => {
       <Grid container style={{flexGrow: 1}}>
         <Grid item xs={12} md={6}>
           <Card className={props.fillViewPort ? props.classes.stretchCard : undefined}>
-            <CardHeader title="Recent Inspections"/>
+            <CardHeader
+              title={
+                <div style={{display: 'flex', alignItems: 'center'}}>
+                  <ListIcon style={{marginRight: '0.75em'}}/>
+                  <span>Recently Completed Parts</span>
+                </div>}
+            />
             <CardContent className={props.fillViewPort ? props.classes.stretchCardContent : undefined}>
               <div className={props.fillViewPort ? props.classes.stretchCardContentContainer : undefined}>
                 <WashList
@@ -155,7 +163,13 @@ export const Wash = inspStyles<WashProps>(props => {
         </Grid>
         <Grid item xs={12} md={6}>
           <Card className={props.fillViewPort ? props.classes.stretchCard : undefined}>
-            <CardHeader title="Selected Material"/>
+            <CardHeader
+              title={
+                <div style={{display: 'flex', alignItems: 'center'}}>
+                  <ToysIcon style={{marginRight: '0.75em'}}/>
+                  <span>Selected Material</span>
+                </div>}
+            />
             <CardContent className={props.fillViewPort ? props.classes.stretchCardContent : undefined}>
               {props.display_material ? <SelectedMaterial mat={props.display_material}/> : undefined}
             </CardContent>

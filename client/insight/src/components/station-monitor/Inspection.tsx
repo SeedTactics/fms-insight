@@ -40,6 +40,8 @@ import Card, { CardContent, CardHeader, CardActions } from 'material-ui/Card';
 import Button from 'material-ui/Button';
 import { connect } from 'react-redux';
 import { createSelector } from 'reselect';
+import BugIcon from 'material-ui-icons/BugReport';
+import WarningIcon from 'material-ui-icons/Warning';
 
 import { MaterialSummary } from '../../data/events';
 import { Store } from '../../data/store';
@@ -143,7 +145,13 @@ export const Inspection = inspStyles<InspectionProps>(props => {
       <Grid container style={{flexGrow: 1}}>
         <Grid item xs={12} md={6}>
           <Card className={props.fillViewPort ? props.classes.stretchCard : undefined}>
-            <CardHeader title="Recent Inspections"/>
+            <CardHeader
+              title={
+                <div style={{display: 'flex', alignItems: 'center'}}>
+                  <WarningIcon style={{marginRight: '0.75em'}}/>
+                  <span>Recent Inspections</span>
+                </div>}
+            />
             <CardContent className={props.fillViewPort ? props.classes.stretchCardContent : undefined}>
               <div className={props.fillViewPort ? props.classes.stretchCardContentContainer : undefined}>
                 <InspectionList
@@ -157,7 +165,13 @@ export const Inspection = inspStyles<InspectionProps>(props => {
         </Grid>
         <Grid item xs={12} md={6}>
           <Card className={props.fillViewPort ? props.classes.stretchCard : undefined}>
-            <CardHeader title="Selected Material"/>
+            <CardHeader
+              title={
+                <div style={{display: 'flex', alignItems: 'center'}}>
+                  <BugIcon style={{marginRight: '0.75em'}}/>
+                  <span>Selected Material</span>
+                </div>}
+            />
             <CardContent className={props.fillViewPort ? props.classes.stretchCardContent : undefined}>
               {props.display_material ? <SelectedMaterial mat={props.display_material}/> : undefined}
             </CardContent>
