@@ -77,10 +77,6 @@ exports[`renders the cost per piece: cost per piece header 1`] = `
             label="Efficiency"
             value={2}
           />
-          <WithStyles(Tab)
-            label="Cost/Piece"
-            value={3}
-          />
         </WithStyles(Tabs)>
         <Connect(LoadingIcon) />
       </WithStyles(Toolbar)>
@@ -134,10 +130,6 @@ exports[`renders the cost per piece: cost per piece header 1`] = `
         <WithStyles(Tab)
           label="Efficiency"
           value={2}
-        />
-        <WithStyles(Tab)
-          label="Cost/Piece"
-          value={3}
         />
       </WithStyles(Tabs)>
     </WithStyles(AppBar)>
@@ -222,10 +214,6 @@ exports[`renders the dashboard: dashboard header 1`] = `
             label="Efficiency"
             value={2}
           />
-          <WithStyles(Tab)
-            label="Cost/Piece"
-            value={3}
-          />
         </WithStyles(Tabs)>
         <Connect(LoadingIcon) />
       </WithStyles(Toolbar)>
@@ -279,10 +267,6 @@ exports[`renders the dashboard: dashboard header 1`] = `
         <WithStyles(Tab)
           label="Efficiency"
           value={2}
-        />
-        <WithStyles(Tab)
-          label="Cost/Piece"
-          value={3}
         />
       </WithStyles(Tabs)>
     </WithStyles(AppBar)>
@@ -367,10 +351,6 @@ exports[`renders the efficiency: efficiency header 1`] = `
             label="Efficiency"
             value={2}
           />
-          <WithStyles(Tab)
-            label="Cost/Piece"
-            value={3}
-          />
         </WithStyles(Tabs)>
         <Connect(LoadingIcon) />
       </WithStyles(Toolbar)>
@@ -424,10 +404,6 @@ exports[`renders the efficiency: efficiency header 1`] = `
         <WithStyles(Tab)
           label="Efficiency"
           value={2}
-        />
-        <WithStyles(Tab)
-          label="Cost/Piece"
-          value={3}
         />
       </WithStyles(Tabs)>
     </WithStyles(AppBar)>
@@ -514,10 +490,6 @@ exports[`renders the inspection monitor: inspection monitor header 1`] = `
             label="Efficiency"
             value={2}
           />
-          <WithStyles(Tab)
-            label="Cost/Piece"
-            value={3}
-          />
         </WithStyles(Tabs)>
         <Connect(LoadingIcon) />
       </WithStyles(Toolbar)>
@@ -571,10 +543,6 @@ exports[`renders the inspection monitor: inspection monitor header 1`] = `
         <WithStyles(Tab)
           label="Efficiency"
           value={2}
-        />
-        <WithStyles(Tab)
-          label="Cost/Piece"
-          value={3}
         />
       </WithStyles(Tabs)>
     </WithStyles(AppBar)>
@@ -661,10 +629,6 @@ exports[`renders the load monitor: station monitor header 1`] = `
             label="Efficiency"
             value={2}
           />
-          <WithStyles(Tab)
-            label="Cost/Piece"
-            value={3}
-          />
         </WithStyles(Tabs)>
         <Connect(LoadingIcon) />
       </WithStyles(Toolbar)>
@@ -718,10 +682,6 @@ exports[`renders the load monitor: station monitor header 1`] = `
         <WithStyles(Tab)
           label="Efficiency"
           value={2}
-        />
-        <WithStyles(Tab)
-          label="Cost/Piece"
-          value={3}
         />
       </WithStyles(Tabs)>
     </WithStyles(AppBar)>
@@ -808,10 +768,6 @@ exports[`renders the wash monitor: wash monitor header 1`] = `
             label="Efficiency"
             value={2}
           />
-          <WithStyles(Tab)
-            label="Cost/Piece"
-            value={3}
-          />
         </WithStyles(Tabs)>
         <Connect(LoadingIcon) />
       </WithStyles(Toolbar)>
@@ -865,10 +821,6 @@ exports[`renders the wash monitor: wash monitor header 1`] = `
         <WithStyles(Tab)
           label="Efficiency"
           value={2}
-        />
-        <WithStyles(Tab)
-          label="Cost/Piece"
-          value={3}
         />
       </WithStyles(Tabs)>
     </WithStyles(AppBar)>

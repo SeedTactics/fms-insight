@@ -4,11 +4,11 @@ exports[`displays the load with no queues: load with no queues 1`] = `
 <nav
   style={
     Object {
-      "alignItems": "center",
+      "alignItems": "flex-end",
       "backgroundColor": "#E0E0E0",
       "display": "flex",
       "height": "2.5em",
-      "justifyContent": "space-evenly",
+      "paddingBottom": "4px",
       "paddingLeft": "24px",
       "paddingRight": "24px",
     }
@@ -48,22 +48,51 @@ exports[`displays the load with no queues: load with no queues 1`] = `
       type="number"
       value={4}
     />
-  </div>
-  <div>
-    <WithStyles(Select)
-      autoWidth={true}
-      key="queueselect"
-      multiple={true}
-      onChange={[Function]}
-      value={Array []}
+    <WithStyles(FormControl)
+      style={
+        Object {
+          "marginLeft": "1em",
+        }
+      }
     >
-      <WithStyles(MenuItem)
-        key="@@insight_free_material@@"
-        value="@@insight_free_material@@"
+      <label
+        style={
+          Object {
+            "color": "rgba(0,0,0,0.54)",
+            "fontSize": "0.9rem",
+            "left": 0,
+            "position": "absolute",
+            "top": "24px",
+          }
+        }
       >
-        Free Material
-      </WithStyles(MenuItem)>
-    </WithStyles(Select)>
+        Display queue(s)
+      </label>
+      <WithStyles(Select)
+        displayEmpty={true}
+        inputProps={
+          Object {
+            "id": "queueselect",
+          }
+        }
+        key="queueselect"
+        multiple={true}
+        onChange={[Function]}
+        style={
+          Object {
+            "minWidth": "10em",
+          }
+        }
+        value={Array []}
+      >
+        <WithStyles(MenuItem)
+          key="@@insight_free_material@@"
+          value="@@insight_free_material@@"
+        >
+          Free Material
+        </WithStyles(MenuItem)>
+      </WithStyles(Select)>
+    </WithStyles(FormControl)>
   </div>
 </nav>
 `;
@@ -72,11 +101,11 @@ exports[`displays the toolbar for all inspection: inspection all toolbar 1`] = `
 <nav
   style={
     Object {
-      "alignItems": "center",
+      "alignItems": "flex-end",
       "backgroundColor": "#E0E0E0",
       "display": "flex",
       "height": "2.5em",
-      "justifyContent": "space-evenly",
+      "paddingBottom": "4px",
       "paddingLeft": "24px",
       "paddingRight": "24px",
     }
@@ -136,7 +165,6 @@ exports[`displays the toolbar for all inspection: inspection all toolbar 1`] = `
       </WithStyles(MenuItem)>
     </WithStyles(Select)>
   </div>
-  <div />
 </nav>
 `;
 
@@ -144,11 +172,11 @@ exports[`displays the toolbar for load with one queue: load with one queue 1`] =
 <nav
   style={
     Object {
-      "alignItems": "center",
+      "alignItems": "flex-end",
       "backgroundColor": "#E0E0E0",
       "display": "flex",
       "height": "2.5em",
-      "justifyContent": "space-evenly",
+      "paddingBottom": "4px",
       "paddingLeft": "24px",
       "paddingRight": "24px",
     }
@@ -188,38 +216,54 @@ exports[`displays the toolbar for load with one queue: load with one queue 1`] =
       type="number"
       value={4}
     />
-  </div>
-  <div>
-    <WithStyles(Select)
-      autoWidth={true}
-      key="queueselect"
-      multiple={true}
-      onChange={[Function]}
-      value={
-        Array [
-          "a",
-        ]
+    <WithStyles(FormControl)
+      style={
+        Object {
+          "marginLeft": "1em",
+        }
       }
     >
-      <WithStyles(MenuItem)
-        key="@@insight_free_material@@"
-        value="@@insight_free_material@@"
+      <WithStyles(Select)
+        displayEmpty={true}
+        inputProps={
+          Object {
+            "id": "queueselect",
+          }
+        }
+        key="queueselect"
+        multiple={true}
+        onChange={[Function]}
+        style={
+          Object {
+            "minWidth": "10em",
+          }
+        }
+        value={
+          Array [
+            "a",
+          ]
+        }
       >
-        Free Material
-      </WithStyles(MenuItem)>
-      <WithStyles(MenuItem)
-        key="0"
-        value="a"
-      >
-        a
-      </WithStyles(MenuItem)>
-      <WithStyles(MenuItem)
-        key="1"
-        value="b"
-      >
-        b
-      </WithStyles(MenuItem)>
-    </WithStyles(Select)>
+        <WithStyles(MenuItem)
+          key="@@insight_free_material@@"
+          value="@@insight_free_material@@"
+        >
+          Free Material
+        </WithStyles(MenuItem)>
+        <WithStyles(MenuItem)
+          key="0"
+          value="a"
+        >
+          a
+        </WithStyles(MenuItem)>
+        <WithStyles(MenuItem)
+          key="1"
+          value="b"
+        >
+          b
+        </WithStyles(MenuItem)>
+      </WithStyles(Select)>
+    </WithStyles(FormControl)>
   </div>
 </nav>
 `;
@@ -228,11 +272,11 @@ exports[`displays the toolbar for load with three queues: load toolbar 1`] = `
 <nav
   style={
     Object {
-      "alignItems": "center",
+      "alignItems": "flex-end",
       "backgroundColor": "#E0E0E0",
       "display": "flex",
       "height": "2.5em",
-      "justifyContent": "space-evenly",
+      "paddingBottom": "4px",
       "paddingLeft": "24px",
       "paddingRight": "24px",
     }
@@ -272,52 +316,68 @@ exports[`displays the toolbar for load with three queues: load toolbar 1`] = `
       type="number"
       value={4}
     />
-  </div>
-  <div>
-    <WithStyles(Select)
-      autoWidth={true}
-      key="queueselect"
-      multiple={true}
-      onChange={[Function]}
-      value={
-        Array [
-          "a",
-          "b",
-          "c",
-        ]
+    <WithStyles(FormControl)
+      style={
+        Object {
+          "marginLeft": "1em",
+        }
       }
     >
-      <WithStyles(MenuItem)
-        key="@@insight_free_material@@"
-        value="@@insight_free_material@@"
+      <WithStyles(Select)
+        displayEmpty={true}
+        inputProps={
+          Object {
+            "id": "queueselect",
+          }
+        }
+        key="queueselect"
+        multiple={true}
+        onChange={[Function]}
+        style={
+          Object {
+            "minWidth": "10em",
+          }
+        }
+        value={
+          Array [
+            "a",
+            "b",
+            "c",
+          ]
+        }
       >
-        Free Material
-      </WithStyles(MenuItem)>
-      <WithStyles(MenuItem)
-        key="0"
-        value="a"
-      >
-        a
-      </WithStyles(MenuItem)>
-      <WithStyles(MenuItem)
-        key="1"
-        value="b"
-      >
-        b
-      </WithStyles(MenuItem)>
-      <WithStyles(MenuItem)
-        key="2"
-        value="c"
-      >
-        c
-      </WithStyles(MenuItem)>
-      <WithStyles(MenuItem)
-        key="3"
-        value="d"
-      >
-        d
-      </WithStyles(MenuItem)>
-    </WithStyles(Select)>
+        <WithStyles(MenuItem)
+          key="@@insight_free_material@@"
+          value="@@insight_free_material@@"
+        >
+          Free Material
+        </WithStyles(MenuItem)>
+        <WithStyles(MenuItem)
+          key="0"
+          value="a"
+        >
+          a
+        </WithStyles(MenuItem)>
+        <WithStyles(MenuItem)
+          key="1"
+          value="b"
+        >
+          b
+        </WithStyles(MenuItem)>
+        <WithStyles(MenuItem)
+          key="2"
+          value="c"
+        >
+          c
+        </WithStyles(MenuItem)>
+        <WithStyles(MenuItem)
+          key="3"
+          value="d"
+        >
+          d
+        </WithStyles(MenuItem)>
+      </WithStyles(Select)>
+    </WithStyles(FormControl)>
   </div>
 </nav>
 `;
@@ -326,11 +386,11 @@ exports[`displays the toolbar for single inspection type: inspection i1 selected
 <nav
   style={
     Object {
-      "alignItems": "center",
+      "alignItems": "flex-end",
       "backgroundColor": "#E0E0E0",
       "display": "flex",
       "height": "2.5em",
-      "justifyContent": "space-evenly",
+      "paddingBottom": "4px",
       "paddingLeft": "24px",
       "paddingRight": "24px",
     }
@@ -390,7 +450,6 @@ exports[`displays the toolbar for single inspection type: inspection i1 selected
       </WithStyles(MenuItem)>
     </WithStyles(Select)>
   </div>
-  <div />
 </nav>
 `;
 
@@ -398,11 +457,11 @@ exports[`displays the toolbar for wash: wash toolbar 1`] = `
 <nav
   style={
     Object {
-      "alignItems": "center",
+      "alignItems": "flex-end",
       "backgroundColor": "#E0E0E0",
       "display": "flex",
       "height": "2.5em",
-      "justifyContent": "space-evenly",
+      "paddingBottom": "4px",
       "paddingLeft": "24px",
       "paddingRight": "24px",
     }
@@ -431,6 +490,5 @@ exports[`displays the toolbar for wash: wash toolbar 1`] = `
       </WithStyles(MenuItem)>
     </WithStyles(Select)>
   </div>
-  <div />
 </nav>
 `;

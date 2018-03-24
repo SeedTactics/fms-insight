@@ -35,6 +35,7 @@ import { connect } from 'react-redux';
 import Select from 'material-ui/Select';
 import { MenuItem } from 'material-ui/Menu';
 import Input from 'material-ui/Input';
+import { FormControl } from 'material-ui/Form';
 import { Seq, Set } from 'immutable';
 
 import * as routes from '../../data/routes';
@@ -46,9 +47,9 @@ const toolbarStyle = {
   'backgroundColor': '#E0E0E0',
   'paddingLeft': '24px',
   'paddingRight': '24px',
+  'paddingBottom': '4px',
   'height': '2.5em',
-  'alignItems': 'center' as 'center',
-  'justifyContent': 'space-evenly' as 'space-evenly'
+  'alignItems': 'flex-end' as 'flex-end',
 };
 
 export interface StationToolbarProps {
@@ -177,24 +178,40 @@ export function StationToolbar(props: StationToolbarProps) {
             </Select>
             : undefined
         }
-      </div>
-      <div>
         {
           props.current_route.station_monitor === routes.StationMonitorType.LoadUnload ?
-            <Select
-              multiple
-              key="queueselect"
-              value={queues}
-              autoWidth
-              onChange={e => setQueues(e.target.value)}
-            >
-              <MenuItem key={freeMaterialSym} value={freeMaterialSym}>Free Material</MenuItem>
+            <FormControl style={{marginLeft: '1em'}}>
               {
-                queueNames.map((q, idx) =>
-                  <MenuItem key={idx} value={q}>{q}</MenuItem>
-                )
+                queues.length === 0 ?
+                  <label
+                    style={{
+                      position: 'absolute',
+                      top: '24px',
+                      left: 0,
+                      color: 'rgba(0,0,0,0.54)',
+                      fontSize: '0.9rem'}}
+                  >
+                    Display queue(s)
+                  </label>
+                  : undefined
               }
-            </Select>
+              <Select
+                multiple
+                key="queueselect"
+                displayEmpty
+                value={queues}
+                inputProps={{id: "queueselect"}}
+                style={{minWidth: '10em'}}
+                onChange={e => setQueues(e.target.value)}
+              >
+                <MenuItem key={freeMaterialSym} value={freeMaterialSym}>Free Material</MenuItem>
+                {
+                  queueNames.map((q, idx) =>
+                    <MenuItem key={idx} value={q}>{q}</MenuItem>
+                  )
+                }
+              </Select>
+            </FormControl>
             : undefined
         }
       </div>
