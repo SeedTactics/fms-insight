@@ -84,7 +84,7 @@ export const WashList = matListStyles<WashListProps>(props => {
 export function SelectedMaterial({mat}: {mat: matDetails.MaterialDetail}) {
   return (
     <>
-      <MaterialDetailTitle partName={mat.partName}/>
+      <MaterialDetailTitle partName={mat.partName} serial={mat.serial}/>
       <MaterialDetailContent mat={mat}/>
     </>
   );
@@ -171,7 +171,9 @@ export const Wash = inspStyles<WashProps>(props => {
                 </div>}
             />
             <CardContent className={props.fillViewPort ? props.classes.stretchCardContent : undefined}>
-              {props.display_material ? <SelectedMaterial mat={props.display_material}/> : undefined}
+              <div className={props.fillViewPort ? props.classes.stretchCardContentContainer : undefined}>
+                {props.display_material ? <SelectedMaterial mat={props.display_material}/> : undefined}
+              </div>
             </CardContent>
             {
               props.display_material ?

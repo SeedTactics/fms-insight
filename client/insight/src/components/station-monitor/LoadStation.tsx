@@ -200,7 +200,7 @@ export function MaterialDialog(props: MaterialDialogProps) {
     body = (
       <>
         <DialogTitle disableTypography>
-          <MaterialDetailTitle partName={mat.partName}/>
+          <MaterialDetailTitle partName={mat.partName} serial={mat.serial}/>
         </DialogTitle>
         <DialogContent>
           <MaterialDetailContent mat={mat}/>

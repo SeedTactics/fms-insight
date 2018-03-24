@@ -47,7 +47,7 @@ import * as im from 'immutable';
 
 import * as api from '../../data/api';
 import * as matDetails from '../../data/material-details';
-import LogEntry from '../LogEntry';
+import { LogEntries } from '../LogEntry';
 import { MaterialSummary } from '../../data/events';
 import { withStyles } from 'material-ui';
 
@@ -274,31 +274,13 @@ export const MatSummary = matStyles<MaterialSummaryProps>(props => {
   );
 });
 
-export interface MaterialEventProps {
-  events: ReadonlyArray<Readonly<api.ILogEntry>>;
-}
-
-export function MaterialEvents(props: MaterialEventProps) {
-  return (
-    <ul style={{'listStyle': 'none'}}>
-      {
-        props.events.map(e => (
-          <li key={e.counter}>
-            <LogEntry entry={e}/>
-          </li>
-        ))
-      }
-    </ul>
-  );
-}
-
-export function MaterialDetailTitle({partName}: {partName: string}) {
+export function MaterialDetailTitle({partName, serial}: {partName: string, serial?: string}) {
   return (
     <div style={{display: 'flex', textAlign: 'left'}}>
       <PartIdenticon part={partName}/>
       <div style={{marginLeft: '8px', flexGrow: 1}}>
         <Typography variant="title">
-          {partName}
+          {partName + (serial === undefined ? "" : " - " + serial)}
         </Typography>
       </div>
     </div>
@@ -319,29 +301,28 @@ export function MaterialDetailContent(props: MaterialDetailProps) {
   }
   return (
     <>
-      <div>
-        <small>Serial: {props.mat.serial || "none"}</small>
+      <div style={{marginLeft: '1em'}}>
+        <div>
+          <small>Workorder: {props.mat.workorderId || "none"}</small>
+        </div>
+        <div>
+          <small>Inspections:</small>
+            {
+              props.mat.signaledInspections.length === 0
+                ? <small>None</small>
+                :
+                props.mat.signaledInspections.map((type, i) => (
+                  <span key={i}>
+                    <small>{i === 0 ? "" : ", "}</small>
+                    <small style={{color: colorForInspType(type)}}>
+                      {type}
+                    </small>
+                  </span>
+                ))
+            }
+        </div>
       </div>
-      <div>
-        <small>Workorder: {props.mat.workorderId || "none"}</small>
-      </div>
-      <div>
-        <small>Inspections:</small>
-          {
-            props.mat.signaledInspections.length === 0
-              ? <small>None</small>
-              :
-              props.mat.signaledInspections.map((type, i) => (
-                <span key={i}>
-                  <small>{i === 0 ? "" : ", "}</small>
-                  <small style={{color: colorForInspType(type)}}>
-                    {type}
-                  </small>
-                </span>
-              ))
-          }
-      </div>
-      {props.mat.loading_events ? <CircularProgress color="secondary"/> : <MaterialEvents events={props.mat.events}/>}
+      {props.mat.loading_events ? <CircularProgress color="secondary"/> : <LogEntries entries={props.mat.events}/>}
     </>
   );
 }

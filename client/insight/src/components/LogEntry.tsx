@@ -32,15 +32,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
 import * as api from '../data/api';
-import { distanceInWordsToNow } from 'date-fns';
+import { format } from 'date-fns';
+import Table, { TableBody, TableCell, TableHead, TableRow } from 'material-ui/Table';
 
-export interface Props {
+export interface LogEntryProps {
     entry: api.ILogEntry;
 }
 
-/*function logType(entry: api.ILogEntry): string {
+function logType(entry: api.ILogEntry): string {
   switch (entry.type) {
-    case api.LogEntryType.LoadUnloadCycle:
+    case api.LogType.LoadUnloadCycle:
       if (entry.result === 'LOAD') {
         if (entry.startofcycle) {
           return 'Start Load';
@@ -55,34 +56,39 @@ export interface Props {
         }
       }
 
-    case api.LogEntryType.MachineCycle:
+    case api.LogType.MachineCycle:
       if (entry.startofcycle) {
         return 'Cycle Start';
       } else {
         return 'Cycle End';
       }
 
-    case api.LogEntryType.PartMark:
+    case api.LogType.PartMark:
       return 'Serial';
 
-    case api.LogEntryType.OrderAssignment:
+    case api.LogType.OrderAssignment:
       return 'Workorder';
 
-    case api.LogEntryType.Inspection:
-      return 'Inspection';
+    case api.LogType.Inspection:
+      return 'Signal';
 
-    case api.LogEntryType.PalletCycle:
+    case api.LogType.PalletCycle:
       return 'Pallet Cycle';
 
-    case api.LogEntryType.FinalizeWorkorder:
+    case api.LogType.FinalizeWorkorder:
       return 'Finalize Workorder';
 
-    case api.LogEntryType.GeneralMessage:
+    case api.LogType.Wash:
+      return 'Wash';
+
+    case api.LogType.InspectionResult:
+      return 'Inspection';
+
+    default:
       return 'Message';
 
-    default: return 'Message';
   }
-}*/
+}
 
 function displayMat(mats: ReadonlyArray<api.ILogMaterial>) {
   let mat = '';
@@ -100,32 +106,13 @@ function displayMat(mats: ReadonlyArray<api.ILogMaterial>) {
 function display(entry: api.ILogEntry): string {
   switch (entry.type) {
     case api.LogType.LoadUnloadCycle:
-      let oper;
-      if (entry.result === 'LOAD') {
-        if (entry.startofcycle) {
-          oper = 'Start load';
-        } else {
-          oper = 'End load';
-        }
-      } else {
-        if (entry.startofcycle) {
-          oper = 'Start unload';
-        } else {
-          oper = 'End unload';
-        }
-      }
-      return oper + ' of ' + displayMat(entry.material) +
+      return displayMat(entry.material) +
         ' on pallet ' + entry.pal +
         ' at station ' + entry.locnum.toString();
 
     case api.LogType.MachineCycle:
       let msg;
-      if (entry.startofcycle) {
-        msg = 'Cycle start';
-      } else {
-        msg = 'Cycle end';
-      }
-      msg += ' of ' + displayMat(entry.material) +
+      msg = displayMat(entry.material) +
         ' on pallet ' + entry.pal +
         ' at machine ' + entry.locnum.toString();
       if (entry.program && entry.program !== '') {
@@ -164,22 +151,57 @@ function display(entry: api.ILogEntry): string {
 
     case api.LogType.InspectionResult:
       if (entry.result.toLowerCase() === "false") {
-        return 'Inspection ' + entry.program + ' Failed';
+        return entry.program + ' Failed';
       } else {
-        return 'Inspection ' + entry.program + ' Succeeded';
+        return entry.program + ' Succeeded';
       }
 
     case api.LogType.Wash:
-      return 'Wash completed';
+      return 'Wash Completed';
 
     default: return entry.result;
   }
 }
 
-export default function LogEntry({entry}: Props) {
-  return (
-    <span>
-      <small>{display(entry) + ' (' + distanceInWordsToNow(entry.endUTC) + ' ago)'}</small>
-    </span>
-  );
+export class LogEntry extends React.PureComponent<LogEntryProps> {
+  render() {
+    return (
+      <TableRow>
+        <TableCell padding="dense">{format(this.props.entry.endUTC, "MMM D, YY")}</TableCell>
+        <TableCell padding="dense">{format(this.props.entry.endUTC, "hh:mm A")}</TableCell>
+        <TableCell padding="dense">{logType(this.props.entry)}</TableCell>
+        <TableCell padding="dense">
+          {display(this.props.entry)}
+        </TableCell>
+      </TableRow>
+    );
+  }
+}
+
+export interface LogEntriesProps {
+  entries: ReadonlyArray<Readonly<api.ILogEntry>>;
+}
+
+export class LogEntries extends React.PureComponent<LogEntriesProps> {
+  render() {
+    return (
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableCell>Date</TableCell>
+            <TableCell>Time</TableCell>
+            <TableCell>Type</TableCell>
+            <TableCell>Details</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {
+            this.props.entries.map(e => (
+              <LogEntry key={e.counter} entry={e}/>
+            ))
+          }
+        </TableBody>
+      </Table>
+    );
+  }
 }
