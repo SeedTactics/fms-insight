@@ -162,6 +162,13 @@ function display(entry: api.ILogEntry): string {
     case api.LogType.FinalizeWorkorder:
       return 'Finalize workorder ' + entry.result;
 
+    case api.LogType.InspectionResult:
+      if (entry.result.toLowerCase() === "false") {
+        return 'Inspection ' + entry.program + ' Failed';
+      } else {
+        return 'Inspection ' + entry.program + ' Succeeded';
+      }
+
     default: return entry.result;
   }
 }

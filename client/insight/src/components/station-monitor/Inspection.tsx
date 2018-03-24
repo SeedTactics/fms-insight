@@ -69,7 +69,7 @@ export const InspectionList = matListStyles<InspectionListProps>(props => {
             <div style={{display: 'inline-block'}}>
               <MatSummary
                 mat={mat}
-                focusInspectionType={props.focusInspectionType}
+                checkInspectionType={props.focusInspectionType}
                 onOpen={props.openMat}
               />
             </div>
@@ -122,12 +122,12 @@ const inspStyles = withStyles(() => ({
 
 export const Inspection = inspStyles<InspectionProps>(props => {
 
-  function markInspComplete() {
-    if (!props.display_material) {
+  function markInspComplete(success: boolean) {
+    if (!props.display_material || !props.focusInspectionType || props.focusInspectionType === "") {
       return;
     }
 
-    props.completeInspection(props.display_material, "MyInspection", true);
+    props.completeInspection(props.display_material, props.focusInspectionType, success);
   }
 
   return (
@@ -152,10 +152,13 @@ export const Inspection = inspStyles<InspectionProps>(props => {
               {props.display_material ? <SelectedMaterial mat={props.display_material}/> : undefined}
             </CardContent>
             {
-              props.display_material ?
+              props.display_material && props.focusInspectionType && props.focusInspectionType !== "" ?
                 <CardActions>
-                  <Button onClick={markInspComplete}>
+                  <Button color="primary" onClick={() => markInspComplete(true)}>
                     Mark Inspection Success
+                  </Button>
+                  <Button color="secondary" onClick={() => markInspComplete(false)}>
+                    Mark Inspection Failed
                   </Button>
                 </CardActions>
                 : undefined

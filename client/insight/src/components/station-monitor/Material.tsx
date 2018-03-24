@@ -182,32 +182,28 @@ export const InProcMaterial = matStyles<InProcMaterialProps>(props => {
 
 export interface MaterialSummaryProps {
   readonly mat: Readonly<MaterialSummary>; // TODO: deep readonly
-  readonly focusInspectionType?: string;
+  readonly checkInspectionType?: string;
+  readonly checkWashCompleted?: boolean;
   // tslint:disable-next-line:no-any
   onOpen: (m: Readonly<MaterialSummary>) => any;
 }
 
 export const MatSummary = matStyles<MaterialSummaryProps>(props => {
-  function colorForInspType(type: string): string {
-    if (!props.focusInspectionType) {
-      return "black";
-    }
-    if (props.focusInspectionType !== "" && props.focusInspectionType !== type) {
-      return "black";
-    }
-    if (props.mat.completedInspections.indexOf(type) >= 0) {
-      return "black";
-    } else {
-      return "red";
-    }
-  }
-
-  let allInspCompleted: boolean;
-  if (props.focusInspectionType === "") {
-    allInspCompleted = im.Set(props.mat.signaledInspections).subtract(props.mat.completedInspections)
+  let showInspCheckmark: boolean;
+  if (!props.checkInspectionType) {
+    showInspCheckmark = false;
+  } else if (props.checkInspectionType === "") {
+    showInspCheckmark = im.Set(props.mat.signaledInspections).subtract(props.mat.completedInspections)
       .isEmpty();
   } else {
-    allInspCompleted = props.mat.completedInspections.indexOf(props.focusInspectionType || "") >= 0;
+    showInspCheckmark = props.mat.completedInspections.indexOf(props.checkInspectionType) >= 0;
+  }
+
+  let showWashCheckmark: boolean;
+  if (props.checkWashCompleted) {
+    showWashCheckmark = props.mat.wash_completed !== undefined;
+  } else {
+    showWashCheckmark = false;
   }
 
   return (
@@ -244,10 +240,7 @@ export const MatSummary = matStyles<MaterialSummaryProps>(props => {
                   {
                     props.mat.signaledInspections.map((type, i) => (
                       <span key={i}>
-                        <small>{i === 0 ? "" : ", "}</small>
-                        <small style={{color: colorForInspType(type)}}>
-                          {type}
-                        </small>
+                        <small>{i === 0 ? type : ", " + type}</small>
                       </span>
                     ))
                   }
@@ -264,11 +257,9 @@ export const MatSummary = matStyles<MaterialSummaryProps>(props => {
               : undefined
             }
             {
-              props.focusInspectionType !== undefined && allInspCompleted ?
+              showInspCheckmark || showWashCheckmark ?
                 <div>
-                  <Tooltip title="All Inspections Completed">
-                    <CheckmarkIcon/>
-                  </Tooltip>
+                  <CheckmarkIcon/>
                 </div>
                 : undefined
             }
