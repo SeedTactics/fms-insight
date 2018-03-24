@@ -117,7 +117,9 @@ namespace MachineWatchApiServer
                 );
 
             services
-                .AddMvcCore()
+                .AddMvcCore(options => {
+                    options.ModelBinderProviders.Insert(0, new DateTimeBinderProvider());
+                })
                 .AddApiExplorer()
                 .AddFormatterMappings()
                 .AddJsonFormatters()
