@@ -113,7 +113,11 @@ const matStyles = withStyles(theme => ({
     flexGrow: 1,
   },
   rightContent: {
-    marginLeft: '4px'
+    marginLeft: '4px',
+    display: 'flex',
+    'flex-direction': 'column',
+    'justify-content': 'space-between',
+    'align-items': 'flex-end',
   },
   avatar: {
     width: '30px',
@@ -190,7 +194,7 @@ export interface MaterialSummaryProps {
 
 export const MatSummary = matStyles<MaterialSummaryProps>(props => {
   let showInspCheckmark: boolean;
-  if (!props.checkInspectionType) {
+  if (props.checkInspectionType === undefined) {
     showInspCheckmark = false;
   } else if (props.checkInspectionType === "") {
     showInspCheckmark = im.Set(props.mat.signaledInspections).subtract(props.mat.completedInspections)

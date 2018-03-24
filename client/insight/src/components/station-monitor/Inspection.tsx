@@ -111,8 +111,16 @@ const inspStyles = withStyles(() => ({
     'flex-direction': 'column' as 'column',
   },
   stretchCardContent: {
-    'overflow-y': 'auto',
     'flex-grow': 1,
+    'position': 'relative' as 'relative',
+  },
+  stretchCardContentContainer: {
+    'position': 'absolute' as 'absolute',
+    'top': 0,
+    'left': 0,
+    'right': 0,
+    'bottom': 0,
+    'overflow-y': 'auto',
   },
   mainScrollable: {
     'padding': '8px',
@@ -137,11 +145,13 @@ export const Inspection = inspStyles<InspectionProps>(props => {
           <Card className={props.fillViewPort ? props.classes.stretchCard : undefined}>
             <CardHeader title="Recent Inspections"/>
             <CardContent className={props.fillViewPort ? props.classes.stretchCardContent : undefined}>
-              <InspectionList
-                recent_inspections={props.recent_inspections}
-                focusInspectionType={props.focusInspectionType}
-                openMat={props.openMat}
-              />
+              <div className={props.fillViewPort ? props.classes.stretchCardContentContainer : undefined}>
+                <InspectionList
+                  recent_inspections={props.recent_inspections}
+                  focusInspectionType={props.focusInspectionType}
+                  openMat={props.openMat}
+                />
+              </div>
             </CardContent>
           </Card>
         </Grid>
