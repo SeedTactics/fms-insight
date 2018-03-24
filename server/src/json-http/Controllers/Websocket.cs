@@ -38,9 +38,30 @@ using System.Linq;
 using System.Threading.Tasks;
 using BlackMaple.MachineWatchInterface;
 using System.Net.WebSockets;
+using System.Runtime.Serialization;
 
 namespace MachineWatchApiServer.Controllers
 {
+  [DataContract]
+  public enum ServerEventType
+  {
+    [EnumMember] NewLogEntry,
+    [EnumMember] NewJobs,
+  };
+
+  [DataContract]
+  public class ServerEvent
+  {
+    [DataMember(IsRequired=true)]
+    public ServerEventType Type {get;set;}
+
+    [DataMember(IsRequired=false, EmitDefaultValue=false)]
+    public LogEntry LogEntry {get;set;}
+
+    [DataMember(IsRequired=false, EmitDefaultValue=false)]
+    public PlannedSchedule NewPlannedSchedule;
+  }
+
   public class WebsocketManager
   {
 
@@ -82,22 +103,24 @@ namespace MachineWatchApiServer.Controllers
       }
     }
 
-    private ILogDatabase _log;
     private WebsocketDict _sockets = new WebsocketDict();
     private Newtonsoft.Json.JsonSerializerSettings _serSettings;
 
-    public WebsocketManager(ILogDatabase log)
+    public WebsocketManager(ILogDatabase log, IJobDatabase jobDatabase)
     {
-      _log = log;
       _serSettings = new Newtonsoft.Json.JsonSerializerSettings();
       _serSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
       _serSettings.ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver();
 
-      _log.NewLogEntry += HandleLogEvent;
+      log.NewLogEntry += (e, foreignId) =>
+        Send(new ServerEvent() {Type = ServerEventType.NewLogEntry, LogEntry = e});
+
+      jobDatabase.OnNewJobs += (sch) =>
+        Send(new ServerEvent() {Type = ServerEventType.NewJobs, NewPlannedSchedule = sch});
     }
 
-    private void HandleLogEvent(LogEntry e, string foreignId) {
-      var data = Newtonsoft.Json.JsonConvert.SerializeObject(e, Newtonsoft.Json.Formatting.None, _serSettings);
+    private void Send(ServerEvent val) {
+      var data = Newtonsoft.Json.JsonConvert.SerializeObject(val, Newtonsoft.Json.Formatting.None, _serSettings);
       var encoded = System.Text.Encoding.UTF8.GetBytes(data);
       var buffer = new ArraySegment<Byte>(encoded, 0, encoded.Length);
 
@@ -138,8 +161,6 @@ namespace MachineWatchApiServer.Controllers
     public async Task CloseAll() {
       var tasks = new List<Task>();
       var sockets = _sockets.Clear();
-
-      _log.NewLogEntry -= HandleLogEvent;
 
       foreach (var ws in sockets) {
         var tokenSource = new CancellationTokenSource();

@@ -113,7 +113,9 @@ namespace MachineWatchApiServer
                 .AddSingleton<IStoreSettings>(settings)
                 .AddSingleton<BlackMaple.MachineWatchInterface.IServerBackend>(plugin.Backend)
                 .AddSingleton<Controllers.WebsocketManager>(
-                    new Controllers.WebsocketManager(plugin.Backend.LogDatabase())
+                    new Controllers.WebsocketManager(
+                        plugin.Backend.LogDatabase(),
+                        plugin.Backend.JobDatabase())
                 );
 
             services
