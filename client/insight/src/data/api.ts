@@ -217,7 +217,7 @@ export class JobsClient {
         return Promise.resolve<HistoricData>(<any>null);
     }
 
-    recent(afterScheduleId: string): Promise<PlannedSchedule> {
+    recent(afterScheduleId: string): Promise<HistoricData> {
         let url_ = this.baseUrl + "/api/v1/jobs/recent?";
         if (afterScheduleId === undefined)
             throw new Error("The parameter 'afterScheduleId' must be defined.");
@@ -238,14 +238,14 @@ export class JobsClient {
         });
     }
 
-    protected processRecent(response: Response): Promise<PlannedSchedule> {
+    protected processRecent(response: Response): Promise<HistoricData> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
         if (status === 200) {
             return response.text().then((_responseText) => {
             let result200: any = null;
             let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = resultData200 ? PlannedSchedule.fromJS(resultData200) : new PlannedSchedule();
+            result200 = resultData200 ? HistoricData.fromJS(resultData200) : new HistoricData();
             return result200;
             });
         } else if (status !== 200 && status !== 204) {
@@ -253,7 +253,7 @@ export class JobsClient {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
             });
         }
-        return Promise.resolve<PlannedSchedule>(<any>null);
+        return Promise.resolve<HistoricData>(<any>null);
     }
 
     latestSchedule(): Promise<PlannedSchedule> {
@@ -2010,7 +2010,7 @@ export interface ISimulatedProduction extends IValueType {
 }
 
 export class SimulatedStationUtilization implements ISimulatedStationUtilization {
-    simulationId: string;
+    scheduleId: string;
     stationGroup: string;
     stationNum: number;
     startUTC: Date;
@@ -2029,7 +2029,7 @@ export class SimulatedStationUtilization implements ISimulatedStationUtilization
 
     init(data?: any) {
         if (data) {
-            this.simulationId = data["SimulationId"];
+            this.scheduleId = data["ScheduleId"];
             this.stationGroup = data["StationGroup"];
             this.stationNum = data["StationNum"];
             this.startUTC = data["StartUTC"] ? new Date(data["StartUTC"].toString()) : <any>undefined;
@@ -2048,7 +2048,7 @@ export class SimulatedStationUtilization implements ISimulatedStationUtilization
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["SimulationId"] = this.simulationId;
+        data["ScheduleId"] = this.scheduleId;
         data["StationGroup"] = this.stationGroup;
         data["StationNum"] = this.stationNum;
         data["StartUTC"] = this.startUTC ? this.startUTC.toISOString() : <any>undefined;
@@ -2060,7 +2060,7 @@ export class SimulatedStationUtilization implements ISimulatedStationUtilization
 }
 
 export interface ISimulatedStationUtilization {
-    simulationId: string;
+    scheduleId: string;
     stationGroup: string;
     stationNum: number;
     startUTC: Date;

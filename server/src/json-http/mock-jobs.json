@@ -1300,7 +1300,7 @@
         {
             "EndUTC": "2016-11-05T12:06:16Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T12:01:16Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -1309,7 +1309,7 @@
         {
             "EndUTC": "2016-11-05T12:07:32Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T12:02:32Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -1318,7 +1318,7 @@
         {
             "EndUTC": "2016-11-05T13:24:42Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T12:07:42Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -1327,7 +1327,7 @@
         {
             "EndUTC": "2016-11-05T12:13:48Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T12:08:48Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -1336,7 +1336,7 @@
         {
             "EndUTC": "2016-11-05T13:27:14Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T12:10:14Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -1345,7 +1345,7 @@
         {
             "EndUTC": "2016-11-05T12:16:20Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T12:11:20Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -1354,7 +1354,7 @@
         {
             "EndUTC": "2016-11-05T13:32:14Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T12:15:14Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -1363,7 +1363,7 @@
         {
             "EndUTC": "2016-11-05T12:21:20Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T12:16:20Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -1372,7 +1372,7 @@
         {
             "EndUTC": "2016-11-05T13:34:46Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T12:17:46Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -1381,7 +1381,7 @@
         {
             "EndUTC": "2016-11-05T12:23:52Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T12:18:52Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -1390,7 +1390,7 @@
         {
             "EndUTC": "2016-11-05T12:28:52Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T12:23:52Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -1399,7 +1399,7 @@
         {
             "EndUTC": "2016-11-05T12:31:24Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T12:26:24Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -1408,7 +1408,7 @@
         {
             "EndUTC": "2016-11-05T14:14:56Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T13:34:56Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -1417,7 +1417,7 @@
         {
             "EndUTC": "2016-11-05T14:14:56Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T13:34:56Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -1426,7 +1426,7 @@
         {
             "EndUTC": "2016-11-05T14:14:56Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T13:34:56Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -1435,7 +1435,7 @@
         {
             "EndUTC": "2016-11-05T14:14:56Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T13:34:56Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -1444,7 +1444,7 @@
         {
             "EndUTC": "2016-11-05T13:46:12Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T13:36:12Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -1453,7 +1453,7 @@
         {
             "EndUTC": "2016-11-05T13:47:28Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T13:37:28Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -1462,7 +1462,7 @@
         {
             "EndUTC": "2016-11-05T13:58:44Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T13:48:44Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -1471,7 +1471,7 @@
         {
             "EndUTC": "2016-11-05T14:01:16Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T13:51:16Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -1480,7 +1480,7 @@
         {
             "EndUTC": "2016-11-05T15:32:06Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T14:15:06Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -1489,7 +1489,7 @@
         {
             "EndUTC": "2016-11-05T15:32:06Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T14:15:06Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -1498,7 +1498,7 @@
         {
             "EndUTC": "2016-11-05T15:32:06Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T14:15:06Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -1507,7 +1507,7 @@
         {
             "EndUTC": "2016-11-05T15:32:06Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T14:15:06Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -1516,7 +1516,7 @@
         {
             "EndUTC": "2016-11-05T14:31:22Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T14:16:22Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -1525,7 +1525,7 @@
         {
             "EndUTC": "2016-11-05T14:32:38Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T14:17:38Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -1534,7 +1534,7 @@
         {
             "EndUTC": "2016-11-05T14:48:54Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T14:33:54Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -1543,7 +1543,7 @@
         {
             "EndUTC": "2016-11-05T14:51:26Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T14:36:26Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -1552,7 +1552,7 @@
         {
             "EndUTC": "2016-11-05T15:47:46Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T15:32:16Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -1561,7 +1561,7 @@
         {
             "EndUTC": "2016-11-05T15:47:46Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T15:32:16Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -1570,7 +1570,7 @@
         {
             "EndUTC": "2016-11-05T15:47:46Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T15:32:16Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -1579,7 +1579,7 @@
         {
             "EndUTC": "2016-11-05T15:47:46Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T15:32:16Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -1588,7 +1588,7 @@
         {
             "EndUTC": "2016-11-05T15:43:32Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T15:33:32Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -1597,7 +1597,7 @@
         {
             "EndUTC": "2016-11-05T15:44:48Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T15:34:48Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -1606,7 +1606,7 @@
         {
             "EndUTC": "2016-11-05T15:56:04Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T15:46:04Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -1615,7 +1615,7 @@
         {
             "EndUTC": "2016-11-05T16:27:46Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T15:47:46Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -1624,7 +1624,7 @@
         {
             "EndUTC": "2016-11-05T16:27:46Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T15:47:46Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -1633,7 +1633,7 @@
         {
             "EndUTC": "2016-11-05T16:27:46Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T15:47:46Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -1642,7 +1642,7 @@
         {
             "EndUTC": "2016-11-05T16:27:46Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T15:47:46Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -1651,7 +1651,7 @@
         {
             "EndUTC": "2016-11-05T15:58:36Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T15:48:36Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -1660,7 +1660,7 @@
         {
             "EndUTC": "2016-11-05T17:44:56Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T16:27:56Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -1669,7 +1669,7 @@
         {
             "EndUTC": "2016-11-05T17:44:56Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T16:27:56Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -1678,7 +1678,7 @@
         {
             "EndUTC": "2016-11-05T17:44:56Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T16:27:56Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -1687,7 +1687,7 @@
         {
             "EndUTC": "2016-11-05T17:44:56Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T16:27:56Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -1696,7 +1696,7 @@
         {
             "EndUTC": "2016-11-05T16:49:12Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T16:29:12Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -1705,7 +1705,7 @@
         {
             "EndUTC": "2016-11-05T16:50:28Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T16:30:28Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -1714,7 +1714,7 @@
         {
             "EndUTC": "2016-11-05T17:11:44Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T16:51:44Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -1723,7 +1723,7 @@
         {
             "EndUTC": "2016-11-05T17:14:16Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T16:54:16Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -1732,7 +1732,7 @@
         {
             "EndUTC": "2016-11-05T18:00:36Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T17:45:06Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -1741,7 +1741,7 @@
         {
             "EndUTC": "2016-11-05T18:00:36Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T17:45:06Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -1750,7 +1750,7 @@
         {
             "EndUTC": "2016-11-05T18:00:36Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T17:45:06Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -1759,7 +1759,7 @@
         {
             "EndUTC": "2016-11-05T18:00:36Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T17:45:06Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -1768,7 +1768,7 @@
         {
             "EndUTC": "2016-11-05T17:56:22Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T17:46:22Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -1777,7 +1777,7 @@
         {
             "EndUTC": "2016-11-05T17:57:38Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T17:47:38Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -1786,7 +1786,7 @@
         {
             "EndUTC": "2016-11-05T18:08:54Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T17:58:54Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -1795,7 +1795,7 @@
         {
             "EndUTC": "2016-11-05T18:40:36Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T18:00:36Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -1804,7 +1804,7 @@
         {
             "EndUTC": "2016-11-05T18:40:36Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T18:00:36Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -1813,7 +1813,7 @@
         {
             "EndUTC": "2016-11-05T18:40:36Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T18:00:36Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -1822,7 +1822,7 @@
         {
             "EndUTC": "2016-11-05T18:40:36Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T18:00:36Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -1831,7 +1831,7 @@
         {
             "EndUTC": "2016-11-05T18:11:26Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T18:01:26Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -1840,7 +1840,7 @@
         {
             "EndUTC": "2016-11-05T19:57:46Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T18:40:46Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -1849,7 +1849,7 @@
         {
             "EndUTC": "2016-11-05T19:57:46Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T18:40:46Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -1858,7 +1858,7 @@
         {
             "EndUTC": "2016-11-05T19:57:46Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T18:40:46Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -1867,7 +1867,7 @@
         {
             "EndUTC": "2016-11-05T19:57:46Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T18:40:46Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -1876,7 +1876,7 @@
         {
             "EndUTC": "2016-11-05T19:02:02Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T18:42:02Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -1885,7 +1885,7 @@
         {
             "EndUTC": "2016-11-05T19:03:18Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T18:43:18Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -1894,7 +1894,7 @@
         {
             "EndUTC": "2016-11-05T19:24:34Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T19:04:34Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -1903,7 +1903,7 @@
         {
             "EndUTC": "2016-11-05T19:27:06Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T19:07:06Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -1912,7 +1912,7 @@
         {
             "EndUTC": "2016-11-05T20:13:26Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T19:57:56Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -1921,7 +1921,7 @@
         {
             "EndUTC": "2016-11-05T20:13:26Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T19:57:56Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -1930,7 +1930,7 @@
         {
             "EndUTC": "2016-11-05T20:13:26Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T19:57:56Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -1939,7 +1939,7 @@
         {
             "EndUTC": "2016-11-05T20:13:26Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T19:57:56Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -1948,7 +1948,7 @@
         {
             "EndUTC": "2016-11-05T20:09:12Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T19:59:12Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -1957,7 +1957,7 @@
         {
             "EndUTC": "2016-11-05T20:10:28Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T20:00:28Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -1966,7 +1966,7 @@
         {
             "EndUTC": "2016-11-05T20:21:44Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T20:11:44Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -1975,7 +1975,7 @@
         {
             "EndUTC": "2016-11-05T20:53:26Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T20:13:26Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -1984,7 +1984,7 @@
         {
             "EndUTC": "2016-11-05T20:53:26Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T20:13:26Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -1993,7 +1993,7 @@
         {
             "EndUTC": "2016-11-05T20:53:26Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T20:13:26Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -2002,7 +2002,7 @@
         {
             "EndUTC": "2016-11-05T20:53:26Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T20:13:26Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -2011,7 +2011,7 @@
         {
             "EndUTC": "2016-11-05T20:24:16Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T20:14:16Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -2020,7 +2020,7 @@
         {
             "EndUTC": "2016-11-05T22:10:36Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T20:53:36Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -2029,7 +2029,7 @@
         {
             "EndUTC": "2016-11-05T22:10:36Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T20:53:36Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -2038,7 +2038,7 @@
         {
             "EndUTC": "2016-11-05T22:10:36Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T20:53:36Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -2047,7 +2047,7 @@
         {
             "EndUTC": "2016-11-05T22:10:36Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T20:53:36Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -2056,7 +2056,7 @@
         {
             "EndUTC": "2016-11-05T21:14:52Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T20:54:52Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -2065,7 +2065,7 @@
         {
             "EndUTC": "2016-11-05T21:16:08Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T20:56:08Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -2074,7 +2074,7 @@
         {
             "EndUTC": "2016-11-05T21:37:24Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T21:17:24Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -2083,7 +2083,7 @@
         {
             "EndUTC": "2016-11-05T21:39:56Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T21:19:56Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -2092,7 +2092,7 @@
         {
             "EndUTC": "2016-11-05T22:26:16Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T22:10:46Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -2101,7 +2101,7 @@
         {
             "EndUTC": "2016-11-05T22:26:16Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T22:10:46Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -2110,7 +2110,7 @@
         {
             "EndUTC": "2016-11-05T22:26:16Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T22:10:46Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -2119,7 +2119,7 @@
         {
             "EndUTC": "2016-11-05T22:26:16Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T22:10:46Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -2128,7 +2128,7 @@
         {
             "EndUTC": "2016-11-05T22:22:02Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T22:12:02Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -2137,7 +2137,7 @@
         {
             "EndUTC": "2016-11-05T22:23:18Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T22:13:18Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -2146,7 +2146,7 @@
         {
             "EndUTC": "2016-11-05T22:34:34Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T22:24:34Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -2155,7 +2155,7 @@
         {
             "EndUTC": "2016-11-05T22:30:16Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T22:26:16Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -2164,7 +2164,7 @@
         {
             "EndUTC": "2016-11-05T23:06:16Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T22:26:16Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -2173,7 +2173,7 @@
         {
             "EndUTC": "2016-11-05T23:06:16Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T22:26:16Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -2182,7 +2182,7 @@
         {
             "EndUTC": "2016-11-05T23:06:16Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T22:26:16Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -2191,7 +2191,7 @@
         {
             "EndUTC": "2016-11-05T22:37:06Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T22:27:06Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -2200,7 +2200,7 @@
         {
             "EndUTC": "2016-11-05T22:57:06Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T22:37:06Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -2209,7 +2209,7 @@
         {
             "EndUTC": "2016-11-06T00:23:26Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T23:06:26Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -2218,7 +2218,7 @@
         {
             "EndUTC": "2016-11-06T00:23:26Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T23:06:26Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -2227,7 +2227,7 @@
         {
             "EndUTC": "2016-11-06T00:23:26Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T23:06:26Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -2236,7 +2236,7 @@
         {
             "EndUTC": "2016-11-06T00:23:26Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T23:06:26Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -2245,7 +2245,7 @@
         {
             "EndUTC": "2016-11-05T23:27:42Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T23:07:42Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -2254,7 +2254,7 @@
         {
             "EndUTC": "2016-11-05T23:28:58Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T23:08:58Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -2263,7 +2263,7 @@
         {
             "EndUTC": "2016-11-05T23:50:14Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-05T23:30:14Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -2272,7 +2272,7 @@
         {
             "EndUTC": "2016-11-06T00:39:06Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T00:23:36Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -2281,7 +2281,7 @@
         {
             "EndUTC": "2016-11-06T00:39:06Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T00:23:36Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -2290,7 +2290,7 @@
         {
             "EndUTC": "2016-11-06T00:43:36Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T00:23:36Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -2299,7 +2299,7 @@
         {
             "EndUTC": "2016-11-06T00:39:06Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T00:23:36Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -2308,7 +2308,7 @@
         {
             "EndUTC": "2016-11-06T00:49:52Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T00:24:52Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -2317,7 +2317,7 @@
         {
             "EndUTC": "2016-11-06T00:51:08Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T00:26:08Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -2326,7 +2326,7 @@
         {
             "EndUTC": "2016-11-06T00:43:06Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T00:39:06Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -2335,7 +2335,7 @@
         {
             "EndUTC": "2016-11-06T00:43:06Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T00:39:06Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -2344,7 +2344,7 @@
         {
             "EndUTC": "2016-11-06T00:43:06Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T00:39:06Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -2353,7 +2353,7 @@
         {
             "EndUTC": "2016-11-06T00:47:36Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T00:43:36Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -2362,7 +2362,7 @@
         {
             "EndUTC": "2016-11-06T01:41:18Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T00:51:18Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -2371,7 +2371,7 @@
         {
             "EndUTC": "2016-11-06T01:12:24Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T00:52:24Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -2380,7 +2380,7 @@
         {
             "EndUTC": "2016-11-06T01:43:50Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T00:53:50Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -2389,7 +2389,7 @@
         {
             "EndUTC": "2016-11-06T01:14:56Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T00:54:56Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -2398,7 +2398,7 @@
         {
             "EndUTC": "2016-11-06T01:33:50Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T01:13:50Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -2407,7 +2407,7 @@
         {
             "EndUTC": "2016-11-06T01:34:56Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T01:14:56Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -2416,7 +2416,7 @@
         {
             "EndUTC": "2016-11-06T01:36:22Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T01:16:22Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -2425,7 +2425,7 @@
         {
             "EndUTC": "2016-11-06T01:37:28Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T01:17:28Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -2434,7 +2434,7 @@
         {
             "EndUTC": "2016-11-06T01:37:50Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T01:33:50Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -2443,7 +2443,7 @@
         {
             "EndUTC": "2016-11-06T01:40:22Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T01:36:22Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -2452,7 +2452,7 @@
         {
             "EndUTC": "2016-11-06T02:02:28Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T01:37:28Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -2461,7 +2461,7 @@
         {
             "EndUTC": "2016-11-06T01:58:54Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T01:38:54Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -2470,7 +2470,7 @@
         {
             "EndUTC": "2016-11-06T02:05:00Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T01:40:00Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -2479,7 +2479,7 @@
         {
             "EndUTC": "2016-11-06T02:01:28Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T01:41:28Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -2488,7 +2488,7 @@
         {
             "EndUTC": "2016-11-06T02:02:54Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T01:58:54Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -2497,7 +2497,7 @@
         {
             "EndUTC": "2016-11-06T02:05:28Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T02:01:28Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -2506,7 +2506,7 @@
         {
             "EndUTC": "2016-11-06T02:53:54Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T02:03:54Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -2515,7 +2515,7 @@
         {
             "EndUTC": "2016-11-06T02:25:00Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T02:05:00Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -2524,7 +2524,7 @@
         {
             "EndUTC": "2016-11-06T02:56:26Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T02:06:26Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -2533,7 +2533,7 @@
         {
             "EndUTC": "2016-11-06T02:27:32Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T02:07:32Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -2542,7 +2542,7 @@
         {
             "EndUTC": "2016-11-06T02:46:26Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T02:26:26Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -2551,7 +2551,7 @@
         {
             "EndUTC": "2016-11-06T02:47:32Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T02:27:32Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -2560,7 +2560,7 @@
         {
             "EndUTC": "2016-11-06T02:48:58Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T02:28:58Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -2569,7 +2569,7 @@
         {
             "EndUTC": "2016-11-06T02:50:04Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T02:30:04Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -2578,7 +2578,7 @@
         {
             "EndUTC": "2016-11-06T02:50:26Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T02:46:26Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -2587,7 +2587,7 @@
         {
             "EndUTC": "2016-11-06T02:52:58Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T02:48:58Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -2596,7 +2596,7 @@
         {
             "EndUTC": "2016-11-06T03:30:04Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T02:50:04Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -2605,7 +2605,7 @@
         {
             "EndUTC": "2016-11-06T03:32:36Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T02:52:36Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -2614,7 +2614,7 @@
         {
             "EndUTC": "2016-11-06T03:16:36Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T02:56:36Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -2623,7 +2623,7 @@
         {
             "EndUTC": "2016-11-06T03:16:36Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T02:56:36Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -2632,7 +2632,7 @@
         {
             "EndUTC": "2016-11-06T03:28:48Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T03:16:36Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -2641,7 +2641,7 @@
         {
             "EndUTC": "2016-11-06T03:28:48Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T03:16:36Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -2650,7 +2650,7 @@
         {
             "EndUTC": "2016-11-06T04:21:40Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T03:31:40Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -2659,7 +2659,7 @@
         {
             "EndUTC": "2016-11-06T03:52:46Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T03:32:46Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -2668,7 +2668,7 @@
         {
             "EndUTC": "2016-11-06T04:24:12Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T03:34:12Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -2677,7 +2677,7 @@
         {
             "EndUTC": "2016-11-06T03:55:18Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T03:35:18Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -2686,7 +2686,7 @@
         {
             "EndUTC": "2016-11-06T04:03:30Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T03:54:12Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -2695,7 +2695,7 @@
         {
             "EndUTC": "2016-11-06T04:15:18Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T03:55:18Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -2704,7 +2704,7 @@
         {
             "EndUTC": "2016-11-06T04:06:02Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T03:56:44Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -2713,7 +2713,7 @@
         {
             "EndUTC": "2016-11-06T04:17:50Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T03:57:50Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -2722,7 +2722,7 @@
         {
             "EndUTC": "2016-11-06T04:15:42Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T04:03:30Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -2731,7 +2731,7 @@
         {
             "EndUTC": "2016-11-06T04:18:14Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T04:06:02Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -2740,7 +2740,7 @@
         {
             "EndUTC": "2016-11-06T04:37:50Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T04:17:50Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -2749,7 +2749,7 @@
         {
             "EndUTC": "2016-11-06T04:38:24Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T04:18:24Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -2758,7 +2758,7 @@
         {
             "EndUTC": "2016-11-06T04:39:16Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T04:19:16Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -2767,7 +2767,7 @@
         {
             "EndUTC": "2016-11-06T04:40:22Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T04:20:22Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -2776,7 +2776,7 @@
         {
             "EndUTC": "2016-11-06T04:50:36Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T04:38:24Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -2785,7 +2785,7 @@
         {
             "EndUTC": "2016-11-06T04:51:28Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T04:39:16Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -2794,7 +2794,7 @@
         {
             "EndUTC": "2016-11-06T04:48:34Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T04:39:16Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -2803,7 +2803,7 @@
         {
             "EndUTC": "2016-11-06T05:20:22Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T04:40:22Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -2812,7 +2812,7 @@
         {
             "EndUTC": "2016-11-06T04:51:06Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T04:41:48Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -2821,7 +2821,7 @@
         {
             "EndUTC": "2016-11-06T05:22:54Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T04:42:54Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -2830,7 +2830,7 @@
         {
             "EndUTC": "2016-11-06T05:00:46Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T04:48:34Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -2839,7 +2839,7 @@
         {
             "EndUTC": "2016-11-06T05:03:18Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T04:51:06Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -2848,7 +2848,7 @@
         {
             "EndUTC": "2016-11-06T06:11:48Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T05:21:48Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -2857,7 +2857,7 @@
         {
             "EndUTC": "2016-11-06T05:42:54Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T05:22:54Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -2866,7 +2866,7 @@
         {
             "EndUTC": "2016-11-06T06:14:20Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T05:24:20Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -2875,7 +2875,7 @@
         {
             "EndUTC": "2016-11-06T05:45:26Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T05:25:26Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -2884,7 +2884,7 @@
         {
             "EndUTC": "2016-11-06T05:53:38Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T05:44:20Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -2893,7 +2893,7 @@
         {
             "EndUTC": "2016-11-06T06:05:26Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T05:45:26Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -2902,7 +2902,7 @@
         {
             "EndUTC": "2016-11-06T05:56:10Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T05:46:52Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -2911,7 +2911,7 @@
         {
             "EndUTC": "2016-11-06T06:07:58Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T05:47:58Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -2920,7 +2920,7 @@
         {
             "EndUTC": "2016-11-06T06:05:50Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T05:53:38Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -2929,7 +2929,7 @@
         {
             "EndUTC": "2016-11-06T06:08:22Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T05:56:10Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -2938,7 +2938,7 @@
         {
             "EndUTC": "2016-11-06T06:16:10Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T06:06:52Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -2947,7 +2947,7 @@
         {
             "EndUTC": "2016-11-06T06:47:58Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T06:07:58Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -2956,7 +2956,7 @@
         {
             "EndUTC": "2016-11-06T06:31:46Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T06:11:46Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -2965,7 +2965,7 @@
         {
             "EndUTC": "2016-11-06T06:28:22Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T06:16:10Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -2974,7 +2974,7 @@
         {
             "EndUTC": "2016-11-06T06:37:50Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T06:28:32Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -2983,7 +2983,7 @@
         {
             "EndUTC": "2016-11-06T06:43:04Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T06:33:46Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -2992,7 +2992,7 @@
         {
             "EndUTC": "2016-11-06T06:54:52Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T06:34:52Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -3001,7 +3001,7 @@
         {
             "EndUTC": "2016-11-06T07:17:50Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T06:37:50Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -3010,7 +3010,7 @@
         {
             "EndUTC": "2016-11-06T07:23:04Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T06:43:04Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -3019,7 +3019,7 @@
         {
             "EndUTC": "2016-11-06T07:39:24Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T06:49:24Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -3028,7 +3028,7 @@
         {
             "EndUTC": "2016-11-06T07:10:30Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T06:50:30Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -3037,7 +3037,7 @@
         {
             "EndUTC": "2016-11-06T07:05:36Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T06:56:18Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -3046,7 +3046,7 @@
         {
             "EndUTC": "2016-11-06T07:37:24Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T06:57:24Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -3055,7 +3055,7 @@
         {
             "EndUTC": "2016-11-06T07:45:36Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T07:05:36Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -3064,7 +3064,7 @@
         {
             "EndUTC": "2016-11-06T07:38:02Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T07:13:02Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -3073,7 +3073,7 @@
         {
             "EndUTC": "2016-11-06T07:32:32Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T07:23:14Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -3082,7 +3082,7 @@
         {
             "EndUTC": "2016-11-06T08:12:32Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T07:32:32Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -3091,7 +3091,7 @@
         {
             "EndUTC": "2016-11-06T08:28:50Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T07:38:50Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -3100,7 +3100,7 @@
         {
             "EndUTC": "2016-11-06T08:06:12Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T07:41:12Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -3109,7 +3109,7 @@
         {
             "EndUTC": "2016-11-06T08:02:28Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T07:42:28Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -3118,7 +3118,7 @@
         {
             "EndUTC": "2016-11-06T08:19:24Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T08:03:54Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -3127,7 +3127,7 @@
         {
             "EndUTC": "2016-11-06T08:25:00Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T08:05:00Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -3136,7 +3136,7 @@
         {
             "EndUTC": "2016-11-06T08:28:44Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T08:08:44Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -3145,7 +3145,7 @@
         {
             "EndUTC": "2016-11-06T08:30:12Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T08:12:42Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -3154,7 +3154,7 @@
         {
             "EndUTC": "2016-11-06T08:30:12Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T08:12:42Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -3163,7 +3163,7 @@
         {
             "EndUTC": "2016-11-06T08:59:24Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T08:19:24Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -3172,7 +3172,7 @@
         {
             "EndUTC": "2016-11-06T08:47:32Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T08:27:32Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -3181,7 +3181,7 @@
         {
             "EndUTC": "2016-11-06T08:45:52Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T08:30:22Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -3190,7 +3190,7 @@
         {
             "EndUTC": "2016-11-06T08:45:52Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T08:30:22Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -3199,7 +3199,7 @@
         {
             "EndUTC": "2016-11-06T08:56:16Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T08:31:16Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -3208,7 +3208,7 @@
         {
             "EndUTC": "2016-11-06T09:25:52Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T08:45:52Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -3217,7 +3217,7 @@
         {
             "EndUTC": "2016-11-06T09:25:52Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T08:45:52Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -3226,7 +3226,7 @@
         {
             "EndUTC": "2016-11-06T09:04:28Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T08:48:58Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -3235,7 +3235,7 @@
         {
             "EndUTC": "2016-11-06T09:15:04Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T08:50:04Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -3244,7 +3244,7 @@
         {
             "EndUTC": "2016-11-06T09:08:48Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T08:58:48Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -3253,7 +3253,7 @@
         {
             "EndUTC": "2016-11-06T09:44:28Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T09:04:28Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -3262,7 +3262,7 @@
         {
             "EndUTC": "2016-11-06T09:27:44Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T09:10:14Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -3271,7 +3271,7 @@
         {
             "EndUTC": "2016-11-06T09:31:20Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T09:11:20Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -3280,7 +3280,7 @@
         {
             "EndUTC": "2016-11-06T09:22:36Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T09:17:36Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -3289,7 +3289,7 @@
         {
             "EndUTC": "2016-11-06T09:43:32Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T09:26:02Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -3298,7 +3298,7 @@
         {
             "EndUTC": "2016-11-06T09:42:18Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T09:27:18Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -3307,7 +3307,7 @@
         {
             "EndUTC": "2016-11-06T09:48:16Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T09:32:46Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -3316,7 +3316,7 @@
         {
             "EndUTC": "2016-11-06T09:48:52Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T09:33:52Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -3325,7 +3325,7 @@
         {
             "EndUTC": "2016-11-06T09:59:14Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T09:43:44Z",
             "StationGroup": "Machine",
             "StationNum": 3,
@@ -3334,7 +3334,7 @@
         {
             "EndUTC": "2016-11-06T10:02:08Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T09:44:38Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -3343,7 +3343,7 @@
         {
             "EndUTC": "2016-11-06T09:49:50Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T09:44:50Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -3352,7 +3352,7 @@
         {
             "EndUTC": "2016-11-06T10:28:16Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T09:48:16Z",
             "StationGroup": "Machine",
             "StationNum": 1,
@@ -3361,7 +3361,7 @@
         {
             "EndUTC": "2016-11-06T10:05:48Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T09:50:18Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -3370,7 +3370,7 @@
         {
             "EndUTC": "2016-11-06T10:07:40Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T09:52:40Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -3379,7 +3379,7 @@
         {
             "EndUTC": "2016-11-06T09:58:56Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T09:53:56Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -3388,7 +3388,7 @@
         {
             "EndUTC": "2016-11-06T10:06:28Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T10:01:28Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -3397,7 +3397,7 @@
         {
             "EndUTC": "2016-11-06T10:25:26Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T10:09:56Z",
             "StationGroup": "Machine",
             "StationNum": 2,
@@ -3406,7 +3406,7 @@
         {
             "EndUTC": "2016-11-06T10:16:02Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T10:11:02Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -3415,7 +3415,7 @@
         {
             "EndUTC": "2016-11-06T10:17:18Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T10:12:18Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -3424,7 +3424,7 @@
         {
             "EndUTC": "2016-11-06T10:31:52Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T10:26:52Z",
             "StationGroup": "L/U",
             "StationNum": 1,
@@ -3433,7 +3433,7 @@
         {
             "EndUTC": "2016-11-06T10:44:42Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T10:29:42Z",
             "StationGroup": "L/U",
             "StationNum": 2,
@@ -3442,7 +3442,7 @@
         {
             "EndUTC": "2016-11-06T11:01:38Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T10:46:08Z",
             "StationGroup": "Machine",
             "StationNum": 4,
@@ -3451,7 +3451,7 @@
         {
             "EndUTC": "2016-11-06T11:08:04Z",
             "PlannedDownTime": "PT0S",
-            "SimulationId": "schId1234",
+            "ScheduleId": "schId1234",
             "StartUTC": "2016-11-06T11:03:04Z",
             "StationGroup": "L/U",
             "StationNum": 2,
