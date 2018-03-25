@@ -44,7 +44,7 @@ namespace BlackMaple.MachineWatchInterface
         HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC);
 
         ///Loads all jobs which have a unique strictly larger than the given unique
-        PlannedSchedule LoadJobsAfterScheduleId(string scheduleId);
+        HistoricData LoadJobsAfterScheduleId(string scheduleId);
 
         ///Loads all jobs for the most recent schedule
         PlannedSchedule LoadMostRecentSchedule();

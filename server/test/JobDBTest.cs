@@ -396,7 +396,6 @@ namespace MachineWatchTest
             _jobDB.AddJobs(new NewJobs {Jobs = new List<JobPlan> {job1}}, null);
 
             CheckJobs(job1, null, null, job1.ScheduleId, null, null);
-            Assert.Empty(_jobDB.LoadExtraPartsForScheduleId(job1.ScheduleId));
             var recent = _jobDB.LoadMostRecentSchedule();
             Assert.Empty(recent.ExtraParts);
             Assert.Equal(job1.ScheduleId, recent.LatestScheduleId);
@@ -423,7 +422,6 @@ namespace MachineWatchTest
 
             _jobDB.AddJobs(newJob2, job1.ScheduleId);
 
-            Assert.Equal(theExtraParts, _jobDB.LoadExtraPartsForScheduleId(job2.ScheduleId));
             CheckJobs(job1, job2, null, job2.ScheduleId, theExtraParts, unfilledWorks);
             CheckJobsDate(job1, job2, null);
             CheckSimStationUse(simStationUse);
@@ -431,10 +429,8 @@ namespace MachineWatchTest
             Assert.False(_jobDB.DoesJobExist("aoughwoeufeg"));
             var newAfter = _jobDB.LoadJobsAfterScheduleId(job1.ScheduleId);
             Assert.Equal(1, newAfter.Jobs.Count);
-            Assert.Equal(job2.ScheduleId, newAfter.LatestScheduleId);
-            Assert.Equal(theExtraParts, newAfter.ExtraParts);
-            CheckWorkordersEqual(unfilledWorks, newAfter.CurrentUnfilledWorkorders);
-            CheckPlanEqual(job2, newAfter.Jobs[0], true);
+            CheckSimStationEqual(simStationUse, newAfter.StationUse);
+            CheckPlanEqual(job2, newAfter.Jobs["Unique2"], true);
             Assert.Equal(0, _jobDB.LoadJobsAfterScheduleId(job2.ScheduleId).Jobs.Count);
             CheckWorkordersEqual(
                 new [] {unfilledWorks[0]},
@@ -692,7 +688,7 @@ namespace MachineWatchTest
             if ((job2 != null)) CheckJobEqual(job2, _jobDB.LoadJob(job2.UniqueStr), true);
             if ((job3 != null)) CheckJobEqual(job3, _jobDB.LoadJob(job3.UniqueStr), true);
 
-            var jobsAndExtra = _jobDB.LoadJobs();
+            var jobsAndExtra = _jobDB.LoadUnarchivedJobs();
             var jobs = jobsAndExtra.Jobs.ToDictionary(x => x.UniqueStr, x => x);
             Assert.Equal(schId == null ? "" : schId, jobsAndExtra.LatestScheduleId);
             Assert.Equal(extraParts == null ? new Dictionary<string, int>() : extraParts,
@@ -731,81 +727,86 @@ namespace MachineWatchTest
             //job3 is the same as job1
 
             //overlap the start of job1: note if job1 != null then job3 also != null
-            var justJob1_3 = _jobDB.LoadJobs(now.AddMinutes(-20), now.AddMinutes(-5));
+            var justJob1_3 = _jobDB.LoadJobHistory(now.AddMinutes(-20), now.AddMinutes(-5));
             if (job1 == null)
             {
-                Assert.Equal(justJob1_3.Count, 0);
+                Assert.Equal(justJob1_3.Jobs.Count, 0);
             }
             else if (job3 == null)
             {
-                Assert.Equal(justJob1_3.Count, 1);
-                CheckJobEqual(job1, justJob1_3[job1.UniqueStr], true);
+                Assert.Equal(justJob1_3.Jobs.Count, 1);
+                CheckJobEqual(job1, justJob1_3.Jobs[job1.UniqueStr], true);
             }
             else
             {
-                Assert.Equal(justJob1_3.Count, 2);
-                CheckJobEqual(job1, justJob1_3[job1.UniqueStr], true);
-                CheckJobEqual(job3, justJob1_3[job3.UniqueStr], true);
+                Assert.Equal(justJob1_3.Jobs.Count, 2);
+                CheckJobEqual(job1, justJob1_3.Jobs[job1.UniqueStr], true);
+                CheckJobEqual(job3, justJob1_3.Jobs[job3.UniqueStr], true);
             }
 
             //overlap the end of job1
-            var justJob1a = _jobDB.LoadJobs(now.AddMinutes(-5), now.AddMinutes(10));
+            var justJob1a = _jobDB.LoadJobHistory(now.AddMinutes(-5), now.AddMinutes(10));
             if (job1 == null)
             {
-                Assert.Equal(justJob1a.Count, 0);
+                Assert.Equal(justJob1a.Jobs.Count, 0);
             }
             else if (job3 == null)
             {
-                Assert.Equal(justJob1a.Count, 1);
-                CheckJobEqual(job1, justJob1a[job1.UniqueStr], true);
+                Assert.Equal(justJob1a.Jobs.Count, 1);
+                CheckJobEqual(job1, justJob1a.Jobs[job1.UniqueStr], true);
             }
             else
             {
-                Assert.Equal(justJob1_3.Count, 2);
-                CheckJobEqual(job1, justJob1a[job1.UniqueStr], true);
-                CheckJobEqual(job3, justJob1a[job3.UniqueStr], true);
+                Assert.Equal(justJob1_3.Jobs.Count, 2);
+                CheckJobEqual(job1, justJob1a.Jobs[job1.UniqueStr], true);
+                CheckJobEqual(job3, justJob1a.Jobs[job3.UniqueStr], true);
             }
 
             //not overlapping
-            Assert.Equal(_jobDB.LoadJobs(now.AddMinutes(-70), now.AddMinutes(-40)).Count, 0);
+            Assert.Equal(_jobDB.LoadJobHistory(now.AddMinutes(-70), now.AddMinutes(-40)).Jobs.Count, 0);
 
             //everything
-            var all = _jobDB.LoadJobs(now.AddHours(-6), now.AddMinutes(10));
+            var all = _jobDB.LoadJobHistory(now.AddHours(-6), now.AddMinutes(10));
             int cnt = 0;
             if (job1 != null)
             {
-                CheckJobEqual(job1, all[job1.UniqueStr], true);
+                CheckJobEqual(job1, all.Jobs[job1.UniqueStr], true);
                 cnt += 1;
             }
             if (job2 != null)
             {
-                CheckJobEqual(job2, all[job2.UniqueStr], true);
+                CheckJobEqual(job2, all.Jobs[job2.UniqueStr], true);
                 cnt += 1;
             }
             if (job3 != null)
             {
-                CheckJobEqual(job3, all[job3.UniqueStr], true);
+                CheckJobEqual(job3, all.Jobs[job3.UniqueStr], true);
                 cnt += 1;
             }
-            Assert.Equal(cnt, all.Count);
+            Assert.Equal(cnt, all.Jobs.Count);
         }
 
         private void CheckSimStationUse(IEnumerable<SimulatedStationUtilization> simStations)
         {
             var now = DateTime.UtcNow;
-            var fromDb = ToList(_jobDB.LoadSimulatedStationUse(now.AddMinutes(-500), now.AddMinutes(10)));
+            var fromDb = ToList(_jobDB.LoadJobHistory(now.AddMinutes(-500), now.AddMinutes(10)).StationUse);
             var actualSims = ToList(simStations);
 
-            Assert.Equal(fromDb.Count, actualSims.Count);
+            CheckSimStationEqual(actualSims, fromDb);
+        }
 
-            fromDb.Sort((x, y) => x.SimulationId.CompareTo(y.SimulationId));
-            actualSims.Sort((x, y) => x.SimulationId.CompareTo(y.SimulationId));
+        private void CheckSimStationEqual(IEnumerable<SimulatedStationUtilization> expected, IEnumerable<SimulatedStationUtilization> actual)
+        {
+            Assert.Equal(actual.Count(), expected.Count());
 
-            for (int i = 0; i < fromDb.Count; i++)
+            var fromDb = actual.OrderBy(x => (x.ScheduleId, x.EndUTC)).ToList();
+            var expectedL = expected.OrderBy(x => (x.ScheduleId, x.EndUTC)).ToList();
+
+            for (int i = 0; i < fromDb.Count(); i++)
             {
                 var db = fromDb[i];
-                var sim = actualSims[i];
-                Assert.Equal(db.SimulationId, sim.SimulationId);
+                var sim = expectedL[i];
+                Assert.Equal(db.ScheduleId, sim.ScheduleId);
                 Assert.Equal(db.StationGroup, sim.StationGroup);
                 Assert.Equal(db.StationNum, sim.StationNum);
                 Assert.Equal(db.StartUTC, sim.StartUTC);

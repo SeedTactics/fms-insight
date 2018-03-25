@@ -64,7 +64,7 @@ namespace MachineWatchApiServer.Controllers
         }
 
         [HttpGet("recent")]
-        public PlannedSchedule Recent([FromQuery]string afterScheduleId)
+        public HistoricData Recent([FromQuery]string afterScheduleId)
         {
             return _db.LoadJobsAfterScheduleId(afterScheduleId);
         }

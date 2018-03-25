@@ -749,172 +749,6 @@ namespace BlackMaple.MachineFramework
             }
         }
 
-        private Dictionary<string, int> LoadMostRecentExtraParts(IDbTransaction trans)
-        {
-            var cmd = _connection.CreateCommand();
-            ((IDbCommand)cmd).Transaction = trans;
-
-            var ret = new Dictionary<string, int>();
-            cmd.CommandText = "SELECT Part, Quantity FROM scheduled_parts WHERE ScheduleId IN (SELECT MAX(ScheduleId) FROM jobs WHERE ScheduleId IS NOT NULL)";
-            using (IDataReader reader = cmd.ExecuteReader())
-            {
-                while (reader.Read())
-                {
-                    ret.Add(reader.GetString(0), reader.GetInt32(1));
-                }
-            }
-            return ret;
-        }
-
-        public Dictionary<string, int> LoadExtraPartsForScheduleId(string schId)
-        {
-            lock (_lock)
-            {
-                var cmd = _connection.CreateCommand();
-
-                var ret = new Dictionary<string, int>();
-                cmd.CommandText = "SELECT Part, Quantity FROM scheduled_parts WHERE ScheduleId = $sid";
-                cmd.Parameters.Add("sid", SqliteType.Text).Value = schId;
-                using (IDataReader reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        ret.Add(reader.GetString(0), reader.GetInt32(1));
-                    }
-                }
-                return ret;
-            }
-        }
-
-        private List<MachineWatchInterface.PartWorkorder> LoadMostRecentUnfilledWorkorders(IDbTransaction trans)
-        {
-            var cmd = _connection.CreateCommand();
-            ((IDbCommand)cmd).Transaction = trans;
-
-            var ret = new List<MachineWatchInterface.PartWorkorder>();
-            cmd.CommandText = "SELECT Workorder, Part, Quantity, DueDate, Priority FROM unfilled_workorders WHERE ScheduleId IN (SELECT MAX(ScheduleId) FROM jobs WHERE ScheduleId IS NOT NULL)";
-            using (IDataReader reader = cmd.ExecuteReader())
-            {
-                while (reader.Read())
-                {
-                    ret.Add(new MachineWatchInterface.PartWorkorder() {
-                        WorkorderId = reader.GetString(0),
-                        Part = reader.GetString(1),
-                        Quantity = reader.GetInt32(2),
-                        DueDate = new DateTime(reader.GetInt64(3)),
-                        Priority = reader.GetInt32(4)
-                    });
-                }
-            }
-            return ret;
-        }
-
-        public List<MachineWatchInterface.PartWorkorder> MostRecentUnfilledWorkordersForPart(string part)
-        {
-            lock (_lock)
-            {
-                var cmd = _connection.CreateCommand();
-
-                var ret = new List<MachineWatchInterface.PartWorkorder>();
-                cmd.CommandText = "SELECT Workorder, Part, Quantity, DueDate, Priority FROM unfilled_workorders " +
-                  "WHERE ScheduleId IN (SELECT MAX(ScheduleId) FROM jobs WHERE ScheduleId IS NOT NULL) AND Part = $part";
-                cmd.Parameters.Add("part", SqliteType.Text).Value = part;
-
-                using (IDataReader reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        ret.Add(new MachineWatchInterface.PartWorkorder() {
-                            WorkorderId = reader.GetString(0),
-                            Part = reader.GetString(1),
-                            Quantity = reader.GetInt32(2),
-                            DueDate = new DateTime(reader.GetInt64(3)),
-                            Priority = reader.GetInt32(4)
-                        });
-                    }
-                }
-                return ret;
-            }
-        }
-
-        public MachineWatchInterface.PlannedSchedule LoadJobs()
-        {
-            var cmd = _connection.CreateCommand();
-            cmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Priority, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId FROM jobs WHERE Archived = 0";
-            return LoadJobsHelper(cmd);
-        }
-
-        public IDictionary<string, MachineWatchInterface.JobPlan> LoadJobs(DateTime startUTC, DateTime endUTC)
-        {
-            var cmd = _connection.CreateCommand();
-            cmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Priority, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId " +
-                " FROM jobs WHERE StartUTC <= $end AND EndUTC >= $start";
-            cmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
-            cmd.Parameters.Add("end", SqliteType.Integer).Value = endUTC.Ticks;
-            return LoadJobsHelper(cmd).Jobs.ToDictionary(x => x.UniqueStr, x => x);
-        }
-
-        public BlackMaple.MachineWatchInterface.HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC)
-        {
-            var ret = default(BlackMaple.MachineWatchInterface.HistoricData);
-            ret.Jobs = LoadJobs(startUTC, endUTC);
-            ret.StationUse = LoadSimulatedStationUse(startUTC, endUTC);
-            return ret;
-        }
-
-        public BlackMaple.MachineWatchInterface.PlannedSchedule LoadJobsAfterScheduleId(string schId)
-        {
-            var cmd = _connection.CreateCommand();
-            cmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Priority, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId " +
-                " FROM jobs WHERE ScheduleId > $sid";
-            cmd.Parameters.Add("sid", SqliteType.Text).Value = schId;
-            return LoadJobsHelper(cmd);
-        }
-
-        public MachineWatchInterface.PlannedSchedule LoadJobsNotCopiedToSystem(DateTime startUTC, DateTime endUTC)
-        {
-            var cmd = _connection.CreateCommand();
-            cmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Priority, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId " +
-                " FROM jobs WHERE StartUTC <= $end AND EndUTC >= $start AND CopiedToSystem = 0";
-            cmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
-            cmd.Parameters.Add("end", SqliteType.Integer).Value = endUTC.Ticks;
-            return LoadJobsHelper(cmd);
-        }
-
-        public BlackMaple.MachineWatchInterface.PlannedSchedule LoadMostRecentSchedule()
-        {
-            var cmd = _connection.CreateCommand();
-			cmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Priority, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId " +
-                " FROM jobs WHERE ScheduleId = $sid";
-
-            lock (_lock)
-            {
-                var ret = default(BlackMaple.MachineWatchInterface.PlannedSchedule);
-                ret.Jobs = new List<BlackMaple.MachineWatchInterface.JobPlan>();
-                ret.ExtraParts = new Dictionary<string, int>();
-
-                var trans = _connection.BeginTransaction();
-                try
-                {
-                    ret.LatestScheduleId = LatestScheduleId(trans);
-            		cmd.Parameters.Add("sid", SqliteType.Text).Value = ret.LatestScheduleId;
-                    cmd.Transaction = trans;
-					ret.Jobs = LoadJobsHelper(cmd, trans);
-                    ret.ExtraParts = LoadMostRecentExtraParts(trans);
-                    ret.CurrentUnfilledWorkorders = LoadMostRecentUnfilledWorkorders(trans);
-
-                    trans.Commit();
-                }
-                catch (Exception ex)
-                {
-                    trans.Rollback();
-                    throw new Exception("Unable to load jobs", ex);
-                }
-
-                return ret;
-            }
-        }
-
         private List<MachineWatchInterface.JobPlan> LoadJobsHelper(IDbCommand cmd, IDbTransaction trans)
         {
             var ret = new List<MachineWatchInterface.JobPlan>();
@@ -974,7 +808,90 @@ namespace BlackMaple.MachineFramework
 			return ret;
         }
 
-        private MachineWatchInterface.PlannedSchedule LoadJobsHelper(IDbCommand cmd)
+        private Dictionary<string, int> LoadMostRecentExtraParts(IDbTransaction trans)
+        {
+            var cmd = _connection.CreateCommand();
+            ((IDbCommand)cmd).Transaction = trans;
+
+            var ret = new Dictionary<string, int>();
+            cmd.CommandText = "SELECT Part, Quantity FROM scheduled_parts WHERE ScheduleId IN (SELECT MAX(ScheduleId) FROM jobs WHERE ScheduleId IS NOT NULL)";
+            using (IDataReader reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    ret.Add(reader.GetString(0), reader.GetInt32(1));
+                }
+            }
+            return ret;
+        }
+
+        private List<MachineWatchInterface.PartWorkorder> LoadMostRecentUnfilledWorkorders(IDbTransaction trans)
+        {
+            var cmd = _connection.CreateCommand();
+            ((IDbCommand)cmd).Transaction = trans;
+
+            var ret = new List<MachineWatchInterface.PartWorkorder>();
+            cmd.CommandText = "SELECT Workorder, Part, Quantity, DueDate, Priority FROM unfilled_workorders WHERE ScheduleId IN (SELECT MAX(ScheduleId) FROM jobs WHERE ScheduleId IS NOT NULL)";
+            using (IDataReader reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    ret.Add(new MachineWatchInterface.PartWorkorder() {
+                        WorkorderId = reader.GetString(0),
+                        Part = reader.GetString(1),
+                        Quantity = reader.GetInt32(2),
+                        DueDate = new DateTime(reader.GetInt64(3)),
+                        Priority = reader.GetInt32(4)
+                    });
+                }
+            }
+            return ret;
+        }
+
+        private string LatestScheduleId(IDbTransaction trans)
+        {
+            var cmd = _connection.CreateCommand();
+            ((IDbCommand)cmd).Transaction = trans;
+
+            cmd.CommandText = "SELECT MAX(ScheduleId) FROM jobs WHERE ScheduleId IS NOT NULL";
+
+            string tag = "";
+
+            object val = cmd.ExecuteScalar();
+            if ((val != null))
+            {
+                tag = val.ToString();
+            }
+
+            return tag;
+        }
+
+        private IList<MachineWatchInterface.SimulatedStationUtilization> LoadSimulatedStationUse(
+            IDbCommand cmd, IDbTransaction trans)
+        {
+            var ret = new List<MachineWatchInterface.SimulatedStationUtilization>();
+
+            using (var reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    var sim = new MachineWatchInterface.SimulatedStationUtilization(
+                            reader.GetString(0),
+                            reader.GetString(1),
+                            reader.GetInt32(2),
+                            new DateTime(reader.GetInt64(3), DateTimeKind.Utc),
+                            new DateTime(reader.GetInt64(4), DateTimeKind.Utc),
+                            TimeSpan.FromTicks(reader.GetInt64(5)),
+                            reader.IsDBNull(6) ? TimeSpan.Zero :
+                            TimeSpan.FromTicks(reader.GetInt64(6)));
+                    ret.Add(sim);
+                }
+            }
+
+            return ret;
+        }
+
+        private MachineWatchInterface.PlannedSchedule LoadPlannedSchedule(IDbCommand cmd)
         {
             lock (_lock)
             {
@@ -1003,6 +920,151 @@ namespace BlackMaple.MachineFramework
                 return ret;
             }
         }
+
+        private MachineWatchInterface.HistoricData LoadHistory(IDbCommand jobCmd, IDbCommand simCmd)
+        {
+            lock (_lock)
+            {
+                var ret = default(BlackMaple.MachineWatchInterface.HistoricData);
+                ret.Jobs = new Dictionary<string, MachineWatchInterface.JobPlan>();
+                ret.StationUse = new List<MachineWatchInterface.SimulatedStationUtilization>();
+
+                var trans = _connection.BeginTransaction();
+                try
+                {
+                    jobCmd.Transaction = trans;
+                    simCmd.Transaction = trans;
+
+					ret.Jobs = LoadJobsHelper(jobCmd, trans).ToDictionary(j => j.UniqueStr, j => j);
+                    ret.StationUse = LoadSimulatedStationUse(simCmd, trans);
+
+                    trans.Commit();
+                }
+                catch (Exception ex)
+                {
+                    trans.Rollback();
+                    throw new Exception("Unable to load jobs", ex);
+                }
+
+                return ret;
+            }
+        }
+
+        // --------------------------------------------------------------------------------
+        // Public Loading API
+        // --------------------------------------------------------------------------------
+
+        public MachineWatchInterface.PlannedSchedule LoadUnarchivedJobs()
+        {
+            var cmd = _connection.CreateCommand();
+            cmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Priority, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId FROM jobs WHERE Archived = 0";
+            return LoadPlannedSchedule(cmd);
+        }
+
+        public MachineWatchInterface.PlannedSchedule LoadJobsNotCopiedToSystem(DateTime startUTC, DateTime endUTC)
+        {
+            var cmd = _connection.CreateCommand();
+            cmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Priority, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId " +
+                " FROM jobs WHERE StartUTC <= $end AND EndUTC >= $start AND CopiedToSystem = 0";
+            cmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
+            cmd.Parameters.Add("end", SqliteType.Integer).Value = endUTC.Ticks;
+            return LoadPlannedSchedule(cmd);
+        }
+
+        public BlackMaple.MachineWatchInterface.HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC)
+        {
+            var jobCmd = _connection.CreateCommand();
+            jobCmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Priority, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId " +
+                " FROM jobs WHERE StartUTC <= $end AND EndUTC >= $start";
+            jobCmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
+            jobCmd.Parameters.Add("end", SqliteType.Integer).Value = endUTC.Ticks;
+
+            var simCmd = _connection.CreateCommand();
+            simCmd.CommandText = "SELECT SimId, StationGroup, StationNum, StartUTC, EndUTC, UtilizationTime, PlanDownTime FROM sim_station_use " +
+                " WHERE EndUTC >= $start AND StartUTC <= $end";
+            simCmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
+            simCmd.Parameters.Add("end", SqliteType.Integer).Value = endUTC.Ticks;
+
+            return LoadHistory(jobCmd, simCmd);
+        }
+
+        public BlackMaple.MachineWatchInterface.HistoricData LoadJobsAfterScheduleId(string schId)
+        {
+            var jobCmd = _connection.CreateCommand();
+            jobCmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Priority, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId " +
+                " FROM jobs WHERE ScheduleId > $sid";
+            jobCmd.Parameters.Add("sid", SqliteType.Text).Value = schId;
+
+            var simCmd = _connection.CreateCommand();
+            simCmd.CommandText = "SELECT SimId, StationGroup, StationNum, StartUTC, EndUTC, UtilizationTime, PlanDownTime FROM sim_station_use " +
+                " WHERE SimId > $sid";
+            simCmd.Parameters.Add("sid", SqliteType.Text).Value = schId;
+
+            return LoadHistory(jobCmd, simCmd);
+        }
+
+        public List<MachineWatchInterface.PartWorkorder> MostRecentUnfilledWorkordersForPart(string part)
+        {
+            lock (_lock)
+            {
+                var cmd = _connection.CreateCommand();
+
+                var ret = new List<MachineWatchInterface.PartWorkorder>();
+                cmd.CommandText = "SELECT Workorder, Part, Quantity, DueDate, Priority FROM unfilled_workorders " +
+                  "WHERE ScheduleId IN (SELECT MAX(ScheduleId) FROM jobs WHERE ScheduleId IS NOT NULL) AND Part = $part";
+                cmd.Parameters.Add("part", SqliteType.Text).Value = part;
+
+                using (IDataReader reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        ret.Add(new MachineWatchInterface.PartWorkorder() {
+                            WorkorderId = reader.GetString(0),
+                            Part = reader.GetString(1),
+                            Quantity = reader.GetInt32(2),
+                            DueDate = new DateTime(reader.GetInt64(3)),
+                            Priority = reader.GetInt32(4)
+                        });
+                    }
+                }
+                return ret;
+            }
+        }
+
+        public BlackMaple.MachineWatchInterface.PlannedSchedule LoadMostRecentSchedule()
+        {
+            var cmd = _connection.CreateCommand();
+			cmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Priority, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId " +
+                " FROM jobs WHERE ScheduleId = $sid";
+
+            lock (_lock)
+            {
+                var ret = default(BlackMaple.MachineWatchInterface.PlannedSchedule);
+                ret.Jobs = new List<BlackMaple.MachineWatchInterface.JobPlan>();
+                ret.ExtraParts = new Dictionary<string, int>();
+
+                var trans = _connection.BeginTransaction();
+                try
+                {
+                    ret.LatestScheduleId = LatestScheduleId(trans);
+            		cmd.Parameters.Add("sid", SqliteType.Text).Value = ret.LatestScheduleId;
+                    cmd.Transaction = trans;
+					ret.Jobs = LoadJobsHelper(cmd, trans);
+                    ret.ExtraParts = LoadMostRecentExtraParts(trans);
+                    ret.CurrentUnfilledWorkorders = LoadMostRecentUnfilledWorkorders(trans);
+
+                    trans.Commit();
+                }
+                catch (Exception ex)
+                {
+                    trans.Rollback();
+                    throw new Exception("Unable to load jobs", ex);
+                }
+
+                return ret;
+            }
+        }
+
         public MachineWatchInterface.JobPlan LoadJob(string UniqueStr)
         {
             lock (_lock)
@@ -1097,24 +1159,6 @@ namespace BlackMaple.MachineFramework
             }
         }
 
-        private string LatestScheduleId(IDbTransaction trans)
-        {
-            var cmd = _connection.CreateCommand();
-            ((IDbCommand)cmd).Transaction = trans;
-
-            cmd.CommandText = "SELECT MAX(ScheduleId) FROM jobs WHERE ScheduleId IS NOT NULL";
-
-            string tag = "";
-
-            object val = cmd.ExecuteScalar();
-            if ((val != null))
-            {
-                tag = val.ToString();
-            }
-
-            return tag;
-        }
-
         public IList<MachineWatchInterface.JobInspectionData> LoadInspections(string unique)
         {
             var ret = new List<MachineWatchInterface.JobInspectionData>();
@@ -1173,48 +1217,6 @@ namespace BlackMaple.MachineFramework
             return ret;
         }
 
-        public IList<MachineWatchInterface.SimulatedStationUtilization> LoadSimulatedStationUse(DateTime startUTC, DateTime endUTC)
-        {
-            var ret = new List<MachineWatchInterface.SimulatedStationUtilization>();
-            lock (_lock)
-            {
-                var trans = _connection.BeginTransaction();
-                try
-                {
-                    var cmd = _connection.CreateCommand();
-                    ((IDbCommand)cmd).Transaction = trans;
-                    cmd.CommandText = "SELECT SimId, StationGroup, StationNum, StartUTC, EndUTC, UtilizationTime, PlanDownTime FROM sim_station_use " +
-                        " WHERE EndUTC >= $start AND StartUTC <= $end";
-                    cmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
-                    cmd.Parameters.Add("end", SqliteType.Integer).Value = endUTC.Ticks;
-
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            var sim = new MachineWatchInterface.SimulatedStationUtilization(
-                                 reader.GetString(0),
-                                 reader.GetString(1),
-                                 reader.GetInt32(2),
-                                 new DateTime(reader.GetInt64(3), DateTimeKind.Utc),
-                                 new DateTime(reader.GetInt64(4), DateTimeKind.Utc),
-                                 TimeSpan.FromTicks(reader.GetInt64(5)),
-                                 reader.IsDBNull(6) ? TimeSpan.Zero :
-                                    TimeSpan.FromTicks(reader.GetInt64(6)));
-                            ret.Add(sim);
-                        }
-                    }
-
-                    trans.Commit();
-                }
-                catch
-                {
-                    trans.Rollback();
-                    throw;
-                }
-                return ret;
-            }
-        }
         #endregion
 
         #region "Adding and deleting"
@@ -1627,7 +1629,7 @@ namespace BlackMaple.MachineFramework
 
             foreach (var sim in simStats)
             {
-                cmd.Parameters[0].Value = sim.SimulationId;
+                cmd.Parameters[0].Value = sim.ScheduleId;
                 cmd.Parameters[1].Value = sim.StationGroup;
                 cmd.Parameters[2].Value = sim.StationNum;
                 cmd.Parameters[3].Value = sim.StartUTC.Ticks;

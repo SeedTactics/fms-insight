@@ -1022,7 +1022,7 @@ namespace BlackMaple.MachineWatchInterface
     [SerializableAttribute, DataContract]
     public class SimulatedStationUtilization
     {
-        [DataMember(IsRequired=true)] public string SimulationId; // a unique string shared between all utilization structs that are part of the same simulation
+        [DataMember(IsRequired=true)] public string ScheduleId;
         [DataMember(IsRequired=true)] public string StationGroup;
         [DataMember(IsRequired=true)] public int StationNum;
         [DataMember(IsRequired=true)] public DateTime StartUTC;
@@ -1032,7 +1032,7 @@ namespace BlackMaple.MachineWatchInterface
 
         public SimulatedStationUtilization(string id, string group, int num, DateTime start, DateTime endT, TimeSpan u, TimeSpan d)
         {
-            SimulationId = id;
+            ScheduleId = id;
             StationGroup = group;
             StationNum = num;
             StartUTC = start;
