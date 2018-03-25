@@ -1279,12 +1279,7 @@ namespace BlackMaple.MachineFramework
             }
 
             if (OnNewJobs != null) {
-                OnNewJobs(new MachineWatchInterface.PlannedSchedule() {
-                    LatestScheduleId = newJobs.ScheduleId,
-                    Jobs = newJobs.Jobs,
-                    ExtraParts = newJobs.ExtraParts,
-                    CurrentUnfilledWorkorders = newJobs.CurrentUnfilledWorkorders
-                });
+                OnNewJobs(newJobs);
             }
         }
         private void AddJob(IDbTransaction trans, MachineWatchInterface.JobPlan job)

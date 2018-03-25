@@ -43,23 +43,13 @@ using System.Runtime.Serialization;
 namespace MachineWatchApiServer.Controllers
 {
   [DataContract]
-  public enum ServerEventType
-  {
-    [EnumMember] NewLogEntry,
-    [EnumMember] NewJobs,
-  };
-
-  [DataContract]
   public class ServerEvent
   {
-    [DataMember(IsRequired=true)]
-    public ServerEventType Type {get;set;}
-
     [DataMember(IsRequired=false, EmitDefaultValue=false)]
     public LogEntry LogEntry {get;set;}
 
     [DataMember(IsRequired=false, EmitDefaultValue=false)]
-    public PlannedSchedule NewPlannedSchedule;
+    public NewJobs NewJobs {get;set;}
   }
 
   public class WebsocketManager
@@ -113,10 +103,10 @@ namespace MachineWatchApiServer.Controllers
       _serSettings.ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver();
 
       log.NewLogEntry += (e, foreignId) =>
-        Send(new ServerEvent() {Type = ServerEventType.NewLogEntry, LogEntry = e});
+        Send(new ServerEvent() {LogEntry = e});
 
-      jobDatabase.OnNewJobs += (sch) =>
-        Send(new ServerEvent() {Type = ServerEventType.NewJobs, NewPlannedSchedule = sch});
+      jobDatabase.OnNewJobs += (jobs) =>
+        Send(new ServerEvent() {NewJobs = jobs});
     }
 
     private void Send(ServerEvent val) {

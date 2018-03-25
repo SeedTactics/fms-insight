@@ -36,7 +36,7 @@ using System.Collections.Generic;
 
 namespace BlackMaple.MachineWatchInterface
 {
-    public delegate void NewJobsDelegate(PlannedSchedule j);
+    public delegate void NewJobsDelegate(NewJobs j);
 
     public interface IJobDatabase
     {
