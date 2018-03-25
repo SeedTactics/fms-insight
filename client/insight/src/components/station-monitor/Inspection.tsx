@@ -47,6 +47,7 @@ import { MaterialSummary } from '../../data/events';
 import { Store } from '../../data/store';
 import { MatSummary, MaterialDetailTitle, MaterialDetailContent } from './Material';
 import * as matDetails from '../../data/material-details';
+import { StationMonitorType } from '../../data/routes';
 
 const matListStyles = withStyles(theme => ({
   summaryItem: {
@@ -221,7 +222,7 @@ export default connect(
   (st: Store) => ({
     recent_inspections: extractRecentInspections(st),
     focusInspectionType: st.Route.selected_insp_type || "",
-    display_material: st.MaterialDetails.inspection_display_material || null,
+    display_material: st.MaterialDetails.material[StationMonitorType.Inspection],
   }),
   {
     openMat: matDetails.openInspectionMaterial,

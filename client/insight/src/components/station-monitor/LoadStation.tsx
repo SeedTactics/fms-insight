@@ -186,14 +186,14 @@ export const PalletColumn = palletStyles<LoadStationProps>(props => {
 });
 
 export interface MaterialDialogProps {
-  display_material?: matDetails.MaterialDetail;
+  display_material: matDetails.MaterialDetail | null;
   // tslint:disable-next-line:no-any
   onClose: () => any;
 }
 
 export function MaterialDialog(props: MaterialDialogProps) {
   let body: JSX.Element | undefined;
-  if (props.display_material === undefined) {
+  if (props.display_material === null) {
     body = <p>None</p>;
   } else {
     const mat = props.display_material;
@@ -215,7 +215,7 @@ export function MaterialDialog(props: MaterialDialogProps) {
   }
   return (
     <Dialog
-      open={props.display_material !== undefined}
+      open={props.display_material !== null}
       onClose={props.onClose}
       maxWidth="md"
     >
@@ -227,7 +227,7 @@ export function MaterialDialog(props: MaterialDialogProps) {
 
 export const ConnectedMaterialDialog = connect(
   (st: Store) => ({
-    display_material: st.MaterialDetails.loadstation_display_material
+    display_material: st.MaterialDetails.material[routes.StationMonitorType.LoadUnload]
   }),
   {
     onClose: () => ({

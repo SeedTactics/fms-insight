@@ -47,6 +47,7 @@ import { MaterialSummary } from '../../data/events';
 import { Store } from '../../data/store';
 import { MatSummary, MaterialDetailTitle, MaterialDetailContent } from './Material';
 import * as matDetails from '../../data/material-details';
+import { StationMonitorType } from '../../data/routes';
 
 const matListStyles = withStyles(theme => ({
   summaryItem: {
@@ -207,7 +208,7 @@ export const extractRecentCompleted = createSelector(
 export default connect(
   (st: Store) => ({
     recent_completed: extractRecentCompleted(st),
-    display_material: st.MaterialDetails.wash_display_material || null,
+    display_material: st.MaterialDetails.material[StationMonitorType.Wash],
   }),
   {
     openMat: matDetails.openWashMaterial,
