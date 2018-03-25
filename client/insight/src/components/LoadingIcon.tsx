@@ -58,7 +58,8 @@ export default connect(
     loading: st.Events.loading_log_entries
           || st.Events.loading_job_history
           || st.Current.loading
-          || st.Events.loading_analysis_month
+          || st.Events.loading_analysis_month_log
+          || st.Events.loading_analysis_month_jobs
           || st.Websocket.websocket_reconnecting
   })
 )(LoadingIcon);

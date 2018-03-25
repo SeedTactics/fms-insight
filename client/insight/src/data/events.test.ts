@@ -164,7 +164,7 @@ it("starts loading a specific month for analysis", () => {
   let st = events.reducer(
     {...events.initial},
     {
-      type: events.ActionType.LoadAnalysisSpecificMonth,
+      type: events.ActionType.LoadSpecificMonthLogEntries,
       month: new Date(2018, 2, 1),
       pledge: {
         status: PledgeStatus.Starting
@@ -173,7 +173,7 @@ it("starts loading a specific month for analysis", () => {
   );
   expect(st.analysis_period).toBe(events.AnalysisPeriod.SpecificMonth);
   expect(st.analysis_period_month).toEqual(new Date(2018, 2, 1));
-  expect(st.loading_analysis_month).toBe(true);
+  expect(st.loading_analysis_month_log).toBe(true);
   expect(st.selected_month).toBe(events.initial.selected_month);
 });
 
@@ -208,12 +208,12 @@ it("loads a specific month for analysis", () => {
 
   let st = events.reducer(
     {...events.initial,
-      loading_analysis_month: true,
+      loading_analysis_month_log: true,
       analysis_period_month: new Date(2018, 1, 1),
       analysis_period: events.AnalysisPeriod.SpecificMonth
     },
     {
-      type: events.ActionType.LoadAnalysisSpecificMonth,
+      type: events.ActionType.LoadSpecificMonthLogEntries,
       month: new Date(2018, 1, 1),
       pledge: {
         status: PledgeStatus.Completed,
@@ -222,7 +222,7 @@ it("loads a specific month for analysis", () => {
     }
   );
   expect(st.analysis_period).toBe(events.AnalysisPeriod.SpecificMonth);
-  expect(st.loading_analysis_month).toBe(false);
+  expect(st.loading_analysis_month_log).toBe(false);
   expect(st.analysis_period_month).toEqual(new Date(2018, 1, 1));
   expect(st.selected_month).toMatchSnapshot('selected month with 27 days ago, 2 days ago, and today');
 });

@@ -76,7 +76,8 @@ export interface State {
 
     readonly analysis_period: AnalysisPeriod;
     readonly analysis_period_month: Date;
-    readonly loading_analysis_month: boolean;
+    readonly loading_analysis_month_log: boolean;
+    readonly loading_analysis_month_jobs: boolean;
 
     readonly last30: Last30Days;
     readonly selected_month: AnalysisMonth;
@@ -87,7 +88,8 @@ export const initial: State = {
     loading_job_history: false,
     analysis_period: AnalysisPeriod.Last30Days,
     analysis_period_month: startOfMonth(new Date()),
-    loading_analysis_month: false,
+    loading_analysis_month_log: false,
+    loading_analysis_month_jobs: false,
 
     last30: {
         latest_log_entry: undefined,
@@ -107,7 +109,8 @@ export enum ActionType {
     SetAnalysisMonth = 'Events_SetAnalysisMonth',
     LoadRecentLogEntries = 'Events_LoadRecentLogEntries',
     LoadRecentJobHistory = 'Events_LoadRecentJobHistory',
-    LoadAnalysisSpecificMonth = 'Events_LoadAnalysisMonth',
+    LoadSpecificMonthLogEntries = 'Events_LoadSpecificMonthLogEntries',
+    LoadSpecificMonthJobHistory = 'Events_LoadSpecificMonthJobHistory',
     SetSystemHours = 'Events_SetSystemHours',
     ReceiveNewLogEntries = 'Events_NewLogEntries',
     ReceiveNewJobs = 'Events_ReceiveNewJobs',
@@ -119,11 +122,16 @@ export type Action =
   | {type: ActionType.SetAnalysisLast30Days }
   | {type: ActionType.SetAnalysisMonth, month: Date }
   | {type: ActionType.LoadRecentLogEntries, now: Date, pledge: ConsumingPledge<ReadonlyArray<Readonly<api.ILogEntry>>>}
-  | {type: ActionType.LoadRecentJobHistory, now: Date, pledge: ConsumingPledge<api.IHistoricData>}
+  | {type: ActionType.LoadRecentJobHistory, now: Date, pledge: ConsumingPledge<Readonly<api.IHistoricData>>}
   | {
-      type: ActionType.LoadAnalysisSpecificMonth,
+      type: ActionType.LoadSpecificMonthLogEntries,
       month: Date,
       pledge: ConsumingPledge<ReadonlyArray<Readonly<api.ILogEntry>>>
+    }
+  | {
+      type: ActionType.LoadSpecificMonthJobHistory,
+      month: Date,
+      pledge: ConsumingPledge<Readonly<api.IHistoricData>>
     }
   | {type: ActionType.ReceiveNewLogEntries, now: Date, events: ReadonlyArray<Readonly<api.ILogEntry>>}
   | {type: ActionType.ReceiveNewJobs, now: Date, jobs: Readonly<api.IHistoricData>}
@@ -188,7 +196,7 @@ export function analyzeSpecificMonth(month: Date) {
     var client = new api.LogClient();
     var startOfNextMonth = addMonths(month, 1);
     return {
-        type: ActionType.LoadAnalysisSpecificMonth,
+        type: ActionType.LoadSpecificMonthLogEntries,
         month: month,
         pledge: client.get(month, startOfNextMonth)
     };
@@ -242,11 +250,7 @@ function processRecentLogEntries(now: Date, evts: Iterable<api.ILogEntry>, s: La
         });
 }
 
-function processRecentJobs(now: Date, jobs: Readonly<api.IHistoricData>, s: Last30Days): Last30Days {
-    return s;
-}
-
-function processSpecificMonth(evts: Iterable<api.ILogEntry>, s: AnalysisMonth): AnalysisMonth {
+function processSpecificMonthLogEntries(evts: Iterable<api.ILogEntry>, s: AnalysisMonth): AnalysisMonth {
     return safeAssign(
         s,
         {
@@ -256,6 +260,14 @@ function processSpecificMonth(evts: Iterable<api.ILogEntry>, s: AnalysisMonth): 
                 s.cycles)
         }
     );
+}
+
+function processRecentJobs(now: Date, jobs: Readonly<api.IHistoricData>, s: Last30Days): Last30Days {
+    return s;
+}
+
+function processSpecificMonthJobs(jobs: Readonly<api.IHistoricData>, s: AnalysisMonth): AnalysisMonth {
+    return s;
 }
 
 export function reducer(s: State, a: Action): State {
@@ -312,26 +324,48 @@ export function reducer(s: State, a: Action): State {
                 selected_month: emptyAnalysisMonth,
             };
 
-        case ActionType.LoadAnalysisSpecificMonth:
+        case ActionType.LoadSpecificMonthLogEntries:
             switch (a.pledge.status) {
                 case PledgeStatus.Starting:
                     return {...s,
                         analysis_period: AnalysisPeriod.SpecificMonth,
                         analysis_period_month: a.month,
                         loading_error: undefined,
-                        loading_analysis_month: true,
+                        loading_analysis_month_log: true,
                         selected_month: emptyAnalysisMonth,
                     };
 
                 case PledgeStatus.Completed:
                     return {...s,
-                        loading_analysis_month: false,
-                        selected_month: processSpecificMonth(a.pledge.result, s.selected_month)
+                        loading_analysis_month_log: false,
+                        selected_month: processSpecificMonthLogEntries(a.pledge.result, s.selected_month)
                     };
 
                 case PledgeStatus.Error:
                     return {...s,
-                        loading_analysis_month: false,
+                        loading_analysis_month_log: false,
+                        loading_error: a.pledge.error
+                    };
+
+                default: return s;
+            }
+
+        case ActionType.LoadSpecificMonthJobHistory:
+            switch (a.pledge.status) {
+                case PledgeStatus.Starting:
+                    return {...s,
+                        loading_analysis_month_jobs: true,
+                    };
+
+                case PledgeStatus.Completed:
+                    return {...s,
+                        loading_analysis_month_jobs: false,
+                        selected_month: processSpecificMonthJobs(a.pledge.result, s.selected_month)
+                    };
+
+                case PledgeStatus.Error:
+                    return {...s,
+                        loading_analysis_month_jobs: false,
                         loading_error: a.pledge.error
                     };
 
