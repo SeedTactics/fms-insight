@@ -31,6 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import * as im from 'immutable';
+
 import * as api from './api';
 import { ConsumingPledge, PledgeStatus } from './pledge';
 import { MaterialSummary } from './events';
@@ -39,8 +41,13 @@ import { StationMonitorType } from './routes';
 export enum ActionType {
   OpenMaterialDialog = 'MaterialDetails_Open',
   CloseMaterialDialog = 'MaterialDetails_Close',
-  CompleteInspection = 'MaterialDetails_CompleteInspection',
-  CompleteWash = 'MaterialDetails_CompleteWash',
+  UpdateMaterial = 'MaterialDetails_UpdateMaterial',
+  LoadWorkorders = 'OrderAssign_LoadWorkorders',
+}
+
+export interface WorkorderPlanAndSummary {
+  readonly plan: Readonly<api.IPartWorkorder>;
+  readonly summary?: Readonly<api.IWorkorderPartSummary>;
 }
 
 export interface MaterialDetail {
@@ -51,10 +58,13 @@ export interface MaterialDetail {
   readonly workorderId?: string;
   readonly signaledInspections: ReadonlyArray<string>;
   readonly completedInspections: ReadonlyArray<string>;
+  readonly updating_material: boolean;
 
   readonly loading_events: boolean;
-  readonly saving_insp_or_wash: boolean;
   readonly events: ReadonlyArray<Readonly<api.ILogEntry>>;
+
+  readonly loading_workorders: boolean;
+  readonly workorders: ReadonlyArray<WorkorderPlanAndSummary>;
 }
 
 export type Action =
@@ -69,18 +79,21 @@ export type Action =
       pledge: ConsumingPledge<ReadonlyArray<Readonly<api.ILogEntry>>>
     }
   | {
-      type: ActionType.CompleteInspection,
-      inspType: string,
+      type: ActionType.UpdateMaterial,
+      station: StationMonitorType,
+      newInspType?: string,
+      newWorkorder?: string,
       pledge: ConsumingPledge<Readonly<api.ILogEntry>>,
     }
   | {
-      type: ActionType.CompleteWash,
-      pledge: ConsumingPledge<Readonly<api.ILogEntry>>,
+      type: ActionType.LoadWorkorders,
+      station: StationMonitorType,
+      pledge: ConsumingPledge<ReadonlyArray<WorkorderPlanAndSummary>>,
     }
   ;
 
 export function openLoadunloadMaterialDialog(mat: Readonly<api.IInProcessMaterial>) {
-  var client = new api.LogClient();
+  const client = new api.LogClient();
   return {
     type: ActionType.OpenMaterialDialog,
     station: StationMonitorType.LoadUnload,
@@ -93,15 +106,18 @@ export function openLoadunloadMaterialDialog(mat: Readonly<api.IInProcessMateria
       signaledInspections: mat.signaledInspections,
       completedInspections: [],
       loading_events: true,
-      saving_insp_or_wash: false,
+      updating_material: false,
       events: [],
+      loading_workorders: false,
+      saving_workorder: false,
+      workorders: [],
     } as MaterialDetail,
     pledge: client.logForMaterial(mat.materialID),
   };
 }
 
 export function openInspectionMaterial(mat: MaterialSummary) {
-  var client = new api.LogClient();
+  const client = new api.LogClient();
   return {
     type: ActionType.OpenMaterialDialog,
     station: StationMonitorType.Inspection,
@@ -114,15 +130,18 @@ export function openInspectionMaterial(mat: MaterialSummary) {
       signaledInspections: mat.signaledInspections,
       completedInspections: mat.completedInspections,
       loading_events: true,
-      saving_insp_or_wash: false,
+      updating_material: false,
       events: [],
+      loading_workorders: false,
+      saving_workorder: false,
+      workorders: [],
     } as MaterialDetail,
     pledge: client.logForMaterial(mat.materialID),
   };
 }
 
 export function openWashMaterial(mat: MaterialSummary) {
-  var client = new api.LogClient();
+  const client = new api.LogClient();
   return {
     type: ActionType.OpenMaterialDialog,
     station: StationMonitorType.Wash,
@@ -135,18 +154,22 @@ export function openWashMaterial(mat: MaterialSummary) {
       signaledInspections: mat.signaledInspections,
       completedInspections: mat.completedInspections,
       loading_events: true,
-      saving_insp_or_wash: false,
+      updating_material: false,
       events: [],
+      loading_workorders: false,
+      saving_workorder: false,
+      workorders: [],
     } as MaterialDetail,
     pledge: client.logForMaterial(mat.materialID),
   };
 }
 
 export function completeInspection(mat: MaterialDetail, inspType: string, success: boolean) {
-  var client = new api.LogClient();
+  const client = new api.LogClient();
   return {
-    type: ActionType.CompleteInspection,
-    inspType: inspType,
+    type: ActionType.UpdateMaterial,
+    station: StationMonitorType.Inspection,
+    newInspType: inspType,
     pledge: client.recordInspectionCompleted(new api.NewInspectionCompleted({
       material: new api.LogMaterial({
         id: mat.materialID,
@@ -166,9 +189,10 @@ export function completeInspection(mat: MaterialDetail, inspType: string, succes
 }
 
 export function completeWash(mat: MaterialDetail) {
-  var client = new api.LogClient();
+  const client = new api.LogClient();
   return {
-    type: ActionType.CompleteWash,
+    type: ActionType.UpdateMaterial,
+    station: StationMonitorType.Wash,
     pledge: client.recordWashCompleted(new api.NewWash({
       material: new api.LogMaterial({
         id: mat.materialID,
@@ -185,17 +209,80 @@ export function completeWash(mat: MaterialDetail) {
   };
 }
 
+export function assignWorkorder(mat: MaterialDetail, station: StationMonitorType, workorder: string) {
+  const client = new api.LogClient();
+  return {
+    type: ActionType.UpdateMaterial,
+    station,
+    newWorkorder: workorder,
+    pledge: client.setWorkorder(
+      workorder,
+      new api.LogMaterial({
+        id: mat.materialID,
+        uniq: mat.jobUnique,
+        part: mat.partName,
+        proc: 1,
+        numproc: 1,
+        face: "1",
+      })
+    )
+  };
+}
+
+export function computeWorkorders(
+    partName: string,
+    workorders: ReadonlyArray<api.PartWorkorder>,
+    summaries: ReadonlyArray<api.WorkorderSummary>): ReadonlyArray<WorkorderPlanAndSummary> {
+
+  const workMap = new Map<string, WorkorderPlanAndSummary>();
+  for (const w of workorders) {
+    workMap.set(w.workorderId, {plan: w});
+  }
+  for (const s of summaries) {
+    for (const w of s.parts) {
+      if (w.name === partName) {
+        const planAndS = workMap.get(s.id);
+        if (planAndS) {
+          workMap.set(s.id, {...planAndS, summary: w});
+        }
+      }
+    }
+  }
+  return im.Seq.Keyed(workMap)
+    .valueSeq()
+    .sortBy(w => [w.plan.dueDate, -w.plan.priority])
+    .toArray();
+}
+
+export function loadWorkorders(mat: MaterialDetail, station: StationMonitorType) {
+  const logClient = new api.LogClient();
+  const jobClient = new api.JobsClient();
+
+  return {
+    type: ActionType.LoadWorkorders,
+    station,
+    pledge:
+      jobClient.mostRecentUnfilledWorkordersForPart(mat.partName)
+      .then(workorders => {
+        return logClient.getWorkorders(workorders.map(w => w.workorderId))
+          .then(summaries => {
+            return computeWorkorders(mat.partName, workorders, summaries);
+          });
+      })
+  };
+}
+
 export interface State {
-  readonly loadstation_display_material?: MaterialDetail;
-  readonly inspection_display_material?: MaterialDetail;
-  readonly wash_display_material?: MaterialDetail;
+  readonly material: {[key in StationMonitorType]: MaterialDetail | null };
 }
 
-export const initial: State = {};
-
-function setEvents(e: ReadonlyArray<Readonly<api.ILogEntry>>, d: MaterialDetail): MaterialDetail {
-  return {...d, loading_events: false, events: e};
-}
+export const initial: State = {
+  material: {
+    StationType_Insp: null,
+    StationType_LoadUnload: null,
+    StationType_Wash: null,
+  }
+};
 
 export function reducer(s: State, a: Action): State {
   if (s === undefined) { return initial; }
@@ -203,125 +290,87 @@ export function reducer(s: State, a: Action): State {
     case ActionType.OpenMaterialDialog:
       switch (a.pledge.status) {
         case PledgeStatus.Starting:
-
-          switch (a.station) {
-            case StationMonitorType.LoadUnload:
-              return {...s, loadstation_display_material: a.initial};
-            case StationMonitorType.Inspection:
-              return {...s, inspection_display_material: a.initial};
-            case StationMonitorType.Wash:
-              return {...s, wash_display_material: a.initial};
-            default: return s;
-          }
+          return {...s, material: {...s.material, [a.station]: a.initial}};
 
         case PledgeStatus.Completed:
-          switch (a.station) {
-            case StationMonitorType.LoadUnload:
-              return {...s, loadstation_display_material: setEvents(a.pledge.result, a.initial)};
-            case StationMonitorType.Inspection:
-              return {...s, inspection_display_material: setEvents(a.pledge.result, a.initial)};
-            case StationMonitorType.Wash:
-              return {...s, wash_display_material: setEvents(a.pledge.result, a.initial)};
-            default: return s;
-          }
+          return {...s, material: {...s.material, [a.station]: {...a.initial,
+            loading_events: false,
+            events: a.pledge.result
+          }}};
 
         case PledgeStatus.Error:
-          switch (a.station) {
-            case StationMonitorType.LoadUnload:
-              return {...s, loadstation_display_material: setEvents([], a.initial)};
-            case StationMonitorType.Inspection:
-              return {...s, inspection_display_material: setEvents([], a.initial)};
-            case StationMonitorType.Wash:
-              return {...s, wash_display_material: setEvents([], a.initial)};
-            default: return s;
-          }
+          return {...s, material: {...s.material, [a.station]: {...a.initial,
+            loading_events: false,
+            events: [],
+          }}};
 
         default:
           return s;
       }
 
     case ActionType.CloseMaterialDialog:
-      switch (a.station) {
-        case StationMonitorType.LoadUnload:
-          return {...s, loadstation_display_material: undefined};
-        case StationMonitorType.Inspection:
-          return {...s, inspection_display_material: undefined};
-        case StationMonitorType.Wash:
-          return {...s, wash_display_material: undefined};
-        default: return s;
-      }
+      return {...s, material: {...s.material, [a.station]: null}};
 
-    case ActionType.CompleteInspection:
+    case ActionType.UpdateMaterial:
       switch (a.pledge.status) {
         case PledgeStatus.Starting:
-          if (s.inspection_display_material === undefined) {
+          const oldMatStart = s.material[a.station];
+          if (oldMatStart === null) {
             return s;
           } else {
-            const oldMatStart = s.inspection_display_material;
-            return {...s, inspection_display_material: {...oldMatStart,
-              saving_insp_or_wash: true}
-            };
+            return {...s, material: {...s.material, [a.station]: {...oldMatStart,
+              updating_material: true}
+            }};
           }
         case PledgeStatus.Completed:
-          if (s.inspection_display_material === undefined) {
-            return s;
-          }
-          const oldMatEnd = s.inspection_display_material;
-          return {...s,
-            inspection_display_material: {...oldMatEnd,
-              completedInspections: [...oldMatEnd.completedInspections, a.inspType],
-              events: [...oldMatEnd.events, a.pledge.result],
-              saving_insp_or_wash: false,
-            },
-          };
-
-        case PledgeStatus.Error:
-          if (s.inspection_display_material === undefined) {
+          const oldMatEnd = s.material[a.station];
+          if (oldMatEnd === null) {
             return s;
           } else {
-            const oldMatStart = s.inspection_display_material;
-            return {...s, inspection_display_material: {...oldMatStart,
-              saving_insp_or_wash: false}
-            };
+            return {...s, material: {...s.material, [a.station]: {...oldMatEnd,
+                completedInspections:
+                  a.newInspType ? [...oldMatEnd.completedInspections, a.newInspType] : oldMatEnd.completedInspections,
+                workorderId: a.newWorkorder || oldMatEnd.workorderId,
+                events: [...oldMatEnd.events, a.pledge.result],
+                updating_material: false,
+              },
+            }};
+          }
+
+        case PledgeStatus.Error:
+          const oldMatErr = s.material[a.station];
+          if (oldMatErr === undefined) {
+            return s;
+          } else {
+            return {...s, material: {...s.material, [a.station]: {...oldMatErr,
+              updating_material: false}
+            }};
           }
 
         default: return s;
       }
 
-    case ActionType.CompleteWash:
+    case ActionType.LoadWorkorders:
       switch (a.pledge.status) {
         case PledgeStatus.Starting:
-          if (s.wash_display_material === undefined) {
-            return s;
-          } else {
-            const oldMatStart = s.wash_display_material;
-            return {...s, wash_display_material: {...oldMatStart,
-              saving_insp_or_wash: true}
-            };
-          }
+          return {...s, material: {...s.material, [a.station]: {...s.material[a.station],
+            loading_workorders: true
+          }}};
+
         case PledgeStatus.Completed:
-          if (s.wash_display_material === undefined) {
-            return s;
-          }
-          const oldMatEnd = s.wash_display_material;
-          return {...s,
-            wash_display_material: {...oldMatEnd,
-              events: [...oldMatEnd.events, a.pledge.result],
-              saving_insp_or_wash: false,
-            },
-          };
+          return {...s, material: {...s.material, [a.station]: {...s.material[a.station],
+            loading_workorders: false,
+            workorders: a.pledge.result,
+          }}};
 
         case PledgeStatus.Error:
-          if (s.wash_display_material === undefined) {
-            return s;
-          } else {
-            const oldMatStart = s.wash_display_material;
-            return {...s, wash_display_material: {...oldMatStart,
-              saving_insp_or_wash: false}
-            };
-          }
+          return {...s, material: {...s.material, [a.station]: {...s.material[a.station],
+            loading_workorders: false,
+            workorders: [],
+          }}};
 
-        default: return s;
+        default:
+          return s;
       }
 
     default:

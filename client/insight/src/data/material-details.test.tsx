@@ -53,293 +53,228 @@ const m: Readonly<mat.MaterialDetail> = {
   signaledInspections: ["a", "b"],
   completedInspections: ["a"],
   loading_events: true,
-  saving_insp_or_wash: false,
+  updating_material: false,
   events: [],
+  loading_workorders: false,
+  workorders: [],
 };
 
-it('starts an open for load station', () => {
-  const action: mat.Action = {
-    type: mat.ActionType.OpenMaterialDialog,
-    station: StationMonitorType.LoadUnload,
-    initial: m,
-    pledge: { status: PledgeStatus.Starting }
-  };
-  let s = mat.reducer(mat.initial, action);
-  expect(s.loadstation_display_material).toBe(m);
-  expect(s.inspection_display_material).toBeUndefined();
-  expect(s.wash_display_material).toBeUndefined();
-});
+const allNullMats = {...mat.initial.material};
+const allStations = [StationMonitorType.Inspection, StationMonitorType.LoadUnload, StationMonitorType.Wash];
 
-it('starts an open for wash station', () => {
-  const action: mat.Action = {
-    type: mat.ActionType.OpenMaterialDialog,
-    station: StationMonitorType.Wash,
-    initial: m,
-    pledge: { status: PledgeStatus.Starting }
-  };
-  let s = mat.reducer(mat.initial, action);
-  expect(s.loadstation_display_material).toBeUndefined();
-  expect(s.inspection_display_material).toBeUndefined();
-  expect(s.wash_display_material).toBe(m);
-});
+for (const station of allStations) {
+  it('starts an open for ' + station, () => {
+    const action: mat.Action = {
+      type: mat.ActionType.OpenMaterialDialog,
+      station,
+      initial: m,
+      pledge: { status: PledgeStatus.Starting }
+    };
+    let s = mat.reducer(mat.initial, action);
+    expect(s.material).toEqual({...allNullMats, [station]: m});
+  });
 
-it('starts an open for inspection station', () => {
-  const action: mat.Action = {
-    type: mat.ActionType.OpenMaterialDialog,
-    station: StationMonitorType.Inspection,
-    initial: m,
-    pledge: { status: PledgeStatus.Starting }
-  };
-  let s = mat.reducer(mat.initial, action);
-  expect(s.loadstation_display_material).toBeUndefined();
-  expect(s.inspection_display_material).toBe(m);
-  expect(s.wash_display_material).toBeUndefined();
-});
+  it('finishes material open for ' + station, () => {
+    const evts = fakeCycle(new Date(), 20);
+    const action: mat.Action = {
+      type: mat.ActionType.OpenMaterialDialog,
+      station,
+      initial: m,
+      pledge: { status: PledgeStatus.Completed, result: evts }
+    };
+    const initialSt = {
+      material: {...allNullMats,
+        [station]: {...m, loading_events: true}}
+    };
+    let s = mat.reducer(initialSt, action);
+    expect(s.material).toEqual({...allNullMats,
+      [station]: {...m, loading_events: false, events: evts}
+    });
+  });
 
-it('finishes material open for load station', () => {
-  const evts = fakeCycle(new Date(), 20);
-  const action: mat.Action = {
-    type: mat.ActionType.OpenMaterialDialog,
-    station: StationMonitorType.LoadUnload,
-    initial: m,
-    pledge: { status: PledgeStatus.Completed, result: evts }
-  };
-  let s = mat.reducer({...mat.initial, loadstation_display_material: m}, action);
-  expect(s.loadstation_display_material).toBeDefined();
-  var mats = s.loadstation_display_material || (() => { throw "undefined"; })();
-  expect(mats.loading_events).toBe(false);
-  expect(mats.events).toEqual(evts);
+  it('handles material error for ' + station, () => {
+    const action: mat.Action = {
+      type: mat.ActionType.OpenMaterialDialog,
+      station,
+      initial: m,
+      pledge: {
+        status: PledgeStatus.Error,
+        error: new Error("aaaa")
+      }
+    };
+    const initialSt = {
+      material: {...allNullMats,
+        [station]: {...m, loading_events: true}}
+    };
+    let s = mat.reducer(initialSt, action);
+    expect(s.material).toEqual({...allNullMats,
+      [station]: {...m, loading_events: false, events: []}
+    });
+  });
 
-  expect(s.inspection_display_material).toBeUndefined();
-  expect(s.wash_display_material).toBeUndefined();
-});
+  it('clears the material from ' + station, () => {
+    const action: mat.Action = {
+      type: mat.ActionType.CloseMaterialDialog,
+      station,
+    };
+    const fullSt: mat.State = {
+      material: {
+        [StationMonitorType.Inspection]: m,
+        [StationMonitorType.Wash]: m,
+        [StationMonitorType.LoadUnload]: m,
+      }
+    };
+    const st = mat.reducer(fullSt, action);
+    expect(st.material).toEqual({...fullSt.material,
+      [station]: null});
+  });
 
-it('finishes material open for wash station', () => {
-  const evts = fakeCycle(new Date(), 20);
-  const action: mat.Action = {
-    type: mat.ActionType.OpenMaterialDialog,
-    station: StationMonitorType.Wash,
-    initial: m,
-    pledge: { status: PledgeStatus.Completed, result: evts }
-  };
-  let s = mat.reducer({...mat.initial, wash_display_material: m}, action);
-  expect(s.wash_display_material).toBeDefined();
-  var mats = s.wash_display_material || (() => { throw "undefined"; })();
-  expect(mats.loading_events).toBe(false);
-  expect(mats.events).toEqual(evts);
+  it("starts to update for " + station, () => {
+    const action: mat.Action = {
+      type: mat.ActionType.UpdateMaterial,
+      station,
+      pledge: {
+        status: PledgeStatus.Starting
+      }
+    };
+    const st = mat.reducer({material: {...allNullMats, [station]: m}}, action);
+    expect(st.material).toEqual({...allNullMats,
+      [station]: {...m, updating_material: true}
+    });
+  });
 
-  expect(s.inspection_display_material).toBeUndefined();
-  expect(s.loadstation_display_material).toBeUndefined();
-});
+  it("errors during update for a " + station, () => {
+    const action: mat.Action = {
+      type: mat.ActionType.UpdateMaterial,
+      station,
+      pledge: {
+        status: PledgeStatus.Error,
+        error: new Error("the error")
+      }
+    };
+    const st = mat.reducer({material: {...allNullMats, [station]: {...m, updating_material: true}}}, action);
+    expect(st.material).toEqual({...allNullMats,
+      [station]: m
+    });
+  });
 
-it('finishes material open for inspection station', () => {
-  const evts = fakeCycle(new Date(), 20);
-  const action: mat.Action = {
-    type: mat.ActionType.OpenMaterialDialog,
-    station: StationMonitorType.Inspection,
-    initial: m,
-    pledge: { status: PledgeStatus.Completed, result: evts }
-  };
-  let s = mat.reducer({...mat.initial, inspection_display_material: m}, action);
-  expect(s.inspection_display_material).toBeDefined();
-  var mats = s.inspection_display_material || (() => { throw "undefined"; })();
-  expect(mats.loading_events).toBe(false);
-  expect(mats.events).toEqual(evts);
+  it("starts to load workorders for " + station, () => {
+    const action: mat.Action = {
+      type: mat.ActionType.LoadWorkorders,
+      station,
+      pledge: {
+        status: PledgeStatus.Starting
+      }
+    };
+    const st = mat.reducer({material: {...allNullMats, [station]: m}}, action);
+    expect(st.material).toEqual({...allNullMats,
+      [station]: {...m, loading_workorders: true}
+    });
+  });
 
-  expect(s.wash_display_material).toBeUndefined();
-  expect(s.loadstation_display_material).toBeUndefined();
-});
+  it("errors during loading workorders for a " + station, () => {
+    const action: mat.Action = {
+      type: mat.ActionType.LoadWorkorders,
+      station,
+      pledge: {
+        status: PledgeStatus.Error,
+        error: new Error("the error")
+      }
+    };
+    const st = mat.reducer({material: {...allNullMats, [station]: {...m, loading_workorders: true}}}, action);
+    expect(st.material).toEqual({...allNullMats,
+      [station]: m
+    });
+  });
 
-it('handles material error for load station', () => {
-  const action: mat.Action = {
-    type: mat.ActionType.OpenMaterialDialog,
-    station: StationMonitorType.LoadUnload,
-    initial: m,
-    pledge: {
-      status: PledgeStatus.Error,
-      error: new Error("aaaa")
-    }
-  };
-  let s = mat.reducer({...mat.initial, loadstation_display_material: m}, action);
-
-  expect(s.loadstation_display_material).toBeDefined();
-  var mats = s.loadstation_display_material || (() => { throw "undefined"; })();
-  expect(mats.loading_events).toBe(false);
-  expect(mats.events).toEqual([]);
-
-  expect(s.inspection_display_material).toBeUndefined();
-  expect(s.wash_display_material).toBeUndefined();
-});
-
-it('handles material error for wash', () => {
-  const action: mat.Action = {
-    type: mat.ActionType.OpenMaterialDialog,
-    station: StationMonitorType.Wash,
-    initial: m,
-    pledge: {
-      status: PledgeStatus.Error,
-      error: new Error("aaaa")
-    }
-  };
-  let s = mat.reducer({...mat.initial, wash_display_material: m}, action);
-
-  expect(s.wash_display_material).toBeDefined();
-  var mats = s.wash_display_material || (() => { throw "undefined"; })();
-  expect(mats.loading_events).toBe(false);
-  expect(mats.events).toEqual([]);
-
-  expect(s.inspection_display_material).toBeUndefined();
-  expect(s.loadstation_display_material).toBeUndefined();
-});
-
-it('handles material error for inspection', () => {
-  const action: mat.Action = {
-    type: mat.ActionType.OpenMaterialDialog,
-    station: StationMonitorType.Inspection,
-    initial: m,
-    pledge: {
-      status: PledgeStatus.Error,
-      error: new Error("aaaa")
-    }
-  };
-  let s = mat.reducer({...mat.initial, inspection_display_material: m}, action);
-
-  expect(s.inspection_display_material).toBeDefined();
-  var mats = s.inspection_display_material || (() => { throw "undefined"; })();
-  expect(mats.loading_events).toBe(false);
-  expect(mats.events).toEqual([]);
-
-  expect(s.wash_display_material).toBeUndefined();
-  expect(s.loadstation_display_material).toBeUndefined();
-});
-
-let fullSt: mat.State = {
-  loadstation_display_material: m,
-  wash_display_material: m,
-  inspection_display_material: m,
-};
-
-it('clears the load station material', () => {
-  const action: mat.Action = {
-    type: mat.ActionType.CloseMaterialDialog,
-    station: StationMonitorType.LoadUnload,
-  };
-  const st = mat.reducer(fullSt, action);
-  expect(st.loadstation_display_material).toBeUndefined();
-  expect(st.wash_display_material).toBe(m);
-  expect(st.inspection_display_material).toBe(m);
-});
-
-it('clears the wash material', () => {
-  const action: mat.Action = {
-    type: mat.ActionType.CloseMaterialDialog,
-    station: StationMonitorType.Wash,
-  };
-  const st = mat.reducer(fullSt, action);
-  expect(st.wash_display_material).toBeUndefined();
-  expect(st.loadstation_display_material).toBe(m);
-  expect(st.inspection_display_material).toBe(m);
-});
-
-it('clears the inspection material', () => {
-  const action: mat.Action = {
-    type: mat.ActionType.CloseMaterialDialog,
-    station: StationMonitorType.Inspection,
-  };
-  const st = mat.reducer(fullSt, action);
-  expect(st.inspection_display_material).toBeUndefined();
-  expect(st.loadstation_display_material).toBe(m);
-  expect(st.wash_display_material).toBe(m);
-});
-
-it("starts to complete an inspection cycle", () => {
-  const action: mat.Action = {
-    type: mat.ActionType.CompleteInspection,
-    inspType: "abc",
-    pledge: {
-      status: PledgeStatus.Starting
-    }
-  };
-  const st = mat.reducer({inspection_display_material: m}, action);
-  expect(st.inspection_display_material).toEqual({...m, saving_insp_or_wash: true});
-  expect(st.loadstation_display_material).toBeUndefined();
-  expect(st.wash_display_material).toBeUndefined();
-});
-
-it("starts to complete a wash cycle", () => {
-  const action: mat.Action = {
-    type: mat.ActionType.CompleteWash,
-    pledge: {
-      status: PledgeStatus.Starting
-    }
-  };
-  const st = mat.reducer({wash_display_material: m}, action);
-  expect(st.wash_display_material).toEqual({...m, saving_insp_or_wash: true});
-  expect(st.inspection_display_material).toBeUndefined();
-  expect(st.loadstation_display_material).toBeUndefined();
-});
-
-it("errors for an completed inspection cycle", () => {
-  const action: mat.Action = {
-    type: mat.ActionType.CompleteInspection,
-    inspType: "abc",
-    pledge: {
-      status: PledgeStatus.Error,
-      error: new Error("the error")
-    }
-  };
-  const st = mat.reducer({inspection_display_material: {...m, saving_insp_or_wash: true}}, action);
-  expect(st.inspection_display_material).toEqual(m);
-  expect(st.loadstation_display_material).toBeUndefined();
-  expect(st.wash_display_material).toBeUndefined();
-});
-
-it("errors for an completed wash cycle", () => {
-  const action: mat.Action = {
-    type: mat.ActionType.CompleteWash,
-    pledge: {
-      status: PledgeStatus.Error,
-      error: new Error("the error")
-    }
-  };
-  const st = mat.reducer({wash_display_material: {...m, saving_insp_or_wash: true}}, action);
-  expect(st.wash_display_material).toEqual(m);
-  expect(st.loadstation_display_material).toBeUndefined();
-  expect(st.inspection_display_material).toBeUndefined();
-});
+  it("successfully loads workorders for a " + station, () => {
+    const work: mat.WorkorderPlanAndSummary = {
+      plan: {
+        workorderId: "work1",
+        part: "aaa",
+        quantity: 5,
+        dueDate: new Date(),
+        priority: 100,
+      },
+    };
+    const action: mat.Action = {
+      type: mat.ActionType.LoadWorkorders,
+      station,
+      pledge: {
+        status: PledgeStatus.Completed,
+        result: [work]
+      }
+    };
+    const st = mat.reducer({material: {...allNullMats, [station]: {...m, loading_workorders: true}}}, action);
+    expect(st.material).toEqual({...allNullMats,
+      [station]: {...m, workorders: [work]}
+    });
+  });
+}
 
 it("succeeds for an completed inspection cycle", () => {
   const evt = fakeInspComplete();
   const action: mat.Action = {
-    type: mat.ActionType.CompleteInspection,
-    inspType: "abc",
+    type: mat.ActionType.UpdateMaterial,
+    station: StationMonitorType.Inspection,
+    newInspType: "abc",
     pledge: {
       status: PledgeStatus.Completed,
       result: evt,
     }
   };
-  const st = mat.reducer({inspection_display_material: {...m, saving_insp_or_wash: true}}, action);
-  expect(st.inspection_display_material).toEqual({...m,
-    events: [evt],
-    completedInspections: [...m.completedInspections, "abc"],
+  const initialSt = {
+    material: {...allNullMats, [StationMonitorType.Inspection]: {...m, updating_material: true}}
+  };
+  const st = mat.reducer(initialSt, action);
+  expect(st.material).toEqual({...allNullMats,
+    [StationMonitorType.Inspection]: {...m,
+      events: [evt],
+      completedInspections: [...m.completedInspections, "abc"]
+    }
   });
-  expect(st.loadstation_display_material).toBeUndefined();
-  expect(st.wash_display_material).toBeUndefined();
 });
 
-it("succeeds for an completed wash cycle", () => {
+it("succeeds for a wash complete cycle", () => {
   const evt = fakeWashComplete();
   const action: mat.Action = {
-    type: mat.ActionType.CompleteWash,
+    type: mat.ActionType.UpdateMaterial,
+    station: StationMonitorType.Wash,
     pledge: {
       status: PledgeStatus.Completed,
       result: evt,
     }
   };
-  const st = mat.reducer({wash_display_material: {...m, saving_insp_or_wash: true}}, action);
-  expect(st.wash_display_material).toEqual({...m,
-    events: [evt],
+  const initialSt = {
+    material: {...allNullMats, [StationMonitorType.Wash]: {...m, updating_material: true}}
+  };
+  const st = mat.reducer(initialSt, action);
+  expect(st.material).toEqual({...allNullMats,
+    [StationMonitorType.Wash]: {...m,
+      events: [evt],
+    }
   });
-  expect(st.loadstation_display_material).toBeUndefined();
-  expect(st.inspection_display_material).toBeUndefined();
+});
+
+it("succeeds for a workorder set", () => {
+  const evt = fakeWashComplete();
+  const action: mat.Action = {
+    type: mat.ActionType.UpdateMaterial,
+    station: StationMonitorType.LoadUnload,
+    newWorkorder: "work1234",
+    pledge: {
+      status: PledgeStatus.Completed,
+      result: evt,
+    }
+  };
+  const initialSt = {
+    material: {...allNullMats, [StationMonitorType.LoadUnload]: {...m, updating_material: true}}
+  };
+  const st = mat.reducer(initialSt, action);
+  expect(st.material).toEqual({...allNullMats,
+    [StationMonitorType.LoadUnload]: {...m,
+      events: [evt],
+      workorderId: "work1234",
+    }
+  });
 });
