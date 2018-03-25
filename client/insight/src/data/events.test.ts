@@ -67,6 +67,25 @@ it('responds to loading', () => {
     }
   );
   expect(st.loading_log_entries).toBe(true);
+  expect(st.loading_job_history).toBe(false);
+  expect(st.loading_error).toBeUndefined();
+  expect(st.last30).toBe(events.initial.last30);
+  expect(st.selected_month).toBe(events.initial.selected_month);
+});
+
+it('responds to loading for jobs', () => {
+  let st = events.reducer(
+    {...events.initial, loading_error: new Error('hello')},
+    {
+      type: events.ActionType.LoadRecentJobHistory,
+      now: new Date(),
+      pledge: {
+        status: PledgeStatus.Starting
+      }
+    }
+  );
+  expect(st.loading_log_entries).toBe(false);
+  expect(st.loading_job_history).toBe(true);
   expect(st.loading_error).toBeUndefined();
   expect(st.last30).toBe(events.initial.last30);
   expect(st.selected_month).toBe(events.initial.selected_month);
@@ -85,6 +104,26 @@ it('responds to error', () => {
     }
   );
   expect(st.loading_log_entries).toBe(false);
+  expect(st.loading_job_history).toBe(false);
+  expect(st.loading_error).toEqual(new Error('hello'));
+  expect(st.last30).toBe(events.initial.last30);
+  expect(st.selected_month).toBe(events.initial.selected_month);
+});
+
+it('responds to error for jobs', () => {
+  let st = events.reducer(
+    {...events.initial, loading_job_history: true},
+    {
+      type: events.ActionType.LoadRecentJobHistory,
+      now: new Date(),
+      pledge: {
+        status: PledgeStatus.Error,
+        error: new Error('hello')
+      }
+    }
+  );
+  expect(st.loading_log_entries).toBe(false);
+  expect(st.loading_job_history).toBe(false);
   expect(st.loading_error).toEqual(new Error('hello'));
   expect(st.last30).toBe(events.initial.last30);
   expect(st.selected_month).toBe(events.initial.selected_month);
@@ -174,7 +213,23 @@ it("starts loading a specific month for analysis", () => {
   expect(st.analysis_period).toBe(events.AnalysisPeriod.SpecificMonth);
   expect(st.analysis_period_month).toEqual(new Date(2018, 2, 1));
   expect(st.loading_analysis_month_log).toBe(true);
+  expect(st.loading_analysis_month_jobs).toBe(false);
   expect(st.selected_month).toBe(events.initial.selected_month);
+});
+
+it("starts loading a specific month jobs for analysis", () => {
+  let st = events.reducer(
+    {...events.initial},
+    {
+      type: events.ActionType.LoadSpecificMonthJobHistory,
+      month: new Date(2018, 2, 1),
+      pledge: {
+        status: PledgeStatus.Starting
+      }
+    }
+  );
+  expect(st.loading_analysis_month_log).toBe(false);
+  expect(st.loading_analysis_month_jobs).toBe(true);
 });
 
 it("loads 30 days for analysis", () => {
