@@ -142,7 +142,6 @@ Object {
 
 exports[`processes new log events into last30: last30 with 2 days ago, today, and 6 days from now 1`] = `
 Object {
-  "current_workorders": Array [],
   "cycles": Object {
     "by_pallet": Immutable.Map {
       "palbb": Array [
@@ -311,7 +310,6 @@ Object {
 
 exports[`processes new log events into last30: last30 with 27 days ago, 2 days ago, and today 1`] = `
 Object {
-  "current_workorders": Array [],
   "cycles": Object {
     "by_pallet": Immutable.Map {
       "palaa": Array [
@@ -499,7 +497,6 @@ Object {
 
 exports[`refreshes new events into last30: last30 with 2 days ago, today, and 6 days from now 1`] = `
 Object {
-  "current_workorders": Array [],
   "cycles": Object {
     "by_pallet": Immutable.Map {
       "palbb": Array [
@@ -668,7 +665,6 @@ Object {
 
 exports[`refreshes new events into last30: last30 with 27 days ago, 2 days ago, and today 1`] = `
 Object {
-  "current_workorders": Array [],
   "cycles": Object {
     "by_pallet": Immutable.Map {
       "palaa": Array [

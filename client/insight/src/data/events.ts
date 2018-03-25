@@ -57,8 +57,6 @@ export interface Last30Days {
     readonly oee: oee.OeeState;
     readonly cycles: cycles.CycleState;
     readonly mat_summary: matsummary.MatSummaryState;
-
-    readonly current_workorders: ReadonlyArray<Readonly<api.IPartWorkorder>>;
 }
 
 export interface AnalysisMonth {
@@ -98,7 +96,6 @@ export const initial: State = {
         oee: oee.initial,
         cycles: cycles.initial,
         mat_summary: matsummary.initial,
-        current_workorders: [],
     },
 
     selected_month: emptyAnalysisMonth,
@@ -263,7 +260,19 @@ function processSpecificMonthLogEntries(evts: Iterable<api.ILogEntry>, s: Analys
 }
 
 function processRecentJobs(now: Date, jobs: Readonly<api.IHistoricData>, s: Last30Days): Last30Days {
-    return s;
+    let latestSchId = s.latest_scheduleId;
+    let largestJob = im.Seq(jobs.jobs).maxBy(j => j.scheduleId);
+    if (largestJob !== undefined) {
+        if (latestSchId === undefined || (largestJob.scheduleId !== undefined) && latestSchId < largestJob.scheduleId) {
+            latestSchId = largestJob.scheduleId;
+        }
+    }
+    return safeAssign(
+        s,
+        {
+            latest_scheduleId: latestSchId
+        }
+    );
 }
 
 function processSpecificMonthJobs(jobs: Readonly<api.IHistoricData>, s: AnalysisMonth): AnalysisMonth {
