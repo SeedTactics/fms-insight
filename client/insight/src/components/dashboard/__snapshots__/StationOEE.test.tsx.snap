@@ -11,6 +11,15 @@ exports[`displays a single station oee: station oee gauge 1`] = `
     <UNDEFINED>
       <div>
         <span>
+          OEE
+          : 
+        </span>
+        <span>
+          43.0%
+        </span>
+      </div>
+      <div>
+        <span>
           Pallet
           : 
         </span>
@@ -84,6 +93,15 @@ exports[`displays a single station without oee: station empty guage 1`] = `
   }
   title={
     <UNDEFINED>
+      <div>
+        <span>
+          OEE
+          : 
+        </span>
+        <span>
+          1.0%
+        </span>
+      </div>
       <div>
         <span>
           Pallet

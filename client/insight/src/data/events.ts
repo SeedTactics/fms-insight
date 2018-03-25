@@ -49,11 +49,16 @@ export enum AnalysisPeriod {
 }
 
 export interface Last30Days {
-    readonly latest_event?: Date;
-    readonly latest_counter?: number;
+    readonly latest_log_entry: Date | undefined;
+    readonly latest_log_counter: number | undefined;
+
+    readonly latest_scheduleId: string | undefined;
+
     readonly oee: oee.OeeState;
     readonly cycles: cycles.CycleState;
     readonly mat_summary: matsummary.MatSummaryState;
+
+    readonly current_workorders: ReadonlyArray<Readonly<api.IPartWorkorder>>;
 }
 
 export interface AnalysisMonth {
@@ -65,7 +70,8 @@ const emptyAnalysisMonth: AnalysisMonth = {
 };
 
 export interface State {
-    readonly loading_events: boolean;
+    readonly loading_log_entries: boolean;
+    readonly loading_job_history: boolean;
     readonly loading_error?: Error;
 
     readonly analysis_period: AnalysisPeriod;
@@ -77,15 +83,20 @@ export interface State {
 }
 
 export const initial: State = {
-    loading_events: false,
+    loading_log_entries: false,
+    loading_job_history: false,
     analysis_period: AnalysisPeriod.Last30Days,
     analysis_period_month: startOfMonth(new Date()),
     loading_analysis_month: false,
 
     last30: {
+        latest_log_entry: undefined,
+        latest_log_counter: undefined,
+        latest_scheduleId: undefined,
         oee: oee.initial,
         cycles: cycles.initial,
         mat_summary: matsummary.initial,
+        current_workorders: [],
     },
 
     selected_month: emptyAnalysisMonth,
@@ -94,10 +105,12 @@ export const initial: State = {
 export enum ActionType {
     SetAnalysisLast30Days = 'Events_SetAnalysisLast30Days',
     SetAnalysisMonth = 'Events_SetAnalysisMonth',
-    LoadRecentEvents = 'Events_LoadRecentEvents',
+    LoadRecentLogEntries = 'Events_LoadRecentLogEntries',
+    LoadRecentJobHistory = 'Events_LoadRecentJobHistory',
     LoadAnalysisSpecificMonth = 'Events_LoadAnalysisMonth',
     SetSystemHours = 'Events_SetSystemHours',
-    ReceiveNewEvents = 'Events_NewEvents',
+    ReceiveNewLogEntries = 'Events_NewLogEntries',
+    ReceiveNewJobs = 'Events_ReceiveNewJobs',
     Other = 'Other',
 }
 
@@ -105,33 +118,44 @@ export enum ActionType {
 export type Action =
   | {type: ActionType.SetAnalysisLast30Days }
   | {type: ActionType.SetAnalysisMonth, month: Date }
-  | {type: ActionType.LoadRecentEvents, now: Date, pledge: ConsumingPledge<ReadonlyArray<Readonly<api.ILogEntry>>>}
+  | {type: ActionType.LoadRecentLogEntries, now: Date, pledge: ConsumingPledge<ReadonlyArray<Readonly<api.ILogEntry>>>}
+  | {type: ActionType.LoadRecentJobHistory, now: Date, pledge: ConsumingPledge<api.IHistoricData>}
   | {
       type: ActionType.LoadAnalysisSpecificMonth,
       month: Date,
       pledge: ConsumingPledge<ReadonlyArray<Readonly<api.ILogEntry>>>
     }
-  | {type: ActionType.ReceiveNewEvents, now: Date, events: ReadonlyArray<Readonly<api.ILogEntry>>}
+  | {type: ActionType.ReceiveNewLogEntries, now: Date, events: ReadonlyArray<Readonly<api.ILogEntry>>}
+  | {type: ActionType.ReceiveNewJobs, now: Date, jobs: Readonly<api.IHistoricData>}
   | {type: ActionType.SetSystemHours, hours: number}
   | {type: ActionType.Other}
   ;
 
 export function loadLast30Days() /*: Action<ActionUse.CreatingAction> */ {
-    var client = new api.LogClient();
+    var logClient = new api.LogClient();
+    var jobClient = new api.JobsClient();
     var now = new Date();
     var thirtyDaysAgo = addDays(now, -30);
-    return {
-        type: ActionType.LoadRecentEvents,
-        now: now,
-        pledge: client.get(thirtyDaysAgo, now)
-    };
+    return [
+        {
+            type: ActionType.LoadRecentLogEntries,
+            now: now,
+            pledge: logClient.get(thirtyDaysAgo, now)
+        },
+        {
+            type: ActionType.LoadRecentJobHistory,
+            now: now,
+            pledge: jobClient.history(thirtyDaysAgo, now)
+
+        }
+    ];
 }
 
-export function refreshEvents(lastCounter: number) {
+export function refreshLogEntries(lastCounter: number) {
     var client = new api.LogClient();
     var now = new Date();
     return {
-        type: ActionType.LoadRecentEvents,
+        type: ActionType.LoadRecentLogEntries,
         now: now,
         pledge: client.recent(lastCounter)
     };
@@ -139,7 +163,20 @@ export function refreshEvents(lastCounter: number) {
 
 export function receiveNewEvents(events: ReadonlyArray<Readonly<api.ILogEntry>>): Action {
     return {
-        type: ActionType.ReceiveNewEvents, now: new Date(), events
+        type: ActionType.ReceiveNewLogEntries, now: new Date(), events
+    };
+}
+
+export function receiveNewJobs(newJobs: Readonly<api.INewJobs>): Action {
+    const jobs: {[key: string]: api.JobPlan} = {};
+    newJobs.jobs.forEach(j => {
+        jobs[j.unique] = j;
+    });
+    return {
+        type: ActionType.ReceiveNewJobs, now: new Date(), jobs: {
+            jobs: jobs,
+            stationUse: newJobs.stationUse
+        }
     };
 }
 
@@ -164,7 +201,7 @@ export function setAnalysisMonth(month: Date) {
     };
 }
 
-function safeAssign<T, R extends T>(o: T, n: R): T {
+function safeAssign<T extends R, R>(o: T, n: R): T {
     let allMatch: boolean = true;
     for (let k of Object.keys(n)) {
         // tslint:disable-next-line:no-any
@@ -180,10 +217,10 @@ function safeAssign<T, R extends T>(o: T, n: R): T {
     }
 }
 
-function processRecentEvents(now: Date, evts: Iterable<api.ILogEntry>, s: Last30Days): Last30Days {
+function processRecentLogEntries(now: Date, evts: Iterable<api.ILogEntry>, s: Last30Days): Last30Days {
     var thirtyDaysAgo = addDays(now, -30);
-    let lastCounter = s.latest_counter;
-    let lastDate = s.latest_event;
+    let lastCounter = s.latest_log_counter;
+    let lastDate = s.latest_log_entry;
     let lastNewEvent = im.Seq(evts).maxBy(e => e.counter);
     if (lastNewEvent !== undefined) {
         if (lastCounter === undefined || lastCounter < lastNewEvent.counter) {
@@ -194,8 +231,8 @@ function processRecentEvents(now: Date, evts: Iterable<api.ILogEntry>, s: Last30
     return safeAssign(
         s,
         {
-            latest_counter: lastCounter,
-            latest_event: lastDate,
+            latest_log_counter: lastCounter,
+            latest_log_entry: lastDate,
             oee: oee.process_events(now, evts, s.oee),
             cycles: cycles.process_events(
                 {type: cycles.ExpireOldDataType.ExpireEarlierThan, d: thirtyDaysAgo},
@@ -203,6 +240,10 @@ function processRecentEvents(now: Date, evts: Iterable<api.ILogEntry>, s: Last30
                 s.cycles),
             mat_summary: matsummary.process_events(now, evts, s.mat_summary)
         });
+}
+
+function processRecentJobs(now: Date, jobs: Readonly<api.IHistoricData>, s: Last30Days): Last30Days {
+    return s;
 }
 
 function processSpecificMonth(evts: Iterable<api.ILogEntry>, s: AnalysisMonth): AnalysisMonth {
@@ -220,23 +261,42 @@ function processSpecificMonth(evts: Iterable<api.ILogEntry>, s: AnalysisMonth): 
 export function reducer(s: State, a: Action): State {
     if (s === undefined) { return initial; }
     switch (a.type) {
-        case ActionType.LoadRecentEvents:
+        case ActionType.LoadRecentLogEntries:
             switch (a.pledge.status) {
                 case PledgeStatus.Starting:
-                    return {...s, loading_events: true, loading_error: undefined};
+                    return {...s, loading_log_entries: true, loading_error: undefined};
                 case PledgeStatus.Completed:
                     return {...s,
-                        last30: processRecentEvents(a.now, a.pledge.result, s.last30),
-                        loading_events: false
+                        last30: processRecentLogEntries(a.now, a.pledge.result, s.last30),
+                        loading_log_entries: false
                     };
                 case PledgeStatus.Error:
-                    return {...s, loading_events: false, loading_error: a.pledge.error};
+                    return {...s, loading_log_entries: false, loading_error: a.pledge.error};
                 default: return s;
             }
 
-        case ActionType.ReceiveNewEvents:
+        case ActionType.ReceiveNewLogEntries:
             return {...s,
-                last30: processRecentEvents(a.now, a.events, s.last30)
+                last30: processRecentLogEntries(a.now, a.events, s.last30)
+            };
+
+        case ActionType.LoadRecentJobHistory:
+            switch (a.pledge.status) {
+                case PledgeStatus.Starting:
+                    return {...s, loading_job_history: true, loading_error: undefined};
+                case PledgeStatus.Completed:
+                    return {...s,
+                        last30: processRecentJobs(a.now, a.pledge.result, s.last30),
+                        loading_job_history: false
+                    };
+                case PledgeStatus.Error:
+                    return {...s, loading_job_history: false, loading_error: a.pledge.error};
+                default: return s;
+            }
+
+        case ActionType.ReceiveNewJobs:
+            return {...s,
+                last30: processRecentJobs(a.now, a.jobs, s.last30)
             };
 
         case ActionType.SetSystemHours:

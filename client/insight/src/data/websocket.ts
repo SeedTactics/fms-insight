@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import ReconnectingWebSocket from 'reconnecting-websocket';
 import * as redux from 'redux';
 import * as events from './events';
-import { LogEntry } from './api';
+import { LogEntry, NewJobs } from './api';
 
 export interface State {
   websocket_reconnecting: boolean;
@@ -81,16 +81,22 @@ export function openWebsocket(d: (a: redux.AnyAction) => void, getEvtState: () =
     d({type: ActionType.WebsocketOpen});
 
     const st = getEvtState();
-    if (st.last30.latest_counter !== undefined) {
-      d(events.refreshEvents(st.last30.latest_counter));
+    if (st.last30.latest_log_counter !== undefined) {
+      d(events.refreshLogEntries(st.last30.latest_log_counter));
     }
   };
   websocket.onclose = () => {
     d({type: ActionType.WebsocketClose});
   };
   websocket.onmessage = (evt) => {
-    const entry = LogEntry.fromJS(JSON.parse(evt.data));
-    d(events.receiveNewEvents([entry]));
+    var json = JSON.parse(evt.data);
+    if (json.LogEntry) {
+      const entry = LogEntry.fromJS(json.LogEntry);
+      d(events.receiveNewEvents([entry]));
+    } else if (json.NewJobs) {
+      const newJobs = NewJobs.fromJS(json.NewJobs);
+      d(events.receiveNewJobs(newJobs));
+    }
   };
   // websocket.open();
 }

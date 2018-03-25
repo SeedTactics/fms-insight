@@ -59,14 +59,14 @@ it('responds to loading', () => {
   let st = events.reducer(
     {...events.initial, loading_error: new Error('hello')},
     {
-      type: events.ActionType.LoadRecentEvents,
+      type: events.ActionType.LoadRecentLogEntries,
       now: new Date(),
       pledge: {
         status: PledgeStatus.Starting
       }
     }
   );
-  expect(st.loading_events).toBe(true);
+  expect(st.loading_log_entries).toBe(true);
   expect(st.loading_error).toBeUndefined();
   expect(st.last30).toBe(events.initial.last30);
   expect(st.selected_month).toBe(events.initial.selected_month);
@@ -74,9 +74,9 @@ it('responds to loading', () => {
 
 it('responds to error', () => {
   let st = events.reducer(
-    {...events.initial, loading_events: true},
+    {...events.initial, loading_log_entries: true},
     {
-      type: events.ActionType.LoadRecentEvents,
+      type: events.ActionType.LoadRecentLogEntries,
       now: new Date(),
       pledge: {
         status: PledgeStatus.Error,
@@ -84,7 +84,7 @@ it('responds to error', () => {
       }
     }
   );
-  expect(st.loading_events).toBe(false);
+  expect(st.loading_log_entries).toBe(false);
   expect(st.loading_error).toEqual(new Error('hello'));
   expect(st.last30).toBe(events.initial.last30);
   expect(st.selected_month).toBe(events.initial.selected_month);
@@ -102,7 +102,7 @@ function procNewEvents(evtsToAction: (now: Date, newEvts: ReadonlyArray<ILogEntr
   let st = events.reducer(
     events.initial,
     {
-      type: events.ActionType.LoadRecentEvents,
+      type: events.ActionType.LoadRecentLogEntries,
       now: now,
       pledge: {
         status: PledgeStatus.Completed,
@@ -128,7 +128,7 @@ function procNewEvents(evtsToAction: (now: Date, newEvts: ReadonlyArray<ILogEntr
   let newSt = events.reducer(
     st,
     {
-      type: events.ActionType.LoadRecentEvents,
+      type: events.ActionType.LoadRecentLogEntries,
       now: sixDays,
       pledge: {
         status: PledgeStatus.Completed,
@@ -142,7 +142,7 @@ function procNewEvents(evtsToAction: (now: Date, newEvts: ReadonlyArray<ILogEntr
 it('processes new log events into last30', () => {
   procNewEvents((now, evts) =>
     ({
-      type: events.ActionType.LoadRecentEvents,
+      type: events.ActionType.LoadRecentLogEntries,
       now,
       pledge: {
         status: PledgeStatus.Completed,
@@ -154,7 +154,7 @@ it('processes new log events into last30', () => {
 it("refreshes new events into last30", () => {
   procNewEvents((now, evts) =>
     ({
-      type: events.ActionType.ReceiveNewEvents,
+      type: events.ActionType.ReceiveNewLogEntries,
       now,
       events: evts
     }));
@@ -239,7 +239,7 @@ it("bins actual cycles by day", () => {
   const st = events.reducer(
     events.initial,
     {
-      type: events.ActionType.LoadRecentEvents,
+      type: events.ActionType.LoadRecentLogEntries,
       now: addDays(now, 1),
       pledge: {
         status: PledgeStatus.Completed,

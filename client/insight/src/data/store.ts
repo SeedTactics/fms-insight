@@ -43,6 +43,7 @@ import { pledgeMiddleware } from './pledge';
 import { connectRoutes, LocationState } from 'redux-first-router';
 import createHistory from 'history/createBrowserHistory';
 import * as queryString from 'query-string';
+import { Dispatch } from 'react-redux';
 
 const history = createHistory();
 const router = connectRoutes(
@@ -69,6 +70,15 @@ export interface Store {
   readonly location: LocationState;
 }
 
+// tslint:disable-next-line:no-any
+const arrayMiddleware = ({dispatch}: {dispatch: Dispatch<any>}) => (next: Dispatch<any>) => (action: any) => {
+  if (action instanceof Array) {
+    action.map(dispatch);
+  } else {
+    return next(action);
+  }
+};
+
 const store = createStore<Store>(
   combineReducers<Store>(
     {
@@ -85,6 +95,7 @@ const store = createStore<Store>(
   compose(
     router.enhancer,
     applyMiddleware(
+        arrayMiddleware,
         pledgeMiddleware,
         router.middleware
     ),

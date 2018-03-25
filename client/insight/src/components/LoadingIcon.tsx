@@ -55,7 +55,8 @@ export function LoadingIcon({loading}: Props) {
 
 export default connect(
   (st: Store) => ({
-    loading: st.Events.loading_events
+    loading: st.Events.loading_log_entries
+          || st.Events.loading_job_history
           || st.Current.loading
           || st.Events.loading_analysis_month
           || st.Websocket.websocket_reconnecting
