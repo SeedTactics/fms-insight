@@ -47,7 +47,9 @@ import { MaterialSummary } from '../../data/events';
 import { Store } from '../../data/store';
 import { MatSummary, MaterialDetailTitle, MaterialDetailContent } from './Material';
 import * as matDetails from '../../data/material-details';
+import * as guiState from '../../data/gui-state';
 import { StationMonitorType } from '../../data/routes';
+import SelectWorkorderDialog from './SelectWorkorder';
 
 const matListStyles = withStyles(theme => ({
   summaryItem: {
@@ -97,6 +99,9 @@ export interface WashProps extends WashListProps {
 
   // tslint:disable-next-line:no-any
   readonly completeWash: (mat: matDetails.MaterialDetail) => any;
+
+  // tslint:disable-next-line:no-any
+  readonly openSelectWorkorder: (mat: matDetails.MaterialDetail) => any;
 }
 
 const inspStyles = withStyles(() => ({
@@ -138,6 +143,12 @@ export const Wash = inspStyles<WashProps>(props => {
     }
 
     props.completeWash(props.display_material);
+  }
+  function openAssignWorkorder() {
+    if (!props.display_material) {
+      return;
+    }
+    props.openSelectWorkorder(props.display_material);
   }
 
   return (
@@ -182,12 +193,20 @@ export const Wash = inspStyles<WashProps>(props => {
                   <Button color="primary" onClick={markWashComplete}>
                     Mark Wash Complete
                   </Button>
+                  <Button color="primary" onClick={openAssignWorkorder}>
+                    {
+                      props.display_material.workorderId ?
+                        "Change Workorder"
+                        : "Assign Workorder"
+                    }
+                  </Button>
                 </CardActions>
                 : undefined
             }
           </Card>
         </Grid>
       </Grid>
+      <SelectWorkorderDialog station={StationMonitorType.Wash}/>
     </main>
   );
 });
@@ -213,5 +232,12 @@ export default connect(
   {
     openMat: matDetails.openWashMaterial,
     completeWash: matDetails.completeWash,
+    openSelectWorkorder: (mat: matDetails.MaterialDetail) => [
+      {
+        type: guiState.ActionType.SetWorkorderDialogOpen,
+        open: true
+      },
+      matDetails.loadWorkorders(mat, StationMonitorType.Wash),
+    ]
   }
 )(Wash);

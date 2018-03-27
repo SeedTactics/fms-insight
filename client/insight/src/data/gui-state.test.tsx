@@ -63,3 +63,19 @@ it("sets the station oee heatmap type", () => {
   });
   expect(s.station_oee_heatmap_type).toEqual(gui.PlannedOrActual.PlannedMinusActual);
 });
+
+it("opens the workorder dialog", () => {
+  let s = gui.reducer(gui.initial, {
+    type: gui.ActionType.SetWorkorderDialogOpen,
+    open: true
+  });
+  expect(s.workorder_dialog_open).toBe(true);
+});
+
+it("closes the workorder dialog", () => {
+  let s = gui.reducer(gui.initial, {
+    type: gui.ActionType.SetWorkorderDialogOpen,
+    open: false
+  });
+  expect(s.workorder_dialog_open).toBe(false);
+});

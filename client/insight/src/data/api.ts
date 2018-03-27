@@ -882,13 +882,12 @@ export class LogClient {
     }
 
     getWorkorders(workorderIds: string[]): Promise<WorkorderSummary[]> {
-        let url_ = this.baseUrl + "/api/v1/log/workorders";
+        let url_ = this.baseUrl + "/api/v1/log/workorders?";
+        if (workorderIds !== undefined)
+            workorderIds && workorderIds.forEach(item => { url_ += "workorderIds=" + encodeURIComponent("" + item) + "&"; });
         url_ = url_.replace(/[?&]$/, "");
 
-        const content_ = JSON.stringify(workorderIds);
-
         let options_ = <RequestInit>{
-            body: content_,
             method: "GET",
             headers: new Headers({
                 "Content-Type": "application/json",

@@ -106,7 +106,7 @@ namespace MachineWatchApiServer.Controllers
         }
 
         [HttpGet("workorders")]
-        public List<WorkorderSummary> GetWorkorders([FromBody] IEnumerable<string> workorderIds)
+        public List<WorkorderSummary> GetWorkorders([FromQuery] IEnumerable<string> workorderIds)
         {
             return _server.GetWorkorderSummaries(workorderIds);
         }

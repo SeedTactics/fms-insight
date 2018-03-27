@@ -3457,5 +3457,42 @@
             "StationNum": 2,
             "UtilizationTime": "PT5M"
         }
+    ],
+    "CurrentUnfilledWorkorders": [
+        {
+            "WorkorderId": "work111",
+            "Part": "part1",
+            "Quantity": 10,
+            "DueDate": "2018-03-02T00:00:00Z",
+            "Priority": 10
+        },
+        {
+            "WorkorderId": "work222",
+            "Part": "part1",
+            "Quantity": 8,
+            "DueDate": "2018-03-12T00:00:00Z",
+            "Priority": 10
+        },
+        {
+            "WorkorderId": "work333",
+            "Part": "part1",
+            "Quantity": 4,
+            "DueDate": "2018-04-17T00:00:00Z",
+            "Priority": 10
+        },
+        {
+            "WorkorderId": "work444",
+            "Part": "part2",
+            "Quantity": 14,
+            "DueDate": "2018-05-02T00:00:00Z",
+            "Priority": 10
+        },
+        {
+            "WorkorderId": "work555",
+            "Part": "part2",
+            "Quantity": 19,
+            "DueDate": "2018-06-29T00:00:00Z",
+            "Priority": 10
+        }
     ]
 }

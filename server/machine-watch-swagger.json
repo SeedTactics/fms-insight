@@ -651,16 +651,14 @@
         "operationId": "log_GetWorkorders",
         "parameters": [
           {
+            "type": "array",
             "name": "workorderIds",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            "x-nullable": true
+            "in": "query",
+            "x-nullable": true,
+            "collectionFormat": "multi",
+            "items": {
+              "type": "string"
+            }
           }
         ],
         "responses": {

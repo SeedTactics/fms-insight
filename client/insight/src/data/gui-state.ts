@@ -41,6 +41,7 @@ export enum ActionType {
   SetSelectedStationCyclePart = 'Gui_SetSelectedStationCyclePart',
   SetSelectedPalletCycle = 'Gui_SetSelectedPalletCycle',
   SetStationOeeHeatmapType = 'Gui_SetStationOeeHeatmapType',
+  SetWorkorderDialogOpen = 'Gui_SetWorkorderDialog',
   Other = 'Other',
 }
 
@@ -48,6 +49,7 @@ export type Action =
   | { type: ActionType.SetSelectedStationCyclePart, part: string }
   | { type: ActionType.SetSelectedPalletCycle, pallet: string }
   | { type: ActionType.SetStationOeeHeatmapType, ty: PlannedOrActual }
+  | { type: ActionType.SetWorkorderDialogOpen, open: boolean }
   | { type: ActionType.Other }
   ;
 
@@ -55,10 +57,12 @@ export interface State {
   readonly station_cycle_selected_part?: string;
   readonly pallet_cycle_selected?: string;
   readonly station_oee_heatmap_type: PlannedOrActual;
+  readonly workorder_dialog_open: boolean;
 }
 
 export const initial: State = {
-  station_oee_heatmap_type: PlannedOrActual.Actual
+  station_oee_heatmap_type: PlannedOrActual.Actual,
+  workorder_dialog_open: false,
 };
 
 export function reducer(s: State, a: Action): State {
@@ -70,6 +74,8 @@ export function reducer(s: State, a: Action): State {
       return {...s, pallet_cycle_selected: a.pallet };
     case ActionType.SetStationOeeHeatmapType:
       return {...s, station_oee_heatmap_type: a.ty };
+    case ActionType.SetWorkorderDialogOpen:
+      return {...s, workorder_dialog_open: a.open };
     default:
       return s;
   }
