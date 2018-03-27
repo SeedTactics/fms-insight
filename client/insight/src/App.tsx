@@ -111,7 +111,7 @@ function Header(p: HeaderProps) {
       <AppBar position="static">
         <Toolbar>
           <Typography variant="title">Insight</Typography>
-          <div style={{'flex-grow': '1'}}/>
+          <div style={{'flexGrow': 1}}/>
           <LoadingIcon/>
         </Toolbar>
         {tabs(true)}

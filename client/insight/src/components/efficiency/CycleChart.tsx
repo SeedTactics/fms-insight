@@ -69,19 +69,34 @@ interface CycleChartState {
   readonly disabled_series: { [key: string]: boolean };
 }
 
+function memoize<A, R>(f: (x: A) => R): ((x: A) => R) {
+  let memo = new Map<A, R>();
+  return x => {
+    let ret = memo.get(x);
+    if (!ret) {
+      ret = f(x);
+      memo.set(x, ret);
+    }
+    return ret;
+  };
+}
+
 export class CycleChart extends React.PureComponent<CycleChartProps, CycleChartState> {
   state = {
     tooltip: undefined,
     disabled_series: {}
   } as CycleChartState;
 
-  setClosestPoint = (series: string) => (point: CycleChartPoint) => {
+  // memoize on the series name, since the function from CycleChartPoint => void is
+  // passed as a prop to the chart, and reusing the same function keeps the props
+  // unchanged so PureComponent can avoid a re-render
+  setTooltip = memoize((series: string) => (point: CycleChartPoint) => {
     if (this.state.tooltip === undefined) {
       this.setState({tooltip: {...point, series: series}});
     } else {
       this.setState({tooltip: undefined});
     }
-  }
+  });
 
   clearTooltip = () => {
     this.setState({tooltip: undefined});
@@ -136,7 +151,7 @@ export class CycleChart extends React.PureComponent<CycleChartProps, CycleChartS
               <MarkSeries
                 key={series}
                 data={points}
-                onValueClick={this.state.disabled_series[series] ? undefined : this.setClosestPoint(series)}
+                onValueClick={this.state.disabled_series[series] ? undefined : this.setTooltip(series)}
                 {...(this.state.disabled_series[series] ? {opacity: 0.2} : null)}
               />
             ).toIndexedSeq()

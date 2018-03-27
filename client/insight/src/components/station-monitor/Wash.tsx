@@ -116,7 +116,7 @@ const inspStyles = withStyles(() => ({
     'flex-direction': 'column' as 'column',
   },
   stretchCardContent: {
-    'flex-grow': 1,
+    'flexGrow': 1,
     'position': 'relative' as 'relative',
   },
   stretchCardContentContainer: {
