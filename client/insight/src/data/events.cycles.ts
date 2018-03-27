@@ -127,7 +127,13 @@ export function process_events(
     }
 
     var newPartCycles = evtsSeq
-      .filter(c => !c.startofcycle)
+      .filter(
+        c => !c.startofcycle
+        && (
+             c.type === api.LogType.LoadUnloadCycle
+          || c.type === api.LogType.MachineCycle
+        )
+      )
       .flatMap(c => c.material.map(m => ({cycle: c, mat: m})))
       .groupBy(e => part_and_proc(e.mat))
       .map(cyclesForPart =>
