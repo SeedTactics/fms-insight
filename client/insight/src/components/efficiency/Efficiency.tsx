@@ -46,6 +46,10 @@ import * as events from '../../data/events';
 import { Store } from '../../data/store';
 import * as guiState from '../../data/gui-state';
 
+// --------------------------------------------------------------------------------
+// Station Cycles
+// --------------------------------------------------------------------------------
+
 export interface PartStationCycleChartProps {
   readonly points: im.Map<string, im.Map<string, ReadonlyArray<events.CycleData>>>;
   readonly default_date_range?: Date[];
@@ -90,6 +94,10 @@ const ConnectedPartStationCycleChart = connect(
       ({ type: guiState.ActionType.SetSelectedStationCyclePart, part: s})
   }
 )(PartStationCycleChart);
+
+// --------------------------------------------------------------------------------
+// Pallet Cycles
+// --------------------------------------------------------------------------------
 
 export interface PalletCycleChartProps {
   readonly points: im.Map<string, ReadonlyArray<events.CycleData>>;
@@ -137,6 +145,10 @@ const ConnectedPalletCycleChart = connect(
     setSelected: (p: string) => ({ type: guiState.ActionType.SetSelectedPalletCycle, pallet: p })
   }
 )(PalletCycleChart);
+
+// --------------------------------------------------------------------------------
+// Oee Heatmap
+// --------------------------------------------------------------------------------
 
 export interface StationOeeHeatmapProps {
   readonly planned_or_actual: guiState.PlannedOrActual;
@@ -213,6 +225,10 @@ const ConnectedStationOeeHeatmap = connect(
     })
   }
 )(StationOeeHeatmap);
+
+// --------------------------------------------------------------------------------
+// Efficiency
+// --------------------------------------------------------------------------------
 
 export default function Efficiency() {
   return (
