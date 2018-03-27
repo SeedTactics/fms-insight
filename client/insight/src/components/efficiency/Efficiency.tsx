@@ -38,6 +38,8 @@ import BasketIcon from 'material-ui-icons/ShoppingBasket';
 import { addMonths, addDays } from 'date-fns';
 import { createSelector } from 'reselect';
 import * as numeral from 'numeral';
+import ExtensionIcon from 'material-ui-icons/Extension';
+import HourglassIcon from 'material-ui-icons/HourglassFull';
 
 import AnalysisSelectToolbar from '../AnalysisSelectToolbar';
 import { SelectableCycleChart } from './CycleChart';
@@ -163,7 +165,7 @@ export function StationOeeHeatmap(props: StationOeeHeatmapProps) {
     <SelectableHeatChart
       card_label="Station OEE"
       label_title="OEE"
-      icon={<BasketIcon style={{color: "#6D4C41"}}/>}
+      icon={<HourglassIcon style={{color: "#6D4C41"}}/>}
       {...props}
     />
   );
@@ -243,7 +245,7 @@ export function CompletedCountHeatmap(props: StationOeeHeatmapProps) {
     <SelectableHeatChart
       card_label="Completed Parts"
       label_title="Completed"
-      icon={<BasketIcon style={{color: "#6D4C41"}}/>}
+      icon={<ExtensionIcon style={{color: "#6D4C41"}}/>}
       {...props}
     />
   );
