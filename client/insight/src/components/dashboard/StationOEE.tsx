@@ -168,7 +168,7 @@ const tooltipStyle = withStyles(() => ({
   }
 }));
 
-export const StationOEE = tooltipStyle<StationOEEProps>(p => {
+export const StationOEEWithStyles = tooltipStyle<StationOEEProps>(p => {
   let pallet: string = "Empty";
   if (p.pallet !== undefined) {
     pallet = p.pallet.pallet.pallet;
@@ -191,6 +191,14 @@ export const StationOEE = tooltipStyle<StationOEEProps>(p => {
     </Tooltip>
   );
 });
+
+// decorate doesn't work well with classes yet.
+// https://github.com/Microsoft/TypeScript/issues/4881
+export class StationOEE extends React.PureComponent<StationOEEProps> {
+  render() {
+    return <StationOEEWithStyles {...this.props}/>;
+  }
+}
 
 export interface StationHours {
     readonly station: string;

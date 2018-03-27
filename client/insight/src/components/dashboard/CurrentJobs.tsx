@@ -51,6 +51,10 @@ import {
   Hint
 } from 'react-vis';
 
+// --------------------------------------------------------------------------------
+// Data
+// --------------------------------------------------------------------------------
+
 interface DataPoint {
   readonly part: string;
   readonly completed: number;
@@ -79,7 +83,7 @@ function displayJob(job: api.IInProcessJob, proc: number): DataPoint {
   };
 }
 
-interface CompletedDataPoint extends DataPoint {
+export interface CompletedDataPoint extends DataPoint {
   readonly x: number;
   readonly y: number;
 }
@@ -108,9 +112,9 @@ export function jobsToPoints(jobs: ReadonlyArray<Readonly<api.IInProcessJob>>): 
   return {completedData, planData};
 }
 
-const targetMark = () => (
-  <rect x="-2" y="-5" width="4" height="10" fill="black"/>
-);
+// --------------------------------------------------------------------------------
+// Plot
+// --------------------------------------------------------------------------------
 
 interface PlotProps {
   readonly cnt: number;
@@ -150,7 +154,11 @@ function ScrollablePlot({children, cnt}: PlotProps) {
   );
 }
 
-export interface Props extends DataPoints {
+const targetMark = () => (
+  <rect x="-2" y="-5" width="4" height="10" fill="black"/>
+);
+
+export interface CurrentJobsProps extends DataPoints {
   readonly fillViewport: boolean;
 }
 
@@ -167,11 +175,15 @@ function format_hint(j: CompletedDataPoint) {
   ];
 }
 
-export class CurrentJobs extends React.PureComponent<Props, JobState> {
+export class CurrentJobs extends React.PureComponent<CurrentJobsProps, JobState> {
   state: JobState = {};
 
   setHint = (j: CompletedDataPoint) => {
     this.setState({hoveredJob: j});
+  }
+
+  clearHint = () => {
+    this.setState({hoveredJob: undefined});
   }
 
   render() {
@@ -186,9 +198,12 @@ export class CurrentJobs extends React.PureComponent<Props, JobState> {
           data={this.props.completedData}
           color="#795548"
           onValueMouseOver={this.setHint}
-          onValueMouseOut={() => this.setState({hoveredJob: undefined})}
+          onValueMouseOut={this.clearHint}
         />
-        <CustomSVGSeries data={this.props.planData} customComponent={targetMark}/>
+        <CustomSVGSeries
+          data={this.props.planData}
+          customComponent={targetMark}
+        />
         {
           this.state.hoveredJob === undefined ? undefined :
             <Hint value={this.state.hoveredJob} format={format_hint}/>
