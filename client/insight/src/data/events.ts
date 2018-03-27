@@ -40,7 +40,7 @@ import * as cycles from './events.cycles';
 import * as matsummary from './events.matsummary';
 
 export { OeeState, StationInUse } from './events.oee';
-export { CycleState, CycleData, binCyclesByDay } from './events.cycles';
+export { CycleState, CycleData, binCyclesByDayAndStat, binCyclesByDayAndPart } from './events.cycles';
 export { MaterialSummary } from './events.matsummary';
 
 export enum AnalysisPeriod {

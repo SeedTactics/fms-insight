@@ -166,7 +166,7 @@ exports[`displays station hours: station oee table 1`] = `
     sm={6}
     xs={12}
   >
-    <WithStyles(Component)
+    <StationOEE
       oee={0}
       pallet={
         Object {
@@ -195,7 +195,7 @@ exports[`displays station hours: station oee table 1`] = `
     sm={6}
     xs={12}
   >
-    <WithStyles(Component)
+    <StationOEE
       oee={0.4}
       station="abc #1"
     />
@@ -208,7 +208,7 @@ exports[`displays station hours: station oee table 1`] = `
     sm={6}
     xs={12}
   >
-    <WithStyles(Component)
+    <StationOEE
       oee={0.03}
       station="zzz #1"
     />

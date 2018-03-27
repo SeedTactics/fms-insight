@@ -302,10 +302,17 @@ it("bins actual cycles by day", () => {
       }
     });
 
-  const byDay = events.binCyclesByDay(
+  const byDayAndStat = events.binCyclesByDayAndStat(
     st.last30.cycles.by_part_then_stat,
     c => duration(c.active).asMinutes()
   );
 
-  expect(byDay).toMatchSnapshot("cycles binned by day and station");
+  expect(byDayAndStat).toMatchSnapshot("cycles binned by day and station");
+
+  const byDayAndPart = events.binCyclesByDayAndPart(
+    st.last30.cycles.by_part_then_stat,
+    c => c.completed ? 1 : 0
+  );
+
+  expect(byDayAndPart).toMatchSnapshot("cycles binned by day and part");
 });

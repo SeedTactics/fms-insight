@@ -172,7 +172,7 @@ export function StationOeeHeatmap(props: StationOeeHeatmapProps) {
 export const stationOeeActualPointsSelector = createSelector(
   (cycles: events.CycleState) => cycles.by_part_then_stat,
   byPartThenStat => {
-    let pts = events.binCyclesByDay(byPartThenStat, c => c.active);
+    let pts = events.binCyclesByDayAndStat(byPartThenStat, c => c.active);
     return pts
       .toSeq()
       .map((val, dayAndStat) => {
@@ -227,6 +227,85 @@ const ConnectedStationOeeHeatmap = connect(
 )(StationOeeHeatmap);
 
 // --------------------------------------------------------------------------------
+// Completed Heatmap
+// --------------------------------------------------------------------------------
+
+export interface CompletedCountHeatmapProps {
+  readonly planned_or_actual: guiState.PlannedOrActual;
+  readonly setType: (p: guiState.PlannedOrActual) => void;
+  readonly actual_points: ReadonlyArray<HeatChartPoint>;
+  readonly planned_points: ReadonlyArray<HeatChartPoint>;
+  readonly planned_minus_actual_points: ReadonlyArray<HeatChartPoint>;
+}
+
+export function CompletedCountHeatmap(props: StationOeeHeatmapProps) {
+  return (
+    <SelectableHeatChart
+      card_label="Completed Parts"
+      label_title="Completed"
+      icon={<BasketIcon style={{color: "#6D4C41"}}/>}
+      {...props}
+    />
+  );
+}
+
+export const completedActualPointsSelector = createSelector(
+  (cycles: events.CycleState) => cycles.by_part_then_stat,
+  byPartThenStat => {
+    let pts = events.binCyclesByDayAndPart(byPartThenStat, c => c.completed ? 1 : 0);
+    return pts
+      .toSeq()
+      .map((val, dayAndStat) => {
+        return {
+          x: dayAndStat.get("day", null),
+          y: dayAndStat.get("part", null),
+          color: val,
+          label: numeral(val).format('0,0')
+        };
+      })
+      .valueSeq()
+      .sortBy(p => p.x)
+      .sortBy(p => p.y, (a, b) => a === b ? 0 : a < b ? 1 : -1) // descending
+      .toArray();
+  }
+);
+
+export function completedPoints(st: Store) {
+  let cycles: events.CycleState;
+  if (st.Events.analysis_period === events.AnalysisPeriod.Last30Days) {
+    cycles = st.Events.last30.cycles;
+  } else {
+    cycles = st.Events.selected_month.cycles;
+  }
+
+  switch (st.Gui.completed_count_heatmap_type) {
+    case guiState.PlannedOrActual.Actual:
+      return completedActualPointsSelector(cycles);
+    case guiState.PlannedOrActual.Planned:
+      return [];
+    case guiState.PlannedOrActual.PlannedMinusActual:
+      return [];
+  }
+}
+
+const ConnectedCompletedCountHeatmap = connect(
+  (st: Store) => {
+    return {
+      planned_or_actual: st.Gui.completed_count_heatmap_type,
+      actual_points: completedPoints(st),
+      planned_points: [],
+      planned_minus_actual_points: [],
+    };
+  },
+  {
+    setType: (p: guiState.PlannedOrActual) => ({
+      type: guiState.ActionType.SetCompletedCountHeatmapType,
+      ty: p
+    })
+  }
+)(CompletedCountHeatmap);
+
+// --------------------------------------------------------------------------------
 // Efficiency
 // --------------------------------------------------------------------------------
 
@@ -241,6 +320,9 @@ export default function Efficiency() {
         </div>
         <div style={{marginTop: '3em'}}>
           <ConnectedStationOeeHeatmap/>
+        </div>
+        <div style={{marginTop: '3em'}}>
+          <ConnectedCompletedCountHeatmap/>
         </div>
       </main>
     </>

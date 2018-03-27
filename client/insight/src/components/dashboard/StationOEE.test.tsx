@@ -126,11 +126,11 @@ it('displays a single station oee', () => {
     ]
   };
 
-  const val = shallow(<StationOEE station="aaa" oee={0.43} pallet={pal}/>).dive();
+  const val = shallow(<StationOEE station="aaa" oee={0.43} pallet={pal}/>).dive().dive();
   expect(val).toMatchSnapshot('station oee gauge');
 });
 
 it('displays a single station without oee', () => {
-  const val = shallow(<StationOEE station="bbb" oee={0.01}/>).dive();
+  const val = shallow(<StationOEE station="bbb" oee={0.01}/>).dive().dive();
   expect(val).toMatchSnapshot('station empty guage');
 });

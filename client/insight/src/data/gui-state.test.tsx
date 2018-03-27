@@ -64,6 +64,14 @@ it("sets the station oee heatmap type", () => {
   expect(s.station_oee_heatmap_type).toEqual(gui.PlannedOrActual.PlannedMinusActual);
 });
 
+it("sets the completed count heatmap type", () => {
+  let s = gui.reducer(gui.initial, {
+    type: gui.ActionType.SetCompletedCountHeatmapType,
+    ty: gui.PlannedOrActual.Planned
+  });
+  expect(s.completed_count_heatmap_type).toEqual(gui.PlannedOrActual.Planned);
+});
+
 it("opens the workorder dialog", () => {
   let s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetWorkorderDialogOpen,

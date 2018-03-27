@@ -191,7 +191,7 @@ export function process_events(
 type DayAndStation = im.Record<{day: Date, station: string}>;
 const mkDayAndStation = im.Record({day: new Date(), station: ""});
 
-export function binCyclesByDay(
+export function binCyclesByDayAndStat(
     byPartThenStat: im.Map<string, im.Map<string, ReadonlyArray<CycleData>>>,
     extractValue: (c: CycleData) => number
   ): im.Map<DayAndStation, number> {
@@ -210,6 +210,33 @@ export function binCyclesByDay(
       .flatMap(x => x)
     ))
     .groupBy(p => new mkDayAndStation({day: p.day, station: p.station}))
+    .map((points, group) =>
+      points.reduce((sum, p) => sum + p.value, 0)
+    )
+    .toMap();
+}
+
+type DayAndPart = im.Record<{day: Date, part: string}>;
+const mkDayAndPart = im.Record({day: new Date(), part: ""});
+
+export function binCyclesByDayAndPart(
+    byPartThenStat: im.Map<string, im.Map<string, ReadonlyArray<CycleData>>>,
+    extractValue: (c: CycleData) => number
+  ): im.Map<DayAndPart, number> {
+  return byPartThenStat.toSeq()
+    .map((byStation, part) =>
+      byStation.valueSeq()
+      .flatMap(points =>
+        im.Seq(points).map(point => ({
+          day: startOfDay(point.x),
+          part: part,
+          value: extractValue(point)
+        }))
+      )
+    )
+    .valueSeq()
+    .flatMap(x => x)
+    .groupBy(p => new mkDayAndPart({day: p.day, part: p.part}))
     .map((points, group) =>
       points.reduce((sum, p) => sum + p.value, 0)
     )

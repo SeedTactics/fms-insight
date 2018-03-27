@@ -1,5 +1,22 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`bins actual cycles by day: cycles binned by day and part 1`] = `
+Immutable.Map {
+  Immutable.Record {
+    "day": 2018-03-05T06:00:00.000Z,
+    "part": "parts-2",
+  }: 1,
+  Immutable.Record {
+    "day": 2018-03-04T06:00:00.000Z,
+    "part": "part6-4",
+  }: 1,
+  Immutable.Record {
+    "day": 2018-03-04T06:00:00.000Z,
+    "part": "partx-0",
+  }: 1,
+}
+`;
+
 exports[`bins actual cycles by day: cycles binned by day and station 1`] = `
 Immutable.Map {
   Immutable.Record {
