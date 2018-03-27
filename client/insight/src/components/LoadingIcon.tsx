@@ -37,11 +37,7 @@ import { CircularProgress } from 'material-ui/Progress';
 import { Store } from '../data/store';
 import Tooltip from 'material-ui/Tooltip/Tooltip';
 
-export interface Props {
-  loading: boolean;
-}
-
-export function LoadingIcon({loading}: Props) {
+export function LoadingIcon({loading}: {loading: boolean}) {
   if (loading) {
     return (
       <Tooltip title="Loading">

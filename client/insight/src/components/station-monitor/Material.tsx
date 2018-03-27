@@ -66,17 +66,19 @@ function getPosition(el: Element) {
   };
 }*/
 
-export function PartIdenticon({part}: {part: string}) {
-  const iconSize = 50;
-  // tslint:disable-next-line:no-any
-  const icon = (jdenticon as any).toSvg(part, iconSize);
+export class PartIdenticon extends React.PureComponent<{part: string}> {
+  render() {
+    const iconSize = 50;
+    // tslint:disable-next-line:no-any
+    const icon = (jdenticon as any).toSvg(this.props.part, iconSize);
 
-  return (
-    <div
-      style={{width: iconSize, height: iconSize}}
-      dangerouslySetInnerHTML={{__html: icon}}
-    />
-  );
+    return (
+      <div
+        style={{width: iconSize, height: iconSize}}
+        dangerouslySetInnerHTML={{__html: icon}}
+      />
+    );
+  }
 }
 
 function materialAction(mat: Readonly<api.IInProcessMaterial>): string | undefined {
@@ -131,7 +133,7 @@ export interface InProcMaterialProps {
   onOpen: (m: Readonly<api.IInProcessMaterial>) => any;
 }
 
-export const InProcMaterial = matStyles<InProcMaterialProps>(props => {
+const InProcMaterialWithStyles = matStyles<InProcMaterialProps>(props => {
   const action = materialAction(props.mat);
   const inspections = props.mat.signaledInspections.join(", ");
 
@@ -184,6 +186,14 @@ export const InProcMaterial = matStyles<InProcMaterialProps>(props => {
   );
 });
 
+// decorate doesn't work well with classes yet.
+// https://github.com/Microsoft/TypeScript/issues/4881
+export class InProcMaterial extends React.PureComponent<InProcMaterialProps> {
+  render() {
+    return <InProcMaterialWithStyles {...this.props}/>;
+  }
+}
+
 export interface MaterialSummaryProps {
   readonly mat: Readonly<MaterialSummary>; // TODO: deep readonly
   readonly checkInspectionType?: string;
@@ -192,7 +202,7 @@ export interface MaterialSummaryProps {
   onOpen: (m: Readonly<MaterialSummary>) => any;
 }
 
-export const MatSummary = matStyles<MaterialSummaryProps>(props => {
+const MatSummaryWithStyles = matStyles<MaterialSummaryProps>(props => {
   let showInspCheckmark: boolean;
   if (props.checkInspectionType === undefined) {
     showInspCheckmark = false;
@@ -274,55 +284,68 @@ export const MatSummary = matStyles<MaterialSummaryProps>(props => {
   );
 });
 
-export function MaterialDetailTitle({partName, serial}: {partName: string, serial?: string}) {
-  return (
-    <div style={{display: 'flex', textAlign: 'left'}}>
-      <PartIdenticon part={partName}/>
-      <div style={{marginLeft: '8px', flexGrow: 1}}>
-        <Typography variant="title">
-          {partName + (serial === undefined ? "" : " - " + serial)}
-        </Typography>
+// decorate doesn't work well with classes yet.
+// https://github.com/Microsoft/TypeScript/issues/4881
+export class MatSummary extends React.PureComponent<MaterialSummaryProps> {
+  render() {
+    return <MatSummaryWithStyles {...this.props}/>;
+  }
+}
+
+export class MaterialDetailTitle extends React.PureComponent<{partName: string, serial?: string}> {
+  render () {
+    return (
+      <div style={{display: 'flex', textAlign: 'left'}}>
+        <PartIdenticon part={this.props.partName}/>
+        <div style={{marginLeft: '8px', flexGrow: 1}}>
+          <Typography variant="title">
+            {this.props.partName + (this.props.serial === undefined ? "" : " - " + this.props.serial)}
+          </Typography>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 }
 
 export interface MaterialDetailProps {
   readonly mat: matDetails.MaterialDetail;
 }
 
-export function MaterialDetailContent(props: MaterialDetailProps) {
-  function colorForInspType(type: string): string {
-    if (props.mat.completedInspections && props.mat.completedInspections.indexOf(type) >= 0) {
-      return "black";
-    } else {
-      return "red";
+export class MaterialDetailContent extends React.PureComponent<MaterialDetailProps> {
+  render () {
+    const mat = this.props.mat;
+    function colorForInspType(type: string): string {
+      if (mat.completedInspections && mat.completedInspections.indexOf(type) >= 0) {
+        return "black";
+      } else {
+        return "red";
+      }
     }
+    return (
+      <>
+        <div style={{marginLeft: '1em'}}>
+          <div>
+            <small>Workorder: {mat.workorderId || "none"}</small>
+          </div>
+          <div>
+            <small>Inspections:</small>
+              {
+                mat.signaledInspections.length === 0
+                  ? <small>None</small>
+                  :
+                  mat.signaledInspections.map((type, i) => (
+                    <span key={i}>
+                      <small>{i === 0 ? "" : ", "}</small>
+                      <small style={{color: colorForInspType(type)}}>
+                        {type}
+                      </small>
+                    </span>
+                  ))
+              }
+          </div>
+        </div>
+        {mat.loading_events ? <CircularProgress color="secondary"/> : <LogEntries entries={mat.events}/>}
+      </>
+    );
   }
-  return (
-    <>
-      <div style={{marginLeft: '1em'}}>
-        <div>
-          <small>Workorder: {props.mat.workorderId || "none"}</small>
-        </div>
-        <div>
-          <small>Inspections:</small>
-            {
-              props.mat.signaledInspections.length === 0
-                ? <small>None</small>
-                :
-                props.mat.signaledInspections.map((type, i) => (
-                  <span key={i}>
-                    <small>{i === 0 ? "" : ", "}</small>
-                    <small style={{color: colorForInspType(type)}}>
-                      {type}
-                    </small>
-                  </span>
-                ))
-            }
-        </div>
-      </div>
-      {props.mat.loading_events ? <CircularProgress color="secondary"/> : <LogEntries entries={props.mat.events}/>}
-    </>
-  );
 }

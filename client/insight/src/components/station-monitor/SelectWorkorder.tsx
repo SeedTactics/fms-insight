@@ -73,8 +73,7 @@ function WorkorderIcon({work}: {work: matDetails.WorkorderPlanAndSummary}) {
 }
 
 export interface SelectWorkorderProps {
-  readonly open: boolean;
-  readonly mats: {[key in routes.StationMonitorType]: matDetails.MaterialDetail | null };
+  readonly mats: {[key in routes.StationMonitorType]: matDetails.MaterialDetail | null } | null;
   readonly station: routes.StationMonitorType;
 
   // tslint:disable-next-line:no-any
@@ -88,51 +87,55 @@ export interface SelectWorkorderProps {
 export function SelectWorkorderDialog(props: SelectWorkorderProps) {
   let body: JSX.Element | undefined;
 
-  const mat = props.mats[props.station];
-  if (mat === null) {
+  if (props.mats === null) {
     body = <p>None</p>;
   } else {
-    const workList = (
-      <List>
-        {mat.workorders.map(w => (
-          <ListItem
-            key={w.plan.workorderId}
-            button
-            onClick={() => props.assignWorkorder(mat, props.station, w.plan.workorderId)}
-          >
-            <ListItemIcon>
-              <WorkorderIcon work={w}/>
-            </ListItemIcon>
-            <ListItemText
-              primary={w.plan.workorderId}
-              secondary={workorderComplete(w)}
-            />
-          </ListItem>
-        ))}
-      </List>
-    );
+    const mat = props.mats[props.station];
+    if (mat === null) {
+      body = <p>None</p>;
+    } else {
+      const workList = (
+        <List>
+          {mat.workorders.map(w => (
+            <ListItem
+              key={w.plan.workorderId}
+              button
+              onClick={() => props.assignWorkorder(mat, props.station, w.plan.workorderId)}
+            >
+              <ListItemIcon>
+                <WorkorderIcon work={w}/>
+              </ListItemIcon>
+              <ListItemText
+                primary={w.plan.workorderId}
+                secondary={workorderComplete(w)}
+              />
+            </ListItem>
+          ))}
+        </List>
+      );
 
-    body = (
-      <>
-        <DialogTitle disableTypography>
-          <MaterialDetailTitle partName={mat.partName} serial={mat.serial}/>
-        </DialogTitle>
-        <DialogContent>
-          {
-            mat.loading_workorders ? <CircularProgress/> : workList
-          }
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={props.onClose} color="primary">
-            Close
-          </Button>
-        </DialogActions>
-      </>
-    );
+      body = (
+        <>
+          <DialogTitle disableTypography>
+            <MaterialDetailTitle partName={mat.partName} serial={mat.serial}/>
+          </DialogTitle>
+          <DialogContent>
+            {
+              mat.loading_workorders ? <CircularProgress/> : workList
+            }
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={props.onClose} color="primary">
+              Close
+            </Button>
+          </DialogActions>
+        </>
+      );
+    }
   }
   return (
     <Dialog
-      open={props.open && mat !== null}
+      open={props.mats !== null}
       onClose={props.onClose}
       maxWidth="md"
     >
@@ -143,8 +146,7 @@ export function SelectWorkorderDialog(props: SelectWorkorderProps) {
 
 export default connect(
   (st: Store) => ({
-    mats: st.MaterialDetails.material,
-    open: st.Gui.workorder_dialog_open,
+    mats: st.Gui.workorder_dialog_open ? st.MaterialDetails.material : null,
   }),
   {
     onClose: () => ({

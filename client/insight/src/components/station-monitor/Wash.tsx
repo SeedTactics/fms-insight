@@ -51,46 +51,44 @@ import * as guiState from '../../data/gui-state';
 import { StationMonitorType } from '../../data/routes';
 import SelectWorkorderDialog from './SelectWorkorder';
 
-const matListStyles = withStyles(theme => ({
-  summaryItem: {
-    paddingTop: 6,
-    paddingBottom: 6,
-  },
-}));
-
 export interface WashListProps {
   readonly recent_completed: ReadonlyArray<MaterialSummary>;
   // tslint:disable-next-line:no-any
   readonly openMat: (mat: MaterialSummary) => any;
 }
 
-export const WashList = matListStyles<WashListProps>(props => {
-  return (
-    <ul style={{listStyle: 'none'}}>
-      {
-        props.recent_completed.map((mat, i) =>
-          <li key={i} className={props.classes.summaryItem}>
-            <div style={{display: 'inline-block'}}>
-              <MatSummary
-                mat={mat}
-                checkWashCompleted
-                onOpen={props.openMat}
-              />
-            </div>
-          </li>
-        )
-      }
-    </ul>
-  );
-});
+export class WashList extends React.PureComponent<WashListProps> {
+  render () {
+    return (
+      <ul style={{listStyle: 'none'}}>
+        {
+          this.props.recent_completed.map((mat, i) =>
+            <li key={i} style={{paddingTop: 6, paddingBottom: 6}}>
+              <div style={{display: 'inline-block'}}>
+                <MatSummary
+                  mat={mat}
+                  checkWashCompleted
+                  onOpen={this.props.openMat}
+                />
+              </div>
+            </li>
+          )
+        }
+      </ul>
+    );
+  }
+}
 
-export function SelectedMaterial({mat}: {mat: matDetails.MaterialDetail}) {
-  return (
-    <>
-      <MaterialDetailTitle partName={mat.partName} serial={mat.serial}/>
-      <MaterialDetailContent mat={mat}/>
-    </>
-  );
+export class SelectedMaterial extends React.PureComponent<{mat: matDetails.MaterialDetail}> {
+  render() {
+    const mat = this.props.mat;
+    return (
+      <>
+        <MaterialDetailTitle partName={mat.partName} serial={mat.serial}/>
+        <MaterialDetailContent mat={mat}/>
+      </>
+    );
+  }
 }
 
 export interface WashProps extends WashListProps {

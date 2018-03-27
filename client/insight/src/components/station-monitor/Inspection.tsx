@@ -49,13 +49,6 @@ import { MatSummary, MaterialDetailTitle, MaterialDetailContent } from './Materi
 import * as matDetails from '../../data/material-details';
 import { StationMonitorType } from '../../data/routes';
 
-const matListStyles = withStyles(theme => ({
-  summaryItem: {
-    paddingTop: 6,
-    paddingBottom: 6,
-  },
-}));
-
 export interface InspectionListProps {
   readonly recent_inspections: ReadonlyArray<MaterialSummary>;
   readonly focusInspectionType: string;
@@ -63,33 +56,38 @@ export interface InspectionListProps {
   readonly openMat: (mat: MaterialSummary) => any;
 }
 
-export const InspectionList = matListStyles<InspectionListProps>(props => {
-  return (
-    <ul style={{listStyle: 'none'}}>
-      {
-        props.recent_inspections.map((mat, i) =>
-          <li key={i} className={props.classes.summaryItem}>
-            <div style={{display: 'inline-block'}}>
-              <MatSummary
-                mat={mat}
-                checkInspectionType={props.focusInspectionType}
-                onOpen={props.openMat}
-              />
-            </div>
-          </li>
-        )
-      }
-    </ul>
-  );
-});
+export class InspectionList extends React.PureComponent<InspectionListProps> {
+  render() {
+    return (
+      <ul style={{listStyle: 'none'}}>
+        {
+          this.props.recent_inspections.map((mat, i) =>
+            <li key={i} style={{paddingTop: 6, paddingBottom: 6}}>
+              <div style={{display: 'inline-block'}}>
+                <MatSummary
+                  mat={mat}
+                  checkInspectionType={this.props.focusInspectionType}
+                  onOpen={this.props.openMat}
+                />
+              </div>
+            </li>
+          )
+        }
+      </ul>
+    );
+  }
+}
 
-export function SelectedMaterial({mat}: {mat: matDetails.MaterialDetail}) {
-  return (
-    <>
-      <MaterialDetailTitle partName={mat.partName} serial={mat.serial}/>
-      <MaterialDetailContent mat={mat}/>
-    </>
-  );
+export class SelectedMaterial extends React.PureComponent<{mat: matDetails.MaterialDetail}> {
+  render() {
+    const mat = this.props.mat;
+    return (
+      <>
+        <MaterialDetailTitle partName={mat.partName} serial={mat.serial}/>
+        <MaterialDetailContent mat={mat}/>
+      </>
+    );
+  }
 }
 
 export interface InspectionProps extends InspectionListProps {

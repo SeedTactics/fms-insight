@@ -82,7 +82,7 @@ export interface MaterialDisplayProps {
   openMat: (m: Readonly<api.IInProcessMaterial>) => any;
 }
 
-export const MaterialDisplay = materialStyle<MaterialDisplayProps>(props => {
+const MaterialDisplayWithStyles = materialStyle<MaterialDisplayProps>(props => {
   return (
     <div className={props.classes.container}>
       <div className={props.classes.labelContainer}>
@@ -103,6 +103,14 @@ export const MaterialDisplay = materialStyle<MaterialDisplayProps>(props => {
     </div>
   );
 });
+
+// decorate doesn't work well with classes yet.
+// https://github.com/Microsoft/TypeScript/issues/4881
+export class MaterialDisplay extends React.PureComponent<MaterialDisplayProps> {
+  render() {
+    return <MaterialDisplayWithStyles {...this.props}/>;
+  }
+}
 
 export interface LoadStationProps {
   readonly fillViewPort: boolean;
