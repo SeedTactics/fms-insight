@@ -61,9 +61,7 @@ it('displays a cycle chart', () => {
 
 it('displays a selectable heat chart with actual points', () => {
   const props: SelectableHeatChartProps = {
-    actual_points: points,
-    planned_points: [],
-    planned_minus_actual_points: [],
+    points: points,
     label_title: "colorlabel",
     card_label: "cardlabel",
     icon: <WorkIcon/>,
@@ -77,9 +75,7 @@ it('displays a selectable heat chart with actual points', () => {
 
 it('displays a selectable heat chart with planned points', () => {
   const props: SelectableHeatChartProps = {
-    planned_points: points,
-    actual_points: [],
-    planned_minus_actual_points: [],
+    points: points,
     label_title: "colorlabel",
     card_label: "cardlabel",
     icon: <WorkIcon/>,
@@ -93,9 +89,7 @@ it('displays a selectable heat chart with planned points', () => {
 
 it('displays a selectable heat chart with planned minus actual points', () => {
   const props: SelectableHeatChartProps = {
-    planned_points: [],
-    actual_points: [],
-    planned_minus_actual_points: points,
+    points: points,
     label_title: "colorlabel",
     card_label: "cardlabel",
     icon: <WorkIcon/>,

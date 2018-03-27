@@ -155,9 +155,7 @@ const ConnectedPalletCycleChart = connect(
 export interface StationOeeHeatmapProps {
   readonly planned_or_actual: guiState.PlannedOrActual;
   readonly setType: (p: guiState.PlannedOrActual) => void;
-  readonly actual_points: ReadonlyArray<HeatChartPoint>;
-  readonly planned_points: ReadonlyArray<HeatChartPoint>;
-  readonly planned_minus_actual_points: ReadonlyArray<HeatChartPoint>;
+  readonly points: ReadonlyArray<HeatChartPoint>;
 }
 
 export function StationOeeHeatmap(props: StationOeeHeatmapProps) {
@@ -193,19 +191,44 @@ export const stationOeeActualPointsSelector = createSelector(
   }
 );
 
+export const stationOeePlannedPointsSelector = createSelector(
+  (sim: events.SimUseState) => sim.station_use,
+  statUse => {
+    let pts = events.binSimStationUseByDayAndStat(statUse.toSeq(), c => c.utilizationTime - c.plannedDownTime);
+    return pts
+      .toSeq()
+      .map((val, dayAndStat) => {
+        const pct = val / (24 * 60);
+        return {
+          x: dayAndStat.get("day", null),
+          y: dayAndStat.get("station", null),
+          color: pct,
+          label: numeral(pct).format('0.0%')
+        };
+      })
+      .valueSeq()
+      .sortBy(p => p.x)
+      .sortBy(p => p.y, (a, b) => a === b ? 0 : a < b ? 1 : -1) // descending
+      .toArray();
+  }
+);
+
 export function stationOeePoints(st: Store) {
   let cycles: events.CycleState;
+  let sim: events.SimUseState;
   if (st.Events.analysis_period === events.AnalysisPeriod.Last30Days) {
     cycles = st.Events.last30.cycles;
+    sim = st.Events.last30.sim_use;
   } else {
     cycles = st.Events.selected_month.cycles;
+    sim = st.Events.selected_month.sim_use;
   }
 
   switch (st.Gui.station_oee_heatmap_type) {
     case guiState.PlannedOrActual.Actual:
       return stationOeeActualPointsSelector(cycles);
     case guiState.PlannedOrActual.Planned:
-      return [];
+      return stationOeePlannedPointsSelector(sim);
     case guiState.PlannedOrActual.PlannedMinusActual:
       return [];
   }
@@ -215,9 +238,7 @@ const ConnectedStationOeeHeatmap = connect(
   (st: Store) => {
     return {
       planned_or_actual: st.Gui.station_oee_heatmap_type,
-      actual_points: stationOeePoints(st),
-      planned_points: [],
-      planned_minus_actual_points: [],
+      points: stationOeePoints(st),
     };
   },
   {
@@ -294,9 +315,7 @@ const ConnectedCompletedCountHeatmap = connect(
   (st: Store) => {
     return {
       planned_or_actual: st.Gui.completed_count_heatmap_type,
-      actual_points: completedPoints(st),
-      planned_points: [],
-      planned_minus_actual_points: [],
+      points: completedPoints(st),
     };
   },
   {

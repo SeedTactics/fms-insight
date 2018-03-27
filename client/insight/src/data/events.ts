@@ -38,10 +38,12 @@ import * as api from './api';
 import * as oee from './events.oee';
 import * as cycles from './events.cycles';
 import * as matsummary from './events.matsummary';
+import * as simuse from './events.simuse';
 
 export { OeeState, StationInUse } from './events.oee';
 export { CycleState, CycleData, binCyclesByDayAndStat, binCyclesByDayAndPart } from './events.cycles';
 export { MaterialSummary } from './events.matsummary';
+export { SimUseState, binSimStationUseByDayAndStat } from './events.simuse';
 
 export enum AnalysisPeriod {
     Last30Days = 'Last_30_Days',
@@ -57,14 +59,17 @@ export interface Last30Days {
     readonly oee: oee.OeeState;
     readonly cycles: cycles.CycleState;
     readonly mat_summary: matsummary.MatSummaryState;
+    readonly sim_use: simuse.SimUseState;
 }
 
 export interface AnalysisMonth {
     readonly cycles: cycles.CycleState;
+    readonly sim_use: simuse.SimUseState;
 }
 
 const emptyAnalysisMonth: AnalysisMonth = {
-    cycles: cycles.initial
+    cycles: cycles.initial,
+    sim_use: simuse.initial,
 };
 
 export interface State {
@@ -96,6 +101,7 @@ export const initial: State = {
         oee: oee.initial,
         cycles: cycles.initial,
         mat_summary: matsummary.initial,
+        sim_use: simuse.initial,
     },
 
     selected_month: emptyAnalysisMonth,
@@ -191,12 +197,20 @@ export function analyzeLast30Days() {
 
 export function analyzeSpecificMonth(month: Date) {
     var client = new api.LogClient();
+    var jobClient = new api.JobsClient();
     var startOfNextMonth = addMonths(month, 1);
-    return {
-        type: ActionType.LoadSpecificMonthLogEntries,
-        month: month,
-        pledge: client.get(month, startOfNextMonth)
-    };
+    return [
+        {
+            type: ActionType.LoadSpecificMonthLogEntries,
+            month: month,
+            pledge: client.get(month, startOfNextMonth)
+        },
+        {
+            type: ActionType.LoadSpecificMonthJobHistory,
+            month: month,
+            pledge: jobClient.history(month, startOfNextMonth)
+        }
+    ];
 }
 
 export function setAnalysisMonth(month: Date) {
@@ -223,7 +237,7 @@ function safeAssign<T extends R, R>(o: T, n: R): T {
 }
 
 function processRecentLogEntries(now: Date, evts: Iterable<api.ILogEntry>, s: Last30Days): Last30Days {
-    var thirtyDaysAgo = addDays(now, -30);
+    const thirtyDaysAgo = addDays(now, -30);
     let lastCounter = s.latest_log_counter;
     let lastDate = s.latest_log_entry;
     let lastNewEvent = im.Seq(evts).maxBy(e => e.counter);
@@ -260,23 +274,37 @@ function processSpecificMonthLogEntries(evts: Iterable<api.ILogEntry>, s: Analys
 }
 
 function processRecentJobs(now: Date, jobs: Readonly<api.IHistoricData>, s: Last30Days): Last30Days {
+    const thirtyDaysAgo = addDays(now, -30);
     let latestSchId = s.latest_scheduleId;
-    let largestJob = im.Seq(jobs.jobs).maxBy(j => j.scheduleId);
+    const largestJob = im.Seq(jobs.jobs).maxBy(j => j.scheduleId);
     if (largestJob !== undefined) {
         if (latestSchId === undefined || (largestJob.scheduleId !== undefined) && latestSchId < largestJob.scheduleId) {
             latestSchId = largestJob.scheduleId;
         }
     }
+
     return safeAssign(
         s,
         {
-            latest_scheduleId: latestSchId
+            latest_scheduleId: latestSchId,
+            sim_use: simuse.process_sim_use(
+                {type: cycles.ExpireOldDataType.ExpireEarlierThan, d: thirtyDaysAgo},
+                jobs.stationUse,
+                s.sim_use)
         }
     );
 }
 
 function processSpecificMonthJobs(jobs: Readonly<api.IHistoricData>, s: AnalysisMonth): AnalysisMonth {
-    return s;
+    return safeAssign(
+        s,
+        {
+            sim_use: simuse.process_sim_use(
+                {type: cycles.ExpireOldDataType.NoExpire},
+                jobs.stationUse,
+                s.sim_use)
+        }
+    );
 }
 
 export function reducer(s: State, a: Action): State {

@@ -109,24 +109,10 @@ export interface SelectableHeatChartProps {
   readonly planned_or_actual: gui.PlannedOrActual;
   readonly setType: (p: gui.PlannedOrActual) => void;
 
-  readonly planned_points: ReadonlyArray<HeatChartPoint>;
-  readonly actual_points: ReadonlyArray<HeatChartPoint>;
-  readonly planned_minus_actual_points: ReadonlyArray<HeatChartPoint>;
+  readonly points: ReadonlyArray<HeatChartPoint>;
 }
 
 export function SelectableHeatChart(props: SelectableHeatChartProps) {
-  let points: ReadonlyArray<HeatChartPoint> = [];
-  switch (props.planned_or_actual) {
-    case gui.PlannedOrActual.Actual:
-      points = props.actual_points;
-      break;
-    case gui.PlannedOrActual.Planned:
-      points = props.planned_points;
-      break;
-    case gui.PlannedOrActual.PlannedMinusActual:
-      points = props.planned_minus_actual_points;
-      break;
-  }
   return (
     <Card raised>
       <CardHeader
@@ -166,9 +152,9 @@ export function SelectableHeatChart(props: SelectableHeatChartProps) {
       />
       <CardContent>
         <HeatChart
-          points={points}
+          points={props.points}
           label_title={props.label_title}
-          row_count={im.Seq(points).map(p => p.y).toSet().size}
+          row_count={im.Seq(props.points).map(p => p.y).toSet().size}
         />
       </CardContent>
     </Card>
