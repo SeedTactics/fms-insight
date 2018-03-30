@@ -166,9 +166,14 @@ namespace MachineWatchApiServer
                 .Build();
         }
 
-        public static void Main()
+        public static void Main(string[] args)
         {
             LoadConfig();
+            #if DEBUG
+            if (string.IsNullOrEmpty(PluginSettings.PluginFile) && args.Length > 0) {
+                PluginSettings.PluginFile = args[0];
+            }
+            #endif
             EnableSerilog();
 
             var host = BuildWebHost();
