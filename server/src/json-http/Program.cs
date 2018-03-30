@@ -35,6 +35,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
@@ -48,8 +49,10 @@ namespace MachineWatchApiServer
     public class ServerSettings
     {
         public string DataDirectory {get;set;}
-        public bool EnableDebug {get;set;}
-        // TODO: TLS settings
+        public bool EnableDebugLog {get;set;} = false;
+        public bool IPv6 {get;set;} = true;
+        public int Port {get;set;} = 5000;
+        public string TLSCertFile {get;set;}
     }
 
     public class Program
@@ -77,7 +80,10 @@ namespace MachineWatchApiServer
             if (ServerSettings == null)
                 ServerSettings = new ServerSettings() {
                     DataDirectory = null,
-                    EnableDebug = false,
+                    EnableDebugLog = false,
+                    IPv6 = true,
+                    Port = 5000,
+                    TLSCertFile = null,
                 };
 
             PluginSettings = Configuration.GetSection("Plugin").Get<PluginSettings>();
@@ -110,7 +116,7 @@ namespace MachineWatchApiServer
             #endif
 
             if (!string.IsNullOrEmpty(ServerSettings.DataDirectory)
-                && ServerSettings.EnableDebug) {
+                && ServerSettings.EnableDebugLog) {
 
                 logConfig = logConfig.WriteTo.File(
                     new Serilog.Formatting.Compact.CompactJsonFormatter(),
@@ -134,7 +140,26 @@ namespace MachineWatchApiServer
 
             return new WebHostBuilder()
                 .UseConfiguration(Configuration)
-                .UseKestrel()
+                .UseKestrel(options => {
+                    IPAddress address;
+                    #if DEBUG
+                    address = IPAddress.Loopback;
+                    #else
+                    if (ServerSettings.IPv6) {
+                        address = IPAddress.IPv6Any;
+                    } else {
+                        address = IPAddress.Any;
+                    }
+                    #endif
+
+                    if (!string.IsNullOrEmpty(ServerSettings.TLSCertFile)) {
+                        options.Listen(address, ServerSettings.Port, listenOptions => {
+                            listenOptions.UseHttps(ServerSettings.TLSCertFile);
+                        });
+                    } else {
+                        options.Listen(address, ServerSettings.Port);
+                    }
+                })
                 .UseContentRoot(contentRoot)
                 .UseSerilog()
                 .UseStartup<Startup>()
