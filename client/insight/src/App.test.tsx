@@ -53,8 +53,6 @@ function appProps(current: routes.RouteLocation): AppProps {
       station_queues: ["q1", "q1"],
       station_free_material: false,
     },
-    loadLast30Days: jest.fn(),
-    loadCurrentStatus: jest.fn(),
     setRoute: jest.fn(),
   };
 }
@@ -65,10 +63,6 @@ it('renders the dashboard', () => {
   const header = val.find("Header").dive();
   expect(val).toMatchSnapshot("dashboard");
   expect(header).toMatchSnapshot("dashboard header");
-
-  // check callbacks
-  expect(props.loadLast30Days).toHaveBeenCalled();
-  expect(props.loadCurrentStatus).toHaveBeenCalled();
 
   // tslint:disable-next-line:no-any
   const onTabChange = header.find("WithStyles(Tabs)").first().prop("onChange") as any;

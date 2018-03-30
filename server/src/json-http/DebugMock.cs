@@ -54,6 +54,8 @@ namespace MachineWatchApiServer
         public InspectionDB InspectionDB {get; private set;}
         private MockCurrentStatus MockStatus {get;set;}
 
+        public event NewCurrentStatus OnNewCurrentStatus;
+
         public void Init(string path)
         {
             string dbFile(string f) => System.IO.Path.Combine(path, f + ".db");

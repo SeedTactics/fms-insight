@@ -51,28 +51,37 @@ const initial: State = {
 };
 
 export enum ActionType {
-    NewCurrentStatus = 'CurStatus_NewCurrentStatus',
+    LoadCurrentStatus = 'CurStatus_LoadCurrentStatus',
+    SetCurrentStatus = 'CurStatus_SetCurrentStatus',
     Other = 'Other',
 }
 
 // TODO: Pledge and DeepReadonly in typescript 2.8
 export type Action =
-  | {type: ActionType.NewCurrentStatus, pledge: ConsumingPledge<Readonly<api.ICurrentStatus>> }
+  | {type: ActionType.LoadCurrentStatus, pledge: ConsumingPledge<Readonly<api.ICurrentStatus>> }
+  | {type: ActionType.SetCurrentStatus, st: Readonly<api.ICurrentStatus>}
   | {type: ActionType.Other}
   ;
 
 export function loadCurrentStatus() {
     var client = new api.JobsClient();
     return {
-        type: ActionType.NewCurrentStatus,
+        type: ActionType.LoadCurrentStatus,
         pledge: client.currentStatus()
+    };
+}
+
+export function setCurrentStatus(st: Readonly<api.ICurrentStatus>) {
+    return {
+        type: ActionType.SetCurrentStatus,
+        st,
     };
 }
 
 export function reducer(s: State, a: Action): State {
     if (s === undefined) { return initial; }
     switch (a.type) {
-        case ActionType.NewCurrentStatus:
+        case ActionType.LoadCurrentStatus:
             switch (a.pledge.status) {
                 case PledgeStatus.Starting:
                     return {...s, loading: true, loading_error: undefined};
@@ -86,6 +95,9 @@ export function reducer(s: State, a: Action): State {
 
                 default: return s;
             }
+        case ActionType.SetCurrentStatus:
+            return {...s, current_status: a.st};
+
         default: return s;
     }
 }

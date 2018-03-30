@@ -50,6 +50,9 @@ namespace MachineWatchApiServer.Controllers
 
     [DataMember(IsRequired=false, EmitDefaultValue=false)]
     public NewJobs NewJobs {get;set;}
+
+    [DataMember(IsRequired=false, EmitDefaultValue=false)]
+    public CurrentStatus NewCurrentStatus {get;set;}
   }
 
   public class WebsocketManager
@@ -96,7 +99,7 @@ namespace MachineWatchApiServer.Controllers
     private WebsocketDict _sockets = new WebsocketDict();
     private Newtonsoft.Json.JsonSerializerSettings _serSettings;
 
-    public WebsocketManager(ILogDatabase log, IJobDatabase jobDatabase)
+    public WebsocketManager(ILogDatabase log, IJobDatabase jobDatabase, IJobControl jobControl)
     {
       _serSettings = new Newtonsoft.Json.JsonSerializerSettings();
       _serSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
@@ -107,6 +110,9 @@ namespace MachineWatchApiServer.Controllers
 
       jobDatabase.OnNewJobs += (jobs) =>
         Send(new ServerEvent() {NewJobs = jobs});
+
+      jobControl.OnNewCurrentStatus += (status) =>
+        Send(new ServerEvent() {NewCurrentStatus = status});
     }
 
     private void Send(ServerEvent val) {

@@ -115,7 +115,8 @@ namespace MachineWatchApiServer
                 .AddSingleton<Controllers.WebsocketManager>(
                     new Controllers.WebsocketManager(
                         plugin.Backend.LogDatabase(),
-                        plugin.Backend.JobDatabase())
+                        plugin.Backend.JobDatabase(),
+                        plugin.Backend.JobControl())
                 );
 
             services

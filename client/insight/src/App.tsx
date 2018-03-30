@@ -43,8 +43,6 @@ import CostPerPiece from './components/cost-per-piece/CostPerPiece';
 import Efficiency from './components/efficiency/Efficiency';
 import StationMonitor from './components/station-monitor/StationMonitor';
 import LoadingIcon from './components/LoadingIcon';
-import { loadLast30Days } from './data/events';
-import { loadCurrentStatus } from './data/current-status';
 import * as routes from './data/routes';
 import { Store } from './data/store';
 
@@ -133,19 +131,10 @@ function Header(p: HeaderProps) {
 export interface AppProps {
   route: routes.State;
   // tslint:disable-next-line:no-any
-  loadLast30Days: () => any;
-  // tslint:disable-next-line:no-any
-  loadCurrentStatus: () => any;
-  // tslint:disable-next-line:no-any
   setRoute: (r: TabType, curSt: routes.State) => any;
 }
 
 export class App extends React.PureComponent<AppProps> {
-  componentDidMount() {
-    this.props.loadLast30Days();
-    this.props.loadCurrentStatus();
-  }
-
   render() {
     let page: JSX.Element;
     switch (this.props.route.current) {
@@ -183,8 +172,6 @@ export default connect(
     route: s.Route
   }),
   {
-    loadLast30Days,
-    loadCurrentStatus,
     setRoute: (r: TabType, curSt: routes.State) => {
       switch (r) {
         case TabType.Dashboard:
