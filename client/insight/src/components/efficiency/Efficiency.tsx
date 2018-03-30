@@ -264,8 +264,9 @@ export interface CompletedCountHeatmapProps {
 export function CompletedCountHeatmap(props: StationOeeHeatmapProps) {
   return (
     <SelectableHeatChart
-      card_label="Completed Parts"
-      label_title="Completed"
+      card_label="Part Production"
+      label_title={props.planned_or_actual === guiState.PlannedOrActual.Actual ?
+                    "Completed" : "Planned"}
       icon={<ExtensionIcon style={{color: "#6D4C41"}}/>}
       {...props}
     />
@@ -293,19 +294,43 @@ export const completedActualPointsSelector = createSelector(
   }
 );
 
+export const completedPlannedPointsSelector = createSelector(
+  (simUse: events.SimUseState) => simUse.production,
+  production => {
+    let pts = events.binSimProductionByDayAndPart(production.toSeq());
+    return pts
+      .toSeq()
+      .map((val, dayAndStat) => {
+        return {
+          x: dayAndStat.get("day", null),
+          y: dayAndStat.get("part", null),
+          color: val,
+          label: numeral(val).format('0,0')
+        };
+      })
+      .valueSeq()
+      .sortBy(p => p.x)
+      .sortBy(p => p.y, (a, b) => a === b ? 0 : a < b ? 1 : -1) // descending
+      .toArray();
+  }
+);
+
 export function completedPoints(st: Store) {
   let cycles: events.CycleState;
+  let sim: events.SimUseState;
   if (st.Events.analysis_period === events.AnalysisPeriod.Last30Days) {
     cycles = st.Events.last30.cycles;
+    sim = st.Events.last30.sim_use;
   } else {
     cycles = st.Events.selected_month.cycles;
+    sim = st.Events.selected_month.sim_use;
   }
 
   switch (st.Gui.completed_count_heatmap_type) {
     case guiState.PlannedOrActual.Actual:
       return completedActualPointsSelector(cycles);
     case guiState.PlannedOrActual.Planned:
-      return [];
+      return completedPlannedPointsSelector(sim);
     case guiState.PlannedOrActual.PlannedMinusActual:
       return [];
   }

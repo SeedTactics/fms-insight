@@ -43,7 +43,7 @@ import * as simuse from './events.simuse';
 export { OeeState, StationInUse } from './events.oee';
 export { CycleState, CycleData, binCyclesByDayAndStat, binCyclesByDayAndPart } from './events.cycles';
 export { MaterialSummary } from './events.matsummary';
-export { SimUseState, binSimStationUseByDayAndStat } from './events.simuse';
+export { SimUseState, binSimStationUseByDayAndStat, binSimProductionByDayAndPart } from './events.simuse';
 
 export enum AnalysisPeriod {
     Last30Days = 'Last_30_Days',
@@ -289,7 +289,7 @@ function processRecentJobs(now: Date, jobs: Readonly<api.IHistoricData>, s: Last
             latest_scheduleId: latestSchId,
             sim_use: simuse.process_sim_use(
                 {type: cycles.ExpireOldDataType.ExpireEarlierThan, d: thirtyDaysAgo},
-                jobs.stationUse,
+                jobs,
                 s.sim_use)
         }
     );
@@ -301,7 +301,7 @@ function processSpecificMonthJobs(jobs: Readonly<api.IHistoricData>, s: Analysis
         {
             sim_use: simuse.process_sim_use(
                 {type: cycles.ExpireOldDataType.NoExpire},
-                jobs.stationUse,
+                jobs,
                 s.sim_use)
         }
     );

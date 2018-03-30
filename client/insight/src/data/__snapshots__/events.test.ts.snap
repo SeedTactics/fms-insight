@@ -155,6 +155,7 @@ Object {
     },
   },
   "sim_use": Object {
+    "production": Immutable.List [],
     "station_use": Immutable.List [],
   },
 }
@@ -326,6 +327,7 @@ Object {
     "system_active_hours_per_week": 168,
   },
   "sim_use": Object {
+    "production": Immutable.List [],
     "station_use": Immutable.List [],
   },
 }
@@ -516,6 +518,7 @@ Object {
     "system_active_hours_per_week": 168,
   },
   "sim_use": Object {
+    "production": Immutable.List [],
     "station_use": Immutable.List [],
   },
 }
@@ -687,6 +690,7 @@ Object {
     "system_active_hours_per_week": 168,
   },
   "sim_use": Object {
+    "production": Immutable.List [],
     "station_use": Immutable.List [],
   },
 }
@@ -877,6 +881,7 @@ Object {
     "system_active_hours_per_week": 168,
   },
   "sim_use": Object {
+    "production": Immutable.List [],
     "station_use": Immutable.List [],
   },
 }

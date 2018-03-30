@@ -129,11 +129,6 @@ exports[`displays a selectable heat chart with actual points: selectable heat ch
           >
             Planned
           </WithStyles(MenuItem)>
-          <WithStyles(MenuItem)
-            value="PlannedOrActual"
-          >
-            Planned minus Actual
-          </WithStyles(MenuItem)>
         </WithStyles(Select)>
       </div>
     }
@@ -236,11 +231,6 @@ exports[`displays a selectable heat chart with planned minus actual points: sele
           >
             Planned
           </WithStyles(MenuItem)>
-          <WithStyles(MenuItem)
-            value="PlannedOrActual"
-          >
-            Planned minus Actual
-          </WithStyles(MenuItem)>
         </WithStyles(Select)>
       </div>
     }
@@ -342,11 +332,6 @@ exports[`displays a selectable heat chart with planned points: selectable heat c
             value="Planned"
           >
             Planned
-          </WithStyles(MenuItem)>
-          <WithStyles(MenuItem)
-            value="PlannedOrActual"
-          >
-            Planned minus Actual
           </WithStyles(MenuItem)>
         </WithStyles(Select)>
       </div>

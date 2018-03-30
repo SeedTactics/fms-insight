@@ -141,12 +141,6 @@ export function SelectableHeatChart(props: SelectableHeatChartProps) {
               >
                 Planned
               </MenuItem>
-              <MenuItem
-                key={gui.PlannedOrActual.PlannedMinusActual}
-                value={gui.PlannedOrActual.PlannedMinusActual}
-              >
-                Planned minus Actual
-              </MenuItem>
             </Select>
           </div>}
       />

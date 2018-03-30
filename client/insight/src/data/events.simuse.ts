@@ -43,12 +43,20 @@ export interface SimStationUse {
   readonly plannedDownTime: number;
 }
 
+export interface SimProduction {
+  readonly part: string;
+  readonly start: Date;
+  readonly quantity: number;
+}
+
 export interface SimUseState {
   readonly station_use: im.List<SimStationUse>;
+  readonly production: im.List<SimProduction>;
 }
 
 export const initial: SimUseState = {
   station_use: im.List(),
+  production: im.List(),
 };
 
 export enum ExpireOldDataType {
@@ -67,29 +75,43 @@ function stat_name(e: api.ISimulatedStationUtilization): string {
 
 export function process_sim_use(
   expire: ExpireOldData,
-  newEvts: Iterable<api.ISimulatedStationUtilization>,
+  newHistory: Readonly<api.IHistoricData>,
   st: SimUseState): SimUseState {
 
-    let evtsSeq = im.Seq(newEvts);
+    let evtsSeq = im.Seq(newHistory.stationUse);
     let stations = st.station_use;
+    let production = st.production;
+
+    let newProd = im.Seq(newHistory.jobs)
+      .valueSeq()
+      .map(j => ({
+        part: j.partName,
+        start: j.routeStartUTC,
+        quantity: j.cyclesOnFirstProcess.reduce((sum, p) => sum + p, 0)
+      }));
 
     switch (expire.type) {
       case ExpireOldDataType.ExpireEarlierThan:
 
         // check if nothing to expire and no new data
-        const minEntry = stations.minBy(e => e.end);
+        const minStat = stations.minBy(e => e.end);
+        const minProd = production.minBy(e => e.start);
 
-        if ((minEntry === undefined || minEntry.end >= expire.d) && evtsSeq.isEmpty()) {
+        if (   (minStat === undefined || minStat.start >= expire.d)
+            && (minProd === undefined || minProd.start >= expire.d)
+            && evtsSeq.isEmpty()
+            && newProd.isEmpty()) {
             return st;
         }
 
         // filter old events
-        stations = stations.filter(e => e.end >= expire.d);
+        stations = stations.filter(e => e.start >= expire.d);
+        production = production.filter(x => x.start >= expire.d);
 
         break;
 
       case ExpireOldDataType.NoExpire:
-        if (evtsSeq.isEmpty()) { return st; }
+        if (evtsSeq.isEmpty() && newProd.isEmpty()) { return st; }
         break;
     }
 
@@ -104,6 +126,7 @@ export function process_sim_use(
 
     return {...st,
       station_use: stations.concat(newStationUse),
+      production: production.concat(newProd),
     };
 }
 
@@ -158,6 +181,19 @@ export function binSimStationUseByDayAndStat(
     .groupBy(s => new mkDayAndStation({day: s.day, station: s.station}))
     .map((points, group) =>
       points.reduce((sum, p) => sum + p.value, 0)
+    )
+    .toMap();
+}
+
+type DayAndPart = im.Record<{day: Date, part: string}>;
+const mkDayAndPart = im.Record({day: new Date(), part: ""});
+
+export function binSimProductionByDayAndPart(prod: im.Seq.Indexed<SimProduction>): im.Map<DayAndPart, number> {
+  return prod
+    // TODO: split across day boundary?
+    .groupBy(p => new mkDayAndPart({day: startOfDay(p.start), part: p.part}))
+    .map((points, group) =>
+      points.reduce((sum, p) => sum + p.quantity, 0)
     )
     .toMap();
 }
