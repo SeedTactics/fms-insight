@@ -881,10 +881,10 @@ export class LogClient {
         return Promise.resolve<LogEntry[]>(<any>null);
     }
 
-    getWorkorders(workorderIds: string[]): Promise<WorkorderSummary[]> {
+    getWorkorders(ids: string[]): Promise<WorkorderSummary[]> {
         let url_ = this.baseUrl + "/api/v1/log/workorders?";
-        if (workorderIds !== undefined)
-            workorderIds && workorderIds.forEach(item => { url_ += "workorderIds=" + encodeURIComponent("" + item) + "&"; });
+        if (ids !== undefined)
+            ids && ids.forEach(item => { url_ += "ids=" + encodeURIComponent("" + item) + "&"; });
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{

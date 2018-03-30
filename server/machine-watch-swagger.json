@@ -652,7 +652,7 @@
         "parameters": [
           {
             "type": "array",
-            "name": "workorderIds",
+            "name": "ids",
             "in": "query",
             "x-nullable": true,
             "collectionFormat": "multi",
