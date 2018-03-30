@@ -56,7 +56,7 @@ namespace MachineWatchApiServer
 
         public event NewCurrentStatus OnNewCurrentStatus;
 
-        public void Init(string path)
+        public void Init(string path, IConfig config, SerialSettings serialSettings)
         {
             string dbFile(string f) => System.IO.Path.Combine(path, f + ".db");
 
@@ -192,6 +192,10 @@ namespace MachineWatchApiServer
             throw new NotImplementedException();
         }
 
+        protected void OnNewStatus(CurrentStatus s)
+        {
+            OnNewCurrentStatus?.Invoke(s);
+        }
     }
 
     public class LogEntryGenerator

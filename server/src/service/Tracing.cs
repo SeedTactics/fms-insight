@@ -36,6 +36,7 @@ using IO = System.IO;
 using System.Diagnostics;
 using System.Collections.Generic;
 using BlackMaple.MachineWatchInterface;
+using BlackMaple.MachineFramework;
 
 namespace BlackMaple.MachineWatch
 {

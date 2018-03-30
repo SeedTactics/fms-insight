@@ -32,12 +32,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System.Collections.Generic;
+using BlackMaple.MachineWatchInterface;
 
-namespace BlackMaple.MachineWatchInterface
+namespace BlackMaple.MachineFramework
 {
+    public interface IConfig
+    {
+        T GetValue<T>(string section, string key);
+    }
+
     public interface IServerBackend
     {
-        void Init(string dataDirectory);
+        void Init(string dataDirectory, IConfig config, SerialSettings serialSettings);
         void Halt();
 
         //Trace listeners are registered before Init is called

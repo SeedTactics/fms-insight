@@ -45,9 +45,17 @@ using Serilog.Events;
 
 namespace MachineWatchApiServer
 {
+    public class ServerSettings
+    {
+        public string DataDirectory {get;set;}
+        public bool EnableDebug {get;set;}
+        // TODO: TLS settings
+    }
+
     public class Program
     {
-        public static IConfiguration Configuration {get;} = new ConfigurationBuilder()
+        public static IConfiguration Configuration {get;} =
+            new ConfigurationBuilder()
             #if USE_SERVICE
             .SetBasePath(Path.GetDirectoryName(
                 System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName
@@ -59,10 +67,36 @@ namespace MachineWatchApiServer
             .AddEnvironmentVariables()
             .Build();
 
+        public static ServerSettings ServerSettings {get; private set;}
+        public static PluginSettings PluginSettings {get; private set;}
+        public static BlackMaple.MachineFramework.SerialSettings SerialSettings {get; private set;}
+
+        private static void LoadConfig()
+        {
+            ServerSettings = Configuration.GetSection("Server").Get<ServerSettings>();
+            if (ServerSettings == null)
+                ServerSettings = new ServerSettings() {
+                    DataDirectory = null,
+                    EnableDebug = false,
+                };
+
+            PluginSettings = Configuration.GetSection("Plugin").Get<PluginSettings>();
+            if (PluginSettings == null)
+                PluginSettings = new PluginSettings() {
+                    PluginFile = null,
+                    WorkerDirectorty = null,
+                };
+
+            SerialSettings = Configuration.GetSection("Serial").Get<BlackMaple.MachineFramework.SerialSettings>();
+            if (SerialSettings == null)
+                SerialSettings = new BlackMaple.MachineFramework.SerialSettings() {
+                    SerialType = BlackMaple.MachineFramework.SerialType.NoAutomaticSerials,
+                    SerialLength = 10,
+                };
+        }
+
         private static void EnableSerilog()
         {
-            var dataDir = Configuration["DataDirectory"];
-            var enableDebug = Configuration["EnableDebug"];
             var logConfig = new LoggerConfiguration()
                 .MinimumLevel.Debug()
                 .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
@@ -75,14 +109,12 @@ namespace MachineWatchApiServer
                 restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information);
             #endif
 
-            if (   !string.IsNullOrEmpty(dataDir)
-                && !string.IsNullOrEmpty(enableDebug)
-                && bool.TryParse(enableDebug, out bool enable)
-                && enable) {
+            if (!string.IsNullOrEmpty(ServerSettings.DataDirectory)
+                && ServerSettings.EnableDebug) {
 
                 logConfig = logConfig.WriteTo.File(
                     new Serilog.Formatting.Compact.CompactJsonFormatter(),
-                    System.IO.Path.Combine(dataDir, "machinewatch-debug.txt"),
+                    System.IO.Path.Combine(ServerSettings.DataDirectory, "machinewatch-debug.txt"),
                     rollingInterval: RollingInterval.Day,
                     restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Debug);
             }
@@ -111,6 +143,7 @@ namespace MachineWatchApiServer
 
         public static void Main()
         {
+            LoadConfig();
             EnableSerilog();
 
             var host = BuildWebHost();

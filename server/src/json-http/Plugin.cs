@@ -45,6 +45,12 @@ using System.Linq;
 
 namespace MachineWatchApiServer
 {
+    public class PluginSettings
+    {
+        public string PluginFile {get;set;}
+        public string WorkerDirectorty {get;set;}
+    }
+
     [DataContract]
     public struct PluginInfo
     {
@@ -73,11 +79,11 @@ namespace MachineWatchApiServer
             Backend = backend;
         }
 
-        public Plugin(string pluginFile, string workerDir)
+        public Plugin(PluginSettings settings)
         {
-            pluginDirectory = Path.GetDirectoryName(pluginFile);
-            LoadPlugin(pluginFile);
-            LoadWorkers(workerDir);
+            pluginDirectory = Path.GetDirectoryName(settings.PluginFile);
+            LoadPlugin(settings.PluginFile);
+            LoadWorkers(settings.WorkerDirectorty);
         }
 
 #if NETCOREAPP2_0

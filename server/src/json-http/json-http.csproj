@@ -39,7 +39,6 @@
       <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.Hosting.WindowsServices" Version="1.1.0" />
         <PackageReference Include="Serilog.Sinks.EventLog" Version="3.0.47"/>
-        <PackageReference Include="SerilogTraceListener" Version="3.0.*"/>
         <Compile Include="../service/Server.cs"/>
       </ItemGroup>
     </When>

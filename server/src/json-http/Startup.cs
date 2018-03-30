@@ -48,25 +48,22 @@ namespace MachineWatchApiServer
 {
     public class Startup
     {
-        public IConfiguration Configuration { get; }
-
-        public Startup(IConfiguration config)
+        private class ConfigWrapper : BlackMaple.MachineFramework.IConfig
         {
-            Configuration = config;
+            public T GetValue<T>(string section, string key)
+            {
+                return Program.Configuration.GetSection(section).GetValue<T>(key);
+            }
         }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            var dataDir = Configuration["DataDirectory"];
-            var pluginFile = Configuration["PluginFile"];
-            var workerDir = Configuration["WorkerDirectory"];
-
             Log.Information("Starting machine watch");
 
             IPlugin plugin;
-            if (!string.IsNullOrEmpty(pluginFile))
-                plugin = new Plugin(pluginFile, workerDir);
+            if (!string.IsNullOrEmpty(Program.PluginSettings.PluginFile))
+                plugin = new Plugin(Program.PluginSettings);
             else
             {
                 #if DEBUG
@@ -80,12 +77,12 @@ namespace MachineWatchApiServer
                     throw new Exception("Must specify plugin");
                 #endif
             }
-            plugin.Backend.Init(dataDir);
+            plugin.Backend.Init(Program.ServerSettings.DataDirectory, new ConfigWrapper(), Program.SerialSettings);
             foreach (var w in plugin.Workers) w.Init(plugin.Backend);
 
             #if USE_TRACE
             System.Diagnostics.Trace.AutoFlush = true;
-            var traceListener = new SerilogTraceListener.SerilogTraceListener();
+            var traceListener = new SerilogTraceListener();
             foreach (var s in plugin.Backend.TraceSources)
             {
                 s.Listeners.Add(traceListener);
@@ -96,7 +93,7 @@ namespace MachineWatchApiServer
             }
             #endif
 
-            var settings = new BlackMaple.MachineFramework.SettingStore(dataDir);
+            var settings = new BlackMaple.MachineFramework.SettingStore(Program.ServerSettings.DataDirectory);
 
             #if USE_SERVICE
             var machServer =
@@ -111,7 +108,7 @@ namespace MachineWatchApiServer
             services
                 .AddSingleton<IPlugin>(plugin)
                 .AddSingleton<IStoreSettings>(settings)
-                .AddSingleton<BlackMaple.MachineWatchInterface.IServerBackend>(plugin.Backend)
+                .AddSingleton<BlackMaple.MachineFramework.IServerBackend>(plugin.Backend)
                 .AddSingleton<Controllers.WebsocketManager>(
                     new Controllers.WebsocketManager(
                         plugin.Backend.LogDatabase(),
@@ -130,6 +127,7 @@ namespace MachineWatchApiServer
                     options.SerializerSettings.Converters.Add(new StringEnumConverter());
                     options.SerializerSettings.ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver();
                 });
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

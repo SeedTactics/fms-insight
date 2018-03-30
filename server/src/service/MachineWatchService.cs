@@ -39,10 +39,32 @@ using System.ServiceProcess;
 using System.Runtime.Remoting;
 using IO = System.IO;
 using BlackMaple.MachineWatchInterface;
+using BlackMaple.MachineFramework;
 using Serilog;
 
 namespace BlackMaple.MachineWatch
 {
+    public class ConfigWrapper : IConfig
+    {
+        public T GetValue<T>(string section, string key)
+        {
+            string val = System.Configuration.ConfigurationManager.AppSettings[section + " " + key];
+            if (string.IsNullOrEmpty(val)) {
+                // try without section (for backwards compatability)
+                val = System.Configuration.ConfigurationManager.AppSettings[key];
+            }
+            var converter = System.ComponentModel.TypeDescriptor.GetConverter(typeof(T));
+            if (converter.CanConvertFrom(typeof(string))) {
+                try {
+                    return (T)converter.ConvertFromInvariantString(val);
+                } catch {
+                    return default(T);
+                }
+            } else {
+                throw new Exception("Unable to convert string to " + typeof(T).ToString());
+            }
+        }
+    }
 
     public class MachineWatchService : System.ServiceProcess.ServiceBase
     {
@@ -178,7 +200,22 @@ namespace BlackMaple.MachineWatch
 
                 _trace.AddSources(plugin.serverBackend, plugin.workers);
 
-                plugin.serverBackend.Init(dataDir);
+			    string serialPerMaterial = System.Configuration.ConfigurationManager.AppSettings["Assign Serial Per Material"];
+                var SerialSettings = new SerialSettings() {
+                    SerialType = SerialType.NoAutomaticSerials,
+                    SerialLength = 10,
+                };
+                if (!string.IsNullOrEmpty (serialPerMaterial)) {
+                    bool result;
+                    if (bool.TryParse(serialPerMaterial, out result)) {
+                        if (result)
+                            SerialSettings.SerialType = SerialType.AssignOneSerialPerMaterial;
+                        else
+                            SerialSettings.SerialType = SerialType.AssignOneSerialPerCycle;
+                    }
+                }
+
+                plugin.serverBackend.Init(dataDir, new ConfigWrapper(), SerialSettings);
                 foreach (IBackgroundWorker w in plugin.workers)
                     w.Init(plugin.serverBackend);
 
