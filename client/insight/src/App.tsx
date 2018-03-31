@@ -91,7 +91,7 @@ function Header(p: HeaderProps) {
         <Tab label="Dashboard" value={TabType.Dashboard}/>
         <Tab label="Station Monitor" value={TabType.StationMonitor}/>
         <Tab label="Efficiency" value={TabType.Efficiency}/>
-        {/* <Tab label="Cost/Piece" value={TabType.CostPerPiece}/> */}
+        <Tab label="Cost/Piece" value={TabType.CostPerPiece}/>
       </Tabs>
     );
 

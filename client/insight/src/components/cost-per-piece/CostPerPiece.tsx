@@ -35,7 +35,7 @@ import * as React from 'react';
 export default function CostPerPiece() {
   return (
     <main style={{'padding': '8px'}}>
-      <p>Cost/Piece page</p>
+      <p>Cost/Piece coming soon!</p>
     </main>
   );
 }
