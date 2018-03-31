@@ -129,16 +129,11 @@ namespace MachineWatchApiServer
                 .Build();
         }
 
-        public static void Main(string[] args)
+        public static void Main()
         {
             ServerSettings = ServerSettings.Load(Configuration);
             FMSSettings = FMSSettings.Load(Configuration);
 
-            #if DEBUG
-            if (string.IsNullOrEmpty(FMSSettings.PluginFile) && args.Length > 0) {
-                FMSSettings.PluginFile = args[0];
-            }
-            #endif
             EnableSerilog();
 
             var host = BuildWebHost();
