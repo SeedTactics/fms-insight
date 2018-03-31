@@ -46,22 +46,6 @@ using Serilog.Events;
 
 namespace MachineWatchApiServer
 {
-    public class ServerSettings
-    {
-        public string DataDirectory {get;set;} = null;
-        public bool EnableDebugLog {get;set;} = false;
-        public bool IPv6 {get;set;} = true;
-        public int Port {get;set;} = 5000;
-        public string TLSCertFile {get;set;} = null;
-    }
-
-    public class FMSSettings
-    {
-        public string PluginFile {get;set;} = null;
-        public bool AutomaticSerials {get;set;} = false;
-        public int SerialLength {get;set;} = 10;
-    }
-
     public class Program
     {
         public static IConfiguration Configuration {get;} =
@@ -79,17 +63,6 @@ namespace MachineWatchApiServer
 
         public static ServerSettings ServerSettings {get; private set;}
         public static FMSSettings FMSSettings {get; private set;}
-
-        private static void LoadSettings()
-        {
-            ServerSettings = Configuration.GetSection("Server").Get<ServerSettings>();
-            if (ServerSettings == null)
-                ServerSettings = new ServerSettings();
-
-            FMSSettings = Configuration.GetSection("FMS").Get<FMSSettings>();
-            if (FMSSettings == null)
-                FMSSettings = new FMSSettings();
-        }
 
         private static void EnableSerilog()
         {
@@ -158,7 +131,9 @@ namespace MachineWatchApiServer
 
         public static void Main(string[] args)
         {
-            LoadSettings();
+            ServerSettings = ServerSettings.Load(Configuration);
+            FMSSettings = FMSSettings.Load(Configuration);
+
             #if DEBUG
             if (string.IsNullOrEmpty(FMSSettings.PluginFile) && args.Length > 0) {
                 FMSSettings.PluginFile = args[0];

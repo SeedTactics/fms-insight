@@ -31,46 +31,48 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.Collections.Generic;
-using Microsoft.AspNetCore.Mvc;
-using BlackMaple.MachineWatchInterface;
+using Microsoft.Extensions.Configuration;
 
-namespace MachineWatchApiServer.Controllers
-{
-    [Route("api/v1/[controller]")]
-    public class serverController : ControllerBase
+namespace MachineWatchApiServer {
+
+    public class ServerSettings
     {
-        private IPlugin _plugin;
-        private IStoreSettings _settings;
+      public string DataDirectory {get;set;} = null;
+      public bool EnableDebugLog {get;set;} = false;
+      public bool IPv6 {get;set;} = true;
+      public int Port {get;set;} = 5000;
+      public string TLSCertFile {get;set;} = null;
 
-        public serverController(IPlugin p, IStoreSettings s)
-        {
-            _settings = s;
-            _plugin = p;
-        }
-
-        [HttpGet("plugin")]
-        public PluginInfo PluginInfo()
-        {
-            return _plugin.PluginInfo;
-        }
-
-        [HttpGet("workorder-assignment-type")]
-        public WorkorderAssignmentType WorkorderAssignmentType()
-        {
-            return Program.FMSSettings.WorkorderAssignment;
-        }
-
-        [HttpGet("settings/{id}")]
-        public string GetSettings(string id)
-        {
-            return _settings.GetSettings(id);
-        }
-
-        [HttpPut("settings/{id}")]
-        public void SetSetting(string id, [FromBody] string setting)
-        {
-            _settings.SetSettings(id, setting);
-        }
+      static public ServerSettings Load(IConfiguration config)
+      {
+        var s = config.GetSection("Server").Get<ServerSettings>();
+        if (s == null)
+            s = new ServerSettings();
+        return s;
+      }
     }
+
+    public enum WorkorderAssignmentType
+    {
+      AssignWorkorderAtUnload,
+      AssignWorkorderAtWash,
+      NoAutomaticWorkorderAssignment,
+    }
+
+    public class FMSSettings
+    {
+      public string PluginFile {get;set;} = null;
+      public bool AutomaticSerials {get;set;} = false;
+      public int SerialLength {get;set;} = 10;
+      public WorkorderAssignmentType WorkorderAssignment {get;set;} = WorkorderAssignmentType.NoAutomaticWorkorderAssignment;
+
+      static public FMSSettings Load(IConfiguration config)
+      {
+        var s = config.GetSection("FMS").Get<FMSSettings>();
+        if (s == null)
+            s = new FMSSettings();
+        return s;
+      }
+    }
+
 }
