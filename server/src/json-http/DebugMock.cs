@@ -58,6 +58,8 @@ namespace MachineWatchApiServer
 
         public void Init(string path, IConfig config, SerialSettings serialSettings)
         {
+            Program.FMSSettings.WorkorderAssignment = WorkorderAssignmentType.AssignWorkorderAtWash;
+
             string dbFile(string f) => System.IO.Path.Combine(path, f + ".db");
 
             if (path != null)

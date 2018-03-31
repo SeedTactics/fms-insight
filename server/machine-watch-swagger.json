@@ -845,6 +845,24 @@
         }
       }
     },
+    "/api/v1/server/workorder-assignment-type": {
+      "get": {
+        "tags": [
+          "server"
+        ],
+        "operationId": "server_WorkorderAssignmentType",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/WorkorderAssignmentType"
+            },
+            "x-nullable": false
+          }
+        }
+      }
+    },
     "/api/v1/server/settings/{id}": {
       "get": {
         "tags": [
@@ -2139,6 +2157,20 @@
         {
           "$ref": "#/definitions/ValueType"
         }
+      ]
+    },
+    "WorkorderAssignmentType": {
+      "type": "string",
+      "description": "",
+      "x-enumNames": [
+        "AssignWorkorderAtUnload",
+        "AssignWorkorderAtWash",
+        "NoAutomaticWorkorderAssignment"
+      ],
+      "enum": [
+        "AssignWorkorderAtUnload",
+        "AssignWorkorderAtWash",
+        "NoAutomaticWorkorderAssignment"
       ]
     }
   },

@@ -1164,6 +1164,41 @@ export class ServerClient {
         return Promise.resolve<PluginInfo>(<any>null);
     }
 
+    workorderAssignmentType(): Promise<WorkorderAssignmentType> {
+        let url_ = this.baseUrl + "/api/v1/server/workorder-assignment-type";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ = <RequestInit>{
+            method: "GET",
+            headers: new Headers({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processWorkorderAssignmentType(_response);
+        });
+    }
+
+    protected processWorkorderAssignmentType(response: Response): Promise<WorkorderAssignmentType> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v, k) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = resultData200 !== undefined ? resultData200 : <any>null;
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<WorkorderAssignmentType>(<any>null);
+    }
+
     getSettings(id: string): Promise<string> {
         let url_ = this.baseUrl + "/api/v1/server/settings/{id}";
         if (id === undefined || id === null)
@@ -3369,6 +3404,12 @@ export class PluginInfo extends ValueType implements IPluginInfo {
 export interface IPluginInfo extends IValueType {
     name?: string;
     version?: string;
+}
+
+export enum WorkorderAssignmentType {
+    AssignWorkorderAtUnload = <any>"AssignWorkorderAtUnload",
+    AssignWorkorderAtWash = <any>"AssignWorkorderAtWash",
+    NoAutomaticWorkorderAssignment = <any>"NoAutomaticWorkorderAssignment",
 }
 
 export class SwaggerException extends Error {
