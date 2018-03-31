@@ -62,8 +62,8 @@ namespace MachineWatchApiServer
             Log.Information("Starting machine watch");
 
             IPlugin plugin;
-            if (!string.IsNullOrEmpty(Program.PluginSettings.PluginFile))
-                plugin = new Plugin(Program.PluginSettings);
+            if (!string.IsNullOrEmpty(Program.FMSSettings.PluginFile))
+                plugin = new Plugin(Program.FMSSettings.PluginFile);
             else
             {
                 #if DEBUG
@@ -77,7 +77,15 @@ namespace MachineWatchApiServer
                     throw new Exception("Must specify plugin");
                 #endif
             }
-            plugin.Backend.Init(Program.ServerSettings.DataDirectory, new ConfigWrapper(), Program.SerialSettings);
+            plugin.Backend.Init(
+                Program.ServerSettings.DataDirectory,
+                new ConfigWrapper(),
+                new BlackMaple.MachineFramework.SerialSettings() {
+                    SerialType = Program.FMSSettings.AutomaticSerials ?
+                        BlackMaple.MachineFramework.SerialType.AssignOneSerialPerMaterial :
+                        BlackMaple.MachineFramework.SerialType.NoAutomaticSerials,
+                    SerialLength = Program.FMSSettings.SerialLength,
+                });
             foreach (var w in plugin.Workers) w.Init(plugin.Backend);
 
             #if USE_TRACE

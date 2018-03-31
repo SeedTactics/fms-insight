@@ -48,11 +48,18 @@ namespace MachineWatchApiServer
 {
     public class ServerSettings
     {
-        public string DataDirectory {get;set;}
+        public string DataDirectory {get;set;} = null;
         public bool EnableDebugLog {get;set;} = false;
         public bool IPv6 {get;set;} = true;
         public int Port {get;set;} = 5000;
-        public string TLSCertFile {get;set;}
+        public string TLSCertFile {get;set;} = null;
+    }
+
+    public class FMSSettings
+    {
+        public string PluginFile {get;set;} = null;
+        public bool AutomaticSerials {get;set;} = false;
+        public int SerialLength {get;set;} = 10;
     }
 
     public class Program
@@ -71,34 +78,17 @@ namespace MachineWatchApiServer
             .Build();
 
         public static ServerSettings ServerSettings {get; private set;}
-        public static PluginSettings PluginSettings {get; private set;}
-        public static BlackMaple.MachineFramework.SerialSettings SerialSettings {get; private set;}
+        public static FMSSettings FMSSettings {get; private set;}
 
-        private static void LoadConfig()
+        private static void LoadSettings()
         {
             ServerSettings = Configuration.GetSection("Server").Get<ServerSettings>();
             if (ServerSettings == null)
-                ServerSettings = new ServerSettings() {
-                    DataDirectory = null,
-                    EnableDebugLog = false,
-                    IPv6 = true,
-                    Port = 5000,
-                    TLSCertFile = null,
-                };
+                ServerSettings = new ServerSettings();
 
-            PluginSettings = Configuration.GetSection("Plugin").Get<PluginSettings>();
-            if (PluginSettings == null)
-                PluginSettings = new PluginSettings() {
-                    PluginFile = null,
-                    WorkerDirectorty = null,
-                };
-
-            SerialSettings = Configuration.GetSection("Serial").Get<BlackMaple.MachineFramework.SerialSettings>();
-            if (SerialSettings == null)
-                SerialSettings = new BlackMaple.MachineFramework.SerialSettings() {
-                    SerialType = BlackMaple.MachineFramework.SerialType.NoAutomaticSerials,
-                    SerialLength = 10,
-                };
+            FMSSettings = Configuration.GetSection("FMS").Get<FMSSettings>();
+            if (FMSSettings == null)
+                FMSSettings = new FMSSettings();
         }
 
         private static void EnableSerilog()
@@ -168,10 +158,10 @@ namespace MachineWatchApiServer
 
         public static void Main(string[] args)
         {
-            LoadConfig();
+            LoadSettings();
             #if DEBUG
-            if (string.IsNullOrEmpty(PluginSettings.PluginFile) && args.Length > 0) {
-                PluginSettings.PluginFile = args[0];
+            if (string.IsNullOrEmpty(FMSSettings.PluginFile) && args.Length > 0) {
+                FMSSettings.PluginFile = args[0];
             }
             #endif
             EnableSerilog();
