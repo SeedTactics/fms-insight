@@ -24,7 +24,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 
-namespace SerilogTraceListener
+namespace MachineWatchApiServer
 {
     /// <summary>
     ///     TraceListener implementation that directs all output to Serilog.

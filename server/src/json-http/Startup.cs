@@ -88,22 +88,20 @@ namespace MachineWatchApiServer
                 });
             foreach (var w in plugin.Workers) w.Init(plugin.Backend);
 
-            #if USE_TRACE
             System.Diagnostics.Trace.AutoFlush = true;
             var traceListener = new SerilogTraceListener();
-            foreach (var s in plugin.Backend.TraceSources)
+            foreach (var s in plugin.Backend.TraceSources())
             {
                 s.Listeners.Add(traceListener);
             }
             foreach (var w in plugin.Workers)
             {
-                s.Listeners.Add(w.TraceSource);
+                w.TraceSource.Listeners.Add(traceListener);
             }
-            #endif
 
             var settings = new BlackMaple.MachineFramework.SettingStore(Program.ServerSettings.DataDirectory);
 
-            #if USE_SERVICE
+            #if SERVE_REMOTING
             var machServer =
                 new BlackMaple.MachineWatch.RemotingServer(
                     p: new ServicePlugin(plugin),
@@ -187,7 +185,7 @@ namespace MachineWatchApiServer
                     w.Halt();
             });
 
-            #if USE_SERVICE
+            #if SERVE_REMOTING
             lifetime.ApplicationStopping.Register(() => {
                 var machServer = services.GetService<BlackMaple.MachineWatch.RemotingServer>();
                 machServer.Dispose();

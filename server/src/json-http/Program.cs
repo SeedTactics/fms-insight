@@ -71,7 +71,7 @@ namespace MachineWatchApiServer
                 .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
                 .WriteTo.Console(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information);
 
-            #if LOG_TO_EVENTLOG
+            #if USE_SERVICE
             logConfig = logConfig.WriteTo.EventLog(
                 "Machine Watch",
                 manageEventSource: true,

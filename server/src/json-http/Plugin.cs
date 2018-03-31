@@ -177,7 +177,7 @@ namespace MachineWatchApiServer
 #endif
     }
 
-#if USE_SERVICE
+#if SERVE_REMOTING
     public class ServicePlugin :
         BlackMaple.MachineWatch.Server.IMachineWatchPlugin,
         IMachineWatchVersion

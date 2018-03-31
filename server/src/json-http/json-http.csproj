@@ -33,14 +33,8 @@
   <Choose>
     <When Condition="$(OS) == 'Windows_NT'">
       <PropertyGroup>
-        <TargetFramework>net461</TargetFramework>
-        <DefineConstants>$(DefineConstants);USE_SERVICE;USE_TRACE;LOG_TO_EVENTLOG</DefineConstants>
+        <TargetFrameworks>netcoreapp2;net461</TargetFrameworks>
       </PropertyGroup>
-      <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.Hosting.WindowsServices" Version="1.1.0" />
-        <PackageReference Include="Serilog.Sinks.EventLog" Version="3.0.47"/>
-        <Compile Include="../service/Server.cs"/>
-      </ItemGroup>
     </When>
     <When Condition="$(OS) == 'Unix'">
         <PropertyGroup>
@@ -49,5 +43,17 @@
     </When>
   </Choose>
 
+  <Choose>
+    <When Condition="$(OS) == 'Windows_NT' And $(Framework) == 'NET46'">
+      <PropertyGroup>
+        <DefineConstants>$(DefineConstants);USE_SERVICE;SERVE_REMOTING</DefineConstants>
+      </PropertyGroup>
+      <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.Hosting.WindowsServices" Version="1.1.0" />
+        <PackageReference Include="Serilog.Sinks.EventLog" Version="3.0.47"/>
+        <Compile Include="../service/Server.cs"/>
+      </ItemGroup>
+    </When>
+  </Choose>
 
 </Project>
