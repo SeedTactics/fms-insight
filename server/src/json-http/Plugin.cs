@@ -42,6 +42,7 @@ using System.Reflection;
 using Microsoft.Extensions.DependencyModel;
 using System.IO;
 using System.Linq;
+using Serilog;
 
 namespace MachineWatchApiServer
 {
@@ -92,23 +93,32 @@ namespace MachineWatchApiServer
 #if NETCOREAPP2_0
         private void LoadPlugin(string pluginFile)
         {
-            var a = LoadFromAssemblyPath(Path.GetFullPath(pluginFile));
-            foreach (var t in a.GetTypes())
-            {
-                foreach (var i in t.GetInterfaces())
+            try {
+                var a = LoadFromAssemblyPath(Path.GetFullPath(pluginFile));
+                foreach (var t in a.GetTypes())
                 {
-                    if (i == typeof(IServerBackend))
+                    foreach (var i in t.GetInterfaces())
                     {
-                        Backend = (IServerBackend) Activator.CreateInstance(t);
-                        PluginInfo = new PluginInfo() {
-                            Name = a.GetName().Name,
-                            Version = System.Diagnostics.FileVersionInfo.GetVersionInfo(a.Location).ToString()
-                        };
-                        return;
+                        if (i == typeof(IServerBackend))
+                        {
+                            Backend = (IServerBackend) Activator.CreateInstance(t);
+                            PluginInfo = new PluginInfo() {
+                                Name = a.GetName().Name,
+                                Version = System.Diagnostics.FileVersionInfo.GetVersionInfo(a.Location).ToString()
+                            };
+                            return;
+                        }
                     }
                 }
+                throw new Exception("Plugin does not contain implementation of IServerBackend");
+            } catch (System.Reflection.ReflectionTypeLoadException ex)
+            {
+                string loaderExceptions = "";
+                foreach (var e in ex.LoaderExceptions)
+                    loaderExceptions += e.ToString() + Environment.NewLine;
+                Log.Fatal(ex, "Error loading plugin: {loaderExceptions}", loaderExceptions);
+
             }
-            throw new Exception("Plugin does not contain implementation of IServerBackend");
         }
 
         protected override Assembly Load(AssemblyName assemblyName)

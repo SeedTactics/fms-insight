@@ -45,7 +45,7 @@ namespace MachineWatchApiServer {
 
       static public ServerSettings Load(IConfiguration config)
       {
-        var s = config.GetSection("Server").Get<ServerSettings>();
+        var s = config.GetSection("SERVER").Get<ServerSettings>();
         if (s == null)
             s = new ServerSettings();
         return s;

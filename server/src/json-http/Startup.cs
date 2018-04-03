@@ -56,6 +56,16 @@ namespace MachineWatchApiServer
             }
         }
 
+        #if DEBUG
+        public static BlackMaple.MachineFramework.IServerBackend DebugMockBackend {get;set;} =
+            new MockBackend();
+        public static PluginInfo DebugMockPluginInfo {get;set;} =
+            new PluginInfo() {
+                Name = "mock-machinewatch",
+                Version = "1.2.3.4"
+            };
+        #endif
+
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
@@ -67,12 +77,7 @@ namespace MachineWatchApiServer
             else
             {
                 #if DEBUG
-                plugin = new Plugin(
-                    backend: new MockBackend(),
-                    info: new PluginInfo() {
-                        Name = "mock-machinewatch",
-                        Version = "1.2.3.4"
-                    });
+                    plugin = new Plugin(DebugMockBackend, DebugMockPluginInfo);
                 #else
                     throw new Exception("Must specify plugin");
                 #endif
