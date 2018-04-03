@@ -1066,13 +1066,15 @@ namespace BlackMaple.MachineWatchInterface
     {
         [DataMember(IsRequired=true)] public string ScheduleId;
 
+        [DataMember(IsRequired=true)] public bool ArchiveCompletedJobs;
+
         [DataMember(IsRequired=true)] public List<JobPlan> Jobs;
 
-        [DataMember(IsRequired=true)] public List<SimulatedStationUtilization> StationUse;
+        [OptionalField, DataMember(IsRequired=false, EmitDefaultValue=false)]
+        public List<SimulatedStationUtilization> StationUse;
 
-        [DataMember(IsRequired=true)] public Dictionary<string, int> ExtraParts;
-
-        [DataMember(IsRequired=true)] public bool ArchiveCompletedJobs;
+        [OptionalField, DataMember(IsRequired=false, EmitDefaultValue=false)]
+        public Dictionary<string, int> ExtraParts;
 
         [OptionalField, DataMember(IsRequired=false, EmitDefaultValue=false)]
         public byte[] DebugMessage;
@@ -1082,28 +1084,6 @@ namespace BlackMaple.MachineWatchInterface
 
         [OptionalField, DataMember(IsRequired=false, EmitDefaultValue=false)]
         public Dictionary<string, QueueSize> QueueSizes;
-
-        public NewJobs(string scheduleId,
-                       IEnumerable<JobPlan> newJobs,
-                       IEnumerable<SimulatedStationUtilization> stationUse = null,
-                       Dictionary<string, int> extraParts = null,
-                       bool archiveCompletedJobs = false,
-                       byte[] debugMsg = null,
-                       IEnumerable<PartWorkorder> workorders = null,
-                       Dictionary<string, QueueSize> queues = null)
-        {
-            this.ScheduleId = scheduleId;
-            this.Jobs = newJobs.ToList();
-            this.StationUse =
-                stationUse == null ? new List<SimulatedStationUtilization>() : stationUse.ToList();
-            this.ExtraParts =
-                extraParts == null ? new Dictionary<string, int>() : extraParts;
-            this.ArchiveCompletedJobs = archiveCompletedJobs;
-            this.DebugMessage = debugMsg;
-            this.CurrentUnfilledWorkorders = workorders?.ToList();
-            this.QueueSizes =
-                queues == null ? new Dictionary<string, QueueSize>() : queues;
-        }
     }
 
     [Serializable, DataContract]

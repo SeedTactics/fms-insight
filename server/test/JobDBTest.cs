@@ -408,7 +408,14 @@ namespace MachineWatchTest
             var theExtraParts = RandExtraParts();
             var unfilledWorks = RandUnfilledWorkorders();
 
-			var newJob2 = new NewJobs(job2.ScheduleId, new JobPlan[] { job2 }, simStationUse, theExtraParts, true, workorders:unfilledWorks);
+			var newJob2 = new NewJobs() {
+                ScheduleId = job2.ScheduleId,
+                Jobs = new List<JobPlan> { job2 },
+                StationUse = simStationUse.ToList(),
+                ExtraParts = theExtraParts,
+                ArchiveCompletedJobs = true,
+                CurrentUnfilledWorkorders = unfilledWorks
+            };
 			try {
 				_jobDB.AddJobs(newJob2, "badsch");
 				Assert.True(false, "Expecting addjobs to throw exception");
@@ -527,7 +534,11 @@ namespace MachineWatchTest
             job3.SetPlannedCyclesOnFirstProcess(2, 5);
 
             byte[] debug = {23, 53, 13, 6, 4, 12, 4, 12, 75, 8, 34, 177, 6, 23, 74};
-            _jobDB.AddJobs(new NewJobs("tag2", new JobPlan[] { job1, job2, job3 }, debugMsg: debug), null);
+            _jobDB.AddJobs(new NewJobs() {
+                ScheduleId = "tag2",
+                Jobs = new List<JobPlan> { job1, job2, job3 },
+                DebugMessage = debug
+            }, null);
             Assert.Equal(debug, LoadDebugData("tag2"));
 
             CheckJobs(job1, job2, job3, job2.ScheduleId, null, null);
