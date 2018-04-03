@@ -142,6 +142,8 @@ namespace BlackMaple.MachineWatchInterface
 
         [DataMember(Name="ExpectedCycleTime", IsRequired=true)]
         private TimeSpan _expectedCycleTime;
+
+        private JobMachiningStop() {} //for json deserialization
     }
 
     [Serializable, DataContract]
@@ -1017,6 +1019,8 @@ namespace BlackMaple.MachineWatchInterface
 
         [DataMember(Name="ProcsAndPaths", IsRequired=true)]
         private ProcessInfo[] _procPath;
+
+        private JobPlan() {} //for json deserialization
     }
 
     [SerializableAttribute, DataContract]
@@ -1053,7 +1057,7 @@ namespace BlackMaple.MachineWatchInterface
     }
 
     [Serializable, DataContract]
-    public struct QueueSize
+    public class QueueSize
     {
         //once an output queue grows to this size, stop unloading parts
         //and keep them in the buffer inside the cell
@@ -1062,28 +1066,28 @@ namespace BlackMaple.MachineWatchInterface
     }
 
     [Serializable, DataContract]
-    public struct NewJobs
+    public class NewJobs
     {
-        [DataMember(IsRequired=true)] public string ScheduleId;
+        [DataMember(IsRequired=true)] public string ScheduleId {get;set;}
 
-        [DataMember(IsRequired=true)] public bool ArchiveCompletedJobs;
+        [DataMember(IsRequired=true)] public bool ArchiveCompletedJobs {get;set;}
 
-        [DataMember(IsRequired=true)] public List<JobPlan> Jobs;
+        [DataMember(IsRequired=true)] public List<JobPlan> Jobs {get;set;}
 
-        [OptionalField, DataMember(IsRequired=false, EmitDefaultValue=false)]
-        public List<SimulatedStationUtilization> StationUse;
+        [DataMember(IsRequired=false, EmitDefaultValue=false)]
+        public List<SimulatedStationUtilization> StationUse {get;set;}
 
-        [OptionalField, DataMember(IsRequired=false, EmitDefaultValue=false)]
-        public Dictionary<string, int> ExtraParts;
+        [DataMember(IsRequired=false, EmitDefaultValue=false)]
+        public Dictionary<string, int> ExtraParts {get;set;}
 
-        [OptionalField, DataMember(IsRequired=false, EmitDefaultValue=false)]
-        public byte[] DebugMessage;
+        [DataMember(IsRequired=false, EmitDefaultValue=false)]
+        public byte[] DebugMessage {get;set;}
 
-        [OptionalField, DataMember(IsRequired=false, EmitDefaultValue=false)]
-        public List<PartWorkorder> CurrentUnfilledWorkorders;
+        [DataMember(IsRequired=false, EmitDefaultValue=false)]
+        public List<PartWorkorder> CurrentUnfilledWorkorders {get;set;}
 
-        [OptionalField, DataMember(IsRequired=false, EmitDefaultValue=false)]
-        public Dictionary<string, QueueSize> QueueSizes;
+        [DataMember(IsRequired=false, EmitDefaultValue=false)]
+        public Dictionary<string, QueueSize> QueueSizes {get;set;}
     }
 
     [Serializable, DataContract]
