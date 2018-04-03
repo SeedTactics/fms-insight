@@ -139,6 +139,8 @@ namespace MachineWatchApiServer
 
             EnableSerilog();
 
+            Log.Information("Starting machine watch with settings {@ServerSettings} and {@FMSSettings}", ServerSettings, FMSSettings);
+
             var host = BuildWebHost();
 
             #if USE_SERVICE
