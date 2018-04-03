@@ -141,7 +141,7 @@ export const Inspection = inspStyles<InspectionProps>(props => {
 
   return (
     <main className={props.fillViewPort ? props.classes.mainFillViewport : props.classes.mainScrollable}>
-      <Grid container style={{flexGrow: 1}}>
+      <Grid container style={{flexGrow: 1}} spacing={16}>
         <Grid item xs={12} md={6}>
           <Card className={props.fillViewPort ? props.classes.stretchCard : undefined}>
             <CardHeader
