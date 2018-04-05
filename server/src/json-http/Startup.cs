@@ -80,16 +80,24 @@ namespace MachineWatchApiServer
                     throw new Exception("Must specify plugin");
                 #endif
             }
+            var cfgWrapper = new ConfigWrapper();
+            var serSettings = new BlackMaple.MachineFramework.SerialSettings() {
+                SerialType = Program.FMSSettings.AutomaticSerials ?
+                    BlackMaple.MachineFramework.SerialType.AssignOneSerialPerMaterial :
+                    BlackMaple.MachineFramework.SerialType.NoAutomaticSerials,
+                SerialLength = Program.FMSSettings.SerialLength,
+            };
             plugin.Backend.Init(
                 Program.ServerSettings.DataDirectory,
-                new ConfigWrapper(),
-                new BlackMaple.MachineFramework.SerialSettings() {
-                    SerialType = Program.FMSSettings.AutomaticSerials ?
-                        BlackMaple.MachineFramework.SerialType.AssignOneSerialPerMaterial :
-                        BlackMaple.MachineFramework.SerialType.NoAutomaticSerials,
-                    SerialLength = Program.FMSSettings.SerialLength,
-                });
-            foreach (var w in plugin.Workers) w.Init(plugin.Backend);
+                cfgWrapper,
+                serSettings);
+            foreach (var w in plugin.Workers)
+                w.Init(
+                    plugin.Backend,
+                    Program.ServerSettings.DataDirectory,
+                    cfgWrapper,
+                    serSettings
+                );
 
             System.Diagnostics.Trace.AutoFlush = true;
             var traceListener = new SerilogTraceListener();

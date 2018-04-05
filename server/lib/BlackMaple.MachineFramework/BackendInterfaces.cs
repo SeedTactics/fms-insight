@@ -61,7 +61,7 @@ namespace BlackMaple.MachineFramework
     public interface IBackgroundWorker
     {
         //The init function should initialize a timer or spawn a thread and then return
-        void Init(IServerBackend backend);
+        void Init(IServerBackend backend, string dataDirectory, IConfig config, SerialSettings serialSettings);
 
         //Once the halt function is called, the class is garbage collected.
         //A new class will be created when the service starts again

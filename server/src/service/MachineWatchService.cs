@@ -215,9 +215,10 @@ namespace BlackMaple.MachineWatch
                     }
                 }
 
-                plugin.serverBackend.Init(dataDir, new ConfigWrapper(), SerialSettings);
+                var cfgWrapper = new ConfigWrapper();
+                plugin.serverBackend.Init(dataDir, cfgWrapper, SerialSettings);
                 foreach (IBackgroundWorker w in plugin.workers)
-                    w.Init(plugin.serverBackend);
+                    w.Init(plugin.serverBackend, dataDir, cfgWrapper, SerialSettings);
 
                 // net461 on linux can't reference MachineFramework built using netstandard, and I don't
                 // yet have the latest mono which supports net471 installed yet.  Once net471 mono is installed
