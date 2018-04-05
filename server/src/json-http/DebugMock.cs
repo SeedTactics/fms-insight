@@ -37,7 +37,6 @@ using System.Runtime.Serialization;
 using BlackMaple.MachineWatchInterface;
 using BlackMaple.MachineFramework;
 using Microsoft.Extensions.Configuration;
-using System.Runtime.Loader;
 using System.Reflection;
 using Microsoft.Extensions.DependencyModel;
 using System.IO;
@@ -47,7 +46,7 @@ using System.Runtime.Serialization.Json;
 #if DEBUG
 namespace MachineWatchApiServer
 {
-    public class MockBackend : IServerBackend, IJobControl
+    public class MockBackend : IServerBackend, IJobControl, IOldJobDecrement
     {
         public JobLogDB LogDB {get;private set;}
         public JobDB JobDB {get; private set;}
@@ -56,9 +55,10 @@ namespace MachineWatchApiServer
 
         public event NewCurrentStatus OnNewCurrentStatus;
 
-        public void Init(string path, IConfig config, SerialSettings serialSettings)
+        public void Init(string dataDir, IConfig config, SerialSettings serialSettings)
         {
             Program.FMSSettings.WorkorderAssignment = WorkorderAssignmentType.AssignWorkorderAtWash;
+            string path = null; // dataDir
 
             string dbFile(string f) => System.IO.Path.Combine(path, f + ".db");
 
@@ -191,12 +191,22 @@ namespace MachineWatchApiServer
 
         public IOldJobDecrement OldJobDecrement()
         {
-            throw new NotImplementedException();
+            return this;
         }
 
         protected void OnNewStatus(CurrentStatus s)
         {
             OnNewCurrentStatus?.Invoke(s);
+        }
+
+        public Dictionary<JobAndPath, int> OldDecrementJobQuantites()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void OldFinalizeDecrement()
+        {
+            throw new NotImplementedException();
         }
     }
 

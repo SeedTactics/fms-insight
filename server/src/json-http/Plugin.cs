@@ -37,7 +37,6 @@ using System.Runtime.Serialization;
 using BlackMaple.MachineWatchInterface;
 using BlackMaple.MachineFramework;
 using Microsoft.Extensions.Configuration;
-using System.Runtime.Loader;
 using System.Reflection;
 using Microsoft.Extensions.DependencyModel;
 using System.IO;
@@ -60,7 +59,11 @@ namespace MachineWatchApiServer
         IList<IBackgroundWorker> Workers {get;}
     }
 
-    public class Plugin : AssemblyLoadContext, IPlugin
+    public class Plugin :
+        #if NETCOREAPP2_0
+        System.Runtime.Loader.AssemblyLoadContext,
+        #endif
+        IPlugin
     {
         public PluginInfo PluginInfo {get; protected set;}
         public IServerBackend Backend {get; protected set;}
@@ -145,7 +148,7 @@ namespace MachineWatchApiServer
         }
 #endif
 
-#if NET40
+#if NET461
         private void LoadPlugin(string pluginFile)
         {
             var asm = System.Reflection.Assembly.LoadFrom(pluginFile);
@@ -158,8 +161,8 @@ namespace MachineWatchApiServer
                         Backend = (IServerBackend)Activator.CreateInstance(t);
                         PluginInfo = new PluginInfo()
                         {
-                            Name = asm.GetName(),
-                            Version = System.Diagnostics.FileVersionInfo.GetVersionInfo(asm.Location)
+                            Name = asm.GetName().Name,
+                            Version = System.Diagnostics.FileVersionInfo.GetVersionInfo(asm.Location).ToString()
                         };
                         return;
                     }
@@ -172,6 +175,7 @@ namespace MachineWatchApiServer
         {
             foreach (var dll in Directory.GetFiles(Path.GetDirectoryName(workerDir), "*.dll"))
             {
+                var asm = System.Reflection.Assembly.LoadFrom(dll);
                 foreach (var t in asm.GetTypes())
                 {
                     foreach (var iFace in t.GetInterfaces())
@@ -189,21 +193,18 @@ namespace MachineWatchApiServer
 
 #if SERVE_REMOTING
     public class ServicePlugin :
-        BlackMaple.MachineWatch.Server.IMachineWatchPlugin,
+        BlackMaple.MachineWatch.RemotingServer.IMachineWatchPlugin,
         IMachineWatchVersion
     {
         private IPlugin _plugin;
 
-        IServerBackend BlackMaple.MachineWatch.Server.IMachineWatchPlugin.serverBackend
-            => _plugin.Backend;
-        IMachineWatchVersion BlackMaple.MachineWatch.Server.IMachineWatchPlugin.serverVersion
-            => this;
-        IEnumerable<IBackgroundWorker> BlackMaple.MachineWatch.Server.IMachineWatchPlugin.Workers
-            => _plugin.Workers;
-        string IMachineWatchVersion.Version => _plugin.PluginInfo.Version;
-        string IMachineWatchVersion.PluginName => _plugin.PluginInfo.Name;
+        public IServerBackend serverBackend => _plugin.Backend;
+        public IMachineWatchVersion serverVersion => this;
+        public IEnumerable<IBackgroundWorker> workers => _plugin.Workers;
+        public string Version() => _plugin.PluginInfo.Version;
+        public string PluginName() => _plugin.PluginInfo.Name;
 
-        public FrameworkPlugin(IPlugin p)
+        public ServicePlugin(IPlugin p)
         {
             _plugin = p;
         }

@@ -145,7 +145,7 @@ namespace MachineWatchApiServer
 
             #if USE_SERVICE
                 Microsoft.AspNetCore.Hosting.WindowsServices.WebHostWindowsServiceExtensions
-                    .RunAsService();
+                    .RunAsService(host);
             #else
                 host.Run();
             #endif

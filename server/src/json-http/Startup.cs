@@ -107,8 +107,8 @@ namespace MachineWatchApiServer
             #if SERVE_REMOTING
             var machServer =
                 new BlackMaple.MachineWatch.RemotingServer(
-                    p: new ServicePlugin(plugin),
-                    dataDir,
+                    new ServicePlugin(plugin),
+                    Program.ServerSettings.DataDirectory,
                     settings
                 );
             services.AddSingleton<BlackMaple.MachineWatch.RemotingServer>(machServer);
