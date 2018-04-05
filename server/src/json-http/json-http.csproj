@@ -25,7 +25,7 @@
     <Otherwise>
       <ItemGroup>
         <PackageReference Include="BlackMaple.MachineWatchInterface" Version="7.*"/>
-        <PackageReference Include="BlackMaple.MachineFramework" Version="6.*"/>
+        <PackageReference Include="BlackMaple.MachineFramework" Version="7.*"/>
       </ItemGroup>
     </Otherwise>
   </Choose>
