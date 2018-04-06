@@ -54,23 +54,28 @@ namespace MachineWatchApiServer {
         }
         return s;
       }
-      
+
       private static string CalculateDataDir()
       {
         #if USE_SERVICE
-        var commonData = System.Environment.GetFolderPath(System.Environment.SpecialFolder.CommonApplicationData);
+          var commonData = System.Environment.GetFolderPath(System.Environment.SpecialFolder.CommonApplicationData);
 
-        //check old cms research data directory
-        var dataDir = System.IO.Path.Combine(
-          commonData, System.IO.Path.Combine("CMS Research", "MachineWatch"));
-        if (!System.IO.Directory.Exists(dataDir)) {
-          //use new seedtactics directory
-          dataDir = System.IO.Path.Combine(
-              commonData, System.IO.Path.Combine("SeedTactics", "MachineWatch"));
+          //check old cms research data directory
+          var dataDir = System.IO.Path.Combine(commonData, "CMS Research", "MachineWatch");
+          if (System.IO.Directory.Exists(dataDir))
+            return dataDir;
+
+          //try new seedtactics directory
+          dataDir = System.IO.Path.Combine(commonData, "SeedTactics", "MachineWatch");
+          if (System.IO.Directory.Exists(dataDir))
+            return dataDir;
+
+          //now new seedtactics directory
+          dataDir = System.IO.Path.Combine(commonData, "SeedTactics", "FMSInsight");
           if (!System.IO.Directory.Exists(dataDir))
             System.IO.Directory.CreateDirectory(dataDir);
-        }
           return dataDir;
+
         #else
           return System.IO.Directory.GetCurrentDirectory();
         #endif

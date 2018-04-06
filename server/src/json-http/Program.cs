@@ -48,21 +48,31 @@ namespace MachineWatchApiServer
 {
     public class Program
     {
-        public static IConfiguration Configuration {get;} =
-            new ConfigurationBuilder()
+        public static string BaseDirectory {get;} =
             #if USE_SERVICE
-            .SetBasePath(Path.GetDirectoryName(
+            Path.GetDirectoryName(
                 System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName
-            ))
+            );
             #else
-            .SetBasePath(Directory.GetCurrentDirectory())
+            Directory.GetCurrentDirectory();
             #endif
-            .AddIniFile("config.ini", optional: true)
-            .AddEnvironmentVariables()
-            .Build();
 
+        public static IConfiguration Configuration {get; private set;}
         public static ServerSettings ServerSettings {get; private set;}
         public static FMSSettings FMSSettings {get; private set;}
+
+        private static void LoadConfig()
+        {
+            Configuration =
+                new ConfigurationBuilder()
+                .SetBasePath(Program.BaseDirectory)
+                .AddIniFile("config.ini", optional: true)
+                .AddEnvironmentVariables()
+                .Build();
+
+            ServerSettings = ServerSettings.Load(Configuration);
+            FMSSettings = FMSSettings.Load(Configuration);
+        }
 
         private static void EnableSerilog()
         {
@@ -96,14 +106,6 @@ namespace MachineWatchApiServer
 
         public static IWebHost BuildWebHost()
         {
-            #if USE_SERVICE
-            var contentRoot = Path.GetDirectoryName(
-                System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName
-            );
-            #else
-            var contentRoot = Directory.GetCurrentDirectory();
-            #endif
-
             return new WebHostBuilder()
                 .UseConfiguration(Configuration)
                 .UseKestrel(options => {
@@ -126,7 +128,7 @@ namespace MachineWatchApiServer
                         options.Listen(address, ServerSettings.Port);
                     }
                 })
-                .UseContentRoot(contentRoot)
+                .UseContentRoot(Program.BaseDirectory)
                 .UseSerilog()
                 .UseStartup<Startup>()
                 .Build();
@@ -134,9 +136,7 @@ namespace MachineWatchApiServer
 
         public static void Main()
         {
-            ServerSettings = ServerSettings.Load(Configuration);
-            FMSSettings = FMSSettings.Load(Configuration);
-
+            LoadConfig();
             EnableSerilog();
 
             Log.Information("Starting machine watch with settings {@ServerSettings} and {@FMSSettings}", ServerSettings, FMSSettings);

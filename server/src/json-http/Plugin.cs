@@ -79,17 +79,13 @@ namespace MachineWatchApiServer
 
         public Plugin(string pluginFile)
         {
+            if (!Path.IsPathRooted(pluginFile)) {
+                pluginFile = Path.Combine(Program.BaseDirectory, pluginFile);
+            }
             pluginDirectory = Path.GetDirectoryName(pluginFile);
             LoadPlugin(pluginFile);
 
-            var workerDir =
-                Path.Combine(
-                    Path.GetDirectoryName(
-                        System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName
-                    ),
-                    "workers"
-                );
-
+            var workerDir = Path.Combine(Program.BaseDirectory, "workers");
             LoadWorkers(workerDir);
         }
 
