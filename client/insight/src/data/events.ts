@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { addDays, addMonths, startOfMonth } from 'date-fns';
-import { PledgeStatus, ConsumingPledge } from './pledge';
+import { PledgeStatus, Pledge, PledgeToPromise } from './pledge';
 import * as im from 'immutable';
 
 import * as api from './api';
@@ -117,32 +117,32 @@ export enum ActionType {
     SetSystemHours = 'Events_SetSystemHours',
     ReceiveNewLogEntries = 'Events_NewLogEntries',
     ReceiveNewJobs = 'Events_ReceiveNewJobs',
-    Other = 'Other',
 }
 
 // TODO: use Plege when typescript 2.8 shows up
 export type Action =
   | {type: ActionType.SetAnalysisLast30Days }
   | {type: ActionType.SetAnalysisMonth, month: Date }
-  | {type: ActionType.LoadRecentLogEntries, now: Date, pledge: ConsumingPledge<ReadonlyArray<Readonly<api.ILogEntry>>>}
-  | {type: ActionType.LoadRecentJobHistory, now: Date, pledge: ConsumingPledge<Readonly<api.IHistoricData>>}
+  | {type: ActionType.LoadRecentLogEntries, now: Date, pledge: Pledge<ReadonlyArray<Readonly<api.ILogEntry>>>}
+  | {type: ActionType.LoadRecentJobHistory, now: Date, pledge: Pledge<Readonly<api.IHistoricData>>}
   | {
       type: ActionType.LoadSpecificMonthLogEntries,
       month: Date,
-      pledge: ConsumingPledge<ReadonlyArray<Readonly<api.ILogEntry>>>
+      pledge: Pledge<ReadonlyArray<Readonly<api.ILogEntry>>>
     }
   | {
       type: ActionType.LoadSpecificMonthJobHistory,
       month: Date,
-      pledge: ConsumingPledge<Readonly<api.IHistoricData>>
+      pledge: Pledge<Readonly<api.IHistoricData>>
     }
   | {type: ActionType.ReceiveNewLogEntries, now: Date, events: ReadonlyArray<Readonly<api.ILogEntry>>}
   | {type: ActionType.ReceiveNewJobs, now: Date, jobs: Readonly<api.IHistoricData>}
   | {type: ActionType.SetSystemHours, hours: number}
-  | {type: ActionType.Other}
   ;
 
-export function loadLast30Days() /*: Action<ActionUse.CreatingAction> */ {
+type ActionToDispatch = PledgeToPromise<Action>;
+
+export function loadLast30Days(): ActionToDispatch[] {
     var logClient = new api.LogClient();
     var jobClient = new api.JobsClient();
     var now = new Date();
@@ -162,7 +162,7 @@ export function loadLast30Days() /*: Action<ActionUse.CreatingAction> */ {
     ];
 }
 
-export function refreshLogEntries(lastCounter: number) {
+export function refreshLogEntries(lastCounter: number): ActionToDispatch {
     var client = new api.LogClient();
     var now = new Date();
     return {
@@ -172,13 +172,13 @@ export function refreshLogEntries(lastCounter: number) {
     };
 }
 
-export function receiveNewEvents(events: ReadonlyArray<Readonly<api.ILogEntry>>): Action {
+export function receiveNewEvents(events: ReadonlyArray<Readonly<api.ILogEntry>>): ActionToDispatch {
     return {
         type: ActionType.ReceiveNewLogEntries, now: new Date(), events
     };
 }
 
-export function receiveNewJobs(newJobs: Readonly<api.INewJobs>): Action {
+export function receiveNewJobs(newJobs: Readonly<api.INewJobs>): ActionToDispatch {
     const jobs: {[key: string]: api.JobPlan} = {};
     newJobs.jobs.forEach(j => {
         jobs[j.unique] = j;
@@ -191,11 +191,11 @@ export function receiveNewJobs(newJobs: Readonly<api.INewJobs>): Action {
     };
 }
 
-export function analyzeLast30Days() {
+export function analyzeLast30Days(): ActionToDispatch {
     return {type: ActionType.SetAnalysisLast30Days};
 }
 
-export function analyzeSpecificMonth(month: Date) {
+export function analyzeSpecificMonth(month: Date): ActionToDispatch[] {
     var client = new api.LogClient();
     var jobClient = new api.JobsClient();
     var startOfNextMonth = addMonths(month, 1);
@@ -213,7 +213,7 @@ export function analyzeSpecificMonth(month: Date) {
     ];
 }
 
-export function setAnalysisMonth(month: Date) {
+export function setAnalysisMonth(month: Date): ActionToDispatch {
     return {
         type: ActionType.SetAnalysisMonth,
         month: month

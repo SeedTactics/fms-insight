@@ -48,7 +48,7 @@ import { MaterialList, LoadStationData, selectLoadStationProps } from '../../dat
 import { InProcMaterial, MaterialDetailTitle, MaterialDetailContent } from './Material';
 import * as api from '../../data/api';
 import * as routes from '../../data/routes';
-import { Store, connect, mkAC, DispatchFn } from '../../data/store';
+import { Store, connect, mkAC, DispatchAction } from '../../data/store';
 import * as matDetails from '../../data/material-details';
 
 const materialStyle = withStyles(() => ({
@@ -195,7 +195,7 @@ export const PalletColumn = palletStyles<LoadStationProps>(props => {
 
 export interface MaterialDialogProps {
   display_material: matDetails.MaterialDetail | null;
-  onClose: DispatchFn<matDetails.ActionType.CloseMaterialDialog>;
+  onClose: DispatchAction<matDetails.ActionType.CloseMaterialDialog>;
 }
 
 export function MaterialDialog(props: MaterialDialogProps) {

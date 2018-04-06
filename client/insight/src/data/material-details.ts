@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as im from 'immutable';
 
 import * as api from './api';
-import { ConsumingPledge, PledgeStatus } from './pledge';
+import { Pledge, PledgeStatus, PledgeToPromise } from './pledge';
 import { MaterialSummary } from './events';
 import { StationMonitorType } from './routes';
 
@@ -76,23 +76,25 @@ export type Action =
       type: ActionType.OpenMaterialDialog,
       station: StationMonitorType,
       initial: MaterialDetail,
-      pledge: ConsumingPledge<ReadonlyArray<Readonly<api.ILogEntry>>>
+      pledge: Pledge<ReadonlyArray<Readonly<api.ILogEntry>>>
     }
   | {
       type: ActionType.UpdateMaterial,
       station: StationMonitorType,
       newInspType?: string,
       newWorkorder?: string,
-      pledge: ConsumingPledge<Readonly<api.ILogEntry>>,
+      pledge: Pledge<Readonly<api.ILogEntry>>,
     }
   | {
       type: ActionType.LoadWorkorders,
       station: StationMonitorType,
-      pledge: ConsumingPledge<ReadonlyArray<WorkorderPlanAndSummary>>,
+      pledge: Pledge<ReadonlyArray<WorkorderPlanAndSummary>>,
     }
   ;
 
-export function openLoadunloadMaterialDialog(mat: Readonly<api.IInProcessMaterial>) {
+type ActionToDispatch = PledgeToPromise<Action>;
+
+export function openLoadunloadMaterialDialog(mat: Readonly<api.IInProcessMaterial>): ActionToDispatch {
   const client = new api.LogClient();
   return {
     type: ActionType.OpenMaterialDialog,
@@ -116,7 +118,7 @@ export function openLoadunloadMaterialDialog(mat: Readonly<api.IInProcessMateria
   };
 }
 
-export function openInspectionMaterial(mat: MaterialSummary) {
+export function openInspectionMaterial(mat: MaterialSummary): ActionToDispatch {
   const client = new api.LogClient();
   return {
     type: ActionType.OpenMaterialDialog,
@@ -140,7 +142,7 @@ export function openInspectionMaterial(mat: MaterialSummary) {
   };
 }
 
-export function openWashMaterial(mat: MaterialSummary) {
+export function openWashMaterial(mat: MaterialSummary): ActionToDispatch {
   const client = new api.LogClient();
   return {
     type: ActionType.OpenMaterialDialog,
@@ -164,7 +166,7 @@ export function openWashMaterial(mat: MaterialSummary) {
   };
 }
 
-export function completeInspection(mat: MaterialDetail, inspType: string, success: boolean) {
+export function completeInspection(mat: MaterialDetail, inspType: string, success: boolean): ActionToDispatch {
   const client = new api.LogClient();
   return {
     type: ActionType.UpdateMaterial,
@@ -188,7 +190,7 @@ export function completeInspection(mat: MaterialDetail, inspType: string, succes
   };
 }
 
-export function completeWash(mat: MaterialDetail) {
+export function completeWash(mat: MaterialDetail): ActionToDispatch {
   const client = new api.LogClient();
   return {
     type: ActionType.UpdateMaterial,
@@ -209,7 +211,7 @@ export function completeWash(mat: MaterialDetail) {
   };
 }
 
-export function assignWorkorder(mat: MaterialDetail, station: StationMonitorType, workorder: string) {
+export function assignWorkorder(mat: MaterialDetail, station: StationMonitorType, workorder: string): ActionToDispatch {
   const client = new api.LogClient();
   return {
     type: ActionType.UpdateMaterial,

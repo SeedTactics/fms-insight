@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as api from './api';
-import { ConsumingPledge, PledgeStatus } from './pledge';
+import { Pledge, PledgeStatus, PledgeToPromise } from './pledge';
 
 export interface State {
     readonly loading: boolean;
@@ -53,17 +53,14 @@ const initial: State = {
 export enum ActionType {
     LoadCurrentStatus = 'CurStatus_LoadCurrentStatus',
     SetCurrentStatus = 'CurStatus_SetCurrentStatus',
-    Other = 'Other',
 }
 
-// TODO: Pledge and DeepReadonly in typescript 2.8
 export type Action =
-  | {type: ActionType.LoadCurrentStatus, pledge: ConsumingPledge<Readonly<api.ICurrentStatus>> }
+  | {type: ActionType.LoadCurrentStatus, pledge: Pledge<Readonly<api.ICurrentStatus>> }
   | {type: ActionType.SetCurrentStatus, st: Readonly<api.ICurrentStatus>}
-  | {type: ActionType.Other}
   ;
 
-export function loadCurrentStatus() {
+export function loadCurrentStatus(): PledgeToPromise<Action> {
     var client = new api.JobsClient();
     return {
         type: ActionType.LoadCurrentStatus,
@@ -71,7 +68,7 @@ export function loadCurrentStatus() {
     };
 }
 
-export function setCurrentStatus(st: Readonly<api.ICurrentStatus>) {
+export function setCurrentStatus(st: Readonly<api.ICurrentStatus>): PledgeToPromise<Action> {
     return {
         type: ActionType.SetCurrentStatus,
         st,

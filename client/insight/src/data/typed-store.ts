@@ -32,28 +32,36 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as reactRedux from 'react-redux';
+import { PledgeToPromise } from './pledge';
 
 type RemoveTypeProp<P> = P extends "type" ? never : P;
 type RemoveType<A> = { [P in RemoveTypeProp<keyof A>]: A[P] };
 type GetActionTypes<A> = A extends {type: infer T} ? T : never;
-
 export type ActionPayload<A, T> = A extends {type: T} ? RemoveType<A> : never;
-export type DispatchFn<A, T> = (payload: ActionPayload<A, T>) => void;
-export type ActionCreator<A, T> = (payload: ActionPayload<A, T>) => A;
+
+export type ActionCreator<A, Args> = (args: Args) => PledgeToPromise<A>;
 
 export interface ActionCreatorFactory<A> {
-  <T extends GetActionTypes<A>>(ty: T): ActionCreator<A, T>;
+  <T extends GetActionTypes<A>>(ty: T): ActionCreator<A, ActionPayload<A, T>>;
 }
-
 export function actionCreatorFactory<A>(): ActionCreatorFactory<A> {
   // tslint:disable-next-line:no-any
-  return (ty: any) => ((payload: any) =>
-    // tslint:disable-next-line:no-any
-    ({...payload as any, type: ty} as any) as any) as any;
+  return (ty: any) => ((payload: any) => {
+    if (!payload) {
+      payload = {};
+    }
+    return ({...payload, type: ty});
+  });
 }
 
-type ActionCreatorToDispatch<A, Creators> = {
-  [P in keyof Creators]: Creators[P] extends ActionCreator<A, infer T> ? DispatchFn<A, T> : never;
+export type DispatchFn<Args> = {} extends Args
+  ? () => void
+  : (payload: Args) => void;
+export type DispatchAction<A, T> = DispatchFn<ActionPayload<A, T>>;
+export type ActionCreatorToDispatch<A, Creators> = {
+  [P in keyof Creators]:
+    Creators[P] extends ActionCreator<A, infer Args> ? DispatchFn<Args> :
+    never;
 };
 
 export interface Connect<A, S> {

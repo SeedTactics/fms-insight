@@ -66,7 +66,7 @@ export type AppAction =
 
 export const connect: tstore.Connect<AppAction, Store> = reactRedux.connect;
 export const mkAC: tstore.ActionCreatorFactory<AppAction> = tstore.actionCreatorFactory<AppAction>();
-export type DispatchFn<T> = tstore.DispatchFn<AppAction, T>;
+export type DispatchAction<T> = tstore.DispatchAction<AppAction, T>;
 
 export function initStore() {
   const history = createHistory();

@@ -38,21 +38,15 @@ export enum PledgeStatus {
     Error = 'Pledge_Error'
 }
 
-export type CreatingPledge<T> = Promise<T>;
-
-export type ConsumingPledge<T> =
+export type Pledge<T> =
   | { status: PledgeStatus.Starting }
   | { status: PledgeStatus.Completed, result: T }
   | { status: PledgeStatus.Error, error: Error }
   ;
 
-// export enum ActionUse {
-//    CreatingAction,
-//    ConsumingAction
-// }
-
-// export type Pledge<T, P extends ActionUse> =
-//   P extends ActionUse.CreatingAction ? CreatingPledge<T> : ConsumingPledge<T>;
+export type PledgeToPromise<AP> = {
+  [P in keyof AP]: "pledge" extends P ? AP[P] extends Pledge<infer R> ? Promise<R> : AP[P] : AP[P];
+};
 
 // tslint:disable
 export const pledgeMiddleware: Middleware =

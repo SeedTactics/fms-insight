@@ -43,7 +43,6 @@ export enum ActionType {
   SetStationOeeHeatmapType = 'Gui_SetStationOeeHeatmapType',
   SetCompletedCountHeatmapType = 'Gui_SetCompletedCountHeatmapType',
   SetWorkorderDialogOpen = 'Gui_SetWorkorderDialog',
-  Other = 'Other',
 }
 
 export type Action =
@@ -52,7 +51,6 @@ export type Action =
   | { type: ActionType.SetStationOeeHeatmapType, ty: PlannedOrActual }
   | { type: ActionType.SetCompletedCountHeatmapType, ty: PlannedOrActual }
   | { type: ActionType.SetWorkorderDialogOpen, open: boolean }
-  | { type: ActionType.Other }
   ;
 
 export interface State {
