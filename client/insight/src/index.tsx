@@ -44,7 +44,7 @@ import 'react-vis/dist/style.css';
 
 import App from './App';
 import registerServiceWorker from './registerServiceWorker';
-import store from './data/store';
+import { initStore } from './data/store';
 
 const theme = createMuiTheme({
   palette: {
@@ -52,6 +52,8 @@ const theme = createMuiTheme({
     secondary: brown
   }
 });
+
+const store = initStore();
 
 ReactDOM.render(
   <MuiThemeProvider theme={theme}>

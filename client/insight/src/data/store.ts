@@ -39,26 +39,12 @@ import * as routes from './routes';
 import * as mat from './material-details';
 import * as websocket from './websocket';
 import { pledgeMiddleware } from './pledge';
+import * as tstore from './typed-store';
 
 import { connectRoutes, LocationState } from 'redux-first-router';
 import createHistory from 'history/createBrowserHistory';
 import * as queryString from 'query-string';
-import { Dispatch } from 'react-redux';
-
-const history = createHistory();
-const router = connectRoutes(
-  history,
-  routes.routeMap,
-  {
-    querySerializer: queryString
-  });
-
-/* tslint:disable */
-const devTools: GenericStoreEnhancer =
-  (window as any)['__REDUX_DEVTOOLS_EXTENSION__']
-  ? (window as any)['__REDUX_DEVTOOLS_EXTENSION__']()
-  : f => f;
-/* tslint:enable */
+import * as reactRedux from 'react-redux';
 
 export interface Store {
   readonly Current: currentStatus.State;
@@ -70,39 +56,69 @@ export interface Store {
   readonly location: LocationState;
 }
 
-// tslint:disable-next-line:no-any
-const arrayMiddleware = ({dispatch}: {dispatch: Dispatch<any>}) => (next: Dispatch<any>) => (action: any) => {
-  if (action instanceof Array) {
-    action.map(dispatch);
-  } else {
-    return next(action);
-  }
-};
+export type AppAction =
+  | currentStatus.Action
+  | events.Action
+  | gui.Action
+  | mat.Action
+  | routes.Action
+  ;
 
-const store = createStore<Store>(
-  combineReducers<Store>(
+export const connect: tstore.Connect<AppAction, Store> = reactRedux.connect;
+export const mkAC: tstore.ActionCreatorFactory<AppAction> = tstore.actionCreatorFactory<AppAction>();
+export type DispatchFn<T> = tstore.DispatchFn<AppAction, T>;
+
+export function initStore() {
+  const history = createHistory();
+  const router = connectRoutes(
+    history,
+    routes.routeMap,
     {
-      Current: currentStatus.reducer,
-      Events: events.reducer,
-      Gui: gui.reducer,
-      MaterialDetails: mat.reducer,
-      Route: routes.reducer,
-      Websocket: websocket.reducer,
-      location: router.reducer,
+      querySerializer: queryString
+    });
+
+  /* tslint:disable */
+  const devTools: GenericStoreEnhancer =
+    (window as any)['__REDUX_DEVTOOLS_EXTENSION__']
+    ? (window as any)['__REDUX_DEVTOOLS_EXTENSION__']()
+    : f => f;
+  /* tslint:enable */
+
+  const arrayMiddleware =
     // tslint:disable-next-line:no-any
-    } as any // bug in typescript types for combineReducers
-  ),
-  compose(
-    router.enhancer,
-    applyMiddleware(
-        arrayMiddleware,
-        pledgeMiddleware,
-        router.middleware
+    ({dispatch}: {dispatch: reactRedux.Dispatch<any>}) => (next: reactRedux.Dispatch<any>) => (action: any) => {
+      if (action instanceof Array) {
+        action.map(dispatch);
+      } else {
+        return next(action);
+      }
+  };
+
+  const store = createStore<Store>(
+    combineReducers<Store>(
+      {
+        Current: currentStatus.reducer,
+        Events: events.reducer,
+        Gui: gui.reducer,
+        MaterialDetails: mat.reducer,
+        Route: routes.reducer,
+        Websocket: websocket.reducer,
+        location: router.reducer,
+      // tslint:disable-next-line:no-any
+      } as any // bug in typescript types for combineReducers
     ),
-    devTools
-  )
-);
+    compose(
+      router.enhancer,
+      applyMiddleware(
+          arrayMiddleware,
+          pledgeMiddleware,
+          router.middleware
+      ),
+      devTools
+    )
+  );
 
-websocket.openWebsocket(a => store.dispatch(a), () => store.getState().Events);
+  websocket.openWebsocket(a => store.dispatch(a), () => store.getState().Events);
 
-export default store;
+  return store;
+}

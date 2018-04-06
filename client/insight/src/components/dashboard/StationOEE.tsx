@@ -31,7 +31,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
-import { connect } from 'react-redux';
 import { withStyles } from 'material-ui';
 import Grid from 'material-ui/Grid';
 import * as im from 'immutable';
@@ -39,7 +38,7 @@ import * as numeral from 'numeral';
 import { createSelector } from 'reselect';
 import Tooltip from 'material-ui/Tooltip';
 
-import { Store } from '../../data/store';
+import { connect, Store } from '../../data/store';
 import { StationInUse } from '../../data/events';
 import * as api from '../../data/api';
 
@@ -304,7 +303,7 @@ const palSelector = createSelector(
 );
 
 export default connect(
-  (s: Store) => ({
+  s => ({
     station_active_hours_past_week: oeeSelector(s),
     system_active_hours_per_week: s.Events.last30.oee.system_active_hours_per_week,
     pallets: palSelector(s),

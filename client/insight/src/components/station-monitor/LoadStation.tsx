@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from 'react';
-import { connect } from 'react-redux';
+import * as reactRedux from 'react-redux';
 import Divider from 'material-ui/Divider';
 import { withStyles } from 'material-ui';
 import * as im from 'immutable';
@@ -48,7 +48,7 @@ import { MaterialList, LoadStationData, selectLoadStationProps } from '../../dat
 import { InProcMaterial, MaterialDetailTitle, MaterialDetailContent } from './Material';
 import * as api from '../../data/api';
 import * as routes from '../../data/routes';
-import { Store } from '../../data/store';
+import { Store, connect, mkAC, DispatchFn } from '../../data/store';
 import * as matDetails from '../../data/material-details';
 
 const materialStyle = withStyles(() => ({
@@ -195,11 +195,11 @@ export const PalletColumn = palletStyles<LoadStationProps>(props => {
 
 export interface MaterialDialogProps {
   display_material: matDetails.MaterialDetail | null;
-  // tslint:disable-next-line:no-any
-  onClose: () => any;
+  onClose: DispatchFn<matDetails.ActionType.CloseMaterialDialog>;
 }
 
 export function MaterialDialog(props: MaterialDialogProps) {
+  const onClose = () => props.onClose({station: routes.StationMonitorType.LoadUnload});
   let body: JSX.Element | undefined;
   if (props.display_material === null) {
     body = <p>None</p>;
@@ -214,7 +214,7 @@ export function MaterialDialog(props: MaterialDialogProps) {
           <MaterialDetailContent mat={mat}/>
         </DialogContent>
         <DialogActions>
-          <Button onClick={props.onClose} color="primary">
+          <Button onClick={onClose} color="primary">
             Close
           </Button>
         </DialogActions>
@@ -224,7 +224,7 @@ export function MaterialDialog(props: MaterialDialogProps) {
   return (
     <Dialog
       open={props.display_material !== null}
-      onClose={props.onClose}
+      onClose={onClose}
       maxWidth="md"
     >
       {body}
@@ -238,10 +238,7 @@ export const ConnectedMaterialDialog = connect(
     display_material: st.MaterialDetails.material[routes.StationMonitorType.LoadUnload]
   }),
   {
-    onClose: () => ({
-      type: matDetails.ActionType.CloseMaterialDialog,
-      station: routes.StationMonitorType.LoadUnload,
-    }),
+    onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
   }
 )(MaterialDialog);
 
@@ -338,7 +335,7 @@ const buildLoadData = createSelector(
   }
 );
 
-export default connect(
+export default reactRedux.connect(
   (st: Store) => ({
     data: buildLoadData(st)
   }),

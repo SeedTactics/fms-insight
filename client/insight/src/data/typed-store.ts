@@ -30,31 +30,36 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from 'react';
-import { CircularProgress } from 'material-ui/Progress';
 
-import { connect, Store } from '../data/store';
-import Tooltip from 'material-ui/Tooltip/Tooltip';
+import * as reactRedux from 'react-redux';
 
-export function LoadingIcon({loading}: {loading: boolean}) {
-  if (loading) {
-    return (
-      <Tooltip title="Loading">
-        <CircularProgress color="secondary"/>
-      </Tooltip>
-    );
-  } else {
-    return null;
-  }
+type RemoveTypeProp<P> = P extends "type" ? never : P;
+type RemoveType<A> = { [P in RemoveTypeProp<keyof A>]: A[P] };
+type GetActionTypes<A> = A extends {type: infer T} ? T : never;
+
+export type ActionPayload<A, T> = A extends {type: T} ? RemoveType<A> : never;
+export type DispatchFn<A, T> = (payload: ActionPayload<A, T>) => void;
+export type ActionCreator<A, T> = (payload: ActionPayload<A, T>) => A;
+
+export interface ActionCreatorFactory<A> {
+  <T extends GetActionTypes<A>>(ty: T): ActionCreator<A, T>;
 }
 
-export default connect(
-  (st: Store) => ({
-    loading: st.Events.loading_log_entries
-          || st.Events.loading_job_history
-          || st.Current.loading
-          || st.Events.loading_analysis_month_log
-          || st.Events.loading_analysis_month_jobs
-          || st.Websocket.websocket_reconnecting
-  })
-)(LoadingIcon);
+export function actionCreatorFactory<A>(): ActionCreatorFactory<A> {
+  // tslint:disable-next-line:no-any
+  return (ty: any) => ((payload: any) =>
+    // tslint:disable-next-line:no-any
+    ({...payload as any, type: ty} as any) as any) as any;
+}
+
+type ActionCreatorToDispatch<A, Creators> = {
+  [P in keyof Creators]: Creators[P] extends ActionCreator<A, infer T> ? DispatchFn<A, T> : never;
+};
+
+export interface Connect<A, S> {
+  <P, TOwnProps = {}>(getProps: (s: S) => P):
+    reactRedux.InferableComponentEnhancerWithProps<P, TOwnProps>;
+
+  <P, Creators, TOwnProps = {}>(getProps: (s: S) => P, actionCreators: Creators):
+    reactRedux.InferableComponentEnhancerWithProps<P & ActionCreatorToDispatch<A, Creators>, TOwnProps>;
+}

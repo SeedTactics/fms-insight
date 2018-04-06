@@ -31,14 +31,13 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
-import { connect } from 'react-redux';
 import * as im from 'immutable';
 import { duration } from 'moment';
 import { createSelector } from 'reselect';
 import * as numerable from 'numeral';
 
 import * as api from '../../data/api';
-import { Store } from '../../data/store';
+import { connect, Store } from '../../data/store';
 import {
   FlexibleWidthXYPlot,
   FlexibleXYPlot,
@@ -219,7 +218,7 @@ const jobsToPointsSelector = createSelector(
 );
 
 export default connect(
-  (s: Store) => {
+  s => {
     return jobsToPointsSelector(s);
   }
 )(CurrentJobs);
