@@ -49,13 +49,17 @@ export interface ActionCreatorFactory<A> {
   <T extends GetActionTypes<A>>(ty: T): ActionCreator<A, ActionPayload<A, T>>;
 }
 export function actionCreatorFactory<A>(): ActionCreatorFactory<A> {
+  // any is needed for payload since typescript can't guarantee that ActionPayload<A, T> is
+  // an object.  ActionPayload<A, T> will be an object exactly when the action type T appears
+  // exactly once in the action sum type, which should always be the case.
   // tslint:disable-next-line:no-any
-  return (ty: any) => ((payload: any) => {
-    if (!payload) {
-      payload = {};
+  return ty => (payload: any) => {
+    if (payload) {
+      return ({...payload, type: ty});
+    } else {
+      return {type: ty};
     }
-    return ({...payload, type: ty});
-  });
+  };
 }
 
 // Specialized type for connect
