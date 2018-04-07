@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import ReconnectingWebSocket from 'reconnecting-websocket';
-import * as redux from 'redux';
 import * as events from './events';
 import * as current from './current-status';
 import { LogEntry, NewJobs, CurrentStatus } from './api';
@@ -67,7 +66,8 @@ export function reducer(s: State, a: Action): State {
   }
 }
 
-export function openWebsocket(d: (a: redux.AnyAction) => void, getEvtState: () => events.State) {
+// tslint:disable-next-line:no-any
+export function openWebsocket(d: (a: any) => void, getEvtState: () => events.State) {
   const loc = window.location;
   let uri = "";
   if (loc.protocol === "https:") {
@@ -85,8 +85,7 @@ export function openWebsocket(d: (a: redux.AnyAction) => void, getEvtState: () =
     if (st.last30.latest_log_counter !== undefined) {
       d(events.refreshLogEntries(st.last30.latest_log_counter));
     } else {
-      // tslint:disable-next-line:no-any
-      d(events.loadLast30Days() as any);
+      d(events.loadLast30Days());
     }
 
     d(current.loadCurrentStatus());

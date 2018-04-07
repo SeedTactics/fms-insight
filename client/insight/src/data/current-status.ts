@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as api from './api';
-import { Pledge, PledgeStatus, PledgeToPromise } from './pledge';
+import { Pledge, PledgeStatus, ActionBeforeMiddleware } from './middleware';
 
 export interface State {
     readonly loading: boolean;
@@ -60,7 +60,9 @@ export type Action =
   | {type: ActionType.SetCurrentStatus, st: Readonly<api.ICurrentStatus>}
   ;
 
-export function loadCurrentStatus(): PledgeToPromise<Action> {
+type ABF = ActionBeforeMiddleware<Action>;
+
+export function loadCurrentStatus(): ABF {
     var client = new api.JobsClient();
     return {
         type: ActionType.LoadCurrentStatus,
@@ -68,7 +70,7 @@ export function loadCurrentStatus(): PledgeToPromise<Action> {
     };
 }
 
-export function setCurrentStatus(st: Readonly<api.ICurrentStatus>): PledgeToPromise<Action> {
+export function setCurrentStatus(st: Readonly<api.ICurrentStatus>): ABF {
     return {
         type: ActionType.SetCurrentStatus,
         st,

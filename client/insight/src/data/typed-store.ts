@@ -32,15 +32,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as reactRedux from 'react-redux';
-import { PledgeToPromise } from './pledge';
 
 type RemoveTypeProp<P> = P extends "type" ? never : P;
 type RemoveType<A> = { [P in RemoveTypeProp<keyof A>]: A[P] };
 type GetActionTypes<A> = A extends {type: infer T} ? T : never;
 export type ActionPayload<A, T> = A extends {type: T} ? RemoveType<A> : never;
+export type ActionCreator<A, Args> = (args: Args) => A;
+export type DispatchFn<Args> =
+  {} extends Args
+  ? () => void
+  : (payload: Args) => void;
+export type DispatchAction<A, T> = DispatchFn<ActionPayload<A, T>>;
 
-export type ActionCreator<A, Args> = (args: Args) => PledgeToPromise<A>;
-
+// Action creator for generic action
 export interface ActionCreatorFactory<A> {
   <T extends GetActionTypes<A>>(ty: T): ActionCreator<A, ActionPayload<A, T>>;
 }
@@ -54,16 +58,12 @@ export function actionCreatorFactory<A>(): ActionCreatorFactory<A> {
   });
 }
 
-export type DispatchFn<Args> = {} extends Args
-  ? () => void
-  : (payload: Args) => void;
-export type DispatchAction<A, T> = DispatchFn<ActionPayload<A, T>>;
+// Specialized type for connect
 export type ActionCreatorToDispatch<A, Creators> = {
   [P in keyof Creators]:
     Creators[P] extends ActionCreator<A, infer Args> ? DispatchFn<Args> :
     never;
 };
-
 export interface Connect<A, S> {
   <P, TOwnProps = {}>(getProps: (s: S) => P):
     reactRedux.InferableComponentEnhancerWithProps<P, TOwnProps>;

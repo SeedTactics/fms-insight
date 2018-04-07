@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { addDays, addMonths, startOfMonth } from 'date-fns';
-import { PledgeStatus, Pledge, PledgeToPromise } from './pledge';
+import { PledgeStatus, Pledge, ActionBeforeMiddleware } from './middleware';
 import * as im from 'immutable';
 
 import * as api from './api';
@@ -140,9 +140,9 @@ export type Action =
   | {type: ActionType.SetSystemHours, hours: number}
   ;
 
-type ActionToDispatch = PledgeToPromise<Action>;
+type ABF = ActionBeforeMiddleware<Action>;
 
-export function loadLast30Days(): ActionToDispatch[] {
+export function loadLast30Days(): ABF {
     var logClient = new api.LogClient();
     var jobClient = new api.JobsClient();
     var now = new Date();
@@ -162,7 +162,7 @@ export function loadLast30Days(): ActionToDispatch[] {
     ];
 }
 
-export function refreshLogEntries(lastCounter: number): ActionToDispatch {
+export function refreshLogEntries(lastCounter: number): ABF {
     var client = new api.LogClient();
     var now = new Date();
     return {
@@ -172,13 +172,13 @@ export function refreshLogEntries(lastCounter: number): ActionToDispatch {
     };
 }
 
-export function receiveNewEvents(events: ReadonlyArray<Readonly<api.ILogEntry>>): ActionToDispatch {
+export function receiveNewEvents(events: ReadonlyArray<Readonly<api.ILogEntry>>): ABF {
     return {
         type: ActionType.ReceiveNewLogEntries, now: new Date(), events
     };
 }
 
-export function receiveNewJobs(newJobs: Readonly<api.INewJobs>): ActionToDispatch {
+export function receiveNewJobs(newJobs: Readonly<api.INewJobs>): ABF {
     const jobs: {[key: string]: api.JobPlan} = {};
     newJobs.jobs.forEach(j => {
         jobs[j.unique] = j;
@@ -191,11 +191,11 @@ export function receiveNewJobs(newJobs: Readonly<api.INewJobs>): ActionToDispatc
     };
 }
 
-export function analyzeLast30Days(): ActionToDispatch {
+export function analyzeLast30Days(): ABF {
     return {type: ActionType.SetAnalysisLast30Days};
 }
 
-export function analyzeSpecificMonth(month: Date): ActionToDispatch[] {
+export function analyzeSpecificMonth(month: Date): ABF {
     var client = new api.LogClient();
     var jobClient = new api.JobsClient();
     var startOfNextMonth = addMonths(month, 1);
@@ -213,7 +213,7 @@ export function analyzeSpecificMonth(month: Date): ActionToDispatch[] {
     ];
 }
 
-export function setAnalysisMonth(month: Date): ActionToDispatch {
+export function setAnalysisMonth(month: Date): ABF {
     return {
         type: ActionType.SetAnalysisMonth,
         month: month

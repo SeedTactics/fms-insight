@@ -38,7 +38,7 @@ import * as gui from './gui-state';
 import * as routes from './routes';
 import * as mat from './material-details';
 import * as websocket from './websocket';
-import { pledgeMiddleware } from './pledge';
+import { pledgeMiddleware, arrayMiddleware, ActionBeforeMiddleware } from './middleware';
 import * as tstore from './typed-store';
 
 import { connectRoutes, LocationState } from 'redux-first-router';
@@ -64,8 +64,11 @@ export type AppAction =
   | routes.Action
   ;
 
-export const connect: tstore.Connect<AppAction, Store> = reactRedux.connect;
-export const mkAC: tstore.ActionCreatorFactory<AppAction> = tstore.actionCreatorFactory<AppAction>();
+export type AppActionBeforeMiddleware = ActionBeforeMiddleware<AppAction>;
+
+export const connect: tstore.Connect<AppActionBeforeMiddleware, Store> = reactRedux.connect;
+export const mkAC: tstore.ActionCreatorFactory<AppActionBeforeMiddleware> =
+  tstore.actionCreatorFactory<AppActionBeforeMiddleware>();
 export type DispatchAction<T> = tstore.DispatchAction<AppAction, T>;
 
 export function initStore() {
@@ -83,16 +86,6 @@ export function initStore() {
     ? (window as any)['__REDUX_DEVTOOLS_EXTENSION__']()
     : f => f;
   /* tslint:enable */
-
-  const arrayMiddleware =
-    // tslint:disable-next-line:no-any
-    ({dispatch}: {dispatch: reactRedux.Dispatch<any>}) => (next: reactRedux.Dispatch<any>) => (action: any) => {
-      if (action instanceof Array) {
-        action.map(dispatch);
-      } else {
-        return next(action);
-      }
-  };
 
   const store = createStore<Store>(
     combineReducers<Store>(

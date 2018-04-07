@@ -31,6 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { Middleware } from 'redux';
+import * as reactRedux from 'react-redux';
 
 export enum PledgeStatus {
     Starting = 'Pledge_Starting',
@@ -48,6 +49,8 @@ export type PledgeToPromise<AP> = {
   [P in keyof AP]: "pledge" extends P ? AP[P] extends Pledge<infer R> ? Promise<R> : AP[P] : AP[P];
 };
 
+export type ActionBeforeMiddleware<A> = PledgeToPromise<A> | PledgeToPromise<A>[];
+
 // tslint:disable
 export const pledgeMiddleware: Middleware =
   ({dispatch}) => next => (action: any) => {
@@ -63,4 +66,13 @@ export const pledgeMiddleware: Middleware =
     } else {
         return next(action);
     }
+  };
+
+export const arrayMiddleware: Middleware =
+    ({dispatch}: {dispatch: reactRedux.Dispatch<any>}) => (next: reactRedux.Dispatch<any>) => (action: any) => {
+      if (action instanceof Array) {
+        action.map(dispatch);
+      } else {
+        return next(action);
+      }
   };

@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as im from 'immutable';
 
 import * as api from './api';
-import { Pledge, PledgeStatus, PledgeToPromise } from './pledge';
+import { Pledge, PledgeStatus, ActionBeforeMiddleware } from './middleware';
 import { MaterialSummary } from './events';
 import { StationMonitorType } from './routes';
 
@@ -92,9 +92,9 @@ export type Action =
     }
   ;
 
-type ActionToDispatch = PledgeToPromise<Action>;
+type ABF = ActionBeforeMiddleware<Action>;
 
-export function openLoadunloadMaterialDialog(mat: Readonly<api.IInProcessMaterial>): ActionToDispatch {
+export function openLoadunloadMaterialDialog(mat: Readonly<api.IInProcessMaterial>): ABF {
   const client = new api.LogClient();
   return {
     type: ActionType.OpenMaterialDialog,
@@ -118,7 +118,7 @@ export function openLoadunloadMaterialDialog(mat: Readonly<api.IInProcessMateria
   };
 }
 
-export function openInspectionMaterial(mat: MaterialSummary): ActionToDispatch {
+export function openInspectionMaterial(mat: MaterialSummary): ABF {
   const client = new api.LogClient();
   return {
     type: ActionType.OpenMaterialDialog,
@@ -142,7 +142,7 @@ export function openInspectionMaterial(mat: MaterialSummary): ActionToDispatch {
   };
 }
 
-export function openWashMaterial(mat: MaterialSummary): ActionToDispatch {
+export function openWashMaterial(mat: MaterialSummary): ABF {
   const client = new api.LogClient();
   return {
     type: ActionType.OpenMaterialDialog,
@@ -166,7 +166,7 @@ export function openWashMaterial(mat: MaterialSummary): ActionToDispatch {
   };
 }
 
-export function completeInspection(mat: MaterialDetail, inspType: string, success: boolean): ActionToDispatch {
+export function completeInspection(mat: MaterialDetail, inspType: string, success: boolean): ABF {
   const client = new api.LogClient();
   return {
     type: ActionType.UpdateMaterial,
@@ -190,7 +190,7 @@ export function completeInspection(mat: MaterialDetail, inspType: string, succes
   };
 }
 
-export function completeWash(mat: MaterialDetail): ActionToDispatch {
+export function completeWash(mat: MaterialDetail): ABF {
   const client = new api.LogClient();
   return {
     type: ActionType.UpdateMaterial,
@@ -211,7 +211,7 @@ export function completeWash(mat: MaterialDetail): ActionToDispatch {
   };
 }
 
-export function assignWorkorder(mat: MaterialDetail, station: StationMonitorType, workorder: string): ActionToDispatch {
+export function assignWorkorder(mat: MaterialDetail, station: StationMonitorType, workorder: string): ABF {
   const client = new api.LogClient();
   return {
     type: ActionType.UpdateMaterial,
