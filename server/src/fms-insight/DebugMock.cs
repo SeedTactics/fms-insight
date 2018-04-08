@@ -46,7 +46,22 @@ using System.Runtime.Serialization.Json;
 #if DEBUG
 namespace MachineWatchApiServer
 {
-    public class MockBackend : IServerBackend, IJobControl, IOldJobDecrement
+    public class MockFMSImplementation : IFMSImplementation
+    {
+        public FMSInfo Info {get;}
+            = new FMSInfo() {
+                Name = "mock",
+                Version = "1.2.3.4"
+            };
+
+        public IServerBackend Backend {get;}
+            = new MockServerBackend();
+
+        public IList<IBackgroundWorker> Workers {get;}
+            = new List<IBackgroundWorker>();
+    }
+
+  public class MockServerBackend : IServerBackend, IJobControl, IOldJobDecrement
     {
         public JobLogDB LogDB {get;private set;}
         public JobDB JobDB {get; private set;}

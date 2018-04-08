@@ -45,37 +45,17 @@ using Serilog;
 
 namespace MachineWatchApiServer
 {
-    [DataContract]
-    public struct PluginInfo
-    {
-        [DataMember] public string Name {get;set;}
-        [DataMember] public string Version {get;set;}
-    }
-
-    public interface IPlugin
-    {
-        PluginInfo PluginInfo {get;}
-        IServerBackend Backend {get;}
-        IList<IBackgroundWorker> Workers {get;}
-    }
-
     public class Plugin :
         #if NETCOREAPP2_0
         System.Runtime.Loader.AssemblyLoadContext,
         #endif
-        IPlugin
+        IFMSImplementation
     {
-        public PluginInfo PluginInfo {get; protected set;}
+        public FMSInfo Info {get; protected set;}
         public IServerBackend Backend {get; protected set;}
         public IList<IBackgroundWorker> Workers {get;} = new List<IBackgroundWorker>();
 
         private string pluginDirectory;
-
-        public Plugin(IServerBackend backend, PluginInfo info)
-        {
-            PluginInfo = info;
-            Backend = backend;
-        }
 
         public Plugin(string pluginFile)
         {
@@ -104,7 +84,7 @@ namespace MachineWatchApiServer
                         if (i == typeof(IServerBackend))
                         {
                             Backend = (IServerBackend) Activator.CreateInstance(t);
-                            PluginInfo = new PluginInfo() {
+                            Info = new FMSInfo() {
                                 Name = a.GetName().Name,
                                 Version = System.Diagnostics.FileVersionInfo.GetVersionInfo(a.Location).ToString()
                             };
@@ -189,25 +169,4 @@ namespace MachineWatchApiServer
         }
 #endif
     }
-
-#if SERVE_REMOTING
-    public class ServicePlugin :
-        BlackMaple.MachineWatch.RemotingServer.IMachineWatchPlugin,
-        IMachineWatchVersion
-    {
-        private IPlugin _plugin;
-
-        public IServerBackend serverBackend => _plugin.Backend;
-        public IMachineWatchVersion serverVersion => this;
-        public IEnumerable<IBackgroundWorker> workers => _plugin.Workers;
-        public string Version() => _plugin.PluginInfo.Version;
-        public string PluginName() => _plugin.PluginInfo.Name;
-
-        public ServicePlugin(IPlugin p)
-        {
-            _plugin = p;
-        }
-    }
-#endif
-
 }

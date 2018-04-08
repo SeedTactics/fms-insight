@@ -31,46 +31,59 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using System;
 using System.Collections.Generic;
-using Microsoft.AspNetCore.Mvc;
+using System.Runtime.Serialization;
 using BlackMaple.MachineWatchInterface;
+using BlackMaple.MachineFramework;
+using Microsoft.Extensions.Configuration;
+using System.Reflection;
+using Microsoft.Extensions.DependencyModel;
+using System.IO;
+using System.Linq;
+using Serilog;
 
-namespace MachineWatchApiServer.Controllers
+namespace MachineWatchApiServer
 {
-    [Route("api/v1/[controller]")]
-    public class serverController : ControllerBase
+    [DataContract]
+    public struct FMSInfo
     {
-        private IFMSImplementation _fmsImpl;
-        private IStoreSettings _settings;
+        [DataMember] public string Name {get;set;}
+        [DataMember] public string Version {get;set;}
+    }
 
-        public serverController(IFMSImplementation fmsImpl, IStoreSettings s)
-        {
-            _settings = s;
-            _fmsImpl = fmsImpl;
-        }
+    public interface IFMSImplementation
+    {
+        FMSInfo Info {get;}
+        IServerBackend Backend {get;}
+        IList<IBackgroundWorker> Workers {get;}
+    }
 
-        [HttpGet("fms-information")]
-        public FMSInfo FMSInformation()
-        {
-            return _fmsImpl.Info;
-        }
+    public static class CurrentFMSImplementation {
+      public static IFMSImplementation Impl {get;set;}
+        #if DEBUG
+          = new MockFMSImplementation();
+        #endif
+    }
 
-        [HttpGet("workorder-assignment-type")]
-        public WorkorderAssignmentType WorkorderAssignmentType()
-        {
-            return Program.FMSSettings.WorkorderAssignment;
-        }
+#if SERVE_REMOTING
+    public class ServicePlugin :
+        BlackMaple.MachineWatch.RemotingServer.IMachineWatchPlugin,
+        IMachineWatchVersion
+    {
+        private IPlugin _plugin;
 
-        [HttpGet("settings/{id}")]
-        public string GetSettings(string id)
-        {
-            return _settings.GetSettings(id);
-        }
+        public IServerBackend serverBackend => _plugin.Backend;
+        public IMachineWatchVersion serverVersion => this;
+        public IEnumerable<IBackgroundWorker> workers => _plugin.Workers;
+        public string Version() => _plugin.PluginInfo.Version;
+        public string PluginName() => _plugin.PluginInfo.Name;
 
-        [HttpPut("settings/{id}")]
-        public void SetSetting(string id, [FromBody] string setting)
+        public ServicePlugin(IPlugin p)
         {
-            _settings.SetSettings(id, setting);
+            _plugin = p;
         }
     }
+#endif
+
 }

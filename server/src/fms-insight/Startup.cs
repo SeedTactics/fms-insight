@@ -56,29 +56,15 @@ namespace MachineWatchApiServer
             }
         }
 
-        public static BlackMaple.MachineFramework.IServerBackend DebugMockBackend {get;set;} =
-            #if DEBUG
-                new MockBackend();
-            #else
-                null;
-            #endif
-
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            IPlugin plugin;
-            //if (!string.IsNullOrEmpty(Program.FMSSettings.PluginFile)) {
-            //    plugin = new Plugin(Program.FMSSettings.PluginFile);
-            //} else
-            if (DebugMockBackend != null) {
-                plugin = new Plugin(DebugMockBackend,
-                    new PluginInfo() {
-                        Name = "mock-machinewatch",
-                        Version = "1.2.3.4"
-                    });
-            } else {
-                throw new Exception("Must specify plugin");
+            var fmsImpl = CurrentFMSImplementation.Impl;
+            if (fmsImpl == null) {
+                // TODO try load via plugin?
+                throw new Exception("Unable to load FMS implementation");
             }
+
             var cfgWrapper = new ConfigWrapper();
             var serSettings = new BlackMaple.MachineFramework.SerialSettings() {
                 SerialType = Program.FMSSettings.AutomaticSerials ?
@@ -86,13 +72,13 @@ namespace MachineWatchApiServer
                     BlackMaple.MachineFramework.SerialType.NoAutomaticSerials,
                 SerialLength = Program.FMSSettings.SerialLength,
             };
-            plugin.Backend.Init(
+            fmsImpl.Backend.Init(
                 Program.ServerSettings.DataDirectory,
                 cfgWrapper,
                 serSettings);
-            foreach (var w in plugin.Workers)
+            foreach (var w in fmsImpl.Workers)
                 w.Init(
-                    plugin.Backend,
+                    fmsImpl.Backend,
                     Program.ServerSettings.DataDirectory,
                     cfgWrapper,
                     serSettings
@@ -100,11 +86,11 @@ namespace MachineWatchApiServer
 
             System.Diagnostics.Trace.AutoFlush = true;
             var traceListener = new SerilogTraceListener();
-            foreach (var s in plugin.Backend.TraceSources())
+            foreach (var s in fmsImpl.Backend.TraceSources())
             {
                 s.Listeners.Add(traceListener);
             }
-            foreach (var w in plugin.Workers)
+            foreach (var w in fmsImpl.Workers)
             {
                 w.TraceSource.Listeners.Add(traceListener);
             }
@@ -122,14 +108,14 @@ namespace MachineWatchApiServer
             #endif
 
             services
-                .AddSingleton<IPlugin>(plugin)
+                .AddSingleton<IFMSImplementation>(fmsImpl)
                 .AddSingleton<IStoreSettings>(settings)
-                .AddSingleton<BlackMaple.MachineFramework.IServerBackend>(plugin.Backend)
+                .AddSingleton<BlackMaple.MachineFramework.IServerBackend>(fmsImpl.Backend)
                 .AddSingleton<Controllers.WebsocketManager>(
                     new Controllers.WebsocketManager(
-                        plugin.Backend.LogDatabase(),
-                        plugin.Backend.JobDatabase(),
-                        plugin.Backend.JobControl())
+                        fmsImpl.Backend.LogDatabase(),
+                        fmsImpl.Backend.JobDatabase(),
+                        fmsImpl.Backend.JobControl())
                 );
 
             services
@@ -151,7 +137,7 @@ namespace MachineWatchApiServer
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(
             IApplicationBuilder app,
-            IPlugin plugin,
+            IFMSImplementation fmsImpl,
             IApplicationLifetime lifetime,
             IHostingEnvironment env,
             IServiceProvider services,
@@ -190,10 +176,10 @@ namespace MachineWatchApiServer
 
 
             lifetime.ApplicationStopping.Register(async () => {
-                if (plugin == null) return;
+                if (fmsImpl == null) return;
                 await wsManager.CloseAll();
-                plugin.Backend?.Halt();
-                foreach (var w in plugin.Workers)
+                fmsImpl.Backend?.Halt();
+                foreach (var w in fmsImpl.Workers)
                     w.Halt();
             });
 
