@@ -46,7 +46,7 @@ using Serilog;
 namespace MachineWatchApiServer
 {
     [DataContract]
-    public struct FMSInfo
+    public class FMSInfo
     {
         [DataMember] public string Name {get;set;}
         [DataMember] public string Version {get;set;}
@@ -57,13 +57,6 @@ namespace MachineWatchApiServer
         FMSInfo Info {get;}
         IServerBackend Backend {get;}
         IList<IBackgroundWorker> Workers {get;}
-    }
-
-    public static class CurrentFMSImplementation {
-      public static IFMSImplementation Impl {get;set;}
-        #if DEBUG
-          = new MockFMSImplementation();
-        #endif
     }
 
 #if SERVE_REMOTING

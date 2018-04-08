@@ -56,15 +56,16 @@ namespace MachineWatchApiServer
             }
         }
 
+        private IFMSImplementation _fmsImpl;
+
+        public Startup(IFMSImplementation fmsImpl)
+        {
+            _fmsImpl = fmsImpl;
+        }
+
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            var fmsImpl = CurrentFMSImplementation.Impl;
-            if (fmsImpl == null) {
-                // TODO try load via plugin?
-                throw new Exception("Unable to load FMS implementation");
-            }
-
             var cfgWrapper = new ConfigWrapper();
             var serSettings = new BlackMaple.MachineFramework.SerialSettings() {
                 SerialType = Program.FMSSettings.AutomaticSerials ?
@@ -72,13 +73,13 @@ namespace MachineWatchApiServer
                     BlackMaple.MachineFramework.SerialType.NoAutomaticSerials,
                 SerialLength = Program.FMSSettings.SerialLength,
             };
-            fmsImpl.Backend.Init(
+            _fmsImpl.Backend.Init(
                 Program.ServerSettings.DataDirectory,
                 cfgWrapper,
                 serSettings);
-            foreach (var w in fmsImpl.Workers)
+            foreach (var w in _fmsImpl.Workers)
                 w.Init(
-                    fmsImpl.Backend,
+                    _fmsImpl.Backend,
                     Program.ServerSettings.DataDirectory,
                     cfgWrapper,
                     serSettings
@@ -86,11 +87,11 @@ namespace MachineWatchApiServer
 
             System.Diagnostics.Trace.AutoFlush = true;
             var traceListener = new SerilogTraceListener();
-            foreach (var s in fmsImpl.Backend.TraceSources())
+            foreach (var s in _fmsImpl.Backend.TraceSources())
             {
                 s.Listeners.Add(traceListener);
             }
-            foreach (var w in fmsImpl.Workers)
+            foreach (var w in _fmsImpl.Workers)
             {
                 w.TraceSource.Listeners.Add(traceListener);
             }
@@ -108,14 +109,14 @@ namespace MachineWatchApiServer
             #endif
 
             services
-                .AddSingleton<IFMSImplementation>(fmsImpl)
+                .AddSingleton<FMSInfo>(_fmsImpl.Info)
                 .AddSingleton<IStoreSettings>(settings)
-                .AddSingleton<BlackMaple.MachineFramework.IServerBackend>(fmsImpl.Backend)
+                .AddSingleton<BlackMaple.MachineFramework.IServerBackend>(_fmsImpl.Backend)
                 .AddSingleton<Controllers.WebsocketManager>(
                     new Controllers.WebsocketManager(
-                        fmsImpl.Backend.LogDatabase(),
-                        fmsImpl.Backend.JobDatabase(),
-                        fmsImpl.Backend.JobControl())
+                        _fmsImpl.Backend.LogDatabase(),
+                        _fmsImpl.Backend.JobDatabase(),
+                        _fmsImpl.Backend.JobControl())
                 );
 
             services
@@ -137,7 +138,6 @@ namespace MachineWatchApiServer
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(
             IApplicationBuilder app,
-            IFMSImplementation fmsImpl,
             IApplicationLifetime lifetime,
             IHostingEnvironment env,
             IServiceProvider services,
@@ -176,10 +176,10 @@ namespace MachineWatchApiServer
 
 
             lifetime.ApplicationStopping.Register(async () => {
-                if (fmsImpl == null) return;
+                if (_fmsImpl == null) return;
                 await wsManager.CloseAll();
-                fmsImpl.Backend?.Halt();
-                foreach (var w in fmsImpl.Workers)
+                _fmsImpl.Backend?.Halt();
+                foreach (var w in _fmsImpl.Workers)
                     w.Halt();
             });
 

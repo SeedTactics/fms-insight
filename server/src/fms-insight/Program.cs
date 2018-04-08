@@ -40,6 +40,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
@@ -100,11 +101,11 @@ namespace MachineWatchApiServer
             Log.Logger = logConfig.CreateLogger();
         }
 
-        public static IWebHost BuildWebHost()
+        public static IWebHost BuildWebHost(IFMSImplementation fmsImpl)
         {
-
             return new WebHostBuilder()
                 .UseConfiguration(Configuration)
+                .ConfigureServices(s => { s.AddSingleton<IFMSImplementation>(fmsImpl); })
                 .UseKestrel(options => {
                     #if DEBUG
                     var address = IPAddress.Loopback;
@@ -126,7 +127,7 @@ namespace MachineWatchApiServer
                 .Build();
         }
 
-        public static void Main()
+        public static void Run(IFMSImplementation fmsImpl)
         {
             LoadConfig();
             EnableSerilog();
@@ -134,13 +135,22 @@ namespace MachineWatchApiServer
             Log.Information("Starting machine watch with settings {@ServerSettings} and {@FMSSettings}",
                 ServerSettings, FMSSettings);
 
-            var host = BuildWebHost();
+            var host = BuildWebHost(fmsImpl);
 
             #if USE_SERVICE
                 Microsoft.AspNetCore.Hosting.WindowsServices.WebHostWindowsServiceExtensions
                     .RunAsService(host);
             #else
                 host.Run();
+            #endif
+        }
+
+        public static void Main()
+        {
+            #if DEBUG
+            Run(new MockFMSImplementation());
+            #else
+            throw new Exception("Unable to find FMS implementation");
             #endif
         }
     }

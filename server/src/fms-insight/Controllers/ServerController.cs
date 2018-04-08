@@ -40,19 +40,19 @@ namespace MachineWatchApiServer.Controllers
     [Route("api/v1/[controller]")]
     public class serverController : ControllerBase
     {
-        private IFMSImplementation _fmsImpl;
+        private FMSInfo _info;
         private IStoreSettings _settings;
 
-        public serverController(IFMSImplementation fmsImpl, IStoreSettings s)
+        public serverController(FMSInfo info, IStoreSettings s)
         {
             _settings = s;
-            _fmsImpl = fmsImpl;
+            _info = info;
         }
 
         [HttpGet("fms-information")]
         public FMSInfo FMSInformation()
         {
-            return _fmsImpl.Info;
+            return _info;
         }
 
         [HttpGet("workorder-assignment-type")]
