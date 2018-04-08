@@ -4,3 +4,6 @@ obj/
 integration.pdf
 node_modules/
 client/insight/build/
+build/tmp/
+build/*.msm
+build/*.wixpdb
