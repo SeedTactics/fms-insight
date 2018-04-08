@@ -54,16 +54,11 @@
         <PackageReference Include="Serilog.Sinks.EventLog" Version="3.0.47"/>
       </ItemGroup>
     </When>
-    <When Condition="$(OS) == 'Windows_NT'">
+    <Otherwise>
       <PropertyGroup>
-        <TargetFrameworks>netcoreapp2;net461</TargetFrameworks>
+        <TargetFramework>netcoreapp2</TargetFramework>
       </PropertyGroup>
-    </When>
-    <When Condition="$(OS) == 'Unix'">
-        <PropertyGroup>
-            <TargetFramework>netcoreapp2</TargetFramework>
-        </PropertyGroup>
-    </When>
+    </Otherwise>
   </Choose>
 
 </Project>
