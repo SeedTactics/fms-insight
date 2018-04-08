@@ -1129,8 +1129,8 @@ export class ServerClient {
         this.baseUrl = baseUrl ? baseUrl : "";
     }
 
-    pluginInfo(): Promise<PluginInfo> {
-        let url_ = this.baseUrl + "/api/v1/server/plugin";
+    fMSInformation(): Promise<FMSInfo> {
+        let url_ = this.baseUrl + "/api/v1/server/fms-information";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
@@ -1142,18 +1142,18 @@ export class ServerClient {
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processPluginInfo(_response);
+            return this.processFMSInformation(_response);
         });
     }
 
-    protected processPluginInfo(response: Response): Promise<PluginInfo> {
+    protected processFMSInformation(response: Response): Promise<FMSInfo> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 200) {
             return response.text().then((_responseText) => {
             let result200: any = null;
             let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = resultData200 ? PluginInfo.fromJS(resultData200) : new PluginInfo();
+            result200 = resultData200 ? FMSInfo.fromJS(resultData200) : <any>null;
             return result200;
             });
         } else if (status !== 200 && status !== 204) {
@@ -1161,7 +1161,7 @@ export class ServerClient {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
             });
         }
-        return Promise.resolve<PluginInfo>(<any>null);
+        return Promise.resolve<FMSInfo>(<any>null);
     }
 
     workorderAssignmentType(): Promise<WorkorderAssignmentType> {
@@ -2677,15 +2677,19 @@ export enum ActionType {
     Machining = <any>"Machining",
 }
 
-export class QueueSize extends ValueType implements IQueueSize {
+export class QueueSize implements IQueueSize {
     maxSizeBeforeStopUnloading?: number;
 
     constructor(data?: IQueueSize) {
-        super(data);
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
     }
 
     init(data?: any) {
-        super.init(data);
         if (data) {
             this.maxSizeBeforeStopUnloading = data["MaxSizeBeforeStopUnloading"];
         }
@@ -2701,38 +2705,40 @@ export class QueueSize extends ValueType implements IQueueSize {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         data["MaxSizeBeforeStopUnloading"] = this.maxSizeBeforeStopUnloading;
-        super.toJSON(data);
         return data;
     }
 }
 
-export interface IQueueSize extends IValueType {
+export interface IQueueSize {
     maxSizeBeforeStopUnloading?: number;
 }
 
-export class NewJobs extends ValueType implements INewJobs {
+export class NewJobs implements INewJobs {
     scheduleId: string;
-    jobs: JobPlan[];
-    stationUse: SimulatedStationUtilization[];
-    extraParts: { [key: string] : number; };
     archiveCompletedJobs: boolean;
+    jobs: JobPlan[];
+    stationUse?: SimulatedStationUtilization[];
+    extraParts?: { [key: string] : number; };
     debugMessage?: string;
     currentUnfilledWorkorders?: PartWorkorder[];
     queueSizes?: { [key: string] : QueueSize; };
 
     constructor(data?: INewJobs) {
-        super(data);
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
         if (!data) {
             this.jobs = [];
-            this.stationUse = [];
-            this.extraParts = {};
         }
     }
 
     init(data?: any) {
-        super.init(data);
         if (data) {
             this.scheduleId = data["ScheduleId"];
+            this.archiveCompletedJobs = data["ArchiveCompletedJobs"];
             if (data["Jobs"] && data["Jobs"].constructor === Array) {
                 this.jobs = [];
                 for (let item of data["Jobs"])
@@ -2750,7 +2756,6 @@ export class NewJobs extends ValueType implements INewJobs {
                         this.extraParts[key] = data["ExtraParts"][key];
                 }
             }
-            this.archiveCompletedJobs = data["ArchiveCompletedJobs"];
             this.debugMessage = data["DebugMessage"];
             if (data["CurrentUnfilledWorkorders"] && data["CurrentUnfilledWorkorders"].constructor === Array) {
                 this.currentUnfilledWorkorders = [];
@@ -2777,6 +2782,7 @@ export class NewJobs extends ValueType implements INewJobs {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         data["ScheduleId"] = this.scheduleId;
+        data["ArchiveCompletedJobs"] = this.archiveCompletedJobs;
         if (this.jobs && this.jobs.constructor === Array) {
             data["Jobs"] = [];
             for (let item of this.jobs)
@@ -2794,7 +2800,6 @@ export class NewJobs extends ValueType implements INewJobs {
                     data["ExtraParts"][key] = this.extraParts[key];
             }
         }
-        data["ArchiveCompletedJobs"] = this.archiveCompletedJobs;
         data["DebugMessage"] = this.debugMessage;
         if (this.currentUnfilledWorkorders && this.currentUnfilledWorkorders.constructor === Array) {
             data["CurrentUnfilledWorkorders"] = [];
@@ -2808,17 +2813,16 @@ export class NewJobs extends ValueType implements INewJobs {
                     data["QueueSizes"][key] = this.queueSizes[key];
             }
         }
-        super.toJSON(data);
         return data;
     }
 }
 
-export interface INewJobs extends IValueType {
+export interface INewJobs {
     scheduleId: string;
-    jobs: JobPlan[];
-    stationUse: SimulatedStationUtilization[];
-    extraParts: { [key: string] : number; };
     archiveCompletedJobs: boolean;
+    jobs: JobPlan[];
+    stationUse?: SimulatedStationUtilization[];
+    extraParts?: { [key: string] : number; };
     debugMessage?: string;
     currentUnfilledWorkorders?: PartWorkorder[];
     queueSizes?: { [key: string] : QueueSize; };
@@ -3369,25 +3373,29 @@ export interface INewWash extends IValueType {
     active: string;
 }
 
-export class PluginInfo extends ValueType implements IPluginInfo {
+export class FMSInfo implements IFMSInfo {
     name?: string;
     version?: string;
 
-    constructor(data?: IPluginInfo) {
-        super(data);
+    constructor(data?: IFMSInfo) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
     }
 
     init(data?: any) {
-        super.init(data);
         if (data) {
             this.name = data["Name"];
             this.version = data["Version"];
         }
     }
 
-    static fromJS(data: any): PluginInfo {
+    static fromJS(data: any): FMSInfo {
         data = typeof data === 'object' ? data : {};
-        let result = new PluginInfo();
+        let result = new FMSInfo();
         result.init(data);
         return result;
     }
@@ -3396,12 +3404,11 @@ export class PluginInfo extends ValueType implements IPluginInfo {
         data = typeof data === 'object' ? data : {};
         data["Name"] = this.name;
         data["Version"] = this.version;
-        super.toJSON(data);
         return data;
     }
 }
 
-export interface IPluginInfo extends IValueType {
+export interface IFMSInfo {
     name?: string;
     version?: string;
 }

@@ -298,7 +298,7 @@
             "schema": {
               "$ref": "#/definitions/NewJobs"
             },
-            "x-nullable": false
+            "x-nullable": true
           },
           {
             "type": "string",
@@ -827,20 +827,20 @@
         }
       }
     },
-    "/api/v1/server/plugin": {
+    "/api/v1/server/fms-information": {
       "get": {
         "tags": [
           "server"
         ],
-        "operationId": "server_PluginInfo",
+        "operationId": "server_FMSInformation",
         "parameters": [],
         "responses": {
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/PluginInfo"
+              "$ref": "#/definitions/FMSInfo"
             },
-            "x-nullable": false
+            "x-nullable": true
           }
         }
       }
@@ -1744,26 +1744,22 @@
           "type": "integer",
           "format": "int32"
         }
-      },
-      "allOf": [
-        {
-          "$ref": "#/definitions/ValueType"
-        }
-      ]
+      }
     },
     "NewJobs": {
       "type": "object",
       "additionalProperties": false,
       "required": [
         "ScheduleId",
-        "Jobs",
-        "StationUse",
-        "ExtraParts",
-        "ArchiveCompletedJobs"
+        "ArchiveCompletedJobs",
+        "Jobs"
       ],
       "properties": {
         "ScheduleId": {
           "type": "string"
+        },
+        "ArchiveCompletedJobs": {
+          "type": "boolean"
         },
         "Jobs": {
           "type": "array",
@@ -1784,9 +1780,6 @@
             "format": "int32"
           }
         },
-        "ArchiveCompletedJobs": {
-          "type": "boolean"
-        },
         "DebugMessage": {
           "type": "string",
           "format": "byte"
@@ -1803,12 +1796,7 @@
             "$ref": "#/definitions/QueueSize"
           }
         }
-      },
-      "allOf": [
-        {
-          "$ref": "#/definitions/ValueType"
-        }
-      ]
+      }
     },
     "QueuePosition": {
       "type": "object",
@@ -2142,7 +2130,7 @@
         }
       ]
     },
-    "PluginInfo": {
+    "FMSInfo": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -2152,12 +2140,7 @@
         "Version": {
           "type": "string"
         }
-      },
-      "allOf": [
-        {
-          "$ref": "#/definitions/ValueType"
-        }
-      ]
+      }
     },
     "WorkorderAssignmentType": {
       "type": "string",
