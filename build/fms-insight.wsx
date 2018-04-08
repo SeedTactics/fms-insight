@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="windows-1252"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <Module Id="FMSInsightServer" Language="0" Version="1.2.3">
+        <Package Id="$(env.FmsInsightProductGuid)"
+                 InstallerVersion="100"
+                 Languages="1033"
+                 Manufacturer="Black Maple Software, LLC"
+                 SummaryCodepage="1252"
+                 AdminImage="no" />
+
+        <Directory Id='TARGETDIR' Name='SourceDir'>
+            <Directory Id='ProgramFilesFolder' Name='PFiles'>
+                <Directory Id='INSTALLDIR' Name='BlackMaple FMS Insight'>
+                    <Directory Id='WWW' Name='www'>
+                    </Directory>
+                </Directory>
+            </Directory>
+        </Directory>
+
+        <ComponentGroupRef Id="FmsInsightServerCg"/>
+        <ComponentGroupRef Id="FmsInsightClientCg"/>
+    </Module>
+</Wix>
