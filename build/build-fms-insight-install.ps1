@@ -7,10 +7,12 @@ $light = "C:\Program Files (x86)\WiX Toolset v3.11\bin\light.exe"
 $scriptdir = Split-Path -parent $PSCommandPath
 Set-Location $scriptdir
 
+# Build server
 dotnet publish ../server/src/fms-insight -c Release -f net461
 $publishdir = "../server/src/fms-insight/bin/Release/net461/publish"
 $ENV:FmsInsightPublishDir = $publishdir
 
+# Build Client
 Push-Location
 Set-Location "../client/insight"
 & yarn install
@@ -19,12 +21,13 @@ Pop-Location
 $clientdir = "../client/insight/build"
 $ENV:FmsInsightClientDir = $clientdir
 
-& $heat dir $publishdir -gg -out tmp/fms-insight-server.wsx -sfrag -sreg -srd -var env.FmsInsightPublishDir -dr INSTALLDIR -cg FmsInsightServerCg
-& $heat dir $clientdir  -gg -out tmp/fms-insight-client.wsx -sfrag -sreg -srd -var env.FmsInsightClientDir -dr WWW -cg FmsInsightClientCg
-
+# Build wix merge module for fms insight
 $prodguid = (New-Guid).Guid
 $ENV:FmsInsightProductGuid = $prodguid
 $prodguid | Out-File "FMSInsightServer.guid.txt"
+
+& $heat dir $publishdir -gg -out tmp/fms-insight-server.wsx -sfrag -sreg -srd -var env.FmsInsightPublishDir -dr INSTALLDIR -cg FmsInsightServerCg
+& $heat dir $clientdir  -gg -out tmp/fms-insight-client.wsx -sfrag -sreg -srd -var env.FmsInsightClientDir -dr WWW -cg FmsInsightClientCg
 
 & $candle tmp/fms-insight-server.wsx -o tmp/fms-insight-server.wixobj
 & $candle tmp/fms-insight-client.wsx -o tmp/fms-insight-client.wixobj
