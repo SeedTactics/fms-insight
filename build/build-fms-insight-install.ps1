@@ -22,6 +22,10 @@ $ENV:FmsInsightClientDir = $clientdir
 & $heat dir $publishdir -gg -out tmp/fms-insight-server.wsx -sfrag -sreg -srd -var env.FmsInsightPublishDir -dr INSTALLDIR -cg FmsInsightServerCg
 & $heat dir $clientdir  -gg -out tmp/fms-insight-client.wsx -sfrag -sreg -srd -var env.FmsInsightClientDir -dr WWW -cg FmsInsightClientCg
 
+$prodguid = (New-Guid).Guid
+$ENV:FmsInsightProductGuid = $prodguid
+$prodguid | Out-File "FMSInsightServer.guid.txt"
+
 & $candle tmp/fms-insight-server.wsx -o tmp/fms-insight-server.wixobj
 & $candle tmp/fms-insight-client.wsx -o tmp/fms-insight-client.wixobj
 & $candle fms-insight.wsx -o tmp/fms-insight.wixobj

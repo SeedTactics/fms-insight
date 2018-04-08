@@ -7,3 +7,4 @@ client/insight/build/
 build/tmp/
 build/*.msm
 build/*.wixpdb
+build/*.guid.txt

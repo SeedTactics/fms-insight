@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="windows-1252"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
     <Module Id="FMSInsightServer" Language="0" Version="1.2.3">
-        <Package Id="78f87b41-7319-43bb-a796-7af223cb2924"
+        <Package Id="$(env.FmsInsightProductGuid)"
                  InstallerVersion="100"
                  Languages="1033"
                  Manufacturer="Black Maple Software, LLC"
