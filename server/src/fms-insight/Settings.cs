@@ -31,54 +31,88 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using System;
+using System.IO;
 using Microsoft.Extensions.Configuration;
 
 namespace MachineWatchApiServer {
 
     public class ServerSettings
     {
+      #if USE_SERVICE
+
+      public static string ConfigDirectory {get;} =
+        Path.Combine(
+          System.Environment.GetFolderPath(System.Environment.SpecialFolder.CommonApplicationData),
+          "SeedTactics",
+          "FMSInsight"
+        );
+
+      public static string ContentRootDirectory {get;} =
+        Path.GetDirectoryName(
+            System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName
+        );
+
+      #else
+
+      public static string ConfigDirectory {get;} =
+        Directory.GetCurrentDirectory();
+
+      public static string ContentRootDirectory {get;} =
+        Directory.GetCurrentDirectory();
+
+      #endif
+
+
       public string DataDirectory {get;set;} = null;
       public bool EnableDebugLog {get;set;} = false;
-      public bool IPv6 {get;set;} = true;
       public int Port {get;set;} = 5000;
       public string TLSCertFile {get;set;} = null;
 
-      static public ServerSettings Load(IConfiguration config)
+      public static ServerSettings Load(IConfiguration config)
       {
         var s = config.GetSection("SERVER").Get<ServerSettings>();
         if (s == null)
             s = new ServerSettings();
 
         if (string.IsNullOrEmpty(s.DataDirectory)) {
-          s.DataDirectory = CalculateDataDir();
+          s.DataDirectory = DefaultDataDirectory();
         }
         return s;
       }
 
-      private static string CalculateDataDir()
+      private static string DefaultDataDirectory()
       {
-        #if USE_SERVICE
-          var commonData = System.Environment.GetFolderPath(System.Environment.SpecialFolder.CommonApplicationData);
+        var commonData = System.Environment.GetFolderPath(System.Environment.SpecialFolder.CommonApplicationData);
 
-          //check old cms research data directory
-          var dataDir = System.IO.Path.Combine(commonData, "CMS Research", "MachineWatch");
-          if (System.IO.Directory.Exists(dataDir))
-            return dataDir;
-
-          //try new seedtactics directory
-          dataDir = System.IO.Path.Combine(commonData, "SeedTactics", "MachineWatch");
-          if (System.IO.Directory.Exists(dataDir))
-            return dataDir;
-
-          //now new seedtactics directory
-          dataDir = System.IO.Path.Combine(commonData, "SeedTactics", "FMSInsight");
-          if (!System.IO.Directory.Exists(dataDir))
-            System.IO.Directory.CreateDirectory(dataDir);
+        //check old cms research data directory
+        var dataDir = Path.Combine(commonData, "CMS Research", "MachineWatch");
+        if (Directory.Exists(dataDir))
           return dataDir;
 
-        #else
-          return System.IO.Directory.GetCurrentDirectory();
-        #endif
+        //try new seedtactics directory
+        dataDir = Path.Combine(commonData, "SeedTactics", "MachineWatch");
+        if (Directory.Exists(dataDir))
+          return dataDir;
+
+        //now FMSInsight directory
+        dataDir = Path.Combine(commonData, "SeedTactics", "FMSInsight");
+        if (!Directory.Exists(dataDir)) {
+          try {
+            Directory.CreateDirectory(dataDir);
+          } catch (UnauthorizedAccessException) {
+            // don't have permissions in CommonApplicationData
+            dataDir = Path.Combine(
+              System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData),
+              "SeedTactics",
+              "FMSInsight"
+            );
+          }
+        }
+
+        if (!Directory.Exists(dataDir))
+          Directory.CreateDirectory(dataDir);
+        return dataDir;
       }
     }
 
@@ -91,7 +125,6 @@ namespace MachineWatchApiServer {
 
     public class FMSSettings
     {
-      public string PluginFile {get;set;} = null;
       public bool AutomaticSerials {get;set;} = false;
       public int SerialLength {get;set;} = 10;
       public WorkorderAssignmentType WorkorderAssignment {get;set;} = WorkorderAssignmentType.NoAutomaticWorkorderAssignment;

@@ -67,9 +67,10 @@ namespace MachineWatchApiServer
         public void ConfigureServices(IServiceCollection services)
         {
             IPlugin plugin;
-            if (!string.IsNullOrEmpty(Program.FMSSettings.PluginFile)) {
-                plugin = new Plugin(Program.FMSSettings.PluginFile);
-            } else if (DebugMockBackend != null) {
+            //if (!string.IsNullOrEmpty(Program.FMSSettings.PluginFile)) {
+            //    plugin = new Plugin(Program.FMSSettings.PluginFile);
+            //} else
+            if (DebugMockBackend != null) {
                 plugin = new Plugin(DebugMockBackend,
                     new PluginInfo() {
                         Name = "mock-machinewatch",

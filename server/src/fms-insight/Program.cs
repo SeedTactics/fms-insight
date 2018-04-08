@@ -48,25 +48,23 @@ namespace MachineWatchApiServer
 {
     public class Program
     {
-        public static string BaseDirectory {get;} =
-            #if USE_SERVICE
-            Path.GetDirectoryName(
-                System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName
-            );
-            #else
-            Directory.GetCurrentDirectory();
-            #endif
-
         public static IConfiguration Configuration {get; private set;}
         public static ServerSettings ServerSettings {get; private set;}
         public static FMSSettings FMSSettings {get; private set;}
 
         private static void LoadConfig()
         {
+            var configFile = Path.Combine(ServerSettings.ConfigDirectory, "config.ini");
+            if (!File.Exists(configFile)) {
+                var defaultConfigFile = Path.Combine(ServerSettings.ContentRootDirectory, "default-config.ini");
+                if (File.Exists(defaultConfigFile)) {
+                    System.IO.File.Copy(defaultConfigFile, configFile, overwrite: false);
+                }
+            }
+
             Configuration =
                 new ConfigurationBuilder()
-                .SetBasePath(Program.BaseDirectory)
-                .AddIniFile("config.ini", optional: true)
+                .AddIniFile(configFile, optional: true)
                 .AddEnvironmentVariables()
                 .Build();
 
@@ -91,9 +89,7 @@ namespace MachineWatchApiServer
                 restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information);
             #endif
 
-            if (!string.IsNullOrEmpty(ServerSettings.DataDirectory)
-                && ServerSettings.EnableDebugLog) {
-
+            if (ServerSettings.EnableDebugLog) {
                 logConfig = logConfig.WriteTo.File(
                     new Serilog.Formatting.Compact.CompactJsonFormatter(),
                     System.IO.Path.Combine(ServerSettings.DataDirectory, "machinewatch-debug.txt"),
@@ -106,18 +102,14 @@ namespace MachineWatchApiServer
 
         public static IWebHost BuildWebHost()
         {
+
             return new WebHostBuilder()
                 .UseConfiguration(Configuration)
                 .UseKestrel(options => {
-                    IPAddress address;
                     #if DEBUG
-                    address = IPAddress.Loopback;
+                    var address = IPAddress.Loopback;
                     #else
-                    if (ServerSettings.IPv6) {
-                        address = IPAddress.IPv6Any;
-                    } else {
-                        address = IPAddress.Any;
-                    }
+                    var address = IPAddress.IPv6Any;
                     #endif
 
                     if (!string.IsNullOrEmpty(ServerSettings.TLSCertFile)) {
@@ -128,7 +120,7 @@ namespace MachineWatchApiServer
                         options.Listen(address, ServerSettings.Port);
                     }
                 })
-                .UseContentRoot(Program.BaseDirectory)
+                .UseContentRoot(ServerSettings.ContentRootDirectory)
                 .UseSerilog()
                 .UseStartup<Startup>()
                 .Build();
@@ -139,7 +131,8 @@ namespace MachineWatchApiServer
             LoadConfig();
             EnableSerilog();
 
-            Log.Information("Starting machine watch with settings {@ServerSettings} and {@FMSSettings}", ServerSettings, FMSSettings);
+            Log.Information("Starting machine watch with settings {@ServerSettings} and {@FMSSettings}",
+                ServerSettings, FMSSettings);
 
             var host = BuildWebHost();
 
