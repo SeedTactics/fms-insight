@@ -43,9 +43,8 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Converters;
 using NSwag.AspNetCore;
 using Serilog;
-using BlackMaple.MachineFramework;
 
-namespace MachineWatchApiServer
+namespace BlackMaple.MachineFramework
 {
     public class Startup
     {

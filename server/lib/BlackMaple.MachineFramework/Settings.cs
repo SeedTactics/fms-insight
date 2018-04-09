@@ -57,10 +57,6 @@ namespace BlackMaple.MachineFramework
       NoAutomaticWorkorderAssignment,
     }
 
-}
-
-namespace MachineWatchApiServer
-{
     public class ServerSettings
     {
       #if SERVICE_AVAIL

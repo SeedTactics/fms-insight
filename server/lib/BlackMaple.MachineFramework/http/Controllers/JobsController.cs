@@ -35,10 +35,9 @@ using System;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using BlackMaple.MachineWatchInterface;
-using BlackMaple.MachineFramework;
 using System.Runtime.Serialization;
 
-namespace MachineWatchApiServer.Controllers
+namespace BlackMaple.MachineFramework.Controllers
 {
     [DataContract]
     public class QueuePosition {

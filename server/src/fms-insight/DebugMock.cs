@@ -45,9 +45,9 @@ using System.Runtime.Serialization.Json;
 
 namespace DebugMachineWatchApiServer
 {
-    public static class Program {
+    public static class DebugMockProgram {
         public static void Main() {
-            MachineWatchApiServer.Program.Run(false, new MockFMSImplementation());
+            BlackMaple.MachineFramework.Program.Run(false, new MockFMSImplementation());
         }
     }
     public class MockFMSImplementation : IFMSImplementation
@@ -76,7 +76,7 @@ namespace DebugMachineWatchApiServer
 
         public void Init(string dataDir, IConfig config, SerialSettings serialSettings)
         {
-            MachineWatchApiServer.Program.FMSSettings.WorkorderAssignment = WorkorderAssignmentType.AssignWorkorderAtWash;
+            BlackMaple.MachineFramework.Program.FMSSettings.WorkorderAssignment = WorkorderAssignmentType.AssignWorkorderAtWash;
             string path = null; // dataDir
 
             string dbFile(string f) => System.IO.Path.Combine(path, f + ".db");

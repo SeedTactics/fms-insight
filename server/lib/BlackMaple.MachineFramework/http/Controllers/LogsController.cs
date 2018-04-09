@@ -36,9 +36,8 @@ using System.Collections.Generic;
 using System.Runtime.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using BlackMaple.MachineWatchInterface;
-using BlackMaple.MachineFramework;
 
-namespace MachineWatchApiServer.Controllers
+namespace BlackMaple.MachineFramework.Controllers
 {
     [DataContract] public struct NewInspectionCompleted
     {

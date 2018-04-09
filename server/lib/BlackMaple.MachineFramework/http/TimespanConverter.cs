@@ -1,7 +1,7 @@
 using System;
 using Newtonsoft.Json;
 
-namespace MachineWatchApiServer
+namespace BlackMaple.MachineFramework
 {
   public class TimespanConverter : JsonConverter
   {

@@ -37,7 +37,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
 
-namespace MachineWatchApiServer {
+namespace BlackMaple.MachineFramework
+{
 
     public class DateTimeModelBinder : IModelBinder
     {

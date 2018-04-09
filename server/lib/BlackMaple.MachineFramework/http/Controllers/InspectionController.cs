@@ -34,9 +34,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using BlackMaple.MachineWatchInterface;
-using BlackMaple.MachineFramework;
 
-namespace MachineWatchApiServer.Controllers
+namespace BlackMaple.MachineFramework.Controllers
 {
     [Route("api/v1/[controller]")]
     public class inspectionController : ControllerBase

@@ -40,7 +40,7 @@ using BlackMaple.MachineWatchInterface;
 using System.Net.WebSockets;
 using System.Runtime.Serialization;
 
-namespace MachineWatchApiServer.Controllers
+namespace BlackMaple.MachineFramework.Controllers
 {
   [DataContract]
   public class ServerEvent
