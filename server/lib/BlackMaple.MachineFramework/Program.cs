@@ -144,14 +144,5 @@ namespace MachineWatchApiServer
                 host.Run();
             #endif
         }
-
-        public static void Main()
-        {
-            #if DEBUG
-            Run(new MockFMSImplementation());
-            #else
-            throw new Exception("Unable to find FMS implementation");
-            #endif
-        }
     }
 }

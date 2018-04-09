@@ -34,9 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Data;
 using System.Collections.Generic;
-#if MICROSOFT_DATA_SQLITE
 using Microsoft.Data.Sqlite;
-#endif
 
 namespace BlackMaple.MachineFramework
 {

@@ -36,9 +36,7 @@ using System.Collections;
 using Generic = System.Collections.Generic;
 using IO = System.IO;
 using System.Data;
-#if MICROSOFT_DATA_SQLITE
 using Microsoft.Data.Sqlite;
-#endif
 
 using BlackMaple.MachineWatchInterface;
 

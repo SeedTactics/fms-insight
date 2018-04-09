@@ -35,9 +35,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Data;
-#if MICROSOFT_DATA_SQLITE
 using Microsoft.Data.Sqlite;
-#endif
 
 namespace BlackMaple.MachineFramework
 {
