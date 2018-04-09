@@ -43,9 +43,13 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization.Json;
 
-#if DEBUG
-namespace MachineWatchApiServer
+namespace DebugMachineWatchApiServer
 {
+    public static class Program {
+        public static void Main() {
+            MachineWatchApiServer.Program.Run(false, new MockFMSImplementation());
+        }
+    }
     public class MockFMSImplementation : IFMSImplementation
     {
         public FMSInfo Info {get;}
@@ -54,14 +58,14 @@ namespace MachineWatchApiServer
                 Version = "1.2.3.4"
             };
 
-        public IServerBackend Backend {get;}
+        public IFMSBackend Backend {get;}
             = new MockServerBackend();
 
         public IList<IBackgroundWorker> Workers {get;}
             = new List<IBackgroundWorker>();
     }
 
-  public class MockServerBackend : IServerBackend, IJobControl, IOldJobDecrement
+  public class MockServerBackend : IFMSBackend, IJobControl, IOldJobDecrement
     {
         public JobLogDB LogDB {get;private set;}
         public JobDB JobDB {get; private set;}
@@ -72,7 +76,7 @@ namespace MachineWatchApiServer
 
         public void Init(string dataDir, IConfig config, SerialSettings serialSettings)
         {
-            Program.FMSSettings.WorkorderAssignment = WorkorderAssignmentType.AssignWorkorderAtWash;
+            MachineWatchApiServer.Program.FMSSettings.WorkorderAssignment = WorkorderAssignmentType.AssignWorkorderAtWash;
             string path = null; // dataDir
 
             string dbFile(string f) => System.IO.Path.Combine(path, f + ".db");
@@ -1222,4 +1226,3 @@ namespace MachineWatchApiServer
         private static Random rng = new Random();
     }
 }
-#endif

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
-
-  <ItemGroup>
-  </ItemGroup>
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2</TargetFramework>
+  </PropertyGroup>
 
   <Choose>
     <When Condition="$(Configuration) == 'Debug'">
@@ -15,36 +15,6 @@
         <PackageReference Include="BlackMaple.MachineWatchInterface" Version="7.*"/>
         <PackageReference Include="BlackMaple.MachineFramework" Version="7.*"/>
       </ItemGroup>
-    </Otherwise>
-  </Choose>
-
-  <Choose>
-    <When Condition="$(TargetFramework) == 'net461'">
-      <PropertyGroup>
-        <DefineConstants>$(DefineConstants);SERVE_REMOTING;USE_SERVICE</DefineConstants>
-      </PropertyGroup>
-      <ItemGroup>
-        <PackageReference Include="System.Data.SQLite.Core" Version="1.0.*" />
-        <PackageReference Include="Microsoft.AspNetCore.Hosting.WindowsServices" Version="2.0.2" />
-        <PackageReference Include="Serilog.Sinks.EventLog" Version="3.0.47"/>
-        <Reference Include="System.Runtime.Remoting"/>
-        <Compile Include="../service/Server.cs"/>
-      </ItemGroup>
-    </When>
-  </Choose>
-
-  <Choose>
-    <When Condition="$(OS) == 'Windows_NT' AND $(Configuration) == 'Release'">
-      <PropertyGroup>
-        <TargetFramework>net461</TargetFramework>
-      </PropertyGroup>
-      <ItemGroup>
-      </ItemGroup>
-    </When>
-    <Otherwise>
-      <PropertyGroup>
-        <TargetFramework>netcoreapp2</TargetFramework>
-      </PropertyGroup>
     </Otherwise>
   </Choose>
 

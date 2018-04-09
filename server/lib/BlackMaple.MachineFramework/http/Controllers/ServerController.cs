@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using BlackMaple.MachineWatchInterface;
+using BlackMaple.MachineFramework;
 
 namespace MachineWatchApiServer.Controllers
 {
@@ -56,7 +57,7 @@ namespace MachineWatchApiServer.Controllers
         }
 
         [HttpGet("workorder-assignment-type")]
-        public WorkorderAssignmentType WorkorderAssignmentType()
+        public BlackMaple.MachineFramework.WorkorderAssignmentType WorkorderAssignmentType()
         {
             return Program.FMSSettings.WorkorderAssignment;
         }

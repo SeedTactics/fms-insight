@@ -65,7 +65,7 @@ namespace MachineWatchApiServer.Controllers
     {
         private ILogDatabase _server;
 
-        public logController(IServerBackend backend)
+        public logController(IFMSBackend backend)
         {
             _server = backend.LogDatabase();
         }

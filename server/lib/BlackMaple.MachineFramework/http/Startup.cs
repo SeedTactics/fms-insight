@@ -43,6 +43,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Converters;
 using NSwag.AspNetCore;
 using Serilog;
+using BlackMaple.MachineFramework;
 
 namespace MachineWatchApiServer
 {
@@ -111,7 +112,7 @@ namespace MachineWatchApiServer
             services
                 .AddSingleton<FMSInfo>(_fmsImpl.Info)
                 .AddSingleton<IStoreSettings>(settings)
-                .AddSingleton<BlackMaple.MachineFramework.IServerBackend>(_fmsImpl.Backend)
+                .AddSingleton<BlackMaple.MachineFramework.IFMSBackend>(_fmsImpl.Backend)
                 .AddSingleton<Controllers.WebsocketManager>(
                     new Controllers.WebsocketManager(
                         _fmsImpl.Backend.LogDatabase(),
@@ -191,4 +192,25 @@ namespace MachineWatchApiServer
             #endif
         }
     }
+
+#if SERVE_REMOTING
+    public class ServicePlugin :
+        BlackMaple.MachineWatch.RemotingServer.IMachineWatchPlugin,
+        IMachineWatchVersion
+    {
+        private IPlugin _plugin;
+
+        public IServerBackend serverBackend => _plugin.Backend;
+        public IMachineWatchVersion serverVersion => this;
+        public IEnumerable<IBackgroundWorker> workers => _plugin.Workers;
+        public string Version() => _plugin.PluginInfo.Version;
+        public string PluginName() => _plugin.PluginInfo.Name;
+
+        public ServicePlugin(IPlugin p)
+        {
+            _plugin = p;
+        }
+    }
+#endif
+
 }

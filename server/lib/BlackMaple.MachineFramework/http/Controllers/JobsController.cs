@@ -52,7 +52,7 @@ namespace MachineWatchApiServer.Controllers
         private IJobDatabase _db;
         private IJobControl _control;
 
-        public jobsController(IServerBackend backend)
+        public jobsController(IFMSBackend backend)
         {
             _db = backend.JobDatabase();
             _control = backend.JobControl();

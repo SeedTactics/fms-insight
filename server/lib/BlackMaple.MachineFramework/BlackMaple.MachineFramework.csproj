@@ -77,7 +77,7 @@
         <Compile Include="../../src/service/Server.cs"/>
       </ItemGroup>
       <PropertyGroup>
-        <DefineConstants>$(DefineConstants);SYSTEM_DATA_SQLITE;SERVE_REMOTING;USE_SERVICE</DefineConstants>
+        <DefineConstants>$(DefineConstants);SYSTEM_DATA_SQLITE;SERVE_REMOTING;SERVICE_AVAIL</DefineConstants>
       </PropertyGroup>
     </When>
   </Choose>

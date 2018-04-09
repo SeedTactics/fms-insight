@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using BlackMaple.MachineWatchInterface;
 
 namespace BlackMaple.MachineFramework
@@ -41,7 +42,7 @@ namespace BlackMaple.MachineFramework
         T GetValue<T>(string section, string key);
     }
 
-    public interface IServerBackend
+    public interface IFMSBackend
     {
         void Init(string dataDirectory, IConfig config, SerialSettings serialSettings);
         void Halt();
@@ -61,7 +62,7 @@ namespace BlackMaple.MachineFramework
     public interface IBackgroundWorker
     {
         //The init function should initialize a timer or spawn a thread and then return
-        void Init(IServerBackend backend, string dataDirectory, IConfig config, SerialSettings serialSettings);
+        void Init(IFMSBackend backend, string dataDirectory, IConfig config, SerialSettings serialSettings);
 
         //Once the halt function is called, the class is garbage collected.
         //A new class will be created when the service starts again
@@ -69,4 +70,19 @@ namespace BlackMaple.MachineFramework
 
         System.Diagnostics.TraceSource TraceSource { get; }
     }
+
+    [DataContract]
+    public class FMSInfo
+    {
+        [DataMember] public string Name {get;set;}
+        [DataMember] public string Version {get;set;}
+    }
+
+    public interface IFMSImplementation
+    {
+        FMSInfo Info {get;}
+        IFMSBackend Backend {get;}
+        IList<IBackgroundWorker> Workers {get;}
+    }
+
 }

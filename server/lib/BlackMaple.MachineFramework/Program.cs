@@ -44,6 +44,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
+using BlackMaple.MachineFramework;
 
 namespace MachineWatchApiServer
 {
@@ -73,7 +74,7 @@ namespace MachineWatchApiServer
             FMSSettings = FMSSettings.Load(Configuration);
         }
 
-        private static void EnableSerilog()
+        private static void EnableSerilog(bool enableEventLog)
         {
             var logConfig = new LoggerConfiguration()
                 .MinimumLevel.Debug()
@@ -83,11 +84,13 @@ namespace MachineWatchApiServer
                         Serilog.Events.LogEventLevel.Debug
                       : Serilog.Events.LogEventLevel.Information );
 
-            #if USE_SERVICE
-            logConfig = logConfig.WriteTo.EventLog(
-                "Machine Watch",
-                manageEventSource: true,
-                restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information);
+            #if SERVICE_AVAIL
+            if (enableEventLog) {
+                logConfig = logConfig.WriteTo.EventLog(
+                    "Machine Watch",
+                    manageEventSource: true,
+                    restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information);
+            }
             #endif
 
             if (ServerSettings.EnableDebugLog) {
@@ -107,12 +110,7 @@ namespace MachineWatchApiServer
                 .UseConfiguration(Configuration)
                 .ConfigureServices(s => { s.AddSingleton<IFMSImplementation>(fmsImpl); })
                 .UseKestrel(options => {
-                    #if DEBUG
-                    var address = IPAddress.Loopback;
-                    #else
                     var address = IPAddress.IPv6Any;
-                    #endif
-
                     if (!string.IsNullOrEmpty(ServerSettings.TLSCertFile)) {
                         options.Listen(address, ServerSettings.Port, listenOptions => {
                             listenOptions.UseHttps(ServerSettings.TLSCertFile);
@@ -127,19 +125,24 @@ namespace MachineWatchApiServer
                 .Build();
         }
 
-        public static void Run(IFMSImplementation fmsImpl)
+        public static void Run(bool useService, IFMSImplementation fmsImpl)
         {
             LoadConfig();
-            EnableSerilog();
+            EnableSerilog(enableEventLog: useService);
 
             Log.Information("Starting machine watch with settings {@ServerSettings} and {@FMSSettings}",
                 ServerSettings, FMSSettings);
 
             var host = BuildWebHost(fmsImpl);
 
-            #if USE_SERVICE
-                Microsoft.AspNetCore.Hosting.WindowsServices.WebHostWindowsServiceExtensions
-                    .RunAsService(host);
+            #if SERVICE_AVAIL
+                if (useService)
+                {
+                    Microsoft.AspNetCore.Hosting.WindowsServices.WebHostWindowsServiceExtensions
+                        .RunAsService(host);
+                } else {
+                    host.Run();
+                }
             #else
                 host.Run();
             #endif

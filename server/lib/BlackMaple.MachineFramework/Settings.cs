@@ -35,11 +35,35 @@ using System;
 using System.IO;
 using Microsoft.Extensions.Configuration;
 
-namespace MachineWatchApiServer {
+namespace BlackMaple.MachineFramework
+{
+    public enum SerialType
+    {
+        NoAutomaticSerials,
+        AssignOneSerialPerMaterial,  // assign a different serial to each piece of material
+        AssignOneSerialPerCycle,     // assign a single serial to all the material on each cycle
+    }
 
+    public class SerialSettings
+    {
+        public SerialType SerialType {get;set;}
+        public int SerialLength {get;set;}
+    }
+
+    public enum WorkorderAssignmentType
+    {
+      AssignWorkorderAtUnload,
+      AssignWorkorderAtWash,
+      NoAutomaticWorkorderAssignment,
+    }
+
+}
+
+namespace MachineWatchApiServer
+{
     public class ServerSettings
     {
-      #if USE_SERVICE
+      #if SERVICE_AVAIL
 
       public static string ConfigDirectory {get;} =
         Path.Combine(
@@ -116,18 +140,12 @@ namespace MachineWatchApiServer {
       }
     }
 
-    public enum WorkorderAssignmentType
-    {
-      AssignWorkorderAtUnload,
-      AssignWorkorderAtWash,
-      NoAutomaticWorkorderAssignment,
-    }
-
     public class FMSSettings
     {
       public bool AutomaticSerials {get;set;} = false;
       public int SerialLength {get;set;} = 10;
-      public WorkorderAssignmentType WorkorderAssignment {get;set;} = WorkorderAssignmentType.NoAutomaticWorkorderAssignment;
+      public BlackMaple.MachineFramework.WorkorderAssignmentType WorkorderAssignment {get;set;}
+        = BlackMaple.MachineFramework.WorkorderAssignmentType.NoAutomaticWorkorderAssignment;
 
       static public FMSSettings Load(IConfiguration config)
       {

@@ -43,7 +43,7 @@ namespace MachineWatchApiServer.Controllers
     {
         private IInspectionControl _server;
 
-        public inspectionController(IServerBackend backend)
+        public inspectionController(IFMSBackend backend)
         {
             _server = backend.InspectionControl();
         }
