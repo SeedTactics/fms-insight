@@ -19,13 +19,6 @@ build_script:
             /p:VersionPrefix=$(ver framework) `
             server/lib/BlackMaple.MachineFramework
         Set-AppveyorBuildVariable "BMS_RELEASE_TO_NUGET" "true"
-    } elseif ($tag.StartsWith("service")) {
-        dotnet pack `
-            --include-symbols `
-            -c Release `
-            /p:VersionPrefix=$(ver service) `
-            server/src/service
-        Set-AppveyorBuildVariable "BMS_RELEASE_TO_NUGET" "true"
     } else {
         dotnet build `
             /p:VersionPrefix=$(ver mwi) `
@@ -35,10 +28,6 @@ build_script:
             /p:VersionPrefix=$(ver framework) `
             --version-suffix pre.$Env:APPVEYOR_BUILD_NUMBER `
             server/lib/BlackMaple.MachineFramework
-        dotnet build `
-            /p:VersionPrefix=$(ver service) `
-            --version-suffix pre.$Env:APPVEYOR_BUILD_NUMBER `
-            server/src/service
     }
 
 test_script:
