@@ -31,6 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#if SERVE_REMOTING
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -47,46 +49,11 @@ namespace BlackMaple.MachineWatch
 {
     public class RemotingServer : IDisposable
     {
-        public readonly IMachineWatchPlugin plugin;
+        public readonly IFMSImplementation plugin;
         private readonly IStoreSettings settingsServer;
         private readonly RemoteSingletons singletons;
 
-        public interface IMachineWatchPlugin
-        {
-            IServerBackend serverBackend { get; }
-            IMachineWatchVersion serverVersion { get; }
-            IEnumerable<IBackgroundWorker> workers { get; }
-        }
-
-        private class MachineWatchVersion : IMachineWatchVersion
-        {
-            private string _ver;
-            private string _plugin;
-            public MachineWatchVersion(System.Reflection.AssemblyName n, System.Diagnostics.FileVersionInfo v)
-            {
-                _ver = v.ProductVersion;
-                _plugin = n.Name;
-            }
-            public string Version() { return _ver; }
-            public string PluginName() { return _plugin; }
-        }
-
-
-        public class MachineWatchPlugin : IMachineWatchPlugin
-        {
-            public IServerBackend serverBackend { get; }
-            public IMachineWatchVersion serverVersion { get; }
-            public IEnumerable<IBackgroundWorker> workers { get; }
-
-            public MachineWatchPlugin(IServerBackend b, System.Reflection.AssemblyName n, System.Diagnostics.FileVersionInfo v, IEnumerable<IBackgroundWorker> ws)
-            {
-                serverBackend = b;
-                serverVersion = new MachineWatchVersion(n, v);
-                workers = ws;
-            }
-        }
-
-        public RemotingServer(IMachineWatchPlugin p, string dataDir, IStoreSettings settings)
+        public RemotingServer(IFMSImplementation p, string dataDir, IStoreSettings settings)
         {
             plugin = p;
 
@@ -113,11 +80,11 @@ namespace BlackMaple.MachineWatch
                 System.Runtime.Remoting.RemotingConfiguration.CustomErrorsMode = System.Runtime.Remoting.CustomErrorsModes.Off;
             }
 
-            var jobDb = plugin.serverBackend.JobDatabase();
-            var logDb = plugin.serverBackend.LogDatabase();
-            var inspServer = plugin.serverBackend.InspectionControl();
-            var jobControl = plugin.serverBackend.JobControl();
-            var oldJob = plugin.serverBackend.OldJobDecrement();
+            var jobDb = plugin.Backend.JobDatabase();
+            var logDb = plugin.Backend.LogDatabase();
+            var inspServer = plugin.Backend.InspectionControl();
+            var jobControl = plugin.Backend.JobControl();
+            var oldJob = plugin.Backend.OldJobDecrement();
 
             singletons = new RemoteSingletons();
 
@@ -136,9 +103,6 @@ namespace BlackMaple.MachineWatch
             singletons.RemoteSingleton(typeof(IOldJobDecrement),
                                         "OldJobDecrement",
                                         oldJob);
-            singletons.RemoteSingleton(typeof(IMachineWatchVersion),
-                        "Version",
-                        plugin.serverVersion);
             singletons.RemoteSingleton(typeof(IStoreSettings),
                         "Settings",
                         settingsServer);
@@ -250,3 +214,5 @@ namespace BlackMaple.MachineWatch
         }
     }
 }
+
+#endif

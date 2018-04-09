@@ -101,7 +101,7 @@ namespace BlackMaple.MachineFramework
             #if SERVE_REMOTING
             var machServer =
                 new BlackMaple.MachineWatch.RemotingServer(
-                    new ServicePlugin(plugin),
+                    _fmsImpl,
                     Program.ServerSettings.DataDirectory,
                     settings
                 );
@@ -191,25 +191,4 @@ namespace BlackMaple.MachineFramework
             #endif
         }
     }
-
-#if SERVE_REMOTING
-    public class ServicePlugin :
-        BlackMaple.MachineWatch.RemotingServer.IMachineWatchPlugin,
-        IMachineWatchVersion
-    {
-        private IPlugin _plugin;
-
-        public IServerBackend serverBackend => _plugin.Backend;
-        public IMachineWatchVersion serverVersion => this;
-        public IEnumerable<IBackgroundWorker> workers => _plugin.Workers;
-        public string Version() => _plugin.PluginInfo.Version;
-        public string PluginName() => _plugin.PluginInfo.Name;
-
-        public ServicePlugin(IPlugin p)
-        {
-            _plugin = p;
-        }
-    }
-#endif
-
 }
