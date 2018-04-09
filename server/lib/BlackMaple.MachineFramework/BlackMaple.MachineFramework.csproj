@@ -74,7 +74,6 @@
         <PackageReference Include="Microsoft.AspNetCore.Hosting.WindowsServices" Version="2.0.2" />
         <PackageReference Include="Serilog.Sinks.EventLog" Version="3.0.47"/>
         <Reference Include="System.Runtime.Remoting"/>
-        <Compile Include="../../src/service/Server.cs"/>
       </ItemGroup>
       <PropertyGroup>
         <DefineConstants>$(DefineConstants);SERVE_REMOTING;SERVICE_AVAIL</DefineConstants>
