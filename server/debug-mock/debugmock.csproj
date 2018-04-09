@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../lib/BlackMaple.MachineWatchInterface/BlackMaple.MachineWatchInterface.csproj" />
+    <ProjectReference Include="../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj"/>
+  </ItemGroup>
+</Project>
