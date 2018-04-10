@@ -246,7 +246,7 @@ export function StationToolbar(props: StationToolbarProps) {
               displayEmpty
               value={standalonequeues}
               inputProps={{id: "queueselect"}}
-              style={{minWidth: '10em'}}
+              style={{marginLeft: '1em', minWidth: '10em'}}
               onChange={e => setStandaloneQueues(e.target.value)}
             >
               <MenuItem key={freeMaterialSym} value={freeMaterialSym}>Free Material</MenuItem>
