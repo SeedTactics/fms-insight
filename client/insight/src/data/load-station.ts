@@ -36,7 +36,7 @@ import * as api from './api';
 
 export type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
 
-export interface LoadStationData {
+export interface LoadStationAndQueueData {
   readonly pallet?: Readonly<api.IPalletStatus>;
   readonly face: im.Map<number, MaterialList>;
   readonly castings: MaterialList;
@@ -44,55 +44,56 @@ export interface LoadStationData {
   readonly queues: im.Map<string, MaterialList>;
 }
 
-export function selectLoadStationProps(
+export function selectLoadStationAndQueueProps(
     loadNum: number,
     queues: ReadonlyArray<string>,
     displayFree: boolean,
     curSt: Readonly<api.ICurrentStatus>
-  ): LoadStationData {
+  ): LoadStationAndQueueData {
 
   let pal: Readonly<api.IPalletStatus> | undefined;
-  for (let p of Object.values(curSt.pallets)) {
-    if (p.currentPalletLocation.loc === api.PalletLocationEnum.LoadUnload && p.currentPalletLocation.num === loadNum) {
-      pal = p;
-      break;
-    }
-  }
-  if (pal === undefined) {
-    const queueMap = new Map<string, MaterialList>();
-    queues.forEach(q => queueMap.set(q, []));
-    return {
-      pallet: undefined,
-      face: im.Map(),
-      castings: [],
-      free: displayFree ? [] : undefined,
-      queues: im.Map(queueMap),
-    };
-  }
-  let palName: string = pal.pallet;
-
-  let byFace = im.Seq(curSt.material)
-    .filter(m => m.location.type === api.LocType.OnPallet
-              && m.location.pallet === palName
-    )
-    .groupBy(m => m.location.face)
-    .map(ms => ms.valueSeq().toArray())
-    .toMap();
-
-  // add missing blank faces
-  const maxFace = pal.numFaces >= 1 ? pal.numFaces : 1;
-  for (let face = 1; face <= maxFace; face++) {
-    if (!byFace.has(face)) {
-      byFace = byFace.set(face, []);
+  if (loadNum >= 0) {
+    for (let p of Object.values(curSt.pallets)) {
+      if (p.currentPalletLocation.loc === api.PalletLocationEnum.LoadUnload
+          && p.currentPalletLocation.num === loadNum) {
+        pal = p;
+        break;
+      }
     }
   }
 
-  const castings = im.Seq(curSt.material)
-    .filter(m => m.action.type === api.ActionType.Loading
-              && m.action.loadOntoPallet === palName
-              && m.action.processAfterLoad === 1
-              && m.location.type === api.LocType.Free);
+  let byFace: im.Map<number, api.IInProcessMaterial[]> = im.Map();
+  let palName: string | undefined;
+  let castings: im.Seq.Indexed<api.IInProcessMaterial> = im.Seq.Indexed();
 
+  // load pallet material
+  if (pal !== undefined) {
+    palName = pal.pallet;
+
+    byFace = im.Seq(curSt.material)
+      .filter(m => m.location.type === api.LocType.OnPallet
+                && m.location.pallet === palName
+      )
+      .groupBy(m => m.location.face)
+      .map(ms => ms.valueSeq().toArray())
+      .toMap();
+
+    // add missing blank faces
+    const maxFace = pal.numFaces >= 1 ? pal.numFaces : 1;
+    for (let face = 1; face <= maxFace; face++) {
+      if (!byFace.has(face)) {
+        byFace = byFace.set(face, []);
+      }
+    }
+
+    castings = im.Seq(curSt.material)
+      .filter(m => m.action.type === api.ActionType.Loading
+                && m.action.loadOntoPallet === palName
+                && m.action.processAfterLoad === 1
+                && m.location.type === api.LocType.Free);
+  }
+
+  // now free and queued material
   let free: MaterialList | undefined;
   if (displayFree) {
     free = im.Seq(curSt.material)

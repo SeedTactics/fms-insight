@@ -53,6 +53,7 @@ exports[`displays an empty queue page: empty queues 1`] = `
       onChange={[Function]}
       style={
         Object {
+          "marginLeft": "1em",
           "minWidth": "10em",
         }
       }
@@ -524,6 +525,7 @@ exports[`displays the toolbar for queue page with three queues: queue toolbar 1`
       onChange={[Function]}
       style={
         Object {
+          "marginLeft": "1em",
           "minWidth": "10em",
         }
       }

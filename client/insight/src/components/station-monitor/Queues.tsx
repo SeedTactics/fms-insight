@@ -32,28 +32,28 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from 'react';
-import Divider from 'material-ui/Divider';
 import { withStyles } from 'material-ui';
 import * as im from 'immutable';
 import { createSelector } from 'reselect';
+import Button from 'material-ui/Button';
+import Dialog, {
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+} from 'material-ui/Dialog';
 
-import { LoadStationAndQueueData, selectLoadStationAndQueueProps } from '../../data/load-station';
+import { MaterialList, LoadStationAndQueueData, selectLoadStationAndQueueProps } from '../../data/load-station';
+import { InProcMaterial, MaterialDetailTitle, MaterialDetailContent } from './Material';
 import * as api from '../../data/api';
 import * as routes from '../../data/routes';
-import { Store, connect } from '../../data/store';
+import { Store, connect, mkAC, DispatchAction } from '../../data/store';
 import * as matDetails from '../../data/material-details';
-import { MaterialDisplay, MaterialDisplayProps, ConnectedMaterialDialog } from './Queues';
 
-const palletStyles = withStyles(() => ({
-  palletContainerFill: {
+const materialStyle = withStyles(() => ({
+  container: {
     width: '100%',
+    minHeight: '70px',
     position: 'relative' as 'relative',
-    flexGrow: 1,
-  },
-  palletContainerScroll: {
-    width: '100%',
-    position: 'relative' as 'relative',
-    minHeight: '12em',
   },
   labelContainer: {
     position: 'absolute' as 'absolute',
@@ -64,61 +64,101 @@ const palletStyles = withStyles(() => ({
     color: 'rgba(0,0,0,0.5)',
     fontSize: 'small',
   },
-  faceContainer: {
-    marginLeft: '4em',
-    marginRight: '4em',
-  },
+  material: {
+    marginTop: '8px',
+    marginBottom: '8px',
+    display: 'flex' as 'flex',
+    flexWrap: 'wrap' as 'wrap',
+    justifyContent: 'space-around' as 'space-around',
+  }
 }));
 
-export const PalletColumn = palletStyles<LoadStationProps>(props => {
-  let palletClass: string;
-  if (props.fillViewPort) {
-    palletClass = props.classes.palletContainerFill;
-  } else {
-    palletClass = props.classes.palletContainerScroll;
-  }
+export interface MaterialDisplayProps {
+  readonly material: MaterialList;
+  readonly label: string;
+  openMat: (m: Readonly<api.IInProcessMaterial>) => void;
+}
 
-  const maxFace = props.data.face.map((m, face) => face).max();
-  const palLabel = "Pallet " + (props.data.pallet ? props.data.pallet.pallet : "");
-
-  let palDetails: JSX.Element;
-  if (props.data.face.size === 1) {
-    const mat = props.data.face.first();
-    palDetails = <MaterialDisplay label={palLabel} material={mat ? mat : []} openMat={props.openMat}/>;
-  } else {
-    palDetails = (
-      <>
-        <div className={props.classes.labelContainer}>
-          <span className={props.classes.label}>{palLabel}</span>
-        </div>
-        <div className={props.classes.faceContainer}>
-          {
-            props.data.face.toSeq().sortBy((data, face) => face).map((data, face) =>
-              <div key={face}>
-                <MaterialDisplay label={"Face " + face.toString()} material={data} openMat={props.openMat}/>
-                {face === maxFace ? undefined : <Divider key={1}/>}
-              </div>
-            ).valueSeq()
-          }
-        </div>
-      </>
-    );
-  }
-
+const MaterialDisplayWithStyles = materialStyle<MaterialDisplayProps>(props => {
   return (
-    <>
-      <MaterialDisplay label="Castings" material={props.data.castings} openMat={props.openMat}/>
-      <Divider/>
-      <div className={palletClass}>
-        {palDetails}
+    <div className={props.classes.container}>
+      <div className={props.classes.labelContainer}>
+        <span className={props.classes.label}>
+          {props.label}
+        </span>
       </div>
-      <Divider/>
-      <MaterialDisplay label="Completed Material" material={[]} openMat={props.openMat}/>
-    </>
+      {
+        props.material.length === 0 ? undefined :
+          <div className={props.classes.material}>
+            {
+              props.material.map((m, idx) => (
+                <InProcMaterial key={idx} mat={m} onOpen={props.openMat}/>
+              ))
+            }
+          </div>
+      }
+    </div>
   );
 });
 
-const loadStyles = withStyles(() => ({
+// decorate doesn't work well with classes yet.
+// https://github.com/Microsoft/TypeScript/issues/4881
+export class MaterialDisplay extends React.PureComponent<MaterialDisplayProps> {
+  render() {
+    return <MaterialDisplayWithStyles {...this.props}/>;
+  }
+}
+
+export interface MaterialDialogProps {
+  display_material: matDetails.MaterialDetail | null;
+  onClose: DispatchAction<matDetails.ActionType.CloseMaterialDialog>;
+}
+
+export function MaterialDialog(props: MaterialDialogProps) {
+  const onClose = () => props.onClose({station: routes.StationMonitorType.LoadUnload});
+  let body: JSX.Element | undefined;
+  if (props.display_material === null) {
+    body = <p>None</p>;
+  } else {
+    const mat = props.display_material;
+    body = (
+      <>
+        <DialogTitle disableTypography>
+          <MaterialDetailTitle partName={mat.partName} serial={mat.serial}/>
+        </DialogTitle>
+        <DialogContent>
+          <MaterialDetailContent mat={mat}/>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose} color="primary">
+            Close
+          </Button>
+        </DialogActions>
+      </>
+    );
+  }
+  return (
+    <Dialog
+      open={props.display_material !== null}
+      onClose={onClose}
+      maxWidth="md"
+    >
+      {body}
+    </Dialog>
+
+  );
+}
+
+export const ConnectedMaterialDialog = connect(
+  (st: Store) => ({
+    display_material: st.MaterialDetails.material[routes.StationMonitorType.LoadUnload]
+  }),
+  {
+    onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
+  }
+)(MaterialDialog);
+
+const queueStyles = withStyles(() => ({
   mainFillViewport: {
     'height': 'calc(100vh - 64px - 2.5em)',
     'display': 'flex',
@@ -130,11 +170,6 @@ const loadStyles = withStyles(() => ({
     'padding': '8px',
     'width': '100%',
   },
-  palCol: {
-    'flexGrow': 1,
-    'display': 'flex',
-    'flexDirection': 'column' as 'column',
-  },
   queueCol: {
     'width': '16em',
     'padding': '8px',
@@ -144,14 +179,13 @@ const loadStyles = withStyles(() => ({
   },
 }));
 
-export interface LoadStationProps {
+export interface QueueProps {
   readonly fillViewPort: boolean;
   readonly data: LoadStationAndQueueData;
   openMat: (m: Readonly<api.IInProcessMaterial>) => void;
 }
 
-export const LoadStation = loadStyles<LoadStationProps>(props => {
-  const palProps = {...props, classes: undefined};
+export const Queues = queueStyles<QueueProps>(props => {
 
   let queues = props.data.queues
     .toSeq()
@@ -172,56 +206,37 @@ export const LoadStation = loadStyles<LoadStationProps>(props => {
     }]).concat(queues);
   }
 
-  const col1 = cells.take(2);
-  const col2 = cells.skip(2).take(2);
-
   return (
     <main className={props.fillViewPort ? props.classes.mainFillViewport : props.classes.mainScrollable}>
-      <div className={props.classes.palCol}>
-        <PalletColumn {...palProps}/>
-      </div>
       {
-        col1.size === 0 ? undefined :
-        <div className={props.classes.queueCol}>
-          {
-            col1.map((mat, idx) =>
-              <MaterialDisplay key={idx} {...mat}/>
-            )
-          }
-        </div>
-      }
-      {
-        col2.size === 0 ? undefined :
-        <div className={props.classes.queueCol}>
-          {
-            col2.map((mat, idx) =>
-              <MaterialDisplay key={idx} {...mat}/>
-            )
-          }
-        </div>
+        cells.map((mat, idx) => (
+          <div key={idx} className={props.classes.queueCol}>
+            <MaterialDisplay {...mat}/>
+          </div>
+        ))
       }
       <ConnectedMaterialDialog/>
     </main>
   );
 });
 
-const buildLoadData = createSelector(
+const buildQueueData = createSelector(
   (st: Store) => st.Current.current_status,
   (st: Store) => st.Route,
   (curStatus: Readonly<api.ICurrentStatus>, route: routes.State): LoadStationAndQueueData => {
     return selectLoadStationAndQueueProps(
-        route.selected_load_id,
-        route.load_queues,
-        route.load_free_material,
+        -1,
+        route.standalone_queues,
+        route.standalone_free_material,
         curStatus);
   }
 );
 
 export default connect(
   (st: Store) => ({
-    data: buildLoadData(st)
+    data: buildQueueData(st)
   }),
   {
     openMat: matDetails.openLoadunloadMaterialDialog,
   }
-)(LoadStation);
+)(Queues);
