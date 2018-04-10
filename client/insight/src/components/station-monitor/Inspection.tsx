@@ -38,13 +38,12 @@ import { addHours } from 'date-fns';
 import Grid from 'material-ui/Grid';
 import Card, { CardContent, CardHeader, CardActions } from 'material-ui/Card';
 import Button from 'material-ui/Button';
-import { connect } from 'react-redux';
 import { createSelector } from 'reselect';
 import BugIcon from 'material-ui-icons/BugReport';
 import WarningIcon from 'material-ui-icons/Warning';
 
 import { MaterialSummary } from '../../data/events';
-import { Store } from '../../data/store';
+import { Store, connect } from '../../data/store';
 import { MatSummary, MaterialDetailTitle, MaterialDetailContent } from './Material';
 import * as matDetails from '../../data/material-details';
 import { StationMonitorType } from '../../data/routes';
@@ -52,8 +51,7 @@ import { StationMonitorType } from '../../data/routes';
 export interface InspectionListProps {
   readonly recent_inspections: ReadonlyArray<MaterialSummary>;
   readonly focusInspectionType: string;
-  // tslint:disable-next-line:no-any
-  readonly openMat: (mat: MaterialSummary) => any;
+  readonly openMat: (mat: MaterialSummary) => void;
 }
 
 export class InspectionList extends React.PureComponent<InspectionListProps> {
@@ -95,7 +93,7 @@ export interface InspectionProps extends InspectionListProps {
   readonly display_material: matDetails.MaterialDetail | null;
 
   // tslint:disable-next-line:no-any
-  readonly completeInspection: (mat: matDetails.MaterialDetail, inspType: string, success: boolean) => any;
+  readonly completeInspection: (comp: matDetails.CompleteInspectionData) => any;
 }
 
 const inspStyles = withStyles(() => ({
@@ -136,7 +134,11 @@ export const Inspection = inspStyles<InspectionProps>(props => {
       return;
     }
 
-    props.completeInspection(props.display_material, props.focusInspectionType, success);
+    props.completeInspection({
+      mat: props.display_material,
+      inspType: props.focusInspectionType,
+      success
+    });
   }
 
   return (

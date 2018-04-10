@@ -59,9 +59,9 @@ ReactDOM.render(
   <MuiThemeProvider theme={theme}>
     <CssBaseline/>
     <Provider store={store}>
-      <React.StrictMode>
+      {/* <React.StrictMode> */}
         <App />
-      </React.StrictMode>
+      {/* </React.StrictMode> */}
     </Provider>
   </MuiThemeProvider>,
   document.getElementById('root') as HTMLElement

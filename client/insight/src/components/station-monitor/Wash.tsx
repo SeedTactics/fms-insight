@@ -38,13 +38,12 @@ import { addHours } from 'date-fns';
 import Grid from 'material-ui/Grid';
 import Card, { CardContent, CardHeader, CardActions } from 'material-ui/Card';
 import Button from 'material-ui/Button';
-import { connect } from 'react-redux';
 import { createSelector } from 'reselect';
 import ListIcon from 'material-ui-icons/List';
 import ToysIcon from 'material-ui-icons/Toys';
 
 import { MaterialSummary } from '../../data/events';
-import { Store } from '../../data/store';
+import { Store, connect, AppActionBeforeMiddleware } from '../../data/store';
 import { MatSummary, MaterialDetailTitle, MaterialDetailContent } from './Material';
 import * as matDetails from '../../data/material-details';
 import * as guiState from '../../data/gui-state';
@@ -53,8 +52,7 @@ import SelectWorkorderDialog from './SelectWorkorder';
 
 export interface WashListProps {
   readonly recent_completed: ReadonlyArray<MaterialSummary>;
-  // tslint:disable-next-line:no-any
-  readonly openMat: (mat: MaterialSummary) => any;
+  readonly openMat: (mat: MaterialSummary) => void;
 }
 
 export class WashList extends React.PureComponent<WashListProps> {
@@ -94,12 +92,8 @@ export class SelectedMaterial extends React.PureComponent<{mat: matDetails.Mater
 export interface WashProps extends WashListProps {
   readonly fillViewPort: boolean;
   readonly display_material: matDetails.MaterialDetail | null;
-
-  // tslint:disable-next-line:no-any
-  readonly completeWash: (mat: matDetails.MaterialDetail) => any;
-
-  // tslint:disable-next-line:no-any
-  readonly openSelectWorkorder: (mat: matDetails.MaterialDetail) => any;
+  readonly completeWash: (mat: matDetails.MaterialDetail) => void;
+  readonly openSelectWorkorder: (mat: matDetails.MaterialDetail) => void;
 }
 
 const inspStyles = withStyles(() => ({
@@ -236,6 +230,6 @@ export default connect(
         open: true
       },
       matDetails.loadWorkorders(mat, StationMonitorType.Wash),
-    ]
+    ] as AppActionBeforeMiddleware
   }
 )(Wash);

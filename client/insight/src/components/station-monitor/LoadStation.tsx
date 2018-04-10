@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from 'react';
-import * as reactRedux from 'react-redux';
 import Divider from 'material-ui/Divider';
 import { withStyles } from 'material-ui';
 import * as im from 'immutable';
@@ -78,8 +77,7 @@ const materialStyle = withStyles(() => ({
 export interface MaterialDisplayProps {
   readonly material: MaterialList;
   readonly label: string;
-  // tslint:disable-next-line:no-any
-  openMat: (m: Readonly<api.IInProcessMaterial>) => any;
+  openMat: (m: Readonly<api.IInProcessMaterial>) => void;
 }
 
 const MaterialDisplayWithStyles = materialStyle<MaterialDisplayProps>(props => {
@@ -115,8 +113,7 @@ export class MaterialDisplay extends React.PureComponent<MaterialDisplayProps> {
 export interface LoadStationProps {
   readonly fillViewPort: boolean;
   readonly data: LoadStationData;
-  // tslint:disable-next-line:no-any
-  openMat: (m: Readonly<api.IInProcessMaterial>) => any;
+  openMat: (m: Readonly<api.IInProcessMaterial>) => void;
 }
 
 const palletStyles = withStyles(() => ({
@@ -335,7 +332,7 @@ const buildLoadData = createSelector(
   }
 );
 
-export default reactRedux.connect(
+export default connect(
   (st: Store) => ({
     data: buildLoadData(st)
   }),

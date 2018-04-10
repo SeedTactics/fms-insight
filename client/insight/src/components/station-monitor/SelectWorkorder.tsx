@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from 'react';
-import { connect } from 'react-redux';
 import Button from 'material-ui/Button';
 import List, { ListItem, ListItemText, ListItemIcon } from 'material-ui/List';
 import Dialog, {
@@ -46,7 +45,7 @@ import ShoppingBasketIcon from 'material-ui-icons/ShoppingBasket';
 
 import { MaterialDetailTitle } from './Material';
 import * as routes from '../../data/routes';
-import { Store } from '../../data/store';
+import { Store, connect, mkAC, AppActionBeforeMiddleware } from '../../data/store';
 import * as matDetails from '../../data/material-details';
 import * as guiState from '../../data/gui-state';
 import { CircularProgress } from 'material-ui/Progress';
@@ -75,13 +74,8 @@ function WorkorderIcon({work}: {work: matDetails.WorkorderPlanAndSummary}) {
 export interface SelectWorkorderProps {
   readonly mats: {[key in routes.StationMonitorType]: matDetails.MaterialDetail | null } | null;
   readonly station: routes.StationMonitorType;
-
-  // tslint:disable-next-line:no-any
-  readonly onClose: () => any;
-
-  readonly assignWorkorder:
-    // tslint:disable-next-line:no-any
-    (mat: matDetails.MaterialDetail, station: routes.StationMonitorType, workorder: string) => any;
+  readonly onClose: () => void;
+  readonly assignWorkorder: (data: matDetails.AssignWorkorderData) => void;
 }
 
 export function SelectWorkorderDialog(props: SelectWorkorderProps) {
@@ -100,7 +94,7 @@ export function SelectWorkorderDialog(props: SelectWorkorderProps) {
             <ListItem
               key={w.plan.workorderId}
               button
-              onClick={() => props.assignWorkorder(mat, props.station, w.plan.workorderId)}
+              onClick={() => props.assignWorkorder({mat, station: props.station, workorder: w.plan.workorderId})}
             >
               <ListItemIcon>
                 <WorkorderIcon work={w}/>
@@ -149,16 +143,10 @@ export default connect(
     mats: st.Gui.workorder_dialog_open ? st.MaterialDetails.material : null,
   }),
   {
-    onClose: () => ({
-      type: guiState.ActionType.SetWorkorderDialogOpen,
-      open: false,
-    }),
-    assignWorkorder: (mat: matDetails.MaterialDetail, station: routes.StationMonitorType, work: string) => [
-      matDetails.assignWorkorder(mat, station, work),
-      {
-        type: guiState.ActionType.SetWorkorderDialogOpen,
-        open: false,
-      }
-    ],
+    onClose: mkAC(guiState.ActionType.SetWorkorderDialogOpen),
+    assignWorkorder: (data: matDetails.AssignWorkorderData) => [
+      matDetails.assignWorkorder(data),
+      { type: guiState.ActionType.SetWorkorderDialogOpen, open: false, }
+    ] as AppActionBeforeMiddleware,
   }
 )(SelectWorkorderDialog);

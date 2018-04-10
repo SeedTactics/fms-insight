@@ -34,11 +34,10 @@ import * as React from 'react';
 import Radio from 'material-ui/Radio';
 import TextField from 'material-ui/TextField';
 import { FormControlLabel } from 'material-ui/Form';
-import { connect } from 'react-redux';
 import { startOfMonth, format, parse } from 'date-fns';
 
 import * as events from '../data/events';
-import { Store } from '../data/store';
+import { Store, connect } from '../data/store';
 
 const toolbarStyle = {
   'display': 'flex',
@@ -53,12 +52,9 @@ const toolbarStyle = {
 export interface AnalysisSelectToolbarProps {
   period: events.AnalysisPeriod;
   period_month: Date;
-  // tslint:disable-next-line:no-any
-  analyzeLast30Days: () => any;
-  // tslint:disable-next-line:no-any
-  analyzeMonth: (month: Date) => any;
-  // tslint:disable-next-line:no-any
-  setMonth: (month: Date) => any;
+  analyzeLast30Days: () => void;
+  analyzeMonth: (month: Date) => void;
+  setMonth: (month: Date) => void;
 }
 
 export class AnalysisSelectToolbar extends React.PureComponent<AnalysisSelectToolbarProps, {temp_month?: Date}> {
@@ -94,7 +90,7 @@ export class AnalysisSelectToolbar extends React.PureComponent<AnalysisSelectToo
           control={
             <Radio
               checked={this.props.period === events.AnalysisPeriod.Last30Days}
-              onChange={e => e.target.value ? this.props.analyzeLast30Days() : null}
+              onChange={(e, checked) => checked ? this.props.analyzeLast30Days() : null}
             />
           }
           label="Last 30 days"
@@ -104,7 +100,7 @@ export class AnalysisSelectToolbar extends React.PureComponent<AnalysisSelectToo
             control={
               <Radio
                 checked={this.props.period === events.AnalysisPeriod.SpecificMonth}
-                onChange={e => e.target.value ? this.props.analyzeMonth(curMonth) : null}
+                onChange={(e, checked) => checked ? this.props.analyzeMonth(curMonth) : null}
               />}
             label="Select Month"
           />

@@ -186,7 +186,7 @@ export function receiveNewJobs(newJobs: Readonly<api.INewJobs>): ABF {
     return {
         type: ActionType.ReceiveNewJobs, now: new Date(), jobs: {
             jobs: jobs,
-            stationUse: newJobs.stationUse
+            stationUse: newJobs.stationUse || []
         }
     };
 }

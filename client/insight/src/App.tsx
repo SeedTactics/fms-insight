@@ -31,7 +31,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
-import { connect } from 'react-redux';
 import AppBar from 'material-ui/AppBar/AppBar';
 import Tabs, { Tab } from 'material-ui/Tabs';
 import Typography from 'material-ui/Typography/Typography';
@@ -44,7 +43,7 @@ import Efficiency from './components/efficiency/Efficiency';
 import StationMonitor from './components/station-monitor/StationMonitor';
 import LoadingIcon from './components/LoadingIcon';
 import * as routes from './data/routes';
-import { Store } from './data/store';
+import { Store, connect } from './data/store';
 
 const tabsStyle = {
   'alignSelf': 'flex-end' as 'flex-end',
@@ -60,7 +59,7 @@ enum TabType {
 
 interface HeaderProps {
   routeState: routes.State;
-  setRoute: (l: TabType, curState: routes.State) => void;
+  setRoute: (arg: {ty: TabType, curSt: routes.State}) => void;
 }
 
 function Header(p: HeaderProps) {
@@ -86,7 +85,7 @@ function Header(p: HeaderProps) {
         fullWidth={full}
         style={full ? {} : tabsStyle}
         value={tabType}
-        onChange={(e, v) => p.setRoute(v, p.routeState)}
+        onChange={(e, v) => p.setRoute({ty: v, curSt: p.routeState})}
       >
         <Tab label="Dashboard" value={TabType.Dashboard}/>
         <Tab label="Station Monitor" value={TabType.StationMonitor}/>
@@ -130,8 +129,7 @@ function Header(p: HeaderProps) {
 
 export interface AppProps {
   route: routes.State;
-  // tslint:disable-next-line:no-any
-  setRoute: (r: TabType, curSt: routes.State) => any;
+  setRoute: (arg: {ty: TabType, curSt: routes.State}) => void;
 }
 
 export class App extends React.PureComponent<AppProps> {
@@ -172,8 +170,8 @@ export default connect(
     route: s.Route
   }),
   {
-    setRoute: (r: TabType, curSt: routes.State) => {
-      switch (r) {
+    setRoute: ({ty, curSt}: {ty: TabType, curSt: routes.State}): routes.Action => {
+      switch (ty) {
         case TabType.Dashboard:
           return { type: routes.RouteLocation.Dashboard };
         case TabType.Efficiency:

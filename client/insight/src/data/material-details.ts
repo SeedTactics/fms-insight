@@ -166,7 +166,13 @@ export function openWashMaterial(mat: MaterialSummary): ABF {
   };
 }
 
-export function completeInspection(mat: MaterialDetail, inspType: string, success: boolean): ABF {
+export interface CompleteInspectionData {
+  readonly mat: MaterialDetail;
+  readonly inspType: string;
+  readonly success: boolean;
+}
+
+export function completeInspection({mat, inspType, success}: CompleteInspectionData): ABF {
   const client = new api.LogClient();
   return {
     type: ActionType.UpdateMaterial,
@@ -184,8 +190,8 @@ export function completeInspection(mat: MaterialDetail, inspType: string, succes
       inspectionLocationNum: 1,
       inspectionType: inspType,
       success,
-      active: '0:0:0',
-      elapsed: '0:0:0',
+      active: 'PT0S',
+      elapsed: 'PT0S',
     }))
   };
 }
@@ -205,13 +211,19 @@ export function completeWash(mat: MaterialDetail): ABF {
         face: "1",
       }),
       washLocationNum: 1,
-      active: '0:0:0',
-      elapsed: '0:0:0',
+      active: 'PT0S',
+      elapsed: 'PT0S',
     }))
   };
 }
 
-export function assignWorkorder(mat: MaterialDetail, station: StationMonitorType, workorder: string): ABF {
+export interface AssignWorkorderData {
+  readonly mat: MaterialDetail;
+  readonly station: StationMonitorType;
+  readonly workorder: string;
+}
+
+export function assignWorkorder({mat, station, workorder}: AssignWorkorderData): ABF {
   const client = new api.LogClient();
   return {
     type: ActionType.UpdateMaterial,

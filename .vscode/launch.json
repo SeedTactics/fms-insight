@@ -5,6 +5,16 @@
    "version": "0.2.0",
    "configurations": [
         {
+            "name": "Mock Server",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceRoot}/server/debug-mock/bin/Debug/netcoreapp2/debugmock.dll",
+            "args": [],
+            "cwd": "${workspaceRoot}/server/debug-mock/bin/Debug/netcoreapp2",
+            "stopAtEntry": false,
+            "console": "internalConsole"
+        },
+        {
             "name": "Launch Chrome",
             "type": "chrome",
             "request": "launch",

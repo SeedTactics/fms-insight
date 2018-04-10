@@ -31,7 +31,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
-import { connect } from 'react-redux';
 import Select from 'material-ui/Select';
 import { MenuItem } from 'material-ui/Menu';
 import Input from 'material-ui/Input';
@@ -39,7 +38,7 @@ import { FormControl } from 'material-ui/Form';
 import { Seq, Set } from 'immutable';
 
 import * as routes from '../../data/routes';
-import { Store } from '../../data/store';
+import { Store, connect } from '../../data/store';
 import * as api from '../../data/api';
 
 const toolbarStyle = {
@@ -57,14 +56,9 @@ export interface StationToolbarProps {
   readonly queues: { [key: string]: api.IQueueSize };
   readonly insp_types: Set<string>;
   readonly displayLoadStation:
-    // tslint:disable-next-line:no-any
-    (num: number, queues: ReadonlyArray<string>, freeMaterial: boolean) => any;
-
-  // tslint:disable-next-line:no-any
-  readonly displayInspection: (type: string | undefined) => any;
-
-  // tslint:disable-next-line:no-any
-  readonly displayWash: () => any;
+    (num: number, queues: ReadonlyArray<string>, freeMaterial: boolean) => void;
+  readonly displayInspection: (type: string | undefined) => void;
+  readonly displayWash: () => void;
 }
 
 const freeMaterialSym = "@@insight_free_material@@";

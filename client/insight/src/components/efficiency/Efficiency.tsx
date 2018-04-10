@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
 import * as im from 'immutable';
-import { connect } from 'react-redux';
 import WorkIcon from 'material-ui-icons/Work';
 import BasketIcon from 'material-ui-icons/ShoppingBasket';
 import { addMonths, addDays } from 'date-fns';
@@ -45,7 +44,7 @@ import AnalysisSelectToolbar from '../AnalysisSelectToolbar';
 import { SelectableCycleChart } from './CycleChart';
 import { SelectableHeatChart, HeatChartPoint } from './HeatChart';
 import * as events from '../../data/events';
-import { Store } from '../../data/store';
+import { Store, connect } from '../../data/store';
 import * as guiState from '../../data/gui-state';
 
 // --------------------------------------------------------------------------------
