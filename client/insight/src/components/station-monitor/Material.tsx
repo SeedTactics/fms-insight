@@ -129,8 +129,7 @@ const matStyles = withStyles(theme => ({
 
 export interface InProcMaterialProps {
   readonly mat: Readonly<api.IInProcessMaterial>; // TODO: deep readonly
-  // tslint:disable-next-line:no-any
-  onOpen: (m: Readonly<api.IInProcessMaterial>) => any;
+  onOpen: (m: Readonly<api.IInProcessMaterial>) => void;
 }
 
 const InProcMaterialWithStyles = matStyles<InProcMaterialProps>(props => {
@@ -198,8 +197,7 @@ export interface MaterialSummaryProps {
   readonly mat: Readonly<MaterialSummary>; // TODO: deep readonly
   readonly checkInspectionType?: string;
   readonly checkWashCompleted?: boolean;
-  // tslint:disable-next-line:no-any
-  onOpen: (m: Readonly<MaterialSummary>) => any;
+  onOpen: (m: Readonly<MaterialSummary>) => void;
 }
 
 const MatSummaryWithStyles = matStyles<MaterialSummaryProps>(props => {
