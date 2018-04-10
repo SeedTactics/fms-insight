@@ -59,12 +59,14 @@ export function selectLoadStationProps(
     }
   }
   if (pal === undefined) {
+    const queueMap = new Map<string, MaterialList>();
+    queues.forEach(q => queueMap.set(q, []));
     return {
       pallet: undefined,
       face: im.Map(),
       castings: [],
-      free: [],
-      queues: im.Map(),
+      free: displayFree ? [] : undefined,
+      queues: im.Map(queueMap),
     };
   }
   let palName: string = pal.pallet;
