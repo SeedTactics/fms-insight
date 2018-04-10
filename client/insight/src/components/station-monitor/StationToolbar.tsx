@@ -59,6 +59,7 @@ export interface StationToolbarProps {
     (num: number, queues: ReadonlyArray<string>, freeMaterial: boolean) => void;
   readonly displayInspection: (type: string | undefined) => void;
   readonly displayWash: () => void;
+  readonly displayQueues: (queues: ReadonlyArray<string>, freeMaterial: boolean) => void;
 }
 
 const freeMaterialSym = "@@insight_free_material@@";
@@ -73,8 +74,8 @@ export function StationToolbar(props: StationToolbarProps) {
       case routes.StationMonitorType.LoadUnload:
         props.displayLoadStation(
           props.current_route.selected_load_id,
-          props.current_route.station_queues,
-          props.current_route.station_free_material
+          props.current_route.load_queues,
+          props.current_route.load_free_material
         );
         break;
 
@@ -85,6 +86,12 @@ export function StationToolbar(props: StationToolbarProps) {
       case routes.StationMonitorType.Wash:
         props.displayWash();
         break;
+
+      case routes.StationMonitorType.Queues:
+        props.displayQueues(
+          props.current_route.standalone_queues,
+          props.current_route.standalone_free_material
+        );
     }
   }
 
@@ -93,8 +100,8 @@ export function StationToolbar(props: StationToolbarProps) {
     if (!isNaN(val) && isFinite(val)) {
       props.displayLoadStation(
         val,
-        props.current_route.station_queues,
-        props.current_route.station_free_material
+        props.current_route.load_queues,
+        props.current_route.load_free_material
       );
     }
   }
@@ -103,15 +110,20 @@ export function StationToolbar(props: StationToolbarProps) {
     props.displayInspection(type === allInspSym ? undefined : type);
   }
 
-  let curQueueCount = props.current_route.station_queues.length;
-  if (curQueueCount > 3) {
-    curQueueCount = 3;
+  let curLoadQueueCount = props.current_route.load_queues.length;
+  if (curLoadQueueCount > 3) {
+    curLoadQueueCount = 3;
+  }
+
+  let curStandaloneCount = props.current_route.standalone_queues.length;
+  if (curStandaloneCount > 3) {
+    curStandaloneCount = 3;
   }
 
   // the material-ui type bindings specify `e.target.value` to have type string, but
   // when multiple selects are enabled it is actually a type string[]
   // tslint:disable-next-line:no-any
-  function setQueues(newQueuesAny: any) {
+  function setLoadQueues(newQueuesAny: any) {
     const newQueues = newQueuesAny as ReadonlyArray<string>;
     const free = newQueues.includes(freeMaterialSym);
     props.displayLoadStation(
@@ -121,9 +133,24 @@ export function StationToolbar(props: StationToolbarProps) {
     );
   }
 
-  let queues: string[] = [...props.current_route.station_queues];
-  if (props.current_route.station_free_material) {
-    queues.push(freeMaterialSym);
+  let loadqueues: string[] = [...props.current_route.load_queues];
+  if (props.current_route.load_free_material) {
+    loadqueues.push(freeMaterialSym);
+  }
+
+  // tslint:disable-next-line:no-any
+  function setStandaloneQueues(newQueuesAny: any) {
+    const newQueues = newQueuesAny as ReadonlyArray<string>;
+    const free = newQueues.includes(freeMaterialSym);
+    props.displayQueues(
+      Seq(newQueues).take(3).filter(q => q !== freeMaterialSym).toArray(),
+      free
+    );
+  }
+
+  let standalonequeues: string[] = [...props.current_route.standalone_queues];
+  if (props.current_route.standalone_free_material) {
+    standalonequeues.push(freeMaterialSym);
   }
 
   return (
@@ -142,6 +169,9 @@ export function StationToolbar(props: StationToolbarProps) {
           </MenuItem>
           <MenuItem value={routes.StationMonitorType.Wash}>
             Wash
+          </MenuItem>
+          <MenuItem value={routes.StationMonitorType.Queues}>
+            Queues
           </MenuItem>
         </Select>
         {
@@ -176,7 +206,7 @@ export function StationToolbar(props: StationToolbarProps) {
           props.current_route.station_monitor === routes.StationMonitorType.LoadUnload ?
             <FormControl style={{marginLeft: '1em'}}>
               {
-                queues.length === 0 ?
+                loadqueues.length === 0 ?
                   <label
                     style={{
                       position: 'absolute',
@@ -193,10 +223,10 @@ export function StationToolbar(props: StationToolbarProps) {
                 multiple
                 key="queueselect"
                 displayEmpty
-                value={queues}
+                value={loadqueues}
                 inputProps={{id: "queueselect"}}
                 style={{minWidth: '10em'}}
-                onChange={e => setQueues(e.target.value)}
+                onChange={e => setLoadQueues(e.target.value)}
               >
                 <MenuItem key={freeMaterialSym} value={freeMaterialSym}>Free Material</MenuItem>
                 {
@@ -206,6 +236,26 @@ export function StationToolbar(props: StationToolbarProps) {
                 }
               </Select>
             </FormControl>
+            : undefined
+        }
+        {
+          props.current_route.station_monitor === routes.StationMonitorType.Queues ?
+            <Select
+              multiple
+              key="queueselect"
+              displayEmpty
+              value={standalonequeues}
+              inputProps={{id: "queueselect"}}
+              style={{minWidth: '10em'}}
+              onChange={e => setStandaloneQueues(e.target.value)}
+            >
+              <MenuItem key={freeMaterialSym} value={freeMaterialSym}>Free Material</MenuItem>
+              {
+                queueNames.map((q, idx) =>
+                  <MenuItem key={idx} value={q}>{q}</MenuItem>
+                )
+              }
+            </Select>
             : undefined
         }
       </div>
@@ -223,5 +273,6 @@ export default connect(
     displayLoadStation: routes.displayLoadStation,
     displayInspection: routes.displayInspectionType,
     displayWash: routes.displayWash,
+    displayQueues: routes.displayQueues,
   }
 )(StationToolbar);

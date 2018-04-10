@@ -34,9 +34,9 @@ import * as React from 'react';
 import { withStyles } from 'material-ui';
 import Grid from 'material-ui/Grid';
 import * as im from 'immutable';
-import * as numeral from 'numeral';
 import { createSelector } from 'reselect';
-import Tooltip from 'material-ui/Tooltip';
+// import * as numeral from 'numeral';
+// import Tooltip from 'material-ui/Tooltip';
 
 import { connect, Store } from '../../data/store';
 import { StationInUse } from '../../data/events';
@@ -109,7 +109,7 @@ function computeCircle(oee: number): JSX.Element {
   }
 }
 
-function computeTooltip(p: StationOEEProps): JSX.Element {
+/*function computeTooltip(p: StationOEEProps): JSX.Element {
 
   let entries: {title: string, value: string}[] = [];
 
@@ -156,7 +156,7 @@ function computeTooltip(p: StationOEEProps): JSX.Element {
       }
     </>
   );
-}
+}*/
 
 // style values set to match react-vis tooltips
 const tooltipStyle = withStyles(() => ({
@@ -176,18 +176,17 @@ export const StationOEEWithStyles = tooltipStyle<StationOEEProps>(p => {
     }
   }
 
+  // TODO: add back tooltip
   return (
-    <Tooltip title={computeTooltip(p)} classes={p.classes}>
-      <svg viewBox="0 0 400 400">
-        {computeCircle(p.oee)}
-        <text x={200} y={190} textAnchor="middle" style={{fontSize: 45}}>
-          {p.station}
-        </text>
-        <text x={200} y={250} textAnchor="middle" style={{fontSize: 30}}>
-          {pallet}
-        </text>
-      </svg>
-    </Tooltip>
+    <svg viewBox="0 0 400 400">
+      {computeCircle(p.oee)}
+      <text x={200} y={190} textAnchor="middle" style={{fontSize: 45}}>
+        {p.station}
+      </text>
+      <text x={200} y={250} textAnchor="middle" style={{fontSize: 30}}>
+        {pallet}
+      </text>
+    </svg>
   );
 });
 

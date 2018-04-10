@@ -87,7 +87,7 @@ it('operates when period is last 30', () => {
   val
     .find({label: "Select Month"})
     .prop("control")
-    .props.onChange({target: {value: true}});
+    .props.onChange(null, {target: {value: true}});
   expect(analyzeMonth).toHaveBeenCalledWith(month);
   analyzeMonth.mockReset();
 
@@ -126,7 +126,7 @@ it("operates when period is specific month", () => {
   val
     .find({label: "Last 30 days"})
     .prop("control")
-    .props.onChange({target: {value: true}});
+    .props.onChange(null, {target: {value: true}});
   expect(analyzeLast30).toHaveBeenCalled();
   analyzeLast30.mockReset();
 

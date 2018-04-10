@@ -42,14 +42,17 @@ const basicState: routes.State = {
   current: routes.RouteLocation.LoadMonitor,
   station_monitor: routes.StationMonitorType.LoadUnload,
   selected_load_id: 4,
-  station_queues: ["a"],
-  station_free_material: false,
+  load_queues: ["a"],
+  load_free_material: false,
+  standalone_queues: ["b"],
+  standalone_free_material: false,
 };
 
 it('displays the toolbar for load with one queue', () => {
   const displayLoad = jest.fn();
   const displayInsp = jest.fn();
   const displayWash = jest.fn();
+  const displayQueues = jest.fn();
 
   let val = shallow(
     <StationToolbar
@@ -59,6 +62,7 @@ it('displays the toolbar for load with one queue', () => {
       displayLoadStation={displayLoad}
       displayInspection={displayInsp}
       displayWash={displayWash}
+      displayQueues={displayQueues}
     />);
   expect(val).toMatchSnapshot('load with one queue');
 });
@@ -67,8 +71,9 @@ it('displays the load with no queues', () => {
   const displayLoad = jest.fn();
   const displayInsp = jest.fn();
   const displayWash = jest.fn();
+  const displayQueues = jest.fn();
   const st = {...basicState,
-    station_queues: [],
+    load_queues: [],
   };
 
   let val = shallow(
@@ -79,6 +84,7 @@ it('displays the load with no queues', () => {
       displayLoadStation={displayLoad}
       displayInspection={displayInsp}
       displayWash={displayWash}
+      displayQueues={displayQueues}
     />);
   expect(val).toMatchSnapshot('load with no queues');
 });
@@ -87,10 +93,11 @@ it('displays the toolbar for load with three queues', () => {
   const displayLoad = jest.fn();
   const displayInsp = jest.fn();
   const displayWash = jest.fn();
+  const displayQueues = jest.fn();
   const st = {...basicState,
     current_route: routes.RouteLocation.LoadMonitor,
     station_monitor: routes.StationMonitorType.LoadUnload,
-    station_queues: ["a", "b", "c"],
+    load_queues: ["a", "b", "c"],
   };
 
   let val = shallow(
@@ -101,6 +108,7 @@ it('displays the toolbar for load with three queues', () => {
       displayLoadStation={displayLoad}
       displayInspection={displayInsp}
       displayWash={displayWash}
+      displayQueues={displayQueues}
     />);
   expect(val).toMatchSnapshot('load toolbar');
 });
@@ -109,10 +117,11 @@ it('displays the toolbar for wash', () => {
   const displayLoad = jest.fn();
   const displayInsp = jest.fn();
   const displayWash = jest.fn();
+  const displayQueues = jest.fn();
   const st = {...basicState,
     current_route: routes.RouteLocation.WashMonitor,
     station_monitor: routes.StationMonitorType.Wash,
-    station_queues: [],
+    load_queues: [],
   };
 
   let val = shallow(
@@ -123,6 +132,7 @@ it('displays the toolbar for wash', () => {
       displayLoadStation={displayLoad}
       displayInspection={displayInsp}
       displayWash={displayWash}
+      displayQueues={displayQueues}
     />);
   expect(val).toMatchSnapshot('wash toolbar');
 });
@@ -131,10 +141,11 @@ it('displays the toolbar for all inspection', () => {
   const displayLoad = jest.fn();
   const displayInsp = jest.fn();
   const displayWash = jest.fn();
+  const displayQueues = jest.fn();
   const st = {...basicState,
     current_route: routes.RouteLocation.InspectionMonitor,
     station_monitor: routes.StationMonitorType.Inspection,
-    station_queues: [],
+    load_queues: [],
   };
 
   let val = shallow(
@@ -145,6 +156,7 @@ it('displays the toolbar for all inspection', () => {
       displayLoadStation={displayLoad}
       displayInspection={displayInsp}
       displayWash={displayWash}
+      displayQueues={displayQueues}
     />);
   expect(val).toMatchSnapshot('inspection all toolbar');
 });
@@ -153,11 +165,12 @@ it('displays the toolbar for single inspection type', () => {
   const displayLoad = jest.fn();
   const displayInsp = jest.fn();
   const displayWash = jest.fn();
+  const displayQueues = jest.fn();
   const st = {...basicState,
     current_route: routes.RouteLocation.InspectionMonitor,
     station_monitor: routes.StationMonitorType.Inspection,
     selected_inspection_type: "i1",
-    station_queues: [],
+    load_queues: [],
   };
 
   let val = shallow(
@@ -168,14 +181,64 @@ it('displays the toolbar for single inspection type', () => {
       displayLoadStation={displayLoad}
       displayInspection={displayInsp}
       displayWash={displayWash}
+      displayQueues={displayQueues}
     />);
   expect(val).toMatchSnapshot('inspection i1 selected toolbar');
+});
+
+it('displays an empty queue page', () => {
+  const displayLoad = jest.fn();
+  const displayInsp = jest.fn();
+  const displayWash = jest.fn();
+  const displayQueues = jest.fn();
+  const st = {...basicState,
+    current_route: routes.RouteLocation.Queues,
+    station_monitor: routes.StationMonitorType.Queues,
+    standalone_queues: [],
+  };
+
+  let val = shallow(
+    <StationToolbar
+      current_route={st}
+      queues={{}}
+      insp_types={Set(["i1", "i2"])}
+      displayLoadStation={displayLoad}
+      displayInspection={displayInsp}
+      displayWash={displayWash}
+      displayQueues={displayQueues}
+    />);
+  expect(val).toMatchSnapshot('empty queues');
+});
+
+it('displays the toolbar for queue page with three queues', () => {
+  const displayLoad = jest.fn();
+  const displayInsp = jest.fn();
+  const displayWash = jest.fn();
+  const displayQueues = jest.fn();
+  const st = {...basicState,
+    current_route: routes.RouteLocation.Queues,
+    station_monitor: routes.StationMonitorType.Queues,
+    standalone_queues: ["a", "b", "c"],
+  };
+
+  let val = shallow(
+    <StationToolbar
+      current_route={st}
+      queues={{"a": {}, "b": {}, "c": {}, "d": {}}}
+      insp_types={Set(["i1", "i2"])}
+      displayLoadStation={displayLoad}
+      displayInspection={displayInsp}
+      displayWash={displayWash}
+      displayQueues={displayQueues}
+    />);
+  expect(val).toMatchSnapshot('queue toolbar');
 });
 
 it("changes the station type", () => {
   const displayLoad = jest.fn();
   const displayInsp = jest.fn();
   const displayWash = jest.fn();
+  const displayQueues = jest.fn();
 
   const val = shallow(
     <StationToolbar
@@ -185,6 +248,7 @@ it("changes the station type", () => {
       displayLoadStation={displayLoad}
       displayInspection={displayInsp}
       displayWash={displayWash}
+      displayQueues={displayQueues}
     />);
 
   // tslint:disable-next-line:no-any
@@ -201,16 +265,24 @@ it("changes the station type", () => {
   onChange({target: {value: routes.StationMonitorType.LoadUnload}});
   expect(displayLoad).toHaveBeenCalledWith(
     basicState.selected_load_id,
-    basicState.station_queues,
+    basicState.load_queues,
     false
   );
   displayLoad.mockReset();
+
+  onChange({target: {value: routes.StationMonitorType.Queues}});
+  expect(displayQueues).toHaveBeenCalledWith(
+    basicState.standalone_queues,
+    false
+  );
+  displayQueues.mockReset();
 });
 
 it("changes the load station number", () => {
   const displayLoad = jest.fn();
   const displayInsp = jest.fn();
   const displayWash = jest.fn();
+  const displayQueues = jest.fn();
 
   const val = shallow(
     <StationToolbar
@@ -220,6 +292,7 @@ it("changes the load station number", () => {
       displayLoadStation={displayLoad}
       displayInspection={displayInsp}
       displayWash={displayWash}
+      displayQueues={displayQueues}
     />);
 
   // tslint:disable-next-line:no-any
@@ -228,18 +301,20 @@ it("changes the load station number", () => {
 
   expect(displayLoad).toHaveBeenCalledWith(
     12,
-    basicState.station_queues,
+    basicState.load_queues,
     false
   );
 
   expect(displayInsp).not.toHaveBeenCalled();
   expect(displayWash).not.toHaveBeenCalled();
+  expect(displayQueues).not.toHaveBeenCalled();
 });
 
-it("changes the queues", () => {
+it("changes the load queues", () => {
   const displayLoad = jest.fn();
   const displayInsp = jest.fn();
   const displayWash = jest.fn();
+  const displayQueues = jest.fn();
 
   const val = shallow(
     <StationToolbar
@@ -249,6 +324,7 @@ it("changes the queues", () => {
       displayLoadStation={displayLoad}
       displayInspection={displayInsp}
       displayWash={displayWash}
+      displayQueues={displayQueues}
     />);
 
   // tslint:disable-next-line:no-any
@@ -272,4 +348,49 @@ it("changes the queues", () => {
 
   expect(displayWash).not.toHaveBeenCalled();
   expect(displayInsp).not.toHaveBeenCalled();
+  expect(displayQueues).not.toHaveBeenCalled();
+});
+
+it("changes the standalone queues", () => {
+  const displayLoad = jest.fn();
+  const displayInsp = jest.fn();
+  const displayWash = jest.fn();
+  const displayQueues = jest.fn();
+
+  const st = {...basicState,
+    current_route: routes.RouteLocation.Queues,
+    station_monitor: routes.StationMonitorType.Queues,
+  };
+
+  const val = shallow(
+    <StationToolbar
+      current_route={st}
+      queues={{}}
+      insp_types={Set()}
+      displayLoadStation={displayLoad}
+      displayInspection={displayInsp}
+      displayWash={displayWash}
+      displayQueues={displayQueues}
+    />);
+
+  // tslint:disable-next-line:no-any
+  const onChange = val.find("WithStyles(Select)").last().prop("onChange") as any;
+
+  onChange({target: {value: ["a", "b"]}});
+  expect(displayQueues).toHaveBeenCalledWith(
+    ["a", "b"],
+    false
+  );
+
+  displayQueues.mockReset();
+
+  onChange({target: {value: []}});
+  expect(displayQueues).toHaveBeenCalledWith(
+    [],
+    false
+  );
+
+  expect(displayWash).not.toHaveBeenCalled();
+  expect(displayInsp).not.toHaveBeenCalled();
+  expect(displayLoad).not.toHaveBeenCalled();
 });

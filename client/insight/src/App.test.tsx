@@ -50,8 +50,10 @@ function appProps(current: routes.RouteLocation): AppProps {
       current,
       station_monitor: monitor,
       selected_load_id: 5,
-      station_queues: ["q1", "q1"],
-      station_free_material: false,
+      load_queues: ["q1", "q1"],
+      load_free_material: false,
+      standalone_queues: ["r1", "r2"],
+      standalone_free_material: true,
     },
     setRoute: jest.fn(),
   };
@@ -67,7 +69,7 @@ it('renders the dashboard', () => {
   // tslint:disable-next-line:no-any
   const onTabChange = header.find("WithStyles(Tabs)").first().prop("onChange") as any;
   onTabChange(null, routes.RouteLocation.CostPerPiece);
-  expect(props.setRoute).toHaveBeenCalledWith(routes.RouteLocation.CostPerPiece, props.route);
+  expect(props.setRoute).toHaveBeenCalledWith({ty: routes.RouteLocation.CostPerPiece, curSt: props.route});
 });
 
 it('renders the load monitor', () => {
@@ -92,6 +94,14 @@ it('renders the wash monitor', () => {
   const header = val.find("Header").dive();
   expect(val).toMatchSnapshot("wash monitor");
   expect(header).toMatchSnapshot("wash monitor header");
+});
+
+it('renders the queue monitor', () => {
+  const props = appProps(routes.RouteLocation.Queues);
+  const val = shallow(<App {...props}/>);
+  const header = val.find("Header").dive();
+  expect(val).toMatchSnapshot("queue monitor");
+  expect(header).toMatchSnapshot("queue monitor header");
 });
 
 it('renders the cost per piece', () => {

@@ -326,8 +326,8 @@ const buildLoadData = createSelector(
   (curStatus: Readonly<api.ICurrentStatus>, route: routes.State): LoadStationData => {
     return selectLoadStationProps(
         route.selected_load_id,
-        route.station_queues,
-        route.station_free_material,
+        route.load_queues,
+        route.load_free_material,
         curStatus);
   }
 );

@@ -55,6 +55,8 @@ function monitorElement(
       return <Inspection fillViewPort={fillViewport}/>;
     case routes.StationMonitorType.Wash:
       return <Wash fillViewPort={fillViewport}/>;
+    case routes.StationMonitorType.Queues:
+      return <p>Queues</p>;
   }
 }
 

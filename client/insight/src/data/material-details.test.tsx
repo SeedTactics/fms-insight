@@ -60,7 +60,12 @@ const m: Readonly<mat.MaterialDetail> = {
 };
 
 const allNullMats = {...mat.initial.material};
-const allStations = [StationMonitorType.Inspection, StationMonitorType.LoadUnload, StationMonitorType.Wash];
+const allStations = [
+  StationMonitorType.Inspection,
+  StationMonitorType.LoadUnload,
+  StationMonitorType.Wash,
+  StationMonitorType.Queues
+];
 
 for (const station of allStations) {
   it('starts an open for ' + station, () => {
@@ -122,6 +127,7 @@ for (const station of allStations) {
         [StationMonitorType.Inspection]: m,
         [StationMonitorType.Wash]: m,
         [StationMonitorType.LoadUnload]: m,
+        [StationMonitorType.Queues]: m,
       }
     };
     const st = mat.reducer(fullSt, action);

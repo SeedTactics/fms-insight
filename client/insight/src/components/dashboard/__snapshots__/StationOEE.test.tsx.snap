@@ -1,156 +1,87 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`displays a single station oee: station oee gauge 1`] = `
-<WithStyles(Tooltip)
-  classes={
-    Object {
-      "tooltip": "Component-tooltip-1",
-    }
-  }
-  title={
-    <UNDEFINED>
-      <div>
-        <span>
-          OEE
-          : 
-        </span>
-        <span>
-          43.0%
-        </span>
-      </div>
-      <div>
-        <span>
-          Pallet
-          : 
-        </span>
-        <span>
-          7
-        </span>
-      </div>
-      <div>
-        <span>
-          Part
-          : 
-        </span>
-        <span>
-          aaa-2 (loading)
-        </span>
-      </div>
-    </UNDEFINED>
-  }
+<svg
+  viewBox="0 0 400 400"
 >
-  <svg
-    viewBox="0 0 400 400"
-  >
-    <React.Fragment>
-      <path
-        d="M 263.86689373476094 335.72405786990294 A 150 150 1.5707963267948966 0 0 200 50"
-        fill="transparent"
-        stroke="#795548"
-        strokeWidth={10}
-      />
-      <path
-        d="M 199.99999999999997 50 A 150 150 1.5707963267948966 1 0 263.86689373476094 335.72405786990294"
-        fill="transparent"
-        stroke="#E0E0E0"
-        strokeWidth={10}
-      />
-    </React.Fragment>
-    <text
-      style={
-        Object {
-          "fontSize": 45,
-        }
-      }
-      textAnchor="middle"
-      x={200}
-      y={190}
-    >
-      aaa
-    </text>
-    <text
-      style={
-        Object {
-          "fontSize": 30,
-        }
-      }
-      textAnchor="middle"
-      x={200}
-      y={250}
-    >
-      Pal 7
-    </text>
-  </svg>
-</WithStyles(Tooltip)>
-`;
-
-exports[`displays a single station without oee: station empty guage 1`] = `
-<WithStyles(Tooltip)
-  classes={
-    Object {
-      "tooltip": "Component-tooltip-1",
-    }
-  }
-  title={
-    <UNDEFINED>
-      <div>
-        <span>
-          OEE
-          : 
-        </span>
-        <span>
-          1.0%
-        </span>
-      </div>
-      <div>
-        <span>
-          Pallet
-          : 
-        </span>
-        <span>
-          None
-        </span>
-      </div>
-    </UNDEFINED>
-  }
->
-  <svg
-    viewBox="0 0 400 400"
-  >
-    <circle
-      cx={200}
-      cy={200}
+  <React.Fragment>
+    <path
+      d="M 263.86689373476094 335.72405786990294 A 150 150 1.5707963267948966 0 0 200 50"
       fill="transparent"
-      r={150}
+      stroke="#795548"
+      strokeWidth={10}
+    />
+    <path
+      d="M 199.99999999999997 50 A 150 150 1.5707963267948966 1 0 263.86689373476094 335.72405786990294"
+      fill="transparent"
       stroke="#E0E0E0"
       strokeWidth={10}
     />
-    <text
-      style={
-        Object {
-          "fontSize": 45,
-        }
+  </React.Fragment>
+  <text
+    style={
+      Object {
+        "fontSize": 45,
       }
-      textAnchor="middle"
-      x={200}
-      y={190}
-    >
-      bbb
-    </text>
-    <text
-      style={
-        Object {
-          "fontSize": 30,
-        }
+    }
+    textAnchor="middle"
+    x={200}
+    y={190}
+  >
+    aaa
+  </text>
+  <text
+    style={
+      Object {
+        "fontSize": 30,
       }
-      textAnchor="middle"
-      x={200}
-      y={250}
-    >
-      Empty
-    </text>
-  </svg>
-</WithStyles(Tooltip)>
+    }
+    textAnchor="middle"
+    x={200}
+    y={250}
+  >
+    Pal 7
+  </text>
+</svg>
+`;
+
+exports[`displays a single station without oee: station empty guage 1`] = `
+<svg
+  viewBox="0 0 400 400"
+>
+  <circle
+    cx={200}
+    cy={200}
+    fill="transparent"
+    r={150}
+    stroke="#E0E0E0"
+    strokeWidth={10}
+  />
+  <text
+    style={
+      Object {
+        "fontSize": 45,
+      }
+    }
+    textAnchor="middle"
+    x={200}
+    y={190}
+  >
+    bbb
+  </text>
+  <text
+    style={
+      Object {
+        "fontSize": 30,
+      }
+    }
+    textAnchor="middle"
+    x={200}
+    y={250}
+  >
+    Empty
+  </text>
+</svg>
 `;
 
 exports[`displays station hours: station oee table 1`] = `

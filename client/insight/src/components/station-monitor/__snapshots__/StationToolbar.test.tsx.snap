@@ -1,5 +1,74 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`displays an empty queue page: empty queues 1`] = `
+<nav
+  style={
+    Object {
+      "alignItems": "flex-end",
+      "backgroundColor": "#E0E0E0",
+      "display": "flex",
+      "height": "2.5em",
+      "paddingBottom": "4px",
+      "paddingLeft": "24px",
+      "paddingRight": "24px",
+    }
+  }
+>
+  <div>
+    <WithStyles(Select)
+      autoWidth={true}
+      onChange={[Function]}
+      value="StationType_Queues"
+    >
+      <WithStyles(MenuItem)
+        value="StationType_LoadUnload"
+      >
+        Load Station
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="StationType_Insp"
+      >
+        Inspection
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="StationType_Wash"
+      >
+        Wash
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="StationType_Queues"
+      >
+        Queues
+      </WithStyles(MenuItem)>
+    </WithStyles(Select)>
+    <WithStyles(Select)
+      displayEmpty={true}
+      inputProps={
+        Object {
+          "id": "queueselect",
+        }
+      }
+      key="queueselect"
+      multiple={true}
+      onChange={[Function]}
+      style={
+        Object {
+          "minWidth": "10em",
+        }
+      }
+      value={Array []}
+    >
+      <WithStyles(MenuItem)
+        key="@@insight_free_material@@"
+        value="@@insight_free_material@@"
+      >
+        Free Material
+      </WithStyles(MenuItem)>
+    </WithStyles(Select)>
+  </div>
+</nav>
+`;
+
 exports[`displays the load with no queues: load with no queues 1`] = `
 <nav
   style={
@@ -34,6 +103,11 @@ exports[`displays the load with no queues: load with no queues 1`] = `
         value="StationType_Wash"
       >
         Wash
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="StationType_Queues"
+      >
+        Queues
       </WithStyles(MenuItem)>
     </WithStyles(Select)>
     <WithStyles(Input)
@@ -132,6 +206,11 @@ exports[`displays the toolbar for all inspection: inspection all toolbar 1`] = `
       >
         Wash
       </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="StationType_Queues"
+      >
+        Queues
+      </WithStyles(MenuItem)>
     </WithStyles(Select)>
     <WithStyles(Select)
       key="inspselect"
@@ -202,6 +281,11 @@ exports[`displays the toolbar for load with one queue: load with one queue 1`] =
         value="StationType_Wash"
       >
         Wash
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="StationType_Queues"
+      >
+        Queues
       </WithStyles(MenuItem)>
     </WithStyles(Select)>
     <WithStyles(Input)
@@ -303,6 +387,11 @@ exports[`displays the toolbar for load with three queues: load toolbar 1`] = `
       >
         Wash
       </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="StationType_Queues"
+      >
+        Queues
+      </WithStyles(MenuItem)>
     </WithStyles(Select)>
     <WithStyles(Input)
       key="loadnumselect"
@@ -382,6 +471,105 @@ exports[`displays the toolbar for load with three queues: load toolbar 1`] = `
 </nav>
 `;
 
+exports[`displays the toolbar for queue page with three queues: queue toolbar 1`] = `
+<nav
+  style={
+    Object {
+      "alignItems": "flex-end",
+      "backgroundColor": "#E0E0E0",
+      "display": "flex",
+      "height": "2.5em",
+      "paddingBottom": "4px",
+      "paddingLeft": "24px",
+      "paddingRight": "24px",
+    }
+  }
+>
+  <div>
+    <WithStyles(Select)
+      autoWidth={true}
+      onChange={[Function]}
+      value="StationType_Queues"
+    >
+      <WithStyles(MenuItem)
+        value="StationType_LoadUnload"
+      >
+        Load Station
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="StationType_Insp"
+      >
+        Inspection
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="StationType_Wash"
+      >
+        Wash
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="StationType_Queues"
+      >
+        Queues
+      </WithStyles(MenuItem)>
+    </WithStyles(Select)>
+    <WithStyles(Select)
+      displayEmpty={true}
+      inputProps={
+        Object {
+          "id": "queueselect",
+        }
+      }
+      key="queueselect"
+      multiple={true}
+      onChange={[Function]}
+      style={
+        Object {
+          "minWidth": "10em",
+        }
+      }
+      value={
+        Array [
+          "a",
+          "b",
+          "c",
+        ]
+      }
+    >
+      <WithStyles(MenuItem)
+        key="@@insight_free_material@@"
+        value="@@insight_free_material@@"
+      >
+        Free Material
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        key="0"
+        value="a"
+      >
+        a
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        key="1"
+        value="b"
+      >
+        b
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        key="2"
+        value="c"
+      >
+        c
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        key="3"
+        value="d"
+      >
+        d
+      </WithStyles(MenuItem)>
+    </WithStyles(Select)>
+  </div>
+</nav>
+`;
+
 exports[`displays the toolbar for single inspection type: inspection i1 selected toolbar 1`] = `
 <nav
   style={
@@ -416,6 +604,11 @@ exports[`displays the toolbar for single inspection type: inspection i1 selected
         value="StationType_Wash"
       >
         Wash
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="StationType_Queues"
+      >
+        Queues
       </WithStyles(MenuItem)>
     </WithStyles(Select)>
     <WithStyles(Select)
@@ -487,6 +680,11 @@ exports[`displays the toolbar for wash: wash toolbar 1`] = `
         value="StationType_Wash"
       >
         Wash
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="StationType_Queues"
+      >
+        Queues
       </WithStyles(MenuItem)>
     </WithStyles(Select)>
   </div>

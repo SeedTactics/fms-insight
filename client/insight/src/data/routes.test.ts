@@ -48,11 +48,13 @@ it("changes to the station page", () => {
     current: routes.RouteLocation.WashMonitor,
     station_monitor: routes.StationMonitorType.Wash,
     selected_load_id: 1,
-    station_queues: [],
-    station_free_material: false,
+    load_queues: [],
+    load_free_material: false,
+    standalone_queues: [],
+    standalone_free_material: false,
   });
 
-  // now one with queues
+  // now one with load queues
   st = routes.reducer(st, {
     type: routes.RouteLocation.LoadMonitor,
     payload: {
@@ -69,8 +71,10 @@ it("changes to the station page", () => {
     current: routes.RouteLocation.LoadMonitor,
     station_monitor: routes.StationMonitorType.LoadUnload,
     selected_load_id: 4,
-    station_queues: ["z", "y", "x"],
-    station_free_material: false,
+    load_queues: ["z", "y", "x"],
+    load_free_material: false,
+    standalone_queues: [],
+    standalone_free_material: false,
   });
 
   // now with free material
@@ -91,8 +95,51 @@ it("changes to the station page", () => {
     current: routes.RouteLocation.LoadMonitor,
     station_monitor: routes.StationMonitorType.LoadUnload,
     selected_load_id: 6,
-    station_queues: ["w"],
-    station_free_material: true,
+    load_queues: ["w"],
+    load_free_material: true,
+    standalone_queues: [],
+    standalone_free_material: false,
+  });
+
+  // now with standalone queues
+  st = routes.reducer(st, {
+    type: routes.RouteLocation.Queues,
+    meta: {
+      query: {
+        queue: ["a", "b", "c"]
+      }
+    },
+  });
+
+  expect(st).toEqual({
+    current: routes.RouteLocation.Queues,
+    station_monitor: routes.StationMonitorType.Queues,
+    selected_load_id: 6,
+    load_queues: ["w"],
+    load_free_material: true,
+    standalone_queues: ["a", "b", "c"],
+    standalone_free_material: false,
+  });
+
+  // now with free material
+  st = routes.reducer(st, {
+    type: routes.RouteLocation.Queues,
+    meta: {
+      query: {
+        queue: ["d"],
+        free: null
+      }
+    },
+  });
+
+  expect(st).toEqual({
+    current: routes.RouteLocation.Queues,
+    station_monitor: routes.StationMonitorType.Queues,
+    selected_load_id: 6,
+    load_queues: ["w"],
+    load_free_material: true,
+    standalone_queues: ["d"],
+    standalone_free_material: true,
   });
 
 });
@@ -107,8 +154,10 @@ it("transitions to the cost/piece, dashboard, and efficiency pages", () => {
     current: routes.RouteLocation.LoadMonitor,
     station_monitor: routes.StationMonitorType.LoadUnload,
     selected_load_id: 2,
-    station_queues: ["a", "b"],
-    station_free_material: false,
+    load_queues: ["a", "b"],
+    load_free_material: false,
+    standalone_queues: [],
+    standalone_free_material: false,
   };
   for (var page of pages) {
     // tslint:disable-next-line:no-any

@@ -295,6 +295,7 @@ export const initial: State = {
     StationType_Insp: null,
     StationType_LoadUnload: null,
     StationType_Wash: null,
+    StationType_Queues: null,
   }
 };
 

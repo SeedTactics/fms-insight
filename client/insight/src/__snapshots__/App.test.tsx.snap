@@ -8,13 +8,18 @@ exports[`renders the cost per piece: cost per piece 1`] = `
     routeState={
       Object {
         "current": "ROUTE_CostPerPiece",
-        "selected_load_id": 5,
-        "station_free_material": false,
-        "station_monitor": "StationType_LoadUnload",
-        "station_queues": Array [
+        "load_free_material": false,
+        "load_queues": Array [
           "q1",
           "q1",
         ],
+        "selected_load_id": 5,
+        "standalone_free_material": true,
+        "standalone_queues": Array [
+          "r1",
+          "r2",
+        ],
+        "station_monitor": "StationType_LoadUnload",
       }
     }
     setRoute={[MockFunction]}
@@ -77,6 +82,10 @@ exports[`renders the cost per piece: cost per piece header 1`] = `
             label="Efficiency"
             value={2}
           />
+          <WithStyles(Tab)
+            label="Cost/Piece"
+            value={3}
+          />
         </WithStyles(Tabs)>
         <Connect(LoadingIcon) />
       </WithStyles(Toolbar)>
@@ -131,6 +140,10 @@ exports[`renders the cost per piece: cost per piece header 1`] = `
           label="Efficiency"
           value={2}
         />
+        <WithStyles(Tab)
+          label="Cost/Piece"
+          value={3}
+        />
       </WithStyles(Tabs)>
     </WithStyles(AppBar)>
   </Hidden>
@@ -145,13 +158,18 @@ exports[`renders the dashboard: dashboard 1`] = `
     routeState={
       Object {
         "current": "ROUTE_Dashboard",
-        "selected_load_id": 5,
-        "station_free_material": false,
-        "station_monitor": "StationType_LoadUnload",
-        "station_queues": Array [
+        "load_free_material": false,
+        "load_queues": Array [
           "q1",
           "q1",
         ],
+        "selected_load_id": 5,
+        "standalone_free_material": true,
+        "standalone_queues": Array [
+          "r1",
+          "r2",
+        ],
+        "station_monitor": "StationType_LoadUnload",
       }
     }
     setRoute={[MockFunction]}
@@ -214,6 +232,10 @@ exports[`renders the dashboard: dashboard header 1`] = `
             label="Efficiency"
             value={2}
           />
+          <WithStyles(Tab)
+            label="Cost/Piece"
+            value={3}
+          />
         </WithStyles(Tabs)>
         <Connect(LoadingIcon) />
       </WithStyles(Toolbar)>
@@ -268,6 +290,10 @@ exports[`renders the dashboard: dashboard header 1`] = `
           label="Efficiency"
           value={2}
         />
+        <WithStyles(Tab)
+          label="Cost/Piece"
+          value={3}
+        />
       </WithStyles(Tabs)>
     </WithStyles(AppBar)>
   </Hidden>
@@ -282,13 +308,18 @@ exports[`renders the efficiency: efficiency 1`] = `
     routeState={
       Object {
         "current": "ROUTE_Efficiency",
-        "selected_load_id": 5,
-        "station_free_material": false,
-        "station_monitor": "StationType_LoadUnload",
-        "station_queues": Array [
+        "load_free_material": false,
+        "load_queues": Array [
           "q1",
           "q1",
         ],
+        "selected_load_id": 5,
+        "standalone_free_material": true,
+        "standalone_queues": Array [
+          "r1",
+          "r2",
+        ],
+        "station_monitor": "StationType_LoadUnload",
       }
     }
     setRoute={[MockFunction]}
@@ -351,6 +382,10 @@ exports[`renders the efficiency: efficiency header 1`] = `
             label="Efficiency"
             value={2}
           />
+          <WithStyles(Tab)
+            label="Cost/Piece"
+            value={3}
+          />
         </WithStyles(Tabs)>
         <Connect(LoadingIcon) />
       </WithStyles(Toolbar)>
@@ -405,6 +440,10 @@ exports[`renders the efficiency: efficiency header 1`] = `
           label="Efficiency"
           value={2}
         />
+        <WithStyles(Tab)
+          label="Cost/Piece"
+          value={3}
+        />
       </WithStyles(Tabs)>
     </WithStyles(AppBar)>
   </Hidden>
@@ -419,13 +458,18 @@ exports[`renders the inspection monitor: inspection monitor 1`] = `
     routeState={
       Object {
         "current": "ROUTE_Inspection",
-        "selected_load_id": 5,
-        "station_free_material": false,
-        "station_monitor": "StationType_Insp",
-        "station_queues": Array [
+        "load_free_material": false,
+        "load_queues": Array [
           "q1",
           "q1",
         ],
+        "selected_load_id": 5,
+        "standalone_free_material": true,
+        "standalone_queues": Array [
+          "r1",
+          "r2",
+        ],
+        "station_monitor": "StationType_Insp",
       }
     }
     setRoute={[MockFunction]}
@@ -490,6 +534,10 @@ exports[`renders the inspection monitor: inspection monitor header 1`] = `
             label="Efficiency"
             value={2}
           />
+          <WithStyles(Tab)
+            label="Cost/Piece"
+            value={3}
+          />
         </WithStyles(Tabs)>
         <Connect(LoadingIcon) />
       </WithStyles(Toolbar)>
@@ -544,6 +592,10 @@ exports[`renders the inspection monitor: inspection monitor header 1`] = `
           label="Efficiency"
           value={2}
         />
+        <WithStyles(Tab)
+          label="Cost/Piece"
+          value={3}
+        />
       </WithStyles(Tabs)>
     </WithStyles(AppBar)>
   </Hidden>
@@ -558,13 +610,18 @@ exports[`renders the load monitor: station monitor 1`] = `
     routeState={
       Object {
         "current": "ROUTE_LoadMonitor",
-        "selected_load_id": 5,
-        "station_free_material": false,
-        "station_monitor": "StationType_LoadUnload",
-        "station_queues": Array [
+        "load_free_material": false,
+        "load_queues": Array [
           "q1",
           "q1",
         ],
+        "selected_load_id": 5,
+        "standalone_free_material": true,
+        "standalone_queues": Array [
+          "r1",
+          "r2",
+        ],
+        "station_monitor": "StationType_LoadUnload",
       }
     }
     setRoute={[MockFunction]}
@@ -629,6 +686,10 @@ exports[`renders the load monitor: station monitor header 1`] = `
             label="Efficiency"
             value={2}
           />
+          <WithStyles(Tab)
+            label="Cost/Piece"
+            value={3}
+          />
         </WithStyles(Tabs)>
         <Connect(LoadingIcon) />
       </WithStyles(Toolbar)>
@@ -683,6 +744,162 @@ exports[`renders the load monitor: station monitor header 1`] = `
           label="Efficiency"
           value={2}
         />
+        <WithStyles(Tab)
+          label="Cost/Piece"
+          value={3}
+        />
+      </WithStyles(Tabs)>
+    </WithStyles(AppBar)>
+  </Hidden>
+</nav>
+`;
+
+exports[`renders the queue monitor: queue monitor 1`] = `
+<div
+  id="App"
+>
+  <Header
+    routeState={
+      Object {
+        "current": "ROUTE_Queues",
+        "load_free_material": false,
+        "load_queues": Array [
+          "q1",
+          "q1",
+        ],
+        "selected_load_id": 5,
+        "standalone_free_material": true,
+        "standalone_queues": Array [
+          "r1",
+          "r2",
+        ],
+        "station_monitor": "StationType_LoadUnload",
+      }
+    }
+    setRoute={[MockFunction]}
+  />
+  <StationMonitor
+    monitor_type="StationType_Queues"
+  />
+</div>
+`;
+
+exports[`renders the queue monitor: queue monitor header 1`] = `
+<nav
+  id="navHeader"
+>
+  <Hidden
+    implementation="js"
+    lgDown={false}
+    lgUp={false}
+    mdDown={false}
+    mdUp={false}
+    smDown={true}
+    smUp={false}
+    xlDown={false}
+    xlUp={false}
+    xsDown={false}
+    xsUp={false}
+  >
+    <WithStyles(AppBar)
+      position="static"
+    >
+      <WithStyles(Toolbar)>
+        <WithStyles(Typography)
+          style={
+            Object {
+              "marginRight": "2em",
+            }
+          }
+          variant="title"
+        >
+          Insight
+        </WithStyles(Typography)>
+        <WithStyles(Tabs)
+          fullWidth={false}
+          onChange={[Function]}
+          style={
+            Object {
+              "alignSelf": "flex-end",
+              "flexGrow": 1,
+            }
+          }
+          value={1}
+        >
+          <WithStyles(Tab)
+            label="Dashboard"
+            value={0}
+          />
+          <WithStyles(Tab)
+            label="Station Monitor"
+            value={1}
+          />
+          <WithStyles(Tab)
+            label="Efficiency"
+            value={2}
+          />
+          <WithStyles(Tab)
+            label="Cost/Piece"
+            value={3}
+          />
+        </WithStyles(Tabs)>
+        <Connect(LoadingIcon) />
+      </WithStyles(Toolbar)>
+    </WithStyles(AppBar)>
+  </Hidden>
+  <Hidden
+    implementation="js"
+    lgDown={false}
+    lgUp={false}
+    mdDown={false}
+    mdUp={true}
+    smDown={false}
+    smUp={false}
+    xlDown={false}
+    xlUp={false}
+    xsDown={false}
+    xsUp={false}
+  >
+    <WithStyles(AppBar)
+      position="static"
+    >
+      <WithStyles(Toolbar)>
+        <WithStyles(Typography)
+          variant="title"
+        >
+          Insight
+        </WithStyles(Typography)>
+        <div
+          style={
+            Object {
+              "flexGrow": 1,
+            }
+          }
+        />
+        <Connect(LoadingIcon) />
+      </WithStyles(Toolbar)>
+      <WithStyles(Tabs)
+        fullWidth={true}
+        onChange={[Function]}
+        style={Object {}}
+        value={1}
+      >
+        <WithStyles(Tab)
+          label="Dashboard"
+          value={0}
+        />
+        <WithStyles(Tab)
+          label="Station Monitor"
+          value={1}
+        />
+        <WithStyles(Tab)
+          label="Efficiency"
+          value={2}
+        />
+        <WithStyles(Tab)
+          label="Cost/Piece"
+          value={3}
+        />
       </WithStyles(Tabs)>
     </WithStyles(AppBar)>
   </Hidden>
@@ -697,13 +914,18 @@ exports[`renders the wash monitor: wash monitor 1`] = `
     routeState={
       Object {
         "current": "ROUTE_Wash",
-        "selected_load_id": 5,
-        "station_free_material": false,
-        "station_monitor": "StationType_Wash",
-        "station_queues": Array [
+        "load_free_material": false,
+        "load_queues": Array [
           "q1",
           "q1",
         ],
+        "selected_load_id": 5,
+        "standalone_free_material": true,
+        "standalone_queues": Array [
+          "r1",
+          "r2",
+        ],
+        "station_monitor": "StationType_Wash",
       }
     }
     setRoute={[MockFunction]}
@@ -768,6 +990,10 @@ exports[`renders the wash monitor: wash monitor header 1`] = `
             label="Efficiency"
             value={2}
           />
+          <WithStyles(Tab)
+            label="Cost/Piece"
+            value={3}
+          />
         </WithStyles(Tabs)>
         <Connect(LoadingIcon) />
       </WithStyles(Toolbar)>
@@ -821,6 +1047,10 @@ exports[`renders the wash monitor: wash monitor header 1`] = `
         <WithStyles(Tab)
           label="Efficiency"
           value={2}
+        />
+        <WithStyles(Tab)
+          label="Cost/Piece"
+          value={3}
         />
       </WithStyles(Tabs)>
     </WithStyles(AppBar)>
