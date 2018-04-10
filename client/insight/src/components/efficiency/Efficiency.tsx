@@ -32,13 +32,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
 import * as im from 'immutable';
-import WorkIcon from 'material-ui-icons/Work';
-import BasketIcon from 'material-ui-icons/ShoppingBasket';
+import WorkIcon from '@material-ui/icons/Work';
+import BasketIcon from '@material-ui/icons/ShoppingBasket';
 import { addMonths, addDays } from 'date-fns';
 import { createSelector } from 'reselect';
 import * as numeral from 'numeral';
-import ExtensionIcon from 'material-ui-icons/Extension';
-import HourglassIcon from 'material-ui-icons/HourglassFull';
+import ExtensionIcon from '@material-ui/icons/Extension';
+import HourglassIcon from '@material-ui/icons/HourglassFull';
 
 import AnalysisSelectToolbar from '../AnalysisSelectToolbar';
 import { SelectableCycleChart } from './CycleChart';

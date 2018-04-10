@@ -39,8 +39,8 @@ import Grid from 'material-ui/Grid';
 import Card, { CardContent, CardHeader, CardActions } from 'material-ui/Card';
 import Button from 'material-ui/Button';
 import { createSelector } from 'reselect';
-import ListIcon from 'material-ui-icons/List';
-import ToysIcon from 'material-ui-icons/Toys';
+import ListIcon from '@material-ui/icons/List';
+import ToysIcon from '@material-ui/icons/Toys';
 
 import { MaterialSummary } from '../../data/events';
 import { Store, connect, AppActionBeforeMiddleware } from '../../data/store';

@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from 'react';
 import { shallow } from 'enzyme';
-import WorkIcon from 'material-ui-icons/Work';
+import WorkIcon from '@material-ui/icons/Work';
 
 import { HeatChart, HeatChartProps, SelectableHeatChart, SelectableHeatChartProps } from './HeatChart';
 

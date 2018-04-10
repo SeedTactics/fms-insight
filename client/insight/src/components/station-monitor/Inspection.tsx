@@ -39,8 +39,8 @@ import Grid from 'material-ui/Grid';
 import Card, { CardContent, CardHeader, CardActions } from 'material-ui/Card';
 import Button from 'material-ui/Button';
 import { createSelector } from 'reselect';
-import BugIcon from 'material-ui-icons/BugReport';
-import WarningIcon from 'material-ui-icons/Warning';
+import BugIcon from '@material-ui/icons/BugReport';
+import WarningIcon from '@material-ui/icons/Warning';
 
 import { MaterialSummary } from '../../data/events';
 import { Store, connect } from '../../data/store';

@@ -36,8 +36,8 @@ import * as jdenticon from 'jdenticon';
 import Typography from 'material-ui/Typography';
 import ButtonBase from 'material-ui/ButtonBase';
 import Tooltip from 'material-ui/Tooltip';
-import WarningIcon from 'material-ui-icons/Warning';
-import CheckmarkIcon from 'material-ui-icons/Check';
+import WarningIcon from '@material-ui/icons/Warning';
+import CheckmarkIcon from '@material-ui/icons/Check';
 import Avatar from 'material-ui/Avatar';
 import Paper from 'material-ui/Paper';
 import { CircularProgress } from 'material-ui/Progress';
@@ -107,8 +107,8 @@ const matStyles = withStyles(theme => ({
     padding: '8px'
   },
   container: {
-    display: 'flex',
-    textAlign: 'left',
+    display: 'flex' as 'flex',
+    textAlign: 'left' as 'left',
   },
   mainContent: {
     marginLeft: '8px',

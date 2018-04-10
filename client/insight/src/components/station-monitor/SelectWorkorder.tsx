@@ -40,8 +40,8 @@ import Dialog, {
   DialogContent,
   DialogTitle,
 } from 'material-ui/Dialog';
-import CheckmarkIcon from 'material-ui-icons/Check';
-import ShoppingBasketIcon from 'material-ui-icons/ShoppingBasket';
+import CheckmarkIcon from '@material-ui/icons/Check';
+import ShoppingBasketIcon from '@material-ui/icons/ShoppingBasket';
 
 import { MaterialDetailTitle } from './Material';
 import * as routes from '../../data/routes';

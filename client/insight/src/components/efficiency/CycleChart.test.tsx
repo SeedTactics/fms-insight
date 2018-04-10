@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from 'react';
 import * as im from 'immutable';
 import { shallow } from 'enzyme';
-import WorkIcon from 'material-ui-icons/Work';
+import WorkIcon from '@material-ui/icons/Work';
 
 import { CycleChart, CycleChartProps, SelectableCycleChartProps, SelectableCycleChart } from './CycleChart';
 
