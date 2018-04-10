@@ -31,16 +31,16 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
-import { withStyles } from 'material-ui';
 import Grid from 'material-ui/Grid';
 import * as im from 'immutable';
 import { createSelector } from 'reselect';
-// import * as numeral from 'numeral';
-// import Tooltip from 'material-ui/Tooltip';
+import * as numeral from 'numeral';
+import Tooltip from 'material-ui/Tooltip';
 
 import { connect, Store } from '../../data/store';
 import { StationInUse } from '../../data/events';
 import * as api from '../../data/api';
+import { duration } from 'moment';
 
 interface PalletData {
   pallet: api.IPalletStatus;
@@ -109,7 +109,7 @@ function computeCircle(oee: number): JSX.Element {
   }
 }
 
-/*function computeTooltip(p: StationOEEProps): JSX.Element {
+function computeTooltip(p: StationOEEProps): JSX.Element {
 
   let entries: {title: string, value: string}[] = [];
 
@@ -134,6 +134,9 @@ function computeCircle(oee: number): JSX.Element {
           break;
         case api.ActionType.Machining:
           matStatus = " (machining)";
+          if (mat.action.expectedRemainingMachiningTime) {
+            matStatus += " " + duration(mat.action.expectedRemainingMachiningTime).humanize() + " remaining";
+          }
           break;
       }
 
@@ -156,18 +159,9 @@ function computeCircle(oee: number): JSX.Element {
       }
     </>
   );
-}*/
+}
 
-// style values set to match react-vis tooltips
-const tooltipStyle = withStyles(() => ({
-  tooltip: {
-    'backgroundColor': '#3a3a48',
-    'color': '#fff',
-    'fontSize': '12px'
-  }
-}));
-
-export const StationOEEWithStyles = tooltipStyle<StationOEEProps>(p => {
+export function StationOEEWithStyles(p: StationOEEProps) {
   let pallet: string = "Empty";
   if (p.pallet !== undefined) {
     pallet = p.pallet.pallet.pallet;
@@ -178,17 +172,19 @@ export const StationOEEWithStyles = tooltipStyle<StationOEEProps>(p => {
 
   // TODO: add back tooltip
   return (
-    <svg viewBox="0 0 400 400">
-      {computeCircle(p.oee)}
-      <text x={200} y={190} textAnchor="middle" style={{fontSize: 45}}>
-        {p.station}
-      </text>
-      <text x={200} y={250} textAnchor="middle" style={{fontSize: 30}}>
-        {pallet}
-      </text>
-    </svg>
+    <Tooltip title={computeTooltip(p)}>
+      <svg viewBox="0 0 400 400">
+        {computeCircle(p.oee)}
+        <text x={200} y={190} textAnchor="middle" style={{fontSize: 45}}>
+          {p.station}
+        </text>
+        <text x={200} y={250} textAnchor="middle" style={{fontSize: 30}}>
+          {pallet}
+        </text>
+      </svg>
+    </Tooltip>
   );
-});
+}
 
 // decorate doesn't work well with classes yet.
 // https://github.com/Microsoft/TypeScript/issues/4881
