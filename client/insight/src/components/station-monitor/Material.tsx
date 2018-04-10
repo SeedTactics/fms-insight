@@ -149,7 +149,7 @@ const InProcMaterialWithStyles = matStyles<InProcMaterialProps>(props => {
               <small>Serial: {props.mat.serial ? props.mat.serial : "none"}</small>
             </div>
             {
-              props.mat.workorderId === undefined ? undefined :
+              props.mat.workorderId === undefined || props.mat.workorderId === "" ? undefined :
                 <div>
                   <small>Workorder: {props.mat.workorderId}</small>
                 </div>
@@ -234,7 +234,7 @@ const MatSummaryWithStyles = matStyles<MaterialSummaryProps>(props => {
               <small>Serial: {props.mat.serial ? props.mat.serial : "none"}</small>
             </div>
             {
-              props.mat.workorderId === undefined ? undefined :
+              props.mat.workorderId === undefined || props.mat.workorderId === "" ? undefined :
                 <div>
                   <small>Workorder: {props.mat.workorderId}</small>
                 </div>
@@ -297,7 +297,9 @@ export class MaterialDetailTitle extends React.PureComponent<{partName: string, 
         <PartIdenticon part={this.props.partName}/>
         <div style={{marginLeft: '8px', flexGrow: 1}}>
           <Typography variant="title">
-            {this.props.partName + (this.props.serial === undefined ? "" : " - " + this.props.serial)}
+            { this.props.partName +
+              (this.props.serial === undefined || this.props.serial === "" ? "" : " - " + this.props.serial)
+            }
           </Typography>
         </div>
       </div>
@@ -326,10 +328,10 @@ export class MaterialDetailContent extends React.PureComponent<MaterialDetailPro
             <small>Workorder: {mat.workorderId || "none"}</small>
           </div>
           <div>
-            <small>Inspections:</small>
+            <small>Inspections: </small>
               {
                 mat.signaledInspections.length === 0
-                  ? <small>None</small>
+                  ? <small>none</small>
                   :
                   mat.signaledInspections.map((type, i) => (
                     <span key={i}>
