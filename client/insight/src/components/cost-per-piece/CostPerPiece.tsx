@@ -31,11 +31,14 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
+import DocumentTitle from 'react-document-title';
 
 export default function CostPerPiece() {
   return (
-    <main style={{'padding': '8px'}}>
-      <p>Cost/Piece coming soon!</p>
-    </main>
+    <DocumentTitle title="Cost/Piece - FMS Insight">
+      <main style={{'padding': '8px'}}>
+        <p>Cost/Piece coming soon!</p>
+      </main>
+    </DocumentTitle>
   );
 }

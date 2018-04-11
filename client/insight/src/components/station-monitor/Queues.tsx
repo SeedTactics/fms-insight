@@ -41,6 +41,7 @@ import Dialog, {
   DialogContent,
   DialogTitle,
 } from 'material-ui/Dialog';
+import DocumentTitle from 'react-document-title';
 
 import { MaterialList, LoadStationAndQueueData, selectLoadStationAndQueueProps } from '../../data/load-station';
 import { InProcMaterial, MaterialDetailTitle, MaterialDetailContent } from './Material';
@@ -207,16 +208,18 @@ export const Queues = queueStyles<QueueProps>(props => {
   }
 
   return (
-    <main className={props.fillViewPort ? props.classes.mainFillViewport : props.classes.mainScrollable}>
-      {
-        cells.map((mat, idx) => (
-          <div key={idx} className={props.classes.queueCol}>
-            <MaterialDisplay {...mat}/>
-          </div>
-        ))
-      }
-      <ConnectedMaterialDialog/>
-    </main>
+    <DocumentTitle title="Material Queues - FMS Insight">
+      <main className={props.fillViewPort ? props.classes.mainFillViewport : props.classes.mainScrollable}>
+        {
+          cells.map((mat, idx) => (
+            <div key={idx} className={props.classes.queueCol}>
+              <MaterialDisplay {...mat}/>
+            </div>
+          ))
+        }
+        <ConnectedMaterialDialog/>
+      </main>
+    </DocumentTitle>
   );
 });
 

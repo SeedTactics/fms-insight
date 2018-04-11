@@ -41,6 +41,7 @@ import Button from 'material-ui/Button';
 import { createSelector } from 'reselect';
 import BugIcon from '@material-ui/icons/BugReport';
 import WarningIcon from '@material-ui/icons/Warning';
+import DocumentTitle from 'react-document-title';
 
 import { MaterialSummary } from '../../data/events';
 import { Store, connect } from '../../data/store';
@@ -141,7 +142,13 @@ export const Inspection = inspStyles<InspectionProps>(props => {
     });
   }
 
+  let title = "Inspection - FMS Insight";
+  if (props.focusInspectionType !== "") {
+    title = "Inspection " + props.focusInspectionType + " - FMS Insight";
+  }
+
   return (
+    <DocumentTitle title={title}>
     <main className={props.fillViewPort ? props.classes.mainFillViewport : props.classes.mainScrollable}>
       <Grid container style={{flexGrow: 1}} spacing={16}>
         <Grid item xs={12} md={6}>
@@ -194,6 +201,7 @@ export const Inspection = inspStyles<InspectionProps>(props => {
         </Grid>
       </Grid>
     </main>
+    </DocumentTitle>
   );
 });
 

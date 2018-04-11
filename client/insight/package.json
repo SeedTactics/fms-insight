@@ -29,7 +29,8 @@
     "redux": "^3.7.2",
     "redux-first-router": "^0.0.16-next",
     "reselect": "^3.0.1",
-    "typeface-roboto": "^0.0.54"
+    "typeface-roboto": "^0.0.54",
+    "react-document-title": "^2.0.0"
   },
   "scripts": {
     "start": "react-scripts-ts start",
@@ -52,6 +53,7 @@
     "@types/react-dom": "^16.0.3",
     "@types/react-redux": "^5.0.14",
     "@types/redux-first-router": "^1.10.2",
+    "@types/react-document-title": "^2.0.0",
     "enzyme": "^3.3.0",
     "enzyme-adapter-react-16": "^1.1.1",
     "enzyme-to-json": "^3.3.1",

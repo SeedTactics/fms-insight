@@ -37,6 +37,7 @@ import * as api from './api';
 export type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
 
 export interface LoadStationAndQueueData {
+  readonly loadNum: number;
   readonly pallet?: Readonly<api.IPalletStatus>;
   readonly face: im.Map<number, MaterialList>;
   readonly castings: MaterialList;
@@ -116,6 +117,7 @@ export function selectLoadStationAndQueueProps(
     .toMap();
 
   return {
+    loadNum,
     pallet: pal,
     face: byFace,
     castings: castings.toArray(),

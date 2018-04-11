@@ -39,6 +39,7 @@ import { createSelector } from 'reselect';
 import * as numeral from 'numeral';
 import ExtensionIcon from '@material-ui/icons/Extension';
 import HourglassIcon from '@material-ui/icons/HourglassFull';
+import DocumentTitle from 'react-document-title';
 
 import AnalysisSelectToolbar from '../AnalysisSelectToolbar';
 import { SelectableCycleChart } from './CycleChart';
@@ -356,20 +357,22 @@ const ConnectedCompletedCountHeatmap = connect(
 
 export default function Efficiency() {
   return (
-    <>
-      <AnalysisSelectToolbar/>
-      <main style={{'padding': '24px'}}>
-        <ConnectedPartStationCycleChart/>
-        <div style={{marginTop: '3em'}}>
-          <ConnectedPalletCycleChart/>
-        </div>
-        <div style={{marginTop: '3em'}}>
-          <ConnectedStationOeeHeatmap/>
-        </div>
-        <div style={{marginTop: '3em'}}>
-          <ConnectedCompletedCountHeatmap/>
-        </div>
-      </main>
-    </>
+    <DocumentTitle title="Efficiency - FMS Insight">
+      <>
+        <AnalysisSelectToolbar/>
+        <main style={{'padding': '24px'}}>
+          <ConnectedPartStationCycleChart/>
+          <div style={{marginTop: '3em'}}>
+            <ConnectedPalletCycleChart/>
+          </div>
+          <div style={{marginTop: '3em'}}>
+            <ConnectedStationOeeHeatmap/>
+          </div>
+          <div style={{marginTop: '3em'}}>
+            <ConnectedCompletedCountHeatmap/>
+          </div>
+        </main>
+      </>
+    </DocumentTitle>
   );
 }

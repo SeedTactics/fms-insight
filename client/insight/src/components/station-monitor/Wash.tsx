@@ -41,6 +41,7 @@ import Button from 'material-ui/Button';
 import { createSelector } from 'reselect';
 import ListIcon from '@material-ui/icons/List';
 import ToysIcon from '@material-ui/icons/Toys';
+import DocumentTitle from 'react-document-title';
 
 import { MaterialSummary } from '../../data/events';
 import { Store, connect, AppActionBeforeMiddleware } from '../../data/store';
@@ -144,6 +145,7 @@ export const Wash = inspStyles<WashProps>(props => {
   }
 
   return (
+    <DocumentTitle title="Wash - FMS Insight">
     <main className={props.fillViewPort ? props.classes.mainFillViewport : props.classes.mainScrollable}>
       <Grid container style={{flexGrow: 1}} spacing={16}>
         <Grid item xs={12} md={6}>
@@ -200,6 +202,7 @@ export const Wash = inspStyles<WashProps>(props => {
       </Grid>
       <SelectWorkorderDialog station={StationMonitorType.Wash}/>
     </main>
+    </DocumentTitle>
   );
 });
 

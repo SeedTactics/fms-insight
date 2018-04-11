@@ -34,6 +34,7 @@ import * as React from 'react';
 import Grid from 'material-ui/Grid/Grid';
 import Card, { CardContent } from 'material-ui/Card';
 import Hidden from 'material-ui/Hidden';
+import DocumentTitle from 'react-document-title';
 
 import StationOEEs from './StationOEE';
 // import MachinePalletStatus from './MachinePalletStatus';
@@ -83,13 +84,15 @@ function ScrollableDashboard() {
 
 export default function Dashboard() {
   return (
-    <div>
-      <Hidden mdDown>
-        <FillViewportDashboard/>
-      </Hidden>
-      <Hidden lgUp>
-        <ScrollableDashboard/>
-      </Hidden>
-    </div>
+    <DocumentTitle title="Dashboard - FMS Insight">
+      <div>
+        <Hidden mdDown>
+          <FillViewportDashboard/>
+        </Hidden>
+        <Hidden lgUp>
+          <ScrollableDashboard/>
+        </Hidden>
+      </div>
+    </DocumentTitle>
   );
 }

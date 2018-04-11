@@ -36,6 +36,7 @@ import Divider from 'material-ui/Divider';
 import { withStyles } from 'material-ui';
 import * as im from 'immutable';
 import { createSelector } from 'reselect';
+import DocumentTitle from 'react-document-title';
 
 import { LoadStationAndQueueData, selectLoadStationAndQueueProps } from '../../data/load-station';
 import * as api from '../../data/api';
@@ -176,32 +177,34 @@ export const LoadStation = loadStyles<LoadStationProps>(props => {
   const col2 = cells.skip(2).take(2);
 
   return (
-    <main className={props.fillViewPort ? props.classes.mainFillViewport : props.classes.mainScrollable}>
-      <div className={props.classes.palCol}>
-        <PalletColumn {...palProps}/>
-      </div>
-      {
-        col1.size === 0 ? undefined :
-        <div className={props.classes.queueCol}>
-          {
-            col1.map((mat, idx) =>
-              <MaterialDisplay key={idx} {...mat}/>
-            )
-          }
+    <DocumentTitle title={"Load " + props.data.loadNum.toString() + " - FMS Insight"}>
+      <main className={props.fillViewPort ? props.classes.mainFillViewport : props.classes.mainScrollable}>
+        <div className={props.classes.palCol}>
+          <PalletColumn {...palProps}/>
         </div>
-      }
-      {
-        col2.size === 0 ? undefined :
-        <div className={props.classes.queueCol}>
-          {
-            col2.map((mat, idx) =>
-              <MaterialDisplay key={idx} {...mat}/>
-            )
-          }
-        </div>
-      }
-      <ConnectedMaterialDialog/>
-    </main>
+        {
+          col1.size === 0 ? undefined :
+          <div className={props.classes.queueCol}>
+            {
+              col1.map((mat, idx) =>
+                <MaterialDisplay key={idx} {...mat}/>
+              )
+            }
+          </div>
+        }
+        {
+          col2.size === 0 ? undefined :
+          <div className={props.classes.queueCol}>
+            {
+              col2.map((mat, idx) =>
+                <MaterialDisplay key={idx} {...mat}/>
+              )
+            }
+          </div>
+        }
+        <ConnectedMaterialDialog/>
+      </main>
+    </DocumentTitle>
   );
 });
 
