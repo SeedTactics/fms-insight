@@ -36,11 +36,13 @@ import * as im from 'immutable';
 import { createSelector } from 'reselect';
 import * as numeral from 'numeral';
 import Tooltip from 'material-ui/Tooltip';
+import TimeAgo from 'react-timeago';
 
 import { connect, Store } from '../../data/store';
 import { StationInUse } from '../../data/events';
 import * as api from '../../data/api';
 import { duration } from 'moment';
+import { addSeconds } from 'date-fns';
 
 interface PalletData {
   pallet: api.IPalletStatus;
@@ -48,10 +50,11 @@ interface PalletData {
 }
 
 export interface StationOEEProps {
-  station: string;
-  oee: number;
-  pallet?: PalletData;
-  queuedPallet?: PalletData;
+  readonly date_of_current_status: Date | undefined;
+  readonly station: string;
+  readonly oee: number;
+  readonly pallet?: PalletData;
+  readonly queuedPallet?: PalletData;
 }
 
 function polarToCartesian(centerX: number, centerY: number, radius: number, angleInRadians: number) {
@@ -111,19 +114,20 @@ function computeCircle(oee: number): JSX.Element {
 
 function computeTooltip(p: StationOEEProps): JSX.Element {
 
-  let entries: {title: string, value: string}[] = [];
+  let entries: {title: string, value: JSX.Element}[] = [];
 
-  entries.push({title: "OEE", value: numeral(p.oee).format('0.0%')});
+  entries.push({title: "OEE", value: <span>{numeral(p.oee).format('0.0%')}</span>});
 
   if (p.pallet === undefined) {
-    entries.push({title: "Pallet", value: "None"});
+    entries.push({title: "Pallet", value: <span>none</span>});
   } else {
-    entries.push({title: "Pallet", value: p.pallet.pallet.pallet});
+    entries.push({title: "Pallet", value: <span>{p.pallet.pallet.pallet}</span>});
 
     for (let mat of p.pallet.material) {
       const name = mat.partName + "-" + mat.process.toString();
 
       let matStatus = "";
+      let matTime: JSX.Element | undefined;
       switch (mat.action.type) {
         case api.ActionType.Loading:
           matStatus = " (loading)";
@@ -134,15 +138,17 @@ function computeTooltip(p: StationOEEProps): JSX.Element {
           break;
         case api.ActionType.Machining:
           matStatus = " (machining)";
-          if (mat.action.expectedRemainingMachiningTime) {
-            matStatus += " " + duration(mat.action.expectedRemainingMachiningTime).humanize() + " remaining";
+          if (mat.action.expectedRemainingMachiningTime && p.date_of_current_status) {
+            matStatus += " completing ";
+            const seconds = duration(mat.action.expectedRemainingMachiningTime).asSeconds();
+            matTime = <TimeAgo date={addSeconds(p.date_of_current_status, seconds)}/>;
           }
           break;
       }
 
       entries.push({
         title: "Part",
-        value: name + matStatus
+        value: <><span>{name + matStatus}</span>{matTime}</>
       });
     }
   }
@@ -153,7 +159,7 @@ function computeTooltip(p: StationOEEProps): JSX.Element {
         entries.map((e, idx) =>
           <div key={idx}>
             <span>{e.title}: </span>
-            <span>{e.value}</span>
+            {e.value}
           </div>
         )
       }
@@ -200,6 +206,7 @@ export interface StationHours {
 }
 
 export interface Props {
+  date_of_current_status: Date | undefined;
   station_active_hours_past_week: im.Map<string, number>;
   pallets: im.Map<string, {pal?: PalletData, queued?: PalletData}>;
   system_active_hours_per_week: number;
@@ -218,6 +225,7 @@ export function StationOEEs(p: Props) {
         stats.map((stat, idx) => (
           <Grid item xs={12} sm={6} md={4} lg={3} key={idx}>
             <StationOEE
+              date_of_current_status={p.date_of_current_status}
               station={stat}
               oee={p.station_active_hours_past_week.get(stat, 0) / p.system_active_hours_per_week}
               pallet={p.pallets.get(stat, {pal: undefined}).pal}
@@ -299,6 +307,7 @@ const palSelector = createSelector(
 
 export default connect(
   s => ({
+    date_of_current_status: s.Current.date_of_current_status,
     station_active_hours_past_week: oeeSelector(s),
     system_active_hours_per_week: s.Events.last30.oee.system_active_hours_per_week,
     pallets: palSelector(s),

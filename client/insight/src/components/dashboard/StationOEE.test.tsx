@@ -82,6 +82,7 @@ it('displays station hours', () => {
   });
   const val = shallow(
     <StationOEEs
+      date_of_current_status={new Date(2016, 3, 5, 2, 7, 2)}
       system_active_hours_per_week={100}
       station_active_hours_past_week={hours}
       pallets={pals}
@@ -126,11 +127,22 @@ it('displays a single station oee', () => {
     ]
   };
 
-  const val = shallow(<StationOEE station="aaa" oee={0.43} pallet={pal}/>).dive().dive();
+  const val = shallow(
+    <StationOEE
+      date_of_current_status={new Date(2016, 3, 5, 2, 7, 2)}
+      station="aaa"
+      oee={0.43}
+      pallet={pal}
+    />).dive().dive();
   expect(val).toMatchSnapshot('station oee gauge');
 });
 
 it('displays a single station without oee', () => {
-  const val = shallow(<StationOEE station="bbb" oee={0.01}/>).dive().dive();
+  const val = shallow(
+    <StationOEE
+      date_of_current_status={new Date(2016, 3, 5, 2, 7, 2)}
+      station="bbb"
+      oee={0.01}
+    />).dive().dive();
   expect(val).toMatchSnapshot('station empty guage');
 });

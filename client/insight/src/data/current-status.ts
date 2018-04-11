@@ -37,6 +37,7 @@ export interface State {
     readonly loading: boolean;
     readonly loading_error?: Error;
     readonly current_status: Readonly<api.ICurrentStatus>; // TODO: DeepReadonly
+    readonly date_of_current_status: Date | undefined;
 }
 
 const initial: State = {
@@ -47,7 +48,8 @@ const initial: State = {
         material: [],
         alarms: [],
         queues: {}
-    }
+    },
+    date_of_current_status: undefined
 };
 
 export enum ActionType {
@@ -56,8 +58,8 @@ export enum ActionType {
 }
 
 export type Action =
-  | {type: ActionType.LoadCurrentStatus, pledge: Pledge<Readonly<api.ICurrentStatus>> }
-  | {type: ActionType.SetCurrentStatus, st: Readonly<api.ICurrentStatus>}
+  | {type: ActionType.LoadCurrentStatus, now: Date, pledge: Pledge<Readonly<api.ICurrentStatus>> }
+  | {type: ActionType.SetCurrentStatus, now: Date, st: Readonly<api.ICurrentStatus>}
   ;
 
 type ABF = ActionBeforeMiddleware<Action>;
@@ -66,6 +68,7 @@ export function loadCurrentStatus(): ABF {
     var client = new api.JobsClient();
     return {
         type: ActionType.LoadCurrentStatus,
+        now: new Date(),
         pledge: client.currentStatus()
     };
 }
@@ -73,6 +76,7 @@ export function loadCurrentStatus(): ABF {
 export function setCurrentStatus(st: Readonly<api.ICurrentStatus>): ABF {
     return {
         type: ActionType.SetCurrentStatus,
+        now: new Date(),
         st,
     };
 }
@@ -88,6 +92,7 @@ export function reducer(s: State, a: Action): State {
                     return {...s,
                         loading: false,
                         current_status: a.pledge.result,
+                        date_of_current_status: a.now,
                     };
                 case PledgeStatus.Error:
                     return {...s, loading_error: a.pledge.error};
@@ -95,7 +100,7 @@ export function reducer(s: State, a: Action): State {
                 default: return s;
             }
         case ActionType.SetCurrentStatus:
-            return {...s, current_status: a.st};
+            return {...s, current_status: a.st, date_of_current_status: a.now};
 
         default: return s;
     }

@@ -297,9 +297,11 @@ exports[`displays a single station oee: station oee gauge 1`] = `
           Part
           : 
         </span>
-        <span>
-          aaa-2 (loading)
-        </span>
+        <UNDEFINED>
+          <span>
+            aaa-2 (loading)
+          </span>
+        </UNDEFINED>
       </div>
     </UNDEFINED>
   }
@@ -638,7 +640,7 @@ exports[`displays a single station without oee: station empty guage 1`] = `
           : 
         </span>
         <span>
-          None
+          none
         </span>
       </div>
     </UNDEFINED>
@@ -697,6 +699,7 @@ exports[`displays station hours: station oee table 1`] = `
     xs={12}
   >
     <StationOEE
+      date_of_current_status={2016-04-05T07:07:02.000Z}
       oee={0}
       pallet={
         Object {
@@ -726,6 +729,7 @@ exports[`displays station hours: station oee table 1`] = `
     xs={12}
   >
     <StationOEE
+      date_of_current_status={2016-04-05T07:07:02.000Z}
       oee={0.4}
       station="abc #1"
     />
@@ -739,6 +743,7 @@ exports[`displays station hours: station oee table 1`] = `
     xs={12}
   >
     <StationOEE
+      date_of_current_status={2016-04-05T07:07:02.000Z}
       oee={0.03}
       station="zzz #1"
     />

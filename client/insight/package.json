@@ -30,7 +30,8 @@
     "redux-first-router": "^0.0.16-next",
     "reselect": "^3.0.1",
     "typeface-roboto": "^0.0.54",
-    "react-document-title": "^2.0.0"
+    "react-document-title": "^2.0.0",
+    "react-timeago": "^3.4.0"
   },
   "scripts": {
     "start": "react-scripts-ts start",

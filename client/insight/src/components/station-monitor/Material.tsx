@@ -41,7 +41,7 @@ import CheckmarkIcon from '@material-ui/icons/Check';
 import Avatar from 'material-ui/Avatar';
 import Paper from 'material-ui/Paper';
 import { CircularProgress } from 'material-ui/Progress';
-import { distanceInWordsToNow } from 'date-fns';
+import TimeAgo from 'react-timeago';
 
 import * as im from 'immutable';
 
@@ -242,7 +242,10 @@ const MatSummaryWithStyles = matStyles<MaterialSummaryProps>(props => {
             {
               props.mat.completed_time === undefined ? undefined :
                 <div>
-                  <small>Completed {distanceInWordsToNow(props.mat.completed_time, {addSuffix: true})}</small>
+                  <small>
+                    <span>Completed </span>
+                    <TimeAgo date={props.mat.completed_time}/>
+                  </small>
                 </div>
             }
             {
