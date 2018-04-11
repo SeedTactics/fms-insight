@@ -37,6 +37,7 @@ using System.Threading;
 using BlackMaple.MachineWatchInterface;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -174,6 +175,10 @@ namespace BlackMaple.MachineFramework
                     }
                 });
 
+            app.Run(async context => {
+                context.Response.ContentType = "text/html";
+                await context.Response.SendFileAsync(System.IO.Path.Combine(env.WebRootPath,"index.html"));
+            });
 
             lifetime.ApplicationStopping.Register(async () => {
                 if (_fmsImpl == null) return;
