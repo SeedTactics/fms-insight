@@ -86,7 +86,7 @@ namespace BlackMaple.MachineFramework
             #if SERVICE_AVAIL
             if (enableEventLog) {
                 logConfig = logConfig.WriteTo.EventLog(
-                    "Machine Watch",
+                    "FMS Insight",
                     manageEventSource: true,
                     restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information);
             }
@@ -129,8 +129,9 @@ namespace BlackMaple.MachineFramework
             LoadConfig();
             EnableSerilog(enableEventLog: useService);
 
-            Log.Information("Starting machine watch with settings {@ServerSettings} and {@FMSSettings}",
-                ServerSettings, FMSSettings);
+            Log.Information("Starting machine watch with settings {@ServerSettings} and {@FMSSettings}. " +
+                            " Using ContentRoot {ContentRoot} and Config {ConfigDir}.",
+                ServerSettings, FMSSettings, ServerSettings.ContentRootDirectory, ServerSettings.ConfigDirectory);
 
             var host = BuildWebHost(fmsImpl);
 
