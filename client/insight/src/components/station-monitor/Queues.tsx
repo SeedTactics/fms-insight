@@ -44,17 +44,20 @@ import Dialog, {
 import DocumentTitle from 'react-document-title';
 
 import { MaterialList, LoadStationAndQueueData, selectLoadStationAndQueueProps } from '../../data/load-station';
-import { InProcMaterial, MaterialDetailTitle, MaterialDetailContent } from './Material';
+import { InProcMaterial, MatSummary, MaterialDetailTitle, MaterialDetailContent } from './Material';
 import * as api from '../../data/api';
 import * as routes from '../../data/routes';
 import { Store, connect, mkAC, DispatchAction } from '../../data/store';
 import * as matDetails from '../../data/material-details';
+import { MaterialSummary } from '../../data/events';
 
 const materialStyle = withStyles(() => ({
   container: {
     width: '100%',
     minHeight: '70px',
     position: 'relative' as 'relative',
+    display: 'flex',
+    flexWrap: 'wrap' as 'wrap'
   },
   labelContainer: {
     position: 'absolute' as 'absolute',
@@ -65,12 +68,11 @@ const materialStyle = withStyles(() => ({
     color: 'rgba(0,0,0,0.5)',
     fontSize: 'small',
   },
-  material: {
-    marginTop: '8px',
-    marginBottom: '8px',
-    display: 'flex' as 'flex',
+  contentContainer: {
+    width: '100%',
+    display: 'flex',
     flexWrap: 'wrap' as 'wrap',
-    justifyContent: 'space-around' as 'space-around',
+    marginTop: '1em',
   }
 }));
 
@@ -82,22 +84,17 @@ export interface MaterialDisplayProps {
 
 const MaterialDisplayWithStyles = materialStyle<MaterialDisplayProps>(props => {
   return (
-    <div className={props.classes.container}>
-      <div className={props.classes.labelContainer}>
+    <div className={props.classes.container} style={{justifyContent: 'space-around'}}>
+      <div key="label" className={props.classes.labelContainer}>
         <span className={props.classes.label}>
           {props.label}
         </span>
       </div>
-      {
-        props.material.length === 0 ? undefined :
-          <div className={props.classes.material}>
-            {
-              props.material.map((m, idx) => (
-                <InProcMaterial key={idx} mat={m} onOpen={props.openMat}/>
-              ))
-            }
-          </div>
-      }
+        {
+          props.material.map((m, idx) => (
+            <InProcMaterial key={idx} mat={m} onOpen={props.openMat}/>
+          ))
+        }
     </div>
   );
 });
@@ -107,6 +104,47 @@ const MaterialDisplayWithStyles = materialStyle<MaterialDisplayProps>(props => {
 export class MaterialDisplay extends React.PureComponent<MaterialDisplayProps> {
   render() {
     return <MaterialDisplayWithStyles {...this.props}/>;
+  }
+}
+
+export interface MaterialSummaryDisplayProps {
+  readonly material: ReadonlyArray<MaterialSummary>;
+  readonly label: string;
+  readonly checkInspectionType?: string;
+  readonly checkWashCompleted?: boolean;
+  openMat: (m: MaterialSummary) => void;
+}
+
+const MaterialSummaryDisplayWithStyles = materialStyle<MaterialSummaryDisplayProps>(props => {
+  return (
+    <div className={props.classes.container}>
+      <div className={props.classes.labelContainer}>
+        <span className={props.classes.label}>
+          {props.label}
+        </span>
+      </div>
+      <div className={props.classes.contentContainer} style={{justifyContent: 'space-between'}}>
+        {
+          props.material.map((m, idx) => (
+            <MatSummary
+              key={idx}
+              mat={m}
+              checkInspectionType={props.checkInspectionType}
+              checkWashCompleted={props.checkWashCompleted}
+              onOpen={props.openMat}
+            />
+          ))
+        }
+      </div>
+    </div>
+  );
+});
+
+// decorate doesn't work well with classes yet.
+// https://github.com/Microsoft/TypeScript/issues/4881
+export class MaterialSummaryDisplay extends React.PureComponent<MaterialSummaryDisplayProps> {
+  render() {
+    return <MaterialSummaryDisplayWithStyles {...this.props}/>;
   }
 }
 

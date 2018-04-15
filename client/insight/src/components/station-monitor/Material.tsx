@@ -104,7 +104,8 @@ function materialAction(mat: Readonly<api.IInProcessMaterial>): string | undefin
 const matStyles = withStyles(theme => ({
   paper: {
     minWidth: '10em',
-    padding: '8px'
+    padding: '8px',
+    margin: '8px'
   },
   container: {
     display: 'flex' as 'flex',

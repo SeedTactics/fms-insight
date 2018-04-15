@@ -39,62 +39,25 @@ import Grid from 'material-ui/Grid';
 import Card, { CardContent, CardHeader, CardActions } from 'material-ui/Card';
 import Button from 'material-ui/Button';
 import { createSelector } from 'reselect';
-import ListIcon from '@material-ui/icons/List';
-import ToysIcon from '@material-ui/icons/Toys';
 import DocumentTitle from 'react-document-title';
 
 import { MaterialSummary } from '../../data/events';
 import { Store, connect, AppActionBeforeMiddleware } from '../../data/store';
-import { MatSummary, MaterialDetailTitle, MaterialDetailContent } from './Material';
+import { MaterialDetailTitle, MaterialDetailContent } from './Material';
 import * as matDetails from '../../data/material-details';
 import * as guiState from '../../data/gui-state';
 import { StationMonitorType } from '../../data/routes';
 import SelectWorkorderDialog from './SelectWorkorder';
+import { MaterialSummaryDisplay } from './Queues';
 
-export interface WashListProps {
+export interface WashProps {
   readonly recent_completed: ReadonlyArray<MaterialSummary>;
   readonly openMat: (mat: MaterialSummary) => void;
-}
-
-export class WashList extends React.PureComponent<WashListProps> {
-  render () {
-    return (
-      <ul style={{listStyle: 'none'}}>
-        {
-          this.props.recent_completed.map((mat, i) =>
-            <li key={i} style={{paddingTop: 6, paddingBottom: 6}}>
-              <div style={{display: 'inline-block'}}>
-                <MatSummary
-                  mat={mat}
-                  checkWashCompleted
-                  onOpen={this.props.openMat}
-                />
-              </div>
-            </li>
-          )
-        }
-      </ul>
-    );
-  }
-}
-
-export class SelectedMaterial extends React.PureComponent<{mat: matDetails.MaterialDetail}> {
-  render() {
-    const mat = this.props.mat;
-    return (
-      <>
-        <MaterialDetailTitle partName={mat.partName} serial={mat.serial}/>
-        <MaterialDetailContent mat={mat}/>
-      </>
-    );
-  }
-}
-
-export interface WashProps extends WashListProps {
   readonly fillViewPort: boolean;
   readonly display_material: matDetails.MaterialDetail | null;
   readonly completeWash: (mat: matDetails.MaterialDetail) => void;
   readonly openSelectWorkorder: (mat: matDetails.MaterialDetail) => void;
+  readonly clearSelected: () => void;
 }
 
 const inspStyles = withStyles(() => ({
@@ -105,6 +68,13 @@ const inspStyles = withStyles(() => ({
     'display': 'flex',
     'flex-direction': 'column' as 'column',
   },
+  stretchList: {
+    'height': '100%',
+    'display': 'flex',
+    'flex-direction': 'column' as 'column',
+    'borderRight': '1px solid rgba(0,0,0,0.12)',
+    'position': 'relative' as 'relative',
+  },
   stretchCard: {
     'height': '100%',
     'display': 'flex',
@@ -114,7 +84,7 @@ const inspStyles = withStyles(() => ({
     'flexGrow': 1,
     'position': 'relative' as 'relative',
   },
-  stretchCardContentContainer: {
+  stretchContentContainer: {
     'position': 'absolute' as 'absolute',
     'top': 0,
     'left': 0,
@@ -144,60 +114,60 @@ export const Wash = inspStyles<WashProps>(props => {
     props.openSelectWorkorder(props.display_material);
   }
 
+  let selectedMat: JSX.Element | undefined;
+
+  if (props.display_material) {
+    selectedMat = (
+      <Card className={props.fillViewPort ? props.classes.stretchCard : undefined}>
+        <CardHeader
+          title={
+            <MaterialDetailTitle
+              partName={props.display_material.partName}
+              serial={props.display_material.serial}
+            />}
+        />
+        <CardContent className={props.fillViewPort ? props.classes.stretchCardContent : undefined}>
+          <div className={props.fillViewPort ? props.classes.stretchContentContainer : undefined}>
+            <MaterialDetailContent mat={props.display_material}/>
+          </div>
+        </CardContent>
+          <CardActions>
+            <Button color="primary" onClick={markWashComplete}>
+              Mark Wash Complete
+            </Button>
+            <Button color="primary" onClick={openAssignWorkorder}>
+              {
+                props.display_material.workorderId ?
+                  "Change Workorder"
+                  : "Assign Workorder"
+              }
+            </Button>
+            <Button color="secondary" onClick={props.clearSelected}>
+              Clear
+            </Button>
+          </CardActions>
+      </Card>
+    );
+  }
+
   return (
     <DocumentTitle title="Wash - FMS Insight">
     <main className={props.fillViewPort ? props.classes.mainFillViewport : props.classes.mainScrollable}>
       <Grid container style={{flexGrow: 1}} spacing={16}>
         <Grid item xs={12} md={6}>
-          <Card className={props.fillViewPort ? props.classes.stretchCard : undefined}>
-            <CardHeader
-              title={
-                <div style={{display: 'flex', alignItems: 'center'}}>
-                  <ListIcon style={{marginRight: '0.75em'}}/>
-                  <span>Recently Completed Parts</span>
-                </div>}
-            />
-            <CardContent className={props.fillViewPort ? props.classes.stretchCardContent : undefined}>
-              <div className={props.fillViewPort ? props.classes.stretchCardContentContainer : undefined}>
-                <WashList
-                  recent_completed={props.recent_completed}
-                  openMat={props.openMat}
-                />
-              </div>
-            </CardContent>
-          </Card>
+          <div className={props.fillViewPort ? props.classes.stretchList : undefined}>
+            <div className={props.fillViewPort ? props.classes.stretchContentContainer : undefined}>
+              <MaterialSummaryDisplay
+                label="Recently Completed Parts"
+                checkWashCompleted
+                material={props.recent_completed}
+                openMat={props.openMat}
+              />
+            </div>
+          </div>
         </Grid>
         <Grid item xs={12} md={6}>
-          <Card className={props.fillViewPort ? props.classes.stretchCard : undefined}>
-            <CardHeader
-              title={
-                <div style={{display: 'flex', alignItems: 'center'}}>
-                  <ToysIcon style={{marginRight: '0.75em'}}/>
-                  <span>Selected Material</span>
-                </div>}
-            />
-            <CardContent className={props.fillViewPort ? props.classes.stretchCardContent : undefined}>
-              <div className={props.fillViewPort ? props.classes.stretchCardContentContainer : undefined}>
-                {props.display_material ? <SelectedMaterial mat={props.display_material}/> : undefined}
-              </div>
-            </CardContent>
-            {
-              props.display_material ?
-                <CardActions>
-                  <Button color="primary" onClick={markWashComplete}>
-                    Mark Wash Complete
-                  </Button>
-                  <Button color="primary" onClick={openAssignWorkorder}>
-                    {
-                      props.display_material.workorderId ?
-                        "Change Workorder"
-                        : "Assign Workorder"
-                    }
-                  </Button>
-                </CardActions>
-                : undefined
-            }
-          </Card>
+          {selectedMat}
         </Grid>
       </Grid>
       <SelectWorkorderDialog station={StationMonitorType.Wash}/>
@@ -233,6 +203,10 @@ export default connect(
         open: true
       },
       matDetails.loadWorkorders(mat, StationMonitorType.Wash),
-    ] as AppActionBeforeMiddleware
+    ] as AppActionBeforeMiddleware,
+    clearSelected: () => ({
+      type: matDetails.ActionType.CloseMaterialDialog,
+      station: StationMonitorType.Wash,
+    }) as AppActionBeforeMiddleware,
   }
 )(Wash);
