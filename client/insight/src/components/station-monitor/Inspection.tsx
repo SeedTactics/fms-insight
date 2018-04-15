@@ -39,43 +39,14 @@ import Grid from 'material-ui/Grid';
 import Card, { CardContent, CardHeader, CardActions } from 'material-ui/Card';
 import Button from 'material-ui/Button';
 import { createSelector } from 'reselect';
-import BugIcon from '@material-ui/icons/BugReport';
-import WarningIcon from '@material-ui/icons/Warning';
 import DocumentTitle from 'react-document-title';
 
 import { MaterialSummary } from '../../data/events';
-import { Store, connect } from '../../data/store';
-import { MatSummary, MaterialDetailTitle, MaterialDetailContent } from './Material';
+import { Store, connect, AppActionBeforeMiddleware } from '../../data/store';
+import { MaterialDetailTitle, MaterialDetailContent } from './Material';
 import * as matDetails from '../../data/material-details';
 import { StationMonitorType } from '../../data/routes';
-
-export interface InspectionListProps {
-  readonly recent_inspections: ReadonlyArray<MaterialSummary>;
-  readonly focusInspectionType: string;
-  readonly openMat: (mat: MaterialSummary) => void;
-}
-
-export class InspectionList extends React.PureComponent<InspectionListProps> {
-  render() {
-    return (
-      <ul style={{listStyle: 'none'}}>
-        {
-          this.props.recent_inspections.map((mat, i) =>
-            <li key={i} style={{paddingTop: 6, paddingBottom: 6}}>
-              <div style={{display: 'inline-block'}}>
-                <MatSummary
-                  mat={mat}
-                  checkInspectionType={this.props.focusInspectionType}
-                  onOpen={this.props.openMat}
-                />
-              </div>
-            </li>
-          )
-        }
-      </ul>
-    );
-  }
-}
+import { MaterialSummaryDisplay } from './Queues';
 
 export class SelectedMaterial extends React.PureComponent<{mat: matDetails.MaterialDetail}> {
   render() {
@@ -89,12 +60,14 @@ export class SelectedMaterial extends React.PureComponent<{mat: matDetails.Mater
   }
 }
 
-export interface InspectionProps extends InspectionListProps {
+export interface InspectionProps {
+  readonly recent_inspections: ReadonlyArray<MaterialSummary>;
+  readonly focusInspectionType: string;
+  readonly openMat: (mat: MaterialSummary) => void;
   readonly fillViewPort: boolean;
   readonly display_material: matDetails.MaterialDetail | null;
-
-  // tslint:disable-next-line:no-any
-  readonly completeInspection: (comp: matDetails.CompleteInspectionData) => any;
+  readonly clearSelected: () => void;
+  readonly completeInspection: (comp: matDetails.CompleteInspectionData) => void;
 }
 
 const inspStyles = withStyles(() => ({
@@ -105,6 +78,13 @@ const inspStyles = withStyles(() => ({
     'display': 'flex',
     'flex-direction': 'column' as 'column',
   },
+  stretchList: {
+    'height': '100%',
+    'display': 'flex',
+    'flex-direction': 'column' as 'column',
+    'borderRight': '1px solid rgba(0,0,0,0.12)',
+    'position': 'relative' as 'relative',
+  },
   stretchCard: {
     'height': '100%',
     'display': 'flex',
@@ -114,7 +94,7 @@ const inspStyles = withStyles(() => ({
     'flexGrow': 1,
     'position': 'relative' as 'relative',
   },
-  stretchCardContentContainer: {
+  stretchContentContainer: {
     'position': 'absolute' as 'absolute',
     'top': 0,
     'left': 0,
@@ -147,57 +127,52 @@ export const Inspection = inspStyles<InspectionProps>(props => {
     title = "Inspection " + props.focusInspectionType + " - FMS Insight";
   }
 
+  let selectedMat: JSX.Element | undefined;
+  if (props.display_material) {
+    selectedMat = (
+      <Card className={props.fillViewPort ? props.classes.stretchCard : undefined}>
+        <CardHeader
+          title={
+            <MaterialDetailTitle partName={props.display_material.partName} serial={props.display_material.serial}/>}
+        />
+        <CardContent className={props.fillViewPort ? props.classes.stretchCardContent : undefined}>
+          <div className={props.fillViewPort ? props.classes.stretchContentContainer : undefined}>
+            <MaterialDetailContent mat={props.display_material}/>
+          </div>
+        </CardContent>
+        <CardActions>
+          <Button color="primary" onClick={() => markInspComplete(true)}>
+            Mark Inspection Success
+          </Button>
+          <Button color="primary" onClick={() => markInspComplete(false)}>
+            Mark Inspection Failed
+          </Button>
+          <Button color="secondary" onClick={props.clearSelected}>
+            Clear
+          </Button>
+        </CardActions>
+      </Card>
+    );
+  }
+
   return (
     <DocumentTitle title={title}>
     <main className={props.fillViewPort ? props.classes.mainFillViewport : props.classes.mainScrollable}>
       <Grid container style={{flexGrow: 1}} spacing={16}>
         <Grid item xs={12} md={6}>
-          <Card className={props.fillViewPort ? props.classes.stretchCard : undefined}>
-            <CardHeader
-              title={
-                <div style={{display: 'flex', alignItems: 'center'}}>
-                  <WarningIcon style={{marginRight: '0.75em'}}/>
-                  <span>Recent Inspections</span>
-                </div>}
-            />
-            <CardContent className={props.fillViewPort ? props.classes.stretchCardContent : undefined}>
-              <div className={props.fillViewPort ? props.classes.stretchCardContentContainer : undefined}>
-                <InspectionList
-                  recent_inspections={props.recent_inspections}
-                  focusInspectionType={props.focusInspectionType}
-                  openMat={props.openMat}
-                />
-              </div>
-            </CardContent>
-          </Card>
+          <div className={props.fillViewPort ? props.classes.stretchList : undefined}>
+            <div className={props.fillViewPort ? props.classes.stretchContentContainer : undefined}>
+              <MaterialSummaryDisplay
+                label="Parts to Inspect"
+                checkInspectionType={props.focusInspectionType}
+                material={props.recent_inspections}
+                openMat={props.openMat}
+              />
+            </div>
+          </div>
         </Grid>
         <Grid item xs={12} md={6}>
-          <Card className={props.fillViewPort ? props.classes.stretchCard : undefined}>
-            <CardHeader
-              title={
-                <div style={{display: 'flex', alignItems: 'center'}}>
-                  <BugIcon style={{marginRight: '0.75em'}}/>
-                  <span>Selected Material</span>
-                </div>}
-            />
-            <CardContent className={props.fillViewPort ? props.classes.stretchCardContent : undefined}>
-              <div className={props.fillViewPort ? props.classes.stretchCardContentContainer : undefined}>
-                {props.display_material ? <SelectedMaterial mat={props.display_material}/> : undefined}
-              </div>
-            </CardContent>
-            {
-              props.display_material && props.focusInspectionType && props.focusInspectionType !== "" ?
-                <CardActions>
-                  <Button color="primary" onClick={() => markInspComplete(true)}>
-                    Mark Inspection Success
-                  </Button>
-                  <Button color="secondary" onClick={() => markInspComplete(false)}>
-                    Mark Inspection Failed
-                  </Button>
-                </CardActions>
-                : undefined
-            }
-          </Card>
+          {selectedMat}
         </Grid>
       </Grid>
     </main>
@@ -235,5 +210,9 @@ export default connect(
   {
     openMat: matDetails.openInspectionMaterial,
     completeInspection: matDetails.completeInspection,
+    clearSelected: () => ({
+      type: matDetails.ActionType.CloseMaterialDialog,
+      station: StationMonitorType.Inspection,
+    }) as AppActionBeforeMiddleware,
   }
 )(Inspection);
