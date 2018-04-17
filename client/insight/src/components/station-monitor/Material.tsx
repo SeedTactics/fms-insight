@@ -136,11 +136,38 @@ const matStyles = withStyles(theme => ({
 export interface MaterialSummaryProps {
   readonly mat: Readonly<MaterialSummary>; // TODO: deep readonly
   readonly action?: string;
+  readonly focusInspectionType?: string;
+  readonly hideInspectionIcon?: boolean;
   onOpen: (m: Readonly<MaterialSummary>) => void;
 }
 
 const MatSummaryWithStyles = matStyles<MaterialSummaryProps>(props => {
   const inspections = props.mat.signaledInspections.join(", ");
+
+  let completedMsg: JSX.Element | undefined;
+  if (props.focusInspectionType && props.mat.completedInspections[props.focusInspectionType]) {
+    completedMsg = (
+      <small>
+        <span>Inspection completed </span>
+        <TimeAgo date={props.mat.completedInspections[props.focusInspectionType]}/>
+      </small>
+    );
+  } else if (props.mat.wash_completed) {
+    completedMsg = (
+      <small>
+        <span>Wash completed </span>
+        <TimeAgo date={props.mat.wash_completed}/>
+      </small>
+    );
+  } else if (props.mat.completed_time) {
+    completedMsg = (
+      <small>
+        <span>Completed </span>
+        <TimeAgo date={props.mat.completed_time}/>
+      </small>
+    );
+  }
+
   return (
     <Paper elevation={4} className={props.classes.paper}>
       <ButtonBase focusRipple onClick={() => props.onOpen(props.mat)}>
@@ -165,15 +192,7 @@ const MatSummaryWithStyles = matStyles<MaterialSummaryProps>(props => {
                   <small>{props.action}</small>
                 </div>
             }
-            {
-              props.mat.completed_time === undefined ? undefined :
-                <div>
-                  <small>
-                    <span>Completed </span>
-                    <TimeAgo date={props.mat.completed_time}/>
-                  </small>
-                </div>
-            }
+            {completedMsg}
           </div>
           <div className={props.classes.rightContent}>
             {props.mat.serial && props.mat.serial.length >= 1 ?
@@ -185,7 +204,7 @@ const MatSummaryWithStyles = matStyles<MaterialSummaryProps>(props => {
               : undefined
             }
             {
-              props.mat.signaledInspections.length === 0 ? undefined :
+              props.hideInspectionIcon || props.mat.signaledInspections.length === 0 ? undefined :
                 <div>
                   <Tooltip title={inspections}>
                     <WarningIcon/>

@@ -121,14 +121,20 @@ export function Inspection(props: InspectionProps) {
           <Grid item xs={12} md={6}>
             <WhiteboardRegion label="Parts to Inspect" borderRight borderBottom>
               { props.recent_inspections.waiting_to_inspect.map((m, idx) =>
-                <MatSummary key={idx} mat={m} onOpen={props.openMat}/>)
+                <MatSummary key={idx} mat={m} onOpen={props.openMat} hideInspectionIcon/>)
               }
             </WhiteboardRegion>
           </Grid>
           <Grid item xs={12} md={6}>
             <WhiteboardRegion label="Recently Inspected" borderLeft borderBottom>
               { props.recent_inspections.inspect_completed.map((m, idx) =>
-                <MatSummary key={idx} mat={m} onOpen={props.openMat}/>)
+                <MatSummary
+                  key={idx}
+                  mat={m}
+                  onOpen={props.openMat}
+                  focusInspectionType={props.focusInspectionType}
+                  hideInspectionIcon
+                />)
               }
             </WhiteboardRegion>
           </Grid>
@@ -149,20 +155,20 @@ export const extractRecentInspections = createSelector(
       .filter(e => e.completed_time !== undefined && e.completed_time >= cutoff);
 
     function checkAllCompleted(m: MaterialSummaryAndCompletedData): boolean {
-      return im.Set(m.signaledInspections).subtract(m.completedInspections).isEmpty();
+      return im.Set(m.signaledInspections).subtract(im.Seq(m.completedInspections).keySeq()).isEmpty();
     }
 
     const uninspected =
       inspType === undefined
         ? allDetails.filter(m => m.signaledInspections.length > 0 && !checkAllCompleted(m))
         : allDetails.filter(m => m.signaledInspections.indexOf(inspType) >= 0
-                              && m.completedInspections.indexOf(inspType) < 0);
+                              && m.completedInspections[inspType] === undefined);
 
     const inspected =
       inspType === undefined
         ? allDetails.filter(m => m.signaledInspections.length > 0 && checkAllCompleted(m))
         : allDetails.filter(m => m.signaledInspections.indexOf(inspType) >= 0
-                              && m.completedInspections.indexOf(inspType) >= 0);
+                              && m.completedInspections[inspType] !== undefined);
 
     return {
       waiting_to_inspect: uninspected.sortBy(e => e.completed_time).reverse().toArray(),

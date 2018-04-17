@@ -40,16 +40,16 @@ export interface MaterialSummary {
   readonly partName: string;
   readonly completed_procs: ReadonlyArray<number>;
   readonly completed_time?: Date;
+  readonly wash_completed?: Date;
 
   readonly serial?: string;
   readonly workorderId?: string;
   readonly signaledInspections: ReadonlyArray<string>;
+  readonly completedInspections: {[key: string]: Date};
 }
 
 export interface MaterialSummaryAndCompletedData extends MaterialSummary {
   readonly last_event: Date;
-  readonly wash_completed?: Date;
-  readonly completedInspections: ReadonlyArray<string>;
 }
 
 export interface MatSummaryState {
@@ -68,9 +68,11 @@ export function inproc_mat_to_summary(mat: Readonly<api.IInProcessMaterial>): Ma
     jobUnique: mat.jobUnique,
     partName: mat.partName,
     completed_procs: im.Range(1, mat.process, 1).toArray(),
+    wash_completed: undefined,
     serial: mat.serial,
     workorderId: mat.workorderId,
     signaledInspections: mat.signaledInspections,
+    completedInspections: {},
   };
 }
 
@@ -104,7 +106,7 @@ export function process_events(now: Date, newEvts: Iterable<api.ILogEntry>, st: 
           last_event: e.endUTC,
           completed_procs: [],
           signaledInspections: [],
-          completedInspections: [],
+          completedInspections: {},
         };
       }
 
@@ -128,7 +130,8 @@ export function process_events(now: Date, newEvts: Iterable<api.ILogEntry>, st: 
           break;
 
         case api.LogType.InspectionResult:
-          mat = {...mat, completedInspections: [...mat.completedInspections, e.program]};
+          mat = {...mat, completedInspections: {...mat.completedInspections,
+            [e.program]: e.endUTC}};
           inspTypes.set(e.program, true);
           break;
 
