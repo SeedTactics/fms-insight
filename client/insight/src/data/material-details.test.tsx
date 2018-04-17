@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as mat from './material-details';
 import { PledgeStatus } from './middleware';
-import { StationMonitorType } from './routes';
 // import * as api from './api';
 import { fakeCycle, fakeInspComplete, fakeWashComplete } from './events.fake';
 
@@ -59,170 +58,128 @@ const m: Readonly<mat.MaterialDetail> = {
   workorders: [],
 };
 
-const allNullMats = {...mat.initial.material};
-const allStations = [
-  StationMonitorType.Inspection,
-  StationMonitorType.LoadUnload,
-  StationMonitorType.Wash,
-  StationMonitorType.Queues
-];
+it('starts an open', () => {
+  const action: mat.Action = {
+    type: mat.ActionType.OpenMaterialDialog,
+    initial: m,
+    pledge: { status: PledgeStatus.Starting }
+  };
+  let s = mat.reducer(mat.initial, action);
+  expect(s.material).toEqual(m);
+});
 
-for (const station of allStations) {
-  it('starts an open for ' + station, () => {
-    const action: mat.Action = {
-      type: mat.ActionType.OpenMaterialDialog,
-      station,
-      initial: m,
-      pledge: { status: PledgeStatus.Starting }
-    };
-    let s = mat.reducer(mat.initial, action);
-    expect(s.material).toEqual({...allNullMats, [station]: m});
-  });
+it('finishes material open', () => {
+  const evts = fakeCycle(new Date(), 20);
+  const action: mat.Action = {
+    type: mat.ActionType.OpenMaterialDialog,
+    initial: m,
+    pledge: { status: PledgeStatus.Completed, result: evts }
+  };
+  const initialSt = {
+    material: {...m, loading_events: true}
+  };
+  let s = mat.reducer(initialSt, action);
+  expect(s.material).toEqual({...m, loading_events: false, events: evts});
+});
 
-  it('finishes material open for ' + station, () => {
-    const evts = fakeCycle(new Date(), 20);
-    const action: mat.Action = {
-      type: mat.ActionType.OpenMaterialDialog,
-      station,
-      initial: m,
-      pledge: { status: PledgeStatus.Completed, result: evts }
-    };
-    const initialSt = {
-      material: {...allNullMats,
-        [station]: {...m, loading_events: true}}
-    };
-    let s = mat.reducer(initialSt, action);
-    expect(s.material).toEqual({...allNullMats,
-      [station]: {...m, loading_events: false, events: evts}
-    });
-  });
+it('handles material error', () => {
+  const action: mat.Action = {
+    type: mat.ActionType.OpenMaterialDialog,
+    initial: m,
+    pledge: {
+      status: PledgeStatus.Error,
+      error: new Error("aaaa")
+    }
+  };
+  const initialSt = {
+    material: {...m, loading_events: true}
+  };
+  let s = mat.reducer(initialSt, action);
+  expect(s.material).toEqual({...m, loading_events: false, events: []});
+});
 
-  it('handles material error for ' + station, () => {
-    const action: mat.Action = {
-      type: mat.ActionType.OpenMaterialDialog,
-      station,
-      initial: m,
-      pledge: {
-        status: PledgeStatus.Error,
-        error: new Error("aaaa")
-      }
-    };
-    const initialSt = {
-      material: {...allNullMats,
-        [station]: {...m, loading_events: true}}
-    };
-    let s = mat.reducer(initialSt, action);
-    expect(s.material).toEqual({...allNullMats,
-      [station]: {...m, loading_events: false, events: []}
-    });
-  });
+it('clears the material', () => {
+  const action: mat.Action = {
+    type: mat.ActionType.CloseMaterialDialog,
+  };
+  const fullSt: mat.State = {
+    material: m
+  };
+  const st = mat.reducer(fullSt, action);
+  expect(st.material).toEqual(null);
+});
 
-  it('clears the material from ' + station, () => {
-    const action: mat.Action = {
-      type: mat.ActionType.CloseMaterialDialog,
-      station,
-    };
-    const fullSt: mat.State = {
-      material: {
-        [StationMonitorType.Inspection]: m,
-        [StationMonitorType.Wash]: m,
-        [StationMonitorType.LoadUnload]: m,
-        [StationMonitorType.Queues]: m,
-      }
-    };
-    const st = mat.reducer(fullSt, action);
-    expect(st.material).toEqual({...fullSt.material,
-      [station]: null});
-  });
+it("starts to update", () => {
+  const action: mat.Action = {
+    type: mat.ActionType.UpdateMaterial,
+    pledge: {
+      status: PledgeStatus.Starting
+    }
+  };
+  const st = mat.reducer({material: m}, action);
+  expect(st.material).toEqual({...m, updating_material: true});
+});
 
-  it("starts to update for " + station, () => {
-    const action: mat.Action = {
-      type: mat.ActionType.UpdateMaterial,
-      station,
-      pledge: {
-        status: PledgeStatus.Starting
-      }
-    };
-    const st = mat.reducer({material: {...allNullMats, [station]: m}}, action);
-    expect(st.material).toEqual({...allNullMats,
-      [station]: {...m, updating_material: true}
-    });
-  });
+it("errors during update", () => {
+  const action: mat.Action = {
+    type: mat.ActionType.UpdateMaterial,
+    pledge: {
+      status: PledgeStatus.Error,
+      error: new Error("the error")
+    }
+  };
+  const st = mat.reducer({material: {...m, updating_material: true}}, action);
+  expect(st.material).toEqual(m);
+});
 
-  it("errors during update for a " + station, () => {
-    const action: mat.Action = {
-      type: mat.ActionType.UpdateMaterial,
-      station,
-      pledge: {
-        status: PledgeStatus.Error,
-        error: new Error("the error")
-      }
-    };
-    const st = mat.reducer({material: {...allNullMats, [station]: {...m, updating_material: true}}}, action);
-    expect(st.material).toEqual({...allNullMats,
-      [station]: m
-    });
-  });
+it("starts to load workorders", () => {
+  const action: mat.Action = {
+    type: mat.ActionType.LoadWorkorders,
+    pledge: {
+      status: PledgeStatus.Starting
+    }
+  };
+  const st = mat.reducer({material: m}, action);
+  expect(st.material).toEqual({...m, loading_workorders: true});
+});
 
-  it("starts to load workorders for " + station, () => {
-    const action: mat.Action = {
-      type: mat.ActionType.LoadWorkorders,
-      station,
-      pledge: {
-        status: PledgeStatus.Starting
-      }
-    };
-    const st = mat.reducer({material: {...allNullMats, [station]: m}}, action);
-    expect(st.material).toEqual({...allNullMats,
-      [station]: {...m, loading_workorders: true}
-    });
-  });
+it("errors during loading workorders", () => {
+  const action: mat.Action = {
+    type: mat.ActionType.LoadWorkorders,
+    pledge: {
+      status: PledgeStatus.Error,
+      error: new Error("the error")
+    }
+  };
+  const st = mat.reducer({material: {...m, loading_workorders: true}}, action);
+  expect(st.material).toEqual(m);
+});
 
-  it("errors during loading workorders for a " + station, () => {
-    const action: mat.Action = {
-      type: mat.ActionType.LoadWorkorders,
-      station,
-      pledge: {
-        status: PledgeStatus.Error,
-        error: new Error("the error")
-      }
-    };
-    const st = mat.reducer({material: {...allNullMats, [station]: {...m, loading_workorders: true}}}, action);
-    expect(st.material).toEqual({...allNullMats,
-      [station]: m
-    });
-  });
-
-  it("successfully loads workorders for a " + station, () => {
-    const work: mat.WorkorderPlanAndSummary = {
-      plan: {
-        workorderId: "work1",
-        part: "aaa",
-        quantity: 5,
-        dueDate: new Date(),
-        priority: 100,
-      },
-    };
-    const action: mat.Action = {
-      type: mat.ActionType.LoadWorkorders,
-      station,
-      pledge: {
-        status: PledgeStatus.Completed,
-        result: [work]
-      }
-    };
-    const st = mat.reducer({material: {...allNullMats, [station]: {...m, loading_workorders: true}}}, action);
-    expect(st.material).toEqual({...allNullMats,
-      [station]: {...m, workorders: [work]}
-    });
-  });
-}
+it("successfully loads workorders", () => {
+  const work: mat.WorkorderPlanAndSummary = {
+    plan: {
+      workorderId: "work1",
+      part: "aaa",
+      quantity: 5,
+      dueDate: new Date(),
+      priority: 100,
+    },
+  };
+  const action: mat.Action = {
+    type: mat.ActionType.LoadWorkorders,
+    pledge: {
+      status: PledgeStatus.Completed,
+      result: [work]
+    }
+  };
+  const st = mat.reducer({material: {...m, loading_workorders: true}}, action);
+  expect(st.material).toEqual({...m, workorders: [work]});
+});
 
 it("succeeds for an completed inspection cycle", () => {
   const evt = fakeInspComplete();
   const action: mat.Action = {
     type: mat.ActionType.UpdateMaterial,
-    station: StationMonitorType.Inspection,
     newInspType: "abc",
     pledge: {
       status: PledgeStatus.Completed,
@@ -230,14 +187,12 @@ it("succeeds for an completed inspection cycle", () => {
     }
   };
   const initialSt = {
-    material: {...allNullMats, [StationMonitorType.Inspection]: {...m, updating_material: true}}
+    material: {...m, updating_material: true}
   };
   const st = mat.reducer(initialSt, action);
-  expect(st.material).toEqual({...allNullMats,
-    [StationMonitorType.Inspection]: {...m,
+  expect(st.material).toEqual({...m,
       events: [evt],
       completedInspections: [...m.completedInspections, "abc"]
-    }
   });
 });
 
@@ -245,20 +200,17 @@ it("succeeds for a wash complete cycle", () => {
   const evt = fakeWashComplete();
   const action: mat.Action = {
     type: mat.ActionType.UpdateMaterial,
-    station: StationMonitorType.Wash,
     pledge: {
       status: PledgeStatus.Completed,
       result: evt,
     }
   };
   const initialSt = {
-    material: {...allNullMats, [StationMonitorType.Wash]: {...m, updating_material: true}}
+    material: {...m, updating_material: true}
   };
   const st = mat.reducer(initialSt, action);
-  expect(st.material).toEqual({...allNullMats,
-    [StationMonitorType.Wash]: {...m,
+  expect(st.material).toEqual({...m,
       events: [evt],
-    }
   });
 });
 
@@ -266,7 +218,6 @@ it("succeeds for a workorder set", () => {
   const evt = fakeWashComplete();
   const action: mat.Action = {
     type: mat.ActionType.UpdateMaterial,
-    station: StationMonitorType.LoadUnload,
     newWorkorder: "work1234",
     pledge: {
       status: PledgeStatus.Completed,
@@ -274,13 +225,11 @@ it("succeeds for a workorder set", () => {
     }
   };
   const initialSt = {
-    material: {...allNullMats, [StationMonitorType.LoadUnload]: {...m, updating_material: true}}
+    material: {...m, updating_material: true}
   };
   const st = mat.reducer(initialSt, action);
-  expect(st.material).toEqual({...allNullMats,
-    [StationMonitorType.LoadUnload]: {...m,
+  expect(st.material).toEqual({...m,
       events: [evt],
       workorderId: "work1234",
-    }
   });
 });

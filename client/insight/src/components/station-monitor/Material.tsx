@@ -35,21 +35,26 @@ import * as React from 'react';
 import * as jdenticon from 'jdenticon';
 import Typography from 'material-ui/Typography';
 import ButtonBase from 'material-ui/ButtonBase';
+import Button from 'material-ui/Button';
 import Tooltip from 'material-ui/Tooltip';
 import WarningIcon from '@material-ui/icons/Warning';
-import CheckmarkIcon from '@material-ui/icons/Check';
 import Avatar from 'material-ui/Avatar';
 import Paper from 'material-ui/Paper';
 import { CircularProgress } from 'material-ui/Progress';
 import TimeAgo from 'react-timeago';
-
-import * as im from 'immutable';
+import Dialog, {
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+} from 'material-ui/Dialog';
 
 import * as api from '../../data/api';
 import * as matDetails from '../../data/material-details';
 import { LogEntries } from '../LogEntry';
 import { MaterialSummary } from '../../data/events';
 import { withStyles } from 'material-ui';
+import { inproc_mat_to_summary } from '../../data/events.matsummary';
+import { DispatchAction }  from '../../data/store';
 
 /*
 function getPosition(el: Element) {
@@ -128,15 +133,14 @@ const matStyles = withStyles(theme => ({
   }
 }));
 
-export interface InProcMaterialProps {
-  readonly mat: Readonly<api.IInProcessMaterial>; // TODO: deep readonly
-  onOpen: (m: Readonly<api.IInProcessMaterial>) => void;
+export interface MaterialSummaryProps {
+  readonly mat: Readonly<MaterialSummary>; // TODO: deep readonly
+  readonly action?: string;
+  onOpen: (m: Readonly<MaterialSummary>) => void;
 }
 
-const InProcMaterialWithStyles = matStyles<InProcMaterialProps>(props => {
-  const action = materialAction(props.mat);
+const MatSummaryWithStyles = matStyles<MaterialSummaryProps>(props => {
   const inspections = props.mat.signaledInspections.join(", ");
-
   return (
     <Paper elevation={4} className={props.classes.paper}>
       <ButtonBase focusRipple onClick={() => props.onOpen(props.mat)}>
@@ -156,9 +160,18 @@ const InProcMaterialWithStyles = matStyles<InProcMaterialProps>(props => {
                 </div>
             }
             {
-              action === undefined ? undefined :
+              props.action === undefined ? undefined :
                 <div>
-                  <small>{action}</small>
+                  <small>{props.action}</small>
+                </div>
+            }
+            {
+              props.mat.completed_time === undefined ? undefined :
+                <div>
+                  <small>
+                    <span>Completed </span>
+                    <TimeAgo date={props.mat.completed_time}/>
+                  </small>
                 </div>
             }
           </div>
@@ -188,109 +201,26 @@ const InProcMaterialWithStyles = matStyles<InProcMaterialProps>(props => {
 
 // decorate doesn't work well with classes yet.
 // https://github.com/Microsoft/TypeScript/issues/4881
-export class InProcMaterial extends React.PureComponent<InProcMaterialProps> {
-  render() {
-    return <InProcMaterialWithStyles {...this.props}/>;
-  }
-}
-
-export interface MaterialSummaryProps {
-  readonly mat: Readonly<MaterialSummary>; // TODO: deep readonly
-  readonly checkInspectionType?: string;
-  readonly checkWashCompleted?: boolean;
-  onOpen: (m: Readonly<MaterialSummary>) => void;
-}
-
-const MatSummaryWithStyles = matStyles<MaterialSummaryProps>(props => {
-  let showInspCheckmark: boolean;
-  if (props.checkInspectionType === undefined) {
-    showInspCheckmark = false;
-  } else if (props.checkInspectionType === "") {
-    showInspCheckmark = im.Set(props.mat.signaledInspections).subtract(props.mat.completedInspections)
-      .isEmpty();
-  } else {
-    showInspCheckmark = props.mat.completedInspections.indexOf(props.checkInspectionType) >= 0;
-  }
-
-  let showWashCheckmark: boolean;
-  if (props.checkWashCompleted) {
-    showWashCheckmark = props.mat.wash_completed !== undefined;
-  } else {
-    showWashCheckmark = false;
-  }
-
-  return (
-    <Paper elevation={4} className={props.classes.paper}>
-      <ButtonBase
-        focusRipple
-        onClick={() => props.onOpen(props.mat)}
-      >
-        <div className={props.classes.container}>
-          <PartIdenticon part={props.mat.partName}/>
-          <div className={props.classes.mainContent}>
-            <Typography variant="title">
-              {props.mat.partName}
-            </Typography>
-            <div>
-              <small>Serial: {props.mat.serial ? props.mat.serial : "none"}</small>
-            </div>
-            {
-              props.mat.workorderId === undefined || props.mat.workorderId === "" ? undefined :
-                <div>
-                  <small>Workorder: {props.mat.workorderId}</small>
-                </div>
-            }
-            {
-              props.mat.completed_time === undefined ? undefined :
-                <div>
-                  <small>
-                    <span>Completed </span>
-                    <TimeAgo date={props.mat.completed_time}/>
-                  </small>
-                </div>
-            }
-            {
-              props.mat.signaledInspections.length === 0 ? undefined :
-                <div>
-                  <small>Inspections: </small>
-                  {
-                    props.mat.signaledInspections.map((type, i) => (
-                      <span key={i}>
-                        <small>{i === 0 ? type : ", " + type}</small>
-                      </span>
-                    ))
-                  }
-                </div>
-            }
-          </div>
-          <div className={props.classes.rightContent}>
-            {props.mat.serial && props.mat.serial.length >= 1 ?
-              <div>
-                <Avatar className={props.classes.avatar}>
-                  {props.mat.serial.substr(props.mat.serial.length - 1, 1)}
-                </Avatar>
-              </div>
-              : undefined
-            }
-            {
-              showInspCheckmark || showWashCheckmark ?
-                <div>
-                  <CheckmarkIcon/>
-                </div>
-                : undefined
-            }
-          </div>
-        </div>
-      </ButtonBase>
-    </Paper>
-  );
-});
-
-// decorate doesn't work well with classes yet.
-// https://github.com/Microsoft/TypeScript/issues/4881
 export class MatSummary extends React.PureComponent<MaterialSummaryProps> {
   render() {
     return <MatSummaryWithStyles {...this.props}/>;
+  }
+}
+
+export interface InProcMaterialProps {
+  readonly mat: Readonly<api.IInProcessMaterial>; // TODO: deep readonly
+  onOpen: (m: Readonly<MaterialSummary>) => void;
+}
+
+export class InProcMaterial extends React.PureComponent<InProcMaterialProps> {
+  render() {
+    return (
+      <MatSummaryWithStyles
+        mat={inproc_mat_to_summary(this.props.mat)}
+        action={materialAction(this.props.mat)}
+        onOpen={this.props.onOpen}
+      />
+    );
   }
 }
 
@@ -311,11 +241,11 @@ export class MaterialDetailTitle extends React.PureComponent<{partName: string, 
   }
 }
 
-export interface MaterialDetailProps {
+interface MaterialDetailProps {
   readonly mat: matDetails.MaterialDetail;
 }
 
-export class MaterialDetailContent extends React.PureComponent<MaterialDetailProps> {
+class MaterialDetailContent extends React.PureComponent<MaterialDetailProps> {
   render () {
     const mat = this.props.mat;
     function colorForInspType(type: string): string {
@@ -351,5 +281,125 @@ export class MaterialDetailContent extends React.PureComponent<MaterialDetailPro
         {mat.loading_events ? <CircularProgress color="secondary"/> : <LogEntries entries={mat.events}/>}
       </>
     );
+  }
+}
+
+export interface MaterialDialogProps {
+  display_material: matDetails.MaterialDetail | null;
+  buttons?: JSX.Element;
+  onClose: DispatchAction<matDetails.ActionType.CloseMaterialDialog>;
+}
+
+export function MaterialDialog(props: MaterialDialogProps) {
+  let body: JSX.Element | undefined;
+  if (props.display_material === null) {
+    body = <p>None</p>;
+  } else {
+    const mat = props.display_material;
+    body = (
+      <>
+        <DialogTitle disableTypography>
+          <MaterialDetailTitle partName={mat.partName} serial={mat.serial}/>
+        </DialogTitle>
+        <DialogContent>
+          <MaterialDetailContent mat={mat}/>
+        </DialogContent>
+        <DialogActions>
+          {props.buttons}
+          <Button onClick={props.onClose} color="primary">
+            Close
+          </Button>
+        </DialogActions>
+      </>
+    );
+  }
+  return (
+    <Dialog
+      open={props.display_material !== null}
+      onClose={props.onClose}
+      maxWidth="md"
+    >
+      {body}
+    </Dialog>
+
+  );
+}
+
+const whiteboardRegionStyle = withStyles(() => ({
+  container: {
+    width: '100%',
+    minHeight: '70px',
+    position: 'relative' as 'relative',
+    display: 'flex',
+    flexWrap: 'wrap' as 'wrap'
+  },
+  labelContainer: {
+    position: 'absolute' as 'absolute',
+    top: '4px',
+    left: '4px',
+  },
+  label: {
+    color: 'rgba(0,0,0,0.5)',
+    fontSize: 'small',
+  },
+  contentContainer: {
+    width: '100%',
+    display: 'flex',
+    flexWrap: 'wrap' as 'wrap',
+    marginTop: '1em',
+  },
+  borderLeft: {
+    borderLeft: '1px solid rgba(0,0,0,0.12)'
+  },
+  borderBottom: {
+    borderBottom: '1px solid rgba(0,0,0,0.12)'
+  },
+  borderRight: {
+    borderRight: '1px solid rgba(0,0,0,0.12)'
+  },
+}));
+
+export interface WhiteboardRegionProps {
+  readonly label: string;
+  readonly spaceAround?: boolean;
+  readonly borderLeft?: boolean;
+  readonly borderBottom?: boolean;
+  readonly borderRight?: boolean;
+}
+
+const WhiteboardRegionWithStyle = whiteboardRegionStyle<WhiteboardRegionProps>(props => {
+  let justifyContent = 'space-between';
+  if (props.spaceAround) {
+    justifyContent = 'space-around';
+  }
+  let mainClasses = [props.classes.container];
+  if (props.borderLeft) {
+    mainClasses.push(props.classes.borderLeft);
+  }
+  if (props.borderBottom) {
+    mainClasses.push(props.classes.borderBottom);
+  }
+  if (props.borderRight) {
+    mainClasses.push(props.classes.borderRight);
+  }
+  return (
+    <div className={mainClasses.join(' ')}>
+      <div className={props.classes.labelContainer}>
+        <span className={props.classes.label}>
+          {props.label}
+        </span>
+      </div>
+      <div className={props.classes.contentContainer} style={{justifyContent}}>
+        {props.children}
+      </div>
+    </div>
+  );
+});
+
+// decorate doesn't work well with classes yet.
+// https://github.com/Microsoft/TypeScript/issues/4881
+export class WhiteboardRegion extends React.PureComponent<WhiteboardRegionProps> {
+  render() {
+    return <WhiteboardRegionWithStyle {...this.props}/>;
   }
 }

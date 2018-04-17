@@ -33,83 +33,24 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from 'react';
 import * as im from 'immutable';
-import { withStyles } from 'material-ui';
 import { addHours } from 'date-fns';
 import Grid from 'material-ui/Grid';
-import Card, { CardContent, CardHeader, CardActions } from 'material-ui/Card';
 import Button from 'material-ui/Button';
 import { createSelector } from 'reselect';
 import DocumentTitle from 'react-document-title';
 
 import { MaterialSummary } from '../../data/events';
-import { Store, connect, AppActionBeforeMiddleware } from '../../data/store';
-import { MaterialDetailTitle, MaterialDetailContent } from './Material';
+import { Store, connect, mkAC, AppActionBeforeMiddleware } from '../../data/store';
+import { MaterialDialogProps, MaterialDialog, MatSummary, WhiteboardRegion } from './Material';
 import * as matDetails from '../../data/material-details';
-import { StationMonitorType } from '../../data/routes';
-import { MaterialSummaryDisplay } from './Queues';
+import { MaterialSummaryAndCompletedData } from '../../data/events.matsummary';
 
-export class SelectedMaterial extends React.PureComponent<{mat: matDetails.MaterialDetail}> {
-  render() {
-    const mat = this.props.mat;
-    return (
-      <>
-        <MaterialDetailTitle partName={mat.partName} serial={mat.serial}/>
-        <MaterialDetailContent mat={mat}/>
-      </>
-    );
-  }
-}
-
-export interface InspectionProps {
-  readonly recent_inspections: ReadonlyArray<MaterialSummary>;
+export interface InspDialogProps extends MaterialDialogProps {
   readonly focusInspectionType: string;
-  readonly openMat: (mat: MaterialSummary) => void;
-  readonly fillViewPort: boolean;
-  readonly display_material: matDetails.MaterialDetail | null;
-  readonly clearSelected: () => void;
   readonly completeInspection: (comp: matDetails.CompleteInspectionData) => void;
 }
 
-const inspStyles = withStyles(() => ({
-  mainFillViewport: {
-    'height': 'calc(100vh - 64px - 2.5em)',
-    'padding': '8px',
-    'width': '100%',
-    'display': 'flex',
-    'flex-direction': 'column' as 'column',
-  },
-  stretchList: {
-    'height': '100%',
-    'display': 'flex',
-    'flex-direction': 'column' as 'column',
-    'borderRight': '1px solid rgba(0,0,0,0.12)',
-    'position': 'relative' as 'relative',
-  },
-  stretchCard: {
-    'height': '100%',
-    'display': 'flex',
-    'flex-direction': 'column' as 'column',
-  },
-  stretchCardContent: {
-    'flexGrow': 1,
-    'position': 'relative' as 'relative',
-  },
-  stretchContentContainer: {
-    'position': 'absolute' as 'absolute',
-    'top': 0,
-    'left': 0,
-    'right': 0,
-    'bottom': 0,
-    'overflow-y': 'auto',
-  },
-  mainScrollable: {
-    'padding': '8px',
-    'width': '100%',
-  },
-}));
-
-export const Inspection = inspStyles<InspectionProps>(props => {
-
+export function InspDialog(props: InspDialogProps) {
   function markInspComplete(success: boolean) {
     if (!props.display_material || !props.focusInspectionType || props.focusInspectionType === "") {
       return;
@@ -122,82 +63,111 @@ export const Inspection = inspStyles<InspectionProps>(props => {
     });
   }
 
-  let title = "Inspection - FMS Insight";
-  if (props.focusInspectionType !== "") {
-    title = "Inspection " + props.focusInspectionType + " - FMS Insight";
-  }
-
-  let selectedMat: JSX.Element | undefined;
-  if (props.display_material) {
-    selectedMat = (
-      <Card className={props.fillViewPort ? props.classes.stretchCard : undefined}>
-        <CardHeader
-          title={
-            <MaterialDetailTitle partName={props.display_material.partName} serial={props.display_material.serial}/>}
-        />
-        <CardContent className={props.fillViewPort ? props.classes.stretchCardContent : undefined}>
-          <div className={props.fillViewPort ? props.classes.stretchContentContainer : undefined}>
-            <MaterialDetailContent mat={props.display_material}/>
-          </div>
-        </CardContent>
-        <CardActions>
+  return (
+    <MaterialDialog
+      display_material={props.display_material}
+      onClose={props.onClose}
+      buttons={
+        props.focusInspectionType === "" ? undefined :
+        <>
           <Button color="primary" onClick={() => markInspComplete(true)}>
             Mark Inspection Success
           </Button>
           <Button color="primary" onClick={() => markInspComplete(false)}>
             Mark Inspection Failed
           </Button>
-          <Button color="secondary" onClick={props.clearSelected}>
-            Clear
-          </Button>
-        </CardActions>
-      </Card>
-    );
+        </>
+      }
+    />
+  );
+}
+
+const ConnectedInspDialog = connect(
+  st => ({
+    display_material: st.MaterialDetails.material,
+    focusInspectionType: st.Route.selected_insp_type || "",
+  }),
+  {
+    onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
+    completeInspection: (data: matDetails.CompleteInspectionData) => [
+      matDetails.completeInspection(data),
+      {type: matDetails.ActionType.CloseMaterialDialog}
+    ] as AppActionBeforeMiddleware,
+  }
+)(InspDialog);
+
+export interface PartsForInspection {
+  readonly waiting_to_inspect: ReadonlyArray<MaterialSummary>;
+  readonly inspect_completed: ReadonlyArray<MaterialSummary>;
+}
+
+export interface InspectionProps {
+  readonly recent_inspections: PartsForInspection;
+  readonly focusInspectionType: string;
+  readonly openMat: (mat: MaterialSummary) => void;
+}
+
+export function Inspection(props: InspectionProps) {
+
+  let title = "Inspection - FMS Insight";
+  if (props.focusInspectionType !== "") {
+    title = "Inspection " + props.focusInspectionType + " - FMS Insight";
   }
 
   return (
     <DocumentTitle title={title}>
-    <main className={props.fillViewPort ? props.classes.mainFillViewport : props.classes.mainScrollable}>
-      <Grid container style={{flexGrow: 1}} spacing={16}>
-        <Grid item xs={12} md={6}>
-          <div className={props.fillViewPort ? props.classes.stretchList : undefined}>
-            <div className={props.fillViewPort ? props.classes.stretchContentContainer : undefined}>
-              <MaterialSummaryDisplay
-                label="Parts to Inspect"
-                checkInspectionType={props.focusInspectionType}
-                material={props.recent_inspections}
-                openMat={props.openMat}
-              />
-            </div>
-          </div>
+      <main style={{padding: '8px'}}>
+        <Grid container spacing={16}>
+          <Grid item xs={12} md={6}>
+            <WhiteboardRegion label="Parts to Inspect" borderRight borderBottom>
+              { props.recent_inspections.waiting_to_inspect.map((m, idx) =>
+                <MatSummary key={idx} mat={m} onOpen={props.openMat}/>)
+              }
+            </WhiteboardRegion>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <WhiteboardRegion label="Recently Inspected" borderLeft borderBottom>
+              { props.recent_inspections.inspect_completed.map((m, idx) =>
+                <MatSummary key={idx} mat={m} onOpen={props.openMat}/>)
+              }
+            </WhiteboardRegion>
+          </Grid>
         </Grid>
-        <Grid item xs={12} md={6}>
-          {selectedMat}
-        </Grid>
-      </Grid>
-    </main>
+        <ConnectedInspDialog/>
+      </main>
     </DocumentTitle>
   );
-});
+}
 
 export const extractRecentInspections = createSelector(
   (st: Store) => st.Events.last30.mat_summary.matsById,
   (st: Store) => st.Route.selected_insp_type,
-  (mats: im.Map<number, MaterialSummary>, inspType: string | undefined): ReadonlyArray<MaterialSummary> => {
+  (mats: im.Map<number, MaterialSummaryAndCompletedData>, inspType: string | undefined): PartsForInspection => {
     const cutoff = addHours(new Date(), -36);
     const allDetails = mats
       .valueSeq()
       .filter(e => e.completed_time !== undefined && e.completed_time >= cutoff);
 
-    const filtered =
-      inspType === undefined
-        ? allDetails.filter(m => m.signaledInspections.length > 0)
-        : allDetails.filter(m => m.signaledInspections.indexOf(inspType) >= 0);
+    function checkAllCompleted(m: MaterialSummaryAndCompletedData): boolean {
+      return im.Set(m.signaledInspections).subtract(m.completedInspections).isEmpty();
+    }
 
-    return filtered
-      .sortBy(e => e.completed_time)
-      .reverse()
-      .toArray();
+    const uninspected =
+      inspType === undefined
+        ? allDetails.filter(m => m.signaledInspections.length > 0 && !checkAllCompleted(m))
+        : allDetails.filter(m => m.signaledInspections.indexOf(inspType) >= 0
+                              && m.completedInspections.indexOf(inspType) < 0);
+
+    const inspected =
+      inspType === undefined
+        ? allDetails.filter(m => m.signaledInspections.length > 0 && checkAllCompleted(m))
+        : allDetails.filter(m => m.signaledInspections.indexOf(inspType) >= 0
+                              && m.completedInspections.indexOf(inspType) >= 0);
+
+    return {
+      waiting_to_inspect: uninspected.sortBy(e => e.completed_time).reverse().toArray(),
+      inspect_completed: inspected.sortBy(e => e.completed_time).reverse().toArray(),
+    };
   }
 );
 
@@ -205,14 +175,8 @@ export default connect(
   (st: Store) => ({
     recent_inspections: extractRecentInspections(st),
     focusInspectionType: st.Route.selected_insp_type || "",
-    display_material: st.MaterialDetails.material[StationMonitorType.Inspection],
   }),
   {
-    openMat: matDetails.openInspectionMaterial,
-    completeInspection: matDetails.completeInspection,
-    clearSelected: () => ({
-      type: matDetails.ActionType.CloseMaterialDialog,
-      station: StationMonitorType.Inspection,
-    }) as AppActionBeforeMiddleware,
+    openMat: matDetails.openMaterialDialog,
   }
 )(Inspection);

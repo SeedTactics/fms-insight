@@ -38,22 +38,22 @@ export interface MaterialSummary {
   readonly materialID: number;
   readonly jobUnique: string;
   readonly partName: string;
-  readonly last_event: Date;
   readonly completed_procs: ReadonlyArray<number>;
+  readonly completed_time?: Date;
 
   readonly serial?: string;
   readonly workorderId?: string;
-
-  readonly completed_time?: Date;
-
-  readonly wash_completed?: Date;
-
   readonly signaledInspections: ReadonlyArray<string>;
+}
+
+export interface MaterialSummaryAndCompletedData extends MaterialSummary {
+  readonly last_event: Date;
+  readonly wash_completed?: Date;
   readonly completedInspections: ReadonlyArray<string>;
 }
 
 export interface MatSummaryState {
-  readonly matsById: im.Map<number, MaterialSummary>;
+  readonly matsById: im.Map<number, MaterialSummaryAndCompletedData>;
   readonly inspTypes: im.Set<string>;
 }
 
@@ -61,6 +61,18 @@ export const initial: MatSummaryState = {
   matsById: im.Map(),
   inspTypes: im.Set(),
 };
+
+export function inproc_mat_to_summary(mat: Readonly<api.IInProcessMaterial>): MaterialSummary {
+  return {
+    materialID: mat.materialID,
+    jobUnique: mat.jobUnique,
+    partName: mat.partName,
+    completed_procs: im.Range(1, mat.process, 1).toArray(),
+    serial: mat.serial,
+    workorderId: mat.workorderId,
+    signaledInspections: mat.signaledInspections,
+  };
+}
 
 export function process_events(now: Date, newEvts: Iterable<api.ILogEntry>, st: MatSummaryState): MatSummaryState {
   const oneWeekAgo = addDays(now, -7);

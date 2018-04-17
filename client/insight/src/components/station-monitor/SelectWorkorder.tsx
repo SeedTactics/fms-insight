@@ -44,7 +44,6 @@ import CheckmarkIcon from '@material-ui/icons/Check';
 import ShoppingBasketIcon from '@material-ui/icons/ShoppingBasket';
 
 import { MaterialDetailTitle } from './Material';
-import * as routes from '../../data/routes';
 import { Store, connect, mkAC, AppActionBeforeMiddleware } from '../../data/store';
 import * as matDetails from '../../data/material-details';
 import * as guiState from '../../data/gui-state';
@@ -72,8 +71,7 @@ function WorkorderIcon({work}: {work: matDetails.WorkorderPlanAndSummary}) {
 }
 
 export interface SelectWorkorderProps {
-  readonly mats: {[key in routes.StationMonitorType]: matDetails.MaterialDetail | null } | null;
-  readonly station: routes.StationMonitorType;
+  readonly mats: matDetails.MaterialDetail | null;
   readonly onClose: () => void;
   readonly assignWorkorder: (data: matDetails.AssignWorkorderData) => void;
 }
@@ -84,7 +82,7 @@ export function SelectWorkorderDialog(props: SelectWorkorderProps) {
   if (props.mats === null) {
     body = <p>None</p>;
   } else {
-    const mat = props.mats[props.station];
+    const mat = props.mats;
     if (mat === null) {
       body = <p>None</p>;
     } else {
@@ -94,7 +92,7 @@ export function SelectWorkorderDialog(props: SelectWorkorderProps) {
             <ListItem
               key={w.plan.workorderId}
               button
-              onClick={() => props.assignWorkorder({mat, station: props.station, workorder: w.plan.workorderId})}
+              onClick={() => props.assignWorkorder({mat, workorder: w.plan.workorderId})}
             >
               <ListItemIcon>
                 <WorkorderIcon work={w}/>

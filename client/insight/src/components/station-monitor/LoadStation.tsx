@@ -39,11 +39,12 @@ import { createSelector } from 'reselect';
 import DocumentTitle from 'react-document-title';
 
 import { LoadStationAndQueueData, selectLoadStationAndQueueProps } from '../../data/load-station';
+import { MaterialDialog, InProcMaterial, WhiteboardRegion } from './Material';
 import * as api from '../../data/api';
 import * as routes from '../../data/routes';
-import { Store, connect } from '../../data/store';
+import { Store, connect, mkAC } from '../../data/store';
 import * as matDetails from '../../data/material-details';
-import { MaterialDisplay, MaterialDisplayProps, ConnectedMaterialDialog } from './Queues';
+import { MaterialSummary } from '../../data/events';
 
 const palletStyles = withStyles(() => ({
   palletContainerFill: {
@@ -85,7 +86,13 @@ export const PalletColumn = palletStyles<LoadStationProps>(props => {
   let palDetails: JSX.Element;
   if (props.data.face.size === 1) {
     const mat = props.data.face.first();
-    palDetails = <MaterialDisplay label={palLabel} material={mat ? mat : []} openMat={props.openMat}/>;
+    palDetails = (
+      <WhiteboardRegion label={palLabel} spaceAround>
+        { (mat || []).map((m, idx) =>
+          <InProcMaterial key={idx} mat={m} onOpen={props.openMat}/>)
+        }
+      </WhiteboardRegion>
+    );
   } else {
     palDetails = (
       <>
@@ -96,7 +103,11 @@ export const PalletColumn = palletStyles<LoadStationProps>(props => {
           {
             props.data.face.toSeq().sortBy((data, face) => face).map((data, face) =>
               <div key={face}>
-                <MaterialDisplay label={"Face " + face.toString()} material={data} openMat={props.openMat}/>
+                <WhiteboardRegion label={"Face " + face.toString()} spaceAround>
+                  { data.map((m, idx) =>
+                    <InProcMaterial key={idx} mat={m} onOpen={props.openMat}/>)
+                  }
+                </WhiteboardRegion>
                 {face === maxFace ? undefined : <Divider key={1}/>}
               </div>
             ).valueSeq()
@@ -108,16 +119,29 @@ export const PalletColumn = palletStyles<LoadStationProps>(props => {
 
   return (
     <>
-      <MaterialDisplay label="Castings" material={props.data.castings} openMat={props.openMat}/>
+      <WhiteboardRegion label="Castings" spaceAround>
+        { props.data.castings.map((m, idx) =>
+          <InProcMaterial key={idx} mat={m} onOpen={props.openMat}/>)
+        }
+      </WhiteboardRegion>
       <Divider/>
       <div className={palletClass}>
         {palDetails}
       </div>
       <Divider/>
-      <MaterialDisplay label="Completed Material" material={[]} openMat={props.openMat}/>
+      <WhiteboardRegion label="Completed Material"/>
     </>
   );
 });
+
+const ConnectedMaterialDialog = connect(
+  st => ({
+    display_material: st.MaterialDetails.material
+  }),
+  {
+    onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
+  }
+)(MaterialDialog);
 
 const loadStyles = withStyles(() => ({
   mainFillViewport: {
@@ -148,7 +172,7 @@ const loadStyles = withStyles(() => ({
 export interface LoadStationProps {
   readonly fillViewPort: boolean;
   readonly data: LoadStationAndQueueData;
-  openMat: (m: Readonly<api.IInProcessMaterial>) => void;
+  openMat: (m: Readonly<MaterialSummary>) => void;
 }
 
 export const LoadStation = loadStyles<LoadStationProps>(props => {
@@ -160,16 +184,14 @@ export const LoadStation = loadStyles<LoadStationProps>(props => {
     .map((mats, q) => ({
       label: q,
       material: mats,
-      openMat: props.openMat
     }))
     .valueSeq();
 
-  let cells: im.Seq.Indexed<MaterialDisplayProps> = queues;
+  let cells = queues;
   if (props.data.free) {
     cells = im.Seq([{
       label: "In Process Material",
       material: props.data.free,
-      openMat: props.openMat,
     }]).concat(queues);
   }
 
@@ -186,9 +208,13 @@ export const LoadStation = loadStyles<LoadStationProps>(props => {
           col1.size === 0 ? undefined :
           <div className={props.classes.queueCol}>
             {
-              col1.map((mat, idx) =>
-                <MaterialDisplay key={idx} {...mat}/>
-              )
+              col1.map((mat, idx) => (
+                <WhiteboardRegion key={idx} label={mat.label}>
+                  { mat.material.map((m, matIdx) =>
+                    <InProcMaterial key={matIdx} mat={m} onOpen={props.openMat}/>)
+                  }
+                </WhiteboardRegion>
+              ))
             }
           </div>
         }
@@ -196,9 +222,13 @@ export const LoadStation = loadStyles<LoadStationProps>(props => {
           col2.size === 0 ? undefined :
           <div className={props.classes.queueCol}>
             {
-              col2.map((mat, idx) =>
-                <MaterialDisplay key={idx} {...mat}/>
-              )
+              col2.map((mat, idx) => (
+                <WhiteboardRegion key={idx} label={mat.label}>
+                  { mat.material.map((m, matIdx) =>
+                    <InProcMaterial key={matIdx} mat={m} onOpen={props.openMat}/>)
+                  }
+                </WhiteboardRegion>
+              ))
             }
           </div>
         }
@@ -225,6 +255,6 @@ export default connect(
     data: buildLoadData(st)
   }),
   {
-    openMat: matDetails.openLoadunloadMaterialDialog,
+    openMat: matDetails.openMaterialDialog,
   }
 )(LoadStation);

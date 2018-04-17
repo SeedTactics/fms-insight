@@ -33,73 +33,27 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from 'react';
 import * as im from 'immutable';
-import { withStyles } from 'material-ui';
 import { addHours } from 'date-fns';
 import Grid from 'material-ui/Grid';
-import Card, { CardContent, CardHeader, CardActions } from 'material-ui/Card';
 import Button from 'material-ui/Button';
 import { createSelector } from 'reselect';
 import DocumentTitle from 'react-document-title';
 
 import { MaterialSummary } from '../../data/events';
-import { Store, connect, AppActionBeforeMiddleware } from '../../data/store';
-import { MaterialDetailTitle, MaterialDetailContent } from './Material';
+import { Store, connect, AppActionBeforeMiddleware, mkAC } from '../../data/store';
+import { MaterialDialog, WhiteboardRegion, MatSummary, MaterialDialogProps } from './Material';
 import * as matDetails from '../../data/material-details';
 import * as guiState from '../../data/gui-state';
 import { StationMonitorType } from '../../data/routes';
 import SelectWorkorderDialog from './SelectWorkorder';
-import { MaterialSummaryDisplay } from './Queues';
+import { MaterialSummaryAndCompletedData } from '../../data/events.matsummary';
 
-export interface WashProps {
-  readonly recent_completed: ReadonlyArray<MaterialSummary>;
-  readonly openMat: (mat: MaterialSummary) => void;
-  readonly fillViewPort: boolean;
-  readonly display_material: matDetails.MaterialDetail | null;
+export interface WashDialogProps extends MaterialDialogProps {
   readonly completeWash: (mat: matDetails.MaterialDetail) => void;
   readonly openSelectWorkorder: (mat: matDetails.MaterialDetail) => void;
-  readonly clearSelected: () => void;
 }
 
-const inspStyles = withStyles(() => ({
-  mainFillViewport: {
-    'height': 'calc(100vh - 64px - 2.5em)',
-    'padding': '8px',
-    'width': '100%',
-    'display': 'flex',
-    'flex-direction': 'column' as 'column',
-  },
-  stretchList: {
-    'height': '100%',
-    'display': 'flex',
-    'flex-direction': 'column' as 'column',
-    'borderRight': '1px solid rgba(0,0,0,0.12)',
-    'position': 'relative' as 'relative',
-  },
-  stretchCard: {
-    'height': '100%',
-    'display': 'flex',
-    'flex-direction': 'column' as 'column',
-  },
-  stretchCardContent: {
-    'flexGrow': 1,
-    'position': 'relative' as 'relative',
-  },
-  stretchContentContainer: {
-    'position': 'absolute' as 'absolute',
-    'top': 0,
-    'left': 0,
-    'right': 0,
-    'bottom': 0,
-    'overflow-y': 'auto',
-  },
-  mainScrollable: {
-    'padding': '8px',
-    'width': '100%',
-  },
-}));
-
-export const Wash = inspStyles<WashProps>(props => {
-
+export function WashDialog(props: WashDialogProps) {
   function markWashComplete() {
     if (!props.display_material) {
       return;
@@ -113,68 +67,82 @@ export const Wash = inspStyles<WashProps>(props => {
     }
     props.openSelectWorkorder(props.display_material);
   }
+  return (
+    <MaterialDialog
+      display_material={props.display_material}
+      onClose={props.onClose}
+      buttons={
+        <>
+          <Button color="primary" onClick={markWashComplete}>
+            Mark Wash Complete
+          </Button>
+          <Button color="primary" onClick={openAssignWorkorder}>
+            {
+              props.display_material && props.display_material.workorderId ?
+                "Change Workorder"
+                : "Assign Workorder"
+            }
+          </Button>
+        </>
+      }
+    />
+  );
+}
 
-  let selectedMat: JSX.Element | undefined;
-
-  if (props.display_material) {
-    selectedMat = (
-      <Card className={props.fillViewPort ? props.classes.stretchCard : undefined}>
-        <CardHeader
-          title={
-            <MaterialDetailTitle
-              partName={props.display_material.partName}
-              serial={props.display_material.serial}
-            />}
-        />
-        <CardContent className={props.fillViewPort ? props.classes.stretchCardContent : undefined}>
-          <div className={props.fillViewPort ? props.classes.stretchContentContainer : undefined}>
-            <MaterialDetailContent mat={props.display_material}/>
-          </div>
-        </CardContent>
-          <CardActions>
-            <Button color="primary" onClick={markWashComplete}>
-              Mark Wash Complete
-            </Button>
-            <Button color="primary" onClick={openAssignWorkorder}>
-              {
-                props.display_material.workorderId ?
-                  "Change Workorder"
-                  : "Assign Workorder"
-              }
-            </Button>
-            <Button color="secondary" onClick={props.clearSelected}>
-              Clear
-            </Button>
-          </CardActions>
-      </Card>
-    );
+const ConnectedWashDialog = connect(
+  st => ({
+    display_material: st.MaterialDetails.material
+  }),
+  {
+    onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
+    completeWash: (mat: matDetails.MaterialDetail) => [
+      matDetails.completeWash(mat),
+      {type: matDetails.ActionType.CloseMaterialDialog},
+    ],
+    openSelectWorkorder: (mat: matDetails.MaterialDetail) => [
+      {
+        type: guiState.ActionType.SetWorkorderDialogOpen,
+        open: true
+      },
+      matDetails.loadWorkorders(mat, StationMonitorType.Wash),
+    ] as AppActionBeforeMiddleware,
   }
+)(WashDialog);
+
+export interface WashProps {
+  readonly recent_completed: ReadonlyArray<MaterialSummaryAndCompletedData>;
+  readonly openMat: (mat: MaterialSummary) => void;
+}
+
+export function Wash(props: WashProps) {
+  const unwashed = im.Seq(props.recent_completed).filter(m => m.wash_completed === undefined);
+  const washed = im.Seq(props.recent_completed).filter(m => m.wash_completed !== undefined);
 
   return (
     <DocumentTitle title="Wash - FMS Insight">
-    <main className={props.fillViewPort ? props.classes.mainFillViewport : props.classes.mainScrollable}>
-      <Grid container style={{flexGrow: 1}} spacing={16}>
-        <Grid item xs={12} md={6}>
-          <div className={props.fillViewPort ? props.classes.stretchList : undefined}>
-            <div className={props.fillViewPort ? props.classes.stretchContentContainer : undefined}>
-              <MaterialSummaryDisplay
-                label="Recently Completed Parts"
-                checkWashCompleted
-                material={props.recent_completed}
-                openMat={props.openMat}
-              />
-            </div>
-          </div>
+      <main style={{padding: '8px'}}>
+        <Grid container spacing={16}>
+          <Grid item xs={12} md={6}>
+            <WhiteboardRegion label="Recently completed parts not yet washed" borderRight borderBottom>
+              { unwashed.map((m, idx) =>
+                <MatSummary key={idx} mat={m} onOpen={props.openMat}/>)
+              }
+            </WhiteboardRegion>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <WhiteboardRegion label="Recently Washed Parts" borderLeft borderBottom>
+              { washed.map((m, idx) =>
+                <MatSummary key={idx} mat={m} onOpen={props.openMat}/>)
+              }
+            </WhiteboardRegion>
+          </Grid>
         </Grid>
-        <Grid item xs={12} md={6}>
-          {selectedMat}
-        </Grid>
-      </Grid>
-      <SelectWorkorderDialog station={StationMonitorType.Wash}/>
-    </main>
+        <SelectWorkorderDialog/>
+        <ConnectedWashDialog/>
+      </main>
     </DocumentTitle>
   );
-});
+}
 
 export const extractRecentCompleted = createSelector(
   (st: Store) => st.Events.last30.mat_summary.matsById,
@@ -192,21 +160,8 @@ export const extractRecentCompleted = createSelector(
 export default connect(
   (st: Store) => ({
     recent_completed: extractRecentCompleted(st),
-    display_material: st.MaterialDetails.material[StationMonitorType.Wash],
   }),
   {
-    openMat: matDetails.openWashMaterial,
-    completeWash: matDetails.completeWash,
-    openSelectWorkorder: (mat: matDetails.MaterialDetail) => [
-      {
-        type: guiState.ActionType.SetWorkorderDialogOpen,
-        open: true
-      },
-      matDetails.loadWorkorders(mat, StationMonitorType.Wash),
-    ] as AppActionBeforeMiddleware,
-    clearSelected: () => ({
-      type: matDetails.ActionType.CloseMaterialDialog,
-      station: StationMonitorType.Wash,
-    }) as AppActionBeforeMiddleware,
+    openMat: matDetails.openMaterialDialog,
   }
 )(Wash);

@@ -53,11 +53,11 @@ function monitorElement(
     case routes.StationMonitorType.LoadUnload:
       return <LoadStation fillViewPort={fillViewport}/>;
     case routes.StationMonitorType.Inspection:
-      return <Inspection fillViewPort={fillViewport}/>;
+      return <Inspection/>;
     case routes.StationMonitorType.Wash:
-      return <Wash fillViewPort={fillViewport}/>;
+      return <Wash/>;
     case routes.StationMonitorType.Queues:
-      return <Queues fillViewPort={fillViewport}/>;
+      return <Queues/>;
   }
 }
 

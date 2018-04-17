@@ -35,162 +35,19 @@ import * as React from 'react';
 import { withStyles } from 'material-ui';
 import * as im from 'immutable';
 import { createSelector } from 'reselect';
-import Button from 'material-ui/Button';
-import Dialog, {
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-} from 'material-ui/Dialog';
 import DocumentTitle from 'react-document-title';
 
-import { MaterialList, LoadStationAndQueueData, selectLoadStationAndQueueProps } from '../../data/load-station';
-import { InProcMaterial, MatSummary, MaterialDetailTitle, MaterialDetailContent } from './Material';
+import { LoadStationAndQueueData, selectLoadStationAndQueueProps } from '../../data/load-station';
+import { MaterialDialog, InProcMaterial, WhiteboardRegion } from './Material';
 import * as api from '../../data/api';
 import * as routes from '../../data/routes';
-import { Store, connect, mkAC, DispatchAction } from '../../data/store';
+import { Store, connect, mkAC } from '../../data/store';
 import * as matDetails from '../../data/material-details';
 import { MaterialSummary } from '../../data/events';
 
-const materialStyle = withStyles(() => ({
-  container: {
-    width: '100%',
-    minHeight: '70px',
-    position: 'relative' as 'relative',
-    display: 'flex',
-    flexWrap: 'wrap' as 'wrap'
-  },
-  labelContainer: {
-    position: 'absolute' as 'absolute',
-    top: '4px',
-    left: '4px',
-  },
-  label: {
-    color: 'rgba(0,0,0,0.5)',
-    fontSize: 'small',
-  },
-  contentContainer: {
-    width: '100%',
-    display: 'flex',
-    flexWrap: 'wrap' as 'wrap',
-    marginTop: '1em',
-  }
-}));
-
-export interface MaterialDisplayProps {
-  readonly material: MaterialList;
-  readonly label: string;
-  openMat: (m: Readonly<api.IInProcessMaterial>) => void;
-}
-
-const MaterialDisplayWithStyles = materialStyle<MaterialDisplayProps>(props => {
-  return (
-    <div className={props.classes.container} style={{justifyContent: 'space-around'}}>
-      <div key="label" className={props.classes.labelContainer}>
-        <span className={props.classes.label}>
-          {props.label}
-        </span>
-      </div>
-        {
-          props.material.map((m, idx) => (
-            <InProcMaterial key={idx} mat={m} onOpen={props.openMat}/>
-          ))
-        }
-    </div>
-  );
-});
-
-// decorate doesn't work well with classes yet.
-// https://github.com/Microsoft/TypeScript/issues/4881
-export class MaterialDisplay extends React.PureComponent<MaterialDisplayProps> {
-  render() {
-    return <MaterialDisplayWithStyles {...this.props}/>;
-  }
-}
-
-export interface MaterialSummaryDisplayProps {
-  readonly material: ReadonlyArray<MaterialSummary>;
-  readonly label: string;
-  readonly checkInspectionType?: string;
-  readonly checkWashCompleted?: boolean;
-  openMat: (m: MaterialSummary) => void;
-}
-
-const MaterialSummaryDisplayWithStyles = materialStyle<MaterialSummaryDisplayProps>(props => {
-  return (
-    <div className={props.classes.container}>
-      <div className={props.classes.labelContainer}>
-        <span className={props.classes.label}>
-          {props.label}
-        </span>
-      </div>
-      <div className={props.classes.contentContainer} style={{justifyContent: 'space-between'}}>
-        {
-          props.material.map((m, idx) => (
-            <MatSummary
-              key={idx}
-              mat={m}
-              checkInspectionType={props.checkInspectionType}
-              checkWashCompleted={props.checkWashCompleted}
-              onOpen={props.openMat}
-            />
-          ))
-        }
-      </div>
-    </div>
-  );
-});
-
-// decorate doesn't work well with classes yet.
-// https://github.com/Microsoft/TypeScript/issues/4881
-export class MaterialSummaryDisplay extends React.PureComponent<MaterialSummaryDisplayProps> {
-  render() {
-    return <MaterialSummaryDisplayWithStyles {...this.props}/>;
-  }
-}
-
-export interface MaterialDialogProps {
-  display_material: matDetails.MaterialDetail | null;
-  onClose: DispatchAction<matDetails.ActionType.CloseMaterialDialog>;
-}
-
-export function MaterialDialog(props: MaterialDialogProps) {
-  const onClose = () => props.onClose({station: routes.StationMonitorType.LoadUnload});
-  let body: JSX.Element | undefined;
-  if (props.display_material === null) {
-    body = <p>None</p>;
-  } else {
-    const mat = props.display_material;
-    body = (
-      <>
-        <DialogTitle disableTypography>
-          <MaterialDetailTitle partName={mat.partName} serial={mat.serial}/>
-        </DialogTitle>
-        <DialogContent>
-          <MaterialDetailContent mat={mat}/>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={onClose} color="primary">
-            Close
-          </Button>
-        </DialogActions>
-      </>
-    );
-  }
-  return (
-    <Dialog
-      open={props.display_material !== null}
-      onClose={onClose}
-      maxWidth="md"
-    >
-      {body}
-    </Dialog>
-
-  );
-}
-
-export const ConnectedMaterialDialog = connect(
-  (st: Store) => ({
-    display_material: st.MaterialDetails.material[routes.StationMonitorType.LoadUnload]
+const ConnectedMaterialDialog = connect(
+  st => ({
+    display_material: st.MaterialDetails.material
   }),
   {
     onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
@@ -198,12 +55,6 @@ export const ConnectedMaterialDialog = connect(
 )(MaterialDialog);
 
 const queueStyles = withStyles(() => ({
-  mainFillViewport: {
-    'height': 'calc(100vh - 64px - 2.5em)',
-    'display': 'flex',
-    'padding': '8px',
-    'width': '100%',
-  },
   mainScrollable: {
     'display': 'flex',
     'padding': '8px',
@@ -219,9 +70,8 @@ const queueStyles = withStyles(() => ({
 }));
 
 export interface QueueProps {
-  readonly fillViewPort: boolean;
   readonly data: LoadStationAndQueueData;
-  openMat: (m: Readonly<api.IInProcessMaterial>) => void;
+  openMat: (m: Readonly<MaterialSummary>) => void;
 }
 
 export const Queues = queueStyles<QueueProps>(props => {
@@ -232,26 +82,30 @@ export const Queues = queueStyles<QueueProps>(props => {
     .map((mats, q) => ({
       label: q,
       material: mats,
-      openMat: props.openMat
     }))
     .valueSeq();
 
-  let cells: im.Seq.Indexed<MaterialDisplayProps> = queues;
+  let cells = queues;
   if (props.data.free) {
     cells = im.Seq([{
       label: "In Process Material",
       material: props.data.free,
-      openMat: props.openMat,
     }]).concat(queues);
   }
 
   return (
     <DocumentTitle title="Material Queues - FMS Insight">
-      <main className={props.fillViewPort ? props.classes.mainFillViewport : props.classes.mainScrollable}>
+      <main className={props.classes.mainScrollable}>
         {
           cells.map((mat, idx) => (
             <div key={idx} className={props.classes.queueCol}>
-              <MaterialDisplay {...mat}/>
+              <WhiteboardRegion label={mat.label}>
+                {
+                  mat.material.map((m, matIdx) =>
+                    <InProcMaterial key={matIdx} mat={m} onOpen={props.openMat}/>
+                  )
+                }
+              </WhiteboardRegion>
             </div>
           ))
         }
@@ -278,6 +132,6 @@ export default connect(
     data: buildQueueData(st)
   }),
   {
-    openMat: matDetails.openLoadunloadMaterialDialog,
+    openMat: matDetails.openMaterialDialog,
   }
 )(Queues);
