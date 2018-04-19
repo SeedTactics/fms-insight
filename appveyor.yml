@@ -3,7 +3,7 @@ image: Visual Studio 2017
 cache:
   - client/insight/node_modules
 environment:
-  - nodejs_version: "Current"
+  nodejs_version: "Current"
 
 build_script:
 - ps: |
