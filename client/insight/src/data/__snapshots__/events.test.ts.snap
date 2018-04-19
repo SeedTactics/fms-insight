@@ -268,7 +268,7 @@ Object {
     "inspTypes": Immutable.Set [],
     "matsById": Immutable.Map {
       70329: Object {
-        "completedInspections": Array [],
+        "completedInspections": Object {},
         "completed_procs": Array [
           1,
         ],
@@ -279,7 +279,7 @@ Object {
         "signaledInspections": Array [],
       },
       58696: Object {
-        "completedInspections": Array [],
+        "completedInspections": Object {},
         "completed_procs": Array [
           1,
         ],
@@ -448,7 +448,7 @@ Object {
     "inspTypes": Immutable.Set [],
     "matsById": Immutable.Map {
       29838: Object {
-        "completedInspections": Array [],
+        "completedInspections": Object {},
         "completed_procs": Array [
           2,
         ],
@@ -459,7 +459,7 @@ Object {
         "signaledInspections": Array [],
       },
       19656: Object {
-        "completedInspections": Array [],
+        "completedInspections": Object {},
         "completed_procs": Array [
           1,
         ],
@@ -470,7 +470,7 @@ Object {
         "signaledInspections": Array [],
       },
       70329: Object {
-        "completedInspections": Array [],
+        "completedInspections": Object {},
         "completed_procs": Array [
           1,
         ],
@@ -631,7 +631,7 @@ Object {
     "inspTypes": Immutable.Set [],
     "matsById": Immutable.Map {
       62822: Object {
-        "completedInspections": Array [],
+        "completedInspections": Object {},
         "completed_procs": Array [
           1,
         ],
@@ -642,7 +642,7 @@ Object {
         "signaledInspections": Array [],
       },
       57245: Object {
-        "completedInspections": Array [],
+        "completedInspections": Object {},
         "completed_procs": Array [
           1,
         ],
@@ -811,7 +811,7 @@ Object {
     "inspTypes": Immutable.Set [],
     "matsById": Immutable.Map {
       90816: Object {
-        "completedInspections": Array [],
+        "completedInspections": Object {},
         "completed_procs": Array [
           2,
         ],
@@ -822,7 +822,7 @@ Object {
         "signaledInspections": Array [],
       },
       56627: Object {
-        "completedInspections": Array [],
+        "completedInspections": Object {},
         "completed_procs": Array [
           1,
         ],
@@ -833,7 +833,7 @@ Object {
         "signaledInspections": Array [],
       },
       62822: Object {
-        "completedInspections": Array [],
+        "completedInspections": Object {},
         "completed_procs": Array [
           1,
         ],
