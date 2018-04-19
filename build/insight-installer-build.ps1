@@ -34,7 +34,7 @@ Move-Item "$publishdir/BlackMaple.FMSInsight.$nameUpper.exe" tmp -Force
 & $candle tmp/insight-client.wsx -o tmp/insight-client.wixobj
 & $candle build/$name.wsx -o tmp/insight.wixobj -ext WixUtilExtension
 & $light tmp/insight-server.wixobj tmp/insight-client.wixobj tmp/insight.wixobj -ext WixUtilExtension `
-  -o "build-output/FMS Insight $nameUpper Install.msi"
+  -o "installers/FMS Insight $nameUpper Install.msi"
 
 Remove-Item -r tmp
 Pop-Location

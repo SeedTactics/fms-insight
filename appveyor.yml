@@ -7,6 +7,25 @@ install:
 
 build_script:
 - ps: |
+    function ver ($x) { c:\python36\python.exe build/version.py $x }
+    dotnet build `
+        /p:VersionPrefix=$(ver mwi) `
+        --version-suffix pre.$Env:APPVEYOR_BUILD_NUMBER `
+        server/lib/BlackMaple.MachineWatchInterface
+    dotnet build `
+        /p:VersionPrefix=$(ver framework) `
+        --version-suffix pre.$Env:APPVEYOR_BUILD_NUMBER `
+        server/lib/BlackMaple.MachineFramework
+    dotnet build `
+        /p:VersionPrefix=$(ver mazak) `
+        --version-suffix pre.$Env:APPVEYOR_BUILD_NUMBER `
+        server/machines/mazak/mazak.csproj
+
+    yarn --cwd client/insight install
+    yarn --cwd client/insight run build
+
+after_build:
+- ps: |
     $tag = $(hg id -t -r '.^')
     function ver ($x) { c:\python36\python.exe build/version.py $x }
     if ($tag.StartsWith("mwi")) {
@@ -27,30 +46,13 @@ build_script:
         dotnet publish `
             -c Release -f net461 `
             /p:VersionPrefix=$(ver mazak) `
-            --version-suffix pre.$Env:APPVEYOR_BUILD_NUMBER `
             server/machines/mazak/mazak.csproj
-
-        yarn --cwd client/insight install
-        yarn --cwd client/insight run build
 
         ./build/insight-installer-build.ps1 mazak $(ver mazak)
-    } else {
-        dotnet build `
-            /p:VersionPrefix=$(ver mwi) `
-            --version-suffix pre.$Env:APPVEYOR_BUILD_NUMBER `
-            server/lib/BlackMaple.MachineWatchInterface
-        dotnet build `
-            /p:VersionPrefix=$(ver framework) `
-            --version-suffix pre.$Env:APPVEYOR_BUILD_NUMBER `
-            server/lib/BlackMaple.MachineFramework
-        dotnet build `
-            /p:VersionPrefix=$(ver mazak) `
-            --version-suffix pre.$Env:APPVEYOR_BUILD_NUMBER `
-            server/machines/mazak/mazak.csproj
-
-        yarn --cwd client/insight install
-        yarn --cwd client/insight run build
+        Push-AppveyorArtifact "installers/FMS Insight Mazak Install.msi"
     }
+
+- ps: 7z a insight-client.zip .\client\insight\build\*
 
 test_script:
 - ps: dotnet test server/test
@@ -59,8 +61,8 @@ artifacts:
   - path: '**/*.nupkg'
     name: NugetPackages
 
-  - path: '**/build-output/*.msi'
-    name: Installers
+  - path: 'insight-client.zip'
+    name: Insight HTML Client
 
 deploy:
 - provider: NuGet

@@ -4,4 +4,3 @@ obj/
 integration.pdf
 node_modules/
 client/insight/build/
-build-output/
