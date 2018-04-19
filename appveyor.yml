@@ -54,7 +54,6 @@ build_script:
 
 test_script:
 - ps: dotnet test server/test
-- ps: yarn --cwd client/insight test
 
 artifacts:
   - path: '**/*.nupkg'
