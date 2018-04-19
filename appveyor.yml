@@ -53,6 +53,7 @@ after_build:
 
         ./build/insight-installer-build.ps1 mazak $(ver mazak)
         cd installers
+        Remove-Item alias:curl
         curl -X POST `
             --user $ENV:bitbucket_auth `
             "https://api.bitbucket.org/2.0/repositories/blackmaple/machinewatch/downloads" `
