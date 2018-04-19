@@ -4,6 +4,9 @@ cache:
   - client/insight/node_modules
 install:
 - ps: Install-Product node Current
+environment:
+  bitbucket_auth:
+    secure: rWSLJHgb9I+I5jdorS8K2T415gRW5nJ2Z23pM3DmhqQ=
 
 build_script:
 - ps: |
@@ -49,7 +52,12 @@ after_build:
             server/machines/mazak/mazak.csproj
 
         ./build/insight-installer-build.ps1 mazak $(ver mazak)
-        Push-AppveyorArtifact "installers/FMS Insight Mazak Install.msi"
+        cd installers
+        curl -X POST `
+            --user $(ENV:bitbucket_auth) `
+            "https://api.bitbucket.org/2.0/repositories/blackmaple/machinewatch/downloads" `
+            --form `
+            files=@"FMS Insight Mazak Install.msi"
     }
 
 - ps: 7z a insight-client.zip .\client\insight\build\*
@@ -63,6 +71,9 @@ artifacts:
 
   - path: 'insight-client.zip'
     name: Insight HTML Client
+
+  - path: 'installers/*.msi'
+    name: Installers
 
 deploy:
 - provider: NuGet
