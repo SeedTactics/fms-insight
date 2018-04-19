@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <AssemblyName>MazakInsightPlugin</AssemblyName>
-    <PackageId>BlackMaple.FMSInsight.Plugins.Mazak</PackageId>
+    <AssemblyName>BlackMaple.FMSInsight.Mazak</AssemblyName>
+    <PackageId>BlackMaple.FMSInsight.Mazak</PackageId>
     <VersionPrefix>2.0.0</VersionPrefix>
     <OutputType>Exe</OutputType>
 
