@@ -35,21 +35,22 @@ build_script:
 
         ./build/insight-installer-build.ps1 mazak $(ver mazak)
     } else {
-        dotnet build `
-            /p:VersionPrefix=$(ver mwi) `
-            --version-suffix pre.$Env:APPVEYOR_BUILD_NUMBER `
-            server/lib/BlackMaple.MachineWatchInterface
-        dotnet build `
-            /p:VersionPrefix=$(ver framework) `
-            --version-suffix pre.$Env:APPVEYOR_BUILD_NUMBER `
-            server/lib/BlackMaple.MachineFramework
-        dotnet build `
-            /p:VersionPrefix=$(ver mazak) `
-            --version-suffix pre.$Env:APPVEYOR_BUILD_NUMBER `
-            server/machines/mazak/mazak.csproj
+        #dotnet build `
+        #    /p:VersionPrefix=$(ver mwi) `
+        #    --version-suffix pre.$Env:APPVEYOR_BUILD_NUMBER `
+        #    server/lib/BlackMaple.MachineWatchInterface
+        #dotnet build `
+        #    /p:VersionPrefix=$(ver framework) `
+        #    --version-suffix pre.$Env:APPVEYOR_BUILD_NUMBER `
+        #    server/lib/BlackMaple.MachineFramework
+        #dotnet build `
+        #    /p:VersionPrefix=$(ver mazak) `
+        #    --version-suffix pre.$Env:APPVEYOR_BUILD_NUMBER `
+        #    server/machines/mazak/mazak.csproj
 
+        node --version
         yarn install --cwd client/insight
-        yarn run --cwd client/insight build
+        yarn run build --cwd client/insight
     }
 
 test_script:
