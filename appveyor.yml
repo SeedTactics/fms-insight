@@ -2,11 +2,13 @@ version: '{build}'
 image: Visual Studio 2017
 cache:
   - client/insight/node_modules
+environment:
+  - nodejs_version: "Current"
 
 build_script:
 - ps: |
     $tag = $(hg id -t -r '.^')
-    function ver ($x) { c:\python36\python.exe version.py $x }
+    function ver ($x) { c:\python36\python.exe build/version.py $x }
     if ($tag.StartsWith("mwi")) {
         dotnet pack `
             --include-symbols `
