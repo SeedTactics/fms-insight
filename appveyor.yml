@@ -2,8 +2,8 @@ version: '{build}'
 image: Visual Studio 2017
 cache:
   - client/insight/node_modules
-environment:
-  nodejs_version: "Current"
+install:
+- ps: Install-Product node Current
 
 build_script:
 - ps: |
