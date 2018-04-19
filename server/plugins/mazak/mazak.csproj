@@ -1,0 +1,70 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>MazakInsightPlugin</AssemblyName>
+    <PackageId>BlackMaple.FMSInsight.Plugins.Mazak</PackageId>
+    <VersionPrefix>2.0.0</VersionPrefix>
+    <OutputType>Exe</OutputType>
+
+    <Title>Mazak backend for FMS Insight</Title>
+    <Company>Black Maple Software, LLC</Company>
+    <Product>SeedTactics</Product>
+    <Copyright>Black Maple Software, LLC</Copyright>
+    <Authors>John Lenz</Authors>
+    <PackageProjectUrl>https://www.seedtactics.com</PackageProjectUrl>
+
+    <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
+  </PropertyGroup>
+
+  <Choose>
+    <When Condition="$(OS) == 'Windows_NT'">
+      <PropertyGroup>
+        <TargetFramework>net461</TargetFramework>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <TargetFramework>netcoreapp2</TargetFramework>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+
+  <ItemGroup>
+    <PackageReference Include="BlackMaple.MachineWatchInterface" Version="7.*" />
+    <PackageReference Include="BlackMaple.MachineFramework" Version="8.*" />
+  </ItemGroup>
+
+  <Choose>
+      <When Condition="$(TargetFramework) == 'net461'">
+          <PropertyGroup>
+            <DefineConstants>$(DefineConstants);USE_OLEDB</DefineConstants>
+          </PropertyGroup>
+          <ItemGroup>
+            <Reference Include="System" />
+            <Reference Include="System.Core" />
+            <Reference Include="System.Data.DataSetExtensions" />
+            <Reference Include="System.Data" />
+          </ItemGroup>
+      </When>
+
+      <When Condition="$(TargetFramework) == 'netcoreapp2'">
+          <ItemGroup>
+            <PacakgeReference Include="System.Data.SqlClient" Version="4.4.3"/>
+          </ItemGroup>
+      </When>
+  </Choose>
+
+  <ItemGroup>
+    <None Include="ReadOnlyDataSet.xsd">
+      <SubType>Designer</SubType>
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>ReadOnlyDataSet.Designer.cs</LastGenOutput>
+    </None>
+    <None Include="TransactionDataSet.xsd">
+      <SubType>Designer</SubType>
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>TransactionDataSet.Designer.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+
+</Project>
