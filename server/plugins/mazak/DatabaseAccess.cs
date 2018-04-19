@@ -38,9 +38,9 @@ namespace MazakMachineInterface
 		public const int ScheduleSafeEditCommand = 7;
 		public const int ScheduleMaterialEditCommand = 8;
 		public const int ErrorCommand = 9;
-		
+
 		private const int WaitCount = 5;
-		
+
 		private string databaseConnStr;
 
         public enum MazakDbType
@@ -60,7 +60,7 @@ namespace MazakMachineInterface
 				throw new Exception("Open database kit is not running");
 			}
 		}
-		
+
 		public DatabaseAccess(string dbConnStr, MazakDbType ty, bool onlyReadOnly)
 		{
 			MazakType = ty;
@@ -71,7 +71,7 @@ namespace MazakMachineInterface
 		}
 
 		#region Transaction databse
-		
+
 		//For the transaction database
 		private IDbConnection MazakTransactionConnection;
 		private System.Data.Common.DbDataAdapter Fixture_t_Adapter;
@@ -81,7 +81,7 @@ namespace MazakMachineInterface
 		private System.Data.Common.DbDataAdapter Part_t_Adapter;
 		private System.Data.Common.DbDataAdapter ScheduleProcess_t_Adapter;
 		private System.Data.Common.DbDataAdapter Schedule_t_Adapter;
-		
+
 		private IList<System.Data.Common.DbDataAdapter> TransactionAdapters = new List<System.Data.Common.DbDataAdapter>();
 		private readonly string[] TransactionTables = {
 			"fixture_t",
@@ -98,6 +98,7 @@ namespace MazakMachineInterface
             Func<String, System.Data.Common.DbDataAdapter> createAdapter;
             Func<System.Data.Common.DbDataAdapter, System.Data.Common.DbCommandBuilder> createCmdBuilder;
             if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE) {
+							  #if USE_OLEDB
                 var transConn = new OleDbConnection();
                 transConn.ConnectionString = "Provider=Microsoft.Jet.OLEDB.4.0;Password=\"\";" +
                     "User ID=Admin;" +
@@ -107,6 +108,9 @@ namespace MazakMachineInterface
                 MazakTransactionConnection = transConn;
                 createAdapter = s => new OleDbDataAdapter(s, transConn);
                 createCmdBuilder = a => new OleDbCommandBuilder((OleDbDataAdapter)a);
+								#else
+								throw new Exception("Mazak Web and VerE are not supported on .NET Core");
+								#endif
             } else {
                 var dbConn = new System.Data.SqlClient.SqlConnection(databaseConnStr + ";Database=FCNETUSER01");
                 MazakTransactionConnection = dbConn;
@@ -144,13 +148,13 @@ namespace MazakMachineInterface
                 PartProcess_t_Adapter = createAdapter("SELECT ContinueCut, CutMc, FixLDS, FixPhoto, FixQuantity, Fixture, MainProgram, PartName, ProcessNumber, RemoveLDS, RemovePhoto, Reserved, WashType FROM PartProcess_t");
                 TransactionAdapters.Add(PartProcess_t_Adapter);
             }
-			
+
 			Schedule_t_Adapter = createAdapter("SELECT Command, Comment, CompleteQuantity, DueDate, FixForMachine, HoldMode, MissingFixture, MissingProgram, MissingTool, MixScheduleID, PartName, PlanQuantity, Priority, ProcessingPriority, Reserved, ScheduleID, TransactionStatus FROM Schedule_t");
 			TransactionAdapters.Add(Schedule_t_Adapter);
-			
+
 			ScheduleProcess_t_Adapter = createAdapter("SELECT ProcessBadQuantity, ProcessExecuteQuantity, ProcessMachine, ProcessMaterialQuantity, ProcessNumber, Reserved, ScheduleID FROM ScheduleProcess_t");
 			TransactionAdapters.Add(ScheduleProcess_t_Adapter);
-			
+
 			foreach (var adapter in TransactionAdapters) {
 				var builder = createCmdBuilder(adapter);
 				adapter.InsertCommand = builder.GetInsertCommand();
@@ -165,6 +169,7 @@ namespace MazakMachineInterface
 				try {
 					MazakTransactionConnection.Open();
 					return;
+				#if USE_OLEDB
 				} catch (OleDbException ex) {
 					if (!(ex.Message.ToLower().IndexOf("could not use") >= 0)) {
 						if (!(ex.Message.ToLower().IndexOf("try again") >= 0)) {
@@ -172,6 +177,7 @@ namespace MazakMachineInterface
 							throw new Exception(ex.ToString());
 						}
 					}
+				#endif
 				} catch (Exception ex) {
 					if (!(ex.Message.ToLower().IndexOf("could not use") >= 0)) {
 						if (!(ex.Message.ToLower().IndexOf("try again") >= 0)) {
@@ -235,7 +241,7 @@ namespace MazakMachineInterface
                 dset.PartProcess_t.Columns.Add("RemoveTime", typeof(int));
                 dset.PartProcess_t.Columns.Add("CreateToolList_RA", typeof(int));
                 foreach (var row in dset.PartProcess_t)
-                {                 
+                {
                     row["PartProcess_1"] = 0;
                     row["PartProcess_2"] = 0;
                     row["PartProcess_3"] = 0;
@@ -269,8 +275,10 @@ namespace MazakMachineInterface
 					trans.Rollback();
 					throw ex;
 				}
+			#if USE_OLEDB
 			} catch (OleDbException ex) {
 				throw new Exception(ex.ToString());
+			#endif
 			} finally {
 				MazakTransactionConnection.Close();
 			}
@@ -288,7 +296,7 @@ namespace MazakMachineInterface
 
 			ClearTransactionDatabase();
 		}
-		
+
 		private bool CheckTransactionErrors(string prefix, System.Collections.Generic.IList<string> log)
 		{
 			TransactionDataSet transSet = new TransactionDataSet();
@@ -316,8 +324,10 @@ namespace MazakMachineInterface
 					throw ex;
 				}
 
+			#if USE_OLEDB
 			} catch (OleDbException ex) {
 				throw new Exception(ex.ToString());
+			#endif
 			} finally {
 				MazakTransactionConnection.Close();
 			}
@@ -371,27 +381,29 @@ namespace MazakMachineInterface
 
                     var cmd = MazakTransactionConnection.CreateCommand();
 					cmd.Transaction = trans;
-					
+
 					foreach (string table in TransactionTables) {
-						
+
 						cmd.CommandText = "DELETE FROM " + table;
 						cmd.ExecuteNonQuery();
-						
+
 					}
-					
+
 					trans.Commit();
 				} catch {
 					trans.Rollback();
 					throw;
 				}
-				
+
+			#if USE_OLEDB
 			} catch (OleDbException ex) {
 				throw new Exception(ex.ToString());
+			#endif
 			} finally {
 				MazakTransactionConnection.Close();
 			}
 		}
-		
+
 		private void SetTransactionTransaction(IDbTransaction trans)
 		{
 			foreach (var adapter in TransactionAdapters) {
@@ -426,23 +438,26 @@ namespace MazakMachineInterface
 				try {
 					return action(ReadOnlyDBConnection);
 
+				#if USE_OLEDB
 				} catch (OleDbException ex) {
 					throw new Exception(ex.ToString());
+				#endif
 				} finally {
 					ReadOnlyDBConnection.Close();
 				}
 
 			} finally {
 				MazakReadonlyLock.ReleaseMutex();
-			}	
+			}
 		}
-		
+
 		private IList<System.Data.Common.DbDataAdapter> ReadOnlyAdapters = new List<System.Data.Common.DbDataAdapter>();
-		
+
 		private void InitializeReadOnly()
 		{
             Func<String, System.Data.Common.DbDataAdapter> createAdapter;
             if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE) {
+								#if USE_OLEDB
                 var dbConn = new OleDbConnection();
 
 
@@ -452,6 +467,9 @@ namespace MazakMachineInterface
 
                 ReadOnlyDBConnection = dbConn;
                 createAdapter = s => new OleDbDataAdapter(s, dbConn);
+								#else
+								throw new Exception("Mazak Web and VerE are not supported on .NET Core");
+								#endif
             } else {
                 var dbConn = new System.Data.SqlClient.SqlConnection(databaseConnStr + ";Database=FCREADDAT01");
                 ReadOnlyDBConnection = dbConn;
@@ -460,10 +478,10 @@ namespace MazakMachineInterface
 
             FixtureAdapter = createAdapter("SELECT Comment, FixtureName, ID, Reserved, UpdatedFlag FROM Fixture");
 			ReadOnlyAdapters.Add(FixtureAdapter);
-			
+
 			if (MazakType != MazakDbType.MazakVersionE) {
 				PalletAdapter = createAdapter("SELECT FixtureGroup AS FixtureGroupV2, Fixture, PalletNumber, RecordID, Reserved, UpdatedFlag FROM Pallet");
-			} else {			
+			} else {
 				PalletAdapter = createAdapter("SELECT Angle AS AngleV1, Fixture, PalletNumber, RecordID, Reserved, UpdatedFlag FROM Pallet");
 			}
 			ReadOnlyAdapters.Add(PalletAdapter);
@@ -498,6 +516,7 @@ namespace MazakMachineInterface
 				try {
 					ReadOnlyDBConnection.Open();
 					return;
+				#if USE_OLEDB
 				} catch (OleDbException ex) {
 					if (!(ex.Message.ToLower().IndexOf("could not use") >= 0)) {
 						if (!(ex.Message.ToLower().IndexOf("try again") >= 0)) {
@@ -505,6 +524,7 @@ namespace MazakMachineInterface
 							throw new DataException(ex.ToString());
 						}
 					}
+				#endif
 				} catch (Exception ex) {
 					if (!(ex.Message.ToLower().IndexOf("could not use") >= 0)) {
 						if (!(ex.Message.ToLower().IndexOf("try again") >= 0)) {
@@ -551,7 +571,7 @@ namespace MazakMachineInterface
 
 				return dset;
 
-			});		
+			});
 		}
 
 		private void SetReadOnlyTransaction(IDbTransaction trans)
@@ -561,7 +581,7 @@ namespace MazakMachineInterface
 		}
 
 		#endregion
-		
+
 		#region Helpers
 		public static void BuildPartRow(TransactionDataSet.Part_tRow newRow, ReadOnlyDataSet.PartRow curRow)
 		{

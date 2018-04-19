@@ -53,6 +53,7 @@ namespace MazakMachineInterface
 		void DeleteLog(string lastForeignID, System.Diagnostics.TraceSource trace);
 	}
 
+#if USE_OLEDB
 	public class LogDataVerE : ILogData
 	{
 		private IReadDataAccess _db;
@@ -130,7 +131,7 @@ namespace MazakMachineInterface
 
                             var e = new LogEntry();
 
-                            e.ForeignID = epoch.ToString() + "-" + reader.GetInt32(0).ToString() 
+                            e.ForeignID = epoch.ToString() + "-" + reader.GetInt32(0).ToString()
                                 + "-" + reader.GetDateTime(1).ToString(DateTimeFormat);
                             e.TimeUTC = new DateTime(reader.GetDateTime(1).Ticks, DateTimeKind.Local);
                             e.TimeUTC = e.TimeUTC.ToUniversalTime();
@@ -193,12 +194,13 @@ namespace MazakMachineInterface
 				}
 			}
 		}
-	
+
 		public void DeleteLog(string lastForeignID, System.Diagnostics.TraceSource trace)
 		{
 			//do nothing
 		}
 	}
+#endif
 
 	public class LogDataWeb : ILogData
 	{
@@ -269,7 +271,7 @@ namespace MazakMachineInterface
 		{
 			var files = new List<string>(System.IO.Directory.GetFiles(_path, "*.csv"));
 			files.Sort();
-			
+
 			foreach (var f in files) {
 				var filename = System.IO.Path.GetFileName(f);
 				if (filename.CompareTo (lastForeignID) > 0)

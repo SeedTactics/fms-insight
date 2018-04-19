@@ -24,7 +24,7 @@
     </When>
     <Otherwise>
       <PropertyGroup>
-        <TargetFramework>netcoreapp2</TargetFramework>
+        <TargetFramework>netcoreapp2.0</TargetFramework>
       </PropertyGroup>
     </Otherwise>
   </Choose>
@@ -47,9 +47,9 @@
           </ItemGroup>
       </When>
 
-      <When Condition="$(TargetFramework) == 'netcoreapp2'">
+      <When Condition="$(TargetFramework) == 'netcoreapp2.0'">
           <ItemGroup>
-            <PacakgeReference Include="System.Data.SqlClient" Version="4.4.3"/>
+            <PackageReference Include="System.Data.SqlClient" Version="4.5.0-preview*"/>
           </ItemGroup>
       </When>
   </Choose>

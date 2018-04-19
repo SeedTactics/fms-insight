@@ -6,7 +6,7 @@ using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
 {
-	public class Backend : IServerBackend
+	public class MazakBackend : IFMSBackend, IFMSImplementation
 	{
 		private DatabaseAccess database;
 		private RoutingInfo routing;
@@ -18,7 +18,7 @@ namespace MazakMachineInterface
 		private JobLogDB jobLog;
 		private InspectionDB insp;
 		private JobDB jobDB;
-		
+
 		//Settings
 		public DatabaseAccess.MazakDbType MazakType;
 		public bool UseStartingOffsetForDueDate;
@@ -31,7 +31,7 @@ namespace MazakMachineInterface
 				return database;
 			}
 		}
-		
+
 		public LoadOperations LoadOperations
 		{
 			get { return loadOper; }
@@ -44,8 +44,15 @@ namespace MazakMachineInterface
 		public LogTranslation LogTranslation {
 			get { return logTrans; }
 		}
-		
-		public void Init(string dataDirectory, IConfig cfg, SerialSettings serSettings)
+
+    	FMSInfo IFMSImplementation.Info => new FMSInfo() {
+			Name = "Mazak",
+			Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString()
+		};
+    	IFMSBackend IFMSImplementation.Backend => this;
+    	IList<IBackgroundWorker> IFMSImplementation.Workers => new List<IBackgroundWorker>();
+
+    	public void Init(string dataDirectory, IConfig cfg, SerialSettings serSettings)
 		{
             string localDbPath = cfg.GetValue<string>("Mazak", "Database Path");
             MazakType = DetectMazakType(cfg, localDbPath);
@@ -88,7 +95,7 @@ namespace MazakMachineInterface
             if (logPath == null || logPath == "")
                 logPath = "c:\\Mazak\\FMS\\Log";
 
-            // general config 
+            // general config
             string useStartingForDue = cfg.GetValue<string>("Mazak", "Use Starting Offset For Due Date");
             string useStarting = cfg.GetValue<string>("Mazak", "Use Starting Offset");
             string decrPriority = cfg.GetValue<string>("Mazak", "Decrement Priority On Download");
@@ -156,8 +163,13 @@ namespace MazakMachineInterface
 			IReadDataAccess readOnlyDb = new DatabaseAccess(dbConnStr, MazakType, true);
 			if (MazakType == DatabaseAccess.MazakDbType.MazakWeb || MazakType == DatabaseAccess.MazakDbType.MazakSmooth)
 				logDataLoader = new LogDataWeb(logPath);
-			else
+			else {
+				#if USE_OLEDB
 				logDataLoader = new LogDataVerE(readOnlyDb);
+				#else
+				throw new Exception("Mazak Web and VerE are not supported on .NET core");
+				#endif
+			}
 			hold = new HoldPattern(dataDirectory, database, holdTrace, true);
 			loadOper = new LoadOperations(loadOperTrace, cfg);
 			routing = new RoutingInfo(database, hold, jobDB, jobLog, insp, loadOper,
@@ -178,7 +190,7 @@ namespace MazakMachineInterface
 			insp.Close();
 			jobLog.Close();
 		}
-		
+
 		private TraceSource routingTrace = new TraceSource("Mazak", SourceLevels.All);
 		private TraceSource holdTrace = new TraceSource("Hold Transitions", SourceLevels.All);
 		private TraceSource loadOperTrace = new TraceSource("Load Operations", SourceLevels.All);
@@ -254,7 +266,7 @@ namespace MazakMachineInterface
 					}
 					if (i.InspectSingleProcess >= 1 && mat.Process != i.InspectSingleProcess) {
 						logTrace.TraceEvent(TraceEventType.Information, 0, "Skipping inspection for material " + mat.MaterialID.ToString() +
-											" inspection type " + i.InspectionType +				
+											" inspection type " + i.InspectionType +
 											" completed at time " + cycle.EndTimeUTC.ToLocalTime().ToString() + " on pallet " + cycle.Pallet.ToString() +
 											" part " + mat.PartName +
 											" process " + mat.Process.ToString() +
@@ -266,7 +278,7 @@ namespace MazakMachineInterface
 
 					hasInspections = true;
 					var result = insp.MakeInspectionDecision(mat.MaterialID, job, i);
-					logTrace.TraceEvent(TraceEventType.Information, 0, 
+					logTrace.TraceEvent(TraceEventType.Information, 0,
 					                 "Making inspection decision for " + i.InspectionType + " material " + mat.MaterialID.ToString() +
 					                 " completed at time " + cycle.EndTimeUTC.ToLocalTime().ToString() + " on pallet " + cycle.Pallet.ToString() +
 					                 " part " + mat.PartName +
@@ -314,5 +326,18 @@ namespace MazakMachineInterface
                 return DatabaseAccess.MazakDbType.MazakSmooth;
             }
         }
+	}
+
+	public static class MazakProgram
+	{
+		public static void Main()
+		{
+			#if DEBUG
+			var useService = false;
+			#else
+			var useService = true;
+			#endif
+			Program.Run(useService, new MazakBackend());
+		}
 	}
 }
