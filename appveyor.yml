@@ -1,5 +1,7 @@
 version: '{build}'
 image: Visual Studio 2017
+cache:
+  - client/insight/node_modules
 
 build_script:
 - ps: |
@@ -57,7 +59,7 @@ artifacts:
     name: NugetPackages
 
   - path: '**/build-output/*.msi'
-  - name: Installers
+    name: Installers
 
 deploy:
 - provider: NuGet
