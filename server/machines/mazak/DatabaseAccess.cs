@@ -52,15 +52,6 @@ namespace MazakMachineInterface
     //Global Settings
     public System.Threading.Mutex MazakTransactionLock = new System.Threading.Mutex();
 
-    //There are two errors we can generate...
-    //    a timeout for the open database kit
-    //    some errors returned by open database kit
-    public const int OpenDatabaseKitTimeoutError = 201;
-    public const int TransactionError = 202;
-    public const int DatabaseLockedError = 203;
-    public const int InvalidPalletPartMapping = 204;
-    public const int InvalidArgument = 205;
-
     protected string ready4ConectPath;
 
     public enum MazakDbType
