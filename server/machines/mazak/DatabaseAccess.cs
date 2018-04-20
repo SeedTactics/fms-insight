@@ -38,9 +38,6 @@ using System.Data.OleDb;
 
 namespace MazakMachineInterface
 {
-  //the following is only defined starting in .net 3.5
-  public delegate TResult Func<T, TResult>(T arg);
-
   public interface IReadDataAccess
   {
     TResult WithReadDBConnection<TResult>(Func<IDbConnection, TResult> action);
