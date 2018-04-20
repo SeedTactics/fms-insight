@@ -262,8 +262,8 @@ export const initial: State = {
 };
 
 function processEvents(evts: ReadonlyArray<Readonly<api.ILogEntry>>, mat: MaterialDetail): MaterialDetail {
-  const inspTypes = im.Set(mat.signaledInspections);
-  const completedTypes = im.Set(mat.completedInspections);
+  let inspTypes = im.Set(mat.signaledInspections);
+  let completedTypes = im.Set(mat.completedInspections);
 
   evts.forEach(e => {
     e.material.forEach(m => {
@@ -291,13 +291,13 @@ function processEvents(evts: ReadonlyArray<Readonly<api.ILogEntry>>, mat: Materi
         if (e.result.toLowerCase() === "true" || e.result === "1") {
           const entries = e.program.split(",");
           if (entries.length >= 2) {
-            inspTypes.add(entries[1]);
+            inspTypes = inspTypes.add(entries[1]);
           }
         }
         break;
 
       case api.LogType.InspectionResult:
-        completedTypes.add(e.program);
+        completedTypes = completedTypes.add(e.program);
         break;
 
     }
@@ -305,7 +305,7 @@ function processEvents(evts: ReadonlyArray<Readonly<api.ILogEntry>>, mat: Materi
 
   return {...mat,
     signaledInspections: inspTypes.toSeq().sort().toArray(),
-    completedInspections: inspTypes.toSeq().sort().toArray(),
+    completedInspections: completedTypes.toSeq().sort().toArray(),
     loading_events: false,
     events: evts,
   };

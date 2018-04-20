@@ -34,7 +34,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as mat from './material-details';
 import { PledgeStatus } from './middleware';
 // import * as api from './api';
-import { fakeCycle, fakeInspComplete, fakeWashComplete } from './events.fake';
+import {
+  fakeCycle,
+  fakeInspComplete,
+  fakeWashComplete,
+  fakeSerial,
+  fakeInspSignal,
+  fakeWorkorderAssign
+} from './events.fake';
 
 it('creates initial state', () => {
   // tslint:disable no-any
@@ -232,4 +239,53 @@ it("succeeds for a workorder set", () => {
       events: [evt],
       workorderId: "work1234",
   });
+});
+
+it("successfully processes events", () => {
+  const cycle = fakeCycle(new Date(), 55);
+  const logmat = cycle[0].material[0];
+  const evts = [...cycle,
+    fakeInspComplete(logmat, "compinsp"),
+    fakeInspSignal(logmat, "signalinsp"),
+    fakeSerial(logmat, "theserial"),
+    fakeWorkorderAssign(logmat, "work1234"),
+  ];
+
+  const initial = {
+    materialID: -1,
+    partName: "",
+    jobUnique: "",
+    serial: "",
+    workorderId: "",
+    signaledInspections: [],
+    completedInspections: [],
+    loading_events: true,
+    updating_material: false,
+    events: [],
+    loading_workorders: false,
+    saving_workorder: false,
+    workorders: [],
+  };
+  const after = {...initial,
+    materialID: logmat.id,
+    partName: logmat.part,
+    jobUnique: logmat.uniq,
+    signaledInspections: ["signalinsp"],
+    completedInspections: ["compinsp"],
+    serial: "theserial",
+    workorderId: "work1234",
+    events: evts,
+    loading_events: false,
+  };
+
+  const action: mat.Action = {
+    type: mat.ActionType.OpenMaterialDialog,
+    initial,
+    pledge: { status: PledgeStatus.Completed, result: evts }
+  };
+  const initialSt = {
+    material: {...m, loading_events: true}
+  };
+  let s = mat.reducer(initialSt, action);
+  expect(s.material).toEqual(after);
 });

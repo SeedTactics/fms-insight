@@ -147,10 +147,50 @@ export function fakeCycle(
     return es;
 }
 
-export function fakeInspComplete(): ILogEntry {
+export function fakeSerial(mat?: LogMaterial, serial?: string): ILogEntry {
+  mat = mat || fakeMaterial();
+  serial = serial || "serial1234";
   return {
     counter: 100,
-    material: [fakeMaterial()],
+    material: [mat],
+    pal: faker.random.alphaNumeric(),
+    type: LogType.PartMark,
+    startofcycle: false,
+    endUTC: new Date(2017, 9, 5),
+    loc: 'Mark',
+    locnum: 1,
+    result: serial,
+    program: '',
+    elapsed: '00:00:00',
+    active: '00:00:00'
+  };
+}
+
+export function fakeInspSignal(mat?: LogMaterial, inspType?: string): ILogEntry {
+  mat = mat || fakeMaterial();
+  inspType = inspType || "MyInspType";
+  return {
+    counter: 100,
+    material: [mat],
+    pal: faker.random.alphaNumeric(),
+    type: LogType.Inspection,
+    startofcycle: false,
+    endUTC: new Date(2017, 9, 5),
+    loc: 'Inspection',
+    locnum: 1,
+    result: 'True',
+    program: 'ignored,' + inspType  + ',other',
+    elapsed: '00:00:00',
+    active: '00:00:00'
+  };
+}
+
+export function fakeInspComplete(mat?: LogMaterial, inspType?: string): ILogEntry {
+  mat = mat || fakeMaterial();
+  inspType = inspType || "MyInspType";
+  return {
+    counter: 100,
+    material: [mat],
     pal: faker.random.alphaNumeric(),
     type: LogType.InspectionResult,
     startofcycle: false,
@@ -158,16 +198,17 @@ export function fakeInspComplete(): ILogEntry {
     loc: 'InspectionComplete',
     locnum: 1,
     result: 'True',
-    program: 'MyInspType',
+    program: inspType,
     elapsed: '00:00:00',
     active: '00:00:00'
   };
 }
 
-export function fakeWashComplete(): ILogEntry {
+export function fakeWashComplete(mat?: LogMaterial): ILogEntry {
+  mat = mat || fakeMaterial();
   return {
     counter: 100,
-    material: [fakeMaterial()],
+    material: [mat],
     pal: faker.random.alphaNumeric(),
     type: LogType.Wash,
     startofcycle: false,
@@ -175,6 +216,25 @@ export function fakeWashComplete(): ILogEntry {
     loc: 'Wash',
     locnum: 1,
     result: '',
+    program: '',
+    elapsed: '00:00:00',
+    active: '00:00:00'
+  };
+}
+
+export function fakeWorkorderAssign(mat?: LogMaterial, workorder?: string): ILogEntry {
+  mat = mat || fakeMaterial();
+  workorder = workorder || "work12345";
+  return {
+    counter: 100,
+    material: [mat],
+    pal: faker.random.alphaNumeric(),
+    type: LogType.OrderAssignment,
+    startofcycle: false,
+    endUTC: new Date(2017, 9, 5),
+    loc: 'OrderAssignment',
+    locnum: 1,
+    result: workorder,
     program: '',
     elapsed: '00:00:00',
     active: '00:00:00'
