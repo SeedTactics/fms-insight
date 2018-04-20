@@ -45,6 +45,8 @@ import { connectRoutes, LocationState } from 'redux-first-router';
 import createHistory from 'history/createBrowserHistory';
 import * as queryString from 'query-string';
 import * as reactRedux from 'react-redux';
+import * as redux from 'redux';
+import { initBarcodeListener } from './barcode';
 
 export interface Store {
   readonly Current: currentStatus.State;
@@ -112,6 +114,7 @@ export function initStore() {
   );
 
   websocket.openWebsocket(a => store.dispatch(a), () => store.getState().Events);
+  initBarcodeListener(a => store.dispatch(a as redux.Action));
 
   return store;
 }

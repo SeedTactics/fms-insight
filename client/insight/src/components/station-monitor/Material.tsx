@@ -38,6 +38,7 @@ import ButtonBase from 'material-ui/ButtonBase';
 import Button from 'material-ui/Button';
 import Tooltip from 'material-ui/Tooltip';
 import WarningIcon from '@material-ui/icons/Warning';
+import SearchIcon from '@material-ui/icons/Search';
 import Avatar from 'material-ui/Avatar';
 import Paper from 'material-ui/Paper';
 import { CircularProgress } from 'material-ui/Progress';
@@ -245,14 +246,26 @@ export class InProcMaterial extends React.PureComponent<InProcMaterialProps> {
 
 export class MaterialDetailTitle extends React.PureComponent<{partName: string, serial?: string}> {
   render () {
+    let title;
+    if (this.props.partName === "" && (this.props.serial === undefined || this.props.serial === "")) {
+      title = "Loading";
+    } else if (this.props.partName === "") {
+      title = "Loading " + this.props.serial;
+    } else if (this.props.serial === undefined || this.props.serial === "") {
+      title = this.props.partName;
+    } else {
+      title = this.props.partName + " - " + this.props.serial;
+    }
+
     return (
       <div style={{display: 'flex', textAlign: 'left'}}>
-        <PartIdenticon part={this.props.partName}/>
+        {this.props.partName === ""
+          ? <SearchIcon/>
+          : <PartIdenticon part={this.props.partName}/>
+        }
         <div style={{marginLeft: '8px', flexGrow: 1}}>
           <Typography variant="title">
-            { this.props.partName +
-              (this.props.serial === undefined || this.props.serial === "" ? "" : " - " + this.props.serial)
-            }
+            {title}
           </Typography>
         </div>
       </div>

@@ -101,7 +101,7 @@ export function openMaterialDialog(mat: Readonly<MaterialSummary>):  ABF {
       serial: mat.serial,
       workorderId: mat.workorderId,
       signaledInspections: mat.signaledInspections,
-      completedInspections: [],
+      completedInspections: Object.keys(mat.completedInspections),
       loading_events: true,
       updating_material: false,
       events: [],
@@ -110,6 +110,29 @@ export function openMaterialDialog(mat: Readonly<MaterialSummary>):  ABF {
       workorders: [],
     } as MaterialDetail,
     pledge: client.logForMaterial(mat.materialID),
+  };
+}
+
+export function openMaterialBySerial(serial: string): ABF {
+  const client = new api.LogClient();
+  return {
+    type: ActionType.OpenMaterialDialog,
+    initial: {
+      materialID: -1,
+      partName: "",
+      jobUnique: "",
+      serial: serial,
+      workorderId: "",
+      signaledInspections: [],
+      completedInspections: [],
+      loading_events: true,
+      updating_material: false,
+      events: [],
+      loading_workorders: false,
+      saving_workorder: false,
+      workorders: [],
+    } as MaterialDetail,
+    pledge: client.logForSerial(serial),
   };
 }
 
