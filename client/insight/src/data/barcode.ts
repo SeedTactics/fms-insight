@@ -79,10 +79,9 @@ export function initBarcodeListener(dispatch: (a: AppActionBeforeMiddleware) => 
       success();
       k.stopPropagation();
       k.preventDefault();
-    } else if (scanActive) {
-      let char = String.fromCharCode(k.which);
-      if (/[a-zA-Z0-9-_]/.test(char)) {
-        scannedTxt += char;
+    } else if (scanActive && k.key && k.key.length === 1) {
+      if (/[a-zA-Z0-9-_]/.test(k.key)) {
+        scannedTxt += k.key;
         k.stopPropagation();
         k.preventDefault();
       }
