@@ -40,12 +40,12 @@ import { HeatChart, HeatChartProps, SelectableHeatChart, SelectableHeatChartProp
 import * as gui from '../../data/gui-state';
 
 const points = [
-  {x: new Date(2018, 2, 1), y: "aaa", color: 1, label: "1"},
-  {x: new Date(2018, 2, 2), y: "aaa", color: 2, label: "2"},
-  {x: new Date(2018, 2, 3), y: "aaa", color: 3, label: "3"},
-  {x: new Date(2018, 2, 1), y: "bbb", color: 4, label: "4"},
-  {x: new Date(2018, 2, 2), y: "bbb", color: 5, label: "5"},
-  {x: new Date(2018, 2, 3), y: "bbb", color: 6, label: "6"},
+  {x: new Date(Date.UTC(2018, 2, 1)), y: "aaa", color: 1, label: "1"},
+  {x: new Date(Date.UTC(2018, 2, 2)), y: "aaa", color: 2, label: "2"},
+  {x: new Date(Date.UTC(2018, 2, 3)), y: "aaa", color: 3, label: "3"},
+  {x: new Date(Date.UTC(2018, 2, 1)), y: "bbb", color: 4, label: "4"},
+  {x: new Date(Date.UTC(2018, 2, 2)), y: "bbb", color: 5, label: "5"},
+  {x: new Date(Date.UTC(2018, 2, 3)), y: "bbb", color: 6, label: "6"},
 ];
 
 it('displays a cycle chart', () => {

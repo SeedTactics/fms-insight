@@ -45,7 +45,7 @@ it('displays the toolbar', () => {
   let val = shallow(
     <AnalysisSelectToolbar
       period={events.AnalysisPeriod.Last30Days}
-      period_month={new Date(2018, 0, 1)}
+      period_month={new Date(Date.UTC(2018, 0, 1))}
       analyzeLast30Days={analyzeLast30}
       analyzeMonth={analyzeMonth}
       setMonth={setMonth}
@@ -55,7 +55,7 @@ it('displays the toolbar', () => {
   val = shallow(
     <AnalysisSelectToolbar
       period={events.AnalysisPeriod.SpecificMonth}
-      period_month={new Date(2018, 1, 1)}
+      period_month={new Date(Date.UTC(2018, 1, 1))}
       analyzeLast30Days={analyzeLast30}
       analyzeMonth={analyzeMonth}
       setMonth={setMonth}

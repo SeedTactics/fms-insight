@@ -36,11 +36,11 @@ exports[`displays a cycle chart: cycle chart 1`] = `
       data={
         Array [
           Object {
-            "x": 2018-02-01T06:00:00.000Z,
+            "x": 2018-02-01T00:00:00.000Z,
             "y": 15,
           },
           Object {
-            "x": 2018-02-02T06:00:00.000Z,
+            "x": 2018-02-02T00:00:00.000Z,
             "y": 66,
           },
         ]
@@ -53,11 +53,11 @@ exports[`displays a cycle chart: cycle chart 1`] = `
       data={
         Array [
           Object {
-            "x": 2018-03-02T06:00:00.000Z,
+            "x": 2018-03-02T00:00:00.000Z,
             "y": 15,
           },
           Object {
-            "x": 2018-03-03T06:00:00.000Z,
+            "x": 2018-03-03T00:00:00.000Z,
             "y": 55,
           },
         ]
@@ -70,7 +70,7 @@ exports[`displays a cycle chart: cycle chart 1`] = `
       data={
         Array [
           Object {
-            "x": 2018-04-03T05:00:00.000Z,
+            "x": 2018-04-03T00:00:00.000Z,
             "y": 15,
           },
         ]
@@ -232,27 +232,27 @@ exports[`displays a selectable cycle chart with something selected: selectable c
         Immutable.Map {
           "aaa": Array [
             Object {
-              "x": 2018-02-01T06:00:00.000Z,
+              "x": 2018-02-01T00:00:00.000Z,
               "y": 15,
             },
             Object {
-              "x": 2018-02-02T06:00:00.000Z,
+              "x": 2018-02-02T00:00:00.000Z,
               "y": 66,
             },
           ],
           "bbb": Array [
             Object {
-              "x": 2018-03-02T06:00:00.000Z,
+              "x": 2018-03-02T00:00:00.000Z,
               "y": 53,
             },
             Object {
-              "x": 2018-03-03T06:00:00.000Z,
+              "x": 2018-03-03T00:00:00.000Z,
               "y": 55,
             },
           ],
           "ccc": Array [
             Object {
-              "x": 2018-04-03T05:00:00.000Z,
+              "x": 2018-04-03T00:00:00.000Z,
               "y": 6,
             },
           ],
@@ -277,8 +277,8 @@ exports[`displays an empty chart: empty cycle chart 1`] = `
     onMouseLeave={[Function]}
     xDomain={
       Array [
-        2018-03-05T06:00:00.000Z,
-        2018-03-10T06:00:00.000Z,
+        2018-03-05T00:00:00.000Z,
+        2018-03-10T00:00:00.000Z,
       ]
     }
     xType="time"

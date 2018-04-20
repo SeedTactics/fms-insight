@@ -42,9 +42,9 @@ it('displays a cycle chart', () => {
   const props: CycleChartProps = {
     points:
       im.Map({
-        "aaa": [{x: new Date(2018, 1, 1), y: 15}, {x: new Date(2018, 1, 2), y: 66}],
-        "bbb": [{x: new Date(2018, 2, 2), y: 15}, {x: new Date(2018, 2, 3), y: 55}],
-        "ccc": [{x: new Date(2018, 3, 3), y: 15}],
+        "aaa": [{x: new Date(Date.UTC(2018, 1, 1)), y: 15}, {x: new Date(Date.UTC(2018, 1, 2)), y: 66}],
+        "bbb": [{x: new Date(Date.UTC(2018, 2, 2)), y: 15}, {x: new Date(Date.UTC(2018, 2, 3)), y: 55}],
+        "ccc": [{x: new Date(Date.UTC(2018, 3, 3)), y: 15}],
       }),
     series_label: "serieslabel"
   };
@@ -57,7 +57,7 @@ it("displays an empty chart", () => {
   const props: CycleChartProps = {
     points: im.Map(),
     series_label: "serieslabel",
-    default_date_range: [new Date(2018, 2, 5), new Date(2018, 2, 10)],
+    default_date_range: [new Date(Date.UTC(2018, 2, 5)), new Date(Date.UTC(2018, 2, 10))],
   };
 
   const val = shallow(<CycleChart {...props}/>);
@@ -68,12 +68,12 @@ const selectProps: SelectableCycleChartProps = {
     points:
       im.Map({
         "111": im.Map({
-            "aaa": [{x: new Date(2018, 1, 1), y: 15}, {x: new Date(2018, 1, 2), y: 66}],
-            "bbb": [{x: new Date(2018, 2, 2), y: 53}, {x: new Date(2018, 2, 3), y: 55}],
-            "ccc": [{x: new Date(2018, 3, 3), y: 6}],
+            "aaa": [{x: new Date(Date.UTC(2018, 1, 1)), y: 15}, {x: new Date(Date.UTC(2018, 1, 2)), y: 66}],
+            "bbb": [{x: new Date(Date.UTC(2018, 2, 2)), y: 53}, {x: new Date(Date.UTC(2018, 2, 3)), y: 55}],
+            "ccc": [{x: new Date(Date.UTC(2018, 3, 3)), y: 6}],
           }),
         "222": im.Map({
-            "aaa": [{x: new Date(2018, 4, 4), y: 62}, {x: new Date(2018, 4, 45), y: 512}],
+            "aaa": [{x: new Date(Date.UTC(2018, 4, 4)), y: 62}, {x: new Date(Date.UTC(2018, 4, 45)), y: 512}],
           }),
       }),
     series_label: "serieslabel",

@@ -39,7 +39,7 @@ exports[`displays the toolbar: last 30 selected with january 1`] = `
       required={false}
       select={false}
       type="month"
-      value="2018-01"
+      value="2017-12"
     />
   </div>
 </nav>
@@ -84,7 +84,7 @@ exports[`displays the toolbar: specific month with february 1`] = `
       required={false}
       select={false}
       type="month"
-      value="2018-02"
+      value="2018-01"
     />
   </div>
 </nav>
