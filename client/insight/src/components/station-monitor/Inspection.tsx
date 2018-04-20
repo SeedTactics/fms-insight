@@ -155,20 +155,20 @@ export const extractRecentInspections = createSelector(
       .filter(e => e.completed_time !== undefined && e.completed_time >= cutoff);
 
     function checkAllCompleted(m: MaterialSummaryAndCompletedData): boolean {
-      return im.Set(m.signaledInspections).subtract(im.Seq(m.completedInspections).keySeq()).isEmpty();
+      return im.Set(m.signaledInspections).subtract(im.Seq(m.completedInspections || {}).keySeq()).isEmpty();
     }
 
     const uninspected =
       inspType === undefined
         ? allDetails.filter(m => m.signaledInspections.length > 0 && !checkAllCompleted(m))
         : allDetails.filter(m => m.signaledInspections.indexOf(inspType) >= 0
-                              && m.completedInspections[inspType] === undefined);
+                              && (m.completedInspections || {})[inspType] === undefined);
 
     const inspected =
       inspType === undefined
         ? allDetails.filter(m => m.signaledInspections.length > 0 && checkAllCompleted(m))
         : allDetails.filter(m => m.signaledInspections.indexOf(inspType) >= 0
-                              && m.completedInspections[inspType] !== undefined);
+                              && (m.completedInspections || {})[inspType] !== undefined);
 
     return {
       waiting_to_inspect: uninspected.sortBy(e => e.completed_time).reverse().toArray(),

@@ -54,7 +54,7 @@ import * as matDetails from '../../data/material-details';
 import { LogEntries } from '../LogEntry';
 import { MaterialSummary } from '../../data/events';
 import { withStyles } from 'material-ui';
-import { inproc_mat_to_summary } from '../../data/events.matsummary';
+import { inproc_mat_to_summary, MaterialSummaryAndCompletedData } from '../../data/events.matsummary';
 import { DispatchAction }  from '../../data/store';
 
 /*
@@ -135,7 +135,7 @@ const matStyles = withStyles(theme => ({
 }));
 
 export interface MaterialSummaryProps {
-  readonly mat: Readonly<MaterialSummary>; // TODO: deep readonly
+  readonly mat: Readonly<MaterialSummaryAndCompletedData>; // TODO: deep readonly
   readonly action?: string;
   readonly focusInspectionType?: string;
   readonly hideInspectionIcon?: boolean;
@@ -144,13 +144,14 @@ export interface MaterialSummaryProps {
 
 const MatSummaryWithStyles = matStyles<MaterialSummaryProps>(props => {
   const inspections = props.mat.signaledInspections.join(", ");
+  const completed = props.mat.completedInspections || {};
 
   let completedMsg: JSX.Element | undefined;
-  if (props.focusInspectionType && props.mat.completedInspections[props.focusInspectionType]) {
+  if (props.focusInspectionType && completed[props.focusInspectionType]) {
     completedMsg = (
       <small>
         <span>Inspection completed </span>
-        <TimeAgo date={props.mat.completedInspections[props.focusInspectionType]}/>
+        <TimeAgo date={completed[props.focusInspectionType]}/>
       </small>
     );
   } else if (props.mat.wash_completed) {

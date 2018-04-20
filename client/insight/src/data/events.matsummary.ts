@@ -39,21 +39,24 @@ export interface MaterialSummary {
   readonly jobUnique: string;
   readonly partName: string;
   readonly completed_procs: ReadonlyArray<number>;
-  readonly completed_time?: Date;
-  readonly wash_completed?: Date;
 
   readonly serial?: string;
   readonly workorderId?: string;
   readonly signaledInspections: ReadonlyArray<string>;
-  readonly completedInspections: {[key: string]: Date};
 }
 
 export interface MaterialSummaryAndCompletedData extends MaterialSummary {
+  readonly completed_time?: Date;
+  readonly wash_completed?: Date;
+  readonly completedInspections?: {[key: string]: Date};
+}
+
+interface MaterialSummaryFromEvents extends MaterialSummaryAndCompletedData {
   readonly last_event: Date;
 }
 
 export interface MatSummaryState {
-  readonly matsById: im.Map<number, MaterialSummaryAndCompletedData>;
+  readonly matsById: im.Map<number, MaterialSummaryFromEvents>;
   readonly inspTypes: im.Set<string>;
 }
 
@@ -68,11 +71,9 @@ export function inproc_mat_to_summary(mat: Readonly<api.IInProcessMaterial>): Ma
     jobUnique: mat.jobUnique,
     partName: mat.partName,
     completed_procs: im.Range(1, mat.process, 1).toArray(),
-    wash_completed: undefined,
     serial: mat.serial,
     workorderId: mat.workorderId,
     signaledInspections: mat.signaledInspections,
-    completedInspections: {},
   };
 }
 

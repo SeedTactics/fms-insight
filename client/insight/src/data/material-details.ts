@@ -58,6 +58,7 @@ export interface MaterialDetail {
   readonly workorderId?: string;
   readonly signaledInspections: ReadonlyArray<string>;
   readonly completedInspections: ReadonlyArray<string>;
+
   readonly updating_material: boolean;
 
   readonly loading_events: boolean;
@@ -101,7 +102,7 @@ export function openMaterialDialog(mat: Readonly<MaterialSummary>):  ABF {
       serial: mat.serial,
       workorderId: mat.workorderId,
       signaledInspections: mat.signaledInspections,
-      completedInspections: Object.keys(mat.completedInspections),
+      completedInspections: [],
       loading_events: true,
       updating_material: false,
       events: [],
@@ -260,6 +261,56 @@ export const initial: State = {
   material: null
 };
 
+function processEvents(evts: ReadonlyArray<Readonly<api.ILogEntry>>, mat: MaterialDetail): MaterialDetail {
+  const inspTypes = im.Set(mat.signaledInspections);
+  const completedTypes = im.Set(mat.completedInspections);
+
+  evts.forEach(e => {
+    e.material.forEach(m => {
+      if (mat.materialID < 0) {
+        mat = {...mat, materialID: m.id};
+      }
+      if (mat.partName === "") {
+        mat = {...mat, partName: m.part};
+      }
+      if (mat.jobUnique === "") {
+        mat = {...mat, jobUnique: m.uniq};
+      }
+    });
+
+    switch (e.type) {
+      case api.LogType.PartMark:
+        mat = {...mat, serial: e.result};
+        break;
+
+      case api.LogType.OrderAssignment:
+        mat = {...mat, workorderId: e.result};
+        break;
+
+      case api.LogType.Inspection:
+        if (e.result.toLowerCase() === "true" || e.result === "1") {
+          const entries = e.program.split(",");
+          if (entries.length >= 2) {
+            inspTypes.add(entries[1]);
+          }
+        }
+        break;
+
+      case api.LogType.InspectionResult:
+        completedTypes.add(e.program);
+        break;
+
+    }
+  });
+
+  return {...mat,
+    signaledInspections: inspTypes.toSeq().sort().toArray(),
+    completedInspections: inspTypes.toSeq().sort().toArray(),
+    loading_events: false,
+    events: evts,
+  };
+}
+
 export function reducer(s: State, a: Action): State {
   if (s === undefined) { return initial; }
   switch (a.type) {
@@ -269,10 +320,7 @@ export function reducer(s: State, a: Action): State {
           return {...s, material: a.initial};
 
         case PledgeStatus.Completed:
-          return {...s, material: {...a.initial,
-            loading_events: false,
-            events: a.pledge.result
-          }};
+          return {...s, material: processEvents(a.pledge.result, a.initial)};
 
         case PledgeStatus.Error:
           return {...s, material: {...a.initial,

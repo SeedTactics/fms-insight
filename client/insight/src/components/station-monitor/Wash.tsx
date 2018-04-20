@@ -146,7 +146,7 @@ export function Wash(props: WashProps) {
 
 export const extractRecentCompleted = createSelector(
   (st: Store) => st.Events.last30.mat_summary.matsById,
-  (mats: im.Map<number, MaterialSummary>): ReadonlyArray<MaterialSummary> => {
+  (mats: im.Map<number, MaterialSummaryAndCompletedData>): ReadonlyArray<MaterialSummaryAndCompletedData> => {
     const cutoff = addHours(new Date(), -36);
     return mats
       .valueSeq()
