@@ -56,7 +56,7 @@ namespace MazakMachineInterface
     {
       var newPartRow = transSet.Part_t.NewPart_tRow();
 
-      newPartRow.Command = DatabaseAccess.AddCommand;
+      newPartRow.Command = TransactionDatabaseAccess.AddCommand;
       newPartRow.PartName = PartName;
       newPartRow.Comment = Comment;
       newPartRow.Price = 0;
@@ -576,7 +576,7 @@ namespace MazakMachineInterface
 
       //Add rows to both V1 and V2.
       TransactionDataSet.Pallet_tV2Row newRow2 = transSet.Pallet_tV2.NewPallet_tV2Row();
-      newRow2.Command = DatabaseAccess.AddCommand;
+      newRow2.Command = TransactionDatabaseAccess.AddCommand;
       newRow2.PalletNumber = palNum;
       newRow2.Fixture = fixture;
       newRow2.RecordID = 0;
@@ -584,7 +584,7 @@ namespace MazakMachineInterface
       transSet.Pallet_tV2.AddPallet_tV2Row(newRow2);
 
       TransactionDataSet.Pallet_tV1Row newRow1 = transSet.Pallet_tV1.NewPallet_tV1Row();
-      newRow1.Command = DatabaseAccess.AddCommand;
+      newRow1.Command = TransactionDatabaseAccess.AddCommand;
       newRow1.PalletNumber = palNum;
       newRow1.Fixture = fixture;
 

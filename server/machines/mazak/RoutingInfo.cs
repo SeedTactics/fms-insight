@@ -1006,7 +1006,7 @@ namespace MazakMachineInterface
         TransactionDataSet.Schedule_tRow newSchRow = transSet.Schedule_t.NewSchedule_tRow();
         if (schRow.PlanQuantity == schRow.CompleteQuantity)
         {
-          newSchRow.Command = DatabaseAccess.DeleteCommand;
+          newSchRow.Command = TransactionDatabaseAccess.DeleteCommand;
           newSchRow.ScheduleID = schRow.ScheduleID;
           newSchRow.PartName = schRow.PartName;
 
@@ -1177,7 +1177,7 @@ namespace MazakMachineInterface
         var newFixRow = transSet.Fixture_t.NewFixture_tRow();
         if (!string.IsNullOrEmpty(oldFixName))
         {
-          newFixRow.Command = DatabaseAccess.EditCommand;
+          newFixRow.Command = TransactionDatabaseAccess.EditCommand;
           newFixRow.FixtureName = oldFixName;
           newFixRow.Comment = newGlobalTag;
           transSet.Fixture_t.AddFixture_tRow(newFixRow);
@@ -1185,7 +1185,7 @@ namespace MazakMachineInterface
         }
         else
         {
-          newFixRow.Command = DatabaseAccess.AddCommand;
+          newFixRow.Command = TransactionDatabaseAccess.AddCommand;
           newFixRow.FixtureName = "Fixture:UniqueStr";
           newFixRow.Comment = newGlobalTag;
           transSet.Fixture_t.AddFixture_tRow(newFixRow);
@@ -1212,7 +1212,7 @@ namespace MazakMachineInterface
       var tempMazakPart = new MazakPart(part, path, UID);
 
       var newSchRow = transSet.Schedule_t.NewSchedule_tRow();
-      newSchRow.Command = DatabaseAccess.AddCommand;
+      newSchRow.Command = TransactionDatabaseAccess.AddCommand;
       newSchRow.ScheduleID = SchID;
       newSchRow.PartName = tempMazakPart.PartName;
       newSchRow.PlanQuantity = part.GetPlannedCyclesOnFirstProcess(path);

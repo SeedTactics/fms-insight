@@ -61,17 +61,6 @@ namespace MazakMachineInterface
     public const int InvalidPalletPartMapping = 204;
     public const int InvalidArgument = 205;
 
-    //List of commands for the transaction database.
-    public const int ForceUnlockEditCommand = 3;
-    public const int AddCommand = 4;
-    public const int DeleteCommand = 5;
-    public const int EditCommand = 6;
-    public const int ScheduleSafeEditCommand = 7;
-    public const int ScheduleMaterialEditCommand = 8;
-    public const int ErrorCommand = 9;
-
-    protected const int WaitCount = 5;
-
     protected string ready4ConectPath;
 
     public enum MazakDbType
@@ -170,6 +159,18 @@ namespace MazakMachineInterface
     }
 
     private string databaseConnStr;
+
+    //List of commands for the transaction database.
+    public const int ForceUnlockEditCommand = 3;
+    public const int AddCommand = 4;
+    public const int DeleteCommand = 5;
+    public const int EditCommand = 6;
+    public const int ScheduleSafeEditCommand = 7;
+    public const int ScheduleMaterialEditCommand = 8;
+    public const int ErrorCommand = 9;
+
+    protected const int WaitCount = 5;
+
 
     //For the transaction database
     private IDbConnection MazakTransactionConnection;

@@ -127,7 +127,7 @@ namespace MazakMachineInterface
           if (!savedParts.Contains(partRow.PartName))
           {
             newPartRow = transSet.Part_t.NewPart_tRow();
-            newPartRow.Command = DatabaseAccess.DeleteCommand;
+            newPartRow.Command = TransactionDatabaseAccess.DeleteCommand;
             newPartRow.PartName = partRow.PartName;
             newPartRow.TotalProcess = partRow.GetPartProcessRows().Length;
             transSet.Part_t.AddPart_tRow(newPartRow);
@@ -150,7 +150,7 @@ namespace MazakMachineInterface
             {
               //not found, we can delete it
               newPalRowV2 = transSet.Pallet_tV2.NewPallet_tV2Row();
-              newPalRowV2.Command = DatabaseAccess.DeleteCommand;
+              newPalRowV2.Command = TransactionDatabaseAccess.DeleteCommand;
               newPalRowV2.PalletNumber = palRow.PalletNumber;
               newPalRowV2.Fixture = palRow.Fixture;
               newPalRowV2.RecordID = palRow.RecordID;
@@ -162,7 +162,7 @@ namespace MazakMachineInterface
             {
               //not found, we can delete it
               newPalRowV1 = transSet.Pallet_tV1.NewPallet_tV1Row();
-              newPalRowV1.Command = DatabaseAccess.DeleteCommand;
+              newPalRowV1.Command = TransactionDatabaseAccess.DeleteCommand;
               newPalRowV1.PalletNumber = palRow.PalletNumber;
               newPalRowV1.Fixture = palRow.Fixture;
               newPalRowV1.RecordID = palRow.RecordID;
@@ -191,7 +191,7 @@ namespace MazakMachineInterface
           {
 
             newFixRow = transSet.Fixture_t.NewFixture_tRow();
-            newFixRow.Command = DatabaseAccess.DeleteCommand;
+            newFixRow.Command = TransactionDatabaseAccess.DeleteCommand;
             newFixRow.FixtureName = fixRow.FixtureName;
             transSet.Fixture_t.AddFixture_tRow(newFixRow);
           }
@@ -215,7 +215,7 @@ namespace MazakMachineInterface
         }
 
         TransactionDataSet.Fixture_tRow newFixRow = transSet.Fixture_t.NewFixture_tRow();
-        newFixRow.Command = DatabaseAccess.AddCommand;
+        newFixRow.Command = TransactionDatabaseAccess.AddCommand;
         newFixRow.FixtureName = fixture;
 
         //the comment can not be empty, or the database kit blows up.
