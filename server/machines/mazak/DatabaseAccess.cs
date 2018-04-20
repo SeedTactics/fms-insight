@@ -144,6 +144,7 @@ namespace MazakMachineInterface
 			: base(dbConnStr, ty)
     {
       databaseConnStr = dbConnStr;
+      InitializeTransaction();
     }
 
     private string databaseConnStr;
@@ -182,21 +183,18 @@ namespace MazakMachineInterface
 
     private void InitializeTransaction()
     {
-
       Func<String, System.Data.Common.DbDataAdapter> createAdapter;
-      Func<System.Data.Common.DbDataAdapter, System.Data.Common.DbCommandBuilder> createCmdBuilder;
       if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE)
       {
 #if USE_OLEDB
-                var transConn = new OleDbConnection();
-                transConn.ConnectionString = "Provider=Microsoft.Jet.OLEDB.4.0;Password=\"\";" +
-                    "User ID=Admin;" +
-                    "Data Source=" + System.IO.Path.Combine(databaseConnStr, "FCNETUSER1.mdb") + ";" +
-                    "Mode=Share Deny None;";
+        var transConn = new OleDbConnection();
+        transConn.ConnectionString = "Provider=Microsoft.Jet.OLEDB.4.0;Password=\"\";" +
+            "User ID=Admin;" +
+            "Data Source=" + System.IO.Path.Combine(databaseConnStr, "FCNETUSER1.mdb") + ";" +
+            "Mode=Share Deny None;";
 
-                MazakTransactionConnection = transConn;
-                createAdapter = s => new OleDbDataAdapter(s, transConn);
-                createCmdBuilder = a => new OleDbCommandBuilder((OleDbDataAdapter)a);
+        MazakTransactionConnection = transConn;
+        createAdapter = s => new OleDbDataAdapter(s, transConn);
 #else
         throw new Exception("Mazak Web and VerE are not supported on .NET Core");
 #endif
@@ -206,7 +204,6 @@ namespace MazakMachineInterface
         var dbConn = new System.Data.SqlClient.SqlConnection(databaseConnStr + ";Database=FCNETUSER01");
         MazakTransactionConnection = dbConn;
         createAdapter = s => new System.Data.SqlClient.SqlDataAdapter(s, dbConn);
-        createCmdBuilder = a => new System.Data.SqlClient.SqlCommandBuilder((System.Data.SqlClient.SqlDataAdapter)a);
       }
 
 
@@ -250,11 +247,29 @@ namespace MazakMachineInterface
 
       ScheduleProcess_t_Adapter = createAdapter("SELECT ProcessBadQuantity, ProcessExecuteQuantity, ProcessMachine, ProcessMaterialQuantity, ProcessNumber, Reserved, ScheduleID FROM ScheduleProcess_t");
       TransactionAdapters.Add(ScheduleProcess_t_Adapter);
+    }
 
+    private void EnsureInsertCommands()
+    {
       foreach (var adapter in TransactionAdapters)
       {
-        var builder = createCmdBuilder(adapter);
-        adapter.InsertCommand = builder.GetInsertCommand();
+        if (adapter.InsertCommand == null) {
+          System.Data.Common.DbCommandBuilder builder;
+          if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE)
+          {
+    #if USE_OLEDB
+            builder = new OleDbCommandBuilder((OleDbDataAdapter)adapter);
+    #else
+            throw new Exception("Mazak Web and VerE are not supported on .NET Core");
+    #endif
+          }
+          else
+          {
+            builder = new System.Data.SqlClient.SqlCommandBuilder((System.Data.SqlClient.SqlDataAdapter)adapter);
+          }
+
+          adapter.InsertCommand = builder.GetInsertCommand();
+        }
       }
     }
 
@@ -267,6 +282,7 @@ namespace MazakMachineInterface
         try
         {
           MazakTransactionConnection.Open();
+          EnsureInsertCommands();
           return;
 #if USE_OLEDB
 				} catch (OleDbException ex) {
