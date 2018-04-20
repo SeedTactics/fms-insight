@@ -1,57 +1,89 @@
+/* Copyright (c) 2018, John Lenz
+
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+
+    * Redistributions in binary form must reproduce the above
+      copyright notice, this list of conditions and the following
+      disclaimer in the documentation and/or other materials provided
+      with the distribution.
+
+    * Neither the name of John Lenz, Black Maple Software, SeedTactics,
+      nor the names of other contributors may be used to endorse or
+      promote products derived from this software without specific
+      prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 using System;
 using System.Collections.Generic;
 
 namespace MazakMachineInterface
 {
-	public enum LogCode
-	{
-		MachineCycleStart = 441,
-		MachineCycleEnd = 442,
+  public enum LogCode
+  {
+    MachineCycleStart = 441,
+    MachineCycleEnd = 442,
 
-		LoadBegin = 501,
-		LoadEnd = 502,
+    LoadBegin = 501,
+    LoadEnd = 502,
 
-		UnloadBegin = 511,
-		UnloadEnd = 512,
+    UnloadBegin = 511,
+    UnloadEnd = 512,
 
-		PalletMoving = 301,
+    PalletMoving = 301,
 
-		// Some old events we don't use anymore
+    // Some old events we don't use anymore
 
-		//Pallet transfer refers to the rotation of pallets between the machining table
-		//and the input/output cart pickup location.  There are three kinds of transfers: both pallets,
-		//only a pallet moving to the machine, and only a pallet moving out of the machine.
-		//PalletTransfer = 221,
-		//PalletTransferNoPalletToMachine = 433,
+    //Pallet transfer refers to the rotation of pallets between the machining table
+    //and the input/output cart pickup location.  There are three kinds of transfers: both pallets,
+    //only a pallet moving to the machine, and only a pallet moving out of the machine.
+    //PalletTransfer = 221,
+    //PalletTransferNoPalletToMachine = 433,
 
 
-	}
+  }
 
-	public class LogEntry
-	{
-		public DateTime TimeUTC;
-		public LogCode Code;
-		public string ForeignID;
+  public class LogEntry
+  {
+    public DateTime TimeUTC;
+    public LogCode Code;
+    public string ForeignID;
 
-		//Only sometimes filled in depending on the log code
-		public int Pallet;
-		public string FullPartName; //Full part name in the mazak system
-		public string JobPartName;  //Part name with : stripped off
-		public int Process;
-		public int FixedQuantity;
-		public string Program;
-		public int StationNumber;
+    //Only sometimes filled in depending on the log code
+    public int Pallet;
+    public string FullPartName; //Full part name in the mazak system
+    public string JobPartName;  //Part name with : stripped off
+    public int Process;
+    public int FixedQuantity;
+    public string Program;
+    public int StationNumber;
 
-		//Only filled in for pallet movement
-		public string TargetPosition;
-		public string FromPosition;
-	}
+    //Only filled in for pallet movement
+    public string TargetPosition;
+    public string FromPosition;
+  }
 
-	public interface ILogData
-	{
-		List<LogEntry> LoadLog(string lastForeignID);
-		void DeleteLog(string lastForeignID, System.Diagnostics.TraceSource trace);
-	}
+  public interface ILogData
+  {
+    List<LogEntry> LoadLog(string lastForeignID);
+    void DeleteLog(string lastForeignID, System.Diagnostics.TraceSource trace);
+  }
 
 #if USE_OLEDB
 	public class LogDataVerE : ILogData
@@ -202,90 +234,97 @@ namespace MazakMachineInterface
 	}
 #endif
 
-	public class LogDataWeb : ILogData
-	{
-		private string _path;
+  public class LogDataWeb : ILogData
+  {
+    private string _path;
 
-		public LogDataWeb(string path)
-		{
-			_path = path;
-		}
+    public LogDataWeb(string path)
+    {
+      _path = path;
+    }
 
-		public List<LogEntry> LoadLog(string lastForeignID)
-		{
-			var files = new List<string>(System.IO.Directory.GetFiles(_path, "*.csv"));
-			files.Sort();
+    public List<LogEntry> LoadLog(string lastForeignID)
+    {
+      var files = new List<string>(System.IO.Directory.GetFiles(_path, "*.csv"));
+      files.Sort();
 
-			var ret = new List<LogEntry>();
+      var ret = new List<LogEntry>();
 
-			foreach (var f in files) {
-				var filename = System.IO.Path.GetFileName(f);
-				if (filename.CompareTo(lastForeignID) <= 0)
-					continue;
+      foreach (var f in files)
+      {
+        var filename = System.IO.Path.GetFileName(f);
+        if (filename.CompareTo(lastForeignID) <= 0)
+          continue;
 
-				using (var stream = new System.IO.StreamReader(f)) {
-					while (stream.Peek() >= 0) {
+        using (var stream = new System.IO.StreamReader(f))
+        {
+          while (stream.Peek() >= 0)
+          {
 
-						var s = stream.ReadLine().Split(',');
-						if (s.Length < 18)
-							continue;
+            var s = stream.ReadLine().Split(',');
+            if (s.Length < 18)
+              continue;
 
-						int code;
-						if (!int.TryParse(s[6], out code))
-							continue;
-						if (!Enum.IsDefined(typeof(LogCode), code)) continue;
+            int code;
+            if (!int.TryParse(s[6], out code))
+              continue;
+            if (!Enum.IsDefined(typeof(LogCode), code)) continue;
 
-						var e = new LogEntry();
+            var e = new LogEntry();
 
-						e.ForeignID = filename;
-						e.TimeUTC = new DateTime(int.Parse(s[0]), int.Parse(s[1]), int.Parse(s[2]),
-						                         int.Parse(s[3]), int.Parse(s[4]), int.Parse(s[5]),
-						                         DateTimeKind.Local);
-						e.TimeUTC = e.TimeUTC.ToUniversalTime();
-						e.Code = (LogCode)code;
+            e.ForeignID = filename;
+            e.TimeUTC = new DateTime(int.Parse(s[0]), int.Parse(s[1]), int.Parse(s[2]),
+                                     int.Parse(s[3]), int.Parse(s[4]), int.Parse(s[5]),
+                                     DateTimeKind.Local);
+            e.TimeUTC = e.TimeUTC.ToUniversalTime();
+            e.Code = (LogCode)code;
 
-						if (!int.TryParse(s[13], out e.Pallet))
-							e.Pallet = -1;
-						e.FullPartName = s[10].Trim();
-						int idx = e.FullPartName.IndexOf(':');
-						if (idx > 0)
-							e.JobPartName = e.FullPartName.Substring(0, idx);
-						else
-							e.JobPartName = e.FullPartName;
-						int.TryParse(s[11], out e.Process);
-						int.TryParse(s[12], out e.FixedQuantity);
-						e.Program = s[14];
-						int.TryParse(s[8], out e.StationNumber);
-						e.FromPosition = s[16];
-						e.TargetPosition = s[17];
+            if (!int.TryParse(s[13], out e.Pallet))
+              e.Pallet = -1;
+            e.FullPartName = s[10].Trim();
+            int idx = e.FullPartName.IndexOf(':');
+            if (idx > 0)
+              e.JobPartName = e.FullPartName.Substring(0, idx);
+            else
+              e.JobPartName = e.FullPartName;
+            int.TryParse(s[11], out e.Process);
+            int.TryParse(s[12], out e.FixedQuantity);
+            e.Program = s[14];
+            int.TryParse(s[8], out e.StationNumber);
+            e.FromPosition = s[16];
+            e.TargetPosition = s[17];
 
-						ret.Add(e);
-					}
-				}
-			}
+            ret.Add(e);
+          }
+        }
+      }
 
-			return ret;
-		}
+      return ret;
+    }
 
-		public void DeleteLog(string lastForeignID, System.Diagnostics.TraceSource trace)
-		{
-			var files = new List<string>(System.IO.Directory.GetFiles(_path, "*.csv"));
-			files.Sort();
+    public void DeleteLog(string lastForeignID, System.Diagnostics.TraceSource trace)
+    {
+      var files = new List<string>(System.IO.Directory.GetFiles(_path, "*.csv"));
+      files.Sort();
 
-			foreach (var f in files) {
-				var filename = System.IO.Path.GetFileName(f);
-				if (filename.CompareTo (lastForeignID) > 0)
-					break;
+      foreach (var f in files)
+      {
+        var filename = System.IO.Path.GetFileName(f);
+        if (filename.CompareTo(lastForeignID) > 0)
+          break;
 
-				try {
-					System.IO.File.Delete(f);
-				} catch (Exception ex) {
-					trace.TraceEvent(System.Diagnostics.TraceEventType.Warning, 0,
-					                 "Error deleting file: " + f + Environment.NewLine + ex.ToString());
-				}
-			}
-		}
-	}
+        try
+        {
+          System.IO.File.Delete(f);
+        }
+        catch (Exception ex)
+        {
+          trace.TraceEvent(System.Diagnostics.TraceEventType.Warning, 0,
+                           "Error deleting file: " + f + Environment.NewLine + ex.ToString());
+        }
+      }
+    }
+  }
 
 }
 
