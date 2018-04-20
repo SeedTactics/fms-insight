@@ -47,11 +47,10 @@ namespace MazakMachineInterface
     ReadOnlyDataSet LoadReadOnly();
   }
 
-  public class DatabaseAccess : IReadDataAccess
+  public class DatabaseAccess
   {
     //Global Settings
     public System.Threading.Mutex MazakTransactionLock = new System.Threading.Mutex();
-    private System.Threading.Mutex MazakReadonlyLock = new System.Threading.Mutex();
 
     //There are two errors we can generate...
     //    a timeout for the open database kit
@@ -71,9 +70,9 @@ namespace MazakMachineInterface
     public const int ScheduleMaterialEditCommand = 8;
     public const int ErrorCommand = 9;
 
-    private const int WaitCount = 5;
+    protected const int WaitCount = 5;
 
-    private string databaseConnStr;
+    protected string databaseConnStr;
 
     public enum MazakDbType
     {
@@ -84,7 +83,7 @@ namespace MazakMachineInterface
 
     public readonly MazakDbType MazakType;
 
-    private void CheckReadyForConnect()
+    protected void CheckReadyForConnect()
     {
       if (MazakType != MazakDbType.MazakVersionE)
         return;
@@ -94,16 +93,75 @@ namespace MazakMachineInterface
       }
     }
 
-    public DatabaseAccess(string dbConnStr, MazakDbType ty, bool onlyReadOnly)
+    public DatabaseAccess(string dbConnStr, MazakDbType ty)
     {
       MazakType = ty;
       databaseConnStr = dbConnStr;
-      if (!onlyReadOnly)
-        InitializeTransaction();
-      InitializeReadOnly();
     }
 
-    #region Transaction databse
+    public static string BuildStationStr(int num, string str)
+    {
+      int i = 0;
+      string ret = "";
+      string[] arr = str.Split(' ');
+      string s = null;
+      for (i = 1; i <= num; i++)
+      {
+        foreach (string s_loopVariable in arr)
+        {
+          s = s_loopVariable;
+          int v;
+          if (int.TryParse(s, out v) && v == i)
+          {
+            ret += i.ToString();
+            goto found;
+          }
+        }
+        ret += "0";
+      found:;
+      }
+      return ret;
+    }
+
+    public static string ParsePallet(int p)
+    {
+      return p.ToString().PadLeft(2, '0');
+    }
+
+    public static string Join(System.Collections.IEnumerable lst)
+    {
+      return Join(lst, ",");
+    }
+    public static string Join(System.Collections.IEnumerable lst, string Seperator)
+    {
+      string ret = "";
+
+      if (lst == null)
+        return "";
+
+      object o = null;
+      foreach (object o_loopVariable in lst)
+      {
+        o = o_loopVariable;
+        ret += Seperator + o.ToString();
+      }
+
+      if (ret.Length > 0)
+      {
+        return ret.Substring(Seperator.Length);
+      }
+      else
+      {
+        return ret;
+      }
+    }
+  }
+
+	public class TransactionDatabaseAccess
+		: DatabaseAccess
+	{
+    public TransactionDatabaseAccess(string dbConnStr, MazakDbType ty)
+			: base(dbConnStr, ty) { }
 
     //For the transaction database
     private IDbConnection MazakTransactionConnection;
@@ -501,9 +559,109 @@ namespace MazakMachineInterface
         ((IDbCommand)adapter.InsertCommand).Transaction = trans;
       }
     }
-    #endregion
 
-    #region Read Only Database
+    public static void BuildPartRow(TransactionDataSet.Part_tRow newRow, ReadOnlyDataSet.PartRow curRow)
+    {
+      newRow.Command = EditCommand;
+      if (!curRow.IsCommentNull())
+        newRow.Comment = curRow.Comment;
+      if (!curRow.IsPriceNull())
+        newRow.Price = curRow.Price;
+      newRow.TotalProcess = curRow.GetPartProcessRows().Length;
+    }
+    public static void BuildPartProcessRow(TransactionDataSet.PartProcess_tRow newRow, ReadOnlyDataSet.PartProcessRow curRow)
+    {
+      if (!curRow.IsContinueCutNull())
+        newRow.ContinueCut = curRow.ContinueCut;
+      if (!curRow.IsCutMcNull())
+        newRow.CutMc = curRow.CutMc;
+      if (!curRow.IsFixLDSNull())
+        newRow.FixLDS = curRow.FixLDS;
+      if (!curRow.IsFixPhotoNull())
+        newRow.FixPhoto = curRow.FixPhoto;
+      if (!curRow.IsFixQuantityNull())
+        newRow.FixQuantity = curRow.FixQuantity.ToString();
+      if (!curRow.IsFixtureNull())
+        newRow.Fixture = curRow.Fixture;
+      if (!curRow.IsMainProgramNull())
+        newRow.MainProgram = curRow.MainProgram;
+      if (!curRow.IsPartNameNull())
+        newRow.PartName = curRow.PartName;
+      if (!curRow.IsProcessNumberNull())
+        newRow.ProcessNumber = curRow.ProcessNumber;
+      if (!curRow.IsRemoveLDSNull())
+        newRow.RemoveLDS = curRow.RemoveLDS;
+      if (!curRow.IsRemovePhotoNull())
+        newRow.RemovePhoto = curRow.RemovePhoto;
+      if (!curRow.IsWashTypeNull())
+        newRow.WashType = curRow.WashType;
+    }
+    public static void BuildScheduleEditRow(TransactionDataSet.Schedule_tRow newRow, ReadOnlyDataSet.ScheduleRow curRow, bool updateMaterial)
+    {
+      if (updateMaterial)
+      {
+        newRow.Command = ScheduleMaterialEditCommand;
+      }
+      else
+      {
+        newRow.Command = ScheduleSafeEditCommand;
+      }
+      if (!curRow.IsCommentNull())
+        newRow.Comment = curRow.Comment;
+      if (!curRow.IsCompleteQuantityNull())
+        newRow.CompleteQuantity = curRow.CompleteQuantity;
+      if (!curRow.IsDueDateNull())
+        newRow.DueDate = curRow.DueDate;
+      if (!curRow.IsFixForMachineNull())
+        newRow.FixForMachine = curRow.FixForMachine;
+      if (!curRow.IsHoldModeNull())
+        newRow.HoldMode = curRow.HoldMode;
+      if (!curRow.IsMissingFixtureNull())
+        newRow.MissingFixture = curRow.MissingFixture;
+      if (!curRow.IsMissingProgramNull())
+        newRow.MissingProgram = curRow.MissingProgram;
+      if (!curRow.IsMissingToolNull())
+        newRow.MissingTool = curRow.MissingTool;
+      if (!curRow.IsMixScheduleIDNull())
+        newRow.MixScheduleID = curRow.MixScheduleID;
+      if (!curRow.IsPartNameNull())
+        newRow.PartName = curRow.PartName;
+      if (!curRow.IsPlanQuantityNull())
+        newRow.PlanQuantity = curRow.PlanQuantity;
+      if (!curRow.IsPriorityNull())
+        newRow.Priority = curRow.Priority;
+      if (!curRow.IsProcessingPriorityNull())
+        newRow.ProcessingPriority = curRow.ProcessingPriority;
+      newRow.ScheduleID = curRow.ScheduleID;
+    }
+    public static void BuildScheduleProcEditRow(TransactionDataSet.ScheduleProcess_tRow newRow, ReadOnlyDataSet.ScheduleProcessRow curRow)
+    {
+      if (!curRow.IsProcessBadQuantityNull())
+        newRow.ProcessBadQuantity = curRow.ProcessBadQuantity;
+      if (!curRow.IsProcessExecuteQuantityNull())
+        newRow.ProcessExecuteQuantity = curRow.ProcessExecuteQuantity;
+      if (!curRow.IsProcessMachineNull())
+        newRow.ProcessMachine = curRow.ProcessMachine;
+      if (!curRow.IsProcessMaterialQuantityNull())
+        newRow.ProcessMaterialQuantity = curRow.ProcessMaterialQuantity;
+      if (!curRow.IsProcessNumberNull())
+        newRow.ProcessNumber = curRow.ProcessNumber;
+      if (!curRow.IsScheduleIDNull())
+        newRow.ScheduleID = curRow.ScheduleID;
+    }
+	}
+
+	public class ReadonlyDatabaseAccess
+	  : DatabaseAccess, IReadDataAccess
+	{
+		private System.Threading.Mutex MazakReadonlyLock = new System.Threading.Mutex();
+
+    public ReadonlyDatabaseAccess(string dbConnStr, MazakDbType ty)
+			: base(dbConnStr, ty)
+		{
+			InitializeReadOnly();
+  	}
+
     //For the read-only database
     private IDbConnection ReadOnlyDBConnection;
     private System.Data.Common.DbDataAdapter FixtureAdapter;
@@ -692,155 +850,5 @@ namespace MazakMachineInterface
         ((IDbCommand)adapter.SelectCommand).Transaction = trans;
     }
 
-    #endregion
-
-    #region Helpers
-    public static void BuildPartRow(TransactionDataSet.Part_tRow newRow, ReadOnlyDataSet.PartRow curRow)
-    {
-      newRow.Command = EditCommand;
-      if (!curRow.IsCommentNull())
-        newRow.Comment = curRow.Comment;
-      if (!curRow.IsPriceNull())
-        newRow.Price = curRow.Price;
-      newRow.TotalProcess = curRow.GetPartProcessRows().Length;
-    }
-    public static void BuildPartProcessRow(TransactionDataSet.PartProcess_tRow newRow, ReadOnlyDataSet.PartProcessRow curRow)
-    {
-      if (!curRow.IsContinueCutNull())
-        newRow.ContinueCut = curRow.ContinueCut;
-      if (!curRow.IsCutMcNull())
-        newRow.CutMc = curRow.CutMc;
-      if (!curRow.IsFixLDSNull())
-        newRow.FixLDS = curRow.FixLDS;
-      if (!curRow.IsFixPhotoNull())
-        newRow.FixPhoto = curRow.FixPhoto;
-      if (!curRow.IsFixQuantityNull())
-        newRow.FixQuantity = curRow.FixQuantity.ToString();
-      if (!curRow.IsFixtureNull())
-        newRow.Fixture = curRow.Fixture;
-      if (!curRow.IsMainProgramNull())
-        newRow.MainProgram = curRow.MainProgram;
-      if (!curRow.IsPartNameNull())
-        newRow.PartName = curRow.PartName;
-      if (!curRow.IsProcessNumberNull())
-        newRow.ProcessNumber = curRow.ProcessNumber;
-      if (!curRow.IsRemoveLDSNull())
-        newRow.RemoveLDS = curRow.RemoveLDS;
-      if (!curRow.IsRemovePhotoNull())
-        newRow.RemovePhoto = curRow.RemovePhoto;
-      if (!curRow.IsWashTypeNull())
-        newRow.WashType = curRow.WashType;
-    }
-    public static void BuildScheduleEditRow(TransactionDataSet.Schedule_tRow newRow, ReadOnlyDataSet.ScheduleRow curRow, bool updateMaterial)
-    {
-      if (updateMaterial)
-      {
-        newRow.Command = ScheduleMaterialEditCommand;
-      }
-      else
-      {
-        newRow.Command = ScheduleSafeEditCommand;
-      }
-      if (!curRow.IsCommentNull())
-        newRow.Comment = curRow.Comment;
-      if (!curRow.IsCompleteQuantityNull())
-        newRow.CompleteQuantity = curRow.CompleteQuantity;
-      if (!curRow.IsDueDateNull())
-        newRow.DueDate = curRow.DueDate;
-      if (!curRow.IsFixForMachineNull())
-        newRow.FixForMachine = curRow.FixForMachine;
-      if (!curRow.IsHoldModeNull())
-        newRow.HoldMode = curRow.HoldMode;
-      if (!curRow.IsMissingFixtureNull())
-        newRow.MissingFixture = curRow.MissingFixture;
-      if (!curRow.IsMissingProgramNull())
-        newRow.MissingProgram = curRow.MissingProgram;
-      if (!curRow.IsMissingToolNull())
-        newRow.MissingTool = curRow.MissingTool;
-      if (!curRow.IsMixScheduleIDNull())
-        newRow.MixScheduleID = curRow.MixScheduleID;
-      if (!curRow.IsPartNameNull())
-        newRow.PartName = curRow.PartName;
-      if (!curRow.IsPlanQuantityNull())
-        newRow.PlanQuantity = curRow.PlanQuantity;
-      if (!curRow.IsPriorityNull())
-        newRow.Priority = curRow.Priority;
-      if (!curRow.IsProcessingPriorityNull())
-        newRow.ProcessingPriority = curRow.ProcessingPriority;
-      newRow.ScheduleID = curRow.ScheduleID;
-    }
-    public static void BuildScheduleProcEditRow(TransactionDataSet.ScheduleProcess_tRow newRow, ReadOnlyDataSet.ScheduleProcessRow curRow)
-    {
-      if (!curRow.IsProcessBadQuantityNull())
-        newRow.ProcessBadQuantity = curRow.ProcessBadQuantity;
-      if (!curRow.IsProcessExecuteQuantityNull())
-        newRow.ProcessExecuteQuantity = curRow.ProcessExecuteQuantity;
-      if (!curRow.IsProcessMachineNull())
-        newRow.ProcessMachine = curRow.ProcessMachine;
-      if (!curRow.IsProcessMaterialQuantityNull())
-        newRow.ProcessMaterialQuantity = curRow.ProcessMaterialQuantity;
-      if (!curRow.IsProcessNumberNull())
-        newRow.ProcessNumber = curRow.ProcessNumber;
-      if (!curRow.IsScheduleIDNull())
-        newRow.ScheduleID = curRow.ScheduleID;
-    }
-
-    public static string BuildStationStr(int num, string str)
-    {
-      int i = 0;
-      string ret = "";
-      string[] arr = str.Split(' ');
-      string s = null;
-      for (i = 1; i <= num; i++)
-      {
-        foreach (string s_loopVariable in arr)
-        {
-          s = s_loopVariable;
-          int v;
-          if (int.TryParse(s, out v) && v == i)
-          {
-            ret += i.ToString();
-            goto found;
-          }
-        }
-        ret += "0";
-      found:;
-      }
-      return ret;
-    }
-
-    public static string ParsePallet(int p)
-    {
-      return p.ToString().PadLeft(2, '0');
-    }
-
-    public static string Join(System.Collections.IEnumerable lst)
-    {
-      return Join(lst, ",");
-    }
-    public static string Join(System.Collections.IEnumerable lst, string Seperator)
-    {
-      string ret = "";
-
-      if (lst == null)
-        return "";
-
-      object o = null;
-      foreach (object o_loopVariable in lst)
-      {
-        o = o_loopVariable;
-        ret += Seperator + o.ToString();
-      }
-
-      if (ret.Length > 0)
-      {
-        return ret.Substring(Seperator.Length);
-      }
-      else
-      {
-        return ret;
-      }
-    }
-    #endregion
-  }
+	}
 }

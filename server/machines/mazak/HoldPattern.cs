@@ -79,22 +79,25 @@ namespace MazakMachineInterface
 
     private TransitionThread _thread;
     internal System.Diagnostics.TraceSource Trace;
-    private DatabaseAccess database;
+    private TransactionDatabaseAccess database;
+    private IReadDataAccess readDatabase;
 
-    public HoldPattern(string dbPath, DatabaseAccess d, System.Diagnostics.TraceSource t, bool createThread)
+    public HoldPattern(string dbPath, TransactionDatabaseAccess d, IReadDataAccess readDb, System.Diagnostics.TraceSource t, bool createThread)
     {
       Trace = t;
       database = d;
+      readDatabase = readDb;
       OpenDB(System.IO.Path.Combine(dbPath, "hold.db"));
 
       if (createThread)
         _thread = new TransitionThread(this);
     }
 
-    public HoldPattern(SqliteConnection conn, DatabaseAccess d, System.Diagnostics.TraceSource t, bool createThread)
+    public HoldPattern(SqliteConnection conn, TransactionDatabaseAccess d, IReadDataAccess readDb, System.Diagnostics.TraceSource t, bool createThread)
     {
       Trace = t;
       database = d;
+      readDatabase = readDb;
       _connection = conn;
 
       if (createThread)
@@ -239,7 +242,7 @@ namespace MazakMachineInterface
         TransactionDataSet transSet = new TransactionDataSet();
 
         TransactionDataSet.Schedule_tRow newSchRow = transSet.Schedule_t.NewSchedule_tRow();
-        DatabaseAccess.BuildScheduleEditRow(newSchRow, _schRow, false);
+        TransactionDatabaseAccess.BuildScheduleEditRow(newSchRow, _schRow, false);
         newSchRow.HoldMode = (int)newHold;
         transSet.Schedule_t.AddSchedule_tRow(newSchRow);
 
@@ -266,7 +269,7 @@ namespace MazakMachineInterface
     private IDictionary<int, MazakSchedule> LoadMazakSchedules()
     {
       var ret = new Dictionary<int, MazakSchedule>();
-      ReadOnlyDataSet currentSet = database.LoadReadOnly();
+      ReadOnlyDataSet currentSet = readDatabase.LoadReadOnly();
 
       foreach (ReadOnlyDataSet.ScheduleRow schRow in currentSet.Schedule.Rows)
       {

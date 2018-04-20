@@ -40,7 +40,7 @@ namespace MazakMachineInterface
 {
   public class MazakBackend : IFMSBackend, IFMSImplementation
   {
-    private DatabaseAccess database;
+    private TransactionDatabaseAccess database;
     private RoutingInfo routing;
     private HoldPattern hold;
     private LoadOperations loadOper;
@@ -57,7 +57,7 @@ namespace MazakMachineInterface
     public bool DecrementPriorityOnDownload;
     public bool CheckPalletsUsedOnce;
 
-    public DatabaseAccess Database
+    public TransactionDatabaseAccess Database
     {
       get
       {
@@ -206,8 +206,8 @@ namespace MazakMachineInterface
       else
         jobDB.Open(System.IO.Path.Combine(dataDirectory, "mazakjobs.db"));
 
-      database = new DatabaseAccess(dbConnStr, MazakType, false);
-      IReadDataAccess readOnlyDb = new DatabaseAccess(dbConnStr, MazakType, true);
+      database = new TransactionDatabaseAccess(dbConnStr, MazakType);
+      IReadDataAccess readOnlyDb = new ReadonlyDatabaseAccess(dbConnStr, MazakType);
       if (MazakType == DatabaseAccess.MazakDbType.MazakWeb || MazakType == DatabaseAccess.MazakDbType.MazakSmooth)
         logDataLoader = new LogDataWeb(logPath);
       else
@@ -218,9 +218,9 @@ namespace MazakMachineInterface
         throw new Exception("Mazak Web and VerE are not supported on .NET core");
 #endif
       }
-      hold = new HoldPattern(dataDirectory, database, holdTrace, true);
+      hold = new HoldPattern(dataDirectory, database, readOnlyDb, holdTrace, true);
       loadOper = new LoadOperations(loadOperTrace, cfg);
-      routing = new RoutingInfo(database, hold, jobDB, jobLog, insp, loadOper,
+      routing = new RoutingInfo(database,readOnlyDb, hold, jobDB, jobLog, insp, loadOper,
                                 CheckPalletsUsedOnce, UseStartingOffsetForDueDate, DecrementPriorityOnDownload,
                                 routingTrace);
       logTrans = new LogTranslation(jobLog, readOnlyDb, serSettings, logDataLoader, logTrace);

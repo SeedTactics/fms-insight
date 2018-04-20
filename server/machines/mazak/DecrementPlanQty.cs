@@ -82,10 +82,11 @@ namespace MazakMachineInterface
 
     private const int MaxRetryTimes = 25;
 
-    internal static Dictionary<JobAndPath, int> DecrementPlanQty(DatabaseAccess database)
+    internal static Dictionary<JobAndPath, int> DecrementPlanQty(
+      TransactionDatabaseAccess database, IReadDataAccess readDb)
     {
       var logMessages = new List<string>();
-      var currentSet = database.LoadReadOnly();
+      var currentSet = readDb.LoadReadOnly();
       var IdsLeftToDecrement = LoadIdsToDecrement(currentSet);
 
       //If nothing is left, just return the stored decrement values.
@@ -130,7 +131,7 @@ namespace MazakMachineInterface
           System.Threading.Thread.Sleep(TimeSpan.FromSeconds(15));
         }
 
-        currentSet = database.LoadReadOnly();
+        currentSet = readDb.LoadReadOnly();
       }
 
       if (logMessages.Count > 0)
@@ -138,7 +139,7 @@ namespace MazakMachineInterface
         throw RoutingInfo.BuildTransactionException("Error decrementing schedule", logMessages);
       }
 
-      return LoadDecrementOffsets(database.LoadReadOnly());
+      return LoadDecrementOffsets(readDb.LoadReadOnly());
     }
 
     private class ScheduleId
@@ -204,7 +205,7 @@ namespace MazakMachineInterface
     //occured and false if we should retry this decrement again.
     private static bool DecrementSingleSchedule(ReadOnlyDataSet currentSet, int schID,
                                                 IList<string> logMessages,
-                                                DatabaseAccess database)
+                                                TransactionDatabaseAccess database)
     {
       //Find the schedule row.
       ReadOnlyDataSet.ScheduleRow schRow = null;
@@ -221,7 +222,7 @@ namespace MazakMachineInterface
 
       var transSet = new TransactionDataSet();
       TransactionDataSet.Schedule_tRow newSchRow = transSet.Schedule_t.NewSchedule_tRow();
-      DatabaseAccess.BuildScheduleEditRow(newSchRow, schRow, true);
+      TransactionDatabaseAccess.BuildScheduleEditRow(newSchRow, schRow, true);
       transSet.Schedule_t.AddSchedule_tRow(newSchRow);
 
       //Clear any holds made from a previous error.
@@ -232,7 +233,7 @@ namespace MazakMachineInterface
       foreach (ReadOnlyDataSet.ScheduleProcessRow schProcRow in schRow.GetScheduleProcessRows())
       {
         var newSchProcRow = transSet.ScheduleProcess_t.NewScheduleProcess_tRow();
-        DatabaseAccess.BuildScheduleProcEditRow(newSchProcRow, schProcRow);
+        TransactionDatabaseAccess.BuildScheduleProcEditRow(newSchProcRow, schProcRow);
         transSet.ScheduleProcess_t.AddScheduleProcess_tRow(newSchProcRow);
 
         newSchProcRow.ProcessBadQuantity = 0;
@@ -273,7 +274,7 @@ namespace MazakMachineInterface
 
     private static void HoldSchedules(ReadOnlyDataSet currentSet, IList<ScheduleId> schIds,
                                       IList<string> logMessages,
-                                      DatabaseAccess database)
+                                      TransactionDatabaseAccess database)
     {
       TransactionDataSet transSet = new TransactionDataSet();
 
@@ -302,7 +303,7 @@ namespace MazakMachineInterface
           if (schRow.HoldMode != (int)HoldPattern.HoldMode.FullHold)
           {
             TransactionDataSet.Schedule_tRow newSchRow = transSet.Schedule_t.NewSchedule_tRow();
-            DatabaseAccess.BuildScheduleEditRow(newSchRow, schRow, false);
+            TransactionDatabaseAccess.BuildScheduleEditRow(newSchRow, schRow, false);
             newSchRow.HoldMode = (int)HoldPattern.HoldMode.FullHold;
             transSet.Schedule_t.AddSchedule_tRow(newSchRow);
           }
@@ -366,12 +367,12 @@ namespace MazakMachineInterface
       return parts;
     }
 
-    public static void FinalizeDecement(DatabaseAccess database)
+    public static void FinalizeDecement(TransactionDatabaseAccess database, IReadDataAccess readDb)
     {
       //We  just lower the plan count (which we can do with the SafeEditCommand), so this is much
       //easier than the above.
 
-      ReadOnlyDataSet currentSet = database.LoadReadOnly();
+      ReadOnlyDataSet currentSet = readDb.LoadReadOnly();
       TransactionDataSet transSet = new TransactionDataSet();
       TransactionDataSet.Schedule_tRow newSchRow = null;
       List<string> log = new List<string>();
@@ -388,7 +389,7 @@ namespace MazakMachineInterface
           if (schRow.PlanQuantity != cnt)
           {
             newSchRow = transSet.Schedule_t.NewSchedule_tRow();
-            DatabaseAccess.BuildScheduleEditRow(newSchRow, schRow, false);
+            TransactionDatabaseAccess.BuildScheduleEditRow(newSchRow, schRow, false);
             newSchRow.PlanQuantity = cnt;
             newSchRow.HoldMode = 0;
             transSet.Schedule_t.AddSchedule_tRow(newSchRow);

@@ -41,7 +41,8 @@ namespace MazakMachineInterface
 {
   public class RoutingInfo : IJobControl, IOldJobDecrement
   {
-    private DatabaseAccess database;
+    private TransactionDatabaseAccess database;
+    private IReadDataAccess readDatabase;
     private HoldPattern hold;
     private BlackMaple.MachineFramework.JobDB jobDB;
     private BlackMaple.MachineFramework.JobLogDB log;
@@ -60,12 +61,13 @@ namespace MazakMachineInterface
     public event NewCurrentStatus OnNewCurrentStatus;
     protected void RaiseNewCurrentStatus(CurrentStatus s) => OnNewCurrentStatus?.Invoke(s);
 
-    public RoutingInfo(DatabaseAccess d, HoldPattern h,
+    public RoutingInfo(TransactionDatabaseAccess d, IReadDataAccess readDb, HoldPattern h,
         BlackMaple.MachineFramework.JobDB jDB, BlackMaple.MachineFramework.JobLogDB jLog,
         BlackMaple.MachineFramework.InspectionDB iDb, LoadOperations lOper,
     bool check, bool useStarting, bool decrPriority, System.Diagnostics.TraceSource t)
     {
       database = d;
+      readDatabase = readDb;
       hold = h;
       jobDB = jDB;
       log = jLog;
@@ -230,7 +232,7 @@ namespace MazakMachineInterface
       }
       try
       {
-        mazakSet = database.LoadReadOnly();
+        mazakSet = readDatabase.LoadReadOnly();
       }
       finally
       {
@@ -736,7 +738,7 @@ namespace MazakMachineInterface
       }
       try
       {
-        currentSet = database.LoadReadOnly();
+        currentSet = readDatabase.LoadReadOnly();
       }
       finally
       {
@@ -784,7 +786,7 @@ namespace MazakMachineInterface
       {
         database.ClearTransactionDatabase();
 
-        ReadOnlyDataSet currentSet = database.LoadReadOnly();
+        ReadOnlyDataSet currentSet = readDatabase.LoadReadOnly();
         List<string> logMessages = new List<string>();
 
         //check for an old schedule that has not yet been copied
@@ -826,7 +828,7 @@ namespace MazakMachineInterface
           }
 
           //reload current set, because schedules have been added
-          currentSet = database.LoadReadOnly();
+          currentSet = readDatabase.LoadReadOnly();
         }
 
         if (!string.IsNullOrEmpty(newJ.ScheduleId))
@@ -902,7 +904,7 @@ namespace MazakMachineInterface
 
         database.ClearTransactionDatabase();
 
-        ReadOnlyDataSet currentSet = database.LoadReadOnly();
+        ReadOnlyDataSet currentSet = readDatabase.LoadReadOnly();
         List<string> logMessages = new List<string>();
 
         try
@@ -1032,7 +1034,7 @@ namespace MazakMachineInterface
 
           if (DecrementPriorityOnDownload)
           {
-            DatabaseAccess.BuildScheduleEditRow(newSchRow, schRow, false);
+            TransactionDatabaseAccess.BuildScheduleEditRow(newSchRow, schRow, false);
             newSchRow.Priority = Math.Max(newSchRow.Priority - 1, 1);
             transSet.Schedule_t.AddSchedule_tRow(newSchRow);
           }
@@ -1336,7 +1338,7 @@ namespace MazakMachineInterface
       try
       {
         database.ClearTransactionDatabase();
-        return modDecrementPlanQty.DecrementPlanQty(database);
+        return modDecrementPlanQty.DecrementPlanQty(database, readDatabase);
       }
       finally
       {
@@ -1360,7 +1362,7 @@ namespace MazakMachineInterface
 
       try
       {
-        modDecrementPlanQty.FinalizeDecement(database);
+        modDecrementPlanQty.FinalizeDecement(database, readDatabase);
       }
       finally
       {

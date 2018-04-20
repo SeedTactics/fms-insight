@@ -319,7 +319,7 @@ namespace MazakMachineInterface
       }
 
       var newPartProcRow = transSet.PartProcess_t.NewPartProcess_tRow();
-      DatabaseAccess.BuildPartProcessRow(newPartProcRow, TemplateProcessRow);
+      TransactionDatabaseAccess.BuildPartProcessRow(newPartProcRow, TemplateProcessRow);
       newPartProcRow.PartName = Part.PartName;
       newPartProcRow.Fixture = fixture + ":" + ProcessNumber.ToString();
       newPartProcRow.ProcessNumber = ProcessNumber;
