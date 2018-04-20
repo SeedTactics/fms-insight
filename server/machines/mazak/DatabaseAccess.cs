@@ -72,7 +72,7 @@ namespace MazakMachineInterface
 
     protected const int WaitCount = 5;
 
-    protected string databaseConnStr;
+    protected string ready4ConectPath;
 
     public enum MazakDbType
     {
@@ -87,7 +87,7 @@ namespace MazakMachineInterface
     {
       if (MazakType != MazakDbType.MazakVersionE)
         return;
-      if (!System.IO.File.Exists(System.IO.Path.Combine(databaseConnStr, "ready4Conect.mdb")))
+      if (!System.IO.File.Exists(ready4ConectPath))
       {
         throw new Exception("Open database kit is not running");
       }
@@ -96,7 +96,10 @@ namespace MazakMachineInterface
     public DatabaseAccess(string dbConnStr, MazakDbType ty)
     {
       MazakType = ty;
-      databaseConnStr = dbConnStr;
+      if (MazakType != MazakDbType.MazakSmooth)
+      {
+        ready4ConectPath = System.IO.Path.Combine(dbConnStr, "ready4Conect.mdb");
+      }
     }
 
     public static string BuildStationStr(int num, string str)
@@ -161,7 +164,12 @@ namespace MazakMachineInterface
 		: DatabaseAccess
 	{
     public TransactionDatabaseAccess(string dbConnStr, MazakDbType ty)
-			: base(dbConnStr, ty) { }
+			: base(dbConnStr, ty)
+    {
+      databaseConnStr = dbConnStr;
+    }
+
+    private string databaseConnStr;
 
     //For the transaction database
     private IDbConnection MazakTransactionConnection;
@@ -654,140 +662,80 @@ namespace MazakMachineInterface
 	public class ReadonlyDatabaseAccess
 	  : DatabaseAccess, IReadDataAccess
 	{
-		private System.Threading.Mutex MazakReadonlyLock = new System.Threading.Mutex();
+    private string _connectionStr;
+    private string _fixtureSelect;
+    private string _palletSelect;
+    private string _partSelect;
+    private string _partProcSelect;
+    private string _scheduleSelect;
+    private string _scheduleProcSelect;
+    private string _palSubStatusSelect;
+    private string _palPositionSelect;
+    private string _mainProgSelect;
 
     public ReadonlyDatabaseAccess(string dbConnStr, MazakDbType ty)
 			: base(dbConnStr, ty)
 		{
-			InitializeReadOnly();
-  	}
-
-    //For the read-only database
-    private IDbConnection ReadOnlyDBConnection;
-    private System.Data.Common.DbDataAdapter FixtureAdapter;
-    private System.Data.Common.DbDataAdapter PalletAdapter;
-    private System.Data.Common.DbDataAdapter PartAdapter;
-    private System.Data.Common.DbDataAdapter PartProcessAdapter;
-    private System.Data.Common.DbDataAdapter ScheduleAdapter;
-    private System.Data.Common.DbDataAdapter ScheduleProcessAdapter;
-    private System.Data.Common.DbDataAdapter PalletSubStatusAdapter;
-    private System.Data.Common.DbDataAdapter PalletPositionAdapter;
-    private System.Data.Common.DbDataAdapter MainProgramAdapter;
-
-    public TResult WithReadDBConnection<TResult>(Func<IDbConnection, TResult> action)
-    {
-      if (!MazakReadonlyLock.WaitOne(TimeSpan.FromMinutes(1)))
-      {
-        throw new ApplicationException("Timed out waiting for readonly database");
-      }
-      try
-      {
-        CheckReadyForConnect();
-
-        OpenReadonly();
-        try
-        {
-          return action(ReadOnlyDBConnection);
-
-#if USE_OLEDB
-				} catch (OleDbException ex) {
-					throw new Exception(ex.ToString());
-#endif
-        }
-        finally
-        {
-          ReadOnlyDBConnection.Close();
-        }
-
-      }
-      finally
-      {
-        MazakReadonlyLock.ReleaseMutex();
-      }
-    }
-
-    private IList<System.Data.Common.DbDataAdapter> ReadOnlyAdapters = new List<System.Data.Common.DbDataAdapter>();
-
-    private void InitializeReadOnly()
-    {
-      Func<String, System.Data.Common.DbDataAdapter> createAdapter;
       if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE)
       {
-#if USE_OLEDB
-                var dbConn = new OleDbConnection();
-
-
-                dbConn.ConnectionString = "Provider=Microsoft.Jet.OLEDB.4.0;Password=\"\";User ID=Admin;" +
-                    "Data Source=" + System.IO.Path.Combine(databaseConnStr, "FCREADDAT01.mdb") + ";" +
-                    "Mode=Share Deny Write;";
-
-                ReadOnlyDBConnection = dbConn;
-                createAdapter = s => new OleDbDataAdapter(s, dbConn);
-#else
-        throw new Exception("Mazak Web and VerE are not supported on .NET Core");
-#endif
+        _connectionStr = "Provider=Microsoft.Jet.OLEDB.4.0;Password=\"\";User ID=Admin;" +
+            "Data Source=" + System.IO.Path.Combine(dbConnStr, "FCREADDAT01.mdb") + ";" +
+            "Mode=Share Deny Write;";
       }
       else
       {
-        var dbConn = new System.Data.SqlClient.SqlConnection(databaseConnStr + ";Database=FCREADDAT01");
-        ReadOnlyDBConnection = dbConn;
-        createAdapter = s => new System.Data.SqlClient.SqlDataAdapter(s, dbConn);
+        _connectionStr = dbConnStr + ";Database=FCREADDAT01";
       }
 
-      FixtureAdapter = createAdapter("SELECT Comment, FixtureName, ID, Reserved, UpdatedFlag FROM Fixture");
-      ReadOnlyAdapters.Add(FixtureAdapter);
+      _fixtureSelect = "SELECT Comment, FixtureName, ID, Reserved, UpdatedFlag FROM Fixture";
 
       if (MazakType != MazakDbType.MazakVersionE)
       {
-        PalletAdapter = createAdapter("SELECT FixtureGroup AS FixtureGroupV2, Fixture, PalletNumber, RecordID, Reserved, UpdatedFlag FROM Pallet");
+        _palletSelect = "SELECT FixtureGroup AS FixtureGroupV2, Fixture, PalletNumber, RecordID, Reserved, UpdatedFlag FROM Pallet";
       }
       else
       {
-        PalletAdapter = createAdapter("SELECT Angle AS AngleV1, Fixture, PalletNumber, RecordID, Reserved, UpdatedFlag FROM Pallet");
+        _palletSelect = "SELECT Angle AS AngleV1, Fixture, PalletNumber, RecordID, Reserved, UpdatedFlag FROM Pallet";
       }
-      ReadOnlyAdapters.Add(PalletAdapter);
 
-      PartAdapter = createAdapter("SELECT Comment, id, PartName, Price, Reserved, UpdatedFlag FROM Part");
-      ReadOnlyAdapters.Add(PartAdapter);
+      _partSelect = "SELECT Comment, id, PartName, Price, Reserved, UpdatedFlag FROM Part";
+      _partProcSelect = "SELECT ContinueCut, CutMc, CuttingID, FixLDS, FixPhoto, FixQuantity, Fixture, MainProgram, PartName, ProcessNumber, RemoveLDS, RemovePhoto, Reserved, UpdatedFlag, WashType FROM PartProcess";
+      _scheduleSelect = "SELECT Comment, CompleteQuantity, DueDate, FixForMachine, HoldMode, MissingFixture, MissingProgram, MissingTool, MixScheduleID, PartName, PlanQuantity, Priority, ProcessingPriority, Reserved, ScheduleID, UpdatedFlag FROM Schedule";
+      _scheduleProcSelect = "SELECT ID, ProcessBadQuantity, ProcessExecuteQuantity, ProcessMachine, ProcessMaterialQuantity, ProcessNumber, ScheduleID, UpdatedFlag FROM ScheduleProcess";
+      _palSubStatusSelect = "SELECT ErrorStatus, FixQuantity, FixtureName, id, MeasureCode, PalletID, PalletNumber, PalletStatus, PartName, PartProcessNumber, ProgramNumber, Reserved, ScheduleID, UpdatedFlag FROM PalletSubStatus";
+      _palPositionSelect = "SELECT id, PalletNumber, PalletPosition FROM PalletPosition";
+      _mainProgSelect = "SELECT id, MainProgram, Comment FROM MainProgram";
+  	}
 
-      PartProcessAdapter = createAdapter("SELECT ContinueCut, CutMc, CuttingID, FixLDS, FixPhoto, FixQuantity, Fixture, MainProgram, PartName, ProcessNumber, RemoveLDS, RemovePhoto, Reserved, UpdatedFlag, WashType FROM PartProcess");
-      ReadOnlyAdapters.Add(PartProcessAdapter);
-
-      ScheduleAdapter = createAdapter("SELECT Comment, CompleteQuantity, DueDate, FixForMachine, HoldMode, MissingFixture, MissingProgram, MissingTool, MixScheduleID, PartName, PlanQuantity, Priority, ProcessingPriority, Reserved, ScheduleID, UpdatedFlag FROM Schedule");
-      ReadOnlyAdapters.Add(ScheduleAdapter);
-
-      ScheduleProcessAdapter = createAdapter("SELECT ID, ProcessBadQuantity, ProcessExecuteQuantity, ProcessMachine, ProcessMaterialQuantity, ProcessNumber, ScheduleID, UpdatedFlag FROM ScheduleProcess");
-      ReadOnlyAdapters.Add(ScheduleProcessAdapter);
-
-      PalletSubStatusAdapter = createAdapter("SELECT ErrorStatus, FixQuantity, FixtureName, id, MeasureCode, PalletID, PalletNumber, PalletStatus, PartName, PartProcessNumber, ProgramNumber, Reserved, ScheduleID, UpdatedFlag FROM PalletSubStatus");
-      ReadOnlyAdapters.Add(PalletSubStatusAdapter);
-
-      PalletPositionAdapter = createAdapter("SELECT id, PalletNumber, PalletPosition FROM PalletPosition");
-      ReadOnlyAdapters.Add(PalletPositionAdapter);
-
-      MainProgramAdapter = createAdapter("SELECT id, MainProgram, Comment FROM MainProgram");
-      ReadOnlyAdapters.Add(MainProgramAdapter);
+    public TResult WithReadDBConnection<TResult>(Func<IDbConnection, TResult> action)
+    {
+      CheckReadyForConnect();
+      using (var conn = CreateConnection())
+      {
+        return action(conn);
+      }
     }
 
-    private void OpenReadonly()
+    private IDbConnection OpenReadonlyOleDb()
     {
+#if USE_OLEDB
       int attempts = 0;
 
+      var conn = new OleDbConnection(_connectionStr);
       while (attempts < 20)
       {
         try
         {
-          ReadOnlyDBConnection.Open();
-          return;
-#if USE_OLEDB
+          conn.Open();
+          return conn;
 				} catch (OleDbException ex) {
 					if (!(ex.Message.ToLower().IndexOf("could not use") >= 0)) {
 						if (!(ex.Message.ToLower().IndexOf("try again") >= 0)) {
 							//if this is not a locking exception, throw it
+              conn.Dispose();
 							throw new DataException(ex.ToString());
 						}
 					}
-#endif
         }
         catch (Exception ex)
         {
@@ -796,6 +744,7 @@ namespace MazakMachineInterface
             if (!(ex.Message.ToLower().IndexOf("try again") >= 0))
             {
               //if this is not a locking exception, throw it
+              conn.Dispose();
               throw;
             }
           }
@@ -806,7 +755,31 @@ namespace MazakMachineInterface
         attempts += 1;
       }
 
+      conn.Dispose();
       throw new Exception("Readonly database is locked and can not be accessed");
+#else
+      throw new Exception("Mazak Web and VerE are not supported on .NET Core");
+#endif
+    }
+
+    private IDbConnection CreateConnection()
+    {
+      if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE)
+      {
+        return OpenReadonlyOleDb();
+      }
+      else
+      {
+        return new System.Data.SqlClient.SqlConnection(_connectionStr);
+      }
+    }
+
+    private static IDbCommand CreateCommand(IDbConnection conn, string select, IDbTransaction trans)
+    {
+      var c = conn.CreateCommand();
+      c.CommandText = select;
+      c.Transaction = trans;
+      return c;
     }
 
     public ReadOnlyDataSet LoadReadOnly()
@@ -816,20 +789,63 @@ namespace MazakMachineInterface
         ReadOnlyDataSet dset = new ReadOnlyDataSet();
         dset.EnforceConstraints = false;
 
-        var trans = ReadOnlyDBConnection.BeginTransaction(IsolationLevel.ReadCommitted);
+        var trans = conn.BeginTransaction(IsolationLevel.ReadCommitted);
         try
         {
-          SetReadOnlyTransaction(trans);
 
-          FixtureAdapter.Fill(dset.Fixture);
-          PalletAdapter.Fill(dset.Pallet);
-          PalletPositionAdapter.Fill(dset.PalletPosition);
-          PartAdapter.Fill(dset.Part);
-          PartProcessAdapter.Fill(dset.PartProcess);
-          ScheduleAdapter.Fill(dset.Schedule);
-          ScheduleProcessAdapter.Fill(dset.ScheduleProcess);
-          PalletSubStatusAdapter.Fill(dset.PalletSubStatus);
-          MainProgramAdapter.Fill(dset.MainProgram);
+          using (var cmd = CreateCommand(conn, _fixtureSelect, trans))
+          using (var reader = cmd.ExecuteReader())
+          {
+            dset.Fixture.Load(reader);
+          }
+
+          using (var cmd = CreateCommand(conn, _palletSelect, trans))
+          using (var reader = cmd.ExecuteReader())
+          {
+            dset.Pallet.Load(reader);
+          }
+
+          using (var cmd = CreateCommand(conn, _palPositionSelect, trans))
+          using (var reader = cmd.ExecuteReader())
+          {
+            dset.PalletPosition.Load(reader);
+          }
+
+          using (var cmd = CreateCommand(conn, _partSelect, trans))
+          using (var reader = cmd.ExecuteReader())
+          {
+            dset.Part.Load(reader);
+          }
+
+          using (var cmd = CreateCommand(conn, _partProcSelect, trans))
+          using (var reader = cmd.ExecuteReader())
+          {
+            dset.PartProcess.Load(reader);
+          }
+
+          using (var cmd = CreateCommand(conn, _scheduleSelect, trans))
+          using (var reader = cmd.ExecuteReader())
+          {
+            dset.Schedule.Load(reader);
+          }
+
+          using (var cmd = CreateCommand(conn, _scheduleProcSelect, trans))
+          using (var reader = cmd.ExecuteReader())
+          {
+            dset.ScheduleProcess.Load(reader);
+          }
+
+          using (var cmd = CreateCommand(conn, _palSubStatusSelect, trans))
+          using (var reader = cmd.ExecuteReader())
+          {
+            dset.PalletSubStatus.Load(reader);
+          }
+
+          using (var cmd = CreateCommand(conn, _mainProgSelect, trans))
+          using (var reader = cmd.ExecuteReader())
+          {
+            dset.MainProgram.Load(reader);
+          }
 
           trans.Commit();
         }
@@ -842,12 +858,6 @@ namespace MazakMachineInterface
         return dset;
 
       });
-    }
-
-    private void SetReadOnlyTransaction(IDbTransaction trans)
-    {
-      foreach (var adapter in ReadOnlyAdapters)
-        ((IDbCommand)adapter.SelectCommand).Transaction = trans;
     }
 
 	}
