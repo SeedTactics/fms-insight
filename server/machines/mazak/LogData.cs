@@ -145,7 +145,7 @@ namespace MazakMachineInterface
                             "FixedQuantity, PalletNumber, ProgramNumber, FromPosition, ToPosition " +
                             "FROM Log WHERE ID > ? ORDER BY ID ASC";
                         var param = cmd.CreateParameter();
-                        param.DbType = System.Data.DbType.VarNumeric;
+                        param.OleDbType = System.Data.OleDb.OleDbType.Numeric;
                         param.Value = lastID;
                         cmd.Parameters.Add(param);
                     }
@@ -202,8 +202,8 @@ namespace MazakMachineInterface
 			var cmd = conn.CreateCommand();
 			cmd.Transaction = trans;
 			cmd.CommandText = "SELECT Date FROM Log WHERE ID = ?";
-            var param = cmd.CreateParameter();
-            param.DbType = System.Data.DbType.VarNumeric;
+            var param = (System.Data.OleDb.OleDbParameter)cmd.CreateParameter();
+            param.OleDbType = System.Data.OleDb.OleDbType.Numeric;
             param.Value = lastID;
             cmd.Parameters.Add(param);
 

@@ -468,8 +468,8 @@ namespace MazakMachineInterface
           Ver0ToVer1(trans);
 
         cmd.Transaction = trans;
-        cmd.CommandText = "UPDATE version SET ver = ?";
-        cmd.Parameters.Add("", SqliteType.Integer).Value = Version;
+        cmd.CommandText = "UPDATE version SET ver = $ver";
+        cmd.Parameters.Add("ver", SqliteType.Integer).Value = Version;
         cmd.ExecuteNonQuery();
 
         trans.Commit();
@@ -524,20 +524,22 @@ namespace MazakMachineInterface
       ((IDbCommand)cmd).Transaction = trans;
 
       //Use insert or replace to allow saving more than once.
-      cmd.CommandText = "INSERT INTO holds(SchId,EntireJob,UniqueStr,HoldPatternStartUTC,HoldPatternRepeats) VALUES (?,?,?,?,?)";
-      cmd.Parameters.Add("", SqliteType.Integer).Value = schId;
-      cmd.Parameters.Add("", SqliteType.Integer).Value = entire;
-      cmd.Parameters.Add("", SqliteType.Text).Value = unique;
-      cmd.Parameters.Add("", SqliteType.Integer).Value = newHold.HoldUnholdPatternStartUTC.Ticks;
-      cmd.Parameters.Add("", SqliteType.Integer).Value = newHold.HoldUnholdPatternRepeats;
+      cmd.CommandText = "INSERT INTO holds(SchId,EntireJob,UniqueStr,HoldPatternStartUTC,HoldPatternRepeats)" +
+                " VALUES ($schid,$job,$uniq,$hs,$hr)";
+      cmd.Parameters.Add("schid", SqliteType.Integer).Value = schId;
+      cmd.Parameters.Add("job", SqliteType.Integer).Value = entire;
+      cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
+      cmd.Parameters.Add("hs", SqliteType.Integer).Value = newHold.HoldUnholdPatternStartUTC.Ticks;
+      cmd.Parameters.Add("hr", SqliteType.Integer).Value = newHold.HoldUnholdPatternRepeats;
       cmd.ExecuteNonQuery();
 
-      cmd.CommandText = "INSERT INTO hold_pattern(SchId,EntireJob,Idx,Span) VALUES (?,?,?,?)";
+      cmd.CommandText = "INSERT INTO hold_pattern(SchId,EntireJob,Idx,Span) " +
+                "VALUES ($schid,$job,$idx,$span)";
       cmd.Parameters.Clear();
-      cmd.Parameters.Add("", SqliteType.Integer).Value = schId;
-      cmd.Parameters.Add("", SqliteType.Integer).Value = entire;
-      cmd.Parameters.Add("", SqliteType.Integer);
-      cmd.Parameters.Add("", SqliteType.Integer);
+      cmd.Parameters.Add("schid", SqliteType.Integer).Value = schId;
+      cmd.Parameters.Add("job", SqliteType.Integer).Value = entire;
+      cmd.Parameters.Add("idx", SqliteType.Integer);
+      cmd.Parameters.Add("span", SqliteType.Integer);
       for (int i = 0; i < newHold.HoldUnholdPattern.Count; i++)
       {
         cmd.Parameters[2].Value = i;
@@ -570,11 +572,11 @@ namespace MazakMachineInterface
       var cmd = _connection.CreateCommand();
       ((IDbCommand)cmd).Transaction = trans;
 
-      cmd.CommandText = "DELETE FROM holds WHERE SchId = ?";
-      cmd.Parameters.Add("", SqliteType.Integer).Value = schId;
+      cmd.CommandText = "DELETE FROM holds WHERE SchId = $schid";
+      cmd.Parameters.Add("schid", SqliteType.Integer).Value = schId;
       cmd.ExecuteNonQuery();
 
-      cmd.CommandText = "DELETE FROM hold_pattern WHERE SchId = ?";
+      cmd.CommandText = "DELETE FROM hold_pattern WHERE SchId = $schid";
       cmd.ExecuteNonQuery();
     }
 
@@ -605,8 +607,9 @@ namespace MazakMachineInterface
           var cmd = _connection.CreateCommand();
           cmd.Transaction = trans;
 
-          cmd.CommandText = "SELECT EntireJob, HoldPatternStartUTC, HoldPatternRepeats,UniqueStr FROM holds WHERE SchID = ?";
-          cmd.Parameters.Add("", SqliteType.Integer).Value = schID;
+                    cmd.CommandText = "SELECT EntireJob, HoldPatternStartUTC, HoldPatternRepeats,UniqueStr FROM holds " +
+                                  "WHERE SchID = $schid";
+          cmd.Parameters.Add("schid", SqliteType.Integer).Value = schID;
 
           using (var reader = cmd.ExecuteReader())
           {
@@ -624,7 +627,7 @@ namespace MazakMachineInterface
               else
                 hold = plan.HoldMachining(1, path);
 
-              hold.HoldUnholdPatternStartUTC = reader.GetDateTime(1);
+              hold.HoldUnholdPatternStartUTC = new DateTime(reader.GetInt64(1), DateTimeKind.Utc);
               hold.HoldUnholdPatternRepeats = reader.GetBoolean(2);
 
             }
@@ -635,7 +638,8 @@ namespace MazakMachineInterface
           plan.HoldMachining(1, path).HoldUnholdPattern.Clear();
 
           //hold pattern
-          cmd.CommandText = "SELECT EntireJob, Span FROM hold_pattern WHERE SchId = ? ORDER BY Idx ASC";
+          cmd.CommandText = "SELECT EntireJob, Span FROM hold_pattern " +
+                        "WHERE SchId = $schid ORDER BY Idx ASC";
 
           using (var reader = cmd.ExecuteReader())
           {
@@ -701,14 +705,15 @@ namespace MazakMachineInterface
             else
               hold = h.HoldMachining;
 
-            hold.HoldUnholdPatternStartUTC = reader.GetDateTime(2);
+            hold.HoldUnholdPatternStartUTC = new DateTime(reader.GetInt64(1), DateTimeKind.Utc);
             hold.HoldUnholdPatternRepeats = reader.GetBoolean(3);
           }
         }
 
         //hold pattern
-        cmd.CommandText = "SELECT EntireJob, Span FROM hold_pattern WHERE SchId = ? ORDER BY Idx ASC";
-        cmd.Parameters.Add("", SqliteType.Integer);
+        cmd.CommandText = "SELECT EntireJob, Span FROM hold_pattern " +
+                    "WHERE SchId = $schid ORDER BY Idx ASC";
+        cmd.Parameters.Add("schid", SqliteType.Integer);
 
         foreach (var pair in ret)
         {
