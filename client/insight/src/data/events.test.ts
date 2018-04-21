@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { addDays, addHours } from 'date-fns';
+import { addDays, addHours, differenceInMinutes, addMinutes } from 'date-fns';
 import { duration } from 'moment';
 
 import { PledgeStatus } from './middleware';
@@ -131,7 +131,7 @@ it('responds to error for jobs', () => {
 });
 
 function procNewEvents(evtsToAction: (now: Date, newEvts: ReadonlyArray<ILogEntry>) => events.Action) {
-  var now = new Date(2018, 1, 2, 3, 4, 5);
+  var now = new Date(Date.UTC(2018, 1, 2, 9, 4, 5));
 
   // start with cycles from 27 days ago, 2 days ago, and today
   const todayCycle = fakeCycle(now, 30, "part111", 1, 'palbb');
@@ -253,7 +253,7 @@ it("loads 30 days for analysis", () => {
 });
 
 it("loads a specific month for analysis", () => {
-  var now = new Date(2018, 1, 2, 3, 4, 5);
+  var now = new Date(Date.UTC(2018, 1, 2, 9, 4, 5));
 
   // start with cycles from 27 days ago, 2 days ago, and today
   const todayCycle = fakeCycle(now, 30, "partAAA", 1, 'palss');
@@ -284,7 +284,9 @@ it("loads a specific month for analysis", () => {
 });
 
 it("bins actual cycles by day", () => {
-  const now = new Date(2018, 2, 5);
+  const now = new Date(2018, 2, 5); // midnight in local time
+  const nowChicago = new Date(Date.UTC(2018, 2, 5, 6, 0, 0)); // America/Chicago time
+  const minOffset = differenceInMinutes(nowChicago, now);
 
   const evts = ([] as ILogEntry[])
     .concat(
@@ -303,16 +305,29 @@ it("bins actual cycles by day", () => {
       }
     });
 
-  const byDayAndStat = events.binCyclesByDayAndStat(
+  let byDayAndStat = events.binCyclesByDayAndStat(
     st.last30.cycles.by_part_then_stat,
     c => duration(c.active).asMinutes()
   );
 
+  // update day to be in Chicago timezone
+  // This is because the snapshot formats the day as a UTC time in Chicago timezone
+  // Note this is after cycles are binned, which is correct since cycles are generated using
+  // now in local time and then binned in local time.  Just need to update the date before
+  // comparing with the snapshot
+  byDayAndStat = byDayAndStat.mapKeys(dayAndStat =>
+    dayAndStat.update("day", d => addMinutes(d, minOffset))
+  );
+
   expect(byDayAndStat).toMatchSnapshot("cycles binned by day and station");
 
-  const byDayAndPart = events.binCyclesByDayAndPart(
+  let byDayAndPart = events.binCyclesByDayAndPart(
     st.last30.cycles.by_part_then_stat,
     c => c.completed ? 1 : 0
+  );
+
+  byDayAndPart = byDayAndPart.mapKeys(dayAndPart =>
+    dayAndPart.update("day", d => addMinutes(d, minOffset))
   );
 
   expect(byDayAndPart).toMatchSnapshot("cycles binned by day and part");
