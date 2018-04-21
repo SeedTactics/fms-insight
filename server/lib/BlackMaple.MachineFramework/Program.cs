@@ -59,6 +59,8 @@ namespace BlackMaple.MachineFramework
             if (!File.Exists(configFile)) {
                 var defaultConfigFile = Path.Combine(ServerSettings.ContentRootDirectory, "default-config.ini");
                 if (File.Exists(defaultConfigFile)) {
+                    if (!Directory.Exists(ServerSettings.ConfigDirectory))
+                        Directory.CreateDirectory(ServerSettings.ConfigDirectory);
                     System.IO.File.Copy(defaultConfigFile, configFile, overwrite: false);
                 }
             }
