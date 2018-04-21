@@ -55,6 +55,7 @@ after_build:
         cd installers
         Remove-Item alias:curl
         curl -X POST `
+            --silent --show-error `
             --user $ENV:bitbucket_auth `
             "https://api.bitbucket.org/2.0/repositories/blackmaple/machinewatch/downloads" `
             --form `
