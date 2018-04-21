@@ -30,8 +30,8 @@
   </Choose>
 
   <ItemGroup>
-    <PackageReference Include="BlackMaple.MachineWatchInterface" Version="7.*" />
-    <PackageReference Include="BlackMaple.MachineFramework" Version="8.*" />
+    <ProjectReference Include="../../lib/BlackMaple.MachineWatchInterface/BlackMaple.MachineWatchInterface.csproj"/>
+    <ProjectReference Include="../../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj"/>
   </ItemGroup>
 
   <Choose>
