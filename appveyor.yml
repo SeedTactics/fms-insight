@@ -52,6 +52,7 @@ after_build:
             server/machines/mazak/mazak.csproj
 
         ./build/insight-installer-build.ps1 mazak $(ver mazak)
+        Push-Location
         cd installers
         Remove-Item alias:curl
         curl -X POST `
@@ -60,6 +61,7 @@ after_build:
             "https://api.bitbucket.org/2.0/repositories/blackmaple/machinewatch/downloads" `
             --form `
             files=@"FMS Insight Mazak Install.msi"
+        Pop-Location
     }
 
 - ps: 7z a insight-client.zip .\client\insight\build\*
