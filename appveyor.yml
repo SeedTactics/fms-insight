@@ -68,7 +68,7 @@ after_build:
 
 test_script:
 - ps: dotnet test server/test
-- ps: yarn --cwd client/insight test
+- ps: ($env:CI = $true) -and (yarn --cwd client/insight test 2>&1 | Write-Host)
 
 artifacts:
   - path: '**/*.nupkg'
