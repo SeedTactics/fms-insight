@@ -140,7 +140,7 @@ namespace MazakMachineInterface
         //useStarting is an old setting, so if it is missing use the new settings
         if (string.IsNullOrEmpty(useStartingForDue))
         {
-          UseStartingOffsetForDueDate = false;
+          UseStartingOffsetForDueDate = true;
         }
         else
         {
@@ -148,7 +148,7 @@ namespace MazakMachineInterface
         }
         if (string.IsNullOrEmpty(decrPriority))
         {
-          DecrementPriorityOnDownload = false;
+          DecrementPriorityOnDownload = true;
         }
         else
         {
@@ -351,10 +351,13 @@ namespace MazakMachineInterface
 
     private DatabaseAccess.MazakDbType DetectMazakType(IConfig cfg, string localDbPath)
     {
+      var verE = cfg.GetValue<bool>("Mazak", "VersionE");
       var webver = cfg.GetValue<bool>("Mazak", "Web Version");
       var smoothVer = cfg.GetValue<bool>("Mazak", "Smooth Version");
 
-      if (webver)
+      if (verE)
+        return DatabaseAccess.MazakDbType.MazakVersionE;
+      else if (webver)
         return DatabaseAccess.MazakDbType.MazakWeb;
       else if (smoothVer)
         return DatabaseAccess.MazakDbType.MazakSmooth;

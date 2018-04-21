@@ -59,6 +59,10 @@
             />
           </Component>
 
+          <Component Id="InsightDefaultConfig" Guid="a1e80287-89cd-4f80-9d5a-74deaa248c4c">
+            <File Id="InsightDefaultConfigIni" KeyPath="yes" Source="server/machines/mazak/default-config.ini"/>
+          </Component>
+
         </Directory>
       </Directory>
 
@@ -69,6 +73,7 @@
       <ComponentGroupRef Id="InsightServerCg"/>
       <ComponentGroupRef Id="InsightClientCg"/>
       <ComponentRef Id="InsightService"/>
+      <ComponentRef Id="InsightDefaultConfig"/>
     </Feature>
 
   </Product>
