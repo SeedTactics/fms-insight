@@ -36,7 +36,7 @@
   "scripts": {
     "start": "react-scripts-ts start",
     "build": "react-scripts-ts build",
-    "test": "TZ='America/Chicago' react-scripts-ts test --env=jsdom",
+    "test": "react-scripts-ts test --env=jsdom",
     "eject": "react-scripts-ts eject",
     "nswag": "./node_modules/nswag/bin/nswag.js swagger2tsclient /runtime:NetCore20 /input:../../server/machine-watch-swagger.json /output:src/data/api.ts"
   },
