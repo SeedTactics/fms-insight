@@ -37,7 +37,9 @@ import * as events from '../data/events';
 import * as gui from '../data/gui-state';
 import * as routes from '../data/routes';
 import * as mat from '../data/material-details';
+import * as operators from '../data/operators';
 import * as websocket from './websocket';
+
 import { pledgeMiddleware, arrayMiddleware, ActionBeforeMiddleware } from './middleware';
 import * as tstore from './typed-store';
 
@@ -55,6 +57,7 @@ export interface Store {
   readonly MaterialDetails: mat.State;
   readonly Route: routes.State;
   readonly Websocket: websocket.State;
+  readonly Operators: operators.State;
   readonly location: LocationState;
 }
 
@@ -64,6 +67,7 @@ export type AppAction =
   | gui.Action
   | mat.Action
   | routes.Action
+  | operators.Action
   ;
 
 export type AppActionBeforeMiddleware = ActionBeforeMiddleware<AppAction>;
@@ -98,6 +102,7 @@ export function initStore() {
         MaterialDetails: mat.reducer,
         Route: routes.reducer,
         Websocket: websocket.reducer,
+        Operators: operators.reducer,
         location: router.reducer,
       // tslint:disable-next-line:no-any
       } as any // bug in typescript types for combineReducers
@@ -115,6 +120,9 @@ export function initStore() {
 
   websocket.openWebsocket(a => store.dispatch(a), () => store.getState().Events);
   initBarcodeListener(a => store.dispatch(a as redux.Action));
+
+  const operatorOnStateChange = operators.createOnStateChange();
+  store.subscribe(() => operatorOnStateChange(store.getState().Operators));
 
   return store;
 }
