@@ -14,6 +14,7 @@
   "dependencies": {
     "@material-ui/icons": "^1.0.0-beta.41",
     "date-fns": "^1.29.0",
+    "downshift": "^1.31.11",
     "history": "^4.7.2",
     "immutable": "^4.0.0-rc.9",
     "jdenticon": "^2.0.0",

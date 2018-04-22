@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 localStorage.setItem("operators", '["initial1"]');
+localStorage.setItem("current-operator", "initialoper");
 import * as operators from './operators';
 import * as im from 'immutable';
 
@@ -43,6 +44,7 @@ it("creates the initial state", () => {
   expect(operators.initial.operators.toArray()).toEqual(
     ["initial1"]
   );
+  expect(operators.initial.current).toEqual("initialoper");
 });
 
 it('adds an operator', () => {
@@ -67,6 +69,32 @@ it('adds an operator', () => {
   });
 });
 
+it('removes an operator', () => {
+  let s: operators.State = {
+    operators: im.Set(["op1", "op2", "aaaa"]),
+    current: "aaaa"
+  };
+  s = operators.reducer(s, {
+    type: operators.ActionType.RemoveOperator,
+    operator: "op1"
+  });
+
+  expect(s).toEqual({
+    operators: im.Set(["op2", "aaaa"]),
+    current: "aaaa",
+  });
+
+  s = operators.reducer(s, {
+    type: operators.ActionType.RemoveOperator,
+    operator: "aaaa"
+  });
+
+  expect(s).toEqual({
+    operators: im.Set(["op2"]),
+    current: undefined,
+  });
+});
+
 it("sets local storage", () => {
   const onChange = operators.createOnStateChange();
   onChange({
@@ -75,4 +103,5 @@ it("sets local storage", () => {
   });
   const opers = JSON.parse(localStorage.getItem("operators") || "[]");
   expect(opers).toEqual(["op1", "op2"]);
+  expect(localStorage.getItem("current-operator")).toEqual("op2");
 });

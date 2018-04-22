@@ -33,13 +33,101 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from 'react';
 import Select from 'material-ui/Select';
 import { MenuItem } from 'material-ui/Menu';
+import TextField from 'material-ui/TextField';
 import Input from 'material-ui/Input';
 import { FormControl } from 'material-ui/Form';
 import { Seq, Set } from 'immutable';
+import Downshift from 'downshift';
+import Paper from 'material-ui/Paper';
+import ArrowDropDownIcon from '@material-ui/icons/ArrowDropDown';
+import List, { ListItem, ListItemText, ListItemSecondaryAction } from 'material-ui/List';
+import IconButton from 'material-ui/IconButton';
+import DeleteIcon from '@material-ui/icons/Delete';
+import Typography from 'material-ui/Typography';
 
 import * as routes from '../../data/routes';
-import { Store, connect } from '../../store/store';
+import { Store, connect, DispatchAction, mkAC } from '../../store/store';
 import * as api from '../../data/api';
+import * as operators from '../../data/operators';
+
+export interface OperatorSelectProps {
+  readonly operators: Set<string>;
+  readonly currentOperator: string | null;
+  readonly setOperator: DispatchAction<operators.ActionType.SetOperator>;
+  readonly removeOperator: DispatchAction<operators.ActionType.RemoveOperator>;
+}
+
+export class OperatorSelect extends React.PureComponent<OperatorSelectProps> {
+  render() {
+    const opers = this.props.operators.toSeq().sort();
+    return (
+        <Downshift
+          selectedItem={this.props.currentOperator}
+          onChange={(o) => {
+            this.props.setOperator({operator: o});
+          }}
+          render={(ds) => (
+            <div style={{position: 'relative'}}>
+              <TextField
+                InputProps={{...
+                  ds.getInputProps({placeholder: "Operator"}),
+                  onKeyUp: (k) => {
+                    if (k.keyCode === 13 && ds.inputValue && ds.inputValue.length > 0) {
+                      this.props.setOperator({operator: ds.inputValue});
+                      ds.closeMenu();
+                    }
+                  },
+                  endAdornment: (
+                    <ArrowDropDownIcon
+                      onClick={() => ds.openMenu()}
+                    />
+                  )
+                }}
+              />
+              {
+                ds.isOpen ?
+                  <Paper
+                    style={{
+                      position: 'absolute',
+                      zIndex: 1,
+                      left: 0,
+                      right: 0
+                    }}
+                  >
+                    { ds.inputValue && ds.inputValue.length > 0 && !this.props.operators.has(ds.inputValue) ?
+                      <Typography variant="caption" align="center">
+                        Press enter to add new
+                      </Typography>
+                      : undefined
+                    }
+                    <List>
+                      {
+                        opers.map((o, idx) =>
+                          <ListItem
+                            key={idx}
+                            button
+                            {... ds.getItemProps({item: o})}
+                          >
+                            <ListItemText primary={o}/>
+                            <ListItemSecondaryAction>
+                              <IconButton onClick={() => this.props.removeOperator({operator: o})}>
+                                <DeleteIcon/>
+                              </IconButton>
+                            </ListItemSecondaryAction>
+                          </ListItem>
+                        )
+                      }
+                    </List>
+
+                  </Paper>
+                : undefined
+              }
+            </div>
+          )}
+        />
+    );
+  }
+}
 
 const toolbarStyle = {
   'display': 'flex',
@@ -55,11 +143,16 @@ export interface StationToolbarProps {
   readonly current_route: routes.State;
   readonly queues: { [key: string]: api.IQueueSize };
   readonly insp_types: Set<string>;
+  readonly operators: Set<string>;
+  readonly currentOperator: string | null;
+
   readonly displayLoadStation:
     (num: number, queues: ReadonlyArray<string>, freeMaterial: boolean) => void;
   readonly displayInspection: (type: string | undefined) => void;
   readonly displayWash: () => void;
   readonly displayQueues: (queues: ReadonlyArray<string>, freeMaterial: boolean) => void;
+  readonly setOperator: DispatchAction<operators.ActionType.SetOperator>;
+  readonly removeOperator: DispatchAction<operators.ActionType.RemoveOperator>;
 }
 
 const freeMaterialSym = "@@insight_free_material@@";
@@ -155,7 +248,7 @@ export function StationToolbar(props: StationToolbarProps) {
 
   return (
     <nav style={toolbarStyle}>
-      <div>
+      <div style={{flexGrow: 1}}>
         <Select
           value={props.current_route.station_monitor}
           onChange={e => setStation(e.target.value)}
@@ -259,6 +352,14 @@ export function StationToolbar(props: StationToolbarProps) {
             : undefined
         }
       </div>
+      <div>
+        <OperatorSelect
+          operators={props.operators}
+          currentOperator={props.currentOperator}
+          setOperator={props.setOperator}
+          removeOperator={props.removeOperator}
+        />
+      </div>
     </nav>
   );
 }
@@ -268,11 +369,15 @@ export default connect(
     current_route: st.Route,
     queues: st.Current.current_status.queues,
     insp_types: st.Events.last30.mat_summary.inspTypes,
+    operators: st.Operators.operators,
+    currentOperator: st.Operators.current || null,
   }),
   {
     displayLoadStation: routes.displayLoadStation,
     displayInspection: routes.displayInspectionType,
     displayWash: routes.displayWash,
     displayQueues: routes.displayQueues,
+    setOperator: mkAC(operators.ActionType.SetOperator),
+    removeOperator: mkAC(operators.ActionType.RemoveOperator),
   }
 )(StationToolbar);

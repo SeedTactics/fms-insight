@@ -34,11 +34,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as im from 'immutable';
 
 export enum ActionType {
-  SetOperator
+  SetOperator = 'Operators_SetOperator',
+  RemoveOperator = 'Operators_Remove'
 }
 
 export type Action =
   | { type: ActionType.SetOperator, operator: string }
+  | { type: ActionType.RemoveOperator, operator: string }
   ;
 
 export interface State {
@@ -47,15 +49,25 @@ export interface State {
 }
 
 export const initial = {
-  operators: im.Set(JSON.parse(localStorage.getItem("operators") || "[]")) as im.Set<string>
+  operators: im.Set(JSON.parse(localStorage.getItem("operators") || "[]")) as im.Set<string>,
+  current: localStorage.getItem("current-operator") || undefined,
 };
 
 export function createOnStateChange(): (s: State) => void {
   let lastOpers = initial.operators;
+  let lastCurrent = initial.current;
   return s => {
     if (s.operators !== lastOpers) {
       lastOpers = s.operators;
       localStorage.setItem("operators", JSON.stringify(s.operators.toArray()));
+    }
+    if (s.current !== lastCurrent) {
+      lastCurrent = s.current;
+      if (s.current) {
+        localStorage.setItem("current-operator", s.current);
+      } else {
+        localStorage.removeItem("current-operator");
+      }
     }
   };
 }
@@ -66,9 +78,18 @@ export function reducer(s: State, a: Action): State {
   switch (a.type) {
     case ActionType.SetOperator:
       return {
-        operators: s.operators.add(a.operator),
+        operators: s.operators.has(a.operator) ? s.operators : s.operators.add(a.operator),
         current: a.operator,
       };
+    case ActionType.RemoveOperator:
+      if (s.operators.has(a.operator)) {
+        return {
+          operators: s.operators.remove(a.operator),
+          current: s.current === a.operator ? undefined : s.current
+        };
+      } else {
+        return s;
+      }
     default:
       return s;
   }

@@ -63,6 +63,10 @@ it('displays the toolbar for load with one queue', () => {
       displayInspection={displayInsp}
       displayWash={displayWash}
       displayQueues={displayQueues}
+      operators={Set(["o1", "o2"])}
+      currentOperator="o1"
+      setOperator={jest.fn()}
+      removeOperator={jest.fn()}
     />);
   expect(val).toMatchSnapshot('load with one queue');
 });
@@ -85,6 +89,10 @@ it('displays the load with no queues', () => {
       displayInspection={displayInsp}
       displayWash={displayWash}
       displayQueues={displayQueues}
+      operators={Set(["o1", "o2"])}
+      currentOperator="o1"
+      setOperator={jest.fn()}
+      removeOperator={jest.fn()}
     />);
   expect(val).toMatchSnapshot('load with no queues');
 });
@@ -109,6 +117,10 @@ it('displays the toolbar for load with three queues', () => {
       displayInspection={displayInsp}
       displayWash={displayWash}
       displayQueues={displayQueues}
+      operators={Set(["o1", "o2"])}
+      currentOperator="o1"
+      setOperator={jest.fn()}
+      removeOperator={jest.fn()}
     />);
   expect(val).toMatchSnapshot('load toolbar');
 });
@@ -133,6 +145,10 @@ it('displays the toolbar for wash', () => {
       displayInspection={displayInsp}
       displayWash={displayWash}
       displayQueues={displayQueues}
+      operators={Set(["o1", "o2"])}
+      currentOperator="o1"
+      setOperator={jest.fn()}
+      removeOperator={jest.fn()}
     />);
   expect(val).toMatchSnapshot('wash toolbar');
 });
@@ -157,6 +173,10 @@ it('displays the toolbar for all inspection', () => {
       displayInspection={displayInsp}
       displayWash={displayWash}
       displayQueues={displayQueues}
+      operators={Set(["o1", "o2"])}
+      currentOperator="o1"
+      setOperator={jest.fn()}
+      removeOperator={jest.fn()}
     />);
   expect(val).toMatchSnapshot('inspection all toolbar');
 });
@@ -182,6 +202,10 @@ it('displays the toolbar for single inspection type', () => {
       displayInspection={displayInsp}
       displayWash={displayWash}
       displayQueues={displayQueues}
+      operators={Set(["o1", "o2"])}
+      currentOperator="o1"
+      setOperator={jest.fn()}
+      removeOperator={jest.fn()}
     />);
   expect(val).toMatchSnapshot('inspection i1 selected toolbar');
 });
@@ -206,6 +230,10 @@ it('displays an empty queue page', () => {
       displayInspection={displayInsp}
       displayWash={displayWash}
       displayQueues={displayQueues}
+      operators={Set(["o1", "o2"])}
+      currentOperator="o1"
+      setOperator={jest.fn()}
+      removeOperator={jest.fn()}
     />);
   expect(val).toMatchSnapshot('empty queues');
 });
@@ -230,6 +258,10 @@ it('displays the toolbar for queue page with three queues', () => {
       displayInspection={displayInsp}
       displayWash={displayWash}
       displayQueues={displayQueues}
+      operators={Set(["o1", "o2"])}
+      currentOperator="o1"
+      setOperator={jest.fn()}
+      removeOperator={jest.fn()}
     />);
   expect(val).toMatchSnapshot('queue toolbar');
 });
@@ -249,6 +281,10 @@ it("changes the station type", () => {
       displayInspection={displayInsp}
       displayWash={displayWash}
       displayQueues={displayQueues}
+      operators={Set(["o1", "o2"])}
+      currentOperator="o1"
+      setOperator={jest.fn()}
+      removeOperator={jest.fn()}
     />);
 
   // tslint:disable-next-line:no-any
@@ -293,6 +329,10 @@ it("changes the load station number", () => {
       displayInspection={displayInsp}
       displayWash={displayWash}
       displayQueues={displayQueues}
+      operators={Set(["o1", "o2"])}
+      currentOperator="o1"
+      setOperator={jest.fn()}
+      removeOperator={jest.fn()}
     />);
 
   // tslint:disable-next-line:no-any
@@ -325,6 +365,10 @@ it("changes the load queues", () => {
       displayInspection={displayInsp}
       displayWash={displayWash}
       displayQueues={displayQueues}
+      operators={Set(["o1", "o2"])}
+      currentOperator="o1"
+      setOperator={jest.fn()}
+      removeOperator={jest.fn()}
     />);
 
   // tslint:disable-next-line:no-any
@@ -371,6 +415,10 @@ it("changes the standalone queues", () => {
       displayInspection={displayInsp}
       displayWash={displayWash}
       displayQueues={displayQueues}
+      operators={Set(["o1", "o2"])}
+      currentOperator="o1"
+      setOperator={jest.fn()}
+      removeOperator={jest.fn()}
     />);
 
   // tslint:disable-next-line:no-any
