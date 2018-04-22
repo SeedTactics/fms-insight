@@ -122,7 +122,7 @@ exports[`displays a cycle chart: cycle chart 1`] = `
 `;
 
 exports[`displays a selectable cycle chart with nothing selected: selectable cycle chart with nothing selected 1`] = `
-<Card
+<WithStyles(Card)
   raised={true}
 >
   <WithStyles(CardHeader)
@@ -179,11 +179,11 @@ exports[`displays a selectable cycle chart with nothing selected: selectable cyc
       series_label="serieslabel"
     />
   </WithStyles(CardContent)>
-</Card>
+</WithStyles(Card)>
 `;
 
 exports[`displays a selectable cycle chart with something selected: selectable cycle chart with something selected 1`] = `
-<Card
+<WithStyles(Card)
   raised={true}
 >
   <WithStyles(CardHeader)
@@ -261,7 +261,7 @@ exports[`displays a selectable cycle chart with something selected: selectable c
       series_label="serieslabel"
     />
   </WithStyles(CardContent)>
-</Card>
+</WithStyles(Card)>
 `;
 
 exports[`displays an empty chart: empty cycle chart 1`] = `

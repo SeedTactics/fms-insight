@@ -81,7 +81,7 @@ exports[`displays a cycle chart: heat chart 1`] = `
 `;
 
 exports[`displays a selectable heat chart with actual points: selectable heat chart with actual data 1`] = `
-<Card
+<WithStyles(Card)
   raised={true}
 >
   <WithStyles(CardHeader)
@@ -179,11 +179,11 @@ exports[`displays a selectable heat chart with actual points: selectable heat ch
       row_count={2}
     />
   </WithStyles(CardContent)>
-</Card>
+</WithStyles(Card)>
 `;
 
 exports[`displays a selectable heat chart with planned minus actual points: selectable heat chart with planned minus actual data 1`] = `
-<Card
+<WithStyles(Card)
   raised={true}
 >
   <WithStyles(CardHeader)
@@ -281,11 +281,11 @@ exports[`displays a selectable heat chart with planned minus actual points: sele
       row_count={2}
     />
   </WithStyles(CardContent)>
-</Card>
+</WithStyles(Card)>
 `;
 
 exports[`displays a selectable heat chart with planned points: selectable heat chart with planned data 1`] = `
-<Card
+<WithStyles(Card)
   raised={true}
 >
   <WithStyles(CardHeader)
@@ -383,5 +383,5 @@ exports[`displays a selectable heat chart with planned points: selectable heat c
       row_count={2}
     />
   </WithStyles(CardContent)>
-</Card>
+</WithStyles(Card)>
 `;

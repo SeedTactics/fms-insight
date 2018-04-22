@@ -4,15 +4,15 @@ exports[`displays a single station oee: station oee gauge 1`] = `
 <Tooltip
   classes={
     Object {
+      "open": "MuiTooltip-open-3",
       "popper": "MuiTooltip-popper-2",
-      "popperClose": "MuiTooltip-popperClose-3",
       "root": "MuiTooltip-root-1",
       "tooltip": "MuiTooltip-tooltip-4",
-      "tooltipOpen": "MuiTooltip-tooltipOpen-9",
-      "tooltipPlacementBottom": "MuiTooltip-tooltipPlacementBottom-8",
-      "tooltipPlacementLeft": "MuiTooltip-tooltipPlacementLeft-5",
-      "tooltipPlacementRight": "MuiTooltip-tooltipPlacementRight-6",
-      "tooltipPlacementTop": "MuiTooltip-tooltipPlacementTop-7",
+      "tooltipPlacementBottom": "MuiTooltip-tooltipPlacementBottom-9",
+      "tooltipPlacementLeft": "MuiTooltip-tooltipPlacementLeft-6",
+      "tooltipPlacementRight": "MuiTooltip-tooltipPlacementRight-7",
+      "tooltipPlacementTop": "MuiTooltip-tooltipPlacementTop-8",
+      "touch": "MuiTooltip-touch-5",
     }
   }
   disableFocusListener={false}
@@ -66,8 +66,10 @@ exports[`displays a single station oee: station oee gauge 1`] = `
           "disabled": "rgba(0, 0, 0, 0.26)",
           "disabledBackground": "rgba(0, 0, 0, 0.12)",
           "hover": "rgba(0, 0, 0, 0.08)",
+          "hoverOpacity": 0.08,
           "selected": "rgba(0, 0, 0, 0.14)",
         },
+        "augmentColor": [Function],
         "background": Object {
           "default": "#fafafa",
           "paper": "#fff",
@@ -355,15 +357,15 @@ exports[`displays a single station without oee: station empty guage 1`] = `
 <Tooltip
   classes={
     Object {
+      "open": "MuiTooltip-open-3",
       "popper": "MuiTooltip-popper-2",
-      "popperClose": "MuiTooltip-popperClose-3",
       "root": "MuiTooltip-root-1",
       "tooltip": "MuiTooltip-tooltip-4",
-      "tooltipOpen": "MuiTooltip-tooltipOpen-9",
-      "tooltipPlacementBottom": "MuiTooltip-tooltipPlacementBottom-8",
-      "tooltipPlacementLeft": "MuiTooltip-tooltipPlacementLeft-5",
-      "tooltipPlacementRight": "MuiTooltip-tooltipPlacementRight-6",
-      "tooltipPlacementTop": "MuiTooltip-tooltipPlacementTop-7",
+      "tooltipPlacementBottom": "MuiTooltip-tooltipPlacementBottom-9",
+      "tooltipPlacementLeft": "MuiTooltip-tooltipPlacementLeft-6",
+      "tooltipPlacementRight": "MuiTooltip-tooltipPlacementRight-7",
+      "tooltipPlacementTop": "MuiTooltip-tooltipPlacementTop-8",
+      "touch": "MuiTooltip-touch-5",
     }
   }
   disableFocusListener={false}
@@ -417,8 +419,10 @@ exports[`displays a single station without oee: station empty guage 1`] = `
           "disabled": "rgba(0, 0, 0, 0.26)",
           "disabledBackground": "rgba(0, 0, 0, 0.12)",
           "hover": "rgba(0, 0, 0, 0.08)",
+          "hoverOpacity": 0.08,
           "selected": "rgba(0, 0, 0, 0.14)",
         },
+        "augmentColor": [Function],
         "background": Object {
           "default": "#fafafa",
           "paper": "#fff",
