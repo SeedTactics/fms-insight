@@ -55,7 +55,7 @@ import { LogEntries } from '../LogEntry';
 import { MaterialSummary } from '../../data/events';
 import { withStyles } from 'material-ui';
 import { inproc_mat_to_summary, MaterialSummaryAndCompletedData } from '../../data/events.matsummary';
-import { DispatchAction }  from '../../data/store';
+import { DispatchAction }  from '../../store/store';
 
 /*
 function getPosition(el: Element) {

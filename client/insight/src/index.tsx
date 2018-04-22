@@ -44,7 +44,7 @@ import 'react-vis/dist/style.css';
 
 import App from './App';
 import registerServiceWorker from './registerServiceWorker';
-import { initStore } from './data/store';
+import { initStore } from './store/store';
 
 const theme = createMuiTheme({
   palette: {

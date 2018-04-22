@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from 'react';
 import { CircularProgress } from 'material-ui/Progress';
 
-import { connect, Store } from '../data/store';
+import { connect, Store } from '../store/store';
 import Tooltip from 'material-ui/Tooltip/Tooltip';
 
 export function LoadingIcon({loading}: {loading: boolean}) {

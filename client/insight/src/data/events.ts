@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { addDays, addMonths, startOfMonth } from 'date-fns';
-import { PledgeStatus, Pledge, ActionBeforeMiddleware } from './middleware';
+import { PledgeStatus, Pledge, ActionBeforeMiddleware } from '../store/middleware';
 import * as im from 'immutable';
 
 import * as api from './api';

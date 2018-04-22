@@ -43,7 +43,7 @@ import Efficiency from './components/efficiency/Efficiency';
 import StationMonitor from './components/station-monitor/StationMonitor';
 import LoadingIcon from './components/LoadingIcon';
 import * as routes from './data/routes';
-import { Store, connect } from './data/store';
+import { Store, connect } from './store/store';
 
 const tabsStyle = {
   'alignSelf': 'flex-end' as 'flex-end',

@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as mat from './material-details';
-import { PledgeStatus } from './middleware';
+import { PledgeStatus } from '../store/middleware';
 // import * as api from './api';
 import {
   fakeCycle,

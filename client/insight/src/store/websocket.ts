@@ -32,9 +32,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import ReconnectingWebSocket from 'reconnecting-websocket';
-import * as events from './events';
-import * as current from './current-status';
-import { LogEntry, NewJobs, CurrentStatus } from './api';
+import * as events from '../data/events';
+import * as current from '../data/current-status';
+import { LogEntry, NewJobs, CurrentStatus } from '../data/api';
 
 export interface State {
   websocket_reconnecting: boolean;

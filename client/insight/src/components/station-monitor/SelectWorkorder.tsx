@@ -44,7 +44,7 @@ import CheckmarkIcon from '@material-ui/icons/Check';
 import ShoppingBasketIcon from '@material-ui/icons/ShoppingBasket';
 
 import { MaterialDetailTitle } from './Material';
-import { Store, connect, mkAC, AppActionBeforeMiddleware } from '../../data/store';
+import { Store, connect, mkAC, AppActionBeforeMiddleware } from '../../store/store';
 import * as matDetails from '../../data/material-details';
 import * as guiState from '../../data/gui-state';
 import { CircularProgress } from 'material-ui/Progress';

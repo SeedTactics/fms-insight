@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { addDays, addHours, differenceInMinutes, addMinutes } from 'date-fns';
 import { duration } from 'moment';
 
-import { PledgeStatus } from './middleware';
+import { PledgeStatus } from '../store/middleware';
 import * as events from './events';
 import * as stationCycles from './events.cycles';
 import * as simuse from './events.simuse';

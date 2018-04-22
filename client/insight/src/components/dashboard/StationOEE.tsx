@@ -38,7 +38,7 @@ import * as numeral from 'numeral';
 import Tooltip from 'material-ui/Tooltip';
 import TimeAgo from 'react-timeago';
 
-import { connect, Store } from '../../data/store';
+import { connect, Store } from '../../store/store';
 import { StationInUse } from '../../data/events';
 import * as api from '../../data/api';
 import { duration } from 'moment';

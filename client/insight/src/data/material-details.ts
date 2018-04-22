@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as im from 'immutable';
 
 import * as api from './api';
-import { Pledge, PledgeStatus, ActionBeforeMiddleware } from './middleware';
+import { Pledge, PledgeStatus, ActionBeforeMiddleware } from '../store/middleware';
 import { MaterialSummary } from './events';
 import { StationMonitorType } from './routes';
 

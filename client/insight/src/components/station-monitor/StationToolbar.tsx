@@ -38,7 +38,7 @@ import { FormControl } from 'material-ui/Form';
 import { Seq, Set } from 'immutable';
 
 import * as routes from '../../data/routes';
-import { Store, connect } from '../../data/store';
+import { Store, connect } from '../../store/store';
 import * as api from '../../data/api';
 
 const toolbarStyle = {

@@ -40,7 +40,7 @@ import { createSelector } from 'reselect';
 import DocumentTitle from 'react-document-title';
 
 import { MaterialSummary } from '../../data/events';
-import { Store, connect, mkAC, AppActionBeforeMiddleware } from '../../data/store';
+import { Store, connect, mkAC, AppActionBeforeMiddleware } from '../../store/store';
 import { MaterialDialogProps, MaterialDialog, MatSummary, WhiteboardRegion } from './Material';
 import * as matDetails from '../../data/material-details';
 import { MaterialSummaryAndCompletedData } from '../../data/events.matsummary';

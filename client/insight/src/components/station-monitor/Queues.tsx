@@ -41,7 +41,7 @@ import { LoadStationAndQueueData, selectLoadStationAndQueueProps } from '../../d
 import { MaterialDialog, InProcMaterial, WhiteboardRegion } from './Material';
 import * as api from '../../data/api';
 import * as routes from '../../data/routes';
-import { Store, connect, mkAC } from '../../data/store';
+import { Store, connect, mkAC } from '../../store/store';
 import * as matDetails from '../../data/material-details';
 import { MaterialSummary } from '../../data/events';
 

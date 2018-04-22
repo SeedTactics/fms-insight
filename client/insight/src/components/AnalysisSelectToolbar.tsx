@@ -37,7 +37,7 @@ import { FormControlLabel } from 'material-ui/Form';
 import { startOfMonth, format, parse } from 'date-fns';
 
 import * as events from '../data/events';
-import { Store, connect } from '../data/store';
+import { Store, connect } from '../store/store';
 
 const toolbarStyle = {
   'display': 'flex',

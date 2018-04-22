@@ -37,7 +37,7 @@ import { createSelector } from 'reselect';
 import * as numerable from 'numeral';
 
 import * as api from '../../data/api';
-import { connect, Store } from '../../data/store';
+import { connect, Store } from '../../store/store';
 import {
   FlexibleWidthXYPlot,
   FlexibleXYPlot,

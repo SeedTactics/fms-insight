@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { AppActionBeforeMiddleware } from "./store";
-import { openMaterialBySerial } from "./material-details";
+import { openMaterialBySerial } from "../data/material-details";
 
 enum ScanMode {
   LoadMaterialDetails,

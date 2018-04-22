@@ -32,11 +32,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { createStore, GenericStoreEnhancer, combineReducers, compose, applyMiddleware } from 'redux';
 
-import * as currentStatus from './current-status';
-import * as events from './events';
-import * as gui from './gui-state';
-import * as routes from './routes';
-import * as mat from './material-details';
+import * as currentStatus from '../data/current-status';
+import * as events from '../data/events';
+import * as gui from '../data/gui-state';
+import * as routes from '../data/routes';
+import * as mat from '../data/material-details';
 import * as websocket from './websocket';
 import { pledgeMiddleware, arrayMiddleware, ActionBeforeMiddleware } from './middleware';
 import * as tstore from './typed-store';

@@ -45,7 +45,7 @@ import AnalysisSelectToolbar from '../AnalysisSelectToolbar';
 import { SelectableCycleChart } from './CycleChart';
 import { SelectableHeatChart, HeatChartPoint } from './HeatChart';
 import * as events from '../../data/events';
-import { Store, connect } from '../../data/store';
+import { Store, connect } from '../../store/store';
 import * as guiState from '../../data/gui-state';
 
 // --------------------------------------------------------------------------------
