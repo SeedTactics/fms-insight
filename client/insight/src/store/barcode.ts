@@ -33,12 +33,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { AppActionBeforeMiddleware } from "./store";
 import { openMaterialBySerial } from "../data/material-details";
+import * as guiState from '../data/gui-state';
 
 enum ScanMode {
   LoadMaterialDetails,
+  AddToQueue,
 }
 
-export function initBarcodeListener(dispatch: (a: AppActionBeforeMiddleware) => void): void {
+export function initBarcodeListener(
+  dispatch: (a: AppActionBeforeMiddleware | AppActionBeforeMiddleware[]) => void
+): void {
   let timeout: NodeJS.Timer | undefined;
   let scanActive: boolean = false;
   let scannedTxt: string = "";
@@ -67,12 +71,25 @@ export function initBarcodeListener(dispatch: (a: AppActionBeforeMiddleware) => 
       case ScanMode.LoadMaterialDetails:
         dispatch(openMaterialBySerial(scannedTxt));
         break;
+      case ScanMode.AddToQueue:
+        dispatch([
+          openMaterialBySerial(scannedTxt),
+          {
+            type: guiState.ActionType.SetAddMatToQueueDialog,
+            queue: undefined,
+            st: guiState.AddMatToQueueDialogState.DialogOpenToAddMaterial,
+          }
+        ]);
     }
   }
 
   function onKeyDown(k: KeyboardEvent) {
     if (k.keyCode === 112) { // F1
       startDetection(ScanMode.LoadMaterialDetails);
+      k.stopPropagation();
+      k.preventDefault();
+    } else if (k.keyCode === 113) { // F2
+      startDetection(ScanMode.AddToQueue);
       k.stopPropagation();
       k.preventDefault();
     } else if (scanActive && k.keyCode === 13) { // Enter

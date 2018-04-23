@@ -896,7 +896,7 @@ namespace DebugMachineWatchApiServer
                     }
                 },
                 new InProcessMaterial() {
-                    MaterialID = 100,
+                    MaterialID = 101,
                     JobUnique = "aaa-schId1234",
                     PartName = "aaa",
                     Process = 2,
@@ -909,8 +909,39 @@ namespace DebugMachineWatchApiServer
                     Action = new InProcessMaterialAction() {
                         Type = InProcessMaterialAction.ActionType.Waiting,
                     }
-                }
+                },
 
+                // some material in Queue2
+                new InProcessMaterial() {
+                    MaterialID = 152,
+                    JobUnique = "aaa-schId1234",
+                    PartName = "aaa",
+                    Process = 1,
+                    Path = 1,
+                    Location = new InProcessMaterialLocation() {
+                        Type = InProcessMaterialLocation.LocType.InQueue,
+                        CurrentQueue = "Queue2",
+                        QueuePosition = 1,
+                    },
+                    Action = new InProcessMaterialAction() {
+                        Type = InProcessMaterialAction.ActionType.Waiting,
+                    }
+                },
+                new InProcessMaterial() {
+                    MaterialID = 200,
+                    JobUnique = "ccc-schId1234",
+                    PartName = "ccc",
+                    Process = 2,
+                    Path = 1,
+                    Location = new InProcessMaterialLocation() {
+                        Type = InProcessMaterialLocation.LocType.InQueue,
+                        CurrentQueue = "Queue2",
+                        QueuePosition = 2,
+                    },
+                    Action = new InProcessMaterialAction() {
+                        Type = InProcessMaterialAction.ActionType.Waiting,
+                    }
+                }
             };
 
 
@@ -936,6 +967,7 @@ namespace DebugMachineWatchApiServer
                 LatestScheduleId = aaa.ScheduleId,
             };
             st.QueueSizes["Queue1"] = new QueueSize();
+            st.QueueSizes["Queue2"] = new QueueSize();
             foreach (var m in mats) st.Material.Add(m);
             return st;
         }
