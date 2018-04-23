@@ -30,50 +30,49 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from 'react';
-import Hidden from 'material-ui/Hidden';
 
-import * as routes from '../../data/routes';
+import * as api from './api';
+import * as im from 'immutable';
 
-import StationToolbar from './StationToolbar';
-import LoadStation from './LoadStation';
-import Inspection from './Inspection';
-import Wash from './Wash';
-import Queues from './Queues';
-import AllMaterial from './AllMaterial';
+export type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
 
-export interface StationMonitorProps {
-  readonly monitor_type: routes.StationMonitorType;
-}
+export type AllMaterialBins = im.Map<string, MaterialList>;
 
-function monitorElement(
-    type: routes.StationMonitorType,
-    fillViewport: boolean,
-  ): JSX.Element {
-  switch (type) {
-    case routes.StationMonitorType.LoadUnload:
-      return <LoadStation fillViewPort={fillViewport}/>;
-    case routes.StationMonitorType.Inspection:
-      return <Inspection/>;
-    case routes.StationMonitorType.Wash:
-      return <Wash/>;
-    case routes.StationMonitorType.Queues:
-      return <Queues/>;
-    case routes.StationMonitorType.AllMaterial:
-      return <AllMaterial/>;
-  }
-}
+export function selectAllMaterialIntoBins(curSt: Readonly<api.ICurrentStatus>): AllMaterialBins {
 
-export default function StationMonitor(props: StationMonitorProps) {
-  return (
-    <div>
-      <StationToolbar/>
-      <Hidden mdDown>
-        {monitorElement(props.monitor_type, true)}
-      </Hidden>
-      <Hidden lgUp>
-        {monitorElement(props.monitor_type, false)}
-      </Hidden>
-    </div>
-  );
+  const palLoc = im.Map(curSt.pallets)
+    .map(st =>
+      " (" + st.currentPalletLocation.group + " #" + st.currentPalletLocation.num.toString() + ")"
+    );
+
+  return im.Seq(curSt.material)
+    .map(mat => {
+      switch (mat.location.type) {
+        case api.LocType.InQueue:
+          return { region: mat.location.currentQueue || "Queue", mat};
+        case api.LocType.OnPallet:
+          let region = "Pallet";
+          if (mat.location.pallet) {
+            region = "Pallet " + mat.location.pallet.toString() + palLoc.get(mat.location.pallet) || "";
+          }
+          return {region, mat};
+        case api.LocType.Free:
+        default:
+          return { region: "Free Material", mat};
+      }
+    })
+    .groupBy(x => x.region)
+    .map(group =>
+      group.map(x => x.mat).sortBy(mat => {
+        switch (mat.location.type) {
+          case api.LocType.OnPallet:
+            return mat.location.face;
+          case api.LocType.InQueue:
+          case api.LocType.Free:
+          default:
+            return mat.location.queuePosition;
+        }
+      }).valueSeq().toArray()
+    )
+    .toMap();
 }
