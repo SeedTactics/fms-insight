@@ -17,113 +17,6 @@
     "application/json"
   ],
   "paths": {
-    "/api/v1/inspection/material/{materialID}/{inspectionType}": {
-      "put": {
-        "tags": [
-          "inspection"
-        ],
-        "operationId": "inspection_ForceInspection",
-        "parameters": [
-          {
-            "type": "integer",
-            "name": "materialID",
-            "in": "path",
-            "required": true,
-            "x-nullable": false,
-            "format": "int64"
-          },
-          {
-            "type": "string",
-            "name": "inspectionType",
-            "in": "path",
-            "required": true,
-            "x-nullable": false
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/v1/inspection/next-piece/{inspectionType}": {
-      "put": {
-        "tags": [
-          "inspection"
-        ],
-        "operationId": "inspection_NextPieceInspection",
-        "parameters": [
-          {
-            "type": "string",
-            "name": "inspectionType",
-            "in": "path",
-            "required": true,
-            "x-nullable": false
-          },
-          {
-            "name": "loc",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/PalletLocation"
-            },
-            "x-nullable": false
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/v1/inspection/counts": {
-      "get": {
-        "tags": [
-          "inspection"
-        ],
-        "operationId": "inspection_GetCounts",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/InspectCount"
-              }
-            },
-            "x-nullable": true
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "inspection"
-        ],
-        "operationId": "inspection_SetCounts",
-        "parameters": [
-          {
-            "name": "newCounts",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/InspectCount"
-              }
-            },
-            "x-nullable": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
     "/api/v1/jobs/history": {
       "get": {
         "tags": [
@@ -328,6 +221,14 @@
             "in": "path",
             "required": true,
             "x-nullable": false
+          },
+          {
+            "type": "integer",
+            "name": "lastCompletedProcess",
+            "in": "query",
+            "required": true,
+            "x-nullable": false,
+            "format": "int32"
           },
           {
             "type": "string",
@@ -920,82 +821,6 @@
     }
   },
   "definitions": {
-    "PalletLocation": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "loc",
-        "group",
-        "num"
-      ],
-      "properties": {
-        "loc": {
-          "$ref": "#/definitions/PalletLocationEnum"
-        },
-        "group": {
-          "type": "string"
-        },
-        "num": {
-          "type": "integer",
-          "format": "int32"
-        }
-      },
-      "allOf": [
-        {
-          "$ref": "#/definitions/ValueType"
-        }
-      ]
-    },
-    "PalletLocationEnum": {
-      "type": "string",
-      "description": "",
-      "x-enumNames": [
-        "LoadUnload",
-        "Machine",
-        "MachineQueue",
-        "Buffer",
-        "Cart"
-      ],
-      "enum": [
-        "LoadUnload",
-        "Machine",
-        "MachineQueue",
-        "Buffer",
-        "Cart"
-      ]
-    },
-    "ValueType": {
-      "type": "object",
-      "x-abstract": true,
-      "additionalProperties": false
-    },
-    "InspectCount": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "Counter",
-        "Value",
-        "LastUTC"
-      ],
-      "properties": {
-        "Counter": {
-          "type": "string"
-        },
-        "Value": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "LastUTC": {
-          "type": "string",
-          "format": "date-time"
-        }
-      },
-      "allOf": [
-        {
-          "$ref": "#/definitions/ValueType"
-        }
-      ]
-    },
     "HistoricData": {
       "type": "object",
       "additionalProperties": false,
@@ -1306,6 +1131,11 @@
         }
       ]
     },
+    "ValueType": {
+      "type": "object",
+      "x-abstract": true,
+      "additionalProperties": false
+    },
     "JobMachiningStop": {
       "type": "object",
       "additionalProperties": false,
@@ -1579,6 +1409,50 @@
           "format": "decimal"
         }
       }
+    },
+    "PalletLocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "loc",
+        "group",
+        "num"
+      ],
+      "properties": {
+        "loc": {
+          "$ref": "#/definitions/PalletLocationEnum"
+        },
+        "group": {
+          "type": "string"
+        },
+        "num": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/ValueType"
+        }
+      ]
+    },
+    "PalletLocationEnum": {
+      "type": "string",
+      "description": "",
+      "x-enumNames": [
+        "LoadUnload",
+        "Machine",
+        "MachineQueue",
+        "Buffer",
+        "Cart"
+      ],
+      "enum": [
+        "LoadUnload",
+        "Machine",
+        "MachineQueue",
+        "Buffer",
+        "Cart"
+      ]
     },
     "InProcessMaterial": {
       "type": "object",
