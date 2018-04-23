@@ -37,14 +37,17 @@ import { withStyles } from 'material-ui';
 import * as im from 'immutable';
 import { createSelector } from 'reselect';
 import DocumentTitle from 'react-document-title';
+import Button from 'material-ui/Button';
 
 import { LoadStationAndQueueData, selectLoadStationAndQueueProps } from '../../data/load-station';
-import { MaterialDialog, InProcMaterial, WhiteboardRegion } from './Material';
+import { MaterialDialog, InProcMaterial, WhiteboardRegion, MaterialDialogProps } from './Material';
 import * as api from '../../data/api';
 import * as routes from '../../data/routes';
-import { Store, connect, mkAC } from '../../store/store';
+import * as guiState from '../../data/gui-state';
+import { Store, connect, mkAC, AppActionBeforeMiddleware } from '../../store/store';
 import * as matDetails from '../../data/material-details';
 import { MaterialSummary } from '../../data/events';
+import SelectWorkorderDialog from './SelectWorkorder';
 
 const palletStyles = withStyles(() => ({
   palletContainerFill: {
@@ -134,14 +137,56 @@ export const PalletColumn = palletStyles<LoadStationProps>(props => {
   );
 });
 
+export interface LoadMatDialogProps extends MaterialDialogProps {
+  readonly workAssignType: api.WorkorderAssignmentType;
+  readonly openSelectWorkorder: (mat: matDetails.MaterialDetail) => void;
+}
+
+export function LoadMatDialog(props: LoadMatDialogProps) {
+  function openAssignWorkorder() {
+    if (!props.display_material) {
+      return;
+    }
+    props.openSelectWorkorder(props.display_material);
+  }
+  return (
+    <MaterialDialog
+      display_material={props.display_material}
+      onClose={props.onClose}
+      buttons={
+        <>
+          { props.workAssignType === api.WorkorderAssignmentType.AssignWorkorderAtUnload ?
+            <Button color="primary" onClick={openAssignWorkorder}>
+              {
+                props.display_material && props.display_material.workorderId ?
+                  "Change Workorder"
+                  : "Assign Workorder"
+              }
+            </Button>
+            : undefined
+          }
+        </>
+      }
+    />
+  );
+}
+
 const ConnectedMaterialDialog = connect(
   st => ({
-    display_material: st.MaterialDetails.material
+    display_material: st.MaterialDetails.material,
+    workAssignType: st.ServerSettings.workorderAssignmentType,
   }),
   {
     onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
+    openSelectWorkorder: (mat: matDetails.MaterialDetail) => [
+      {
+        type: guiState.ActionType.SetWorkorderDialogOpen,
+        open: true
+      },
+      matDetails.loadWorkorders(mat, routes.StationMonitorType.LoadUnload),
+    ] as AppActionBeforeMiddleware,
   }
-)(MaterialDialog);
+)(LoadMatDialog);
 
 const loadStyles = withStyles(() => ({
   mainFillViewport: {
@@ -171,6 +216,7 @@ const loadStyles = withStyles(() => ({
 
 export interface LoadStationProps {
   readonly fillViewPort: boolean;
+  readonly workAssignType: api.WorkorderAssignmentType;
   readonly data: LoadStationAndQueueData;
   openMat: (m: Readonly<MaterialSummary>) => void;
 }
@@ -232,6 +278,8 @@ export const LoadStation = loadStyles<LoadStationProps>(props => {
             }
           </div>
         }
+        {props.workAssignType === api.WorkorderAssignmentType.AssignWorkorderAtUnload
+          ? <SelectWorkorderDialog/> : undefined}
         <ConnectedMaterialDialog/>
       </main>
     </DocumentTitle>
@@ -252,7 +300,8 @@ const buildLoadData = createSelector(
 
 export default connect(
   (st: Store) => ({
-    data: buildLoadData(st)
+    data: buildLoadData(st),
+    workAssignType: st.ServerSettings.workorderAssignmentType,
   }),
   {
     openMat: matDetails.openMaterialDialog,
