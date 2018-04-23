@@ -56,5 +56,12 @@ export default connect(
           || st.Events.loading_analysis_month_log
           || st.Events.loading_analysis_month_jobs
           || st.Websocket.websocket_reconnecting
+          || st.MaterialDetails.add_mat_in_progress
+          || (st.MaterialDetails.material &&
+               (   st.MaterialDetails.material.loading_events
+                || st.MaterialDetails.material.loading_workorders
+                || st.MaterialDetails.material.updating_material
+               )
+             )
   })
 )(LoadingIcon);

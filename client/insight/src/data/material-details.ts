@@ -36,13 +36,13 @@ import * as im from 'immutable';
 import * as api from './api';
 import { Pledge, PledgeStatus, ActionBeforeMiddleware } from '../store/middleware';
 import { MaterialSummary } from './events';
-import { StationMonitorType } from './routes';
 
 export enum ActionType {
   OpenMaterialDialog = 'MaterialDetails_Open',
   CloseMaterialDialog = 'MaterialDetails_Close',
   UpdateMaterial = 'MaterialDetails_UpdateMaterial',
   LoadWorkorders = 'OrderAssign_LoadWorkorders',
+  AddNewMaterialToQueue = 'MaterialDetails_AddNewMaterialToQueue',
 }
 
 export interface WorkorderPlanAndSummary {
@@ -86,6 +86,10 @@ export type Action =
   | {
       type: ActionType.LoadWorkorders,
       pledge: Pledge<ReadonlyArray<WorkorderPlanAndSummary>>,
+    }
+  | {
+      type: ActionType.AddNewMaterialToQueue,
+      pledge: Pledge<void>,
     }
   ;
 
@@ -251,13 +255,12 @@ export function computeWorkorders(
     .toArray();
 }
 
-export function loadWorkorders(mat: MaterialDetail, station: StationMonitorType) {
+export function loadWorkorders(mat: MaterialDetail): ABF {
   const logClient = new api.LogClient();
   const jobClient = new api.JobsClient();
 
   return {
     type: ActionType.LoadWorkorders,
-    station,
     pledge:
       jobClient.mostRecentUnfilledWorkordersForPart(mat.partName)
       .then(workorders => {
@@ -269,12 +272,52 @@ export function loadWorkorders(mat: MaterialDetail, station: StationMonitorType)
   };
 }
 
+export interface AddExistingMaterialToQueueData {
+  readonly materialId: number;
+  readonly queue: string;
+  readonly queuePosition: number;
+}
+
+export function addExistingMaterialToQueue(d: AddExistingMaterialToQueueData): ABF {
+  const client = new api.JobsClient();
+  return {
+    type: ActionType.AddNewMaterialToQueue,
+    pledge: client.setMaterialInQueue(d.materialId, new api.QueuePosition({
+      queue: d.queue,
+      position: d.queuePosition
+    })),
+  };
+}
+
+export interface AddNewMaterialToQueueData {
+  readonly jobUnique: string;
+  readonly lastCompletedProcess?: number;
+  readonly queue: string;
+  readonly queuePosition: number;
+  readonly serial?: string;
+}
+
+export function addNewMaterialToQueue(d: AddNewMaterialToQueueData) {
+  const client = new api.JobsClient();
+  return {
+    type: ActionType.AddNewMaterialToQueue,
+    pledge: client.addUnprocessedMaterialToQueue(
+      d.jobUnique, d.lastCompletedProcess || -1, d.queue, d.queuePosition, d.serial || ""
+    )
+  };
+}
+
 export interface State {
   readonly material: MaterialDetail | null;
+  readonly load_error?: Error;
+  readonly update_error?: Error;
+  readonly add_mat_in_progress: boolean;
+  readonly add_mat_error?: Error;
 }
 
 export const initial: State = {
-  material: null
+  material: null,
+  add_mat_in_progress: false,
 };
 
 function processEvents(evts: ReadonlyArray<Readonly<api.ILogEntry>>, mat: MaterialDetail): MaterialDetail {
@@ -333,16 +376,19 @@ export function reducer(s: State, a: Action): State {
     case ActionType.OpenMaterialDialog:
       switch (a.pledge.status) {
         case PledgeStatus.Starting:
-          return {...s, material: a.initial};
+          return {...s, material: a.initial, load_error: undefined};
 
         case PledgeStatus.Completed:
           return {...s, material: processEvents(a.pledge.result, a.initial)};
 
         case PledgeStatus.Error:
-          return {...s, material: {...a.initial,
-            loading_events: false,
-            events: [],
-          }};
+          return {...s,
+            material: {...a.initial,
+              loading_events: false,
+              events: [],
+            },
+            load_error: a.pledge.error,
+          };
 
         default:
           return s;
@@ -355,8 +401,11 @@ export function reducer(s: State, a: Action): State {
       if (!s.material) { return s; }
       switch (a.pledge.status) {
         case PledgeStatus.Starting:
-          return {...s, material: {...s.material,
-            updating_material: true}
+          return {...s,
+            material: {...s.material,
+              updating_material: true
+            },
+            update_error: undefined,
           };
         case PledgeStatus.Completed:
           const oldMatEnd = s.material;
@@ -370,8 +419,11 @@ export function reducer(s: State, a: Action): State {
           };
 
         case PledgeStatus.Error:
-          return {...s, material: {...s.material,
-            updating_material: false}
+          return {...s, material:
+            {...s.material,
+              updating_material: false
+            },
+            update_error: a.pledge.error,
           };
 
         default: return s;
@@ -399,6 +451,17 @@ export function reducer(s: State, a: Action): State {
 
         default:
           return s;
+      }
+
+    case ActionType.AddNewMaterialToQueue:
+      switch (a.pledge.status) {
+        case PledgeStatus.Starting:
+          return {...s, add_mat_in_progress: true, add_mat_error: undefined};
+        case PledgeStatus.Completed:
+          return {...s, add_mat_in_progress: false };
+        case PledgeStatus.Error:
+          return {...s, add_mat_in_progress: false, add_mat_error: a.pledge.error };
+        default: return s;
       }
 
     default:

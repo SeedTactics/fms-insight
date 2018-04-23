@@ -183,7 +183,7 @@ const ConnectedMaterialDialog = connect(
         type: guiState.ActionType.SetWorkorderDialogOpen,
         open: true
       },
-      matDetails.loadWorkorders(mat, routes.StationMonitorType.LoadUnload),
+      matDetails.loadWorkorders(mat),
     ] as AppActionBeforeMiddleware,
   }
 )(LoadMatDialog);

@@ -44,7 +44,6 @@ import { Store, connect, AppActionBeforeMiddleware, mkAC } from '../../store/sto
 import { MaterialDialog, WhiteboardRegion, MatSummary, MaterialDialogProps } from './Material';
 import * as matDetails from '../../data/material-details';
 import * as guiState from '../../data/gui-state';
-import { StationMonitorType } from '../../data/routes';
 import SelectWorkorderDialog from './SelectWorkorder';
 import { MaterialSummaryAndCompletedData } from '../../data/events.matsummary';
 import { WorkorderAssignmentType } from '../../data/api';
@@ -112,7 +111,7 @@ const ConnectedWashDialog = connect(
         type: guiState.ActionType.SetWorkorderDialogOpen,
         open: true
       },
-      matDetails.loadWorkorders(mat, StationMonitorType.Wash),
+      matDetails.loadWorkorders(mat),
     ] as AppActionBeforeMiddleware,
   }
 )(WashDialog);

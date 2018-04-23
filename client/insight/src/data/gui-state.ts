@@ -37,12 +37,19 @@ export enum PlannedOrActual {
   PlannedMinusActual = 'PlannedOrActual',
 }
 
+export enum AddMatToQueueDialogState {
+  DialogClosed,
+  DialogOpenChooseSerialOrJob,
+  DialogOpenToAddMaterial,
+}
+
 export enum ActionType {
   SetSelectedStationCyclePart = 'Gui_SetSelectedStationCyclePart',
   SetSelectedPalletCycle = 'Gui_SetSelectedPalletCycle',
   SetStationOeeHeatmapType = 'Gui_SetStationOeeHeatmapType',
   SetCompletedCountHeatmapType = 'Gui_SetCompletedCountHeatmapType',
   SetWorkorderDialogOpen = 'Gui_SetWorkorderDialog',
+  SetAddMatToQueueDialog = 'Gui_SetAddMatToQueueDialog',
 }
 
 export type Action =
@@ -51,6 +58,7 @@ export type Action =
   | { type: ActionType.SetStationOeeHeatmapType, ty: PlannedOrActual }
   | { type: ActionType.SetCompletedCountHeatmapType, ty: PlannedOrActual }
   | { type: ActionType.SetWorkorderDialogOpen, open: boolean }
+  | { type: ActionType.SetAddMatToQueueDialog, queue?: string, st: AddMatToQueueDialogState }
   ;
 
 export interface State {
@@ -59,12 +67,15 @@ export interface State {
   readonly station_oee_heatmap_type: PlannedOrActual;
   readonly completed_count_heatmap_type: PlannedOrActual;
   readonly workorder_dialog_open: boolean;
+  readonly add_mat_to_queue_st: AddMatToQueueDialogState;
+  readonly add_mat_to_queue?: string;
 }
 
 export const initial: State = {
   station_oee_heatmap_type: PlannedOrActual.Actual,
   completed_count_heatmap_type: PlannedOrActual.Actual,
   workorder_dialog_open: false,
+  add_mat_to_queue_st: AddMatToQueueDialogState.DialogClosed,
 };
 
 export function reducer(s: State, a: Action): State {
@@ -80,6 +91,8 @@ export function reducer(s: State, a: Action): State {
       return {...s, completed_count_heatmap_type: a.ty };
     case ActionType.SetWorkorderDialogOpen:
       return {...s, workorder_dialog_open: a.open };
+    case ActionType.SetAddMatToQueueDialog:
+      return {...s, add_mat_to_queue_st: a.st, add_mat_to_queue: a.queue };
     default:
       return s;
   }

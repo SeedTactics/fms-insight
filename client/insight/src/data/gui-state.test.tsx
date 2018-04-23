@@ -87,3 +87,13 @@ it("closes the workorder dialog", () => {
   });
   expect(s.workorder_dialog_open).toBe(false);
 });
+
+it("sets the add mat dialog state", () => {
+  let s = gui.reducer(gui.initial, {
+    type: gui.ActionType.SetAddMatToQueueDialog,
+    st: gui.AddMatToQueueDialogState.DialogOpenChooseSerialOrJob,
+    queue: "abc",
+  });
+  expect(s.add_mat_to_queue_st).toEqual(gui.AddMatToQueueDialogState.DialogOpenChooseSerialOrJob);
+  expect(s.add_mat_to_queue).toEqual("abc");
+});
