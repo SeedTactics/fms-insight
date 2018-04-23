@@ -71,8 +71,9 @@ it('starts an open', () => {
     initial: m,
     pledge: { status: PledgeStatus.Starting }
   };
-  let s = mat.reducer(mat.initial, action);
+  let s = mat.reducer({...mat.initial, load_error: new Error("a")}, action);
   expect(s.material).toEqual(m);
+  expect(s.load_error).toBeUndefined();
 });
 
 it('finishes material open', () => {
@@ -105,6 +106,7 @@ it('handles material error', () => {
   };
   let s = mat.reducer(initialSt, action);
   expect(s.material).toEqual({...m, loading_events: false, events: []});
+  expect(s.load_error).toEqual(new Error("aaaa"));
 });
 
 it('clears the material', () => {
@@ -126,8 +128,9 @@ it("starts to update", () => {
       status: PledgeStatus.Starting
     }
   };
-  const st = mat.reducer({material: m, add_mat_in_progress: false}, action);
+  const st = mat.reducer({material: m, add_mat_in_progress: false, update_error: new Error("a")}, action);
   expect(st.material).toEqual({...m, updating_material: true});
+  expect(st.update_error).toBeUndefined();
 });
 
 it("errors during update", () => {
@@ -140,6 +143,7 @@ it("errors during update", () => {
   };
   const st = mat.reducer({material: {...m, updating_material: true}, add_mat_in_progress: false}, action);
   expect(st.material).toEqual(m);
+  expect(st.update_error).toEqual(new Error("the error"));
 });
 
 it("starts to load workorders", () => {
@@ -149,8 +153,9 @@ it("starts to load workorders", () => {
       status: PledgeStatus.Starting
     }
   };
-  const st = mat.reducer({material: m, add_mat_in_progress: false}, action);
+  const st = mat.reducer({material: m, add_mat_in_progress: false, load_workorders_error: new Error("a")}, action);
   expect(st.material).toEqual({...m, loading_workorders: true});
+  expect(st.load_workorders_error).toBeUndefined();
 });
 
 it("errors during loading workorders", () => {
@@ -163,6 +168,7 @@ it("errors during loading workorders", () => {
   };
   const st = mat.reducer({material: {...m, loading_workorders: true}, add_mat_in_progress: false}, action);
   expect(st.material).toEqual(m);
+  expect(st.load_workorders_error).toEqual(new Error("the error"));
 });
 
 it("successfully loads workorders", () => {
@@ -295,4 +301,45 @@ it("successfully processes events", () => {
   };
   let s = mat.reducer(initialSt, action);
   expect(s.material).toEqual(after);
+});
+
+it("starts to add new material", () => {
+  const action: mat.Action = {
+    type: mat.ActionType.AddNewMaterialToQueue,
+    pledge: {
+      status: PledgeStatus.Starting
+    }
+  };
+  const st = mat.reducer({material: m, add_mat_in_progress: false, add_mat_error: new Error("a")}, action);
+  expect(st.material).toEqual(m);
+  expect(st.add_mat_in_progress).toBe(true);
+  expect(st.add_mat_error).toBeUndefined();
+});
+
+it("completes to add new material", () => {
+  const action: mat.Action = {
+    type: mat.ActionType.AddNewMaterialToQueue,
+    pledge: {
+      status: PledgeStatus.Completed,
+      result: undefined,
+    }
+  };
+  const st = mat.reducer({material: m, add_mat_in_progress: true}, action);
+  expect(st.material).toEqual(m);
+  expect(st.add_mat_in_progress).toBe(false);
+  expect(st.add_mat_error).toBeUndefined();
+});
+
+it("errors during add new material", () => {
+  const action: mat.Action = {
+    type: mat.ActionType.AddNewMaterialToQueue,
+    pledge: {
+      status: PledgeStatus.Error,
+      error: new Error("an error")
+    }
+  };
+  const st = mat.reducer({material: m, add_mat_in_progress: true}, action);
+  expect(st.material).toEqual(m);
+  expect(st.add_mat_in_progress).toBe(false);
+  expect(st.add_mat_error).toEqual(new Error("an error"));
 });

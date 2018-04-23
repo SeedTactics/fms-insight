@@ -311,6 +311,7 @@ export interface State {
   readonly material: MaterialDetail | null;
   readonly load_error?: Error;
   readonly update_error?: Error;
+  readonly load_workorders_error?: Error;
   readonly add_mat_in_progress: boolean;
   readonly add_mat_error?: Error;
 }
@@ -433,9 +434,12 @@ export function reducer(s: State, a: Action): State {
       if (!s.material) { return s; }
       switch (a.pledge.status) {
         case PledgeStatus.Starting:
-          return {...s, material: {...s.material,
-            loading_workorders: true
-          }};
+          return {...s,
+            material: {...s.material,
+              loading_workorders: true
+            },
+            load_workorders_error: undefined
+          };
 
         case PledgeStatus.Completed:
           return {...s, material: {...s.material,
@@ -444,10 +448,13 @@ export function reducer(s: State, a: Action): State {
           }};
 
         case PledgeStatus.Error:
-          return {...s, material: {...s.material,
-            loading_workorders: false,
-            workorders: [],
-          }};
+          return {...s,
+            material: {...s.material,
+              loading_workorders: false,
+              workorders: [],
+            },
+            load_workorders_error: a.pledge.error,
+          };
 
         default:
           return s;
