@@ -48,6 +48,8 @@ import Dialog, {
   DialogContent,
   DialogTitle,
 } from 'material-ui/Dialog';
+import AddIcon from '@material-ui/icons/AddBox';
+import IconButton from 'material-ui/IconButton';
 
 import * as api from '../../data/api';
 import * as matDetails from '../../data/material-details';
@@ -367,24 +369,24 @@ const whiteboardRegionStyle = withStyles(() => ({
   container: {
     width: '100%',
     minHeight: '70px',
-    position: 'relative' as 'relative',
-    display: 'flex',
-    flexWrap: 'wrap' as 'wrap'
   },
   labelContainer: {
-    position: 'absolute' as 'absolute',
-    top: '4px',
-    left: '4px',
+    display: 'flex',
   },
   label: {
     color: 'rgba(0,0,0,0.5)',
     fontSize: 'small',
+    flexGrow: 1,
+  },
+  addButton: {
+    color: 'rgba(0,0,0,0.5)',
+    height: '0.7em',
+    width: '0.7em',
   },
   contentContainer: {
     width: '100%',
     display: 'flex',
     flexWrap: 'wrap' as 'wrap',
-    marginTop: '1em',
   },
   borderLeft: {
     borderLeft: '1px solid rgba(0,0,0,0.12)'
@@ -404,6 +406,7 @@ export interface WhiteboardRegionProps {
   readonly borderLeft?: boolean;
   readonly borderBottom?: boolean;
   readonly borderRight?: boolean;
+  readonly onAddMaterial?: () => void;
 }
 
 const WhiteboardRegionWithStyle = whiteboardRegionStyle<WhiteboardRegionProps>(props => {
@@ -429,6 +432,12 @@ const WhiteboardRegionWithStyle = whiteboardRegionStyle<WhiteboardRegionProps>(p
         <span className={props.classes.label}>
           {props.label}
         </span>
+        { props.onAddMaterial ?
+          <IconButton onClick={props.onAddMaterial} className={props.classes.addButton}>
+            <AddIcon className={props.classes.addButton}/>
+          </IconButton>
+          : undefined
+        }
       </div>
       <div className={props.classes.contentContainer} style={{justifyContent}}>
         {props.children}
