@@ -49,7 +49,8 @@ import SelectWorkorderDialog from './SelectWorkorder';
 import { MaterialSummaryAndCompletedData } from '../../data/events.matsummary';
 
 export interface WashDialogProps extends MaterialDialogProps {
-  readonly completeWash: (mat: matDetails.MaterialDetail) => void;
+  readonly operator?: string;
+  readonly completeWash: (mat: matDetails.CompleteWashData) => void;
   readonly openSelectWorkorder: (mat: matDetails.MaterialDetail) => void;
 }
 
@@ -59,7 +60,7 @@ export function WashDialog(props: WashDialogProps) {
       return;
     }
 
-    props.completeWash(props.display_material);
+    props.completeWash({mat: props.display_material, operator: props.operator});
   }
   function openAssignWorkorder() {
     if (!props.display_material) {
@@ -91,12 +92,13 @@ export function WashDialog(props: WashDialogProps) {
 
 const ConnectedWashDialog = connect(
   st => ({
-    display_material: st.MaterialDetails.material
+    display_material: st.MaterialDetails.material,
+    operator: st.Operators.current,
   }),
   {
     onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
-    completeWash: (mat: matDetails.MaterialDetail) => [
-      matDetails.completeWash(mat),
+    completeWash: (d: matDetails.CompleteWashData) => [
+      matDetails.completeWash(d),
       {type: matDetails.ActionType.CloseMaterialDialog},
     ],
     openSelectWorkorder: (mat: matDetails.MaterialDetail) => [

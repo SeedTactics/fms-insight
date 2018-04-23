@@ -141,9 +141,10 @@ export interface CompleteInspectionData {
   readonly mat: MaterialDetail;
   readonly inspType: string;
   readonly success: boolean;
+  readonly operator?: string;
 }
 
-export function completeInspection({mat, inspType, success}: CompleteInspectionData): ABF {
+export function completeInspection({mat, inspType, success, operator}: CompleteInspectionData): ABF {
   const client = new api.LogClient();
   return {
     type: ActionType.UpdateMaterial,
@@ -162,19 +163,25 @@ export function completeInspection({mat, inspType, success}: CompleteInspectionD
       success,
       active: 'PT0S',
       elapsed: 'PT0S',
+      extraData: operator ? {operator} : undefined
     }))
   };
 }
 
-export function completeWash(mat: MaterialDetail): ABF {
+export interface CompleteWashData {
+  readonly mat: MaterialDetail;
+  readonly operator?: string;
+}
+
+export function completeWash(d: CompleteWashData): ABF {
   const client = new api.LogClient();
   return {
     type: ActionType.UpdateMaterial,
     pledge: client.recordWashCompleted(new api.NewWash({
       material: new api.LogMaterial({
-        id: mat.materialID,
-        uniq: mat.jobUnique,
-        part: mat.partName,
+        id: d.mat.materialID,
+        uniq: d.mat.jobUnique,
+        part: d.mat.partName,
         proc: 1,
         numproc: 1,
         face: "1",
@@ -182,6 +189,7 @@ export function completeWash(mat: MaterialDetail): ABF {
       washLocationNum: 1,
       active: 'PT0S',
       elapsed: 'PT0S',
+      extraData: d.operator ? {operator: d.operator} : undefined
     }))
   };
 }

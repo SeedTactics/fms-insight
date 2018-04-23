@@ -46,6 +46,7 @@ import * as matDetails from '../../data/material-details';
 import { MaterialSummaryAndCompletedData } from '../../data/events.matsummary';
 
 export interface InspDialogProps extends MaterialDialogProps {
+  readonly operator?: string;
   readonly focusInspectionType: string;
   readonly completeInspection: (comp: matDetails.CompleteInspectionData) => void;
 }
@@ -59,7 +60,8 @@ export function InspDialog(props: InspDialogProps) {
     props.completeInspection({
       mat: props.display_material,
       inspType: props.focusInspectionType,
-      success
+      success,
+      operator: props.operator,
     });
   }
 
@@ -86,6 +88,7 @@ const ConnectedInspDialog = connect(
   st => ({
     display_material: st.MaterialDetails.material,
     focusInspectionType: st.Route.selected_insp_type || "",
+    operator: st.Operators.current,
   }),
   {
     onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
