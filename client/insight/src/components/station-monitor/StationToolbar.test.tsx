@@ -63,6 +63,7 @@ it('displays the toolbar for load with one queue', () => {
       displayInspection={displayInsp}
       displayWash={displayWash}
       displayQueues={displayQueues}
+      displayAllMaterial={jest.fn()}
       operators={Set(["o1", "o2"])}
       currentOperator="o1"
       setOperator={jest.fn()}
@@ -89,6 +90,7 @@ it('displays the load with no queues', () => {
       displayInspection={displayInsp}
       displayWash={displayWash}
       displayQueues={displayQueues}
+      displayAllMaterial={jest.fn()}
       operators={Set(["o1", "o2"])}
       currentOperator="o1"
       setOperator={jest.fn()}
@@ -117,6 +119,7 @@ it('displays the toolbar for load with three queues', () => {
       displayInspection={displayInsp}
       displayWash={displayWash}
       displayQueues={displayQueues}
+      displayAllMaterial={jest.fn()}
       operators={Set(["o1", "o2"])}
       currentOperator="o1"
       setOperator={jest.fn()}
@@ -145,12 +148,38 @@ it('displays the toolbar for wash', () => {
       displayInspection={displayInsp}
       displayWash={displayWash}
       displayQueues={displayQueues}
+      displayAllMaterial={jest.fn()}
       operators={Set(["o1", "o2"])}
       currentOperator="o1"
       setOperator={jest.fn()}
       removeOperator={jest.fn()}
     />);
   expect(val).toMatchSnapshot('wash toolbar');
+});
+
+it('displays the toolbar for all material', () => {
+  const st = {...basicState,
+    current_route: routes.RouteLocation.AllMaterial,
+    station_monitor: routes.StationMonitorType.AllMaterial,
+    load_queues: [],
+  };
+
+  let val = shallow(
+    <StationToolbar
+      current_route={st}
+      queues={{}}
+      insp_types={Set(["i1", "i2"])}
+      displayLoadStation={jest.fn()}
+      displayInspection={jest.fn()}
+      displayWash={jest.fn()}
+      displayQueues={jest.fn()}
+      displayAllMaterial={jest.fn()}
+      operators={Set(["o1", "o2"])}
+      currentOperator="o1"
+      setOperator={jest.fn()}
+      removeOperator={jest.fn()}
+    />);
+  expect(val).toMatchSnapshot('all material toolbar');
 });
 
 it('displays the toolbar for all inspection', () => {
@@ -173,6 +202,7 @@ it('displays the toolbar for all inspection', () => {
       displayInspection={displayInsp}
       displayWash={displayWash}
       displayQueues={displayQueues}
+      displayAllMaterial={jest.fn()}
       operators={Set(["o1", "o2"])}
       currentOperator="o1"
       setOperator={jest.fn()}
@@ -202,6 +232,7 @@ it('displays the toolbar for single inspection type', () => {
       displayInspection={displayInsp}
       displayWash={displayWash}
       displayQueues={displayQueues}
+      displayAllMaterial={jest.fn()}
       operators={Set(["o1", "o2"])}
       currentOperator="o1"
       setOperator={jest.fn()}
@@ -230,6 +261,7 @@ it('displays an empty queue page', () => {
       displayInspection={displayInsp}
       displayWash={displayWash}
       displayQueues={displayQueues}
+      displayAllMaterial={jest.fn()}
       operators={Set(["o1", "o2"])}
       currentOperator="o1"
       setOperator={jest.fn()}
@@ -258,6 +290,7 @@ it('displays the toolbar for queue page with three queues', () => {
       displayInspection={displayInsp}
       displayWash={displayWash}
       displayQueues={displayQueues}
+      displayAllMaterial={jest.fn()}
       operators={Set(["o1", "o2"])}
       currentOperator="o1"
       setOperator={jest.fn()}
@@ -281,6 +314,7 @@ it("changes the station type", () => {
       displayInspection={displayInsp}
       displayWash={displayWash}
       displayQueues={displayQueues}
+      displayAllMaterial={jest.fn()}
       operators={Set(["o1", "o2"])}
       currentOperator="o1"
       setOperator={jest.fn()}
@@ -329,6 +363,7 @@ it("changes the load station number", () => {
       displayInspection={displayInsp}
       displayWash={displayWash}
       displayQueues={displayQueues}
+      displayAllMaterial={jest.fn()}
       operators={Set(["o1", "o2"])}
       currentOperator="o1"
       setOperator={jest.fn()}
@@ -365,6 +400,7 @@ it("changes the load queues", () => {
       displayInspection={displayInsp}
       displayWash={displayWash}
       displayQueues={displayQueues}
+      displayAllMaterial={jest.fn()}
       operators={Set(["o1", "o2"])}
       currentOperator="o1"
       setOperator={jest.fn()}
@@ -415,6 +451,7 @@ it("changes the standalone queues", () => {
       displayInspection={displayInsp}
       displayWash={displayWash}
       displayQueues={displayQueues}
+      displayAllMaterial={jest.fn()}
       operators={Set(["o1", "o2"])}
       currentOperator="o1"
       setOperator={jest.fn()}

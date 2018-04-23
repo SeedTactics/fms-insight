@@ -151,6 +151,7 @@ export interface StationToolbarProps {
   readonly displayInspection: (type: string | undefined) => void;
   readonly displayWash: () => void;
   readonly displayQueues: (queues: ReadonlyArray<string>, freeMaterial: boolean) => void;
+  readonly displayAllMaterial: () => void;
   readonly setOperator: DispatchAction<operators.ActionType.SetOperator>;
   readonly removeOperator: DispatchAction<operators.ActionType.RemoveOperator>;
 }
@@ -185,6 +186,11 @@ export function StationToolbar(props: StationToolbarProps) {
           props.current_route.standalone_queues,
           props.current_route.standalone_free_material
         );
+        break;
+
+      case routes.StationMonitorType.AllMaterial:
+        props.displayAllMaterial();
+        break;
     }
   }
 
@@ -265,6 +271,9 @@ export function StationToolbar(props: StationToolbarProps) {
           </MenuItem>
           <MenuItem value={routes.StationMonitorType.Queues}>
             Queues
+          </MenuItem>
+          <MenuItem value={routes.StationMonitorType.AllMaterial}>
+            All Material
           </MenuItem>
         </Select>
         {
@@ -377,6 +386,7 @@ export default connect(
     displayInspection: routes.displayInspectionType,
     displayWash: routes.displayWash,
     displayQueues: routes.displayQueues,
+    displayAllMaterial: routes.displayAllMaterial,
     setOperator: mkAC(operators.ActionType.SetOperator),
     removeOperator: mkAC(operators.ActionType.RemoveOperator),
   }

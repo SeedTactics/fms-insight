@@ -40,6 +40,7 @@ export enum RouteLocation {
   InspectionMonitor = 'ROUTE_Inspection',
   WashMonitor = 'ROUTE_Wash',
   Queues = 'ROUTE_Queues',
+  AllMaterial = 'ROUTE_AllMaterial',
   CostPerPiece = 'ROUTE_CostPerPiece',
   Efficiency = 'ROUTE_Efficiency'
 }
@@ -50,6 +51,7 @@ export const routeMap = {
   [RouteLocation.InspectionMonitor]: '/station/inspection',
   [RouteLocation.WashMonitor]: '/station/wash',
   [RouteLocation.Queues]: '/station/queues',
+  [RouteLocation.AllMaterial]: '/station/all-material',
   [RouteLocation.CostPerPiece]: '/cost',
   [RouteLocation.Efficiency]: '/efficiency',
 };
@@ -86,6 +88,7 @@ export type Action =
         }
       },
     }
+  | { type: RouteLocation.AllMaterial }
   | { type: RouteLocation.CostPerPiece }
   | { type: RouteLocation.Efficiency }
   | { type: typeof NOT_FOUND }
@@ -96,6 +99,7 @@ export enum StationMonitorType {
   Inspection = 'StationType_Insp',
   Wash = 'StationType_Wash',
   Queues = 'StationType_Queues',
+  AllMaterial = 'StationType_AllMaterial',
 }
 
 export interface State {
@@ -145,6 +149,11 @@ export function switchToStationMonitorPage(curSt: State): Action {
         type: RouteLocation.Queues,
         meta: { query: { queue: curSt.load_queues, free: curSt.load_free_material ? null : undefined }},
       };
+
+    case StationMonitorType.AllMaterial:
+      return {
+        type: RouteLocation.AllMaterial,
+      };
   }
 }
 
@@ -186,6 +195,10 @@ export function displayQueues(
   };
 }
 
+export function displayAllMaterial(): Action {
+  return { type: RouteLocation.AllMaterial };
+}
+
 export function reducer(s: State, a: Action): State {
   if ( s === undefined) { return initial; }
   switch (a.type) {
@@ -217,6 +230,11 @@ export function reducer(s: State, a: Action): State {
         station_monitor: StationMonitorType.Queues,
         standalone_queues: Seq(standalonequery.queue || []).take(3).toArray(),
         standalone_free_material: standalonequery.free === null ? true : false
+      };
+    case RouteLocation.AllMaterial:
+      return {...s,
+        current: RouteLocation.AllMaterial,
+        station_monitor: StationMonitorType.AllMaterial,
       };
     case RouteLocation.CostPerPiece:
       return {...s, current: RouteLocation.CostPerPiece };

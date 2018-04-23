@@ -58,6 +58,8 @@ function monitorElement(
       return <Wash/>;
     case routes.StationMonitorType.Queues:
       return <Queues/>;
+    case routes.StationMonitorType.AllMaterial:
+      return <p>All Material</p>;
   }
 }
 

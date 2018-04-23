@@ -46,6 +46,11 @@ exports[`displays an empty queue page: empty queues 1`] = `
       >
         Queues
       </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="StationType_AllMaterial"
+      >
+        All Material
+      </WithStyles(MenuItem)>
     </WithStyles(Select)>
     <WithStyles(Select)
       displayEmpty={true}
@@ -134,6 +139,11 @@ exports[`displays the load with no queues: load with no queues 1`] = `
         value="StationType_Queues"
       >
         Queues
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="StationType_AllMaterial"
+      >
+        All Material
       </WithStyles(MenuItem)>
     </WithStyles(Select)>
     <WithStyles(Input)
@@ -256,6 +266,11 @@ exports[`displays the toolbar for all inspection: inspection all toolbar 1`] = `
       >
         Queues
       </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="StationType_AllMaterial"
+      >
+        All Material
+      </WithStyles(MenuItem)>
     </WithStyles(Select)>
     <WithStyles(Select)
       key="inspselect"
@@ -286,6 +301,75 @@ exports[`displays the toolbar for all inspection: inspection all toolbar 1`] = `
         value="i2"
       >
         i2
+      </WithStyles(MenuItem)>
+    </WithStyles(Select)>
+  </div>
+  <div>
+    <OperatorSelect
+      currentOperator="o1"
+      operators={
+        Immutable.Set [
+          "o1",
+          "o2",
+        ]
+      }
+      removeOperator={[MockFunction]}
+      setOperator={[MockFunction]}
+    />
+  </div>
+</nav>
+`;
+
+exports[`displays the toolbar for all material: all material toolbar 1`] = `
+<nav
+  style={
+    Object {
+      "alignItems": "flex-end",
+      "backgroundColor": "#E0E0E0",
+      "display": "flex",
+      "height": "2.5em",
+      "paddingBottom": "4px",
+      "paddingLeft": "24px",
+      "paddingRight": "24px",
+    }
+  }
+>
+  <div
+    style={
+      Object {
+        "flexGrow": 1,
+      }
+    }
+  >
+    <WithStyles(Select)
+      autoWidth={true}
+      onChange={[Function]}
+      value="StationType_AllMaterial"
+    >
+      <WithStyles(MenuItem)
+        value="StationType_LoadUnload"
+      >
+        Load Station
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="StationType_Insp"
+      >
+        Inspection
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="StationType_Wash"
+      >
+        Wash
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="StationType_Queues"
+      >
+        Queues
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="StationType_AllMaterial"
+      >
+        All Material
       </WithStyles(MenuItem)>
     </WithStyles(Select)>
   </div>
@@ -350,6 +434,11 @@ exports[`displays the toolbar for load with one queue: load with one queue 1`] =
         value="StationType_Queues"
       >
         Queues
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="StationType_AllMaterial"
+      >
+        All Material
       </WithStyles(MenuItem)>
     </WithStyles(Select)>
     <WithStyles(Input)
@@ -474,6 +563,11 @@ exports[`displays the toolbar for load with three queues: load toolbar 1`] = `
         value="StationType_Queues"
       >
         Queues
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="StationType_AllMaterial"
+      >
+        All Material
       </WithStyles(MenuItem)>
     </WithStyles(Select)>
     <WithStyles(Input)
@@ -613,6 +707,11 @@ exports[`displays the toolbar for queue page with three queues: queue toolbar 1`
       >
         Queues
       </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="StationType_AllMaterial"
+      >
+        All Material
+      </WithStyles(MenuItem)>
     </WithStyles(Select)>
     <WithStyles(Select)
       displayEmpty={true}
@@ -732,6 +831,11 @@ exports[`displays the toolbar for single inspection type: inspection i1 selected
       >
         Queues
       </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="StationType_AllMaterial"
+      >
+        All Material
+      </WithStyles(MenuItem)>
     </WithStyles(Select)>
     <WithStyles(Select)
       key="inspselect"
@@ -826,6 +930,11 @@ exports[`displays the toolbar for wash: wash toolbar 1`] = `
         value="StationType_Queues"
       >
         Queues
+      </WithStyles(MenuItem)>
+      <WithStyles(MenuItem)
+        value="StationType_AllMaterial"
+      >
+        All Material
       </WithStyles(MenuItem)>
     </WithStyles(Select)>
   </div>

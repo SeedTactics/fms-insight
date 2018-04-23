@@ -1,5 +1,157 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`renders the all material monitor: all material monitor 1`] = `
+<div
+  id="App"
+>
+  <Header
+    routeState={
+      Object {
+        "current": "ROUTE_AllMaterial",
+        "load_free_material": false,
+        "load_queues": Array [
+          "q1",
+          "q1",
+        ],
+        "selected_load_id": 5,
+        "standalone_free_material": true,
+        "standalone_queues": Array [
+          "r1",
+          "r2",
+        ],
+        "station_monitor": "StationType_LoadUnload",
+      }
+    }
+    setRoute={[MockFunction]}
+  />
+  <StationMonitor
+    monitor_type="StationType_AllMaterial"
+  />
+</div>
+`;
+
+exports[`renders the all material monitor: all material monitor header 1`] = `
+<nav
+  id="navHeader"
+>
+  <Hidden
+    implementation="js"
+    lgDown={false}
+    lgUp={false}
+    mdDown={false}
+    mdUp={false}
+    smDown={true}
+    smUp={false}
+    xlDown={false}
+    xlUp={false}
+    xsDown={false}
+    xsUp={false}
+  >
+    <WithStyles(AppBar)
+      position="static"
+    >
+      <WithStyles(Toolbar)>
+        <WithStyles(Typography)
+          style={
+            Object {
+              "marginRight": "2em",
+            }
+          }
+          variant="title"
+        >
+          Insight
+        </WithStyles(Typography)>
+        <WithStyles(Tabs)
+          fullWidth={false}
+          onChange={[Function]}
+          style={
+            Object {
+              "alignSelf": "flex-end",
+              "flexGrow": 1,
+            }
+          }
+          value={1}
+        >
+          <WithStyles(Tab)
+            label="Dashboard"
+            value={0}
+          />
+          <WithStyles(Tab)
+            label="Station Monitor"
+            value={1}
+          />
+          <WithStyles(Tab)
+            label="Efficiency"
+            value={2}
+          />
+          <WithStyles(Tab)
+            label="Cost/Piece"
+            value={3}
+          />
+        </WithStyles(Tabs)>
+        <Connect(LoadingIcon) />
+      </WithStyles(Toolbar)>
+    </WithStyles(AppBar)>
+  </Hidden>
+  <Hidden
+    implementation="js"
+    lgDown={false}
+    lgUp={false}
+    mdDown={false}
+    mdUp={true}
+    smDown={false}
+    smUp={false}
+    xlDown={false}
+    xlUp={false}
+    xsDown={false}
+    xsUp={false}
+  >
+    <WithStyles(AppBar)
+      position="static"
+    >
+      <WithStyles(Toolbar)>
+        <WithStyles(Typography)
+          variant="title"
+        >
+          Insight
+        </WithStyles(Typography)>
+        <div
+          style={
+            Object {
+              "flexGrow": 1,
+            }
+          }
+        />
+        <Connect(LoadingIcon) />
+      </WithStyles(Toolbar)>
+      <WithStyles(Tabs)
+        fullWidth={true}
+        onChange={[Function]}
+        style={Object {}}
+        value={1}
+      >
+        <WithStyles(Tab)
+          label="Dashboard"
+          value={0}
+        />
+        <WithStyles(Tab)
+          label="Station Monitor"
+          value={1}
+        />
+        <WithStyles(Tab)
+          label="Efficiency"
+          value={2}
+        />
+        <WithStyles(Tab)
+          label="Cost/Piece"
+          value={3}
+        />
+      </WithStyles(Tabs)>
+    </WithStyles(AppBar)>
+  </Hidden>
+</nav>
+`;
+
 exports[`renders the cost per piece: cost per piece 1`] = `
 <div
   id="App"

@@ -104,6 +104,14 @@ it('renders the queue monitor', () => {
   expect(header).toMatchSnapshot("queue monitor header");
 });
 
+it('renders the all material monitor', () => {
+  const props = appProps(routes.RouteLocation.AllMaterial);
+  const val = shallow(<App {...props}/>);
+  const header = val.find("Header").dive();
+  expect(val).toMatchSnapshot("all material monitor");
+  expect(header).toMatchSnapshot("all material monitor header");
+});
+
 it('renders the cost per piece', () => {
   const props = appProps(routes.RouteLocation.CostPerPiece);
   const val = shallow(<App {...props}/>);

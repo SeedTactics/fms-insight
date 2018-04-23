@@ -72,6 +72,7 @@ function Header(p: HeaderProps) {
       case routes.RouteLocation.InspectionMonitor:
       case routes.RouteLocation.WashMonitor:
       case routes.RouteLocation.Queues:
+      case routes.RouteLocation.AllMaterial:
         tabType = TabType.StationMonitor;
         break;
       case routes.RouteLocation.Efficiency:
@@ -154,6 +155,9 @@ export class App extends React.PureComponent<AppProps> {
         break;
       case routes.RouteLocation.Queues:
         page = <StationMonitor monitor_type={routes.StationMonitorType.Queues}/>;
+        break;
+      case routes.RouteLocation.AllMaterial:
+        page = <StationMonitor monitor_type={routes.StationMonitorType.AllMaterial}/>;
         break;
       case routes.RouteLocation.Dashboard:
       default:
