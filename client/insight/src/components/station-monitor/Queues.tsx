@@ -44,7 +44,6 @@ import Dialog, {
   DialogContent,
   DialogTitle,
 } from 'material-ui/Dialog';
-import Grid from 'material-ui/Grid';
 import TextField from 'material-ui/TextField';
 
 import { LoadStationAndQueueData, selectLoadStationAndQueueProps } from '../../data/load-station';
@@ -284,28 +283,42 @@ class ChooseSerialOrDirectJob extends React.PureComponent<ChooseSerialOrDirectJo
           Lookup Material
         </DialogTitle>
         <DialogContent>
-          <p style={{textAlign: "center", maxWidth: "10em"}}>
-            To find the details of the material to add,  you can either scan a part's serial,
-            lookup a serial, or manually select a job.
-          </p>
-          <Grid container alignContent="center" alignItems="center">
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Serial"
-                value={this.state.serial || ""}
-                onChange={e => this.setState({serial: e.target.value})}
-              />
-              <Button
-                variant="raised"
-                color="secondary"
-                onClick={() => this.state.serial
-                  ? this.props.lookupSerial(this.state.serial || "", this.props.queue_name)
-                  : undefined}
-              >
-                Lookup Serial
-              </Button>
-            </Grid>
-            <Grid item xs={12} sm={6}>
+          <div style={{maxWidth: '25em'}}>
+            <p>
+              To find the details of the material to add,  you can either scan a part's serial,
+              lookup a serial, or manually select a job.
+            </p>
+          </div>
+          <div style={{display: "flex", alignItems: 'center'}}>
+            <div
+              style={{
+                borderRight: '1px solid rgba(0,0,0,0.2)',
+                paddingRight: '8px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+              }}
+            >
+              <div style={{marginBottom: '2em'}}>
+                <TextField
+                  label="Serial"
+                  value={this.state.serial || ""}
+                  onChange={e => this.setState({serial: e.target.value})}
+                />
+              </div>
+              <div>
+                <Button
+                  variant="raised"
+                  color="secondary"
+                  onClick={() => this.state.serial
+                    ? this.props.lookupSerial(this.state.serial || "", this.props.queue_name)
+                    : undefined}
+                >
+                  Lookup Serial
+                </Button>
+              </div>
+            </div>
+            <div style={{paddingLeft: '8px'}}>
               <Button
                 variant="raised"
                 color="secondary"
@@ -316,8 +329,8 @@ class ChooseSerialOrDirectJob extends React.PureComponent<ChooseSerialOrDirectJo
               >
                 Manually Select Job
               </Button>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </DialogContent>
         <DialogActions>
           <Button onClick={this.props.onClose} color="primary">
