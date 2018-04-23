@@ -879,6 +879,38 @@ namespace DebugMachineWatchApiServer
                     }
                 },
 
+                // some material in Queue1
+                new InProcessMaterial() {
+                    MaterialID = 100,
+                    JobUnique = "xxx-schId1234",
+                    PartName = "xxx",
+                    Process = 1,
+                    Path = 1,
+                    Location = new InProcessMaterialLocation() {
+                        Type = InProcessMaterialLocation.LocType.InQueue,
+                        CurrentQueue = "Queue1",
+                        QueuePosition = 1,
+                    },
+                    Action = new InProcessMaterialAction() {
+                        Type = InProcessMaterialAction.ActionType.Waiting,
+                    }
+                },
+                new InProcessMaterial() {
+                    MaterialID = 100,
+                    JobUnique = "aaa-schId1234",
+                    PartName = "aaa",
+                    Process = 2,
+                    Path = 1,
+                    Location = new InProcessMaterialLocation() {
+                        Type = InProcessMaterialLocation.LocType.InQueue,
+                        CurrentQueue = "Queue1",
+                        QueuePosition = 2,
+                    },
+                    Action = new InProcessMaterialAction() {
+                        Type = InProcessMaterialAction.ActionType.Waiting,
+                    }
+                }
+
             };
 
 
@@ -903,6 +935,7 @@ namespace DebugMachineWatchApiServer
                 },
                 LatestScheduleId = aaa.ScheduleId,
             };
+            st.QueueSizes["Queue1"] = new QueueSize();
             foreach (var m in mats) st.Material.Add(m);
             return st;
         }

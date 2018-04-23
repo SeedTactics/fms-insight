@@ -63,7 +63,7 @@ export type Action =
       payload: { num: number },
       meta?: {
         query?: {
-          queue?: ReadonlyArray<string>,
+          queue?: string | ReadonlyArray<string>,
           free?: null,
         }
       },
@@ -83,7 +83,7 @@ export type Action =
       type: RouteLocation.Queues,
       meta?: {
         query?: {
-          queue?: ReadonlyArray<string>,
+          queue?: string | ReadonlyArray<string>,
           free?: null,
         }
       },
@@ -203,12 +203,20 @@ export function reducer(s: State, a: Action): State {
   if ( s === undefined) { return initial; }
   switch (a.type) {
     case RouteLocation.LoadMonitor:
-      var query = (a.meta || {}).query || {};
+      const query = (a.meta || {}).query || {};
+      let loadqueues: ReadonlyArray<string> = [];
+      if (query.queue) {
+        if (typeof query.queue === "string") {
+          loadqueues = [query.queue];
+        } else {
+          loadqueues = query.queue;
+        }
+      }
       return {...s,
         current: RouteLocation.LoadMonitor,
         station_monitor: StationMonitorType.LoadUnload,
         selected_load_id: a.payload.num,
-        load_queues: Seq(query.queue || []).take(3).toArray(),
+        load_queues: Seq(loadqueues).take(3).toArray(),
         load_free_material: query.free === null ? true : false
       };
     case RouteLocation.InspectionMonitor:
@@ -224,11 +232,19 @@ export function reducer(s: State, a: Action): State {
         station_monitor: StationMonitorType.Wash,
       };
     case RouteLocation.Queues:
-      var standalonequery = (a.meta || {}).query || {};
+      const standalonequery = (a.meta || {}).query || {};
+      let queues: ReadonlyArray<string> = [];
+      if (standalonequery.queue) {
+        if (typeof standalonequery.queue === "string") {
+          queues = [standalonequery.queue];
+        } else {
+          queues = standalonequery.queue;
+        }
+      }
       return {...s,
         current: RouteLocation.Queues,
         station_monitor: StationMonitorType.Queues,
-        standalone_queues: Seq(standalonequery.queue || []).take(3).toArray(),
+        standalone_queues: queues,
         standalone_free_material: standalonequery.free === null ? true : false
       };
     case RouteLocation.AllMaterial:

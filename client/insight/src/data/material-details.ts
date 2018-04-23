@@ -81,7 +81,7 @@ export type Action =
       type: ActionType.UpdateMaterial,
       newInspType?: string,
       newWorkorder?: string,
-      pledge: Pledge<Readonly<api.ILogEntry>>,
+      pledge: Pledge<Readonly<api.ILogEntry> | undefined>,
     }
   | {
       type: ActionType.LoadWorkorders,
@@ -191,6 +191,14 @@ export function completeWash(d: CompleteWashData): ABF {
       elapsed: 'PT0S',
       extraData: d.operator ? {operator: d.operator} : undefined
     }))
+  };
+}
+
+export function removeFromQueue(mat: MaterialDetail): ABF {
+  const client = new api.JobsClient();
+  return {
+    type: ActionType.UpdateMaterial,
+    pledge: client.removeMaterialFromAllQueues(mat.materialID).then(() => undefined)
   };
 }
 
@@ -356,7 +364,7 @@ export function reducer(s: State, a: Action): State {
               completedInspections:
                 a.newInspType ? [...oldMatEnd.completedInspections, a.newInspType] : oldMatEnd.completedInspections,
               workorderId: a.newWorkorder || oldMatEnd.workorderId,
-              events: [...oldMatEnd.events, a.pledge.result],
+              events: a.pledge.result ? [...oldMatEnd.events, a.pledge.result] : oldMatEnd.events,
               updating_material: false,
             },
           };

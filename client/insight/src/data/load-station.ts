@@ -92,24 +92,24 @@ export function selectLoadStationAndQueueProps(
                 && m.action.loadOntoPallet === palName
                 && m.action.processAfterLoad === 1
                 && m.location.type === api.LocType.Free);
+  } else if (displayFree) {
+    castings = im.Seq(curSt.material)
+      .filter(m => m.action.processAfterLoad === 1
+                && m.location.type === api.LocType.Free);
   }
 
   // now free and queued material
   let free: MaterialList | undefined;
   if (displayFree) {
     free = im.Seq(curSt.material)
-      .filter(m => m.action.type === api.ActionType.Loading
-                && m.action.loadOntoPallet === palName
-                && m.action.processAfterLoad > 1
+      .filter(m => m.action.processAfterLoad > 1
                 && m.location.type === api.LocType.Free)
       .toArray();
   }
 
   const queueNames = im.Set(queues);
   const queueMat = im.Seq(curSt.material)
-    .filter(m => m.action.type === api.ActionType.Loading
-              && m.action.loadOntoPallet === palName
-              && m.location.type === api.LocType.InQueue
+    .filter(m => m.location.type === api.LocType.InQueue
               && queueNames.contains(m.location.currentQueue || "")
     )
     .groupBy(m => m.location.currentQueue || "")

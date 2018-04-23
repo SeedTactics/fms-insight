@@ -36,14 +36,39 @@ import { withStyles } from 'material-ui';
 import * as im from 'immutable';
 import { createSelector } from 'reselect';
 import DocumentTitle from 'react-document-title';
+import Button from 'material-ui/Button';
 
 import { LoadStationAndQueueData, selectLoadStationAndQueueProps } from '../../data/load-station';
-import { MaterialDialog, InProcMaterial, WhiteboardRegion } from './Material';
+import { MaterialDialog, InProcMaterial, WhiteboardRegion, MaterialDialogProps } from './Material';
 import * as api from '../../data/api';
 import * as routes from '../../data/routes';
-import { Store, connect, mkAC } from '../../store/store';
+import { Store, connect, mkAC, AppActionBeforeMiddleware } from '../../store/store';
 import * as matDetails from '../../data/material-details';
 import { MaterialSummary } from '../../data/events';
+
+export interface QueueMatDialogProps extends MaterialDialogProps {
+  readonly removeFromQueue: (mat: matDetails.MaterialDetail) => void;
+}
+
+export function QueueMatDialog(props: QueueMatDialogProps) {
+  function removeFromQueue() {
+    if (!props.display_material) {
+      return;
+    }
+
+    props.removeFromQueue(props.display_material);
+  }
+  return (
+    <MaterialDialog
+      display_material={props.display_material}
+      onClose={props.onClose}
+      buttons={
+        <Button color="primary" onClick={removeFromQueue}>
+          Remove From Queue
+        </Button>}
+    />
+  );
+}
 
 const ConnectedMaterialDialog = connect(
   st => ({
@@ -51,21 +76,17 @@ const ConnectedMaterialDialog = connect(
   }),
   {
     onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
+    removeFromQueue: (mat: matDetails.MaterialDetail) => [
+      matDetails.removeFromQueue(mat),
+      {type: matDetails.ActionType.CloseMaterialDialog},
+    ] as AppActionBeforeMiddleware,
   }
-)(MaterialDialog);
+)(QueueMatDialog);
 
 const queueStyles = withStyles(() => ({
   mainScrollable: {
-    'display': 'flex',
     'padding': '8px',
     'width': '100%',
-  },
-  queueCol: {
-    'width': '16em',
-    'padding': '8px',
-    'display': 'flex',
-    'flexDirection': 'column' as 'column',
-    'borderLeft': '1px solid rgba(0, 0, 0, 0.12)',
   },
 }));
 
@@ -81,16 +102,25 @@ export const Queues = queueStyles<QueueProps>(props => {
     .sortBy((mats, q) => q)
     .map((mats, q) => ({
       label: q,
+      free: false,
       material: mats,
     }))
     .valueSeq();
 
   let cells = queues;
   if (props.data.free) {
-    cells = im.Seq([{
-      label: "In Process Material",
-      material: props.data.free,
-    }]).concat(queues);
+    cells = im.Seq([
+      {
+        label: "Castings",
+        free: true,
+        material: props.data.castings,
+      },
+      {
+        label: "In Process Material",
+        free: true,
+        material: props.data.free,
+      },
+    ]).concat(queues);
   }
 
   return (
@@ -98,15 +128,19 @@ export const Queues = queueStyles<QueueProps>(props => {
       <main className={props.classes.mainScrollable}>
         {
           cells.map((mat, idx) => (
-            <div key={idx} className={props.classes.queueCol}>
-              <WhiteboardRegion label={mat.label}>
-                {
-                  mat.material.map((m, matIdx) =>
-                    <InProcMaterial key={matIdx} mat={m} onOpen={props.openMat}/>
-                  )
-                }
-              </WhiteboardRegion>
-            </div>
+            <WhiteboardRegion
+              key={idx}
+              label={mat.label}
+              borderBottom
+              flexStart
+              onAddMaterial={mat.free ? undefined : () => {return; }}
+            >
+              {
+                mat.material.map((m, matIdx) =>
+                  <InProcMaterial key={matIdx} mat={m} onOpen={props.openMat} includePalletInAction/>
+                )
+              }
+            </WhiteboardRegion>
           ))
         }
         <ConnectedMaterialDialog/>
