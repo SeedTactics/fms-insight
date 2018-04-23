@@ -58,7 +58,12 @@ export function selectAllMaterialIntoBins(curSt: Readonly<api.ICurrentStatus>): 
           return {region, mat};
         case api.LocType.Free:
         default:
-          return { region: "Free Material", mat};
+          switch (mat.action.type) {
+            case api.ActionType.Loading:
+              return { region: "Castings", mat};
+            default:
+              return { region: "Free Material", mat};
+          }
       }
     })
     .groupBy(x => x.region)
