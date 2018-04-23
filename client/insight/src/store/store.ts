@@ -38,6 +38,7 @@ import * as gui from '../data/gui-state';
 import * as routes from '../data/routes';
 import * as mat from '../data/material-details';
 import * as operators from '../data/operators';
+import * as serverSettings from '../data/server-settings';
 import * as websocket from './websocket';
 
 import { pledgeMiddleware, arrayMiddleware, ActionBeforeMiddleware } from './middleware';
@@ -58,6 +59,7 @@ export interface Store {
   readonly Route: routes.State;
   readonly Websocket: websocket.State;
   readonly Operators: operators.State;
+  readonly ServerSettings: serverSettings.State;
   readonly location: LocationState;
 }
 
@@ -103,6 +105,7 @@ export function initStore() {
         Route: routes.reducer,
         Websocket: websocket.reducer,
         Operators: operators.reducer,
+        ServerSettings: serverSettings.reducer,
         location: router.reducer,
       // tslint:disable-next-line:no-any
       } as any // bug in typescript types for combineReducers
@@ -123,6 +126,7 @@ export function initStore() {
 
   const operatorOnStateChange = operators.createOnStateChange();
   store.subscribe(() => operatorOnStateChange(store.getState().Operators));
+  store.dispatch(serverSettings.loadServerSettings() as redux.Action);
 
   return store;
 }
