@@ -46,6 +46,7 @@ import Card, { CardHeader, CardContent } from 'material-ui/Card';
 import * as numerable from 'numeral';
 import Select from 'material-ui/Select';
 import { MenuItem } from 'material-ui/Menu';
+import { PartIdenticon } from '../station-monitor/Material';
 
 export interface CycleChartPoint {
   readonly x: Date;
@@ -186,11 +187,20 @@ export interface SelectableCycleChartProps {
   readonly icon: JSX.Element;
   readonly default_date_range?: Date[];
   readonly selected?: string;
+  readonly useIdenticon?: boolean;
   readonly setSelected: (s: string) => void;
 }
 
 export function SelectableCycleChart(props: SelectableCycleChartProps) {
   let validValue = props.selected !== undefined && props.points.has(props.selected);
+  function stripAfterDash(s: string): string {
+    const idx = s.indexOf('-');
+    if (idx >= 0) {
+      return s.substring(0, idx);
+    } else {
+      return s;
+    }
+  }
   return (
     <Card raised>
       <CardHeader
@@ -213,7 +223,12 @@ export function SelectableCycleChart(props: SelectableCycleChartProps) {
               }
               {
                 props.points.keySeq().sort().map(n =>
-                  <MenuItem key={n} value={n}>{n}</MenuItem>
+                  <MenuItem key={n} value={n}>
+                    <div style={{display: "flex", alignItems: "center"}}>
+                      <PartIdenticon part={stripAfterDash(n)} size={30}/>
+                      <span style={{marginRight: '1em'}}>{n}</span>
+                    </div>
+                  </MenuItem>
                 )
               }
             </Select>

@@ -66,6 +66,7 @@ export function PartStationCycleChart(props: PartStationCycleChartProps) {
       series_label="Station"
       card_label="Station Cycles"
       icon={<WorkIcon style={{color: "#6D4C41"}}/>}
+      useIdenticon
       {...props}
     />
   );

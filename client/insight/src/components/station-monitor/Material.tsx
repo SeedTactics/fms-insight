@@ -74,9 +74,9 @@ function getPosition(el: Element) {
   };
 }*/
 
-export class PartIdenticon extends React.PureComponent<{part: string}> {
+export class PartIdenticon extends React.PureComponent<{part: string, size?: number}> {
   render() {
-    const iconSize = 50;
+    const iconSize = this.props.size || 50;
     // tslint:disable-next-line:no-any
     const icon = (jdenticon as any).toSvg(this.props.part, iconSize);
 
