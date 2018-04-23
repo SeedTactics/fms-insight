@@ -68,7 +68,8 @@ namespace BlackMaple.MachineWatchInterface
         /// Add a new unprocessed piece of material (typically a casting)
         /// for the given job into the given queue.  The serial is optional
         /// and is passed only if the material has already been marked with a serial.
-        void AddUnprocessedMaterialToQueue(string jobUnique, string queue, int position, string serial);
+        /// Use -1 or 0 for lastCompletedProcess if the material is a casting.
+        void AddUnprocessedMaterialToQueue(string jobUnique, int lastCompletedProcess, string queue, int position, string serial);
 
         /// Add material into a queue or just into free material if the queue name is the empty string.
         /// The material will be inserted into the given position, bumping any later material to a

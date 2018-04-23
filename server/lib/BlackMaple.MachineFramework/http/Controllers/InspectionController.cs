@@ -37,6 +37,7 @@ using BlackMaple.MachineWatchInterface;
 
 namespace BlackMaple.MachineFramework.Controllers
 {
+    /*
     [Route("api/v1/[controller]")]
     public class inspectionController : ControllerBase
     {
@@ -72,7 +73,6 @@ namespace BlackMaple.MachineFramework.Controllers
             _server.SetInspectCounts(newCounts);
         }
 
-        /*
         [HttpGet ("types")]
         public List<string> GetGlobalInspectionTypes()
         {
@@ -96,7 +96,6 @@ namespace BlackMaple.MachineFramework.Controllers
         {
             _server.DeleteGlobalInspectionType(ty);
         }
-        */
-
     }
+    */
 }

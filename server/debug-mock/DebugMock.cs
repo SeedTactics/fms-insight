@@ -191,8 +191,8 @@ namespace DebugMachineWatchApiServer
             JobDB.AddJobs(jobs, expectedPreviousScheduleId);
         }
 
-        public void AddUnprocessedMaterialToQueue(string jobUnique, string queue, int position, string serial)
-            => MockStatus.AddUnprocessedMaterialToQueue(jobUnique, queue, position, serial);
+        public void AddUnprocessedMaterialToQueue(string jobUnique, int lastCompletedProcess, string queue, int position, string serial)
+            => MockStatus.AddUnprocessedMaterialToQueue(jobUnique, lastCompletedProcess, queue, position, serial);
         public void SetMaterialInQueue(long materialId, string queue, int position)
             => MockStatus.SetMaterialInQueue(materialId, queue, position);
         public void RemoveMaterialFromAllQueues(long materialId)
@@ -958,7 +958,7 @@ namespace DebugMachineWatchApiServer
             21,
         };
 
-        public void AddUnprocessedMaterialToQueue(string jobUnique, string queue, int position, string serial)
+        public void AddUnprocessedMaterialToQueue(string jobUnique, int lastCompletedProcess, string queue, int position, string serial)
         {
 
         }

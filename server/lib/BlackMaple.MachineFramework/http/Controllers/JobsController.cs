@@ -100,9 +100,9 @@ namespace BlackMaple.MachineFramework.Controllers
         }
 
         [HttpPost("job/{jobUnique}/unprocessed-material")]
-        public void AddUnprocessedMaterialToQueue(string jobUnique, [FromQuery] string queue, [FromQuery] int pos, [FromBody] string serial)
+        public void AddUnprocessedMaterialToQueue(string jobUnique, [FromQuery] int lastCompletedProcess, [FromQuery] string queue, [FromQuery] int pos, [FromBody] string serial)
         {
-            _control.AddUnprocessedMaterialToQueue(jobUnique, queue, pos, serial);
+            _control.AddUnprocessedMaterialToQueue(jobUnique, lastCompletedProcess, queue, pos, serial);
         }
 
         [HttpPut("material/{materialId}/queue")]
