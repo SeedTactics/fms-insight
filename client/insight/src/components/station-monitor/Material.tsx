@@ -281,11 +281,11 @@ export class MaterialDetailTitle extends React.PureComponent<{partName: string, 
   }
 }
 
-interface MaterialDetailProps {
+export interface MaterialDetailProps {
   readonly mat: matDetails.MaterialDetail;
 }
 
-class MaterialDetailContent extends React.PureComponent<MaterialDetailProps> {
+export class MaterialDetailContent extends React.PureComponent<MaterialDetailProps> {
   render () {
     const mat = this.props.mat;
     function colorForInspType(type: string): string {
