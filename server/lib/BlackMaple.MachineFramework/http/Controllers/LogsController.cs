@@ -75,6 +75,24 @@ namespace BlackMaple.MachineFramework.Controllers
             return _server.GetLogEntries(startUTC, endUTC);
         }
 
+        [HttpGet("events.csv")]
+        [Produces("text/csv")]
+        public IActionResult GetEventCSV([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC) {
+            var ms = new System.IO.MemoryStream();
+            try {
+                var tx = new System.IO.StreamWriter(ms);
+                CSVLogConverter.WriteCSV(tx, _server.GetLogEntries(startUTC, endUTC));
+            } catch {
+                ms.Close();
+                throw;
+            }
+            ms.Position = 0;
+            // filestreamresult will close the memorystream
+            return new FileStreamResult(ms, "text/csv") {
+                FileDownloadName = "events.csv"
+            };
+        }
+
         [HttpGet("events/all-completed-parts")]
         public List<LogEntry> GetCompletedParts([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
         {
