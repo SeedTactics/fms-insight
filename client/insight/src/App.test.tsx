@@ -127,3 +127,11 @@ it('renders the efficiency', () => {
   expect(val).toMatchSnapshot("efficiency");
   expect(header).toMatchSnapshot("efficiency header");
 });
+
+it('renders the data export page', () => {
+  const props = appProps(routes.RouteLocation.DataExport);
+  const val = shallow(<App {...props}/>);
+  const header = val.find("Header").dive();
+  expect(val).toMatchSnapshot("data export");
+  expect(header).toMatchSnapshot("data export header");
+});

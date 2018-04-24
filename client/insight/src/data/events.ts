@@ -51,8 +51,8 @@ export enum AnalysisPeriod {
 }
 
 export interface Last30Days {
-    readonly latest_log_entry: Date | undefined;
     readonly latest_log_counter: number | undefined;
+    readonly most_recent_10_events: ReadonlyArray<Readonly<api.ILogEntry>>;
 
     readonly latest_scheduleId: string | undefined;
 
@@ -95,9 +95,9 @@ export const initial: State = {
     loading_analysis_month_jobs: false,
 
     last30: {
-        latest_log_entry: undefined,
         latest_log_counter: undefined,
         latest_scheduleId: undefined,
+        most_recent_10_events: [],
         oee: oee.initial,
         cycles: cycles.initial,
         mat_summary: matsummary.initial,
@@ -239,24 +239,29 @@ function safeAssign<T extends R, R>(o: T, n: R): T {
 function processRecentLogEntries(now: Date, evts: Iterable<api.ILogEntry>, s: Last30Days): Last30Days {
     const thirtyDaysAgo = addDays(now, -30);
     let lastCounter = s.latest_log_counter;
-    let lastDate = s.latest_log_entry;
     let lastNewEvent = im.Seq(evts).maxBy(e => e.counter);
+    let last10Evts = s.most_recent_10_events;
     if (lastNewEvent !== undefined) {
         if (lastCounter === undefined || lastCounter < lastNewEvent.counter) {
             lastCounter = lastNewEvent.counter;
-            lastDate = lastNewEvent.endUTC;
         }
+        const lastNew10 = im.Seq(evts).takeLast(10);
+        last10Evts =
+            im.Seq(last10Evts)
+            .concat(lastNew10)
+            .takeLast(10)
+            .toArray();
     }
     return safeAssign(
         s,
         {
             latest_log_counter: lastCounter,
-            latest_log_entry: lastDate,
             oee: oee.process_events(now, evts, s.oee),
             cycles: cycles.process_events(
                 {type: cycles.ExpireOldDataType.ExpireEarlierThan, d: thirtyDaysAgo},
                 evts,
                 s.cycles),
+            most_recent_10_events: last10Evts,
             mat_summary: matsummary.process_events(now, evts, s.mat_summary)
         });
 }

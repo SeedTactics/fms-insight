@@ -41,6 +41,7 @@ import Dashboard from './components/dashboard/Dashboard';
 import CostPerPiece from './components/cost-per-piece/CostPerPiece';
 import Efficiency from './components/efficiency/Efficiency';
 import StationMonitor from './components/station-monitor/StationMonitor';
+import DataExport from './components/data-export/DataExport';
 import LoadingIcon from './components/LoadingIcon';
 import * as routes from './data/routes';
 import { Store, connect } from './store/store';
@@ -55,6 +56,7 @@ enum TabType {
   StationMonitor,
   Efficiency,
   CostPerPiece,
+  DataExport,
 }
 
 interface HeaderProps {
@@ -81,6 +83,8 @@ function Header(p: HeaderProps) {
       case routes.RouteLocation.CostPerPiece:
         tabType = TabType.CostPerPiece;
         break;
+      case routes.RouteLocation.DataExport:
+        tabType = TabType.DataExport;
     }
     const tabs = (full: boolean) => (
       <Tabs
@@ -93,6 +97,7 @@ function Header(p: HeaderProps) {
         <Tab label="Station Monitor" value={TabType.StationMonitor}/>
         <Tab label="Efficiency" value={TabType.Efficiency}/>
         <Tab label="Cost/Piece" value={TabType.CostPerPiece}/>
+        <Tab label="Data Export" value={TabType.DataExport}/>
       </Tabs>
     );
 
@@ -159,6 +164,9 @@ export class App extends React.PureComponent<AppProps> {
       case routes.RouteLocation.AllMaterial:
         page = <StationMonitor monitor_type={routes.StationMonitorType.AllMaterial}/>;
         break;
+      case routes.RouteLocation.DataExport:
+        page = <DataExport/>;
+        break;
       case routes.RouteLocation.Dashboard:
       default:
         page = <Dashboard/>;
@@ -188,6 +196,8 @@ export default connect(
           return { type: routes.RouteLocation.CostPerPiece };
         case TabType.StationMonitor:
           return routes.switchToStationMonitorPage(curSt);
+        case TabType.DataExport:
+          return { type: routes.RouteLocation.DataExport };
       }
     }
   }

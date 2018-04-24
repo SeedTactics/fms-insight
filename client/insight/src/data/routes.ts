@@ -42,7 +42,8 @@ export enum RouteLocation {
   Queues = 'ROUTE_Queues',
   AllMaterial = 'ROUTE_AllMaterial',
   CostPerPiece = 'ROUTE_CostPerPiece',
-  Efficiency = 'ROUTE_Efficiency'
+  Efficiency = 'ROUTE_Efficiency',
+  DataExport = 'ROUTE_DataExport',
 }
 
 export const routeMap = {
@@ -54,6 +55,7 @@ export const routeMap = {
   [RouteLocation.AllMaterial]: '/station/all-material',
   [RouteLocation.CostPerPiece]: '/cost',
   [RouteLocation.Efficiency]: '/efficiency',
+  [RouteLocation.DataExport]: '/data-export',
 };
 
 export type Action =
@@ -91,6 +93,7 @@ export type Action =
   | { type: RouteLocation.AllMaterial }
   | { type: RouteLocation.CostPerPiece }
   | { type: RouteLocation.Efficiency }
+  | { type: RouteLocation.DataExport }
   | { type: typeof NOT_FOUND }
   ;
 
@@ -256,6 +259,8 @@ export function reducer(s: State, a: Action): State {
       return {...s, current: RouteLocation.CostPerPiece };
     case RouteLocation.Efficiency:
       return {...s, current: RouteLocation.Efficiency };
+    case RouteLocation.DataExport:
+      return {...s, current: RouteLocation.DataExport };
     case RouteLocation.Dashboard:
     case NOT_FOUND:
       return {...s, current: RouteLocation.Dashboard };
