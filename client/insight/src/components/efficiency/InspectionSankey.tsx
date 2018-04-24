@@ -107,8 +107,8 @@ export class InspectionSankeyDiagram
         links={this.props.sankey.links.map((l, idx) => ({...l,
           opacity: this.state.activeLink && this.state.activeLink.index === idx ? 0.6 : 0.3
         }))}
-        width={500}
-        height={500}
+        width={window.innerWidth - 300}
+        height={window.innerHeight - 200}
         onLinkMouseOver={(link: D3Link) => this.setState({activeLink: link})}
         onLinkMouseOut={() => this.setState({activeLink: undefined})}
       >
@@ -202,10 +202,12 @@ export class InspectionSankey extends React.Component<InspectionSankeyProps, Ins
             </div>}
         />
         <CardContent>
-          { curData ?
-            <ConvertInspectionDataToSankey data={curData}/>
-            : undefined
-          }
+          <div style={{display: 'flex', justifyContent: 'center'}}>
+            { curData ?
+              <ConvertInspectionDataToSankey data={curData}/>
+              : undefined
+            }
+          </div>
         </CardContent>
       </Card>
     );
