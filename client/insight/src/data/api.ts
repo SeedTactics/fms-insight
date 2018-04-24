@@ -511,6 +511,45 @@ export class LogClient {
         return Promise.resolve<LogEntry[]>(<any>null);
     }
 
+    getEventCSV(startUTC: Date, endUTC: Date): Promise<void> {
+        let url_ = this.baseUrl + "/api/v1/log/events.csv?";
+        if (startUTC === undefined || startUTC === null)
+            throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
+        else
+            url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toJSON() : "") + "&";
+        if (endUTC === undefined || endUTC === null)
+            throw new Error("The parameter 'endUTC' must be defined and cannot be null.");
+        else
+            url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toJSON() : "") + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ = <RequestInit>{
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGetEventCSV(_response);
+        });
+    }
+
+    protected processGetEventCSV(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(<any>null);
+    }
+
     getCompletedParts(startUTC: Date, endUTC: Date): Promise<LogEntry[]> {
         let url_ = this.baseUrl + "/api/v1/log/events/all-completed-parts?";
         if (startUTC === undefined || startUTC === null)

@@ -388,6 +388,37 @@
         }
       }
     },
+    "/api/v1/log/events.csv": {
+      "get": {
+        "tags": [
+          "log"
+        ],
+        "operationId": "log_GetEventCSV",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "startUTC",
+            "in": "query",
+            "required": true,
+            "x-nullable": false,
+            "format": "date-time"
+          },
+          {
+            "type": "string",
+            "name": "endUTC",
+            "in": "query",
+            "required": true,
+            "x-nullable": false,
+            "format": "date-time"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/v1/log/events/all-completed-parts": {
       "get": {
         "tags": [
