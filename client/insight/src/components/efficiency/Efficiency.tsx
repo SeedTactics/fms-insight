@@ -47,6 +47,7 @@ import { SelectableHeatChart, HeatChartPoint } from './HeatChart';
 import * as events from '../../data/events';
 import { Store, connect } from '../../store/store';
 import * as guiState from '../../data/gui-state';
+import InspectionSankey from './InspectionSankey';
 
 // --------------------------------------------------------------------------------
 // Station Cycles
@@ -371,6 +372,9 @@ export default function Efficiency() {
           </div>
           <div style={{marginTop: '3em'}}>
             <ConnectedCompletedCountHeatmap/>
+          </div>
+          <div style={{marginTop: '3em'}}>
+            <InspectionSankey/>
           </div>
         </main>
       </>

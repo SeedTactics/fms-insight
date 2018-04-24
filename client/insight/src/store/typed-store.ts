@@ -72,6 +72,9 @@ export interface Connect<A, S> {
   <P, TOwnProps = {}>(getProps: (s: S) => P):
     reactRedux.InferableComponentEnhancerWithProps<P, TOwnProps>;
 
+  <P, TOwnProps = {}>(getProps: (s: S, ownProps: TOwnProps) => P):
+    reactRedux.InferableComponentEnhancerWithProps<P, TOwnProps>;
+
   <P, Creators, TOwnProps = {}>(getProps: (s: S) => P, actionCreators: Creators):
     reactRedux.InferableComponentEnhancerWithProps<P & ActionCreatorToDispatch<A, Creators>, TOwnProps>;
 }

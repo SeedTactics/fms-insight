@@ -22,4 +22,6 @@ declare module 'react-vis' {
   export class DiscreteColorLegend extends React.Component<any> {}
   export class Hint extends React.Component<any> {}
 
+  export class Sankey extends React.Component<any> {}
+
 }
