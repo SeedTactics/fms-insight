@@ -116,23 +116,22 @@ export function inspectionDataToSankey(d: ReadonlyArray<InspectionLogEntry>): Sa
     .toKeyedSeq()
     .mapKeys((idx, e) => e.materialID)
     .map(e => e.result.type === InspectionLogResultType.Completed ? e.result.success : false)
-    .toMap();
-
-  const inspCounters =
-    entrySeq
-    .map(e => e.result.type === InspectionLogResultType.Triggered
-                ? { materialID: e.materialID, toInspect: e.result.toInspect, counter: e.result.counter}
-                : undefined
-    )
-    .filter(e => e !== undefined) as
-      im.Seq.Indexed<{materialID: number, toInspect: boolean, counter: InspectionCounter}>
+    .toMap()
     ;
 
+  // create all the edges, likely with duplicate edges between nodes
   const edges =
-    inspCounters
-    .flatMap(c => edgesForCounter(c.counter, c.toInspect, matIdToInspResult.get(c.materialID)))
+    entrySeq
+    .flatMap(c => {
+      if (c.result.type === InspectionLogResultType.Triggered) {
+        return edgesForCounter(c.result.counter, c.result.toInspect, matIdToInspResult.get(c.materialID));
+      } else {
+        return [];
+      }
+    })
     ;
 
+  // extract the nodes and assign an index
   const nodes = edges
     .flatMap(e => [e.from, e.to])
     .toSet()
@@ -140,19 +139,23 @@ export function inspectionDataToSankey(d: ReadonlyArray<InspectionLogEntry>): Sa
     .map((node, idx) => ({ idx, node }))
     ;
 
+  // create the sankey nodes to return
   const sankeyNodes = nodes
     .map(s => ({
       unique: s.node.get("unique", ""),
       name: s.node.get("name", "")
     }))
-    .toArray();
+    .toArray()
+    ;
 
+  // create a map from NodeR to index
   const nodesToIdx = nodes
     .toKeyedSeq()
     .mapKeys((key, n) => n.node)
     .map(n => n.idx)
     .toMap();
 
+  // create the sankey links to return by counting Edges between nodes
   const sankeyLinks = edges
     .countBy(e => mkEdgeR({
       from: nodesToIdx.get(e.from, 0),
