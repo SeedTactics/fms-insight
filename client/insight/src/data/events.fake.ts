@@ -64,7 +64,7 @@ function addStartAndEnd(es: ILogEntry[], e: ILogEntry): void {
 }
 
 export function fakeCycle(
-    time: Date, machineTime: number, part?: string, proc?: number, pallet?: string
+    time: Date, machineTime: number, part?: string, proc?: number, pallet?: string, noInspections?: boolean,
   ): ReadonlyArray<ILogEntry> {
     const pal = pallet || 'pal' + faker.random.alphaNumeric();
     const material = [fakeMaterial(part, proc)];
@@ -127,6 +127,12 @@ export function fakeCycle(
       }
     );
 
+    if (!noInspections) {
+      time = addMinutes(time, 5);
+      counter += 1;
+      es.push(fakeInspSignal(material[0], "Insp1", time, counter));
+    }
+
     es.push(
       {
         counter: counter + 1,
@@ -143,6 +149,12 @@ export function fakeCycle(
         active: '-00:01:00',
       }
     );
+
+    if (!noInspections) {
+      time = addMinutes(time, 7);
+      counter += 1;
+      es.push(fakeInspComplete(material[0], "Insp1", time, true, counter));
+    }
 
     return es;
 }
@@ -166,38 +178,45 @@ export function fakeSerial(mat?: LogMaterial, serial?: string): ILogEntry {
   };
 }
 
-export function fakeInspSignal(mat?: LogMaterial, inspType?: string): ILogEntry {
+export function fakeInspSignal(mat?: LogMaterial, inspType?: string, now?: Date, counter?: number): ILogEntry {
   mat = mat || fakeMaterial();
   inspType = inspType || "MyInspType";
+  now = now || new Date(2017, 9, 5);
+  counter = counter || 100;
   return {
-    counter: 100,
+    counter: counter,
     material: [mat],
-    pal: faker.random.alphaNumeric(),
+    pal: "",
     type: LogType.Inspection,
     startofcycle: false,
-    endUTC: new Date(2017, 9, 5),
+    endUTC: now,
     loc: 'Inspection',
     locnum: 1,
     result: 'True',
-    program: 'ignored,' + inspType  + ',other',
+    program: 'ignored,' + inspType  + ',P6,S4',
     elapsed: '00:00:00',
     active: '00:00:00'
   };
 }
 
-export function fakeInspComplete(mat?: LogMaterial, inspType?: string): ILogEntry {
+export function fakeInspComplete(
+  mat?: LogMaterial, inspType?: string, now?: Date, success?: boolean, counter?: number
+): ILogEntry {
   mat = mat || fakeMaterial();
   inspType = inspType || "MyInspType";
+  now = now || new Date(2017, 9, 5);
+  success = success || true;
+  counter = counter || 100;
   return {
-    counter: 100,
+    counter,
     material: [mat],
-    pal: faker.random.alphaNumeric(),
+    pal: "",
     type: LogType.InspectionResult,
     startofcycle: false,
-    endUTC: new Date(2017, 9, 5),
+    endUTC: now,
     loc: 'InspectionComplete',
     locnum: 1,
-    result: 'True',
+    result: success.toString(),
     program: inspType,
     elapsed: '00:00:00',
     active: '00:00:00'

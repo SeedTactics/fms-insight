@@ -54,13 +54,13 @@ Object {
         Object {
           "active": -1,
           "completed": false,
-          "x": 2018-01-06T09:40:05.000Z,
+          "x": 2018-01-06T09:45:05.000Z,
           "y": 44,
         },
         Object {
           "active": -1,
           "completed": false,
-          "x": 2018-01-31T09:46:05.000Z,
+          "x": 2018-01-31T09:51:05.000Z,
           "y": 44,
         },
       ],
@@ -68,7 +68,7 @@ Object {
         Object {
           "active": -1,
           "completed": false,
-          "x": 2018-02-02T09:52:05.000Z,
+          "x": 2018-02-02T09:57:05.000Z,
           "y": 44,
         },
       ],
@@ -155,7 +155,98 @@ Object {
     },
   },
   "inspection": Object {
-    "by_part": Immutable.Map {},
+    "by_part": Immutable.Map {
+      Immutable.Record {
+        "part": "partCCC",
+        "inspType": "Insp1",
+      }: Array [
+        Object {
+          "materialID": 47455,
+          "result": Object {
+            "counter": Object {
+              "inspType": "Insp1",
+              "pallets": Array [
+                "6",
+              ],
+              "part": "ignored",
+              "stations": Array [
+                "4",
+              ],
+            },
+            "type": 0,
+          },
+          "time": 2018-01-06T09:45:05.000Z,
+        },
+        Object {
+          "materialID": 47455,
+          "result": Object {
+            "counter": "Insp1",
+            "type": 1,
+          },
+          "time": 2018-01-06T09:52:05.000Z,
+        },
+      ],
+      Immutable.Record {
+        "part": "partBBB",
+        "inspType": "Insp1",
+      }: Array [
+        Object {
+          "materialID": 41703,
+          "result": Object {
+            "counter": Object {
+              "inspType": "Insp1",
+              "pallets": Array [
+                "6",
+              ],
+              "part": "ignored",
+              "stations": Array [
+                "4",
+              ],
+            },
+            "type": 0,
+          },
+          "time": 2018-01-31T09:51:05.000Z,
+        },
+        Object {
+          "materialID": 41703,
+          "result": Object {
+            "counter": "Insp1",
+            "type": 1,
+          },
+          "time": 2018-01-31T09:58:05.000Z,
+        },
+      ],
+      Immutable.Record {
+        "part": "partAAA",
+        "inspType": "Insp1",
+      }: Array [
+        Object {
+          "materialID": 68845,
+          "result": Object {
+            "counter": Object {
+              "inspType": "Insp1",
+              "pallets": Array [
+                "6",
+              ],
+              "part": "ignored",
+              "stations": Array [
+                "4",
+              ],
+            },
+            "type": 0,
+          },
+          "time": 2018-02-02T09:57:05.000Z,
+        },
+        Object {
+          "materialID": 68845,
+          "result": Object {
+            "counter": "Insp1",
+            "type": 1,
+          },
+          "time": 2018-02-02T10:04:05.000Z,
+        },
+      ],
+    },
   },
   "sim_use": Object {
     "production": Immutable.List [],
@@ -172,13 +263,13 @@ Object {
         Object {
           "active": -1,
           "completed": false,
-          "x": 2018-01-31T09:46:05.000Z,
+          "x": 2018-01-31T09:51:05.000Z,
           "y": 44,
         },
         Object {
           "active": -1,
           "completed": false,
-          "x": 2018-02-02T09:52:05.000Z,
+          "x": 2018-02-02T09:57:05.000Z,
           "y": 44,
         },
       ],
@@ -186,7 +277,7 @@ Object {
         Object {
           "active": -1,
           "completed": false,
-          "x": 2018-02-08T09:34:05.000Z,
+          "x": 2018-02-08T09:39:05.000Z,
           "y": 44,
         },
       ],
@@ -265,45 +356,141 @@ Object {
     },
   },
   "inspection": Object {
-    "by_part": Immutable.Map {},
+    "by_part": Immutable.Map {
+      Immutable.Record {
+        "part": "part222",
+        "inspType": "Insp1",
+      }: Array [
+        Object {
+          "materialID": 19656,
+          "result": Object {
+            "counter": Object {
+              "inspType": "Insp1",
+              "pallets": Array [
+                "6",
+              ],
+              "part": "ignored",
+              "stations": Array [
+                "4",
+              ],
+            },
+            "type": 0,
+          },
+          "time": 2018-01-31T09:51:05.000Z,
+        },
+        Object {
+          "materialID": 19656,
+          "result": Object {
+            "counter": "Insp1",
+            "type": 1,
+          },
+          "time": 2018-01-31T09:58:05.000Z,
+        },
+      ],
+      Immutable.Record {
+        "part": "part111",
+        "inspType": "Insp1",
+      }: Array [
+        Object {
+          "materialID": 70329,
+          "result": Object {
+            "counter": Object {
+              "inspType": "Insp1",
+              "pallets": Array [
+                "6",
+              ],
+              "part": "ignored",
+              "stations": Array [
+                "4",
+              ],
+            },
+            "type": 0,
+          },
+          "time": 2018-02-02T09:57:05.000Z,
+        },
+        Object {
+          "materialID": 70329,
+          "result": Object {
+            "counter": "Insp1",
+            "type": 1,
+          },
+          "time": 2018-02-02T10:04:05.000Z,
+        },
+        Object {
+          "materialID": 58696,
+          "result": Object {
+            "counter": Object {
+              "inspType": "Insp1",
+              "pallets": Array [
+                "6",
+              ],
+              "part": "ignored",
+              "stations": Array [
+                "4",
+              ],
+            },
+            "type": 0,
+          },
+          "time": 2018-02-08T09:39:05.000Z,
+        },
+        Object {
+          "materialID": 58696,
+          "result": Object {
+            "counter": "Insp1",
+            "type": 1,
+          },
+          "time": 2018-02-08T09:46:05.000Z,
+        },
+      ],
+    },
   },
-  "latest_log_counter": 6,
+  "latest_log_counter": 7,
   "latest_scheduleId": undefined,
   "mat_summary": Object {
-    "inspTypes": Immutable.Set [],
+    "inspTypes": Immutable.Set [
+      "Insp1",
+    ],
     "matsById": Immutable.Map {
       70329: Object {
-        "completedInspections": Object {},
+        "completedInspections": Object {
+          "Insp1": 2018-02-02T10:04:05.000Z,
+        },
         "completed_procs": Array [
           1,
         ],
         "jobUnique": "uniqi",
-        "last_event": 2018-02-02T09:52:05.000Z,
+        "last_event": 2018-02-02T10:04:05.000Z,
         "materialID": 70329,
         "partName": "part111",
-        "signaledInspections": Array [],
+        "signaledInspections": Array [
+          "Insp1",
+        ],
       },
       58696: Object {
-        "completedInspections": Object {},
+        "completedInspections": Object {
+          "Insp1": 2018-02-08T09:46:05.000Z,
+        },
         "completed_procs": Array [
           1,
         ],
         "jobUnique": "uniqw",
-        "last_event": 2018-02-08T09:34:05.000Z,
+        "last_event": 2018-02-08T09:46:05.000Z,
         "materialID": 58696,
         "partName": "part111",
-        "signaledInspections": Array [],
+        "signaledInspections": Array [
+          "Insp1",
+        ],
       },
     },
   },
   "most_recent_10_events": Array [
     Object {
-      "active": "00:03:00",
-      "counter": 4,
-      "elapsed": "00:03:00",
-      "endUTC": 2018-02-02T09:49:05.000Z,
-      "loc": "L/U",
-      "locnum": 2,
+      "active": "00:00:00",
+      "counter": 7,
+      "elapsed": "00:00:00",
+      "endUTC": 2018-02-02T10:04:05.000Z,
+      "loc": "InspectionComplete",
+      "locnum": 1,
       "material": Array [
         Object {
           "face": "face4",
@@ -314,48 +501,11 @@ Object {
           "uniq": "uniqi",
         },
       ],
-      "pal": "palbb",
-      "program": "",
-      "result": "",
-      "startofcycle": true,
-      "type": "LoadUnloadCycle",
-    },
-    Object {
-      "active": "00:03:00",
-      "counter": 5,
-      "elapsed": "00:03:00",
-      "endUTC": 2018-02-02T09:52:05.000Z,
-      "loc": "L/U",
-      "locnum": 2,
-      "material": Array [
-        Object {
-          "face": "face4",
-          "id": 70329,
-          "numproc": 4,
-          "part": "part111",
-          "proc": 1,
-          "uniq": "uniqi",
-        },
-      ],
-      "pal": "palbb",
-      "program": "UNLOAD",
-      "result": "UNLOAD",
+      "pal": "",
+      "program": "Insp1",
+      "result": "true",
       "startofcycle": false,
-      "type": "LoadUnloadCycle",
-    },
-    Object {
-      "active": "-00:01:00",
-      "counter": 6,
-      "elapsed": "00:44:00",
-      "endUTC": 2018-02-02T09:52:05.000Z,
-      "loc": "L/U",
-      "locnum": 2,
-      "material": Array [],
-      "pal": "palbb",
-      "program": "",
-      "result": "PalletCycle",
-      "startofcycle": false,
-      "type": "PalletCycle",
+      "type": "InspectionResult",
     },
     Object {
       "active": "00:06:00",
@@ -496,10 +646,33 @@ Object {
       "type": "LoadUnloadCycle",
     },
     Object {
-      "active": "-00:01:00",
+      "active": "00:00:00",
       "counter": 6,
+      "elapsed": "00:00:00",
+      "endUTC": 2018-02-08T09:39:05.000Z,
+      "loc": "Inspection",
+      "locnum": 1,
+      "material": Array [
+        Object {
+          "face": "facef",
+          "id": 58696,
+          "numproc": 4,
+          "part": "part111",
+          "proc": 1,
+          "uniq": "uniqw",
+        },
+      ],
+      "pal": "",
+      "program": "ignored,Insp1,P6,S4",
+      "result": "True",
+      "startofcycle": false,
+      "type": "Inspection",
+    },
+    Object {
+      "active": "-00:01:00",
+      "counter": 7,
       "elapsed": "00:44:00",
-      "endUTC": 2018-02-08T09:34:05.000Z,
+      "endUTC": 2018-02-08T09:39:05.000Z,
       "loc": "L/U",
       "locnum": 2,
       "material": Array [],
@@ -508,6 +681,29 @@ Object {
       "result": "PalletCycle",
       "startofcycle": false,
       "type": "PalletCycle",
+    },
+    Object {
+      "active": "00:00:00",
+      "counter": 7,
+      "elapsed": "00:00:00",
+      "endUTC": 2018-02-08T09:46:05.000Z,
+      "loc": "InspectionComplete",
+      "locnum": 1,
+      "material": Array [
+        Object {
+          "face": "facef",
+          "id": 58696,
+          "numproc": 4,
+          "part": "part111",
+          "proc": 1,
+          "uniq": "uniqw",
+        },
+      ],
+      "pal": "",
+      "program": "Insp1",
+      "result": "true",
+      "startofcycle": false,
+      "type": "InspectionResult",
     },
   ],
   "oee": Object {
@@ -560,7 +756,7 @@ Object {
         Object {
           "active": -1,
           "completed": false,
-          "x": 2018-01-06T09:40:05.000Z,
+          "x": 2018-01-06T09:45:05.000Z,
           "y": 44,
         },
       ],
@@ -568,13 +764,13 @@ Object {
         Object {
           "active": -1,
           "completed": false,
-          "x": 2018-01-31T09:46:05.000Z,
+          "x": 2018-01-31T09:51:05.000Z,
           "y": 44,
         },
         Object {
           "active": -1,
           "completed": false,
-          "x": 2018-02-02T09:52:05.000Z,
+          "x": 2018-02-02T09:57:05.000Z,
           "y": 44,
         },
       ],
@@ -661,56 +857,156 @@ Object {
     },
   },
   "inspection": Object {
-    "by_part": Immutable.Map {},
+    "by_part": Immutable.Map {
+      Immutable.Record {
+        "part": "part222",
+        "inspType": "Insp1",
+      }: Array [
+        Object {
+          "materialID": 29838,
+          "result": Object {
+            "counter": Object {
+              "inspType": "Insp1",
+              "pallets": Array [
+                "6",
+              ],
+              "part": "ignored",
+              "stations": Array [
+                "4",
+              ],
+            },
+            "type": 0,
+          },
+          "time": 2018-01-06T09:45:05.000Z,
+        },
+        Object {
+          "materialID": 29838,
+          "result": Object {
+            "counter": "Insp1",
+            "type": 1,
+          },
+          "time": 2018-01-06T09:52:05.000Z,
+        },
+        Object {
+          "materialID": 19656,
+          "result": Object {
+            "counter": Object {
+              "inspType": "Insp1",
+              "pallets": Array [
+                "6",
+              ],
+              "part": "ignored",
+              "stations": Array [
+                "4",
+              ],
+            },
+            "type": 0,
+          },
+          "time": 2018-01-31T09:51:05.000Z,
+        },
+        Object {
+          "materialID": 19656,
+          "result": Object {
+            "counter": "Insp1",
+            "type": 1,
+          },
+          "time": 2018-01-31T09:58:05.000Z,
+        },
+      ],
+      Immutable.Record {
+        "part": "part111",
+        "inspType": "Insp1",
+      }: Array [
+        Object {
+          "materialID": 70329,
+          "result": Object {
+            "counter": Object {
+              "inspType": "Insp1",
+              "pallets": Array [
+                "6",
+              ],
+              "part": "ignored",
+              "stations": Array [
+                "4",
+              ],
+            },
+            "type": 0,
+          },
+          "time": 2018-02-02T09:57:05.000Z,
+        },
+        Object {
+          "materialID": 70329,
+          "result": Object {
+            "counter": "Insp1",
+            "type": 1,
+          },
+          "time": 2018-02-02T10:04:05.000Z,
+        },
+      ],
+    },
   },
-  "latest_log_counter": 6,
+  "latest_log_counter": 7,
   "latest_scheduleId": undefined,
   "mat_summary": Object {
-    "inspTypes": Immutable.Set [],
+    "inspTypes": Immutable.Set [
+      "Insp1",
+    ],
     "matsById": Immutable.Map {
       29838: Object {
-        "completedInspections": Object {},
+        "completedInspections": Object {
+          "Insp1": 2018-01-06T09:52:05.000Z,
+        },
         "completed_procs": Array [
           2,
         ],
         "jobUnique": "uniqc",
-        "last_event": 2018-01-06T09:40:05.000Z,
+        "last_event": 2018-01-06T09:52:05.000Z,
         "materialID": 29838,
         "partName": "part222",
-        "signaledInspections": Array [],
+        "signaledInspections": Array [
+          "Insp1",
+        ],
       },
       19656: Object {
-        "completedInspections": Object {},
+        "completedInspections": Object {
+          "Insp1": 2018-01-31T09:58:05.000Z,
+        },
         "completed_procs": Array [
           1,
         ],
         "jobUnique": "uniqz",
-        "last_event": 2018-01-31T09:46:05.000Z,
+        "last_event": 2018-01-31T09:58:05.000Z,
         "materialID": 19656,
         "partName": "part222",
-        "signaledInspections": Array [],
+        "signaledInspections": Array [
+          "Insp1",
+        ],
       },
       70329: Object {
-        "completedInspections": Object {},
+        "completedInspections": Object {
+          "Insp1": 2018-02-02T10:04:05.000Z,
+        },
         "completed_procs": Array [
           1,
         ],
         "jobUnique": "uniqi",
-        "last_event": 2018-02-02T09:52:05.000Z,
+        "last_event": 2018-02-02T10:04:05.000Z,
         "materialID": 70329,
         "partName": "part111",
-        "signaledInspections": Array [],
+        "signaledInspections": Array [
+          "Insp1",
+        ],
       },
     },
   },
   "most_recent_10_events": Array [
     Object {
-      "active": "00:03:00",
-      "counter": 4,
-      "elapsed": "00:03:00",
-      "endUTC": 2018-01-31T09:43:05.000Z,
-      "loc": "L/U",
-      "locnum": 2,
+      "active": "00:00:00",
+      "counter": 7,
+      "elapsed": "00:00:00",
+      "endUTC": 2018-01-31T09:58:05.000Z,
+      "loc": "InspectionComplete",
+      "locnum": 1,
       "material": Array [
         Object {
           "face": "face5",
@@ -721,48 +1017,11 @@ Object {
           "uniq": "uniqz",
         },
       ],
-      "pal": "palbb",
-      "program": "",
-      "result": "",
-      "startofcycle": true,
-      "type": "LoadUnloadCycle",
-    },
-    Object {
-      "active": "00:03:00",
-      "counter": 5,
-      "elapsed": "00:03:00",
-      "endUTC": 2018-01-31T09:46:05.000Z,
-      "loc": "L/U",
-      "locnum": 2,
-      "material": Array [
-        Object {
-          "face": "face5",
-          "id": 19656,
-          "numproc": 4,
-          "part": "part222",
-          "proc": 1,
-          "uniq": "uniqz",
-        },
-      ],
-      "pal": "palbb",
-      "program": "UNLOAD",
-      "result": "UNLOAD",
+      "pal": "",
+      "program": "Insp1",
+      "result": "true",
       "startofcycle": false,
-      "type": "LoadUnloadCycle",
-    },
-    Object {
-      "active": "-00:01:00",
-      "counter": 6,
-      "elapsed": "00:44:00",
-      "endUTC": 2018-01-31T09:46:05.000Z,
-      "loc": "L/U",
-      "locnum": 2,
-      "material": Array [],
-      "pal": "palbb",
-      "program": "",
-      "result": "PalletCycle",
-      "startofcycle": false,
-      "type": "PalletCycle",
+      "type": "InspectionResult",
     },
     Object {
       "active": "00:06:00",
@@ -903,10 +1162,33 @@ Object {
       "type": "LoadUnloadCycle",
     },
     Object {
-      "active": "-00:01:00",
+      "active": "00:00:00",
       "counter": 6,
+      "elapsed": "00:00:00",
+      "endUTC": 2018-02-02T09:57:05.000Z,
+      "loc": "Inspection",
+      "locnum": 1,
+      "material": Array [
+        Object {
+          "face": "face4",
+          "id": 70329,
+          "numproc": 4,
+          "part": "part111",
+          "proc": 1,
+          "uniq": "uniqi",
+        },
+      ],
+      "pal": "",
+      "program": "ignored,Insp1,P6,S4",
+      "result": "True",
+      "startofcycle": false,
+      "type": "Inspection",
+    },
+    Object {
+      "active": "-00:01:00",
+      "counter": 7,
       "elapsed": "00:44:00",
-      "endUTC": 2018-02-02T09:52:05.000Z,
+      "endUTC": 2018-02-02T09:57:05.000Z,
       "loc": "L/U",
       "locnum": 2,
       "material": Array [],
@@ -915,6 +1197,29 @@ Object {
       "result": "PalletCycle",
       "startofcycle": false,
       "type": "PalletCycle",
+    },
+    Object {
+      "active": "00:00:00",
+      "counter": 7,
+      "elapsed": "00:00:00",
+      "endUTC": 2018-02-02T10:04:05.000Z,
+      "loc": "InspectionComplete",
+      "locnum": 1,
+      "material": Array [
+        Object {
+          "face": "face4",
+          "id": 70329,
+          "numproc": 4,
+          "part": "part111",
+          "proc": 1,
+          "uniq": "uniqi",
+        },
+      ],
+      "pal": "",
+      "program": "Insp1",
+      "result": "true",
+      "startofcycle": false,
+      "type": "InspectionResult",
     },
   ],
   "oee": Object {
@@ -967,13 +1272,13 @@ Object {
         Object {
           "active": -1,
           "completed": false,
-          "x": 2018-01-31T09:46:05.000Z,
+          "x": 2018-01-31T09:51:05.000Z,
           "y": 44,
         },
         Object {
           "active": -1,
           "completed": false,
-          "x": 2018-02-02T09:52:05.000Z,
+          "x": 2018-02-02T09:57:05.000Z,
           "y": 44,
         },
       ],
@@ -981,7 +1286,7 @@ Object {
         Object {
           "active": -1,
           "completed": false,
-          "x": 2018-02-08T09:34:05.000Z,
+          "x": 2018-02-08T09:39:05.000Z,
           "y": 44,
         },
       ],
@@ -1060,45 +1365,141 @@ Object {
     },
   },
   "inspection": Object {
-    "by_part": Immutable.Map {},
+    "by_part": Immutable.Map {
+      Immutable.Record {
+        "part": "part222",
+        "inspType": "Insp1",
+      }: Array [
+        Object {
+          "materialID": 56627,
+          "result": Object {
+            "counter": Object {
+              "inspType": "Insp1",
+              "pallets": Array [
+                "6",
+              ],
+              "part": "ignored",
+              "stations": Array [
+                "4",
+              ],
+            },
+            "type": 0,
+          },
+          "time": 2018-01-31T09:51:05.000Z,
+        },
+        Object {
+          "materialID": 56627,
+          "result": Object {
+            "counter": "Insp1",
+            "type": 1,
+          },
+          "time": 2018-01-31T09:58:05.000Z,
+        },
+      ],
+      Immutable.Record {
+        "part": "part111",
+        "inspType": "Insp1",
+      }: Array [
+        Object {
+          "materialID": 62822,
+          "result": Object {
+            "counter": Object {
+              "inspType": "Insp1",
+              "pallets": Array [
+                "6",
+              ],
+              "part": "ignored",
+              "stations": Array [
+                "4",
+              ],
+            },
+            "type": 0,
+          },
+          "time": 2018-02-02T09:57:05.000Z,
+        },
+        Object {
+          "materialID": 62822,
+          "result": Object {
+            "counter": "Insp1",
+            "type": 1,
+          },
+          "time": 2018-02-02T10:04:05.000Z,
+        },
+        Object {
+          "materialID": 57245,
+          "result": Object {
+            "counter": Object {
+              "inspType": "Insp1",
+              "pallets": Array [
+                "6",
+              ],
+              "part": "ignored",
+              "stations": Array [
+                "4",
+              ],
+            },
+            "type": 0,
+          },
+          "time": 2018-02-08T09:39:05.000Z,
+        },
+        Object {
+          "materialID": 57245,
+          "result": Object {
+            "counter": "Insp1",
+            "type": 1,
+          },
+          "time": 2018-02-08T09:46:05.000Z,
+        },
+      ],
+    },
   },
-  "latest_log_counter": 6,
+  "latest_log_counter": 7,
   "latest_scheduleId": undefined,
   "mat_summary": Object {
-    "inspTypes": Immutable.Set [],
+    "inspTypes": Immutable.Set [
+      "Insp1",
+    ],
     "matsById": Immutable.Map {
       62822: Object {
-        "completedInspections": Object {},
+        "completedInspections": Object {
+          "Insp1": 2018-02-02T10:04:05.000Z,
+        },
         "completed_procs": Array [
           1,
         ],
         "jobUnique": "uniq7",
-        "last_event": 2018-02-02T09:52:05.000Z,
+        "last_event": 2018-02-02T10:04:05.000Z,
         "materialID": 62822,
         "partName": "part111",
-        "signaledInspections": Array [],
+        "signaledInspections": Array [
+          "Insp1",
+        ],
       },
       57245: Object {
-        "completedInspections": Object {},
+        "completedInspections": Object {
+          "Insp1": 2018-02-08T09:46:05.000Z,
+        },
         "completed_procs": Array [
           1,
         ],
         "jobUnique": "uniqr",
-        "last_event": 2018-02-08T09:34:05.000Z,
+        "last_event": 2018-02-08T09:46:05.000Z,
         "materialID": 57245,
         "partName": "part111",
-        "signaledInspections": Array [],
+        "signaledInspections": Array [
+          "Insp1",
+        ],
       },
     },
   },
   "most_recent_10_events": Array [
     Object {
-      "active": "00:03:00",
-      "counter": 4,
-      "elapsed": "00:03:00",
-      "endUTC": 2018-02-02T09:49:05.000Z,
-      "loc": "L/U",
-      "locnum": 2,
+      "active": "00:00:00",
+      "counter": 7,
+      "elapsed": "00:00:00",
+      "endUTC": 2018-02-02T10:04:05.000Z,
+      "loc": "InspectionComplete",
+      "locnum": 1,
       "material": Array [
         Object {
           "face": "face7",
@@ -1109,48 +1510,11 @@ Object {
           "uniq": "uniq7",
         },
       ],
-      "pal": "palbb",
-      "program": "",
-      "result": "",
-      "startofcycle": true,
-      "type": "LoadUnloadCycle",
-    },
-    Object {
-      "active": "00:03:00",
-      "counter": 5,
-      "elapsed": "00:03:00",
-      "endUTC": 2018-02-02T09:52:05.000Z,
-      "loc": "L/U",
-      "locnum": 2,
-      "material": Array [
-        Object {
-          "face": "face7",
-          "id": 62822,
-          "numproc": 2,
-          "part": "part111",
-          "proc": 1,
-          "uniq": "uniq7",
-        },
-      ],
-      "pal": "palbb",
-      "program": "UNLOAD",
-      "result": "UNLOAD",
+      "pal": "",
+      "program": "Insp1",
+      "result": "true",
       "startofcycle": false,
-      "type": "LoadUnloadCycle",
-    },
-    Object {
-      "active": "-00:01:00",
-      "counter": 6,
-      "elapsed": "00:44:00",
-      "endUTC": 2018-02-02T09:52:05.000Z,
-      "loc": "L/U",
-      "locnum": 2,
-      "material": Array [],
-      "pal": "palbb",
-      "program": "",
-      "result": "PalletCycle",
-      "startofcycle": false,
-      "type": "PalletCycle",
+      "type": "InspectionResult",
     },
     Object {
       "active": "00:06:00",
@@ -1291,10 +1655,33 @@ Object {
       "type": "LoadUnloadCycle",
     },
     Object {
-      "active": "-00:01:00",
+      "active": "00:00:00",
       "counter": 6,
+      "elapsed": "00:00:00",
+      "endUTC": 2018-02-08T09:39:05.000Z,
+      "loc": "Inspection",
+      "locnum": 1,
+      "material": Array [
+        Object {
+          "face": "face6",
+          "id": 57245,
+          "numproc": 3,
+          "part": "part111",
+          "proc": 1,
+          "uniq": "uniqr",
+        },
+      ],
+      "pal": "",
+      "program": "ignored,Insp1,P6,S4",
+      "result": "True",
+      "startofcycle": false,
+      "type": "Inspection",
+    },
+    Object {
+      "active": "-00:01:00",
+      "counter": 7,
       "elapsed": "00:44:00",
-      "endUTC": 2018-02-08T09:34:05.000Z,
+      "endUTC": 2018-02-08T09:39:05.000Z,
       "loc": "L/U",
       "locnum": 2,
       "material": Array [],
@@ -1303,6 +1690,29 @@ Object {
       "result": "PalletCycle",
       "startofcycle": false,
       "type": "PalletCycle",
+    },
+    Object {
+      "active": "00:00:00",
+      "counter": 7,
+      "elapsed": "00:00:00",
+      "endUTC": 2018-02-08T09:46:05.000Z,
+      "loc": "InspectionComplete",
+      "locnum": 1,
+      "material": Array [
+        Object {
+          "face": "face6",
+          "id": 57245,
+          "numproc": 3,
+          "part": "part111",
+          "proc": 1,
+          "uniq": "uniqr",
+        },
+      ],
+      "pal": "",
+      "program": "Insp1",
+      "result": "true",
+      "startofcycle": false,
+      "type": "InspectionResult",
     },
   ],
   "oee": Object {
@@ -1355,7 +1765,7 @@ Object {
         Object {
           "active": -1,
           "completed": false,
-          "x": 2018-01-06T09:40:05.000Z,
+          "x": 2018-01-06T09:45:05.000Z,
           "y": 44,
         },
       ],
@@ -1363,13 +1773,13 @@ Object {
         Object {
           "active": -1,
           "completed": false,
-          "x": 2018-01-31T09:46:05.000Z,
+          "x": 2018-01-31T09:51:05.000Z,
           "y": 44,
         },
         Object {
           "active": -1,
           "completed": false,
-          "x": 2018-02-02T09:52:05.000Z,
+          "x": 2018-02-02T09:57:05.000Z,
           "y": 44,
         },
       ],
@@ -1456,56 +1866,156 @@ Object {
     },
   },
   "inspection": Object {
-    "by_part": Immutable.Map {},
+    "by_part": Immutable.Map {
+      Immutable.Record {
+        "part": "part222",
+        "inspType": "Insp1",
+      }: Array [
+        Object {
+          "materialID": 90816,
+          "result": Object {
+            "counter": Object {
+              "inspType": "Insp1",
+              "pallets": Array [
+                "6",
+              ],
+              "part": "ignored",
+              "stations": Array [
+                "4",
+              ],
+            },
+            "type": 0,
+          },
+          "time": 2018-01-06T09:45:05.000Z,
+        },
+        Object {
+          "materialID": 90816,
+          "result": Object {
+            "counter": "Insp1",
+            "type": 1,
+          },
+          "time": 2018-01-06T09:52:05.000Z,
+        },
+        Object {
+          "materialID": 56627,
+          "result": Object {
+            "counter": Object {
+              "inspType": "Insp1",
+              "pallets": Array [
+                "6",
+              ],
+              "part": "ignored",
+              "stations": Array [
+                "4",
+              ],
+            },
+            "type": 0,
+          },
+          "time": 2018-01-31T09:51:05.000Z,
+        },
+        Object {
+          "materialID": 56627,
+          "result": Object {
+            "counter": "Insp1",
+            "type": 1,
+          },
+          "time": 2018-01-31T09:58:05.000Z,
+        },
+      ],
+      Immutable.Record {
+        "part": "part111",
+        "inspType": "Insp1",
+      }: Array [
+        Object {
+          "materialID": 62822,
+          "result": Object {
+            "counter": Object {
+              "inspType": "Insp1",
+              "pallets": Array [
+                "6",
+              ],
+              "part": "ignored",
+              "stations": Array [
+                "4",
+              ],
+            },
+            "type": 0,
+          },
+          "time": 2018-02-02T09:57:05.000Z,
+        },
+        Object {
+          "materialID": 62822,
+          "result": Object {
+            "counter": "Insp1",
+            "type": 1,
+          },
+          "time": 2018-02-02T10:04:05.000Z,
+        },
+      ],
+    },
   },
-  "latest_log_counter": 6,
+  "latest_log_counter": 7,
   "latest_scheduleId": undefined,
   "mat_summary": Object {
-    "inspTypes": Immutable.Set [],
+    "inspTypes": Immutable.Set [
+      "Insp1",
+    ],
     "matsById": Immutable.Map {
       90816: Object {
-        "completedInspections": Object {},
+        "completedInspections": Object {
+          "Insp1": 2018-01-06T09:52:05.000Z,
+        },
         "completed_procs": Array [
           2,
         ],
         "jobUnique": "uniq9",
-        "last_event": 2018-01-06T09:40:05.000Z,
+        "last_event": 2018-01-06T09:52:05.000Z,
         "materialID": 90816,
         "partName": "part222",
-        "signaledInspections": Array [],
+        "signaledInspections": Array [
+          "Insp1",
+        ],
       },
       56627: Object {
-        "completedInspections": Object {},
+        "completedInspections": Object {
+          "Insp1": 2018-01-31T09:58:05.000Z,
+        },
         "completed_procs": Array [
           1,
         ],
         "jobUnique": "uniqp",
-        "last_event": 2018-01-31T09:46:05.000Z,
+        "last_event": 2018-01-31T09:58:05.000Z,
         "materialID": 56627,
         "partName": "part222",
-        "signaledInspections": Array [],
+        "signaledInspections": Array [
+          "Insp1",
+        ],
       },
       62822: Object {
-        "completedInspections": Object {},
+        "completedInspections": Object {
+          "Insp1": 2018-02-02T10:04:05.000Z,
+        },
         "completed_procs": Array [
           1,
         ],
         "jobUnique": "uniq7",
-        "last_event": 2018-02-02T09:52:05.000Z,
+        "last_event": 2018-02-02T10:04:05.000Z,
         "materialID": 62822,
         "partName": "part111",
-        "signaledInspections": Array [],
+        "signaledInspections": Array [
+          "Insp1",
+        ],
       },
     },
   },
   "most_recent_10_events": Array [
     Object {
-      "active": "00:03:00",
-      "counter": 4,
-      "elapsed": "00:03:00",
-      "endUTC": 2018-01-31T09:43:05.000Z,
-      "loc": "L/U",
-      "locnum": 2,
+      "active": "00:00:00",
+      "counter": 7,
+      "elapsed": "00:00:00",
+      "endUTC": 2018-01-31T09:58:05.000Z,
+      "loc": "InspectionComplete",
+      "locnum": 1,
       "material": Array [
         Object {
           "face": "face8",
@@ -1516,48 +2026,11 @@ Object {
           "uniq": "uniqp",
         },
       ],
-      "pal": "palbb",
-      "program": "",
-      "result": "",
-      "startofcycle": true,
-      "type": "LoadUnloadCycle",
-    },
-    Object {
-      "active": "00:03:00",
-      "counter": 5,
-      "elapsed": "00:03:00",
-      "endUTC": 2018-01-31T09:46:05.000Z,
-      "loc": "L/U",
-      "locnum": 2,
-      "material": Array [
-        Object {
-          "face": "face8",
-          "id": 56627,
-          "numproc": 4,
-          "part": "part222",
-          "proc": 1,
-          "uniq": "uniqp",
-        },
-      ],
-      "pal": "palbb",
-      "program": "UNLOAD",
-      "result": "UNLOAD",
+      "pal": "",
+      "program": "Insp1",
+      "result": "true",
       "startofcycle": false,
-      "type": "LoadUnloadCycle",
-    },
-    Object {
-      "active": "-00:01:00",
-      "counter": 6,
-      "elapsed": "00:44:00",
-      "endUTC": 2018-01-31T09:46:05.000Z,
-      "loc": "L/U",
-      "locnum": 2,
-      "material": Array [],
-      "pal": "palbb",
-      "program": "",
-      "result": "PalletCycle",
-      "startofcycle": false,
-      "type": "PalletCycle",
+      "type": "InspectionResult",
     },
     Object {
       "active": "00:06:00",
@@ -1698,10 +2171,33 @@ Object {
       "type": "LoadUnloadCycle",
     },
     Object {
-      "active": "-00:01:00",
+      "active": "00:00:00",
       "counter": 6,
+      "elapsed": "00:00:00",
+      "endUTC": 2018-02-02T09:57:05.000Z,
+      "loc": "Inspection",
+      "locnum": 1,
+      "material": Array [
+        Object {
+          "face": "face7",
+          "id": 62822,
+          "numproc": 2,
+          "part": "part111",
+          "proc": 1,
+          "uniq": "uniq7",
+        },
+      ],
+      "pal": "",
+      "program": "ignored,Insp1,P6,S4",
+      "result": "True",
+      "startofcycle": false,
+      "type": "Inspection",
+    },
+    Object {
+      "active": "-00:01:00",
+      "counter": 7,
       "elapsed": "00:44:00",
-      "endUTC": 2018-02-02T09:52:05.000Z,
+      "endUTC": 2018-02-02T09:57:05.000Z,
       "loc": "L/U",
       "locnum": 2,
       "material": Array [],
@@ -1710,6 +2206,29 @@ Object {
       "result": "PalletCycle",
       "startofcycle": false,
       "type": "PalletCycle",
+    },
+    Object {
+      "active": "00:00:00",
+      "counter": 7,
+      "elapsed": "00:00:00",
+      "endUTC": 2018-02-02T10:04:05.000Z,
+      "loc": "InspectionComplete",
+      "locnum": 1,
+      "material": Array [
+        Object {
+          "face": "face7",
+          "id": 62822,
+          "numproc": 2,
+          "part": "part111",
+          "proc": 1,
+          "uniq": "uniq7",
+        },
+      ],
+      "pal": "",
+      "program": "Insp1",
+      "result": "true",
+      "startofcycle": false,
+      "type": "InspectionResult",
     },
   ],
   "oee": Object {

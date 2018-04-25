@@ -77,7 +77,7 @@ it('starts an open', () => {
 });
 
 it('finishes material open', () => {
-  const evts = fakeCycle(new Date(), 20);
+  const evts = fakeCycle(new Date(), 20, undefined, undefined, undefined, true);
   const action: mat.Action = {
     type: mat.ActionType.OpenMaterialDialog,
     initial: m,
@@ -254,7 +254,7 @@ it("succeeds for a workorder set", () => {
 });
 
 it("successfully processes events", () => {
-  const cycle = fakeCycle(new Date(), 55);
+  const cycle = fakeCycle(new Date(), 55, undefined, undefined, undefined, true);
   const logmat = cycle[0].material[0];
   const evts = [...cycle,
     fakeInspComplete(logmat, "compinsp"),

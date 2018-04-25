@@ -109,15 +109,18 @@ export function process_events(
     switch (expire.type) {
       case ExpireOldDataType.ExpireEarlierThan:
 
+        let eventsFiltered = false;
         parts = parts
           .map(entries => {
             // check if expire is needed
             if (entries.length === 0 || entries[0].time >= expire.d) {
               return entries;
             } else {
+              eventsFiltered = true;
               return im.Seq(entries).skipWhile(e => e.time < expire.d).toArray();
             }
           });
+        if (!eventsFiltered && evtsSeq.isEmpty()) { return st; }
 
         break;
 
