@@ -154,14 +154,14 @@ export function inspectionDataToSankey(d: ReadonlyArray<InspectionLogEntry>): Sa
     .toMap();
 
   const sankeyLinks = edges
-    .groupBy(e => mkEdgeR({
+    .countBy(e => mkEdgeR({
       from: nodesToIdx.get(e.from, 0),
       to: nodesToIdx.get(e.to, 0),
     }))
-    .map((es, link) => ({
+    .map((value, link) => ({
       source: link.get("from", 0),
       target: link.get("to", 0),
-      value: es.count(),
+      value,
     }))
     .valueSeq()
     .toArray()
