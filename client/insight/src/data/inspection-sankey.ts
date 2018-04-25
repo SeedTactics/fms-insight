@@ -31,11 +31,12 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-// import * as im from 'immutable';
-import { InspectionLogEntry } from './events.inspection';
+import * as im from 'immutable';
+import { InspectionLogResultType, InspectionLogEntry, InspectionCounter } from './events.inspection';
 
 export interface SankeyNode {
-  readonly name: string;
+  readonly unique: string; // full unique of node
+  readonly name: string; // what to display for the node
 }
 
 export interface SankeyLink {
@@ -49,7 +50,129 @@ export interface SankeyDiagram {
   readonly links: ReadonlyArray<SankeyLink>;
 }
 
+type NodeR = im.Record<{unique: string, name: string}>;
+const mkNodeR = im.Record({unique: "", name: ""});
+
+const mkEdgeR = im.Record({from: 0, to: 0});
+
+interface Edge {
+  readonly from: NodeR;
+  readonly to: NodeR;
+}
+
+function edgesForCounter(counter: InspectionCounter, toInspect: boolean, result: boolean | undefined): Edge[] {
+  let path = "";
+  let prevNode = mkNodeR({unique: "", name: "start"});
+  let edges: Edge[] = [];
+  const numProc = Math.max(counter.pallets.length, counter.stations.length);
+  for (let i = 0; i < numProc; i++) {
+    let cur: string | undefined;
+    if (i < counter.pallets.length && i < counter.stations.length) {
+      cur = "P" + counter.pallets[i] + ",M" + counter.stations[i];
+    } else if (i < counter.pallets.length) {
+      cur = "P" + counter.pallets[i];
+    } else if (i < counter.stations.length) {
+      cur = "M" + counter.stations[i];
+    }
+    if (cur) {
+      path += "->" + cur;
+      const nextNode = mkNodeR({unique: path, name: cur});
+      edges.push({
+        from: prevNode,
+        to: nextNode,
+      });
+      prevNode = nextNode;
+    }
+  }
+
+  if (toInspect && result !== undefined) {
+    if (result) {
+      edges.push({
+        from: prevNode,
+        to: mkNodeR({unique: path + "->success", name: "success"})
+      });
+    } else {
+      edges.push({
+        from: prevNode,
+        to: mkNodeR({unique: path + "->failed", name: "failed"})
+      });
+    }
+  } else {
+    edges.push({
+      from: prevNode,
+      to: mkNodeR({unique: path + "->uninspected", name: "uninspected"})
+    });
+  }
+
+  return edges;
+}
+
 export function inspectionDataToSankey(d: ReadonlyArray<InspectionLogEntry>): SankeyDiagram {
+  const entrySeq = im.Seq(d);
+
+  const matIdToInspResult =
+    entrySeq
+    .filter(e => e.result.type === InspectionLogResultType.Completed)
+    .toKeyedSeq()
+    .mapKeys((idx, e) => e.materialID)
+    .map(e => e.result.type === InspectionLogResultType.Completed ? e.result.success : false)
+    .toMap();
+
+  const inspCounters =
+    entrySeq
+    .map(e => e.result.type === InspectionLogResultType.Triggered
+                ? { materialID: e.materialID, toInspect: e.result.toInspect, counter: e.result.counter}
+                : undefined
+    )
+    .filter(e => e !== undefined) as
+      im.Seq.Indexed<{materialID: number, toInspect: boolean, counter: InspectionCounter}>
+    ;
+
+  const edges =
+    inspCounters
+    .flatMap(c => edgesForCounter(c.counter, c.toInspect, matIdToInspResult.get(c.materialID)))
+    ;
+
+  const nodes = edges
+    .flatMap(e => [e.from, e.to])
+    .toSet()
+    .toIndexedSeq()
+    .map((node, idx) => ({ idx, node }))
+    ;
+
+  const sankeyNodes = nodes
+    .map(s => ({
+      unique: s.node.get("unique", ""),
+      name: s.node.get("name", "")
+    }))
+    .toArray();
+
+  const nodesToIdx = nodes
+    .toKeyedSeq()
+    .mapKeys((key, n) => n.node)
+    .map(n => n.idx)
+    .toMap();
+
+  const sankeyLinks = edges
+    .groupBy(e => mkEdgeR({
+      from: nodesToIdx.get(e.from, 0),
+      to: nodesToIdx.get(e.to, 0),
+    }))
+    .map((es, link) => ({
+      source: link.get("from", 0),
+      target: link.get("to", 0),
+      value: es.count(),
+    }))
+    .valueSeq()
+    .toArray()
+    ;
+
+  return {
+    nodes: sankeyNodes,
+    links: sankeyLinks,
+  };
+
+  /*
   return {
     nodes: [{name: 'a'}, {name: 'b'}, {name: 'c'}],
     links: [
@@ -57,5 +180,5 @@ export function inspectionDataToSankey(d: ReadonlyArray<InspectionLogEntry>): Sa
       {source: 0, target: 2, value: 20},
       {source: 1, target: 2, value: 20}
     ],
-  };
+  };*/
 }

@@ -173,6 +173,7 @@ Object {
                 "4",
               ],
             },
+            "toInspect": true,
             "type": 0,
           },
           "time": 2018-01-06T09:45:05.000Z,
@@ -180,7 +181,7 @@ Object {
         Object {
           "materialID": 47455,
           "result": Object {
-            "counter": "Insp1",
+            "success": true,
             "type": 1,
           },
           "time": 2018-01-06T09:52:05.000Z,
@@ -203,6 +204,7 @@ Object {
                 "4",
               ],
             },
+            "toInspect": true,
             "type": 0,
           },
           "time": 2018-01-31T09:51:05.000Z,
@@ -210,7 +212,7 @@ Object {
         Object {
           "materialID": 41703,
           "result": Object {
-            "counter": "Insp1",
+            "success": true,
             "type": 1,
           },
           "time": 2018-01-31T09:58:05.000Z,
@@ -233,6 +235,7 @@ Object {
                 "4",
               ],
             },
+            "toInspect": true,
             "type": 0,
           },
           "time": 2018-02-02T09:57:05.000Z,
@@ -240,7 +243,7 @@ Object {
         Object {
           "materialID": 68845,
           "result": Object {
-            "counter": "Insp1",
+            "success": true,
             "type": 1,
           },
           "time": 2018-02-02T10:04:05.000Z,
@@ -374,6 +377,7 @@ Object {
                 "4",
               ],
             },
+            "toInspect": true,
             "type": 0,
           },
           "time": 2018-01-31T09:51:05.000Z,
@@ -381,7 +385,7 @@ Object {
         Object {
           "materialID": 19656,
           "result": Object {
-            "counter": "Insp1",
+            "success": true,
             "type": 1,
           },
           "time": 2018-01-31T09:58:05.000Z,
@@ -404,6 +408,7 @@ Object {
                 "4",
               ],
             },
+            "toInspect": true,
             "type": 0,
           },
           "time": 2018-02-02T09:57:05.000Z,
@@ -411,7 +416,7 @@ Object {
         Object {
           "materialID": 70329,
           "result": Object {
-            "counter": "Insp1",
+            "success": true,
             "type": 1,
           },
           "time": 2018-02-02T10:04:05.000Z,
@@ -429,6 +434,7 @@ Object {
                 "4",
               ],
             },
+            "toInspect": true,
             "type": 0,
           },
           "time": 2018-02-08T09:39:05.000Z,
@@ -436,7 +442,7 @@ Object {
         Object {
           "materialID": 58696,
           "result": Object {
-            "counter": "Insp1",
+            "success": true,
             "type": 1,
           },
           "time": 2018-02-08T09:46:05.000Z,
@@ -875,6 +881,7 @@ Object {
                 "4",
               ],
             },
+            "toInspect": true,
             "type": 0,
           },
           "time": 2018-01-06T09:45:05.000Z,
@@ -882,7 +889,7 @@ Object {
         Object {
           "materialID": 29838,
           "result": Object {
-            "counter": "Insp1",
+            "success": true,
             "type": 1,
           },
           "time": 2018-01-06T09:52:05.000Z,
@@ -900,6 +907,7 @@ Object {
                 "4",
               ],
             },
+            "toInspect": true,
             "type": 0,
           },
           "time": 2018-01-31T09:51:05.000Z,
@@ -907,7 +915,7 @@ Object {
         Object {
           "materialID": 19656,
           "result": Object {
-            "counter": "Insp1",
+            "success": true,
             "type": 1,
           },
           "time": 2018-01-31T09:58:05.000Z,
@@ -930,6 +938,7 @@ Object {
                 "4",
               ],
             },
+            "toInspect": true,
             "type": 0,
           },
           "time": 2018-02-02T09:57:05.000Z,
@@ -937,7 +946,7 @@ Object {
         Object {
           "materialID": 70329,
           "result": Object {
-            "counter": "Insp1",
+            "success": true,
             "type": 1,
           },
           "time": 2018-02-02T10:04:05.000Z,
@@ -1383,6 +1392,7 @@ Object {
                 "4",
               ],
             },
+            "toInspect": true,
             "type": 0,
           },
           "time": 2018-01-31T09:51:05.000Z,
@@ -1390,7 +1400,7 @@ Object {
         Object {
           "materialID": 56627,
           "result": Object {
-            "counter": "Insp1",
+            "success": true,
             "type": 1,
           },
           "time": 2018-01-31T09:58:05.000Z,
@@ -1413,6 +1423,7 @@ Object {
                 "4",
               ],
             },
+            "toInspect": true,
             "type": 0,
           },
           "time": 2018-02-02T09:57:05.000Z,
@@ -1420,7 +1431,7 @@ Object {
         Object {
           "materialID": 62822,
           "result": Object {
-            "counter": "Insp1",
+            "success": true,
             "type": 1,
           },
           "time": 2018-02-02T10:04:05.000Z,
@@ -1438,6 +1449,7 @@ Object {
                 "4",
               ],
             },
+            "toInspect": true,
             "type": 0,
           },
           "time": 2018-02-08T09:39:05.000Z,
@@ -1445,7 +1457,7 @@ Object {
         Object {
           "materialID": 57245,
           "result": Object {
-            "counter": "Insp1",
+            "success": true,
             "type": 1,
           },
           "time": 2018-02-08T09:46:05.000Z,
@@ -1884,6 +1896,7 @@ Object {
                 "4",
               ],
             },
+            "toInspect": true,
             "type": 0,
           },
           "time": 2018-01-06T09:45:05.000Z,
@@ -1891,7 +1904,7 @@ Object {
         Object {
           "materialID": 90816,
           "result": Object {
-            "counter": "Insp1",
+            "success": true,
             "type": 1,
           },
           "time": 2018-01-06T09:52:05.000Z,
@@ -1909,6 +1922,7 @@ Object {
                 "4",
               ],
             },
+            "toInspect": true,
             "type": 0,
           },
           "time": 2018-01-31T09:51:05.000Z,
@@ -1916,7 +1930,7 @@ Object {
         Object {
           "materialID": 56627,
           "result": Object {
-            "counter": "Insp1",
+            "success": true,
             "type": 1,
           },
           "time": 2018-01-31T09:58:05.000Z,
@@ -1939,6 +1953,7 @@ Object {
                 "4",
               ],
             },
+            "toInspect": true,
             "type": 0,
           },
           "time": 2018-02-02T09:57:05.000Z,
@@ -1946,7 +1961,7 @@ Object {
         Object {
           "materialID": 62822,
           "result": Object {
-            "counter": "Insp1",
+            "success": true,
             "type": 1,
           },
           "time": 2018-02-02T10:04:05.000Z,

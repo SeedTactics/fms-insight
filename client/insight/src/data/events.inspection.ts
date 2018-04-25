@@ -35,8 +35,7 @@ import * as im from 'immutable'; // consider collectable.js at some point?
 
 export enum InspectionLogResultType {
   Triggered,
-  Succeeded,
-  Failed,
+  Completed,
 }
 
 export interface InspectionCounter {
@@ -47,9 +46,14 @@ export interface InspectionCounter {
 }
 
 export type InspectionLogResult =
-  | { readonly type: InspectionLogResultType.Triggered, readonly counter: InspectionCounter }
-  | { readonly type: InspectionLogResultType.Succeeded }
-  | { readonly type: InspectionLogResultType.Failed }
+  | {
+      readonly type: InspectionLogResultType.Triggered,
+      readonly counter: InspectionCounter,
+      readonly toInspect: boolean;
+    }
+  | { readonly type: InspectionLogResultType.Completed,
+      readonly success: boolean;
+    }
   ;
 
 export interface InspectionLogEntry {
@@ -137,27 +141,33 @@ export function process_events(
       .flatMap(c => c.material.map(m => {
         if (c.type === api.LogType.Inspection) {
           const counter = parseInspectionCounter(c.program);
+          let toInspect: boolean;
+          if (c.result.toLowerCase() === "true" || c.result === "1") {
+            toInspect = true;
+          } else {
+            toInspect = false;
+          }
           return {
             key: mkPartAndInspType({part: m.part, inspType: counter.inspType}),
             entry: {
               time: c.endUTC,
               materialID: m.id,
-              result: {type: InspectionLogResultType.Triggered, counter }
+              result: {type: InspectionLogResultType.Triggered, counter, toInspect }
             } as InspectionLogEntry
           };
         } else { // api.LogType.InspectionResult
-          let ty: InspectionLogResultType;
+          let success: boolean;
           if (c.result.toLowerCase() === "true" || c.result === "1") {
-            ty = InspectionLogResultType.Succeeded;
+            success = true;
           } else {
-            ty = InspectionLogResultType.Failed;
+            success = false;
           }
           return {
             key: mkPartAndInspType({part: m.part, inspType: c.program}),
             entry: {
               time: c.endUTC,
               materialID: m.id,
-              result: {type: ty, counter: c.program}
+              result: {type: InspectionLogResultType.Completed, success}
             } as InspectionLogEntry
           };
         }
