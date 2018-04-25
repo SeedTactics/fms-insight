@@ -154,6 +154,9 @@ Object {
       },
     },
   },
+  "inspection": Object {
+    "by_part": Immutable.Map {},
+  },
   "sim_use": Object {
     "production": Immutable.List [],
     "station_use": Immutable.List [],
@@ -260,6 +263,9 @@ Object {
         ],
       },
     },
+  },
+  "inspection": Object {
+    "by_part": Immutable.Map {},
   },
   "latest_log_counter": 6,
   "latest_scheduleId": undefined,
@@ -653,6 +659,9 @@ Object {
         ],
       },
     },
+  },
+  "inspection": Object {
+    "by_part": Immutable.Map {},
   },
   "latest_log_counter": 6,
   "latest_scheduleId": undefined,
@@ -1050,6 +1059,9 @@ Object {
       },
     },
   },
+  "inspection": Object {
+    "by_part": Immutable.Map {},
+  },
   "latest_log_counter": 6,
   "latest_scheduleId": undefined,
   "mat_summary": Object {
@@ -1442,6 +1454,9 @@ Object {
         ],
       },
     },
+  },
+  "inspection": Object {
+    "by_part": Immutable.Map {},
   },
   "latest_log_counter": 6,
   "latest_scheduleId": undefined,

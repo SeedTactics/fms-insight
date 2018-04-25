@@ -31,7 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as im from 'immutable';
+// import * as im from 'immutable';
+import { InspectionLogEntry } from './events.inspection';
 
 export interface SankeyNode {
   readonly name: string;
@@ -48,14 +49,7 @@ export interface SankeyDiagram {
   readonly links: ReadonlyArray<SankeyLink>;
 }
 
-export type PartAndInspType = im.Record<{part: string, inspType: string}>;
-export const mkPartAndInspType = im.Record({part: "", inspType: ""});
-
-export interface InspectionData {
-
-}
-
-export function inspectionDataToSankey(d: InspectionData): SankeyDiagram {
+export function inspectionDataToSankey(d: ReadonlyArray<InspectionLogEntry>): SankeyDiagram {
   return {
     nodes: [{name: 'a'}, {name: 'b'}, {name: 'c'}],
     links: [

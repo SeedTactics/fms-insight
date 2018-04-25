@@ -38,6 +38,7 @@ import { PledgeStatus } from '../store/middleware';
 import * as events from './events';
 import * as stationCycles from './events.cycles';
 import * as simuse from './events.simuse';
+import * as inspection from './events.inspection';
 import { fakeCycle } from './events.fake';
 import { ILogEntry } from './api';
 
@@ -242,7 +243,7 @@ it("loads 30 days for analysis", () => {
   let st = events.reducer(
     {...events.initial,
       analysis_period: events.AnalysisPeriod.SpecificMonth,
-      selected_month: {cycles, sim_use: simuse.initial}
+      selected_month: {cycles, sim_use: simuse.initial, inspection: inspection.initial}
     },
     {
       type: events.ActionType.SetAnalysisLast30Days

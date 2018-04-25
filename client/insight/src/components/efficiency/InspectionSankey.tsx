@@ -43,11 +43,15 @@ import { connect } from '../../store/store';
 import {
   SankeyNode,
   SankeyDiagram,
-  PartAndInspType,
-  mkPartAndInspType,
-  InspectionData,
   inspectionDataToSankey,
 } from '../../data/inspection-sankey';
+
+import * as events from '../../data/events';
+import {
+  PartAndInspType,
+  mkPartAndInspType,
+  InspectionLogEntry,
+} from '../../data/events.inspection';
 
 export interface InspectionSankeyDiagramProps {
   readonly sankey: SankeyDiagram;
@@ -119,7 +123,7 @@ export class InspectionSankeyDiagram
 }
 
 // use purecomponent to only recalculate the SankeyDiagram when the InspectionData changes.
-class ConvertInspectionDataToSankey extends React.PureComponent<{data: InspectionData}> {
+class ConvertInspectionDataToSankey extends React.PureComponent<{data: ReadonlyArray<InspectionLogEntry>}> {
   render() {
     return (
       <InspectionSankeyDiagram sankey={inspectionDataToSankey(this.props.data)}/>
@@ -128,7 +132,7 @@ class ConvertInspectionDataToSankey extends React.PureComponent<{data: Inspectio
 }
 
 export interface InspectionSankeyProps {
-  readonly sankeys: im.Map<PartAndInspType, InspectionData>;
+  readonly inspectionlogs: im.Map<PartAndInspType, ReadonlyArray<InspectionLogEntry>>;
 }
 
 interface InspectionSankeyState {
@@ -140,15 +144,17 @@ export class InspectionSankey extends React.Component<InspectionSankeyProps, Ins
   state: InspectionSankeyState = {};
 
   render() {
-    let curData: InspectionData | undefined;
+    let curData: ReadonlyArray<InspectionLogEntry> | undefined;
     if (this.state.selectedPart && this.state.selectedInspectType) {
-      curData = this.props.sankeys.get(
+      curData = this.props.inspectionlogs.get(
         mkPartAndInspType({
           part: this.state.selectedPart,
           inspType: this.state.selectedInspectType
         })
       );
     }
+    const parts = this.props.inspectionlogs.keySeq().map(e => e.get("part", "")).toSet().toSeq().sort();
+    const inspTypes = this.props.inspectionlogs.keySeq().map(e => e.get("inspType", "")).toSet().toSeq().sort();
     return (
       <Card raised>
         <CardHeader
@@ -171,7 +177,7 @@ export class InspectionSankey extends React.Component<InspectionSankeyProps, Ins
                     <MenuItem key={0} value=""><em>Select Inspection Type</em></MenuItem>
                 }
                 {
-                  this.props.sankeys.keySeq().map(k => k.get("inspType", "")).sort().map(n =>
+                  inspTypes.map(n =>
                     <MenuItem key={n} value={n}>
                       {n}
                     </MenuItem>
@@ -189,7 +195,7 @@ export class InspectionSankey extends React.Component<InspectionSankeyProps, Ins
                     <MenuItem key={0} value=""><em>Select Part</em></MenuItem>
                 }
                 {
-                  this.props.sankeys.keySeq().map(k => k.get("part", "")).sort().map(n =>
+                  parts.map(n =>
                     <MenuItem key={n} value={n}>
                       <div style={{display: "flex", alignItems: "center"}}>
                         <PartIdenticon part={n} size={30}/>
@@ -216,10 +222,9 @@ export class InspectionSankey extends React.Component<InspectionSankeyProps, Ins
 
 export default connect(
   (st => ({
-    sankeys: im.Map(
-      [
-        [ mkPartAndInspType({part: "part1", inspType: "Insp1"}), {} ]
-      ]
-    ),
+    inspectionlogs:
+      st.Events.analysis_period === events.AnalysisPeriod.Last30Days
+      ? st.Events.last30.inspection.by_part
+      : st.Events.selected_month.inspection.by_part,
   }))
 )(InspectionSankey);

@@ -276,7 +276,7 @@ namespace DebugMachineWatchApiServer
                     workCounter += 1;
                 }
 
-                AddInspection(part, machine, mat, cur);
+                AddInspection(part, pal, machine, mat, cur);
                 cur = cur.AddMinutes(1);
             }
         }
@@ -446,7 +446,7 @@ namespace DebugMachineWatchApiServer
                 ));
         }
 
-        private void AddInspection(string part, int machine, LogMaterial mat, DateTime cur)
+        private void AddInspection(string part, string pallet, int machine, LogMaterial mat, DateTime cur)
         {
             bool result = rand.NextDouble() < 0.2;
 
@@ -454,7 +454,7 @@ namespace DebugMachineWatchApiServer
             {
                 Name = "MyInspection",
                 TrackPartName = true,
-                TrackPalletName = false,
+                TrackPalletName = true,
                 TrackStationName = true,
                 DefaultCountToTriggerInspection = 10,
                 DefaultDeadline = TimeSpan.Zero,
@@ -471,7 +471,8 @@ namespace DebugMachineWatchApiServer
                 locName: "Inspect",
                 locNum: 1,
                 prog: insp.Counter
-                    .Replace(JobInspectionData.StationFormatFlag(1, 1), machine.ToString()),
+                    .Replace(JobInspectionData.StationFormatFlag(1, 1), machine.ToString())
+                    .Replace(JobInspectionData.PalletFormatFlag(1), pallet),
                 start: false,
                 endTime: cur,
                 result: result.ToString(),

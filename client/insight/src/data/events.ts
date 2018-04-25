@@ -39,11 +39,19 @@ import * as oee from './events.oee';
 import * as cycles from './events.cycles';
 import * as matsummary from './events.matsummary';
 import * as simuse from './events.simuse';
+import * as inspection from './events.inspection';
 
 export { OeeState, StationInUse } from './events.oee';
 export { CycleState, CycleData, binCyclesByDayAndStat, binCyclesByDayAndPart } from './events.cycles';
 export { MaterialSummary } from './events.matsummary';
 export { SimUseState, binSimStationUseByDayAndStat, binSimProductionByDayAndPart } from './events.simuse';
+export {
+    InspectionLogResultType,
+    InspectionLogResult,
+    InspectionCounter,
+    InspectionLogEntry,
+    InspectionState
+} from './events.inspection';
 
 export enum AnalysisPeriod {
     Last30Days = 'Last_30_Days',
@@ -60,16 +68,19 @@ export interface Last30Days {
     readonly cycles: cycles.CycleState;
     readonly mat_summary: matsummary.MatSummaryState;
     readonly sim_use: simuse.SimUseState;
+    readonly inspection: inspection.InspectionState;
 }
 
 export interface AnalysisMonth {
     readonly cycles: cycles.CycleState;
     readonly sim_use: simuse.SimUseState;
+    readonly inspection: inspection.InspectionState;
 }
 
 const emptyAnalysisMonth: AnalysisMonth = {
     cycles: cycles.initial,
     sim_use: simuse.initial,
+    inspection: inspection.initial,
 };
 
 export interface State {
@@ -102,6 +113,7 @@ export const initial: State = {
         cycles: cycles.initial,
         mat_summary: matsummary.initial,
         sim_use: simuse.initial,
+        inspection: inspection.initial,
     },
 
     selected_month: emptyAnalysisMonth,
@@ -262,7 +274,12 @@ function processRecentLogEntries(now: Date, evts: Iterable<api.ILogEntry>, s: La
                 evts,
                 s.cycles),
             most_recent_10_events: last10Evts,
-            mat_summary: matsummary.process_events(now, evts, s.mat_summary)
+            mat_summary: matsummary.process_events(now, evts, s.mat_summary),
+            inspection: inspection.process_events(
+                {type: cycles.ExpireOldDataType.ExpireEarlierThan, d: thirtyDaysAgo},
+                evts,
+                s.inspection
+            ),
         });
 }
 
@@ -273,7 +290,12 @@ function processSpecificMonthLogEntries(evts: Iterable<api.ILogEntry>, s: Analys
             cycles: cycles.process_events(
                 {type: cycles.ExpireOldDataType.NoExpire},
                 evts,
-                s.cycles)
+                s.cycles),
+            inspection: inspection.process_events(
+                {type: cycles.ExpireOldDataType.NoExpire},
+                evts,
+                s.inspection
+            ),
         }
     );
 }
