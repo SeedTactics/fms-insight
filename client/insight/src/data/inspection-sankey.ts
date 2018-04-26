@@ -62,7 +62,7 @@ interface Edge {
 
 function edgesForCounter(counter: InspectionCounter, toInspect: boolean, result: boolean | undefined): Edge[] {
   let path = "";
-  let prevNode = mkNodeR({unique: "", name: "start"});
+  let prevNode = mkNodeR({unique: "", name: "raw"});
   let edges: Edge[] = [];
   const numProc = Math.max(counter.pallets.length, counter.stations.length);
   for (let i = 0; i < numProc; i++) {

@@ -122,7 +122,7 @@ export const PalletColumn = palletStyles<LoadStationProps>(props => {
 
   return (
     <>
-      <WhiteboardRegion label="Castings" spaceAround>
+      <WhiteboardRegion label="Raw Material" spaceAround>
         { props.data.castings.map((m, idx) =>
           <InProcMaterial key={idx} mat={m} onOpen={props.openMat}/>)
         }

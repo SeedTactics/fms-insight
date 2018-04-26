@@ -189,15 +189,15 @@ class SelectJob extends React.PureComponent<SelectJobProps> {
           { this.props.selected_job === undefined || this.props.selected_job.procsAndPaths.length === 1 ? undefined :
             <div style={{marginLeft: '1em'}}>
               <p style={{margin: "1em", maxWidth: "15em"}}>
-                Select the last completed process, or "Casting" if this part has not yet completed any process.
+                Select the last completed process, or "Raw Material" if this part has not yet completed any process.
               </p>
               <List>
                 <MenuItem
-                  key="casting"
+                  key="rawmaterial"
                   selected={this.props.selected_last_process === undefined}
                   onClick={() => this.props.onSelectProcess()}
                 >
-                  Casting
+                  Raw Material
                 </MenuItem>
                 {im.Range(1, this.props.selected_job.procsAndPaths.length).map(p =>
                   <MenuItem
@@ -560,7 +560,7 @@ export const Queues = queueStyles<QueueProps>(props => {
   if (props.data.free) {
     cells = im.Seq([
       {
-        label: "Castings",
+        label: "Raw Material",
         free: true,
         material: props.data.castings,
       },

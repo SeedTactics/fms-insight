@@ -60,7 +60,7 @@ export function selectAllMaterialIntoBins(curSt: Readonly<api.ICurrentStatus>): 
         default:
           switch (mat.action.type) {
             case api.ActionType.Loading:
-              return { region: "Castings", mat};
+              return { region: "Raw Material", mat};
             default:
               return { region: "Free Material", mat};
           }
