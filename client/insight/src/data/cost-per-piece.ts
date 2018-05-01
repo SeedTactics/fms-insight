@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as im from 'immutable';
 import { PartCycleData } from './events.cycles';
 import { duration, Duration } from 'moment';
+import { getDaysInMonth } from 'date-fns';
 
 export interface CostInput {
   // key is machine group name
@@ -84,21 +85,25 @@ export function reducer(s: State, a: Action): State {
   let newSt = s;
   switch (a.type) {
     case ActionType.SetMachineCostPerYear:
+      if (isNaN(a.cost)) { return s; }
       newSt = {...s, input: {...s.input, machineCostPerYear: {...s.input.machineCostPerYear,
         [a.group]: a.cost,
       }}};
       break;
     case ActionType.SetPartMaterialCost:
+      if (isNaN(a.cost)) { return s; }
       newSt = {...s, input: {...s.input, partMaterialCost: {...s.input.partMaterialCost,
         [a.part]: a.cost,
       }}};
       break;
     case ActionType.SetNumOperators:
+      if (isNaN(a.numOpers)) { return s; }
       newSt = {...s, input: {...s.input,
         numOperators: a.numOpers,
       }};
       break;
     case ActionType.SetOperatorCostPerHour:
+      if (isNaN(a.cost)) { return s; }
       newSt = {...s, input: {...s.input,
         operatorCostPerHour: a.cost,
       }};
@@ -167,11 +172,16 @@ function labor_cost(
 }
 
 export function compute_monthly_cost(
-  i: CostInput, cycles: im.Seq.Indexed<PartCycleData>, numDays?: number
+  i: CostInput, byPart: im.Map<string, im.Map<string, ReadonlyArray<PartCycleData>>>, month?: Date
 ): ReadonlyArray<PartCost> {
 
-  const days = numDays || 30;
+  const days = month ? getDaysInMonth(month) : 30;
   const totalLaborCost = days * 24 * i.operatorCostPerHour * i.numOperators;
+  const cycles = byPart
+    .toSeq()
+    .flatMap(c => c)
+    .valueSeq()
+    .flatMap(c => c);
 
   const totalStatUseMinutes: im.Map<string, number> =
     cycles
