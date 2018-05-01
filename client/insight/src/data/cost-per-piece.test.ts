@@ -75,6 +75,12 @@ it("sets machine costs", () => {
       "g2": 150
     }
   }});
+  expect(JSON.parse(localStorage.getItem("cost-per-piece") || "")).toEqual({...ccp.initial.input,
+    machineCostPerYear: {
+      "g1": 12,
+      "g2": 150
+    }
+  });
 });
 
 it("sets part material cost", () => {
@@ -112,6 +118,12 @@ it("sets part material cost", () => {
       "p2": 63,
     }
   }});
+  expect(JSON.parse(localStorage.getItem("cost-per-piece") || "")).toEqual({...ccp.initial.input,
+    partMaterialCost: {
+      "p1": 52,
+      "p2": 63,
+    }
+  });
 });
 
 it("sets the number of operators", () => {
@@ -122,6 +134,9 @@ it("sets the number of operators", () => {
   expect(s).toEqual({input: {...ccp.initial.input,
     numOperators: 12,
   }});
+  expect(JSON.parse(localStorage.getItem("cost-per-piece") || "")).toEqual({...ccp.initial.input,
+    numOperators: 12,
+  });
 });
 
 it("sets the operator cost per hour", () => {
@@ -132,4 +147,7 @@ it("sets the operator cost per hour", () => {
   expect(s).toEqual({input: {...ccp.initial.input,
     operatorCostPerHour: 67,
   }});
+  expect(JSON.parse(localStorage.getItem("cost-per-piece") || "")).toEqual({...ccp.initial.input,
+    operatorCostPerHour: 67,
+  });
 });

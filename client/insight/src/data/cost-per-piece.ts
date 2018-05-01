@@ -61,36 +61,53 @@ export interface State {
   readonly input: CostInput;
 }
 
-export const initial: State = {
-  input: {
-    machineCostPerYear: {},
-    partMaterialCost: {},
-    numOperators: 0,
-    operatorCostPerHour: 0,
+export const initial: State = (function() {
+  const json = localStorage.getItem("cost-per-piece");
+  if (json) {
+    return {
+      input: JSON.parse(json),
+    };
+  } else {
+    return {
+      input: {
+        machineCostPerYear: {},
+        partMaterialCost: {},
+        numOperators: 0,
+        operatorCostPerHour: 0,
+      }
+    };
   }
-};
+})();
 
 export function reducer(s: State, a: Action): State {
   if (s === undefined) { return initial; }
+  let newSt = s;
   switch (a.type) {
     case ActionType.SetMachineCostPerYear:
-      return {...s, input: {...s.input, machineCostPerYear: {...s.input.machineCostPerYear,
+      newSt = {...s, input: {...s.input, machineCostPerYear: {...s.input.machineCostPerYear,
         [a.group]: a.cost,
       }}};
+      break;
     case ActionType.SetPartMaterialCost:
-      return {...s, input: {...s.input, partMaterialCost: {...s.input.partMaterialCost,
+      newSt = {...s, input: {...s.input, partMaterialCost: {...s.input.partMaterialCost,
         [a.part]: a.cost,
       }}};
+      break;
     case ActionType.SetNumOperators:
-      return {...s, input: {...s.input,
+      newSt = {...s, input: {...s.input,
         numOperators: a.numOpers,
       }};
+      break;
     case ActionType.SetOperatorCostPerHour:
-      return {...s, input: {...s.input,
+      newSt = {...s, input: {...s.input,
         operatorCostPerHour: a.cost,
       }};
-    default: return s;
+      break;
   }
+  if (s !== newSt) {
+    localStorage.setItem("cost-per-piece", JSON.stringify(newSt.input));
+  }
+  return newSt;
 }
 
 export interface PartCost {
