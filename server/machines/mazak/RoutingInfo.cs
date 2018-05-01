@@ -1477,7 +1477,7 @@ namespace MazakMachineInterface
 
     #region Queues
 
-    public void AddUnprocessedMaterialToQueue(string jobUnique, string queue, int position, string serial)
+    public void AddUnprocessedMaterialToQueue(string jobUnique, int process, string queue, int position, string serial)
     {
       //do nothing
     }

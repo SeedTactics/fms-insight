@@ -775,7 +775,9 @@ namespace MazakMachineInterface
       }
       else
       {
-        return new System.Data.SqlClient.SqlConnection(_connectionStr);
+        var conn = new System.Data.SqlClient.SqlConnection(_connectionStr);
+        conn.Open();
+        return conn;
       }
     }
 

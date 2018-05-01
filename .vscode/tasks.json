@@ -15,50 +15,33 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "pack:mwi",
-            "command": "dotnet pack /p:VersionPrefix=$(python ${workspaceFolder}/version.py mwi) --include-symbols --version-suffix=alpha$(date -u +%Y%m%d%H%M%S) -o ${workspaceFolder}/../nugetpackages",
-            "options": {
-                "cwd": "${workspaceFolder}/server/lib/BlackMaple.MachineWatchInterface"
-            },
-            "type": "shell",
-            "presentation": {
-                "reveal": "silent"
-            },
-            "problemMatcher": "$msCompile"
-        },
-        {
-            "label": "pack:framework",
-            "command": "dotnet pack /p:VersionPrefix=$(python ${workspaceFolder}/version.py framework) --include-symbols --version-suffix=alpha$(date -u +%Y%m%d%H%M%S) -o ${workspaceFolder}/../nugetpackages",
-            "options": {
-                "cwd": "${workspaceFolder}/server/lib/BlackMaple.MachineFramework"
-            },
-            "type": "shell",
-            "presentation": {
-                "reveal": "silent"
-            },
-            "problemMatcher": "$msCompile"
-        },
-        {
-            "label": "pack:service",
-            "command": "dotnet pack /p:VersionPrefix=$(python ${workspaceFolder}/version.py service) --include-symbols --version-suffix=alpha$(date -u +%Y%m%d%H%M%S) -o ${workspaceFolder}/../nugetpackages",
-            "options": {
-                "cwd": "${workspaceFolder}/server/src/service"
-            },
-            "type": "shell",
-            "presentation": {
-                "reveal": "silent"
-            },
-            "problemMatcher": "$msCompile"
-        },
-        {
-            "label": "server:dev",
-            "command": "dotnet run -p server/src/json-http",
+            "label": "debug-mock:build",
+            "command": "dotnet build server/debug-mock/mock.csproj",
+            "group": "build",
             "type": "shell",
             "presentation": {
                 "reveal": "silent",
-                "panel": "dedicated"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "debug-mock:run",
+            "command": "dotnet run -p server/debug-mock",
+            "type": "shell",
+            "presentation": {
+                "reveal": "always",
             },
             "problemMatcher": []
+        },
+        {
+            "label": "mazak:build",
+            "command": "dotnet build server/machines/mazak/mazak.csproj",
+            "group": "build",
+            "type": "shell",
+            "presentation": {
+                "reveal": "silent",
+            },
+            "problemMatcher": "$msCompile"
         },
         {
             "label": "insight:dev",

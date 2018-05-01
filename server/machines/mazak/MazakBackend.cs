@@ -178,15 +178,6 @@ namespace MazakMachineInterface
         }
       }
 
-
-#if DEBUG
-      //MazakType = DatabaseAccess.MazakDbType.MazakSmooth;
-      //dbPath = "172.16.11.6";
-      MazakType = DatabaseAccess.MazakDbType.MazakVersionE;
-      dbConnStr = @"\\172.16.11.14\mazak\NFMS\DB";
-      UseStartingOffsetForDueDate = true;
-#endif
-
       if (!System.IO.Directory.Exists(logPath))
         logTrace.TraceEvent(TraceEventType.Error, 0, "Configured Log CSV directory " + logPath + " does not exist.");
 

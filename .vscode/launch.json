@@ -4,15 +4,30 @@
    // For further information visit https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md
    "version": "0.2.0",
    "configurations": [
+       {
+           "name": "Mazak",
+           "type": "coreclr",
+           "request": "launch",
+           "program": "${workspaceRoot}/server/machines/mazak/bin/Debug/netcoreapp2.0/BlackMaple.FMSInsight.Mazak.dll",
+           "args": [],
+           "cwd": "${workspaceRoot}/server/machines/mazak",
+           "stopAtEntry": false,
+           "console": "internalConsole",
+           "preLaunchTask": "mazak:build",
+           "env": {
+               "Mazak__SQL ConnectionString": "Server=localhost;User Id=mazakpmc;Password=Fms-978",
+           }
+       },
         {
             "name": "Mock Server",
             "type": "coreclr",
             "request": "launch",
             "program": "${workspaceRoot}/server/debug-mock/bin/Debug/netcoreapp2/debugmock.dll",
             "args": [],
-            "cwd": "${workspaceRoot}/server/debug-mock/bin/Debug/netcoreapp2",
+            "cwd": "${workspaceRoot}/server/debug-mock",
             "stopAtEntry": false,
-            "console": "internalConsole"
+            "console": "internalConsole",
+            "preLaunchTask": "debug-mock:build"
         },
         {
             "name": "Launch Chrome",
