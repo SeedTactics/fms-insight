@@ -39,6 +39,7 @@ import * as routes from '../data/routes';
 import * as mat from '../data/material-details';
 import * as operators from '../data/operators';
 import * as serverSettings from '../data/server-settings';
+import * as ccp from '../data/cost-per-piece';
 import * as websocket from './websocket';
 
 import { pledgeMiddleware, arrayMiddleware, ActionBeforeMiddleware } from './middleware';
@@ -60,6 +61,7 @@ export interface Store {
   readonly Websocket: websocket.State;
   readonly Operators: operators.State;
   readonly ServerSettings: serverSettings.State;
+  readonly CostPerPiece: ccp.State;
   readonly location: LocationState;
 }
 
@@ -70,6 +72,7 @@ export type AppAction =
   | mat.Action
   | routes.Action
   | operators.Action
+  | ccp.Action
   ;
 
 export type AppActionBeforeMiddleware = ActionBeforeMiddleware<AppAction>;
@@ -106,6 +109,7 @@ export function initStore() {
         Websocket: websocket.reducer,
         Operators: operators.reducer,
         ServerSettings: serverSettings.reducer,
+        CostPerPiece: ccp.reducer,
         location: router.reducer,
       // tslint:disable-next-line:no-any
       } as any // bug in typescript types for combineReducers

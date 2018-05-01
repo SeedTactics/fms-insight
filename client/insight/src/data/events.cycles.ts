@@ -51,7 +51,7 @@ export interface PartCycleData extends CycleData {
 }
 
 export interface CycleState {
-  readonly by_part_then_stat: im.Map<string, im.Map<string, ReadonlyArray<CycleData>>>;
+  readonly by_part_then_stat: im.Map<string, im.Map<string, ReadonlyArray<PartCycleData>>>;
   readonly by_pallet: im.Map<string, ReadonlyArray<CycleData>>;
 }
 
@@ -242,8 +242,8 @@ type DayAndPart = im.Record<{day: Date, part: string}>;
 const mkDayAndPart = im.Record({day: new Date(), part: ""});
 
 export function binCyclesByDayAndPart(
-    byPartThenStat: im.Map<string, im.Map<string, ReadonlyArray<CycleData>>>,
-    extractValue: (c: CycleData) => number
+    byPartThenStat: im.Map<string, im.Map<string, ReadonlyArray<PartCycleData>>>,
+    extractValue: (c: PartCycleData) => number
   ): im.Map<DayAndPart, number> {
   return byPartThenStat.toSeq()
     .map((byStation, part) =>
