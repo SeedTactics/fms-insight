@@ -39,6 +39,13 @@ export interface CycleData {
   readonly x: Date;
   readonly y: number; // cycle time in minutes
   readonly active: number; // active time in minutes
+}
+
+export interface PartCycleData extends CycleData {
+  readonly part: string;
+  readonly process: number;
+  readonly stationGroup: string;
+  readonly stationNumber: number;
   readonly completed: boolean; // did this cycle result in a completed part
 }
 
@@ -66,17 +73,25 @@ function part_and_proc(m: api.ILogMaterial): string {
   return m.part + "-" + m.proc.toString();
 }
 
-function stat_name(e: api.ILogEntry): string {
+function stat_group(e: Readonly<api.ILogEntry>): string {
   switch (e.type) {
     case api.LogType.LoadUnloadCycle:
     case api.LogType.MachineCycle:
     case api.LogType.Wash:
-      return e.loc + ' #' + e.locnum;
+      return e.loc;
     case api.LogType.InspectionResult:
-      return e.loc + ' ' + e.program;
+      return 'Inspect ' + e.program;
     default:
       return "";
     }
+}
+
+function stat_name_and_num(e: PartCycleData): string {
+  if (e.stationGroup.startsWith("Inspect")) {
+    return e.stationGroup;
+  } else {
+    return e.stationGroup + " #" + e.stationNumber.toString();
+  }
 }
 
 export function process_events(
@@ -126,7 +141,7 @@ export function process_events(
         break;
     }
 
-    var newPartCycles = evtsSeq
+    var newPartCycles: im.Seq.Keyed<string, im.Map<string, ReadonlyArray<PartCycleData>>> = evtsSeq
       .filter(
         c => !c.startofcycle
         && (
@@ -138,15 +153,20 @@ export function process_events(
       .groupBy(e => part_and_proc(e.mat))
       .map(cyclesForPart =>
         cyclesForPart.toSeq()
-          .groupBy(e => stat_name(e.cycle))
-          .filter((cycles, stat) => stat !== "")
+          .map(e => ({
+            x: e.cycle.endUTC,
+            y: duration(e.cycle.elapsed).asMinutes(),
+            active: duration(e.cycle.active).asMinutes(),
+            completed: e.cycle.type === api.LogType.LoadUnloadCycle && e.cycle.result === "UNLOAD",
+            part: e.mat.part,
+            process: e.mat.proc,
+            stationGroup: stat_group(e.cycle),
+            stationNumber: e.cycle.locnum,
+          }))
+          .filter(c => c.stationGroup !== "")
+          .groupBy(e => stat_name_and_num(e))
           .map(cycles =>
-            cycles.map(c => ({
-              x: c.cycle.endUTC,
-              y: duration(c.cycle.elapsed).asMinutes(),
-              active: duration(c.cycle.active).asMinutes(),
-              completed: c.cycle.type === api.LogType.LoadUnloadCycle && c.cycle.result === "UNLOAD",
-            }))
+            cycles
             .valueSeq()
             .toArray()
           )
