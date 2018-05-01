@@ -198,6 +198,11 @@ Object {
         ],
       },
     },
+    "station_groups": Immutable.Set [
+      "L/U",
+      "MC",
+      "Inspect Insp1",
+    ],
   },
   "inspection": Object {
     "by_part": Immutable.Map {
@@ -447,6 +452,11 @@ Object {
         ],
       },
     },
+    "station_groups": Immutable.Set [
+      "L/U",
+      "MC",
+      "Inspect Insp1",
+    ],
   },
   "inspection": Object {
     "by_part": Immutable.Map {
@@ -996,6 +1006,11 @@ Object {
         ],
       },
     },
+    "station_groups": Immutable.Set [
+      "L/U",
+      "MC",
+      "Inspect Insp1",
+    ],
   },
   "inspection": Object {
     "by_part": Immutable.Map {
@@ -1552,6 +1567,11 @@ Object {
         ],
       },
     },
+    "station_groups": Immutable.Set [
+      "L/U",
+      "MC",
+      "Inspect Insp1",
+    ],
   },
   "inspection": Object {
     "by_part": Immutable.Map {
@@ -2101,6 +2121,11 @@ Object {
         ],
       },
     },
+    "station_groups": Immutable.Set [
+      "L/U",
+      "MC",
+      "Inspect Insp1",
+    ],
   },
   "inspection": Object {
     "by_part": Immutable.Map {

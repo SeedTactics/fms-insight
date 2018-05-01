@@ -53,11 +53,13 @@ export interface PartCycleData extends CycleData {
 export interface CycleState {
   readonly by_part_then_stat: im.Map<string, im.Map<string, ReadonlyArray<PartCycleData>>>;
   readonly by_pallet: im.Map<string, ReadonlyArray<CycleData>>;
+  readonly station_groups: im.Set<string>;
 }
 
 export const initial: CycleState = {
   by_part_then_stat: im.Map(),
   by_pallet: im.Map(),
+  station_groups: im.Set(),
 };
 
 export enum ExpireOldDataType {
@@ -103,6 +105,7 @@ export function process_events(
     let evtsSeq = im.Seq(newEvts);
     let parts = st.by_part_then_stat;
     let pals = st.by_pallet;
+    let statGroups = st.station_groups;
 
     switch (expire.type) {
       case ExpireOldDataType.ExpireEarlierThan:
@@ -204,9 +207,18 @@ export function process_events(
         newPalCycles
       );
 
+    var newStatGroups = evtsSeq
+      .map(stat_group)
+      .filter(s => s !== "" && !statGroups.has(s))
+      .toSet();
+    if (newStatGroups.size > 0) {
+      statGroups = statGroups.union(newStatGroups);
+    }
+
     return {...st,
       by_part_then_stat: parts,
       by_pallet: pals,
+      station_groups: statGroups,
     };
 }
 
