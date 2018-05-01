@@ -1,27 +1,93 @@
-# Machine Watch
+# FMS Insight
 
 [![Build status](https://ci.appveyor.com/api/projects/status/qhvrw56g6syoep9w?svg=true)](https://ci.appveyor.com/project/wuzzeb/machinewatch)
 
-Machine Watch is a service application that runs on an FMS cell controller. Machine Watch does not
-implement any complex logic or control itself; instead Machine Watch is a generic conduit which
-allows other software to communicate with the cell. Machine Watch provides two main services.
-First, it records a log of the operation of the machines, pallets, and other events that occur in
-the cell. Secondly, Machine Watch provides the ability to create and edit parts, pallets, schedules,
-and jobs inside the cell controller.  Both of these services are available over the network using
-a common API, so that clients do not need to know the specific details of the cell controller manufacturer.
+FMS Insight is a client and server which runs on an flexible machining system (FMS)
+cell controller which provides:
 
-This repository contains the network API and data structures exposed by Machine Watch to clients,
-the server code, and some helper code for the communication between Machine Watch and the cell controller.
-The Machine Watch server communicates with the cell controller software via a plugin loaded by the server;
-each cell controller manufacturer has a distinct plugin.  The plugins for the various cell controllers are
-developed separately in different repositories.
+* A server which stores a log of all events and stores a log of planned jobs.
+* A server which translates incomming planned jobs into jobs in the cell controller.
+* A REST-like HTTP API which allows other programs to view the events and create planned jobs.
+* A view-only HTML client which displays a dashboard, station monitor, and data analysis
+  based on the log of events, planned jobs, and current cell status.
 
-### Running Machine Watch
+### Logging
 
-The [SeedTactics documentation](https://www.seedtactics.com/guide/machine-watch) describes installing, configuring,
-and using a Machine Watch server.
+One core feature of the FMS Insight server is to maintain a log of all
+events. These events include machine cycle start, machine cycle end, load
+start, load end, pallet movements, inspections, serial assignment, wash, and
+others. The server also maintains a log of planned jobs; each planned job is
+stored with its date, part name, planned quantities, flexibility, and other
+features of the job.
 
-### Writing a program to communicate with Machine Watch
+The logging format is common and shared between all cell manufacturers, with
+specific details of each cell controller manufacturer's log hidden by custom
+code which translates the log events into the common FMS Insight log. FMS
+Insight stores the log of events in a SQLite database and access to the log
+events is available via a REST-like HTTP API.
+
+The immutable log of events and planned jobs can be then used to drive all
+decisions and analysis of the cell. The design is based on the
+[Event Sourcing Pattern](https://martinfowler.com/eaaDev/EventSourcing.html).
+All changes to the cell are captured as a stream of events, and analysis and
+monitoring of the cell proceeds by analyzing the log.
+
+### Job Translation
+
+The second core feature of the FMS Insight server is to translate planned
+jobs into the cell controller (because all current cell controllers are
+stateful instead of based on the event sourcing pattern). The FMS Insight
+server does not implement any complex logic or control itself; instead FMS
+Insight is a generic conduit which allows other software to communicate jobs
+into the cell controller.
+
+FMS Insight defines a common JSON definition of a planned job which includes
+the part name, program, pallets, flexiblity (which machines/load stations to
+use), target cycles, and other data about the planned job. The FMS Insight
+server then provides a REST-like HTTP API which allows other programs to post
+this common JSON definition of a planned job wich FMS Insight then inserts
+into the cell controller.  There is different code for each cell control
+manufacturer, but this is hidden behind the common JSON definition of a planned
+job.
+
+Finally, the FMS Insight server HTTP API provides access to the current state
+of jobs, pallets, and material. Technically this should all be able to be
+recovered from the event log, but since current cell controllers are based on
+modifying state FMS Insight provides a view of this state in a common JSON
+format.
+
+### View-Only HTML Client
+
+FMS Insight serves a view-only HTTP client.
+
+* Dashboard: The dashboard provides an overview of the current jobs and their
+  progress, current machine status, and other data.
+* Station Monitor.  The station monitor is intended to be viewed at various operator
+  stations throughout the factory and provides information to the operator on what
+  actions to take.  For example, at the load station it shows what to load and unload and
+  at the inspection stand it shows what inspections were triggered.
+* Efficiency Report.  The efficiency report shows various charts and data analysis of the
+  event log.  These charts are intended to help improve the efficiency of the cell.
+* Part Cost/Piece.  The part cost/piece report shows a calculated cost/piece based on the
+  event log.  The cost/piece is intended to help validate that operational changes are
+  actually improvements.
+
+### Creating Jobs and Scheduling
+
+The FMS Insight client and server has no method to create new planned jobs.
+As mentioned above, it accepts a planned job as a JSON document and
+translates that job into the cell controller. On typical projects, planned
+jobs are created by analyzing incoming orders, but so far each project has a
+custom algorithm to translate orders to planned jobs.  The
+[seedscheduling](https://bitbucket.org/blackmaple/seedscheduling) repository
+contains some framework code and jupyter notebooks to translate orders into
+planned jobs.   Typically during development I use the jupter notebook to create
+and send planned jobs to FMS Insight, and during production OrderLink is used to
+perform the scheduling.
+
+# Code Overview
+
+### Machine Watch Interface
 
 [![NuGet Stats](https://img.shields.io/nuget/v/BlackMaple.MachineWatchInterface.svg)](https://www.nuget.org/packages/BlackMaple.MachineWatchInterface)
 
@@ -66,23 +132,7 @@ For details on the interfaces and data available, see the
 [source code](https://bitbucket.org/blackmaple/machinewatch/src/tip/server/lib/BlackMaple.MachineWatchInterface/).
 In particular, the `api` subdirectory contains the network interface.
 
-### Writing a plugin for a cell controller
-
-[![NuGet Stats](https://img.shields.io/nuget/v/BlackMaple.MachineFramework.svg)](https://www.nuget.org/packages/BlackMaple.MachineFramework)
+### Machine Framework
 
 First, read the [integrations document](https://bitbucket.org/blackmaple/machinewatch/src/tip/integration.md) which
 describes at a high level the data and communication between Machine Watch and the cell controller.
-
-When Machine Watch starts, it searches the `plugins/` directory inside the AppDomain base directory for assemblies.
-The first assembly which contains a type which implements the
-[IServerBackend](https://bitbucket.org/blackmaple/machinewatch/src/tip/server/lib/BlackMaple.MachineFramework/BackendInterfaces.cs)
-interface is loaded and used for communication between the service and the cell controller (the type must have a zero-argument constructor).
-In addition, any types which implement the
-[IBackgroundWorker](https://bitbucket.org/blackmaple/machinewatch/src/tip/server/lib/BlackMaple.MachineFramework/BackendInterfaces.cs) interface
-are loaded and started.  There must be only one `IServerBackend` but can be multiple `IBackgroundWorker`s.
-
-The `BlackMaple.MachineFramework` assembly assists with implementing this interface.  It contains code to store jobs and log data
-in SQLite databases, make inspection decisions, and more.  It doesn't have to be used, but it does make implementing plugins easier.
-The source code is here in the
-[lib/BlackMaple.MachineFramework](https://bitbucket.org/blackmaple/machinewatch/src/tip/server/lib/BlackMaple.MachineFramework/)
-directory, but is also available on NuGet at [BlackMaple.MachineFramework](https://www.nuget.org/packages/BlackMaple.MachineFramework/).
