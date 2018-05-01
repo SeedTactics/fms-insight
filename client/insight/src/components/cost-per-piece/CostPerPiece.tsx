@@ -63,7 +63,7 @@ export function CostPerPieceInput(props: CostPerPieceInputProps) {
         <CardHeader
           title={
             <div style={{display: 'flex', flexWrap: 'wrap', alignItems: 'center'}}>
-              <MoneyIcon/>
+              <MoneyIcon style={{color: "#6D4C41"}}/>
               <div style={{marginLeft: '10px', marginRight: '3em'}}>
                 Cost Inputs
               </div>
@@ -151,7 +151,7 @@ export function CostPerPieceOutput(props: CostPerPieceOutputProps) {
       <CardHeader
         title={
           <div style={{display: 'flex', flexWrap: 'wrap', alignItems: 'center'}}>
-            <BuildIcon/>
+            <BuildIcon style={{color: "#6D4C41"}}/>
             <div style={{marginLeft: '10px', marginRight: '3em'}}>
               Part Cost/Piece
             </div>
