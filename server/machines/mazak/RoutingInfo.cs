@@ -185,6 +185,39 @@ namespace MazakMachineInterface
       }
     }
 
+    private void AddDataFromJobDB(JobPlan jobFromMazak)
+    {
+      var jobFromDb = jobDB.LoadJob(jobFromMazak.UniqueStr);
+      if (jobFromDb == null) return;
+
+      jobFromMazak.RouteStartingTimeUTC = jobFromDb.RouteStartingTimeUTC;
+      jobFromMazak.RouteEndingTimeUTC = jobFromDb.RouteEndingTimeUTC;
+      jobFromMazak.ScheduleId = jobFromDb.ScheduleId;
+      foreach (var b in jobFromDb.ScheduledBookingIds)
+        jobFromMazak.ScheduledBookingIds.Add(b);
+      for (int proc = 1; proc <= jobFromMazak.NumProcesses; proc++) {
+        for (int path = 1; path <= jobFromMazak.GetNumPaths(proc); path++) {
+          if (proc > jobFromDb.NumProcesses || path > jobFromDb.GetNumPaths(proc))
+            continue;
+
+          jobFromMazak.SetSimulatedStartingTimeUTC(proc, path,
+            jobFromDb.GetSimulatedStartingTimeUTC(proc, path));
+          jobFromMazak.SetSimulatedAverageFlowTime(proc, path,
+            jobFromDb.GetSimulatedAverageFlowTime(proc, path));
+          jobFromMazak.SetSimulatedProduction(proc, path,
+            jobFromDb.GetSimulatedProduction(proc, path));
+
+          var mazakStops = jobFromMazak.GetMachiningStop(proc, path).ToList();
+          var dbStops = jobFromDb.GetMachiningStop(proc, path).ToList();
+          for (int i = 0; i < Math.Min(mazakStops.Count, dbStops.Count); i++) {
+            mazakStops[i].StationGroup = dbStops[i].StationGroup;
+            mazakStops[i].ExpectedCycleTime = dbStops[i].ExpectedCycleTime;
+          }
+        }
+      }
+
+    }
+
     /* This loads a JobPlan which contains the routing for the given unique string.  Not all fields in the plan are filled in,
 		 * just the routing.  This is useful for inspection decisions, since when translating inspection counters we only need the routing */
     public static JobPlan RoutingForUnique(ReadOnlyDataSet mazakSet, string unique, DatabaseAccess.MazakDbType mazakTy)
@@ -318,6 +351,9 @@ namespace MazakMachineInterface
 
         AddRoutingToJob(mazakSet, partRow, job, path, database.MazakType);
       }
+
+      foreach (var j in jobsBySchID.Values)
+        AddDataFromJobDB(j);
 
       //Now add pallets
 
@@ -619,7 +655,7 @@ namespace MazakMachineInterface
         }
       }
 
-      return new PalletLocation();
+      return new PalletLocation(PalletLocationEnum.Buffer, "Buffer", 0);
     }
 
     private PalletLocation ParseStatNameVerE(string pos)
