@@ -11,60 +11,40 @@ environment:
 build_script:
 - ps: |
     function ver ($x) { c:\python36\python.exe build/version.py $x }
-    dotnet build `
+    $tag = $(hg id -t -r '.^')
+    if ($tag.StartsWith("mwi")) {
+        $mwisuffix = ""
+        Set-AppveyorBuildVariable "BMS_RELEASE_MWI_TO_NUGET" "true"
+    } else {
+        $mwisuffix = "--version-suffix=pre." + $Env:APPVEYOR_BUILD_NUMBER
+    }
+    dotnet pack `
+        --include-symbols `
+        -c Release `
         /p:VersionPrefix=$(ver mwi) `
-        --version-suffix pre.$Env:APPVEYOR_BUILD_NUMBER `
+        $mwisuffix `
         server/lib/BlackMaple.MachineWatchInterface
-    dotnet build `
-        /p:VersionPrefix=$(ver framework) `
+
+- ps: |
+    yarn --cwd client/insight install
+    yarn --cwd client/insight run build
+    dotnet pack `
+        --include-symbols `
+        -c Release `
         --version-suffix pre.$Env:APPVEYOR_BUILD_NUMBER `
         server/lib/BlackMaple.MachineFramework
-    dotnet build `
+
+- ps: |
+    function ver ($x) { c:\python36\python.exe build/version.py $x }
+    dotnet pack `
+        --include-symbols `
+        -c Release `
+        -f net461 `
         /p:VersionPrefix=$(ver mazak) `
         --version-suffix pre.$Env:APPVEYOR_BUILD_NUMBER `
         server/machines/mazak/mazak.csproj
 
-    yarn --cwd client/insight install
-    yarn --cwd client/insight run build
-
-after_build:
-- ps: |
-    $tag = $(hg id -t -r '.^')
-    function ver ($x) { c:\python36\python.exe build/version.py $x }
-    if ($tag.StartsWith("mwi")) {
-        dotnet pack `
-            --include-symbols `
-            -c Release `
-            /p:VersionPrefix=$(ver mwi) `
-            server/lib/BlackMaple.MachineWatchInterface
-        Set-AppveyorBuildVariable "BMS_RELEASE_TO_NUGET" "true"
-    } elseif ($tag.StartsWith("framework")) {
-        dotnet pack `
-            --include-symbols `
-            -c Release `
-            /p:VersionPrefix=$(ver framework) `
-            server/lib/BlackMaple.MachineFramework
-        Set-AppveyorBuildVariable "BMS_RELEASE_TO_NUGET" "true"
-    } elseif ($tag.StartsWith("mazak")) {
-        dotnet publish `
-            -c Release -f net461 `
-            /p:VersionPrefix=$(ver mazak) `
-            server/machines/mazak/mazak.csproj
-
-        ./build/insight-installer-build.ps1 mazak $(ver mazak)
-        Push-Location
-        cd installers
-        Remove-Item alias:curl
-        curl -X POST `
-            --silent --show-error `
-            --user $ENV:bitbucket_auth `
-            "https://api.bitbucket.org/2.0/repositories/blackmaple/machinewatch/downloads" `
-            --form `
-            files=@"FMS Insight Mazak Install.msi"
-        Pop-Location
-    }
-
-- ps: 7z a insight-client.zip .\client\insight\build\*
+    ./build/insight-installer-build.ps1 mazak
 
 test_script:
 - ps: dotnet test server/test
@@ -74,9 +54,6 @@ artifacts:
   - path: '**/*.nupkg'
     name: NugetPackages
 
-  - path: 'insight-client.zip'
-    name: Insight HTML Client
-
   - path: 'installers/*.msi'
     name: Installers
 
@@ -84,8 +61,22 @@ deploy:
 - provider: NuGet
   on:
     branch: default
-    BMS_RELEASE_TO_NUGET: true
+    BMS_RELEASE_MWI_TO_NUGET: true
   skip_symbols: false
-  artifact: /.*\.nupkg/
+  artifact: /.*BlackMaple\.MachineWatchInterface.*\.nupkg/
   api_key:
     secure: kj0pW91vWRjFl99SLY/sageGAghMFfmqFpNdJd7y+Q73eoImzcsnPCZYlwYxKIhs
+
+deploy_script:
+- ps: |
+    $tag = $(hg id -t -r '.^')
+    if ($tag.StartsWith("mazak")) {
+        cd installers
+        Remove-Item alias:curl
+        curl -X POST `
+            --silent --show-error `
+            --user $ENV:bitbucket_auth `
+            "https://api.bitbucket.org/2.0/repositories/blackmaple/machinewatch/downloads" `
+            --form `
+            files=@"FMS Insight Mazak Install.msi"
+    }

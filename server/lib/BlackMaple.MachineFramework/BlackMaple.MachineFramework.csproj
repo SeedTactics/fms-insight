@@ -3,6 +3,7 @@
   <PropertyGroup>
     <PackageId>BlackMaple.MachineFramework</PackageId>
     <AssemblyName>BlackMaple.MachineFramework</AssemblyName>
+    <VersionPrefix>8.2.0</VersionPrefix>
 
     <Title>SeedTactics Utility Library for MachineWatch Plugins</Title>
     <Company>Black Maple Software, LLC</Company>
@@ -73,4 +74,12 @@
       </PropertyGroup>
     </When>
   </Choose>
+
+  <ItemGroup Condition="$(Configuration) == 'release'">
+    <!-- https://github.com/NuGet/Home/issues/4818 -->
+    <Content Include="..\..\..\client\insight\build\**\*">
+      <PackagePath Condition="'$(OS)' == 'Windows_NT'">content\wwwroot\</PackagePath>
+      <PackagePath Condition="'$(OS)' != 'Windows_NT'">content/wwwroot/</PackagePath>
+    </Content>
+  </ItemGroup>
 </Project>

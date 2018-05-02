@@ -1,8 +1,16 @@
 Param(
   [string]$name,
-  [string]$version
 )
 $nameUpper = (Get-Culture).TextInfo.ToTitleCase($name)
+
+function ver ($x) { c:\python36\python.exe build/version.py $x }
+$tag = $(hg id -t -r '.^')
+if ($tag.StartsWith("mazak")) {
+    $version = $(ver $name)
+} else {
+    $version = $(ver $name) + "pre." + $Env.APPVEYOR_BUILD_NUMBER
+}
+Write-Host "Building installer for " + $name + " version " + $version
 
 Push-Location
 Set-Location (Split-Path -parent $PSCommandPath)
