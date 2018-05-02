@@ -72,6 +72,8 @@ namespace MazakMachineInterface
     public event MachiningCompletedDel MachiningCompleted;
     public delegate void PalletMoveDel(int pallet, string fromStation, string toStation);
     public event PalletMoveDel PalletMove;
+    public delegate void NewEntriesDel(ReadOnlyDataSet dset);
+    public event NewEntriesDel NewEntries;
 
     #region Events
     /* This is public instead of private for testing ONLY */
@@ -83,7 +85,8 @@ namespace MazakMachineInterface
         {
           var dset = _readDB.LoadReadOnly();
 
-          foreach (var ev in _loadLogData.LoadLog(_log.MaxForeignID()))
+          var logs = _loadLogData.LoadLog(_log.MaxForeignID());
+          foreach (var ev in logs)
           {
             try
             {
@@ -98,6 +101,10 @@ namespace MazakMachineInterface
           }
 
           _loadLogData.DeleteLog(_log.MaxForeignID(), trace);
+
+          if (logs.Count > 0) {
+            NewEntries?.Invoke(dset);
+          }
 
         }
         catch (Exception ex)

@@ -59,7 +59,7 @@ namespace MazakMachineInterface
     private readonly System.Diagnostics.TraceSource trace;
 
     public event NewCurrentStatus OnNewCurrentStatus;
-    protected void RaiseNewCurrentStatus(CurrentStatus s) => OnNewCurrentStatus?.Invoke(s);
+    public void RaiseNewCurrentStatus(CurrentStatus s) => OnNewCurrentStatus?.Invoke(s);
 
     public RoutingInfo(TransactionDatabaseAccess d, IReadDataAccess readDb, HoldPattern h,
         BlackMaple.MachineFramework.JobDB jDB, BlackMaple.MachineFramework.JobLogDB jLog,
@@ -271,6 +271,12 @@ namespace MazakMachineInterface
       {
         database.MazakTransactionLock.ReleaseMutex();
       }
+
+      return GetCurrentStatus(mazakSet);
+    }
+
+    public CurrentStatus GetCurrentStatus(ReadOnlyDataSet mazakSet)
+    {
 
       //Load process and path numbers
       Dictionary<string, int> uniqueToMaxPath;

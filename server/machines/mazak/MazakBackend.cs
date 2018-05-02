@@ -217,10 +217,15 @@ namespace MazakMachineInterface
       logTrans = new LogTranslation(jobLog, readOnlyDb, serSettings, logDataLoader, logTrace);
 
       logTrans.MachiningCompleted += HandleMachiningCompleted;
+      logTrans.NewEntries += OnNewLogEntries;
+      loadOper.LoadActions += OnLoadActions;
     }
 
     public void Halt()
     {
+      logTrans.MachiningCompleted -= HandleMachiningCompleted;
+      logTrans.NewEntries -= OnNewLogEntries;
+      loadOper.LoadActions -= OnLoadActions;
       routing.Halt();
       hold.Shutdown();
       logTrans.Halt();
@@ -338,6 +343,16 @@ namespace MazakMachineInterface
                               " part " + mat.PartName);
         }
       }
+    }
+
+    private void OnLoadActions(int lds, IEnumerable<LoadAction> actions)
+    {
+      routing.RaiseNewCurrentStatus(routing.GetCurrentStatus());
+    }
+
+    private void OnNewLogEntries(ReadOnlyDataSet dset)
+    {
+      routing.RaiseNewCurrentStatus(routing.GetCurrentStatus(dset));
     }
 
     private DatabaseAccess.MazakDbType DetectMazakType(IConfig cfg, string localDbPath)
