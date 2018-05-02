@@ -39,7 +39,6 @@ build_script:
     dotnet pack `
         --include-symbols `
         -c Release `
-        -f net461 `
         /p:VersionPrefix=$(ver mazak) `
         --version-suffix pre.$Env:APPVEYOR_BUILD_NUMBER `
         server/machines/mazak/mazak.csproj
