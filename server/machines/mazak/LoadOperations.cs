@@ -72,11 +72,13 @@ namespace MazakMachineInterface
     public delegate void LoadActionsDel(int lds, IEnumerable<LoadAction> actions);
     public event LoadActionsDel LoadActions;
     private string mazakPath;
+    private SmoothDB _smoothDB;
 
-    public LoadOperations(TraceSource t, BlackMaple.MachineFramework.IConfig cfg)
+    public LoadOperations(TraceSource t, BlackMaple.MachineFramework.IConfig cfg, SmoothDB smoothDB)
     {
       trace = t;
       mazakPath = cfg.GetValue<string>("Mazak", "Load CSV Path");
+      _smoothDB = smoothDB;
       if (string.IsNullOrEmpty(mazakPath))
       {
 #if DEBUG
@@ -94,7 +96,7 @@ namespace MazakMachineInterface
         {
           trace.TraceEvent(TraceEventType.Error, 0,
                            "Unable to determine the path to the mazak load CSV files.  Please add/update a setting" +
-                           " called 'Mazak Load CSV Path' in MachineWatch.exe.config to point to the correct directory");
+                           " called 'Load CSV Path' in config file");
           return;
         }
       }
@@ -186,6 +188,7 @@ namespace MazakMachineInterface
 
     public IEnumerable<LoadAction> CurrentLoadActions()
     {
+      if (_smoothDB != null) return _smoothDB.CurrentLoadActions();
       if (!Directory.Exists(mazakPath))
         return new List<LoadAction>();
 

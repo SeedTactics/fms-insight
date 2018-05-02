@@ -678,6 +678,8 @@ namespace MazakMachineInterface
     private string _palPositionSelect;
     private string _mainProgSelect;
 
+    public SmoothDB SmoothDB {get;}
+
     public ReadonlyDatabaseAccess(string dbConnStr, MazakDbType ty)
 			: base(dbConnStr, ty)
 		{
@@ -690,6 +692,7 @@ namespace MazakMachineInterface
       else
       {
         _connectionStr = dbConnStr + ";Database=FCREADDAT01";
+        SmoothDB = new SmoothDB(_connectionStr);
       }
 
       _fixtureSelect = "SELECT Comment, FixtureName, ID, Reserved, UpdatedFlag FROM Fixture";

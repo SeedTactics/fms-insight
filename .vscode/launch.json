@@ -10,7 +10,7 @@
            "request": "launch",
            "program": "${workspaceRoot}/server/machines/mazak/bin/Debug/netcoreapp2.0/BlackMaple.FMSInsight.Mazak.dll",
            "args": [],
-           "cwd": "${workspaceRoot}/server/machines/mazak",
+           "cwd": "${workspaceRoot}/server/machines/mazak/bin",
            "stopAtEntry": false,
            "console": "internalConsole",
            "preLaunchTask": "mazak:build",
@@ -24,7 +24,7 @@
             "request": "launch",
             "program": "${workspaceRoot}/server/debug-mock/bin/Debug/netcoreapp2/debugmock.dll",
             "args": [],
-            "cwd": "${workspaceRoot}/server/debug-mock",
+            "cwd": "${workspaceRoot}/server/debug-mock/bin",
             "stopAtEntry": false,
             "console": "internalConsole",
             "preLaunchTask": "debug-mock:build"

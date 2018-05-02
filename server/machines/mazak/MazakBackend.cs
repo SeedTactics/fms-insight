@@ -198,7 +198,7 @@ namespace MazakMachineInterface
         jobDB.Open(System.IO.Path.Combine(dataDirectory, "mazakjobs.db"));
 
       database = new TransactionDatabaseAccess(dbConnStr, MazakType);
-      IReadDataAccess readOnlyDb = new ReadonlyDatabaseAccess(dbConnStr, MazakType);
+      var readOnlyDb = new ReadonlyDatabaseAccess(dbConnStr, MazakType);
       if (MazakType == DatabaseAccess.MazakDbType.MazakWeb || MazakType == DatabaseAccess.MazakDbType.MazakSmooth)
         logDataLoader = new LogDataWeb(logPath);
       else
@@ -210,7 +210,7 @@ namespace MazakMachineInterface
 #endif
       }
       hold = new HoldPattern(dataDirectory, database, readOnlyDb, holdTrace, true);
-      loadOper = new LoadOperations(loadOperTrace, cfg);
+      loadOper = new LoadOperations(loadOperTrace, cfg, readOnlyDb.SmoothDB);
       routing = new RoutingInfo(database,readOnlyDb, hold, jobDB, jobLog, insp, loadOper,
                                 CheckPalletsUsedOnce, UseStartingOffsetForDueDate, DecrementPriorityOnDownload,
                                 routingTrace);
