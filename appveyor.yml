@@ -51,6 +51,18 @@ build_script:
 
     ./build/insight-installer-build.ps1 mazak
 
+    $tag = $(hg id -t -r '.^')
+    if ($tag.StartsWith("mazak")) {
+        cd installers
+        Remove-Item alias:curl
+        curl -X POST `
+            --silent --show-error `
+            --user $ENV:bitbucket_auth `
+            "https://api.bitbucket.org/2.0/repositories/blackmaple/machinewatch/downloads" `
+            --form `
+            files=@"FMS Insight Mazak Install.msi"
+    }
+
 test_script:
 - ps: dotnet test server/test
 - ps: ($env:CI = $true) -and (yarn --cwd client/insight test 2>&1 | Write-Host)
@@ -71,17 +83,3 @@ deploy:
   artifact: /.*BlackMaple\.MachineWatchInterface.*\.nupkg/
   api_key:
     secure: kj0pW91vWRjFl99SLY/sageGAghMFfmqFpNdJd7y+Q73eoImzcsnPCZYlwYxKIhs
-
-deploy_script:
-- ps: |
-    $tag = $(hg id -t -r '.^')
-    if ($tag.StartsWith("mazak")) {
-        cd installers
-        Remove-Item alias:curl
-        curl -X POST `
-            --silent --show-error `
-            --user $ENV:bitbucket_auth `
-            "https://api.bitbucket.org/2.0/repositories/blackmaple/machinewatch/downloads" `
-            --form `
-            files=@"FMS Insight Mazak Install.msi"
-    }
