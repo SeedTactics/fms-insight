@@ -8,7 +8,8 @@ $tag = $(hg id -t -r '.^')
 if ($tag.StartsWith("mazak")) {
     $version = $(ver $name)
 } else {
-    $version = $(ver $name) + "." + $Env:APPVEYOR_BUILD_NUMBER
+    # WiX doesn't support semver, so don't increment
+    $version = $(ver $name --no-increment) + "." + $Env:APPVEYOR_BUILD_NUMBER
 }
 Write-Host "Building installer for " $name " version " $version
 

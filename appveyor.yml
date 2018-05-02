@@ -31,7 +31,7 @@ build_script:
     dotnet pack `
         --include-symbols `
         -c Release `
-        --version-suffix pre.$Env:APPVEYOR_BUILD_NUMBER `
+        --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
         server/lib/BlackMaple.MachineFramework
 
 - ps: |
@@ -40,7 +40,13 @@ build_script:
         --include-symbols `
         -c Release `
         /p:VersionPrefix=$(ver mazak) `
-        --version-suffix pre.$Env:APPVEYOR_BUILD_NUMBER `
+        --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
+        server/machines/mazak/mazak.csproj
+    dotnet publish `
+        -c Release `
+        -f net461 `
+        /p:VersionPrefix=$(ver mazak) `
+        --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
         server/machines/mazak/mazak.csproj
 
     ./build/insight-installer-build.ps1 mazak
