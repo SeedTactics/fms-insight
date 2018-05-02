@@ -1,5 +1,5 @@
 Param(
-  [string]$name,
+  [string]$name
 )
 $nameUpper = (Get-Culture).TextInfo.ToTitleCase($name)
 
