@@ -24,6 +24,11 @@
     <OutputType>Library</OutputType>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Include="../BlackMaple.MachineWatchInterface/api/*.cs"/>
+    <Compile Include="../BlackMaple.MachineWatchInterface/types/*.cs"/>
+  </ItemGroup>
+
   <Choose>
       <When Condition="$(OS) == 'Unix'">
           <PropertyGroup>
@@ -55,19 +60,6 @@
     <PackageReference Include="Microsoft.Data.Sqlite" Version="2.*" />
     <PackageReference Include="CsvHelper" Version="7.1.0"/>
   </ItemGroup>
-
-  <Choose>
-    <When Condition="$(Configuration) == 'Debug'">
-      <ItemGroup>
-        <ProjectReference Include="../BlackMaple.MachineWatchInterface/BlackMaple.MachineWatchInterface.csproj" />
-      </ItemGroup>
-    </When>
-    <Otherwise>
-      <ItemGroup>
-        <PackageReference Include="BlackMaple.MachineWatchInterface" Version="7.*"/>
-      </ItemGroup>
-    </Otherwise>
-  </Choose>
 
   <Choose>
     <When Condition="$(TargetFramework) == 'net461'">

@@ -4,7 +4,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../lib/BlackMaple.MachineWatchInterface/BlackMaple.MachineWatchInterface.csproj" />
     <ProjectReference Include="../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj"/>
   </ItemGroup>
 </Project>
