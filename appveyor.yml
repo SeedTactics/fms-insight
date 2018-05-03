@@ -51,17 +51,22 @@ build_script:
 
     ./build/insight-installer-build.ps1 mazak
 
-    $tag = $(hg id -t -r '.^')
-    if ($tag.StartsWith("mazak")) {
-        cd installers
-        Remove-Item alias:curl
-        curl -X POST `
-            --silent --show-error `
-            --user $ENV:bitbucket_auth `
-            "https://api.bitbucket.org/2.0/repositories/blackmaple/machinewatch/downloads" `
-            --form `
-            files=@"FMS Insight Mazak Install.msi"
-    }
+- ps: |
+    function ver ($x) { c:\python36\python.exe build/version.py $x }
+    dotnet pack `
+        --include-symbols `
+        -c Release `
+        /p:VersionPrefix=$(ver makino) `
+        --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
+        server/machines/makino/makino.csproj
+    dotnet publish `
+        -c Release `
+        -f net461 `
+        /p:VersionPrefix=$(ver makino) `
+        --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
+        server/machines/makino/makino.csproj
+
+    ./build/insight-installer-build.ps1 makino
 
 - ps: |
     function ver ($x) { c:\python36\python.exe build/version.py $x }

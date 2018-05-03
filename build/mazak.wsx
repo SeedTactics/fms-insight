@@ -30,8 +30,6 @@
       <Directory Id='ProgramFilesFolder' Name='PFiles'>
         <Directory Id='INSTALLDIR' Name='SeedTactic FMS Insight'>
 
-          <Directory Id="clientwww" Name="wwwroot"/>
-
           <Component Id="InsightService" Guid="a9902261-4da2-42a4-9503-b67dea8db299">
             <File Id="InsightService" KeyPath="yes" Source="tmp/BlackMaple.FMSInsight.Mazak.exe"/>
             <RemoveFile Id="RemoveLogFiles" Name="*.svclog" On="both"/>
@@ -71,7 +69,6 @@
 
     <Feature Id="InsightAll" Level="1">
       <ComponentGroupRef Id="InsightServerCg"/>
-      <ComponentGroupRef Id="InsightClientCg"/>
       <ComponentRef Id="InsightService"/>
       <ComponentRef Id="InsightDefaultConfig"/>
     </Feature>

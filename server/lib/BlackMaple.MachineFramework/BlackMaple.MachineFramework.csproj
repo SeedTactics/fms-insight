@@ -5,21 +5,18 @@
     <AssemblyName>BlackMaple.MachineFramework</AssemblyName>
     <VersionPrefix>8.2.1</VersionPrefix>
 
-    <Title>SeedTactics Utility Library for MachineWatch Plugins</Title>
+    <Title>SeedTactics Utility Library for FMS Insight Plugins</Title>
     <Company>Black Maple Software, LLC</Company>
     <Product>SeedTactics</Product>
     <Copyright>Black Maple Software, LLC</Copyright>
     <Authors>John Lenz</Authors>
     <PackageLicenseUrl>https://opensource.org/licenses/BSD-3-Clause</PackageLicenseUrl>
     <PackageProjectUrl>https://www.seedtactics.com</PackageProjectUrl>
-    <RepositoryUrl>https://bitbucket.org/blackmaple/machinewatch</RepositoryUrl>
+    <RepositoryUrl>https://bitbucket.org/blackmaple/fms-insight</RepositoryUrl>
     <RepositoryType>hg</RepositoryType>
     <Description>
-      Machine Watch is a generic conduit which allows SeedTactic software to monitor and control the cell.
-      The communication between the MachineWatch server and the cell happens via a plugin, and
-      this package implements some common code to help implement plugins.
-
-      For documentation and source code, visit [the bitbucket project](https://bitbucket.org/blackmaple/machinewatch).
+      SeedTactic FMS Insight is a generic conduit which allows SeedTactic software to monitor and control the cell.
+      For documentation and source code, visit the bitbucket project at https://bitbucket.org/blackmaple/fms-insight
     </Description>
 
     <OutputType>Library</OutputType>
@@ -28,6 +25,15 @@
   <ItemGroup>
     <Compile Include="../BlackMaple.MachineWatchInterface/api/*.cs"/>
     <Compile Include="../BlackMaple.MachineWatchInterface/types/*.cs"/>
+
+    <Content Include="..\..\..\client\insight\build\**\*">
+      <PackagePath>contentFiles\any\any\wwwroot</PackagePath>
+      <PackageCopyToOutput>true</PackageCopyToOutput>
+    </Content>
+    <ContentWithTargetPath Include="..\..\..\client\insight\build\**\*">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <TargetPath>wwwroot/%(RecursiveDir)%(FileName)%(Extension)</TargetPath>
+    </ContentWithTargetPath>
   </ItemGroup>
 
   <Choose>
@@ -75,10 +81,4 @@
     </When>
   </Choose>
 
-  <ItemGroup Condition="$(Configuration) == 'release'">
-    <Content Include="..\..\..\client\insight\build\**\*">
-      <PackagePath>contentFiles\any\any\wwwroot</PackagePath>
-      <PackageCopyToOutput>true</PackageCopyToOutput>
-    </Content>
-  </ItemGroup>
 </Project>
