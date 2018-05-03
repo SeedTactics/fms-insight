@@ -63,6 +63,23 @@ build_script:
             files=@"FMS Insight Mazak Install.msi"
     }
 
+- ps: |
+    function ver ($x) { c:\python36\python.exe build/version.py $x }
+    dotnet pack `
+        --include-symbols `
+        -c Release `
+        /p:VersionPrefix=$(ver cincron) `
+        --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
+        server/machines/cincron/cincron.csproj
+    dotnet publish `
+        -c Release `
+        -f net461 `
+        /p:VersionPrefix=$(ver cincron) `
+        --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
+        server/machines/cincron/cincron.csproj
+
+    ./build/insight-installer-build.ps1 cincron
+
 test_script:
 - ps: dotnet test server/test
 - ps: ($env:CI = $true) -and (yarn --cwd client/insight test 2>&1 | Write-Host)
