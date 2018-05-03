@@ -105,14 +105,17 @@ namespace BlackMaple.MachineFramework.Controllers
       _serSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
       _serSettings.ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver();
 
-      log.NewLogEntry += (e, foreignId) =>
-        Send(new ServerEvent() {LogEntry = e});
+      if (log != null)
+        log.NewLogEntry += (e, foreignId) =>
+          Send(new ServerEvent() {LogEntry = e});
 
-      jobDatabase.OnNewJobs += (jobs) =>
-        Send(new ServerEvent() {NewJobs = jobs});
+      if (jobDatabase != null)
+        jobDatabase.OnNewJobs += (jobs) =>
+          Send(new ServerEvent() {NewJobs = jobs});
 
-      jobControl.OnNewCurrentStatus += (status) =>
-        Send(new ServerEvent() {NewCurrentStatus = status});
+      if (jobControl != null)
+        jobControl.OnNewCurrentStatus += (status) =>
+          Send(new ServerEvent() {NewCurrentStatus = status});
     }
 
     private void Send(ServerEvent val) {
