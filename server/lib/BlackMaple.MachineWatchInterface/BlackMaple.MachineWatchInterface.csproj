@@ -4,21 +4,22 @@
     <AssemblyName>BlackMaple.MachineWatchInterface</AssemblyName>
     <PackageId>BlackMaple.MachineWatchInterface</PackageId>
 
-    <Title>SeedTactics Interface to MachineWatch</Title>
+    <Title>SeedTactics Interface to MachineWatch and FMS Insight</Title>
     <Company>Black Maple Software, LLC</Company>
     <Product>SeedTactics</Product>
     <Copyright>Black Maple Software, LLC</Copyright>
     <Authors>John Lenz</Authors>
     <PackageLicenseUrl>https://opensource.org/licenses/BSD-3-Clause</PackageLicenseUrl>
     <PackageProjectUrl>https://www.seedtactics.com</PackageProjectUrl>
-    <RepositoryUrl>https://bitbucket.org/blackmaple/machinewatch</RepositoryUrl>
+    <RepositoryUrl>https://bitbucket.org/blackmaple/fms-insight</RepositoryUrl>
     <RepositoryType>hg</RepositoryType>
     <Description>
-      Machine Watch is a generic conduit which allows SeedTactic software to monitor and control the cell.
+      FMS Insight is a generic conduit which allows SeedTactic software to monitor and control the cell.
       This package contains the API and data structures, and should be used from clients which
-      wish to communicate with MachineWatch.
+      wish to communicate with either MachineWatch or FMS Insight (they share the same API).
 
-      For documentation and source code, visit [the bitbucket project](https://bitbucket.org/blackmaple/machinewatch).
+      For documentation and source code, visit the bitbucket project at
+      https://bitbucket.org/blackmaple/fms-insight
     </Description>
 
     <OutputType>Library</OutputType>
