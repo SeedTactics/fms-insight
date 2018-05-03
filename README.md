@@ -1,6 +1,6 @@
 # FMS Insight
 
-[![Build status](https://ci.appveyor.com/api/projects/status/qhvrw56g6syoep9w?svg=true)](https://ci.appveyor.com/project/wuzzeb/machinewatch)
+[![Build status](https://ci.appveyor.com/api/projects/status/qfbp2wstg3if04t4?svg=true)](https://ci.appveyor.com/project/wuzzeb/fms-insight)
 
 FMS Insight is a client and server which runs on an flexible machining system (FMS)
 cell controller which provides:
@@ -96,41 +96,6 @@ If you want to write a client program to communicate with Machine Watch over the
 [lib/BlackMaple.MachineWatchInterface](https://bitbucket.org/blackmaple/machinewatch/src/tip/server/lib/BlackMaple.MachineWatchInterface/)
 directory, but a compiled version is on NuGet as
 [BlackMaple.MachineWatchInterface](https://www.nuget.org/packages/BlackMaple.MachineWatchInterface/).
-
-Follow the following steps:
-
-* Add a reference to [BlackMaple.MachineWatchInterface](https://www.nuget.org/packages/BlackMaple.MachineWatchInterface/).
-
-* In the `main` function or other bootstrap code, add the following
-
-~~~ {.csharp}
-var clientFormatter = New Runtime.Remoting.Channels.BinaryClientFormatterSinkProvider();
-var serverFormatter = New Runtime.Remoting.Channels.BinaryServerFormatterSinkProvider();
-serverFormatter.TypeFilterLevel = Runtime.Serialization.Formatters.TypeFilterLevel.Full;
-
-var props = New System.Collections.Hashtable();
-props["port"] = 0;
-System.Runtime.Remoting.Channels.ChannelServices.RegisterChannel(
-  New System.Runtime.Remoting.Channels.Tcp.TcpChannel(props, clientFormatter, serverFormatter), False);
-~~~
-
-(We are currently using .NET Remoting but are working on a version of the server which uses REST HTTP.)
-
-* Allow the user to enter a computer name for the computer running Machine Watch (and perhaps a port).
-   If no port is entered, default to port 8086.
-
-* Access one of the exposed interfaces such as `ILogDatabase` via Remoting:
-
-~~~ {.csproj}
-var jobServer = (BlackMaple.MachineWatchInterface.ILogDatabase)
-    System.Runtime.Remoting.RemotingServices.Connect(
-      typeof(BlackMaple.MachineWatchInterface.ILogDatabase),
-      "tcp://" + locationAndPort + "/LogDatabase");
-~~~
-
-For details on the interfaces and data available, see the
-[source code](https://bitbucket.org/blackmaple/machinewatch/src/tip/server/lib/BlackMaple.MachineWatchInterface/).
-In particular, the `api` subdirectory contains the network interface.
 
 ### Machine Framework
 
