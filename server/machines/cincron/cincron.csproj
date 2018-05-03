@@ -1,0 +1,54 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>BlackMaple.FMSInsight.Cincron</AssemblyName>
+    <PackageId>BlackMaple.FMSInsight.Cincron</PackageId>
+    <OutputType>Exe</OutputType>
+
+    <Title>Cincron backend for FMS Insight</Title>
+    <Company>Black Maple Software, LLC</Company>
+    <Product>SeedTactics</Product>
+    <Copyright>Black Maple Software, LLC</Copyright>
+    <Authors>John Lenz</Authors>
+    <PackageProjectUrl>https://www.seedtactics.com</PackageProjectUrl>
+
+    <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
+  </PropertyGroup>
+
+  <Choose>
+    <When Condition="$(OS) == 'Windows_NT'">
+      <PropertyGroup>
+        <TargetFramework>net461</TargetFramework>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <TargetFramework>netcoreapp2.0</TargetFramework>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+
+  <ItemGroup>
+    <ProjectReference Include="../../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj"/>
+  </ItemGroup>
+
+  <Choose>
+      <When Condition="$(TargetFramework) == 'net461'">
+          <PropertyGroup>
+            <DefineConstants>$(DefineConstants);USE_OLEDB</DefineConstants>
+          </PropertyGroup>
+          <ItemGroup>
+            <Reference Include="System" />
+            <Reference Include="System.Core" />
+            <Reference Include="System.Data.DataSetExtensions" />
+            <Reference Include="System.Data" />
+          </ItemGroup>
+      </When>
+
+      <When Condition="$(TargetFramework) == 'netcoreapp2.0'">
+          <ItemGroup>
+            <PackageReference Include="System.Data.SqlClient" Version="4.5.0-preview*"/>
+          </ItemGroup>
+      </When>
+  </Choose>
+</Project>
