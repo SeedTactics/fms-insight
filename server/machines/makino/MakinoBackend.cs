@@ -128,6 +128,8 @@ namespace Makino
 
                 _jobs = new Jobs(_makinoDB, _jobDB, adePath, downloadOnlyOrders);
 
+                _logTimer.LogsProcessed += OnLogsProcessed;
+
 			} catch (Exception ex) {
 				trace.TraceEvent(System.Diagnostics.TraceEventType.Error, 0,
 					"Unhandled exception when initializing makino backend" + Environment.NewLine +
@@ -137,6 +139,7 @@ namespace Makino
 
 		public void Halt()
 		{
+            _logTimer.LogsProcessed -= OnLogsProcessed;
 			if (_logTimer != null) _logTimer.Halt();
 			if (_inspectDB != null) _inspectDB.Close();
 			if (_jobDB != null) _jobDB.Close();
@@ -153,6 +156,11 @@ namespace Makino
 				dbTrace
 			};
 		}
+
+        private void OnLogsProcessed()
+        {
+            _jobs.RaiseNewCurrentStatus(_jobs.GetCurrentStatus());
+        }
 
         private string DetectSqlConnectionStr()
         {

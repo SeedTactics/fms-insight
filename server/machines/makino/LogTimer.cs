@@ -48,6 +48,9 @@ namespace Makino
 		private System.Timers.Timer _timer;
 		private System.Diagnostics.TraceSource _trace;
 
+		public delegate void LogsProcessedDel();
+		public event LogsProcessedDel LogsProcessed;
+
         public SerialSettings SerialSettings
         {
             get;
@@ -115,7 +118,9 @@ namespace Makino
 			var moreMachines = mE.MoveNext();
 			var moreLoads = lE.MoveNext();
 
+			bool newLogEntries = false;
 			while (moreMachines || moreLoads) {
+				newLogEntries = true;
 				if (moreMachines && moreLoads) {
 
 					//check which event occured first and process it
@@ -135,6 +140,9 @@ namespace Makino
 					moreLoads = lE.MoveNext();
 				}
 			}
+
+			if (newLogEntries)
+				LogsProcessed?.Invoke();
 		}
 
         private void AddMachineToLog(

@@ -44,7 +44,7 @@ namespace Makino
 		private bool _onlyOrders;
 
         public event NewCurrentStatus OnNewCurrentStatus;
-        protected void RaiseNewCurrentStatus(CurrentStatus s) => OnNewCurrentStatus?.Invoke(s);
+        public void RaiseNewCurrentStatus(CurrentStatus s) => OnNewCurrentStatus?.Invoke(s);
 
 		public Jobs(MakinoDB db, BlackMaple.MachineFramework.JobDB jdb, string xmlPath, bool onlyOrders)
 		{
