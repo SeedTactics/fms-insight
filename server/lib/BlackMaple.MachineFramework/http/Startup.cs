@@ -165,13 +165,15 @@ namespace BlackMaple.MachineFramework
 
             app.UseSwaggerUi3(typeof(Startup).Assembly,
                 new SwaggerUi3Settings() {
-                    Title = "MachineWatch",
+                    Title = "SeedTactic FMS Insight",
+                    Description = "API for access to FMS Insight for flexible manufacturing system control",
                     Version = "v1",
                     DefaultEnumHandling = NJsonSchema.EnumHandling.String,
                     DefaultPropertyNameHandling = NJsonSchema.PropertyNameHandling.Default,
                     PostProcess = document => {
-                        document.Host = "";
-                        document.BasePath = "/";
+                        document.Host = null;
+                        document.BasePath = null;
+                        document.Schemes = null;
                     }
                 });
 
