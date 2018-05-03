@@ -1,0 +1,47 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>BlackMaple.FMSInsight.API</AssemblyName>
+    <PackageId>BlackMaple.FMSInsight.API</PackageId>
+
+    <Title>Client API to SeedTactics FMS Insight</Title>
+    <Company>Black Maple Software, LLC</Company>
+    <Product>SeedTactics</Product>
+    <Copyright>Black Maple Software, LLC</Copyright>
+    <Authors>John Lenz</Authors>
+    <PackageLicenseUrl>https://opensource.org/licenses/BSD-3-Clause</PackageLicenseUrl>
+    <PackageProjectUrl>https://www.seedtactics.com</PackageProjectUrl>
+    <RepositoryUrl>https://bitbucket.org/blackmaple/fms-insight</RepositoryUrl>
+    <RepositoryType>hg</RepositoryType>
+    <Description>
+      FMS Insight is a generic conduit which allows SeedTactic software to monitor and control
+      a flexible manufacturing system cell. This package contains the API generated
+      from the swagger API description.
+
+      For documentation and source code, visit the bitbucket project at
+      https://bitbucket.org/blackmaple/fms-insight
+    </Description>
+
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2"/>
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework) == 'netstandard2.0'">
+    <PackageReference Include="System.ComponentModel.Annotations" Version="4.4.1"/>
+  </ItemGroup>
+
+  <Choose>
+      <When Condition="$(OS) == 'Unix'">
+          <PropertyGroup>
+              <TargetFramework>netstandard2.0</TargetFramework>
+          </PropertyGroup>
+      </When>
+      <When Condition="$(OS) == 'Windows_NT'">
+          <PropertyGroup>
+              <TargetFrameworks>net461;netstandard2.0</TargetFrameworks>
+          </PropertyGroup>
+      </When>
+  </Choose>
+</Project>
