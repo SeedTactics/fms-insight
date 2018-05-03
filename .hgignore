@@ -4,3 +4,8 @@ obj/
 integration.pdf
 node_modules/
 client/insight/build/
+
+website/build/
+website/yarn.lock
+website/node_modules
+website/i18n
