@@ -23,13 +23,7 @@
     </Description>
 
     <OutputType>Library</OutputType>
-	<EnableDefaultCompileItems>False</EnableDefaultCompileItems>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Compile Include="types/*.cs"/>
-    <Compile Include="api/*.cs"/>
-  </ItemGroup>
 
   <Choose>
       <When Condition="$(OS) == 'Unix'">
