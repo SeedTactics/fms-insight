@@ -12,6 +12,22 @@ build_script:
 - ps: |
     function ver ($x) { c:\python36\python.exe build/version.py $x }
     $tag = $(hg id -t -r '.^')
+    if ($tag.StartsWith("insightapi")) {
+        $vsuffix = ""
+        Set-AppveyorBuildVariable "BMS_RELEASE_INSIGHT_API_TO_NUGET" "true"
+    } else {
+        $vsuffix = "--version-suffix=pre." + $Env:APPVEYOR_BUILD_NUMBER
+    }
+    dotnet pack `
+        --include-symbols `
+        -c Release `
+        /p:VersionPrefix=$(ver insightapi) `
+        $vsuffix `
+        client/csharp-api
+
+- ps: |
+    function ver ($x) { c:\python36\python.exe build/version.py $x }
+    $tag = $(hg id -t -r '.^')
     if ($tag.StartsWith("mwi")) {
         $mwisuffix = ""
         Set-AppveyorBuildVariable "BMS_RELEASE_MWI_TO_NUGET" "true"
