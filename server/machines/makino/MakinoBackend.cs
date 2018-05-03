@@ -66,8 +66,12 @@ namespace Makino
 			try {
 
 				string adePath = cfg.GetValue<string>("Makino", "ADE Path");
-                string dbConnStr = cfg.GetValue<string>("Makino", "SQL Server Connection String");
+                if (string.IsNullOrEmpty(adePath))
+                {
+                    adePath = @"c:\Makino\ADE";
+                }
 
+                string dbConnStr = cfg.GetValue<string>("Makino", "SQL Server Connection String");
                 if (string.IsNullOrEmpty(dbConnStr))
                 {
                     dbConnStr = DetectSqlConnectionStr();
