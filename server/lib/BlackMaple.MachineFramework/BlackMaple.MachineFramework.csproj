@@ -76,10 +76,8 @@
   </Choose>
 
   <ItemGroup Condition="$(Configuration) == 'release'">
-    <!-- https://github.com/NuGet/Home/issues/4818 -->
     <Content Include="..\..\..\client\insight\build\**\*">
-      <PackagePath Condition="'$(OS)' == 'Windows_NT'">contentFiles\any\any\wwwroot\</PackagePath>
-      <PackagePath Condition="'$(OS)' != 'Windows_NT'">contentFiles/any/any/wwwroot/</PackagePath>
+      <PackagePath>contentFiles\any\any\wwwroot</PackagePath>
       <PackageCopyToOutput>true</PackageCopyToOutput>
     </Content>
   </ItemGroup>
