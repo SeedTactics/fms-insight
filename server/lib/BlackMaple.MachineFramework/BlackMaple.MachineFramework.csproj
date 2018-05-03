@@ -80,6 +80,7 @@
     <Content Include="..\..\..\client\insight\build\**\*">
       <PackagePath Condition="'$(OS)' == 'Windows_NT'">contentFiles\any\any\wwwroot\</PackagePath>
       <PackagePath Condition="'$(OS)' != 'Windows_NT'">contentFiles/any/any/wwwroot/</PackagePath>
+      <PackageCopyToOutput>true</PackageCopyToOutput>
     </Content>
   </ItemGroup>
 </Project>
