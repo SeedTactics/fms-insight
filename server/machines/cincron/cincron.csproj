@@ -34,20 +34,8 @@
 
   <Choose>
       <When Condition="$(TargetFramework) == 'net461'">
-          <PropertyGroup>
-            <DefineConstants>$(DefineConstants);USE_OLEDB</DefineConstants>
-          </PropertyGroup>
           <ItemGroup>
             <Reference Include="System" />
-            <Reference Include="System.Core" />
-            <Reference Include="System.Data.DataSetExtensions" />
-            <Reference Include="System.Data" />
-          </ItemGroup>
-      </When>
-
-      <When Condition="$(TargetFramework) == 'netcoreapp2.0'">
-          <ItemGroup>
-            <PackageReference Include="System.Data.SqlClient" Version="4.5.0-preview*"/>
           </ItemGroup>
       </When>
   </Choose>
