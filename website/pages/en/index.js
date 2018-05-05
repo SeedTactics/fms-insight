@@ -118,7 +118,7 @@ const Block = props => (
     padding={['bottom', 'top']}
     id={props.id}
     background={props.background}>
-    <GridBlock align="center" contents={props.children} layout={props.layout} />
+    <GridBlock align={props.align || "center"} contents={props.children} layout={props.layout} />
   </Container>
 );
 
@@ -155,48 +155,95 @@ const FeatureCallout = props => (
   <div
     className="productShowcaseSection paddingBottom"
     style={{textAlign: 'center'}}>
-    <h2>Automation Management Callout</h2>
-    <MarkdownBlock>These are features of this project</MarkdownBlock>
+    <h2>Automation Management And Performance Improvement</h2>
+    <MarkdownBlock>
+      FMS Insight is used by industrial engineers, floor managers, and
+      operators to enhance an automated handling system in a flexible
+      machining cell. We have observed that an event log
+      allows process actions such as inspections which guarantee each path is
+      periodically inspected. Data integration with the cell controller
+      simplifies operations and leads to higher efficiency.
+    </MarkdownBlock>
   </div>
 );
 
-const LearnHow = props => (
-  <Block background="light">
-    {[
-      {
-        content: 'Talk about learning how to use this',
-        image: imgUrl('docusaurus.svg'),
-        imageAlign: 'right',
-        title: 'Learn How',
-      },
-    ]}
-  </Block>
-);
+const traits = [
+  {
+    content: 'FMS Insight provides a touchscreen friendly view of information at the load station, including ' +
+    'what part type to load, what part type to unload, serial assignment, inspection decisions, ' +
+    'load instructions, and workorder assignment.',
+    image: imgUrl('docusaurus.svg'),
+    title: 'Load/Unload Instructions',
+  },
+  {
+    content: 'The event log facilitates inspection signaling where each combination of ' +
+    'pallet and machine is guranteed to be periodically inspected.  In addition, FMS insight provides ' +
+    'a view of the event log at the inspection stand which allows the operator to view the pallet, machine, ' +
+    'and date/time of the part being inspected.',
+    image: imgUrl('docusaurus.svg'),
+    title: 'Inspections',
+  },
+  {
+    content: 'Using the event log, FMS Insight provides reports and charts targeted at iteratively improving ' +
+    'the efficiency of the cell.  These reports have been built up over decades of expierence to highlight the ' +
+    'places where small changes to pallet or machine assignments can lead to large performance improvements',
+    image: imgUrl('docusaurus.svg'),
+    title: 'Efficiency Improvement',
+  },
+  {
+    content: 'If a serial or barcode is marked on each piece of material, FMS Insight can track that serial ' +
+    'in the event log and use a barcode scanner to retrieve the events for a specific piece of material.',
+    image: imgUrl('docusaurus.svg'),
+    title: 'Serials',
+  },
+  {
+    content: 'FMS Insight provides a status dashboard which shows an overview of the cell.  The dashboard shows ' +
+    'the progress on currently scheduled jobs, an estimate on remaining work to complete the jobs, an overview of ' +
+    'the load stations and machines, and the OEE for the past week for each machine.',
+    image: imgUrl('docusaurus.svg'),
+    title: 'Dashboard',
+  },
+  {
+    content: 'Using the event log, FMS Insight provides a monthly cost/piece report showing a breakdown of the ' +
+    'machining and labor cost for each part.  The cost/piece can be used to validate that iterative operational changes ' +
+    'are actually improvements, helps plan future capital investments, and assists ordering and sales quote future work.',
+    image: imgUrl('docusaurus.svg'),
+    title: 'Cost/Piece',
+  },
+  {
+    content: 'FMS Insight provides a screen which allows an operator to assign a piece of material to a workorder.  This ' +
+    'goes into the event log and FMS Insight can track how many parts have been assigned to a workorder. ' +
+    'If serials/barcodes are used, the individual serials are tracked in the workorder to allow ERP cost calculations at ' +
+    'the workorder level',
+    image: imgUrl('docusaurus.svg'),
+    title: 'Workorder Assignment',
+  },
+  {
+    content: 'FMS Insight uses the event log to provide a touchscreen friendly view of all the material in the cell. ' +
+    'This is helpful when material enters and leaves the automated handling system, such as between part processes or ' +
+    'if parts are transfered from a lathe cell to a horizontal cell.',
+    image: imgUrl('docusaurus.svg'),
+    title: 'In-Process Material Tracking',
+  },
+  {
+    content: 'FMS Insight provides an API which can be used to create parts, pallets, jobs, and schedules in the cell ' +
+    'controller.  Each project and ERP is different, so FMS Insight does not directly create the data.  Instead, ' +
+    'FMS Insight provides an API which easily allows the ERP software to translate the orders in the ERP into ' +
+    'data in the cell controller.  The API uses JSON and a REST-like HTTP interface, and is described fully as an ' +
+    'OpenAPI specification.',
+    image: imgUrl('docusaurus.svg'),
+    title: 'Cell Control Data',
+  },
+];
 
-const TryOut = props => (
-  <Block id="try">
-    {[
-      {
-        content: 'Talk about trying this out',
-        image: imgUrl('docusaurus.svg'),
-        imageAlign: 'left',
-        title: 'Try it Out',
-      },
-    ]}
-  </Block>
-);
-
-const Description = props => (
-  <Block background="dark">
-    {[
-      {
-        content: 'This is another description of how this project is useful',
-        image: imgUrl('docusaurus.svg'),
-        imageAlign: 'right',
-        title: 'Description',
-      },
-    ]}
-  </Block>
+const Traits = props => (
+  <div>
+    {traits.map((t, idx) =>
+      <Block align="left" key={idx} background={idx % 2 === 0 ? "light" : undefined}>
+        {[{...t, imageAlign: idx % 2 === 0 ? "right" : "left"}]}
+      </Block>
+    )}
+  </div>
 );
 
 const Showcase = props => {
@@ -239,9 +286,7 @@ class Index extends React.Component {
         <div className="mainContainer">
           <Features />
           <FeatureCallout />
-          <LearnHow />
-          <TryOut />
-          <Description />
+          <Traits/>
           <Showcase language={language} />
         </div>
       </div>
