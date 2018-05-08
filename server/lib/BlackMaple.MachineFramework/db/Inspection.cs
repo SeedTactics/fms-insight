@@ -222,7 +222,11 @@ namespace BlackMaple.MachineFramework
 
         #region Inspection Decisions
         //This function returns true if the material should be inspected.
-        public bool MakeInspectionDecision(long matID, JobPlan job, JobInspectionData iProg)
+        public bool MakeInspectionDecision(
+            long matID,
+            JobPlan job,
+            JobInspectionData iProg,
+            DateTime? mutcNow = null)
         {
             var counter = jobLog.TranslateInspectionCounter(matID, job, iProg.Counter);
 
@@ -231,15 +235,18 @@ namespace BlackMaple.MachineFramework
                                           job.PartName,
                                           job.NumProcesses,
                                           iProg,
-                                          counter);
+                                          counter,
+                                          mutcNow);
         }
         public bool MakeInspectionDecision(long matID,
                                            string unique,
                                            string partName,
                                            int numProcesses,
                                            JobInspectionData iProg,
-                                           string counter)
+                                           string counter,
+                                           DateTime? mutcNow = null)
         {
+            var utcNow = mutcNow.HasValue ? mutcNow.Value : DateTime.UtcNow;
             LogEntry log = null;
             bool inspect = false;
 
@@ -274,7 +281,7 @@ namespace BlackMaple.MachineFramework
                 //now check lastutc
                 if (iProg.TimeInterval > TimeSpan.Zero &&
                     currentCount.LastUTC != DateTime.MaxValue &&
-                    currentCount.LastUTC.Add(iProg.TimeInterval) < DateTime.UtcNow)
+                    currentCount.LastUTC.Add(iProg.TimeInterval) < utcNow)
                 {
                     inspect = true;
                 }
@@ -290,11 +297,11 @@ namespace BlackMaple.MachineFramework
 
                 //update lastutc if there is an inspection
                 if (inspect)
-                    currentCount.LastUTC = DateTime.UtcNow;
+                    currentCount.LastUTC = utcNow;
 
                 //if no lastutc has been recoreded, record the current time.
                 if (currentCount.LastUTC == DateTime.MaxValue)
-                    currentCount.LastUTC = DateTime.UtcNow;
+                    currentCount.LastUTC = utcNow;
 
                 LogMaterial mat =
                     new LogMaterial(matID, unique, numProcesses, partName, -1);
@@ -304,10 +311,10 @@ namespace BlackMaple.MachineFramework
                     "", //pallet
                     LogType.Inspection, "Inspect", 1,
                     counter,
-                    false, DateTime.UtcNow, inspect.ToString(), false);
+                    false, utcNow, inspect.ToString(), false);
 
                 StoreInspectionDecision(counter, currentCount.Value, currentCount.LastUTC,
-                                        matID, iProg.InspectionType, inspect);
+                                        matID, iProg.InspectionType, inspect, utcNow);
 
             }
 
@@ -507,10 +514,8 @@ namespace BlackMaple.MachineFramework
         }
 
         private void StoreInspectionDecision(string counter, int newCounterVal, DateTime newLastUTC,
-                                             long matID, string inspType, bool status)
+                                             long matID, string inspType, bool status, DateTime utcNow)
         {
-            System.DateTime d = DateTime.UtcNow;
-
             var cmd = _connection.CreateCommand();
 
             var trans = _connection.BeginTransaction();
@@ -530,7 +535,7 @@ namespace BlackMaple.MachineFramework
                 cmd.Parameters.Add("insp", SqliteType.Text).Value = inspType;
                 cmd.Parameters.Add("cntr", SqliteType.Text).Value = counter;
                 cmd.Parameters.Add("status", SqliteType.Integer).Value = status;
-                cmd.Parameters.Add("create", SqliteType.Integer).Value = d.Ticks;
+                cmd.Parameters.Add("create", SqliteType.Integer).Value = utcNow.Ticks;
                 cmd.ExecuteNonQuery();
 
                 trans.Commit();
