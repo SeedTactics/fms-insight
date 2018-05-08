@@ -1768,6 +1768,7 @@ namespace BlackMaple.MachineFramework
             {
                 var trans = _connection.BeginTransaction();
 
+                var newEvts = new List<BlackMaple.MachineWatchInterface.LogEntry>();
                 try
                 {
 
@@ -1781,24 +1782,30 @@ namespace BlackMaple.MachineFramework
                     if (lastCycleTime != null && lastCycleTime != DBNull.Value)
                         elapsedTime = timeUTC.Subtract(new DateTime((long)lastCycleTime, DateTimeKind.Utc));
 
-                    var addCmd = _connection.CreateCommand();
-                    addCmd.Transaction = trans;
                     if (lastCycleTime == null || lastCycleTime == DBNull.Value || elapsedTime != TimeSpan.Zero)
                     {
-                        // Add the pallet cycle
-                        addCmd.CommandText = "INSERT INTO stations(Pallet, StationLoc, StationName, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, ForeignID)" +
-                            "VALUES ($pal,$loc,'Pallet Cycle',1,'',0,$time,'PalletCycle',0,$elapsed,NULL,$foreign)";
-                        addCmd.Parameters.Add("pal", SqliteType.Text).Value = pal;
-                        addCmd.Parameters.Add("loc", SqliteType.Integer).Value = (int)MachineWatchInterface.LogType.PalletCycle;
-                        addCmd.Parameters.Add("time", SqliteType.Integer).Value = timeUTC.Ticks;
-                        addCmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignID;
-                        addCmd.Parameters.Add("elapsed", SqliteType.Integer).Value = elapsedTime.Ticks;
-                        addCmd.ExecuteNonQuery();
+                        newEvts.Add(AddStationCycle(trans, new BlackMaple.MachineWatchInterface.LogEntry(
+                            cntr: -1,
+                            mat: new List<BlackMaple.MachineWatchInterface.LogMaterial>(),
+                            pal: pal,
+                            ty: BlackMaple.MachineWatchInterface.LogType.PalletCycle,
+                            locName: "Pallet Cycle",
+                            locNum: 1,
+                            prog: "",
+                            start: false,
+                            endTime: timeUTC,
+                            result: "PalletCycle",
+                            endOfRoute: false,
+                            elapsed: elapsedTime,
+                            active: TimeSpan.Zero
+                        ), foreignID, null));
                     }
 
                     if (mat == null)
                     {
                         trans.Commit();
+                        foreach (var e in newEvts)
+                            NewLogEntry?.Invoke(e, foreignID);
                         return;
                     }
 
@@ -1808,31 +1815,6 @@ namespace BlackMaple.MachineFramework
                     loadPending.CommandText = "SELECT Key, LoadStation, Elapsed, ActiveTime, ForeignID FROM pendingloads WHERE Pallet = $pal";
                     loadPending.Parameters.Add("pal", SqliteType.Text).Value = pal;
 
-                    addCmd.CommandText = "INSERT INTO stations(Pallet, StationLoc, StationName, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, ForeignID)" +
-                        "VALUES ($pal," + ((int)MachineWatchInterface.LogType.LoadUnloadCycle).ToString() +
-                                ",'Load',$load,'',0,$time,'LOAD',0,$elapsed,$active,$foreign)";
-                    addCmd.Parameters.Clear();
-                    addCmd.Parameters.Add("pal", SqliteType.Text).Value = pal;
-                    addCmd.Parameters.Add("load", SqliteType.Integer);
-                    addCmd.Parameters.Add("time", SqliteType.Integer).Value = timeUTC.AddSeconds(1).Ticks;
-                    addCmd.Parameters.Add("elapsed", SqliteType.Integer);
-                    addCmd.Parameters.Add("active", SqliteType.Integer);
-                    addCmd.Parameters.Add("foreign", SqliteType.Text);
-
-                    var addSerial = _connection.CreateCommand();
-                    addSerial.Transaction = trans;
-                    addSerial.CommandText = "INSERT INTO stations(Pallet, StationLoc, StationName, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, ForeignID)" +
-                        "VALUES ($pal," + ((int)MachineWatchInterface.LogType.PartMark).ToString() +
-                                ",'Mark',1,'MARK',0,$time,$result,0,NULL,NULL,NULL)";
-                    addSerial.Parameters.Add("pal", SqliteType.Text).Value = pal;
-                    addSerial.Parameters.Add("time", SqliteType.Integer).Value = timeUTC.AddSeconds(2).Ticks;
-                    addSerial.Parameters.Add("result", SqliteType.Text); // result
-
-                    var lastRowid = _connection.CreateCommand();
-                    lastRowid.Transaction = trans;
-                    lastRowid.CommandText = "SELECT last_insert_rowid()";
-
-
                     using (var reader = loadPending.ExecuteReader())
                     {
                         while (reader.Read())
@@ -1840,18 +1822,23 @@ namespace BlackMaple.MachineFramework
                             var key = reader.GetString(0);
                             if (mat.ContainsKey(key))
                             {
-                                addCmd.Parameters[1].Value = reader.GetInt32(1); // load
-                                addCmd.Parameters[3].Value = reader.GetInt64(2); //elapsed
-                                if (reader.IsDBNull(3))
-                                    addCmd.Parameters[4].Value = DBNull.Value; //active
-                                else
-                                    addCmd.Parameters[4].Value = reader.GetInt64(3); //active
-                                addCmd.Parameters[5].Value = reader.GetString(4); //foreign
-                                addCmd.ExecuteNonQuery();
-
-                                long ctr = (long)lastRowid.ExecuteScalar();
-
-                                AddMaterial(ctr, mat[key], trans);
+                                newEvts.Add(AddStationCycle(trans, new BlackMaple.MachineWatchInterface.LogEntry(
+                                    cntr: -1,
+                                    mat: mat[key],
+                                    pal: pal,
+                                    ty: BlackMaple.MachineWatchInterface.LogType.LoadUnloadCycle,
+                                    locName: "Load",
+                                    locNum: reader.GetInt32(1),
+                                    prog: "",
+                                    start: false,
+                                    endTime: timeUTC.AddSeconds(1),
+                                    result: "LOAD",
+                                    endOfRoute: false,
+                                    elapsed: TimeSpan.FromTicks(reader.GetInt64(2)),
+                                    active: reader.IsDBNull(3) ? TimeSpan.Zero : TimeSpan.FromTicks(reader.GetInt64(3))
+                                ),
+                                foreignID: reader.GetString(4),
+                                origMessage: null));
 
                                 if (serialType == SerialType.AssignOneSerialPerCycle)
                                 {
@@ -1868,19 +1855,24 @@ namespace BlackMaple.MachineFramework
                                     }
                                     if (matID >= 0)
                                     {
-                                        // add the serial
                                         var serial = ConvertToBase62(matID);
                                         serial = serial.Substring(0, Math.Min(serLength, serial.Length));
                                         serial = serial.PadLeft(serLength, '0');
-                                        addSerial.Parameters[2].Value = serial;
-                                        addSerial.ExecuteNonQuery();
+                                        newEvts.Add(AddStationCycle(trans, new MachineWatchInterface.LogEntry(-1,
+                                            mat[key],
+                                            "",
+                                            MachineWatchInterface.LogType.PartMark, "Mark", 1,
+                                            "MARK",
+                                            false,
+                                            timeUTC.AddSeconds(2),
+                                            serial,
+                                            false), null, null));
+                                        // add the serial
                                         foreach (var m in mat[key])
                                         {
                                             if (m.MaterialID >= 0)
                                                 RecordSerialForMaterialID(trans, m.MaterialID, serial);
                                         }
-                                        ctr = (long)lastRowid.ExecuteScalar();
-                                        AddMaterial(ctr, mat[key], trans);
                                     }
 
                                 }
@@ -1888,15 +1880,20 @@ namespace BlackMaple.MachineFramework
                                 {
                                     foreach (var m in mat[key])
                                     {
-                                        if (m.MaterialID < 0) continue;
                                         var serial = ConvertToBase62(m.MaterialID);
                                         serial = serial.Substring(0, Math.Min(serLength, serial.Length));
                                         serial = serial.PadLeft(serLength, '0');
-                                        addSerial.Parameters[2].Value = serial;
-                                        addSerial.ExecuteNonQuery();
+                                        if (m.MaterialID < 0) continue;
+                                        newEvts.Add(AddStationCycle(trans, new MachineWatchInterface.LogEntry(-1,
+                                            new BlackMaple.MachineWatchInterface.LogMaterial[] {m},
+                                            "",
+                                            MachineWatchInterface.LogType.PartMark, "Mark", 1,
+                                            "MARK",
+                                            false,
+                                            timeUTC.AddSeconds(2),
+                                            serial,
+                                            false), null, null));
                                         RecordSerialForMaterialID(trans, m.MaterialID, serial);
-                                        ctr = (long)lastRowid.ExecuteScalar();
-                                        AddMaterial(ctr, new MachineWatchInterface.LogMaterial[] { m }, trans);
                                     }
 
                                 }
@@ -1904,10 +1901,11 @@ namespace BlackMaple.MachineFramework
                         }
                     }
 
-                    addCmd.CommandText = "DELETE FROM pendingloads WHERE Pallet = $pal";
-                    addCmd.Parameters.Clear();
-                    addCmd.Parameters.Add("pal", SqliteType.Text).Value = pal;
-                    addCmd.ExecuteNonQuery();
+                    var delCmd = _connection.CreateCommand();
+                    delCmd.Transaction = trans;
+                    delCmd.CommandText = "DELETE FROM pendingloads WHERE Pallet = $pal";
+                    delCmd.Parameters.Add("pal", SqliteType.Text).Value = pal;
+                    delCmd.ExecuteNonQuery();
 
                     trans.Commit();
                 }
@@ -1916,6 +1914,9 @@ namespace BlackMaple.MachineFramework
                     trans.Rollback();
                     throw;
                 }
+
+                foreach (var e in newEvts)
+                    NewLogEntry?.Invoke(e, foreignID);
             }
         }
 

@@ -543,11 +543,11 @@ namespace MachineWatchTest
                                     t.AddMinutes(45).AddSeconds(1), "LOAD", false, TimeSpan.FromMinutes(32), TimeSpan.FromMinutes(38));
 
             var ser1 = new LogEntry(0, new LogMaterial[] { mat1 },
-                                  "pal1", LogType.PartMark, "Mark", 1, "MARK", false,
+                                  "", LogType.PartMark, "Mark", 1, "MARK", false,
               t.AddMinutes(45).AddSeconds(2), serial1, false);
 
             var ser2 = new LogEntry(0, new LogMaterial[] { mat2 },
-                                  "pal1", LogType.PartMark, "Mark", 1, "MARK", false,
+                                  "", LogType.PartMark, "Mark", 1, "MARK", false,
               t.AddMinutes(45).AddSeconds(2), serial2, false);
 
             mat["key2"] = new LogMaterial[] { mat3 };
@@ -557,7 +557,7 @@ namespace MachineWatchTest
                                     t.AddMinutes(45).AddSeconds(1), "LOAD", false, TimeSpan.FromMinutes(44), TimeSpan.FromMinutes(49));
 
             var ser3 = new LogEntry(0, new LogMaterial[] { mat3 },
-                                  "pal1", LogType.PartMark, "Mark", 1, "MARK", false,
+                                  "", LogType.PartMark, "Mark", 1, "MARK", false,
               t.AddMinutes(45).AddSeconds(2), serial3, false);
 
             _jobLog.CompletePalletCycle("pal1", t.AddMinutes(45), "for3", mat, SerialType.AssignOneSerialPerMaterial, 10);
@@ -610,7 +610,7 @@ namespace MachineWatchTest
                                     t.AddMinutes(45).AddSeconds(1), "LOAD", false, TimeSpan.FromMinutes(32), TimeSpan.FromMinutes(38));
 
             var ser1 = new LogEntry(0, new LogMaterial[] { mat1, mat2 },
-                                  "pal1", LogType.PartMark, "Mark", 1, "MARK", false,
+                                  "", LogType.PartMark, "Mark", 1, "MARK", false,
               t.AddMinutes(45).AddSeconds(2), serial1, false);
 
             mat["key2"] = new LogMaterial[] { mat3 };
@@ -620,7 +620,7 @@ namespace MachineWatchTest
                                     t.AddMinutes(45).AddSeconds(1), "LOAD", false, TimeSpan.FromMinutes(44), TimeSpan.FromMinutes(49));
 
             var ser3 = new LogEntry(0, new LogMaterial[] { mat3 },
-                                  "pal1", LogType.PartMark, "Mark", 1, "MARK", false,
+                                  "", LogType.PartMark, "Mark", 1, "MARK", false,
               t.AddMinutes(45).AddSeconds(2), serial3, false);
 
             _jobLog.CompletePalletCycle("pal1", t.AddMinutes(45), "for3", mat, SerialType.AssignOneSerialPerCycle, 10);
