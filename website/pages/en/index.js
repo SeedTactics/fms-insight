@@ -240,7 +240,9 @@ const Traits = props => (
   <div>
     {traits.map((t, idx) =>
       <Block align="left" key={idx} background={idx % 2 === 0 ? "light" : undefined}>
-        {[{...t, imageAlign: idx % 2 === 0 ? "right" : "left"}]}
+        {
+          [{content: t.content, image: t.image, title: t.title, imageAlign: idx % 2 === 0 ? "right" : "left"}]
+        }
       </Block>
     )}
   </div>
