@@ -104,6 +104,11 @@ function Header(p: HeaderProps) {
     const largeAppBar = (
       <AppBar position="static">
         <Toolbar>
+          <img
+            src="/seedtactics-logo.svg"
+            alt="Logo"
+            style={{height: '30px', marginRight: '1em'}}
+          />
           <Typography variant="title" style={{'marginRight': '2em'}}>Insight</Typography>
           {tabs(false)}
           <LoadingIcon/>
@@ -114,6 +119,11 @@ function Header(p: HeaderProps) {
     const smallAppBar = (
       <AppBar position="static">
         <Toolbar>
+          <img
+            src="/seedtactics-logo.svg"
+            alt="Logo"
+            style={{height: '25px', marginRight: '4px'}}
+          />
           <Typography variant="title">Insight</Typography>
           <div style={{'flexGrow': 1}}/>
           <LoadingIcon/>
