@@ -437,8 +437,6 @@ namespace MazakMachineInterface
               //check for unloading or transfer
               var loadNext = CheckLoadOfNextProcess(currentLoads, job.UniqueStr, palSub.PartProcessNumber, palLoc);
               var unload = CheckUnload(currentLoads, job.UniqueStr, palSub.PartProcessNumber, palLoc);
-              if (loadNext != null) currentLoads.Remove(loadNext);
-              if (unload != null) currentLoads.Remove(unload);
 
               if (loadNext != null)
               {
@@ -512,8 +510,14 @@ namespace MazakMachineInterface
         if (act.LoadEvent == true
             && loc.Num == act.LoadStation
             && unique == act.Unique
-            && process + 1 == act.Process)
+            && process + 1 == act.Process
+            && act.Qty >= 1)
         {
+          if (act.Qty == 1)  {
+            currentLoads.Remove(act);
+          } else {
+            act.Qty -= 1;
+          }
           return act;
         }
       }
@@ -529,8 +533,14 @@ namespace MazakMachineInterface
         if (act.LoadEvent == false
             && loc.Num == act.LoadStation
             && unique == act.Unique
-            && process == act.Process)
+            && process == act.Process
+            && act.Qty >= 1)
         {
+          if (act.Qty == 1) {
+            currentLoads.Remove(act);
+          } else {
+            act.Qty -= 1;
+          }
           return act;
         }
       }

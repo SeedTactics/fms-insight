@@ -47,7 +47,7 @@ namespace MazakMachineInterface
     public readonly string Part;
     public readonly int Process;
     public readonly int Path;
-    public readonly int Qty;
+    public int Qty {get;set;}
 
     public LoadAction(bool l, int stat, string p, string comment, int proc, int q)
     {
