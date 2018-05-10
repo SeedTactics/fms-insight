@@ -217,7 +217,7 @@ export function StationOEEs(p: Props) {
     im.Set(p.station_active_hours_past_week.keySeq())
     .union(im.Set(p.pallets.keySeq()))
     .toSeq()
-    .sortBy(s => s)
+    .sortBy(s => [s.startsWith("L/U"), s]) // put machines first
     .cacheResult();
   return (
     <Grid container justify="space-around">
