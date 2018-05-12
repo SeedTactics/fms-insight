@@ -148,7 +148,7 @@ namespace DebugMachineWatchApiServer
       LoadEvents(sampleDataPath, offset);
       LoadJobs(sampleDataPath, offset);
 
-      MockStatus = new MockCurrentStatus(JobDB, sampleDataPath, offset);
+      MockStatus = new MockCurrentStatus(JobDB, LogDB, sampleDataPath, offset);
     }
 
     public IEnumerable<System.Diagnostics.TraceSource> TraceSources()
@@ -250,22 +250,38 @@ namespace DebugMachineWatchApiServer
           using (var ms = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(evtJson)))
           {
             var e = (BlackMaple.MachineWatchInterface.LogEntry)s.ReadObject(ms);
-            var e2 = new BlackMaple.MachineWatchInterface.LogEntry(
-                cntr: e.Counter,
-                mat: e.Material,
-                pal: e.Pallet,
-                ty: e.LogType,
-                locName: e.LocationName,
-                locNum: e.LocationNum,
-                prog: e.Program,
-                start: e.StartOfCycle,
-                endTime: e.EndTimeUTC.Add(offset),
-                result: e.Result,
-                endOfRoute: e.EndOfRoute,
-                elapsed: e.ElapsedTime,
-                active: e.ActiveOperationTime
-            );
-            LogDB.AddLogEntry(e2);
+            foreach (var m in e.Material) {
+              if (string.IsNullOrEmpty(LogDB.JobUniqueStrFromMaterialID(m.MaterialID)) &&
+                  !string.IsNullOrEmpty(m.JobUniqueStr)) {
+                LogDB.CreateMaterialID(m.MaterialID, m.JobUniqueStr);
+              }
+            }
+            if (e.LogType == LogType.PartMark) {
+              foreach (var m in e.Material)
+                LogDB.RecordSerialForMaterialID(m, e.Result, e.EndTimeUTC.Add(offset));
+            } else if (e.LogType == LogType.OrderAssignment) {
+              foreach (var m in e.Material)
+                LogDB.RecordWorkorderForMaterialID(m, e.Result, e.EndTimeUTC.Add(offset));
+            } else if (e.LogType == LogType.FinalizeWorkorder) {
+              LogDB.RecordFinalizedWorkorder(e.Result, e.EndTimeUTC.Add(offset));
+            } else {
+              var e2 = new BlackMaple.MachineWatchInterface.LogEntry(
+                  cntr: e.Counter,
+                  mat: e.Material,
+                  pal: e.Pallet,
+                  ty: e.LogType,
+                  locName: e.LocationName,
+                  locNum: e.LocationNum,
+                  prog: e.Program,
+                  start: e.StartOfCycle,
+                  endTime: e.EndTimeUTC.Add(offset),
+                  result: e.Result,
+                  endOfRoute: e.EndOfRoute,
+                  elapsed: e.ElapsedTime,
+                  active: e.ActiveOperationTime
+              );
+              LogDB.AddLogEntry(e2);
+            }
           }
         }
       }
@@ -325,10 +341,6 @@ namespace DebugMachineWatchApiServer
         }
       }
       // not converted: hold patterns
-    }
-
-    private void LoadStatuses(string sampleDataPath, TimeSpan offset)
-    {
     }
   }
 
@@ -502,7 +514,7 @@ namespace DebugMachineWatchApiServer
           mat: new LogMaterial[] { mat },
           pal: pal,
           ty: LogType.MachineCycle,
-          locName: "MC",
+          locName: "Machine",
           locNum: stat,
           prog: "prog1",
           start: true,
@@ -518,7 +530,7 @@ namespace DebugMachineWatchApiServer
           mat: new LogMaterial[] { mat },
           pal: pal,
           ty: LogType.MachineCycle,
-          locName: "MC",
+          locName: "Machine",
           locNum: stat,
           prog: "prog1",
           start: false,
@@ -641,12 +653,14 @@ namespace DebugMachineWatchApiServer
   public class MockCurrentStatus
   {
     private JobDB _jobDb;
+    private JobLogDB _jobLog;
     private Dictionary<string, CurrentStatus> Statuses {get;} = new Dictionary<string, CurrentStatus>();
     private CurrentStatus CurrentStatus {get;set;}
 
-    public MockCurrentStatus(JobDB jobDB, string sampleDataPath, TimeSpan offset)
+    public MockCurrentStatus(JobDB jobDB, JobLogDB logDb, string sampleDataPath, TimeSpan offset)
     {
       _jobDb = jobDB;
+      _jobLog = logDb;
       var settings = new DataContractJsonSerializerSettings();
       settings.DateTimeFormat = new DateTimeFormat("yyyy-MM-ddTHH:mm:ssZ");
       settings.UseSimpleDictionaryFormat = true;
@@ -673,6 +687,8 @@ namespace DebugMachineWatchApiServer
       } else {
         CurrentStatus = Statuses[statusFromEnv];
       }
+
+      AddFakeInProcMaterial(CurrentStatus);
     }
 
     public CurrentStatus GetCurrentStatus()
@@ -680,42 +696,9 @@ namespace DebugMachineWatchApiServer
       return CurrentStatus;
     }
 
-    public CurrentStatus BuildCurrentStatus()
+    private void AddFakeInProcMaterial(CurrentStatus cur)
     {
-      var status = _jobDb.LoadMostRecentSchedule();
-      var jobsByPart = status.Jobs.ToDictionary(j => j.PartName, j => j);
-
-      //aaa
-      var aaa = new InProcessJob(jobsByPart["aaa"]);
-      aaa.SetCompleted(1, 1, 5);
-      aaa.SetCompleted(2, 1, 3);
-
-      //bbb
-      var bbb = new InProcessJob(jobsByPart["bbb"]);
-      bbb.SetCompleted(1, 1, 11);
-      bbb.SetCompleted(2, 1, 6);
-
-      //ccc
-      var ccc = new InProcessJob(jobsByPart["ccc"]);
-      ccc.SetCompleted(1, 1, 8);
-      ccc.SetCompleted(2, 1, 0);
-
-      //xxx
-      var xxx = new InProcessJob(jobsByPart["xxx"]);
-      xxx.SetCompleted(1, 1, 3);
-
-      //yyy
-      var yyy = new InProcessJob(jobsByPart["yyy"]);
-      yyy.SetCompleted(1, 1, 7);
-
-      //xxx
-      var zzz = new InProcessJob(jobsByPart["zzz"]);
-      zzz.SetCompleted(1, 1, 0);
-
       //pallets
-
-      //1, 2, 3, 4 can go to load1,2 and machine 1, 2, 3, 4
-      //5, 6, 7, 8 can also go everywhere
 
       //pallet 1 at load 1
       //pallet 2 on cart
@@ -726,60 +709,61 @@ namespace DebugMachineWatchApiServer
       //pallet 7 at machine 2 queue
       //pallet 8 at machine 3
 
-      var pal1 = new PalletStatus()
+      cur.Pallets.Clear();
+      cur.Pallets.Add("1", new PalletStatus()
       {
         Pallet = "1",
         FixtureOnPallet = "fix1",
         NumFaces = 2,
-        CurrentPalletLocation = new PalletLocation(PalletLocationEnum.LoadUnload, "Load", 1),
+        CurrentPalletLocation = new PalletLocation(PalletLocationEnum.LoadUnload, "L/U", 1),
         NewFixture = "newfix1"
-      };
-      var pal2 = new PalletStatus()
+      });
+      cur.Pallets.Add("2", new PalletStatus()
       {
         Pallet = "2",
         NumFaces = 2,
         CurrentPalletLocation = new PalletLocation(PalletLocationEnum.Cart, "Cart", 1),
         TargetLocation = new PalletLocation(PalletLocationEnum.Buffer, "Buffer", 2),
         PercentMoveCompleted = (decimal)0.45
-      };
-      var pal3 = new PalletStatus()
+      });
+      cur.Pallets.Add("3", new PalletStatus()
       {
         Pallet = "3",
         NumFaces = 2,
         CurrentPalletLocation = new PalletLocation(PalletLocationEnum.Buffer, "Buffer", 3),
-      };
-      var pal4 = new PalletStatus()
+      });
+      cur.Pallets.Add("4", new PalletStatus()
       {
         Pallet = "4",
         NumFaces = 2,
-        CurrentPalletLocation = new PalletLocation(PalletLocationEnum.Machine, "MC", 1),
-      };
-      var pal5 = new PalletStatus()
+        CurrentPalletLocation = new PalletLocation(PalletLocationEnum.Machine, "Machine", 1),
+      });
+      cur.Pallets.Add("5", new PalletStatus()
       {
         Pallet = "5",
         NumFaces = 1,
-        CurrentPalletLocation = new PalletLocation(PalletLocationEnum.LoadUnload, "Load", 2),
-      };
-      var pal6 = new PalletStatus()
+        CurrentPalletLocation = new PalletLocation(PalletLocationEnum.LoadUnload, "L/U", 2),
+      });
+      cur.Pallets.Add("6", new PalletStatus()
       {
         Pallet = "6",
         NumFaces = 1,
-        CurrentPalletLocation = new PalletLocation(PalletLocationEnum.Machine, "MC", 2),
-      };
-      var pal7 = new PalletStatus()
+        CurrentPalletLocation = new PalletLocation(PalletLocationEnum.Machine, "Machine", 2),
+      });
+      cur.Pallets.Add("7", new PalletStatus()
       {
         Pallet = "7",
         NumFaces = 1,
-        CurrentPalletLocation = new PalletLocation(PalletLocationEnum.MachineQueue, "MC", 2),
-      };
-      var pal8 = new PalletStatus()
+        CurrentPalletLocation = new PalletLocation(PalletLocationEnum.MachineQueue, "Machine", 2),
+      });
+      cur.Pallets.Add("8", new PalletStatus()
       {
         Pallet = "8",
         NumFaces = 1,
-        CurrentPalletLocation = new PalletLocation(PalletLocationEnum.Machine, "MC", 3),
-      };
+        CurrentPalletLocation = new PalletLocation(PalletLocationEnum.Machine, "Machine", 3),
+      });
 
-      //pallet 1 unloading a completed aaa-2, moving aaa-1 to aaa-2, and loading a new aaa-1
+      //pallet 1 unloading a completed aaa-2, moving aaa-1 to aaa-2, and loading a new bbb-1
       //pallet 2 on cart has a completed bbb-1 and bbb-2
       //pallet 3 is empty
       //pallet 4 is machining a ccc-2 and has a ccc-1 also on the pallet
@@ -788,72 +772,100 @@ namespace DebugMachineWatchApiServer
       //pallet 7 has an unmachined yyy (yyy has 2 per pallet)
       //pallet 8 is machining a xxx
 
+      var aaaUniq = cur.Jobs.Values.Where(j => j.PartName == "aaa").FirstOrDefault()?.UniqueStr;
+      var bbbUniq = cur.Jobs.Values.Where(j => j.PartName == "bbb").FirstOrDefault()?.UniqueStr;
+      var cccUniq = cur.Jobs.Values.Where(j => j.PartName == "ccc").FirstOrDefault()?.UniqueStr;
+      var xxxUniq = cur.Jobs.Values.Where(j => j.PartName == "xxx").FirstOrDefault()?.UniqueStr;
+      var yyyUniq = cur.Jobs.Values.Where(j => j.PartName == "yyy").FirstOrDefault()?.UniqueStr;
+      var zzzUniq = cur.Jobs.Values.Where(j => j.PartName == "zzz").FirstOrDefault()?.UniqueStr;
+
+      cur.Material.Clear();
+
+      //pallet 1 at load station
+
+      //unload completed aaa-2
+      {
+        var mat = new LogMaterial(
+          matID: _jobLog.AllocateMaterialID(aaaUniq),
+          uniq: aaaUniq,
+          proc:2 ,
+          part: "aaa",
+          numProc: 2,
+          face: "2"
+        );
+        cur.Material.Add(
+          new InProcessMaterial() {
+              MaterialID = mat.MaterialID,
+              JobUnique = aaaUniq,
+              PartName = "aaa",
+              Process = 2,
+              Path = 1,
+              Serial = JobLogDB.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+              WorkorderId = "123456",
+              SignaledInspections = new List<string> {"insp1", "insp2"},
+              Location = new InProcessMaterialLocation() {
+                  Type = InProcessMaterialLocation.LocType.OnPallet,
+                  Pallet = "1",
+                  Face = 2
+              },
+              Action = new InProcessMaterialAction() {
+                  Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
+              }
+          });
+      }
+
+      //transfer from aaa-1 to aaa-2
+      cur.Material.Add(
+        new InProcessMaterial() {
+            MaterialID = 11,
+            JobUnique = aaaUniq,
+            PartName = "aaa",
+            Process = 1,
+            Path = 1,
+            Serial = "ABC987",
+            Location = new InProcessMaterialLocation() {
+                Type = InProcessMaterialLocation.LocType.OnPallet,
+                Pallet = "1",
+                Face = 1
+            },
+            Action = new InProcessMaterialAction() {
+                Type = InProcessMaterialAction.ActionType.Loading,
+                LoadOntoPallet = "1",
+                LoadOntoFace = 2,
+                ProcessAfterLoad = 2,
+                PathAfterLoad = 1
+            }
+        });
+
+      //load new bbb-1
+      cur.Material.Add(
+        new InProcessMaterial() {
+            MaterialID = -1,
+            JobUnique = bbbUniq,
+            PartName = "bbb",
+            Process = 1,
+            Path = 1,
+            Location = new InProcessMaterialLocation() {
+                Type = InProcessMaterialLocation.LocType.Free,
+            },
+            Action = new InProcessMaterialAction() {
+                Type = InProcessMaterialAction.ActionType.Loading,
+                LoadOntoPallet = "1",
+                LoadOntoFace = 1,
+                ProcessAfterLoad = 1,
+                PathAfterLoad = 1
+            }
+        });
+
+
+
+
       var mats = new List<InProcessMaterial> {
-
-                //pallet 1 at load station
-
-                //unload completed aaa-2
-                new InProcessMaterial() {
-                    MaterialID = 10,
-                    JobUnique = "aaa-schId1234",
-                    PartName = "aaa",
-                    Process = 2,
-                    Path = 1,
-                    Serial = "ABC123",
-                    SignaledInspections = new List<string> {"insp1", "insp2"},
-                    Location = new InProcessMaterialLocation() {
-                        Type = InProcessMaterialLocation.LocType.OnPallet,
-                        Pallet = "1",
-                        Face = 2
-                    },
-                    Action = new InProcessMaterialAction() {
-                        Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
-                    }
-                },
-                //transfer from aaa-1 to aaa-2
-                new InProcessMaterial() {
-                    MaterialID = 11,
-                    JobUnique = "aaa-schId1234",
-                    PartName = "aaa",
-                    Process = 1,
-                    Path = 1,
-                    Serial = "ABC987",
-                    Location = new InProcessMaterialLocation() {
-                        Type = InProcessMaterialLocation.LocType.OnPallet,
-                        Pallet = "1",
-                        Face = 1
-                    },
-                    Action = new InProcessMaterialAction() {
-                        Type = InProcessMaterialAction.ActionType.Loading,
-                        LoadOntoPallet = "1",
-                        LoadOntoFace = 2,
-                        ProcessAfterLoad = 2,
-                        PathAfterLoad = 1
-                    }
-                },
-                //load new aaa-1
-                new InProcessMaterial() {
-                    MaterialID = -1,
-                    JobUnique = "aaa-schId1234",
-                    PartName = "aaa",
-                    Process = 1,
-                    Path = 1,
-                    Location = new InProcessMaterialLocation() {
-                        Type = InProcessMaterialLocation.LocType.Free,
-                    },
-                    Action = new InProcessMaterialAction() {
-                        Type = InProcessMaterialAction.ActionType.Loading,
-                        LoadOntoPallet = "1",
-                        LoadOntoFace = 1,
-                        ProcessAfterLoad = 1,
-                        PathAfterLoad = 1
-                    }
-                },
 
                 //pallet 2 on cart has bbb1 and bbb2
                 new InProcessMaterial() {
                     MaterialID = 12,
-                    JobUnique = "bbb-schId1234",
+                    JobUnique = bbbUniq,
                     PartName = "bbb",
                     Process = 1,
                     Path = 1,
@@ -868,7 +880,7 @@ namespace DebugMachineWatchApiServer
                 },
                 new InProcessMaterial() {
                     MaterialID = 13,
-                    JobUnique = "bbb-schId1234",
+                    JobUnique = bbbUniq,
                     PartName = "bbb",
                     Process = 2,
                     Path = 1,
@@ -887,7 +899,7 @@ namespace DebugMachineWatchApiServer
                 //pallet 4 is machining a ccc-2 and has a ccc-1
                 new InProcessMaterial() {
                     MaterialID = 14,
-                    JobUnique = "ccc-schId1234",
+                    JobUnique = cccUniq,
                     PartName = "ccc",
                     Process = 1,
                     Path = 1,
@@ -902,7 +914,7 @@ namespace DebugMachineWatchApiServer
                 },
                 new InProcessMaterial() {
                     MaterialID = 15,
-                    JobUnique = "ccc-schId1234",
+                    JobUnique = cccUniq,
                     PartName = "ccc",
                     Process = 2,
                     Path = 1,
@@ -924,7 +936,7 @@ namespace DebugMachineWatchApiServer
                 //unload xxx
                 new InProcessMaterial() {
                     MaterialID = 16,
-                    JobUnique = "xxx-schId1234",
+                    JobUnique = xxxUniq,
                     PartName = "xxx",
                     Process = 1,
                     Path = 1,
@@ -940,7 +952,7 @@ namespace DebugMachineWatchApiServer
                 //load new zzz
                 new InProcessMaterial() {
                     MaterialID = -1,
-                    JobUnique = "zzz-schId1234",
+                    JobUnique = zzzUniq,
                     PartName = "zzz",
                     Process = 1,
                     Path = 1,
@@ -959,7 +971,7 @@ namespace DebugMachineWatchApiServer
                 //pallet 6 machining zzz
                 new InProcessMaterial() {
                     MaterialID = 17,
-                    JobUnique = "zzz-schId1234",
+                    JobUnique = zzzUniq,
                     PartName = "zzz",
                     Process = 1,
                     Path = 1,
@@ -979,7 +991,7 @@ namespace DebugMachineWatchApiServer
                 //pallet 7 is at machine queue with yyy (two parts)
                 new InProcessMaterial() {
                     MaterialID = 18,
-                    JobUnique = "yyy-schId1234",
+                    JobUnique = yyyUniq,
                     PartName = "yyy",
                     Process = 1,
                     Path = 1,
@@ -994,7 +1006,7 @@ namespace DebugMachineWatchApiServer
                 },
                 new InProcessMaterial() {
                     MaterialID = 19,
-                    JobUnique = "yyy-schId1234",
+                    JobUnique = yyyUniq,
                     PartName = "yyy",
                     Process = 1,
                     Path = 1,
@@ -1011,7 +1023,7 @@ namespace DebugMachineWatchApiServer
                 //pallet 8 machining xxx
                 new InProcessMaterial() {
                     MaterialID = 20,
-                    JobUnique = "xxx-schId1234",
+                    JobUnique = xxxUniq,
                     PartName = "xxx",
                     Process = 1,
                     Path = 1,
@@ -1031,7 +1043,7 @@ namespace DebugMachineWatchApiServer
                 // some material in Queue1
                 new InProcessMaterial() {
                     MaterialID = 100,
-                    JobUnique = "xxx-schId1234",
+                    JobUnique = xxxUniq,
                     PartName = "xxx",
                     Process = 1,
                     Path = 1,
@@ -1046,7 +1058,7 @@ namespace DebugMachineWatchApiServer
                 },
                 new InProcessMaterial() {
                     MaterialID = 101,
-                    JobUnique = "aaa-schId1234",
+                    JobUnique = aaaUniq,
                     PartName = "aaa",
                     Process = 2,
                     Path = 1,
@@ -1063,7 +1075,7 @@ namespace DebugMachineWatchApiServer
                 // some material in Queue2
                 new InProcessMaterial() {
                     MaterialID = 152,
-                    JobUnique = "aaa-schId1234",
+                    JobUnique = aaaUniq,
                     PartName = "aaa",
                     Process = 1,
                     Path = 1,
@@ -1078,7 +1090,7 @@ namespace DebugMachineWatchApiServer
                 },
                 new InProcessMaterial() {
                     MaterialID = 200,
-                    JobUnique = "ccc-schId1234",
+                    JobUnique = cccUniq,
                     PartName = "ccc",
                     Process = 2,
                     Path = 1,
@@ -1093,41 +1105,9 @@ namespace DebugMachineWatchApiServer
                 }
             };
 
-
-      var st = new CurrentStatus()
-      {
-        Jobs = {
-                    {aaa.UniqueStr, aaa},
-                    {bbb.UniqueStr, bbb},
-                    {ccc.UniqueStr, ccc},
-                    {xxx.UniqueStr, xxx},
-                    {yyy.UniqueStr, yyy},
-                    {zzz.UniqueStr, zzz}
-                },
-        Pallets = {
-                    {"1", pal1},
-                    {"2", pal2},
-                    {"3", pal3},
-                    {"4", pal4},
-                    {"5", pal5},
-                    {"6", pal6},
-                    {"7", pal7},
-                    {"8", pal8},
-                },
-        LatestScheduleId = aaa.ScheduleId,
-      };
-      st.QueueSizes["Queue1"] = new QueueSize();
-      st.QueueSizes["Queue2"] = new QueueSize();
-      foreach (var m in mats) st.Material.Add(m);
-      return st;
-    }
-
-    public List<string> GetQueueNames()
-    {
-      return new List<string> {
-                "queueaaaa",
-                "queuebbbb"
-            };
+      cur.QueueSizes["Queue1"] = new QueueSize();
+      cur.QueueSizes["Queue2"] = new QueueSize();
+      foreach (var m in mats) cur.Material.Add(m);
     }
 
     private List<long> aaaQueue = new List<long> {

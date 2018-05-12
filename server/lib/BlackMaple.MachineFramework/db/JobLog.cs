@@ -1328,13 +1328,35 @@ namespace BlackMaple.MachineFramework
         {
             lock (_lock)
             {
+                using (var cmd = _connection.CreateCommand()) {
+                    var trans = _connection.BeginTransaction();
+                    cmd.Transaction = trans;
+                    try {
+                        cmd.CommandText = "INSERT INTO materialid(UniqueStr) VALUES ($uniq)";
+                        cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
+                        cmd.ExecuteNonQuery();
+                        cmd.CommandText = "SELECT last_insert_rowid()";
+                        cmd.Parameters.Clear();
+                        var matID = (long)cmd.ExecuteScalar();
+                        trans.Commit();
+                        return matID;
+                    } catch {
+                        trans.Rollback();
+                        throw;
+                    }
+                }
+            }
+        }
+
+        public void CreateMaterialID(long matID, string unique)
+        {
+            lock (_lock)
+            {
                 var cmd = _connection.CreateCommand();
-                cmd.CommandText = "INSERT INTO materialid(UniqueStr) VALUES ($uniq)";
+                cmd.CommandText = "INSERT INTO materialid(MaterialID, UniqueStr) VALUES ($mid, $uniq)";
+                cmd.Parameters.Add("mid", SqliteType.Integer).Value = matID;
                 cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
                 cmd.ExecuteNonQuery();
-                cmd.CommandText = "SELECT last_insert_rowid()";
-                cmd.Parameters.Clear();
-                return (long)cmd.ExecuteScalar();
             }
         }
 
