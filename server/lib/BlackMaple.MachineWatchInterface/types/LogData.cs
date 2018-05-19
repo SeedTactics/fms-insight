@@ -68,6 +68,8 @@ namespace BlackMaple.MachineWatchInterface
             NumProcesses = numProc;
             Face = face;
         }
+
+        private LogMaterial() {} //for json deserialization
     }
 
     [Serializable, DataContract]
@@ -202,6 +204,8 @@ namespace BlackMaple.MachineWatchInterface
         }
 
         public LogEntry(LogEntry copy) : this(copy, copy.Counter) { }
+
+        private LogEntry() {} //for json deserialization
 
         public bool ShouldSerializeElapsedTime()
         {

@@ -232,6 +232,8 @@ namespace BlackMaple.MachineWatchInterface
                 _completed[proc-1] = Enumerable.Repeat(0, base.GetNumPaths(proc)).ToArray();
         }
 
+        private InProcessJob() {} //for json deserialization
+
         [DataMember(Name="Completed", IsRequired=true)] private int[][] _completed;
     }
 

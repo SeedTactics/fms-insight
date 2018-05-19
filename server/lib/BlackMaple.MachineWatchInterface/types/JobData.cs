@@ -208,6 +208,8 @@ namespace BlackMaple.MachineWatchInterface
             InspectSingleProcess = insp.InspectSingleProcess;
         }
 
+        private JobInspectionData() {} //for json deserialization
+
         //The final counter string is determined by replacing following substrings in the counter
         public static string PalletFormatFlag(int proc)
         {
@@ -1020,7 +1022,7 @@ namespace BlackMaple.MachineWatchInterface
         [DataMember(Name="ProcsAndPaths", IsRequired=true)]
         private ProcessInfo[] _procPath;
 
-        private JobPlan() {} //for json deserialization
+        protected JobPlan() {} //for json deserialization
     }
 
     [SerializableAttribute, DataContract]
