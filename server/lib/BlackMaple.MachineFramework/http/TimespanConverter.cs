@@ -21,6 +21,8 @@ namespace BlackMaple.MachineFramework
       var spanString = reader.Value as string;
       if (spanString == null)
         return null;
+      if (TimeSpan.TryParse(spanString, out TimeSpan result))
+        return result;
       return System.Xml.XmlConvert.ToTimeSpan(spanString);
     }
 
