@@ -51,6 +51,16 @@ exports[`renders the all material monitor: all material monitor header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
+        <img
+          alt="Logo"
+          src="/seedtactics-logo.svg"
+          style={
+            Object {
+              "height": "30px",
+              "marginRight": "1em",
+            }
+          }
+        />
         <WithStyles(Typography)
           style={
             Object {
@@ -114,6 +124,16 @@ exports[`renders the all material monitor: all material monitor header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
+        <img
+          alt="Logo"
+          src="/seedtactics-logo.svg"
+          style={
+            Object {
+              "height": "25px",
+              "marginRight": "4px",
+            }
+          }
+        />
         <WithStyles(Typography)
           variant="title"
         >
@@ -209,6 +229,16 @@ exports[`renders the cost per piece: cost per piece header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
+        <img
+          alt="Logo"
+          src="/seedtactics-logo.svg"
+          style={
+            Object {
+              "height": "30px",
+              "marginRight": "1em",
+            }
+          }
+        />
         <WithStyles(Typography)
           style={
             Object {
@@ -272,6 +302,16 @@ exports[`renders the cost per piece: cost per piece header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
+        <img
+          alt="Logo"
+          src="/seedtactics-logo.svg"
+          style={
+            Object {
+              "height": "25px",
+              "marginRight": "4px",
+            }
+          }
+        />
         <WithStyles(Typography)
           variant="title"
         >
@@ -367,6 +407,16 @@ exports[`renders the dashboard: dashboard header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
+        <img
+          alt="Logo"
+          src="/seedtactics-logo.svg"
+          style={
+            Object {
+              "height": "30px",
+              "marginRight": "1em",
+            }
+          }
+        />
         <WithStyles(Typography)
           style={
             Object {
@@ -430,6 +480,16 @@ exports[`renders the dashboard: dashboard header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
+        <img
+          alt="Logo"
+          src="/seedtactics-logo.svg"
+          style={
+            Object {
+              "height": "25px",
+              "marginRight": "4px",
+            }
+          }
+        />
         <WithStyles(Typography)
           variant="title"
         >
@@ -525,6 +585,16 @@ exports[`renders the data export page: data export header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
+        <img
+          alt="Logo"
+          src="/seedtactics-logo.svg"
+          style={
+            Object {
+              "height": "30px",
+              "marginRight": "1em",
+            }
+          }
+        />
         <WithStyles(Typography)
           style={
             Object {
@@ -588,6 +658,16 @@ exports[`renders the data export page: data export header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
+        <img
+          alt="Logo"
+          src="/seedtactics-logo.svg"
+          style={
+            Object {
+              "height": "25px",
+              "marginRight": "4px",
+            }
+          }
+        />
         <WithStyles(Typography)
           variant="title"
         >
@@ -683,6 +763,16 @@ exports[`renders the efficiency: efficiency header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
+        <img
+          alt="Logo"
+          src="/seedtactics-logo.svg"
+          style={
+            Object {
+              "height": "30px",
+              "marginRight": "1em",
+            }
+          }
+        />
         <WithStyles(Typography)
           style={
             Object {
@@ -746,6 +836,16 @@ exports[`renders the efficiency: efficiency header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
+        <img
+          alt="Logo"
+          src="/seedtactics-logo.svg"
+          style={
+            Object {
+              "height": "25px",
+              "marginRight": "4px",
+            }
+          }
+        />
         <WithStyles(Typography)
           variant="title"
         >
@@ -843,6 +943,16 @@ exports[`renders the inspection monitor: inspection monitor header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
+        <img
+          alt="Logo"
+          src="/seedtactics-logo.svg"
+          style={
+            Object {
+              "height": "30px",
+              "marginRight": "1em",
+            }
+          }
+        />
         <WithStyles(Typography)
           style={
             Object {
@@ -906,6 +1016,16 @@ exports[`renders the inspection monitor: inspection monitor header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
+        <img
+          alt="Logo"
+          src="/seedtactics-logo.svg"
+          style={
+            Object {
+              "height": "25px",
+              "marginRight": "4px",
+            }
+          }
+        />
         <WithStyles(Typography)
           variant="title"
         >
@@ -1003,6 +1123,16 @@ exports[`renders the load monitor: station monitor header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
+        <img
+          alt="Logo"
+          src="/seedtactics-logo.svg"
+          style={
+            Object {
+              "height": "30px",
+              "marginRight": "1em",
+            }
+          }
+        />
         <WithStyles(Typography)
           style={
             Object {
@@ -1066,6 +1196,16 @@ exports[`renders the load monitor: station monitor header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
+        <img
+          alt="Logo"
+          src="/seedtactics-logo.svg"
+          style={
+            Object {
+              "height": "25px",
+              "marginRight": "4px",
+            }
+          }
+        />
         <WithStyles(Typography)
           variant="title"
         >
@@ -1163,6 +1303,16 @@ exports[`renders the queue monitor: queue monitor header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
+        <img
+          alt="Logo"
+          src="/seedtactics-logo.svg"
+          style={
+            Object {
+              "height": "30px",
+              "marginRight": "1em",
+            }
+          }
+        />
         <WithStyles(Typography)
           style={
             Object {
@@ -1226,6 +1376,16 @@ exports[`renders the queue monitor: queue monitor header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
+        <img
+          alt="Logo"
+          src="/seedtactics-logo.svg"
+          style={
+            Object {
+              "height": "25px",
+              "marginRight": "4px",
+            }
+          }
+        />
         <WithStyles(Typography)
           variant="title"
         >
@@ -1323,6 +1483,16 @@ exports[`renders the wash monitor: wash monitor header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
+        <img
+          alt="Logo"
+          src="/seedtactics-logo.svg"
+          style={
+            Object {
+              "height": "30px",
+              "marginRight": "1em",
+            }
+          }
+        />
         <WithStyles(Typography)
           style={
             Object {
@@ -1386,6 +1556,16 @@ exports[`renders the wash monitor: wash monitor header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
+        <img
+          alt="Logo"
+          src="/seedtactics-logo.svg"
+          style={
+            Object {
+              "height": "25px",
+              "marginRight": "4px",
+            }
+          }
+        />
         <WithStyles(Typography)
           variant="title"
         >
