@@ -14,7 +14,7 @@
     <RepositoryUrl>https://bitbucket.org/blackmaple/fms-insight</RepositoryUrl>
     <RepositoryType>hg</RepositoryType>
     <Description>
-      FMS Insight is a generic conduit which allows SeedTactic software to monitor and control
+      FMS Insight is a generic service which allows access to monitor and control
       a flexible manufacturing system cell. This package contains the API generated
       from the swagger API description.
 

@@ -5381,6 +5381,12 @@ namespace BlackMaple.FMSInsight.API
         [System.Runtime.Serialization.EnumMember(Value = "Wash")]
         Wash = 9,
     
+        [System.Runtime.Serialization.EnumMember(Value = "AddToQueue")]
+        AddToQueue = 10,
+    
+        [System.Runtime.Serialization.EnumMember(Value = "RemoveFromQueue")]
+        RemoveFromQueue = 11,
+    
     }
     
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.10.45.0 (Newtonsoft.Json v9.0.0.0)")]

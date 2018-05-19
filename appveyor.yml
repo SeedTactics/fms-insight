@@ -121,3 +121,12 @@ deploy:
   artifact: /.*BlackMaple\.MachineWatchInterface.*\.nupkg/
   api_key:
     secure: kj0pW91vWRjFl99SLY/sageGAghMFfmqFpNdJd7y+Q73eoImzcsnPCZYlwYxKIhs
+
+- provider: NuGet
+  on:
+    branch: default
+    BMS_RELEASE_INSIGHT_API_TO_NUGET: true
+  skip_symbols: false
+  artifact: /.*BlackMaple\.FMSInsight\.API.*\.nupkg/
+  api_key:
+    secure: kj0pW91vWRjFl99SLY/sageGAghMFfmqFpNdJd7y+Q73eoImzcsnPCZYlwYxKIhs

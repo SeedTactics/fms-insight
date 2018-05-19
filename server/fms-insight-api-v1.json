@@ -1869,7 +1869,9 @@
         "PalletCycle",
         "FinalizeWorkorder",
         "InspectionResult",
-        "Wash"
+        "Wash",
+        "AddToQueue",
+        "RemoveFromQueue"
       ],
       "enum": [
         "LoadUnloadCycle",
@@ -1881,7 +1883,9 @@
         "PalletCycle",
         "FinalizeWorkorder",
         "InspectionResult",
-        "Wash"
+        "Wash",
+        "AddToQueue",
+        "RemoveFromQueue"
       ]
     },
     "WorkorderSummary": {
