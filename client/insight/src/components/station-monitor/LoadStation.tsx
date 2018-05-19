@@ -32,12 +32,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from 'react';
-import Divider from 'material-ui/Divider';
-import { withStyles } from 'material-ui';
+import Divider from '@material-ui/core/Divider';
+import withStyles from '@material-ui/core/styles/withStyles';
 import * as im from 'immutable';
 import { createSelector } from 'reselect';
 import DocumentTitle from 'react-document-title';
-import Button from 'material-ui/Button';
+import Button from '@material-ui/core/Button';
 
 import { LoadStationAndQueueData, selectLoadStationAndQueueProps } from '../../data/load-station';
 import { MaterialDialog, InProcMaterial, WhiteboardRegion, MaterialDialogProps } from './Material';

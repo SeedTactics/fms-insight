@@ -33,12 +33,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from 'react';
 import * as df from 'date-fns';
 import DocumentTitle from 'react-document-title';
-import TextField from 'material-ui/TextField';
-import Button from 'material-ui/Button';
+import TextField from '@material-ui/core/TextField';
+import Button from '@material-ui/core/Button';
 import ExportIcon from '@material-ui/icons/ImportExport';
 import ViewIcon from '@material-ui/icons/ViewList';
-import Card, { CardContent, CardHeader, CardActions } from 'material-ui/Card';
-import Grid from 'material-ui/Grid';
+import Card from '@material-ui/core/Card';
+import CardContent from '@material-ui/core/CardContent';
+import CardHeader from '@material-ui/core/CardHeader';
+import CardActions from '@material-ui/core/CardActions';
+import Grid from '@material-ui/core/Grid';
 import * as queryString from 'query-string';
 
 import * as api from '../../data/api';

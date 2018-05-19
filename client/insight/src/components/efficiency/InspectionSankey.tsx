@@ -33,9 +33,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from 'react';
 import * as im from 'immutable';
 import SearchIcon from '@material-ui/icons/Search';
-import Card, { CardHeader, CardContent } from 'material-ui/Card';
-import Select from 'material-ui/Select';
-import { MenuItem } from 'material-ui/Menu';
+import Card from '@material-ui/core/Card';
+import CardContent from '@material-ui/core/CardContent';
+import CardHeader from '@material-ui/core/CardHeader';
+import Select from '@material-ui/core/Select';
+import MenuItem from '@material-ui/core/MenuItem';
 import { Sankey, Hint } from 'react-vis';
 
 import { PartIdenticon } from '../station-monitor/Material';

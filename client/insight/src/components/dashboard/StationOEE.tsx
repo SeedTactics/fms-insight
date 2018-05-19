@@ -31,11 +31,11 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
-import Grid from 'material-ui/Grid';
+import Grid from '@material-ui/core/Grid';
 import * as im from 'immutable';
 import { createSelector } from 'reselect';
 import * as numeral from 'numeral';
-import Tooltip from 'material-ui/Tooltip';
+import Tooltip from '@material-ui/core/Tooltip';
 import TimeAgo from 'react-timeago';
 
 import { connect, Store } from '../../store/store';

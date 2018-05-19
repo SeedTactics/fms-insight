@@ -32,19 +32,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from 'react';
-import { withStyles } from 'material-ui';
+import withStyles from '@material-ui/core/styles/withStyles';
 import * as im from 'immutable';
 import { createSelector } from 'reselect';
 import DocumentTitle from 'react-document-title';
-import Button from 'material-ui/Button';
-import List, { ListItemText, ListItemIcon } from 'material-ui/List';
-import { MenuItem } from 'material-ui/Menu';
-import Dialog, {
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-} from 'material-ui/Dialog';
-import TextField from 'material-ui/TextField';
+import Button from '@material-ui/core/Button';
+import List from '@material-ui/core/List';
+import ListItemText from '@material-ui/core/ListItemText';
+import ListItemIcon from '@material-ui/core/ListItemIcon';
+import MenuItem from '@material-ui/core/MenuItem';
+import Dialog from '@material-ui/core/Dialog';
+import DialogActions from '@material-ui/core/DialogActions';
+import DialogContent from '@material-ui/core/DialogContent';
+import DialogTitle from '@material-ui/core/DialogTitle';
+import TextField from '@material-ui/core/TextField';
 
 import { LoadStationAndQueueData, selectLoadStationAndQueueProps } from '../../data/load-station';
 import { InProcMaterial, WhiteboardRegion, MaterialDetailTitle, MaterialDetailContent, PartIdenticon }

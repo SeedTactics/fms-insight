@@ -33,29 +33,28 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from 'react';
 import * as jdenticon from 'jdenticon';
-import Typography from 'material-ui/Typography';
-import ButtonBase from 'material-ui/ButtonBase';
-import Button from 'material-ui/Button';
-import Tooltip from 'material-ui/Tooltip';
+import Typography from '@material-ui/core/Typography';
+import ButtonBase from '@material-ui/core/ButtonBase';
+import Button from '@material-ui/core/Button';
+import Tooltip from '@material-ui/core/Tooltip';
 import WarningIcon from '@material-ui/icons/Warning';
 import SearchIcon from '@material-ui/icons/Search';
-import Avatar from 'material-ui/Avatar';
-import Paper from 'material-ui/Paper';
-import { CircularProgress } from 'material-ui/Progress';
+import Avatar from '@material-ui/core/Avatar';
+import Paper from '@material-ui/core/Paper';
+import CircularProgress from '@material-ui/core/CircularProgress';
 import TimeAgo from 'react-timeago';
-import Dialog, {
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-} from 'material-ui/Dialog';
+import Dialog from '@material-ui/core/Dialog';
+import DialogActions from '@material-ui/core/DialogActions';
+import DialogContent from '@material-ui/core/DialogContent';
+import DialogTitle from '@material-ui/core/DialogTitle';
 import AddIcon from '@material-ui/icons/AddBox';
-import IconButton from 'material-ui/IconButton';
+import IconButton from '@material-ui/core/IconButton';
 
 import * as api from '../../data/api';
 import * as matDetails from '../../data/material-details';
 import { LogEntries } from '../LogEntry';
 import { MaterialSummary } from '../../data/events';
-import { withStyles } from 'material-ui';
+import withStyles from '@material-ui/core/styles/withStyles';
 import { inproc_mat_to_summary, MaterialSummaryAndCompletedData } from '../../data/events.matsummary';
 import { DispatchAction }  from '../../store/store';
 

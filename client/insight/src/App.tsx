@@ -31,11 +31,12 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
-import AppBar from 'material-ui/AppBar/AppBar';
-import Tabs, { Tab } from 'material-ui/Tabs';
-import Typography from 'material-ui/Typography/Typography';
-import Toolbar from 'material-ui/Toolbar/Toolbar';
-import Hidden from 'material-ui/Hidden/Hidden';
+import AppBar from '@material-ui/core/AppBar';
+import Tabs from '@material-ui/core/Tabs';
+import Tab from '@material-ui/core/Tab';
+import Typography from '@material-ui/core/Typography';
+import Toolbar from '@material-ui/core/Toolbar';
+import Hidden from '@material-ui/core/Hidden';
 
 import Dashboard from './components/dashboard/Dashboard';
 import CostPerPiece from './components/cost-per-piece/CostPerPiece';

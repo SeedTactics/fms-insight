@@ -35,46 +35,40 @@ import * as reactRedux from 'react-redux';
 
 type RemoveTypeProp<P> = P extends "type" ? never : P;
 type RemoveType<A> = { [P in RemoveTypeProp<keyof A>]: A[P] };
-type GetActionTypes<A> = A extends {type: infer T} ? T : never;
+export type GetActionTypes<A> = A extends {type: infer T} ? T : never;
 export type ActionPayload<A, T> = A extends {type: T} ? RemoveType<A> : never;
-export type ActionCreator<A, Args> = (args: Args) => A;
 export type DispatchFn<Args> =
   {} extends Args
   ? () => void
   : (payload: Args) => void;
 export type DispatchAction<A, T> = DispatchFn<ActionPayload<A, T>>;
 
-// Action creator for generic action
-export interface ActionCreatorFactory<A> {
-  <T extends GetActionTypes<A>>(ty: T): ActionCreator<A, ActionPayload<A, T>>;
-}
-export function actionCreatorFactory<A>(): ActionCreatorFactory<A> {
-  // any is needed for payload since typescript can't guarantee that ActionPayload<A, T> is
-  // an object.  ActionPayload<A, T> will be an object exactly when the action type T appears
-  // exactly once in the action sum type, which should always be the case.
-  // tslint:disable-next-line:no-any
-  return ty => (payload: any) => {
-    if (payload) {
-      return ({...payload, type: ty});
-    } else {
-      return {type: ty};
-    }
-  };
-}
-
 // Specialized type for connect
+export type ActionCreator<A, Args> = (args: Args) => A;
 export type ActionCreatorToDispatch<A, Creators> = {
   [P in keyof Creators]:
     Creators[P] extends ActionCreator<A, infer Args> ? DispatchFn<Args> :
     never;
 };
+
+// react-redux 6.0 has wierd bug around InferableComponentEnhancerWithProps
+// in its attempt to support decorators.
+// e.g. https://github.com/DefinitelyTyped/DefinitelyTyped/issues/25874
+// so copy one without decorator support here for now.
+export interface InferableComponentEnhancerWithProps<TInjectedProps, TNeedsProps> {
+    <P extends TInjectedProps>(component: React.ComponentType<P>):
+        React.ComponentClass<reactRedux.Omit<P, keyof TInjectedProps> & TNeedsProps>
+     & {WrappedComponent: React.ComponentType<P>}
+   ;
+}
+
 export interface Connect<A, S> {
   <P, TOwnProps = {}>(getProps: (s: S) => P):
-    reactRedux.InferableComponentEnhancerWithProps<P, TOwnProps>;
+    InferableComponentEnhancerWithProps<P, TOwnProps>;
 
   <P, TOwnProps = {}>(getProps: (s: S, ownProps: TOwnProps) => P):
-    reactRedux.InferableComponentEnhancerWithProps<P, TOwnProps>;
+    InferableComponentEnhancerWithProps<P, TOwnProps>;
 
   <P, Creators, TOwnProps = {}>(getProps: (s: S) => P, actionCreators: Creators):
-    reactRedux.InferableComponentEnhancerWithProps<P & ActionCreatorToDispatch<A, Creators>, TOwnProps>;
+    InferableComponentEnhancerWithProps<P & ActionCreatorToDispatch<A, Creators>, TOwnProps>;
 }

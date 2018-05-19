@@ -31,9 +31,9 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
-import Radio from 'material-ui/Radio';
-import TextField from 'material-ui/TextField';
-import { FormControlLabel } from 'material-ui/Form';
+import Radio from '@material-ui/core/Radio';
+import TextField from '@material-ui/core/TextField';
+import FormControlLabel from '@material-ui/core/FormControlLabel';
 import { startOfMonth, format, parse } from 'date-fns';
 
 import * as events from '../data/events';

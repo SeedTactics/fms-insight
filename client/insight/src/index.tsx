@@ -35,11 +35,11 @@ import * as ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
 
 import 'typeface-roboto';
-import CssBaseline from 'material-ui/CssBaseline';
-import green from 'material-ui/colors/green';
-import brown from 'material-ui/colors/brown';
-import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
-import { createMuiTheme } from 'material-ui/styles';
+import CssBaseline from '@material-ui/core/CssBaseline';
+import green from '@material-ui/core/colors/green';
+import brown from '@material-ui/core/colors/brown';
+import MuiThemeProvider from '@material-ui/core/styles/MuiThemeProvider';
+import createMuiTheme from '@material-ui/core/styles/createMuiTheme';
 import 'react-vis/dist/style.css';
 
 import App from './App';

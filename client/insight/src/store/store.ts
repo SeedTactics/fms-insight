@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { createStore, GenericStoreEnhancer, combineReducers, compose, applyMiddleware } from 'redux';
+import { createStore, combineReducers, compose, applyMiddleware } from 'redux';
 
 import * as currentStatus from '../data/current-status';
 import * as events from '../data/events';
@@ -76,11 +76,26 @@ export type AppAction =
   ;
 
 export type AppActionBeforeMiddleware = ActionBeforeMiddleware<AppAction>;
+export type DispatchAction<T> = tstore.DispatchAction<AppAction, T>;
 
 export const connect: tstore.Connect<AppActionBeforeMiddleware, Store> = reactRedux.connect;
-export const mkAC: tstore.ActionCreatorFactory<AppActionBeforeMiddleware> =
-  tstore.actionCreatorFactory<AppActionBeforeMiddleware>();
-export type DispatchAction<T> = tstore.DispatchAction<AppAction, T>;
+
+export interface ActionCreatorFactory {
+  <T extends tstore.GetActionTypes<AppAction>>(ty: T):
+    (payload: tstore.ActionPayload<AppActionBeforeMiddleware, T>) => AppActionBeforeMiddleware;
+}
+export const mkAC: ActionCreatorFactory =
+  // any is needed for payload since typescript can't guarantee that ActionPayload<A, T> is
+  // an object.  ActionPayload<A, T> will be an object exactly when the action type T appears
+  // exactly once in the action sum type, which should always be the case.
+  // tslint:disable-next-line:no-any
+  ty => (payload: any) => {
+    if (payload) {
+      return ({...payload, type: ty});
+    } else {
+      return {type: ty};
+    }
+  };
 
 export function initStore() {
   const history = createHistory();
@@ -92,14 +107,14 @@ export function initStore() {
     });
 
   /* tslint:disable */
-  const devTools: GenericStoreEnhancer =
+  const devTools =
     (window as any)['__REDUX_DEVTOOLS_EXTENSION__']
     ? (window as any)['__REDUX_DEVTOOLS_EXTENSION__']()
-    : f => f;
+    : (f: any) => f;
   /* tslint:enable */
 
-  const store = createStore<Store>(
-    combineReducers<Store>(
+  const store: redux.Store<Store, AppAction> = createStore(
+    combineReducers(
       {
         Current: currentStatus.reducer,
         Events: events.reducer,

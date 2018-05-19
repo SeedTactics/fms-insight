@@ -42,10 +42,12 @@ import { MarkSeries,
          HorizontalGridLines,
          DiscreteColorLegend
        } from 'react-vis';
-import Card, { CardHeader, CardContent } from 'material-ui/Card';
+import Card from '@material-ui/core/Card';
+import CardContent from '@material-ui/core/CardContent';
+import CardHeader from '@material-ui/core/CardHeader';
 import * as numerable from 'numeral';
-import Select from 'material-ui/Select';
-import { MenuItem } from 'material-ui/Menu';
+import Select from '@material-ui/core/Select';
+import MenuItem from '@material-ui/core/MenuItem';
 import { PartIdenticon } from '../station-monitor/Material';
 
 export interface CycleChartPoint {

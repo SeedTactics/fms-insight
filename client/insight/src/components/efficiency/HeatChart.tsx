@@ -39,9 +39,11 @@ import { HeatmapSeries,
          Hint,
          FlexibleWidthXYPlot,
        } from 'react-vis';
-import Card, { CardHeader, CardContent } from 'material-ui/Card';
-import Select from 'material-ui/Select';
-import { MenuItem } from 'material-ui/Menu';
+import Card from '@material-ui/core/Card';
+import CardContent from '@material-ui/core/CardContent';
+import CardHeader from '@material-ui/core/CardHeader';
+import Select from '@material-ui/core/Select';
+import MenuItem from '@material-ui/core/MenuItem';
 
 import * as gui from '../../data/gui-state';
 

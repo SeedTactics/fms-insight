@@ -31,10 +31,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
-import { CircularProgress } from 'material-ui/Progress';
+import CircularProgress from '@material-ui/core/CircularProgress';
 
 import { connect, Store } from '../store/store';
-import Tooltip from 'material-ui/Tooltip/Tooltip';
+import Tooltip from '@material-ui/core/Tooltip';
 
 export function LoadingIcon({loading}: {loading: boolean}) {
   if (loading) {

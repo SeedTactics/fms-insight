@@ -33,7 +33,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from 'react';
 import * as api from '../data/api';
 import { format } from 'date-fns';
-import Table, { TableBody, TableCell, TableHead, TableRow } from 'material-ui/Table';
+import Table from '@material-ui/core/Table';
+import TableBody from '@material-ui/core/TableBody';
+import TableCell from '@material-ui/core/TableCell';
+import TableHead from '@material-ui/core/TableHead';
+import TableRow from '@material-ui/core/TableRow';
 
 export interface LogEntryProps {
     entry: api.ILogEntry;

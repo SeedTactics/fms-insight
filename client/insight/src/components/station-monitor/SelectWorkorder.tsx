@@ -33,13 +33,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from 'react';
-import Button from 'material-ui/Button';
-import List, { ListItem, ListItemText, ListItemIcon } from 'material-ui/List';
-import Dialog, {
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-} from 'material-ui/Dialog';
+import Button from '@material-ui/core/Button';
+import List from '@material-ui/core/List';
+import ListItem from '@material-ui/core/ListItem';
+import ListItemText from '@material-ui/core/ListItemText';
+import ListItemIcon from '@material-ui/core/ListItemIcon';
+import Dialog from '@material-ui/core/Dialog';
+import DialogActions from '@material-ui/core/DialogActions';
+import DialogContent from '@material-ui/core/DialogContent';
+import DialogTitle from '@material-ui/core/DialogTitle';
 import CheckmarkIcon from '@material-ui/icons/Check';
 import ShoppingBasketIcon from '@material-ui/icons/ShoppingBasket';
 
@@ -47,7 +49,7 @@ import { MaterialDetailTitle } from './Material';
 import { Store, connect, mkAC, AppActionBeforeMiddleware } from '../../store/store';
 import * as matDetails from '../../data/material-details';
 import * as guiState from '../../data/gui-state';
-import { CircularProgress } from 'material-ui/Progress';
+import CircularProgress from '@material-ui/core/CircularProgress';
 
 function workorderComplete(w: matDetails.WorkorderPlanAndSummary): string {
   let completed = 0;

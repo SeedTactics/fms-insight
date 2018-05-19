@@ -34,8 +34,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from 'react';
 import * as im from 'immutable';
 import { addHours } from 'date-fns';
-import Grid from 'material-ui/Grid';
-import Button from 'material-ui/Button';
+import Grid from '@material-ui/core/Grid';
+import Button from '@material-ui/core/Button';
 import { createSelector } from 'reselect';
 import DocumentTitle from 'react-document-title';
 

@@ -31,19 +31,22 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
-import Select from 'material-ui/Select';
-import { MenuItem } from 'material-ui/Menu';
-import TextField from 'material-ui/TextField';
-import Input from 'material-ui/Input';
-import { FormControl } from 'material-ui/Form';
+import Select from '@material-ui/core/Select';
+import MenuItem from '@material-ui/core/MenuItem';
+import TextField from '@material-ui/core/TextField';
+import Input from '@material-ui/core/Input';
+import FormControl from '@material-ui/core/FormControl';
 import { Seq, Set } from 'immutable';
 import Downshift from 'downshift';
-import Paper from 'material-ui/Paper';
+import Paper from '@material-ui/core/Paper';
 import ArrowDropDownIcon from '@material-ui/icons/ArrowDropDown';
-import List, { ListItem, ListItemText, ListItemSecondaryAction } from 'material-ui/List';
-import IconButton from 'material-ui/IconButton';
+import List from '@material-ui/core/List';
+import ListItem from '@material-ui/core/ListItem';
+import ListItemText from '@material-ui/core/ListItemText';
+import ListItemSecondaryAction from '@material-ui/core/ListItemSecondaryAction';
+import IconButton from '@material-ui/core/IconButton';
 import DeleteIcon from '@material-ui/icons/Delete';
-import Typography from 'material-ui/Typography';
+import Typography from '@material-ui/core/Typography';
 
 import * as routes from '../../data/routes';
 import { Store, connect, DispatchAction, mkAC } from '../../store/store';
