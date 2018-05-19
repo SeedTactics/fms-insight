@@ -41,7 +41,7 @@ using System.Reflection;
 using Microsoft.Extensions.DependencyModel;
 using System.IO;
 using System.Linq;
-using System.Runtime.Serialization.Json;
+using Newtonsoft.Json;
 
 namespace DebugMachineWatchApiServer
 {
@@ -73,7 +73,11 @@ namespace DebugMachineWatchApiServer
     public JobLogDB LogDB { get; private set; }
     public JobDB JobDB { get; private set; }
     public InspectionDB InspectionDB { get; private set; }
-    public MockCurrentStatus MockStatus {get; private set;}
+
+    private Dictionary<string, CurrentStatus> Statuses {get;} = new Dictionary<string, CurrentStatus>();
+    private CurrentStatus CurrentStatus {get;set;}
+
+    private JsonSerializerSettings _jsonSettings;
 
     public event NewCurrentStatus OnNewCurrentStatus;
 
@@ -116,6 +120,10 @@ namespace DebugMachineWatchApiServer
         JobDB.CreateTables();
       }
 
+      _jsonSettings = new JsonSerializerSettings();
+      _jsonSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
+      _jsonSettings.ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver();
+
       /*
       var sample = new LogEntryGenerator(LogDB);
       DateTime today = DateTime.Today;
@@ -147,8 +155,7 @@ namespace DebugMachineWatchApiServer
 
       LoadEvents(sampleDataPath, offset);
       LoadJobs(sampleDataPath, offset);
-
-      MockStatus = new MockCurrentStatus(JobDB, LogDB, sampleDataPath, offset);
+      LoadStatus(sampleDataPath, offset);
     }
 
     public IEnumerable<System.Diagnostics.TraceSource> TraceSources()
@@ -185,7 +192,7 @@ namespace DebugMachineWatchApiServer
 
     public CurrentStatus GetCurrentStatus()
     {
-      return MockStatus.GetCurrentStatus();
+      return CurrentStatus;
     }
 
     public List<string> CheckValidRoutes(IEnumerable<JobPlan> newJobs)
@@ -199,11 +206,17 @@ namespace DebugMachineWatchApiServer
     }
 
     public void AddUnprocessedMaterialToQueue(string jobUnique, int lastCompletedProcess, string queue, int position, string serial)
-        => MockStatus.AddUnprocessedMaterialToQueue(jobUnique, lastCompletedProcess, queue, position, serial);
+    {
+      //TODO
+    }
     public void SetMaterialInQueue(long materialId, string queue, int position)
-        => MockStatus.SetMaterialInQueue(materialId, queue, position);
+    {
+      //TODO
+    }
     public void RemoveMaterialFromAllQueues(long materialId)
-        => MockStatus.RemoveMaterialFromAllQueues(materialId);
+    {
+      //TODO
+    }
 
     public List<JobAndDecrementQuantity> DecrementJobQuantites(string loadDecrementsStrictlyAfterDecrementId)
     {
@@ -240,48 +253,46 @@ namespace DebugMachineWatchApiServer
       using (var file = System.IO.File.OpenRead(System.IO.Path.Combine(sampleDataPath, "events.json")))
       {
         var reader = new System.IO.StreamReader(file);
-        var settings = new DataContractJsonSerializerSettings();
-        settings.DateTimeFormat = new DateTimeFormat("yyyy-MM-ddTHH:mm:ssZ");
-        settings.UseSimpleDictionaryFormat = true;
-        var s = new DataContractJsonSerializer(typeof(BlackMaple.MachineWatchInterface.LogEntry), settings);
         while (reader.Peek() >= 0)
         {
           var evtJson = reader.ReadLine();
-          using (var ms = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(evtJson)))
-          {
-            var e = (BlackMaple.MachineWatchInterface.LogEntry)s.ReadObject(ms);
-            foreach (var m in e.Material) {
-              if (string.IsNullOrEmpty(LogDB.JobUniqueStrFromMaterialID(m.MaterialID)) &&
-                  !string.IsNullOrEmpty(m.JobUniqueStr)) {
-                LogDB.CreateMaterialID(m.MaterialID, m.JobUniqueStr);
-              }
+          var e = (BlackMaple.MachineWatchInterface.LogEntry)JsonConvert.DeserializeObject(
+            evtJson,
+            typeof(BlackMaple.MachineWatchInterface.LogEntry),
+            _jsonSettings
+          );
+
+          foreach (var m in e.Material) {
+            if (string.IsNullOrEmpty(LogDB.JobUniqueStrFromMaterialID(m.MaterialID)) &&
+                !string.IsNullOrEmpty(m.JobUniqueStr)) {
+              LogDB.CreateMaterialID(m.MaterialID, m.JobUniqueStr);
             }
-            if (e.LogType == LogType.PartMark) {
-              foreach (var m in e.Material)
-                LogDB.RecordSerialForMaterialID(m, e.Result, e.EndTimeUTC.Add(offset));
-            } else if (e.LogType == LogType.OrderAssignment) {
-              foreach (var m in e.Material)
-                LogDB.RecordWorkorderForMaterialID(m, e.Result, e.EndTimeUTC.Add(offset));
-            } else if (e.LogType == LogType.FinalizeWorkorder) {
-              LogDB.RecordFinalizedWorkorder(e.Result, e.EndTimeUTC.Add(offset));
-            } else {
-              var e2 = new BlackMaple.MachineWatchInterface.LogEntry(
-                  cntr: e.Counter,
-                  mat: e.Material,
-                  pal: e.Pallet,
-                  ty: e.LogType,
-                  locName: e.LocationName,
-                  locNum: e.LocationNum,
-                  prog: e.Program,
-                  start: e.StartOfCycle,
-                  endTime: e.EndTimeUTC.Add(offset),
-                  result: e.Result,
-                  endOfRoute: e.EndOfRoute,
-                  elapsed: e.ElapsedTime,
-                  active: e.ActiveOperationTime
-              );
-              LogDB.AddLogEntry(e2);
-            }
+          }
+          if (e.LogType == LogType.PartMark) {
+            foreach (var m in e.Material)
+              LogDB.RecordSerialForMaterialID(m, e.Result, e.EndTimeUTC.Add(offset));
+          } else if (e.LogType == LogType.OrderAssignment) {
+            foreach (var m in e.Material)
+              LogDB.RecordWorkorderForMaterialID(m, e.Result, e.EndTimeUTC.Add(offset));
+          } else if (e.LogType == LogType.FinalizeWorkorder) {
+            LogDB.RecordFinalizedWorkorder(e.Result, e.EndTimeUTC.Add(offset));
+          } else {
+            var e2 = new BlackMaple.MachineWatchInterface.LogEntry(
+                cntr: e.Counter,
+                mat: e.Material,
+                pal: e.Pallet,
+                ty: e.LogType,
+                locName: e.LocationName,
+                locNum: e.LocationNum,
+                prog: e.Program,
+                start: e.StartOfCycle,
+                endTime: e.EndTimeUTC.Add(offset),
+                result: e.Result,
+                endOfRoute: e.EndOfRoute,
+                elapsed: e.ElapsedTime,
+                active: e.ActiveOperationTime
+            );
+            LogDB.AddLogEntry(e2);
           }
         }
       }
@@ -289,32 +300,60 @@ namespace DebugMachineWatchApiServer
 
     private void LoadJobs(string sampleDataPath, TimeSpan offset)
     {
-      using (var file = System.IO.File.OpenRead(System.IO.Path.Combine(sampleDataPath, "newjobs.json")))
+      var newJobsJson = System.IO.File.ReadAllText(
+        System.IO.Path.Combine(sampleDataPath, "newjobs.json"));
+      var allNewJobs = (List<BlackMaple.MachineWatchInterface.NewJobs>)JsonConvert.DeserializeObject(
+        newJobsJson,
+        typeof(List<BlackMaple.MachineWatchInterface.NewJobs>),
+        _jsonSettings
+      );
+
+      foreach (var newJobs in allNewJobs)
       {
-        var settings = new DataContractJsonSerializerSettings();
-        settings.DateTimeFormat = new DateTimeFormat("yyyy-MM-ddTHH:mm:ssZ");
-        settings.UseSimpleDictionaryFormat = true;
-        var s = new DataContractJsonSerializer(typeof(List<BlackMaple.MachineWatchInterface.NewJobs>), settings);
-        var allNewJobs = (List<BlackMaple.MachineWatchInterface.NewJobs>)s.ReadObject(file);
-
-        foreach (var newJobs in allNewJobs)
+        foreach (var j in newJobs.Jobs)
         {
-          foreach (var j in newJobs.Jobs)
-          {
-            OffsetJob(j, offset);
-          }
-          foreach (var su in newJobs.StationUse)
-          {
-            su.StartUTC = su.StartUTC.Add(offset);
-            su.EndUTC = su.EndUTC.Add(offset);
-          }
-          foreach (var w in newJobs.CurrentUnfilledWorkorders)
-          {
-            w.DueDate = w.DueDate.Add(offset);
-          }
-
-          JobDB.AddJobs(newJobs, null);
+          OffsetJob(j, offset);
         }
+        foreach (var su in newJobs.StationUse)
+        {
+          su.StartUTC = su.StartUTC.Add(offset);
+          su.EndUTC = su.EndUTC.Add(offset);
+        }
+        foreach (var w in newJobs.CurrentUnfilledWorkorders)
+        {
+          w.DueDate = w.DueDate.Add(offset);
+        }
+
+        JobDB.AddJobs(newJobs, null);
+      }
+    }
+
+    private void LoadStatus(string sampleDataPath, TimeSpan offset)
+    {
+      var files = System.IO.Directory.GetFiles(sampleDataPath, "status-*.json");
+      foreach (var f in files)
+      {
+        var name = System.IO.Path.GetFileNameWithoutExtension(f).Replace("status-", "");
+
+        var statusJson = System.IO.File.ReadAllText(f);
+        var curSt = (BlackMaple.MachineWatchInterface.CurrentStatus)JsonConvert.DeserializeObject(
+          statusJson,
+          typeof(BlackMaple.MachineWatchInterface.CurrentStatus),
+          _jsonSettings
+        );
+
+        foreach (var uniq in curSt.Jobs.Keys) {
+          MockServerBackend.OffsetJob(curSt.Jobs[uniq], offset);
+        }
+        Statuses.Add(name, curSt);
+      }
+
+      string statusFromEnv = System.Environment.GetEnvironmentVariable("BMS_CURRENT_STATUS");
+      if (string.IsNullOrEmpty(statusFromEnv) || !Statuses.ContainsKey(statusFromEnv))
+      {
+        CurrentStatus = Statuses.OrderBy(st => st.Key).First().Value;
+      } else {
+        CurrentStatus = Statuses[statusFromEnv];
       }
     }
 
@@ -344,6 +383,7 @@ namespace DebugMachineWatchApiServer
     }
   }
 
+/*
   public class LogEntryGenerator
   {
     private Random rand = new Random();
@@ -661,32 +701,7 @@ namespace DebugMachineWatchApiServer
     {
       _jobDb = jobDB;
       _jobLog = logDb;
-      var settings = new DataContractJsonSerializerSettings();
-      settings.DateTimeFormat = new DateTimeFormat("yyyy-MM-ddTHH:mm:ssZ");
-      settings.UseSimpleDictionaryFormat = true;
-      var s = new DataContractJsonSerializer(typeof(BlackMaple.MachineWatchInterface.CurrentStatus), settings);
 
-      var files = System.IO.Directory.GetFiles(sampleDataPath, "status-*.json");
-      foreach (var f in files)
-      {
-        var name = System.IO.Path.GetFileNameWithoutExtension(f).Replace("status-", "");
-
-        using (var file = System.IO.File.OpenRead(f)) {
-          var curSt = (BlackMaple.MachineWatchInterface.CurrentStatus)s.ReadObject(file);
-          foreach (var uniq in curSt.Jobs.Keys) {
-            MockServerBackend.OffsetJob(curSt.Jobs[uniq], offset);
-          }
-          Statuses.Add(name, curSt);
-        }
-      }
-
-      string statusFromEnv = System.Environment.GetEnvironmentVariable("BMS_CURRENT_STATUS");
-      if (string.IsNullOrEmpty(statusFromEnv) || !Statuses.ContainsKey(statusFromEnv))
-      {
-        CurrentStatus = Statuses.OrderBy(st => st.Key).First().Value;
-      } else {
-        CurrentStatus = Statuses[statusFromEnv];
-      }
 
       AddFakeInProcMaterial(CurrentStatus);
     }
@@ -1145,4 +1160,5 @@ namespace DebugMachineWatchApiServer
       bbbQueue.Remove(materialId);
     }
   }
+  */
 }
