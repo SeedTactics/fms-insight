@@ -1,7 +1,7 @@
 {
   "docs": {
-    "Docusaurus": ["doc1"],
-    "First Category": ["doc2"],
-    "Second Category": ["doc3"]
+    "Basics": ["overview", "getting-started"],
+    "Server": ["server-config", "server-errors"],
+    "Client": ["doc3"]
   }
 }
