@@ -893,7 +893,7 @@ namespace BlackMaple.MachineWatchInterface
         [DataMember(Name = "Inspections", IsRequired=false, EmitDefaultValue=false)]
         private IList<JobInspectionData> _inspections;
 
-        [DataMember(Name="HoldEntireJob", IsRequired=true)]
+        [DataMember(Name="HoldEntireJob", IsRequired=false, EmitDefaultValue=false)]
         private JobHoldPattern _holdJob;
 
         [DataMember(Name="CyclesOnFirstProcess", IsRequired=true)]
@@ -965,10 +965,10 @@ namespace BlackMaple.MachineWatchInterface
             [DataMember(IsRequired=true)]
             public TimeSpan SimulatedAverageFlowTime; // average time a part takes to complete the entire sequence
 
-            [DataMember(IsRequired=true)]
+            [DataMember(IsRequired=false, EmitDefaultValue=false)]
             public JobHoldPattern HoldMachining;
 
-            [DataMember(IsRequired=true)]
+            [DataMember(IsRequired=false, EmitDefaultValue=false)]
             public JobHoldPattern HoldLoadUnload;
 
             [DataMember(IsRequired=true)]
