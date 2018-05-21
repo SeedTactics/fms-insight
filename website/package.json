@@ -10,6 +10,6 @@
   },
   "devDependencies": {
     "date-fns": "^1.29.0",
-    "docusaurus": "^1.0.14"
+    "docusaurus": "^1.1.1"
   }
 }

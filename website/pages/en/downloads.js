@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 const React = require('react');
 const CompLibrary = require('../../core/CompLibrary.js');
 const child_process = require('child_process');
-import {format} from 'date-fns';
+const format = require('date-fns').format;
 
 class DownloadLink extends React.Component {
   render() {

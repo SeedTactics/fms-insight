@@ -141,11 +141,11 @@ const Features = props => (
         title: 'Station Monitoring',
       },
       {
-        content: 'Automatically send orders, part, schedule, and job data into the cell controller, ' +
-        'reducing the data burden on the operator.',
-        image: imgUrl('group-work.svg'),
+        content: 'Track and record parts by serial as they transition from manual handling to the automation' +
+        ' sytem and back again.',
+        image: imgUrl('label.svg'),
         imageAlign: 'top',
-        title: 'Cell Control Interop',
+        title: 'Part Tracking',
       },
     ]}
   </Block>
