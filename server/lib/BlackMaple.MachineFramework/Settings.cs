@@ -88,6 +88,7 @@ namespace BlackMaple.MachineFramework
       public bool EnableDebugLog {get;set;} = false;
       public int Port {get;set;} = 5000;
       public string TLSCertFile {get;set;} = null;
+      public bool EnableSailAPI {get;set;} = false;
 
       public static ServerSettings Load(IConfiguration config)
       {

@@ -100,13 +100,15 @@ namespace BlackMaple.MachineFramework
             var settings = new BlackMaple.MachineFramework.SettingStore(Program.ServerSettings.DataDirectory);
 
             #if SERVE_REMOTING
-            var machServer =
-                new BlackMaple.MachineWatch.RemotingServer(
-                    _fmsImpl,
-                    Program.ServerSettings.DataDirectory,
-                    settings
-                );
-            services.AddSingleton<BlackMaple.MachineWatch.RemotingServer>(machServer);
+            if (Program.ServerSettings.EnableSailAPI) {
+                var machServer =
+                    new BlackMaple.MachineWatch.RemotingServer(
+                        _fmsImpl,
+                        Program.ServerSettings.DataDirectory,
+                        settings
+                    );
+                services.AddSingleton<BlackMaple.MachineWatch.RemotingServer>(machServer);
+            }
             #endif
 
             services
@@ -191,10 +193,12 @@ namespace BlackMaple.MachineFramework
             });
 
             #if SERVE_REMOTING
-            lifetime.ApplicationStopping.Register(() => {
-                var machServer = services.GetService<BlackMaple.MachineWatch.RemotingServer>();
-                machServer.Dispose();
-            });
+            if (Program.ServerSettings.EnableSailAPI) {
+                lifetime.ApplicationStopping.Register(() => {
+                    var machServer = services.GetService<BlackMaple.MachineWatch.RemotingServer>();
+                    machServer.Dispose();
+                });
+            }
             #endif
         }
     }
