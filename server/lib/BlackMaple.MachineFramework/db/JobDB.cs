@@ -1679,6 +1679,8 @@ namespace BlackMaple.MachineFramework
         private void InsertHold(string unique, int proc, int path, bool load, MachineWatchInterface.JobHoldPattern newHold,
                                 IDbTransaction trans)
         {
+            if (newHold == null) return;
+
             var cmd = _connection.CreateCommand();
             ((IDbCommand)cmd).Transaction = trans;
 
