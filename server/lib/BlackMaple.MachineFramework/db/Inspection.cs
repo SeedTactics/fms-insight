@@ -96,7 +96,7 @@ namespace BlackMaple.MachineFramework
         }
 
 
-        private const int Version = 4;
+        private const int Version = 5;
         public void CreateTables()
         {
             var cmd = _connection.CreateCommand();
@@ -116,16 +116,6 @@ namespace BlackMaple.MachineFramework
             cmd.ExecuteNonQuery();
 
             cmd.CommandText = "CREATE TABLE next_piece(StatType INTEGER, StatNum INTEGER, InspType TEXT, PRIMARY KEY(StatType,StatNum, InspType))";
-            cmd.ExecuteNonQuery();
-
-            cmd.CommandText = "CREATE TABLE global_types(InspType TEXT PRIMARY KEY," +
-              " TrackPart INTEGER, TrackPallet INTEGER, TrackStation INTEGER, SingleProc INTEGER, " +
-              " MaxCount INTEGER, RandomFreq INTEGER, Deadline INTEGER)";
-            cmd.ExecuteNonQuery();
-
-            cmd.CommandText = "CREATE TABLE global_override(InspType TEXT, Part TEXT, " +
-              " MaxCount INTEGER, RandomFreq INTEGER, Deadline INTEGER, " +
-              " PRIMARY KEY (InspType, Part))";
             cmd.ExecuteNonQuery();
         }
 
@@ -154,6 +144,8 @@ namespace BlackMaple.MachineFramework
 
                 if (ver < 4)
                     Ver3ToVer4(trans);
+
+                if (ver < 5) Ver4ToVer5(trans);
 
                 cmd.Transaction = trans;
                 cmd.CommandText = "UPDATE version SET ver = $ver";
@@ -216,6 +208,18 @@ namespace BlackMaple.MachineFramework
             cmd.CommandText = "CREATE TABLE global_override(InspType TEXT, Part TEXT, " +
               " MaxCount INTEGER, RandomFreq INTEGER, Deadline INTEGER, " +
               " PRIMARY KEY (InspType, Part))";
+            cmd.ExecuteNonQuery();
+        }
+
+        private void Ver4ToVer5(IDbTransaction trans)
+        {
+            IDbCommand cmd = _connection.CreateCommand();
+            cmd.Transaction = trans;
+
+            cmd.CommandText = "DROP TABLE global_types";
+            cmd.ExecuteNonQuery();
+
+            cmd.CommandText = "DROP TABLE global_override";
             cmd.ExecuteNonQuery();
         }
         #endregion
@@ -612,246 +616,5 @@ namespace BlackMaple.MachineFramework
             }
         }
         #endregion
-
-        public InspectionType LoadGlobalInspectionType(string ty)
-        {
-            lock (_lock)
-            {
-                using (var cmd = _connection.CreateCommand())
-                {
-                    cmd.Parameters.Add("ty", SqliteType.Text).Value = ty;
-                    var trans = _connection.BeginTransaction();
-                    try
-                    {
-                        cmd.Transaction = trans;
-
-                        var ret = new InspectionType();
-                        ret.Name = ty;
-
-                        cmd.CommandText = "SELECT TrackPart, TrackPallet, TrackStation, SingleProc, MaxCount, RandomFreq, Deadline " +
-                          "FROM global_types WHERE InspType = $ty";
-                        using (var reader = cmd.ExecuteReader())
-                        {
-                            if (reader.Read())
-                            {
-                                ret.TrackPartName = reader.GetBoolean(0);
-                                ret.TrackPalletName = reader.GetBoolean(1);
-                                ret.TrackStationName = reader.GetBoolean(2);
-                                ret.InspectSingleProcess = reader.GetInt32(3);
-                                ret.DefaultCountToTriggerInspection = reader.GetInt32(4);
-                                ret.DefaultRandomFreq = reader.GetDouble(5);
-                                ret.DefaultDeadline = TimeSpan.FromSeconds(reader.GetInt64(6));
-                                ret.Overrides = new Generic.List<InspectionFrequencyOverride>();
-                            }
-                            else
-                            {
-                                ret = null;
-                            }
-                        }
-
-                        if (ret != null) {
-                        cmd.CommandText = "SELECT Part, MaxCount, RandomFreq, Deadline " +
-                            " FROM global_override WHERE InspType = $ty";
-                        using (var reader = cmd.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                var o = new InspectionFrequencyOverride();
-                                o.Part = reader.GetString(0);
-                                o.CountBeforeInspection = reader.GetInt32(1);
-                                o.RandomFreq = reader.GetDouble(2);
-                                o.Deadline = TimeSpan.FromSeconds(reader.GetInt64(3));
-                                ret.Overrides.Add(o);
-                            }
-                        }
-                        }
-
-                        trans.Commit();
-
-                        return ret;
-                    }
-                    catch
-                    {
-                        trans.Rollback();
-                        throw;
-                    }
-                }
-            }
-        }
-
-        public Generic.List<string> LoadGlobalInspectionTypes()
-        {
-            lock (_lock)
-            {
-                using (var cmd = _connection.CreateCommand()) {
-                var trans = _connection.BeginTransaction();
-                try
-                {
-                    cmd.Transaction = trans;
-
-                    var ret = new Generic.List<string>();
-
-                    cmd.CommandText = "SELECT InspType FROM global_types";
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            ret.Add(reader.GetString(0));
-                        }
-                    }
-
-                    trans.Commit();
-
-                    return ret;
-                }
-                catch
-                {
-                    trans.Rollback();
-                    throw;
-                }
-                }
-            }
-        }
-
-        public Generic.List<InspectionType> LoadAllGlobalInspections()
-        {
-            lock (_lock)
-            {
-                using (var cmd = _connection.CreateCommand()) {
-                var trans = _connection.BeginTransaction();
-                try
-                {
-                    cmd.Transaction = trans;
-
-                    var ret = new Generic.Dictionary<string, InspectionType>();
-
-                    cmd.CommandText = "SELECT InspType, TrackPart, TrackPallet, TrackStation, SingleProc, MaxCount, RandomFreq, Deadline " +
-                      "FROM global_types";
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            var itype = new InspectionType();
-                            itype.Name = reader.GetString(0);
-                            itype.TrackPartName = reader.GetBoolean(1);
-                            itype.TrackPalletName = reader.GetBoolean(2);
-                            itype.TrackStationName = reader.GetBoolean(3);
-                            itype.InspectSingleProcess = reader.GetInt32(4);
-                            itype.DefaultCountToTriggerInspection = reader.GetInt32(5);
-                            itype.DefaultRandomFreq = reader.GetDouble(6);
-                            itype.DefaultDeadline = TimeSpan.FromSeconds(reader.GetInt64(7));
-                            itype.Overrides = new Generic.List<InspectionFrequencyOverride>();
-                            ret.Add(itype.Name, itype);
-                        }
-                    }
-
-                    cmd.CommandText = "SELECT InspType, Part, MaxCount, RandomFreq, Deadline " +
-                        " FROM global_override";
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            var o = new InspectionFrequencyOverride();
-                            o.Part = reader.GetString(1);
-                            o.CountBeforeInspection = reader.GetInt32(2);
-                            o.RandomFreq = reader.GetDouble(3);
-                            o.Deadline = TimeSpan.FromSeconds(reader.GetInt64(4));
-
-                            var ty = reader.GetString(0);
-                            if (ret.ContainsKey(ty))
-                                ret[ty].Overrides.Add(o);
-                        }
-                    }
-
-                    trans.Commit();
-
-                    return new Generic.List<InspectionType>(ret.Values);
-                }
-                catch
-                {
-                    trans.Rollback();
-                    throw;
-                }
-            }
-            }
-        }
-
-        public void SetGlobalInspectionType(InspectionType ty)
-        {
-            lock (_lock)
-            {
-                var cmd = _connection.CreateCommand();
-                var trans = _connection.BeginTransaction();
-                try
-                {
-                    cmd.Transaction = trans;
-
-                    cmd.CommandText = "INSERT OR REPLACE INTO global_types(InspType,TrackPart,TrackPallet,TrackStation,SingleProc,MaxCount,RandomFreq,Deadline) " +
-                      "VALUES($ty,$part,$pal,$stat,$proc,$cnt,$freq,$dead)";
-                    cmd.Parameters.Add("ty", SqliteType.Text).Value = ty.Name;
-                    cmd.Parameters.Add("part", SqliteType.Integer).Value = ty.TrackPartName;
-                    cmd.Parameters.Add("pal", SqliteType.Integer).Value = ty.TrackPalletName;
-                    cmd.Parameters.Add("stat", SqliteType.Integer).Value = ty.TrackStationName;
-                    cmd.Parameters.Add("proc", SqliteType.Integer).Value = ty.InspectSingleProcess;
-                    cmd.Parameters.Add("cnt", SqliteType.Integer).Value = ty.DefaultCountToTriggerInspection;
-                    cmd.Parameters.Add("freq", SqliteType.Real).Value = ty.DefaultRandomFreq;
-                    cmd.Parameters.Add("dead", SqliteType.Integer).Value = Convert.ToInt64(ty.DefaultDeadline.TotalSeconds);
-                    cmd.ExecuteNonQuery();
-
-                    cmd.CommandText = "DELETE FROM global_override WHERE InspType = $ty";
-                    cmd.Parameters.Clear();
-                    cmd.Parameters.Add("ty", SqliteType.Text).Value = ty.Name;
-                    cmd.ExecuteNonQuery();
-
-                    cmd.CommandText = "INSERT INTO global_override(InspType,Part,MaxCount,RandomFreq,Deadline) " +
-                      " VALUES ($ty,$part,$cnt,$freq,$dead)";
-                    foreach (var o in ty.Overrides)
-                    {
-                        cmd.Parameters.Clear();
-                        cmd.Parameters.Add("ty", SqliteType.Text).Value = ty.Name;
-                        cmd.Parameters.Add("part", SqliteType.Text).Value = o.Part;
-                        cmd.Parameters.Add("cnt", SqliteType.Integer).Value = o.CountBeforeInspection;
-                        cmd.Parameters.Add("freq", SqliteType.Real).Value = o.RandomFreq;
-                        cmd.Parameters.Add("dead", SqliteType.Integer).Value =
-                            Convert.ToInt64(o.Deadline.TotalSeconds);
-                        cmd.ExecuteNonQuery();
-                    }
-
-                    trans.Commit();
-                }
-                catch
-                {
-                    trans.Rollback();
-                    throw;
-                }
-            }
-        }
-
-        public void DeleteGlobalInspectionType(string ty)
-        {
-            lock (_lock)
-            {
-                using (var cmd = _connection.CreateCommand()) {
-                cmd.CommandText = "DELETE FROM global_types WHERE InspType = $ty";
-                cmd.Parameters.Add("ty", SqliteType.Text).Value = ty;
-
-                var trans = _connection.BeginTransaction();
-                try
-                {
-                    cmd.Transaction = trans;
-                    cmd.ExecuteNonQuery();
-                    cmd.CommandText = "DELETE FROM global_override WHERE InspType = $ty";
-                    cmd.ExecuteNonQuery();
-                    trans.Commit();
-                }
-                catch
-                {
-                    trans.Rollback();
-                    throw;
-                }
-            }
-            }
-        }
-
     }
 }

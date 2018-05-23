@@ -31,10 +31,20 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 
 namespace BlackMaple.MachineWatchInterface
 {
+    [Serializable, DataContract]
+    public struct InspectCount
+    {
+        [DataMember(IsRequired=true)] public string Counter;
+        [DataMember(IsRequired=true)] public int Value;
+        [DataMember(IsRequired=true)] public DateTime LastUTC;
+    }
+
     public interface IInspectionControl
     {
         ///Forces the given materialID to be inspected
@@ -46,10 +56,5 @@ namespace BlackMaple.MachineWatchInterface
         //allow editing of counts.  Uses lists of InspectCount structure
         List<InspectCount> LoadInspectCounts();
         void SetInspectCounts(IEnumerable<InspectCount> countUpdates);
-
-        List<string> LoadGlobalInspectionTypes();
-        InspectionType LoadGlobalInspectionType(string ty);
-        void SetGlobalInspectionType(InspectionType ty);
-        void DeleteGlobalInspectionType(string ty);
     }
 }

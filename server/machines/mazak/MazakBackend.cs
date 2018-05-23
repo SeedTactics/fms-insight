@@ -295,10 +295,6 @@ namespace MazakMachineInterface
         }
 
         job.AddInspections(jobDB.LoadInspections(job.UniqueStr));
-        foreach (var i in insp.LoadAllGlobalInspections())
-        {
-          job.AddInspection(i.ConvertToJobInspection(job.PartName, job.NumProcesses));
-        }
 
         bool hasInspections = false;
         foreach (var i in job.GetInspections())

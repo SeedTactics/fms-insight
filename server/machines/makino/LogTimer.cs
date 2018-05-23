@@ -218,11 +218,6 @@ namespace Makino
 				foreach (var insp in job.GetInspections()) {
 					_inspectDB.MakeInspectionDecision(mat.MaterialID, job, insp);
 				}
-                foreach (var insp in _inspectDB.LoadAllGlobalInspections())
-                {
-                    _inspectDB.MakeInspectionDecision(mat.MaterialID, job,
-                        insp.ConvertToJobInspection(job.PartName, job.NumProcesses));
-                }
 			}
 		}
 
