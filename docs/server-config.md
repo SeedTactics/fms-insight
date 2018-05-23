@@ -4,46 +4,49 @@ title: Server Configuration
 sidebar_label: Configuration
 ---
 
-#### Configuration
+The FMS Insight server is configured via a file
+`SeedTactics\FMSInsight\config.ini` located in the Windows Common AppData
+folder. On a default Windows install, this has a full path of
+`c:\ProgramData\SeedTactics\FMSInsight\config.ini`. The config file itself
+describes the settings in detail, but they fall into three groups: server
+settings such as network ports and SSL, FMS settings such as automatic serial
+assignment, and finally cell controller specific settings.
 
-Machine Watch runs as a service with no GUI. Machine Watch is configured through a file named
-`MachineWatch.xml` located in the install directory chosen when you first installed Machine Watch
-(defaults to a folder in `C:\Program Files`). Any changes to the settings file requires restarting
-the Machine Watch service. To restart the service open the Windows Service Manager, right click on
-the Machine Watch service, and select "Stop" and then "Start". The `MachineWatch.xml` configuration
-file contains two kinds of settings: app settings and network settings.
+The first time FMS Insight starts, if the `config.ini` file does not exist,
+FMS Insight will create a default config file. FMS Insight should run fine
+with the default settings, so typically when first getting started no config
+file settings need to be changed. Any changes to settings in `config.ini`
+require the FMS Insight server to be restarted before they take effect.
 
-The network settings relate to the .NET Remoting lease times and formatters plus the network port
-(defaults to 8086). The lease times and formatter settings should be left unchanged, but if needed
-you can change the port that Machine Watch listens on. This port is used by the SeedTactic software
-so if changed the SeedTactic software must be configured to use the same port. Also, this port
-(defaults to 8086) must be allowed through any firewalls between the computers running SeedTactics
-and the Machine Watch cell controller.
-
-The app settings are specific to each cell controller and are described in the documentation for each company.
-
-* [Mazak Machine Watch](/guide/machinewatch/mazak)
-* [Makino Machine Watch](/guide/machinewatch/makino)
-* [Mori Machine Watch](/guide/machinewatch/mori)
-* [Cincron Machine Watch](/guide/machinewatch/cincron)
+The `config.ini` file is an [INI file](https://en.wikipedia.org/wiki/INI_file).
+The default config file contains a large number of comments describing each option.
+Comments describing each option are prefixed by a hash (`#`) and the options themselves
+are prefixed by a semicolon (`;`).  To edit an option, remove the leading semicolon (`;`)
+and then edit the option value.  Remember to restart the FMS Insight server.  If any configuration
+errors are present, FMS Insight will generate an error message with details into the
+[event log](server-errors.md).
 
 #### Databases
 
-Machine Watch uses [SQLite](https://www.sqlite.org/) to store data about the cell.  The primary data stored is a log of the activity
-of all parts, pallets, machines, jobs, schedules, serial numbers, and orders.  In addition, Machine Watch stores a small amount of temporary
-data to assist with monitoring (for example, when a part is loaded on a pallet Machine Watch will store which parts and serial numbers are on
-the pallet so that when the pallet gets to the machine Machine Watch knows what is being machined).
+FMS Insight uses [SQLite](https://www.sqlite.org/) to store data about the cell.
+The primary data stored is a log of the activity of all parts, pallets, machines, jobs,
+schedules, inspections, serial numbers, orders, and other data.  In addition, FMS Insight
+stores a small amount of temporary data to assist with monitoring.
 
-The SQLite databases are stored locally in the global AppData folder (not user specific).
-The location of the AppData folder differs based on the Windows version and system configuration.  For Windows XP, it is located by
-default at `C:\Documents and Settings\All Users` (must enable viewing hidden folders). For Windows 7 and 10, it is located by default at
-`C:\ProgramData\`.  Within this folder is a folder named `Black Maple Software` or `CMS Research` and then a folder named `MachineWatch`.
-Inside this folder will be several SQLite databases.  The SQLite databases are not large, typically under 100 megabytes, so disk space is not
-a problem.
+The SQLite databases are by default stored locally in the Windows Common
+AppData folder which on a default Windows install is
+`c:\ProgramData\SeedTactics\FMSInsight`. This path can be changed in the
+`config.ini` file if needed, but we suggest that the databases are kept on
+the local drive for performance and data integrety (SQlite works best on a
+local drive). The SQLite databases are not large, typically under 100
+megabytes, so disk space is not a problem.
 
-Every time Machine Watch starts, it checks for the existence of the SQLite databases and if they are
-missing it creates them. For this reason, the databases can be deleted without impacting the
-operation of the cell (as long as Machine Watch is restarted). Also, since the databases just store
-a log of past activity and all complex logic is outside Machine Watch in the SeedTactic software, if
-the databases are deleted (and recreated) the cell will continue to operate just fine in the future.
-Thus it is not necessary to backup the databases (but of course you can if you want to preserve historical data).
+Every time FMS Insight starts, it checks for the existence of the SQLite
+databases and if they are missing it creates them. For this reason, the
+databases can be deleted without impacting the operation of the cell (as long
+as FMS Insight is restarted). Also, since the databases just store a log of
+past activity and all complex logic is outside FMS Insight, if the databases
+are deleted (and recreated) the cell will continue to operate just fine in
+the future (minus the historical data). Thus it is not necessary to backup
+the databases (but of course you can if you want to preserve historical
+data).
