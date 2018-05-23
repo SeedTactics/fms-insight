@@ -207,16 +207,6 @@ namespace BlackMaple.MachineWatchInterface
 
         private LogEntry() {} //for json deserialization
 
-        public bool ShouldSerializeElapsedTime()
-        {
-            return ElapsedTime != TimeSpan.FromMinutes(-1);
-        }
-
-        public bool ShouldSerializeActiveOperationTime()
-        {
-            return ActiveOperationTime != TimeSpan.Zero;
-        }
-
         public bool ShouldSerializeProgramDetails()
         {
             return _details.Count > 0;
