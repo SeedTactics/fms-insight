@@ -97,7 +97,7 @@ namespace BlackMaple.MachineFramework
             if (ServerSettings.EnableDebugLog) {
                 logConfig = logConfig.WriteTo.File(
                     new Serilog.Formatting.Compact.CompactJsonFormatter(),
-                    System.IO.Path.Combine(ServerSettings.DataDirectory, "machinewatch-debug.txt"),
+                    System.IO.Path.Combine(ServerSettings.DataDirectory, "fmsinsight-debug.txt"),
                     rollingInterval: RollingInterval.Day,
                     restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Debug);
             }
