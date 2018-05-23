@@ -1291,7 +1291,10 @@ namespace BlackMaple.MachineFramework
             cmd.Parameters.Add("part", SqliteType.Text).Value = job.PartName;
             cmd.Parameters.Add("proc", SqliteType.Integer).Value = job.NumProcesses;
             cmd.Parameters.Add("pri", SqliteType.Integer).Value = job.Priority;
-            cmd.Parameters.Add("comment", SqliteType.Text).Value = job.Comment;
+            if (string.IsNullOrEmpty(job.Comment))
+                cmd.Parameters.Add("comment", SqliteType.Text).Value = DBNull.Value;
+            else
+                cmd.Parameters.Add("comment", SqliteType.Text).Value = job.Comment;
             cmd.Parameters.Add("marker", SqliteType.Integer).Value = job.CreateMarkerData;
             cmd.Parameters.Add("start", SqliteType.Integer).Value = job.RouteStartingTimeUTC.Ticks;
             cmd.Parameters.Add("end", SqliteType.Integer).Value = job.RouteEndingTimeUTC.Ticks;
