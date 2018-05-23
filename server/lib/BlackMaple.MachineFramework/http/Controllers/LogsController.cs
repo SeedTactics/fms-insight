@@ -141,6 +141,13 @@ namespace BlackMaple.MachineFramework.Controllers
             return _server.RecordWorkorderForMaterialID(mat, workorder);
         }
 
+        [HttpPost("inspections/{inspType}/material")]
+        public LogEntry SetInspectionDecision(string inspType, [FromBody] LogMaterial mat, [FromQuery] bool inspect = true)
+        {
+            // TODO: implement
+            return null;
+        }
+
         [HttpPost("events/inspection-result")]
         public LogEntry RecordInspectionCompleted([FromBody] NewInspectionCompleted insp)
         {
