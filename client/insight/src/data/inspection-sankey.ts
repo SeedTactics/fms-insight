@@ -89,18 +89,18 @@ function edgesForCounter(counter: InspectionCounter, toInspect: boolean, result:
     if (result) {
       edges.push({
         from: prevNode,
-        to: mkNodeR({unique: path + "->success", name: "success"})
+        to: mkNodeR({unique: "@@success", name: "success"})
       });
     } else {
       edges.push({
         from: prevNode,
-        to: mkNodeR({unique: path + "->failed", name: "failed"})
+        to: mkNodeR({unique: "@@failed", name: "failed"})
       });
     }
   } else {
     edges.push({
       from: prevNode,
-      to: mkNodeR({unique: path + "->uninspected", name: "uninspected"})
+      to: mkNodeR({unique: "@@uninspected", name: "uninspected"})
     });
   }
 

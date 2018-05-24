@@ -227,7 +227,7 @@ export function SelectableCycleChart(props: SelectableCycleChartProps) {
                 props.points.keySeq().sort().map(n =>
                   <MenuItem key={n} value={n}>
                     <div style={{display: "flex", alignItems: "center"}}>
-                      <PartIdenticon part={stripAfterDash(n)} size={30}/>
+                      {props.useIdenticon ? <PartIdenticon part={stripAfterDash(n)} size={30}/> : undefined}
                       <span style={{marginRight: '1em'}}>{n}</span>
                     </div>
                   </MenuItem>

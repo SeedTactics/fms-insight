@@ -49,23 +49,17 @@ import { Store, connect } from '../../store/store';
 import { LogEntries } from '../LogEntry';
 
 export interface CSVExportState {
-  readonly startDate: string;
-  readonly startTime: string;
-  readonly endDate: string;
-  readonly endTime: string;
+  readonly exportDate: string;
 }
 
 export class CSVExport extends React.PureComponent<{}, CSVExportState> {
   state: CSVExportState = {
-    startDate: df.format(df.addDays(new Date(), -1), "YYYY-MM-DD"),
-    startTime: df.format(new Date(), "HH:mm"),
-    endDate: df.format(new Date(), "YYYY-MM-DD"),
-    endTime: df.format(new Date(), "HH:mm"),
+    exportDate: df.format(df.addDays(new Date(), -1), "YYYY-MM-DD"),
   };
 
   render() {
-    const startDate = df.parse(this.state.startDate + " " + this.state.startTime);
-    const endDate = df.parse(this.state.endDate + " " + this.state.endTime);
+    const startDate = df.parse(this.state.exportDate);
+    const endDate = df.addDays(startDate, 1);
     const startEndQuery = queryString.stringify({
       startUTC: startDate.toISOString(),
       endUTC: endDate.toISOString(),
@@ -88,36 +82,12 @@ export class CSVExport extends React.PureComponent<{}, CSVExportState> {
         <CardContent>
           <Grid container>
             <Grid item xs={12} sm={6}>
-              <div style={{display: 'flex', marginBottom: '2em'}}>
-                <TextField
-                  label="Start Date"
-                  type="date"
-                  value={this.state.startDate}
-                  onChange={e => this.setState({startDate: e.target.value})}
-                />
-                <TextField
-                  style={{marginLeft: '2em'}}
-                  label="Start Time"
-                  type="time"
-                  value={this.state.startTime}
-                  onChange={e => this.setState({startTime: e.target.value})}
-                />
-              </div>
-              <div style={{display: 'flex'}}>
-                <TextField
-                  label="End Date"
-                  type="date"
-                  value={this.state.endDate}
-                  onChange={e => this.setState({endDate: e.target.value})}
-                />
-                <TextField
-                  style={{marginLeft: '2em'}}
-                  label="End Time"
-                  type="time"
-                  value={this.state.endTime}
-                  onChange={e => this.setState({endTime: e.target.value})}
-                />
-              </div>
+              <TextField
+                label="Export Date"
+                type="date"
+                value={this.state.exportDate}
+                onChange={e => this.setState({exportDate: e.target.value})}
+              />
             </Grid>
             <Grid item xs={12} sm={6} md={5}>
               <p>
