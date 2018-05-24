@@ -39,13 +39,13 @@ Move-Item "$publishdir/BlackMaple.FMSInsight.$nameUpper.exe" tmp -Force
 & $candle tmp/insight-server.wsx -o tmp/insight-server.wixobj
 & $candle build/$name.wsx -o tmp/insight.wixobj -ext WixUtilExtension
 & $light tmp/insight-server.wixobj tmp/insight.wixobj -ext WixUtilExtension `
-  -o "installers/FMS Insight $nameUpper Install.msi"
+  -o "installers/$version/FMS Insight $nameUpper Install.msi"
 
 Remove-Item -r tmp
 
 if ($tag.StartsWith($name)) {
     Push-Location
-    cd installers
+    cd installers/$version
     Remove-Item alias:curl
     curl.exe -X POST `
         --silent --show-error `
