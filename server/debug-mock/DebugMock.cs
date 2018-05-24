@@ -236,6 +236,7 @@ namespace DebugMachineWatchApiServer
     private void LoadEvents(string sampleDataPath, TimeSpan offset)
     {
       var files = System.IO.Directory.GetFiles(sampleDataPath, "events-*.json");
+      var evts = new List<BlackMaple.MachineWatchInterface.LogEntry>();
       foreach (var f in files)
       {
         using (var file = System.IO.File.OpenRead(f))
@@ -249,40 +250,44 @@ namespace DebugMachineWatchApiServer
               typeof(BlackMaple.MachineWatchInterface.LogEntry),
               _jsonSettings
             );
-
-            foreach (var m in e.Material) {
-              if (string.IsNullOrEmpty(LogDB.JobUniqueStrFromMaterialID(m.MaterialID)) &&
-                  !string.IsNullOrEmpty(m.JobUniqueStr)) {
-                LogDB.CreateMaterialID(m.MaterialID, m.JobUniqueStr);
-              }
-            }
-            if (e.LogType == LogType.PartMark) {
-              foreach (var m in e.Material)
-                LogDB.RecordSerialForMaterialID(m, e.Result, e.EndTimeUTC.Add(offset));
-            } else if (e.LogType == LogType.OrderAssignment) {
-              foreach (var m in e.Material)
-                LogDB.RecordWorkorderForMaterialID(m, e.Result, e.EndTimeUTC.Add(offset));
-            } else if (e.LogType == LogType.FinalizeWorkorder) {
-              LogDB.RecordFinalizedWorkorder(e.Result, e.EndTimeUTC.Add(offset));
-            } else {
-              var e2 = new BlackMaple.MachineWatchInterface.LogEntry(
-                  cntr: e.Counter,
-                  mat: e.Material,
-                  pal: e.Pallet,
-                  ty: e.LogType,
-                  locName: e.LocationName,
-                  locNum: e.LocationNum,
-                  prog: e.Program,
-                  start: e.StartOfCycle,
-                  endTime: e.EndTimeUTC.Add(offset),
-                  result: e.Result,
-                  endOfRoute: e.EndOfRoute,
-                  elapsed: e.ElapsedTime,
-                  active: e.ActiveOperationTime
-              );
-              LogDB.AddLogEntry(e2);
-            }
+            evts.Add(e);
           }
+        }
+      }
+
+      foreach (var e in evts.OrderBy(e => e.EndTimeUTC))
+      {
+        foreach (var m in e.Material) {
+          if (string.IsNullOrEmpty(LogDB.JobUniqueStrFromMaterialID(m.MaterialID)) &&
+              !string.IsNullOrEmpty(m.JobUniqueStr)) {
+            LogDB.CreateMaterialID(m.MaterialID, m.JobUniqueStr);
+          }
+        }
+        if (e.LogType == LogType.PartMark) {
+          foreach (var m in e.Material)
+            LogDB.RecordSerialForMaterialID(m, e.Result, e.EndTimeUTC.Add(offset));
+        } else if (e.LogType == LogType.OrderAssignment) {
+          foreach (var m in e.Material)
+            LogDB.RecordWorkorderForMaterialID(m, e.Result, e.EndTimeUTC.Add(offset));
+        } else if (e.LogType == LogType.FinalizeWorkorder) {
+          LogDB.RecordFinalizedWorkorder(e.Result, e.EndTimeUTC.Add(offset));
+        } else {
+          var e2 = new BlackMaple.MachineWatchInterface.LogEntry(
+              cntr: e.Counter,
+              mat: e.Material,
+              pal: e.Pallet,
+              ty: e.LogType,
+              locName: e.LocationName,
+              locNum: e.LocationNum,
+              prog: e.Program,
+              start: e.StartOfCycle,
+              endTime: e.EndTimeUTC.Add(offset),
+              result: e.Result,
+              endOfRoute: e.EndOfRoute,
+              elapsed: e.ElapsedTime,
+              active: e.ActiveOperationTime
+          );
+          LogDB.AddLogEntry(e2);
         }
       }
     }
