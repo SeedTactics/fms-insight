@@ -2,6 +2,7 @@
   "docs": {
     "Basics": ["overview", "getting-started"],
     "Server": ["server-config", "server-errors"],
-    "Client": ["doc3"]
+    "Client": ["doc3"],
+    "Integrations": ["mazak"]
   }
 }
