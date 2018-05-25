@@ -51,7 +51,7 @@ const users = [
 
 const siteConfig = {
   title: 'SeedTactic FMS Insight' /* title for your website */,
-  tagline: 'Data analytics and monitoring for flexible manfuacturing systems',
+  tagline: 'Open source data analytics and monitoring for flexible manfuacturing systems',
   url: 'https://blackmaple.bitbucket.io' /* your website url */,
   baseUrl: '/fms-insight/' /* base url for your project */,
   // For github.io type URLs, you would set the url and baseUrl like:

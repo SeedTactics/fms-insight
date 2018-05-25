@@ -8,7 +8,7 @@ FMS Insight works with all Palletech cell controller versions from Mazak:
 Version E, Web Version, and Smooth PMC. FMS Insight can read all events from
 the cell controller and can also edit almost all the data in the cell controller.
 
-##### Open Database Kit
+## Open Database Kit
 
 To facilitate the communication between FMS Insight and the Mazak cell
 controller, you must acquire a program called "Mazak Open Database Kit". This
@@ -17,14 +17,14 @@ inside the cell controller. Please contact your Mazak representative and ask
 to obtain "Open Database Kit" that matches the specific cell controller
 (Version E, Web, or Smooth PMC).
 
-##### Enable Log CSV
+## Enable Log CSV
 
 For Mazak Web and Mazak Smooth PMC, you must enable a setting in the Mazak cell controller
 which will cause the Mazak cell controller to create log files of all events (pallet movements,
 machine cycles, etc.) in the `c:\Mazak\FMS\Log` directory.  Once enabled, FMS Insight will
 automatically find any log entries from this directory.
 
-##### Simulation Lab
+## Simulation Lab
 
 The Mazak Palletech cell controller software has a great ability to be run in a
 simulation mode without any machines or carts attached. In this mode, the
@@ -49,7 +49,7 @@ The simulation lab is also great for training before the machines are even
 installed, testing out new scheduling or inspection signaling techniques, or
 training new operators and managers.
 
-##### Avoid the cell controller on your factory network
+## Avoid the cell controller on your factory network
 
 Mazak does not recommend that you enable Windows updates, and Mazak cell
 controllers run on Windows XP and Windows 8 which no longer receive support
@@ -101,7 +101,7 @@ directly, we suggest the following setup:
   Edit the [config.ini](server-config.md) file and set the `SQL ConnectionString` setting
   to a SQL Server connection string which uses the IP address of the Mazak cell controller.
 
-##### Starting Offset and Decrement Priority
+## Starting Offset and Decrement Priority
 
 The Mazak [config.ini](server-config.md) contains two settings `Use Starting Offset For Due Date` and
 `Decrement Priority On Download` which control how new schedules are added into the cell controller.

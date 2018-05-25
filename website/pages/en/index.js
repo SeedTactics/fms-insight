@@ -49,6 +49,10 @@ function imgUrl(img) {
   return siteConfig.baseUrl + 'img/' + img;
 }
 
+function screenshotUrl(img) {
+  return siteConfig.baseUrl + 'screenshots/' + img;
+}
+
 function docUrl(doc, language) {
   return siteConfig.baseUrl + 'docs/' + (language ? language + '/' : '') + doc;
 }
@@ -104,8 +108,9 @@ class HomeSplash extends React.Component {
         <div className="inner">
           <ProjectTitle />
           <PromoSection>
-            <Button href="#try">Try It Out</Button>
+            { /* <Button href="#try">Try It Out</Button> */ }
             <Button href={docUrl('getting-started.html', language)}>Get Started</Button>
+            <Button href="https://bitbucket.org/blackmaple/fms-insight">Source Code</Button>
           </PromoSection>
         </div>
       </SplashContainer>
@@ -172,7 +177,7 @@ const traits = [
     content: 'FMS Insight provides a touchscreen friendly view of information at the load station, including ' +
     'what part type to load, what part type to unload, serial assignment, inspection decisions, ' +
     'load instructions, and workorder assignment.',
-    image: imgUrl('docusaurus.svg'),
+    image: screenshotUrl('insight-loadstation-small.jpg'),
     title: 'Load/Unload Instructions',
   },
   {
@@ -180,27 +185,27 @@ const traits = [
     'pallet and machine is guranteed to be periodically inspected.  In addition, FMS insight provides ' +
     'a view of the event log at the inspection stand which allows the operator to view the pallet, machine, ' +
     'and date/time of the part being inspected.',
-    image: imgUrl('docusaurus.svg'),
+    image: screenshotUrl('insight-inspection-details.jpg'),
     title: 'Inspections',
   },
   {
     content: 'Using the event log, FMS Insight provides reports and charts targeted at iteratively improving ' +
     'the efficiency of the cell.  These reports have been built up over decades of expierence to highlight the ' +
     'places where small changes to pallet or machine assignments can lead to large performance improvements',
-    image: imgUrl('docusaurus.svg'),
+    image: screenshotUrl('insight-station-cycle-graph-only.jpg'),
     title: 'Efficiency Improvement',
   },
   {
-    content: 'If a serial or barcode is marked on each piece of material, FMS Insight can track that serial ' +
-    'in the event log and use a barcode scanner to retrieve the events for a specific piece of material.',
-    image: imgUrl('docusaurus.svg'),
+    content: 'If a serial or barcode is marked on each piece of material, FMS Insight can track the material via the serial ' +
+    'through the entire process, and use a barcode scanner to retrieve the events for a specific piece of material.',
+    image: screenshotUrl('insight-inspection-sankey-only.jpg'),
     title: 'Serials',
   },
   {
     content: 'FMS Insight provides a status dashboard which shows an overview of the cell.  The dashboard shows ' +
     'the progress on currently scheduled jobs, an estimate on remaining work to complete the jobs, an overview of ' +
     'the load stations and machines, and the OEE for the past week for each machine.',
-    image: imgUrl('docusaurus.svg'),
+    image: screenshotUrl('insight-dashboard-jobs.jpg'),
     title: 'Dashboard',
   },
   {
@@ -215,14 +220,14 @@ const traits = [
     'goes into the event log and FMS Insight can track how many parts have been assigned to a workorder. ' +
     'If serials/barcodes are used, the individual serials are tracked in the workorder to allow ERP cost calculations at ' +
     'the workorder level',
-    image: imgUrl('docusaurus.svg'),
+    image: screenshotUrl('insight-wash-screen.jpg'),
     title: 'Workorder Assignment',
   },
   {
     content: 'FMS Insight uses the event log to provide a touchscreen friendly view of all the material in the cell. ' +
     'This is helpful when material enters and leaves the automated handling system, such as between part processes or ' +
     'if parts are transfered from a lathe cell to a horizontal cell.',
-    image: imgUrl('docusaurus.svg'),
+    image: screenshotUrl('insight-all-material.jpg'),
     title: 'In-Process Material Tracking',
   },
   {
@@ -231,7 +236,7 @@ const traits = [
     'FMS Insight provides an API which easily allows the ERP software to translate the orders in the ERP into ' +
     'data in the cell controller.  The API uses JSON and a REST-like HTTP interface, and is described fully as an ' +
     'OpenAPI specification.',
-    image: imgUrl('docusaurus.svg'),
+    image: screenshotUrl('insight-swagger.jpg'),
     title: 'Cell Control Data',
   },
 ];
