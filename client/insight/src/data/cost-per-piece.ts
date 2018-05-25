@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as im from 'immutable';
 import { PartCycleData } from './events.cycles';
-import { duration, Duration } from 'moment';
 import { getDaysInMonth } from 'date-fns';
 
 export interface CostInput {
@@ -136,10 +135,7 @@ function machine_cost(
 ): number {
   return cycles
     .groupBy(c => c.stationGroup)
-    .map(forPartStat => forPartStat
-      .reduce((x: Duration, c) => x.add(c.active, "minutes"), duration(0))
-      .minutes()
-    )
+    .map(forPartStat => forPartStat.reduce((x , c) => x + c.active, 0))
     .reduce(
       (x: number, minutes: number, statGroup: string) => {
         const totalUse = totalStatUseMinutes.get(statGroup) || 1;
@@ -156,10 +152,7 @@ function labor_cost(
 ): number {
   const pctUse = cycles
     .groupBy(c => c.stationGroup)
-    .map(forPartStat => forPartStat
-      .reduce((x: Duration, c) => x.add(c.active, "minutes"), duration(0))
-      .minutes()
-    )
+    .map(forPartStat => forPartStat.reduce((x , c) => x + c.active, 0))
     .reduce(
       (x: number, minutes: number, statGroup: string) => {
         const total = totalStatUseMinutes.get(statGroup, 1);
@@ -186,10 +179,7 @@ export function compute_monthly_cost(
   const totalStatUseMinutes: im.Map<string, number> =
     cycles
     .groupBy(c => c.stationGroup)
-    .map(cs => cs
-      .reduce((x: Duration, c) => x.add(c.active, "minutes"), duration(0))
-      .minutes()
-    )
+    .map(cs => cs.reduce((x , c) => x + c.active, 0))
     .toMap();
 
   return cycles
