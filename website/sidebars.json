@@ -2,7 +2,13 @@
   "docs": {
     "Basics": ["overview", "getting-started"],
     "Server": ["server-config", "server-errors"],
-    "Client": ["doc3"],
+    "Client": [
+      "client-launch",
+      "client-dashboard",
+      "client-station-monitor",
+      "client-efficiency",
+      "client-cost-per-piece"
+    ],
     "Integrations": ["mazak"]
   }
 }

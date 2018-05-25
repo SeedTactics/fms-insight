@@ -8,7 +8,11 @@ When the FMS Insight server encounters an error, it reports the error back over 
 software that requested the operation (such as the Insight client web page).  The FMS Insight server
 also logs the error with more details into the Windows Event Log.  Thus, when the Insight web page or
 any other software reports an error you can check the Windows Event Log on the cell controller
-for more information. The location of the viewer is different in different versions of Windows;
+for more information.
+
+## Windows Event Viewer
+
+ The location of the viewer is different in different versions of Windows;
 on Windows 10, open the start menu and search for "Event Viewer" and on Windows 7 open the "Control Panel",
 navigate to "Administrative Tools", and then open the "Event Viewer". To view the events in the event viewer,
 navigate to "Windows Logs" and then "Application" in the tree on the left (see the screenshot below).
