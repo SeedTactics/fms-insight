@@ -212,7 +212,7 @@ const traits = [
     content: 'Using the event log, FMS Insight provides a monthly cost/piece report showing a breakdown of the ' +
     'machining and labor cost for each part.  The cost/piece can be used to validate that iterative operational changes ' +
     'are actually improvements, helps plan future capital investments, and assists ordering and sales quote future work.',
-    image: imgUrl('docusaurus.svg'),
+    image: screenshotUrl('insight-part-cost.jpg'),
     title: 'Cost/Piece',
   },
   {
