@@ -42,6 +42,7 @@ Move-Item "$publishdir/BlackMaple.FMSInsight.$nameUpper.exe" tmp -Force
 & $light tmp/insight-server.wixobj tmp/insight.wixobj -ext WixUtilExtension `
   -o "installers/fms-insight/FMS Insight $nameUpper Install.msi"
 
+New-Item -ItemType Directory -Force -Path "software-updates/fms-insight"
 @{"fms-insight" = $name; "version" = $version; "date" = [DateTime]::UtcNow.ToString("u") } `
   | ConvertTo-Json | Out-File -Force $("software-updates/fms-insight/" + $name + "-latest.json")
 

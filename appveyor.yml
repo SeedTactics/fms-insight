@@ -112,6 +112,9 @@ artifacts:
   - path: 'installers/**/*.msi'
     name: Installers
 
+  - path: 'software-updates/**/*.json'
+    name: LatestVersions
+
 deploy:
 - provider: NuGet
   on:
