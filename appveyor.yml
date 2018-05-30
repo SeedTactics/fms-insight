@@ -136,7 +136,7 @@ deploy:
     branch: default
     BMS_INSTALLER_makino_RELEASE: true
   access_key_id: AKIAIK37O65OBXTG7WJQ
-  artifact: /installers.*Makino.*msi/
+  artifact: /installers.*Makino.*msi/, software-updates/fms-insight/makino-latest.json
   secret_access_key:
     secure: VjsW1yZpL1XL5llb8a/24qaHuYHJMrMC//YgrrOAinHoy7iZtZNdSlbHudDl6kRn
   bucket: seedtactics-downloads
@@ -148,7 +148,7 @@ deploy:
     branch: default
     BMS_INSTALLER_mazak_RELEASE: true
   access_key_id: AKIAIK37O65OBXTG7WJQ
-  artifact: /installers.*Mazak.*msi/
+  artifact: /installers.*Mazak.*msi/, software-updates/fms-insight/mazak-latest.json
   secret_access_key:
     secure: VjsW1yZpL1XL5llb8a/24qaHuYHJMrMC//YgrrOAinHoy7iZtZNdSlbHudDl6kRn
   bucket: seedtactics-downloads
