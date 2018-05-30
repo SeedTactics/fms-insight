@@ -43,7 +43,7 @@ Move-Item "$publishdir/BlackMaple.FMSInsight.$nameUpper.exe" tmp -Force
   -o "installers/fms-insight/FMS Insight $nameUpper Install.msi"
 
 @{"fms-insight" = $name; "version" = $version; "date" = [DateTime]::UtcNow.ToString("u") } `
-  | ConvertTo-Json | Out-File $("software-updates/fms-insight/" + $name + "-latest.json")
+  | ConvertTo-Json | Out-File -Force $("software-updates/fms-insight/" + $name + "-latest.json")
 
 Remove-Item -r tmp
 Pop-Location
