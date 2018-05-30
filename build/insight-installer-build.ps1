@@ -42,18 +42,4 @@ Move-Item "$publishdir/BlackMaple.FMSInsight.$nameUpper.exe" tmp -Force
   -o "installers/$version/FMS Insight $nameUpper Install.msi"
 
 Remove-Item -r tmp
-
-if ($tag.StartsWith($name)) {
-    Push-Location
-    cd installers/$version
-    Remove-Item alias:curl
-    curl.exe -X POST `
-        --silent --show-error `
-        --user $ENV:bitbucket_auth `
-        "https://api.bitbucket.org/2.0/repositories/blackmaple/fms-insight/downloads" `
-        --form `
-        files=@"FMS Insight $nameUpper Install.msi"
-    Pop-Location
-}
-
 Pop-Location
