@@ -58,7 +58,7 @@ class DownloadLink extends React.Component {
         <a
           href={
             "https://seedtactics-downloads.s3.amazonaws.com/" +
-            "fms-insight/" + prefix + "/" + ver + "/" +
+            "installers/fms-insight/" + prefix + "/" + ver + "/" +
             "FMS%20Insight%20" + nameUpper + "%20Install.msi"
           }
         >

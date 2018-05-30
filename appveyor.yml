@@ -141,7 +141,6 @@ deploy:
     secure: VjsW1yZpL1XL5llb8a/24qaHuYHJMrMC//YgrrOAinHoy7iZtZNdSlbHudDl6kRn
   bucket: seedtactics-downloads
   region: us-west-2
-  folder: fms-insight/makino
   set_public: true
 
 - provider: S3
@@ -154,5 +153,4 @@ deploy:
     secure: VjsW1yZpL1XL5llb8a/24qaHuYHJMrMC//YgrrOAinHoy7iZtZNdSlbHudDl6kRn
   bucket: seedtactics-downloads
   region: us-west-2
-  folder: fms-insight/mazak
   set_public: true
