@@ -66,11 +66,11 @@ class Footer extends React.Component {
           </a>
           <div>
             <h5>Docs</h5>
-            <a href={this.docUrl('getting-started.html', this.props.language)}>
-              Getting Started
-            </a>
             <a href={this.docUrl('overview.html', this.props.language)}>
               Overview
+            </a>
+            <a href={this.docUrl('getting-started.html', this.props.language)}>
+              Getting Started
             </a>
             <a href={this.docUrl('client-launch.html', this.props.language)}>
               Client
@@ -80,6 +80,9 @@ class Footer extends React.Component {
             <h5>More</h5>
             <a href="https://bitbucket.org/blackmaple/fms-insight">BitBucket</a>
             <a href="https://www.seedtactics.com">SeedTactics</a>
+            <a href={this.docUrl('getting-started.html#downloads', this.props.language)}>
+              Downloads
+            </a>
           </div>
         </section>
 

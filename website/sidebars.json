@@ -1,7 +1,15 @@
 {
   "docs": {
-    "Basics": ["overview", "getting-started"],
-    "Server": ["server-config", "server-errors"],
+    "Basics": [
+      "overview",
+      "getting-started"
+    ],
+    "Server": [
+      "server-config",
+      "server-errors",
+      "creating-jobs",
+      "workorder-report"
+    ],
     "Client": [
       "client-launch",
       "client-dashboard",
