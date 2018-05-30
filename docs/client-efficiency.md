@@ -56,10 +56,72 @@ can obtain more information about the pallet cycle in a tooltip.
 
 ![Screenshot of Station OEE Heatmap](assets/insight-station-oee.jpg)
 
+The Station OEE heatmap shows the station overall equipment effectiveness (OEE)
+over the month.  On the x-axis are the days of the month and on the y-axis are
+the machines and load stations.  For each station and each day, FMS Insight adds
+up the expected operation time for each part cycle and then divides by 24 hours
+to obtain a percentage that the station was busy with productive work.  (If station cycles
+were longer than expected, this extra time is not counted in the OEE.  Thus the Station OEE
+should only be focused on seriously once the station cycles are mostly stable at their
+expected cycle time.)  For each grid cell in the chart, the OEE percentage is drawn
+with a color with darker colors higher OEE and ligher colors lower OEE.  A grid cell
+can be moused over to obtain extra information in a tooltip.
+
+
 ## Part Production
 
-![Screenshot of Station OEE Heatmap](assets/insight-part-production.jpg)
+![Screenshot of Part Production Heatmap](assets/insight-part-production.jpg)
+
+The Part Production heatmap shows the distribution of completed parts over
+the month. On the x-axis are the days of the month and on the y-axis are the
+part types. For each part and each day, FMS Insight counts how many parts
+were produced that day. For each grid cell in the chart, the completed count
+is drawn as a color with darker colors higher counts and ligher colors lower
+counts. A grid cell can be moused over to obtain extra information in a
+tooltip.
+
+The part production and station OEE heatmaps are useful to brainstorm potential
+flexibility changes.  For example, the above station OEE screenshot shows that
+machines 3 and 4 have higher OEE than machines 1 and 2.  As long as station cycles
+are stable around their expected time, this likely reflects that not enough pallets
+and parts are routed to machines 1 and 2.  Looking at the part production heatmap,
+some of the darker parts might be candidates to be expanded to include machines 1 and 2.
+Indeed, in the scenario which produced the screenshot, part `yyy` was routed only
+to machines 3 and 4 and we can see from the part heatmap that it has large production.
+We could therefore brainstorm that part `yyy` could be expanded to also include machine 2.
+
+Note that these heatmaps should only be used to brainstorm ideas.  We would still
+to investigate if expanding `yyy` to include machine 2 would increase overall
+system performance.  Are there enough pallets?  How many extra inspections are required?
+Will this cause a traffic jam?  These questions can be answered using simulation,
+Little's Law, or a tool such as our [SeedTactic: Planning](https://www.seedtactics.com/products/seedtactic-planning).
 
 ## Inspections
 
 ![Screenshot of Inspection Sankey](assets/insight-inspection-sankey.jpg)
+
+The inspections chart shows a Sankey diagram of the material paths and
+inspection results. First, select an inspection type and then select a part
+in the top right. FMS Insight then loads all cycles for this part for the
+entire month and groups them according to their path (A path consists of a
+pallet and machine for each process or sequence, plus the final inspection
+result.) The counts of the various paths are then charted using a Sankey
+diagram, where the widths of the bars are drawn scaled based on the quantity
+of parts which took that path, with parts "flowing" from left to right.
+Any link can be moused over to obtain additional information in a tooltip.
+
+For example, in the above screenshot, one path is to use pallet 1 and machine
+1 (P1,M1) for the first sequence and then pallet 1 and machine 2 for the
+second sequence (P1,M2).  This corresponds to the large top link between `raw`
+and `P1,M1` and then the downward-curved link between "P1,M1" on the left and
+`P1,M2` on the right. The path is then further split with uninspected parts
+and successfully inspected parts.
+
+The width of these paths shows the relative count of parts taking these
+paths. For example, starting from using pallet 1 and machine 1 on the first
+sequence, parts either go to `P1,M1` meaning they return to machine 1 for
+their second sequence or they go to `P1,M2` meaning the go to machine 2 for
+their second sequence. The relative widths of the bars show that this is
+about equal but slightly more parts return back to machine 1 for their second
+sequence.  Similarly, the width of the links going to `uninspected` and `success`
+show that most parts are not inspected while a few are inspected successfully.
