@@ -7,6 +7,7 @@ function ver ($x) { c:\python36\python.exe build/version.py $x }
 $tag = $(hg id -t -r '.^')
 if ($tag.StartsWith($name)) {
     $version = $(ver $name)
+    Set-AppveyorBuildVariable $("BMS_INSTALLER_" + $name + "_RELEASE") "true"
 } else {
     # WiX doesn't support semver, so don't increment
     $version = $(ver $name --no-increment) + "." + $Env:APPVEYOR_BUILD_NUMBER

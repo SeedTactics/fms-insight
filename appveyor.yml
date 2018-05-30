@@ -130,3 +130,29 @@ deploy:
   artifact: /.*BlackMaple\.FMSInsight\.API.*\.nupkg/
   api_key:
     secure: kj0pW91vWRjFl99SLY/sageGAghMFfmqFpNdJd7y+Q73eoImzcsnPCZYlwYxKIhs
+
+- provider: S3
+  on:
+    branch: default
+    BMS_INSTALLER_makino_RELEASE: true
+  access_key_id: AKIAIK37O65OBXTG7WJQ
+  artifact: /installers.*Makino.*msi/
+  secret_access_key:
+    secure: VjsW1yZpL1XL5llb8a/24qaHuYHJMrMC//YgrrOAinHoy7iZtZNdSlbHudDl6kRn
+  bucket: seedtactics-downloads
+  region: us-west-2
+  folder: fms-insight/makino
+  set_public: true
+
+- provider: S3
+  on:
+    branch: default
+    BMS_INSTALLER_mazak_RELEASE: true
+  access_key_id: AKIAIK37O65OBXTG7WJQ
+  artifact: /installers.*Mazak.*msi/
+  secret_access_key:
+    secure: VjsW1yZpL1XL5llb8a/24qaHuYHJMrMC//YgrrOAinHoy7iZtZNdSlbHudDl6kRn
+  bucket: seedtactics-downloads
+  region: us-west-2
+  folder: fms-insight/mazak
+  set_public: true

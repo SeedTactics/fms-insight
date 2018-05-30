@@ -57,9 +57,9 @@ class DownloadLink extends React.Component {
       <span>
         <a
           href={
-            "https://ci.appveyor.com/api/projects/wuzzeb/fms-insight/artifacts/installers/" +
-            "FMS Insight " + nameUpper + " Install.msi" +
-            "?tag=" + tag
+            "https://seedtactics-downloads.s3.amazonaws.com/" +
+            "fms-insight/" + prefix + "/" + ver + "/" +
+            "FMS%20Insight%20" + nameUpper + "%20Install.msi"
           }
         >
           FMS Insight {nameUpper} Install
