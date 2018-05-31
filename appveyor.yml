@@ -115,8 +115,11 @@ artifacts:
   - path: '**/*.nupkg'
     name: NugetPackages
 
-  - path: 'installers/*'
+  - path: 'installers/*.msi'
     name: Installers
+
+  - path: 'installers/*.json'
+    name: InstallerVersions
 
   - path: 'website.zip'
     name: Website
