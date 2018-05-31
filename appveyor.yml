@@ -105,7 +105,7 @@ build_script:
 - ps: |
     yarn --cwd website install
     yarn --cwd website run build
-    7z a website.zip .\website\build\*
+    7z a website.zip .\website\build\fms-insight\*
 
 test_script:
 - ps: dotnet test server/test
