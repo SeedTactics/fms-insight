@@ -40,10 +40,11 @@ browser. FMS Insight works with any recent version of Firefox, Chrome, or
 Edge, so if Internet Explorer is the default browser, the address should be
 opened in Firefox, Chrome, or Edge.
 
-Instead, the address `http://localhost:5000` can be entered into the location
-bar of Firefox, Chrome, or Edge to open the FMS Insight client page. Also,
-this address can be set as the homepage of Firefox, Chrome, or Edge so that
-it opens automatically when the browser starts.
+Instead, the address [http://localhost:5000](http://localhost:5000) can be
+entered into the location bar of Firefox, Chrome, or Edge to open the FMS
+Insight client page. Also, this address can be set as the homepage of
+Firefox, Chrome, or Edge so that it opens automatically when the browser
+starts.
 
 ## Explore data about the cell
 
@@ -87,10 +88,13 @@ documentation.
 
 ## ERP Data Reports
 
-While the FMS Insight client provides some efficiency and cost reports, these are
-useful for focusing on the cell operations only. FMS Insight does not have the whole
-picture.  FMS Insight provides the log data about the cell over HTTP in the JSON format
-to easily allow the ERP software to integrate information about the cell into its own
-reports.  If each material is assigned a workorder, FMS Insight will also provide
-a workorder report in JSON over HTTP for even easier integration into the ERP system.
-More information is availble in the [workorder reporting](workorder-report.md) documentation.
+While the FMS Insight client provides some efficiency and cost reports, these
+are useful for focusing on the cell operations only. FMS Insight does not
+have the whole picture. FMS Insight provides the log data about the cell over
+HTTP in the JSON format to easily allow the ERP software to integrate
+information about the cell into its own reports. A preview of this data can
+be obtained by vising the "Data Export" tab in the FMS Insight client. If
+each material is assigned a workorder, FMS Insight will also provide a
+workorder report in JSON over HTTP for even easier integration into the ERP
+system. More information is availble in the [workorder
+reporting](workorder-report.md) documentation.

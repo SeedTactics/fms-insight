@@ -17,6 +17,6 @@
       "client-efficiency",
       "client-cost-per-piece"
     ],
-    "Integrations": ["mazak"]
+    "Integrations": ["mazak", "makino"]
   }
 }

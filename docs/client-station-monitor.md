@@ -4,4 +4,4 @@ title: Station Monitor
 sidebar_label: Stations
 ---
 
-The dashboard
+Station monitor documentation is coming soon.
