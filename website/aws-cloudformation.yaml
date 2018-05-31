@@ -1,0 +1,66 @@
+---
+Description: CloudFront template for the insight website
+AWSTemplateFormatVersion: 2010-09-09
+
+Resources:
+  FmsInsightBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: "com.seedtactics.fms-insight"
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - NoncurrentVersionExpirationInDays: 30
+            Status: Enabled
+
+  FmsInsightCloudfront:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Aliases:
+          - "fms-insight.seedtactics.com"
+        Origins:
+          - Id: BucketOrigin
+            DomainName: !GetAtt ["FmsInsightBucket", "DomainName"]
+            S3OriginConfig: {}
+        Enabled: True
+        DefaultRootObject: index.html
+        HttpVersion: http2
+        IPV6Enabled: true
+
+        DefaultCacheBehavior:
+          TargetOriginId: "BucketOrigin"
+          AllowedMethods: ["HEAD", "GET"]
+          Compress: true
+          DefaultTTL: 86400 # One day, but the bucket is versioned so cloudfront should quickly invalidate changes
+          ForwardedValues:
+            QueryString: false
+            Cookies:
+              Forward: none
+          ViewerProtocolPolicy: redirect-to-https
+
+        ViewerCertificate:
+          AcmCertificateArn: "arn:aws:acm:us-east-1:875681960689:certificate/7a6bcc85-6560-4fb9-bc55-593c4e3c6aeb"
+          SslSupportMethod: "sni-only"
+          MinimumProtocolVersion: TLSv1
+
+  CloudfrontDnsRecordIpv4:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      Name: "fms-insight.seedtactics.com"
+      HostedZoneId: !ImportValue "MainZoneId"
+      Type: "A"
+      AliasTarget:
+        DNSName: !GetAtt [FmsInsightCloudfront, "DomainName"]
+        HostedZoneId: "Z2FDTNDATAQYW2" # Value from CloudFormation documentation for cloudfront zone id
+
+  CloudfrontDnsRecordIpv6:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      Name: "fms-insight.seedtactics.com"
+      HostedZoneId: !ImportValue "MainZoneId"
+      Type: "AAAA"
+      AliasTarget:
+        DNSName: !GetAtt [FmsInsightCloudfront, "DomainName"]
+        HostedZoneId: "Z2FDTNDATAQYW2" # Value from CloudFormation documentation for cloudfront zone id
