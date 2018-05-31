@@ -27,8 +27,8 @@ completed 17 parts, then the credited machine hours is 17 times 77 minutes
 which is about 21.8 hours so a brown bar will be drawn up to 21.8 hours (see
 the bottom row in the screenshot above).  A completed part is credited only with
 its expected cycle time even if the actual time on the machine is larger.  Also,
-a completed part is assigned only once the part has been completly machined and unloaded.
-Indeed, the bullet chart does not reflect in-process or partially machined material, becuase
+a completed part is assigned only once the part has been completely machined and unloaded.
+Indeed, the bullet chart does not reflect in-process or partially machined material, because
 the program might not finish correctly or the part might be become scrap.
 
 The bullet chart is an easy way to watch the progress on the current jobs. If
@@ -39,12 +39,12 @@ the chart).
 ## Stations
 
 On the right of the dashboard, there is one circle for each machine and load station in the cell.
-The outside of the station is a circular guage displaying the operating equipment effectiveness (OEE)
+The outside of the station is a circular gauge displaying the operating equipment effectiveness (OEE)
 for the past week.  This is calculated by taking all cycles from the past `7 * 24 = 168 hours`, adding up
 their expected machine or load time, and dividing by 168 hours to obtain a percentage.  This percentage is used
-to fill in the guage on the outside of the station, and can also be viewed in a tooltip by mousing over the station.
+to fill in the gauge on the outside of the station, and can also be viewed in a tooltip by mousing over the station.
 
 In addition, each station shows the pallet currently at the station (if any) and when moused over the tooltip will
 display additional information about the material on the pallet, including the program currently in execution,
 expected remaining time, or parts being loaded.  More details about the current material on the various pallets
-is availible in the [station monitor tab](client-station-monitor.md).
+is available in the [station monitor tab](client-station-monitor.md).

@@ -4,7 +4,7 @@ title: Overview
 sidebar_label: Overview
 ---
 
-FMS Insight is a progam which runs on an flexible machining system (FMS)
+FMS Insight is a program which runs on an flexible machining system (FMS)
 cell controller which provides:
 
 * A server which stores a log of all events that occur in the cell.

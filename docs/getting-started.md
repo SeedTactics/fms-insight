@@ -4,14 +4,14 @@ title: Getting Started
 sidebar_label: Getting Started
 ---
 
-FMS Insight is a progam which runs on an flexible machining system (FMS)
+FMS Insight is a program which runs on an flexible machining system (FMS)
 cell controller which provides a server which logs and interacts with the cell
 controller and an HTML client which displays a dashboard, station monitor, and
 data analytics.
 
 The simplest configuration is to install FMS Insight directly on the cell
 controller itself. FMS Insight requires .NET Framework
-4.6.1, which is preinstalled on Windows 7 and 10 so typically no dependencies
+4.6.1, which is pre-installed on Windows 7 and 10 so typically no dependencies
 must be installed first.
 
 ## Downloads
@@ -70,7 +70,7 @@ in the cell controller. External software is needed to create the jobs,
 prioritize the work, and make sure no traffic jams occur (too much work for
 too few machines) and that the cell stays efficient (enough jobs are created
 to keep the machines busy). Despite requiring extra software, automatic job
-download provides a large benifit in station utilization and lean
+download provides a large benefit in station utilization and lean
 manufacturing when running a large variety of parts with variable part
 quantities.
 
@@ -83,7 +83,7 @@ Alternatively, if daily scheduling takes place directly in the ERP system,
 some custom software can be created to send the jobs and schedules from the
 ERP system into FMS Insight; FMS Insight uses HTTP and JSON so the jobs just
 need to be posted to FMS Insight in the correct format. More information is
-availble in the [creating jobs and schedules](creating-jobs.md)
+available in the [creating jobs and schedules](creating-jobs.md)
 documentation.
 
 ## ERP Data Reports
@@ -96,5 +96,5 @@ information about the cell into its own reports. A preview of this data can
 be obtained by vising the "Data Export" tab in the FMS Insight client. If
 each material is assigned a workorder, FMS Insight will also provide a
 workorder report in JSON over HTTP for even easier integration into the ERP
-system. More information is availble in the [workorder
+system. More information is available in the [workorder
 reporting](workorder-report.md) documentation.

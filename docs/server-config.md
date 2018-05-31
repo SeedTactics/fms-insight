@@ -37,7 +37,7 @@ The SQLite databases are by default stored locally in the Windows Common
 AppData folder which on a default Windows install is
 `c:\ProgramData\SeedTactics\FMSInsight`. This path can be changed in the
 `config.ini` file if needed, but we suggest that the databases are kept on
-the local drive for performance and data integrety (SQlite works best on a
+the local drive for performance and data integrity (SQlite works best on a
 local drive). The SQLite databases are not large, typically under 100
 megabytes, so disk space is not a problem.
 

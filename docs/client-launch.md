@@ -12,7 +12,7 @@ work (old versions of Internet Explorer only partially work). By default, FMS
 Insight listens on port 5000 and uses `http` so you can visit `http://<ip
 address or name of insigt server>:5000` from your browser. From the computer
 on which you installed FMS Insight server, you can open the FMS Insight client by
-visting [http://localhost:5000](http://localhost:5000). We suggest that you
+visiting [http://localhost:5000](http://localhost:5000). We suggest that you
 bookmark this page or set it as the home page of the browser.  If you have multiple cells,
 just create multiple bookmarks, one for each cell.
 

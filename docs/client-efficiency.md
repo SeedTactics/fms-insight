@@ -20,8 +20,8 @@ and machine cycles for the part will be displayed. The x-axis is the days of
 the month and the y-axis is cycle time in minutes. The cycle time is the wall
 clock time between cycle start and cycle end of the machine or the wall clock
 time between a pallet arriving at the load station to the pallet leaving the
-load station. The legend at the bottom shows which colors coorespond to which
-stations, and by clicking on stations in the legened you can enable or
+load station. The legend at the bottom shows which colors correspond to which
+stations, and by clicking on stations in the legend you can enable or
 disable the viewing of specific stations. Finally, by clicking on a point you
 can obtain details about that specific cycle in a tooltip.
 
@@ -64,7 +64,7 @@ to obtain a percentage that the station was busy with productive work.  (If stat
 were longer than expected, this extra time is not counted in the OEE.  Thus the Station OEE
 should only be focused on seriously once the station cycles are mostly stable at their
 expected cycle time.)  For each grid cell in the chart, the OEE percentage is drawn
-with a color with darker colors higher OEE and ligher colors lower OEE.  A grid cell
+with a color with darker colors higher OEE and lighter colors lower OEE.  A grid cell
 can be moused over to obtain extra information in a tooltip.
 
 
@@ -76,7 +76,7 @@ The Part Production heatmap shows the distribution of completed parts over
 the month. On the x-axis are the days of the month and on the y-axis are the
 part types. For each part and each day, FMS Insight counts how many parts
 were produced that day. For each grid cell in the chart, the completed count
-is drawn as a color with darker colors higher counts and ligher colors lower
+is drawn as a color with darker colors higher counts and lighter colors lower
 counts. A grid cell can be moused over to obtain extra information in a
 tooltip.
 

@@ -9,7 +9,7 @@ in the cell controller. External software is needed to create the jobs,
 prioritize the work, and make sure no traffic jams occur (too much work for
 too few machines) and that the cell stays efficient (enough jobs are created
 to keep the machines busy). Despite requiring extra software, automatic job
-download provides a large benifit in station utilization and lean
+download provides a large benefit in station utilization and lean
 manufacturing when running a large variety of parts with variable part
 quantities.
 
