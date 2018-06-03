@@ -1,4 +1,3 @@
-
 /* Copyright (c) 2018, John Lenz
 
 All rights reserved.
@@ -34,69 +33,41 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from 'react';
 import Button from '@material-ui/core/Button';
-import List from '@material-ui/core/List';
-import ListItem from '@material-ui/core/ListItem';
-import ListItemText from '@material-ui/core/ListItemText';
-import ListItemIcon from '@material-ui/core/ListItemIcon';
 import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogTitle from '@material-ui/core/DialogTitle';
-import CheckmarkIcon from '@material-ui/icons/Check';
-import ShoppingBasketIcon from '@material-ui/icons/ShoppingBasket';
 import TextField from '@material-ui/core/TextField';
 
 import { MaterialDetailTitle } from './Material';
 import { Store, connect, mkAC, AppActionBeforeMiddleware } from '../../store/store';
 import * as matDetails from '../../data/material-details';
 import * as guiState from '../../data/gui-state';
-import CircularProgress from '@material-ui/core/CircularProgress';
 
-function workorderComplete(w: matDetails.WorkorderPlanAndSummary): string {
-  let completed = 0;
-  if (w.summary) {
-    completed = w.summary.completedQty;
-  }
-  return "Due " + w.plan.dueDate.toDateString() +
-         "; Completed " + completed.toString() + " of " + w.plan.quantity.toString();
-}
-
-function WorkorderIcon({work}: {work: matDetails.WorkorderPlanAndSummary}) {
-  let completed = 0;
-  if (work.summary) {
-    completed = work.summary.completedQty;
-  }
-  if (work.plan.quantity <= completed) {
-    return <CheckmarkIcon/>;
-  } else {
-    return <ShoppingBasketIcon/>;
-  }
-}
-
-export interface ManualWorkorderEntryProps {
+export interface ManualSerialEntryProps {
   readonly mat: matDetails.MaterialDetail;
-  readonly assignWorkorder: (data: matDetails.AssignWorkorderData) => void;
+  readonly assignSerial: (data: matDetails.AssignSerialData) => void;
 }
 
-interface ManualWorkorderEntryState {
-  readonly workorder: string;
+interface ManualSerialEntryState {
+  readonly serial: string;
 }
 
-export class ManualWorkorderEntry extends React.PureComponent<ManualWorkorderEntryProps, ManualWorkorderEntryState> {
-  state = {workorder: ""};
+export class ManualSerialEntry extends React.PureComponent<ManualSerialEntryProps, ManualSerialEntryState> {
+  state = {serial: ""};
 
   render() {
     return (
       <TextField
-        label={this.state.workorder === "" ? "Workorder" : "Workorder (press enter)"}
-        value={this.state.workorder}
-        onChange={e => this.setState({workorder: e.target.value})}
+        label={this.state.serial === "" ? "Serial" : "Serial (press enter)"}
+        value={this.state.serial}
+        onChange={e => this.setState({serial: e.target.value})}
         onKeyPress={e => {
-          if (e.key === "Enter" && this.state.workorder && this.state.workorder !== "") {
+          if (e.key === "Enter" && this.state.serial && this.state.serial !== "") {
             e.preventDefault();
-            this.props.assignWorkorder({
+            this.props.assignSerial({
               mat: this.props.mat,
-              workorder: this.state.workorder
+              serial: this.state.serial
             });
           }
         }}
@@ -105,13 +76,13 @@ export class ManualWorkorderEntry extends React.PureComponent<ManualWorkorderEnt
   }
 }
 
-export interface SelectWorkorderProps {
+export interface EnterSerialProps {
   readonly mats: matDetails.MaterialDetail | null;
   readonly onClose: () => void;
-  readonly assignWorkorder: (data: matDetails.AssignWorkorderData) => void;
+  readonly assignSerial: (data: matDetails.AssignSerialData) => void;
 }
 
-export function SelectWorkorderDialog(props: SelectWorkorderProps) {
+export function EnterSerialDialog(props: EnterSerialProps) {
   let body: JSX.Element | undefined;
 
   if (props.mats === null) {
@@ -121,36 +92,13 @@ export function SelectWorkorderDialog(props: SelectWorkorderProps) {
     if (mat === null) {
       body = <p>None</p>;
     } else {
-      const workList = (
-        <List>
-          {mat.workorders.map(w => (
-            <ListItem
-              key={w.plan.workorderId}
-              button
-              onClick={() => props.assignWorkorder({mat, workorder: w.plan.workorderId})}
-            >
-              <ListItemIcon>
-                <WorkorderIcon work={w}/>
-              </ListItemIcon>
-              <ListItemText
-                primary={w.plan.workorderId}
-                secondary={workorderComplete(w)}
-              />
-            </ListItem>
-          ))}
-        </List>
-      );
-
       body = (
         <>
           <DialogTitle disableTypography>
             <MaterialDetailTitle partName={mat.partName} serial={mat.serial}/>
           </DialogTitle>
           <DialogContent>
-            <ManualWorkorderEntry mat={mat} assignWorkorder={props.assignWorkorder}/>
-            {
-              mat.loading_workorders ? <CircularProgress/> : workList
-            }
+            <ManualSerialEntry mat={mat} assignSerial={props.assignSerial}/>
           </DialogContent>
           <DialogActions>
             <Button onClick={props.onClose} color="primary">
@@ -174,13 +122,13 @@ export function SelectWorkorderDialog(props: SelectWorkorderProps) {
 
 export default connect(
   (st: Store) => ({
-    mats: st.Gui.workorder_dialog_open ? st.MaterialDetails.material : null,
+    mats: st.Gui.serial_dialog_open ? st.MaterialDetails.material : null,
   }),
   {
-    onClose: mkAC(guiState.ActionType.SetWorkorderDialogOpen),
-    assignWorkorder: (data: matDetails.AssignWorkorderData) => [
-      matDetails.assignWorkorder(data),
-      { type: guiState.ActionType.SetWorkorderDialogOpen, open: false, }
+    onClose: mkAC(guiState.ActionType.SetSerialDialogOpen),
+    assignSerial: (data: matDetails.AssignSerialData) => [
+      matDetails.assignSerial(data),
+      { type: guiState.ActionType.SetSerialDialogOpen, open: false, }
     ] as AppActionBeforeMiddleware,
   }
-)(SelectWorkorderDialog);
+)(EnterSerialDialog);

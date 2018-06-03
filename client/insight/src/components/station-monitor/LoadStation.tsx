@@ -48,6 +48,7 @@ import { Store, connect, mkAC, AppActionBeforeMiddleware } from '../../store/sto
 import * as matDetails from '../../data/material-details';
 import { MaterialSummary } from '../../data/events';
 import SelectWorkorderDialog from './SelectWorkorder';
+import SetSerialDialog from './EnterSerial';
 
 const palletStyles = withStyles(() => ({
   palletContainerFill: {
@@ -140,6 +141,7 @@ export const PalletColumn = palletStyles<LoadStationProps>(props => {
 export interface LoadMatDialogProps extends MaterialDialogProps {
   readonly workAssignType: api.WorkorderAssignmentType;
   readonly openSelectWorkorder: (mat: matDetails.MaterialDetail) => void;
+  readonly openSetSerial: (mat: matDetails.MaterialDetail) => void;
 }
 
 export function LoadMatDialog(props: LoadMatDialogProps) {
@@ -149,12 +151,25 @@ export function LoadMatDialog(props: LoadMatDialogProps) {
     }
     props.openSelectWorkorder(props.display_material);
   }
+  function openSetSerial() {
+    if (!props.display_material) {
+      return;
+    }
+    props.openSetSerial(props.display_material);
+  }
   return (
     <MaterialDialog
       display_material={props.display_material}
       onClose={props.onClose}
       buttons={
         <>
+          <Button color="primary" onClick={openSetSerial}>
+            {
+              props.display_material && props.display_material.serial ?
+                "Change Serial"
+                : "Assign Serial"
+            }
+          </Button>
           { props.workAssignType === api.WorkorderAssignmentType.AssignWorkorderAtUnload ?
             <Button color="primary" onClick={openAssignWorkorder}>
               {
@@ -185,6 +200,11 @@ const ConnectedMaterialDialog = connect(
       },
       matDetails.loadWorkorders(mat),
     ] as AppActionBeforeMiddleware,
+    openSetSerial: (mat: matDetails.MaterialDetail) =>
+      ({
+        type: guiState.ActionType.SetSerialDialogOpen,
+        open: true
+      }),
   }
 )(LoadMatDialog);
 
@@ -280,6 +300,7 @@ export const LoadStation = loadStyles<LoadStationProps>(props => {
         }
         {props.workAssignType === api.WorkorderAssignmentType.AssignWorkorderAtUnload
           ? <SelectWorkorderDialog/> : undefined}
+        <SetSerialDialog/>
         <ConnectedMaterialDialog/>
       </main>
     </DocumentTitle>
