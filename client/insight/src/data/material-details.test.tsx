@@ -253,6 +253,27 @@ it("succeeds for a workorder set", () => {
   });
 });
 
+it("succeeds for a serial set", () => {
+  const evt = fakeWashComplete();
+  const action: mat.Action = {
+    type: mat.ActionType.UpdateMaterial,
+    newSerial: "serial1524",
+    pledge: {
+      status: PledgeStatus.Completed,
+      result: evt,
+    }
+  };
+  const initialSt = {
+    material: {...m, updating_material: true},
+    add_mat_in_progress: false,
+  };
+  const st = mat.reducer(initialSt, action);
+  expect(st.material).toEqual({...m,
+      events: [evt],
+      serial: "serial1524",
+  });
+});
+
 it("successfully processes events", () => {
   const cycle = fakeCycle(new Date(), 55, undefined, undefined, undefined, true);
   const logmat = cycle[0].material[0];

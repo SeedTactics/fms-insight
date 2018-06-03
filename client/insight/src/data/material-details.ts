@@ -81,6 +81,7 @@ export type Action =
       type: ActionType.UpdateMaterial,
       newInspType?: string,
       newWorkorder?: string,
+      newSerial?: string,
       pledge: Pledge<Readonly<api.ILogEntry> | undefined>,
     }
   | {
@@ -218,6 +219,30 @@ export function assignWorkorder({mat, workorder}: AssignWorkorderData): ABF {
     newWorkorder: workorder,
     pledge: client.setWorkorder(
       workorder,
+      new api.LogMaterial({
+        id: mat.materialID,
+        uniq: mat.jobUnique,
+        part: mat.partName,
+        proc: 1,
+        numproc: 1,
+        face: "1",
+      })
+    )
+  };
+}
+
+export interface AssignSerialData {
+  readonly mat: MaterialDetail;
+  readonly serial: string;
+}
+
+export function assignSerial({mat, serial}: AssignSerialData): ABF {
+  const client = new api.LogClient();
+  return {
+    type: ActionType.UpdateMaterial,
+    newSerial: serial,
+    pledge: client.setSerial(
+      serial,
       new api.LogMaterial({
         id: mat.materialID,
         uniq: mat.jobUnique,
@@ -414,6 +439,7 @@ export function reducer(s: State, a: Action): State {
               completedInspections:
                 a.newInspType ? [...oldMatEnd.completedInspections, a.newInspType] : oldMatEnd.completedInspections,
               workorderId: a.newWorkorder || oldMatEnd.workorderId,
+              serial: a.newSerial || oldMatEnd.serial,
               events: a.pledge.result ? [...oldMatEnd.events, a.pledge.result] : oldMatEnd.events,
               updating_material: false,
             },
