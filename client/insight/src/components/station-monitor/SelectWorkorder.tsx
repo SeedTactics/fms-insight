@@ -44,6 +44,7 @@ import DialogContent from '@material-ui/core/DialogContent';
 import DialogTitle from '@material-ui/core/DialogTitle';
 import CheckmarkIcon from '@material-ui/icons/Check';
 import ShoppingBasketIcon from '@material-ui/icons/ShoppingBasket';
+import TextField from '@material-ui/core/TextField';
 
 import { MaterialDetailTitle } from './Material';
 import { Store, connect, mkAC, AppActionBeforeMiddleware } from '../../store/store';
@@ -69,6 +70,38 @@ function WorkorderIcon({work}: {work: matDetails.WorkorderPlanAndSummary}) {
     return <CheckmarkIcon/>;
   } else {
     return <ShoppingBasketIcon/>;
+  }
+}
+
+export interface ManualWorkorderEntryProps {
+  readonly mat: matDetails.MaterialDetail;
+  readonly assignWorkorder: (data: matDetails.AssignWorkorderData) => void;
+}
+
+interface ManualWorkorderEntryState {
+  readonly workorder: string;
+}
+
+export class ManualWorkorderEntry extends React.PureComponent<ManualWorkorderEntryProps, ManualWorkorderEntryState> {
+  state = {workorder: ""};
+
+  render() {
+    return (
+      <TextField
+        label={this.state.workorder === "" ? "Workorder" : "Workorder (press enter)"}
+        value={this.state.workorder}
+        onChange={e => this.setState({workorder: e.target.value})}
+        onKeyPress={e => {
+          if (e.key === "Enter" && this.state.workorder && this.state.workorder !== "") {
+            e.preventDefault();
+            this.props.assignWorkorder({
+              mat: this.props.mat,
+              workorder: this.state.workorder
+            });
+          }
+        }}
+      />
+    );
   }
 }
 
@@ -114,6 +147,7 @@ export function SelectWorkorderDialog(props: SelectWorkorderProps) {
             <MaterialDetailTitle partName={mat.partName} serial={mat.serial}/>
           </DialogTitle>
           <DialogContent>
+            <ManualWorkorderEntry mat={mat} assignWorkorder={props.assignWorkorder}/>
             {
               mat.loading_workorders ? <CircularProgress/> : workList
             }

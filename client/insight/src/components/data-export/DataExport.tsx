@@ -42,18 +42,19 @@ import CardContent from '@material-ui/core/CardContent';
 import CardHeader from '@material-ui/core/CardHeader';
 import CardActions from '@material-ui/core/CardActions';
 import Grid from '@material-ui/core/Grid';
+import BasketIcon from '@material-ui/icons/ShoppingBasket';
 import * as queryString from 'query-string';
 
 import * as api from '../../data/api';
 import { Store, connect } from '../../store/store';
 import { LogEntries } from '../LogEntry';
 
-export interface CSVExportState {
+export interface CSVLogExportState {
   readonly exportDate: string;
 }
 
-export class CSVExport extends React.PureComponent<{}, CSVExportState> {
-  state: CSVExportState = {
+export class CSVLogExport extends React.PureComponent<{}, CSVLogExportState> {
+  state: CSVLogExportState = {
     exportDate: df.format(df.addDays(new Date(), -1), "YYYY-MM-DD"),
   };
 
@@ -115,6 +116,70 @@ export class CSVExport extends React.PureComponent<{}, CSVExportState> {
   }
 }
 
+export interface CSVWorkorderExportState {
+  readonly exportWorkorder: string;
+}
+
+export class CSVWorkorderExport extends React.PureComponent<{}, CSVWorkorderExportState> {
+  state: CSVWorkorderExportState = {
+    exportWorkorder: "",
+  };
+
+  render() {
+    const startEndQuery = queryString.stringify({
+      ids: this.state.exportWorkorder,
+    });
+    const curlUrl =
+      window.location.protocol + "//" + window.location.host
+     + "/api/v1/log/workorders?" + startEndQuery;
+
+    return (
+      <Card style={{margin: '2em'}}>
+        <CardHeader
+          title={
+          <div style={{display: 'flex', alignItems: 'center'}}>
+            <BasketIcon/>
+            <div style={{marginLeft: '10px', marginRight: '3em'}}>
+              Workorder Data Export
+            </div>
+          </div>}
+        />
+        <CardContent>
+          <Grid container>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Workorder"
+                value={this.state.exportWorkorder}
+                onChange={e => this.setState({exportWorkorder: e.target.value})}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={5}>
+              <p>
+                Data is also available programatically over HTTP.
+                See the <a href="/swagger/">OpenAPI Specification</a> or
+                try the following command in the terminal or PowerShell.
+              </p>
+              <code>
+                curl -o workorders.json {curlUrl}
+              </code>
+            </Grid>
+          </Grid>
+        </CardContent>
+        <CardActions>
+          <Button
+            variant="raised"
+            color="primary"
+            disabled={!this.state.exportWorkorder || this.state.exportWorkorder === ""}
+            href={"/api/v1/log/workorders.csv?" + startEndQuery}
+          >
+            Export to CSV
+          </Button>
+        </CardActions>
+      </Card>
+    );
+  }
+}
+
 export interface RecentEventsProps {
   events: ReadonlyArray<Readonly<api.ILogEntry>>;
 }
@@ -148,7 +213,8 @@ export default function DataExport() {
   return (
     <DocumentTitle title="Data Export - FMS Insight">
       <main style={{padding: '8px'}}>
-        <CSVExport/>
+        <CSVLogExport/>
+        <CSVWorkorderExport/>
         <ConnectedRecentEvents/>
       </main>
     </DocumentTitle>

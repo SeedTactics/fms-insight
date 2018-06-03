@@ -129,6 +129,25 @@ namespace BlackMaple.MachineFramework.Controllers
             return _server.GetWorkorderSummaries(ids);
         }
 
+        [HttpGet("workorders.csv")]
+        [Produces("text/csv")]
+        public IActionResult GetWorkordersCSV([FromQuery] IEnumerable<string> ids)
+        {
+            var ms = new System.IO.MemoryStream();
+            try {
+                var tx = new System.IO.StreamWriter(ms);
+                CSVWorkorderConverter.WriteCSV(tx, _server.GetWorkorderSummaries(ids));
+            } catch {
+                ms.Close();
+                throw;
+            }
+            ms.Position = 0;
+            // filestreamresult will close the memorystream
+            return new FileStreamResult(ms, "text/csv") {
+                FileDownloadName = "workorders.csv"
+            };
+        }
+
         [HttpPost("serial/{serial}/material")]
         public LogEntry SetSerial(string serial, [FromBody] LogMaterial mat)
         {
