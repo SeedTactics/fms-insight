@@ -2,7 +2,8 @@
   "docs": {
     "Basics": [
       "overview",
-      "getting-started"
+      "getting-started",
+      "material-tracking"
     ],
     "Server": [
       "server-config",
