@@ -98,6 +98,7 @@ export function openWebsocket(d: (a: any) => void, getEvtState: () => events.Sta
     if (json.LogEntry) {
       const entry = LogEntry.fromJS(json.LogEntry);
       d(events.receiveNewEvents([entry]));
+      d(current.receiveNewLogEntry(entry));
     } else if (json.NewJobs) {
       const newJobs = NewJobs.fromJS(json.NewJobs);
       d(events.receiveNewJobs(newJobs));

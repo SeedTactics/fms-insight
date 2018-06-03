@@ -31,6 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as api from './api';
+import * as im from 'immutable';
 import { Pledge, PledgeStatus, ActionBeforeMiddleware } from '../store/middleware';
 
 export interface State {
@@ -40,7 +41,7 @@ export interface State {
     readonly date_of_current_status: Date | undefined;
 }
 
-const initial: State = {
+export const initial: State = {
     loading: false,
     current_status: {
         jobs: {},
@@ -55,11 +56,13 @@ const initial: State = {
 export enum ActionType {
     LoadCurrentStatus = 'CurStatus_LoadCurrentStatus',
     SetCurrentStatus = 'CurStatus_SetCurrentStatus',
+    ReceiveNewLogEntry = 'Events_NewLogEntry',
 }
 
 export type Action =
   | {type: ActionType.LoadCurrentStatus, now: Date, pledge: Pledge<Readonly<api.ICurrentStatus>> }
   | {type: ActionType.SetCurrentStatus, now: Date, st: Readonly<api.ICurrentStatus>}
+  | {type: ActionType.ReceiveNewLogEntry, entry: Readonly<api.ILogEntry>}
   ;
 
 type ABF = ActionBeforeMiddleware<Action>;
@@ -79,6 +82,61 @@ export function setCurrentStatus(st: Readonly<api.ICurrentStatus>): ABF {
         now: new Date(),
         st,
     };
+}
+
+export function receiveNewLogEntry(entry: Readonly<api.ILogEntry>): ABF {
+    return {
+        type: ActionType.ReceiveNewLogEntry,
+        entry,
+    };
+}
+
+function process_new_events(entry: Readonly<api.ILogEntry>, s: State): State {
+    let mats: im.Map<number, Readonly<api.InProcessMaterial>> | undefined;
+    function adjustMat(id: number, f: (mat: Readonly<api.IInProcessMaterial>) => Readonly<api.IInProcessMaterial>) {
+        if (mats === undefined) {
+            mats = s.current_status.material.reduce(
+                (map, mat) => map.set(mat.materialID, mat),
+                im.Map<number, Readonly<api.InProcessMaterial>>()
+            );
+        }
+        mats = mats.update(id, mat => new api.InProcessMaterial(f(mat)));
+    }
+
+    switch (entry.type) {
+        case api.LogType.PartMark:
+        for (let m of entry.material) {
+            adjustMat(m.id, inmat => ({...inmat, serial: entry.result}));
+        }
+        break;
+
+        case api.LogType.OrderAssignment:
+        for (let m of entry.material) {
+            adjustMat(m.id, inmat => ({...inmat, workorderId: entry.result}));
+        }
+        break;
+
+        case api.LogType.Inspection:
+        if (entry.result.toLowerCase() === "true" || entry.result === "1") {
+            const inspParts = entry.program.split(",");
+            if (inspParts.length >= 2) {
+                for (let m of entry.material) {
+                    adjustMat(m.id, inmat =>
+                        ({...inmat, signaledInspections: [...inmat.signaledInspections, inspParts[1]]})
+                    );
+                }
+            }
+        }
+        break;
+        }
+
+    if (mats === undefined) {
+        return s;
+    } else {
+        return {...s, current_status: {...s.current_status,
+            material: mats.valueSeq().toArray()
+        }};
+    }
 }
 
 export function reducer(s: State, a: Action): State {
@@ -101,6 +159,9 @@ export function reducer(s: State, a: Action): State {
             }
         case ActionType.SetCurrentStatus:
             return {...s, current_status: a.st, date_of_current_status: a.now};
+
+        case ActionType.ReceiveNewLogEntry:
+            return process_new_events(a.entry, s);
 
         default: return s;
     }
