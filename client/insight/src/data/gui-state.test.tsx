@@ -88,6 +88,22 @@ it("closes the workorder dialog", () => {
   expect(s.workorder_dialog_open).toBe(false);
 });
 
+it("opens the serial dialog", () => {
+  let s = gui.reducer(gui.initial, {
+    type: gui.ActionType.SetSerialDialogOpen,
+    open: true
+  });
+  expect(s.serial_dialog_open).toBe(true);
+});
+
+it("closes the serial dialog", () => {
+  let s = gui.reducer(gui.initial, {
+    type: gui.ActionType.SetSerialDialogOpen,
+    open: false
+  });
+  expect(s.serial_dialog_open).toBe(false);
+});
+
 it("sets the add mat dialog state", () => {
   let s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetAddMatToQueueDialog,
