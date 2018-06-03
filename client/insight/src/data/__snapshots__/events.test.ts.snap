@@ -201,7 +201,6 @@ Object {
     "station_groups": Immutable.Set [
       "L/U",
       "MC",
-      "Inspect Insp1",
     ],
   },
   "inspection": Object {
@@ -455,7 +454,6 @@ Object {
     "station_groups": Immutable.Set [
       "L/U",
       "MC",
-      "Inspect Insp1",
     ],
   },
   "inspection": Object {
@@ -1009,7 +1007,6 @@ Object {
     "station_groups": Immutable.Set [
       "L/U",
       "MC",
-      "Inspect Insp1",
     ],
   },
   "inspection": Object {
@@ -1570,7 +1567,6 @@ Object {
     "station_groups": Immutable.Set [
       "L/U",
       "MC",
-      "Inspect Insp1",
     ],
   },
   "inspection": Object {
@@ -2124,7 +2120,6 @@ Object {
     "station_groups": Immutable.Set [
       "L/U",
       "MC",
-      "Inspect Insp1",
     ],
   },
   "inspection": Object {

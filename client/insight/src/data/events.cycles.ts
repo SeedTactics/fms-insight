@@ -86,7 +86,17 @@ function stat_group(e: Readonly<api.ILogEntry>): string {
       return 'Inspect ' + e.program;
     default:
       return "";
-    }
+  }
+}
+
+function stat_group_load_machine_only(e: Readonly<api.ILogEntry>): string {
+  switch (e.type) {
+    case api.LogType.LoadUnloadCycle:
+    case api.LogType.MachineCycle:
+      return e.loc;
+    default:
+      return "";
+  }
 }
 
 function stat_name_and_num(e: PartCycleData): string {
@@ -208,7 +218,7 @@ export function process_events(
       );
 
     var newStatGroups = evtsSeq
-      .map(stat_group)
+      .map(stat_group_load_machine_only)
       .filter(s => s !== "" && !statGroups.has(s))
       .toSet();
     if (newStatGroups.size > 0) {
