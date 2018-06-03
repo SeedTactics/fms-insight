@@ -37,6 +37,9 @@ import Tab from '@material-ui/core/Tab';
 import Typography from '@material-ui/core/Typography';
 import Toolbar from '@material-ui/core/Toolbar';
 import Hidden from '@material-ui/core/Hidden';
+import HelpOutline from '@material-ui/icons/HelpOutline';
+import IconButton from '@material-ui/core/IconButton';
+import Tooltip from '@material-ui/core/Tooltip';
 
 import Dashboard from './components/dashboard/Dashboard';
 import CostPerPiece from './components/cost-per-piece/CostPerPiece';
@@ -67,6 +70,7 @@ interface HeaderProps {
 
 function Header(p: HeaderProps) {
     let tabType: TabType = TabType.Dashboard;
+    let helpUrl = "https://fms-insight.seedtactics.com/docs/client-dashboard.html";
     switch (p.routeState.current) {
       case routes.RouteLocation.Dashboard:
         tabType = TabType.Dashboard;
@@ -77,12 +81,15 @@ function Header(p: HeaderProps) {
       case routes.RouteLocation.Queues:
       case routes.RouteLocation.AllMaterial:
         tabType = TabType.StationMonitor;
+        helpUrl = "https://fms-insight.seedtactics.com/docs/client-station-monitor.html";
         break;
       case routes.RouteLocation.Efficiency:
         tabType = TabType.Efficiency;
+        helpUrl = "https://fms-insight.seedtactics.com/docs/client-efficiency.html";
         break;
       case routes.RouteLocation.CostPerPiece:
         tabType = TabType.CostPerPiece;
+        helpUrl = "https://fms-insight.seedtactics.com/docs/client-cost-per-piece.html";
         break;
       case routes.RouteLocation.DataExport:
         tabType = TabType.DataExport;
@@ -102,6 +109,14 @@ function Header(p: HeaderProps) {
       </Tabs>
     );
 
+    const HelpButton = () => (
+      <Tooltip title="Help">
+        <IconButton aria-label="Help" href={helpUrl} target="_help">
+          <HelpOutline/>
+        </IconButton>
+      </Tooltip>
+    );
+
     const largeAppBar = (
       <AppBar position="static">
         <Toolbar>
@@ -113,6 +128,7 @@ function Header(p: HeaderProps) {
           <Typography variant="title" style={{'marginRight': '2em'}}>Insight</Typography>
           {tabs(false)}
           <LoadingIcon/>
+          <HelpButton/>
         </Toolbar>
       </AppBar>
     );
@@ -128,6 +144,7 @@ function Header(p: HeaderProps) {
           <Typography variant="title">Insight</Typography>
           <div style={{'flexGrow': 1}}/>
           <LoadingIcon/>
+          <HelpButton/>
         </Toolbar>
         {tabs(true)}
       </AppBar>

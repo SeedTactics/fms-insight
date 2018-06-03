@@ -104,6 +104,7 @@ exports[`renders the all material monitor: all material monitor header 1`] = `
           />
         </WithStyles(Tabs)>
         <Connect(LoadingIcon) />
+        <HelpButton />
       </WithStyles(Toolbar)>
     </WithStyles(AppBar)>
   </Hidden>
@@ -147,6 +148,7 @@ exports[`renders the all material monitor: all material monitor header 1`] = `
           }
         />
         <Connect(LoadingIcon) />
+        <HelpButton />
       </WithStyles(Toolbar)>
       <WithStyles(Tabs)
         fullWidth={true}
@@ -282,6 +284,7 @@ exports[`renders the cost per piece: cost per piece header 1`] = `
           />
         </WithStyles(Tabs)>
         <Connect(LoadingIcon) />
+        <HelpButton />
       </WithStyles(Toolbar)>
     </WithStyles(AppBar)>
   </Hidden>
@@ -325,6 +328,7 @@ exports[`renders the cost per piece: cost per piece header 1`] = `
           }
         />
         <Connect(LoadingIcon) />
+        <HelpButton />
       </WithStyles(Toolbar)>
       <WithStyles(Tabs)
         fullWidth={true}
@@ -460,6 +464,7 @@ exports[`renders the dashboard: dashboard header 1`] = `
           />
         </WithStyles(Tabs)>
         <Connect(LoadingIcon) />
+        <HelpButton />
       </WithStyles(Toolbar)>
     </WithStyles(AppBar)>
   </Hidden>
@@ -503,6 +508,7 @@ exports[`renders the dashboard: dashboard header 1`] = `
           }
         />
         <Connect(LoadingIcon) />
+        <HelpButton />
       </WithStyles(Toolbar)>
       <WithStyles(Tabs)
         fullWidth={true}
@@ -638,6 +644,7 @@ exports[`renders the data export page: data export header 1`] = `
           />
         </WithStyles(Tabs)>
         <Connect(LoadingIcon) />
+        <HelpButton />
       </WithStyles(Toolbar)>
     </WithStyles(AppBar)>
   </Hidden>
@@ -681,6 +688,7 @@ exports[`renders the data export page: data export header 1`] = `
           }
         />
         <Connect(LoadingIcon) />
+        <HelpButton />
       </WithStyles(Toolbar)>
       <WithStyles(Tabs)
         fullWidth={true}
@@ -816,6 +824,7 @@ exports[`renders the efficiency: efficiency header 1`] = `
           />
         </WithStyles(Tabs)>
         <Connect(LoadingIcon) />
+        <HelpButton />
       </WithStyles(Toolbar)>
     </WithStyles(AppBar)>
   </Hidden>
@@ -859,6 +868,7 @@ exports[`renders the efficiency: efficiency header 1`] = `
           }
         />
         <Connect(LoadingIcon) />
+        <HelpButton />
       </WithStyles(Toolbar)>
       <WithStyles(Tabs)
         fullWidth={true}
@@ -996,6 +1006,7 @@ exports[`renders the inspection monitor: inspection monitor header 1`] = `
           />
         </WithStyles(Tabs)>
         <Connect(LoadingIcon) />
+        <HelpButton />
       </WithStyles(Toolbar)>
     </WithStyles(AppBar)>
   </Hidden>
@@ -1039,6 +1050,7 @@ exports[`renders the inspection monitor: inspection monitor header 1`] = `
           }
         />
         <Connect(LoadingIcon) />
+        <HelpButton />
       </WithStyles(Toolbar)>
       <WithStyles(Tabs)
         fullWidth={true}
@@ -1176,6 +1188,7 @@ exports[`renders the load monitor: station monitor header 1`] = `
           />
         </WithStyles(Tabs)>
         <Connect(LoadingIcon) />
+        <HelpButton />
       </WithStyles(Toolbar)>
     </WithStyles(AppBar)>
   </Hidden>
@@ -1219,6 +1232,7 @@ exports[`renders the load monitor: station monitor header 1`] = `
           }
         />
         <Connect(LoadingIcon) />
+        <HelpButton />
       </WithStyles(Toolbar)>
       <WithStyles(Tabs)
         fullWidth={true}
@@ -1356,6 +1370,7 @@ exports[`renders the queue monitor: queue monitor header 1`] = `
           />
         </WithStyles(Tabs)>
         <Connect(LoadingIcon) />
+        <HelpButton />
       </WithStyles(Toolbar)>
     </WithStyles(AppBar)>
   </Hidden>
@@ -1399,6 +1414,7 @@ exports[`renders the queue monitor: queue monitor header 1`] = `
           }
         />
         <Connect(LoadingIcon) />
+        <HelpButton />
       </WithStyles(Toolbar)>
       <WithStyles(Tabs)
         fullWidth={true}
@@ -1536,6 +1552,7 @@ exports[`renders the wash monitor: wash monitor header 1`] = `
           />
         </WithStyles(Tabs)>
         <Connect(LoadingIcon) />
+        <HelpButton />
       </WithStyles(Toolbar)>
     </WithStyles(AppBar)>
   </Hidden>
@@ -1579,6 +1596,7 @@ exports[`renders the wash monitor: wash monitor header 1`] = `
           }
         />
         <Connect(LoadingIcon) />
+        <HelpButton />
       </WithStyles(Toolbar)>
       <WithStyles(Tabs)
         fullWidth={true}
