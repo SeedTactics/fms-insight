@@ -123,26 +123,26 @@ Insight allows the operator to keep the virtual whiteboard in sync with the
 material on the factory floor. Operators can remove virtual material sticky
 notes from the whiteboard by clicking a button and add sticky notes by
 scanning a barcode or manually entering a serial. Each queue or conveyor or
-place where material is under manual control has a cooresponding whiteboard
+place where material is under manual control has a corresponding whiteboard
 region. By placing a computer or tablet at that place in the factory, the
 operator can at a glance see if the virtual whiteboard matches the reality on
 the factory floor, and if not simply edit the virtual whiteboard to match.
 
 ## An Example Design
 
-The virtual whiteboard implemented by FMS Insight is versitle and can adjust
+The virtual whiteboard implemented by FMS Insight is versatile and can adjust
 to a huge variety of processes with parts moving in and out of automation and
 manual handling.
 
-For example, consider a process with two cells: a horizonal machining cell
+For example, consider a process with two cells: a horizontal machining cell
 and a lathe cell. Parts are manually loaded and unloaded and transfer between
 cells via a conveyor. The conveyor between the cells will correspond to a
 region on the virtual whiteboard. Also, right next to the conveyor, there is
 a computer or mounted tablet with an attached barcode scanner. The computer
 uses FMS Insight to display the region of the whiteboard for the conveyor. As
 parts are unloaded from one cell, FMS Insight automatically moves the
-cooresponding material sticky note from the pallet to the conveyor region.
-Simiarly, FMS Insight is configured to monitor the virtual whiteboard region
+corresponding material sticky note from the pallet to the conveyor region.
+Similarly, FMS Insight is configured to monitor the virtual whiteboard region
 for the conveyor to know when to bring pallets to the load station to load
 material out of the conveyor.
 
@@ -191,12 +191,12 @@ or stands for holding parts between processes (e.g. large parts which have
 process 1 and process 2 on different pallets). At each location, dedicate a
 computer or mounted tablet with an attached barcode scanner to view and edit
 the whiteboard region. Insight can be configured to automatically move the
-virtual sticky notes during normal opreations as parts are loaded and
+virtual sticky notes during normal operations as parts are loaded and
 unloaded into these queues, but the operator can use the computer and scanner
 to adjust the whiteboard region as needed.
 
 For in-process manual operations such as manual CMM stations or custom
-processes outside the auatomated cell, create two whiteboard regions. One
+processes outside the automated cell, create two whiteboard regions. One
 region for the input to the process and one region for the output from the
 process. For example, at an in-process CMM stand, create a whiteboard region
 for the unloaded parts not yet measured. FMS Insight can then be configured
@@ -212,7 +212,7 @@ outbound region to the pallet as part of the load operation.
 For raw material, Insight supports two options. Insight can just assume raw
 material is always available in which case Insight will create a new virtual
 sticky note during the initial loading. In this design, the first time a
-sticky note appears is on the pallet. Alternativly, Insight can be configured
+sticky note appears is on the pallet. Alternatively, Insight can be configured
 to draw initial material from a virtual whiteboard region. In this case, when
 material arrives, an operator must scan or add the material into the initial
 whiteboard region. Once added, FMS Insight will then activate the pallet to

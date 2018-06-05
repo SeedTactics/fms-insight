@@ -107,6 +107,6 @@ any part by scanned serial.
 ![Screenshot of All Material screen](/docs/assets/insight-all-material.jpg)
 
 The All Material screen displays all virtual whiteboard regions.  This includes the regions for all pallets
-and all configured in-process queues.  This is primarily indended to help visualize and debug the current state
+and all configured in-process queues.  This is primarily intended to help visualize and debug the current state
 of the whole cell; typically at specific stations during normal operation one of the other screens which focuses
 on only a section of the virtual whiteboard is more appropriate.
