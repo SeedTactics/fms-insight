@@ -28,14 +28,15 @@ in-process queues have their own computer with a dedicated display, but for queu
 associated with the load station such as a transfer stand, the virtual whiteboard region for
 the queue can be displayed along with the pallet regions.
 
+![Screenshot of Load Station Material Dialog](/docs/assets/insight-loadstation-details.jpg)
+
 When a material sticky note is clicked or tapped, a dialog will open with a log of events for the
 piece of material.  In the dialog, a serial can be entered or changed, the part can be
-marked for inspection, and optionally assigned to a workorder.  The server has a
-[configuration value](server-config.md) called "Workorder Assignment" that determines
-where workorders are assigned.  If the configuration value is set to "AssignWorkorderAtUnload",
-the dialog will contain a button allowing the workorder to be assigned.
+marked for inspection, and assigned to a workorder.
 
 ## Queues
+
+Coming soon.
 
 ## Inspection
 
@@ -47,6 +48,8 @@ On the left is the virtual whiteboard region for completed but not yet inspected
 the right is material which has completed inspections.  Insight only displays material completed
 within the last 36 hours.
 
+![Screenshot of Inspection Station Material Dialog](/docs/assets/insight-inspection-details.jpg)
+
 When a material sticky note is clicked or tapped, a dialog will open with a
 log of events for the piece of material. If a specific inspection type is
 selected, there will be buttons to mark a piece of material as either
@@ -55,14 +58,19 @@ event in the log and move the virtual sticky note from the left to the right.
 The top toolbar on the right allows an operator name to be entered and this
 operator name will be attached to the created inspection completed log entry.
 
-Finally, an attached barcode scanner can also be used to open the material dialog.  This allows viewing
-details and marking as inspected or uninspected any part by scanned serial.
+Finally, an attached barcode scanner can also be used to open the material
+dialog. This allows viewing details and marking as inspected or uninspected
+any part by scanned serial.
 
 ## Wash
+
+![Screenshot of Wash Screen](/docs/assets/insight-wash.jpg)
 
 The wash screen shows completed material from the last 36 hours. On the left
 is the virtual whiteboard region for completed but not yet washed material
 and on the right is material which has completed final wash.
+
+![Screenshot of Wash Material Details](/docs/assets/insight-wash-details.jpg)
 
 When a material sticky note is clicked or tapped, a dialog will open with a
 log of events for the piece of material. There is a button to mark a piece of
@@ -71,13 +79,9 @@ event in the log and move the virtual sticky note from the left to the right.
 The top toolbar on the right allows an operator name to be entered and this
 operator name will be attached to the created inspection completed log entry.
 
-The server has a
-[configuration value](server-config.md) called "Workorder Assignment" that determines
-where workorders are assigned.  If the configuration value is set to "AssignWorkorderAtWash",
-the dialog will contain a button allowing the workorder to be assigned.
-
-Finally, an attached barcode scanner can also be used to open the material dialog.  This allows viewing
-details and marking as inspected or uninspected any part by scanned serial.
+Finally, an attached barcode scanner can also be used to open the material
+dialog. This allows viewing details and marking as inspected or uninspected
+any part by scanned serial.
 
 ## All Material
 
