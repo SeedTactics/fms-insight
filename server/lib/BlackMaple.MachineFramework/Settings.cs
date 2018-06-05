@@ -50,13 +50,6 @@ namespace BlackMaple.MachineFramework
         public int SerialLength {get;set;}
     }
 
-    public enum WorkorderAssignmentType
-    {
-      AssignWorkorderAtUnload,
-      AssignWorkorderAtWash,
-      NoAutomaticWorkorderAssignment,
-    }
-
     public class ServerSettings
     {
       #if SERVICE_AVAIL
@@ -141,8 +134,6 @@ namespace BlackMaple.MachineFramework
     {
       public bool AutomaticSerials {get;set;} = false;
       public int SerialLength {get;set;} = 10;
-      public BlackMaple.MachineFramework.WorkorderAssignmentType WorkorderAssignment {get;set;}
-        = BlackMaple.MachineFramework.WorkorderAssignmentType.NoAutomaticWorkorderAssignment;
 
       static public FMSSettings Load(IConfiguration config)
       {

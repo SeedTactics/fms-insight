@@ -39,7 +39,6 @@ export enum ActionType {
 }
 
 interface LoadReturn {
-  readonly workType: api.WorkorderAssignmentType;
   readonly fmsInfo: Readonly<api.IFMSInfo>;
 }
 
@@ -48,24 +47,19 @@ export type Action =
   ;
 
 export interface State {
-  readonly workorderAssignmentType: api.WorkorderAssignmentType;
   readonly fmsInfo?: Readonly<api.IFMSInfo>;
   readonly loadError?: Error;
 }
 
 export const initial: State = {
-  workorderAssignmentType: api.WorkorderAssignmentType.AssignWorkorderAtWash,
   fmsInfo: undefined,
 };
 
 export function loadServerSettings(): ActionBeforeMiddleware<Action> {
   const client = new api.ServerClient();
-  const p: Promise<LoadReturn> = client.workorderAssignmentType()
-  .then(workType => {
-    return client.fMSInformation()
-    .then(fmsInfo => {
-      return {workType, fmsInfo};
-    });
+  const p: Promise<LoadReturn> = client.fMSInformation()
+  .then(fmsInfo => {
+    return {fmsInfo};
   });
 
   return {
@@ -83,7 +77,6 @@ export function reducer(s: State, a: Action): State {
           return s; // do nothing
         case PledgeStatus.Completed:
           return {
-            workorderAssignmentType: a.pledge.result.workType,
             fmsInfo: a.pledge.result.fmsInfo,
           };
         case PledgeStatus.Error:

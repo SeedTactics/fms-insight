@@ -46,10 +46,8 @@ import * as matDetails from '../../data/material-details';
 import * as guiState from '../../data/gui-state';
 import SelectWorkorderDialog from './SelectWorkorder';
 import { MaterialSummaryAndCompletedData } from '../../data/events.matsummary';
-import { WorkorderAssignmentType } from '../../data/api';
 
 export interface WashDialogProps extends MaterialDialogProps {
-  readonly workAssignType: WorkorderAssignmentType;
   readonly operator?: string;
   readonly completeWash: (mat: matDetails.CompleteWashData) => void;
   readonly openSelectWorkorder: (mat: matDetails.MaterialDetail) => void;
@@ -78,16 +76,13 @@ export function WashDialog(props: WashDialogProps) {
           <Button color="primary" onClick={markWashComplete}>
             Mark Wash Complete
           </Button>
-          { props.workAssignType === WorkorderAssignmentType.AssignWorkorderAtWash ?
-            <Button color="primary" onClick={openAssignWorkorder}>
-              {
-                props.display_material && props.display_material.workorderId ?
-                  "Change Workorder"
-                  : "Assign Workorder"
-              }
-            </Button>
-            : undefined
-          }
+          <Button color="primary" onClick={openAssignWorkorder}>
+            {
+              props.display_material && props.display_material.workorderId ?
+                "Change Workorder"
+                : "Assign Workorder"
+            }
+          </Button>
         </>
       }
     />
@@ -98,7 +93,6 @@ const ConnectedWashDialog = connect(
   st => ({
     display_material: st.MaterialDetails.material,
     operator: st.Operators.current,
-    workAssignType: st.ServerSettings.workorderAssignmentType,
   }),
   {
     onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
@@ -117,7 +111,6 @@ const ConnectedWashDialog = connect(
 )(WashDialog);
 
 export interface WashProps {
-  readonly workAssignType: WorkorderAssignmentType;
   readonly recent_completed: ReadonlyArray<MaterialSummaryAndCompletedData>;
   readonly openMat: (mat: MaterialSummary) => void;
 }
@@ -145,9 +138,7 @@ export function Wash(props: WashProps) {
             </WhiteboardRegion>
           </Grid>
         </Grid>
-        { props.workAssignType === WorkorderAssignmentType.AssignWorkorderAtWash
-            ? <SelectWorkorderDialog/> : undefined
-        }
+        <SelectWorkorderDialog/>
         <ConnectedWashDialog/>
       </main>
     </DocumentTitle>
@@ -170,7 +161,6 @@ export const extractRecentCompleted = createSelector(
 export default connect(
   (st: Store) => ({
     recent_completed: extractRecentCompleted(st),
-    workAssignType: st.ServerSettings.workorderAssignmentType,
   }),
   {
     openMat: matDetails.openMaterialDialog,

@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as ss from './server-settings';
 import { PledgeStatus } from '../store/middleware';
-import { WorkorderAssignmentType } from './api';
 
 it("creates the initial state", () => {
   // tslint:disable no-any
@@ -48,7 +47,6 @@ it('loads data', () => {
     pledge: {
       status: PledgeStatus.Completed,
       result: {
-        workType: WorkorderAssignmentType.AssignWorkorderAtUnload,
         fmsInfo: {
           name: "test",
           version: "1.2.3.4",
@@ -58,7 +56,6 @@ it('loads data', () => {
   });
 
   expect(s).toEqual({
-    workorderAssignmentType: WorkorderAssignmentType.AssignWorkorderAtUnload,
     fmsInfo: {
       name: "test",
       version: "1.2.3.4",

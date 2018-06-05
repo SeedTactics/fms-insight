@@ -139,7 +139,6 @@ export const PalletColumn = palletStyles<LoadStationProps>(props => {
 });
 
 export interface LoadMatDialogProps extends MaterialDialogProps {
-  readonly workAssignType: api.WorkorderAssignmentType;
   readonly openSelectWorkorder: (mat: matDetails.MaterialDetail) => void;
   readonly openSetSerial: (mat: matDetails.MaterialDetail) => void;
 }
@@ -170,16 +169,13 @@ export function LoadMatDialog(props: LoadMatDialogProps) {
                 : "Assign Serial"
             }
           </Button>
-          { props.workAssignType === api.WorkorderAssignmentType.AssignWorkorderAtUnload ?
-            <Button color="primary" onClick={openAssignWorkorder}>
-              {
-                props.display_material && props.display_material.workorderId ?
-                  "Change Workorder"
-                  : "Assign Workorder"
-              }
-            </Button>
-            : undefined
-          }
+          <Button color="primary" onClick={openAssignWorkorder}>
+            {
+              props.display_material && props.display_material.workorderId ?
+                "Change Workorder"
+                : "Assign Workorder"
+            }
+          </Button>
         </>
       }
     />
@@ -189,7 +185,6 @@ export function LoadMatDialog(props: LoadMatDialogProps) {
 const ConnectedMaterialDialog = connect(
   st => ({
     display_material: st.MaterialDetails.material,
-    workAssignType: st.ServerSettings.workorderAssignmentType,
   }),
   {
     onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
@@ -236,7 +231,6 @@ const loadStyles = withStyles(() => ({
 
 export interface LoadStationProps {
   readonly fillViewPort: boolean;
-  readonly workAssignType: api.WorkorderAssignmentType;
   readonly data: LoadStationAndQueueData;
   openMat: (m: Readonly<MaterialSummary>) => void;
 }
@@ -298,8 +292,7 @@ export const LoadStation = loadStyles<LoadStationProps>(props => {
             }
           </div>
         }
-        {props.workAssignType === api.WorkorderAssignmentType.AssignWorkorderAtUnload
-          ? <SelectWorkorderDialog/> : undefined}
+        <SelectWorkorderDialog/>
         <SetSerialDialog/>
         <ConnectedMaterialDialog/>
       </main>
@@ -322,7 +315,6 @@ const buildLoadData = createSelector(
 export default connect(
   (st: Store) => ({
     data: buildLoadData(st),
-    workAssignType: st.ServerSettings.workorderAssignmentType,
   }),
   {
     openMat: matDetails.openMaterialDialog,

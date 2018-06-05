@@ -55,12 +55,6 @@ namespace BlackMaple.MachineFramework.Controllers
             return _info;
         }
 
-        [HttpGet("workorder-assignment-type")]
-        public BlackMaple.MachineFramework.WorkorderAssignmentType WorkorderAssignmentType()
-        {
-            return Program.FMSSettings.WorkorderAssignment;
-        }
-
         [HttpGet("settings/{id}")]
         public string GetSettings(string id)
         {

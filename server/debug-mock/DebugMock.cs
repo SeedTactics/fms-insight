@@ -83,7 +83,6 @@ namespace DebugMachineWatchApiServer
 
     public void Init(string dataDir, IConfig config, SerialSettings serialSettings)
     {
-      BlackMaple.MachineFramework.Program.FMSSettings.WorkorderAssignment = WorkorderAssignmentType.AssignWorkorderAtWash;
       string path = null; // dataDir
 
       string dbFile(string f) => System.IO.Path.Combine(path, f + ".db");
