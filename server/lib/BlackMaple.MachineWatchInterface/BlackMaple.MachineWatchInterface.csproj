@@ -25,6 +25,11 @@
     <OutputType>Library</OutputType>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Include="../BlackMaple.MachineFramework/api/*.cs"/>
+    <Compile Include="../BlackMaple.MachineFramework/types/*.cs"/>
+  </ItemGroup>
+
   <Choose>
       <When Condition="$(OS) == 'Unix'">
           <PropertyGroup>

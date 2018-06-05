@@ -23,9 +23,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="../BlackMaple.MachineWatchInterface/api/*.cs"/>
-    <Compile Include="../BlackMaple.MachineWatchInterface/types/*.cs"/>
-
     <Content Include="..\..\..\client\insight\build\**\*">
       <PackagePath>contentFiles\any\any\wwwroot</PackagePath>
       <PackageCopyToOutput>true</PackageCopyToOutput>
