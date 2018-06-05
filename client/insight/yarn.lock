@@ -5285,8 +5285,8 @@ npmlog@^4.0.2:
     set-blocking "~2.0.0"
 
 nswag@^11.14.0:
-  version "11.17.9"
-  resolved "https://registry.yarnpkg.com/nswag/-/nswag-11.17.9.tgz#8aea53d8e6d73d984909f3338e95288f9c64fb69"
+  version "11.17.12"
+  resolved "https://registry.yarnpkg.com/nswag/-/nswag-11.17.12.tgz#55608c9a0fd4a93fe6bd81eb8ee19a59055b8c76"
 
 nth-check@~1.0.1:
   version "1.0.1"

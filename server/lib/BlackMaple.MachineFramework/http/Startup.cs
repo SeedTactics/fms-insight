@@ -38,11 +38,13 @@ using BlackMaple.MachineWatchInterface;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Converters;
 using NSwag.AspNetCore;
+using NSwag.SwaggerGeneration.WebApi;
 using Serilog;
 
 namespace BlackMaple.MachineFramework
@@ -126,6 +128,7 @@ namespace BlackMaple.MachineFramework
                 .AddMvcCore(options => {
                     options.ModelBinderProviders.Insert(0, new DateTimeBinderProvider());
                 })
+                .SetCompatibilityVersion(CompatibilityVersion.Version_2_1)
                 .AddApiExplorer()
                 .AddFormatterMappings()
                 .AddJsonFormatters()
@@ -149,6 +152,12 @@ namespace BlackMaple.MachineFramework
             app.UseMvc();
             app.UseStaticFiles();
 
+            if (!string.IsNullOrEmpty(Program.ServerSettings.TLSCertFile)) {
+                if (!env.IsDevelopment())
+                    app.UseHsts();
+                app.UseHttpsRedirection();
+            }
+
             app.UseWebSockets();
             app.Use(async (context, next) => {
                 if (context.Request.Path == "/api/v1/events")
@@ -165,19 +174,18 @@ namespace BlackMaple.MachineFramework
                 }
             });
 
-            app.UseSwaggerUi3(typeof(Startup).Assembly,
-                new SwaggerUi3Settings() {
-                    Title = "SeedTactic FMS Insight",
-                    Description = "API for access to FMS Insight for flexible manufacturing system control",
-                    Version = "1.1.0",
-                    DefaultEnumHandling = NJsonSchema.EnumHandling.String,
-                    DefaultPropertyNameHandling = NJsonSchema.PropertyNameHandling.Default,
-                    PostProcess = document => {
-                        document.Host = null;
-                        document.BasePath = null;
-                        document.Schemes = null;
-                    }
-                });
+            app.UseSwaggerUi3(typeof(Startup).Assembly, settings => {
+                settings.GeneratorSettings.Title = "SeedTactic FMS Insight";
+                settings.GeneratorSettings.Description = "API for access to FMS Insight for flexible manufacturing system control";
+                settings.GeneratorSettings.Version = "1.1.0";
+                settings.GeneratorSettings.DefaultEnumHandling = NJsonSchema.EnumHandling.String;
+                settings.GeneratorSettings.DefaultPropertyNameHandling = NJsonSchema.PropertyNameHandling.Default;
+                settings.PostProcess = document => {
+                    document.Host = null;
+                    document.BasePath = null;
+                    document.Schemes = null;
+                };
+            });
 
             app.Run(async context => {
                 context.Response.ContentType = "text/html";
