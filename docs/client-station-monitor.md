@@ -15,6 +15,12 @@ completing wash or assigning a workorder. Finally, the sticky note contains
 an identicon based on the part name and the final number/letter of the
 serial.
 
+We suggest that computers or mounted tablets be placed next to various stations
+in the factory, perhaps with an attached barcode scanner.
+The computer or mounted tablet can then be configured to open the specific screen
+for the station by either bookmarking the page or just setting the specific page
+as the homepage for the browser.
+
 ## Load Station
 
 ![Screenshot of Load Station screen](/docs/assets/insight-load-station.jpg)
@@ -36,7 +42,20 @@ marked for inspection, and assigned to a workorder.
 
 ## Queues
 
-Coming soon.
+![Screenshot of Queues Screen](/docs/assets/insight-queues.jpg)
+
+The queues screen shows the material currently inside one or more queues.  On the top toolbar,
+one or more queues can be selected and the virtual whiteboard regions for the selected queues
+are then displayed. The queue screen allows the operator to edit the material in the queue.
+To add new material to the queue, click the plus icon button in the top-right of the queue
+virtual whiteboard region.  This will bring up a dialog allowing you to enter a serial,
+scan a barcode, or manually select a job for the added material.
+
+![Screenshot of Queue Material Dialog](/docs/assets/insight-queue-details.jpg)
+
+By clicking or tapping on a material sticky note, a dialog will open with
+details about the specific piece of material. The dialog will have a button
+at the bottom labeled "Remove From Queue".
 
 ## Inspection
 
