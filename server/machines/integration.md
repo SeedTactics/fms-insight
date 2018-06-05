@@ -21,145 +21,12 @@ described in the second section below.
 
 This section describes the data that is passed between Machine Watch and the Cell Controller.
 
-## Log of past events
+# Events
 
-The cell controller should output a log of events.
-
-To help track material, Machine Watch assigns a `MaterialID` to each piece of material produced by
-the cell. The `MaterialID` is a unique integer that identifies a specific piece of material and is
-never reused. The `MaterialID` helps track a single piece of material throughout its entire journey,
-from initial loading through reclamping and multiple processes to unloading. The `MaterialID` is
-especially helpful for parts with multiple processes since the same `MaterialID` will appear on
-multiple machine cycles.
-
-`MaterialID`s can either be created and assigned by the cell controller or Machine Watch. It is
-better that the cell controller assigns `MaterialID`s because the cell controller knows more about
-the cell operation, but Machine Watch can generate and attach `MaterialID`s to existing events if
-the cell controller does not create unique IDs for each piece of material.
-
-For each job added into the cell, our software creates a `JobUnique`. This is a string which uniquely
-identifies the job and is typically a UUID or other unique randomly generated ID. Each event about a
-piece of material should include also the `JobUnique` that is causing the material to be manufactured.
-
-Here are the events we look for:
-
-##### Machine Cycle
-
-An event for cycle start and cycle stop of each machine.  Output data for:
-
-* Date and Time
-* Station number
-* Pallet
-* Program
-* Active operation time (time that the program is actually cutting/running.  For example, if the machine goes down the time between
-  cycle start and cycle stop will be longer than the active operation time.)
-* List of material being cut by the program:
-    - MaterialID
-    - Part Name
-    - Process #
-    - Part Quantity
-    - JobUnique
-* Any additional data which might help the customer.  In the past we have included probe data produced by the part program,
-  tools used and their life, and others.  This kind of data is largely based on what the customer wants.  Our system can attach
-  any extra data that the cell controller produces.
-
-##### Load Cycle
-
-The cell controller must produce an event for start of loading/unloading (when the pallet arrives at the load station) and
-another event for end of loading/unloading (when the pallet leaves the load station).  The data we
-look for is:
-
-* Date and Time
-* Station number
-* Pallet
-
-For start of load/unload (when the pallet arrives at the load station), the event should also contain:
-
-* a list of material the operator should load onto the pallet:
-    - MaterialID
-    - Part Name
-    - Process #
-    - Quantity
-    - JobUnique
-* a list of material that the operator should remove from the pallet:
-    - MaterialID
-    - Part Name
-    - Process #
-    - Quantity
-    - JobUnique
-* a list of material that the operator should transfer from one process to another (reclamp):
-    - MaterialID
-    - Part Name
-    - Process # to remove from
-    - Process # to place into
-    - Quantity
-    - JobUnique
-
-For end of load/unload (when the pallet leaves the load station), the event should contain the same
-material data as the start, except restricted to what the operator actually performed. Typically
-this will be the same as what the cell controller requested at the start, but could be different.
-For example, the cell controller requests that a part ABC be loaded onto the pallet but there is no
-raw casting so the operator sends the pallet to the buffer stand instead to wait. In this case, the
-start of load/unload event will include the request for ABC but the end of load/unload event will
-not have a piece of material loaded.
-
-## Incoming Jobs
-
-On a schedule determined by the customer but typically once a day or once a week, our software will
-examine the customer's orders and due dates and completed material and then use artificial intelligence
-to optimize what to produce and what flexibility to use. To keep the system lean, only enough demand
-to keep the machines busy is then sent to the cell controller in the form of a collection of jobs.
-(These are also called schedules on some cell controllers.) New jobs are created each day and the
-flexibility of which pallets or machines to use can change for each job.
-
-Each job is assigned a unique string that is never reused. This `JobUnique` must then appear
-in the log of events which allows us to connect events back to jobs.
-The following is the data included as part of the job.
-
-- `JobUnique`: a string uniquely identifying the job.
-- Part Name
-- Priority
-- Quantity to Produce
-- Number of Processes
-- (optional) Hold Pattern.  Occasionally the customer wants a hold pattern such as hold this
-  job until 3rd shift.  We can adapt to whatever the cell controller provides (if anything).
-
-For each process, the job includes the following data:
-
-- list of allowed pallets
-- list of allowed load/unload stations
-- list of allowed machines
-- program to run at the machine
-- part quantity loaded onto a pallet at once
-- fixture or fixtures to use
-
-It could also include other data based on the needs of the cell controller.
-
-## Current Status of the Jobs
-
-Machine Watch requires read access to the current list of jobs. That is, all the jobs currently in
-the system with data about them (part, priority, flexibility, planned quantity, etc.). The list
-should also include data about the progress of the job: the competed quantity and the number of
-parts currently in-process.
-
-Machine Watch must have a way of requesting the current status of jobs. Machine Watch only
-occasionally needs this information: once a day during the order optimization and occasionally
-throughout the day based on user monitoring. Therefore, if there is some mechanism that Machine
-Watch can use to request the data that is OK. Alternatively, the current status of jobs could also
-just always be available (via a database for example).
-
-## Current Pallet Status
-
-Machine Watch would also like to access the current status of the cell: current location of the
-pallets, current material loaded onto the pallets, machine status, load/unload instructions
-(material to load/unload at the load station). All of this data can be recovered from the log of
-events so is not strictly required. But, access to this data is a great help for debugging, testing,
-and cross-checking the data. If it is easy to provide access to the current cell status then Machine
-Watch would take advantage of this data.  Otherwise, we can get by without it.
 
 ## Editing Jobs
 
-Finally, Machine Watch must be able to perform the following operations on jobs:
+Finally, FMS Insight must be able to perform the following operations on jobs in the cell controller:
 
 - delete completed jobs (alternatively, completed jobs can be automatically deleted by the cell controller).
   We are adding new jobs every single day so there must be some method to clean up old completed jobs.
@@ -173,7 +40,7 @@ Finally, Machine Watch must be able to perform the following operations on jobs:
   quantities from jobs. We don't want to delete the job because any in-process material should
   finish, but we don't want the job to start any new parts. The easiest way to do that is to reduce
   the planned quantity.
-  
+
   One major example of where this is helpful is machine downtime: say a machine goes down for 10
   hours. There will be a large backlog of work and the best technique to recover is to remove this
   backlog of work and let the artificial intelligence in our software re-assign flexibility. Because
@@ -181,10 +48,9 @@ Finally, Machine Watch must be able to perform the following operations on jobs:
   might need to be spread across multiple machines in order to finish by the due date. The
   artificial intelligence inside our software automatically carries out these calculations, and just
   needs to be able to remove existing quantities from the old jobs to start from a blank slate each day.
-  
-Outside of this, Machine Watch does not need the ability to edit jobs.  Instead of editing jobs, we just
-create new ones.
 
+Outside of this, FMS Insight does not need the ability to edit jobs.  Instead of editing jobs, we just
+create new ones.
 # Data Interchange Format
 
 We have used all of the following techniques so can adapt to different possible solutions.
