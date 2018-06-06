@@ -34,6 +34,7 @@ using System;
 using System.Xml;
 using System.Collections.Generic;
 using BlackMaple.MachineWatchInterface;
+using System.IO;
 
 namespace Makino
 {
@@ -41,18 +42,28 @@ namespace Makino
 	{
 		public static void WriteOrderXML(string filename, IEnumerable<JobPlan> jobs, bool onlyOrders)
 		{
-			string tempFile = System.IO.Path.GetTempFileName();
+			string tempFile = Path.GetTempFileName();
 			try {
 
 				WriteFile(tempFile, jobs, onlyOrders);
-				if (System.IO.File.Exists(filename))
-					System.IO.File.Delete(filename);
-				System.IO.File.Move(tempFile, filename);
+
+				var accControl = new System.Security.AccessControl.FileSecurity();
+				accControl.AddAccessRule(new System.Security.AccessControl.FileSystemAccessRule(
+						identity: new System.Security.Principal.SecurityIdentifier(System.Security.Principal.WellKnownSidType.WorldSid, null),
+						fileSystemRights: System.Security.AccessControl.FileSystemRights.FullControl,
+						type: System.Security.AccessControl.AccessControlType.Allow
+				));
+				var finfo = new FileInfo(tempFile);
+				finfo.SetAccessControl(accControl);
+
+				if (File.Exists(filename))
+					File.Delete(filename);
+				File.Move(tempFile, filename);
 
 			} finally {
 				try {
-					if (System.IO.File.Exists(tempFile))
-						System.IO.File.Delete(tempFile);
+					if (File.Exists(tempFile))
+						File.Delete(tempFile);
 				} catch {
 					//Do nothing
 				}
