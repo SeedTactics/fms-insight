@@ -42,8 +42,9 @@ Move-Item "$publishdir/BlackMaple.FMSInsight.$nameUpper.exe" tmp -Force
 & $light tmp/insight-server.wixobj tmp/insight.wixobj -ext WixUtilExtension `
   -o "installers/FMS Insight $nameUpper Install.msi"
 
-@{"fms-insight" = $name; "version" = $version; "date" = [DateTime]::UtcNow.ToString("u") } `
-  | ConvertTo-Json | Out-File -Force $("installers/" + $nameUpper + "-latest.json")
+$latestJson = @{"fms-insight" = $name; "version" = $version; "date" = [DateTime]::UtcNow.ToString("u") } `
+  | ConvertTo-Json
+[System.IO.File]::WriteAllLines("$pwd\installers\$nameUpper-latest.json", $latestJson)
 
 Remove-Item -r tmp
 Pop-Location
