@@ -506,8 +506,10 @@ namespace MazakMachineInterface
           //Schedule ids can be reused, so make sure the old schedule hold data is gone.
           DeleteHoldTrans(schID, trans);
 
-          InsertHold(schID, true, job.UniqueStr, job.HoldEntireJob, trans);
-          InsertHold(schID, false, job.UniqueStr, job.HoldMachining(1, path), trans);
+          if (job.HoldEntireJob != null)
+            InsertHold(schID, true, job.UniqueStr, job.HoldEntireJob, trans);
+          if (job.HoldMachining(1, path) != null)
+            InsertHold(schID, false, job.UniqueStr, job.HoldMachining(1, path), trans);
           trans.Commit();
         }
         catch

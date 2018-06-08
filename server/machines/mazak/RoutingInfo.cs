@@ -1292,8 +1292,11 @@ namespace MazakMachineInterface
         newSchRow.DueDate = DateTime.Parse("1/1/2008 12:00:00 AM");
       }
 
-      newSchRow.HoldMode = (int)HoldPattern.CalculateHoldMode(part.HoldEntireJob.IsJobOnHold,
-                                                              part.HoldMachining(1, path).IsJobOnHold);
+      bool entireHold = false;
+      if (part.HoldEntireJob != null) entireHold = part.HoldEntireJob.IsJobOnHold;
+      bool machiningHold = false;
+      if (part.HoldMachining(1, path) != null) machiningHold = part.HoldMachining(1, path).IsJobOnHold;
+      newSchRow.HoldMode = (int)HoldPattern.CalculateHoldMode(entireHold, machiningHold);
 
       //need to add all the ScheduleProcess rows
       for (int i = 1; i <= numProcess(part); i++)
