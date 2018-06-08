@@ -2975,6 +2975,7 @@ export enum LogType {
     Wash = <any>"Wash",
     AddToQueue = <any>"AddToQueue",
     RemoveFromQueue = <any>"RemoveFromQueue",
+    InspectionForce = <any>"InspectionForce",
 }
 
 export class WorkorderSummary implements IWorkorderSummary {

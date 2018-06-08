@@ -5445,6 +5445,9 @@ namespace BlackMaple.FMSInsight.API
         [System.Runtime.Serialization.EnumMember(Value = "RemoveFromQueue")]
         RemoveFromQueue = 11,
     
+        [System.Runtime.Serialization.EnumMember(Value = "InspectionForce")]
+        InspectionForce = 12,
+    
     }
     
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.10.50.0 (Newtonsoft.Json v9.0.0.0)")]

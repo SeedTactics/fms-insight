@@ -177,7 +177,7 @@ namespace BlackMaple.MachineFramework
             app.UseSwaggerUi3(typeof(Startup).Assembly, settings => {
                 settings.GeneratorSettings.Title = "SeedTactic FMS Insight";
                 settings.GeneratorSettings.Description = "API for access to FMS Insight for flexible manufacturing system control";
-                settings.GeneratorSettings.Version = "1.1.0";
+                settings.GeneratorSettings.Version = "1.2.0";
                 settings.GeneratorSettings.DefaultEnumHandling = NJsonSchema.EnumHandling.String;
                 settings.GeneratorSettings.DefaultPropertyNameHandling = NJsonSchema.PropertyNameHandling.Default;
                 settings.PostProcess = document => {
