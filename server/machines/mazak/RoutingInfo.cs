@@ -376,6 +376,7 @@ namespace MazakMachineInterface
           {
             Pallet = palName,
             CurrentPalletLocation = palLoc,
+            FixtureOnPallet = palRow.Fixture,
             NumFaces = 1,
             OnHold = false
           };
