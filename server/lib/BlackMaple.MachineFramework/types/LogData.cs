@@ -87,6 +87,7 @@ namespace BlackMaple.MachineWatchInterface
         [EnumMember] Wash = 104,
         [EnumMember] AddToQueue = 105,
         [EnumMember] RemoveFromQueue = 106,
+        [EnumMember] InspectionForce = 107,
     }
 
     [Serializable, DataContract]
