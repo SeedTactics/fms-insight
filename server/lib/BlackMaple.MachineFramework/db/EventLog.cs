@@ -32,18 +32,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
+using System.Linq;
 using System.Data;
 using System.Collections.Generic;
 using Microsoft.Data.Sqlite;
 
 namespace BlackMaple.MachineFramework
 {
-    public class JobLogDB : MachineWatchInterface.ILogDatabase
+    public class JobLogDB : MachineWatchInterface.ILogDatabase, MachineWatchInterface.IInspectionControl
     {
 
         #region Database Create/Update
         private SqliteConnection _connection;
         private object _lock;
+        private Random _rand = new Random();
 
         public JobLogDB()
         {
@@ -54,13 +56,13 @@ namespace BlackMaple.MachineFramework
             _connection = c;
         }
 
-        public void Open(string filename)
+        public void Open(string filename, string oldInspDbFile = null)
         {
             if (System.IO.File.Exists(filename))
             {
                 _connection = SqliteExtensions.Connect(filename, newFile: false);
                 _connection.Open();
-                UpdateTables();
+                UpdateTables(oldInspDbFile);
             }
             else
             {
@@ -85,7 +87,7 @@ namespace BlackMaple.MachineFramework
         }
 
 
-        private const int Version = 16;
+        private const int Version = 17;
 
         public void CreateTables()
         {
@@ -140,10 +142,16 @@ namespace BlackMaple.MachineFramework
             cmd.CommandText = "CREATE TABLE program_details(Counter INTEGER, Key TEXT, Value TEXT, " +
                 "PRIMARY KEY(Counter, Key))";
             cmd.ExecuteNonQuery();
+
+            cmd.CommandText = "CREATE TABLE inspection_counters(Counter TEXT PRIMARY KEY, Val INTEGER, LastUTC INTEGER)";
+            cmd.ExecuteNonQuery();
+
+            cmd.CommandText = "CREATE TABLE inspection_next_piece(StatType INTEGER, StatNum INTEGER, InspType TEXT, PRIMARY KEY(StatType,StatNum, InspType))";
+            cmd.ExecuteNonQuery();
         }
 
 
-        private void UpdateTables()
+        private void UpdateTables(string inspDbFile)
         {
             var cmd = _connection.CreateCommand();
 
@@ -222,6 +230,8 @@ namespace BlackMaple.MachineFramework
                 if (curVersion < 15) Ver14ToVer15(trans);
 
                 if (curVersion < 16) Ver15ToVer16(trans);
+
+                if (curVersion < 17) Ver16ToVer17(trans, inspDbFile);
 
                 //update the version in the database
                 cmd.Transaction = trans;
@@ -389,6 +399,34 @@ namespace BlackMaple.MachineFramework
             cmd.CommandText = "DROP TABLE sersettings";
             cmd.ExecuteNonQuery();
         }
+
+        private void Ver16ToVer17(IDbTransaction trans, string inspDbFile)
+        {
+            var cmd = _connection.CreateCommand();
+            ((IDbCommand)cmd).Transaction = trans;
+
+            cmd.CommandText = "CREATE TABLE inspection_counters(Counter TEXT PRIMARY KEY, Val INTEGER, LastUTC INTEGER)";
+            cmd.ExecuteNonQuery();
+
+            cmd.CommandText = "CREATE TABLE inspection_next_piece(StatType INTEGER, StatNum INTEGER, InspType TEXT, PRIMARY KEY(StatType,StatNum, InspType))";
+            cmd.ExecuteNonQuery();
+
+            if (string.IsNullOrEmpty(inspDbFile)) return;
+
+            cmd.CommandText = "ATTACH DATABASE $db AS insp";
+            cmd.Parameters.Add("db", SqliteType.Text).Value = inspDbFile;
+            cmd.ExecuteNonQuery();
+            cmd.Parameters.Clear();
+
+            cmd.CommandText = "INSERT INTO main.inspection_counters SELECT * FROM insp.counters";
+            cmd.ExecuteNonQuery();
+
+            cmd.CommandText = "INSERT INTO main.inspection_next_piece SELECT * FROM insp.next_piece";
+            cmd.ExecuteNonQuery();
+
+            cmd.CommandText = "DETACH DATABASE insp";
+            cmd.ExecuteNonQuery();
+        }
         #endregion
 
         #region Event
@@ -536,7 +574,6 @@ namespace BlackMaple.MachineFramework
                 }
             }
         }
-
 
         public List<MachineWatchInterface.LogEntry> GetLog(long counter)
         {
@@ -988,186 +1025,6 @@ namespace BlackMaple.MachineFramework
 			}
 		}
 
-        #endregion
-
-        #region Inspection Translate
-        //This function is used by clsInspection
-        internal string TranslateInspectionCounter(long matID, MachineWatchInterface.JobPlan job, string counter)
-        {
-            lock (_lock)
-            {
-                //first, load the counters which contain this MaterialID
-                var cmd = _connection.CreateCommand();
-                cmd.CommandText = "SELECT Counter, Process FROM material WHERE MaterialID = $int";
-                cmd.Parameters.Add("int", SqliteType.Integer).Value = matID;
-
-                Dictionary<int, List<long>> counters = new Dictionary<int, List<long>>();
-
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        List<long> lst = null;
-                        int proc = reader.GetInt32(1);
-                        if (counters.ContainsKey(proc))
-                        {
-                            lst = counters[proc];
-                        }
-                        else
-                        {
-                            lst = new List<long>();
-                            counters[proc] = lst;
-                        }
-                        lst.Add(reader.GetInt64(0));
-                    }
-                }
-
-                cmd.CommandText = "SELECT Pallet, StationLoc, StationNum FROM stations WHERE Counter = $int AND Start = 0";
-
-                string newCounter = counter;
-
-                //now we go through each coutner/each row in the log and try and use the log row
-                //to translate some of the wildcards in newProg
-                foreach (int proc in counters.Keys)
-                {
-                    List<long> lst = counters[proc];
-                    lst.Sort();
-
-                    bool foundLoad = false;
-                    bool foundMach = false;
-                    var stops = new StationsOnPath[job.GetNumPaths(proc)];
-                    for (int path = 1; path <= job.GetNumPaths(proc); path++)
-                        stops[path - 1] = new StationsOnPath(job, proc, path);
-
-                    foreach (long ctr in lst)
-                    {
-                        cmd.Parameters[0].Value = ctr;
-                        using (var reader = cmd.ExecuteReader())
-                        {
-
-                            if (reader.Read())
-                            {
-                                //for each log entry, we search for a matching route stop in the job
-                                //if we find one, we replace the counter in the program
-                                string pal = reader.GetString(0);
-                                var palLoc = (MachineWatchInterface.LogType)reader.GetInt32(1);
-                                int statNum = reader.GetInt32(2);
-
-                                newCounter = newCounter.Replace(MachineWatchInterface.JobInspectionData.PalletFormatFlag(proc), pal);
-
-                                if (palLoc == MachineWatchInterface.LogType.LoadUnloadCycle)
-                                {
-                                    if (!foundLoad && !foundMach)
-                                    {
-                                        newCounter = newCounter.Replace(MachineWatchInterface.JobInspectionData.LoadFormatFlag(proc),
-                                                                        statNum.ToString());
-                                        foundLoad = true;
-                                    }
-                                    else
-                                    {
-                                        newCounter = newCounter.Replace(MachineWatchInterface.JobInspectionData.UnloadFormatFlag(proc),
-                                                                        statNum.ToString());
-                                    }
-
-                                }
-                                else if (palLoc == MachineWatchInterface.LogType.MachineCycle)
-                                {
-                                    foundMach = true;
-                                    for (int i = 0; i < stops.Length; i++)
-                                        stops[i].VisitStation(statNum);
-                                }
-                            }
-                        }
-                    }
-
-                    for (int path = 1; path <= job.GetNumPaths(proc); path++)
-                    {
-                        if (stops[path - 1].MatchingRoute)
-                        {
-                            newCounter = stops[path - 1].ReplaceCounter(newCounter);
-                        }
-                    }
-                }
-
-                return newCounter;
-            }
-        }
-
-        private class StationsOnPath
-        {
-            public StationsOnPath(MachineWatchInterface.JobPlan job, int proc, int path)
-            {
-                _job = job;
-                _proc = proc;
-                _stopEnum = _job.GetMachiningStop(proc, path).GetEnumerator();
-                _stopIndex = 0;
-                _matchingRoute = true;
-                _replacements = new List<Replacement>();
-            }
-
-            public bool MatchingRoute
-            {
-                get { return _matchingRoute; }
-            }
-
-            public void VisitStation(int stat)
-            {
-                while (_stopEnum.MoveNext())
-                {
-                    _stopIndex += 1;
-
-                    if (CollContains(_stopEnum.Current.Stations(), stat))
-                    {
-                        _replacements.Add(new Replacement(_stopIndex, stat));
-                        return;
-                    }
-                }
-
-                //we ran out of stops
-                _matchingRoute = false;
-            }
-
-            public string ReplaceCounter(string counter)
-            {
-                if (!_matchingRoute) return counter;
-
-                foreach (var s in _replacements)
-                    counter = counter.Replace(MachineWatchInterface.JobInspectionData.StationFormatFlag(_proc, s.stopNum),
-                                              s.stat.ToString());
-                return counter;
-            }
-
-            private bool CollContains(IEnumerable<int> coll, int val)
-            {
-                foreach (int v in coll)
-                {
-                    if (v.Equals(val))
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            }
-
-            private MachineWatchInterface.JobPlan _job;
-            private int _proc;
-
-            private IEnumerator<MachineWatchInterface.JobMachiningStop> _stopEnum;
-            private int _stopIndex;
-            private bool _matchingRoute;
-
-            private struct Replacement
-            {
-                public int stopNum;
-                public int stat;
-                public Replacement(int st, int sta)
-                {
-                    stopNum = st;
-                    stat = sta;
-                }
-            }
-            private List<Replacement> _replacements;
-        }
         #endregion
 
         #region Adding
@@ -1959,6 +1816,627 @@ namespace BlackMaple.MachineFramework
             }
 
             return res;
+        }
+        #endregion
+
+        #region Inspection Counts
+
+        private MachineWatchInterface.InspectCount QueryCount(IDbTransaction trans, string counter, int maxVal)
+        {
+            var cnt = new MachineWatchInterface.InspectCount();
+            cnt.Counter = counter;
+
+            using (var cmd = _connection.CreateCommand()) {
+                ((IDbCommand)cmd).Transaction = trans;
+                cmd.CommandText = "SELECT Val, LastUTC FROM inspection_counters WHERE Counter = $cntr";
+                cmd.Parameters.Add("cntr", SqliteType.Text).Value = counter;
+
+                using (IDataReader reader = cmd.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        cnt.Value = reader.GetInt32(0);
+                        if (reader.IsDBNull(1))
+                            cnt.LastUTC = DateTime.MaxValue;
+                        else
+                            cnt.LastUTC = new DateTime(reader.GetInt64(1), DateTimeKind.Utc);
+
+                    }
+                    else
+                    {
+                        if (maxVal <= 1)
+                            cnt.Value = 0;
+                        else
+                            cnt.Value = _rand.Next(0, maxVal - 1);
+
+                        cnt.LastUTC = DateTime.MaxValue;
+                    }
+                }
+            }
+
+            return cnt;
+        }
+
+        public List<MachineWatchInterface.InspectCount> LoadInspectCounts()
+        {
+            lock (_lock)
+            {
+                List<MachineWatchInterface.InspectCount> ret = new List<MachineWatchInterface.InspectCount>();
+
+                using (var cmd = _connection.CreateCommand()) {
+                    cmd.CommandText = "SELECT Counter, Val, LastUTC FROM inspection_counters";
+
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var insp = default(MachineWatchInterface.InspectCount);
+                            insp.Counter = reader.GetString(0);
+                            insp.Value = reader.GetInt32(1);
+                            if (reader.IsDBNull(2))
+                                insp.LastUTC = DateTime.MaxValue;
+                            else
+                                insp.LastUTC = new DateTime(reader.GetInt64(2), DateTimeKind.Utc);
+                            ret.Add(insp);
+                        }
+                    }
+                }
+
+                return ret;
+            }
+        }
+
+        private void SetInspectionCount(IDbTransaction trans, MachineWatchInterface.InspectCount cnt)
+        {
+            using (var cmd = _connection.CreateCommand())
+            {
+                ((IDbCommand)cmd).Transaction = trans;
+                cmd.CommandText = "INSERT OR REPLACE INTO inspection_counters(Counter,Val,LastUTC) VALUES ($cntr,$val,$time)";
+                cmd.Parameters.Add("cntr", SqliteType.Text).Value = cnt.Counter;
+                cmd.Parameters.Add("val", SqliteType.Integer).Value = cnt.Value;
+                cmd.Parameters.Add("time", SqliteType.Integer).Value = cnt.LastUTC.Ticks;
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        public void SetInspectCounts(IEnumerable<MachineWatchInterface.InspectCount> counts)
+        {
+            lock (_lock)
+            {
+                using (var cmd = _connection.CreateCommand()) {
+                    cmd.CommandText = "INSERT OR REPLACE INTO inspection_counters(Counter, Val, LastUTC) VALUES ($cntr,$val,$last)";
+                    cmd.Parameters.Add("cntr", SqliteType.Text);
+                    cmd.Parameters.Add("val", SqliteType.Integer);
+                    cmd.Parameters.Add("last", SqliteType.Integer);
+
+                    var trans = _connection.BeginTransaction();
+                    try
+                    {
+                        cmd.Transaction = trans;
+
+                        foreach (var insp in counts)
+                        {
+                            cmd.Parameters[0].Value = insp.Counter;
+                            cmd.Parameters[1].Value = insp.Value;
+                            cmd.Parameters[2].Value = insp.LastUTC.Ticks;
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        trans.Commit();
+                    }
+                    catch
+                    {
+                        trans.Rollback();
+                        throw;
+                    }
+                }
+            }
+        }
+        #endregion
+
+        #region Inspection Translation
+        public class MaterialProcessActualPath
+        {
+            public class Stop
+            {
+                public string StationName {get;set;}
+                public int StationNum {get;set;}
+            }
+
+            public long MaterialID {get;set;}
+            public int Process {get;set;}
+            public string Pallet {get;set;}
+            public int LoadStation {get;set;}
+            public List<Stop> Stops {get;set;}
+            public int UnloadStation {get;set;}
+        }
+
+        private Dictionary<int, MaterialProcessActualPath> LookupActualPath(IDbTransaction trans, long matID)
+        {
+            var byProc = new Dictionary<int, MaterialProcessActualPath>();
+            MaterialProcessActualPath getPath(int proc)
+            {
+                if (byProc.ContainsKey(proc))
+                    return byProc[proc];
+                else {
+                    var m = new MaterialProcessActualPath() {
+                        MaterialID = matID,
+                        Process = proc,
+                        Pallet = null,
+                        LoadStation = -1,
+                        Stops = new List<MaterialProcessActualPath.Stop>(),
+                        UnloadStation = -1
+                    };
+                    byProc.Add(proc, m);
+                    return m;
+                }
+            }
+
+            var cmd = _connection.CreateCommand();
+            ((IDbCommand)cmd).Transaction = trans;
+            cmd.CommandText = "SELECT Pallet, StationLoc, StationName, StationNum, Process " +
+                " FROM stations " +
+                " INNER JOIN material ON stations.Counter = material.Counter " +
+                " WHERE " +
+                "    MaterialID = $mat AND Start = 0 " +
+                "    AND (StationLoc = $ty1 OR StationLoc = $ty2) " +
+                " ORDER BY stations.Counter ASC";
+            cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
+            cmd.Parameters.Add("ty1", SqliteType.Integer).Value = (int)MachineWatchInterface.LogType.LoadUnloadCycle;
+            cmd.Parameters.Add("ty2", SqliteType.Integer).Value = (int)MachineWatchInterface.LogType.MachineCycle;
+
+            using (var reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    //for each log entry, we search for a matching route stop in the job
+                    //if we find one, we replace the counter in the program
+                    string pal = reader.GetString(0);
+                    var logTy = (MachineWatchInterface.LogType)reader.GetInt32(1);
+                    string statName = reader.GetString(2);
+                    int statNum = reader.GetInt32(3);
+                    int process = reader.GetInt32(4);
+
+                    var mat = getPath(process);
+
+                    if (!string.IsNullOrEmpty(pal))
+                        mat.Pallet = pal;
+
+                    switch (logTy)
+                    {
+                        case MachineWatchInterface.LogType.LoadUnloadCycle:
+                            if (mat.LoadStation == -1)
+                                mat.LoadStation = statNum;
+                            else
+                                mat.UnloadStation = statNum;
+                            break;
+
+                        case MachineWatchInterface.LogType.MachineCycle:
+                            mat.Stops.Add(new MaterialProcessActualPath.Stop() {
+                                StationName = statName, StationNum = statNum});
+                            break;
+                    }
+                }
+            }
+
+            return byProc;
+        }
+
+        private string TranslateInspectionCounter(long matID, Dictionary<int, MaterialProcessActualPath> actualPath, string counter)
+        {
+            foreach (var p in actualPath.Values)
+            {
+                counter = counter.Replace(
+                    MachineWatchInterface.JobInspectionData.PalletFormatFlag(p.Process),
+                    p.Pallet
+                );
+                counter = counter.Replace(
+                    MachineWatchInterface.JobInspectionData.LoadFormatFlag(p.Process),
+                    p.LoadStation.ToString()
+                );
+                counter = counter.Replace(
+                    MachineWatchInterface.JobInspectionData.UnloadFormatFlag(p.Process),
+                    p.UnloadStation.ToString()
+                );
+                for (int stopNum = 1; stopNum <= p.Stops.Count; stopNum++) {
+                    counter = counter.Replace(
+                        MachineWatchInterface.JobInspectionData.StationFormatFlag(p.Process, stopNum),
+                        p.Stops[stopNum-1].StationNum.ToString()
+                    );
+                }
+            }
+            return counter;
+        }
+        #endregion
+
+        #region Inspection Decisions
+
+        public class Decision
+        {
+            public long MaterialID;
+            public string InspType;
+            public string Counter;
+            public bool Inspect;
+            public bool Forced;
+            public System.DateTime CreateUTC;
+        }
+        public IList<Decision> LookupInspectionDecisions(long matID)
+        {
+            lock (_lock)
+            {
+                var trans = _connection.BeginTransaction();
+                try {
+                    var ret = LookupInspectionDecisions(trans, matID);
+                    trans.Commit();
+                    return ret;
+                } catch {
+                    trans.Rollback();
+                    throw;
+                }
+            }
+
+        }
+
+        private IList<Decision> LookupInspectionDecisions(IDbTransaction trans, long matID)
+        {
+            List<Decision> ret = new List<Decision>();
+            var cmd = _connection.CreateCommand();
+            ((IDbCommand)cmd).Transaction = trans;
+            cmd.CommandText = "SELECT Counter, StationLoc, Program, TimeUTC, Result " +
+                " FROM stations " +
+                " WHERE " +
+                "    Counter IN (SELECT Counter FROM material WHERE MaterialID = $mat) " +
+                "    AND (StationLoc = $loc1 OR StationLoc = $loc2) " +
+                " ORDER BY Counter ASC";
+            cmd.Parameters.Add("$mat", SqliteType.Integer).Value = matID;
+            cmd.Parameters.Add("$loc1", SqliteType.Integer).Value = MachineWatchInterface.LogType.InspectionForce;
+            cmd.Parameters.Add("$loc2", SqliteType.Integer).Value = MachineWatchInterface.LogType.Inspection;
+
+            var detailCmd = _connection.CreateCommand();
+            ((IDbCommand)detailCmd).Transaction = trans;
+            detailCmd.CommandText = "SELECT Value FROM program_details WHERE Counter = $cntr AND Key = 'InspectionType'";
+            detailCmd.Parameters.Add("cntr", SqliteType.Integer);
+
+            using (var reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    var cntr = reader.GetInt64(0);
+                    var logTy = (MachineWatchInterface.LogType)reader.GetInt32(1);
+                    var prog = reader.GetString(2);
+                    var timeUtc = new DateTime(reader.GetInt64(3), DateTimeKind.Utc);
+                    var result = reader.GetString(4);
+                    var inspect = false;
+                    bool.TryParse(result, out inspect);
+
+                    if (logTy == MachineWatchInterface.LogType.Inspection)
+                    {
+                        detailCmd.Parameters[0].Value = cntr;
+                        var inspVal = detailCmd.ExecuteScalar();
+                        string inspType;
+                        if (inspVal != null)
+                        {
+                            inspType = inspVal.ToString();
+                        } else {
+                            // old code didn't record in details, so assume the counter is in a specific format
+                            var parts = prog.Split(',');
+                            if (parts.Length >= 2)
+                                inspType = parts[1];
+                            else
+                                inspType = "";
+                        }
+                        ret.Add(new Decision() {
+                            MaterialID = matID,
+                            InspType = inspType,
+                            Counter = prog,
+                            Inspect = inspect,
+                            Forced = false,
+                            CreateUTC = timeUtc
+                        });
+                    } else {
+                        ret.Add(new Decision() {
+                            MaterialID = matID,
+                            InspType = prog,
+                            Counter = "",
+                            Inspect = inspect,
+                            Forced = true,
+                            CreateUTC = timeUtc
+                        });
+                    }
+                }
+            }
+            return ret;
+        }
+
+        public void MakeInspectionDecisions(
+            long matID,
+            MachineWatchInterface.JobPlan job,
+            int process,
+            IEnumerable<MachineWatchInterface.JobInspectionData> inspections,
+            DateTime? mutcNow = null)
+        {
+            MakeInspectionDecisions(matID, job.UniqueStr, job.PartName, process, inspections, mutcNow);
+        }
+
+        public void MakeInspectionDecisions(
+            long matID,
+            string uniqueStr,
+            string partName,
+            int process,
+            IEnumerable<MachineWatchInterface.JobInspectionData> inspections,
+            DateTime? mutcNow = null)
+        {
+            List<MachineWatchInterface.LogEntry> logs;
+            lock (_lock)
+            {
+                var trans = _connection.BeginTransaction();
+                try {
+                    logs = MakeInspectionDecisions(trans, matID, uniqueStr, partName, process, inspections, mutcNow);
+                    trans.Commit();
+                } catch {
+                    trans.Rollback();
+                    throw;
+                }
+            }
+
+            foreach (var l in logs)
+                NewLogEntry?.Invoke(l, null);
+        }
+
+        private List<MachineWatchInterface.LogEntry> MakeInspectionDecisions(
+            IDbTransaction trans,
+            long matID,
+            string uniqueStr,
+            string partName,
+            int process,
+            IEnumerable<MachineWatchInterface.JobInspectionData> inspections,
+            DateTime? mutcNow)
+        {
+            var utcNow = mutcNow ?? DateTime.UtcNow;
+            var logEntries = new List<MachineWatchInterface.LogEntry>();
+
+            var actualPath = LookupActualPath(trans, matID);
+
+            var decisions =
+                LookupInspectionDecisions(trans, matID)
+                .ToLookup(d => d.InspType, d => d);
+
+            Dictionary<string, MachineWatchInterface.JobInspectionData> insps;
+            if (inspections == null)
+                insps = new Dictionary<string, MachineWatchInterface.JobInspectionData>();
+            else
+                insps = inspections.ToDictionary(x => x.InspectionType, x => x);
+
+
+            var inspsToCheck = decisions.Select(x => x.Key).Union(insps.Keys).Distinct();
+            foreach (var inspType in inspsToCheck)
+            {
+                bool inspect = false;
+                string counter = "";
+                bool alreadyRecorded = false;
+
+                MachineWatchInterface.JobInspectionData iProg = null;
+                if (insps.ContainsKey(inspType)) {
+                    iProg = insps[inspType];
+                    counter = TranslateInspectionCounter(matID, actualPath, iProg.Counter);
+                }
+
+
+                if (decisions.Contains(inspType)) {
+                    // use the decision
+                    foreach (var d in decisions[inspType]) {
+                        inspect = inspect || d.Inspect;
+                        alreadyRecorded = alreadyRecorded || !d.Forced;
+                    }
+
+                }
+
+                if (!alreadyRecorded && iProg != null) {
+                    // use the counter
+                    var currentCount = QueryCount(trans, counter, iProg.MaxVal);
+                    if (iProg.MaxVal > 0)
+                    {
+                        currentCount.Value += 1;
+
+                        if (currentCount.Value >= iProg.MaxVal)
+                        {
+                            currentCount.Value = 0;
+                            inspect = true;
+                        }
+                    }
+                    else if (iProg.RandomFreq > 0)
+                    {
+                        if (_rand.NextDouble() < iProg.RandomFreq)
+                            inspect = true;
+                    }
+
+                    //now check lastutc
+                    if (iProg.TimeInterval > TimeSpan.Zero &&
+                        currentCount.LastUTC != DateTime.MaxValue &&
+                        currentCount.LastUTC.Add(iProg.TimeInterval) < utcNow)
+                    {
+                        inspect = true;
+                    }
+
+                    //update lastutc if there is an inspection
+                    if (inspect)
+                        currentCount.LastUTC = utcNow;
+
+                    //if no lastutc has been recoreded, record the current time.
+                    if (currentCount.LastUTC == DateTime.MaxValue)
+                        currentCount.LastUTC = utcNow;
+
+                    SetInspectionCount(trans, currentCount);
+                }
+
+                if (!alreadyRecorded) {
+                    var log = StoreInspectionDecision(trans,
+                        matID, uniqueStr, partName, process, actualPath, inspType, counter, utcNow, inspect);
+                    logEntries.Add(log);
+                }
+            }
+
+            return logEntries;
+        }
+
+        private MachineWatchInterface.LogEntry StoreInspectionDecision(
+            IDbTransaction trans,
+            long matID, string unique, string partName, int proc, Dictionary<int, MaterialProcessActualPath> actualPath,
+            string inspType, string counter, DateTime utcNow, bool inspect)
+        {
+            var mat =
+                new MachineWatchInterface.LogMaterial(matID, unique, proc, partName, -1);
+            var pathSteps = actualPath.Values.OrderBy(p => p.Process).ToList();
+
+            var log = new MachineWatchInterface.LogEntry(
+                cntr: -1,
+                mat: new MachineWatchInterface.LogMaterial[] {mat},
+                pal: "",
+                ty: MachineWatchInterface.LogType.Inspection,
+                locName: "Inspect",
+                locNum: 1,
+                prog: counter,
+                start: false,
+                endTime: utcNow,
+                result: inspect.ToString(),
+                endOfRoute: false);
+
+            log.ProgramDetails["InspectionType"] = inspType;
+            log.ProgramDetails["ActualPath"] = Newtonsoft.Json.JsonConvert.SerializeObject(pathSteps);
+
+            log = AddStationCycle(trans, log, null, null);
+
+            return log;
+        }
+
+        #endregion
+
+        #region Force and Next Piece Inspection
+        public void ForceInspection(long matID, string inspType)
+        {
+            var mat = new MachineWatchInterface.LogMaterial(matID, "", 1, "", 1);
+            ForceInspection(mat, inspType, inspect: true, utcNow: DateTime.UtcNow);
+        }
+
+        public MachineWatchInterface.LogEntry ForceInspection(
+            MachineWatchInterface.LogMaterial mat, string inspType, bool inspect)
+        {
+            return ForceInspection(mat, inspType, inspect, DateTime.UtcNow);
+        }
+
+        public MachineWatchInterface.LogEntry ForceInspection(
+            MachineWatchInterface.LogMaterial mat, string inspType, bool inspect, DateTime utcNow)
+        {
+            MachineWatchInterface.LogEntry log;
+            lock (_lock)
+            {
+                var trans = _connection.BeginTransaction();
+
+                try
+                {
+                    log = RecordForceInspection(trans, mat, inspType, inspect, utcNow);
+                    trans.Commit();
+                }
+                catch
+                {
+                    trans.Rollback();
+                    throw;
+                }
+            }
+
+            if (NewLogEntry != null)
+                NewLogEntry(log, null);
+
+            return log;
+        }
+
+        private MachineWatchInterface.LogEntry RecordForceInspection(
+            IDbTransaction trans,
+            MachineWatchInterface.LogMaterial mat, string inspType, bool inspect, DateTime utcNow)
+        {
+            var log = new MachineWatchInterface.LogEntry(
+                cntr: -1,
+                mat: new MachineWatchInterface.LogMaterial[] {mat},
+                pal: "",
+                ty: MachineWatchInterface.LogType.InspectionForce,
+                locName: "Inspect",
+                locNum: 1,
+                prog: inspType,
+                start: false,
+                endTime: utcNow,
+                result: inspect.ToString(),
+                endOfRoute: false);
+            return AddStationCycle(trans, log, null, null);
+        }
+
+        public void NextPieceInspection(MachineWatchInterface.PalletLocation palLoc, string inspType)
+        {
+            lock (_lock)
+            {
+                var cmd = _connection.CreateCommand();
+
+                cmd.CommandText = "INSERT OR REPLACE INTO inspection_next_piece(StatType, StatNum, InspType)" +
+                    " VALUES ($loc,$locnum,$insp)";
+                cmd.Parameters.Add("loc", SqliteType.Integer).Value = (int)palLoc.Location;
+                cmd.Parameters.Add("locnum", SqliteType.Integer).Value = palLoc.Num;
+                cmd.Parameters.Add("insp", SqliteType.Text).Value = inspType;
+
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        public void CheckMaterialForNextPeiceInspection(MachineWatchInterface.PalletLocation palLoc, long matID)
+        {
+            var logs = new List<MachineWatchInterface.LogEntry>();
+
+            lock (_lock)
+            {
+                var cmd = _connection.CreateCommand();
+                var cmd2 = _connection.CreateCommand();
+
+                cmd.CommandText = "SELECT InspType FROM inspection_next_piece WHERE StatType = $loc AND StatNum = $locnum";
+                cmd.Parameters.Add("loc", SqliteType.Integer).Value = (int)palLoc.Location;
+                cmd.Parameters.Add("locnum", SqliteType.Integer).Value = palLoc.Num;
+
+                var trans = _connection.BeginTransaction();
+                try
+                {
+                    cmd.Transaction = trans;
+
+                    IDataReader reader = cmd.ExecuteReader();
+                    try
+                    {
+                        var now = DateTime.UtcNow;
+                        while (reader.Read())
+                        {
+                            if (!reader.IsDBNull(0))
+                            {
+                                var mat = new MachineWatchInterface.LogMaterial(matID, "", 1, "", 1);
+                                logs.Add(RecordForceInspection(trans, mat, reader.GetString(0), inspect:true, utcNow: now));
+                            }
+                        }
+
+                    }
+                    finally
+                    {
+                        reader.Close();
+                    }
+
+                    cmd.CommandText = "DELETE FROM inspection_next_piece WHERE StatType = $loc AND StatNum = $locnum";
+                    //keep the same parameters as above
+                    cmd.ExecuteNonQuery();
+
+                    trans.Commit();
+                }
+                catch
+                {
+                    trans.Rollback();
+                    throw;
+                }
+
+                foreach (var log in logs)
+                    NewLogEntry?.Invoke(log, null);
+            }
         }
         #endregion
     }

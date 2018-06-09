@@ -37,29 +37,23 @@ using Xunit;
 using Microsoft.Data.Sqlite;
 using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
+using FluentAssertions;
 
 namespace MachineWatchTest {
   public class InspectionTest : IDisposable {
 
-		private JobLogDB _jobLog;
-		private InspectionDB _insp;
+		private JobLogDB _insp;
 
     public InspectionTest()
 		{
       var logConn = SqliteExtensions.ConnectMemory();
       logConn.Open();
-      _jobLog = new JobLogDB(logConn);
-      _jobLog.CreateTables();
-
-      var inspConn = SqliteExtensions.ConnectMemory();
-      inspConn.Open();
-			_insp = new InspectionDB(_jobLog, inspConn);
+      _insp = new JobLogDB(logConn);
       _insp.CreateTables();
 		}
 
 		public void Dispose()
 		{
-			_jobLog.Close();
 			_insp.Close();
 		}
 
@@ -105,7 +99,7 @@ namespace MachineWatchTest {
 			job.AddInspection(freqProg);
 
 			for (int i = 0; i < 100; i++)
-				_insp.MakeInspectionDecision (i, job, freqProg);
+				_insp.MakeInspectionDecisions(i, job, 1, new[] {freqProg});
 
 			int numInsp = 0;
 			for (int i = 0; i < 100; i++) {
@@ -120,6 +114,7 @@ namespace MachineWatchTest {
 		[Fact]
 		public void Inspections()
 		{
+			var now = DateTime.UtcNow;
 			//set the count as zero, otherwise it chooses a random
       InspectCount cnt = new InspectCount();
 			cnt.Counter = "counter1";
@@ -140,20 +135,19 @@ namespace MachineWatchTest {
 
 			//the lastutc should be 2 minutes too short, so only inspections from the counter should take place
 
-			Assert.False(_insp.MakeInspectionDecision(1, job, inspProg));
-			Assert.False(_insp.MakeInspectionDecision(1, job, inspProg));
+			_insp.MakeInspectionDecisions(1, job, 2, new [] {inspProg}, now);
+			_insp.MakeInspectionDecisions(1, job, 2, new [] {inspProg}, now); // twice should have no effect
+			CheckDecision(1, "insp1", "counter1", false, now);
 			CheckCount("counter1", 1);
 			CheckLastUTC("counter1", cnt.LastUTC);
 
-			Assert.False(_insp.MakeInspectionDecision(2, job2, inspProg2));
+			_insp.MakeInspectionDecisions(2, job2, 2, new[] {inspProg2}, now);
+			CheckDecision(2, "insp1", "counter1", false, now);
 			CheckCount("counter1", 2);
 			CheckLastUTC("counter1", cnt.LastUTC);
 
-			Assert.True(_insp.MakeInspectionDecision(3, job, inspProg));
-
-			CheckDecision(1, "insp1", "counter1", false);
-			CheckDecision(2, "insp1", "counter1", false);
-			CheckDecision(3, "insp1", "counter1", true);
+			_insp.MakeInspectionDecisions(3, job, 2, new[] {inspProg}, now);
+			CheckDecision(3, "insp1", "counter1", true, now);
 
 			CheckCount("counter1", 0);
 			CheckLastUTC("counter1", DateTime.UtcNow);
@@ -167,15 +161,15 @@ namespace MachineWatchTest {
 
 			job.PartName = "part5";
 
-			Assert.True(_insp.MakeInspectionDecision(4, job, inspProg));
-
-			CheckDecision(4, "insp1", "counter1", true);
-			CheckLastUTC("counter1", DateTime.UtcNow);
+			_insp.MakeInspectionDecisions(4, job, 2, new[] {inspProg});
+			CheckDecision(4, "insp1", "counter1", true, now);
+			CheckLastUTC("counter1", now);
 		}
 
 		[Fact]
 		public void ForcedInspection()
 		{
+			DateTime now = DateTime.UtcNow;
 			var job = new JobPlan("job1", 1);
 			job.PartName = "part1";
 			var job2 = new JobPlan("job2", 1);
@@ -197,14 +191,13 @@ namespace MachineWatchTest {
 			//try making a decision
 			_insp.ForceInspection(2, "insp1");
 
-			Assert.False(_insp.MakeInspectionDecision(1, job, inspProg));
-			Assert.False(_insp.MakeInspectionDecision(1, job, inspProg));
+			_insp.MakeInspectionDecisions(1, job, 1, new[] {inspProg}, now);
+			_insp.MakeInspectionDecisions(1, job, 1, new[] {inspProg}, now);
+			CheckDecision(1, "insp1", "counter1", false, now);
 			CheckCount("counter1", 1);
 
-			Assert.True(_insp.MakeInspectionDecision(2, job2, inspProg2));
-
-			CheckDecision(1, "insp1", "counter1", false);
-			CheckDecision(2, "insp1", "counter1", true);
+			_insp.MakeInspectionDecisions(2, job2, 1, new[] {inspProg2}, now);
+			CheckDecision(2, "insp1", "counter1", true, now, true);
 
 			CheckCount("counter1", 2);
 		}
@@ -212,6 +205,7 @@ namespace MachineWatchTest {
 		[Fact]
 		public void NextPiece()
 		{
+			DateTime now = DateTime.UtcNow;
 			var job = new JobPlan("job1", 1);
 			job.PartName = "part1";
 
@@ -233,10 +227,9 @@ namespace MachineWatchTest {
 
 			CheckCount("counter1", 0);
 
-			Assert.True(_insp.MakeInspectionDecision(1, job, inspProg));
+			_insp.MakeInspectionDecisions(1, job, 1, new[] {inspProg}, now);
 			CheckCount("counter1", 1);
-
-			CheckDecision(1, "insp1", "counter1", true);
+			CheckDecision(1, "insp1", "counter1", true, now, true);
 		}
 
 		[Fact]
@@ -266,13 +259,13 @@ namespace MachineWatchTest {
 			cnt2.Counter = expandedCounter2;
 			cnt2.Value = 0;
 			cnt2.LastUTC = DateTime.UtcNow.AddHours(-10);
-			_insp.SetInspectCounts(new InspectCount[] {cnt, cnt2});
+			_insp.SetInspectCounts(new [] {cnt, cnt2});
 
 
-			var mat1Proc1 = new LogMaterial[] {new LogMaterial(1, "job1", 1, "part1", 2)};
-			var mat1Proc2 = new LogMaterial[] {new LogMaterial(1, "job1", 2, "part1", 2)};
-			var mat2Proc1 = new LogMaterial[] {new LogMaterial(2, "job1", 1, "part1", 2)};
-			var mat2Proc2 = new LogMaterial[] {new LogMaterial(2, "job1", 2, "part1", 2)};
+			var mat1Proc1 = new [] {new LogMaterial(1, "job1", 1, "part1", 2)};
+			var mat1Proc2 = new [] {new LogMaterial(1, "job1", 2, "part1", 2)};
+			var mat2Proc1 = new [] {new LogMaterial(2, "job1", 1, "part1", 2)};
+			var mat2Proc2 = new [] {new LogMaterial(2, "job1", 2, "part1", 2)};
 
 			_lastCycleTime = DateTime.UtcNow.AddDays(-1);
 
@@ -296,65 +289,92 @@ namespace MachineWatchTest {
 
 			var job = new JobPlan("job1", 2);
 			job.PartName = "part1";
-
-			for (int proc = 1; proc <= 2; proc++) {
-				for (int stat = 1; stat <= 10; stat++) {
-					job.AddLoadStation(proc, 1, stat);
-					job.AddUnloadStation(proc, 1, stat);
-				}
-			}
-
-			var stop = new JobMachiningStop("Machine");
-			for (int stat = 1; stat <= 20; stat++)
-				stop.AddProgram(stat, "prog");
-			job.AddMachiningStop(1, 1, stop);
-			stop = new JobMachiningStop("Machine");
-			for (int stat = 1; stat <= 20; stat++)
-				stop.AddProgram(stat, "prog");
-			job.AddMachiningStop(1, 1, stop);
-
-			stop = new JobMachiningStop("Machine");
-			for (int stat = 1; stat <= 20; stat++)
-				stop.AddProgram(stat, "prog");
-			job.AddMachiningStop(2, 1, stop);
-			stop = new JobMachiningStop("Machine");
-			for (int stat = 1; stat <= 20; stat++)
-				stop.AddProgram(stat, "prog");
-			job.AddMachiningStop(2, 1, stop);
-
 			var inspProg = new JobInspectionData("insp1", counter, 10, TimeSpan.FromDays(2));
 			job.AddInspection(inspProg);
 
-			Assert.False(_insp.MakeInspectionDecision(1, job, inspProg));
+			var now = DateTime.UtcNow;
+			_insp.MakeInspectionDecisions(1, job, 2, new[] {inspProg}, now);
+			CheckDecision(1, "insp1", expandedCounter1, false, now);
 			Assert.Equal(2, _insp.LoadInspectCounts().Count);
 			CheckCount(expandedCounter1, 1);
 			CheckCount(expandedCounter2, 0);
 
-			Assert.False(_insp.MakeInspectionDecision(2, job, inspProg));
+			_insp.MakeInspectionDecisions(2, job, 2, new[] {inspProg});
+			CheckDecision(2, "insp1", expandedCounter2, false, now);
 			Assert.Equal(2, _insp.LoadInspectCounts().Count);
 			CheckCount(expandedCounter1, 1);
 			CheckCount(expandedCounter2, 1);
+		}
+
+		[Fact]
+		public void WithoutInspectProgram()
+		{
+			DateTime now = DateTime.UtcNow;
+			var mat1 = new LogMaterial(1, "uniq1", 1, "part1", -1);
+			var mat2 = new LogMaterial(2, "uniq1", 1, "part1", -1);
+			_insp.ForceInspection(mat1, "myinspection", true, now);
+			_insp.ForceInspection(mat2, "myinspection", false, now);
+
+			_insp.MakeInspectionDecisions(1, "unique1", "part1", 1, null, now);
+			_insp.MakeInspectionDecisions(2, "unique1", "part1", 1, null, now);
+
+			CheckDecision(1, "myinspection", "", true, now, true);
+			CheckDecision(2, "myinspection", "", false, now, true);
 		}
 
 		private DateTime _lastCycleTime;
 		private void AddCycle(LogMaterial[] mat, string pal, LogType loc, int statNum, bool end)
 		{
 			string name = loc == LogType.MachineCycle ? "MC" : "Load";
-      		_jobLog.AddLogEntry(new LogEntry(-1, mat, pal, loc, name, statNum, "", true, _lastCycleTime, "", end));
+      		_insp.AddLogEntry(new LogEntry(-1, mat, pal, loc, name, statNum, "", true, _lastCycleTime, "", end));
 			_lastCycleTime = _lastCycleTime.AddMinutes(15);
-			_jobLog.AddLogEntry(new LogEntry(-1, mat, pal, loc, name, statNum, "", false, _lastCycleTime, "", end));
+			_insp.AddLogEntry(new LogEntry(-1, mat, pal, loc, name, statNum, "", false, _lastCycleTime, "", end));
 			_lastCycleTime = _lastCycleTime.AddMinutes(15);
 		}
 
-		private void CheckDecision(long matID, string iType, string counter, bool inspect)
+		private void CheckDecision(long matID, string iType, string counter, bool inspect, DateTime now, bool forced = false)
 		{
+			int decisionCnt = 0;
+			int forcedCnt = 0;
 			foreach (var d in _insp.LookupInspectionDecisions(matID)) {
-				if (d.Counter == counter && d.InspType == iType) {
-					Assert.Equal(inspect, d.Inspect);
-					return;
+				if (d.InspType == iType) {
+					d.ShouldBeEquivalentTo(
+							new JobLogDB.Decision() {
+								MaterialID = matID,
+								InspType = iType,
+								Counter = d.Forced ? "" : counter,
+								Inspect = inspect,
+								Forced = d.Forced,
+								CreateUTC = now
+							},
+							options =>
+								options
+									.Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, 1000))
+										.WhenTypeIs<DateTime>()
+						);
+					if (d.Forced) forcedCnt += 1; else decisionCnt += 1;
 				}
 			}
-			Assert.True(false, "Unable to find counter and inspection type");
+			Assert.Equal(decisionCnt, 1);
+			Assert.Equal(forcedCnt, forced ? 1 :  0);
+
+			var log = _insp.GetLogForMaterial(matID);
+			int inspEntries = 0;
+			int forceEntries = 0;
+			foreach (var entry in _insp.GetLogForMaterial(matID)) {
+				if (entry.LogType == LogType.Inspection && entry.ProgramDetails["InspectionType"] == iType) {
+					inspEntries += 1;
+					entry.EndTimeUTC.Should().BeCloseTo(now, 1000);
+					entry.Program.Should().Equals(counter);
+					entry.Result.Should().Equals(inspect.ToString());
+					// TODO: test path
+				} else if (entry.LogType == LogType.InspectionForce && entry.Program == iType) {
+					forceEntries += 1;
+					entry.Result.Should().Equals(inspect.ToString());
+				}
+			}
+			inspEntries.Should().Equals(1);
+			forceEntries.Should().Equals(forced ? 1 : 0);
 		}
 
 		private bool FindDecision(long matID, string iType, string counter)
