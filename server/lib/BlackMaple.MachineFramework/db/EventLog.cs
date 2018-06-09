@@ -1947,7 +1947,7 @@ namespace BlackMaple.MachineFramework
             public int Process {get;set;}
             public string Pallet {get;set;}
             public int LoadStation {get;set;}
-            public List<Stop> Stops {get;set;}
+            public List<Stop> Stops {get;set;} = new List<Stop>();
             public int UnloadStation {get;set;}
         }
 
@@ -1964,7 +1964,6 @@ namespace BlackMaple.MachineFramework
                         Process = proc,
                         Pallet = null,
                         LoadStation = -1,
-                        Stops = new List<MaterialProcessActualPath.Stop>(),
                         UnloadStation = -1
                     };
                     byProc.Add(proc, m);
