@@ -46,7 +46,6 @@ namespace MazakMachineInterface
     private HoldPattern hold;
     private BlackMaple.MachineFramework.JobDB jobDB;
     private BlackMaple.MachineFramework.JobLogDB log;
-    private BlackMaple.MachineFramework.InspectionDB inspDb;
     private LoadOperations loadOper;
     private System.Timers.Timer _copySchedulesTimer;
 
@@ -63,7 +62,7 @@ namespace MazakMachineInterface
 
     public RoutingInfo(TransactionDatabaseAccess d, IReadDataAccess readDb, HoldPattern h,
         BlackMaple.MachineFramework.JobDB jDB, BlackMaple.MachineFramework.JobLogDB jLog,
-        BlackMaple.MachineFramework.InspectionDB iDb, LoadOperations lOper,
+        LoadOperations lOper,
     bool check, bool useStarting, bool decrPriority, System.Diagnostics.TraceSource t)
     {
       database = d;
@@ -71,7 +70,6 @@ namespace MazakMachineInterface
       hold = h;
       jobDB = jDB;
       log = jLog;
-      inspDb = iDb;
       loadOper = lOper;
       CheckPalletsUsedOnce = check;
       UseStartingOffsetForDueDate = useStarting;
@@ -418,9 +416,10 @@ namespace MazakMachineInterface
                 Serial = log.SerialForMaterialID(matID),
                 WorkorderId = log.WorkorderForMaterialID(matID),
                 SignaledInspections =
-                      inspDb.LookupInspectionDecisions(matID)
+                      log.LookupInspectionDecisions(matID)
                       .Where(x => x.Inspect)
                       .Select(x => x.InspType)
+                      .Distinct()
                       .ToList(),
                 Location = new InProcessMaterialLocation()
                 {
@@ -614,7 +613,7 @@ namespace MazakMachineInterface
             Serial = log.SerialForMaterialID(matID),
             WorkorderId = log.WorkorderForMaterialID(matID),
             SignaledInspections =
-                          inspDb.LookupInspectionDecisions(matID)
+                          log.LookupInspectionDecisions(matID)
                           .Where(x => x.Inspect)
                           .Select(x => x.InspType)
                           .ToList(),

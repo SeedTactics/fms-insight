@@ -72,7 +72,6 @@ namespace DebugMachineWatchApiServer
   {
     public JobLogDB LogDB { get; private set; }
     public JobDB JobDB { get; private set; }
-    public InspectionDB InspectionDB { get; private set; }
 
     private Dictionary<string, CurrentStatus> Statuses {get;} = new Dictionary<string, CurrentStatus>();
     private CurrentStatus CurrentStatus {get;set;}
@@ -91,11 +90,7 @@ namespace DebugMachineWatchApiServer
       {
         if (System.IO.File.Exists(dbFile("log"))) System.IO.File.Delete(dbFile("log"));
         LogDB = new JobLogDB();
-        LogDB.Open(dbFile("log"));
-
-        if (System.IO.File.Exists(dbFile("insp"))) System.IO.File.Delete(dbFile("insp"));
-        InspectionDB = new InspectionDB(LogDB);
-        InspectionDB.Open(dbFile("insp"));
+        LogDB.Open(dbFile("log"), dbFile("insp"));
 
         if (System.IO.File.Exists(dbFile("job"))) System.IO.File.Delete(dbFile("job"));
         JobDB = new JobDB();
@@ -107,11 +102,6 @@ namespace DebugMachineWatchApiServer
         conn.Open();
         LogDB = new JobLogDB(conn);
         LogDB.CreateTables();
-
-        conn = SqliteExtensions.ConnectMemory();
-        conn.Open();
-        InspectionDB = new InspectionDB(LogDB, conn);
-        InspectionDB.CreateTables();
 
         conn = SqliteExtensions.ConnectMemory();
         conn.Open();
@@ -150,13 +140,12 @@ namespace DebugMachineWatchApiServer
     public void Halt()
     {
       JobDB.Close();
-      InspectionDB.Close();
       LogDB.Close();
     }
 
     public IInspectionControl InspectionControl()
     {
-      return InspectionDB;
+      return LogDB;
     }
 
     public IJobControl JobControl()

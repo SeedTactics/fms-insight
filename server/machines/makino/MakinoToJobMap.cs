@@ -68,12 +68,10 @@ namespace Makino
 		private Dictionary<int, InProcessJob> _byOrderID = new Dictionary<int, InProcessJob>();
 
         private BlackMaple.MachineFramework.JobLogDB _logDb;
-        private BlackMaple.MachineFramework.InspectionDB _inspDb;
 
-        public MakinoToJobMap(BlackMaple.MachineFramework.JobLogDB log, BlackMaple.MachineFramework.InspectionDB insp)
+        public MakinoToJobMap(BlackMaple.MachineFramework.JobLogDB log)
         {
             _logDb = log;
-            _inspDb = insp;
         }
 
         public IEnumerable<InProcessJob> Jobs
@@ -204,9 +202,10 @@ namespace Makino
                 Serial = _logDb.SerialForMaterialID(matID),
                 WorkorderId = _logDb.WorkorderForMaterialID(matID),
                 SignaledInspections =
-                    _inspDb.LookupInspectionDecisions(matID)
+                    _logDb.LookupInspectionDecisions(matID)
                         .Where(x => x.Inspect)
                         .Select(x => x.InspType)
+						.Distinct()
                         .ToList(),
                 Action = new InProcessMaterialAction()
                 {

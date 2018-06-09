@@ -42,7 +42,6 @@ namespace Cincron
         private System.Diagnostics.TraceSource trace =
            new System.Diagnostics.TraceSource("Cincron", System.Diagnostics.SourceLevels.All);
 
-        private InspectionDB _inspectDB;
         private JobLogDB _log;
         private MessageWatcher _msgWatcher;
 
@@ -79,8 +78,6 @@ namespace Cincron
                 _log = new JobLogDB();
 
                 _log.Open(System.IO.Path.Combine(dataDirectory, "log.db"));
-                _inspectDB = new InspectionDB(_log);
-                _inspectDB.Open(System.IO.Path.Combine(dataDirectory, "inspections.db"));
                 _msgWatcher = new MessageWatcher(msgFile, _log, trace);
                 _msgWatcher.Start();
 
@@ -99,13 +96,12 @@ namespace Cincron
         public void Halt()
         {
             if (_msgWatcher != null) _msgWatcher.Halt();
-            if (_inspectDB != null) _inspectDB.Close();
             if (_log != null) _log.Close();
         }
 
         public IInspectionControl InspectionControl()
         {
-            return _inspectDB;
+            return _log;
         }
 
         public IJobDatabase JobDatabase()

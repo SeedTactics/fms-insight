@@ -40,7 +40,6 @@ namespace Makino
 	public class MakinoBackend : IFMSBackend, IFMSImplementation
 	{
 		// Common databases from machine framework
-		private InspectionDB _inspectDB;
 		private JobDB _jobDB;
 		private JobLogDB _log;
 
@@ -98,27 +97,22 @@ namespace Makino
                 _jobDB = new JobDB(jobConn);
                 _jobDB.CreateTables();
 
-                var inspConn = SqliteExtensions.ConnectMemory();
-                inspConn.Open();
-                _inspectDB = new InspectionDB(_log, inspConn);
-                _inspectDB.CreateTables();
-
                 var statusConn = SqliteExtensions.ConnectMemory();
                 statusConn.Open();
                 _status = new StatusDB(statusConn);
                 _status.CreateTables();
 
-                _makinoDB = new MakinoDB(MakinoDB.DBTypeEnum.SqlLocal, "", _status, _log, _inspectDB, dbTrace);
-                _logTimer = new LogTimer(_log, _jobDB, _inspectDB, _makinoDB, _status, serSettings, logTrace);
+                _makinoDB = new MakinoDB(MakinoDB.DBTypeEnum.SqlLocal, "", _status, _log, dbTrace);
+                _logTimer = new LogTimer(_log, _jobDB, _makinoDB, _status, serSettings, logTrace);
 #else
                 _log = new JobLogDB();
-                _log.Open(System.IO.Path.Combine(_dataDirectory, "log.db"));
+                _log.Open(
+                    System.IO.Path.Combine(_dataDirectory, "log.db"),
+                    System.IO.Path.Combine(_dataDirectory, "inspections.db")
+                );
 
-                _jobDB = new BlackMaple.MachineFramework.JobDB();
+                _jobDB = new BlackMaple.MachineFramework.JobDB()
                 _jobDB.Open(System.IO.Path.Combine(_dataDirectory, "jobs.db"));
-
-                _inspectDB = new BlackMaple.MachineFramework.InspectionDB(_log);
-                _inspectDB.Open(System.IO.Path.Combine(_dataDirectory, "inspections.db"));
 
                 _status = new StatusDB(System.IO.Path.Combine(_dataDirectory, "makino.db"));
 
@@ -141,7 +135,6 @@ namespace Makino
 		{
             _logTimer.LogsProcessed -= OnLogsProcessed;
 			if (_logTimer != null) _logTimer.Halt();
-			if (_inspectDB != null) _inspectDB.Close();
 			if (_jobDB != null) _jobDB.Close();
 			if (_log != null) _log.Close();
 			if (_status != null) _status.Close();
@@ -189,7 +182,7 @@ namespace Makino
 
 		public IInspectionControl InspectionControl()
 		{
-			return _inspectDB;
+			return _log;
 		}
 
 		public ILogDatabase LogDatabase()

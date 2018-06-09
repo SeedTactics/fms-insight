@@ -188,18 +188,16 @@ namespace Makino
 		private StatusDB _status;
 		private string dbo;
 		private System.Diagnostics.TraceSource trace;
-        private BlackMaple.MachineFramework.JobLogDB _logDb;
-        private BlackMaple.MachineFramework.InspectionDB _inspDb;
+    private BlackMaple.MachineFramework.JobLogDB _logDb;
 
-        public MakinoDB(DBTypeEnum dbType, string dbConnStr, StatusDB status,
-            BlackMaple.MachineFramework.JobLogDB log, BlackMaple.MachineFramework.InspectionDB insp,
-            System.Diagnostics.TraceSource t)
+		public MakinoDB(DBTypeEnum dbType, string dbConnStr, StatusDB status,
+				BlackMaple.MachineFramework.JobLogDB log,
+				System.Diagnostics.TraceSource t)
 		{
 			trace = t;
 			_status = status;
-            _logDb = log;
-            _inspDb = insp;
-            switch (dbType) {
+			_logDb = log;
+			switch (dbType) {
 			case DBTypeEnum.SqlLocal:
                 _db = new System.Data.SqlClient.SqlConnection("Data Source = (localdb)\\MSSQLLocalDB; Initial Catalog = Makino;");
                 _db.Open();
@@ -585,7 +583,7 @@ namespace Makino
 		{
 			using (var cmd = _db.CreateCommand()) {
 
-				var map = new MakinoToJobMap(_logDb, _inspDb);
+				var map = new MakinoToJobMap(_logDb);
 				var palMap = new MakinoToPalletMap();
 
 				Load("SELECT PartID, ProcessNumber, ProcessID FROM " + dbo + "Processes", reader => {

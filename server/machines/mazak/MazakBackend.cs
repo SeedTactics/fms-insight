@@ -31,6 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
+using System.Linq;
 using System.Diagnostics;
 using System.Collections.Generic;
 using BlackMaple.MachineWatchInterface;
@@ -48,7 +49,6 @@ namespace MazakMachineInterface
     private ILogData logDataLoader;
 
     private JobLogDB jobLog;
-    private InspectionDB insp;
     private JobDB jobDB;
 
     //Settings
@@ -186,10 +186,11 @@ namespace MazakMachineInterface
           "DecrementPriorityOnDownload = " + DecrementPriorityOnDownload.ToString());
 
       jobLog = new BlackMaple.MachineFramework.JobLogDB();
-      jobLog.Open(System.IO.Path.Combine(dataDirectory, "log.db"));
+      jobLog.Open(
+        System.IO.Path.Combine(dataDirectory, "log.db"),
+        System.IO.Path.Combine(dataDirectory, "insp.db")
+      );
 
-      insp = new BlackMaple.MachineFramework.InspectionDB(jobLog);
-      insp.Open(System.IO.Path.Combine(dataDirectory, "insp.db"));
       jobDB = new BlackMaple.MachineFramework.JobDB();
       var jobInspName = System.IO.Path.Combine(dataDirectory, "jobinspection.db");
       if (System.IO.File.Exists(jobInspName))
@@ -211,7 +212,7 @@ namespace MazakMachineInterface
       }
       hold = new HoldPattern(dataDirectory, database, readOnlyDb, holdTrace, true);
       loadOper = new LoadOperations(loadOperTrace, cfg, readOnlyDb.SmoothDB);
-      routing = new RoutingInfo(database,readOnlyDb, hold, jobDB, jobLog, insp, loadOper,
+      routing = new RoutingInfo(database,readOnlyDb, hold, jobDB, jobLog, loadOper,
                                 CheckPalletsUsedOnce, UseStartingOffsetForDueDate, DecrementPriorityOnDownload,
                                 routingTrace);
       logTrans = new LogTranslation(jobLog, readOnlyDb, serSettings, logDataLoader, logTrace);
@@ -231,7 +232,6 @@ namespace MazakMachineInterface
       logTrans.Halt();
       loadOper.Halt();
       jobDB.Close();
-      insp.Close();
       jobLog.Close();
     }
 
@@ -247,7 +247,7 @@ namespace MazakMachineInterface
 
     public IInspectionControl InspectionControl()
     {
-      return insp;
+      return jobLog;
     }
 
     public IJobControl JobControl()
@@ -296,7 +296,7 @@ namespace MazakMachineInterface
 
         job.AddInspections(jobDB.LoadInspections(job.UniqueStr));
 
-        bool hasInspections = false;
+        var inspections = new List<JobInspectionData>();
         foreach (var i in job.GetInspections())
         {
           if (i.InspectSingleProcess <= 0 && mat.Process != mat.NumProcesses)
@@ -322,22 +322,14 @@ namespace MazakMachineInterface
             continue;
           }
 
-          hasInspections = true;
-          var result = insp.MakeInspectionDecision(mat.MaterialID, job, i);
-          logTrace.TraceEvent(TraceEventType.Information, 0,
-                           "Making inspection decision for " + i.InspectionType + " material " + mat.MaterialID.ToString() +
-                           " completed at time " + cycle.EndTimeUTC.ToLocalTime().ToString() + " on pallet " + cycle.Pallet.ToString() +
-                           " part " + mat.PartName +
-                           ".  The decision is " + result.ToString());
+          inspections.Add(i);
         }
 
-        if (!hasInspections)
-        {
-          logTrace.TraceEvent(TraceEventType.Information, 0,
-                              "No inspection decisions made for material " + mat.MaterialID.ToString() +
-                              " completed at time " + cycle.EndTimeUTC.ToLocalTime().ToString() + " on pallet " + cycle.Pallet.ToString() +
-                              " part " + mat.PartName);
-        }
+        jobLog.MakeInspectionDecisions(mat.MaterialID, job, mat.Process, inspections);
+        logTrace.TraceEvent(TraceEventType.Information, 0,
+                          "Making inspection decision for " + string.Join(',', inspections.Select(x => x.InspectionType)) + " material " + mat.MaterialID.ToString() +
+                          " completed at time " + cycle.EndTimeUTC.ToLocalTime().ToString() + " on pallet " + cycle.Pallet.ToString() +
+                          " part " + mat.PartName);
       }
     }
 

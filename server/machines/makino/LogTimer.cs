@@ -42,7 +42,6 @@ namespace Makino
 		private object _lock;
 		private JobLogDB _log;
 		private JobDB _jobDB;
-		private InspectionDB _inspectDB;
 		private MakinoDB _makinoDB;
 		private StatusDB _status;
 		private System.Timers.Timer _timer;
@@ -58,7 +57,7 @@ namespace Makino
         }
 
 		public LogTimer(
-			JobLogDB log, JobDB jobDB, InspectionDB inspect, MakinoDB makinoDB, StatusDB status,
+			JobLogDB log, JobDB jobDB, MakinoDB makinoDB, StatusDB status,
             SerialSettings serSettings,
 			System.Diagnostics.TraceSource trace)
 		{
@@ -66,7 +65,6 @@ namespace Makino
 			_log = log;
 			_jobDB = jobDB;
             SerialSettings = serSettings;
-			_inspectDB = inspect;
 			_makinoDB = makinoDB;
 			_status = status;
 			_trace = trace;
@@ -204,7 +202,7 @@ namespace Makino
 
 		private void AddInspection(MakinoDB.MachineResults m, IList<LogMaterial> material)
 		{
-			if (_jobDB == null && _inspectDB == null)
+			if (_jobDB == null && _log == null)
 				return;
 
 			var job = _jobDB.LoadJob(m.OrderName);
@@ -215,9 +213,7 @@ namespace Makino
 				return;
 
 			foreach (LogMaterial mat in material) {
-				foreach (var insp in job.GetInspections()) {
-					_inspectDB.MakeInspectionDecision(mat.MaterialID, job, insp);
-				}
+				_log.MakeInspectionDecisions(mat.MaterialID, job, m.ProcessNum, job.GetInspections());
 			}
 		}
 
