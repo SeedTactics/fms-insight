@@ -32,7 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as im from 'immutable';
-import { InspectionLogResultType, InspectionLogEntry, InspectionCounter } from './events.inspection';
+import * as api from './api';
+import { InspectionLogResultType, InspectionLogEntry } from './events.inspection';
 
 export interface SankeyNode {
   readonly unique: string; // full unique of node
@@ -60,21 +61,17 @@ interface Edge {
   readonly to: NodeR;
 }
 
-function edgesForCounter(counter: InspectionCounter, toInspect: boolean, result: boolean | undefined): Edge[] {
+function edgesForPath(
+    actualPath: ReadonlyArray<Readonly<api.IMaterialProcessActualPath>>,
+    toInspect: boolean,
+    result: boolean | undefined
+): Edge[] {
   let path = "";
   let prevNode = mkNodeR({unique: "", name: "raw"});
   let edges: Edge[] = [];
-  const numProc = Math.max(counter.pallets.length, counter.stations.length);
-  for (let i = 0; i < numProc; i++) {
-    let cur: string | undefined;
-    if (i < counter.pallets.length && i < counter.stations.length) {
-      cur = "P" + counter.pallets[i] + ",M" + counter.stations[i];
-    } else if (i < counter.pallets.length) {
-      cur = "P" + counter.pallets[i];
-    } else if (i < counter.stations.length) {
-      cur = "M" + counter.stations[i];
-    }
-    if (cur) {
+  for (const proc of actualPath) {
+    for (const stop of proc.stops) {
+      const cur = "P" + proc.pallet + ",M" + stop.stationNum;
       path += "->" + cur;
       const nextNode = mkNodeR({unique: path, name: cur});
       edges.push({
@@ -124,7 +121,7 @@ export function inspectionDataToSankey(d: ReadonlyArray<InspectionLogEntry>): Sa
     entrySeq
     .flatMap(c => {
       if (c.result.type === InspectionLogResultType.Triggered) {
-        return edgesForCounter(c.result.counter, c.result.toInspect, matIdToInspResult.get(c.materialID));
+        return edgesForPath(c.result.actualPath, c.result.toInspect, matIdToInspResult.get(c.materialID));
       } else {
         return [];
       }

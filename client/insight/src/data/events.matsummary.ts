@@ -122,11 +122,19 @@ export function process_events(now: Date, newEvts: Iterable<api.ILogEntry>, st: 
 
         case api.LogType.Inspection:
           if (e.result.toLowerCase() === "true" || e.result === "1") {
-            const entries = e.program.split(",");
-            if (entries.length >= 2) {
-              mat = {...mat, signaledInspections: [...mat.signaledInspections, entries[1]]};
-              inspTypes.set(entries[1], true);
+            const inspType = (e.details || {}).InspectionType;
+            if (inspType) {
+              mat = {...mat, signaledInspections: [...mat.signaledInspections, inspType]};
+              inspTypes.set(inspType, true);
             }
+          }
+          break;
+
+        case api.LogType.InspectionForce:
+          if (e.result.toLowerCase() === "true" || e.result === "1") {
+            const inspType = e.program;
+            mat = {...mat, signaledInspections: [...mat.signaledInspections, inspType]};
+            inspTypes.set(inspType, true);
           }
           break;
 

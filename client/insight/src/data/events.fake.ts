@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { LogMaterial, ILogEntry, LogType } from './api';
+import { LogMaterial, ILogEntry, LogType, MaterialProcessActualPath, Stop } from './api';
 import * as faker from 'faker';
 import { duration } from 'moment';
 import { addSeconds, addMinutes } from 'date-fns';
@@ -130,6 +130,11 @@ export function fakeCycle(
     if (!noInspections) {
       time = addMinutes(time, 5);
       counter += 1;
+      if (faker.random.boolean() === true) {
+        es.push(fakeInspForce(material[0], "Insp1", time, counter))
+        time = addSeconds(time, 5);
+        counter += 1;
+      }
       es.push(fakeInspSignal(material[0], "Insp1", time, counter));
     }
 
@@ -183,6 +188,18 @@ export function fakeInspSignal(mat?: LogMaterial, inspType?: string, now?: Date,
   inspType = inspType || "MyInspType";
   now = now || new Date(2017, 9, 5);
   counter = counter || 100;
+  const path = [
+    (new MaterialProcessActualPath({
+      materialID: mat.id,
+      process: 1,
+      pallet: "6",
+      loadStation: 1,
+      stops: [
+        new Stop({stationName: "MC", stationNum: 4})
+      ],
+      unloadStation: 2
+    })).toJSON()
+  ];
   return {
     counter: counter,
     material: [mat],
@@ -193,9 +210,34 @@ export function fakeInspSignal(mat?: LogMaterial, inspType?: string, now?: Date,
     loc: 'Inspection',
     locnum: 1,
     result: 'True',
-    program: 'ignored,' + inspType  + ',P6,S4',
+    program: 'theprogramshouldbeignored',
     elapsed: '00:00:00',
-    active: '00:00:00'
+    active: '00:00:00',
+    details: {
+      "InspectionType": inspType,
+      "Path": JSON.stringify(path),
+    }
+  };
+}
+
+export function fakeInspForce(mat?: LogMaterial, inspType?: string, now?: Date, counter?: number): ILogEntry {
+  mat = mat || fakeMaterial();
+  inspType = inspType || "MyInspType";
+  now = now || new Date(2017, 9, 5);
+  counter = counter || 100;
+  return {
+    counter: counter,
+    material: [mat],
+    pal: "",
+    type: LogType.InspectionForce,
+    startofcycle: false,
+    endUTC: now,
+    loc: 'Inspection',
+    locnum: 1,
+    result: 'True',
+    program: inspType,
+    elapsed: '00:00:00',
+    active: '00:00:00',
   };
 }
 

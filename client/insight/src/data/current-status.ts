@@ -117,18 +117,24 @@ function process_new_events(entry: Readonly<api.ILogEntry>, s: State): State {
         break;
 
         case api.LogType.Inspection:
+        case api.LogType.InspectionForce:
         if (entry.result.toLowerCase() === "true" || entry.result === "1") {
-            const inspParts = entry.program.split(",");
-            if (inspParts.length >= 2) {
+            let inspType: string;
+            if (entry.type === api.LogType.InspectionForce) {
+                inspType = entry.program;
+            } else {
+                inspType = (entry.details || {}).InspectionType;
+            }
+            if (inspType) {
                 for (let m of entry.material) {
                     adjustMat(m.id, inmat =>
-                        ({...inmat, signaledInspections: [...inmat.signaledInspections, inspParts[1]]})
+                        ({...inmat, signaledInspections: [...inmat.signaledInspections, inspType]})
                     );
                 }
             }
         }
         break;
-        }
+    }
 
     if (mats === undefined) {
         return s;

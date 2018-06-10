@@ -79,9 +79,10 @@ export type Action =
     }
   | {
       type: ActionType.UpdateMaterial,
-      newInspType?: string,
+      newCompletedInspection?: string,
       newWorkorder?: string,
       newSerial?: string,
+      newSignaledInspection?: string,
       pledge: Pledge<Readonly<api.ILogEntry> | undefined>,
     }
   | {
@@ -142,6 +143,29 @@ export function openMaterialBySerial(serial: string): ABF {
   };
 }
 
+export interface ForceInspectionData {
+  readonly mat: MaterialDetail;
+  readonly inspType: string;
+  readonly inspect: boolean;
+}
+
+export function forceInspection({mat, inspType, inspect}: ForceInspectionData): ABF {
+  const client = new api.LogClient();
+  const logMat = new api.LogMaterial({
+    id: mat.materialID,
+    uniq: mat.jobUnique,
+    part: mat.partName,
+    proc: 1,
+    numproc: 1,
+    face: "1",
+  });
+  return {
+    type: ActionType.UpdateMaterial,
+    newSignaledInspection: inspType,
+    pledge: client.setInspectionDecision(inspType, logMat, inspect),
+  };
+}
+
 export interface CompleteInspectionData {
   readonly mat: MaterialDetail;
   readonly inspType: string;
@@ -153,7 +177,7 @@ export function completeInspection({mat, inspType, success, operator}: CompleteI
   const client = new api.LogClient();
   return {
     type: ActionType.UpdateMaterial,
-    newInspType: inspType,
+    newCompletedInspection: inspType,
     pledge: client.recordInspectionCompleted(new api.NewInspectionCompleted({
       material: new api.LogMaterial({
         id: mat.materialID,
@@ -374,10 +398,16 @@ function processEvents(evts: ReadonlyArray<Readonly<api.ILogEntry>>, mat: Materi
 
       case api.LogType.Inspection:
         if (e.result.toLowerCase() === "true" || e.result === "1") {
-          const entries = e.program.split(",");
-          if (entries.length >= 2) {
-            inspTypes = inspTypes.add(entries[1]);
+          const itype = (e.details || {}).InspectionType;
+          if (itype) {
+            inspTypes = inspTypes.add(itype);
           }
+        }
+        break;
+
+      case api.LogType.InspectionForce:
+        if (e.result.toLowerCase() === "true" || e.result === "1") {
+          inspTypes = inspTypes.add(e.program);
         }
         break;
 
@@ -437,7 +467,13 @@ export function reducer(s: State, a: Action): State {
           const oldMatEnd = s.material;
           return {...s, material: {...oldMatEnd,
               completedInspections:
-                a.newInspType ? [...oldMatEnd.completedInspections, a.newInspType] : oldMatEnd.completedInspections,
+                a.newCompletedInspection
+                  ? [...oldMatEnd.completedInspections, a.newCompletedInspection]
+                  : oldMatEnd.completedInspections,
+              signaledInspections:
+                a.newSignaledInspection
+                  ? [...oldMatEnd.signaledInspections, a.newSignaledInspection]
+                  : oldMatEnd.signaledInspections,
               workorderId: a.newWorkorder || oldMatEnd.workorderId,
               serial: a.newSerial || oldMatEnd.serial,
               events: a.pledge.result ? [...oldMatEnd.events, a.pledge.result] : oldMatEnd.events,

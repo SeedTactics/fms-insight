@@ -35,20 +35,17 @@ import * as im from 'immutable'; // consider collectable.js at some point?
 
 export enum InspectionLogResultType {
   Triggered,
+  Forced,
   Completed,
-}
-
-export interface InspectionCounter {
-  readonly part: string;
-  readonly inspType: string;
-  readonly pallets: ReadonlyArray<string>;
-  readonly stations: ReadonlyArray<string>;
 }
 
 export type InspectionLogResult =
   | {
       readonly type: InspectionLogResultType.Triggered,
-      readonly counter: InspectionCounter,
+      readonly actualPath: ReadonlyArray<Readonly<api.IMaterialProcessActualPath>>,
+      readonly toInspect: boolean;
+    }
+  | { readonly type: InspectionLogResultType.Forced,
       readonly toInspect: boolean;
     }
   | { readonly type: InspectionLogResultType.Completed,
@@ -82,25 +79,6 @@ export type ExpireOldData =
   | {type: ExpireOldDataType.ExpireEarlierThan, d: Date }
   | {type: ExpireOldDataType.NoExpire }
   ;
-
-export function parseInspectionCounter(counter: string): InspectionCounter {
-  const s = counter.split(",");
-  const pals: string[] = [];
-  const stats: string[] = [];
-  for (var i = 2; i < s.length; i++) {
-    if (s[i].startsWith("P")) {
-      pals.push(s[i].substr(1));
-    } else {
-      stats.push(s[i].substr(1));
-    }
-  }
-  return {
-    part: s.length >= 1 ? s[0] : "",
-    inspType: s.length >= 2 ? s[1] : "",
-    pallets: pals,
-    stations: stats,
-  };
-}
 
 export function process_events(
   expire: ExpireOldData,
@@ -136,11 +114,18 @@ export function process_events(
     var newPartCycles = evtsSeq
       .filter(c =>
              c.type === api.LogType.Inspection
+          || c.type === api.LogType.InspectionForce
           || c.type === api.LogType.InspectionResult
       )
       .flatMap(c => c.material.map(m => {
         if (c.type === api.LogType.Inspection) {
-          const counter = parseInspectionCounter(c.program);
+          const pathsJson: ReadonlyArray<object> = JSON.parse((c.details || {}).Path || "[]");
+          const paths: Array<Readonly<api.IMaterialProcessActualPath>> = [];
+          for (const pathJson of pathsJson) {
+            paths.push(api.MaterialProcessActualPath.fromJS(pathJson));
+          }
+          const inspType = (c.details || {}).InspectionType || "";
+
           let toInspect: boolean;
           if (c.result.toLowerCase() === "true" || c.result === "1") {
             toInspect = true;
@@ -148,11 +133,26 @@ export function process_events(
             toInspect = false;
           }
           return {
-            key: mkPartAndInspType({part: m.part, inspType: counter.inspType}),
+            key: mkPartAndInspType({part: m.part, inspType: inspType}),
             entry: {
               time: c.endUTC,
               materialID: m.id,
-              result: {type: InspectionLogResultType.Triggered, counter, toInspect }
+              result: {type: InspectionLogResultType.Triggered, actualPath: paths, toInspect }
+            } as InspectionLogEntry
+          };
+        } else if (c.type === api.LogType.InspectionForce) {
+          let forceInspect: boolean;
+          if (c.result.toLowerCase() === "true" || c.result === "1") {
+            forceInspect = true;
+          } else {
+            forceInspect = false;
+          }
+          return {
+            key: mkPartAndInspType({part: m.part, inspType: c.program}),
+            entry: {
+              time: c.endUTC,
+              materialID: m.id,
+              result: {type: InspectionLogResultType.Forced, toInspect: forceInspect}
             } as InspectionLogEntry
           };
         } else { // api.LogType.InspectionResult

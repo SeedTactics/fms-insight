@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as cs from './current-status';
 import * as api from './api';
-import { fakeMaterial, fakeSerial, fakeWorkorderAssign, fakeInspSignal, fakeInspComplete } from './events.fake';
+import { fakeMaterial, fakeSerial, fakeWorkorderAssign, fakeInspSignal, fakeInspComplete, fakeInspForce } from './events.fake';
 
 it('creates initial state', () => {
   // tslint:disable no-any
@@ -100,6 +100,17 @@ it("sets an inspection", () => {
 
   const actualInProcMat = st.current_status.material.filter(m => m.materialID === mat.id)[0];
   expect(actualInProcMat.signaledInspections).toEqual(["aaa", "insp11"]);
+});
+
+it("sets a forced inspection", () => {
+  const mat = new api.LogMaterial({...fakeMaterial(), id: 20});
+  const st = cs.reducer(statusWithMat, {
+    type: cs.ActionType.ReceiveNewLogEntry,
+    entry: fakeInspForce(mat, "insp55")
+  });
+
+  const actualInProcMat = st.current_status.material.filter(m => m.materialID === mat.id)[0];
+  expect(actualInProcMat.signaledInspections).toEqual(["aaa", "insp55"]);
 });
 
 it("ignores other cycles", () => {

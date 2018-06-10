@@ -74,6 +74,7 @@ function logType(entry: api.ILogEntry): string {
       return 'Workorder';
 
     case api.LogType.Inspection:
+    case api.LogType.InspectionForce:
       return 'Signal';
 
     case api.LogType.PalletCycle:
@@ -87,6 +88,12 @@ function logType(entry: api.ILogEntry): string {
 
     case api.LogType.InspectionResult:
       return 'Inspection';
+
+    case api.LogType.AddToQueue:
+      return 'Queue';
+
+    case api.LogType.RemoveFromQueue:
+      return 'Queue';
 
     default:
       return 'Message';
@@ -136,12 +143,8 @@ function display(entry: api.ILogEntry): string {
       return 'Pallet ' + entry.pal + ' completed route';
 
     case api.LogType.Inspection:
-      let infos = (entry.program).split(',');
-      let inspName = 'unknown';
-      if (infos.length >= 2 && infos[1] && infos[1] !== '') {
-        inspName = infos[1];
-      }
-      let inspected = entry.result === 'true' || entry.result === 'True';
+      const inspName = (entry.details || {}).InspectionType || "";
+      let inspected = entry.result.toLowerCase() === 'true' || entry.result === '1';
       if (inspected) {
         return displayMat(entry.material) +
           ' signaled for inspection ' + inspName;
@@ -149,6 +152,18 @@ function display(entry: api.ILogEntry): string {
         return displayMat(entry.material) +
           ' skipped inspection ' + inspName;
       }
+
+    case api.LogType.InspectionForce:
+      const forceInspName = entry.program;
+      let forced = entry.result.toLowerCase() === 'true' || entry.result === '1';
+      if (forced) {
+        return displayMat(entry.material) +
+          ' declared for inspection ' + forceInspName;
+      } else {
+        return displayMat(entry.material) +
+          ' passed over for inspection ' + forceInspName;
+      }
+
 
     case api.LogType.FinalizeWorkorder:
       return 'Finalize workorder ' + entry.result;
@@ -162,6 +177,12 @@ function display(entry: api.ILogEntry): string {
 
     case api.LogType.Wash:
       return 'Wash Completed';
+
+    case api.LogType.AddToQueue:
+      return displayMat(entry.material) + " added to queue " + entry.program;
+
+    case api.LogType.RemoveFromQueue:
+      return displayMat(entry.material) + " removed from queue " + entry.program;
 
     default: return entry.result;
   }

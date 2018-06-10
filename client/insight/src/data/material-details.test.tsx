@@ -196,7 +196,7 @@ it("succeeds for an completed inspection cycle", () => {
   const evt = fakeInspComplete();
   const action: mat.Action = {
     type: mat.ActionType.UpdateMaterial,
-    newInspType: "abc",
+    newCompletedInspection: "abc",
     pledge: {
       status: PledgeStatus.Completed,
       result: evt,
@@ -210,6 +210,27 @@ it("succeeds for an completed inspection cycle", () => {
   expect(st.material).toEqual({...m,
       events: [evt],
       completedInspections: [...m.completedInspections, "abc"]
+  });
+});
+
+it("succeeds for a signaled inspection cycle", () => {
+  const evt = fakeInspSignal();
+  const action: mat.Action = {
+    type: mat.ActionType.UpdateMaterial,
+    newSignaledInspection: "xxx",
+    pledge: {
+      status: PledgeStatus.Completed,
+      result: evt,
+    }
+  };
+  const initialSt = {
+    material: {...m, updating_material: true},
+    add_mat_in_progress: false,
+  };
+  const st = mat.reducer(initialSt, action);
+  expect(st.material).toEqual({...m,
+      events: [evt],
+      signaledInspections: [...m.signaledInspections, "xxx"]
   });
 });
 
