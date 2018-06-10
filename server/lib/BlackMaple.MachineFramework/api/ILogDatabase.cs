@@ -34,10 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
 
-#if !NET35
-using System.Threading.Tasks;
-#endif
-
 namespace BlackMaple.MachineWatchInterface
 {
     public delegate void NewLogEntryDelegate(LogEntry e, string foreignId);
@@ -55,6 +51,7 @@ namespace BlackMaple.MachineWatchInterface
         LogEntry RecordSerialForMaterialID(LogMaterial mat, string serial);
         LogEntry RecordWorkorderForMaterialID(LogMaterial mat, string workorder);
         LogEntry RecordFinalizedWorkorder(string workorder);
+        LogEntry ForceInspection(LogMaterial mat, string inspType, bool inspect);
 
         LogEntry RecordInspectionCompleted(
           LogMaterial mat,

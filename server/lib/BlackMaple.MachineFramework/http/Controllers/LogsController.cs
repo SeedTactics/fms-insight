@@ -163,8 +163,7 @@ namespace BlackMaple.MachineFramework.Controllers
         [HttpPost("inspections/{inspType}/material")]
         public LogEntry SetInspectionDecision(string inspType, [FromBody] LogMaterial mat, [FromQuery] bool inspect = true)
         {
-            // TODO: implement
-            return null;
+            return _server.ForceInspection(mat, inspType, inspect);
         }
 
         [HttpPost("events/inspection-result")]
@@ -200,19 +199,5 @@ namespace BlackMaple.MachineFramework.Controllers
         {
             return _server.RecordFinalizedWorkorder(workorder);
         }
-
-        /*
-        [HttpGet("settings/serials")]
-        public SerialSettings GetSerialSettings()
-        {
-            return _server.GetSerialSettings();
-        }
-
-        [HttpPut("settings/serials")]
-        public void SetSerialSettings([FromBody] SerialSettings settings)
-        {
-            _server.SetSerialSettings(settings);
-        }
-        */
     }
 }
