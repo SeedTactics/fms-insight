@@ -791,8 +791,8 @@ Object {
       "active": "00:00:00",
       "counter": 6,
       "details": Object {
+        "ActualPath": "[{\\"MaterialID\\":43888,\\"Process\\":1,\\"Pallet\\":\\"6\\",\\"LoadStation\\":1,\\"Stops\\":[{\\"StationName\\":\\"MC\\",\\"StationNum\\":4}],\\"UnloadStation\\":2}]",
         "InspectionType": "Insp1",
-        "Path": "[{\\"MaterialID\\":43888,\\"Process\\":1,\\"Pallet\\":\\"6\\",\\"LoadStation\\":1,\\"Stops\\":[{\\"StationName\\":\\"MC\\",\\"StationNum\\":4}],\\"UnloadStation\\":2}]",
       },
       "elapsed": "00:00:00",
       "endUTC": 2018-02-08T09:39:05.000Z,
@@ -1387,8 +1387,8 @@ Object {
       "active": "00:00:00",
       "counter": 6,
       "details": Object {
+        "ActualPath": "[{\\"MaterialID\\":70329,\\"Process\\":1,\\"Pallet\\":\\"6\\",\\"LoadStation\\":1,\\"Stops\\":[{\\"StationName\\":\\"MC\\",\\"StationNum\\":4}],\\"UnloadStation\\":2}]",
         "InspectionType": "Insp1",
-        "Path": "[{\\"MaterialID\\":70329,\\"Process\\":1,\\"Pallet\\":\\"6\\",\\"LoadStation\\":1,\\"Stops\\":[{\\"StationName\\":\\"MC\\",\\"StationNum\\":4}],\\"UnloadStation\\":2}]",
       },
       "elapsed": "00:00:00",
       "endUTC": 2018-02-02T09:57:05.000Z,
@@ -1977,8 +1977,8 @@ Object {
       "active": "00:00:00",
       "counter": 7,
       "details": Object {
+        "ActualPath": "[{\\"MaterialID\\":80572,\\"Process\\":1,\\"Pallet\\":\\"6\\",\\"LoadStation\\":1,\\"Stops\\":[{\\"StationName\\":\\"MC\\",\\"StationNum\\":4}],\\"UnloadStation\\":2}]",
         "InspectionType": "Insp1",
-        "Path": "[{\\"MaterialID\\":80572,\\"Process\\":1,\\"Pallet\\":\\"6\\",\\"LoadStation\\":1,\\"Stops\\":[{\\"StationName\\":\\"MC\\",\\"StationNum\\":4}],\\"UnloadStation\\":2}]",
       },
       "elapsed": "00:00:00",
       "endUTC": 2018-02-08T09:39:10.000Z,
@@ -2591,8 +2591,8 @@ Object {
       "active": "00:00:00",
       "counter": 7,
       "details": Object {
+        "ActualPath": "[{\\"MaterialID\\":90793,\\"Process\\":1,\\"Pallet\\":\\"6\\",\\"LoadStation\\":1,\\"Stops\\":[{\\"StationName\\":\\"MC\\",\\"StationNum\\":4}],\\"UnloadStation\\":2}]",
         "InspectionType": "Insp1",
-        "Path": "[{\\"MaterialID\\":90793,\\"Process\\":1,\\"Pallet\\":\\"6\\",\\"LoadStation\\":1,\\"Stops\\":[{\\"StationName\\":\\"MC\\",\\"StationNum\\":4}],\\"UnloadStation\\":2}]",
       },
       "elapsed": "00:00:00",
       "endUTC": 2018-02-02T09:57:10.000Z,

@@ -215,7 +215,7 @@ export function fakeInspSignal(mat?: LogMaterial, inspType?: string, now?: Date,
     active: '00:00:00',
     details: {
       "InspectionType": inspType,
-      "Path": JSON.stringify(path),
+      "ActualPath": JSON.stringify(path),
     }
   };
 }
