@@ -88,6 +88,22 @@ it("closes the workorder dialog", () => {
   expect(s.workorder_dialog_open).toBe(false);
 });
 
+it("opens the insp type dialog", () => {
+  let s = gui.reducer(gui.initial, {
+    type: gui.ActionType.SetInspTypeDialogOpen,
+    open: true
+  });
+  expect(s.insptype_dialog_open).toBe(true);
+});
+
+it("closes the insp type dialog", () => {
+  let s = gui.reducer(gui.initial, {
+    type: gui.ActionType.SetInspTypeDialogOpen,
+    open: false
+  });
+  expect(s.insptype_dialog_open).toBe(false);
+});
+
 it("opens the serial dialog", () => {
   let s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetSerialDialogOpen,

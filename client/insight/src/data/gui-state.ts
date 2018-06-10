@@ -49,6 +49,7 @@ export enum ActionType {
   SetStationOeeHeatmapType = 'Gui_SetStationOeeHeatmapType',
   SetCompletedCountHeatmapType = 'Gui_SetCompletedCountHeatmapType',
   SetWorkorderDialogOpen = 'Gui_SetWorkorderDialog',
+  SetInspTypeDialogOpen = 'Gui_SetInspTypeDialog',
   SetSerialDialogOpen = 'Gui_SetSerialDialogOpen',
   SetAddMatToQueueDialog = 'Gui_SetAddMatToQueueDialog',
 }
@@ -59,6 +60,7 @@ export type Action =
   | { type: ActionType.SetStationOeeHeatmapType, ty: PlannedOrActual }
   | { type: ActionType.SetCompletedCountHeatmapType, ty: PlannedOrActual }
   | { type: ActionType.SetWorkorderDialogOpen, open: boolean }
+  | { type: ActionType.SetInspTypeDialogOpen, open: boolean }
   | { type: ActionType.SetSerialDialogOpen, open: boolean }
   | { type: ActionType.SetAddMatToQueueDialog, queue?: string, st: AddMatToQueueDialogState }
   ;
@@ -69,6 +71,7 @@ export interface State {
   readonly station_oee_heatmap_type: PlannedOrActual;
   readonly completed_count_heatmap_type: PlannedOrActual;
   readonly workorder_dialog_open: boolean;
+  readonly insptype_dialog_open: boolean;
   readonly serial_dialog_open: boolean;
   readonly add_mat_to_queue_st: AddMatToQueueDialogState;
   readonly add_mat_to_queue?: string;
@@ -78,6 +81,7 @@ export const initial: State = {
   station_oee_heatmap_type: PlannedOrActual.Actual,
   completed_count_heatmap_type: PlannedOrActual.Actual,
   workorder_dialog_open: false,
+  insptype_dialog_open: false,
   serial_dialog_open: false,
   add_mat_to_queue_st: AddMatToQueueDialogState.DialogClosed,
 };
@@ -95,6 +99,8 @@ export function reducer(s: State, a: Action): State {
       return {...s, completed_count_heatmap_type: a.ty };
     case ActionType.SetWorkorderDialogOpen:
       return {...s, workorder_dialog_open: a.open };
+    case ActionType.SetInspTypeDialogOpen:
+      return {...s, insptype_dialog_open: a.open };
     case ActionType.SetSerialDialogOpen:
       return {...s, serial_dialog_open: a.open };
     case ActionType.SetAddMatToQueueDialog:
