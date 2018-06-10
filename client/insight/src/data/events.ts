@@ -48,7 +48,6 @@ export { SimUseState, binSimStationUseByDayAndStat, binSimProductionByDayAndPart
 export {
     InspectionLogResultType,
     InspectionLogResult,
-    InspectionCounter,
     InspectionLogEntry,
     InspectionState
 } from './events.inspection';

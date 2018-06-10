@@ -111,7 +111,7 @@ namespace Makino
                     System.IO.Path.Combine(_dataDirectory, "inspections.db")
                 );
 
-                _jobDB = new BlackMaple.MachineFramework.JobDB()
+                _jobDB = new BlackMaple.MachineFramework.JobDB();
                 _jobDB.Open(System.IO.Path.Combine(_dataDirectory, "jobs.db"));
 
                 _status = new StatusDB(System.IO.Path.Combine(_dataDirectory, "makino.db"));

@@ -327,7 +327,7 @@ namespace MazakMachineInterface
 
         jobLog.MakeInspectionDecisions(mat.MaterialID, job, mat.Process, inspections);
         logTrace.TraceEvent(TraceEventType.Information, 0,
-                          "Making inspection decision for " + string.Join(',', inspections.Select(x => x.InspectionType)) + " material " + mat.MaterialID.ToString() +
+                          "Making inspection decision for " + string.Join(",", inspections.Select(x => x.InspectionType)) + " material " + mat.MaterialID.ToString() +
                           " completed at time " + cycle.EndTimeUTC.ToLocalTime().ToString() + " on pallet " + cycle.Pallet.ToString() +
                           " part " + mat.PartName);
       }

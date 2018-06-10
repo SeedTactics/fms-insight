@@ -164,7 +164,6 @@ function display(entry: api.ILogEntry): string {
           ' passed over for inspection ' + forceInspName;
       }
 
-
     case api.LogType.FinalizeWorkorder:
       return 'Finalize workorder ' + entry.result;
 

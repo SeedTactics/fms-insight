@@ -131,7 +131,7 @@ export function fakeCycle(
       time = addMinutes(time, 5);
       counter += 1;
       if (faker.random.boolean() === true) {
-        es.push(fakeInspForce(material[0], "Insp1", time, counter))
+        es.push(fakeInspForce(material[0], "Insp1", time, counter));
         time = addSeconds(time, 5);
         counter += 1;
       }

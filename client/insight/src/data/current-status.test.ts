@@ -33,7 +33,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as cs from './current-status';
 import * as api from './api';
-import { fakeMaterial, fakeSerial, fakeWorkorderAssign, fakeInspSignal, fakeInspComplete, fakeInspForce } from './events.fake';
+import {
+  fakeMaterial, fakeSerial, fakeWorkorderAssign, fakeInspSignal, fakeInspComplete, fakeInspForce
+} from './events.fake';
 
 it('creates initial state', () => {
   // tslint:disable no-any

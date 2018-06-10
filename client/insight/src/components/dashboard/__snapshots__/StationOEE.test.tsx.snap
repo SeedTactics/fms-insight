@@ -690,11 +690,11 @@ exports[`displays a single station without oee: station empty guage 1`] = `
 `;
 
 exports[`displays station hours: station oee table 1`] = `
-<GridWrapper
+<WithStyles(Grid)
   container={true}
   justify="space-around"
 >
-  <GridWrapper
+  <WithStyles(Grid)
     item={true}
     key="aaa #1"
     lg={3}
@@ -723,8 +723,8 @@ exports[`displays station hours: station oee table 1`] = `
       }
       station="aaa #1"
     />
-  </GridWrapper>
-  <GridWrapper
+  </WithStyles(Grid)>
+  <WithStyles(Grid)
     item={true}
     key="abc #1"
     lg={3}
@@ -737,8 +737,8 @@ exports[`displays station hours: station oee table 1`] = `
       oee={0.4}
       station="abc #1"
     />
-  </GridWrapper>
-  <GridWrapper
+  </WithStyles(Grid)>
+  <WithStyles(Grid)
     item={true}
     key="zzz #1"
     lg={3}
@@ -751,6 +751,6 @@ exports[`displays station hours: station oee table 1`] = `
       oee={0.03}
       station="zzz #1"
     />
-  </GridWrapper>
-</GridWrapper>
+  </WithStyles(Grid)>
+</WithStyles(Grid)>
 `;

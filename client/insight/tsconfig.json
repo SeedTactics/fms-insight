@@ -16,7 +16,10 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
-    "noUnusedLocals": true
+    "noUnusedLocals": true,
+
+    // only until https://github.com/facebook/immutable-js/issues/1540 is fixed
+    "keyofStringsOnly": true
   },
   "exclude": [
     "node_modules",
