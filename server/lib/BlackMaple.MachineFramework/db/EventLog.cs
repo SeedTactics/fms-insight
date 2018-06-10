@@ -1947,31 +1947,15 @@ namespace BlackMaple.MachineFramework
         #endregion
 
         #region Inspection Translation
-        public class MaterialProcessActualPath
+        private Dictionary<int, MachineWatchInterface.MaterialProcessActualPath> LookupActualPath(IDbTransaction trans, long matID)
         {
-            public class Stop
-            {
-                public string StationName {get;set;}
-                public int StationNum {get;set;}
-            }
-
-            public long MaterialID {get;set;}
-            public int Process {get;set;}
-            public string Pallet {get;set;}
-            public int LoadStation {get;set;}
-            public List<Stop> Stops {get;set;} = new List<Stop>();
-            public int UnloadStation {get;set;}
-        }
-
-        private Dictionary<int, MaterialProcessActualPath> LookupActualPath(IDbTransaction trans, long matID)
-        {
-            var byProc = new Dictionary<int, MaterialProcessActualPath>();
-            MaterialProcessActualPath getPath(int proc)
+            var byProc = new Dictionary<int, MachineWatchInterface.MaterialProcessActualPath>();
+            MachineWatchInterface.MaterialProcessActualPath getPath(int proc)
             {
                 if (byProc.ContainsKey(proc))
                     return byProc[proc];
                 else {
-                    var m = new MaterialProcessActualPath() {
+                    var m = new MachineWatchInterface.MaterialProcessActualPath() {
                         MaterialID = matID,
                         Process = proc,
                         Pallet = null,
@@ -2023,7 +2007,7 @@ namespace BlackMaple.MachineFramework
                             break;
 
                         case MachineWatchInterface.LogType.MachineCycle:
-                            mat.Stops.Add(new MaterialProcessActualPath.Stop() {
+                            mat.Stops.Add(new MachineWatchInterface.MaterialProcessActualPath.Stop() {
                                 StationName = statName, StationNum = statNum});
                             break;
                     }
@@ -2033,7 +2017,7 @@ namespace BlackMaple.MachineFramework
             return byProc;
         }
 
-        private string TranslateInspectionCounter(long matID, Dictionary<int, MaterialProcessActualPath> actualPath, string counter)
+        private string TranslateInspectionCounter(long matID, Dictionary<int, MachineWatchInterface.MaterialProcessActualPath> actualPath, string counter)
         {
             foreach (var p in actualPath.Values)
             {
@@ -2292,7 +2276,7 @@ namespace BlackMaple.MachineFramework
 
         private MachineWatchInterface.LogEntry StoreInspectionDecision(
             IDbTransaction trans,
-            long matID, string unique, string partName, int proc, Dictionary<int, MaterialProcessActualPath> actualPath,
+            long matID, string unique, string partName, int proc, Dictionary<int, MachineWatchInterface.MaterialProcessActualPath> actualPath,
             string inspType, string counter, DateTime utcNow, bool inspect)
         {
             var mat =

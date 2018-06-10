@@ -299,25 +299,25 @@ namespace MachineWatchTest {
 			CheckCount(expandedCounter1, 1);
 			CheckCount(expandedCounter2, 0);
 			ExpectPathToBe(1, "insp1", new[] {
-				new JobLogDB.MaterialProcessActualPath() {
+				new MaterialProcessActualPath() {
 					MaterialID = 1,
 					Process = 1,
 					Pallet = "P1",
 					LoadStation = 1,
 					Stops = {
-						new JobLogDB.MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 10},
-						new JobLogDB.MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 11}
+						new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 10},
+						new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 11}
 					},
 					UnloadStation = 2,
 				},
-				new JobLogDB.MaterialProcessActualPath() {
+				new MaterialProcessActualPath() {
 					MaterialID = 1,
 					Process = 2,
 					Pallet = "P2",
 					LoadStation = 3,
 					Stops = {
-						new JobLogDB.MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 12},
-						new JobLogDB.MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 13}
+						new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 12},
+						new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 13}
 					},
 					UnloadStation = 4,
 				}
@@ -326,25 +326,25 @@ namespace MachineWatchTest {
 			_insp.MakeInspectionDecisions(2, job, 2, new[] {inspProg});
 			CheckDecision(2, "insp1", expandedCounter2, false, now);
 			ExpectPathToBe(2, "insp1", new[] {
-				new JobLogDB.MaterialProcessActualPath() {
+				new MaterialProcessActualPath() {
 					MaterialID = 2,
 					Process = 1,
 					Pallet = "P5",
 					LoadStation = 6,
 					Stops = {
-						new JobLogDB.MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 15},
-						new JobLogDB.MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 16}
+						new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 15},
+						new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 16}
 					},
 					UnloadStation = 8,
 				},
-				new JobLogDB.MaterialProcessActualPath() {
+				new MaterialProcessActualPath() {
 					MaterialID = 2,
 					Process = 2,
 					Pallet = "P4",
 					LoadStation = 7,
 					Stops = {
-						new JobLogDB.MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 18},
-						new JobLogDB.MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 19}
+						new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 18},
+						new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 19}
 					},
 					UnloadStation = 9,
 				}
@@ -425,13 +425,13 @@ namespace MachineWatchTest {
 			forceEntries.Should().Equals(forced ? 1 : 0);
 		}
 
-		private void ExpectPathToBe(long matID, string iType, IEnumerable<JobLogDB.MaterialProcessActualPath> expected)
+		private void ExpectPathToBe(long matID, string iType, IEnumerable<MaterialProcessActualPath> expected)
 		{
 			bool foundEntry = false;
 			foreach (var entry in _insp.GetLogForMaterial(matID)) {
 				if (entry.LogType == LogType.Inspection && entry.ProgramDetails["InspectionType"] == iType) {
 					foundEntry = true;
-					var path = Newtonsoft.Json.JsonConvert.DeserializeObject<List<JobLogDB.MaterialProcessActualPath>>(
+					var path = Newtonsoft.Json.JsonConvert.DeserializeObject<List<MaterialProcessActualPath>>(
 						entry.ProgramDetails["ActualPath"]);
 					path.ShouldAllBeEquivalentTo(expected);
 					break;

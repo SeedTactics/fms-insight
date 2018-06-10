@@ -90,7 +90,7 @@ namespace BlackMaple.MachineWatchInterface
         [EnumMember] InspectionForce = 107,
     }
 
-    [Serializable, DataContract]
+    [Serializable, DataContract, KnownType(typeof(MaterialProcessActualPath))]
     public class LogEntry
     {
         [DataMember(Name = "counter", IsRequired=true)]
@@ -213,6 +213,26 @@ namespace BlackMaple.MachineWatchInterface
             return _details.Count > 0;
         }
     }
+
+    // stored serialized in json format in the details for inspection logs.
+    [DataContract]
+    public class MaterialProcessActualPath
+    {
+        [DataContract]
+        public class Stop
+        {
+            [DataMember(IsRequired=true)] public string StationName {get;set;}
+            [DataMember(IsRequired=true)] public int StationNum {get;set;}
+        }
+
+        [DataMember(IsRequired=true)] public long MaterialID {get;set;}
+        [DataMember(IsRequired=true)] public int Process {get;set;}
+        [DataMember(IsRequired=true)] public string Pallet {get;set;}
+        [DataMember(IsRequired=true)] public int LoadStation {get;set;}
+        [DataMember(IsRequired=true)] public List<Stop> Stops {get;set;} = new List<Stop>();
+        [DataMember(IsRequired=true)] public int UnloadStation {get;set;}
+    }
+
 
     [Serializable, DataContract]
     public class WorkorderPartSummary
