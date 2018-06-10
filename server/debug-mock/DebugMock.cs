@@ -275,6 +275,10 @@ namespace DebugMachineWatchApiServer
               elapsed: e.ElapsedTime,
               active: e.ActiveOperationTime
           );
+          if (e.ProgramDetails != null) {
+            foreach (var x in e.ProgramDetails)
+              e2.ProgramDetails.Add(x.Key, x.Value);
+          }
           LogDB.AddLogEntry(e2);
         }
       }
