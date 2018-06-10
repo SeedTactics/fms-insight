@@ -116,8 +116,8 @@ namespace Makino
 
                 _status = new StatusDB(System.IO.Path.Combine(_dataDirectory, "makino.db"));
 
-                _makinoDB = new MakinoDB(MakinoDB.DBTypeEnum.SqlConnStr, dbConnStr, _status, _log, _inspectDB, dbTrace);
-                _logTimer = new LogTimer(_log, _jobDB, _inspectDB, _makinoDB, _status, serSettings, logTrace);
+                _makinoDB = new MakinoDB(MakinoDB.DBTypeEnum.SqlConnStr, dbConnStr, _status, _log, dbTrace);
+                _logTimer = new LogTimer(_log, _jobDB, _makinoDB, _status, serSettings, logTrace);
 #endif
 
                 _jobs = new Jobs(_makinoDB, _jobDB, adePath, downloadOnlyOrders);
