@@ -1,10 +1,10 @@
 {
-  "x-generator": "NSwag v11.14.1.0 (NJsonSchema v9.10.24.0 (Newtonsoft.Json v10.0.0.0))",
+  "x-generator": "NSwag v11.17.12.0 (NJsonSchema v9.10.50.0 (Newtonsoft.Json v11.0.0.0))",
   "swagger": "2.0",
   "info": {
     "title": "SeedTactic FMS Insight",
     "description": "API for access to FMS Insight for flexible manufacturing system control",
-    "version": "v1"
+    "version": "1.2"
   },
   "consumes": [
     "application/json"
@@ -25,25 +25,25 @@
             "name": "startUTC",
             "in": "query",
             "required": true,
-            "x-nullable": false,
-            "format": "date-time"
+            "format": "date-time",
+            "x-nullable": false
           },
           {
             "type": "string",
             "name": "endUTC",
             "in": "query",
             "required": true,
-            "x-nullable": false,
-            "format": "date-time"
+            "format": "date-time",
+            "x-nullable": false
           }
         ],
         "responses": {
           "200": {
+            "x-nullable": false,
             "description": "",
             "schema": {
               "$ref": "#/definitions/HistoricData"
-            },
-            "x-nullable": false
+            }
           }
         }
       }
@@ -65,11 +65,11 @@
         ],
         "responses": {
           "200": {
+            "x-nullable": false,
             "description": "",
             "schema": {
               "$ref": "#/definitions/HistoricData"
-            },
-            "x-nullable": false
+            }
           }
         }
       }
@@ -80,14 +80,13 @@
           "jobs"
         ],
         "operationId": "jobs_LatestSchedule",
-        "parameters": [],
         "responses": {
           "200": {
+            "x-nullable": false,
             "description": "",
             "schema": {
               "$ref": "#/definitions/PlannedSchedule"
-            },
-            "x-nullable": false
+            }
           }
         }
       }
@@ -109,14 +108,14 @@
         ],
         "responses": {
           "200": {
+            "x-nullable": true,
             "description": "",
             "schema": {
               "type": "array",
               "items": {
                 "$ref": "#/definitions/PartWorkorder"
               }
-            },
-            "x-nullable": true
+            }
           }
         }
       }
@@ -127,14 +126,13 @@
           "jobs"
         ],
         "operationId": "jobs_CurrentStatus",
-        "parameters": [],
         "responses": {
           "200": {
+            "x-nullable": true,
             "description": "",
             "schema": {
               "$ref": "#/definitions/CurrentStatus"
-            },
-            "x-nullable": true
+            }
           }
         }
       }
@@ -161,14 +159,14 @@
         ],
         "responses": {
           "200": {
+            "x-nullable": true,
             "description": "",
             "schema": {
               "type": "array",
               "items": {
                 "type": "string"
               }
-            },
-            "x-nullable": true
+            }
           }
         }
       }
@@ -223,8 +221,8 @@
             "name": "lastCompletedProcess",
             "in": "query",
             "required": true,
-            "x-nullable": false,
-            "format": "int32"
+            "format": "int32",
+            "x-nullable": false
           },
           {
             "type": "string",
@@ -238,8 +236,8 @@
             "name": "pos",
             "in": "query",
             "required": true,
-            "x-nullable": false,
-            "format": "int32"
+            "format": "int32",
+            "x-nullable": false
           },
           {
             "name": "serial",
@@ -270,8 +268,8 @@
             "name": "materialId",
             "in": "path",
             "required": true,
-            "x-nullable": false,
-            "format": "int64"
+            "format": "int64",
+            "x-nullable": false
           },
           {
             "name": "queue",
@@ -300,8 +298,8 @@
             "name": "materialId",
             "in": "path",
             "required": true,
-            "x-nullable": false,
-            "format": "int64"
+            "format": "int64",
+            "x-nullable": false
           }
         ],
         "responses": {
@@ -328,20 +326,20 @@
             "type": "string",
             "name": "loadDecrementsAfterTimeUTC",
             "in": "query",
-            "x-nullable": true,
-            "format": "date-time"
+            "format": "date-time",
+            "x-nullable": true
           }
         ],
         "responses": {
           "200": {
+            "x-nullable": true,
             "description": "",
             "schema": {
               "type": "array",
               "items": {
                 "$ref": "#/definitions/JobAndDecrementQuantity"
               }
-            },
-            "x-nullable": true
+            }
           }
         }
       }
@@ -358,28 +356,28 @@
             "name": "startUTC",
             "in": "query",
             "required": true,
-            "x-nullable": false,
-            "format": "date-time"
+            "format": "date-time",
+            "x-nullable": false
           },
           {
             "type": "string",
             "name": "endUTC",
             "in": "query",
             "required": true,
-            "x-nullable": false,
-            "format": "date-time"
+            "format": "date-time",
+            "x-nullable": false
           }
         ],
         "responses": {
           "200": {
+            "x-nullable": true,
             "description": "",
             "schema": {
               "type": "array",
               "items": {
                 "$ref": "#/definitions/LogEntry"
               }
-            },
-            "x-nullable": true
+            }
           }
         }
       }
@@ -396,21 +394,25 @@
             "name": "startUTC",
             "in": "query",
             "required": true,
-            "x-nullable": false,
-            "format": "date-time"
+            "format": "date-time",
+            "x-nullable": false
           },
           {
             "type": "string",
             "name": "endUTC",
             "in": "query",
             "required": true,
-            "x-nullable": false,
-            "format": "date-time"
+            "format": "date-time",
+            "x-nullable": false
           }
         ],
         "responses": {
           "200": {
-            "description": ""
+            "x-nullable": true,
+            "description": "",
+            "schema": {
+              "type": "file"
+            }
           }
         }
       }
@@ -427,28 +429,28 @@
             "name": "startUTC",
             "in": "query",
             "required": true,
-            "x-nullable": false,
-            "format": "date-time"
+            "format": "date-time",
+            "x-nullable": false
           },
           {
             "type": "string",
             "name": "endUTC",
             "in": "query",
             "required": true,
-            "x-nullable": false,
-            "format": "date-time"
+            "format": "date-time",
+            "x-nullable": false
           }
         ],
         "responses": {
           "200": {
+            "x-nullable": true,
             "description": "",
             "schema": {
               "type": "array",
               "items": {
                 "$ref": "#/definitions/LogEntry"
               }
-            },
-            "x-nullable": true
+            }
           }
         }
       }
@@ -465,20 +467,20 @@
             "name": "lastSeenCounter",
             "in": "query",
             "required": true,
-            "x-nullable": false,
-            "format": "int64"
+            "format": "int64",
+            "x-nullable": false
           }
         ],
         "responses": {
           "200": {
+            "x-nullable": true,
             "description": "",
             "schema": {
               "type": "array",
               "items": {
                 "$ref": "#/definitions/LogEntry"
               }
-            },
-            "x-nullable": true
+            }
           }
         }
       }
@@ -495,20 +497,20 @@
             "name": "materialID",
             "in": "path",
             "required": true,
-            "x-nullable": false,
-            "format": "int64"
+            "format": "int64",
+            "x-nullable": false
           }
         ],
         "responses": {
           "200": {
+            "x-nullable": true,
             "description": "",
             "schema": {
               "type": "array",
               "items": {
                 "$ref": "#/definitions/LogEntry"
               }
-            },
-            "x-nullable": true
+            }
           }
         }
       }
@@ -530,14 +532,14 @@
         ],
         "responses": {
           "200": {
+            "x-nullable": true,
             "description": "",
             "schema": {
               "type": "array",
               "items": {
                 "$ref": "#/definitions/LogEntry"
               }
-            },
-            "x-nullable": true
+            }
           }
         }
       }
@@ -559,14 +561,14 @@
         ],
         "responses": {
           "200": {
+            "x-nullable": true,
             "description": "",
             "schema": {
               "type": "array",
               "items": {
                 "$ref": "#/definitions/LogEntry"
               }
-            },
-            "x-nullable": true
+            }
           }
         }
       }
@@ -582,8 +584,8 @@
             "type": "array",
             "name": "ids",
             "in": "query",
-            "x-nullable": true,
             "collectionFormat": "multi",
+            "x-nullable": true,
             "items": {
               "type": "string"
             }
@@ -591,14 +593,43 @@
         ],
         "responses": {
           "200": {
+            "x-nullable": true,
             "description": "",
             "schema": {
               "type": "array",
               "items": {
                 "$ref": "#/definitions/WorkorderSummary"
               }
-            },
-            "x-nullable": true
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/log/workorders.csv": {
+      "get": {
+        "tags": [
+          "log"
+        ],
+        "operationId": "log_GetWorkordersCSV",
+        "parameters": [
+          {
+            "type": "array",
+            "name": "ids",
+            "in": "query",
+            "collectionFormat": "multi",
+            "x-nullable": true,
+            "items": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": true,
+            "description": "",
+            "schema": {
+              "type": "file"
+            }
           }
         }
       }
@@ -629,11 +660,11 @@
         ],
         "responses": {
           "200": {
+            "x-nullable": true,
             "description": "",
             "schema": {
               "$ref": "#/definitions/LogEntry"
-            },
-            "x-nullable": true
+            }
           }
         }
       }
@@ -664,11 +695,53 @@
         ],
         "responses": {
           "200": {
+            "x-nullable": true,
             "description": "",
             "schema": {
               "$ref": "#/definitions/LogEntry"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/log/inspections/{inspType}/material": {
+      "post": {
+        "tags": [
+          "log"
+        ],
+        "operationId": "log_SetInspectionDecision",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "inspType",
+            "in": "path",
+            "required": true,
+            "x-nullable": false
+          },
+          {
+            "name": "mat",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/LogMaterial"
             },
             "x-nullable": true
+          },
+          {
+            "type": "boolean",
+            "name": "inspect",
+            "in": "query",
+            "default": true,
+            "x-nullable": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/LogEntry"
+            }
           }
         }
       }
@@ -692,11 +765,11 @@
         ],
         "responses": {
           "200": {
+            "x-nullable": true,
             "description": "",
             "schema": {
               "$ref": "#/definitions/LogEntry"
-            },
-            "x-nullable": true
+            }
           }
         }
       }
@@ -720,11 +793,11 @@
         ],
         "responses": {
           "200": {
+            "x-nullable": true,
             "description": "",
             "schema": {
               "$ref": "#/definitions/LogEntry"
-            },
-            "x-nullable": true
+            }
           }
         }
       }
@@ -746,11 +819,11 @@
         ],
         "responses": {
           "200": {
+            "x-nullable": true,
             "description": "",
             "schema": {
               "$ref": "#/definitions/LogEntry"
-            },
-            "x-nullable": true
+            }
           }
         }
       }
@@ -761,32 +834,13 @@
           "server"
         ],
         "operationId": "server_FMSInformation",
-        "parameters": [],
         "responses": {
           "200": {
+            "x-nullable": true,
             "description": "",
             "schema": {
               "$ref": "#/definitions/FMSInfo"
-            },
-            "x-nullable": true
-          }
-        }
-      }
-    },
-    "/api/v1/server/workorder-assignment-type": {
-      "get": {
-        "tags": [
-          "server"
-        ],
-        "operationId": "server_WorkorderAssignmentType",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/WorkorderAssignmentType"
-            },
-            "x-nullable": false
+            }
           }
         }
       }
@@ -808,11 +862,11 @@
         ],
         "responses": {
           "200": {
+            "x-nullable": true,
             "description": "",
             "schema": {
               "type": "string"
-            },
-            "x-nullable": true
+            }
           }
         }
       },
@@ -868,12 +922,7 @@
             "$ref": "#/definitions/SimulatedStationUtilization"
           }
         }
-      },
-      "allOf": [
-        {
-          "$ref": "#/definitions/ValueType"
-        }
-      ]
+      }
     },
     "JobPlan": {
       "type": "object",
@@ -888,7 +937,6 @@
         "Priority",
         "ManuallyCreated",
         "CreateMarkingData",
-        "HoldEntireJob",
         "CyclesOnFirstProcess",
         "ProcsAndPaths"
       ],
@@ -1041,12 +1089,7 @@
             "$ref": "#/definitions/ProcPathInfo"
           }
         }
-      },
-      "allOf": [
-        {
-          "$ref": "#/definitions/ValueType"
-        }
-      ]
+      }
     },
     "ProcPathInfo": {
       "type": "object",
@@ -1059,8 +1102,6 @@
         "Stops",
         "SimulatedStartingUTC",
         "SimulatedAverageFlowTime",
-        "HoldMachining",
-        "HoldLoadUnload",
         "PartsPerPallet"
       ],
       "properties": {
@@ -1130,12 +1171,7 @@
         "OutputQueue": {
           "type": "string"
         }
-      },
-      "allOf": [
-        {
-          "$ref": "#/definitions/ValueType"
-        }
-      ]
+      }
     },
     "FixtureFace": {
       "type": "object",
@@ -1151,17 +1187,7 @@
         "Face": {
           "type": "string"
         }
-      },
-      "allOf": [
-        {
-          "$ref": "#/definitions/ValueType"
-        }
-      ]
-    },
-    "ValueType": {
-      "type": "object",
-      "x-abstract": true,
-      "additionalProperties": false
+      }
     },
     "JobMachiningStop": {
       "type": "object",
@@ -1211,12 +1237,7 @@
           "type": "integer",
           "format": "int32"
         }
-      },
-      "allOf": [
-        {
-          "$ref": "#/definitions/ValueType"
-        }
-      ]
+      }
     },
     "SimulatedStationUtilization": {
       "type": "object",
@@ -1290,12 +1311,7 @@
             "$ref": "#/definitions/PartWorkorder"
           }
         }
-      },
-      "allOf": [
-        {
-          "$ref": "#/definitions/ValueType"
-        }
-      ]
+      }
     },
     "PartWorkorder": {
       "type": "object",
@@ -1456,12 +1472,7 @@
           "type": "integer",
           "format": "int32"
         }
-      },
-      "allOf": [
-        {
-          "$ref": "#/definitions/ValueType"
-        }
-      ]
+      }
     },
     "PalletLocationEnum": {
       "type": "string",
@@ -1744,12 +1755,7 @@
           "type": "integer",
           "format": "int32"
         }
-      },
-      "allOf": [
-        {
-          "$ref": "#/definitions/ValueType"
-        }
-      ]
+      }
     },
     "LogEntry": {
       "type": "object",
@@ -1871,7 +1877,8 @@
         "InspectionResult",
         "Wash",
         "AddToQueue",
-        "RemoveFromQueue"
+        "RemoveFromQueue",
+        "InspectionForce"
       ],
       "enum": [
         "LoadUnloadCycle",
@@ -1885,8 +1892,65 @@
         "InspectionResult",
         "Wash",
         "AddToQueue",
-        "RemoveFromQueue"
+        "RemoveFromQueue",
+        "InspectionForce"
       ]
+    },
+    "MaterialProcessActualPath": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "MaterialID",
+        "Process",
+        "Pallet",
+        "LoadStation",
+        "Stops",
+        "UnloadStation"
+      ],
+      "properties": {
+        "MaterialID": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "Process": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "Pallet": {
+          "type": "string"
+        },
+        "LoadStation": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "Stops": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Stop"
+          }
+        },
+        "UnloadStation": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "Stop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "StationName",
+        "StationNum"
+      ],
+      "properties": {
+        "StationName": {
+          "type": "string"
+        },
+        "StationNum": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
     },
     "WorkorderSummary": {
       "type": "object",
@@ -1990,12 +2054,7 @@
           "type": "string",
           "format": "time-span"
         }
-      },
-      "allOf": [
-        {
-          "$ref": "#/definitions/ValueType"
-        }
-      ]
+      }
     },
     "NewWash": {
       "type": "object",
@@ -2028,12 +2087,7 @@
           "type": "string",
           "format": "time-span"
         }
-      },
-      "allOf": [
-        {
-          "$ref": "#/definitions/ValueType"
-        }
-      ]
+      }
     },
     "FMSInfo": {
       "type": "object",
@@ -2046,23 +2100,6 @@
           "type": "string"
         }
       }
-    },
-    "WorkorderAssignmentType": {
-      "type": "string",
-      "description": "",
-      "x-enumNames": [
-        "AssignWorkorderAtUnload",
-        "AssignWorkorderAtWash",
-        "NoAutomaticWorkorderAssignment"
-      ],
-      "enum": [
-        "AssignWorkorderAtUnload",
-        "AssignWorkorderAtWash",
-        "NoAutomaticWorkorderAssignment"
-      ]
     }
-  },
-  "parameters": {},
-  "responses": {},
-  "securityDefinitions": {}
+  }
 }

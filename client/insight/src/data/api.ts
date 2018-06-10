@@ -2978,6 +2978,113 @@ export enum LogType {
     InspectionForce = <any>"InspectionForce",
 }
 
+export class MaterialProcessActualPath implements IMaterialProcessActualPath {
+    materialID: number;
+    process: number;
+    pallet: string;
+    loadStation: number;
+    stops: Stop[];
+    unloadStation: number;
+
+    constructor(data?: IMaterialProcessActualPath) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+        if (!data) {
+            this.stops = [];
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.materialID = data["MaterialID"];
+            this.process = data["Process"];
+            this.pallet = data["Pallet"];
+            this.loadStation = data["LoadStation"];
+            if (data["Stops"] && data["Stops"].constructor === Array) {
+                this.stops = [];
+                for (let item of data["Stops"])
+                    this.stops.push(Stop.fromJS(item));
+            }
+            this.unloadStation = data["UnloadStation"];
+        }
+    }
+
+    static fromJS(data: any): MaterialProcessActualPath {
+        data = typeof data === 'object' ? data : {};
+        let result = new MaterialProcessActualPath();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["MaterialID"] = this.materialID;
+        data["Process"] = this.process;
+        data["Pallet"] = this.pallet;
+        data["LoadStation"] = this.loadStation;
+        if (this.stops && this.stops.constructor === Array) {
+            data["Stops"] = [];
+            for (let item of this.stops)
+                data["Stops"].push(item.toJSON());
+        }
+        data["UnloadStation"] = this.unloadStation;
+        return data;
+    }
+}
+
+export interface IMaterialProcessActualPath {
+    materialID: number;
+    process: number;
+    pallet: string;
+    loadStation: number;
+    stops: Stop[];
+    unloadStation: number;
+}
+
+export class Stop implements IStop {
+    stationName: string;
+    stationNum: number;
+
+    constructor(data?: IStop) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.stationName = data["StationName"];
+            this.stationNum = data["StationNum"];
+        }
+    }
+
+    static fromJS(data: any): Stop {
+        data = typeof data === 'object' ? data : {};
+        let result = new Stop();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["StationName"] = this.stationName;
+        data["StationNum"] = this.stationNum;
+        return data;
+    }
+}
+
+export interface IStop {
+    stationName: string;
+    stationNum: number;
+}
+
 export class WorkorderSummary implements IWorkorderSummary {
     parts: WorkorderPartSummary[];
     serials: string[];
