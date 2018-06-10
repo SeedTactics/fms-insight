@@ -119,7 +119,7 @@ export function process_events(
       )
       .flatMap(c => c.material.map(m => {
         if (c.type === api.LogType.Inspection) {
-          const pathsJson: ReadonlyArray<object> = JSON.parse((c.details || {}).Path || "[]");
+          const pathsJson: ReadonlyArray<object> = JSON.parse((c.details || {}).ActualPath || "[]");
           const paths: Array<Readonly<api.IMaterialProcessActualPath>> = [];
           for (const pathJson of pathsJson) {
             paths.push(api.MaterialProcessActualPath.fromJS(pathJson));
