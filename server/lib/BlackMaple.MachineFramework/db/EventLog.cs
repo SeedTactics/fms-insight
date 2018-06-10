@@ -195,6 +195,7 @@ namespace BlackMaple.MachineFramework
 
 
             var trans = _connection.BeginTransaction();
+            bool detachInsp = false;
 
             try
             {
@@ -231,7 +232,8 @@ namespace BlackMaple.MachineFramework
 
                 if (curVersion < 16) Ver15ToVer16(trans);
 
-                if (curVersion < 17) Ver16ToVer17(trans, inspDbFile);
+                if (curVersion < 17)
+                    detachInsp = Ver16ToVer17(trans, inspDbFile);
 
                 //update the version in the database
                 cmd.Transaction = trans;
@@ -245,6 +247,9 @@ namespace BlackMaple.MachineFramework
                 trans.Rollback();
                 throw;
             }
+
+            //detaching must be outside the transaction which attached
+            if (detachInsp) DetachInspectionDb();
 
             //only vacuum if we did some updating
             cmd.Transaction = null;
@@ -400,7 +405,7 @@ namespace BlackMaple.MachineFramework
             cmd.ExecuteNonQuery();
         }
 
-        private void Ver16ToVer17(IDbTransaction trans, string inspDbFile)
+        private bool Ver16ToVer17(IDbTransaction trans, string inspDbFile)
         {
             var cmd = _connection.CreateCommand();
             ((IDbCommand)cmd).Transaction = trans;
@@ -411,7 +416,8 @@ namespace BlackMaple.MachineFramework
             cmd.CommandText = "CREATE TABLE inspection_next_piece(StatType INTEGER, StatNum INTEGER, InspType TEXT, PRIMARY KEY(StatType,StatNum, InspType))";
             cmd.ExecuteNonQuery();
 
-            if (string.IsNullOrEmpty(inspDbFile)) return;
+            if (string.IsNullOrEmpty(inspDbFile)) return false;
+            if (!System.IO.File.Exists(inspDbFile)) return false;
 
             cmd.CommandText = "ATTACH DATABASE $db AS insp";
             cmd.Parameters.Add("db", SqliteType.Text).Value = inspDbFile;
@@ -424,6 +430,12 @@ namespace BlackMaple.MachineFramework
             cmd.CommandText = "INSERT INTO main.inspection_next_piece SELECT * FROM insp.next_piece";
             cmd.ExecuteNonQuery();
 
+            return true;
+        }
+
+        private void DetachInspectionDb()
+        {
+            var cmd = _connection.CreateCommand();
             cmd.CommandText = "DETACH DATABASE insp";
             cmd.ExecuteNonQuery();
         }
