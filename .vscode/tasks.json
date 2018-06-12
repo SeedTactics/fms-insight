@@ -16,7 +16,7 @@
         },
         {
             "label": "debug-mock:build",
-            "command": "dotnet build server/debug-mock/mock.csproj",
+            "command": "dotnet build server/debug-mock/debugmock.csproj",
             "group": "build",
             "type": "shell",
             "presentation": {

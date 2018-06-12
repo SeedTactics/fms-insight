@@ -719,7 +719,11 @@ namespace BlackMaple.MachineFramework
                             WHERE
                                 stations.Counter = material.Counter
                                 AND
-                                stations.EndOfRoute = 1
+                                stations.StationLoc = $loadty
+                                AND
+                                stations.Result = 'UNLOAD'
+                                AND
+                                stations.Start = 0
                                 AND
                                 stations.TimeUTC <= $endUTC
                                 AND
@@ -733,6 +737,8 @@ namespace BlackMaple.MachineFramework
                 var cmd = _connection.CreateCommand();
                 cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
                     " FROM stations WHERE Counter IN (" + searchCompleted + ") ORDER BY Counter ASC";
+                cmd.Parameters.Add("loadty", SqliteType.Integer)
+                    .Value = (int)MachineWatchInterface.LogType.LoadUnloadCycle;
                 cmd.Parameters.Add("endUTC", SqliteType.Integer).Value = endUTC.Ticks;
                 cmd.Parameters.Add("startUTC", SqliteType.Integer).Value = startUTC.Ticks;
 
@@ -898,7 +904,11 @@ namespace BlackMaple.MachineFramework
   					WHERE
    						stations.Counter = material.Counter
    						AND
-   						stations.EndOfRoute = 1
+   						stations.StationLoc = $loadty
+                        AND
+                        stations.Result = 'UNLOAD'
+                        AND
+                        stations.Start = 0
    						AND
    						material.MaterialID = materialid.MaterialID
    						AND
@@ -947,6 +957,8 @@ namespace BlackMaple.MachineFramework
 			{
 				countCmd.CommandText = countQry;
 				countCmd.Parameters.Add("workid", SqliteType.Text);
+                countCmd.Parameters.Add("loadty", SqliteType.Integer)
+                    .Value = (int)MachineWatchInterface.LogType.LoadUnloadCycle;
 				serialCmd.CommandText = serialQry;
 				serialCmd.Parameters.Add("workid", SqliteType.Text);
                 finalizedCmd.CommandText = finalizedQry;

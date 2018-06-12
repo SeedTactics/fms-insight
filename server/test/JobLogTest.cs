@@ -662,7 +662,7 @@ namespace MachineWatchTest
 			_jobLog.AddLogEntry(
 				new LogEntry(0, new LogMaterial[] { mat1_proc2, mat2_proc1 }, //mat2_proc1 should be ignored since it isn't final process
                              "pal1", LogType.LoadUnloadCycle, "Load", 5, "UNLOAD", false,
-                             t.AddMinutes(7), "UNLOAD", true,
+                             t.AddMinutes(7), "UNLOAD", false,
 							 TimeSpan.FromMinutes(50), TimeSpan.FromMinutes(60))
 			);
 
@@ -681,7 +681,7 @@ namespace MachineWatchTest
 			_jobLog.AddLogEntry(
 				new LogEntry(0, new LogMaterial[] { mat3, mat4, mat5, mat6 },
                              "pal1", LogType.LoadUnloadCycle, "Load", 5, "UNLOAD", false,
-                             t.AddMinutes(17), "UNLOAD", true,
+                             t.AddMinutes(17), "UNLOAD", false,
 							 TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(6))
 			);
 
@@ -798,7 +798,7 @@ namespace MachineWatchTest
             var mat1_proc1complete = AddLogEntry(
 				new LogEntry(0, new LogMaterial[] { mat1_proc1 },
                              "pal1", LogType.LoadUnloadCycle, "Load", 5, "prog1", false,
-                             old.AddMinutes(6), "", true,
+                             old.AddMinutes(6), "", false,
 							 TimeSpan.FromMinutes(11), TimeSpan.FromMinutes(21))
 			);
 			var mat1_proc2old = AddLogEntry(
@@ -810,7 +810,7 @@ namespace MachineWatchTest
 			var mat1_proc2complete = AddLogEntry(
 				new LogEntry(0, new LogMaterial[] { mat1_proc2 },
                              "pal1", LogType.LoadUnloadCycle, "Load", 5, "UNLOAD", false,
-                             recent.AddMinutes(4), "UNLOAD", true,
+                             recent.AddMinutes(4), "UNLOAD", false,
 							 TimeSpan.FromMinutes(30), TimeSpan.FromMinutes(40))
 			);
 
@@ -824,7 +824,7 @@ namespace MachineWatchTest
             AddLogEntry(
 				new LogEntry(0, new LogMaterial[] { mat2_proc1 },
                              "pal1", LogType.LoadUnloadCycle, "Load", 5, "load2", false,
-                             recent.AddMinutes(6), "", true,
+                             recent.AddMinutes(6), "UNLOAD", false,
 							 TimeSpan.FromMinutes(51), TimeSpan.FromMinutes(61))
 			);
 			AddLogEntry(
@@ -844,7 +844,7 @@ namespace MachineWatchTest
             AddLogEntry(
 				new LogEntry(0, new LogMaterial[] { mat3 },
                              "pal1", LogType.LoadUnloadCycle, "Load", 5, "load3", false,
-                             old.AddMinutes(25), "", true,
+                             old.AddMinutes(25), "UNLOAD", false,
 							 TimeSpan.FromMinutes(71), TimeSpan.FromMinutes(81))
 			);
 
@@ -858,7 +858,7 @@ namespace MachineWatchTest
             var mat4complete = AddLogEntry(
 				new LogEntry(0, new LogMaterial[] { mat4 },
                              "pal1", LogType.LoadUnloadCycle, "Load", 5, "load4", false,
-                             recent.AddMinutes(45), "", true,
+                             recent.AddMinutes(45), "UNLOAD", false,
 							 TimeSpan.FromMinutes(91), TimeSpan.FromMinutes(101))
 			);
 
