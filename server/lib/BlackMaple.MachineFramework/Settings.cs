@@ -33,23 +33,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.IO;
+using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 
 namespace BlackMaple.MachineFramework
 {
-    public enum SerialType
-    {
-        NoAutomaticSerials,
-        AssignOneSerialPerMaterial,  // assign a different serial to each piece of material
-        AssignOneSerialPerCycle,     // assign a single serial to all the material on each cycle
-    }
-
-    public class SerialSettings
-    {
-        public SerialType SerialType {get;set;}
-        public int SerialLength {get;set;}
-    }
-
     public class ServerSettings
     {
       #if SERVICE_AVAIL
@@ -130,18 +118,39 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    public enum SerialType
+    {
+        NoAutomaticSerials,
+        AssignOneSerialPerMaterial,  // assign a different serial to each piece of material
+        AssignOneSerialPerCycle,     // assign a single serial to all the material on each cycle
+    }
+
     public class FMSSettings
     {
-      public bool AutomaticSerials {get;set;} = false;
+      public SerialType SerialType {get;set;} = SerialType.NoAutomaticSerials;
       public int SerialLength {get;set;} = 10;
+      public Dictionary<string, MachineWatchInterface.QueueSize> Queues {get;}
+        = new Dictionary<string, MachineWatchInterface.QueueSize>();
 
       static public FMSSettings Load(IConfiguration config)
       {
-        var s = config.GetSection("FMS").Get<FMSSettings>();
-        if (s == null)
-            s = new FMSSettings();
+        var s = new FMSSettings();
+
+        var fmsSection = config.GetSection("FMS");
+        if (fmsSection.GetValue<bool>("AutomaticSerials", false)) {
+          s.SerialType = SerialType.AssignOneSerialPerMaterial;
+        }
+        s.SerialLength = fmsSection.GetValue<int>("SerialLength", 10);
+
+        foreach (var q in config.GetSection("QUEUE").AsEnumerable()) {
+          if (int.TryParse(q.Value, out int count)) {
+            s.Queues[q.Key] = new MachineWatchInterface.QueueSize() {
+              MaxSizeBeforeStopUnloading = count > 0 ? (int?)count : null
+            };
+          }
+        }
+
         return s;
       }
     }
-
 }

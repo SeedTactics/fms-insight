@@ -53,7 +53,7 @@ namespace Cincron
         public IFMSBackend Backend => this;
         public IList<IBackgroundWorker> Workers => new List<IBackgroundWorker>();
 
-        public void Init(string dataDirectory, IConfig cfg, SerialSettings ser)
+        public void Init(string dataDirectory, IConfig cfg, FMSSettings settings)
         {
             try {
 

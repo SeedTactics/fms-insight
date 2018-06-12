@@ -70,22 +70,16 @@ namespace BlackMaple.MachineFramework
         public void ConfigureServices(IServiceCollection services)
         {
             var cfgWrapper = new ConfigWrapper();
-            var serSettings = new BlackMaple.MachineFramework.SerialSettings() {
-                SerialType = Program.FMSSettings.AutomaticSerials ?
-                    BlackMaple.MachineFramework.SerialType.AssignOneSerialPerMaterial :
-                    BlackMaple.MachineFramework.SerialType.NoAutomaticSerials,
-                SerialLength = Program.FMSSettings.SerialLength,
-            };
             _fmsImpl.Backend.Init(
                 Program.ServerSettings.DataDirectory,
                 cfgWrapper,
-                serSettings);
+                Program.FMSSettings);
             foreach (var w in _fmsImpl.Workers)
                 w.Init(
                     _fmsImpl.Backend,
                     Program.ServerSettings.DataDirectory,
                     cfgWrapper,
-                    serSettings
+                    Program.FMSSettings
                 );
 
             System.Diagnostics.Trace.AutoFlush = true;

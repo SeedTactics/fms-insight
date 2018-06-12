@@ -88,7 +88,7 @@ namespace MazakMachineInterface
     IFMSBackend IFMSImplementation.Backend => this;
     IList<IBackgroundWorker> IFMSImplementation.Workers => new List<IBackgroundWorker>();
 
-    public void Init(string dataDirectory, IConfig cfg, SerialSettings serSettings)
+    public void Init(string dataDirectory, IConfig cfg, FMSSettings settings)
     {
       string localDbPath = cfg.GetValue<string>("Mazak", "Database Path");
       MazakType = DetectMazakType(cfg, localDbPath);
@@ -174,7 +174,7 @@ namespace MazakMachineInterface
         if (bool.TryParse(serialPerMaterial, out result))
         {
           if (!result)
-            serSettings.SerialType = SerialType.AssignOneSerialPerCycle;
+            settings.SerialType = SerialType.AssignOneSerialPerCycle;
         }
       }
 
@@ -215,7 +215,7 @@ namespace MazakMachineInterface
       routing = new RoutingInfo(database,readOnlyDb, hold, jobDB, jobLog, loadOper,
                                 CheckPalletsUsedOnce, UseStartingOffsetForDueDate, DecrementPriorityOnDownload,
                                 routingTrace);
-      logTrans = new LogTranslation(jobLog, readOnlyDb, serSettings, logDataLoader, logTrace);
+      logTrans = new LogTranslation(jobLog, readOnlyDb, settings, logDataLoader, logTrace);
 
       logTrans.MachiningCompleted += HandleMachiningCompleted;
       logTrans.NewEntries += OnNewLogEntries;

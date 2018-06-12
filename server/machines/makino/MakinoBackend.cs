@@ -60,7 +60,7 @@ namespace Makino
 		private System.Diagnostics.TraceSource dbTrace =
 			new System.Diagnostics.TraceSource("Makino DB", System.Diagnostics.SourceLevels.All);
 
-		public void Init(string dataDir, IConfig cfg, SerialSettings serSettings)
+		public void Init(string dataDir, IConfig cfg, FMSSettings settings)
 		{
 			try {
 
@@ -103,7 +103,7 @@ namespace Makino
                 _status.CreateTables();
 
                 _makinoDB = new MakinoDB(MakinoDB.DBTypeEnum.SqlLocal, "", _status, _log, dbTrace);
-                _logTimer = new LogTimer(_log, _jobDB, _makinoDB, _status, serSettings, logTrace);
+                _logTimer = new LogTimer(_log, _jobDB, _makinoDB, _status, settings, logTrace);
 #else
                 _log = new JobLogDB();
                 _log.Open(
@@ -117,7 +117,7 @@ namespace Makino
                 _status = new StatusDB(System.IO.Path.Combine(_dataDirectory, "makino.db"));
 
                 _makinoDB = new MakinoDB(MakinoDB.DBTypeEnum.SqlConnStr, dbConnStr, _status, _log, dbTrace);
-                _logTimer = new LogTimer(_log, _jobDB, _makinoDB, _status, serSettings, logTrace);
+                _logTimer = new LogTimer(_log, _jobDB, _makinoDB, _status, settings, logTrace);
 #endif
 
                 _jobs = new Jobs(_makinoDB, _jobDB, adePath, downloadOnlyOrders);

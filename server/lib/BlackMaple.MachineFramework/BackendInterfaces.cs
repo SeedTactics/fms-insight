@@ -44,7 +44,7 @@ namespace BlackMaple.MachineFramework
 
     public interface IFMSBackend
     {
-        void Init(string dataDirectory, IConfig config, SerialSettings serialSettings);
+        void Init(string dataDirectory, IConfig config, FMSSettings settings);
         void Halt();
 
         //Trace listeners are registered before Init is called
@@ -62,7 +62,7 @@ namespace BlackMaple.MachineFramework
     public interface IBackgroundWorker
     {
         //The init function should initialize a timer or spawn a thread and then return
-        void Init(IFMSBackend backend, string dataDirectory, IConfig config, SerialSettings serialSettings);
+        void Init(IFMSBackend backend, string dataDirectory, IConfig config, FMSSettings settings);
 
         //Once the halt function is called, the class is garbage collected.
         //A new class will be created when the service starts again

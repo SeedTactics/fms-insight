@@ -50,7 +50,7 @@ namespace Makino
 		public delegate void LogsProcessedDel();
 		public event LogsProcessedDel LogsProcessed;
 
-        public SerialSettings SerialSettings
+        public FMSSettings Settings
         {
             get;
             set;
@@ -58,13 +58,13 @@ namespace Makino
 
 		public LogTimer(
 			JobLogDB log, JobDB jobDB, MakinoDB makinoDB, StatusDB status,
-            SerialSettings serSettings,
+            FMSSettings settings,
 			System.Diagnostics.TraceSource trace)
 		{
 			_lock = new object();
 			_log = log;
 			_jobDB = jobDB;
-            SerialSettings = serSettings;
+            Settings = settings;
 			_makinoDB = makinoDB;
 			_status = status;
 			_trace = trace;
@@ -330,8 +330,8 @@ namespace Makino
 
 			var ret = new List<LogMaterial>();
 			foreach (var row in rows) {
-                if (SerialSettings.SerialType != SerialType.NoAutomaticSerials)
-				    CreateSerial(row.MatID, order, part, process, fixturenum.ToString(), _log, SerialSettings.SerialLength, _trace);
+                if (Settings.SerialType != SerialType.NoAutomaticSerials)
+				    CreateSerial(row.MatID, order, part, process, fixturenum.ToString(), _log, Settings.SerialLength, _trace);
 				//TODO: maxProcess
 				ret.Add(new LogMaterial(row.MatID, order, process, part, process, fixturenum.ToString()));
 			}

@@ -46,16 +46,16 @@ namespace MazakMachineInterface
 
     private object _lock;
     private System.Timers.Timer _timer;
-    public BlackMaple.MachineFramework.SerialSettings SerialSettings { get; set; }
+    public BlackMaple.MachineFramework.FMSSettings FMSSettings { get; set; }
 
     public LogTranslation(BlackMaple.MachineFramework.JobLogDB log, IReadDataAccess readDB,
-                              BlackMaple.MachineFramework.SerialSettings serSettings,
+                              BlackMaple.MachineFramework.FMSSettings settings,
                           ILogData loadLogData, System.Diagnostics.TraceSource t)
     {
       _log = log;
       _loadLogData = loadLogData;
       _readDB = readDB;
-      SerialSettings = serSettings;
+      FMSSettings = settings;
       trace = t;
       _lock = new object();
       _timer = new System.Timers.Timer(TimeSpan.FromMinutes(1).TotalMilliseconds);
@@ -437,7 +437,7 @@ namespace MazakMachineInterface
       }
 
       _log.CompletePalletCycle(pallet.ToString(), t, foreignID, mat,
-                SerialSettings.SerialType, SerialSettings.SerialLength);
+                FMSSettings.SerialType, FMSSettings.SerialLength);
 
       if (palletCycle)
         return cycle;

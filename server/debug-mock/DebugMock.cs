@@ -80,7 +80,7 @@ namespace DebugMachineWatchApiServer
 
     public event NewCurrentStatus OnNewCurrentStatus;
 
-    public void Init(string dataDir, IConfig config, SerialSettings serialSettings)
+    public void Init(string dataDir, IConfig config, FMSSettings settings)
     {
       string path = null; // dataDir
 
