@@ -13,6 +13,11 @@ Resources:
         Rules:
           - NoncurrentVersionExpirationInDays: 30
             Status: Enabled
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins: ["*"]
+            AllowedMethods: ["GET", "HEAD"]
+            MaxAge: 3600
 
   FmsInsightCloudfront:
     Type: AWS::CloudFront::Distribution
@@ -32,13 +37,17 @@ Resources:
 
         DefaultCacheBehavior:
           TargetOriginId: "BucketOrigin"
-          AllowedMethods: ["HEAD", "GET"]
+          AllowedMethods: ["HEAD", "GET", "OPTIONS"]
           Compress: true
           DefaultTTL: 86400 # One day, but the bucket is versioned so cloudfront should quickly invalidate changes
           ForwardedValues:
             QueryString: false
             Cookies:
               Forward: none
+            Headers:
+              - "Origin"
+              - "Access-Control-Request-Headers"
+              - "Access-Control-Request-Method"
           ViewerProtocolPolicy: redirect-to-https
 
         ViewerCertificate:
