@@ -1043,7 +1043,7 @@ namespace MazakMachineInterface
           foreach (ReadOnlyDataSet.PartRow partRow in currentSet.Part)
           {
             if (MazakPart.IsSailPart(partRow.PartName)) {
-              MazakPart.ParseComment(part.Comment, out string u, out int p, out bool m);
+              MazakPart.ParseComment(partRow.Comment, out string u, out int p, out bool m);
               if (u == part.UniqueStr && p == path) {
                 downloadUid = MazakPart.ParseUID(partRow.PartName);
                 mazakPartName = partRow.PartName;
