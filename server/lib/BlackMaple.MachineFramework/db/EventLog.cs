@@ -1730,7 +1730,7 @@ namespace BlackMaple.MachineFramework
                                     mat: mat[key],
                                     pal: pal,
                                     ty: BlackMaple.MachineWatchInterface.LogType.LoadUnloadCycle,
-                                    locName: "Load",
+                                    locName: "L/U",
                                     locNum: reader.GetInt32(1),
                                     prog: "",
                                     start: false,

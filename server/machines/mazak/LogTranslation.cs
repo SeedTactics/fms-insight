@@ -130,7 +130,7 @@ namespace MazakMachineInterface
           _log.AddStationCycle(new MWI.LogEntry(0,
               CreateMaterialWithoutIDs(e, dset),
                       e.Pallet.ToString(),
-                      LogType.LoadUnloadCycle, "Load", e.StationNumber,
+                      LogType.LoadUnloadCycle, "L/U", e.StationNumber,
               e.Program, true, // start of cycle
               e.TimeUTC, "LOAD", false), // not the end of the route
               e.ForeignID);
@@ -196,7 +196,7 @@ namespace MazakMachineInterface
           _log.AddStationCycle(new MWI.LogEntry(0,
               FindMaterial(e, dset, cycle),
                       e.Pallet.ToString(),
-                      LogType.LoadUnloadCycle, "Load", e.StationNumber,
+                      LogType.LoadUnloadCycle, "L/U", e.StationNumber,
                       e.Program, true, // start of cycle
               e.TimeUTC, "UNLOAD", false), // not the end of the route
               e.ForeignID);
@@ -211,7 +211,7 @@ namespace MazakMachineInterface
           _log.AddStationCycle(new MWI.LogEntry(0,
                 FindMaterial(e, dset, cycle),
                   e.Pallet.ToString(),
-                          LogType.LoadUnloadCycle, "Load", e.StationNumber,
+                          LogType.LoadUnloadCycle, "L/U", e.StationNumber,
                           e.Program, false, // not the start of cycle
               e.TimeUTC, "UNLOAD", true, // end of the route
                           loadElapsed, loadElapsed),
