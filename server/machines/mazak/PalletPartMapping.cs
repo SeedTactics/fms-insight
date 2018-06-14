@@ -186,8 +186,7 @@ namespace MazakMachineInterface
         if (idx >= 0)
         {
 
-          if (!usedFixtures.ContainsKey(fixRow.FixtureName) &&
-              fixRow.FixtureName.ToLower() != "fixture:uniquestr")
+          if (!usedFixtures.ContainsKey(fixRow.FixtureName))
           {
 
             newFixRow = transSet.Fixture_t.NewFixture_tRow();

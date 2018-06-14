@@ -246,9 +246,6 @@ namespace BlackMaple.MachineWatchInterface
         public IList<string> Alarms => _alarms;
         public Dictionary<string, QueueSize> QueueSizes => _queues;
 
-        [DataMember(IsRequired=false, EmitDefaultValue=false)]
-        public string LatestScheduleId {get;set;}
-
         public CurrentStatus()
         {
             _jobs = new Dictionary<string, InProcessJob>();
@@ -256,7 +253,6 @@ namespace BlackMaple.MachineWatchInterface
             _material = new List<InProcessMaterial>();
             _alarms = new List<string>();
             _queues = new Dictionary<string, QueueSize>();
-            LatestScheduleId = null;
         }
 
         [DataMember(Name="Jobs", IsRequired=true)]

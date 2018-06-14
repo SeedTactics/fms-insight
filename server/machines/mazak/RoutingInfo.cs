@@ -191,6 +191,7 @@ namespace MazakMachineInterface
       jobFromMazak.RouteStartingTimeUTC = jobFromDb.RouteStartingTimeUTC;
       jobFromMazak.RouteEndingTimeUTC = jobFromDb.RouteEndingTimeUTC;
       jobFromMazak.ScheduleId = jobFromDb.ScheduleId;
+      jobFromMazak.AddInspections(jobFromDb.GetInspections());
       foreach (var b in jobFromDb.ScheduledBookingIds)
         jobFromMazak.ScheduledBookingIds.Add(b);
       for (int proc = 1; proc <= jobFromMazak.NumProcesses; proc++) {
@@ -214,44 +215,6 @@ namespace MazakMachineInterface
         }
       }
 
-    }
-
-    /* This loads a JobPlan which contains the routing for the given unique string.  Not all fields in the plan are filled in,
-		 * just the routing.  This is useful for inspection decisions, since when translating inspection counters we only need the routing */
-    public static JobPlan RoutingForUnique(ReadOnlyDataSet mazakSet, string unique, DatabaseAccess.MazakDbType mazakTy)
-    {
-      Dictionary<string, int> uniqueToMaxPath;
-      Dictionary<string, int> uniqueToMaxProcess;
-      CalculateMaxProcAndPath(mazakSet, null, out uniqueToMaxPath, out uniqueToMaxProcess);
-
-      if (!uniqueToMaxProcess.ContainsKey(unique))
-        return null;
-      if (!uniqueToMaxPath.ContainsKey(unique))
-        return null;
-
-      int numProc = uniqueToMaxProcess[unique];
-      int maxPath = uniqueToMaxPath[unique];
-
-      var paths = new int[numProc];
-      for (int i = 0; i < numProc; i++)
-        paths[i] = maxPath;
-      var job = new JobPlan(unique, numProc, paths);
-
-      foreach (ReadOnlyDataSet.PartRow partRow in mazakSet.Part.Rows)
-      {
-        if (partRow.IsCommentNull())
-          continue;
-
-        string jobUnique = "";
-        int path = 1;
-        bool manual = false;
-        MazakPart.ParseComment(partRow.Comment, out jobUnique, out path, out manual);
-
-        if (unique == jobUnique)
-          AddRoutingToJob(mazakSet, partRow, job, path, mazakTy);
-      }
-
-      return job;
     }
 
     public CurrentStatus GetCurrentStatus()
@@ -336,7 +299,6 @@ namespace MazakMachineInterface
           job = new InProcessJob(jobUnique, numProc, paths);
           job.PartName = partName;
           job.JobCopiedToSystem = true;
-          job.AddInspections(jobDB.LoadInspections(job.UniqueStr));
           curStatus.Jobs.Add(jobUnique, job);
         }
         jobsBySchID.Add(schRow.ScheduleID, job);
@@ -346,7 +308,6 @@ namespace MazakMachineInterface
         job.SetPlannedCyclesOnFirstProcess(path, schRow.PlanQuantity);
         job.SetCompleted(numProc, path, schRow.CompleteQuantity);
         job.Priority = schRow.Priority;
-
         if (((HoldPattern.HoldMode)schRow.HoldMode) == HoldPattern.HoldMode.FullHold)
           job.HoldEntireJob.UserHold = true;
         else
@@ -467,19 +428,6 @@ namespace MazakMachineInterface
             AddLoads(currentLoads, status.Pallet, palLoc, curStatus);
             AddUnloads(currentLoads, status, oldCycles, curStatus);
           }
-        }
-      }
-
-
-
-      //now lookup the global string
-      foreach (ReadOnlyDataSet.FixtureRow fixRow in mazakSet.Fixture.Rows)
-      {
-        if (fixRow.FixtureName.ToLower() == "fixture:uniquestr")
-        {
-          if (!fixRow.IsCommentNull())
-            curStatus.LatestScheduleId = fixRow.Comment;
-          break;
         }
       }
 
@@ -814,7 +762,6 @@ namespace MazakMachineInterface
       {
         if (ex.Message.StartsWith("Invalid pallet->part mapping"))
         {
-
           logMessages.Add(ex.Message);
         }
         else
@@ -837,9 +784,18 @@ namespace MazakMachineInterface
       try
       {
         database.ClearTransactionDatabase();
-
-        ReadOnlyDataSet currentSet = readDatabase.LoadReadOnly();
         List<string> logMessages = new List<string>();
+
+        // check previous schedule id
+        if (!string.IsNullOrEmpty(newJ.ScheduleId))
+        {
+          var recentDbSchedule = jobDB.LoadMostRecentSchedule();
+          if (!string.IsNullOrEmpty(expectedPreviousScheduleId) &&
+              expectedPreviousScheduleId != recentDbSchedule.LatestScheduleId)
+          {
+            throw new ApplicationException("Expected previous schedule ID does not match current schedule ID");
+          }
+        }
 
         //check for an old schedule that has not yet been copied
         var oldJobs = jobDB.LoadJobsNotCopiedToSystem(DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddHours(1));
@@ -849,61 +805,12 @@ namespace MazakMachineInterface
           trace.TraceEvent(TraceEventType.Warning, 0, "Resuming copy of job schedules into mazak: "
               + String.Join(",", oldJobs.Jobs.Select(j => j.UniqueStr).ToArray()));
 
-          //find UID.  This relies on their being only one schedule to copy at a time
-          int UID = 0;
-          foreach (ReadOnlyDataSet.FixtureRow fixRow in currentSet.Fixture.Rows)
-          {
-            if (!fixRow.IsCommentNull() && fixRow.Comment == oldJobs.LatestScheduleId)
-            {
-              UID = MazakPart.ParseUID(fixRow.FixtureName);
-              if (UID >= 0)
-              {
-                break;
-              }
-            }
-          }
-          var usedScheduleIDs = new List<int>();
-          foreach (ReadOnlyDataSet.ScheduleRow schRow in currentSet.Schedule.Rows)
-          {
-            usedScheduleIDs.Add(schRow.ScheduleID);
-          }
-          AddSchedules(oldJobs.Jobs, usedScheduleIDs, UID, currentSet, logMessages,
-              p => FindNumberProcesses(currentSet, p));
-          UpdateGlobalUniqueStr(currentSet, logMessages, oldJobs.LatestScheduleId);
-          hold.SignalNewSchedules();
-
-          if (logMessages.Count > 0)
-          {
-            throw new ApplicationException(
-                 "Error copying job schedules to mazak " +
-                 String.Join(Environment.NewLine, logMessages.ToArray()));
-          }
-
-          //reload current set, because schedules have been added
-          currentSet = readDatabase.LoadReadOnly();
+          AddSchedules(oldJobs.Jobs, logMessages);
         }
-
-        if (!string.IsNullOrEmpty(newJ.ScheduleId))
-        {
-          //check for already downloaded scheduleId.
-          var recentDbSchedule = jobDB.LoadMostRecentSchedule();
-          if (string.Compare(recentDbSchedule.LatestScheduleId, newJ.ScheduleId) >= 0)
-          {
-            //this schedule has been already downloaded
-            return;
-          }
-          if (!string.IsNullOrEmpty(expectedPreviousScheduleId) &&
-              expectedPreviousScheduleId != recentDbSchedule.LatestScheduleId)
-          {
-            throw new ApplicationException("Expected previous schedule id does not match current schedule id");
-          }
-        }
-
 
         //add fixtures, pallets, parts.  If this fails, just throw an exception,
         //they will be deleted during the next download.
-        var palPartMap = AddFixturesPalletsParts(newJ, currentSet, logMessages, newJ.ScheduleId);
-
+        var palPartMap = AddFixturesPalletsParts(newJ, logMessages, newJ.ScheduleId);
         if (logMessages.Count > 0)
         {
           throw BuildTransactionException("Error downloading routing info", logMessages);
@@ -914,17 +821,9 @@ namespace MazakMachineInterface
         //copy them to the system
         AddJobsToDB(newJ);
 
-        {
-          var usedScheduleIDs = new List<int>();
-          foreach (ReadOnlyDataSet.ScheduleRow schRow in currentSet.Schedule.Rows)
-          {
-            usedScheduleIDs.Add(schRow.ScheduleID);
-          }
-          AddSchedules(newJ.Jobs, usedScheduleIDs, palPartMap.Uid, currentSet, logMessages,
-              p => palPartMap.GetNumberProcesses(p));
-          UpdateGlobalUniqueStr(currentSet, logMessages, newJ.ScheduleId);
-          hold.SignalNewSchedules();
-        }
+        AddSchedules(newJ.Jobs, logMessages);
+
+        hold.SignalNewSchedules();
       }
       finally
       {
@@ -941,86 +840,55 @@ namespace MazakMachineInterface
 
     public void RecopyJobsToSystem()
     {
-      if (!database.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
-      {
-        throw new Exception("Unable to obtain mazak database lock");
-      }
-      try
-      {
-        var jobs = jobDB.LoadJobsNotCopiedToSystem(DateTime.UtcNow.AddHours(-JobLookbackHours), DateTime.UtcNow.AddHours(1));
-        if (jobs.Jobs.Count == 0) return;
-
-        //there are jobs to copy
-        trace.TraceEvent(TraceEventType.Warning, 0, "Resuming copy of job schedules into mazak: "
-            + String.Join(",", jobs.Jobs.Select(j => j.UniqueStr).ToArray()));
-
-        database.ClearTransactionDatabase();
-
-        ReadOnlyDataSet currentSet = readDatabase.LoadReadOnly();
-        List<string> logMessages = new List<string>();
-
+      try {
+        if (!database.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
+        {
+          throw new Exception("Unable to obtain mazak database lock");
+        }
         try
         {
-          var usedScheduleIDs = new List<int>();
-          foreach (ReadOnlyDataSet.ScheduleRow schRow in currentSet.Schedule.Rows)
-          {
-            usedScheduleIDs.Add(schRow.ScheduleID);
-          }
+          var jobs = jobDB.LoadJobsNotCopiedToSystem(DateTime.UtcNow.AddHours(-JobLookbackHours), DateTime.UtcNow.AddHours(1));
+          if (jobs.Jobs.Count == 0) return;
 
-          int UID = 0;
-          foreach (ReadOnlyDataSet.FixtureRow fixRow in currentSet.Fixture.Rows)
-          {
-            if (!fixRow.IsCommentNull() && fixRow.Comment == jobs.LatestScheduleId)
-            {
-              //found a download that was in progress...
-              UID = MazakPart.ParseUID(fixRow.FixtureName);
-              if (UID >= 0)
-              {
-                break;
-              }
-            }
-          }
-          AddSchedules(jobs.Jobs, usedScheduleIDs, UID, currentSet, logMessages,
-              p => FindNumberProcesses(currentSet, p));
+          //there are jobs to copy
+          trace.TraceEvent(TraceEventType.Warning, 0, "Resuming copy of job schedules into mazak: "
+              + String.Join(",", jobs.Jobs.Select(j => j.UniqueStr).ToArray()));
 
-          UpdateGlobalUniqueStr(currentSet, logMessages, jobs.LatestScheduleId);
+          database.ClearTransactionDatabase();
 
-          hold.SignalNewSchedules();
+          List<string> logMessages = new List<string>();
 
-          if (logMessages.Count > 0)
-          {
+          AddSchedules(jobs.Jobs, logMessages);
+          if (logMessages.Count > 0) {
             trace.TraceEvent(TraceEventType.Error, 0,
                 "Error copying job schedules to mazak " +
                 String.Join(Environment.NewLine, logMessages.ToArray()));
           }
-        }
-        catch (Exception ex)
-        {
-          trace.TraceEvent(TraceEventType.Error, 0,
-              "Error copying job schedules to mazak " + ex.ToString());
-        }
 
-      }
-      finally
-      {
-        try
-        {
-          database.ClearTransactionDatabase();
+          hold.SignalNewSchedules();
         }
-        catch
+        finally
         {
+          try
+          {
+            database.ClearTransactionDatabase();
+          }
+          catch { }
+          database.MazakTransactionLock.ReleaseMutex();
         }
-        database.MazakTransactionLock.ReleaseMutex();
+      } catch (Exception ex) {
+        trace.TraceEvent(TraceEventType.Error, 0,
+            "Error recopying job schedules to mazak " + ex.ToString());
       }
     }
 
     private clsPalletPartMapping AddFixturesPalletsParts(
             NewJobs newJ,
-        ReadOnlyDataSet currentSet,
             IList<string> logMessages,
         string newGlobal)
     {
       TransactionDataSet transSet = new TransactionDataSet();
+      var currentSet = readDatabase.LoadReadOnly();
 
       int UID = 0;
       var savedParts = new List<string>();
@@ -1146,45 +1014,53 @@ namespace MazakMachineInterface
       return palletPartMap;
     }
 
-    private delegate int FindProcDel(JobPlan part);
-
-    private void AddSchedules(IEnumerable<JobPlan> routes,
-                              List<int> usedScheduleIDs,
-                              int UID,
-                              ReadOnlyDataSet currentSet,
-                              IList<string> logMessages,
-                              FindProcDel numProcess)
+    private void AddSchedules(IEnumerable<JobPlan> jobs,
+                              IList<string> logMessages)
     {
+      var currentSet = readDatabase.LoadReadOnly();
       var transSet = new TransactionDataSet();
-      var scheduledPart = new List<string>();
       var now = DateTime.Now;
 
-      //add all parts that have already been scheduled
+      var usedScheduleIDs = new HashSet<int>();
+      var scheduledParts = new HashSet<string>();
       foreach (ReadOnlyDataSet.ScheduleRow schRow in currentSet.Schedule.Rows)
       {
-        if (MazakPart.ParseUID(schRow.PartName) == UID)
-        {
-          string partName = schRow.PartName.Substring(0, schRow.PartName.IndexOf(':'));
-          scheduledPart.Add(partName + "--" + MazakPart.ParsePathFromPart(schRow.PartName).ToString());
-        }
+        usedScheduleIDs.Add(schRow.ScheduleID);
+        scheduledParts.Add(schRow.PartName);
       }
 
       //now add the new schedule
       int scheduleCount = 0;
-      foreach (JobPlan part in routes)
+      foreach (JobPlan part in jobs)
       {
         for (int path = 1; path <= part.GetNumPaths(1); path++)
         {
-          if (!scheduledPart.Contains(part.PartName + "--" + path.ToString()) & part.GetPlannedCyclesOnFirstProcess(path) > 0)
+          if (part.GetPlannedCyclesOnFirstProcess(path) <= 0) continue;
+
+          //check if part exists downloaded
+          int downloadUid = -1;
+          string mazakPartName = "";
+          foreach (ReadOnlyDataSet.PartRow partRow in currentSet.Part)
           {
-            scheduledPart.Add(part.PartName + "--" + path.ToString());
+            if (MazakPart.IsSailPart(partRow.PartName)) {
+              MazakPart.ParseComment(part.Comment, out string u, out int p, out bool m);
+              if (u == part.UniqueStr && p == path) {
+                downloadUid = MazakPart.ParseUID(partRow.PartName);
+                mazakPartName = partRow.PartName;
+                break;
+              }
+            }
+          }
+          if (downloadUid < 0) {
+            throw new ApplicationException(
+              "Attempting to create schedule for " + part.UniqueStr + " but a part does not exist");
+          }
 
+          if (!scheduledParts.Contains(mazakPartName))
+          {
             int schid = FindNextScheduleId(usedScheduleIDs);
-
-            SchedulePart(transSet, schid, UID, numProcess, part, path, now, scheduleCount);
-
+            SchedulePart(transSet, schid, downloadUid, part.NumProcesses, part, path, now, scheduleCount);
             hold.SaveHoldMode(schid, part, path);
-
             scheduleCount += 1;
           }
         }
@@ -1201,47 +1077,9 @@ namespace MazakMachineInterface
         trace.TraceEvent(TraceEventType.Information, 0, "Completed adding schedules with messages " +
             DatabaseAccess.Join(logMessages, Environment.NewLine));
 
-        foreach (var j in routes)
+        foreach (var j in jobs)
         {
           jobDB.MarkJobCopiedToSystem(j.UniqueStr);
-        }
-      }
-    }
-
-    private void UpdateGlobalUniqueStr(
-        ReadOnlyDataSet currentSet,
-        IList<string> logMessages,
-        string newGlobalTag)
-    {
-      //once a successful transaction has occured, save the uniqueStr into the fixutre comment
-      if (!string.IsNullOrEmpty(newGlobalTag))
-      {
-        string oldFixName = "";
-        foreach (ReadOnlyDataSet.FixtureRow fixRow in currentSet.Fixture.Rows)
-        {
-          if (fixRow.FixtureName.ToLower() == "fixture:uniquestr")
-          {
-            oldFixName = fixRow.FixtureName;
-            break;
-          }
-        }
-        var transSet = new TransactionDataSet();
-        var newFixRow = transSet.Fixture_t.NewFixture_tRow();
-        if (!string.IsNullOrEmpty(oldFixName))
-        {
-          newFixRow.Command = TransactionDatabaseAccess.EditCommand;
-          newFixRow.FixtureName = oldFixName;
-          newFixRow.Comment = newGlobalTag;
-          transSet.Fixture_t.AddFixture_tRow(newFixRow);
-          database.SaveTransaction(transSet, logMessages, "UniqueStr", 3);
-        }
-        else
-        {
-          newFixRow.Command = TransactionDatabaseAccess.AddCommand;
-          newFixRow.FixtureName = "Fixture:UniqueStr";
-          newFixRow.Comment = newGlobalTag;
-          transSet.Fixture_t.AddFixture_tRow(newFixRow);
-          database.SaveTransaction(transSet, logMessages, "UniqueStr", 3);
         }
       }
     }
@@ -1258,7 +1096,7 @@ namespace MazakMachineInterface
       return 1;
     }
 
-    private void SchedulePart(TransactionDataSet transSet, int SchID, int UID, FindProcDel numProcess,
+    private void SchedulePart(TransactionDataSet transSet, int SchID, int UID, int numProcess,
                               JobPlan part, int path, DateTime now, int scheduleCount)
     {
       var tempMazakPart = new MazakPart(part, path, UID);
@@ -1298,7 +1136,7 @@ namespace MazakMachineInterface
       newSchRow.HoldMode = (int)HoldPattern.CalculateHoldMode(entireHold, machiningHold);
 
       //need to add all the ScheduleProcess rows
-      for (int i = 1; i <= numProcess(part); i++)
+      for (int i = 1; i <= numProcess; i++)
       {
         var newSchProcRow = transSet.ScheduleProcess_t.NewScheduleProcess_tRow();
         newSchProcRow.ScheduleID = SchID;
@@ -1460,7 +1298,7 @@ namespace MazakMachineInterface
       return cnt;
     }
 
-    private static int FindNextScheduleId(IList<int> usedScheduleIds)
+    private static int FindNextScheduleId(HashSet<int> usedScheduleIds)
     {
       for (int i = 1; i <= 9999; i++)
       {

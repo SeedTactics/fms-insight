@@ -284,20 +284,8 @@ namespace MazakMachineInterface
           continue;
         }
 
-        var job = RoutingInfo.RoutingForUnique(dset, mat.JobUniqueStr, MazakType);
-        if (job == null)
-        {
-          logTrace.TraceEvent(TraceEventType.Information, 0, "Unable to make inspection decisions for material " + mat.MaterialID.ToString() +
-                           " completed at time " + cycle.EndTimeUTC.ToLocalTime().ToString() + " on pallet " + cycle.Pallet.ToString() +
-                           " part " + mat.PartName +
-                           " because the job " + mat.JobUniqueStr + " cannot be found");
-          continue;
-        }
-
-        job.AddInspections(jobDB.LoadInspections(job.UniqueStr));
-
         var inspections = new List<JobInspectionData>();
-        foreach (var i in job.GetInspections())
+        foreach (var i in jobDB.LoadInspections(mat.JobUniqueStr))
         {
           if (i.InspectSingleProcess <= 0 && mat.Process != mat.NumProcesses)
           {
@@ -325,7 +313,7 @@ namespace MazakMachineInterface
           inspections.Add(i);
         }
 
-        jobLog.MakeInspectionDecisions(mat.MaterialID, job, mat.Process, inspections);
+        jobLog.MakeInspectionDecisions(mat.MaterialID, mat.JobUniqueStr, mat.PartName, mat.Process, inspections);
         logTrace.TraceEvent(TraceEventType.Information, 0,
                           "Making inspection decision for " + string.Join(",", inspections.Select(x => x.InspectionType)) + " material " + mat.MaterialID.ToString() +
                           " completed at time " + cycle.EndTimeUTC.ToLocalTime().ToString() + " on pallet " + cycle.Pallet.ToString() +
