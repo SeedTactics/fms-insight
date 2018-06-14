@@ -1399,6 +1399,7 @@ namespace BlackMaple.MachineFramework
             {
                 for (int j = 1; j <= job.GetNumPaths(i); j++)
                 {
+                    if (job.PlannedFixtures(i, j) == null) continue;
                     foreach (var fix in job.PlannedFixtures(i, j))
                     {
                         cmd.Parameters[1].Value = i;
