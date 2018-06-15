@@ -414,15 +414,15 @@ namespace MachineWatchTest {
 				if (entry.LogType == LogType.Inspection && entry.ProgramDetails["InspectionType"] == iType) {
 					inspEntries += 1;
 					entry.EndTimeUTC.Should().BeCloseTo(now, 1000);
-					entry.Program.Should().Equals(counter);
-					entry.Result.Should().Equals(inspect.ToString());
+					entry.Program.Should().Be(counter);
+					entry.Result.Should().Be(inspect.ToString());
 				} else if (entry.LogType == LogType.InspectionForce && entry.Program == iType) {
 					forceEntries += 1;
-					entry.Result.Should().Equals(inspect.ToString());
+					entry.Result.Should().Be(inspect.ToString());
 				}
 			}
-			inspEntries.Should().Equals(1);
-			forceEntries.Should().Equals(forced ? 1 : 0);
+			inspEntries.Should().Be(1);
+			forceEntries.Should().Be(forced ? 1 : 0);
 		}
 
 		private void ExpectPathToBe(long matID, string iType, IEnumerable<MaterialProcessActualPath> expected)
