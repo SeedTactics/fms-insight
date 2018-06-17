@@ -5,6 +5,8 @@ exports[`renders the all material monitor: all material monitor 1`] = `
   id="App"
 >
   <Header
+    fmsInfo={null}
+    latestVersion={null}
     routeState={
       Object {
         "current": "ROUTE_AllMaterial",
@@ -51,16 +53,20 @@ exports[`renders the all material monitor: all material monitor header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
-        <img
-          alt="Logo"
-          src="/seedtactics-logo.svg"
-          style={
-            Object {
-              "height": "30px",
-              "marginRight": "1em",
+        <WithStyles(Tooltip)
+          title=""
+        >
+          <img
+            alt="Logo"
+            src="/seedtactics-logo.svg"
+            style={
+              Object {
+                "height": "30px",
+                "marginRight": "1em",
+              }
             }
-          }
-        />
+          />
+        </WithStyles(Tooltip)>
         <WithStyles(Typography)
           style={
             Object {
@@ -125,16 +131,20 @@ exports[`renders the all material monitor: all material monitor header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
-        <img
-          alt="Logo"
-          src="/seedtactics-logo.svg"
-          style={
-            Object {
-              "height": "25px",
-              "marginRight": "4px",
+        <WithStyles(Tooltip)
+          title=""
+        >
+          <img
+            alt="Logo"
+            src="/seedtactics-logo.svg"
+            style={
+              Object {
+                "height": "25px",
+                "marginRight": "4px",
+              }
             }
-          }
-        />
+          />
+        </WithStyles(Tooltip)>
         <WithStyles(Typography)
           variant="title"
         >
@@ -187,6 +197,8 @@ exports[`renders the cost per piece: cost per piece 1`] = `
   id="App"
 >
   <Header
+    fmsInfo={null}
+    latestVersion={null}
     routeState={
       Object {
         "current": "ROUTE_CostPerPiece",
@@ -231,16 +243,20 @@ exports[`renders the cost per piece: cost per piece header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
-        <img
-          alt="Logo"
-          src="/seedtactics-logo.svg"
-          style={
-            Object {
-              "height": "30px",
-              "marginRight": "1em",
+        <WithStyles(Tooltip)
+          title=""
+        >
+          <img
+            alt="Logo"
+            src="/seedtactics-logo.svg"
+            style={
+              Object {
+                "height": "30px",
+                "marginRight": "1em",
+              }
             }
-          }
-        />
+          />
+        </WithStyles(Tooltip)>
         <WithStyles(Typography)
           style={
             Object {
@@ -305,16 +321,20 @@ exports[`renders the cost per piece: cost per piece header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
-        <img
-          alt="Logo"
-          src="/seedtactics-logo.svg"
-          style={
-            Object {
-              "height": "25px",
-              "marginRight": "4px",
+        <WithStyles(Tooltip)
+          title=""
+        >
+          <img
+            alt="Logo"
+            src="/seedtactics-logo.svg"
+            style={
+              Object {
+                "height": "25px",
+                "marginRight": "4px",
+              }
             }
-          }
-        />
+          />
+        </WithStyles(Tooltip)>
         <WithStyles(Typography)
           variant="title"
         >
@@ -367,6 +387,8 @@ exports[`renders the dashboard: dashboard 1`] = `
   id="App"
 >
   <Header
+    fmsInfo={null}
+    latestVersion={null}
     routeState={
       Object {
         "current": "ROUTE_Dashboard",
@@ -411,16 +433,20 @@ exports[`renders the dashboard: dashboard header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
-        <img
-          alt="Logo"
-          src="/seedtactics-logo.svg"
-          style={
-            Object {
-              "height": "30px",
-              "marginRight": "1em",
+        <WithStyles(Tooltip)
+          title=""
+        >
+          <img
+            alt="Logo"
+            src="/seedtactics-logo.svg"
+            style={
+              Object {
+                "height": "30px",
+                "marginRight": "1em",
+              }
             }
-          }
-        />
+          />
+        </WithStyles(Tooltip)>
         <WithStyles(Typography)
           style={
             Object {
@@ -485,16 +511,20 @@ exports[`renders the dashboard: dashboard header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
-        <img
-          alt="Logo"
-          src="/seedtactics-logo.svg"
-          style={
-            Object {
-              "height": "25px",
-              "marginRight": "4px",
+        <WithStyles(Tooltip)
+          title=""
+        >
+          <img
+            alt="Logo"
+            src="/seedtactics-logo.svg"
+            style={
+              Object {
+                "height": "25px",
+                "marginRight": "4px",
+              }
             }
-          }
-        />
+          />
+        </WithStyles(Tooltip)>
         <WithStyles(Typography)
           variant="title"
         >
@@ -547,6 +577,8 @@ exports[`renders the data export page: data export 1`] = `
   id="App"
 >
   <Header
+    fmsInfo={null}
+    latestVersion={null}
     routeState={
       Object {
         "current": "ROUTE_DataExport",
@@ -591,16 +623,20 @@ exports[`renders the data export page: data export header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
-        <img
-          alt="Logo"
-          src="/seedtactics-logo.svg"
-          style={
-            Object {
-              "height": "30px",
-              "marginRight": "1em",
+        <WithStyles(Tooltip)
+          title=""
+        >
+          <img
+            alt="Logo"
+            src="/seedtactics-logo.svg"
+            style={
+              Object {
+                "height": "30px",
+                "marginRight": "1em",
+              }
             }
-          }
-        />
+          />
+        </WithStyles(Tooltip)>
         <WithStyles(Typography)
           style={
             Object {
@@ -665,16 +701,20 @@ exports[`renders the data export page: data export header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
-        <img
-          alt="Logo"
-          src="/seedtactics-logo.svg"
-          style={
-            Object {
-              "height": "25px",
-              "marginRight": "4px",
+        <WithStyles(Tooltip)
+          title=""
+        >
+          <img
+            alt="Logo"
+            src="/seedtactics-logo.svg"
+            style={
+              Object {
+                "height": "25px",
+                "marginRight": "4px",
+              }
             }
-          }
-        />
+          />
+        </WithStyles(Tooltip)>
         <WithStyles(Typography)
           variant="title"
         >
@@ -727,6 +767,8 @@ exports[`renders the efficiency: efficiency 1`] = `
   id="App"
 >
   <Header
+    fmsInfo={null}
+    latestVersion={null}
     routeState={
       Object {
         "current": "ROUTE_Efficiency",
@@ -771,16 +813,20 @@ exports[`renders the efficiency: efficiency header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
-        <img
-          alt="Logo"
-          src="/seedtactics-logo.svg"
-          style={
-            Object {
-              "height": "30px",
-              "marginRight": "1em",
+        <WithStyles(Tooltip)
+          title=""
+        >
+          <img
+            alt="Logo"
+            src="/seedtactics-logo.svg"
+            style={
+              Object {
+                "height": "30px",
+                "marginRight": "1em",
+              }
             }
-          }
-        />
+          />
+        </WithStyles(Tooltip)>
         <WithStyles(Typography)
           style={
             Object {
@@ -845,16 +891,20 @@ exports[`renders the efficiency: efficiency header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
-        <img
-          alt="Logo"
-          src="/seedtactics-logo.svg"
-          style={
-            Object {
-              "height": "25px",
-              "marginRight": "4px",
+        <WithStyles(Tooltip)
+          title=""
+        >
+          <img
+            alt="Logo"
+            src="/seedtactics-logo.svg"
+            style={
+              Object {
+                "height": "25px",
+                "marginRight": "4px",
+              }
             }
-          }
-        />
+          />
+        </WithStyles(Tooltip)>
         <WithStyles(Typography)
           variant="title"
         >
@@ -907,6 +957,8 @@ exports[`renders the inspection monitor: inspection monitor 1`] = `
   id="App"
 >
   <Header
+    fmsInfo={null}
+    latestVersion={null}
     routeState={
       Object {
         "current": "ROUTE_Inspection",
@@ -953,16 +1005,20 @@ exports[`renders the inspection monitor: inspection monitor header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
-        <img
-          alt="Logo"
-          src="/seedtactics-logo.svg"
-          style={
-            Object {
-              "height": "30px",
-              "marginRight": "1em",
+        <WithStyles(Tooltip)
+          title=""
+        >
+          <img
+            alt="Logo"
+            src="/seedtactics-logo.svg"
+            style={
+              Object {
+                "height": "30px",
+                "marginRight": "1em",
+              }
             }
-          }
-        />
+          />
+        </WithStyles(Tooltip)>
         <WithStyles(Typography)
           style={
             Object {
@@ -1027,16 +1083,20 @@ exports[`renders the inspection monitor: inspection monitor header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
-        <img
-          alt="Logo"
-          src="/seedtactics-logo.svg"
-          style={
-            Object {
-              "height": "25px",
-              "marginRight": "4px",
+        <WithStyles(Tooltip)
+          title=""
+        >
+          <img
+            alt="Logo"
+            src="/seedtactics-logo.svg"
+            style={
+              Object {
+                "height": "25px",
+                "marginRight": "4px",
+              }
             }
-          }
-        />
+          />
+        </WithStyles(Tooltip)>
         <WithStyles(Typography)
           variant="title"
         >
@@ -1089,6 +1149,8 @@ exports[`renders the load monitor: station monitor 1`] = `
   id="App"
 >
   <Header
+    fmsInfo={null}
+    latestVersion={null}
     routeState={
       Object {
         "current": "ROUTE_LoadMonitor",
@@ -1135,16 +1197,20 @@ exports[`renders the load monitor: station monitor header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
-        <img
-          alt="Logo"
-          src="/seedtactics-logo.svg"
-          style={
-            Object {
-              "height": "30px",
-              "marginRight": "1em",
+        <WithStyles(Tooltip)
+          title=""
+        >
+          <img
+            alt="Logo"
+            src="/seedtactics-logo.svg"
+            style={
+              Object {
+                "height": "30px",
+                "marginRight": "1em",
+              }
             }
-          }
-        />
+          />
+        </WithStyles(Tooltip)>
         <WithStyles(Typography)
           style={
             Object {
@@ -1209,16 +1275,20 @@ exports[`renders the load monitor: station monitor header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
-        <img
-          alt="Logo"
-          src="/seedtactics-logo.svg"
-          style={
-            Object {
-              "height": "25px",
-              "marginRight": "4px",
+        <WithStyles(Tooltip)
+          title=""
+        >
+          <img
+            alt="Logo"
+            src="/seedtactics-logo.svg"
+            style={
+              Object {
+                "height": "25px",
+                "marginRight": "4px",
+              }
             }
-          }
-        />
+          />
+        </WithStyles(Tooltip)>
         <WithStyles(Typography)
           variant="title"
         >
@@ -1271,6 +1341,8 @@ exports[`renders the queue monitor: queue monitor 1`] = `
   id="App"
 >
   <Header
+    fmsInfo={null}
+    latestVersion={null}
     routeState={
       Object {
         "current": "ROUTE_Queues",
@@ -1317,16 +1389,20 @@ exports[`renders the queue monitor: queue monitor header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
-        <img
-          alt="Logo"
-          src="/seedtactics-logo.svg"
-          style={
-            Object {
-              "height": "30px",
-              "marginRight": "1em",
+        <WithStyles(Tooltip)
+          title=""
+        >
+          <img
+            alt="Logo"
+            src="/seedtactics-logo.svg"
+            style={
+              Object {
+                "height": "30px",
+                "marginRight": "1em",
+              }
             }
-          }
-        />
+          />
+        </WithStyles(Tooltip)>
         <WithStyles(Typography)
           style={
             Object {
@@ -1391,16 +1467,20 @@ exports[`renders the queue monitor: queue monitor header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
-        <img
-          alt="Logo"
-          src="/seedtactics-logo.svg"
-          style={
-            Object {
-              "height": "25px",
-              "marginRight": "4px",
+        <WithStyles(Tooltip)
+          title=""
+        >
+          <img
+            alt="Logo"
+            src="/seedtactics-logo.svg"
+            style={
+              Object {
+                "height": "25px",
+                "marginRight": "4px",
+              }
             }
-          }
-        />
+          />
+        </WithStyles(Tooltip)>
         <WithStyles(Typography)
           variant="title"
         >
@@ -1453,6 +1533,8 @@ exports[`renders the wash monitor: wash monitor 1`] = `
   id="App"
 >
   <Header
+    fmsInfo={null}
+    latestVersion={null}
     routeState={
       Object {
         "current": "ROUTE_Wash",
@@ -1499,16 +1581,20 @@ exports[`renders the wash monitor: wash monitor header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
-        <img
-          alt="Logo"
-          src="/seedtactics-logo.svg"
-          style={
-            Object {
-              "height": "30px",
-              "marginRight": "1em",
+        <WithStyles(Tooltip)
+          title=""
+        >
+          <img
+            alt="Logo"
+            src="/seedtactics-logo.svg"
+            style={
+              Object {
+                "height": "30px",
+                "marginRight": "1em",
+              }
             }
-          }
-        />
+          />
+        </WithStyles(Tooltip)>
         <WithStyles(Typography)
           style={
             Object {
@@ -1573,16 +1659,20 @@ exports[`renders the wash monitor: wash monitor header 1`] = `
       position="static"
     >
       <WithStyles(Toolbar)>
-        <img
-          alt="Logo"
-          src="/seedtactics-logo.svg"
-          style={
-            Object {
-              "height": "25px",
-              "marginRight": "4px",
+        <WithStyles(Tooltip)
+          title=""
+        >
+          <img
+            alt="Logo"
+            src="/seedtactics-logo.svg"
+            style={
+              Object {
+                "height": "25px",
+                "marginRight": "4px",
+              }
             }
-          }
-        />
+          />
+        </WithStyles(Tooltip)>
         <WithStyles(Typography)
           variant="title"
         >

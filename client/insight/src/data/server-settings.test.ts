@@ -42,6 +42,7 @@ it("creates the initial state", () => {
 });
 
 it('loads data', () => {
+  const now = new Date();
   let s = ss.reducer(ss.initial, {
     type: ss.ActionType.Load,
     pledge: {
@@ -50,6 +51,10 @@ it('loads data', () => {
         fmsInfo: {
           name: "test",
           version: "1.2.3.4",
+        },
+        latestVersion: {
+          version: "hello",
+          date: now,
         }
       }
     }
@@ -59,6 +64,10 @@ it('loads data', () => {
     fmsInfo: {
       name: "test",
       version: "1.2.3.4",
+    },
+    latestInstaller: {
+      version: "hello",
+      date: now
     }
   });
 });

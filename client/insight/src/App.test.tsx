@@ -55,6 +55,8 @@ function appProps(current: routes.RouteLocation): AppProps {
       standalone_queues: ["r1", "r2"],
       standalone_free_material: true,
     },
+    fmsInfo: null,
+    latestVersion: null,
     setRoute: jest.fn(),
   };
 }

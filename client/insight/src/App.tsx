@@ -49,6 +49,8 @@ import DataExport from './components/data-export/DataExport';
 import LoadingIcon from './components/LoadingIcon';
 import * as routes from './data/routes';
 import { Store, connect } from './store/store';
+import * as api from './data/api';
+import { LatestInstaller } from './data/server-settings';
 
 const tabsStyle = {
   'alignSelf': 'flex-end' as 'flex-end',
@@ -65,6 +67,8 @@ enum TabType {
 
 interface HeaderProps {
   routeState: routes.State;
+  fmsInfo: Readonly<api.IFMSInfo> | null;
+  latestVersion: LatestInstaller | null;
   setRoute: (arg: {ty: TabType, curSt: routes.State}) => void;
 }
 
@@ -117,14 +121,29 @@ function Header(p: HeaderProps) {
       </Tooltip>
     );
 
+    let tooltip: JSX.Element | string = "";
+    if (p.fmsInfo && p.latestVersion) {
+      tooltip = (
+        <div>
+          {(p.fmsInfo.name || "") + " " + (p.fmsInfo.version || "")}
+          <br/>
+          Latest version {p.latestVersion.version} ({p.latestVersion.date.toDateString()})
+        </div>
+      );
+    } else if (p.fmsInfo) {
+      tooltip = (p.fmsInfo.name || "") + " " + (p.fmsInfo.version || "");
+    }
+
     const largeAppBar = (
       <AppBar position="static">
         <Toolbar>
-          <img
-            src="/seedtactics-logo.svg"
-            alt="Logo"
-            style={{height: '30px', marginRight: '1em'}}
-          />
+          <Tooltip title={tooltip}>
+            <img
+              src="/seedtactics-logo.svg"
+              alt="Logo"
+              style={{height: '30px', marginRight: '1em'}}
+            />
+          </Tooltip>
           <Typography variant="title" style={{'marginRight': '2em'}}>Insight</Typography>
           {tabs(false)}
           <LoadingIcon/>
@@ -136,11 +155,13 @@ function Header(p: HeaderProps) {
     const smallAppBar = (
       <AppBar position="static">
         <Toolbar>
-          <img
-            src="/seedtactics-logo.svg"
-            alt="Logo"
-            style={{height: '25px', marginRight: '4px'}}
-          />
+          <Tooltip title={tooltip}>
+            <img
+              src="/seedtactics-logo.svg"
+              alt="Logo"
+              style={{height: '25px', marginRight: '4px'}}
+            />
+          </Tooltip>
           <Typography variant="title">Insight</Typography>
           <div style={{'flexGrow': 1}}/>
           <LoadingIcon/>
@@ -164,6 +185,8 @@ function Header(p: HeaderProps) {
 
 export interface AppProps {
   route: routes.State;
+  fmsInfo: Readonly<api.IFMSInfo> | null;
+  latestVersion: LatestInstaller | null;
   setRoute: (arg: {ty: TabType, curSt: routes.State}) => void;
 }
 
@@ -202,7 +225,12 @@ export class App extends React.PureComponent<AppProps> {
     }
     return (
       <div id="App">
-        <Header routeState={this.props.route} setRoute={this.props.setRoute}/>
+        <Header
+          routeState={this.props.route}
+          fmsInfo={this.props.fmsInfo}
+          latestVersion={this.props.latestVersion}
+          setRoute={this.props.setRoute}
+        />
         {page}
       </div>
     );
@@ -211,7 +239,9 @@ export class App extends React.PureComponent<AppProps> {
 
 export default connect(
   (s: Store) => ({
-    route: s.Route
+    route: s.Route,
+    fmsInfo: s.ServerSettings.fmsInfo || null,
+    latestVersion: s.ServerSettings.latestInstaller || null,
   }),
   {
     setRoute: ({ty, curSt}: {ty: TabType, curSt: routes.State}): routes.Action => {

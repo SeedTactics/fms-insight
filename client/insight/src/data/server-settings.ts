@@ -38,8 +38,14 @@ export enum ActionType {
   Load = 'ServerSettings_Load'
 }
 
+export interface LatestInstaller {
+  readonly version: string;
+  readonly date: Date;
+}
+
 interface LoadReturn {
   readonly fmsInfo: Readonly<api.IFMSInfo>;
+  readonly latestVersion?: LatestInstaller;
 }
 
 export type Action =
@@ -48,23 +54,47 @@ export type Action =
 
 export interface State {
   readonly fmsInfo?: Readonly<api.IFMSInfo>;
+  readonly latestInstaller?: LatestInstaller;
   readonly loadError?: Error;
 }
 
-export const initial: State = {
-  fmsInfo: undefined,
-};
+export const initial: State = {};
+
+async function loadInfo(): Promise<LoadReturn> {
+  const client = new api.ServerClient();
+  const fmsInfo = await client.fMSInformation();
+
+  let url: string | undefined;
+  let latestVersion: LatestInstaller | undefined;
+  switch (fmsInfo.name) {
+    case "Mazak":
+      url = "https://fms-insight.seedtactics.com/installers/Mazak-latest.json";
+      break;
+    case "Makino":
+      url = "https://fms-insight.seedtactics.com/installers/Makino-latest.json";
+      break;
+    case "mock":
+      url = "https://fms-insight.seedtactics.com/installers/Mazak-latest.json";
+      break;
+  }
+  if (url) {
+    const res = await fetch(url);
+    if (res && res.ok) {
+      const data = await res.json();
+      latestVersion = {
+        version: data.version,
+        date: new Date(Date.parse(data.date))
+      };
+    }
+  }
+
+  return {fmsInfo, latestVersion};
+}
 
 export function loadServerSettings(): ActionBeforeMiddleware<Action> {
-  const client = new api.ServerClient();
-  const p: Promise<LoadReturn> = client.fMSInformation()
-  .then(fmsInfo => {
-    return {fmsInfo};
-  });
-
   return {
     type: ActionType.Load,
-    pledge: p,
+    pledge: loadInfo(),
   };
 }
 
@@ -78,6 +108,7 @@ export function reducer(s: State, a: Action): State {
         case PledgeStatus.Completed:
           return {
             fmsInfo: a.pledge.result.fmsInfo,
+            latestInstaller: a.pledge.result.latestVersion,
           };
         case PledgeStatus.Error:
           return {...s, loadError: a.pledge.error};
