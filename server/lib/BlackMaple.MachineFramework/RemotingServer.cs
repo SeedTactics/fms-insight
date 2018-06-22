@@ -59,6 +59,9 @@ namespace BlackMaple.MachineWatch
 
             settingsServer = settings;
 
+            AppDomain.CurrentDomain.AssemblyResolve += ResolveEventHandler;
+            AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += ResolveEventHandler;
+
             //Configure .NET Remoting
             if (System.IO.File.Exists(AppDomain.CurrentDomain.SetupInformation.ConfigurationFile))
             {
@@ -106,6 +109,29 @@ namespace BlackMaple.MachineWatch
             singletons.RemoteSingleton(typeof(IStoreSettings),
                         "Settings",
                         settingsServer);
+        }
+
+        private Assembly ResolveEventHandler(object sender, ResolveEventArgs args)
+        {
+            var assName = args.Name.Split(',')[0];
+
+            /*
+             SAIL is compiled against the backend types in the BlackMaple.MachineWatchInterface
+            assembly.  Here in the backned, the types are in the MachineFramework assembly,
+            but they use identical code.  This hack allows remoting to work, so types from
+            MachineWatchInterface get loaded from MachineFramework
+            */
+            if (assName == "BlackMaple.MachineWatchInterface") {
+                assName = "BlackMaple.MachineFramework";
+            }
+
+            foreach (var ass in AppDomain.CurrentDomain.GetAssemblies()) {
+                if (ass.GetName().Name == assName) {
+                    return ass;
+                }
+            }
+
+            return null;
         }
 
         #region IDisposable Support
