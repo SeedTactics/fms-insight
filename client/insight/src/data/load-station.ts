@@ -75,7 +75,7 @@ export function selectLoadStationAndQueueProps(
       .filter(m => m.location.type === api.LocType.OnPallet
                 && m.location.pallet === palName
       )
-      .groupBy(m => m.location.face)
+      .groupBy(m => m.location.face || 0)
       .map(ms => ms.valueSeq().toArray())
       .toMap();
 
@@ -102,7 +102,8 @@ export function selectLoadStationAndQueueProps(
   let free: MaterialList | undefined;
   if (displayFree) {
     free = im.Seq(curSt.material)
-      .filter(m => m.action.processAfterLoad > 1
+      .filter(m => m.action.processAfterLoad &&
+                   m.action.processAfterLoad > 1
                 && m.location.type === api.LocType.Free)
       .toArray();
   }

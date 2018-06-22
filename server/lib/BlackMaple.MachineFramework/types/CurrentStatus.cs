@@ -58,9 +58,9 @@ namespace BlackMaple.MachineWatchInterface
 
         // If Type = Loading
         [DataMember(IsRequired=false, EmitDefaultValue=false)] public string LoadOntoPallet {get;set;}
-        [DataMember(IsRequired=false, EmitDefaultValue=false)] public int LoadOntoFace {get;set;}
-        [DataMember(IsRequired=false, EmitDefaultValue=false)] public int ProcessAfterLoad {get;set;}
-        [DataMember(IsRequired=false, EmitDefaultValue=false)] public int PathAfterLoad {get;set;}
+        [DataMember(IsRequired=false, EmitDefaultValue=false)] public int? LoadOntoFace {get;set;}
+        [DataMember(IsRequired=false, EmitDefaultValue=false)] public int? ProcessAfterLoad {get;set;}
+        [DataMember(IsRequired=false, EmitDefaultValue=false)] public int? PathAfterLoad {get;set;}
 
         //If Type = UnloadToInProcess
         [DataMember(IsRequired=false, EmitDefaultValue=false)] public string UnloadIntoQueue {get;set;}
@@ -88,13 +88,13 @@ namespace BlackMaple.MachineWatchInterface
 
         //If Type == OnPallet
         [DataMember(IsRequired=false, EmitDefaultValue=false)] public string Pallet {get;set;}
-        [DataMember(IsRequired=false, EmitDefaultValue=false)] public int Face {get;set;}
+        [DataMember(IsRequired=false, EmitDefaultValue=false)] public int? Face {get;set;}
 
         //If Type == InQueue
         [DataMember(IsRequired=false, EmitDefaultValue=false)] public string CurrentQueue {get;set;}
 
         //If Type == InQueue or Type == Free
-        [DataMember(IsRequired=false, EmitDefaultValue=false)] public int QueuePosition {get;set;}
+        [DataMember(IsRequired=false, EmitDefaultValue=false)] public int? QueuePosition {get;set;}
     }
 
     //Stores information about a piece of material, where it is, and what is happening to it.

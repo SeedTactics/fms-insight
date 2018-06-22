@@ -93,12 +93,13 @@ function materialAction(mat: Readonly<api.IInProcessMaterial>, includePalletInAc
     case api.ActionType.Loading:
       switch (mat.location.type) {
         case api.LocType.OnPallet:
-          return "Transfer to face " + mat.action.loadOntoFace.toString();
+          return "Transfer to face " + (mat.action.loadOntoFace || 0).toString();
         default:
           if (includePalletInAction) {
-            return "Load onto face " + mat.action.loadOntoFace.toString() + " of pal " + mat.action.loadOntoPallet;
+            return "Load onto face " + (mat.action.loadOntoFace || 0).toString()
+              + " of pal " + mat.action.loadOntoPallet;
           } else {
-            return "Load onto face " + mat.action.loadOntoFace.toString();
+            return "Load onto face " + (mat.action.loadOntoFace || 0).toString();
           }
       }
     case api.ActionType.UnloadToInProcess:
