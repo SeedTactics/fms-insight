@@ -51,7 +51,7 @@ suggest the following setup:
   Framework version 4.6.1, which comes pre-installed on Windows 10.
 
 * Connect one network card in the FMS Insight Server to your factory network.
-  Connect it to your domain using your usual usual security policies and
+  Connect it to your domain using your usual security policies and
   enterprise domain control.  Automatic Windows Updates can be enabled.
 
 * Connect the second network card in a point-to-point connection (perhaps with a
