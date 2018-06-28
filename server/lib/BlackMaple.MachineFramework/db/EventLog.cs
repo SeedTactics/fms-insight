@@ -1260,9 +1260,9 @@ namespace BlackMaple.MachineFramework
             return AddEntryInTransaction(trans =>
                 mats
                 .SelectMany(mat => RemoveFromAllQueues(trans, mat, timeUTC))
-                .Append(
+                .Concat( new [] {
                     AddLogEntry(trans, log, foreignId, originalMessage)
-                )
+                })
             );
         }
 
