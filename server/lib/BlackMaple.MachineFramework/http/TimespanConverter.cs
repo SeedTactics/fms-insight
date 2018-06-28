@@ -20,7 +20,7 @@ namespace BlackMaple.MachineFramework
       if (objectType == typeof(Nullable<TimeSpan>) && reader.Value == null)
         return (Nullable<TimeSpan>)null;
       else if (reader.Value == null)
-        throw new Exception("Invalid null value for TimeSpan");
+        throw new ArgumentException("Invalid null value for TimeSpan");
 
       var spanString = reader.Value as string;
       if (TimeSpan.TryParse(spanString, out TimeSpan result)) return result;

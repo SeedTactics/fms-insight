@@ -909,10 +909,10 @@ namespace BlackMaple.MachineFramework
 
                     trans.Commit();
                 }
-                catch (Exception ex)
+                catch
                 {
                     trans.Rollback();
-                    throw new Exception("Unable to load jobs", ex);
+                    throw;
                 }
 
                 return ret;
@@ -938,10 +938,10 @@ namespace BlackMaple.MachineFramework
 
                     trans.Commit();
                 }
-                catch (Exception ex)
+                catch
                 {
                     trans.Rollback();
-                    throw new Exception("Unable to load jobs", ex);
+                    throw;
                 }
 
                 return ret;
@@ -1053,10 +1053,10 @@ namespace BlackMaple.MachineFramework
 
                     trans.Commit();
                 }
-                catch (Exception ex)
+                catch
                 {
                     trans.Rollback();
-                    throw new Exception("Unable to load jobs", ex);
+                    throw;
                 }
 
                 return ret;
@@ -1131,10 +1131,10 @@ namespace BlackMaple.MachineFramework
 
                     trans.Commit();
                 }
-                catch (Exception ex)
+                catch
                 {
                     trans.Rollback();
-                    throw new Exception("Load failed", ex);
+                    throw;
                 }
 
                 return job;
@@ -1236,7 +1236,7 @@ namespace BlackMaple.MachineFramework
                         var last = LatestScheduleId(trans);
                         if (last != expectedPreviousScheduleId)
                         {
-                            throw new Exception(string.Format("Mismatch in previous schedule: expected '{0}' but got '{1}'", expectedPreviousScheduleId, last));
+                            throw new BadRequestException(string.Format("Mismatch in previous schedule: expected '{0}' but got '{1}'", expectedPreviousScheduleId, last));
                         }
                     }
                     foreach (var job in newJobs.Jobs)

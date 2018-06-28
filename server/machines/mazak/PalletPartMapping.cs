@@ -93,7 +93,7 @@ namespace MazakMachineInterface
               int v;
               if (!int.TryParse(palName, out v))
               {
-                throw new Exception("Invalid pallet->part mapping. " + palName + " is not numeric.");
+                throw new BlackMaple.MachineFramework.BadRequestException("Invalid pallet->part mapping. " + palName + " is not numeric.");
               }
             }
           }
@@ -499,7 +499,7 @@ namespace MazakMachineInterface
             var firstPallets = DatabaseAccess.Join(firstGraph.Pallets, ",");
             var secondPallets = DatabaseAccess.Join(graph.Pallets, ",");
 
-            throw new Exception(
+            throw new BlackMaple.MachineFramework.BadRequestException(
                 "Invalid pallet->part mapping. " + firstPart + " and " + secondPart + " do not " +
                 "have matching pallet lists.  " + firstPart + " is assigned to " + firstPallets +
                 " and " + secondPart + " is assigned to " + secondPallets);

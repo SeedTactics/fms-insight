@@ -126,7 +126,7 @@ namespace BlackMaple.MachineFramework.Controllers
             else if (loadDecrementsAfterTimeUTC.HasValue)
                 return _control.DecrementJobQuantites(loadDecrementsAfterTimeUTC.Value);
             else
-                throw new Exception("Must specify either loadDecrementsStrictlyAfterDecrementId or loadDecrementsAfterTimeUTC");
+                throw new BadRequestException("Must specify either loadDecrementsStrictlyAfterDecrementId or loadDecrementsAfterTimeUTC");
         }
     }
 }

@@ -143,6 +143,7 @@ namespace BlackMaple.MachineFramework
             IServiceProvider services,
             Controllers.WebsocketManager wsManager)
         {
+            app.UseMiddleware(typeof(ErrorHandlingMiddleware));
             app.UseMvc();
             app.UseStaticFiles();
 

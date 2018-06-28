@@ -793,7 +793,8 @@ namespace MazakMachineInterface
           if (!string.IsNullOrEmpty(expectedPreviousScheduleId) &&
               expectedPreviousScheduleId != recentDbSchedule.LatestScheduleId)
           {
-            throw new ApplicationException("Expected previous schedule ID does not match current schedule ID");
+            throw new BlackMaple.MachineFramework.BadRequestException(
+              "Expected previous schedule ID does not match current schedule ID.  Another user may have already created a schedule.");
           }
         }
 
@@ -1052,7 +1053,7 @@ namespace MazakMachineInterface
             }
           }
           if (downloadUid < 0) {
-            throw new ApplicationException(
+            throw new BlackMaple.MachineFramework.BadRequestException(
               "Attempting to create schedule for " + part.UniqueStr + " but a part does not exist");
           }
 
@@ -1308,7 +1309,7 @@ namespace MazakMachineInterface
           return i;
         }
       }
-      throw new ApplicationException("All Schedule Ids are currently being used");
+      throw new Exception("All Schedule Ids are currently being used");
     }
 
 

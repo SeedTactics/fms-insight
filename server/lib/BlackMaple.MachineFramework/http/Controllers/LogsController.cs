@@ -169,8 +169,8 @@ namespace BlackMaple.MachineFramework.Controllers
         [HttpPost("events/inspection-result")]
         public LogEntry RecordInspectionCompleted([FromBody] NewInspectionCompleted insp)
         {
-            if (string.IsNullOrEmpty(insp.InspectionType)) throw new Exception("Must give inspection type");
-            if (insp.Material == null) throw new Exception("Must give material type");
+            if (string.IsNullOrEmpty(insp.InspectionType)) throw new BadRequestException("Must give inspection type");
+            if (insp.Material == null) throw new BadRequestException("Must give material type");
             return _server.RecordInspectionCompleted(
                 insp.Material,
                 insp.InspectionLocationNum,
