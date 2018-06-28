@@ -1,6 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <PackageId>BlackMaple.MachineFramework.Tests</PackageId>
+    <AssemblyName>BlackMaple.MachineFramework.Tests</AssemblyName>
     <TargetFramework>netcoreapp2.1</TargetFramework>
   </PropertyGroup>
 

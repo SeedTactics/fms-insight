@@ -127,13 +127,12 @@ namespace MazakMachineInterface
 
         case LogCode.LoadBegin:
 
-          _log.AddStationCycle(new MWI.LogEntry(0,
-              CreateMaterialWithoutIDs(e, dset),
-                      e.Pallet.ToString(),
-                      LogType.LoadUnloadCycle, "L/U", e.StationNumber,
-              e.Program, true, // start of cycle
-              e.TimeUTC, "LOAD", false), // not the end of the route
-              e.ForeignID);
+          _log.RecordLoadStart(
+            mats: CreateMaterialWithoutIDs(e, dset),
+            pallet: e.Pallet.ToString(),
+            lulNum: e.StationNumber,
+            timeUTC: e.TimeUTC,
+            foreignId: e.ForeignID);
 
           break;
 
@@ -151,13 +150,14 @@ namespace MazakMachineInterface
           // Just in case, we check for pending loads here
           cycle = CheckPendingLoads(e.Pallet, e.TimeUTC.AddSeconds(-1), "", dset, false, cycle);
 
-          _log.AddStationCycle(new MWI.LogEntry(0,
-              FindMaterial(e, dset, cycle),
-                      e.Pallet.ToString(),
-                      LogType.MachineCycle, "MC", e.StationNumber,
-              e.Program, true, // start of cycle
-              e.TimeUTC, "", false), // not the end of the route
-              e.ForeignID);
+          _log.RecordMachineStart(
+            mats: FindMaterial(e, dset, cycle),
+            pallet: e.Pallet.ToString(),
+            statName: "MC",
+            statNum: e.StationNumber,
+            program: e.Program,
+            timeUTC: e.TimeUTC,
+            foreignId: e.ForeignID);
 
           break;
 
@@ -167,16 +167,17 @@ namespace MazakMachineInterface
 
           if (elapsed > TimeSpan.FromSeconds(30))
           {
-            var s = new MWI.LogEntry(0,
-                FindMaterial(e, dset, cycle),
-                  e.Pallet.ToString(),
-                          LogType.MachineCycle, "MC", e.StationNumber,
-                          e.Program, false, // not the start of cycle
-                  e.TimeUTC, "", false, // not the end of the route
-                          elapsed, TimeSpan.FromMinutes(-1)); //TODO: check if mazak records active time anywhere
-
-            _log.AddStationCycle(s, e.ForeignID);
-
+            var s = _log.RecordMachineEnd(
+              mats: FindMaterial(e, dset, cycle),
+              pallet: e.Pallet.ToString(),
+              statName: "MC",
+              statNum: e.StationNumber,
+              program: e.Program,
+              timeUTC: e.TimeUTC,
+              result: "",
+              elapsed: elapsed,
+              active: TimeSpan.FromMinutes(-1), //TODO: check if mazak records active time anywhere
+              foreignId: e.ForeignID);
             if (MachiningCompleted != null)
               MachiningCompleted(s, dset);
 
@@ -193,13 +194,12 @@ namespace MazakMachineInterface
 
         case LogCode.UnloadBegin:
 
-          _log.AddStationCycle(new MWI.LogEntry(0,
-              FindMaterial(e, dset, cycle),
-                      e.Pallet.ToString(),
-                      LogType.LoadUnloadCycle, "L/U", e.StationNumber,
-                      e.Program, true, // start of cycle
-              e.TimeUTC, "UNLOAD", false), // not the end of the route
-              e.ForeignID);
+          _log.RecordUnloadStart(
+            mats: FindMaterial(e, dset, cycle),
+            pallet: e.Pallet.ToString(),
+            lulNum: e.StationNumber,
+            timeUTC: e.TimeUTC,
+            foreignId: e.ForeignID);
 
           break;
 
@@ -208,14 +208,14 @@ namespace MazakMachineInterface
           //TODO: test for rework
           var loadElapsed = CalculateElapsed(e, cycle, LogType.LoadUnloadCycle, e.StationNumber);
 
-          _log.AddStationCycle(new MWI.LogEntry(0,
-                FindMaterial(e, dset, cycle),
-                  e.Pallet.ToString(),
-                          LogType.LoadUnloadCycle, "L/U", e.StationNumber,
-                          e.Program, false, // not the start of cycle
-              e.TimeUTC, "UNLOAD", true, // end of the route
-                          loadElapsed, loadElapsed),
-                  e.ForeignID);
+          _log.RecordUnloadEnd(
+            mats: FindMaterial(e, dset, cycle),
+            pallet: e.Pallet.ToString(),
+            lulNum: e.StationNumber,
+            timeUTC: e.TimeUTC,
+            elapsed: loadElapsed,
+            active: loadElapsed,
+            foreignId: e.ForeignID);
 
           break;
 

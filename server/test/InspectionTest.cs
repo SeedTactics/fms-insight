@@ -375,9 +375,9 @@ namespace MachineWatchTest {
 		private void AddCycle(LogMaterial[] mat, string pal, LogType loc, int statNum, bool end)
 		{
 			string name = loc == LogType.MachineCycle ? "MC" : "Load";
-      		_insp.AddLogEntry(new LogEntry(-1, mat, pal, loc, name, statNum, "", true, _lastCycleTime, "", end));
+   		_insp.AddLogEntryFromUnitTest(new LogEntry(-1, mat, pal, loc, name, statNum, "", true, _lastCycleTime, "", end));
 			_lastCycleTime = _lastCycleTime.AddMinutes(15);
-			_insp.AddLogEntry(new LogEntry(-1, mat, pal, loc, name, statNum, "", false, _lastCycleTime, "", end));
+			_insp.AddLogEntryFromUnitTest(new LogEntry(-1, mat, pal, loc, name, statNum, "", false, _lastCycleTime, "", end));
 			_lastCycleTime = _lastCycleTime.AddMinutes(15);
 		}
 

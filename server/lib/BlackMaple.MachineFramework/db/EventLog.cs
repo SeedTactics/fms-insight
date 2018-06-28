@@ -86,8 +86,7 @@ namespace BlackMaple.MachineFramework
             _connection.Close();
         }
 
-
-        private const int Version = 17;
+        private const int Version = 18;
 
         public void CreateTables()
         {
@@ -147,6 +146,11 @@ namespace BlackMaple.MachineFramework
             cmd.ExecuteNonQuery();
 
             cmd.CommandText = "CREATE TABLE inspection_next_piece(StatType INTEGER, StatNum INTEGER, InspType TEXT, PRIMARY KEY(StatType,StatNum, InspType))";
+            cmd.ExecuteNonQuery();
+
+            cmd.CommandText = "CREATE TABLE queues(MaterialID INTEGER, Queue TEXT, Position INTEGER, PRIMARY KEY(MaterialID, Queue))";
+            cmd.ExecuteNonQuery();
+            cmd.CommandText = "CREATE INDEX queues_idx ON queues(Queue, Position)";
             cmd.ExecuteNonQuery();
         }
 
@@ -234,6 +238,8 @@ namespace BlackMaple.MachineFramework
 
                 if (curVersion < 17)
                     detachInsp = Ver16ToVer17(trans, inspDbFile);
+
+                if (curVersion < 18) Ver17ToVer18(trans);
 
                 //update the version in the database
                 cmd.Transaction = trans;
@@ -439,6 +445,17 @@ namespace BlackMaple.MachineFramework
             cmd.CommandText = "DETACH DATABASE insp";
             cmd.ExecuteNonQuery();
         }
+
+        private void Ver17ToVer18(IDbTransaction trans)
+        {
+            IDbCommand cmd = _connection.CreateCommand();
+            cmd.Transaction = trans;
+            cmd.CommandText = "CREATE TABLE queues(MaterialID INTEGER, Queue TEXT, Position INTEGER, PRIMARY KEY(MaterialID, Queue))";
+            cmd.ExecuteNonQuery();
+            cmd.CommandText = "CREATE INDEX queues_idx ON queues(Queue, Position)";
+            cmd.ExecuteNonQuery();
+        }
+
         #endregion
 
         #region Event
@@ -874,7 +891,7 @@ namespace BlackMaple.MachineFramework
             }
         }
 
-        public bool CycleExists(MachineWatchInterface.LogEntry cycle)
+        public bool CycleExists(DateTime endUTC, string pal, MachineWatchInterface.LogType logTy, string locName, int locNum)
         {
             lock (_lock)
             {
@@ -882,11 +899,11 @@ namespace BlackMaple.MachineFramework
                 {
                     cmd.CommandText = "SELECT COUNT(*) FROM stations WHERE " +
                         "TimeUTC = $time AND Pallet = $pal AND StationLoc = $loc AND StationNum = $locnum AND StationName = $locname";
-                    cmd.Parameters.Add("time", SqliteType.Integer).Value = cycle.EndTimeUTC.Ticks;
-                    cmd.Parameters.Add("pal", SqliteType.Text).Value = cycle.Pallet;
-                    cmd.Parameters.Add("loc", SqliteType.Integer).Value = (int)cycle.LogType;
-                    cmd.Parameters.Add("locnum", SqliteType.Integer).Value = cycle.LocationNum;
-                    cmd.Parameters.Add("locname", SqliteType.Text).Value = cycle.LocationName;
+                    cmd.Parameters.Add("time", SqliteType.Integer).Value = endUTC.Ticks;
+                    cmd.Parameters.Add("pal", SqliteType.Text).Value = pal;
+                    cmd.Parameters.Add("loc", SqliteType.Integer).Value = (int)logTy;
+                    cmd.Parameters.Add("locnum", SqliteType.Integer).Value = locNum;
+                    cmd.Parameters.Add("locname", SqliteType.Text).Value = locName;
 
                     var ret = cmd.ExecuteScalar();
                     if (ret == null || Convert.ToInt32(ret) <= 0)
@@ -1052,66 +1069,7 @@ namespace BlackMaple.MachineFramework
         #endregion
 
         #region Adding
-        public MachineWatchInterface.LogEntry AddLogEntry(MachineWatchInterface.LogEntry log)
-        {
-            return AddStationCycle(log, null, null);
-        }
-
-        public MachineWatchInterface.LogEntry AddStationCycle(MachineWatchInterface.LogEntry log, string foreignID)
-        {
-            return AddStationCycle(log, foreignID, null);
-        }
-
-        public MachineWatchInterface.LogEntry AddStationCycle(MachineWatchInterface.LogEntry log, string foreignID, string origMessage)
-        {
-            lock (_lock)
-            {
-                var trans = _connection.BeginTransaction();
-
-                try
-                {
-                    log = AddStationCycle(trans, log, foreignID, origMessage);
-                    trans.Commit();
-                }
-                catch
-                {
-                    trans.Rollback();
-                    throw;
-                }
-            }
-
-            if (NewLogEntry != null)
-                NewLogEntry(log, foreignID);
-
-            return log;
-        }
-
-        public void AddStationCycles(IEnumerable<MachineWatchInterface.LogEntry> logs, string foreignID, string origMessage)
-        {
-            var results = new List<MachineWatchInterface.LogEntry>();
-            lock (_lock)
-            {
-                var trans = _connection.BeginTransaction();
-
-                try
-                {
-                    foreach (var log in logs)
-                        results.Add(AddStationCycle(trans, log, foreignID, origMessage));
-                    trans.Commit();
-                }
-                catch
-                {
-                    trans.Rollback();
-                    throw;
-                }
-            }
-
-            if (NewLogEntry != null)
-                foreach (var log in results)
-                    NewLogEntry(log, foreignID);
-        }
-
-        public MachineWatchInterface.LogEntry AddStationCycle(IDbTransaction trans, MachineWatchInterface.LogEntry log, string foreignID, string origMessage)
+        private MachineWatchInterface.LogEntry AddLogEntry(IDbTransaction trans, MachineWatchInterface.LogEntry log, string foreignID, string origMessage)
         {
             var cmd = _connection.CreateCommand();
             ((IDbCommand)cmd).Transaction = trans;
@@ -1201,10 +1159,423 @@ namespace BlackMaple.MachineFramework
                 cmd.ExecuteNonQuery();
             }
         }
+
+        private MachineWatchInterface.LogEntry AddEntryInTransaction(Func<IDbTransaction, MachineWatchInterface.LogEntry> f, string foreignId = "")
+        {
+            MachineWatchInterface.LogEntry log;
+            lock (_lock)
+            {
+                var trans = _connection.BeginTransaction();
+                try
+                {
+                    log = f(trans);
+                    trans.Commit();
+                }
+                catch
+                {
+                    trans.Rollback();
+                    throw;
+                }
+            }
+            NewLogEntry?.Invoke(log, foreignId);
+            return log;
+        }
+
+        private IEnumerable<MachineWatchInterface.LogEntry> AddEntryInTransaction(Func<IDbTransaction, IEnumerable<MachineWatchInterface.LogEntry>> f, string foreignId = "")
+        {
+            IEnumerable<MachineWatchInterface.LogEntry> logs;
+            lock (_lock)
+            {
+                var trans = _connection.BeginTransaction();
+                try
+                {
+                    logs = f(trans).ToList();
+                    trans.Commit();
+                }
+                catch
+                {
+                    trans.Rollback();
+                    throw;
+                }
+            }
+            foreach (var l in logs) NewLogEntry?.Invoke(l, foreignId);
+            return logs;
+        }
+
+        internal MachineWatchInterface.LogEntry AddLogEntryFromUnitTest(MachineWatchInterface.LogEntry log, string foreignId = null, string origMessage = null)
+        {
+            return AddEntryInTransaction(trans =>
+                AddLogEntry(trans, log, foreignId, origMessage)
+            );
+        }
+
+
+        public MachineWatchInterface.LogEntry RecordLoadStart(
+            IEnumerable<MachineWatchInterface.LogMaterial> mats,
+            string pallet,
+            int lulNum,
+            DateTime timeUTC,
+            string foreignId = null,
+            string originalMessage = null
+        ) {
+            var log = new MachineWatchInterface.LogEntry(
+                cntr: -1,
+                mat: mats,
+                pal: pallet,
+                ty: MachineWatchInterface.LogType.LoadUnloadCycle,
+                locName: "L/U",
+                locNum: lulNum,
+                prog: "LOAD",
+                start: true,
+                endTime: timeUTC,
+                result: "LOAD",
+                endOfRoute: false);
+            return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
+        }
+
+        public IEnumerable<MachineWatchInterface.LogEntry> RecordLoadEnd(
+            IEnumerable<MachineWatchInterface.LogMaterial> mats,
+            string pallet,
+            int lulNum,
+            DateTime timeUTC,
+            TimeSpan elapsed,
+            TimeSpan active,
+            string foreignId = null,
+            string originalMessage = null
+        ) {
+            var log = new MachineWatchInterface.LogEntry(
+                cntr: -1,
+                mat: mats,
+                pal: pallet,
+                ty: MachineWatchInterface.LogType.LoadUnloadCycle,
+                locName: "L/U",
+                locNum: lulNum,
+                prog: "LOAD",
+                start: false,
+                endTime: timeUTC,
+                result: "LOAD",
+                elapsed: elapsed,
+                active: active,
+                endOfRoute: false);
+            return AddEntryInTransaction(trans =>
+                mats
+                .SelectMany(mat => RemoveFromAllQueues(trans, mat, timeUTC))
+                .Append(
+                    AddLogEntry(trans, log, foreignId, originalMessage)
+                )
+            );
+        }
+
+        public MachineWatchInterface.LogEntry RecordUnloadStart(
+            IEnumerable<MachineWatchInterface.LogMaterial> mats,
+            string pallet,
+            int lulNum,
+            DateTime timeUTC,
+            string foreignId = null,
+            string originalMessage = null
+        ) {
+            var log = new MachineWatchInterface.LogEntry(
+                cntr: -1,
+                mat: mats,
+                pal: pallet,
+                ty: MachineWatchInterface.LogType.LoadUnloadCycle,
+                locName: "L/U",
+                locNum: lulNum,
+                prog: "UNLOAD",
+                start: true,
+                endTime: timeUTC,
+                result: "UNLOAD",
+                endOfRoute: false);
+            return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
+        }
+
+        public IEnumerable<MachineWatchInterface.LogEntry> RecordUnloadEnd(
+            IEnumerable<MachineWatchInterface.LogMaterial> mats,
+            string pallet,
+            int lulNum,
+            DateTime timeUTC,
+            TimeSpan elapsed,
+            TimeSpan active,
+            Dictionary<long, string> unloadIntoQueues = null, // key is material id, value is queue name
+            string foreignId = null,
+            string originalMessage = null
+        ) {
+            var log = new MachineWatchInterface.LogEntry(
+                cntr: -1,
+                mat: mats,
+                pal: pallet,
+                ty: MachineWatchInterface.LogType.LoadUnloadCycle,
+                locName: "L/U",
+                locNum: lulNum,
+                prog: "UNLOAD",
+                start: false,
+                endTime: timeUTC,
+                elapsed: elapsed,
+                active: active,
+                result: "UNLOAD",
+                endOfRoute: true);
+            return AddEntryInTransaction(trans => {
+                var msgs = new List<MachineWatchInterface.LogEntry>();
+                if (unloadIntoQueues != null) {
+                    foreach (var mat in mats) {
+                        if (unloadIntoQueues.ContainsKey(mat.MaterialID)) {
+                            msgs.AddRange(AddToQueue(trans, mat, unloadIntoQueues[mat.MaterialID], -1, timeUTC));
+                        }
+                    }
+                }
+                msgs.Add(AddLogEntry(trans, log, foreignId, originalMessage));
+                return msgs;
+            });
+        }
+
+        public MachineWatchInterface.LogEntry RecordMachineStart(
+            IEnumerable<MachineWatchInterface.LogMaterial> mats,
+            string pallet,
+            string statName,
+            int statNum,
+            string program,
+            DateTime timeUTC,
+            string foreignId = null,
+            string originalMessage = null
+        ) {
+            var log = new MachineWatchInterface.LogEntry(
+                cntr: -1,
+                mat: mats,
+                pal: pallet,
+                ty: MachineWatchInterface.LogType.MachineCycle,
+                locName: statName,
+                locNum: statNum,
+                prog: program,
+                start: true,
+                endTime: timeUTC,
+                result: "",
+                endOfRoute: false);
+            return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
+        }
+
+        public MachineWatchInterface.LogEntry RecordMachineEnd(
+            IEnumerable<MachineWatchInterface.LogMaterial> mats,
+            string pallet,
+            string statName,
+            int statNum,
+            string program,
+            string result,
+            DateTime timeUTC,
+            TimeSpan elapsed,
+            TimeSpan active,
+            IDictionary<string, string> extraData = null,
+            string foreignId = null,
+            string originalMessage = null
+        ) {
+            var log = new MachineWatchInterface.LogEntry(
+                cntr: -1,
+                mat: mats,
+                pal: pallet,
+                ty: MachineWatchInterface.LogType.MachineCycle,
+                locName: statName,
+                locNum: statNum,
+                prog: program,
+                start: false,
+                endTime: timeUTC,
+                result: result,
+                elapsed: elapsed,
+                active: active,
+                endOfRoute: false);
+            if (extraData != null) {
+                foreach (var k in extraData)
+                    log.ProgramDetails[k.Key] = k.Value;
+            }
+            return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
+        }
+
+        public MachineWatchInterface.LogEntry RecordSerialForMaterialID(
+            MachineWatchInterface.LogMaterial mat, string serial
+        ) {
+            return RecordSerialForMaterialID(mat, serial, DateTime.UtcNow);
+        }
+
+        public MachineWatchInterface.LogEntry RecordSerialForMaterialID(
+            MachineWatchInterface.LogMaterial mat, string serial, DateTime endTimeUTC
+        ) {
+            var log = new MachineWatchInterface.LogEntry(
+                cntr: -1,
+                mat: new [] { mat },
+                pal: "",
+                ty: MachineWatchInterface.LogType.PartMark,
+                locName: "Mark",
+                locNum: 1,
+                prog: "MARK",
+                start: false,
+                endTime: endTimeUTC,
+                result: serial,
+                endOfRoute: false);
+            return AddEntryInTransaction(trans => {
+                RecordSerialForMaterialID(trans, mat.MaterialID, serial);
+                return AddLogEntry(trans, log, null, null);
+            });
+        }
+
+        public MachineWatchInterface.LogEntry RecordWorkorderForMaterialID(
+            MachineWatchInterface.LogMaterial mat, string workorder
+        ) {
+            return RecordWorkorderForMaterialID(mat, workorder, DateTime.UtcNow);
+        }
+
+        public MachineWatchInterface.LogEntry RecordWorkorderForMaterialID(
+            MachineWatchInterface.LogMaterial mat, string workorder, DateTime recordUtc
+        ) {
+            var log = new MachineWatchInterface.LogEntry(
+                cntr: -1,
+                mat: new [] { mat },
+                pal: "",
+                ty: MachineWatchInterface.LogType.OrderAssignment,
+                locName: "Order",
+                locNum: 1,
+                prog: "",
+                start: false,
+                endTime: recordUtc,
+                result: workorder,
+                endOfRoute: false);
+            return AddEntryInTransaction(trans => {
+                RecordWorkorderForMaterialID(trans, mat.MaterialID, workorder);
+                return AddLogEntry(trans, log, null, null);
+            });
+        }
+
+        public MachineWatchInterface.LogEntry RecordInspectionCompleted(
+            MachineWatchInterface.LogMaterial mat,
+            int inspectionLocNum,
+            string inspectionType,
+            bool success,
+            IDictionary<string, string> extraData,
+            TimeSpan elapsed,
+            TimeSpan active)
+        {
+            return RecordInspectionCompleted(mat, inspectionLocNum, inspectionType, success, extraData, elapsed, active, DateTime.UtcNow);
+
+        }
+
+        public MachineWatchInterface.LogEntry RecordInspectionCompleted(
+            MachineWatchInterface.LogMaterial mat,
+            int inspectionLocNum,
+            string inspectionType,
+            bool success,
+            IDictionary<string, string> extraData,
+            TimeSpan elapsed,
+            TimeSpan active,
+            DateTime inspectTimeUTC)
+        {
+            var log = new MachineWatchInterface.LogEntry(
+                cntr: -1,
+                mat: new MachineWatchInterface.LogMaterial[] { mat },
+                pal: "",
+                ty: MachineWatchInterface.LogType.InspectionResult,
+                locName: "Inspection",
+                locNum: inspectionLocNum,
+                prog: inspectionType,
+                start: false,
+                endTime: inspectTimeUTC,
+                result: success.ToString(),
+                endOfRoute: false,
+                elapsed: elapsed,
+                active: active);
+            foreach (var x in extraData) log.ProgramDetails.Add(x.Key, x.Value);
+
+            return AddEntryInTransaction(trans => AddLogEntry(trans, log, null, null));
+        }
+        public MachineWatchInterface.LogEntry RecordWashCompleted(
+            MachineWatchInterface.LogMaterial mat,
+            int washLocNum,
+            IDictionary<string, string> extraData,
+            TimeSpan elapsed,
+            TimeSpan active
+        ) {
+            return RecordWashCompleted(mat, washLocNum, extraData, elapsed, active, DateTime.UtcNow);
+        }
+
+        public MachineWatchInterface.LogEntry RecordWashCompleted(
+            MachineWatchInterface.LogMaterial mat,
+            int washLocNum,
+            IDictionary<string, string> extraData,
+            TimeSpan elapsed,
+            TimeSpan active,
+            DateTime completeTimeUTC)
+        {
+            var log = new MachineWatchInterface.LogEntry(
+                cntr: -1,
+                mat: new MachineWatchInterface.LogMaterial[] { mat },
+                pal: "",
+                ty: MachineWatchInterface.LogType.Wash,
+                locName: "Wash",
+                locNum: washLocNum,
+                prog: "",
+                start: false,
+                endTime: completeTimeUTC,
+                result: "",
+                endOfRoute: false,
+                elapsed: elapsed,
+                active: active);
+            foreach (var x in extraData) log.ProgramDetails.Add(x.Key, x.Value);
+            return AddEntryInTransaction(trans => AddLogEntry(trans, log, null, null));
+        }
+
+        public MachineWatchInterface.LogEntry RecordFinalizedWorkorder(string workorder)
+        {
+            return RecordFinalizedWorkorder(workorder, DateTime.UtcNow);
+
+        }
+        public MachineWatchInterface.LogEntry RecordFinalizedWorkorder(string workorder, DateTime finalizedUTC)
+        {
+            var log = new MachineWatchInterface.LogEntry(
+                cntr: -1,
+                mat: new MachineWatchInterface.LogMaterial[] {},
+                pal: "",
+                ty: MachineWatchInterface.LogType.FinalizeWorkorder,
+                locName: "FinalizeWorkorder",
+                locNum: 1,
+                prog: "",
+                start: false,
+                endTime: finalizedUTC,
+                result: workorder,
+                endOfRoute: false);
+            return AddEntryInTransaction(trans => AddLogEntry(trans, log, null, null));
+        }
+
+        public IEnumerable<MachineWatchInterface.LogEntry> RecordAddMaterialToQueue(
+            MachineWatchInterface.LogMaterial mat, string queue, int position, DateTime? timeUTC = null)
+        {
+            return AddEntryInTransaction(trans =>
+                AddToQueue(trans, mat, queue, position, timeUTC ?? DateTime.UtcNow)
+            );
+        }
+
+        public IEnumerable<MachineWatchInterface.LogEntry> RecordAddMaterialToQueue(
+            long matID, int process, string queue, int position, DateTime? timeUTC = null)
+        {
+            return AddEntryInTransaction(trans =>
+                AddToQueue(trans, matID, process, queue, position, timeUTC ?? DateTime.UtcNow)
+            );
+        }
+
+
+        public IEnumerable<MachineWatchInterface.LogEntry> RecordRemoveMaterialFromAllQueues(
+            MachineWatchInterface.LogMaterial mat, DateTime? timeUTC = null)
+        {
+            return AddEntryInTransaction(trans =>
+                RemoveFromAllQueues(trans, mat, timeUTC ?? DateTime.UtcNow)
+            );
+        }
+
+        public IEnumerable<MachineWatchInterface.LogEntry> RecordRemoveMaterialFromAllQueues(
+            long matID, DateTime? timeUTC = null)
+        {
+            return AddEntryInTransaction(trans =>
+                RemoveFromAllQueues(trans, matID, timeUTC ?? DateTime.UtcNow)
+            );
+        }
         #endregion
 
-        #region Material Tags
-
+        #region Material IDs
         public long AllocateMaterialID(string unique)
         {
             lock (_lock)
@@ -1263,56 +1634,6 @@ namespace BlackMaple.MachineFramework
             }
         }
 
-
-        public MachineWatchInterface.LogEntry RecordSerialForMaterialID(MachineWatchInterface.LogMaterial mat, string serial)
-        {
-            return RecordSerialForMaterialID(mat, serial, DateTime.UtcNow);
-        }
-
-        public MachineWatchInterface.LogEntry RecordSerialForMaterialID(MachineWatchInterface.LogMaterial mat, string serial, DateTime endTimeUTC)
-        {
-            var log = new MachineWatchInterface.LogEntry(-1,
-                                                             new MachineWatchInterface.LogMaterial[] { mat },
-                                                             "",
-                                                             MachineWatchInterface.LogType.PartMark, "Mark", 1,
-                                                             "MARK",
-                                                             false,
-                                                             endTimeUTC,
-                                                             serial,
-                                                             false);
-            lock (_lock)
-            {
-                var trans = _connection.BeginTransaction();
-                try
-                {
-                    RecordSerialForMaterialID(trans, mat.MaterialID, serial);
-                    log = AddStationCycle(trans, log, "", "");
-                    trans.Commit();
-                }
-                catch
-                {
-                    trans.Rollback();
-                    throw;
-                }
-            }
-            if (NewLogEntry != null)
-                NewLogEntry(log, "");
-            return log;
-        }
-
-        private void RecordSerialForMaterialID(IDbTransaction trans, long matID, string serial)
-        {
-            var cmd = _connection.CreateCommand();
-            ((IDbCommand)cmd).Transaction = trans;
-            cmd.CommandText = "UPDATE materialid SET Serial = $ser WHERE MaterialID = $mat";
-            if (string.IsNullOrEmpty(serial))
-                cmd.Parameters.Add("ser", SqliteType.Text).Value = DBNull.Value;
-            else
-                cmd.Parameters.Add("ser", SqliteType.Text).Value = serial;
-            cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
-            cmd.ExecuteNonQuery();
-        }
-
         public string SerialForMaterialID(long matID)
         {
             lock (_lock)
@@ -1336,214 +1657,19 @@ namespace BlackMaple.MachineFramework
             }
         }
 
-        public MachineWatchInterface.LogEntry RecordWorkorderForMaterialID(MachineWatchInterface.LogMaterial mat, string workorder)
-        {
-            return RecordWorkorderForMaterialID(mat, workorder, DateTime.UtcNow);
-        }
-
-        public MachineWatchInterface.LogEntry RecordWorkorderForMaterialID(MachineWatchInterface.LogMaterial mat, string workorder, DateTime recordUtc)
-        {
-                var log = new MachineWatchInterface.LogEntry(-1,
-                                                             new MachineWatchInterface.LogMaterial[] { mat },
-                                                             "",
-                                                             MachineWatchInterface.LogType.OrderAssignment, "Order", 1,
-                                                             "",
-                                                             false,
-                                                             recordUtc,
-                                                             workorder,
-                                                             false);
-            lock (_lock)
-            {
-                var trans = _connection.BeginTransaction();
-                try
-                {
-                    RecordWorkorderForMaterialID(trans, mat.MaterialID, workorder);
-                    log = AddStationCycle(trans, log, "", "");
-                    trans.Commit();
-                }
-                catch
-                {
-                    trans.Rollback();
-                    throw;
-                }
-            }
-            if (NewLogEntry != null)
-                NewLogEntry(log, "");
-            return log;
-        }
-
-        public MachineWatchInterface.LogEntry RecordInspectionCompleted(
-            MachineWatchInterface.LogMaterial mat,
-            int inspectionLocNum,
-            string inspectionType,
-            bool success,
-            IDictionary<string, string> extraData,
-            TimeSpan elapsed,
-            TimeSpan active)
-        {
-            return RecordInspectionCompleted(
-                mat,
-                inspectionLocNum,
-                inspectionType,
-                success,
-                extraData,
-                elapsed,
-                active,
-                DateTime.UtcNow
-            );
-        }
-
-        public MachineWatchInterface.LogEntry RecordInspectionCompleted(
-            MachineWatchInterface.LogMaterial mat,
-            int inspectionLocNum,
-            string inspectionType,
-            bool success,
-            IDictionary<string, string> extraData,
-            TimeSpan elapsed,
-            TimeSpan active,
-            DateTime endUTC)
-        {
-            var log = new MachineWatchInterface.LogEntry(
-                -1,
-                new MachineWatchInterface.LogMaterial[] { mat },
-                "",
-                MachineWatchInterface.LogType.InspectionResult, "Inspection", inspectionLocNum,
-                inspectionType,
-                false,
-                endUTC,
-                success.ToString(),
-                false,
-                elapsed,
-                active);
-            foreach (var x in extraData) log.ProgramDetails.Add(x.Key, x.Value);
-
-            lock (_lock)
-            {
-                var trans = _connection.BeginTransaction();
-                try
-                {
-                    log = AddStationCycle(trans, log, "", "");
-                    trans.Commit();
-                }
-                catch
-                {
-                    trans.Rollback();
-                    throw;
-                }
-            }
-            if (NewLogEntry != null)
-                NewLogEntry(log, "");
-            return log;
-        }
-
-        public MachineWatchInterface.LogEntry RecordWashCompleted(
-            MachineWatchInterface.LogMaterial mat,
-            int washLocNum,
-            IDictionary<string, string> extraData,
-            TimeSpan elapsed,
-            TimeSpan active)
-        {
-            return RecordWashCompleted(
-                mat,
-                washLocNum,
-                extraData,
-                elapsed,
-                active,
-                DateTime.UtcNow
-            );
-        }
-
-        public MachineWatchInterface.LogEntry RecordWashCompleted(
-            MachineWatchInterface.LogMaterial mat,
-            int washLocNum,
-            IDictionary<string, string> extraData,
-            TimeSpan elapsed,
-            TimeSpan active,
-            DateTime endUTC)
-        {
-            var log = new MachineWatchInterface.LogEntry(
-                -1,
-                new MachineWatchInterface.LogMaterial[] { mat },
-                "",
-                MachineWatchInterface.LogType.Wash, "Wash", washLocNum,
-                "",
-                false,
-                endUTC,
-                "",
-                false,
-                elapsed,
-                active);
-            foreach (var x in extraData) log.ProgramDetails.Add(x.Key, x.Value);
-
-            lock (_lock)
-            {
-                var trans = _connection.BeginTransaction();
-                try
-                {
-                    log = AddStationCycle(trans, log, "", "");
-                    trans.Commit();
-                }
-                catch
-                {
-                    trans.Rollback();
-                    throw;
-                }
-            }
-            if (NewLogEntry != null)
-                NewLogEntry(log, "");
-            return log;
-        }
-
-        private void RecordWorkorderForMaterialID(IDbTransaction trans, long matID, string workorder)
+        private void RecordSerialForMaterialID(IDbTransaction trans, long matID, string serial)
         {
             var cmd = _connection.CreateCommand();
             ((IDbCommand)cmd).Transaction = trans;
-            cmd.CommandText = "UPDATE materialid SET Workorder = $work WHERE MaterialID = $mat";
-            if (string.IsNullOrEmpty(workorder))
-                cmd.Parameters.Add("work", SqliteType.Text).Value = DBNull.Value;
+            cmd.CommandText = "UPDATE materialid SET Serial = $ser WHERE MaterialID = $mat";
+            if (string.IsNullOrEmpty(serial))
+                cmd.Parameters.Add("ser", SqliteType.Text).Value = DBNull.Value;
             else
-                cmd.Parameters.Add("work", SqliteType.Text).Value = workorder;
+                cmd.Parameters.Add("ser", SqliteType.Text).Value = serial;
             cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
             cmd.ExecuteNonQuery();
         }
 
-        public MachineWatchInterface.LogEntry RecordFinalizedWorkorder(string workorder)
-        {
-            return RecordFinalizedWorkorder(workorder, DateTime.UtcNow);
-        }
-
-        public MachineWatchInterface.LogEntry RecordFinalizedWorkorder(string workorder, DateTime finalizedUTC)
-        {
-            var log = new MachineWatchInterface.LogEntry(
-                cntr: -1,
-                mat: new MachineWatchInterface.LogMaterial[] {},
-                pal: "",
-                ty: MachineWatchInterface.LogType.FinalizeWorkorder,
-                locName: "FinalizeWorkorder",
-                locNum: 1,
-                prog: "",
-                start: false,
-                endTime: finalizedUTC,
-                result: workorder,
-                endOfRoute: false);
-            lock (_lock)
-            {
-                var trans = _connection.BeginTransaction();
-                try
-                {
-                    log = AddStationCycle(trans, log, "", "");
-                    trans.Commit();
-                }
-                catch
-                {
-                    trans.Rollback();
-                    throw;
-                }
-            }
-            if (NewLogEntry != null)
-                NewLogEntry(log, "");
-            return log;
-        }
 
         public string WorkorderForMaterialID(long matID)
         {
@@ -1568,6 +1694,226 @@ namespace BlackMaple.MachineFramework
             }
         }
 
+        private void RecordWorkorderForMaterialID(IDbTransaction trans, long matID, string workorder)
+        {
+            var cmd = _connection.CreateCommand();
+            ((IDbCommand)cmd).Transaction = trans;
+            cmd.CommandText = "UPDATE materialid SET Workorder = $work WHERE MaterialID = $mat";
+            if (string.IsNullOrEmpty(workorder))
+                cmd.Parameters.Add("work", SqliteType.Text).Value = DBNull.Value;
+            else
+                cmd.Parameters.Add("work", SqliteType.Text).Value = workorder;
+            cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
+            cmd.ExecuteNonQuery();
+
+        }
+        #endregion
+
+        #region Queues
+
+        private IEnumerable<MachineWatchInterface.LogEntry> AddToQueue(IDbTransaction trans, long matId, int process, string queue, int position, DateTime timeUTC)
+        {
+            // lookup unique, part, and number of processes
+            string unique = "";
+            string part = "";
+            int numProc = -1;
+
+            using (var cmd = _connection.CreateCommand()) {
+                ((IDbCommand)cmd).Transaction = trans;
+
+                cmd.CommandText = "SELECT UniqueStr, Part, NumProcess FROM material WHERE MaterialID = $mid LIMIT 1";
+                cmd.Parameters.Add("mid", SqliteType.Integer).Value = matId;
+                using (var reader = cmd.ExecuteReader()) {
+                    if (reader.Read()) {
+                        if (!reader.IsDBNull(0)) unique = reader.GetString(0);
+                        if (!reader.IsDBNull(1)) part = reader.GetString(1);
+                        if (!reader.IsDBNull(2)) numProc = reader.GetInt32(2);
+                    }
+                }
+            }
+
+            var mat = new MachineWatchInterface.LogMaterial(
+                matID: matId,
+                uniq: unique,
+                proc: process,
+                part: part,
+                numProc: numProc
+            );
+
+            return AddToQueue(trans, mat, queue, position, timeUTC);
+        }
+
+        private IEnumerable<MachineWatchInterface.LogEntry> AddToQueue(IDbTransaction trans, MachineWatchInterface.LogMaterial mat, string queue, int position, DateTime timeUTC)
+        {
+            var ret = new List<MachineWatchInterface.LogEntry>();
+
+            ret.AddRange(RemoveFromAllQueues(trans, mat, timeUTC));
+
+            var log = new MachineWatchInterface.LogEntry(
+                cntr: -1,
+                mat: new [] {mat},
+                pal: "",
+                ty: MachineWatchInterface.LogType.AddToQueue,
+                locName: queue,
+                locNum: position,
+                prog: "",
+                start: false,
+                endTime: timeUTC,
+                result: "",
+                endOfRoute: false);
+
+            ret.Add(AddLogEntry(trans, log, null, null));
+
+            var cmd = _connection.CreateCommand();
+            ((IDbCommand)cmd).Transaction = trans;
+
+            if (position >= 0) {
+                cmd.CommandText = "UPDATE queues SET Position = Position + 1 " +
+                                    " WHERE Queue = $q AND Position >= $p";
+                cmd.Parameters.Add("q", SqliteType.Text).Value = queue;
+                cmd.Parameters.Add("p", SqliteType.Integer).Value = position;
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "INSERT INTO queues(MaterialID, Queue, Position) VALUES ($m, $q, $p)";
+                cmd.Parameters.Add("m", SqliteType.Integer).Value = mat.MaterialID;
+                cmd.ExecuteNonQuery();
+            } else {
+                cmd.CommandText =
+                    "INSERT INTO queues(MaterialID, Queue, Position) " +
+                    " VALUES ($m, $q, (SELECT IFNULL(MAX(Position) + 1, 0) FROM queues WHERE Queue = $q))";
+                cmd.Parameters.Add("m", SqliteType.Integer).Value = mat.MaterialID;
+                cmd.Parameters.Add("q", SqliteType.Text).Value = queue;
+                cmd.ExecuteNonQuery();
+            }
+
+            return ret;
+        }
+
+        private IEnumerable<MachineWatchInterface.LogEntry> RemoveFromAllQueues(IDbTransaction trans, long matID, DateTime timeUTC)
+        {
+            // lookup unique, part, and number of processes
+            string unique = "";
+            string part = "";
+            int numProc = -1;
+
+            using (var cmd = _connection.CreateCommand()) {
+                ((IDbCommand)cmd).Transaction = trans;
+
+                cmd.CommandText = "SELECT UniqueStr, Part, NumProcess FROM material WHERE MaterialID = $mid LIMIT 1";
+                cmd.Parameters.Add("mid", SqliteType.Integer).Value = matID;
+                using (var reader = cmd.ExecuteReader()) {
+                    if (reader.Read()) {
+                        if (!reader.IsDBNull(0)) unique = reader.GetString(0);
+                        if (!reader.IsDBNull(1)) part = reader.GetString(1);
+                        if (!reader.IsDBNull(2)) numProc = reader.GetInt32(2);
+                    }
+                }
+            }
+
+            var mat = new MachineWatchInterface.LogMaterial(
+                matID: matID,
+                uniq: unique,
+                proc: 1,
+                part: part,
+                numProc: numProc
+            );
+
+            return RemoveFromAllQueues(trans, mat, timeUTC);
+        }
+
+        private IEnumerable<MachineWatchInterface.LogEntry> RemoveFromAllQueues(IDbTransaction trans, MachineWatchInterface.LogMaterial mat, DateTime timeUTC)
+        {
+            using (var findCmd = _connection.CreateCommand())
+            using (var updatePosCmd = _connection.CreateCommand())
+            using (var deleteCmd = _connection.CreateCommand())
+            {
+                ((IDbCommand)findCmd).Transaction = trans;
+                findCmd.CommandText = "SELECT Queue, Position FROM queues WHERE MaterialID = $mid";
+                findCmd.Parameters.Add("mid", SqliteType.Integer).Value = mat.MaterialID;
+
+                ((IDbCommand)updatePosCmd).Transaction = trans;
+                updatePosCmd.CommandText =
+                    "UPDATE queues SET Position = Position - 1 " +
+                    " WHERE Queue = $q AND Position > $pos";
+                updatePosCmd.Parameters.Add("q", SqliteType.Text);
+                updatePosCmd.Parameters.Add("pos", SqliteType.Integer);
+
+                ((IDbCommand)deleteCmd).Transaction = trans;
+                deleteCmd.CommandText = "DELETE FROM queues WHERE MaterialID = $mid";
+                deleteCmd.Parameters.Add("mid", SqliteType.Integer).Value = mat.MaterialID;
+
+                var logs = new List<MachineWatchInterface.LogEntry>();
+
+                using (var reader = findCmd.ExecuteReader())
+                {
+                    while (reader.Read()) {
+                        var queue = reader.GetString(0);
+                        var pos = reader.GetInt32(1);
+
+                        var log = new MachineWatchInterface.LogEntry(
+                            cntr: -1,
+                            mat: new [] {mat},
+                            pal: "",
+                            ty: MachineWatchInterface.LogType.RemoveFromQueue,
+                            locName: queue,
+                            locNum: pos,
+                            prog: "",
+                            start: false,
+                            endTime: timeUTC,
+                            result: "",
+                            endOfRoute: false);
+
+                        log = AddLogEntry(trans, log, null, null);
+                        logs.Add(log);
+
+                        updatePosCmd.Parameters[0].Value = queue;
+                        updatePosCmd.Parameters[1].Value = pos;
+                        updatePosCmd.ExecuteNonQuery();
+                    }
+                }
+
+                deleteCmd.ExecuteNonQuery();
+
+                return logs;
+            }
+        }
+
+        public struct QueuedMaterial
+        {
+            public long MaterialID {get;set;}
+            public int Position {get;set;}
+        }
+
+        public IEnumerable<QueuedMaterial> GetMaterialInQueue(string queue)
+        {
+            lock (_lock)
+            {
+                var trans = _connection.BeginTransaction();
+                var ret = new List<QueuedMaterial>();
+                try
+                {
+                    var cmd = _connection.CreateCommand();
+                    cmd.Transaction = trans;
+                    cmd.CommandText = "SELECT MaterialID, Position FROM queues WHERE Queue = $q ORDER BY Position";
+                    cmd.Parameters.Add("q", SqliteType.Text).Value = queue;
+                    using (var reader = cmd.ExecuteReader()) {
+                        while (reader.Read()) {
+                            ret.Add(new QueuedMaterial() {
+                                MaterialID = reader.GetInt64(0),
+                                Position = reader.GetInt32(1)
+                            });
+                        }
+                    }
+                    trans.Commit();
+                    return ret;
+                }
+                catch
+                {
+                    trans.Rollback();
+                    throw;
+                }
+            }
+        }
         #endregion
 
         #region Pending Loads
@@ -1687,7 +2033,7 @@ namespace BlackMaple.MachineFramework
 
                     if (lastCycleTime == null || lastCycleTime == DBNull.Value || elapsedTime != TimeSpan.Zero)
                     {
-                        newEvts.Add(AddStationCycle(trans, new BlackMaple.MachineWatchInterface.LogEntry(
+                        newEvts.Add(AddLogEntry(trans, new BlackMaple.MachineWatchInterface.LogEntry(
                             cntr: -1,
                             mat: new List<BlackMaple.MachineWatchInterface.LogMaterial>(),
                             pal: pal,
@@ -1725,7 +2071,7 @@ namespace BlackMaple.MachineFramework
                             var key = reader.GetString(0);
                             if (mat.ContainsKey(key))
                             {
-                                newEvts.Add(AddStationCycle(trans, new BlackMaple.MachineWatchInterface.LogEntry(
+                                newEvts.Add(AddLogEntry(trans, new BlackMaple.MachineWatchInterface.LogEntry(
                                     cntr: -1,
                                     mat: mat[key],
                                     pal: pal,
@@ -1761,7 +2107,7 @@ namespace BlackMaple.MachineFramework
                                         var serial = ConvertToBase62(matID);
                                         serial = serial.Substring(0, Math.Min(serLength, serial.Length));
                                         serial = serial.PadLeft(serLength, '0');
-                                        newEvts.Add(AddStationCycle(trans, new MachineWatchInterface.LogEntry(-1,
+                                        newEvts.Add(AddLogEntry(trans, new MachineWatchInterface.LogEntry(-1,
                                             mat[key],
                                             "",
                                             MachineWatchInterface.LogType.PartMark, "Mark", 1,
@@ -1787,7 +2133,7 @@ namespace BlackMaple.MachineFramework
                                         serial = serial.Substring(0, Math.Min(serLength, serial.Length));
                                         serial = serial.PadLeft(serLength, '0');
                                         if (m.MaterialID < 0) continue;
-                                        newEvts.Add(AddStationCycle(trans, new MachineWatchInterface.LogEntry(-1,
+                                        newEvts.Add(AddLogEntry(trans, new MachineWatchInterface.LogEntry(-1,
                                             new BlackMaple.MachineWatchInterface.LogMaterial[] {m},
                                             "",
                                             MachineWatchInterface.LogType.PartMark, "Mark", 1,
@@ -2173,21 +2519,9 @@ namespace BlackMaple.MachineFramework
             IEnumerable<MachineWatchInterface.JobInspectionData> inspections,
             DateTime? mutcNow = null)
         {
-            List<MachineWatchInterface.LogEntry> logs;
-            lock (_lock)
-            {
-                var trans = _connection.BeginTransaction();
-                try {
-                    logs = MakeInspectionDecisions(trans, matID, uniqueStr, partName, process, inspections, mutcNow);
-                    trans.Commit();
-                } catch {
-                    trans.Rollback();
-                    throw;
-                }
-            }
-
-            foreach (var l in logs)
-                NewLogEntry?.Invoke(l, null);
+            AddEntryInTransaction(trans =>
+                MakeInspectionDecisions(trans, matID, uniqueStr, partName, process, inspections, mutcNow)
+            );
         }
 
         private List<MachineWatchInterface.LogEntry> MakeInspectionDecisions(
@@ -2311,7 +2645,7 @@ namespace BlackMaple.MachineFramework
             log.ProgramDetails["InspectionType"] = inspType;
             log.ProgramDetails["ActualPath"] = Newtonsoft.Json.JsonConvert.SerializeObject(pathSteps);
 
-            log = AddStationCycle(trans, log, null, null);
+            log = AddLogEntry(trans, log, null, null);
 
             return log;
         }
@@ -2334,27 +2668,9 @@ namespace BlackMaple.MachineFramework
         public MachineWatchInterface.LogEntry ForceInspection(
             MachineWatchInterface.LogMaterial mat, string inspType, bool inspect, DateTime utcNow)
         {
-            MachineWatchInterface.LogEntry log;
-            lock (_lock)
-            {
-                var trans = _connection.BeginTransaction();
-
-                try
-                {
-                    log = RecordForceInspection(trans, mat, inspType, inspect, utcNow);
-                    trans.Commit();
-                }
-                catch
-                {
-                    trans.Rollback();
-                    throw;
-                }
-            }
-
-            if (NewLogEntry != null)
-                NewLogEntry(log, null);
-
-            return log;
+            return AddEntryInTransaction(trans =>
+                RecordForceInspection(trans, mat, inspType, inspect, utcNow)
+            );
         }
 
         private MachineWatchInterface.LogEntry RecordForceInspection(
@@ -2373,7 +2689,7 @@ namespace BlackMaple.MachineFramework
                 endTime: utcNow,
                 result: inspect.ToString(),
                 endOfRoute: false);
-            return AddStationCycle(trans, log, null, null);
+            return AddLogEntry(trans, log, null, null);
         }
 
         public void NextPieceInspection(MachineWatchInterface.PalletLocation palLoc, string inspType)

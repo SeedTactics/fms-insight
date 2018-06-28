@@ -33,10 +33,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 using Microsoft.Data.Sqlite;
 using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
+using FluentAssertions;
 
 namespace MachineWatchTest
 {
@@ -57,53 +59,6 @@ namespace MachineWatchTest
             _jobLog.Close();
         }
 
-        /*
-        public class IgnoreEmptyCollection : Newtonsoft.Json.Serialization.DefaultContractResolver
-        {
-            public static IgnoreEmptyCollection Instance = new IgnoreEmptyCollection();
-            protected override Newtonsoft.Json.Serialization.JsonProperty CreateProperty(System.Reflection.MemberInfo member, MemberSerialization memberSerialization)
-            {
-                var property = base.CreateProperty(member, memberSerialization);
-                Predicate<object> checkEmpty = obj =>
-                {
-                    var collection = property.ValueProvider.GetValue(obj) as System.Collections.ICollection;
-                    return collection == null || collection.Count != 0;
-                };
-                if (property.ShouldSerialize == null)
-                {
-                    property.ShouldSerialize = checkEmpty;
-                }
-                else
-                {
-                    Predicate<object> oldShouldSerialize = property.ShouldSerialize;
-                    property.ShouldSerialize = o => oldShouldSerialize(o) && checkEmpty(o);
-                }
-                return property;
-            }
-        }
-        public void PrintLog(LogEntry log)
-        {
-            var str = JsonConvert.SerializeObject(log,
-                                                  Formatting.Indented,
-                                                  new Newtonsoft.Json.JsonSerializerSettings
-                                                  { //DefaultValueHandling = DefaultValueHandling.Ignore,
-                                                    Converters = new JsonConverter[] { new Newtonsoft.Json.Converters.StringEnumConverter() }
-                                                    //ContractResolver = IgnoreEmptyCollection.Instance
-                                                });
-            Console.WriteLine("XXXXX " + str);
-
-            //var settings = new System.Runtime.Serialization.Json.DataContractJsonSerializerSettings {
-            //    DateTimeFormat = new System.Runtime.Serialization.DateTimeFormat("yyyy-MM-ddTHH:mm:ssZ"),
-            //};
-            //var serializer = new System.Runtime.Serialization.Json.DataContractJsonSerializer(log.GetType(), settings);
-            //System.IO.MemoryStream ms = new System.IO.MemoryStream();
-            //serializer.WriteObject(ms, log);
-            //Console.WriteLine("YYYYYY" + ": " + System.Text.Encoding.UTF8.GetString(ms.ToArray()));
-            var stat = JsonConvert.DeserializeObject<LogEntry>(str);
-            var str2 = JsonConvert.SerializeObject(stat, Formatting.Indented);
-            Console.WriteLine("XXXXX " + str2);
-    }*/
-
         [Fact]
         public void MaterialIDs()
         {
@@ -122,70 +77,147 @@ namespace MachineWatchTest
             Assert.Equal(DateTime.MinValue, _jobLog.MaxLogDate());
 
             System.DateTime start = DateTime.UtcNow.AddHours(-10);
-            System.DateTime last = DateTime.MinValue;
 
             List<LogEntry> logs = new List<LogEntry>();
             var logsForMat1 = new List<LogEntry>();
 
-            LogMaterial mat1 = new LogMaterial(19, "unique", 2, "pp1", 53, "face55");
-            LogMaterial mat2 = new LogMaterial(1, "grgaegr", 7, "pp2", 23, "face22");
+            LogMaterial mat1 = new LogMaterial(1, "grgaegr", 7, "pp2", 23, "face22");
+            LogMaterial mat19 = new LogMaterial(19, "unique", 2, "pp1", 53, "face55");
 
-            var log = new LogEntry(12, new LogMaterial[] { mat1, mat2 }, "pal",
-                                LogType.LoadUnloadCycle, "Load", 2,
-                                "pppe", false, start.AddHours(1), "ress", true);
-            logs.Add(log);
-            logsForMat1.Add(log);
+            var loadStartActualCycle = _jobLog.RecordLoadStart(
+                mats: new[] {mat1, mat19},
+                pallet: "pal",
+                lulNum: 2,
+                timeUTC: start.AddHours(1)
+            );
+            loadStartActualCycle.ShouldBeEquivalentTo(
+                new LogEntry(
+                    loadStartActualCycle.Counter, new LogMaterial[] { mat1, mat19 }, "pal",
+                    LogType.LoadUnloadCycle, "L/U", 2,
+                    "LOAD", true, start.AddHours(1), "LOAD", false)
+            );
+            logs.Add(loadStartActualCycle);
+            logsForMat1.Add(loadStartActualCycle);
 
-            mat1 = new LogMaterial(15, "qghr4e", 3, "ppp532", 14);
-            mat2 = new LogMaterial(2, "ahre", 1, "gewoiweg", 13);
+            var mat2 = new LogMaterial(2, "ahre", 1, "gewoiweg", 13);
+            var mat15 = new LogMaterial(15, "qghr4e", 3, "ppp532", 14);
 
-            logs.Add(new LogEntry(1166, new LogMaterial[] { mat1, mat2 }, "gherr",
-                                LogType.MachineCycle, "MC", 16,
-                                "ehr", true, start.AddHours(3), "geehr", false, TimeSpan.FromMinutes(55), TimeSpan.Zero));
+            var loadEndActualCycle = _jobLog.RecordLoadEnd(
+                mats: new[] {mat2, mat15},
+                pallet: "aaaa",
+                lulNum: 16,
+                timeUTC: start.AddHours(3),
+                elapsed: TimeSpan.FromMinutes(52),
+                active: TimeSpan.FromMinutes(25)
+            );
+            loadEndActualCycle.ShouldBeEquivalentTo( new [] {
+                new LogEntry(
+                    loadEndActualCycle.First().Counter, new LogMaterial[] { mat2, mat15 }, "aaaa",
+                    LogType.LoadUnloadCycle, "L/U", 16,
+                    "LOAD", false, start.AddHours(3), "LOAD", false,
+                    TimeSpan.FromMinutes(52), TimeSpan.FromMinutes(25))
+            });
+            logs.Add(loadEndActualCycle.First());
 
-            mat1 = new LogMaterial(1, "ehet", 1, "gweg", 12);
+            var machineStartActualCycle = _jobLog.RecordMachineStart(
+                mats: new[] {mat15},
+                pallet: "rrrr",
+                statName: "ssssss",
+                statNum: 152,
+                program: "progggg",
+                timeUTC: start.AddHours(5).AddMinutes(10)
+            );
+            machineStartActualCycle.ShouldBeEquivalentTo(
+                new LogEntry(
+                    machineStartActualCycle.Counter, new LogMaterial[] { mat15 }, "rrrr",
+                    LogType.MachineCycle, "ssssss", 152,
+                    "progggg", true, start.AddHours(5).AddMinutes(10), "", false)
+            );
+            logs.Add(machineStartActualCycle);
 
-            log = new LogEntry(1622, new LogMaterial[] { mat1 }, "sht", LogType.GeneralMessage, "ABC", 1,
-                             "heert", false, start.AddHours(5).AddMinutes(10), "sthrt", false, TimeSpan.FromMinutes(19), TimeSpan.FromMinutes(12));
-            logs.Add(log);
-            logsForMat1.Add(log);
+            var machineEndActualCycle = _jobLog.RecordMachineEnd(
+                mats: new[] {mat2},
+                pallet: "www",
+                statName: "xxx",
+                statNum: 177,
+                program: "progggg",
+                result: "4444",
+                timeUTC: start.AddHours(5).AddMinutes(19),
+                elapsed: TimeSpan.FromMinutes(12),
+                active: TimeSpan.FromMinutes(99),
+                extraData: new Dictionary<string, string>() {
+                    {"aa", "AA"}, {"bb", "BB"}
+                }
+            );
+            var machineEndExpectedCycle =
+                new LogEntry(
+                    machineEndActualCycle.Counter, new LogMaterial[] { mat2 }, "www",
+                    LogType.MachineCycle, "xxx", 177,
+                    "progggg", false, start.AddHours(5).AddMinutes(19), "4444", false,
+                    TimeSpan.FromMinutes(12), TimeSpan.FromMinutes(99));
+            machineEndExpectedCycle.ProgramDetails["aa"] = "AA";
+            machineEndExpectedCycle.ProgramDetails["bb"] = "BB";
+            machineEndActualCycle.ShouldBeEquivalentTo(machineEndExpectedCycle);
+            logs.Add(machineEndActualCycle);
 
-            mat1 = new LogMaterial(1562, "hree", 6, "gaherher", 32);
+            var unloadStartActualCycle = _jobLog.RecordUnloadStart(
+                mats: new[] {mat15, mat19},
+                pallet: "rrr",
+                lulNum: 87,
+                timeUTC: start.AddHours(6).AddMinutes(10)
+            );
+            unloadStartActualCycle.ShouldBeEquivalentTo(
+                new LogEntry(
+                    unloadStartActualCycle.Counter, new LogMaterial[] { mat15, mat19 }, "rrr",
+                    LogType.LoadUnloadCycle, "L/U", 87,
+                    "UNLOAD", true, start.AddHours(6).AddMinutes(10), "UNLOAD", false)
+            );
+            logs.Add(unloadStartActualCycle);
 
-            log = new LogEntry(1234, new LogMaterial[] { mat1 }, "jtryr", LogType.PartMark, "Mark", 8,
-                                 "gh4rer", true, start.AddHours(7), "weferg", true);
-            log.ProgramDetails["1"] = "one";
-            log.ProgramDetails["2"] = "two";
-            log.ProgramDetails["3"] = "three";
-            logs.Add(log);
+            var unloadEndActualCycle = _jobLog.RecordUnloadEnd(
+                mats: new[] {mat2, mat19},
+                pallet: "bb",
+                lulNum: 14,
+                timeUTC: start.AddHours(7),
+                elapsed: TimeSpan.FromMinutes(152),
+                active: TimeSpan.FromMinutes(55)
+            );
+            unloadEndActualCycle.ShouldBeEquivalentTo( new [] {
+                new LogEntry(
+                    unloadEndActualCycle.First().Counter, new LogMaterial[] { mat2, mat19 }, "bb",
+                    LogType.LoadUnloadCycle, "L/U", 14,
+                    "UNLOAD", false, start.AddHours(7), "UNLOAD", true,
+                    TimeSpan.FromMinutes(152), TimeSpan.FromMinutes(55))
+            });
+            logs.Add(unloadEndActualCycle.First());
 
-            last = AddLog(logs);
 
-            Assert.Equal(last, _jobLog.MaxLogDate());
+            // ----- check loading of logs -----
+
+            Assert.Equal(start.AddHours(7), _jobLog.MaxLogDate());
 
             IList<LogEntry> otherLogs = null;
 
             otherLogs = _jobLog.GetLogEntries(start, DateTime.UtcNow);
-            long maxCtr = CheckLog(logs, otherLogs, start);
+            CheckLog(logs, otherLogs, start);
 
             otherLogs = _jobLog.GetLogEntries(start.AddHours(5), DateTime.UtcNow);
             CheckLog(logs, otherLogs, start.AddHours(5));
 
-            otherLogs = _jobLog.GetLog(maxCtr - 2);
+            otherLogs = _jobLog.GetLog(loadEndActualCycle.First().Counter);
             CheckLog(logs, otherLogs, start.AddHours(5));
 
-            otherLogs = _jobLog.GetLog(maxCtr - 1);
+            otherLogs = _jobLog.GetLog(unloadStartActualCycle.Counter);
             CheckLog(logs, otherLogs, start.AddHours(6.5));
 
-            otherLogs = _jobLog.GetLog(maxCtr);
+            otherLogs = _jobLog.GetLog(unloadEndActualCycle.First().Counter);
             Assert.Equal(0, otherLogs.Count);
 
             foreach (var c in logs)
-                Assert.True(_jobLog.CycleExists(c), "Checking " + c.EndTimeUTC.ToString());
+                Assert.True(_jobLog.CycleExists(c.EndTimeUTC, c.Pallet, c.LogType, c.LocationName, c.LocationNum), "Checking " + c.EndTimeUTC.ToString());
 
-            Assert.False(_jobLog.CycleExists(new LogEntry(
-        -1, new LogMaterial[] { }, "Palll", LogType.MachineCycle, "MC", 3,
-                "Program", false, DateTime.Parse("4/6/2011"), "", false)));
+            Assert.False(_jobLog.CycleExists(
+                DateTime.Parse("4/6/2011"), "Pallll", LogType.MachineCycle, "MC", 3));
 
             CheckLog(logsForMat1, _jobLog.GetLogForMaterial(1), start);
             Assert.Equal(_jobLog.GetLogForMaterial(18).Count, 0);
@@ -232,35 +264,6 @@ namespace MachineWatchTest
 
             CheckLog(logsForMat1, _jobLog.GetLogForJobUnique("uniqformat1"), start);
         }
-
-        /*
-          [Fact]
-          public void Serialization()
-          {
-              System.DateTime start = DateTime.UtcNow.AddHours(-10);
-
-              LogMaterial mat1 = new LogMaterial(1, "unique", 2, "pp1", 53, "face111");
-              LogMaterial mat2 = new LogMaterial(17, "grgaegr", 7, "pp2", 23, "face4423");
-
-              var c = new LogEntry(12, new LogMaterial[] { mat1, mat2 }, "pal",
-                                 LogType.LoadUnloadCycle, "Load", 2,
-                                 "pppe", false, start.AddHours(1), "ress", true);
-              c.ProgramDetails["a"] = "z";
-              c.ProgramDetails["b"] = "y";
-
-              var formatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
-
-              var stream = new System.IO.MemoryStream();
-
-              formatter.Serialize(stream, c);
-
-              stream.Seek(0, System.IO.SeekOrigin.Begin);
-
-              LogEntry cload =
-                  (LogEntry) formatter.Deserialize(stream);
-
-              CheckEqual(c, cload);
-          }*/
 
         [Fact]
         public void LookupByPallet()
@@ -390,7 +393,7 @@ namespace MachineWatchTest
                 "result",
                 true)); //end of route
 
-            _jobLog.AddLogEntry(pal1Cycle[pal1Cycle.Count - 1]);
+            _jobLog.AddLogEntryFromUnitTest(pal1Cycle[pal1Cycle.Count - 1]);
 
             CheckLog(pal1Cycle, _jobLog.CurrentPalletLog("pal1"), DateTime.UtcNow.AddHours(-10));
             CheckLog(pal2Cycle, _jobLog.CurrentPalletLog("pal2"), DateTime.UtcNow.AddHours(-10));
@@ -426,11 +429,11 @@ namespace MachineWatchTest
                                   "prog3", false, DateTime.UtcNow, "result3", false, TimeSpan.FromMinutes(20), TimeSpan.FromMinutes(21));
 
             Assert.Equal("", _jobLog.MaxForeignID());
-            _jobLog.AddStationCycle(log1, "for1");
+            _jobLog.AddLogEntryFromUnitTest(log1, "for1");
             Assert.Equal("for1", _jobLog.MaxForeignID());
-            _jobLog.AddStationCycle(log2, "for2");
+            _jobLog.AddLogEntryFromUnitTest(log2, "for2");
             Assert.Equal("for2", _jobLog.MaxForeignID());
-            _jobLog.AddLogEntry(log3);
+            _jobLog.AddLogEntryFromUnitTest(log3);
             Assert.Equal("for2", _jobLog.MaxForeignID());
             _jobLog.AddPendingLoad("p", "k", 1, TimeSpan.Zero, TimeSpan.Zero, "for4");
             Assert.Equal("for4", _jobLog.MaxForeignID());
@@ -471,18 +474,14 @@ namespace MachineWatchTest
             var log1 = new LogEntry(0, new LogMaterial[] { mat1, mat2 },
                                   "palllet16", LogType.GeneralMessage, "Hello", 5,
                                   "program125", false, DateTime.UtcNow, "result66", false, TimeSpan.FromMinutes(166), TimeSpan.FromMinutes(74));
-            var log2 = new LogEntry(0, new LogMaterial[] { mat1, mat2 },
-                                  "pall53", LogType.MachineCycle, "MC", 9,
-                                  "prog55", false, DateTime.UtcNow, "result", false, TimeSpan.FromMinutes(63), TimeSpan.FromMinutes(53));
 
             Assert.Equal("", _jobLog.MaxForeignID());
-            _jobLog.AddStationCycles(new LogEntry[] { log1, log2 }, "foreign1", "the original message");
+            _jobLog.AddLogEntryFromUnitTest(log1, "foreign1", "the original message");
             Assert.Equal("foreign1", _jobLog.MaxForeignID());
 
             var load1 = _jobLog.StationLogByForeignID("foreign1");
-            Assert.Equal(2, load1.Count);
+            Assert.Equal(1, load1.Count);
             CheckEqual(log1, load1[0]);
-            CheckEqual(log2, load1[1]);
 
             Assert.Equal("the original message", _jobLog.OriginalMessageByForeignID("foreign1"));
             Assert.Equal("", _jobLog.OriginalMessageByForeignID("abc"));
@@ -510,8 +509,8 @@ namespace MachineWatchTest
                                   "pal2", LogType.MachineCycle, "MC", 1,
                                   "prog2", false, t.AddMinutes(20), "result2", false, TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(17));
 
-            _jobLog.AddLogEntry(log1);
-            _jobLog.AddLogEntry(log2);
+            _jobLog.AddLogEntryFromUnitTest(log1);
+            _jobLog.AddLogEntryFromUnitTest(log2);
 
             _jobLog.AddPendingLoad("pal1", "key1", 5, TimeSpan.FromMinutes(32), TimeSpan.FromMinutes(38), "for1");
             _jobLog.AddPendingLoad("pal1", "key2", 7, TimeSpan.FromMinutes(44), TimeSpan.FromMinutes(49), "for2");
@@ -591,8 +590,8 @@ namespace MachineWatchTest
                                   "pal2", LogType.MachineCycle, "MC", 1,
                                   "prog2", false, t.AddMinutes(20), "result2", false, TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(22));
 
-            _jobLog.AddLogEntry(log1);
-            _jobLog.AddLogEntry(log2);
+            _jobLog.AddLogEntryFromUnitTest(log1);
+            _jobLog.AddLogEntryFromUnitTest(log2);
 
             _jobLog.AddPendingLoad("pal1", "key1", 5, TimeSpan.FromMinutes(32), TimeSpan.FromMinutes(38), "for1");
             _jobLog.AddPendingLoad("pal1", "key2", 7, TimeSpan.FromMinutes(44), TimeSpan.FromMinutes(49), "for2");
@@ -647,19 +646,19 @@ namespace MachineWatchTest
             var mat2_proc1 = new LogMaterial(_jobLog.AllocateMaterialID("uniq1"), "uniq1", 1, "part1", 2);
 
 			//not adding all events, but at least one non-endofroute and one endofroute
-			_jobLog.AddLogEntry(
+			_jobLog.AddLogEntryFromUnitTest(
 				new LogEntry(0, new LogMaterial[] { mat1_proc1 },
                              "pal1", LogType.MachineCycle, "MC", 5, "prog1", false,
                              t.AddMinutes(5), "", false,
 							 TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(20))
 			);
-			_jobLog.AddLogEntry(
+			_jobLog.AddLogEntryFromUnitTest(
 				new LogEntry(0, new LogMaterial[] { mat1_proc2 },
                              "pal1", LogType.MachineCycle, "MC", 5, "prog2", false,
                              t.AddMinutes(6), "", false,
 							 TimeSpan.FromMinutes(30), TimeSpan.FromMinutes(40))
 			);
-			_jobLog.AddLogEntry(
+			_jobLog.AddLogEntryFromUnitTest(
 				new LogEntry(0, new LogMaterial[] { mat1_proc2, mat2_proc1 }, //mat2_proc1 should be ignored since it isn't final process
                              "pal1", LogType.LoadUnloadCycle, "Load", 5, "UNLOAD", false,
                              t.AddMinutes(7), "UNLOAD", false,
@@ -672,13 +671,13 @@ namespace MachineWatchTest
 			var mat5 = new LogMaterial(_jobLog.AllocateMaterialID("uniq2"), "uniq2", 1, "part3", 1);
 			var mat6 = new LogMaterial(_jobLog.AllocateMaterialID("uniq2"), "uniq2", 1, "part3", 1);
 
-			_jobLog.AddLogEntry(
+			_jobLog.AddLogEntryFromUnitTest(
 				new LogEntry(0, new LogMaterial[] { mat3, mat4, mat5, mat6 },
                              "pal1", LogType.MachineCycle, "MC", 5, "progdouble", false,
                              t.AddMinutes(15), "", false,
 							 TimeSpan.FromMinutes(3), TimeSpan.FromMinutes(4))
 			);
-			_jobLog.AddLogEntry(
+			_jobLog.AddLogEntryFromUnitTest(
 				new LogEntry(0, new LogMaterial[] { mat3, mat4, mat5, mat6 },
                              "pal1", LogType.LoadUnloadCycle, "Load", 5, "UNLOAD", false,
                              t.AddMinutes(17), "UNLOAD", false,
@@ -869,10 +868,184 @@ namespace MachineWatchTest
               DateTime.MinValue);
         }
 
+        [Fact]
+        public void Queues()
+        {
+            var start = DateTime.UtcNow.AddHours(-10);
+
+            var otherQueueMat = new LogMaterial(100, "uniq100", 100, "part100", 100);
+            _jobLog.RecordAddMaterialToQueue(otherQueueMat, "BBBB", 0, start.AddHours(-1))
+                .ShouldAllBeEquivalentTo(new [] {AddToQueueExpectedEntry(otherQueueMat, 1, "BBBB", 0, start.AddHours(-1))});
+
+
+            var expectedLogs = new List<LogEntry>();
+
+            var mat1 = new LogMaterial(1, "uniq1", 15, "part111", 19);
+            var mat2 = new LogMaterial(2, "uniq2", 1, "part2", 22);
+            var mat3 = new LogMaterial(3, "uniq3", 3, "part3", 36);
+
+            // add via LogMaterial with position -1
+            _jobLog.RecordAddMaterialToQueue(mat1, "AAAA", -1, start)
+                .ShouldAllBeEquivalentTo(new [] {AddToQueueExpectedEntry(mat1, 2, "AAAA", -1, start)});
+            expectedLogs.Add(AddToQueueExpectedEntry(mat1, 2, "AAAA", -1, start));
+
+            _jobLog.GetMaterialInQueue("AAAA")
+                .ShouldAllBeEquivalentTo(new [] {
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Position = 0}
+                });
+
+            //adding with LogMaterial with position -1 and existing queue
+            _jobLog.RecordAddMaterialToQueue(mat2, "AAAA", -1, start.AddMinutes(10))
+                .ShouldAllBeEquivalentTo(new [] {AddToQueueExpectedEntry(mat2, 3, "AAAA", -1, start.AddMinutes(10))});
+            expectedLogs.Add(AddToQueueExpectedEntry(mat2, 3, "AAAA", -1, start.AddMinutes(10)));
+
+            _jobLog.GetMaterialInQueue("AAAA")
+                .ShouldAllBeEquivalentTo(new [] {
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Position = 0},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Position = 1}
+                });
+
+
+            //inserting into queue with LogMaterial
+            _jobLog.RecordAddMaterialToQueue(mat3, "AAAA", 1, start.AddMinutes(20))
+                .ShouldAllBeEquivalentTo(new [] {AddToQueueExpectedEntry(mat3, 4, "AAAA", 1, start.AddMinutes(20))});
+            expectedLogs.Add(AddToQueueExpectedEntry(mat3, 4, "AAAA", 1, start.AddMinutes(20)));
+
+            _jobLog.GetMaterialInQueue("AAAA")
+                .ShouldAllBeEquivalentTo(new [] {
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Position = 0},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Position = 1},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Position = 2}
+                });
+
+            //removing from queue with LogMaterial
+            _jobLog.RecordRemoveMaterialFromAllQueues(mat3, start.AddMinutes(30))
+                .ShouldAllBeEquivalentTo(new [] {RemoveFromQueueExpectedEntry(mat3, 5, "AAAA", 1, start.AddMinutes(30))});
+            expectedLogs.Add(RemoveFromQueueExpectedEntry(mat3, 5, "AAAA", 1, start.AddMinutes(30)));
+
+            _jobLog.GetMaterialInQueue("AAAA")
+                .ShouldAllBeEquivalentTo(new [] {
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Position = 0},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Position = 1}
+                });
+
+
+            //add back in with matid only
+            _jobLog.RecordAddMaterialToQueue(mat3.MaterialID, mat3.Process, "AAAA", 2, start.AddMinutes(40))
+                .ShouldAllBeEquivalentTo(new [] {AddToQueueExpectedEntry(mat3, 6, "AAAA", 2, start.AddMinutes(40))});
+            expectedLogs.Add(AddToQueueExpectedEntry(mat3, 6, "AAAA", 2, start.AddMinutes(40)));
+
+            _jobLog.GetMaterialInQueue("AAAA")
+                .ShouldAllBeEquivalentTo(new [] {
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Position = 0},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Position = 1},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Position = 2}
+                });
+
+            //add also removes from queue (rearrange material 1)
+            _jobLog.RecordAddMaterialToQueue(mat1, "AAAA", 2, start.AddMinutes(50))
+                .ShouldAllBeEquivalentTo(new [] {
+                    RemoveFromQueueExpectedEntry(mat1, 7, "AAAA", 0, start.AddMinutes(50)),
+                    AddToQueueExpectedEntry(mat1, 8, "AAAA", 2, start.AddMinutes(50))
+                });
+            expectedLogs.Add(RemoveFromQueueExpectedEntry(mat1, 7, "AAAA", 0, start.AddMinutes(50)));
+            expectedLogs.Add(AddToQueueExpectedEntry(mat1, 8, "AAAA", 2, start.AddMinutes(50)));
+
+            _jobLog.GetMaterialInQueue("AAAA")
+                .ShouldAllBeEquivalentTo(new [] {
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Position = 0},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Position = 1},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Position = 2}
+                });
+
+            //removing from queue with matid
+            _jobLog.RecordRemoveMaterialFromAllQueues(mat2.MaterialID, start.AddMinutes(60))
+                .ShouldAllBeEquivalentTo(new [] {RemoveFromQueueExpectedEntry(mat2, 9, "AAAA", 0, start.AddMinutes(60))});
+            expectedLogs.Add(RemoveFromQueueExpectedEntry(mat2, 9, "AAAA", 0, start.AddMinutes(60)));
+
+            _jobLog.GetMaterialInQueue("AAAA")
+                .ShouldAllBeEquivalentTo(new [] {
+                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Position = 0},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Position = 1}
+                });
+
+
+            _jobLog.GetLogEntries(start, DateTime.UtcNow)
+                .ShouldAllBeEquivalentTo(expectedLogs);
+        }
+
+        [Fact]
+        public void LoadUnloadIntoQueues()
+        {
+            var start = DateTime.UtcNow.AddHours(-10);
+            var expectedLogs = new List<LogEntry>();
+
+            var mat1 = new LogMaterial(1, "uniq1", 15, "part111", 19);
+            var mat2 = new LogMaterial(2, "uniq2", 1, "part2", 22);
+            var mat3 = new LogMaterial(3, "uniq3", 3, "part3", 36);
+            var mat4 = new LogMaterial(4, "uniq4", 4, "part4", 47);
+
+            // add two material into queue 1
+            _jobLog.RecordAddMaterialToQueue(mat1, "AAAA", -1, start);
+            expectedLogs.Add(AddToQueueExpectedEntry(mat1, 1, "AAAA", -1, start));
+            _jobLog.RecordAddMaterialToQueue(mat2, "AAAA", -1, start);
+            expectedLogs.Add(AddToQueueExpectedEntry(mat2, 2, "AAAA", -1, start));
+
+            _jobLog.GetMaterialInQueue("AAAA")
+                .ShouldAllBeEquivalentTo(new [] {
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Position = 0},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Position = 1}
+                });
+
+
+            // loading should remove from queue
+            var loadEndActual = _jobLog.RecordLoadEnd(new[] {mat1}, "pal1", 16, start.AddMinutes(10), TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(20));
+            loadEndActual.ShouldAllBeEquivalentTo(new [] {
+                new LogEntry(3, new [] {mat1}, "pal1",
+                    LogType.LoadUnloadCycle, "L/U", 16,
+                    "LOAD", false, start.AddMinutes(10), "LOAD", false,
+                    TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(20)),
+
+                RemoveFromQueueExpectedEntry(mat1, 4, "AAAA", 0, start.AddMinutes(10))
+            });
+            expectedLogs.AddRange(loadEndActual);
+
+            _jobLog.GetMaterialInQueue("AAAA")
+                .ShouldAllBeEquivalentTo(new [] {
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Position = 0}
+                });
+
+            //unloading should add to queue
+            var unloadEndActual = _jobLog.RecordUnloadEnd(
+                new[] {mat1, mat3, mat4}, "pal5", 77, start.AddMinutes(30), TimeSpan.FromMinutes(52), TimeSpan.FromMinutes(23),
+                new Dictionary<long, string>() { {1, "AAAA"}, {3, "AAAA"}});
+            unloadEndActual.ShouldAllBeEquivalentTo(new [] {
+                new LogEntry(7, new [] {mat1, mat3, mat4}, "pal5",
+                    LogType.LoadUnloadCycle, "L/U", 77,
+                    "UNLOAD", false, start.AddMinutes(30), "UNLOAD", true,
+                    TimeSpan.FromMinutes(52), TimeSpan.FromMinutes(23)),
+
+                AddToQueueExpectedEntry(mat1, 5, "AAAA", -1, start.AddMinutes(30)),
+                AddToQueueExpectedEntry(mat3, 6, "AAAA", -1, start.AddMinutes(30)),
+            });
+            expectedLogs.AddRange(unloadEndActual);
+
+            _jobLog.GetMaterialInQueue("AAAA")
+                .ShouldAllBeEquivalentTo(new [] {
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Position = 0},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Position = 1},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Position = 2}
+                });
+
+
+            _jobLog.GetLogEntries(start, DateTime.UtcNow)
+                .ShouldAllBeEquivalentTo(expectedLogs);
+        }
+
         #region Helpers
         private LogEntry AddLogEntry(LogEntry l)
         {
-            _jobLog.AddLogEntry(l);
+            _jobLog.AddLogEntryFromUnitTest(l);
             return l;
         }
 
@@ -882,7 +1055,7 @@ namespace MachineWatchTest
 
             foreach (var l in logs)
             {
-                _jobLog.AddLogEntry(l);
+                _jobLog.AddLogEntryFromUnitTest(l);
 
                 if (l.EndTimeUTC > last)
                 {
@@ -988,6 +1161,38 @@ namespace MachineWatchTest
             {
                 return false;
             }
+        }
+
+        private LogEntry AddToQueueExpectedEntry(LogMaterial mat, long cntr, string queue, int position, DateTime timeUTC)
+        {
+            return new LogEntry(
+                cntr: cntr,
+                mat: new [] {mat},
+                pal: "",
+                ty: LogType.AddToQueue,
+                locName: queue,
+                locNum: position,
+                prog: "",
+                start: false,
+                endTime: timeUTC,
+                result: "",
+                endOfRoute: false);
+        }
+
+        private LogEntry RemoveFromQueueExpectedEntry(LogMaterial mat, long cntr, string queue, int position, DateTime timeUTC)
+        {
+            return new LogEntry(
+                cntr: cntr,
+                mat: new [] {mat},
+                pal: "",
+                ty: LogType.RemoveFromQueue,
+                locName: queue,
+                locNum: position,
+                prog: "",
+                start: false,
+                endTime: timeUTC,
+                result: "",
+                endOfRoute: false);
         }
         #endregion
     }

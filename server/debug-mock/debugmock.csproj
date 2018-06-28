@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
+    <PackageId>BlackMaple.MachineFramework.DebugMock</PackageId>
+    <AssemblyName>BlackMaple.MachineFramework.DebugMock</AssemblyName>
     <TargetFramework>netcoreapp2.1</TargetFramework>
   </PropertyGroup>
 

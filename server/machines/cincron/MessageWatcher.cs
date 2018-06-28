@@ -146,19 +146,16 @@ namespace Cincron
                 && queueChange.CurrentLocation.Location == PalletLocationEnum.Machine
                 && queueChange.NewQueuePosition == "10010") {
 
-                _log.AddStationCycle(new LogEntry(
-                     cntr: 0,
-                     mat: FindMaterial(queueChange.Pallet),
-                     pal: queueChange.Pallet,
-                     ty: LogType.MachineCycle,
-                     locName: "MC",
-                     locNum: queueChange.CurrentLocation.Num,
-                     prog: "",
-                     start: true,
-                     endTime: queueChange.TimeUTC,
-                     result: "",
-                     endOfRoute: false),
-                     ForeignId(msg), msg.LogMessage);
+                _log.RecordMachineStart(
+                    mats: FindMaterial(queueChange.Pallet),
+                    pallet: queueChange.Pallet,
+                    statName: "MC",
+                    statNum: queueChange.CurrentLocation.Num,
+                    program: "",
+                    timeUTC: queueChange.TimeUTC,
+                    foreignId: ForeignId(msg),
+                    originalMessage: msg.LogMessage
+                );
             }
 
             //machine cycle end.  StepNo changing to 5 signals cycle end.
@@ -167,21 +164,19 @@ namespace Cincron
                 var machineCycleStart = FindMachineStart(_log.CurrentPalletLog(stepChange.Pallet));
 
                 if (machineCycleStart != null) {
-                    _log.AddStationCycle(new LogEntry(
-                        cntr: 0,
-                        mat: machineCycleStart.Material,
-                        pal: stepChange.Pallet,
-                        ty: LogType.MachineCycle,
-                        locName: "MC",
-                        locNum: machineCycleStart.LocationNum,
-                        prog: "",
-                        start: false,
-                        endTime: stepChange.TimeUTC,
+                    _log.RecordMachineEnd(
+                        mats: machineCycleStart.Material,
+                        pallet: stepChange.Pallet,
+                        statName: "MC",
+                        statNum: machineCycleStart.LocationNum,
+                        program: "",
+                        timeUTC: stepChange.TimeUTC,
                         result: "",
-                        endOfRoute: false,
                         elapsed: stepChange.TimeUTC.Subtract(machineCycleStart.EndTimeUTC),
-                        active: TimeSpan.Zero),
-                     ForeignId(msg), msg.LogMessage);
+                        active: TimeSpan.Zero,
+                        foreignId: ForeignId(msg),
+                        originalMessage: msg.LogMessage
+                    );
                 }
             }
 
@@ -194,21 +189,19 @@ namespace Cincron
 
                 if (machineCycleStart != null)
                 {
-                    _log.AddStationCycle(new LogEntry(
-                        cntr: 0,
-                        mat: machineCycleStart.Material,
-                        pal: progEnd.Pallet,
-                        ty: LogType.MachineCycle,
-                        locName: "MC",
-                        locNum: machineCycleStart.LocationNum,
-                        prog: "",
-                        start: false,
-                        endTime: progEnd.TimeUTC,
+                    _log.RecordMachineEnd(
+                        mats: machineCycleStart.Material,
+                        pallet: progEnd.Pallet,
+                        statName: "MC",
+                        statNum: machineCycleStart.LocationNum,
+                        program: "",
+                        timeUTC: progEnd.TimeUTC,
                         result: "",
-                        endOfRoute: false,
                         elapsed: progEnd.TimeUTC.Subtract(machineCycleStart.EndTimeUTC),
-                        active: TimeSpan.Zero),
-                     ForeignId(msg), msg.LogMessage);
+                        active: TimeSpan.Zero,
+                        foreignId: ForeignId(msg),
+                        originalMessage: msg.LogMessage
+                    );
                 }
             }
 
@@ -231,37 +224,27 @@ namespace Cincron
             //unload start.  Use the completed parts and last unload station from the state.
             var unloadStart = msg as CincronMessage.PartUnloadStart;
             if (unloadStart != null) {
-                _log.AddStationCycle(new LogEntry(
-                   cntr: 0,
-                   mat: CreateUnloadMaterial(state, unloadStart.Pallet),
-                   pal: unloadStart.Pallet,
-                   ty: LogType.LoadUnloadCycle,
-                   locName: "Load",
-                   locNum: state.LastUnloadStation.Num,
-                   prog: "",
-                   start: true,
-                   endTime: unloadStart.TimeUTC,
-                   result: "UNLOAD",
-                   endOfRoute: false),
-                ForeignId(msg), msg.LogMessage);
+                _log.RecordUnloadStart(
+                    mats: CreateUnloadMaterial(state, unloadStart.Pallet),
+                    pallet: unloadStart.Pallet,
+                    lulNum: state.LastUnloadStation.Num,
+                    timeUTC: unloadStart.TimeUTC,
+                    foreignId: ForeignId(msg),
+                    originalMessage: msg.LogMessage
+                );
                 state.PartCompletedMessages.Clear();
             }
 
             var loadStart = msg as CincronMessage.PartLoadStart;
             if (loadStart != null) {
-                _log.AddStationCycle(new LogEntry(
-                   cntr: 0,
-                   mat: CreateLoadMaterial(loadStart),
-                   pal: loadStart.Pallet,
-                   ty: LogType.LoadUnloadCycle,
-                   locName: "Load",
-                   locNum: state.LastUnloadStation.Num,
-                   prog: "",
-                   start: true,
-                   endTime: loadStart.TimeUTC,
-                   result: "LOAD",
-                   endOfRoute: false),
-                ForeignId(msg), msg.LogMessage);
+                _log.RecordLoadStart(
+                    mats: CreateLoadMaterial(loadStart),
+                    pallet: loadStart.Pallet,
+                    lulNum: state.LastUnloadStation.Num,
+                    timeUTC: loadStart.TimeUTC,
+                    foreignId: ForeignId(msg),
+                    originalMessage: msg.LogMessage
+                );
             }
 
             //end of load and unload on step change to 2
@@ -271,63 +254,35 @@ namespace Cincron
                 var oldEvts = _log.CurrentPalletLog(stepChange.Pallet);
                 var loadStartCycle = FindLoadStart(oldEvts);
                 var unloadStartCycle = FindUnloadStart(oldEvts);
-                var newEvts = new List<LogEntry>();
 
                 if (unloadStartCycle != null) {
-                    newEvts.Add(new LogEntry(
-                      cntr: 0,
-                      mat: unloadStartCycle.Material,
-                      pal: stepChange.Pallet,
-                      ty: LogType.LoadUnloadCycle,
-                      locName: "Load",
-                      locNum: unloadStartCycle.LocationNum,
-                      prog: "",
-                      start: false,
-                      endTime: stepChange.TimeUTC,
-                      result: "UNLOAD",
-                      endOfRoute: true,
-                      elapsed: stepChange.TimeUTC.Subtract(unloadStartCycle.EndTimeUTC),
-                      active: TimeSpan.Zero));
+                    _log.RecordUnloadEnd(
+                        mats: unloadStartCycle.Material,
+                        pallet: stepChange.Pallet,
+                        lulNum: unloadStartCycle.LocationNum,
+                        timeUTC: stepChange.TimeUTC,
+                        elapsed: stepChange.TimeUTC.Subtract(unloadStartCycle.EndTimeUTC),
+                        active: TimeSpan.Zero,
+                        foreignId: ForeignId(msg),
+                        originalMessage: msg.LogMessage
+                    );
                 }
 
-                //pallet cycle
-                var lastCycleTime = _log.LastPalletCycleTime(stepChange.Pallet);
-                var elapsed = TimeSpan.Zero;
-                if (lastCycleTime > DateTime.MinValue)
-                    elapsed = stepChange.TimeUTC.Subtract(lastCycleTime);
-                newEvts.Add(new LogEntry(
-                  cntr: 0,
-                  mat: new List<LogMaterial>(),
-                  pal: stepChange.Pallet,
-                  ty: LogType.PalletCycle,
-                  locName: "Pallet Cycle",
-                  locNum: 1,
-                  prog: "",
-                  start: false,
-                  endTime: stepChange.TimeUTC,
-                  result: "PalletCycle",
-                  endOfRoute: false,
-                  elapsed: elapsed,
-                  active: TimeSpan.Zero));
+                var mats = new Dictionary<string, IEnumerable<LogMaterial>>();
 
-                //end load, one second after pallet cycle
                 if (loadStartCycle != null) {
-                    newEvts.Add(new LogEntry(
-                      cntr: 0,
-                      mat: loadStartCycle.Material,
-                      pal: stepChange.Pallet,
-                      ty: LogType.LoadUnloadCycle,
-                      locName: "Load",
-                      locNum: loadStartCycle.LocationNum,
-                      prog: "",
-                      start: false,
-                      endTime: stepChange.TimeUTC.AddSeconds(1),
-                      result: "LOAD",
-                      endOfRoute: true,
-                      elapsed: stepChange.TimeUTC.Subtract(loadStartCycle.EndTimeUTC),
-                      active: TimeSpan.Zero));
+                    _log.AddPendingLoad(
+                        pal: stepChange.Pallet,
+                        key: stepChange.Pallet,
+                        load: loadStartCycle.LocationNum,
+                        elapsed: stepChange.TimeUTC.Subtract(loadStartCycle.EndTimeUTC),
+                        active: TimeSpan.Zero,
+                        foreignID: ForeignId(msg)
+                    );
+                    mats[stepChange.Pallet] = loadStartCycle.Material;
                 }
-                _log.AddStationCycles(newEvts, ForeignId(msg), msg.LogMessage);
+
+                _log.CompletePalletCycle(stepChange.Pallet, stepChange.TimeUTC, ForeignId(msg), mats, SerialType.NoAutomaticSerials, 10);
             }
         }
 

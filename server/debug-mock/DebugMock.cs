@@ -279,7 +279,7 @@ namespace DebugMachineWatchApiServer
             foreach (var x in e.ProgramDetails)
               e2.ProgramDetails.Add(x.Key, x.Value);
           }
-          LogDB.AddLogEntry(e2);
+          LogDB.AddLogEntryFromUnitTest(e2);
         }
       }
     }

@@ -172,16 +172,14 @@ namespace Makino
 
             var elapsed = m.EndDateTimeUTC.Subtract(m.StartDateTimeUTC);
 
-            //create the cycle
-            var cycle = new LogEntry(-1, matList, m.PalletID.ToString(),
-                LogType.MachineCycle, "MC", loc.Num,
-                                     m.Program, false, m.EndDateTimeUTC, "", false, elapsed,
-                                     TimeSpan.FromSeconds(m.SpindleTimeSeconds));
-
             //check if the cycle already exists
-            if (timeToSkip == m.EndDateTimeUTC && _log.CycleExists(cycle))
+            if (timeToSkip == m.EndDateTimeUTC
+			    && _log.CycleExists(m.EndDateTimeUTC, m.PalletID.ToString(), LogType.MachineCycle, "MC", loc.Num))
+			{
                 return;
+			}
 
+			var extraData = new Dictionary<string, string>();
             if (matList.Count > 0) {
                 var matID1 = ((LogMaterial)matList[0]).MaterialID;
                 _trace.TraceEvent(System.Diagnostics.TraceEventType.Information, 0,
@@ -191,11 +189,20 @@ namespace Makino
                 foreach (var v in _makinoDB.QueryCommonValues(m)) {
                     _trace.TraceEvent(System.Diagnostics.TraceEventType.Information, 0,
                         "Common value with number " + v.Number.ToString() + " and value " + v.Value);
-                    cycle.ProgramDetails[v.Number.ToString()] = v.Value;
+                    extraData[v.Number.ToString()] = v.Value;
                 }
             }
-
-			_log.AddLogEntry(cycle);
+			_log.RecordMachineEnd(
+				mats: matList,
+				pallet: m.PalletID.ToString(),
+				statName: "MC",
+				statNum: loc.Num,
+				program: m.Program,
+				result: "",
+				timeUTC: m.EndDateTimeUTC,
+				elapsed: elapsed,
+				active: TimeSpan.FromSeconds(m.SpindleTimeSeconds),
+				extraData: extraData);
 
 			AddInspection(m, matList);
 		}
@@ -248,16 +255,18 @@ namespace Makino
 				var matList = FindOrCreateMaterial(w.PalletID, w.FixtureNumber, w.EndDateTimeUTC,
 					                               w.UnloadOrderName, w.UnloadPartName, w.UnloadProcessNum, numParts);
 
-				//create the cycle
-				var cycle = new LogEntry(-1, matList, w.PalletID.ToString(),
-                    LogType.LoadUnloadCycle, "Load", loc.Num,
-					"UNLOAD", false, w.EndDateTimeUTC, "", true,  elapsed, elapsed);
-
 				//check if the cycle already exists
-				if (timeToSkip == w.EndDateTimeUTC && _log.CycleExists(cycle))
+				if (timeToSkip == w.EndDateTimeUTC
+					&& _log.CycleExists(w.EndDateTimeUTC, w.PalletID.ToString(), LogType.LoadUnloadCycle, "L/U", loc.Num))
 					return;
 
-				_log.AddLogEntry(cycle);
+				_log.RecordUnloadEnd(
+					mats: matList,
+					pallet: w.PalletID.ToString(),
+					lulNum: loc.Num,
+					timeUTC: w.EndDateTimeUTC,
+					elapsed: elapsed,
+					active: elapsed);
 			}
 
 			//Pallet Cycle
@@ -273,12 +282,13 @@ namespace Makino
 				var matList = CreateMaterial(w.PalletID, w.FixtureNumber, w.EndDateTimeUTC.AddSeconds(1),
 				                             w.LoadOrderName, w.LoadPartName, w.LoadProcessNum, numParts);
 
-				//create the cycle
-				var cycle = new LogEntry(-1, matList, w.PalletID.ToString(),
-                    LogType.LoadUnloadCycle, "Load", loc.Num,
-					"LOAD", false, w.EndDateTimeUTC.AddSeconds(1), "", false, elapsed, elapsed);
-
-				_log.AddLogEntry(cycle);
+				_log.RecordLoadEnd(
+					mats: matList,
+					pallet: w.PalletID.ToString(),
+					lulNum: loc.Num,
+					timeUTC: w.EndDateTimeUTC.AddSeconds(1),
+					elapsed: elapsed,
+					active: elapsed);
 			}
 		}
 

@@ -45,6 +45,9 @@ using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
 
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("BlackMaple.MachineFramework.Tests")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("BlackMaple.MachineFramework.DebugMock")]
+
 namespace BlackMaple.MachineFramework
 {
     public class Program
