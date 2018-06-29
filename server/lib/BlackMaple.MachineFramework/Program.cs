@@ -113,6 +113,7 @@ namespace BlackMaple.MachineFramework
             return new WebHostBuilder()
                 .UseConfiguration(Configuration)
                 .ConfigureServices(s => { s.AddSingleton<IFMSImplementation>(fmsImpl); })
+                .SuppressStatusMessages(suppressStatusMessages: true)
                 .UseKestrel(options => {
                     var address = IPAddress.IPv6Any;
                     if (!string.IsNullOrEmpty(ServerSettings.TLSCertFile)) {
@@ -129,14 +130,16 @@ namespace BlackMaple.MachineFramework
                 .Build();
         }
 
-        public static void Run(bool useService, IFMSImplementation fmsImpl)
+        public static void Run(bool useService, IFMSImplementation fmsImpl, bool outputConfigToLog = true)
         {
             LoadConfig();
             EnableSerilog(enableEventLog: useService);
 
-            Log.Information("Starting machine watch with settings {@ServerSettings} and {@FMSSettings}. " +
-                            " Using ContentRoot {ContentRoot} and Config {ConfigDir}.",
-                ServerSettings, FMSSettings, ServerSettings.ContentRootDirectory, ServerSettings.ConfigDirectory);
+            if (outputConfigToLog) {
+                Log.Information("Starting FMS Insight with settings {@ServerSettings} and {@FMSSettings}. " +
+                                " Using ContentRoot {ContentRoot} and Config {ConfigDir}.",
+                    ServerSettings, FMSSettings, ServerSettings.ContentRootDirectory, ServerSettings.ConfigDirectory);
+            }
 
             var host = BuildWebHost(fmsImpl);
 

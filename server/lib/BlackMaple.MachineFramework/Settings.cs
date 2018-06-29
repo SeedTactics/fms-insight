@@ -150,14 +150,18 @@ namespace BlackMaple.MachineFramework
 
         foreach (var q in config.GetSection("QUEUE").AsEnumerable()) {
           if (int.TryParse(q.Value, out int count)) {
-            s.Queues[q.Key] = new MachineWatchInterface.QueueSize() {
+            var key = q.Key.Substring(q.Key.IndexOf(':'));
+            s.Queues[key] = new MachineWatchInterface.QueueSize() {
               MaxSizeBeforeStopUnloading = count > 0 ? (int?)count : null
             };
           }
         }
 
         foreach (var q in config.GetSection("EXTERNAL QUEUE").AsEnumerable()) {
-          s.ExternalQueues[q.Key] = q.Value;
+          if (!string.IsNullOrEmpty(q.Value) && q.Key.IndexOf(':') >= 0) {
+            var key = q.Key.Substring(q.Key.IndexOf(':'));
+            s.ExternalQueues[key] = q.Value;
+          }
         }
 
         return s;
