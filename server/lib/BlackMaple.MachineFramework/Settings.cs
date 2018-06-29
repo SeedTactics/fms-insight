@@ -133,8 +133,6 @@ namespace BlackMaple.MachineFramework
 
       public Dictionary<string, MachineWatchInterface.QueueSize> Queues {get;}
         = new Dictionary<string, MachineWatchInterface.QueueSize>();
-      public Dictionary<string, string> ExternalQueues {get;}
-        = new Dictionary<string, string>();
 
       static public FMSSettings Load(IConfiguration config)
       {
@@ -154,13 +152,6 @@ namespace BlackMaple.MachineFramework
             s.Queues[key] = new MachineWatchInterface.QueueSize() {
               MaxSizeBeforeStopUnloading = count > 0 ? (int?)count : null
             };
-          }
-        }
-
-        foreach (var q in config.GetSection("EXTERNAL_QUEUE").AsEnumerable()) {
-          if (!string.IsNullOrEmpty(q.Value) && q.Key.IndexOf(':') >= 0) {
-            var key = q.Key.Substring(q.Key.IndexOf(':')+1);
-            s.ExternalQueues[key] = q.Value;
           }
         }
 
