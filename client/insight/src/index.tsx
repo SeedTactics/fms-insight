@@ -43,7 +43,7 @@ import createMuiTheme from '@material-ui/core/styles/createMuiTheme';
 import 'react-vis/dist/style.css';
 
 import App from './App';
-import registerServiceWorker from './registerServiceWorker';
+import unregister from './registerServiceWorker';
 import { initStore } from './store/store';
 
 const theme = createMuiTheme({
@@ -66,4 +66,9 @@ ReactDOM.render(
   </MuiThemeProvider>,
   document.getElementById('root') as HTMLElement
 );
-registerServiceWorker();
+
+// the service worker currently doesn't work because the /swagger and /instruction routes
+// are redirected by the service worker to /index.html.  Need to whitelist these routes
+// before the service worker is correct.
+// registerServiceWorker();
+unregister();
