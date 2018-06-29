@@ -69,7 +69,8 @@ export class OperatorSelect extends React.PureComponent<OperatorSelectProps> {
           onChange={(o) => {
             this.props.setOperator({operator: o});
           }}
-          render={(ds) => (
+        >
+          {(ds) => (
             <div style={{position: 'relative'}}>
               <TextField
                 InputProps={{...
@@ -127,7 +128,7 @@ export class OperatorSelect extends React.PureComponent<OperatorSelectProps> {
               }
             </div>
           )}
-        />
+        </Downshift>
     );
   }
 }
