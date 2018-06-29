@@ -129,8 +129,12 @@ namespace BlackMaple.MachineFramework
     {
       public SerialType SerialType {get;set;} = SerialType.NoAutomaticSerials;
       public int SerialLength {get;set;} = 10;
+      public string InstructionFilePath {get;set;}
+
       public Dictionary<string, MachineWatchInterface.QueueSize> Queues {get;}
         = new Dictionary<string, MachineWatchInterface.QueueSize>();
+      public Dictionary<string, string> ExternalQueues {get;}
+        = new Dictionary<string, string>();
 
       static public FMSSettings Load(IConfiguration config)
       {
@@ -142,12 +146,18 @@ namespace BlackMaple.MachineFramework
         }
         s.SerialLength = fmsSection.GetValue<int>("SerialLength", 10);
 
+        s.InstructionFilePath = fmsSection.GetValue<string>("InstructionFilePath");
+
         foreach (var q in config.GetSection("QUEUE").AsEnumerable()) {
           if (int.TryParse(q.Value, out int count)) {
             s.Queues[q.Key] = new MachineWatchInterface.QueueSize() {
               MaxSizeBeforeStopUnloading = count > 0 ? (int?)count : null
             };
           }
+        }
+
+        foreach (var q in config.GetSection("EXTERNAL QUEUE").AsEnumerable()) {
+          s.ExternalQueues[q.Key] = q.Value;
         }
 
         return s;

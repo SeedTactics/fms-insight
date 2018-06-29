@@ -9,6 +9,12 @@
     },
     "/api/*": {
       "target": "http://localhost:5000"
+    },
+    "/instructions/*": {
+      "target": "http://localhost:5000"
+    },
+    "/swagger/*": {
+      "target": "http://localhost:5000"
     }
   },
   "dependencies": {

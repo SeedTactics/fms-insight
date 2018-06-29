@@ -345,8 +345,18 @@ export function MaterialDialog(props: MaterialDialogProps) {
           <MaterialDetailContent mat={mat}/>
         </DialogContent>
         <DialogActions>
+          {mat.partName && mat.partName !== "" ?
+            <Button
+              href={"/api/v1/server/find-instructions/" + encodeURIComponent(mat.partName)}
+              target="bms-instructions"
+              color="primary"
+            >
+              Instructions
+            </Button>
+            : undefined
+          }
           {props.buttons}
-          <Button onClick={props.onClose} color="primary">
+          <Button onClick={props.onClose} color="secondary">
             Close
           </Button>
         </DialogActions>

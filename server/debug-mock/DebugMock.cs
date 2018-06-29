@@ -49,6 +49,11 @@ namespace DebugMachineWatchApiServer
   {
     public static void Main()
     {
+      System.Environment.SetEnvironmentVariable("FMS__InstructionFilePath",
+      System.IO.Path.Combine(
+          System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
+          "../../../sample-instructions/"
+      ));
       BlackMaple.MachineFramework.Program.Run(false, new MockFMSImplementation());
     }
   }

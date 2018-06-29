@@ -147,6 +147,18 @@ namespace BlackMaple.MachineFramework
             app.UseMvc();
             app.UseStaticFiles();
 
+            if (!string.IsNullOrEmpty(Program.FMSSettings.InstructionFilePath))
+            {
+                if (System.IO.Directory.Exists(Program.FMSSettings.InstructionFilePath)) {
+                    app.UseStaticFiles(new StaticFileOptions() {
+                        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(Program.FMSSettings.InstructionFilePath),
+                        RequestPath = "/instructions"
+                    });
+                } else {
+                    Log.Error("Instruction directory {path} does not exist or is not a directory", Program.FMSSettings.InstructionFilePath);
+                }
+            }
+
             if (!string.IsNullOrEmpty(Program.ServerSettings.TLSCertFile)) {
                 if (!env.IsDevelopment())
                     app.UseHsts();

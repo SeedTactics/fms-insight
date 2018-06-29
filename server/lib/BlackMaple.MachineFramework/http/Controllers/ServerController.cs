@@ -31,6 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using System.IO;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using BlackMaple.MachineWatchInterface;
@@ -65,6 +66,25 @@ namespace BlackMaple.MachineFramework.Controllers
         public void SetSetting(string id, [FromBody] string setting)
         {
             _settings.SetSettings(id, setting);
+        }
+
+        [HttpGet("find-instructions/{part}")]
+        [ProducesResponseType(302)]
+        [ProducesResponseType(404)]
+        public IActionResult FindInstructions(string part)
+        {
+            if (string.IsNullOrEmpty(Program.FMSSettings.InstructionFilePath)) {
+                return NotFound("Error: instruction directory must be configured in FMS Insight config file.");
+            }
+            if (!Directory.Exists(Program.FMSSettings.InstructionFilePath)) {
+                return NotFound("Error: configured instruction directory does not exist");
+            }
+            foreach (var f in Directory.GetFiles(Program.FMSSettings.InstructionFilePath)) {
+                if (Path.GetFileName(f).Contains(part)) {
+                    return Redirect("/instructions/" + System.Uri.EscapeDataString(Path.GetFileName(f)));
+                }
+            }
+            return NotFound("Error: could not find a file with " + part + " in the filename");
         }
     }
 }
