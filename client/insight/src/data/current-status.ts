@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as api from './api';
 import * as im from 'immutable';
 import { Pledge, PledgeStatus, ActionBeforeMiddleware } from '../store/middleware';
+import { JobsBackend } from './backend';
 
 export interface State {
     readonly loading: boolean;
@@ -68,11 +69,10 @@ export type Action =
 type ABF = ActionBeforeMiddleware<Action>;
 
 export function loadCurrentStatus(): ABF {
-    var client = new api.JobsClient();
     return {
         type: ActionType.LoadCurrentStatus,
         now: new Date(),
-        pledge: client.currentStatus()
+        pledge: JobsBackend.currentStatus()
     };
 }
 

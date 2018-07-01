@@ -40,6 +40,7 @@ import * as cycles from './events.cycles';
 import * as matsummary from './events.matsummary';
 import * as simuse from './events.simuse';
 import * as inspection from './events.inspection';
+import { JobsBackend, LogBackend } from './backend';
 
 export { OeeState, StationInUse } from './events.oee';
 export { CycleState, CycleData, binCyclesByDayAndStat, binCyclesByDayAndPart } from './events.cycles';
@@ -154,32 +155,29 @@ export type Action =
 type ABF = ActionBeforeMiddleware<Action>;
 
 export function loadLast30Days(): ABF {
-    var logClient = new api.LogClient();
-    var jobClient = new api.JobsClient();
     var now = new Date();
     var thirtyDaysAgo = addDays(now, -30);
     return [
         {
             type: ActionType.LoadRecentLogEntries,
             now: now,
-            pledge: logClient.get(thirtyDaysAgo, now)
+            pledge: LogBackend.get(thirtyDaysAgo, now)
         },
         {
             type: ActionType.LoadRecentJobHistory,
             now: now,
-            pledge: jobClient.history(thirtyDaysAgo, now)
+            pledge: JobsBackend.history(thirtyDaysAgo, now)
 
         }
     ];
 }
 
 export function refreshLogEntries(lastCounter: number): ABF {
-    var client = new api.LogClient();
     var now = new Date();
     return {
         type: ActionType.LoadRecentLogEntries,
         now: now,
-        pledge: client.recent(lastCounter)
+        pledge: LogBackend.recent(lastCounter)
     };
 }
 
@@ -207,19 +205,17 @@ export function analyzeLast30Days(): ABF {
 }
 
 export function analyzeSpecificMonth(month: Date): ABF {
-    var client = new api.LogClient();
-    var jobClient = new api.JobsClient();
     var startOfNextMonth = addMonths(month, 1);
     return [
         {
             type: ActionType.LoadSpecificMonthLogEntries,
             month: month,
-            pledge: client.get(month, startOfNextMonth)
+            pledge: LogBackend.get(month, startOfNextMonth)
         },
         {
             type: ActionType.LoadSpecificMonthJobHistory,
             month: month,
-            pledge: jobClient.history(month, startOfNextMonth)
+            pledge: JobsBackend.history(month, startOfNextMonth)
         }
     ];
 }

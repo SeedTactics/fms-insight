@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as api from './api';
+import { ServerBackend } from './backend';
 import { Pledge, PledgeStatus, ActionBeforeMiddleware } from '../store/middleware';
 
 export enum ActionType {
@@ -61,8 +62,7 @@ export interface State {
 export const initial: State = {};
 
 async function loadInfo(): Promise<LoadReturn> {
-  const client = new api.ServerClient();
-  const fmsInfo = await client.fMSInformation();
+  const fmsInfo = await ServerBackend.fMSInformation();
 
   let url: string | undefined;
   let latestVersion: LatestInstaller | undefined;

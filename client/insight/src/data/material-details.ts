@@ -36,6 +36,7 @@ import * as im from 'immutable';
 import * as api from './api';
 import { Pledge, PledgeStatus, ActionBeforeMiddleware } from '../store/middleware';
 import { MaterialSummary } from './events';
+import { JobsBackend, LogBackend } from './backend';
 
 export enum ActionType {
   OpenMaterialDialog = 'MaterialDetails_Open',
@@ -98,7 +99,6 @@ export type Action =
 type ABF = ActionBeforeMiddleware<Action>;
 
 export function openMaterialDialog(mat: Readonly<MaterialSummary>):  ABF {
-  const client = new api.LogClient();
   return {
     type: ActionType.OpenMaterialDialog,
     initial: {
@@ -116,12 +116,11 @@ export function openMaterialDialog(mat: Readonly<MaterialSummary>):  ABF {
       saving_workorder: false,
       workorders: [],
     } as MaterialDetail,
-    pledge: client.logForMaterial(mat.materialID),
+    pledge: LogBackend.logForMaterial(mat.materialID),
   };
 }
 
 export function openMaterialBySerial(serial: string): ABF {
-  const client = new api.LogClient();
   return {
     type: ActionType.OpenMaterialDialog,
     initial: {
@@ -139,7 +138,7 @@ export function openMaterialBySerial(serial: string): ABF {
       saving_workorder: false,
       workorders: [],
     } as MaterialDetail,
-    pledge: client.logForSerial(serial),
+    pledge: LogBackend.logForSerial(serial),
   };
 }
 
@@ -150,7 +149,6 @@ export interface ForceInspectionData {
 }
 
 export function forceInspection({mat, inspType, inspect}: ForceInspectionData): ABF {
-  const client = new api.LogClient();
   const logMat = new api.LogMaterial({
     id: mat.materialID,
     uniq: mat.jobUnique,
@@ -162,7 +160,7 @@ export function forceInspection({mat, inspType, inspect}: ForceInspectionData): 
   return {
     type: ActionType.UpdateMaterial,
     newSignaledInspection: inspType,
-    pledge: client.setInspectionDecision(inspType, logMat, inspect),
+    pledge: LogBackend.setInspectionDecision(inspType, logMat, inspect),
   };
 }
 
@@ -174,11 +172,10 @@ export interface CompleteInspectionData {
 }
 
 export function completeInspection({mat, inspType, success, operator}: CompleteInspectionData): ABF {
-  const client = new api.LogClient();
   return {
     type: ActionType.UpdateMaterial,
     newCompletedInspection: inspType,
-    pledge: client.recordInspectionCompleted(new api.NewInspectionCompleted({
+    pledge: LogBackend.recordInspectionCompleted(new api.NewInspectionCompleted({
       material: new api.LogMaterial({
         id: mat.materialID,
         uniq: mat.jobUnique,
@@ -203,10 +200,9 @@ export interface CompleteWashData {
 }
 
 export function completeWash(d: CompleteWashData): ABF {
-  const client = new api.LogClient();
   return {
     type: ActionType.UpdateMaterial,
-    pledge: client.recordWashCompleted(new api.NewWash({
+    pledge: LogBackend.recordWashCompleted(new api.NewWash({
       material: new api.LogMaterial({
         id: d.mat.materialID,
         uniq: d.mat.jobUnique,
@@ -224,10 +220,9 @@ export function completeWash(d: CompleteWashData): ABF {
 }
 
 export function removeFromQueue(mat: MaterialDetail): ABF {
-  const client = new api.JobsClient();
   return {
     type: ActionType.UpdateMaterial,
-    pledge: client.removeMaterialFromAllQueues(mat.materialID).then(() => undefined)
+    pledge: JobsBackend.removeMaterialFromAllQueues(mat.materialID).then(() => undefined)
   };
 }
 
@@ -237,11 +232,10 @@ export interface AssignWorkorderData {
 }
 
 export function assignWorkorder({mat, workorder}: AssignWorkorderData): ABF {
-  const client = new api.LogClient();
   return {
     type: ActionType.UpdateMaterial,
     newWorkorder: workorder,
-    pledge: client.setWorkorder(
+    pledge: LogBackend.setWorkorder(
       workorder,
       new api.LogMaterial({
         id: mat.materialID,
@@ -261,11 +255,10 @@ export interface AssignSerialData {
 }
 
 export function assignSerial({mat, serial}: AssignSerialData): ABF {
-  const client = new api.LogClient();
   return {
     type: ActionType.UpdateMaterial,
     newSerial: serial,
-    pledge: client.setSerial(
+    pledge: LogBackend.setSerial(
       serial,
       new api.LogMaterial({
         id: mat.materialID,
@@ -305,15 +298,13 @@ export function computeWorkorders(
 }
 
 export function loadWorkorders(mat: MaterialDetail): ABF {
-  const logClient = new api.LogClient();
-  const jobClient = new api.JobsClient();
 
   return {
     type: ActionType.LoadWorkorders,
     pledge:
-      jobClient.mostRecentUnfilledWorkordersForPart(mat.partName)
+      JobsBackend.mostRecentUnfilledWorkordersForPart(mat.partName)
       .then(workorders => {
-        return logClient.getWorkorders(workorders.map(w => w.workorderId))
+        return LogBackend.getWorkorders(workorders.map(w => w.workorderId))
           .then(summaries => {
             return computeWorkorders(mat.partName, workorders, summaries);
           });
@@ -328,10 +319,9 @@ export interface AddExistingMaterialToQueueData {
 }
 
 export function addExistingMaterialToQueue(d: AddExistingMaterialToQueueData): ABF {
-  const client = new api.JobsClient();
   return {
     type: ActionType.AddNewMaterialToQueue,
-    pledge: client.setMaterialInQueue(d.materialId, new api.QueuePosition({
+    pledge: JobsBackend.setMaterialInQueue(d.materialId, new api.QueuePosition({
       queue: d.queue,
       position: d.queuePosition
     })),
@@ -347,10 +337,9 @@ export interface AddNewMaterialToQueueData {
 }
 
 export function addNewMaterialToQueue(d: AddNewMaterialToQueueData) {
-  const client = new api.JobsClient();
   return {
     type: ActionType.AddNewMaterialToQueue,
-    pledge: client.addUnprocessedMaterialToQueue(
+    pledge: JobsBackend.addUnprocessedMaterialToQueue(
       d.jobUnique, d.lastCompletedProcess || -1, d.queue, d.queuePosition, d.serial || ""
     )
   };
