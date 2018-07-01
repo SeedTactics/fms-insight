@@ -126,12 +126,12 @@
     "@types/node" "*"
     "@types/react" "*"
 
-"@types/react-redux@^6.0.0":
-  version "6.0.3"
-  resolved "https://registry.yarnpkg.com/@types/react-redux/-/react-redux-6.0.3.tgz#7e8a86cce1c453166056bce9d4eb5cab5a2cfe13"
+"@types/react-redux@^5.0.0":
+  version "5.0.20"
+  resolved "https://registry.yarnpkg.com/@types/react-redux/-/react-redux-5.0.20.tgz#a332f2a97043d6127159956a4639a9fb5dc1f5dc"
   dependencies:
     "@types/react" "*"
-    redux "^4.0.0"
+    redux "^3.6.0"
 
 "@types/react-transition-group@^2.0.8":
   version "2.0.11"
@@ -140,8 +140,8 @@
     "@types/react" "*"
 
 "@types/react@*", "@types/react@^16.0.35":
-  version "16.4.5"
-  resolved "https://registry.yarnpkg.com/@types/react/-/react-16.4.5.tgz#98a00fdd2c512ed5d7399d3f2660ce9d6152bce6"
+  version "16.4.6"
+  resolved "https://registry.yarnpkg.com/@types/react/-/react-16.4.6.tgz#5024957c6bcef4f02823accf5974faba2e54fada"
   dependencies:
     csstype "^2.2.0"
 
@@ -209,8 +209,8 @@ ajv@^5.0.0, ajv@^5.1.0, ajv@^5.1.5:
     json-schema-traverse "^0.3.0"
 
 ajv@^6.1.0:
-  version "6.5.1"
-  resolved "https://registry.yarnpkg.com/ajv/-/ajv-6.5.1.tgz#88ebc1263c7133937d108b80c5572e64e1d9322d"
+  version "6.5.2"
+  resolved "https://registry.yarnpkg.com/ajv/-/ajv-6.5.2.tgz#678495f9b82f7cca6be248dd92f59bff5e1f4360"
   dependencies:
     fast-deep-equal "^2.0.1"
     fast-json-stable-stringify "^2.0.0"
@@ -6527,7 +6527,7 @@ redux-first-router@^0.0.16-next:
   dependencies:
     rudy-match-path "^0.3.0"
 
-redux@^3.7.0:
+redux@^3.6.0, redux@^3.7.0:
   version "3.7.2"
   resolved "https://registry.yarnpkg.com/redux/-/redux-3.7.2.tgz#06b73123215901d25d065be342eb026bc1c8537b"
   dependencies:
@@ -7592,8 +7592,8 @@ tsconfig-paths-webpack-plugin@^2.0.0:
     tsconfig-paths "^3.1.1"
 
 tsconfig-paths@^3.1.1:
-  version "3.4.1"
-  resolved "https://registry.yarnpkg.com/tsconfig-paths/-/tsconfig-paths-3.4.1.tgz#9e03c5833f09c23e2c330b785e875d6cfc92f43a"
+  version "3.4.2"
+  resolved "https://registry.yarnpkg.com/tsconfig-paths/-/tsconfig-paths-3.4.2.tgz#4640bffaeee3fc0ab986607edae203859156a8c3"
   dependencies:
     deepmerge "^2.0.1"
     minimist "^1.2.0"

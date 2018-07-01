@@ -100,7 +100,9 @@ function process_new_events(entry: Readonly<api.ILogEntry>, s: State): State {
                 im.Map<number, Readonly<api.InProcessMaterial>>()
             );
         }
-        mats = mats.update(id, mat => new api.InProcessMaterial(f(mat)));
+        if (mats.has(id)) {
+            mats = mats.update(id, mat => new api.InProcessMaterial(f(mat)));
+        }
     }
 
     switch (entry.type) {

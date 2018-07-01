@@ -178,10 +178,10 @@ function display(entry: api.ILogEntry): string {
       return 'Wash Completed';
 
     case api.LogType.AddToQueue:
-      return displayMat(entry.material) + " added to queue " + entry.program;
+      return displayMat(entry.material) + " added to queue " + entry.loc;
 
     case api.LogType.RemoveFromQueue:
-      return displayMat(entry.material) + " removed from queue " + entry.program;
+      return displayMat(entry.material) + " removed from queue " + entry.loc;
 
     default: return entry.result;
   }

@@ -108,10 +108,11 @@ export function selectLoadStationAndQueueProps(
       .toArray();
   }
 
-  const queueNames = im.Set(queues);
+  const queueNames = im.Map<string, api.IInProcessMaterial[]>(
+    queues.map(q => [q, []] as [string, api.IInProcessMaterial[]]));
   const queueMat = im.Seq(curSt.material)
     .filter(m => m.location.type === api.LocType.InQueue
-              && queueNames.contains(m.location.currentQueue || "")
+              && queueNames.has(m.location.currentQueue || "")
     )
     .groupBy(m => m.location.currentQueue || "")
     .map(ms => ms.valueSeq().toArray())
@@ -123,6 +124,6 @@ export function selectLoadStationAndQueueProps(
     face: byFace,
     castings: castings.toArray(),
     free: free,
-    queues: queueMat,
+    queues: queueNames.merge(queueMat),
   };
 }
