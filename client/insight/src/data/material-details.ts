@@ -274,8 +274,8 @@ export function assignSerial({mat, serial}: AssignSerialData): ABF {
 
 export function computeWorkorders(
     partName: string,
-    workorders: ReadonlyArray<api.PartWorkorder>,
-    summaries: ReadonlyArray<api.WorkorderSummary>): ReadonlyArray<WorkorderPlanAndSummary> {
+    workorders: ReadonlyArray<api.IPartWorkorder>,
+    summaries: ReadonlyArray<api.IWorkorderSummary>): ReadonlyArray<WorkorderPlanAndSummary> {
 
   const workMap = new Map<string, WorkorderPlanAndSummary>();
   for (const w of workorders) {

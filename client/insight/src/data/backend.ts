@@ -34,9 +34,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as api from './api';
 
 export interface JobAPI {
-  history(startUTC: Date, endUTC: Date): Promise<api.HistoricData>;
-  currentStatus(): Promise<api.CurrentStatus>;
-  mostRecentUnfilledWorkordersForPart(part: string): Promise<api.PartWorkorder[]>;
+  history(startUTC: Date, endUTC: Date): Promise<Readonly<api.IHistoricData>>;
+  currentStatus(): Promise<Readonly<api.ICurrentStatus>>;
+  mostRecentUnfilledWorkordersForPart(part: string): Promise<ReadonlyArray<Readonly<api.IPartWorkorder>>>;
 
   removeMaterialFromAllQueues(materialId: number): Promise<void>;
   setMaterialInQueue(materialId: number, queue: api.QueuePosition): Promise<void>;
@@ -45,26 +45,35 @@ export interface JobAPI {
   ): Promise<void>;
 }
 
-export const JobsBackend: JobAPI = new api.JobsClient();
-
 export interface ServerAPI {
-  fMSInformation(): Promise<api.FMSInfo>;
+  fMSInformation(): Promise<Readonly<api.IFMSInfo>>;
 }
-
-export const ServerBackend: ServerAPI = new api.ServerClient();
 
 export interface LogAPI {
-  get(startUTC: Date, endUTC: Date): Promise<api.LogEntry[]>;
-  recent(lastSeenCounter: number): Promise<api.LogEntry[]>;
-  logForMaterial(materialID: number): Promise<api.LogEntry[]>;
-  logForSerial(serial: string): Promise<api.LogEntry[]>;
-  getWorkorders(ids: string[]): Promise<api.WorkorderSummary[]>;
+  get(startUTC: Date, endUTC: Date): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
+  recent(lastSeenCounter: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
+  logForMaterial(materialID: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
+  logForSerial(serial: string): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
+  getWorkorders(ids: string[]): Promise<ReadonlyArray<Readonly<api.IWorkorderSummary>>>;
 
-  setInspectionDecision(inspType: string, mat: api.LogMaterial, inspect: boolean): Promise<api.LogEntry>;
-  recordInspectionCompleted(insp: api.NewInspectionCompleted): Promise<api.LogEntry>;
-  recordWashCompleted(insp: api.NewWash): Promise<api.LogEntry>;
-  setWorkorder(workorder: string, mat: api.LogMaterial): Promise<api.LogEntry>;
-  setSerial(serial: string, mat: api.LogMaterial): Promise<api.LogEntry>;
+  setInspectionDecision(inspType: string, mat: api.LogMaterial, inspect: boolean): Promise<Readonly<api.ILogEntry>>;
+  recordInspectionCompleted(insp: api.NewInspectionCompleted): Promise<Readonly<api.ILogEntry>>;
+  recordWashCompleted(insp: api.NewWash): Promise<Readonly<api.ILogEntry>>;
+  setWorkorder(workorder: string, mat: api.LogMaterial): Promise<Readonly<api.ILogEntry>>;
+  setSerial(serial: string, mat: api.LogMaterial): Promise<Readonly<api.ILogEntry>>;
 }
 
-export const LogBackend: LogAPI = new api.LogClient();
+export let ServerBackend: ServerAPI = new api.ServerClient();
+export let JobsBackend: JobAPI = new api.JobsClient();
+export let LogBackend: LogAPI = new api.LogClient();
+
+export function initMockBackend() {
+  ServerBackend = {
+    fMSInformation() {
+      return Promise.resolve({
+        name: "Sample",
+        version: "1.0.0"
+      });
+    }
+  };
+}
