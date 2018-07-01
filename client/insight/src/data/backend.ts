@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as api from './api';
+import * as im from 'immutable';
 
 export interface JobAPI {
   history(startUTC: Date, endUTC: Date): Promise<Readonly<api.IHistoricData>>;
@@ -67,7 +68,12 @@ export let ServerBackend: ServerAPI = new api.ServerClient();
 export let JobsBackend: JobAPI = new api.JobsClient();
 export let LogBackend: LogAPI = new api.LogClient();
 
-export function initMockBackend() {
+export function initMockBackend(
+  curSt: Readonly<api.ICurrentStatus>,
+  jobs: Readonly<api.IHistoricData>,
+  workorders: Map<string, ReadonlyArray<Readonly<api.IPartWorkorder>>>,
+  events: Readonly<api.ILogEntry>[],
+) {
   ServerBackend = {
     fMSInformation() {
       return Promise.resolve({
@@ -75,5 +81,168 @@ export function initMockBackend() {
         version: "1.0.0"
       });
     }
+  };
+
+  JobsBackend = {
+    history(startUTC: Date, endUTC: Date): Promise<Readonly<api.IHistoricData>> {
+      return Promise.resolve(jobs);
+    },
+    currentStatus(): Promise<Readonly<api.ICurrentStatus>> {
+      return Promise.resolve(curSt);
+    },
+    mostRecentUnfilledWorkordersForPart(part: string): Promise<ReadonlyArray<Readonly<api.IPartWorkorder>>> {
+      return Promise.resolve(workorders.get(part) || []);
+    },
+
+    removeMaterialFromAllQueues(materialId: number): Promise<void> {
+      // do nothing
+      return Promise.resolve();
+    },
+    setMaterialInQueue(materialId: number, queue: api.QueuePosition): Promise<void> {
+      // do nothing
+      return Promise.resolve();
+    },
+    addUnprocessedMaterialToQueue(
+      jobUnique: string, lastCompletedProcess: number, queue: string, pos: number, serial: string
+    ): Promise<void> {
+      // do nothing
+      return Promise.resolve();
+    }
+  };
+
+  const serialsToMatId =
+    im.Map(
+      im.Seq(events)
+      .filter(e => e.type === api.LogType.PartMark)
+      .flatMap(e => e.material.map(m => [e.result, m.id] as [string, number]))
+    );
+
+  LogBackend = {
+    get(startUTC: Date, endUTC: Date): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
+      return Promise.resolve(
+        im.Seq(events)
+        .filter(e => e.endUTC >= startUTC && e.endUTC <= endUTC)
+        .toArray()
+      );
+    },
+    recent(lastSeenCounter: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
+      // no recent events, everything is static
+      return Promise.resolve([]);
+    },
+    logForMaterial(materialID: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
+      return Promise.resolve(
+        im.Seq(events)
+        .filter(e => im.Seq(e.material).some(m => m.id === materialID))
+        .toArray()
+      );
+    },
+    logForSerial(serial: string): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
+      var mId = serialsToMatId.get(serial);
+      if (mId) {
+        return this.logForMaterial(mId);
+      } else {
+        return Promise.resolve([]);
+      }
+    },
+    getWorkorders(ids: string[]): Promise<ReadonlyArray<Readonly<api.IWorkorderSummary>>> {
+      // no workorder summaries
+      return Promise.resolve([]);
+    },
+
+    setInspectionDecision(inspType: string, mat: api.LogMaterial, inspect: boolean): Promise<Readonly<api.ILogEntry>> {
+      const evt = {
+        counter: 0,
+        material: [mat],
+        pal: "",
+        type: api.LogType.Inspection,
+        startofcycle: false,
+        endUTC: new Date(),
+        loc: 'Inspection',
+        locnum: 1,
+        result: inspect.toString(),
+        program: '',
+        elapsed: '00:00:00',
+        active: '00:00:00',
+        details: {
+          "InspectionType": inspType,
+        }
+      };
+      events.push(evt);
+      return Promise.resolve(evt);
+    },
+    recordInspectionCompleted(insp: api.NewInspectionCompleted): Promise<Readonly<api.ILogEntry>> {
+      const evt: api.ILogEntry = {
+        counter: 0,
+        material: [insp.material],
+        pal: "",
+        type: api.LogType.InspectionResult,
+        startofcycle: false,
+        endUTC: new Date(),
+        loc: 'InspectionComplete',
+        locnum: insp.inspectionLocationNum,
+        result: insp.success.toString(),
+        program: insp.inspectionType,
+        elapsed: insp.elapsed,
+        active: insp.active,
+        details: insp.extraData
+      };
+      events.push(evt);
+      return Promise.resolve(evt);
+    },
+    recordWashCompleted(wash: api.NewWash): Promise<Readonly<api.ILogEntry>> {
+      const evt: api.ILogEntry = {
+        counter: 0,
+        material: [wash.material],
+        pal: "",
+        type: api.LogType.Wash,
+        startofcycle: false,
+        endUTC: new Date(),
+        loc: 'Wash',
+        locnum: wash.washLocationNum,
+        result: '',
+        program: '',
+        elapsed: wash.elapsed,
+        active: wash.active,
+        details: wash.extraData
+      };
+      events.push(evt);
+      return Promise.resolve(evt);
+    },
+    setWorkorder(workorder: string, mat: api.LogMaterial): Promise<Readonly<api.ILogEntry>> {
+      const evt: api.ILogEntry =  {
+        counter: 0,
+        material: [mat],
+        pal: "",
+        type: api.LogType.OrderAssignment,
+        startofcycle: false,
+        endUTC: new Date(),
+        loc: 'OrderAssignment',
+        locnum: 1,
+        result: workorder,
+        program: '',
+        elapsed: '00:00:00',
+        active: '00:00:00'
+      };
+      events.push(evt);
+      return Promise.resolve(evt);
+    },
+    setSerial(serial: string, mat: api.LogMaterial): Promise<Readonly<api.ILogEntry>> {
+      const evt: api.ILogEntry = {
+        counter: 0,
+        material: [mat],
+        pal: "",
+        type: api.LogType.PartMark,
+        startofcycle: false,
+        endUTC: new Date(),
+        loc: 'Mark',
+        locnum: 1,
+        result: serial,
+        program: '',
+        elapsed: '00:00:00',
+        active: '00:00:00'
+      };
+      events.push(evt);
+      return Promise.resolve(evt);
+    },
   };
 }
