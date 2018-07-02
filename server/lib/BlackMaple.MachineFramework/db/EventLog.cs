@@ -2012,6 +2012,51 @@ namespace BlackMaple.MachineFramework
             }
         }
 
+        /// Find parts without an assigned unique in the queue, and assign them to the given unique
+        public IReadOnlyList<long> AllocateCastingsInQueue(string queue, string part, string unique, int maxCount)
+        {
+            lock (_lock)
+            {
+                var trans = _connection.BeginTransaction();
+                var matIds = new List<long>();
+                try
+                {
+                    using (var cmd = _connection.CreateCommand()) {
+                        cmd.Transaction = trans;
+
+                        cmd.CommandText = "SELECT queues.MaterialID FROM queues " +
+                            " INNER JOIN matdetails ON queues.MaterialID = matdetails.MaterialID " +
+                            " WHERE Queue = $q AND matdetails.PartName = $p AND matdetails.UniqueStr IS NULL " +
+                            " ORDER BY Position ASC" +
+                            " LIMIT $cnt ";
+                        cmd.Parameters.Add("q", SqliteType.Text).Value = queue;
+                        cmd.Parameters.Add("p", SqliteType.Text).Value = part;
+                        cmd.Parameters.Add("cnt", SqliteType.Integer).Value = maxCount;
+                        using (var reader = cmd.ExecuteReader()) {
+                            while (reader.Read()) matIds.Add(reader.GetInt64(0));
+                        }
+
+                        cmd.CommandText = "UPDATE matdetails SET UniqueStr = $uniq WHERE MaterialID = $mid";
+                        cmd.Parameters.Clear();
+                        cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
+                        cmd.Parameters.Add("mid", SqliteType.Integer);
+
+                        foreach (var matId in matIds) {
+                            cmd.Parameters[1].Value = matId;
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
+                    trans.Commit();
+                    return matIds;
+                }
+                catch
+                {
+                    trans.Rollback();
+                    throw;
+                }
+            }
+        }
+
         public struct QueuedMaterial
         {
             public long MaterialID {get;set;}

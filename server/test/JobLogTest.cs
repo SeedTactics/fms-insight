@@ -1080,6 +1080,27 @@ namespace MachineWatchTest
                 .ShouldAllBeEquivalentTo(expectedLogs);
         }
 
+        [Fact]
+        public void AllocateCastingsFromQueues()
+        {
+            var mat1 = new LogMaterial(
+                _jobLog.AllocateMaterialIDForCasting("part1", 5), "", 2, "part1", 5);
+            var mat2 = new LogMaterial(
+                _jobLog.AllocateMaterialIDForCasting("part1", 5), "", 1, "part1", 5);
+            var mat3 = new LogMaterial(
+                _jobLog.AllocateMaterialIDForCasting("part3", 3), "", 3, "part3", 3);
+
+            _jobLog.RecordAddMaterialToQueue(mat1, "queue1", 0);
+            _jobLog.RecordAddMaterialToQueue(mat2, "queue1", 1);
+            _jobLog.RecordAddMaterialToQueue(mat3, "queue1", 2);
+
+            _jobLog.AllocateCastingsInQueue("queue1", "part1", "uniqAAA", 2)
+                .ShouldAllBeEquivalentTo(new[] {mat1.MaterialID, mat2.MaterialID});
+
+            _jobLog.JobUniqueStrFromMaterialID(mat1.MaterialID).Should().Be("uniqAAA");
+            _jobLog.JobUniqueStrFromMaterialID(mat2.MaterialID).Should().Be("uniqAAA");
+        }
+
         #region Helpers
         private LogEntry AddLogEntry(LogEntry l)
         {
