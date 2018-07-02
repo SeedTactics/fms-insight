@@ -2062,6 +2062,9 @@ namespace BlackMaple.MachineFramework
             public long MaterialID {get;set;}
             public string Queue {get;set;}
             public int Position {get;set;}
+            public string Unique {get;set;}
+            public string PartName {get;set;}
+            public int NumProcesses {get;set;}
         }
 
         public IEnumerable<QueuedMaterial> GetMaterialInQueue(string queue)
@@ -2074,14 +2077,21 @@ namespace BlackMaple.MachineFramework
                 {
                     var cmd = _connection.CreateCommand();
                     cmd.Transaction = trans;
-                    cmd.CommandText = "SELECT MaterialID, Position FROM queues WHERE Queue = $q ORDER BY Position";
+                    cmd.CommandText = "SELECT queues.MaterialID, Position, UniqueStr, PartName, NumProcesses " +
+                      " FROM queues " +
+                      " LEFT OUTER JOIN matdetails ON queues.MaterialID = matdetails.MaterialID " +
+                      " WHERE Queue = $q " +
+                      " ORDER BY Position";
                     cmd.Parameters.Add("q", SqliteType.Text).Value = queue;
                     using (var reader = cmd.ExecuteReader()) {
                         while (reader.Read()) {
                             ret.Add(new QueuedMaterial() {
                                 MaterialID = reader.GetInt64(0),
                                 Queue = queue,
-                                Position = reader.GetInt32(1)
+                                Position = reader.GetInt32(1),
+                                Unique = reader.IsDBNull(2) ? "" : reader.GetString(2),
+                                PartName = reader.IsDBNull(3) ? "" : reader.GetString(3),
+                                NumProcesses = reader.IsDBNull(4) ? 1 : reader.GetInt32(4),
                             });
                         }
                     }
@@ -2106,13 +2116,19 @@ namespace BlackMaple.MachineFramework
                 {
                     var cmd = _connection.CreateCommand();
                     cmd.Transaction = trans;
-                    cmd.CommandText = "SELECT MaterialID, Queue, Position FROM queues ORDER BY Queue, Position";
+                    cmd.CommandText = "SELECT queues.MaterialID, Queue, Position, UniqueStr, PartName, NumProcesses " +
+                      " FROM queues " +
+                      " LEFT OUTER JOIN matdetails ON queues.MaterialID = matdetails.MaterialID " +
+                      " ORDER BY Queue, Position";
                     using (var reader = cmd.ExecuteReader()) {
                         while (reader.Read()) {
                             ret.Add(new QueuedMaterial() {
                                 MaterialID = reader.GetInt64(0),
                                 Queue = reader.GetString(1),
-                                Position = reader.GetInt32(2)
+                                Position = reader.GetInt32(2),
+                                Unique = reader.IsDBNull(3) ? "" : reader.GetString(3),
+                                PartName = reader.IsDBNull(4) ? "" : reader.GetString(4),
+                                NumProcesses = reader.IsDBNull(5) ? 1 : reader.GetInt32(5),
                             });
                         }
                     }

@@ -925,7 +925,7 @@ namespace MachineWatchTest
 
             _jobLog.GetMaterialInQueue("AAAA")
                 .ShouldAllBeEquivalentTo(new [] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartName = "part111", NumProcesses = 19}
                 });
 
             //adding with LogMaterial with position -1 and existing queue
@@ -935,8 +935,8 @@ namespace MachineWatchTest
 
             _jobLog.GetMaterialInQueue("AAAA")
                 .ShouldAllBeEquivalentTo(new [] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartName = "part2", NumProcesses = 22}
                 });
 
 
@@ -947,16 +947,16 @@ namespace MachineWatchTest
 
             _jobLog.GetMaterialInQueue("AAAA")
                 .ShouldAllBeEquivalentTo(new [] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 2}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartName = "part3", NumProcesses = 36},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 2, Unique = "uniq2", PartName = "part2", NumProcesses = 22}
                 });
             _jobLog.GetMaterialInAllQueues()
                 .ShouldAllBeEquivalentTo(new [] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 2},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 100, Queue = "BBBB", Position = 0}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartName = "part3", NumProcesses = 36},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 2, Unique = "uniq2", PartName = "part2", NumProcesses = 22},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 100, Queue = "BBBB", Position = 0, Unique = "uniq100", PartName = "part100", NumProcesses = 100}
                 });
 
             //removing from queue with LogMaterial
@@ -966,8 +966,8 @@ namespace MachineWatchTest
 
             _jobLog.GetMaterialInQueue("AAAA")
                 .ShouldAllBeEquivalentTo(new [] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartName = "part2", NumProcesses = 22}
                 });
 
 
@@ -978,9 +978,9 @@ namespace MachineWatchTest
 
             _jobLog.GetMaterialInQueue("AAAA")
                 .ShouldAllBeEquivalentTo(new [] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 2}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartName = "part2", NumProcesses = 22},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 2, Unique = "uniq3", PartName = "part3", NumProcesses = 36}
                 });
 
             //add also removes from queue (rearrange material 1)
@@ -994,9 +994,9 @@ namespace MachineWatchTest
 
             _jobLog.GetMaterialInQueue("AAAA")
                 .ShouldAllBeEquivalentTo(new [] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 2}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartName = "part2", NumProcesses = 22},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartName = "part3", NumProcesses = 36},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 2, Unique = "uniq1", PartName = "part111", NumProcesses = 19}
                 });
 
             //removing from queue with matid
@@ -1006,8 +1006,8 @@ namespace MachineWatchTest
 
             _jobLog.GetMaterialInQueue("AAAA")
                 .ShouldAllBeEquivalentTo(new [] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 0},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 1}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 0, Unique = "uniq3", PartName = "part3", NumProcesses = 36},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 1, Unique = "uniq1", PartName = "part111", NumProcesses = 19}
                 });
 
 
@@ -1038,8 +1038,8 @@ namespace MachineWatchTest
 
             _jobLog.GetMaterialInQueue("AAAA")
                 .ShouldAllBeEquivalentTo(new [] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartName = "part2", NumProcesses = 22}
                 });
 
 
@@ -1057,7 +1057,7 @@ namespace MachineWatchTest
 
             _jobLog.GetMaterialInQueue("AAAA")
                 .ShouldAllBeEquivalentTo(new [] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartName = "part2", NumProcesses = 22}
                 });
 
             //unloading should add to queue
@@ -1077,9 +1077,9 @@ namespace MachineWatchTest
 
             _jobLog.GetMaterialInQueue("AAAA")
                 .ShouldAllBeEquivalentTo(new [] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 1},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 2}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartName = "part2", NumProcesses = 22},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 1, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 2, Unique = "uniq3", PartName = "part3", NumProcesses = 36}
                 });
 
 
