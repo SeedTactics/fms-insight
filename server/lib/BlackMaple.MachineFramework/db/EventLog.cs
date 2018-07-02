@@ -2060,6 +2060,7 @@ namespace BlackMaple.MachineFramework
         public struct QueuedMaterial
         {
             public long MaterialID {get;set;}
+            public string Queue {get;set;}
             public int Position {get;set;}
         }
 
@@ -2079,7 +2080,39 @@ namespace BlackMaple.MachineFramework
                         while (reader.Read()) {
                             ret.Add(new QueuedMaterial() {
                                 MaterialID = reader.GetInt64(0),
+                                Queue = queue,
                                 Position = reader.GetInt32(1)
+                            });
+                        }
+                    }
+                    trans.Commit();
+                    return ret;
+                }
+                catch
+                {
+                    trans.Rollback();
+                    throw;
+                }
+            }
+        }
+
+        public IEnumerable<QueuedMaterial> GetMaterialInAllQueues()
+        {
+            lock (_lock)
+            {
+                var trans = _connection.BeginTransaction();
+                var ret = new List<QueuedMaterial>();
+                try
+                {
+                    var cmd = _connection.CreateCommand();
+                    cmd.Transaction = trans;
+                    cmd.CommandText = "SELECT MaterialID, Queue, Position FROM queues ORDER BY Queue, Position";
+                    using (var reader = cmd.ExecuteReader()) {
+                        while (reader.Read()) {
+                            ret.Add(new QueuedMaterial() {
+                                MaterialID = reader.GetInt64(0),
+                                Queue = reader.GetString(1),
+                                Position = reader.GetInt32(2)
                             });
                         }
                     }
