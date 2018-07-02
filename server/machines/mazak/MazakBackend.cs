@@ -44,6 +44,7 @@ namespace MazakMachineInterface
     private TransactionDatabaseAccess database;
     private RoutingInfo routing;
     private HoldPattern hold;
+    private MazakQueues queues;
     private LoadOperations loadOper;
     private LogTranslation logTrans;
     private ILogData logDataLoader;
@@ -212,8 +213,10 @@ namespace MazakMachineInterface
       }
       hold = new HoldPattern(dataDirectory, database, readOnlyDb, holdTrace, true);
       loadOper = new LoadOperations(loadOperTrace, cfg, readOnlyDb.SmoothDB);
-      routing = new RoutingInfo(database,readOnlyDb, hold, jobDB, jobLog, loadOper,
+      queues = new MazakQueues(jobLog, jobDB, loadOper, readOnlyDb, database);
+      routing = new RoutingInfo(database,readOnlyDb, hold, queues, jobDB, jobLog, loadOper,
                                 CheckPalletsUsedOnce, UseStartingOffsetForDueDate, DecrementPriorityOnDownload,
+                                settings,
                                 routingTrace);
       logTrans = new LogTranslation(jobLog, readOnlyDb, settings, logDataLoader, logTrace);
 
@@ -229,6 +232,7 @@ namespace MazakMachineInterface
       loadOper.LoadActions -= OnLoadActions;
       routing.Halt();
       hold.Shutdown();
+      queues.Shutdown();
       logTrans.Halt();
       loadOper.Halt();
       jobDB.Close();

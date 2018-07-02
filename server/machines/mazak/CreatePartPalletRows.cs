@@ -100,6 +100,13 @@ namespace MazakMachineInterface
       return false;
     }
 
+    public static string ExtractPartNameFromMazakPartName(string mazakPartName)
+    {
+        int loc = mazakPartName.IndexOf(':');
+        if (loc >= 0) mazakPartName = mazakPartName.Substring(0, loc);
+        return mazakPartName;
+    }
+
     public static int ParseUID(string str)
     {
       string[] sSplit = str.Split(':');
