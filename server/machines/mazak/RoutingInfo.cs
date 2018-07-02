@@ -183,6 +183,27 @@ namespace MazakMachineInterface
       }
     }
 
+    private static void AddCompletedToJob(ReadOnlyDataSet mazakSet, ReadOnlyDataSet.ScheduleRow schRow, InProcessJob job, int path)
+    {
+        job.SetCompleted(job.NumProcesses, path, schRow.CompleteQuantity);
+
+        //in-proc and material for each process
+        var counts = new Dictionary<int, int>(); //key is process, value is in-proc + mat
+        foreach (var schProcRow in schRow.GetScheduleProcessRows()) {
+          counts[schProcRow.ProcessNumber] =
+            schProcRow.ProcessBadQuantity + schProcRow.ProcessExecuteQuantity + schProcRow.ProcessMaterialQuantity;
+        }
+
+        for (int proc = 1; proc < job.NumProcesses; proc++) {
+          var cnt =
+            counts
+            .Where(x => x.Key > proc)
+            .Select(x => x.Value)
+            .Sum();
+          job.SetCompleted(proc, path, cnt + schRow.CompleteQuantity);
+        }
+    }
+
     private void AddDataFromJobDB(JobPlan jobFromMazak)
     {
       var jobFromDb = jobDB.LoadJob(jobFromMazak.UniqueStr);
@@ -306,7 +327,7 @@ namespace MazakMachineInterface
 
         //Job Basics
         job.SetPlannedCyclesOnFirstProcess(path, schRow.PlanQuantity);
-        job.SetCompleted(numProc, path, schRow.CompleteQuantity);
+        AddCompletedToJob(mazakSet, schRow, job, path);
         job.Priority = schRow.Priority;
         if (((HoldPattern.HoldMode)schRow.HoldMode) == HoldPattern.HoldMode.FullHold)
           job.HoldEntireJob.UserHold = true;
