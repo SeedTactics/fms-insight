@@ -333,7 +333,7 @@ namespace Cincron
 
         private IEnumerable<LogMaterial> CreateLoadMaterial(CincronMessage.PartLoadStart load)
         {
-            var matId = _log.AllocateMaterialID(load.WorkId);
+            var matId = _log.AllocateMaterialID(load.WorkId, "", 1);
             _trace.TraceEvent(System.Diagnostics.TraceEventType.Information, 0,
                  "Creating new material id for load event: " + matId.ToString() +
                  " work id " + load.WorkId);
@@ -358,7 +358,7 @@ namespace Cincron
 
             _trace.TraceEvent(System.Diagnostics.TraceEventType.Warning, 0,
                 "Unable to find existing material for pallet " + pal);
-            var matId = _log.AllocateMaterialID("");
+            var matId = _log.AllocateMaterialID("", "", 1);
             return new LogMaterial[] {
                 new LogMaterial(
                     matID: matId,
@@ -376,6 +376,7 @@ namespace Cincron
             string partName = "";
             if (state.PartCompletedMessages.Count > 0)
                 partName = state.PartCompletedMessages[0].PartName;
+            _log.SetDetailsForMaterialID(oldMat.MaterialID, oldMat.JobUniqueStr, partName, 1);
 
             ret.Add(new LogMaterial(
                 matID: oldMat.MaterialID,

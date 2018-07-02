@@ -179,13 +179,13 @@ namespace Makino
 		}
 
 		public IList<MatIDRow> CreateMaterialIDs(int pallet, int fixturenum, DateTime loadedUTC,
-			string order, int numParts, int startingCounter)
+			string order, IReadOnlyList<long> materialIds, int startingCounter)
 		{
 			lock (_lock) {
 				var trans = _connection.BeginTransaction();
 				try {
 
-					var ret = AddMatIDs(pallet, fixturenum, loadedUTC, order, numParts, startingCounter, trans);
+					var ret = AddMatIDs(pallet, fixturenum, loadedUTC, order, materialIds, startingCounter, trans);
 
 					trans.Commit();
 					return ret;
@@ -236,20 +236,12 @@ namespace Makino
 		}
 
 		private List<MatIDRow> AddMatIDs(int pallet, int fixturenum, DateTime loadedUTC, string order,
-			int numParts, int counterStart, IDbTransaction trans)
+			IReadOnlyList<long> materialIds, int counterStart, IDbTransaction trans)
 		{
 			var ret = new List<MatIDRow>();
 
 			using (var cmd = _connection.CreateCommand()) {
 				((IDbCommand)cmd).Transaction = trans;
-
-				cmd.CommandText = "SELECT MAX(MaterialID) FROM matids";
-				var lastMatObj = cmd.ExecuteScalar();
-				long lastMat;
-				if (lastMatObj == null || lastMatObj == DBNull.Value)
-					lastMat = 1;
-				else
-					lastMat = Convert.ToInt64(lastMatObj);
 
 				cmd.CommandText = "INSERT INTO matids(Pallet, FixtureNum, LoadedUTC, LocCounter, OrderName, MaterialID)" +
 					" VALUES (?,?,?,?,?,?)";
@@ -260,16 +252,16 @@ namespace Makino
 				cmd.Parameters.Add("", SqliteType.Text).Value = order;
 				cmd.Parameters.Add("", SqliteType.Integer);
 
-				for (int i = 0; i < numParts; i++) {
+				for (int i = 0; i < materialIds.Count; i++) {
 					cmd.Parameters[3].Value = counterStart + i;
-					cmd.Parameters[5].Value = lastMat + i + 1;
+					cmd.Parameters[5].Value = materialIds[i];
 					cmd.ExecuteNonQuery();
 
 					var row = default(MatIDRow);
 					row.LoadedUTC = loadedUTC;
 					row.LocCounter = counterStart + i;
 					row.Order = order;
-					row.MatID = lastMat + i + 1;
+					row.MatID = materialIds[i];
 					ret.Add(row);
 				}
 			}

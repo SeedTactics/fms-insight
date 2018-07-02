@@ -287,7 +287,7 @@ namespace MazakMachineInterface
           string partName;
           int numProc;
           FindPart(dset, e, out unique, out partName, out numProc);
-          ret.Add(new LogMaterial(_log.AllocateMaterialID(unique), unique,
+          ret.Add(new LogMaterial(_log.AllocateMaterialID(unique, partName, numProc), unique,
                                      e.Process, partName, numProc, e.Process.ToString()));
 
           trace.TraceEvent(System.Diagnostics.TraceEventType.Information, 0,
@@ -317,7 +317,7 @@ namespace MazakMachineInterface
             //must create material
             if (unique == null)
               FindPart(dset, e, out unique, out partName, out numProc);
-            ret.Add(new LogMaterial(_log.AllocateMaterialID(unique), unique,
+            ret.Add(new LogMaterial(_log.AllocateMaterialID(unique, partName, numProc), unique,
                                        e.Process, partName, numProc, face));
 
             trace.TraceEvent(System.Diagnostics.TraceEventType.Information, 0,

@@ -292,9 +292,18 @@ namespace Makino
 			}
 		}
 
+		private IReadOnlyList<long> AllocateMatIds(int count, string order, string part, int numProcess)
+		{
+			var matIds = new List<long>();
+			for (int i = 0; i < count; i++) {
+				matIds.Add(_log.AllocateMaterialID(order, part, numProcess));
+			}
+			return matIds;
+		}
+
 		private IList<LogMaterial> CreateMaterial(int pallet, int fixturenum, DateTime endUTC, string order, string part, int process, int count)
 		{
-			var rows = _status.CreateMaterialIDs(pallet, fixturenum, endUTC, order, count, 0);
+			var rows = _status.CreateMaterialIDs(pallet, fixturenum, endUTC, order, AllocateMatIds(count, order, part, process), 0);
 
 			var ret = new List<LogMaterial>();
 			foreach (var row in rows)
@@ -309,7 +318,7 @@ namespace Makino
 			if (rows.Count == 0) {
 				OutputTrace("Unable to find any material ids for pallet " + pallet.ToString() + "-" +
 					fixturenum.ToString() + " for order " + order + " for event at time " + endUTC.ToString());
-				rows = _status.CreateMaterialIDs(pallet, fixturenum, endUTC, order, count, 0);
+				rows = _status.CreateMaterialIDs(pallet, fixturenum, endUTC, order, AllocateMatIds(count, order, part, process), 0);
 			}
 
 			if (rows[0].Order != order) {
@@ -317,7 +326,7 @@ namespace Makino
 					" for event at time " + endUTC.ToString() + " does not have matching orders: " +
 					"expected " + order + " but found " + rows[0].Order);
 
-				rows = _status.CreateMaterialIDs(pallet, fixturenum, endUTC, order, count, 0);
+				rows = _status.CreateMaterialIDs(pallet, fixturenum, endUTC, order, AllocateMatIds(count, order, part, process), 0);
 			}
 
 			if (rows.Count < count) {
@@ -333,7 +342,7 @@ namespace Makino
 
 				//stupid that IList doesn't have AddRange
 				foreach (var row in _status.CreateMaterialIDs(
-					pallet, fixturenum, rows[0].LoadedUTC, order, count - rows.Count, maxCounter + 1)) {
+					pallet, fixturenum, rows[0].LoadedUTC, order, AllocateMatIds(count - rows.Count, order, part, process), maxCounter + 1)) {
 					rows.Add(row);
 				}
 			}

@@ -105,8 +105,8 @@ namespace BlackMaple.MachineFramework
                  "Result TEXT, EndOfRoute INTEGER, Elapsed INTEGER, ActiveTime INTEGER, ForeignID TEXT, OriginalMessage TEXT)";
             cmd.ExecuteNonQuery();
 
-            cmd.CommandText = "CREATE TABLE material(Counter INTEGER, MaterialID INTEGER, UniqueStr TEXT," +
-                 "Process INTEGER, Part TEXT, NumProcess INTEGER, Face TEXT, PRIMARY KEY(Counter,MaterialID,Process))";
+            cmd.CommandText = "CREATE TABLE stations_mat(Counter INTEGER, MaterialID INTEGER, " +
+                 "Process INTEGER, Face TEXT, PRIMARY KEY(Counter,MaterialID,Process))";
             cmd.ExecuteNonQuery();
 
             cmd.CommandText = "CREATE INDEX stations_idx ON stations(TimeUTC)";
@@ -118,17 +118,23 @@ namespace BlackMaple.MachineFramework
             cmd.CommandText = "CREATE INDEX stations_foreign ON stations(ForeignID)";
             cmd.ExecuteNonQuery();
 
-            cmd.CommandText = "CREATE INDEX material_idx ON material(MaterialID)";
+            cmd.CommandText = "CREATE INDEX stations_material_idx ON stations_mat(MaterialID)";
             cmd.ExecuteNonQuery();
 
-            cmd.CommandText = "CREATE TABLE materialid(MaterialID INTEGER PRIMARY KEY AUTOINCREMENT," +
-                 "UniqueStr TEXT NOT NULL, Serial TEXT, Workorder TEXT)";
+            cmd.CommandText = "CREATE TABLE matdetails(" +
+                "MaterialID INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                "UniqueStr TEXT, " +
+                "PartName TEXT NOT NULL, " +
+                "NumProcesses INTEGER NOT NULL, " +
+                "Serial TEXT, " +
+                "Workorder TEXT " +
+                ")";
             cmd.ExecuteNonQuery();
-            cmd.CommandText = "CREATE INDEX materialid_serial ON materialid(Serial) WHERE Serial IS NOT NULL";
+            cmd.CommandText = "CREATE INDEX matdetails_serial ON matdetails(Serial) WHERE Serial IS NOT NULL";
             cmd.ExecuteNonQuery();
-            cmd.CommandText = "CREATE INDEX materialid_workorder ON materialid(Workorder) WHERE Workorder IS NOT NULL";
+            cmd.CommandText = "CREATE INDEX matdetails_workorder ON matdetails(Workorder) WHERE Workorder IS NOT NULL";
             cmd.ExecuteNonQuery();
-            cmd.CommandText = "CREATE INDEX materialid_uniq ON materialid(UniqueStr)";
+            cmd.CommandText = "CREATE INDEX matdetails_uniq ON matdetails(UniqueStr)";
             cmd.ExecuteNonQuery();
 
             cmd.CommandText = "CREATE TABLE pendingloads(Pallet TEXT, Key TEXT, LoadStation INTEGER, Elapsed INTEGER, ActiveTime INTEGER, ForeignID TEXT)";
@@ -153,7 +159,6 @@ namespace BlackMaple.MachineFramework
             cmd.CommandText = "CREATE INDEX queues_idx ON queues(Queue, Position)";
             cmd.ExecuteNonQuery();
         }
-
 
         private void UpdateTables(string inspDbFile)
         {
@@ -454,6 +459,47 @@ namespace BlackMaple.MachineFramework
             cmd.ExecuteNonQuery();
             cmd.CommandText = "CREATE INDEX queues_idx ON queues(Queue, Position)";
             cmd.ExecuteNonQuery();
+
+            // new stations_mat table equals old material table but without some columns
+            cmd.CommandText = "CREATE TABLE stations_mat(Counter INTEGER, MaterialID INTEGER, " +
+                 "Process INTEGER, Face TEXT, PRIMARY KEY(Counter,MaterialID,Process))";
+            cmd.ExecuteNonQuery();
+            cmd.CommandText = "CREATE INDEX stations_material_idx ON stations_mat(MaterialID)";
+            cmd.ExecuteNonQuery();
+            cmd.CommandText = "INSERT INTO stations_mat(Counter, MaterialID, Process, Face) " +
+              " SELECT Counter, MaterialID, Process, Face FROM material";
+            cmd.ExecuteNonQuery();
+
+
+            // new matdetails table
+            cmd.CommandText = "CREATE TABLE matdetails(" +
+                "MaterialID INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                "UniqueStr TEXT, " +
+                "PartName TEXT," +
+                "NumProcesses INTEGER, " +
+                "Serial TEXT, " +
+                "Workorder TEXT " +
+                ")";
+            cmd.ExecuteNonQuery();
+            cmd.CommandText = "CREATE INDEX matdetails_serial ON matdetails(Serial) WHERE Serial IS NOT NULL";
+            cmd.ExecuteNonQuery();
+            cmd.CommandText = "CREATE INDEX matdetails_workorder ON matdetails(Workorder) WHERE Workorder IS NOT NULL";
+            cmd.ExecuteNonQuery();
+            cmd.CommandText = "CREATE INDEX matdetails_uniq ON matdetails(UniqueStr)";
+            cmd.ExecuteNonQuery();
+            cmd.CommandText = "INSERT INTO matdetails(MaterialID, UniqueStr, Serial, Workorder, PartName, NumProcesses) " +
+              " SELECT " +
+              "   MaterialID, UniqueStr, Serial, Workorder " +
+              "   (SELECT Part FROM material WHERE material.MaterialID = materialid.MaterialID LIMIT 1) as PartName, " +
+              "   (SELECT NumProcess FROM material WHERE material.MaterialID = materialid.MaterialID LIMIT 1) as NumProcesses " +
+              " FROM materialid";
+            cmd.ExecuteNonQuery();
+
+
+            cmd.CommandText = "DROP TABLE material";
+            cmd.ExecuteNonQuery();
+            cmd.CommandText = "DROP TABLE materialid";
+            cmd.ExecuteNonQuery();
         }
 
         #endregion
@@ -466,7 +512,11 @@ namespace BlackMaple.MachineFramework
         private List<MachineWatchInterface.LogEntry> LoadLog(IDataReader reader)
         {
             var matCmd = _connection.CreateCommand();
-            matCmd.CommandText = "SELECT MaterialID, UniqueStr, Process, Part, NumProcess, Face FROM material WHERE Counter = $cntr ORDER BY Counter ASC";
+            matCmd.CommandText = "SELECT stations_mat.MaterialID, UniqueStr, Process, PartName, NumProcesses, Face " +
+              " FROM stations_mat " +
+              " LEFT OUTER JOIN matdetails ON stations_mat.MaterialID = matdetails.MaterialID " +
+              " WHERE stations_mat.Counter = $cntr " +
+              " ORDER BY stations_mat.Counter ASC";
             matCmd.Parameters.Add("cntr", SqliteType.Integer);
 
             var detailCmd = _connection.CreateCommand();
@@ -551,9 +601,12 @@ namespace BlackMaple.MachineFramework
                 {
                     while (matReader.Read())
                     {
+                        string uniq = "";
                         string part = "";
                         int numProc = -1;
                         string face = "";
+                        if (!matReader.IsDBNull(1))
+                            uniq = matReader.GetString(1);
                         if (!matReader.IsDBNull(3))
                             part = matReader.GetString(3);
                         if (!matReader.IsDBNull(4))
@@ -561,7 +614,7 @@ namespace BlackMaple.MachineFramework
                         if (!matReader.IsDBNull(5))
                             face = matReader.GetString(5);
                         matLst.Add(new MachineWatchInterface.LogMaterial(matReader.GetInt64(0),
-                                                                         matReader.GetString(1),
+                                                                         uniq,
                                                                          matReader.GetInt32(2),
                                                                          part, numProc, face));
                     }
@@ -669,7 +722,7 @@ namespace BlackMaple.MachineFramework
             {
                 var cmd = _connection.CreateCommand();
                 cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-                     " FROM stations WHERE Counter IN (SELECT Counter FROM material WHERE MaterialID = $mat) ORDER BY Counter ASC";
+                     " FROM stations WHERE Counter IN (SELECT Counter FROM stations_mat WHERE MaterialID = $mat) ORDER BY Counter ASC";
                 cmd.Parameters.Add("mat", SqliteType.Integer).Value = materialID;
 
                 using (var reader = cmd.ExecuteReader())
@@ -685,7 +738,7 @@ namespace BlackMaple.MachineFramework
             {
                 var cmd = _connection.CreateCommand();
                 cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-                    " FROM stations WHERE Counter IN (SELECT material.Counter FROM materialid INNER JOIN material ON material.MaterialID = materialid.MaterialID WHERE materialid.Serial = $ser) ORDER BY Counter ASC";
+                    " FROM stations WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.Serial = $ser) ORDER BY Counter ASC";
                 cmd.Parameters.Add("ser", SqliteType.Text).Value = serial;
 
                 using (var reader = cmd.ExecuteReader())
@@ -701,7 +754,7 @@ namespace BlackMaple.MachineFramework
             {
                 var cmd = _connection.CreateCommand();
                 cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-                    " FROM stations WHERE Counter IN (SELECT material.Counter FROM materialid INNER JOIN material ON material.MaterialID = materialid.MaterialID WHERE materialid.UniqueStr = $uniq) ORDER BY Counter ASC";
+                    " FROM stations WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.UniqueStr = $uniq) ORDER BY Counter ASC";
                 cmd.Parameters.Add("uniq", SqliteType.Text).Value = jobUnique;
 
                 using (var reader = cmd.ExecuteReader())
@@ -717,7 +770,7 @@ namespace BlackMaple.MachineFramework
             {
                 var cmd = _connection.CreateCommand();
                 cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-                    " FROM stations WHERE Counter IN (SELECT material.Counter FROM materialid INNER JOIN material ON material.MaterialID = materialid.MaterialID WHERE materialid.Workorder = $work) ORDER BY Counter ASC";
+                    " FROM stations WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.Workorder = $work) ORDER BY Counter ASC";
                 cmd.Parameters.Add("work", SqliteType.Text).Value = workorder;
 
                 using (var reader = cmd.ExecuteReader())
@@ -730,11 +783,11 @@ namespace BlackMaple.MachineFramework
         public List<MachineWatchInterface.LogEntry> GetCompletedPartLogs(DateTime startUTC, DateTime endUTC)
         {
             var searchCompleted = @"
-                SELECT Counter FROM material
+                SELECT Counter FROM stations_mat
                     WHERE MaterialId IN
-                        (SELECT material.MaterialId FROM stations, material
+                        (SELECT stations_mat.MaterialId FROM stations, stations_mat, matdetails
                             WHERE
-                                stations.Counter = material.Counter
+                                stations.Counter = stations_mat.Counter
                                 AND
                                 stations.StationLoc = $loadty
                                 AND
@@ -746,7 +799,9 @@ namespace BlackMaple.MachineFramework
                                 AND
                                 stations.TimeUTC >= $startUTC
                                 AND
-                                material.Process = material.NumProcess
+                                stations_mat.MaterialID = matdetails.MaterialID
+                                AND
+                                stations_mat.Process = matdetails.NumProcesses
                         )";
 
             lock (_lock)
@@ -917,9 +972,9 @@ namespace BlackMaple.MachineFramework
 		public List<MachineWatchInterface.WorkorderSummary> GetWorkorderSummaries(IEnumerable<string> workorders)
 		{
 			var countQry = @"
-				SELECT material.Part, COUNT(material.MaterialID) FROM stations, material, materialid
+				SELECT matdetails.PartName, COUNT(stations_mat.MaterialID) FROM stations, stations_mat, matdetails
   					WHERE
-   						stations.Counter = material.Counter
+   						stations.Counter = stations_mat.Counter
    						AND
    						stations.StationLoc = $loadty
                         AND
@@ -927,18 +982,18 @@ namespace BlackMaple.MachineFramework
                         AND
                         stations.Start = 0
    						AND
-   						material.MaterialID = materialid.MaterialID
+   						stations_mat.MaterialID = matdetails.MaterialID
    						AND
-   						materialid.Workorder = $workid
+   						matdetails.Workorder = $workid
                         AND
-                        material.Process == material.NumProcess
+                        stations_mat.Process == matdetails.NumProcesses
                     GROUP BY
-                        material.Part";
+                        matdetails.PartName";
 
 			var serialQry = @"
-				SELECT DISTINCT Serial FROM materialid
+				SELECT DISTINCT Serial FROM matdetails
 				    WHERE
-					    materialid.Workorder = $workid";
+					    matdetails.Workorder = $workid";
 
             var finalizedQry = @"
                 SELECT MAX(TimeUTC) FROM stations
@@ -950,22 +1005,22 @@ namespace BlackMaple.MachineFramework
                         StationLoc = $workloc"; //use the (Pallet, Result) index
 
             var timeQry = @"
-                SELECT Part, StationName, SUM(Elapsed / totcount), SUM(ActiveTime / totcount)
+                SELECT PartName, StationName, SUM(Elapsed / totcount), SUM(ActiveTime / totcount)
                     FROM
                         (
-                            SELECT s.StationName, m.Part, s.Elapsed, s.ActiveTime,
-                                 (SELECT COUNT(*) FROM material AS m2 WHERE m2.Counter = s.Counter) totcount
-                              FROM stations AS s, material AS m, materialid
+                            SELECT s.StationName, matdetails.PartName, s.Elapsed, s.ActiveTime,
+                                 (SELECT COUNT(*) FROM stations_mat AS m2 WHERE m2.Counter = s.Counter) totcount
+                              FROM stations AS s, stations_mat AS m, matdetails
                               WHERE
                                 s.Counter = m.Counter
                                 AND
-                                m.MaterialID = materialid.MaterialID
+                                m.MaterialID = matdetails.MaterialID
                                 AND
-                                materialid.Workorder = $workid
+                                matdetails.Workorder = $workid
                                 AND
                                 s.Start = 0
                         )
-                    GROUP BY Part, StationName";
+                    GROUP BY PartName, StationName";
 
 			using (var countCmd = _connection.CreateCommand())
 			using (var serialCmd = _connection.CreateCommand())
@@ -1120,24 +1175,18 @@ namespace BlackMaple.MachineFramework
             var cmd = _connection.CreateCommand();
             ((IDbCommand)cmd).Transaction = trans;
 
-            cmd.CommandText = "INSERT INTO material(Counter,MaterialID,UniqueStr,Process,Part,NumProcess,Face)" +
-           "VALUES($cntr,$mat,$unique,$proc,$part,$numproc,$face)";
+            cmd.CommandText = "INSERT INTO stations_mat(Counter,MaterialID,Process,Face)" +
+           "VALUES($cntr,$mat,$proc,$face)";
             cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
             cmd.Parameters.Add("mat", SqliteType.Integer);
-            cmd.Parameters.Add("unique", SqliteType.Text);
             cmd.Parameters.Add("proc", SqliteType.Integer);
-            cmd.Parameters.Add("part", SqliteType.Text);
-            cmd.Parameters.Add("numproc", SqliteType.Integer);
             cmd.Parameters.Add("face", SqliteType.Text);
 
             foreach (var m in mat)
             {
                 cmd.Parameters[1].Value = m.MaterialID;
-                cmd.Parameters[2].Value = m.JobUniqueStr;
-                cmd.Parameters[3].Value = m.Process;
-                cmd.Parameters[4].Value = m.PartName;
-                cmd.Parameters[5].Value = m.NumProcesses;
-                cmd.Parameters[6].Value = m.Face;
+                cmd.Parameters[2].Value = m.Process;
+                cmd.Parameters[3].Value = m.Face;
                 cmd.ExecuteNonQuery();
             }
         }
@@ -1576,7 +1625,7 @@ namespace BlackMaple.MachineFramework
         #endregion
 
         #region Material IDs
-        public long AllocateMaterialID(string unique)
+        public long AllocateMaterialID(string unique, string part, int numProc)
         {
             lock (_lock)
             {
@@ -1584,8 +1633,10 @@ namespace BlackMaple.MachineFramework
                     var trans = _connection.BeginTransaction();
                     cmd.Transaction = trans;
                     try {
-                        cmd.CommandText = "INSERT INTO materialid(UniqueStr) VALUES ($uniq)";
+                        cmd.CommandText = "INSERT INTO matdetails(UniqueStr, PartName, NumProcesses) VALUES ($uniq,$part,$numproc)";
                         cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
+                        cmd.Parameters.Add("part", SqliteType.Text).Value = part;
+                        cmd.Parameters.Add("numproc", SqliteType.Integer).Value = numProc;
                         cmd.ExecuteNonQuery();
                         cmd.CommandText = "SELECT last_insert_rowid()";
                         cmd.Parameters.Clear();
@@ -1600,14 +1651,54 @@ namespace BlackMaple.MachineFramework
             }
         }
 
-        public void CreateMaterialID(long matID, string unique)
+        public long AllocateMaterialIDForCasting(string part, int numProc)
+        {
+            lock (_lock)
+            {
+                using (var cmd = _connection.CreateCommand()) {
+                    var trans = _connection.BeginTransaction();
+                    cmd.Transaction = trans;
+                    try {
+                        cmd.CommandText = "INSERT INTO matdetails(PartName, NumProcesses) VALUES ($part,$numproc)";
+                        cmd.Parameters.Add("part", SqliteType.Text).Value = part;
+                        cmd.Parameters.Add("numproc", SqliteType.Integer).Value = numProc;
+                        cmd.ExecuteNonQuery();
+                        cmd.CommandText = "SELECT last_insert_rowid()";
+                        cmd.Parameters.Clear();
+                        var matID = (long)cmd.ExecuteScalar();
+                        trans.Commit();
+                        return matID;
+                    } catch {
+                        trans.Rollback();
+                        throw;
+                    }
+                }
+            }
+        }
+
+        public void SetDetailsForMaterialID(long matID, string unique, string part, int numProc)
+        {
+            lock (_lock) {
+                var cmd = _connection.CreateCommand();
+                cmd.CommandText = "UPDATE matdetails SET UniqueStr = $uniq, PartName = $part, NumProcesses = $numproc WHERE MaterialID = $mat";
+                cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
+                cmd.Parameters.Add("part", SqliteType.Text).Value = part;
+                cmd.Parameters.Add("numproc", SqliteType.Integer).Value = numProc;
+                cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        public void CreateMaterialID(long matID, string unique, string part, int numProc)
         {
             lock (_lock)
             {
                 var cmd = _connection.CreateCommand();
-                cmd.CommandText = "INSERT INTO materialid(MaterialID, UniqueStr) VALUES ($mid, $uniq)";
+                cmd.CommandText = "INSERT INTO matdetails(MaterialID, UniqueStr, PartName, NumProcesses) VALUES ($mid, $uniq, $part, $numproc)";
                 cmd.Parameters.Add("mid", SqliteType.Integer).Value = matID;
                 cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
+                cmd.Parameters.Add("part", SqliteType.Text).Value = part;
+                cmd.Parameters.Add("numproc", SqliteType.Integer).Value = numProc;
                 cmd.ExecuteNonQuery();
             }
         }
@@ -1619,18 +1710,62 @@ namespace BlackMaple.MachineFramework
                 string unique = "";
 
                 var cmd = _connection.CreateCommand();
-                cmd.CommandText = "SELECT UniqueStr FROM materialid WHERE MaterialID = $mat";
+                cmd.CommandText = "SELECT UniqueStr FROM matdetails WHERE MaterialID = $mat";
                 cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
 
                 using (var reader = cmd.ExecuteReader())
                 {
                     if (reader.Read())
                     {
-                        unique = reader.GetString(0);
+                        if (!reader.IsDBNull(0)) unique = reader.GetString(0);
                     }
                 }
 
                 return unique;
+            }
+        }
+
+        public string PartForMaterialID(long matID)
+        {
+            lock (_lock)
+            {
+                string part = "";
+
+                var cmd = _connection.CreateCommand();
+                cmd.CommandText = "SELECT PartName FROM matdetails WHERE MaterialID = $mat";
+                cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
+
+                using (var reader = cmd.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        if (!reader.IsDBNull(0)) part = reader.GetString(0);
+                    }
+                }
+
+                return part;
+            }
+        }
+
+        public int NumProcessesForMaterialID(long matID)
+        {
+            lock (_lock)
+            {
+                int numProc = 1;
+
+                var cmd = _connection.CreateCommand();
+                cmd.CommandText = "SELECT NumProcesses FROM matdetails WHERE MaterialID = $mat";
+                cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
+
+                using (var reader = cmd.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        if (!reader.IsDBNull(0)) numProc = reader.GetInt32(0);
+                    }
+                }
+
+                return numProc;
             }
         }
 
@@ -1641,7 +1776,7 @@ namespace BlackMaple.MachineFramework
                 string ser = "";
 
                 var cmd = _connection.CreateCommand();
-                cmd.CommandText = "SELECT Serial FROM materialid WHERE MaterialID = $mat";
+                cmd.CommandText = "SELECT Serial FROM matdetails WHERE MaterialID = $mat";
                 cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
 
                 using (var reader = cmd.ExecuteReader())
@@ -1661,7 +1796,7 @@ namespace BlackMaple.MachineFramework
         {
             var cmd = _connection.CreateCommand();
             ((IDbCommand)cmd).Transaction = trans;
-            cmd.CommandText = "UPDATE materialid SET Serial = $ser WHERE MaterialID = $mat";
+            cmd.CommandText = "UPDATE matdetails SET Serial = $ser WHERE MaterialID = $mat";
             if (string.IsNullOrEmpty(serial))
                 cmd.Parameters.Add("ser", SqliteType.Text).Value = DBNull.Value;
             else
@@ -1670,7 +1805,6 @@ namespace BlackMaple.MachineFramework
             cmd.ExecuteNonQuery();
         }
 
-
         public string WorkorderForMaterialID(long matID)
         {
             lock (_lock)
@@ -1678,7 +1812,7 @@ namespace BlackMaple.MachineFramework
                 string workId = "";
 
                 var cmd = _connection.CreateCommand();
-                cmd.CommandText = "SELECT Workorder FROM materialid WHERE MaterialID = $mat";
+                cmd.CommandText = "SELECT Workorder FROM matdetails WHERE MaterialID = $mat";
                 cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
 
                 using (var reader = cmd.ExecuteReader())
@@ -1698,7 +1832,7 @@ namespace BlackMaple.MachineFramework
         {
             var cmd = _connection.CreateCommand();
             ((IDbCommand)cmd).Transaction = trans;
-            cmd.CommandText = "UPDATE materialid SET Workorder = $work WHERE MaterialID = $mat";
+            cmd.CommandText = "UPDATE matdetails SET Workorder = $work WHERE MaterialID = $mat";
             if (string.IsNullOrEmpty(workorder))
                 cmd.Parameters.Add("work", SqliteType.Text).Value = DBNull.Value;
             else
@@ -1721,7 +1855,7 @@ namespace BlackMaple.MachineFramework
             using (var cmd = _connection.CreateCommand()) {
                 ((IDbCommand)cmd).Transaction = trans;
 
-                cmd.CommandText = "SELECT UniqueStr, Part, NumProcess FROM material WHERE MaterialID = $mid LIMIT 1";
+                cmd.CommandText = "SELECT UniqueStr, PartName, NumProcesses FROM matdetails WHERE MaterialID = $mid";
                 cmd.Parameters.Add("mid", SqliteType.Integer).Value = matId;
                 using (var reader = cmd.ExecuteReader()) {
                     if (reader.Read()) {
@@ -1799,7 +1933,7 @@ namespace BlackMaple.MachineFramework
             using (var cmd = _connection.CreateCommand()) {
                 ((IDbCommand)cmd).Transaction = trans;
 
-                cmd.CommandText = "SELECT UniqueStr, Part, NumProcess FROM material WHERE MaterialID = $mid LIMIT 1";
+                cmd.CommandText = "SELECT UniqueStr, PartName, NumProcesses FROM matdetails WHERE MaterialID = $mid";
                 cmd.Parameters.Add("mid", SqliteType.Integer).Value = matID;
                 using (var reader = cmd.ExecuteReader()) {
                     if (reader.Read()) {
@@ -2329,7 +2463,7 @@ namespace BlackMaple.MachineFramework
             ((IDbCommand)cmd).Transaction = trans;
             cmd.CommandText = "SELECT Pallet, StationLoc, StationName, StationNum, Process " +
                 " FROM stations " +
-                " INNER JOIN material ON stations.Counter = material.Counter " +
+                " INNER JOIN stations_mat ON stations.Counter = stations_mat.Counter " +
                 " WHERE " +
                 "    MaterialID = $mat AND Start = 0 " +
                 "    AND (StationLoc = $ty1 OR StationLoc = $ty2) " +
@@ -2438,7 +2572,7 @@ namespace BlackMaple.MachineFramework
             cmd.CommandText = "SELECT Counter, StationLoc, Program, TimeUTC, Result " +
                 " FROM stations " +
                 " WHERE " +
-                "    Counter IN (SELECT Counter FROM material WHERE MaterialID = $mat) " +
+                "    Counter IN (SELECT Counter FROM stations_mat WHERE MaterialID = $mat) " +
                 "    AND (StationLoc = $loc1 OR StationLoc = $loc2) " +
                 " ORDER BY Counter ASC";
             cmd.Parameters.Add("$mat", SqliteType.Integer).Value = matID;

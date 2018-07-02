@@ -62,13 +62,29 @@ namespace MachineWatchTest
         [Fact]
         public void MaterialIDs()
         {
-            long m1 = _jobLog.AllocateMaterialID("U1");
-            long m2 = _jobLog.AllocateMaterialID("U2");
-            long m3 = _jobLog.AllocateMaterialID("U3");
+            long m1 = _jobLog.AllocateMaterialID("U1", "P1", 52);
+            long m2 = _jobLog.AllocateMaterialID("U2", "P2", 66);
+            long m3 = _jobLog.AllocateMaterialID("U3", "P3", 566);
 
             Assert.Equal("U1", _jobLog.JobUniqueStrFromMaterialID(m1));
             Assert.Equal("U2", _jobLog.JobUniqueStrFromMaterialID(m2));
             Assert.Equal("U3", _jobLog.JobUniqueStrFromMaterialID(m3));
+            _jobLog.PartForMaterialID(m1).Should().Be("P1");
+            _jobLog.PartForMaterialID(m2).Should().Be("P2");
+            _jobLog.PartForMaterialID(m3).Should().Be("P3");
+            _jobLog.NumProcessesForMaterialID(m1).Should().Be(52);
+            _jobLog.NumProcessesForMaterialID(m2).Should().Be(66);
+            _jobLog.NumProcessesForMaterialID(m3).Should().Be(566);
+
+            long m4 = _jobLog.AllocateMaterialIDForCasting("P4", 44);
+            _jobLog.JobUniqueStrFromMaterialID(m4).Should().BeNullOrEmpty();
+            _jobLog.PartForMaterialID(m4).Should().Be("P4");
+            _jobLog.NumProcessesForMaterialID(m4).Should().Be(44);
+
+            _jobLog.SetDetailsForMaterialID(m4, "U4", "P4444", 77);
+            _jobLog.JobUniqueStrFromMaterialID(m4).Should().Be("U4");
+            _jobLog.PartForMaterialID(m4).Should().Be("P4444");
+            _jobLog.NumProcessesForMaterialID(m4).Should().Be(77);
         }
 
         [Fact]
@@ -81,8 +97,10 @@ namespace MachineWatchTest
             List<LogEntry> logs = new List<LogEntry>();
             var logsForMat1 = new List<LogEntry>();
 
-            LogMaterial mat1 = new LogMaterial(1, "grgaegr", 7, "pp2", 23, "face22");
-            LogMaterial mat19 = new LogMaterial(19, "unique", 2, "pp1", 53, "face55");
+            LogMaterial mat1 = new LogMaterial(
+                _jobLog.AllocateMaterialID("grgaegr", "pp2", 23), "grgaegr", 7, "pp2", 23, "face22");
+            LogMaterial mat19 = new LogMaterial(
+                _jobLog.AllocateMaterialID("unique", "pp1", 53), "unique", 2, "pp1", 53, "face55");
 
             var loadStartActualCycle = _jobLog.RecordLoadStart(
                 mats: new[] {mat1, mat19},
@@ -99,8 +117,10 @@ namespace MachineWatchTest
             logs.Add(loadStartActualCycle);
             logsForMat1.Add(loadStartActualCycle);
 
-            var mat2 = new LogMaterial(2, "ahre", 1, "gewoiweg", 13);
-            var mat15 = new LogMaterial(15, "qghr4e", 3, "ppp532", 14);
+            var mat2 = new LogMaterial(
+                _jobLog.AllocateMaterialID("ahre", "gewoiweg", 13), "ahre", 1, "gewoiweg", 13);
+            var mat15 = new LogMaterial(
+                _jobLog.AllocateMaterialID("qghr4e", "ppp532", 14), "qghr4e", 3, "ppp532", 14);
 
             var loadEndActualCycle = _jobLog.RecordLoadEnd(
                 mats: new[] {mat2, mat15},
@@ -222,8 +242,6 @@ namespace MachineWatchTest
             CheckLog(logsForMat1, _jobLog.GetLogForMaterial(1), start);
             Assert.Equal(_jobLog.GetLogForMaterial(18).Count, 0);
 
-            _jobLog.AllocateMaterialID("uniqformat1");
-            mat1 = new LogMaterial(1, "thrwe", 9, "adsf", 644, "face842");
             var markLog = _jobLog.RecordSerialForMaterialID(mat1, "ser1");
             logsForMat1.Add(new LogEntry(-1, new LogMaterial[] { mat1 }, "",
                                              LogType.PartMark, "Mark", 1,
@@ -238,7 +256,7 @@ namespace MachineWatchTest
             CheckLog(logsForMat1, _jobLog.GetLogForWorkorder("work1"), start);
             Assert.Equal(_jobLog.GetLogForWorkorder("work2").Count, 0);
 
-            CheckLog(logsForMat1, _jobLog.GetLogForJobUnique("uniqformat1"), start);
+            CheckLog(logsForMat1, _jobLog.GetLogForJobUnique(mat1.JobUniqueStr), start);
             Assert.Equal(_jobLog.GetLogForJobUnique("sofusadouf").Count, 0);
 
             //inspection and wash
@@ -262,7 +280,7 @@ namespace MachineWatchTest
             expectedWashLog.ProgramDetails.Add("y", "yyy");
             logsForMat1.Add(expectedWashLog);
 
-            CheckLog(logsForMat1, _jobLog.GetLogForJobUnique("uniqformat1"), start);
+            CheckLog(logsForMat1, _jobLog.GetLogForJobUnique(mat1.JobUniqueStr), start);
         }
 
         [Fact]
@@ -276,8 +294,10 @@ namespace MachineWatchTest
             var pal1Cycle = new List<LogEntry>();
             var pal2Cycle = new List<LogEntry>();
 
-            var mat1 = new LogMaterial(1, "unique", 1, "part1", 2, "face1");
-            var mat2 = new LogMaterial(17, "unique2", 2, "part2", 2, "face2");
+            var mat1 = new LogMaterial(
+                _jobLog.AllocateMaterialID("unique", "part1", 2), "unique", 1, "part1", 2, "face1");
+            var mat2 = new LogMaterial(
+                _jobLog.AllocateMaterialID("unique2", "part2", 2), "unique2", 2, "part2", 2, "face2");
 
             DateTime pal1InitialTime = DateTime.UtcNow.AddHours(-4);
 
@@ -415,8 +435,10 @@ namespace MachineWatchTest
         [Fact]
         public void ForeignID()
         {
-            var mat1 = new LogMaterial(1, "unique", 1, "part1", 2, "face1");
-            var mat2 = new LogMaterial(17, "unique2", 2, "part2", 2, "face2");
+            var mat1 = new LogMaterial(
+                _jobLog.AllocateMaterialID("unique", "part1", 2), "unique", 1, "part1", 2, "face1");
+            var mat2 = new LogMaterial(
+                _jobLog.AllocateMaterialID("unique2", "part2", 2), "unique2", 2, "part2", 2, "face2");
 
             var log1 = new LogEntry(0, new LogMaterial[] { mat1, mat2 },
                                   "pal1", LogType.GeneralMessage, "ABC", 1,
@@ -468,8 +490,10 @@ namespace MachineWatchTest
         [Fact]
         public void OriginalMessage()
         {
-            var mat1 = new LogMaterial(14, "uniqqqq", 1, "pppart66", 5, "facce");
-            var mat2 = new LogMaterial(17, "uuuuuniq", 2, "part5", 2, "face2");
+            var mat1 = new LogMaterial(
+                _jobLog.AllocateMaterialID("uniqqqq", "pppart66", 5), "uniqqqq", 1, "pppart66", 5, "facce");
+            var mat2 = new LogMaterial(
+                _jobLog.AllocateMaterialID("uuuuuniq", "part5", 2), "uuuuuniq", 2, "part5", 2, "face2");
 
             var log1 = new LogEntry(0, new LogMaterial[] { mat1, mat2 },
                                   "palllet16", LogType.GeneralMessage, "Hello", 5,
@@ -492,13 +516,16 @@ namespace MachineWatchTest
         {
             Assert.Equal(0, _jobLog.PendingLoads("pal1").Count);
 
-            var mat1 = new LogMaterial(1, "unique", 1, "part1", 1, "face1");
-            var mat2 = new LogMaterial(17, "unique2", 2, "part2", 2, "face2");
-            var mat3 = new LogMaterial(25, "unique3", 3, "part3", 3, "face3");
+            var mat1 = new LogMaterial(
+                _jobLog.AllocateMaterialID("unique", "part1", 1), "unique", 1, "part1", 1, "face1");
+            var mat2 = new LogMaterial(
+                _jobLog.AllocateMaterialID("unique2", "part2", 2), "unique2", 2, "part2", 2, "face2");
+            var mat3 = new LogMaterial(
+                _jobLog.AllocateMaterialID("unique3", "part3", 3), "unique3", 3, "part3", 3, "face3");
 
-            var serial1 = "0000000001";
-            var serial2 = JobLogDB.ConvertToBase62(17).PadLeft(10, '0');
-            var serial3 = JobLogDB.ConvertToBase62(25).PadLeft(10, '0');
+            var serial1 = JobLogDB.ConvertToBase62(mat1.MaterialID).PadLeft(10, '0');
+            var serial2 = JobLogDB.ConvertToBase62(mat2.MaterialID).PadLeft(10, '0');
+            var serial3 = JobLogDB.ConvertToBase62(mat3.MaterialID).PadLeft(10, '0');
 
             var t = DateTime.UtcNow.AddHours(-1);
 
@@ -574,12 +601,15 @@ namespace MachineWatchTest
         [Fact]
         public void PendingLoadOneSerialPerCycle()
         {
-            var mat1 = new LogMaterial(6, "unique", 1, "part1", 1, "face1");
-            var mat2 = new LogMaterial(17, "unique2", 2, "part2", 2, "face2");
-            var mat3 = new LogMaterial(25, "unique3", 3, "part3", 3, "face3");
+            var mat1 = new LogMaterial(
+                _jobLog.AllocateMaterialID("unique", "part1", 1), "unique", 1, "part1", 1, "face1");
+            var mat2 = new LogMaterial(
+                _jobLog.AllocateMaterialID("unique2", "part2", 2), "unique2", 2, "part2", 2, "face2");
+            var mat3 = new LogMaterial(
+                _jobLog.AllocateMaterialID("unique3", "part3", 3), "unique3", 3, "part3", 3, "face3");
 
-            var serial1 = "0000000006";
-            var serial3 = JobLogDB.ConvertToBase62(25).PadLeft(10, '0');
+            var serial1 = JobLogDB.ConvertToBase62(mat1.MaterialID).PadLeft(10, '0');
+            var serial3 = JobLogDB.ConvertToBase62(mat3.MaterialID).PadLeft(10, '0');
 
             var t = DateTime.UtcNow.AddHours(-1);
 
@@ -640,10 +670,10 @@ namespace MachineWatchTest
 			var t = DateTime.UtcNow.AddHours(-1);
 
 			//one material across two processes
-			var mat1 = _jobLog.AllocateMaterialID("uniq1");
+			var mat1 = _jobLog.AllocateMaterialID("uniq1", "part1", 2);
 			var mat1_proc1 = new LogMaterial(mat1, "uniq1", 1, "part1", 2);
 			var mat1_proc2 = new LogMaterial(mat1, "uniq1", 2, "part1", 2);
-            var mat2_proc1 = new LogMaterial(_jobLog.AllocateMaterialID("uniq1"), "uniq1", 1, "part1", 2);
+            var mat2_proc1 = new LogMaterial(_jobLog.AllocateMaterialID("uniq1", "part1", 2), "uniq1", 1, "part1", 2);
 
 			//not adding all events, but at least one non-endofroute and one endofroute
 			_jobLog.AddLogEntryFromUnitTest(
@@ -666,10 +696,10 @@ namespace MachineWatchTest
 			);
 
 			//four materials on the same pallet but different workorders
-			var mat3 = new LogMaterial(_jobLog.AllocateMaterialID("uniq2"), "uniq2", 1, "part1", 1);
-			var mat4 = new LogMaterial(_jobLog.AllocateMaterialID("uniq2"), "uniq2", 1, "part2", 1);
-			var mat5 = new LogMaterial(_jobLog.AllocateMaterialID("uniq2"), "uniq2", 1, "part3", 1);
-			var mat6 = new LogMaterial(_jobLog.AllocateMaterialID("uniq2"), "uniq2", 1, "part3", 1);
+			var mat3 = new LogMaterial(_jobLog.AllocateMaterialID("uniq2", "part1", 1), "uniq2", 1, "part1", 1);
+			var mat4 = new LogMaterial(_jobLog.AllocateMaterialID("uniq2", "part2", 1), "uniq2", 1, "part2", 1);
+			var mat5 = new LogMaterial(_jobLog.AllocateMaterialID("uniq2", "part3", 1), "uniq2", 1, "part3", 1);
+			var mat6 = new LogMaterial(_jobLog.AllocateMaterialID("uniq2", "part3", 1), "uniq2", 1, "part3", 1);
 
 			_jobLog.AddLogEntryFromUnitTest(
 				new LogEntry(0, new LogMaterial[] { mat3, mat4, mat5, mat6 },
@@ -777,15 +807,15 @@ namespace MachineWatchTest
             var recent = DateTime.UtcNow.AddHours(-1);
 
 			//material
-			var mat1 = _jobLog.AllocateMaterialID("uniq1");
+			var mat1 = _jobLog.AllocateMaterialID("uniq1", "part1", 2);
 			var mat1_proc1 = new LogMaterial(mat1, "uniq1", 1, "part1", 2);
 			var mat1_proc2 = new LogMaterial(mat1, "uniq1", 2, "part1", 2);
-            var mat2 = _jobLog.AllocateMaterialID("uniq1");
+            var mat2 = _jobLog.AllocateMaterialID("uniq1", "part1", 2);
             var mat2_proc1 = new LogMaterial(mat2, "uniq1", 1, "part1", 2);
             var mat2_proc2 = new LogMaterial(mat2, "uniq1", 2, "part1", 2);
 
-            var mat3 = new LogMaterial(_jobLog.AllocateMaterialID("uniq1"), "uniq1", 1, "part1", 1);
-            var mat4 = new LogMaterial(_jobLog.AllocateMaterialID("uniq1"), "uniq1", 1, "part1", 1);
+            var mat3 = new LogMaterial(_jobLog.AllocateMaterialID("uniq1", "part1", 1), "uniq1", 1, "part1", 1);
+            var mat4 = new LogMaterial(_jobLog.AllocateMaterialID("uniq1", "part1", 1), "uniq1", 1, "part1", 1);
 
 			//mat1 has proc1 in old, proc2 in recent so everything should be loaded
 			var mat1_proc1old = AddLogEntry(
@@ -874,6 +904,7 @@ namespace MachineWatchTest
             var start = DateTime.UtcNow.AddHours(-10);
 
             var otherQueueMat = new LogMaterial(100, "uniq100", 100, "part100", 100);
+            _jobLog.CreateMaterialID(100, "uniq100", "part100", 100);
             _jobLog.RecordAddMaterialToQueue(otherQueueMat, "BBBB", 0, start.AddHours(-1))
                 .ShouldAllBeEquivalentTo(new [] {AddToQueueExpectedEntry(otherQueueMat, 1, "BBBB", 0, start.AddHours(-1))});
 
@@ -881,8 +912,11 @@ namespace MachineWatchTest
             var expectedLogs = new List<LogEntry>();
 
             var mat1 = new LogMaterial(1, "uniq1", 15, "part111", 19);
+            _jobLog.CreateMaterialID(1, "uniq1", "part111", 19);
             var mat2 = new LogMaterial(2, "uniq2", 1, "part2", 22);
+            _jobLog.CreateMaterialID(2, "uniq2", "part2", 22);
             var mat3 = new LogMaterial(3, "uniq3", 3, "part3", 36);
+            _jobLog.CreateMaterialID(3, "uniq3", "part3", 36);
 
             // add via LogMaterial with position -1
             _jobLog.RecordAddMaterialToQueue(mat1, "AAAA", -1, start)
@@ -981,9 +1015,13 @@ namespace MachineWatchTest
             var expectedLogs = new List<LogEntry>();
 
             var mat1 = new LogMaterial(1, "uniq1", 15, "part111", 19);
+            _jobLog.CreateMaterialID(1, "uniq1", "part111", 19);
             var mat2 = new LogMaterial(2, "uniq2", 1, "part2", 22);
+            _jobLog.CreateMaterialID(2, "uniq2", "part2", 22);
             var mat3 = new LogMaterial(3, "uniq3", 3, "part3", 36);
+            _jobLog.CreateMaterialID(3, "uniq3", "part3", 36);
             var mat4 = new LogMaterial(4, "uniq4", 4, "part4", 47);
+            _jobLog.CreateMaterialID(4, "uniq4", "part4", 47);
 
             // add two material into queue 1
             _jobLog.RecordAddMaterialToQueue(mat1, "AAAA", -1, start);
