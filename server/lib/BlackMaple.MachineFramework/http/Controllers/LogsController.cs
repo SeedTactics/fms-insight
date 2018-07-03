@@ -123,6 +123,12 @@ namespace BlackMaple.MachineFramework.Controllers
             return _server.GetLogForWorkorder(workorder);
         }
 
+        [HttpGet("material-details/{materialID}")]
+        public MaterialDetails MaterialDetails(long materialID)
+        {
+            return _server.GetMaterialDetails(materialID);
+        }
+
         [HttpGet("workorders")]
         public List<WorkorderSummary> GetWorkorders([FromQuery] IEnumerable<string> ids)
         {

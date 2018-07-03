@@ -393,6 +393,7 @@ namespace MazakMachineInterface
               if (matIDs.Count > 0)
                 matID = matIDs.Dequeue();
 
+              var matDetails = log.GetMaterialDetails(matID);
               var inProcMat = new InProcessMaterial()
               {
                 MaterialID = matID,
@@ -400,8 +401,8 @@ namespace MazakMachineInterface
                 PartName = job.PartName,
                 Process = palSub.PartProcessNumber,
                 Path = path,
-                Serial = log.SerialForMaterialID(matID),
-                WorkorderId = log.WorkorderForMaterialID(matID),
+                Serial = matDetails?.Serial,
+                WorkorderId = matDetails?.Workorder,
                 SignaledInspections =
                       log.LookupInspectionDecisions(matID)
                       .Where(x => x.Inspect)
@@ -472,14 +473,15 @@ namespace MazakMachineInterface
             }
           }
         }
+        var matDetails = log.GetMaterialDetails(mat.MaterialID);
         curStatus.Material.Add(new InProcessMaterial() {
           MaterialID = mat.MaterialID,
           JobUnique = mat.Unique,
           PartName = mat.PartName,
           Process = lastProc,
           Path = 1,
-          Serial = log.SerialForMaterialID(mat.MaterialID),
-          WorkorderId = log.WorkorderForMaterialID(mat.MaterialID),
+          Serial = matDetails?.Serial,
+          WorkorderId = matDetails?.Workorder,
           SignaledInspections =
                 log.LookupInspectionDecisions(mat.MaterialID)
                 .Where(x => x.Inspect)
@@ -640,7 +642,7 @@ namespace MazakMachineInterface
           if (matIDs.Count > 0)
             matID = matIDs.Dequeue();
 
-
+          var matDetails = log.GetMaterialDetails(matID);
           var inProcMat = new InProcessMaterial()
           {
             MaterialID = matID,
@@ -648,8 +650,8 @@ namespace MazakMachineInterface
             PartName = unload.Part,
             Process = unload.Process,
             Path = unload.Path,
-            Serial = log.SerialForMaterialID(matID),
-            WorkorderId = log.WorkorderForMaterialID(matID),
+            Serial = matDetails?.Serial,
+            WorkorderId = matDetails?.Workorder,
             SignaledInspections =
                           log.LookupInspectionDecisions(matID)
                           .Where(x => x.Inspect)

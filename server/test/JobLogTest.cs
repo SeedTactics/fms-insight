@@ -66,25 +66,41 @@ namespace MachineWatchTest
             long m2 = _jobLog.AllocateMaterialID("U2", "P2", 66);
             long m3 = _jobLog.AllocateMaterialID("U3", "P3", 566);
 
-            Assert.Equal("U1", _jobLog.JobUniqueStrFromMaterialID(m1));
-            Assert.Equal("U2", _jobLog.JobUniqueStrFromMaterialID(m2));
-            Assert.Equal("U3", _jobLog.JobUniqueStrFromMaterialID(m3));
-            _jobLog.PartForMaterialID(m1).Should().Be("P1");
-            _jobLog.PartForMaterialID(m2).Should().Be("P2");
-            _jobLog.PartForMaterialID(m3).Should().Be("P3");
-            _jobLog.NumProcessesForMaterialID(m1).Should().Be(52);
-            _jobLog.NumProcessesForMaterialID(m2).Should().Be(66);
-            _jobLog.NumProcessesForMaterialID(m3).Should().Be(566);
+            _jobLog.GetMaterialDetails(m1).ShouldBeEquivalentTo(new MaterialDetails() {
+                MaterialID = m1,
+                JobUnique = "U1",
+                PartName = "P1",
+                NumProcesses = 52,
+            });
+
+            _jobLog.GetMaterialDetails(m2).ShouldBeEquivalentTo(new MaterialDetails() {
+                MaterialID = m2,
+                JobUnique = "U2",
+                PartName = "P2",
+                NumProcesses = 66,
+            });
+
+            _jobLog.GetMaterialDetails(m3).ShouldBeEquivalentTo(new MaterialDetails() {
+                MaterialID = m3,
+                JobUnique = "U3",
+                PartName = "P3",
+                NumProcesses = 566,
+            });
 
             long m4 = _jobLog.AllocateMaterialIDForCasting("P4", 44);
-            _jobLog.JobUniqueStrFromMaterialID(m4).Should().BeNullOrEmpty();
-            _jobLog.PartForMaterialID(m4).Should().Be("P4");
-            _jobLog.NumProcessesForMaterialID(m4).Should().Be(44);
+            _jobLog.GetMaterialDetails(m4).ShouldBeEquivalentTo(new MaterialDetails() {
+                MaterialID = m4,
+                PartName = "P4",
+                NumProcesses = 44,
+            });
 
             _jobLog.SetDetailsForMaterialID(m4, "U4", "P4444", 77);
-            _jobLog.JobUniqueStrFromMaterialID(m4).Should().Be("U4");
-            _jobLog.PartForMaterialID(m4).Should().Be("P4444");
-            _jobLog.NumProcessesForMaterialID(m4).Should().Be(77);
+            _jobLog.GetMaterialDetails(m4).ShouldBeEquivalentTo(new MaterialDetails() {
+                MaterialID = m4,
+                JobUnique = "U4",
+                PartName = "P4444",
+                NumProcesses = 77,
+            });
         }
 
         [Fact]
@@ -722,14 +738,14 @@ namespace MachineWatchTest
 			_jobLog.RecordSerialForMaterialID(mat4, "serial4");
 			_jobLog.RecordSerialForMaterialID(mat5, "serial5");
 			_jobLog.RecordSerialForMaterialID(mat6, "serial6");
-            Assert.Equal("serial1", _jobLog.SerialForMaterialID(mat1_proc2.MaterialID));
+            Assert.Equal("serial1", _jobLog.GetMaterialDetails(mat1_proc2.MaterialID).Serial);
 
 			_jobLog.RecordWorkorderForMaterialID(mat1_proc2, "work1");
 			_jobLog.RecordWorkorderForMaterialID(mat3, "work1");
 			_jobLog.RecordWorkorderForMaterialID(mat4, "work1");
 			_jobLog.RecordWorkorderForMaterialID(mat5, "work2");
 			_jobLog.RecordWorkorderForMaterialID(mat6, "work2");
-            Assert.Equal("work2", _jobLog.WorkorderForMaterialID(mat5.MaterialID));
+            Assert.Equal("work2", _jobLog.GetMaterialDetails(mat5.MaterialID).Workorder);
 
 			var summary = _jobLog.GetWorkorderSummaries(new [] {"work1", "work2"});
 			Assert.Equal(2, summary.Count);
@@ -1107,8 +1123,8 @@ namespace MachineWatchTest
             _jobLog.AllocateCastingsInQueue("queue1", "part1", "uniqAAA", 2)
                 .ShouldAllBeEquivalentTo(new[] {mat1.MaterialID, mat2.MaterialID});
 
-            _jobLog.JobUniqueStrFromMaterialID(mat1.MaterialID).Should().Be("uniqAAA");
-            _jobLog.JobUniqueStrFromMaterialID(mat2.MaterialID).Should().Be("uniqAAA");
+            _jobLog.GetMaterialDetails(mat1.MaterialID).JobUnique.Should().Be("uniqAAA");
+            _jobLog.GetMaterialDetails(mat2.MaterialID).JobUnique.Should().Be("uniqAAA");
         }
 
         #region Helpers

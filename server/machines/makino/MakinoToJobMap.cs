@@ -192,6 +192,7 @@ namespace Makino
 			if (_programs.ContainsKey(jobID) && _programs[jobID].Count > 0)
 				program = _programs[jobID][0];
 
+			var matDetails = _logDb.GetMaterialDetails(matID);
             return new InProcessMaterial()
             {
                 MaterialID = matID,
@@ -199,8 +200,8 @@ namespace Makino
                 Process = _procIDToProcNum[processID],
                 Path = 1,
                 PartName = job.PartName,
-                Serial = _logDb.SerialForMaterialID(matID),
-                WorkorderId = _logDb.WorkorderForMaterialID(matID),
+                Serial = matDetails?.Serial,
+                WorkorderId = matDetails?.Workorder,
                 SignaledInspections =
                     _logDb.LookupInspectionDecisions(matID)
                         .Where(x => x.Inspect)

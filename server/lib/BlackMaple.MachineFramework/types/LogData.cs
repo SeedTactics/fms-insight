@@ -214,6 +214,17 @@ namespace BlackMaple.MachineWatchInterface
         }
     }
 
+    [DataContract]
+    public class MaterialDetails
+    {
+        [DataMember(IsRequired=true)] public long MaterialID {get;set;}
+        [DataMember] public string JobUnique {get;set;}
+        [DataMember] public string PartName {get;set;}
+        [DataMember] public int NumProcesses {get;set;}
+        [DataMember] public string Workorder {get;set;}
+        [DataMember] public string Serial {get;set;}
+    }
+
     // stored serialized in json format in the details for inspection logs.
     [DataContract]
     public class MaterialProcessActualPath

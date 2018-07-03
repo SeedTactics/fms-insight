@@ -251,8 +251,8 @@ namespace DebugMachineWatchApiServer
       foreach (var e in evts.OrderBy(e => e.EndTimeUTC))
       {
         foreach (var m in e.Material) {
-          if (string.IsNullOrEmpty(LogDB.JobUniqueStrFromMaterialID(m.MaterialID)) &&
-              !string.IsNullOrEmpty(m.JobUniqueStr)) {
+          var matDetails = LogDB.GetMaterialDetails(m.MaterialID);
+          if (matDetails == null && !string.IsNullOrEmpty(m.JobUniqueStr)) {
             LogDB.CreateMaterialID(m.MaterialID, m.JobUniqueStr, m.PartName, m.NumProcesses);
           }
         }

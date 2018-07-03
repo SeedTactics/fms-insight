@@ -1703,92 +1703,29 @@ namespace BlackMaple.MachineFramework
             }
         }
 
-        public string JobUniqueStrFromMaterialID(long matID)
+        public MachineWatchInterface.MaterialDetails GetMaterialDetails(long matID)
         {
             lock (_lock)
             {
-                string unique = "";
-
                 var cmd = _connection.CreateCommand();
-                cmd.CommandText = "SELECT UniqueStr FROM matdetails WHERE MaterialID = $mat";
+                cmd.CommandText = "SELECT UniqueStr, PartName, NumProcesses, Workorder, Serial FROM matdetails WHERE MaterialID = $mat";
                 cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
 
                 using (var reader = cmd.ExecuteReader())
                 {
                     if (reader.Read())
                     {
-                        if (!reader.IsDBNull(0)) unique = reader.GetString(0);
+                        var ret = new MachineWatchInterface.MaterialDetails() {MaterialID = matID};
+                        if (!reader.IsDBNull(0)) ret.JobUnique = reader.GetString(0);
+                        if (!reader.IsDBNull(1)) ret.PartName = reader.GetString(1);
+                        if (!reader.IsDBNull(2)) ret.NumProcesses = reader.GetInt32(2);
+                        if (!reader.IsDBNull(3)) ret.Workorder = reader.GetString(3);
+                        if (!reader.IsDBNull(4)) ret.Serial = reader.GetString(4);
+                        return ret;
                     }
                 }
 
-                return unique;
-            }
-        }
-
-        public string PartForMaterialID(long matID)
-        {
-            lock (_lock)
-            {
-                string part = "";
-
-                var cmd = _connection.CreateCommand();
-                cmd.CommandText = "SELECT PartName FROM matdetails WHERE MaterialID = $mat";
-                cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
-
-                using (var reader = cmd.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        if (!reader.IsDBNull(0)) part = reader.GetString(0);
-                    }
-                }
-
-                return part;
-            }
-        }
-
-        public int NumProcessesForMaterialID(long matID)
-        {
-            lock (_lock)
-            {
-                int numProc = 1;
-
-                var cmd = _connection.CreateCommand();
-                cmd.CommandText = "SELECT NumProcesses FROM matdetails WHERE MaterialID = $mat";
-                cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
-
-                using (var reader = cmd.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        if (!reader.IsDBNull(0)) numProc = reader.GetInt32(0);
-                    }
-                }
-
-                return numProc;
-            }
-        }
-
-        public string SerialForMaterialID(long matID)
-        {
-            lock (_lock)
-            {
-                string ser = "";
-
-                var cmd = _connection.CreateCommand();
-                cmd.CommandText = "SELECT Serial FROM matdetails WHERE MaterialID = $mat";
-                cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
-
-                using (var reader = cmd.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        if (!reader.IsDBNull(0))
-                            ser = reader.GetString(0);
-                    }
-                }
-
-                return ser;
+                return null;
             }
         }
 
@@ -1803,29 +1740,6 @@ namespace BlackMaple.MachineFramework
                 cmd.Parameters.Add("ser", SqliteType.Text).Value = serial;
             cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
             cmd.ExecuteNonQuery();
-        }
-
-        public string WorkorderForMaterialID(long matID)
-        {
-            lock (_lock)
-            {
-                string workId = "";
-
-                var cmd = _connection.CreateCommand();
-                cmd.CommandText = "SELECT Workorder FROM matdetails WHERE MaterialID = $mat";
-                cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
-
-                using (var reader = cmd.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        if (!reader.IsDBNull(0))
-                            workId = reader.GetString(0);
-                    }
-                }
-
-                return workId;
-            }
         }
 
         private void RecordWorkorderForMaterialID(IDbTransaction trans, long matID, string workorder)
