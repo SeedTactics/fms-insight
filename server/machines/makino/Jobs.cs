@@ -120,6 +120,11 @@ namespace Makino
         #endregion
 
         #region Queues
+        public void AddUnallocatedCastingToQueue(string part, string queue, int position, string serial)
+        {
+            //do nothing
+        }
+
         public void AddUnprocessedMaterialToQueue(string jobUnique, int process, string queue, int position, string serial)
         {
             //do nothing

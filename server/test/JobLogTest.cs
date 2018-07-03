@@ -1117,14 +1117,25 @@ namespace MachineWatchTest
             _jobLog.RecordAddMaterialToQueue(mat2, "queue1", 1);
             _jobLog.RecordAddMaterialToQueue(mat3, "queue1", 2);
 
-            _jobLog.AllocateCastingsInQueue("queue1", "part5", "uniqAAA", 2)
+            _jobLog.AllocateCastingsInQueue("queue1", "part5", "uniqAAA", numProcesses: 15, maxCount: 2)
                 .ShouldAllBeEquivalentTo(new long[] {});
 
-            _jobLog.AllocateCastingsInQueue("queue1", "part1", "uniqAAA", 2)
+            _jobLog.AllocateCastingsInQueue("queue1", "part1", "uniqAAA", numProcesses: 6312, maxCount: 2)
                 .ShouldAllBeEquivalentTo(new[] {mat1.MaterialID, mat2.MaterialID});
 
-            _jobLog.GetMaterialDetails(mat1.MaterialID).JobUnique.Should().Be("uniqAAA");
-            _jobLog.GetMaterialDetails(mat2.MaterialID).JobUnique.Should().Be("uniqAAA");
+            _jobLog.GetMaterialDetails(mat1.MaterialID).ShouldBeEquivalentTo(new MaterialDetails() {
+                MaterialID = mat1.MaterialID,
+                JobUnique = "uniqAAA",
+                PartName = "part1",
+                NumProcesses = 6312,
+            });
+
+            _jobLog.GetMaterialDetails(mat2.MaterialID).ShouldBeEquivalentTo(new MaterialDetails() {
+                MaterialID = mat2.MaterialID,
+                JobUnique = "uniqAAA",
+                PartName = "part1",
+                NumProcesses = 6312,
+            });
         }
 
         #region Helpers

@@ -1474,12 +1474,23 @@ namespace MazakMachineInterface
     #endregion
 
     #region Queues
+    public void AddUnallocatedCastingToQueue(string part, string queue, int position, string serial)
+    {
+      // num proc will be set later once it is allocated inside the MazakQueues thread
+      var matId = log.AllocateMaterialIDForCasting(part, 1);
+      // the add to queue log entry will use the process, so later when we lookup the latest completed process
+      // for the material in the queue, it will be correctly computed.
+      log.RecordAddMaterialToQueue(matId, 0, queue, position);
+      queues.SignalRecheckMaterial();
+    }
 
     public void AddUnprocessedMaterialToQueue(string jobUnique, int process, string queue, int position, string serial)
     {
       var job = jobDB.LoadJob(jobUnique);
       if (job == null) throw new BlackMaple.MachineFramework.BadRequestException("Unable to find job " + jobUnique);
       var matId = log.AllocateMaterialID(jobUnique, job.PartName, job.NumProcesses);
+      // the add to queue log entry will use the process, so later when we lookup the latest completed process
+      // for the material in the queue, it will be correctly computed.
       log.RecordAddMaterialToQueue(matId, process, queue, position);
       queues.SignalRecheckMaterial();
     }

@@ -183,17 +183,18 @@ namespace DebugMachineWatchApiServer
       JobDB.AddJobs(jobs, expectedPreviousScheduleId);
     }
 
+    public void AddUnallocatedCastingToQueue(string part, string queue, int position, string serial)
+    {
+    }
+
     public void AddUnprocessedMaterialToQueue(string jobUnique, int lastCompletedProcess, string queue, int position, string serial)
     {
-      //TODO
     }
     public void SetMaterialInQueue(long materialId, string queue, int position)
     {
-      //TODO
     }
     public void RemoveMaterialFromAllQueues(long materialId)
     {
-      //TODO
     }
 
     public List<JobAndDecrementQuantity> DecrementJobQuantites(string loadDecrementsStrictlyAfterDecrementId)

@@ -1927,7 +1927,7 @@ namespace BlackMaple.MachineFramework
         }
 
         /// Find parts without an assigned unique in the queue, and assign them to the given unique
-        public IReadOnlyList<long> AllocateCastingsInQueue(string queue, string part, string unique, int maxCount)
+        public IReadOnlyList<long> AllocateCastingsInQueue(string queue, string part, string unique, int numProcesses, int maxCount)
         {
             lock (_lock)
             {
@@ -1950,13 +1950,14 @@ namespace BlackMaple.MachineFramework
                             while (reader.Read()) matIds.Add(reader.GetInt64(0));
                         }
 
-                        cmd.CommandText = "UPDATE matdetails SET UniqueStr = $uniq WHERE MaterialID = $mid";
+                        cmd.CommandText = "UPDATE matdetails SET UniqueStr = $uniq, NumProcesses = $numproc WHERE MaterialID = $mid";
                         cmd.Parameters.Clear();
                         cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
+                        cmd.Parameters.Add("numproc", SqliteType.Integer).Value = numProcesses;
                         cmd.Parameters.Add("mid", SqliteType.Integer);
 
                         foreach (var matId in matIds) {
-                            cmd.Parameters[1].Value = matId;
+                            cmd.Parameters[2].Value = matId;
                             cmd.ExecuteNonQuery();
                         }
                     }

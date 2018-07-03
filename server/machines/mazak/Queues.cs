@@ -152,7 +152,7 @@ namespace MazakMachineInterface
 
           MazakPart.ParseComment(schRow.Comment, out string unique, out int path, out bool manual);
           log.Debug("Allocating castings in queue {queue} with part {part} to job {uniq} remaining qty {remain}", qname, p, unique, remain);
-          _log.AllocateCastingsInQueue(qname, p, unique, remain);
+          _log.AllocateCastingsInQueue(qname, p, unique, schRow.GetScheduleProcessRows().Length, remain);
         }
       }
 

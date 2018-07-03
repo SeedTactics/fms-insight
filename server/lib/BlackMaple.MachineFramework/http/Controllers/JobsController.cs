@@ -103,6 +103,16 @@ namespace BlackMaple.MachineFramework.Controllers
             _control.AddJobs(newJobs, expectedPreviousScheduleId);
         }
 
+        [HttpPost("part/{partName}/casting")]
+        public void AddUnallocatedCastingToQueue(string partName, [FromQuery] string queue, [FromQuery] int pos, [FromBody] string serial)
+        {
+            if (string.IsNullOrEmpty(partName))
+                throw new BadRequestException("Part name must be non-empty");
+            if (string.IsNullOrEmpty(queue))
+                throw new BadRequestException("Queue must be non-empty");
+            _control.AddUnallocatedCastingToQueue(partName, queue, pos, serial);
+        }
+
         [HttpPost("job/{jobUnique}/unprocessed-material")]
         public void AddUnprocessedMaterialToQueue(string jobUnique, [FromQuery] int lastCompletedProcess, [FromQuery] string queue, [FromQuery] int pos, [FromBody] string serial)
         {
