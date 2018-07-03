@@ -31,6 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
+using System.Linq;
 using BlackMaple.MachineWatchInterface;
 using MWI = BlackMaple.MachineWatchInterface;
 using System.Collections.Generic;
@@ -39,6 +40,7 @@ namespace MazakMachineInterface
 {
   public class LogTranslation
   {
+    private BlackMaple.MachineFramework.JobDB _jobDB;
     private BlackMaple.MachineFramework.JobLogDB _log;
     private ILogData _loadLogData;
     private System.Diagnostics.TraceSource trace;
@@ -48,11 +50,12 @@ namespace MazakMachineInterface
     private System.Timers.Timer _timer;
     public BlackMaple.MachineFramework.FMSSettings FMSSettings { get; set; }
 
-    public LogTranslation(BlackMaple.MachineFramework.JobLogDB log, IReadDataAccess readDB,
-                              BlackMaple.MachineFramework.FMSSettings settings,
+    public LogTranslation(BlackMaple.MachineFramework.JobLogDB log, BlackMaple.MachineFramework.JobDB jobDB,
+                          IReadDataAccess readDB, BlackMaple.MachineFramework.FMSSettings settings,
                           ILogData loadLogData, System.Diagnostics.TraceSource t)
     {
       _log = log;
+      _jobDB = jobDB;
       _loadLogData = loadLogData;
       _readDB = readDB;
       FMSSettings = settings;
@@ -151,7 +154,7 @@ namespace MazakMachineInterface
           cycle = CheckPendingLoads(e.Pallet, e.TimeUTC.AddSeconds(-1), "", dset, false, cycle);
 
           _log.RecordMachineStart(
-            mats: FindMaterial(e, dset, cycle),
+            mats: FindMaterial(e, dset, cycle).Select(m => m.Mat),
             pallet: e.Pallet.ToString(),
             statName: "MC",
             statNum: e.StationNumber,
@@ -168,7 +171,7 @@ namespace MazakMachineInterface
           if (elapsed > TimeSpan.FromSeconds(30))
           {
             var s = _log.RecordMachineEnd(
-              mats: FindMaterial(e, dset, cycle),
+              mats: FindMaterial(e, dset, cycle).Select(m => m.Mat),
               pallet: e.Pallet.ToString(),
               statName: "MC",
               statNum: e.StationNumber,
@@ -195,7 +198,7 @@ namespace MazakMachineInterface
         case LogCode.UnloadBegin:
 
           _log.RecordUnloadStart(
-            mats: FindMaterial(e, dset, cycle),
+            mats: FindMaterial(e, dset, cycle).Select(m => m.Mat),
             pallet: e.Pallet.ToString(),
             lulNum: e.StationNumber,
             timeUTC: e.TimeUTC,
@@ -208,14 +211,18 @@ namespace MazakMachineInterface
           //TODO: test for rework
           var loadElapsed = CalculateElapsed(e, cycle, LogType.LoadUnloadCycle, e.StationNumber);
 
+          var mats = FindMaterial(e, dset, cycle);
+          var queues = FindUnloadQueues(mats);
+
           _log.RecordUnloadEnd(
-            mats: FindMaterial(e, dset, cycle),
+            mats: mats.Select(m => m.Mat),
             pallet: e.Pallet.ToString(),
             lulNum: e.StationNumber,
             timeUTC: e.TimeUTC,
             elapsed: loadElapsed,
             active: loadElapsed,
-            foreignId: e.ForeignID);
+            foreignId: e.ForeignID,
+            unloadIntoQueues: queues);
 
           break;
 
@@ -240,10 +247,7 @@ namespace MazakMachineInterface
     #region Material
     private List<LogMaterial> CreateMaterialWithoutIDs(LogEntry e, ReadOnlyDataSet dset)
     {
-      string unique;
-      string partName;
-      int numProc;
-      FindPart(dset, e, out unique, out partName, out numProc);
+      FindPart(dset, e, out string unique, out string partName, out int path, out int numProc);
 
       var ret = new List<LogMaterial>();
       ret.Add(new LogMaterial(-1, unique, e.Process, partName, numProc, ""));
@@ -251,12 +255,18 @@ namespace MazakMachineInterface
       return ret;
     }
 
-    private List<LogMaterial> FindMaterial(LogEntry e, ReadOnlyDataSet dset, IList<MWI.LogEntry> oldEvents)
+    private struct LogMaterialAndPath
+    {
+      public LogMaterial Mat {get;set;}
+      public int Path {get;set;}
+    }
+
+    private List<LogMaterialAndPath> FindMaterial(LogEntry e, ReadOnlyDataSet dset, IList<MWI.LogEntry> oldEvents)
     {
       return FindMaterialByProcess(e, e.Process, dset, oldEvents);
     }
 
-    private List<LogMaterial> FindMaterialByProcess(LogEntry e, int procToCheck, ReadOnlyDataSet dset, IList<MWI.LogEntry> oldEvents)
+    private List<LogMaterialAndPath> FindMaterialByProcess(LogEntry e, int procToCheck, ReadOnlyDataSet dset, IList<MWI.LogEntry> oldEvents)
     {
       SortedList<string, LogMaterial> byFace; //face -> material
 
@@ -269,29 +279,30 @@ namespace MazakMachineInterface
         byFace = new SortedList<string, LogMaterial>();
       }
 
-      var ret = new List<LogMaterial>();
+      var ret = new List<LogMaterialAndPath>();
 
       if (e.FixedQuantity == 1)
       {
 
+        FindPart(dset, e, out string unique, out string partName, out int path, out int numProc);
         if (byFace.ContainsKey(e.Process.ToString()))
         {
-          ret.Add(byFace[e.Process.ToString()]);
-
+          ret.Add(new LogMaterialAndPath() {
+            Mat = byFace[e.Process.ToString()],
+            Path = path,
+          });
         }
         else
         {
-
           //must create material
-          string unique;
-          string partName;
-          int numProc;
-          FindPart(dset, e, out unique, out partName, out numProc);
-          ret.Add(new LogMaterial(_log.AllocateMaterialID(unique, partName, numProc), unique,
-                                     e.Process, partName, numProc, e.Process.ToString()));
+          ret.Add(new LogMaterialAndPath() {
+            Mat = new LogMaterial(_log.AllocateMaterialID(unique, partName, numProc), unique,
+                                     e.Process, partName, numProc, e.Process.ToString()),
+            Path = path,
+          });
 
           trace.TraceEvent(System.Diagnostics.TraceEventType.Information, 0,
-                           "Creating material " + ret[0].MaterialID + " for code " + e.Code.ToString() + " at " +
+                           "Creating material " + ret[0].Mat.MaterialID + " for code " + e.Code.ToString() + " at " +
                            e.StationNumber.ToString() + " for " + e.FullPartName + " - " + e.Process.ToString() + " on " +
                            "pallet " + e.Pallet.ToString() + " unique " + unique);
         }
@@ -302,30 +313,62 @@ namespace MazakMachineInterface
 
         string unique = null;
         string partName = null;
+        int path = 1;
         int numProc = 1;
 
         for (int i = 1; i <= e.FixedQuantity; i += 1)
         {
           string face = e.Process.ToString() + "-" + i.ToString();
 
+          if (unique == null)
+            FindPart(dset, e, out unique, out partName, out path, out numProc);
           if (byFace.ContainsKey(face))
           {
-            ret.Add(byFace[face]);
+            ret.Add(new LogMaterialAndPath() {
+              Mat = byFace[face],
+              Path = path
+            });
           }
           else
           {
             //must create material
-            if (unique == null)
-              FindPart(dset, e, out unique, out partName, out numProc);
-            ret.Add(new LogMaterial(_log.AllocateMaterialID(unique, partName, numProc), unique,
-                                       e.Process, partName, numProc, face));
+            ret.Add(new LogMaterialAndPath() {
+              Mat = new LogMaterial(_log.AllocateMaterialID(unique, partName, numProc), unique,
+                                    e.Process, partName, numProc, face),
+              Path = path
+            });
 
             trace.TraceEvent(System.Diagnostics.TraceEventType.Information, 0,
-                             "Creating material " + ret[ret.Count - 1].MaterialID + " for code " + e.Code.ToString() + " at " +
+                             "Creating material " + ret[ret.Count - 1].Mat.MaterialID + " for code " + e.Code.ToString() + " at " +
                              e.StationNumber.ToString() + " for " + e.FullPartName + " - " + e.Process.ToString() + " " +
                              "index " + i.ToString() + " on " +
                              "pallet " + e.Pallet.ToString() + " unique " + unique);
 
+          }
+        }
+      }
+
+      return ret;
+    }
+
+    private Dictionary<long, string> FindUnloadQueues(IEnumerable<LogMaterialAndPath> mats)
+    {
+      var ret = new Dictionary<long, string>();
+      var jobs = new Dictionary<string, JobPlan>();
+
+      foreach (var mat in mats) {
+        JobPlan job;
+        if (jobs.ContainsKey(mat.Mat.JobUniqueStr)) {
+          job = jobs[mat.Mat.JobUniqueStr];
+        } else {
+          job = _jobDB.LoadJob(mat.Mat.JobUniqueStr);
+          jobs.Add(mat.Mat.JobUniqueStr, job);
+        }
+
+        if (job != null) {
+          var q = job.GetOutputQueue(process: mat.Mat.Process, path: mat.Path);
+          if (!string.IsNullOrEmpty(q)) {
+            ret[mat.Mat.MaterialID] = q;
           }
         }
       }
@@ -433,7 +476,7 @@ namespace MazakMachineInterface
         if (!int.TryParse(s[2], out e.FixedQuantity))
           e.FixedQuantity = 1;
 
-        mat[p.Key] = FindMaterialByProcess(e, e.Process - 1, dset, cycle);
+        mat[p.Key] = FindMaterialByProcess(e, e.Process - 1, dset, cycle).Select(m => m.Mat);
       }
 
       _log.CompletePalletCycle(pallet.ToString(), t, foreignID, mat,
@@ -445,10 +488,11 @@ namespace MazakMachineInterface
         return _log.CurrentPalletLog(pallet.ToString());
     }
 
-    private void FindPart(ReadOnlyDataSet dset, LogEntry e, out string unique, out string partName, out int numProc)
+    private void FindPart(ReadOnlyDataSet dset, LogEntry e, out string unique, out string partName, out int path, out int numProc)
     {
       unique = "";
       numProc = e.Process;
+      path = 1;
       partName = e.JobPartName;
 
       //first search pallets for the given schedule id.  Since the part name usually includes the UID assigned for this
@@ -469,7 +513,6 @@ namespace MazakMachineInterface
         {
           if (schRow.ScheduleID == scheduleID && !schRow.IsCommentNull())
           {
-            int path;
             bool manual;
             MazakPart.ParseComment(schRow.Comment, out unique, out path, out manual);
             numProc = schRow.GetScheduleProcessRows().Length;
@@ -488,7 +531,6 @@ namespace MazakMachineInterface
       {
         if (schRow.PartName == e.FullPartName && !schRow.IsCommentNull())
         {
-          int path;
           bool manual;
           MazakPart.ParseComment(schRow.Comment, out unique, out path, out manual);
           numProc = schRow.GetScheduleProcessRows().Length;

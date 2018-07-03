@@ -218,7 +218,7 @@ namespace MazakMachineInterface
                                 CheckPalletsUsedOnce, UseStartingOffsetForDueDate, DecrementPriorityOnDownload,
                                 settings,
                                 routingTrace);
-      logTrans = new LogTranslation(jobLog, readOnlyDb, settings, logDataLoader, logTrace);
+      logTrans = new LogTranslation(jobLog, jobDB, readOnlyDb, settings, logDataLoader, logTrace);
 
       logTrans.MachiningCompleted += HandleMachiningCompleted;
       logTrans.NewEntries += OnNewLogEntries;
