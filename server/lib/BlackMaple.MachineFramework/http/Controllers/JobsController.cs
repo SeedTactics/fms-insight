@@ -66,6 +66,8 @@ namespace BlackMaple.MachineFramework.Controllers
         [HttpGet("recent")]
         public HistoricData Recent([FromQuery]string afterScheduleId)
         {
+            if (string.IsNullOrEmpty(afterScheduleId))
+                throw new BadRequestException("After schedule ID must be non-empty");
             return _db.LoadJobsAfterScheduleId(afterScheduleId);
         }
 
@@ -78,6 +80,8 @@ namespace BlackMaple.MachineFramework.Controllers
         [HttpGet("unfilled-workorders/by-part/{part}")]
         public IList<PartWorkorder> MostRecentUnfilledWorkordersForPart(string part)
         {
+            if (string.IsNullOrEmpty(part))
+                throw new BadRequestException("Part must be non-empty");
             return _db.MostRecentUnfilledWorkordersForPart(part);
         }
 
@@ -102,11 +106,17 @@ namespace BlackMaple.MachineFramework.Controllers
         [HttpPost("job/{jobUnique}/unprocessed-material")]
         public void AddUnprocessedMaterialToQueue(string jobUnique, [FromQuery] int lastCompletedProcess, [FromQuery] string queue, [FromQuery] int pos, [FromBody] string serial)
         {
+            if (string.IsNullOrEmpty(jobUnique))
+                throw new BadRequestException("Job unique must be non-empty");
+            if (string.IsNullOrEmpty(queue))
+                throw new BadRequestException("Queue must be non-empty");
             _control.AddUnprocessedMaterialToQueue(jobUnique, lastCompletedProcess, queue, pos, serial);
         }
 
         [HttpPut("material/{materialId}/queue")]
         public void SetMaterialInQueue(long materialId, [FromBody] QueuePosition queue) {
+            if (string.IsNullOrEmpty(queue.Queue))
+                throw new BadRequestException("Queue name must be non-empty");
             _control.SetMaterialInQueue(materialId, queue.Queue, queue.Position);
         }
 
