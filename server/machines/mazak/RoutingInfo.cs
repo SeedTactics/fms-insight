@@ -566,25 +566,32 @@ namespace MazakMachineInterface
 
     private void AddLoads(IEnumerable<LoadAction> currentLoads, string pallet, PalletLocation palLoc, CurrentStatus curStatus)
     {
+      var queuedMats = new Dictionary<string, List<BlackMaple.MachineFramework.JobLogDB.QueuedMaterial>>();
       //process remaining loads/unloads (already processed ones have been removed from currentLoads)
       foreach (var operation in currentLoads)
       {
         if (!operation.LoadEvent || operation.LoadStation != palLoc.Num) continue;
         for (int i = 0; i < operation.Qty; i++)
         {
-          var queuedMat = new Queue<long>();
+          List<BlackMaple.MachineFramework.JobLogDB.QueuedMaterial> queuedMat = null;
           if (curStatus.Jobs.ContainsKey(operation.Unique)) {
             var queue = curStatus.Jobs[operation.Unique].GetInputQueue(process: operation.Process, path: operation.Path);
             if (!string.IsNullOrEmpty(queue)) {
-              queuedMat = new Queue<long>(
-                log.GetMaterialInQueue(queue)
-                .Where(m => m.Unique == operation.Unique)
-                .Select(m => m.MaterialID));
+              //only lookup each queue once
+              if (queuedMats.ContainsKey(queue))
+                queuedMat = queuedMats[queue];
+              else {
+                queuedMat = log.GetMaterialInQueue(queue).ToList();
+              }
             }
           }
           long matId = -1;
-          if (queuedMat.Count >= 0) {
-            matId = queuedMat.Dequeue();
+          if (queuedMat != null) {
+            matId = queuedMat
+              .Where(m => m.Unique == operation.Unique)
+              .Select(m => m.MaterialID)
+              .DefaultIfEmpty(-1)
+              .First();
           }
           var inProcMat = new InProcessMaterial()
           {
@@ -1482,6 +1489,7 @@ namespace MazakMachineInterface
         .SelectMany(e => e.Material)
         .Where(m => m.MaterialID == materialId)
         .Select(m => m.Process)
+        .DefaultIfEmpty(0)
         .Max();
       log.RecordAddMaterialToQueue(materialId, proc, queue, position);
       queues.SignalRecheckMaterial();
