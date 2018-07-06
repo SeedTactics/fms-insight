@@ -9,7 +9,8 @@
       "server-config",
       "server-errors",
       "creating-jobs",
-      "workorder-report"
+      "workorder-report",
+      "part-instructions"
     ],
     "Client": [
       "client-launch",
