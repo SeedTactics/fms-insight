@@ -982,13 +982,13 @@ namespace BlackMaple.MachineWatchInterface
             [DataMember(IsRequired=true)]
             public IList<int> Load;
 
-            [DataMember(IsRequired=false, EmitDefaultValue=false)]
+            [DataMember(IsRequired=false)]
             public TimeSpan ExpectedLoadTime;
 
             [DataMember(IsRequired=true)]
             public IList<int> Unload;
 
-            [DataMember(IsRequired=false, EmitDefaultValue=false)]
+            [DataMember(IsRequired=false)]
             public TimeSpan ExpectedUnloadTime;
 
             [DataMember(IsRequired=true)]
