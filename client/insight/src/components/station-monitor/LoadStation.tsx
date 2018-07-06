@@ -40,7 +40,7 @@ import DocumentTitle from 'react-document-title';
 import Button from '@material-ui/core/Button';
 
 import { LoadStationAndQueueData, selectLoadStationAndQueueProps } from '../../data/load-station';
-import { MaterialDialog, InProcMaterial, WhiteboardRegion, MaterialDialogProps } from './Material';
+import { MaterialDialog, InProcMaterial, WhiteboardRegion, MaterialDialogProps, InstructionButton } from './Material';
 import * as api from '../../data/api';
 import * as routes from '../../data/routes';
 import * as guiState from '../../data/gui-state';
@@ -158,6 +158,10 @@ export function LoadMatDialog(props: LoadMatDialogProps) {
       onClose={props.onClose}
       buttons={
         <>
+          {props.display_material && props.display_material.partName !== "" ?
+            <InstructionButton part={props.display_material.partName} type="load"/>
+            : undefined
+          }
           <Button color="primary" onClick={props.openSetSerial}>
             {
               props.display_material && props.display_material.serial ?

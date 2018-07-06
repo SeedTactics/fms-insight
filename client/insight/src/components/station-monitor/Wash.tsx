@@ -41,7 +41,7 @@ import DocumentTitle from 'react-document-title';
 
 import { MaterialSummary } from '../../data/events';
 import { Store, connect, AppActionBeforeMiddleware, mkAC } from '../../store/store';
-import { MaterialDialog, WhiteboardRegion, MatSummary, MaterialDialogProps } from './Material';
+import { MaterialDialog, WhiteboardRegion, MatSummary, MaterialDialogProps, InstructionButton } from './Material';
 import * as matDetails from '../../data/material-details';
 import * as guiState from '../../data/gui-state';
 import SelectWorkorderDialog from './SelectWorkorder';
@@ -73,6 +73,10 @@ export function WashDialog(props: WashDialogProps) {
       onClose={props.onClose}
       buttons={
         <>
+          {props.display_material && props.display_material.partName !== "" ?
+            <InstructionButton part={props.display_material.partName} type="wash"/>
+            : undefined
+          }
           <Button color="primary" onClick={markWashComplete}>
             Mark Wash Complete
           </Button>

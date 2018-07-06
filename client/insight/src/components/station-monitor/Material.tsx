@@ -324,6 +324,18 @@ export class MaterialDetailContent extends React.PureComponent<MaterialDetailPro
   }
 }
 
+export function InstructionButton({part, type}: {readonly part: string, readonly type: string}) {
+  return (
+    <Button
+      href={"/api/v1/server/find-instructions/" + encodeURIComponent(part) + "?type=" + encodeURIComponent(type)}
+      target="bms-instructions"
+      color="primary"
+    >
+      Instructions
+    </Button>
+  );
+}
+
 export interface MaterialDialogProps {
   display_material: matDetails.MaterialDetail | null;
   buttons?: JSX.Element;
@@ -345,16 +357,6 @@ export function MaterialDialog(props: MaterialDialogProps) {
           <MaterialDetailContent mat={mat}/>
         </DialogContent>
         <DialogActions>
-          {mat.partName && mat.partName !== "" ?
-            <Button
-              href={"/api/v1/server/find-instructions/" + encodeURIComponent(mat.partName)}
-              target="bms-instructions"
-              color="primary"
-            >
-              Instructions
-            </Button>
-            : undefined
-          }
           {props.buttons}
           <Button onClick={props.onClose} color="secondary">
             Close

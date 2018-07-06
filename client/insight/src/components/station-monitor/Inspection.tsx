@@ -41,7 +41,7 @@ import DocumentTitle from 'react-document-title';
 
 import { MaterialSummary } from '../../data/events';
 import { Store, connect, mkAC, AppActionBeforeMiddleware } from '../../store/store';
-import { MaterialDialogProps, MaterialDialog, MatSummary, WhiteboardRegion } from './Material';
+import { MaterialDialogProps, MaterialDialog, MatSummary, WhiteboardRegion, InstructionButton } from './Material';
 import * as matDetails from '../../data/material-details';
 import { MaterialSummaryAndCompletedData } from '../../data/events.matsummary';
 
@@ -72,6 +72,10 @@ export function InspDialog(props: InspDialogProps) {
       buttons={
         props.focusInspectionType === "" ? undefined :
         <>
+          {props.display_material && props.display_material.partName !== "" ?
+            <InstructionButton part={props.display_material.partName} type={props.focusInspectionType}/>
+            : undefined
+          }
           <Button color="primary" onClick={() => markInspComplete(true)}>
             Mark Inspection Success
           </Button>
