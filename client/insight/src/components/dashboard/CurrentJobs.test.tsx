@@ -134,6 +134,8 @@ it('converts events to points', () => {
                   expectedCycleTime: "01:15:00",
                 })
               ],
+              expectedLoadTime: '00:05:00',
+              expectedUnloadTime: '00:04:00',
               simulatedStartingUTC: new Date(),
               simulatedAverageFlowTime: "",
               holdMachining: new api.JobHoldPattern(dummyHold),
@@ -153,6 +155,8 @@ it('converts events to points', () => {
                   expectedCycleTime: "01:15:00",
                 })
               ],
+              expectedLoadTime: '00:05:00',
+              expectedUnloadTime: '00:04:00',
               simulatedStartingUTC: new Date(),
               simulatedAverageFlowTime: "",
               holdMachining: new api.JobHoldPattern(dummyHold),
@@ -174,6 +178,8 @@ it('converts events to points', () => {
                   expectedCycleTime: "00:45:00",
                 })
               ],
+              expectedLoadTime: '00:05:00',
+              expectedUnloadTime: '00:04:00',
               load: [1],
               unload: [2],
               simulatedStartingUTC: new Date(),
