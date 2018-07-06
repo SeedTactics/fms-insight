@@ -128,79 +128,201 @@ namespace MazakMachineInterface
       }
     }
 
-    private TimeSpan? CheckForNewMaterial()
+    private class ScheduleWithQueuesProcess
     {
-      log.Debug("Starting check for new queued material to add to mazak");
-      var read = _readonlyDB.LoadReadOnly();
-      var loadOpers = _loadOper.CurrentLoadActions();
-      var queuedMats = _log.GetMaterialInAllQueues();
-      var transSet = new TransactionDataSet();
+      public ReadOnlyDataSet.ScheduleProcessRow SchProcRow {get;set;}
+      public string InputQueue {get;set;}
+      public int? TargetMaterialCount {get;set;}
+    }
 
-      // check for any raw material to assign to a job
-      var partsToAllocate =
-        queuedMats
-        .Where(m => string.IsNullOrEmpty(m.Unique))
-        .Select(m => new ValueTuple<string, string>(m.Queue, m.PartName))
-        .ToHashSet();
-      foreach (var (qname, p) in partsToAllocate) {
-        log.Debug("Found {part} in queue {queue} without an assigned job, searching for mazak schedule to use", qname, p);
-        foreach (var schRow in read.Schedule.OrderBy(schRow => schRow.DueDate)) {
-          if (!MazakPart.IsSailPart(schRow.PartName)) continue;
-          if (MazakPart.ExtractPartNameFromMazakPartName(schRow.PartName) != p) continue;
-          int remain = schRow.PlanQuantity - CountCompletedOrInProc(schRow, 1);
-          if (remain <= 0) continue;
+    private class ScheduleWithQueues
+    {
+      public ReadOnlyDataSet.ScheduleRow SchRow {get;set;}
+      public string Unique {get;set;}
+      public string PartName {get;set;}
+      public int Path {get;set;}
+      public int NumProcesses {get;set;}
+      public int RemainToLoad {get;set;}
+      public Dictionary<int, ScheduleWithQueuesProcess> Procs {get;set;}
+    }
 
-          MazakPart.ParseComment(schRow.Comment, out string unique, out int path, out bool manual);
-          log.Debug("Allocating castings in queue {queue} with part {part} to job {uniq} remaining qty {remain}", qname, p, unique, remain);
-          _log.AllocateCastingsInQueue(qname, p, unique, schRow.GetScheduleProcessRows().Length, remain);
-        }
-      }
+    private IEnumerable<ScheduleWithQueues> LoadSchedules(ReadOnlyDataSet read, IEnumerable<LoadAction> loadOpers, out bool foundAtLoad)
+    {
+      foundAtLoad = false;
+      var schs = new List<ScheduleWithQueues>();
+      foreach (var schRow in read.Schedule.OrderBy(s => s.DueDate)) {
+        if (!MazakPart.IsSailPart(schRow.PartName)) continue;
 
-      //now check for queued material on an input queue
-      bool foundAtLoad = false;
-      var jobUniquesToCheck =
-        queuedMats
-        .Where(m => !string.IsNullOrEmpty(m.Unique))
-        .GroupBy(m => m.Unique);
-      foreach (var uniqGroup in jobUniquesToCheck) {
-        var job = _jobDB.LoadJob(uniqGroup.Key);
+        var remain  = schRow.PlanQuantity - CountCompletedOrInProc(schRow, proc: 1);
+        if (remain <= 0) continue;
+
+        MazakPart.ParseComment(schRow.Comment, out string unique, out int path, out bool manual);
+
+        var job = _jobDB.LoadJob(unique);
         if (job == null) continue;
 
         // only if no load or unload action is in process
         bool foundJobAtLoad = false;
         foreach (var action in loadOpers) {
-          if (action.Unique == job.UniqueStr) {
-            foundAtLoad = true;
+          if (action.Unique == job.UniqueStr && action.Path == path) {
             foundJobAtLoad = true;
+            foundAtLoad = true;
             log.Debug("Not editing queued material because {uniq} is in the process of being loaded or unload with action {@action}", job.UniqueStr, action);
             break;
           }
         }
         if (foundJobAtLoad) continue;
 
-        var procsWithQueuedMat =
-          uniqGroup
-          .Select(m => new ValueTuple<string, int>(m.Queue, FindNextProcess(m.MaterialID)))
-          .GroupBy(m => m)
-          .Select(group => new { Queue = group.Key.Item1, NextProcess = group.Key.Item2, QueuedCount = group.Count()})
-          ;
+        // start building the schedule
+        var sch = new ScheduleWithQueues() {
+          SchRow = schRow,
+          Unique = unique,
+          PartName = job.PartName,
+          Path = path,
+          NumProcesses = job.NumProcesses,
+          RemainToLoad = remain,
+          Procs = new Dictionary<int, ScheduleWithQueuesProcess>(),
+        };
+        bool missingProc = false;
+        for (int proc = 1; proc <= job.NumProcesses; proc++) {
+          ReadOnlyDataSet.ScheduleProcessRow schProcRow = null;
+          foreach (var row in schRow.GetScheduleProcessRows()) {
+            if (schProcRow.ProcessNumber == proc) {
+              schProcRow = row;
+              break;
+            }
+          }
+          if (schProcRow == null) {
+            log.Error("Unable to find process {proc} for job {uniq} and schedule {schid}", proc, job.UniqueStr, schRow.ScheduleID);
+            missingProc = true;
+            break;
+          }
+          sch.Procs.Add(proc, new ScheduleWithQueuesProcess() {
+            SchProcRow = schProcRow,
+            InputQueue = job.GetInputQueue(process: proc, path: path)
+          });
+        }
+        if (!missingProc && sch.Procs.Values.Any(p => !string.IsNullOrEmpty(p.InputQueue))) {
+          schs.Add(sch);
+        }
+      }
+      return schs;
+    }
 
-        foreach (var queuedMat in procsWithQueuedMat) {
-          log.Debug("Checking material for job {uniq} with material {@mat}", uniqGroup.Key, queuedMat);
+    private void AttemptToAllocateCastings(IEnumerable<ScheduleWithQueues> schs)
+    {
+      // go through each job and check for castings in an input queue that have not yet been assigned to a job
+      foreach (var job in schs.GroupBy(s => s.Unique)) {
+        var uniqueStr = job.Key;
+        var partName = job.First().PartName;
+        var numProc = job.First().NumProcesses;
+        log.Debug("Checking job {uniq} with for unallocated castings", uniqueStr);
 
-          // TODO: Check for matching path
+        // check for any raw material to assign to the job
+        var proc1Queues =
+          job
+          .Select(s => s.Procs[1].InputQueue)
+          .Where(q => !string.IsNullOrEmpty(q))
+          .Distinct();
+        foreach (var queue in proc1Queues) {
+          var remain = job.Select(s => s.RemainToLoad).Sum();
+          if (remain <= 0) continue;
 
-          if (queuedMat.NextProcess < job.NumProcesses) {
-            for (int path = 1; path <= job.GetNumPaths(queuedMat.NextProcess); path++) {
-              var inputQueue = job.GetInputQueue(queuedMat.NextProcess, path);
-              if (!string.IsNullOrEmpty(inputQueue) && inputQueue == queuedMat.Queue) {
-                EnsureMaterialOnScheduleIs(transSet, read, loadOpers, unique: job.UniqueStr, path: path, proc: queuedMat.NextProcess, count: queuedMat.QueuedCount);
-                break;
+          var partsToAllocate =
+            _log.GetMaterialInQueue(queue)
+            .Where(m => string.IsNullOrEmpty(m.Unique) && m.PartName == partName)
+            .Any();
+          if (partsToAllocate) {
+            log.Debug("Found {part} in queue {queue} without an assigned job, assigning {remain} to job {uniq}", queue, partName, remain, uniqueStr);
+            _log.AllocateCastingsInQueue(queue, partName, uniqueStr, numProc, remain);
+          }
+        }
+      }
+    }
+
+    private void CalculateTargetMatQty(ReadOnlyDataSet read, IEnumerable<ScheduleWithQueues> schs)
+    {
+      // go through each job and process, and distribute the queued material among the various paths
+      // for the job and process.
+      foreach (var job in schs.GroupBy(s => s.Unique)) {
+        var uniqueStr = job.Key;
+        var partName = job.First().PartName;
+        var numProc = job.First().NumProcesses;
+        log.Debug("Checking job {uniq} with schedules {@pathGroup}", uniqueStr, job);
+
+        for (int proc = 1; proc <= numProc; proc++) {
+          // group the processes by input queue
+          var byQueue = job.Select(s => s.Procs[proc]).GroupBy(p => p.InputQueue);
+          foreach (var queueGroup in byQueue) {
+            if (string.IsNullOrEmpty(queueGroup.Key)) continue;
+
+            var matInQueue =
+              _log.GetMaterialInQueue(queueGroup.Key)
+              .Where(m => m.Unique == uniqueStr && FindNextProcess(m.MaterialID) == proc)
+              .Count()
+              ;
+            var curMazakSchMat = queueGroup.Select(s => s.SchProcRow.ProcessMaterialQuantity).Sum();
+
+            log.Debug("Calculated {matInQueue} parts in queue and {mazakCnt} parts in mazak for job {uniq} proc {proc}",
+              matInQueue, curMazakSchMat, uniqueStr, proc);
+
+            if (queueGroup.Count() == 1) {
+              // put all material on the single path
+              if (matInQueue != curMazakSchMat) {
+                queueGroup.First().TargetMaterialCount = matInQueue;
+              }
+            } else {
+              // keep each path at least fixQty piece of material
+              // TODO: deal with path groups
+              if (matInQueue > curMazakSchMat) {
+                int remain = matInQueue - curMazakSchMat;
+                foreach (var p in queueGroup.Where(p => p.SchProcRow.ProcessMaterialQuantity == 0)) {
+                  int fixQty = PartFixQuantity(read, p.SchProcRow);
+                  if (fixQty <= remain) {
+                    remain -= fixQty;
+                    p.TargetMaterialCount = fixQty;
+                  }
+                }
               }
             }
           }
         }
       }
+    }
+
+    private void UpdateMazakMaterialCounts(TransactionDataSet transDB, IEnumerable<ScheduleWithQueues> schs)
+    {
+      foreach (var sch in schs) {
+        if (!sch.Procs.Values.Any(p => p.TargetMaterialCount.HasValue)) continue;
+        log.Debug("Updating material on schedule {schId} for job {uniq} to {@sch}", sch.SchRow.ScheduleID, sch.Unique, sch);
+
+        var tschRow = transDB.Schedule_t.NewSchedule_tRow();
+        TransactionDatabaseAccess.BuildScheduleEditRow(tschRow, sch.SchRow, true);
+
+        foreach (var proc in sch.Procs.Values) {
+          var tschProcRow = transDB.ScheduleProcess_t.NewScheduleProcess_tRow();
+          TransactionDatabaseAccess.BuildScheduleProcEditRow(tschProcRow, proc.SchProcRow);
+          if (proc.TargetMaterialCount.HasValue) {
+            tschProcRow.ProcessMaterialQuantity = proc.TargetMaterialCount.Value;
+          }
+          transDB.ScheduleProcess_t.AddScheduleProcess_tRow(tschProcRow);
+        }
+      }
+    }
+
+    private TimeSpan? CheckForNewMaterial()
+    {
+      log.Debug("Starting check for new queued material to add to mazak");
+      var read = _readonlyDB.LoadReadOnly();
+      var loadOpers = _loadOper.CurrentLoadActions();
+      var transSet = new TransactionDataSet();
+
+      var schs = LoadSchedules(read, loadOpers, out bool foundAtLoad);
+      if (!schs.Any()) return null;
+
+      AttemptToAllocateCastings(schs);
+      CalculateTargetMatQty(read, schs);
+      UpdateMazakMaterialCounts(transSet, schs);
 
       if (transSet.Schedule_t.Count > 0) {
         _transDB.ClearTransactionDatabase();
@@ -246,40 +368,16 @@ namespace MazakMachineInterface
         return inproc + schRow.CompleteQuantity;
     }
 
-    private void EnsureMaterialOnScheduleIs(TransactionDataSet transDB, ReadOnlyDataSet curSet, IEnumerable<LoadAction> loadOpers, string unique, int path, int proc, int count)
+    private int PartFixQuantity(ReadOnlyDataSet read, ReadOnlyDataSet.ScheduleProcessRow schProcRow)
     {
-        log.Debug("Ensuring material on unique {uniq} path {path} proc {proc} is equal to {count}", unique, path, proc, count);
-        foreach (var schRow in curSet.Schedule) {
-          if (!MazakPart.IsSailPart(schRow.PartName)) continue;
-          MazakPart.ParseComment(schRow.Comment, out string schUnique, out int schPath, out bool manual);
-          if (schUnique != unique || schPath != path) continue;
-
-          bool needReset = false;
-          foreach (var schProcRow in schRow.GetScheduleProcessRows()) {
-            if (schProcRow.ProcessNumber == proc && schProcRow.ProcessMaterialQuantity != count) {
-              //need to reset material
-              needReset = true;
-              break;
-            }
-          }
-
-          if (!needReset) continue;
-
-          log.Debug("Editing the material count for {uniq} path {path} proc {proc}", unique, path, proc);
-          // edit the schedule with the new counts
-          var tschRow = transDB.Schedule_t.NewSchedule_tRow();
-          TransactionDatabaseAccess.BuildScheduleEditRow(tschRow, schRow, true);
-          foreach (var schProcRow in schRow.GetScheduleProcessRows()) {
-            var tschProcRow = transDB.ScheduleProcess_t.NewScheduleProcess_tRow();
-            TransactionDatabaseAccess.BuildScheduleProcEditRow(tschProcRow, schProcRow);
-            if (schProcRow.ProcessNumber == proc) {
-              tschProcRow.ProcessMaterialQuantity = count;
-            }
-            transDB.ScheduleProcess_t.AddScheduleProcess_tRow(tschProcRow);
-          }
-          transDB.Schedule_t.AddSchedule_tRow(tschRow);
-
+      var schRow = schProcRow.ScheduleRow;
+      foreach (var procRow in read.PartProcess) {
+        if (procRow.PartName == schRow.PartName && procRow.ProcessNumber == schProcRow.ProcessNumber) {
+          return procRow.FixQuantity;
         }
+      }
+      return 1;
     }
+
   }
 }
