@@ -648,6 +648,22 @@ namespace BlackMaple.MachineWatchInterface
                 throw new IndexOutOfRangeException("Invalid process or path number");
             }
         }
+        public TimeSpan GetExpectedLoadTime(int process, int path)
+        {
+            if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process)) {
+                return _procPath[process - 1].Paths[path - 1].ExpectedLoadTime;
+            } else {
+                throw new IndexOutOfRangeException("Invalid process or path number");
+            }
+        }
+        public void SetExpectedLoadTime(int process, int path, TimeSpan t)
+        {
+            if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process)) {
+                _procPath[process - 1].Paths[path - 1].ExpectedLoadTime = t;
+            } else {
+                throw new IndexOutOfRangeException("Invalid process or path number");
+            }
+        }
         public IEnumerable<int> UnloadStations(int process, int path)
         {
             if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process)) {
@@ -660,6 +676,22 @@ namespace BlackMaple.MachineWatchInterface
         {
             if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process)) {
                 _procPath[process - 1][path - 1].Unload.Add(statNum);
+            } else {
+                throw new IndexOutOfRangeException("Invalid process or path number");
+            }
+        }
+        public TimeSpan GetExpectedUnloadTime(int process, int path)
+        {
+            if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process)) {
+                return _procPath[process - 1].Paths[path - 1].ExpectedUnloadTime;
+            } else {
+                throw new IndexOutOfRangeException("Invalid process or path number");
+            }
+        }
+        public void SetExpectedUnloadTime(int process, int path, TimeSpan t)
+        {
+            if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process)) {
+                _procPath[process - 1].Paths[path - 1].ExpectedUnloadTime = t;
             } else {
                 throw new IndexOutOfRangeException("Invalid process or path number");
             }
@@ -950,8 +982,14 @@ namespace BlackMaple.MachineWatchInterface
             [DataMember(IsRequired=true)]
             public IList<int> Load;
 
+            [DataMember(IsRequired=false, EmitDefaultValue=false)]
+            public TimeSpan ExpectedLoadTime;
+
             [DataMember(IsRequired=true)]
             public IList<int> Unload;
+
+            [DataMember(IsRequired=false, EmitDefaultValue=false)]
+            public TimeSpan ExpectedUnloadTime;
 
             [DataMember(IsRequired=true)]
             public IList<JobMachiningStop> Stops;
@@ -987,7 +1025,9 @@ namespace BlackMaple.MachineWatchInterface
                     Pallets = new List<string>();
                     Fixtures = new List<FixtureFace>();
                     Load = new List<int>();
+                    ExpectedLoadTime = TimeSpan.Zero;
                     Unload = new List<int>();
+                    ExpectedUnloadTime = TimeSpan.Zero;
                     Stops = new List<JobMachiningStop>();
                     SimulatedProduction = new List<SimulatedProduction>();
                     SimulatedStartingUTC = DateTime.MinValue;
@@ -1002,7 +1042,9 @@ namespace BlackMaple.MachineWatchInterface
                     Pallets = new List<string>(other.Pallets);
                     Fixtures = new List<FixtureFace>(other.Fixtures);
                     Load = new List<int>(other.Load);
+                    ExpectedLoadTime = other.ExpectedLoadTime;
                     Unload = new List<int>(other.Unload);
+                    ExpectedUnloadTime = other.ExpectedUnloadTime;
                     Stops = new List<JobMachiningStop>();
                     SimulatedProduction = new List<SimulatedProduction>(other.SimulatedProduction);
                     SimulatedStartingUTC = other.SimulatedStartingUTC;

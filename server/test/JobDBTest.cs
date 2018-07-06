@@ -150,6 +150,13 @@ namespace MachineWatchTest
             job1.AddLoadStation(2, 2, 785);
             job1.AddLoadStation(2, 2, 53);
             job1.AddLoadStation(2, 3, 15);
+
+            job1.SetExpectedLoadTime(1, 1, TimeSpan.FromSeconds(100));
+            job1.SetExpectedLoadTime(1, 2, TimeSpan.FromMinutes(53));
+            job1.SetExpectedLoadTime(2, 1, TimeSpan.FromHours(52));
+            job1.SetExpectedLoadTime(2, 2, TimeSpan.FromSeconds(98));
+            job1.SetExpectedLoadTime(2, 3, TimeSpan.FromSeconds(35));
+
             job1.AddUnloadStation(1, 1, 75);
             job1.AddUnloadStation(1, 1, 234);
             job1.AddUnloadStation(1, 2, 53);
@@ -157,6 +164,12 @@ namespace MachineWatchTest
             job1.AddUnloadStation(2, 2, 2);
             job1.AddUnloadStation(2, 2, 12);
             job1.AddUnloadStation(2, 3, 32);
+
+            job1.SetExpectedUnloadTime(1, 1, TimeSpan.FromSeconds(13));
+            job1.SetExpectedUnloadTime(1, 2, TimeSpan.FromMinutes(12));
+            job1.SetExpectedUnloadTime(2, 1, TimeSpan.FromHours(63));
+            job1.SetExpectedUnloadTime(2, 2, TimeSpan.FromSeconds(73));
+            job1.SetExpectedUnloadTime(2, 3, TimeSpan.FromSeconds(532));
 
             var route = new JobMachiningStop("Machine");
             route.AddProgram(23, "Hello");
@@ -904,6 +917,9 @@ namespace MachineWatchTest
 
                     Assert.Equal(job1.GetSimulatedProduction(proc, path), job2.GetSimulatedProduction(proc, path));
                     Assert.Equal(job1.GetSimulatedAverageFlowTime(proc, path), job2.GetSimulatedAverageFlowTime(proc, path));
+
+                    Assert.Equal(job1.GetExpectedLoadTime(proc, path), job2.GetExpectedLoadTime(proc, path));
+                    Assert.Equal(job1.GetExpectedUnloadTime(proc, path), job2.GetExpectedUnloadTime(proc, path));
 
                     EqualSort(job1.LoadStations(proc, path), job2.LoadStations(proc, path));
                     EqualSort(job1.UnloadStations(proc, path), job2.UnloadStations(proc, path));
