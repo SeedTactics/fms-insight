@@ -71,7 +71,7 @@ namespace BlackMaple.MachineFramework.Controllers
         [HttpGet("find-instructions/{part}")]
         [ProducesResponseType(302)]
         [ProducesResponseType(404)]
-        public IActionResult FindInstructions(string part)
+        public IActionResult FindInstructions(string part, [FromQuery] string type)
         {
             if (string.IsNullOrEmpty(Program.FMSSettings.InstructionFilePath)) {
                 return NotFound("Error: instruction directory must be configured in FMS Insight config file.");
@@ -80,11 +80,15 @@ namespace BlackMaple.MachineFramework.Controllers
                 return NotFound("Error: configured instruction directory does not exist");
             }
             foreach (var f in Directory.GetFiles(Program.FMSSettings.InstructionFilePath)) {
-                if (Path.GetFileName(f).Contains(part)) {
-                    return Redirect("/instructions/" + System.Uri.EscapeDataString(Path.GetFileName(f)));
-                }
+                if (!Path.GetFileName(f).Contains(part)) continue;
+                if (!string.IsNullOrEmpty(type) && !Path.GetFileName(f).ToLower().Contains(type.ToLower())) continue;
+                return Redirect("/instructions/" + System.Uri.EscapeDataString(Path.GetFileName(f)));
             }
-            return NotFound("Error: could not find a file with " + part + " in the filename");
+            return NotFound(
+                "Error: could not find a file with " +
+                (string.IsNullOrEmpty(type) ?  part : part + " and " + type)  +
+                " in the filename."
+            );
         }
     }
 }
