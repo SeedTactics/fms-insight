@@ -24,6 +24,20 @@ which will cause the Mazak cell controller to create log files of all events (pa
 machine cycles, etc.) in the `c:\Mazak\FMS\Log` directory.  Once enabled, FMS Insight will
 automatically find any log entries from this directory.
 
+To enable, go to the `c:\Mazak\FMS` directory.  Rename the file `log-parameters.ini.sample` to `log-parameters.ini` and restart the Mazak Palletech software.  The `log-parameters.ini` file
+contains settings for the path to use and how often to delete, but FMS Insight works fine with
+the default settings.  If you want, you can change the log directory in `log-parameters.ini`
+and then specify the same folder in the FMS Insight server configuration file.
+
+## Load Instructions
+
+Finally, one parameter must be changed.  Open the Mazak Palletech software, go to the parameter
+edit screen, select `X`, and scroll to the setting `X-31`.  Set the `X-31` setting from 0 to 1.
+This setting will cause CSV files describing the current load and unload operation at the load
+station to be output to the `c:\Mazak\FMS\LDS` directory.  FMS Insight monitors this directory
+and uses the CSV files to display the parts being loaded and unloaded from each pallet at
+the load station.
+
 ## Simulation Lab
 
 The Mazak Palletech cell controller software has a great ability to be run in a
