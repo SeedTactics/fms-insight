@@ -87,7 +87,8 @@ namespace BlackMaple.MachineFramework.Controllers
             return NotFound(
                 "Error: could not find a file with " +
                 (string.IsNullOrEmpty(type) ?  part : part + " and " + type)  +
-                " in the filename."
+                " in the filename inside " +
+                Program.FMSSettings.InstructionFilePath
             );
         }
     }
