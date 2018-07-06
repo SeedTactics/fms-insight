@@ -460,7 +460,7 @@ namespace MazakMachineInterface
       }
 
       //now queued
-      var seenMatIds = curStatus.Material.Select(m => m.MaterialID).ToHashSet();
+      var seenMatIds = new HashSet<long>(curStatus.Material.Select(m => m.MaterialID));
       foreach (var mat in log.GetMaterialInAllQueues()) {
         // material could be in the process of being loaded
         if (seenMatIds.Contains(mat.MaterialID)) continue;
