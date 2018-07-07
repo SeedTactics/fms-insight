@@ -78,9 +78,8 @@ namespace MazakMachineInterface
     public delegate void NewEntriesDel(ReadOnlyDataSet dset);
     public event NewEntriesDel NewEntries;
 
-    #region Events
-    /* This is public instead of private for testing ONLY */
-    public void HandleElapsed(object sender, System.Timers.ElapsedEventArgs e)
+    #region Timer
+    private void HandleElapsed(object sender, System.Timers.ElapsedEventArgs e)
     {
       lock (_lock)
       {
@@ -93,7 +92,7 @@ namespace MazakMachineInterface
           {
             try
             {
-              HandleEvent(ev, dset);
+              HandleEvent(ev, new FindPartFromReadOnlySet(dset), le => MachiningCompleted?.Invoke(le, dset));
             }
             catch (Exception ex)
             {
@@ -115,8 +114,72 @@ namespace MazakMachineInterface
       }
     }
 
-    /* This is public instead of private for testing ONLY */
-    public void HandleEvent(LogEntry e, ReadOnlyDataSet dset)
+    internal interface IFindPart
+    {
+      void FindPart(int pallet, string mazakPartName, int proc, out string unique, out int path, out int numProc);
+    }
+
+    private class FindPartFromReadOnlySet : IFindPart
+    {
+      private ReadOnlyDataSet dset;
+      public FindPartFromReadOnlySet(ReadOnlyDataSet d) { dset = d;}
+      public void FindPart(int pallet, string mazakPartName, int proc, out string unique, out int path, out int numProc)
+      {
+        unique = "";
+        numProc = proc;
+        path = 1;
+
+        //first search pallets for the given schedule id.  Since the part name usually includes the UID assigned for this
+        //download, even if old log entries are being processed the correct unique string will still be loaded.
+        int scheduleID = -1;
+        foreach (ReadOnlyDataSet.PalletSubStatusRow palRow in dset.PalletSubStatus.Rows)
+        {
+          if (palRow.PalletNumber == pallet && palRow.PartName == mazakPartName && palRow.PartProcessNumber == proc)
+          {
+            scheduleID = palRow.ScheduleID;
+            break;
+          }
+        }
+
+        if (scheduleID >= 0)
+        {
+          foreach (ReadOnlyDataSet.ScheduleRow schRow in dset.Schedule.Rows)
+          {
+            if (schRow.ScheduleID == scheduleID && !schRow.IsCommentNull())
+            {
+              bool manual;
+              MazakPart.ParseComment(schRow.Comment, out unique, out path, out manual);
+              numProc = schRow.GetScheduleProcessRows().Length;
+              if (numProc < proc) numProc = proc;
+              return;
+            }
+          }
+        }
+
+        Log.Debug("Unable to find schedule ID for {part}-{proc} on pallet {pallet}", mazakPartName, proc, pallet);
+
+        // search for the first schedule for this part
+        foreach (ReadOnlyDataSet.ScheduleRow schRow in dset.Schedule.Rows)
+        {
+          if (schRow.PartName == mazakPartName && !schRow.IsCommentNull())
+          {
+            bool manual;
+            MazakPart.ParseComment(schRow.Comment, out unique, out path, out manual);
+            numProc = schRow.GetScheduleProcessRows().Length;
+            if (numProc < proc) numProc = proc;
+            return;
+          }
+        }
+
+        Log.Warning("Unable to find any schedule for log event {part}-{proc} on pallet {pallet}", mazakPartName, proc, pallet);
+      }
+    }
+
+    #endregion
+
+    #region Events
+    /* This is internal instead of private for testing only */
+    internal void HandleEvent(LogEntry e, IFindPart findPart, Action<MWI.LogEntry> onMachiningCompleted)
     {
       var cycle = new List<MWI.LogEntry>();
       if (e.Pallet >= 1)
@@ -130,7 +193,7 @@ namespace MazakMachineInterface
         case LogCode.LoadBegin:
 
           _log.RecordLoadStart(
-            mats: CreateMaterialWithoutIDs(e, dset),
+            mats: CreateMaterialWithoutIDs(e, findPart),
             pallet: e.Pallet.ToString(),
             lulNum: e.StationNumber,
             timeUTC: e.TimeUTC,
@@ -150,10 +213,10 @@ namespace MazakMachineInterface
 
           // There should never be any pending loads since the pallet movement event should have fired.
           // Just in case, we check for pending loads here
-          cycle = CheckPendingLoads(e.Pallet, e.TimeUTC.AddSeconds(-1), "", dset, false, cycle);
+          cycle = CheckPendingLoads(e.Pallet, e.TimeUTC.AddSeconds(-1), "", findPart, false, cycle);
 
           _log.RecordMachineStart(
-            mats: GetMaterialOnPallet(e, dset, cycle).Select(m => m.Mat),
+            mats: GetMaterialOnPallet(e, findPart, cycle).Select(m => m.Mat),
             pallet: e.Pallet.ToString(),
             statName: "MC",
             statNum: e.StationNumber,
@@ -170,7 +233,7 @@ namespace MazakMachineInterface
           if (elapsed > TimeSpan.FromSeconds(30))
           {
             var s = _log.RecordMachineEnd(
-              mats: GetMaterialOnPallet(e, dset, cycle).Select(m => m.Mat),
+              mats: GetMaterialOnPallet(e, findPart, cycle).Select(m => m.Mat),
               pallet: e.Pallet.ToString(),
               statName: "MC",
               statNum: e.StationNumber,
@@ -180,9 +243,7 @@ namespace MazakMachineInterface
               elapsed: elapsed,
               active: TimeSpan.FromMinutes(-1), //TODO: check if mazak records active time anywhere
               foreignId: e.ForeignID);
-            if (MachiningCompleted != null)
-              MachiningCompleted(s, dset);
-
+            onMachiningCompleted(s);
           }
           else
           {
@@ -196,7 +257,7 @@ namespace MazakMachineInterface
         case LogCode.UnloadBegin:
 
           _log.RecordUnloadStart(
-            mats: GetMaterialOnPallet(e, dset, cycle).Select(m => m.Mat),
+            mats: GetMaterialOnPallet(e, findPart, cycle).Select(m => m.Mat),
             pallet: e.Pallet.ToString(),
             lulNum: e.StationNumber,
             timeUTC: e.TimeUTC,
@@ -209,7 +270,7 @@ namespace MazakMachineInterface
           //TODO: test for rework
           var loadElapsed = CalculateElapsed(e, cycle, LogType.LoadUnloadCycle, e.StationNumber);
 
-          var mats = GetMaterialOnPallet(e, dset, cycle);
+          var mats = GetMaterialOnPallet(e, findPart, cycle);
           var queues = FindUnloadQueues(mats);
 
           _log.RecordUnloadEnd(
@@ -228,7 +289,7 @@ namespace MazakMachineInterface
 
           if (e.FromPosition != null && e.FromPosition.StartsWith("LS"))
           {
-            CheckPendingLoads(e.Pallet, e.TimeUTC, e.ForeignID, dset, true, cycle);
+            CheckPendingLoads(e.Pallet, e.TimeUTC, e.ForeignID, findPart, true, cycle);
           }
 
           if (PalletMove != null)
@@ -243,9 +304,9 @@ namespace MazakMachineInterface
     #endregion
 
     #region Material
-    private List<LogMaterial> CreateMaterialWithoutIDs(LogEntry e, ReadOnlyDataSet dset)
+    private List<LogMaterial> CreateMaterialWithoutIDs(LogEntry e, IFindPart findPart)
     {
-      FindPart(dset, e.Pallet, e.FullPartName, e.Process, out string unique, out int path, out int numProc);
+      findPart.FindPart(e.Pallet, e.FullPartName, e.Process, out string unique, out int path, out int numProc);
 
       var ret = new List<LogMaterial>();
       ret.Add(new LogMaterial(-1, unique, e.Process, e.JobPartName, numProc, ""));
@@ -259,7 +320,7 @@ namespace MazakMachineInterface
       public int Path {get;set;}
     }
 
-    private List<LogMaterialAndPath> GetMaterialOnPallet(LogEntry e, ReadOnlyDataSet dset, IList<MWI.LogEntry> oldEvents)
+    private List<LogMaterialAndPath> GetMaterialOnPallet(LogEntry e, IFindPart findPart, IList<MWI.LogEntry> oldEvents)
     {
       var byFace = ParseMaterialFromPreviousEvents(
         jobPartName: e.JobPartName,
@@ -267,7 +328,7 @@ namespace MazakMachineInterface
         fixQty: e.FixedQuantity,
         isUnloadEnd: e.Code == LogCode.UnloadEnd,
         oldEvents: oldEvents);
-      FindPart(dset, e.Pallet, e.FullPartName, e.Process, out string unique, out int path, out int numProc);
+      findPart.FindPart(e.Pallet, e.FullPartName, e.Process, out string unique, out int path, out int numProc);
 
       var ret = new List<LogMaterialAndPath>();
 
@@ -348,7 +409,7 @@ namespace MazakMachineInterface
       return e.FullPartName + "," + e.Process.ToString() + "," + e.FixedQuantity.ToString();
     }
 
-    private List<MWI.LogEntry> CheckPendingLoads(int pallet, DateTime t, string foreignID, ReadOnlyDataSet dset, bool palletCycle, List<MWI.LogEntry> cycle)
+    private List<MWI.LogEntry> CheckPendingLoads(int pallet, DateTime t, string foreignID, IFindPart findPart, bool palletCycle, List<MWI.LogEntry> cycle)
     {
       var pending = _log.PendingLoads(pallet.ToString());
 
@@ -388,7 +449,7 @@ namespace MazakMachineInterface
         if (!int.TryParse(s[1], out proc)) proc = 1;
         if (!int.TryParse(s[2], out fixQty)) fixQty = 1;
 
-        FindPart(dset, pallet, fullPartName, proc, out string unique, out int path, out int numProc);
+        findPart.FindPart(pallet, fullPartName, proc, out string unique, out int path, out int numProc);
 
         JobPlan job;
         if (jobs.ContainsKey(unique)) {
@@ -485,57 +546,6 @@ namespace MazakMachineInterface
         return _log.CurrentPalletLog(pallet.ToString());
     }
 
-    private void FindPart(ReadOnlyDataSet dset, int pallet, string mazakPartName, int proc, out string unique, out int path, out int numProc)
-    {
-      unique = "";
-      numProc = proc;
-      path = 1;
-
-      //first search pallets for the given schedule id.  Since the part name usually includes the UID assigned for this
-      //download, even if old log entries are being processed the correct unique string will still be loaded.
-      int scheduleID = -1;
-      foreach (ReadOnlyDataSet.PalletSubStatusRow palRow in dset.PalletSubStatus.Rows)
-      {
-        if (palRow.PalletNumber == pallet && palRow.PartName == mazakPartName && palRow.PartProcessNumber == proc)
-        {
-          scheduleID = palRow.ScheduleID;
-          break;
-        }
-      }
-
-      if (scheduleID >= 0)
-      {
-        foreach (ReadOnlyDataSet.ScheduleRow schRow in dset.Schedule.Rows)
-        {
-          if (schRow.ScheduleID == scheduleID && !schRow.IsCommentNull())
-          {
-            bool manual;
-            MazakPart.ParseComment(schRow.Comment, out unique, out path, out manual);
-            numProc = schRow.GetScheduleProcessRows().Length;
-            if (numProc < proc) numProc = proc;
-            return;
-          }
-        }
-      }
-
-      Log.Debug("Unable to find schedule ID for {part}-{proc} on pallet {pallet}", mazakPartName, proc, pallet);
-
-      // search for the first schedule for this part
-      foreach (ReadOnlyDataSet.ScheduleRow schRow in dset.Schedule.Rows)
-      {
-        if (schRow.PartName == mazakPartName && !schRow.IsCommentNull())
-        {
-          bool manual;
-          MazakPart.ParseComment(schRow.Comment, out unique, out path, out manual);
-          numProc = schRow.GetScheduleProcessRows().Length;
-          if (numProc < proc) numProc = proc;
-          return;
-        }
-      }
-
-      Log.Warning("Unable to find any schedule for log event {part}-{proc} on pallet {pallet}", mazakPartName, proc, pallet);
-    }
-
     private Dictionary<long, string> FindUnloadQueues(IEnumerable<LogMaterialAndPath> mats)
     {
       var ret = new Dictionary<long, string>();
@@ -563,7 +573,7 @@ namespace MazakMachineInterface
     #endregion
 
     #region Elapsed
-    private TimeSpan CalculateElapsed(LogEntry e, IList<MWI.LogEntry> oldEvents, LogType ty, int statNum)
+    private static TimeSpan CalculateElapsed(LogEntry e, IList<MWI.LogEntry> oldEvents, LogType ty, int statNum)
     {
       for (int i = oldEvents.Count - 1; i >= 0; i -= 1)
       {
