@@ -495,11 +495,10 @@ namespace MachineWatchTest
     public void SingleMachineCycle()
     {
       var t = DateTime.UtcNow.AddHours(-5);
-      long mat = jobLog.AllocateMaterialID("", "", 1) + 1;
 
 			AddTestPart(pallet: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, path: 1);
 
-      var p = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, face: "1", numProc: 1, matID: mat);
+      var p = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, face: "1", numProc: 1, matID: 1);
 
       LoadStart(p, offset: 0, load: 5);
       LoadEnd(p, offset: 2, load: 5, cycleOffset: 3, elapMin: 2);
@@ -518,14 +517,13 @@ namespace MachineWatchTest
     public void MultipleMachineCycles()
     {
       var t = DateTime.UtcNow.AddHours(-5);
-      long mat = jobLog.AllocateMaterialID("", "", 1) + 1;
 
       AddTestPart(pallet: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, path: 1);
       AddTestPart(pallet: 6, unique: "unique", part: "part1", proc: 1, numProc: 1, path: 1);
 
-      var p1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, face: "1", matID: mat);
-      var p2 = BuildMaterial(t, pal: 6, unique: "unique", part: "part1", proc: 1, numProc: 1, face: "1", matID: mat + 1);
-      var p3 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, face: "1", matID: mat + 2);
+      var p1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, face: "1", matID: 1);
+      var p2 = BuildMaterial(t, pal: 6, unique: "unique", part: "part1", proc: 1, numProc: 1, face: "1", matID: 2);
+      var p3 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, face: "1", matID: 3);
 
       LoadStart(p1, offset: 0, load: 1);
       LoadStart(p2, offset: 1, load: 2);
