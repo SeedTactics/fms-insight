@@ -515,21 +515,27 @@ namespace MazakMachineInterface
             oldEvents: cycle);
           for (int i = 1; i <= fixQty; i += 1)
           {
-            string face;
-            if (fixQty == 1)
-              face = proc.ToString();
-            else
-              face = proc.ToString() + "-" + i.ToString();
+            string prevFace;
+            string nextFace;
+            if (fixQty == 1) {
+              prevFace = (proc-1).ToString();
+              nextFace = proc.ToString();
+            } else {
+              prevFace = (proc-1).ToString() + "-" + i.ToString();
+              nextFace = proc.ToString() + "-" + i.ToString();
+            }
 
-            if (byFace.ContainsKey(face))
+            if (byFace.ContainsKey(prevFace))
             {
-              mats.Add(byFace[face]);
+              var old = byFace[prevFace];
+              mats.Add(new LogMaterial(
+                old.MaterialID, unique, proc, jobPartName, numProc, nextFace));
             }
             else
             {
               //something went wrong, must create material
               mats.Add(new LogMaterial(_log.AllocateMaterialID(unique, jobPartName, numProc), unique,
-                                        proc, jobPartName, numProc, face));
+                                        proc, jobPartName, numProc, nextFace));
 
               Log.Warning("Could not find material on pallet {pallet} for previous process {proc}, creating new material for {@pending}",
                 pallet, proc - 1, p);

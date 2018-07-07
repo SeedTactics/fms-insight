@@ -154,8 +154,9 @@ namespace MachineWatchTest
       };
     }
 
-    protected void MachStart(TestMaterial mat, int offset, int mach, string prog)
+    protected void MachStart(TestMaterial mat, int offset, int mach)
     {
+      string prog = "program-" + mat.MaterialID.ToString();
       var e2 = new MazakMachineInterface.LogEntry() {
         TimeUTC = mat.EventStartTime.AddMinutes(offset),
         Code = LogCode.MachineCycleStart,
@@ -195,8 +196,9 @@ namespace MachineWatchTest
       ));
     }
 
-    protected void MachEnd(TestMaterial mat, int offset, int mach, string prog, int elapMin)
+    protected void MachEnd(TestMaterial mat, int offset, int mach, int elapMin)
     {
+      string prog = "program-" + mat.MaterialID.ToString();
       var e2 = new MazakMachineInterface.LogEntry() {
         TimeUTC = mat.EventStartTime.AddMinutes(offset),
         Code = LogCode.MachineCycleEnd,
@@ -504,8 +506,8 @@ namespace MachineWatchTest
       LoadEnd(p, offset: 2, load: 5, cycleOffset: 3, elapMin: 2);
       MovePallet(t, offset: 3, load: 1, pal: 3, elapMin: 0);
 
-      MachStart(p, offset: 4, mach: 2, prog: "prog111");
-      MachEnd(p, offset: 20, mach: 2, prog: "prog111", elapMin: 16);
+      MachStart(p, offset: 4, mach: 2);
+      MachEnd(p, offset: 20, mach: 2, elapMin: 16);
 
       UnloadStart(p, offset: 22, load: 1);
       UnloadEnd(p, offset: 23, load: 1, elapMin: 1);
@@ -531,18 +533,18 @@ namespace MachineWatchTest
       LoadEnd(p1, offset: 2, load: 1, cycleOffset: 2, elapMin: 2);
       MovePallet(t, offset: 2, load: 1, pal: 3, elapMin: 0);
 
-      MachStart(p1, offset: 3, mach: 2, prog: "prog11");
+      MachStart(p1, offset: 3, mach: 2);
 
       LoadEnd(p2, offset: 4, load: 2, cycleOffset: 4, elapMin: 3);
       MovePallet(t, offset: 4, load: 2, pal: 6, elapMin: 0);
 
-      MachStart(p2, offset: 5, mach: 3, prog: "prog11");
-      MachEnd(p1, offset: 23, mach: 2, elapMin: 20, prog: "prog11");
+      MachStart(p2, offset: 5, mach: 3);
+      MachEnd(p1, offset: 23, mach: 2, elapMin: 20);
 
       LoadStart(p3, offset: 25, load: 4);
       UnloadStart(p1, offset: 25, load: 4);
 
-      MachEnd(p2, offset: 30, mach: 3, elapMin: 25, prog: "prog11");
+      MachEnd(p2, offset: 30, mach: 3, elapMin: 25);
 
       UnloadStart(p2, offset: 33, load: 3);
 
@@ -550,12 +552,12 @@ namespace MachineWatchTest
       UnloadEnd(p1, offset: 37, load: 4, elapMin: 12);
       MovePallet(t, offset: 38, load: 4, pal: 3, elapMin: 38 - 2);
 
-      MachStart(p3, offset: 40, mach: 1, prog: "prog11");
+      MachStart(p3, offset: 40, mach: 1);
 
       UnloadEnd(p2, offset: 41, load: 3, elapMin: 8);
       MovePallet(t, offset: 41, load: 3, pal: 6, elapMin: 41 - 4);
 
-      MachEnd(p3, offset: 61, mach: 1, elapMin: 21, prog: "prog11");
+      MachEnd(p3, offset: 61, mach: 1, elapMin: 21);
       UnloadStart(p3, offset: 62, load: 6);
       UnloadEnd(p3, offset: 66, load: 6, elapMin: 4);
       MovePallet(t, offset: 66, load: 6, pal: 3, elapMin: 66 - 38);
@@ -563,30 +565,28 @@ namespace MachineWatchTest
       CheckExpected(t.AddHours(-1), t.AddHours(5));
     }
 
-		/*
     [Fact]
     public void MultipleProcess()
     {
       var t = DateTime.UtcNow.AddHours(-5);
-      long mat = jobLog.AllocateMaterialID("", "", 1) + 1;
 
       AddTestPart(pallet: 3, unique: "unique", part: "part1", proc: 1, numProc: 2, path: 1);
       AddTestPart(pallet: 3, unique: "unique", part: "part1", proc: 2, numProc: 2, path: 1);
       AddTestPart(pallet: 6, unique: "unique", part: "part1", proc: 1, numProc: 2, path: 1);
 
-      var p1d1 = BuildPart(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 2, fix: 1, program: "prog1", matID: mat);
-      var p1d2 = BuildPart(t, pal: 3, unique: "unique", part: "part1", proc: 2, numProc: 2, fix: 1, program: "prog2", matID: mat);
-      var p2 = BuildPart(t, pal: 6, unique: "unique", part: "part1", proc: 1, numProc: 2, fix: 1, program: "prog1", matID: mat + 1);
-      var p3d1 = BuildPart(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 2, fix: 1, program: "prog3", matID: mat + 2);
+      var p1d1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 2, face: "1", matID: 1);
+      var p1d2 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 2, numProc: 2, face: "2", matID: 1);
+      var p2 = BuildMaterial(t, pal: 6, unique: "unique", part: "part1", proc: 1, numProc: 2, face: "1", matID: 2);
+      var p3d1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 2, face: "1", matID: 3);
 
       LoadStart(p1d1, offset: 0, load: 1);
       LoadStart(p2, offset: 2, load: 2);
 
       LoadEnd(p1d1, offset: 4, load: 1, elapMin: 4, cycleOffset: 5);
-      MovePallet(t, offset: 5, load: 1, pal: 3);
+      MovePallet(t, offset: 5, load: 1, pal: 3, elapMin: 0);
 
       LoadEnd(p2, offset: 6, load: 2, elapMin: 4, cycleOffset: 6);
-      MovePallet(t, offset: 6, load: 2, pal: 6);
+      MovePallet(t, offset: 6, load: 2, pal: 6, elapMin: 0);
 
       MachStart(p1d1, offset: 10, mach: 1);
       MachStart(p2, offset: 12, mach: 3);
@@ -599,7 +599,7 @@ namespace MachineWatchTest
       LoadEnd(p3d1, offset: 24, load: 3, cycleOffset: 24, elapMin: 1);
       UnloadEnd(p1d1, offset: 24, load: 3, elapMin: 1);
       LoadEnd(p1d2, offset: 24, load: 3, cycleOffset: 24, elapMin: 1);
-      MovePallet(t, offset: 24, load: 3, pal: 3);
+      MovePallet(t, offset: 24, load: 3, pal: 3, elapMin: 24 - 5);
 
       MachStart(p1d2, offset: 30, mach: 4);
       MachEnd(p2, offset: 33, mach: 3, elapMin: 21);
@@ -610,7 +610,7 @@ namespace MachineWatchTest
       MachStart(p3d1, offset: 43, mach: 4);
 
       UnloadEnd(p2, offset: 44, load: 4, elapMin: 4);
-      MovePallet(t, offset: 45, load: 4, pal: 6);
+      MovePallet(t, offset: 45, load: 4, pal: 6, elapMin: 45 - 6);
 
       MachEnd(p3d1, offset: 50, mach: 4, elapMin: 7);
 
@@ -618,11 +618,12 @@ namespace MachineWatchTest
       UnloadStart(p1d2, offset: 52, load: 1);
       UnloadEnd(p3d1, offset: 54, load: 1, elapMin: 2);
       UnloadEnd(p1d2, offset: 54, load: 1, elapMin: 2);
-      MovePallet(t, offset: 55, load: 1, pal: 3);
+      MovePallet(t, offset: 55, load: 1, pal: 3, elapMin: 55 - 24);
 
       CheckExpected(t.AddHours(-1), t.AddHours(5));
     }
 
+		/*
     [Test]
     public void FixedQuantites()
     {
