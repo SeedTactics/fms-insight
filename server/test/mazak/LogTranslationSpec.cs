@@ -438,7 +438,7 @@ namespace MachineWatchTest
       ));
     }
 
-    protected void MovePallet(DateTime t, int offset, int pal, int load, int elapMin)
+    protected void MovePallet(DateTime t, int offset, int pal, int load, int elapMin, bool addExpected = true)
     {
       var e = new MazakMachineInterface.LogEntry();
       e.Code = LogCode.PalletMoving;
@@ -457,21 +457,26 @@ namespace MachineWatchTest
 
       log.HandleEvent(e, findPart, ev => {});
 
-      expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
-        cntr: -1,
-        mat: new BlackMaple.MachineWatchInterface.LogMaterial[] {},
-        pal: pal.ToString(),
-        ty: BlackMaple.MachineWatchInterface.LogType.PalletCycle,
-        locName: "Pallet Cycle",
-        locNum: 1,
-        prog: "",
-        start: false,
-        endTime: t.AddMinutes(offset),
-        result: "PalletCycle",
-        endOfRoute: false,
-        elapsed: TimeSpan.FromMinutes(elapMin),
-        active: TimeSpan.Zero
-      ));
+      if (addExpected)
+        expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
+          cntr: -1,
+          mat: new BlackMaple.MachineWatchInterface.LogMaterial[] {},
+          pal: pal.ToString(),
+          ty: BlackMaple.MachineWatchInterface.LogType.PalletCycle,
+          locName: "Pallet Cycle",
+          locNum: 1,
+          prog: "",
+          start: false,
+          endTime: t.AddMinutes(offset),
+          result: "PalletCycle",
+          endOfRoute: false,
+          elapsed: TimeSpan.FromMinutes(elapMin),
+          active: TimeSpan.Zero
+        ));
+    }
+
+    protected void HandleSkippedEvent(MazakMachineInterface.LogEntry e) {
+      log.HandleEvent(e, findPart, _ => {});
     }
 
     #endregion
@@ -692,92 +697,39 @@ namespace MachineWatchTest
 
       CheckExpected(t.AddHours(-1), t.AddHours(5));
     }
+    */
 
-    [Test]
-    public void MultipleSchedulesSamePart()
-    {
-      // This tests that looking the unique up by schedule ID on the pallet status works properly
-
-      var t = DateTime.UtcNow.AddHours(-5);
-      long mat = jobLog.AllocateMaterialID("") + 1;
-
-      AddSchedule(schID: 1, unique: "unique", part: "part1", numProc: 2);
-      AddSchedule(schID: 2, unique: "unique2", part: "part1", numProc: 2);
-      AddPallet(pallet: 3, schID: 2, part: "part1", proc: 1);
-      AddPallet(pallet: 3, schID: 1, part: "part1", proc: 2);
-      AddPallet(pallet: 4, schID: 1, part: "part1", proc: 1);
-      AddPallet(pallet: 4, schID: 2, part: "part1", proc: 2);
-
-      var p3d1 = BuildPart(t, pal: 3, unique: "unique2", part: "part1", proc: 1, numProc: 2, fix: 2, program: "prog1", matID: mat);
-      var p3d2 = BuildPart(t, pal: 3, unique: "unique", part: "part1", proc: 2, numProc: 2, fix: 2, program: "prog2", matID: mat + 2);
-      var p4d1 = BuildPart(t, pal: 4, unique: "unique", part: "part1", proc: 1, numProc: 2, fix: 2, program: "prog1", matID: mat + 4);
-      var p4d2 = BuildPart(t, pal: 4, unique: "unique2", part: "part1", proc: 2, numProc: 2, fix: 2, program: "prog2", matID: mat + 6);
-
-      LoadStart(p3d1, offset: 0, load: 1);
-      LoadStart(p3d2, offset: 0, load: 1);
-      LoadEnd(p3d1, offset: 1, load: 1, cycleOffset: 1, elapMin: 1);
-      LoadEnd(p3d2, offset: 1, load: 1, cycleOffset: 1, elapMin: 1);
-      MovePallet(t, offset: 1, load: 1, pal: 3);
-
-      MachStart(p3d2, offset: 5, mach: 4);
-
-      LoadStart(p4d1, offset: 10, load: 1);
-      LoadStart(p4d2, offset: 10, load: 1);
-      LoadEnd(p4d1, offset: 12, load: 1, cycleOffset: 12, elapMin: 2);
-      LoadEnd(p4d2, offset: 12, load: 1, cycleOffset: 12, elapMin: 2);
-      MovePallet(t, offset: 12, load: 1, pal: 4);
-
-      MachEnd(p3d2, offset: 17, mach: 4, elapMin: 12);
-      MachStart(p3d1, offset: 19, mach: 4);
-
-      MachStart(p4d1, offset: 22, mach: 5);
-
-      MachEnd(p3d1, offset: 24, mach: 4, elapMin: 5);
-
-      MachEnd(p4d1, offset: 30, mach: 5, elapMin: 8);
-      MachStart(p4d2, offset: 32, mach: 5);
-      MachEnd(p4d2, offset: 44, mach: 5, elapMin: 12);
-
-      UnloadStart(p3d1, offset: 44, load: 1);
-      UnloadStart(p3d2, offset: 44, load: 1);
-      UnloadEnd(p3d1, offset: 46, load: 1, elapMin: 2);
-      UnloadEnd(p3d2, offset: 46, load: 1, elapMin: 2);
-      MovePallet(t, offset: 46, load: 1, pal: 3);
-
-      UnloadStart(p4d1, offset: 50, load: 1);
-      UnloadStart(p4d2, offset: 50, load: 1);
-      UnloadEnd(p4d1, offset: 51, load: 1, elapMin: 1);
-      UnloadEnd(p4d2, offset: 51, load: 1, elapMin: 1);
-      MovePallet(t, offset: 51, load: 1, pal: 4);
-
-      CheckExpected(t.AddHours(-1), t.AddHours(5));
-    }
-
-    [Test]
+    [Fact]
     public void SkipShortMachineCycle()
     {
       var t = DateTime.UtcNow.AddHours(-5);
-      long mat = jobLog.AllocateMaterialID("") + 1;
 
-      AddSchedule(schID: 1, unique: "unique", part: "part1", numProc: 1);
-      AddPallet(pallet: 3, schID: 1, part: "part1", proc: 1);
-      //Don't add pallet 6, make sure the fallback lookup works.
+      AddTestPart(pallet: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, path: 1);
 
-      var p1 = BuildPart(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, fix: 1, program: "prog", matID: mat);
+      var p1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, face: "1", matID: 1);
 
       LoadStart(p1, offset: 0, load: 1);
       LoadEnd(p1, offset: 2, load: 1, cycleOffset: 2, elapMin: 2);
-      MovePallet(t, offset: 2, load: 1, pal: 3);
+      MovePallet(t, offset: 2, load: 1, pal: 3, elapMin: 0);
 
       MachStart(p1, offset: 8, mach: 3);
 
       // Add machine end after 15 seconds
-      var bad = p1.Clone();
-      bad.TimeUTC = t.AddMinutes(8).AddSeconds(15);
-      bad.Code = LogCode.MachineCycleEnd;
-      bad.StationNumber = 3;
-      bad.Elapsed = TimeSpan.FromSeconds(15);
-      log.HandleEvent(bad, dset);
+      var bad = new MazakMachineInterface.LogEntry() {
+        TimeUTC = t.AddMinutes(8).AddSeconds(15),
+        Code = LogCode.MachineCycleEnd,
+        ForeignID = "",
+        StationNumber = 3,
+        Pallet = p1.Pallet,
+        FullPartName = p1.MazakPartName,
+        JobPartName = p1.JobPartName,
+        Process = p1.Process,
+        FixedQuantity = 1,
+        Program = "program",
+        TargetPosition = "",
+        FromPosition = "",
+      };
+      HandleSkippedEvent(bad);
       // don't add to expected, since it should be skipped
 
       MachStart(p1, offset: 15, mach: 3);
@@ -785,26 +737,24 @@ namespace MachineWatchTest
 
       UnloadStart(p1, offset: 30, load: 1);
       UnloadEnd(p1, offset: 33, load: 1, elapMin: 3);
-      MovePallet(t, offset: 33, load: 1, pal: 3);
+      MovePallet(t, offset: 33, load: 1, pal: 3, elapMin: 33-2);
 
       CheckExpected(t.AddHours(-1), t.AddHours(5));
     }
 
-    [Test]
+    [Fact]
     public void Remachining()
     {
       var t = DateTime.UtcNow.AddHours(-5);
-      long mat = jobLog.AllocateMaterialID("") + 1;
 
-      AddSchedule(schID: 1, unique: "unique", part: "part1", numProc: 1);
-      AddPallet(pallet: 3, schID: 1, part: "part1", proc: 1);
+      AddTestPart(pallet: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, path: 1);
 
-      var p1 = BuildPart(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, fix: 1, program: "prog", matID: mat);
-      var p2 = BuildPart(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, fix: 1, program: "prog", matID: mat + 1);
+      var p1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, face: "1", matID: 1);
+      var p2 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, face: "1", matID: 2);
 
       LoadStart(p1, offset: 0, load: 5);
       LoadEnd(p1, offset: 2, load: 5, cycleOffset: 3, elapMin: 2);
-      MovePallet(t, offset: 3, load: 1, pal: 3);
+      MovePallet(t, offset: 3, load: 1, pal: 3, elapMin: 0);
 
       MachStart(p1, offset: 4, mach: 2);
       MachEnd(p1, offset: 20, mach: 2, elapMin: 16);
@@ -812,7 +762,7 @@ namespace MachineWatchTest
       UnloadStart(p1, offset: 22, load: 1);
       LoadStart(p2, offset: 23, load: 1);
       //No unload or load ends since this is a remachining
-      MovePallet(t, offset: 26, load: 1, pal: 3, addExpected: false);
+      MovePallet(t, offset: 26, load: 1, pal: 3, elapMin: 0, addExpected: false);
 
       MachStart(p1, offset: 30, mach: 1);
       MachEnd(p1, offset: 43, mach: 1, elapMin: 13);
@@ -821,18 +771,17 @@ namespace MachineWatchTest
       LoadStart(p2, offset: 45, load: 2);
       UnloadEnd(p1, offset: 47, load: 2, elapMin: 2);
       LoadEnd(p2, offset: 47, load: 2, cycleOffset: 48, elapMin: 2);
-      MovePallet(t, offset: 48, load: 2, pal: 3);
+      MovePallet(t, offset: 48, load: 2, pal: 3, elapMin: 48 - 3);
 
       MachStart(p2, offset: 50, mach: 1);
       MachEnd(p2, offset: 57, mach: 1, elapMin: 7);
 
       UnloadStart(p2, offset: 60, load: 1);
       UnloadEnd(p2, offset: 66, load: 1, elapMin: 6);
-      MovePallet(t, offset: 66, load: 1, pal: 3);
+      MovePallet(t, offset: 66, load: 1, pal: 3, elapMin: 66 - 48);
 
-      CheckExpected(t.AddHours(-1), t.AddHours(5), checkValid: false);
+      CheckExpected(t.AddHours(-1), t.AddHours(5));
     }
-		*/
   }
 
 	/*
@@ -910,42 +859,5 @@ namespace MachineWatchTest
       Assert.AreEqual(1, System.IO.Directory.GetFiles(_logPath, "*.csv").Length);
     }
   }
-
-  [TestFixture]
-  public class RoutingTests
-  {
-    [Test]
-    public void SortSchedules()
-    {
-      var sortMethod = typeof(RoutingInfo).GetMethod("SortSchedulesByDate",
-                                                     System.Reflection.BindingFlags.NonPublic |
-                                                     System.Reflection.BindingFlags.Static);
-
-      var tset = new TransactionDataSet();
-
-      var d = DateTime.Now;
-
-      //ScheduleID 15
-      tset.Schedule_t.AddSchedule_tRow(1, "Abc", 15, d.AddMinutes(15), 1, 0, 0, 0, 0, 0, "Part1", 3, 4, 1, 15, 1);
-      tset.ScheduleProcess_t.AddScheduleProcess_tRow(0, 0, 0, 0, 1, 0, 15);
-      tset.ScheduleProcess_t.AddScheduleProcess_tRow(0, 0, 0, 0, 2, 0, 15);
-
-      //ScheduleID 16
-      tset.Schedule_t.AddSchedule_tRow(1, "Def", 20, d.AddMinutes(5), 1, 0, 0, 0, 0, 0, "Part2", 8, 4, 1, 16, 1);
-      tset.ScheduleProcess_t.AddScheduleProcess_tRow(0, 0, 0, 0, 1, 0, 16);
-      tset.ScheduleProcess_t.AddScheduleProcess_tRow(0, 0, 0, 0, 2, 0, 16);
-
-      Assert.AreEqual(15, tset.Schedule_t[0].ScheduleID);
-      Assert.AreEqual(16, tset.Schedule_t[1].ScheduleID);
-      Assert.AreEqual(15, tset.ScheduleProcess_t[0].ScheduleID);
-
-      sortMethod.Invoke(null, new object[] { tset });
-
-      Assert.AreEqual(2, tset.Schedule_t.Rows.Count);
-      Assert.AreEqual(16, tset.Schedule_t[0].ScheduleID);
-      Assert.AreEqual(15, tset.Schedule_t[1].ScheduleID);
-      Assert.AreEqual(15, tset.ScheduleProcess_t[0].ScheduleID);
-    }
-  }
-	*/
+  */
 }
