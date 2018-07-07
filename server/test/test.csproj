@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj" />
+    <ProjectReference Include="../machines/mazak/mazak.csproj" />
   </ItemGroup>
 
   <ItemGroup>

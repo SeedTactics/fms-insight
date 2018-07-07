@@ -707,7 +707,7 @@ namespace MazakMachineInterface
             else
               hold = h.HoldMachining;
 
-            hold.HoldUnholdPatternStartUTC = new DateTime(reader.GetInt64(1), DateTimeKind.Utc);
+            hold.HoldUnholdPatternStartUTC = new DateTime(reader.GetInt64(2), DateTimeKind.Utc);
             hold.HoldUnholdPatternRepeats = reader.GetBoolean(3);
           }
         }
