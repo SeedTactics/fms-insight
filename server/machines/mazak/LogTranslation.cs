@@ -51,8 +51,10 @@ namespace MazakMachineInterface
     private System.Timers.Timer _timer;
     public BlackMaple.MachineFramework.FMSSettings FMSSettings { get; set; }
 
-    public LogTranslation(BlackMaple.MachineFramework.JobLogDB log, BlackMaple.MachineFramework.JobDB jobDB,
-                          IReadDataAccess readDB, BlackMaple.MachineFramework.FMSSettings settings,
+    public LogTranslation(BlackMaple.MachineFramework.JobLogDB log,
+                          BlackMaple.MachineFramework.JobDB jobDB,
+                          IReadDataAccess readDB,
+                          BlackMaple.MachineFramework.FMSSettings settings,
                           ILogData loadLogData)
     {
       _log = log;

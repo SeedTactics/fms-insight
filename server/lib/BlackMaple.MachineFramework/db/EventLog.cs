@@ -2221,7 +2221,7 @@ namespace BlackMaple.MachineFramework
                                     ty: BlackMaple.MachineWatchInterface.LogType.LoadUnloadCycle,
                                     locName: "L/U",
                                     locNum: reader.GetInt32(1),
-                                    prog: "",
+                                    prog: "LOAD",
                                     start: false,
                                     endTime: timeUTC.AddSeconds(1),
                                     result: "LOAD",

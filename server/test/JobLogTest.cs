@@ -581,7 +581,7 @@ namespace MachineWatchTest
             mat["key1"] = new LogMaterial[] { mat1, mat2 };
 
             var nLoad1 = new LogEntry(0, new LogMaterial[] { mat1, mat2 },
-                                    "pal1", LogType.LoadUnloadCycle, "L/U", 5, "", false,
+                                    "pal1", LogType.LoadUnloadCycle, "L/U", 5, "LOAD", false,
                                     t.AddMinutes(45).AddSeconds(1), "LOAD", false, TimeSpan.FromMinutes(32), TimeSpan.FromMinutes(38));
 
             var ser1 = new LogEntry(0, new LogMaterial[] { mat1 },
@@ -595,7 +595,7 @@ namespace MachineWatchTest
             mat["key2"] = new LogMaterial[] { mat3 };
 
             var nLoad2 = new LogEntry(0, new LogMaterial[] { mat3 },
-                                    "pal1", LogType.LoadUnloadCycle, "L/U", 7, "", false,
+                                    "pal1", LogType.LoadUnloadCycle, "L/U", 7, "LOAD", false,
                                     t.AddMinutes(45).AddSeconds(1), "LOAD", false, TimeSpan.FromMinutes(44), TimeSpan.FromMinutes(49));
 
             var ser3 = new LogEntry(0, new LogMaterial[] { mat3 },
@@ -651,7 +651,7 @@ namespace MachineWatchTest
             mat["key1"] = new LogMaterial[] { mat1, mat2 };
 
             var nLoad1 = new LogEntry(0, new LogMaterial[] { mat1, mat2 },
-                                    "pal1", LogType.LoadUnloadCycle, "L/U", 5, "", false,
+                                    "pal1", LogType.LoadUnloadCycle, "L/U", 5, "LOAD", false,
                                     t.AddMinutes(45).AddSeconds(1), "LOAD", false, TimeSpan.FromMinutes(32), TimeSpan.FromMinutes(38));
 
             var ser1 = new LogEntry(0, new LogMaterial[] { mat1, mat2 },
@@ -661,7 +661,7 @@ namespace MachineWatchTest
             mat["key2"] = new LogMaterial[] { mat3 };
 
             var nLoad2 = new LogEntry(0, new LogMaterial[] { mat3 },
-                                    "pal1", LogType.LoadUnloadCycle, "L/U", 7, "", false,
+                                    "pal1", LogType.LoadUnloadCycle, "L/U", 7, "LOAD", false,
                                     t.AddMinutes(45).AddSeconds(1), "LOAD", false, TimeSpan.FromMinutes(44), TimeSpan.FromMinutes(49));
 
             var ser3 = new LogEntry(0, new LogMaterial[] { mat3 },
