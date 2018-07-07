@@ -59,6 +59,7 @@ namespace MazakMachineInterface
       _readonlyDB = rDB;
       _transDB = db;
       _jobDB = jDB;
+      _log = log;
       _loadOper = load;
       _shutdown = new AutoResetEvent(false);
       _recheckMaterial = new AutoResetEvent(false);
