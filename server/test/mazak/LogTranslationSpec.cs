@@ -211,7 +211,7 @@ namespace MachineWatchTest
     }
 
     protected void LoadStart(TestLogEntry le, int offset, int load)
-    {Assert.Equal(0, expected.Count);
+    {
       var e2 = le.Clone();
       e2.MaterialID = -1;
       e2.FixedQuantity = 1;
@@ -529,16 +529,14 @@ namespace MachineWatchTest
       CheckExpected(t.AddHours(-1), t.AddHours(5));
     }
 
-		/*
-    [Test]
+    [Fact]
     public void MultipleMachineCycles()
     {
       var t = DateTime.UtcNow.AddHours(-5);
-      long mat = jobLog.AllocateMaterialID("") + 1;
+      long mat = jobLog.AllocateMaterialID("", "", 1) + 1;
 
-      AddSchedule(schID: 1, unique: "unique", part: "part1", numProc: 1);
-      AddPallet(pallet: 3, schID: 1, part: "part1", proc: 1);
-      //Don't add pallet 6, make sure the fallback lookup works.
+      AddTestPart(pallet: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, path: 1);
+      AddTestPart(pallet: 6, unique: "unique", part: "part1", proc: 1, numProc: 1, path: 1);
 
       var p1 = BuildPart(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, fix: 1, program: "prog", matID: mat);
       var p2 = BuildPart(t, pal: 6, unique: "unique", part: "part1", proc: 1, numProc: 1, fix: 1, program: "prog", matID: mat + 1);
@@ -582,16 +580,16 @@ namespace MachineWatchTest
       CheckExpected(t.AddHours(-1), t.AddHours(5));
     }
 
-    [Test]
+		/*
+    [Fact]
     public void MultipleProcess()
     {
       var t = DateTime.UtcNow.AddHours(-5);
-      long mat = jobLog.AllocateMaterialID("") + 1;
+      long mat = jobLog.AllocateMaterialID("", "", 1) + 1;
 
-      AddSchedule(schID: 1, unique: "unique", part: "part1", numProc: 2);
-      AddPallet(pallet: 3, schID: 1, part: "part1", proc: 1);
-      AddPallet(pallet: 3, schID: 1, part: "part1", proc: 2);
-      AddPallet(pallet: 6, schID: 1, part: "part1", proc: 1);
+      AddTestPart(pallet: 3, unique: "unique", part: "part1", proc: 1, numProc: 2, path: 1);
+      AddTestPart(pallet: 3, unique: "unique", part: "part1", proc: 2, numProc: 2, path: 1);
+      AddTestPart(pallet: 6, unique: "unique", part: "part1", proc: 1, numProc: 2, path: 1);
 
       var p1d1 = BuildPart(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 2, fix: 1, program: "prog1", matID: mat);
       var p1d2 = BuildPart(t, pal: 3, unique: "unique", part: "part1", proc: 2, numProc: 2, fix: 1, program: "prog2", matID: mat);
