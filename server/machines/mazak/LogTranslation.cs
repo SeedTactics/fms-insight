@@ -207,7 +207,7 @@ namespace MazakMachineInterface
 
           _log.AddPendingLoad(e.Pallet.ToString(), PendingLoadKey(e), e.StationNumber,
                               CalculateElapsed(e, cycle, LogType.LoadUnloadCycle, e.StationNumber),
-                              TimeSpan.Zero, //Mazak doesn't give actual operation time for loads
+                              TimeSpan.Zero, //TODO: load active time from job
                               e.ForeignID);
           break;
 
@@ -243,7 +243,7 @@ namespace MazakMachineInterface
               timeUTC: e.TimeUTC,
               result: "",
               elapsed: elapsed,
-              active: TimeSpan.FromMinutes(-1), //TODO: check if mazak records active time anywhere
+              active: TimeSpan.Zero, //TODO: load active time from job
               foreignId: e.ForeignID);
             onMachiningCompleted(s);
           }
@@ -281,7 +281,7 @@ namespace MazakMachineInterface
             lulNum: e.StationNumber,
             timeUTC: e.TimeUTC,
             elapsed: loadElapsed,
-            active: loadElapsed,
+            active: TimeSpan.Zero, // TODO: lookup active time in job
             foreignId: e.ForeignID,
             unloadIntoQueues: queues);
 
