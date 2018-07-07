@@ -82,7 +82,7 @@ namespace MazakMachineInterface
   public interface ILogData
   {
     List<LogEntry> LoadLog(string lastForeignID);
-    void DeleteLog(string lastForeignID, System.Diagnostics.TraceSource trace);
+    void DeleteLog(string lastForeignID);
   }
 
 #if USE_OLEDB
@@ -227,7 +227,7 @@ namespace MazakMachineInterface
 			}
 		}
 
-		public void DeleteLog(string lastForeignID, System.Diagnostics.TraceSource trace)
+		public void DeleteLog(string lastForeignID)
 		{
 			//do nothing
 		}
@@ -237,6 +237,7 @@ namespace MazakMachineInterface
   public class LogDataWeb : ILogData
   {
     private string _path;
+    private static Serilog.ILogger Log = Serilog.Log.ForContext<LogDataWeb>();
 
     public LogDataWeb(string path)
     {
@@ -302,7 +303,7 @@ namespace MazakMachineInterface
       return ret;
     }
 
-    public void DeleteLog(string lastForeignID, System.Diagnostics.TraceSource trace)
+    public void DeleteLog(string lastForeignID)
     {
       var files = new List<string>(System.IO.Directory.GetFiles(_path, "*.csv"));
       files.Sort();
@@ -319,8 +320,7 @@ namespace MazakMachineInterface
         }
         catch (Exception ex)
         {
-          trace.TraceEvent(System.Diagnostics.TraceEventType.Warning, 0,
-                           "Error deleting file: " + f + Environment.NewLine + ex.ToString());
+          Log.Warning(ex, "Error deleting file: " + f);
         }
       }
     }
