@@ -550,7 +550,8 @@ namespace MazakMachineInterface
       }
     }
 
-    private void DeleteHold(int schId)
+    // internal for testing only!
+    internal void DeleteHold(int schId)
     {
       lock (_dbLock)
       {
@@ -669,7 +670,8 @@ namespace MazakMachineInterface
       }
     }
 
-    private IDictionary<int, JobHold> GetHoldPatterns()
+    // internal for testing only
+    internal IDictionary<int, JobHold> GetHoldPatterns()
     {
       lock (_dbLock)
       {

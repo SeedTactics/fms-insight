@@ -92,7 +92,7 @@ namespace MachineWatchTest {
 			AssertHold(job2.HoldEntireJob, load2.HoldEntireJob);
 			AssertHold(job2.HoldMachining(1, 1), load2.HoldMachining(1, 1));
 
-			var hDict = GetHoldPatterns(hold);
+			var hDict = hold.GetHoldPatterns();
 
 			Assert.Equal(3, hDict.Count);
 			Assert.True(hDict.ContainsKey(2), "Key 2");
@@ -106,9 +106,9 @@ namespace MachineWatchTest {
 			AssertHold(job2.HoldEntireJob,       hDict[6].HoldEntireJob);
 			AssertHold(job2.HoldMachining(1, 1), hDict[6].HoldMachining);
 
-			DeleteHold(hold, 6);
+			hold.DeleteHold(6);
 
-			hDict = GetHoldPatterns(hold);
+			hDict = hold.GetHoldPatterns();
 
 			Assert.Equal(2, hDict.Count);
 			Assert.True(hDict.ContainsKey(2), "Key 2");
@@ -127,23 +127,6 @@ namespace MachineWatchTest {
 			Assert.Equal(h1.HoldUnholdPattern.Count, h2.HoldUnholdPattern.Count);
 			for (int i = 0; i < h1.HoldUnholdPattern.Count - 1; i++)
 				Assert.Equal(h1.HoldUnholdPattern[i], h2.HoldUnholdPattern[i]);
-		}
-
-		//we use reflection to test private methods
-		private void DeleteHold(HoldPattern hold, int schID)
-		{
-			var method = typeof(HoldPattern).GetMethod("DeleteHold",
-			                                           System.Reflection.BindingFlags.NonPublic |
-			                                           System.Reflection.BindingFlags.Instance);
-			method.Invoke(hold, new object[] {schID});
-		}
-
-		private IDictionary<int, HoldPattern.JobHold> GetHoldPatterns(HoldPattern hold)
-		{
-			var method = typeof(HoldPattern).GetMethod("GetHoldPatterns",
-			                                           System.Reflection.BindingFlags.NonPublic |
-			                                           System.Reflection.BindingFlags.Instance);
-			return (IDictionary<int, HoldPattern.JobHold>) method.Invoke(hold, new object[] {});
 		}
 	}
 }

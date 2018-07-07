@@ -37,6 +37,8 @@ using System.Collections.Generic;
 using BlackMaple.MachineWatchInterface;
 using BlackMaple.MachineFramework;
 
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("BlackMaple.MachineFramework.Tests")]
+
 namespace MazakMachineInterface
 {
   public class MazakBackend : IFMSBackend, IFMSImplementation
