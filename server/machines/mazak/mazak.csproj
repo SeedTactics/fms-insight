@@ -18,7 +18,7 @@
   <Choose>
     <When Condition="$(OS) == 'Windows_NT'">
       <PropertyGroup>
-        <TargetFramework>net461</TargetFramework>
+        <TargetFrameworks>net461;netcoreapp2.1</TargetFrameworks>
       </PropertyGroup>
     </When>
     <Otherwise>
