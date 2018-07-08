@@ -65,7 +65,8 @@ namespace MazakMachineInterface
       _recheckMaterial = new AutoResetEvent(false);
 
       _thread = new Thread(new ThreadStart(ThreadFunc));
-      _thread.Start();
+      // disable queue thread for now
+      //_thread.Start();
     }
 
     public void SignalRecheckMaterial()
@@ -75,10 +76,10 @@ namespace MazakMachineInterface
 
     public void Shutdown()
     {
-      _shutdown.Set();
+      //_shutdown.Set();
 
-      if (!_thread.Join(TimeSpan.FromSeconds(15)))
-        _thread.Abort();
+      //if (!_thread.Join(TimeSpan.FromSeconds(15)))
+      //  _thread.Abort();
     }
 
     private void ThreadFunc()

@@ -846,15 +846,15 @@ namespace MazakMachineInterface
       {
         trace.TraceEvent(TraceEventType.Information, 0, "Check valid routing info");
 
-        // currently only support input queues on the first process and no output queues on the final process
+        // queue support is still being developed and tested
         foreach (var j in jobs) {
           for (int proc = 1; proc <= j.NumProcesses; proc++) {
             for (int path = 1; path <= j.GetNumPaths(proc); path++) {
-              if (proc > 1 && !string.IsNullOrEmpty(j.GetInputQueue(proc, path))) {
-                logMessages.Add("Input queues can only be on the first process (job " + j.UniqueStr + ")");
+              if (!string.IsNullOrEmpty(j.GetInputQueue(proc, path))) {
+                logMessages.Add("Input queues are not yet supported (job " + j.UniqueStr + ")");
               }
-              if (proc == j.NumProcesses && !string.IsNullOrEmpty(j.GetOutputQueue(proc, path))) {
-                logMessages.Add("Output queues cannot be on the final process yet (job " + j.UniqueStr + ")");
+              if (!string.IsNullOrEmpty(j.GetOutputQueue(proc, path))) {
+                logMessages.Add("Output queues are not yet supported (job " + j.UniqueStr + ")");
               }
             }
           }
