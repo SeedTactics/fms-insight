@@ -251,7 +251,7 @@ namespace MazakMachineInterface
 
           _log.AddPendingLoad(e.Pallet.ToString(), PendingLoadKey(e), e.StationNumber,
                               CalculateElapsed(e, cycle, LogType.LoadUnloadCycle, e.StationNumber),
-                              TimeSpan.Zero, //TODO: load active time from job
+                              CalculateActiveLoadTime(e),
                               e.ForeignID);
           break;
 
@@ -278,8 +278,9 @@ namespace MazakMachineInterface
 
           if (elapsed > TimeSpan.FromSeconds(30))
           {
+            var machineMats = GetMaterialOnPallet(e, cycle);
             var s = _log.RecordMachineEnd(
-              mats: GetMaterialOnPallet(e, cycle).Select(m => m.Mat),
+              mats: machineMats.Select(m => m.Mat),
               pallet: e.Pallet.ToString(),
               statName: "MC",
               statNum: e.StationNumber,
@@ -287,7 +288,7 @@ namespace MazakMachineInterface
               timeUTC: e.TimeUTC,
               result: "",
               elapsed: elapsed,
-              active: TimeSpan.Zero, //TODO: load active time from job
+              active: CalculateActiveMachining(machineMats.Select(m => m.Mat)),
               foreignId: e.ForeignID);
             _onMachiningCompleted(s);
           }
@@ -325,7 +326,7 @@ namespace MazakMachineInterface
             lulNum: e.StationNumber,
             timeUTC: e.TimeUTC,
             elapsed: loadElapsed,
-            active: TimeSpan.Zero, // TODO: lookup active time in job
+            active: CalculateActiveUnloadTime(mats),
             foreignId: e.ForeignID,
             unloadIntoQueues: queues);
 
@@ -638,6 +639,38 @@ namespace MazakMachineInterface
       Log.Debug("Calculating elapsed time for {@entry} did not find a previous cycle event", e);
 
       return TimeSpan.Zero;
+    }
+
+    private TimeSpan CalculateActiveMachining(IEnumerable<MWI.LogMaterial> mats) {
+      TimeSpan total = TimeSpan.Zero;
+      //for now, assume only one stop per process and each path is the same time
+      var procs = mats
+        .Select(m => new {Unique = m.JobUniqueStr, Process = m.Process})
+        .Distinct();
+      foreach (var proc in procs) {
+        var job = GetJob(proc.Unique);
+        if (job == null) continue;
+        var stop = job.GetMachiningStop(proc.Process, 1).FirstOrDefault();
+        if (stop == null) continue;
+        total += stop.ExpectedCycleTime;
+      }
+
+      return total;
+    }
+
+    private TimeSpan CalculateActiveLoadTime(LogEntry e) {
+      _findPart.FindPart(e.Pallet, e.FullPartName, e.Process, out string unique, out int path, out int numProc);
+      var job = GetJob(unique);
+      if (job == null) return TimeSpan.Zero;
+      return job.GetExpectedLoadTime(e.Process, path) * e.FixedQuantity;
+    }
+
+    private TimeSpan CalculateActiveUnloadTime(IEnumerable<LogMaterialAndPath> mats) {
+      var ticks = mats
+        .Select(m => GetJob(m.Mat.JobUniqueStr)?.GetExpectedUnloadTime(m.Mat.Process, m.Path) ?? TimeSpan.Zero)
+        .Select(t => t.Ticks)
+        .Sum();
+      return TimeSpan.FromTicks(ticks);
     }
     #endregion
   }
