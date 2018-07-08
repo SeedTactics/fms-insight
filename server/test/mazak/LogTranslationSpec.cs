@@ -159,19 +159,41 @@ namespace MachineWatchTest
       };
     }
 
+    protected IEnumerable<TestMaterial> BuildMaterial(DateTime t, int pal, string unique, string part, int proc, int numProc, string face, IEnumerable<long> matIDs, int path = 1)
+    {
+      return matIDs.Select((matID, idx) =>
+        new TestMaterial() {
+          MaterialID = matID,
+          MazakPartName = part + ":4:" + path.ToString(),
+          JobPartName = part,
+          Unique = unique,
+          Process = proc,
+          Path = path,
+          NumProcess = numProc,
+          Face = face + "-" + (idx+1).ToString(),
+          EventStartTime = t,
+          Pallet = pal,
+        })
+        .ToList();
+    }
+
     protected void MachStart(TestMaterial mat, int offset, int mach)
     {
-      string prog = "program-" + mat.MaterialID.ToString();
+      MachStart(new [] {mat}, offset, mach);
+    }
+    protected void MachStart(IEnumerable<TestMaterial> mats, int offset, int mach)
+    {
+      string prog = "program-" + mats.First().MaterialID.ToString();
       var e2 = new MazakMachineInterface.LogEntry() {
-        TimeUTC = mat.EventStartTime.AddMinutes(offset),
+        TimeUTC = mats.First().EventStartTime.AddMinutes(offset),
         Code = LogCode.MachineCycleStart,
         ForeignID = "",
         StationNumber = mach,
-        Pallet = mat.Pallet,
-        FullPartName = mat.MazakPartName,
-        JobPartName = mat.JobPartName,
-        Process = mat.Process,
-        FixedQuantity = 1,
+        Pallet = mats.First().Pallet,
+        FullPartName = mats.First().MazakPartName,
+        JobPartName = mats.First().JobPartName,
+        Process = mats.First().Process,
+        FixedQuantity = mats.Count(),
         Program = prog,
         TargetPosition = "",
         FromPosition = "",
@@ -181,15 +203,15 @@ namespace MachineWatchTest
 
       expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
 					cntr: -1,
-					mat: new [] {new BlackMaple.MachineWatchInterface.LogMaterial(
+					mat: mats.Select(mat => new BlackMaple.MachineWatchInterface.LogMaterial(
 						matID: mat.MaterialID,
 						uniq: mat.Unique,
 						proc: mat.Process,
 						part: mat.JobPartName,
 						numProc: mat.NumProcess,
-						face: mat.Process.ToString()
-					)},
-					pal: mat.Pallet.ToString(),
+						face: mat.Face
+					)),
+					pal: mats.First().Pallet.ToString(),
 					ty: BlackMaple.MachineWatchInterface.LogType.MachineCycle,
 					locName: "MC",
 					locNum: e2.StationNumber,
@@ -203,17 +225,21 @@ namespace MachineWatchTest
 
     protected void MachEnd(TestMaterial mat, int offset, int mach, int elapMin, int activeMin = 0)
     {
-      string prog = "program-" + mat.MaterialID.ToString();
+      MachEnd(new [] {mat}, offset, mach, elapMin, activeMin);
+    }
+    protected void MachEnd(IEnumerable<TestMaterial> mats, int offset, int mach, int elapMin, int activeMin = 0)
+    {
+      string prog = "program-" + mats.First().MaterialID.ToString();
       var e2 = new MazakMachineInterface.LogEntry() {
-        TimeUTC = mat.EventStartTime.AddMinutes(offset),
+        TimeUTC = mats.First().EventStartTime.AddMinutes(offset),
         Code = LogCode.MachineCycleEnd,
         ForeignID = "",
         StationNumber = mach,
-        Pallet = mat.Pallet,
-        FullPartName = mat.MazakPartName,
-        JobPartName = mat.JobPartName,
-        Process = mat.Process,
-        FixedQuantity = 1,
+        Pallet = mats.First().Pallet,
+        FullPartName = mats.First().MazakPartName,
+        JobPartName = mats.First().JobPartName,
+        Process = mats.First().Process,
+        FixedQuantity = mats.Count(),
         Program = prog,
         TargetPosition = "",
         FromPosition = "",
@@ -221,15 +247,15 @@ namespace MachineWatchTest
 
       var expectedLog = new BlackMaple.MachineWatchInterface.LogEntry(
         cntr: -1,
-        mat: new [] {new BlackMaple.MachineWatchInterface.LogMaterial(
+        mat: mats.Select(mat => new BlackMaple.MachineWatchInterface.LogMaterial(
           matID: mat.MaterialID,
           uniq: mat.Unique,
           proc: mat.Process,
           part: mat.JobPartName,
           numProc: mat.NumProcess,
-          face: mat.Process.ToString()
-        )},
-        pal: mat.Pallet.ToString(),
+          face: mat.Face
+        )),
+        pal: mats.First().Pallet.ToString(),
         ty: BlackMaple.MachineWatchInterface.LogType.MachineCycle,
         locName: "MC",
         locNum: e2.StationNumber,
@@ -253,16 +279,20 @@ namespace MachineWatchTest
 
     protected void LoadStart(TestMaterial mat, int offset, int load)
     {
+      LoadStart(new [] {mat}, offset, load);
+    }
+    protected void LoadStart(IEnumerable<TestMaterial> mats, int offset, int load)
+    {
       var e2 = new MazakMachineInterface.LogEntry() {
-        TimeUTC = mat.EventStartTime.AddMinutes(offset),
+        TimeUTC = mats.First().EventStartTime.AddMinutes(offset),
         Code = LogCode.LoadBegin,
         ForeignID = "",
         StationNumber = load,
-        Pallet = mat.Pallet,
-        FullPartName = mat.MazakPartName,
-        JobPartName = mat.JobPartName,
-        Process = mat.Process,
-        FixedQuantity = 1,
+        Pallet = mats.First().Pallet,
+        FullPartName = mats.First().MazakPartName,
+        JobPartName = mats.First().JobPartName,
+        Process = mats.First().Process,
+        FixedQuantity = mats.Count(),
         Program = "",
         TargetPosition = "",
         FromPosition = "",
@@ -275,12 +305,12 @@ namespace MachineWatchTest
 					mat: new [] {new BlackMaple.MachineWatchInterface.LogMaterial(
 						matID: -1,
 						uniq: "",
-						proc: mat.Process,
+						proc: mats.First().Process,
 						part: "",
 						numProc: -1,
 						face: ""
 					)},
-					pal: mat.Pallet.ToString(),
+					pal: mats.First().Pallet.ToString(),
 					ty: BlackMaple.MachineWatchInterface.LogType.LoadUnloadCycle,
 					locName: "L/U",
 					locNum: e2.StationNumber,
@@ -294,16 +324,20 @@ namespace MachineWatchTest
 
     protected void LoadEnd(TestMaterial mat, int offset, int cycleOffset, int load, int elapMin, int activeMin = 0)
     {
+      LoadEnd(new [] {mat}, offset, cycleOffset, load, elapMin, activeMin);
+    }
+    protected void LoadEnd(IEnumerable<TestMaterial> mats, int offset, int cycleOffset, int load, int elapMin, int activeMin = 0)
+    {
       var e2 = new MazakMachineInterface.LogEntry() {
-        TimeUTC = mat.EventStartTime.AddMinutes(offset),
+        TimeUTC = mats.First().EventStartTime.AddMinutes(offset),
         Code = LogCode.LoadEnd,
         ForeignID = "",
         StationNumber = load,
-        Pallet = mat.Pallet,
-        FullPartName = mat.MazakPartName,
-        JobPartName = mat.JobPartName,
-        Process = mat.Process,
-        FixedQuantity = 1,
+        Pallet = mats.First().Pallet,
+        FullPartName = mats.First().MazakPartName,
+        JobPartName = mats.First().JobPartName,
+        Process = mats.First().Process,
+        FixedQuantity = mats.Count(),
         Program = "",
         TargetPosition = "",
         FromPosition = "",
@@ -313,61 +347,67 @@ namespace MachineWatchTest
 
       expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
 					cntr: -1,
-					mat: new [] {new BlackMaple.MachineWatchInterface.LogMaterial(
+					mat: mats.Select(mat => new BlackMaple.MachineWatchInterface.LogMaterial(
 						matID: mat.MaterialID,
 						uniq: mat.Unique,
 						proc: mat.Process,
 						part: mat.JobPartName,
 						numProc: mat.NumProcess,
-						face: mat.Process.ToString()
-					)},
-					pal: mat.Pallet.ToString(),
+						face: mat.Face
+					)),
+					pal: mats.First().Pallet.ToString(),
 					ty: BlackMaple.MachineWatchInterface.LogType.LoadUnloadCycle,
 					locName: "L/U",
 					locNum: e2.StationNumber,
 					prog: "LOAD",
 					start: false,
-					endTime: mat.EventStartTime.AddMinutes(cycleOffset).AddSeconds(1),
+					endTime: mats.First().EventStartTime.AddMinutes(cycleOffset).AddSeconds(1),
 					result: "LOAD",
 					endOfRoute: false,
           elapsed: TimeSpan.FromMinutes(elapMin),
           active: TimeSpan.FromMinutes(activeMin)
       ));
 
-      expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
-					cntr: -1,
-					mat: new [] {new BlackMaple.MachineWatchInterface.LogMaterial(
-						matID: mat.MaterialID,
-						uniq: mat.Unique,
-						proc: mat.Process,
-						part: mat.JobPartName,
-						numProc: mat.NumProcess,
-						face: mat.Process.ToString()
-					)},
-					pal: "",
-					ty: BlackMaple.MachineWatchInterface.LogType.PartMark,
-					locName: "Mark",
-					locNum: 1,
-					prog: "MARK",
-					start: false,
-					endTime: mat.EventStartTime.AddMinutes(cycleOffset).AddSeconds(1),
-					result: JobLogDB.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
-					endOfRoute: false
-      ));
+      foreach (var mat in mats) {
+        expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
+            cntr: -1,
+            mat: new [] {new BlackMaple.MachineWatchInterface.LogMaterial(
+              matID: mat.MaterialID,
+              uniq: mat.Unique,
+              proc: mat.Process,
+              part: mat.JobPartName,
+              numProc: mat.NumProcess,
+              face: mat.Face
+            )},
+            pal: "",
+            ty: BlackMaple.MachineWatchInterface.LogType.PartMark,
+            locName: "Mark",
+            locNum: 1,
+            prog: "MARK",
+            start: false,
+            endTime: mat.EventStartTime.AddMinutes(cycleOffset).AddSeconds(1),
+            result: JobLogDB.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            endOfRoute: false
+        ));
+      }
     }
 
     protected void UnloadStart(TestMaterial mat, int offset, int load)
     {
+      UnloadStart(new [] {mat}, offset, load);
+    }
+    protected void UnloadStart(IEnumerable<TestMaterial> mats, int offset, int load)
+    {
       var e2 = new MazakMachineInterface.LogEntry() {
-        TimeUTC = mat.EventStartTime.AddMinutes(offset),
+        TimeUTC = mats.First().EventStartTime.AddMinutes(offset),
         Code = LogCode.UnloadBegin,
         ForeignID = "",
         StationNumber = load,
-        Pallet = mat.Pallet,
-        FullPartName = mat.MazakPartName,
-        JobPartName = mat.JobPartName,
-        Process = mat.Process,
-        FixedQuantity = 1,
+        Pallet = mats.First().Pallet,
+        FullPartName = mats.First().MazakPartName,
+        JobPartName = mats.First().JobPartName,
+        Process = mats.First().Process,
+        FixedQuantity = mats.Count(),
         Program = "",
         TargetPosition = "",
         FromPosition = "",
@@ -377,15 +417,15 @@ namespace MachineWatchTest
 
       expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
 					cntr: -1,
-					mat: new [] {new BlackMaple.MachineWatchInterface.LogMaterial(
+					mat: mats.Select(mat => new BlackMaple.MachineWatchInterface.LogMaterial(
 						matID: mat.MaterialID,
 						uniq: mat.Unique,
 						proc: mat.Process,
 						part: mat.JobPartName,
 						numProc: mat.NumProcess,
-						face: mat.Process.ToString()
-					)},
-					pal: mat.Pallet.ToString(),
+						face: mat.Face
+					)),
+					pal: mats.First().Pallet.ToString(),
 					ty: BlackMaple.MachineWatchInterface.LogType.LoadUnloadCycle,
 					locName: "L/U",
 					locNum: e2.StationNumber,
@@ -399,16 +439,20 @@ namespace MachineWatchTest
 
     protected void UnloadEnd(TestMaterial mat, int offset, int load, int elapMin, int activeMin = 0)
     {
+      UnloadEnd(new [] {mat}, offset, load, elapMin, activeMin);
+    }
+    protected void UnloadEnd(IEnumerable<TestMaterial> mats, int offset, int load, int elapMin, int activeMin = 0)
+    {
       var e2 = new MazakMachineInterface.LogEntry() {
-        TimeUTC = mat.EventStartTime.AddMinutes(offset),
+        TimeUTC = mats.First().EventStartTime.AddMinutes(offset),
         Code = LogCode.UnloadEnd,
         ForeignID = "",
         StationNumber = load,
-        Pallet = mat.Pallet,
-        FullPartName = mat.MazakPartName,
-        JobPartName = mat.JobPartName,
-        Process = mat.Process,
-        FixedQuantity = 1,
+        Pallet = mats.First().Pallet,
+        FullPartName = mats.First().MazakPartName,
+        JobPartName = mats.First().JobPartName,
+        Process = mats.First().Process,
+        FixedQuantity = mats.Count(),
         Program = "",
         TargetPosition = "",
         FromPosition = "",
@@ -418,15 +462,15 @@ namespace MachineWatchTest
 
       expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
 					cntr: -1,
-					mat: new [] {new BlackMaple.MachineWatchInterface.LogMaterial(
+					mat: mats.Select(mat => new BlackMaple.MachineWatchInterface.LogMaterial(
 						matID: mat.MaterialID,
 						uniq: mat.Unique,
 						proc: mat.Process,
 						part: mat.JobPartName,
 						numProc: mat.NumProcess,
-						face: mat.Process.ToString()
-					)},
-					pal: mat.Pallet.ToString(),
+						face: mat.Face
+					)),
+					pal: mats.First().Pallet.ToString(),
 					ty: BlackMaple.MachineWatchInterface.LogType.LoadUnloadCycle,
 					locName: "L/U",
 					locNum: e2.StationNumber,
@@ -638,9 +682,9 @@ namespace MachineWatchTest
       AddTestPart(pallet: 4, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 2);
 
       var proc1path1 = BuildMaterial(t, pal: 2, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matID: 1);
-      var proc2path1 = BuildMaterial(t, pal: 2, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1, face: "1", matID: 1);
+      var proc2path1 = BuildMaterial(t, pal: 2, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1, face: "2", matID: 1);
       var proc1path2 = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 2, face: "1", matID: 2);
-      var proc2path2 = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 2, face: "1", matID: 2);
+      var proc2path2 = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 2, face: "2", matID: 2);
 
       var j = new JobPlan("uuuu", 2, new[] {2, 2});
       j.PartName = "pppp";
@@ -709,76 +753,54 @@ namespace MachineWatchTest
       CheckExpected(t.AddHours(-1), t.AddHours(5));
     }
 
-		/*
-    [Test]
-    public void FixedQuantites()
+    [Fact]
+    public void LargeFixedQuantites()
     {
+
       var t = DateTime.UtcNow.AddHours(-5);
-      long mat = jobLog.AllocateMaterialID("") + 1;
+      AddTestPart(pallet: 1, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1);
+      AddTestPart(pallet: 1, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1);
 
-      AddSchedule(schID: 1, unique: "unique", part: "part1", numProc: 2);
-      AddSchedule(schID: 2, unique: "unique2", part: "part2", numProc: 2);
-      AddPallet(pallet: 3, schID: 2, part: "part2", proc: 1);
-      AddPallet(pallet: 3, schID: 1, part: "part1", proc: 2);
-      AddPallet(pallet: 4, schID: 1, part: "part1", proc: 1);
-      AddPallet(pallet: 5, schID: 2, part: "part2", proc: 1);
+      var proc1 = BuildMaterial(t, pal: 1, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matIDs: new long[] {1, 2, 3});
+      var proc2 = BuildMaterial(t, pal: 1, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1, face: "2", matIDs: new long[] {1, 2, 3});
+      var proc1snd = BuildMaterial(t, pal: 1, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matIDs: new long[] {4, 5, 6});
+      var proc2snd = BuildMaterial(t, pal: 1, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1, face: "2", matIDs: new long[] {4, 5, 6});
+      var proc1thrd = BuildMaterial(t, pal: 1, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matIDs: new long[] {7, 8, 9});
 
-      var p1d1 = BuildPart(t, pal: 3, unique: "unique2", part: "part2", proc: 1, numProc: 2, fix: 3, program: "prog2", matID: mat);
-      var p1d2 = BuildPart(t, pal: 3, unique: "unique2", part: "part2", proc: 2, numProc: 2, fix: 3, program: "prog2", matID: mat);
-      var p2 = BuildPart(t, pal: 4, unique: "unique", part: "part1", proc: 1, numProc: 2, fix: 2, program: "prog1", matID: mat + 3);
-      var p3 = BuildPart(t, pal: 5, unique: "unique2", part: "part2", proc: 2, numProc: 2, fix: 3, program: "prog2", matID: mat + 5);
-      var p4 = BuildPart(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 2, fix: 2, program: "prog1", matID: mat + 8);
+      LoadStart(proc1, offset: 0, load: 1);
+      LoadEnd(proc1, offset: 5, cycleOffset: 6, load: 1, elapMin: 5);
+      MovePallet(t, pal: 1, offset: 6, load: 1, elapMin: 0);
 
-      LoadStart(p1d1, offset: 0, load: 1);
-      LoadStart(p2, offset: 0, load: 2);
-      LoadStart(p3, offset: 1, load: 3);
-      LoadEnd(p1d1, offset: 1, load: 1, cycleOffset: 2, elapMin: 1);
-      LoadEnd(p3, offset: 2, load: 3, cycleOffset: 2, elapMin: 1);
-      LoadEnd(p2, offset: 2, load: 2, cycleOffset: 2, elapMin: 2);
-      MovePallet(t, offset: 2, load: 2, pal: 3);
-      MovePallet(t, offset: 2, load: 1, pal: 4);
-      MovePallet(t, offset: 2, load: 3, pal: 5);
+      MachStart(proc1, offset: 10, mach: 5);
+      MachEnd(proc1, offset: 15, mach: 5, elapMin: 5);
 
-      MachStart(p1d1, offset: 10, mach: 1);
-      MachStart(p2, offset: 10, mach: 2);
-      MachEnd(p1d1, offset: 20, mach: 1, elapMin: 10);
-      MachStart(p3, offset: 22, mach: 1);
-      MachEnd(p2, offset: 32, mach: 2, elapMin: 22);
+      UnloadStart(proc1, offset: 20, load: 2);
+      LoadStart(proc2, offset: 20, load: 2);
+      LoadStart(proc1snd, offset: 20, load: 2);
 
-      UnloadStart(p1d1, offset: 40, load: 1);
-      LoadStart(p1d2, offset: 40, load: 1);
-      LoadStart(p4, offset: 40, load: 1);
+      UnloadEnd(proc1, offset: 24, load: 2, elapMin: 4);
+      LoadEnd(proc2, offset: 24, cycleOffset: 25, load: 2, elapMin: 4);
+      LoadEnd(proc1snd, offset: 24, cycleOffset: 25, load: 2, elapMin: 4);
+      MovePallet(t, pal: 1, offset: 25, load: 2, elapMin: 25-6);
 
-      MachEnd(p3, offset: 43, mach: 1, elapMin: 21);
+      MachStart(proc2, offset: 30, mach: 6);
+      MachEnd(proc2, offset: 33, mach: 6, elapMin: 3);
+      MachStart(proc1snd, offset: 35, mach: 6);
+      MachEnd(proc1snd, offset: 37, mach: 6, elapMin: 2);
 
-      LoadEnd(p4, offset: 44, load: 1, cycleOffset: 46, elapMin: 4);
-      LoadEnd(p1d2, offset: 44, load: 1, cycleOffset: 46, elapMin: 4);
-      UnloadEnd(p1d1, offset: 45, load: 1, elapMin: 5);
-      MovePallet(t, offset: 46, load: 1, pal: 3);
+      UnloadStart(proc2, offset: 40, load: 1);
+      UnloadStart(proc1snd, offset: 40, load: 1);
+      LoadStart(proc2snd, offset: 40, load: 1);
+      LoadStart(proc1thrd, offset: 40, load: 1);
 
-      UnloadStart(p2, offset: 50, load: 1);
-      UnloadStart(p3, offset: 52, load: 2);
-      UnloadEnd(p3, offset: 54, load: 2, elapMin: 2);
-      UnloadEnd(p2, offset: 55, load: 1, elapMin: 5);
-      MovePallet(t, offset: 55, load: 1, pal: 4);
-
-      MachStart(p4, offset: 56, mach: 6);
-
-      MovePallet(t, offset: 58, load: 2, pal: 5);
-
-      MachEnd(p4, offset: 60, mach: 6, elapMin: 4);
-      MachStart(p1d2, offset: 62, mach: 7);
-      MachEnd(p1d2, offset: 80, mach: 7, elapMin: 18);
-
-      UnloadStart(p1d2, offset: 90, load: 9);
-      UnloadEnd(p1d2, offset: 92, load: 9, elapMin: 2);
-      UnloadStart(p4, offset: 94, load: 9);
-      UnloadEnd(p4, offset: 97, load: 9, elapMin: 3);
-      MovePallet(t, offset: 99, load: 9, pal: 3);
+      UnloadEnd(proc2, offset: 45, load: 1, elapMin: 5);
+      UnloadEnd(proc1snd, offset: 45, load: 1, elapMin: 5);
+      LoadEnd(proc2snd, offset: 45, cycleOffset: 50, load: 1, elapMin: 5);
+      LoadEnd(proc1thrd, offset: 45, cycleOffset:50, load: 1, elapMin: 5);
+      MovePallet(t, pal: 1, offset: 50, load: 1, elapMin: 50-25);
 
       CheckExpected(t.AddHours(-1), t.AddHours(5));
     }
-    */
 
     [Fact]
     public void SkipShortMachineCycle()
