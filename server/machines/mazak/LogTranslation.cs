@@ -662,7 +662,7 @@ namespace MazakMachineInterface
       _findPart.FindPart(e.Pallet, e.FullPartName, e.Process, out string unique, out int path, out int numProc);
       var job = GetJob(unique);
       if (job == null) return TimeSpan.Zero;
-      return job.GetExpectedLoadTime(e.Process, path) * e.FixedQuantity;
+      return TimeSpan.FromTicks(job.GetExpectedLoadTime(e.Process, path).Ticks * e.FixedQuantity);
     }
 
     private TimeSpan CalculateActiveUnloadTime(IEnumerable<LogMaterialAndPath> mats) {
