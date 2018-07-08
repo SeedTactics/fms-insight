@@ -49,8 +49,9 @@ namespace MachineWatchTest
 		protected JobDB jobDB;
     protected LogTranslation log;
     protected List<BlackMaple.MachineWatchInterface.LogEntry> expected = new List<BlackMaple.MachineWatchInterface.LogEntry>();
+    protected List<BlackMaple.MachineWatchInterface.LogEntry> raisedByMachineCompleted = new List<BlackMaple.MachineWatchInterface.LogEntry>();
+    protected List<MazakMachineInterface.LogEntry> raisedByPalletMove = new List<MazakMachineInterface.LogEntry>();
 		private List<TestPartData> partData;
-		private TestFindPart findPart;
 
     protected LogTestBase()
     {
@@ -65,14 +66,16 @@ namespace MachineWatchTest
       jobDB.CreateTables();
 
 			partData = new List<TestPartData>();
-			findPart = new TestFindPart(partData);
+			var findPart = new TestFindPart(partData);
 
 			var settings = new FMSSettings() {
 				SerialType = SerialType.AssignOneSerialPerMaterial
 			};
 
-      log = new LogTranslation(jobLog, jobDB, null, settings, null);
-      log.Halt(); // stop the timer, we will inject events directly
+      log = new LogTranslation(jobDB, jobLog, findPart, settings,
+        e => raisedByMachineCompleted.Add(e),
+        e => raisedByPalletMove.Add(e)
+      );
     }
 
 		public void Dispose()
@@ -92,7 +95,7 @@ namespace MachineWatchTest
 			public int NumProc {get;set;}
 		}
 
-    private class TestFindPart : LogTranslation.IFindPart
+    private class TestFindPart : IFindPart
     {
 			private IEnumerable<TestPartData> testPartData;
 			public TestFindPart(IEnumerable<TestPartData> td) { testPartData = td; }
@@ -172,7 +175,7 @@ namespace MachineWatchTest
         FromPosition = "",
       };
 
-      log.HandleEvent(e2, findPart, e => {});
+      log.HandleEvent(e2);
 
       expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
 					cntr: -1,
@@ -237,15 +240,12 @@ namespace MachineWatchTest
         active: TimeSpan.Zero
       );
 
+      log.HandleEvent(e2);
+      raisedByMachineCompleted.ShouldAllBeEquivalentTo(new [] {expectedLog},
+        options => options.Excluding(x => x.Counter)
+      );
+      raisedByMachineCompleted.Clear();
 
-			bool raisedEvt = false;
-      log.HandleEvent(e2, findPart, logE => {
-				logE.ShouldBeEquivalentTo(expectedLog, options =>
-          options.Excluding(x => x.Counter)
-        );
-				raisedEvt = true;
-			});
-			raisedEvt.Should().BeTrue();
       expected.Add(expectedLog);
     }
 
@@ -266,7 +266,7 @@ namespace MachineWatchTest
         FromPosition = "",
       };
 
-      log.HandleEvent(e2, findPart, e => {});
+      log.HandleEvent(e2);
 
       expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
 					cntr: -1,
@@ -307,7 +307,7 @@ namespace MachineWatchTest
         FromPosition = "",
       };
 
-      log.HandleEvent(e2, findPart, e => {});
+      log.HandleEvent(e2);
 
       expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
 					cntr: -1,
@@ -371,7 +371,7 @@ namespace MachineWatchTest
         FromPosition = "",
       };
 
-      log.HandleEvent(e2, findPart, e => {});
+      log.HandleEvent(e2);
 
       expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
 					cntr: -1,
@@ -412,7 +412,7 @@ namespace MachineWatchTest
         FromPosition = "",
       };
 
-      log.HandleEvent(e2, findPart, e => {});
+      log.HandleEvent(e2);
 
       expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
 					cntr: -1,
@@ -455,7 +455,9 @@ namespace MachineWatchTest
       e.TargetPosition = "S011"; //stacker
       e.FromPosition = "LS01" + load.ToString();
 
-      log.HandleEvent(e, findPart, ev => {});
+      log.HandleEvent(e);
+      raisedByPalletMove.ShouldAllBeEquivalentTo(new [] {e});
+      raisedByPalletMove.Clear();
 
       if (addExpected)
         expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
@@ -473,10 +475,6 @@ namespace MachineWatchTest
           elapsed: TimeSpan.FromMinutes(elapMin),
           active: TimeSpan.Zero
         ));
-    }
-
-    protected void HandleSkippedEvent(MazakMachineInterface.LogEntry e) {
-      log.HandleEvent(e, findPart, _ => {});
     }
 
     #endregion
@@ -729,7 +727,7 @@ namespace MachineWatchTest
         TargetPosition = "",
         FromPosition = "",
       };
-      HandleSkippedEvent(bad);
+      log.HandleEvent(bad);
       // don't add to expected, since it should be skipped
 
       MachStart(p1, offset: 15, mach: 3);

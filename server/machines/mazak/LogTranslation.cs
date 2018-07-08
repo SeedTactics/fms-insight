@@ -38,24 +38,29 @@ using System.Collections.Generic;
 
 namespace MazakMachineInterface
 {
-  public class LogTranslation
+  public interface IFindPart
+  {
+    void FindPart(int pallet, string mazakPartName, int proc, out string unique, out int path, out int numProc);
+  }
+
+  public class LogTranslationTimer
   {
     private BlackMaple.MachineFramework.JobDB _jobDB;
     private BlackMaple.MachineFramework.JobLogDB _log;
     private ILogData _loadLogData;
     private IReadDataAccess _readDB;
+    public BlackMaple.MachineFramework.FMSSettings FMSSettings { get; set; }
 
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LogTranslation>();
 
     private object _lock;
     private System.Timers.Timer _timer;
-    public BlackMaple.MachineFramework.FMSSettings FMSSettings { get; set; }
 
-    public LogTranslation(BlackMaple.MachineFramework.JobLogDB log,
-                          BlackMaple.MachineFramework.JobDB jobDB,
-                          IReadDataAccess readDB,
-                          BlackMaple.MachineFramework.FMSSettings settings,
-                          ILogData loadLogData)
+    public LogTranslationTimer(BlackMaple.MachineFramework.JobLogDB log,
+                               BlackMaple.MachineFramework.JobDB jobDB,
+                               IReadDataAccess readDB,
+                               BlackMaple.MachineFramework.FMSSettings settings,
+                               ILogData loadLogData)
     {
       _log = log;
       _jobDB = jobDB;
@@ -90,11 +95,15 @@ namespace MazakMachineInterface
           var dset = _readDB.LoadReadOnly();
 
           var logs = _loadLogData.LoadLog(_log.MaxForeignID());
+          var trans = new LogTranslation(_jobDB, _log, new FindPartFromReadOnlySet(dset), FMSSettings,
+            le => MachiningCompleted?.Invoke(le, dset),
+            le => PalletMove?.Invoke(le.Pallet, le.FromPosition, le.TargetPosition)
+          );
           foreach (var ev in logs)
           {
             try
             {
-              HandleEvent(ev, new FindPartFromReadOnlySet(dset), le => MachiningCompleted?.Invoke(le, dset));
+              trans.HandleEvent(ev);
             }
             catch (Exception ex)
             {
@@ -114,11 +123,6 @@ namespace MazakMachineInterface
           Log.Error(ex, "Unhandled error processing log");
         }
       }
-    }
-
-    internal interface IFindPart
-    {
-      void FindPart(int pallet, string mazakPartName, int proc, out string unique, out int path, out int numProc);
     }
 
     private class FindPartFromReadOnlySet : IFindPart
@@ -178,14 +182,54 @@ namespace MazakMachineInterface
     }
 
     #endregion
+  }
+
+  public class LogTranslation
+  {
+    private BlackMaple.MachineFramework.JobDB _jobDB;
+    private BlackMaple.MachineFramework.JobLogDB _log;
+    private IFindPart _findPart;
+    private Dictionary<string, JobPlan> _jobs;
+    private BlackMaple.MachineFramework.FMSSettings _settings;
+    private Action<MWI.LogEntry> _onMachiningCompleted;
+    private Action<LogEntry> _onPalletMove;
+
+    private static Serilog.ILogger Log = Serilog.Log.ForContext<LogTranslation>();
+
+    public LogTranslation(BlackMaple.MachineFramework.JobDB jDB,
+                          BlackMaple.MachineFramework.JobLogDB logDB,
+                          IFindPart findPart,
+                          BlackMaple.MachineFramework.FMSSettings settings,
+                          Action<MWI.LogEntry> onMachineCompleted,
+                          Action<LogEntry> onPalletMove)
+    {
+      _jobDB = jDB;
+      _log = logDB;
+      _findPart = findPart;
+      _settings = settings;
+      _onMachiningCompleted = onMachineCompleted;
+      _onPalletMove = onPalletMove;
+      _jobs = new Dictionary<string, JobPlan>();
+    }
+
+    private JobPlan GetJob(string unique) {
+      if (_jobs.ContainsKey(unique))
+        return _jobs[unique];
+      else {
+        var j = _jobDB.LoadJob(unique);
+        _jobs.Add(unique, j);
+        return j;
+      }
+    }
 
     #region Events
-    /* This is internal instead of private for testing only */
-    internal void HandleEvent(LogEntry e, IFindPart findPart, Action<MWI.LogEntry> onMachiningCompleted)
+    public void HandleEvent(LogEntry e)
     {
       var cycle = new List<MWI.LogEntry>();
       if (e.Pallet >= 1)
         cycle = _log.CurrentPalletLog(e.Pallet.ToString());
+
+      var jobs = new Dictionary<string, JobPlan>();
 
       Log.Debug("Handling mazak event {@event}", e);
 
@@ -195,7 +239,7 @@ namespace MazakMachineInterface
         case LogCode.LoadBegin:
 
           _log.RecordLoadStart(
-            mats: CreateMaterialWithoutIDs(e, findPart),
+            mats: CreateMaterialWithoutIDs(e),
             pallet: e.Pallet.ToString(),
             lulNum: e.StationNumber,
             timeUTC: e.TimeUTC,
@@ -215,10 +259,10 @@ namespace MazakMachineInterface
 
           // There should never be any pending loads since the pallet movement event should have fired.
           // Just in case, we check for pending loads here
-          cycle = CheckPendingLoads(e.Pallet, e.TimeUTC.AddSeconds(-1), "", findPart, false, cycle);
+          cycle = CheckPendingLoads(e.Pallet, e.TimeUTC.AddSeconds(-1), "", false, cycle);
 
           _log.RecordMachineStart(
-            mats: GetMaterialOnPallet(e, findPart, cycle).Select(m => m.Mat),
+            mats: GetMaterialOnPallet(e, cycle).Select(m => m.Mat),
             pallet: e.Pallet.ToString(),
             statName: "MC",
             statNum: e.StationNumber,
@@ -235,7 +279,7 @@ namespace MazakMachineInterface
           if (elapsed > TimeSpan.FromSeconds(30))
           {
             var s = _log.RecordMachineEnd(
-              mats: GetMaterialOnPallet(e, findPart, cycle).Select(m => m.Mat),
+              mats: GetMaterialOnPallet(e, cycle).Select(m => m.Mat),
               pallet: e.Pallet.ToString(),
               statName: "MC",
               statNum: e.StationNumber,
@@ -245,7 +289,7 @@ namespace MazakMachineInterface
               elapsed: elapsed,
               active: TimeSpan.Zero, //TODO: load active time from job
               foreignId: e.ForeignID);
-            onMachiningCompleted(s);
+            _onMachiningCompleted(s);
           }
           else
           {
@@ -259,7 +303,7 @@ namespace MazakMachineInterface
         case LogCode.UnloadBegin:
 
           _log.RecordUnloadStart(
-            mats: GetMaterialOnPallet(e, findPart, cycle).Select(m => m.Mat),
+            mats: GetMaterialOnPallet(e, cycle).Select(m => m.Mat),
             pallet: e.Pallet.ToString(),
             lulNum: e.StationNumber,
             timeUTC: e.TimeUTC,
@@ -272,7 +316,7 @@ namespace MazakMachineInterface
           //TODO: test for rework
           var loadElapsed = CalculateElapsed(e, cycle, LogType.LoadUnloadCycle, e.StationNumber);
 
-          var mats = GetMaterialOnPallet(e, findPart, cycle);
+          var mats = GetMaterialOnPallet(e, cycle);
           var queues = FindUnloadQueues(mats);
 
           _log.RecordUnloadEnd(
@@ -291,13 +335,9 @@ namespace MazakMachineInterface
 
           if (e.FromPosition != null && e.FromPosition.StartsWith("LS"))
           {
-            CheckPendingLoads(e.Pallet, e.TimeUTC, e.ForeignID, findPart, true, cycle);
+            CheckPendingLoads(e.Pallet, e.TimeUTC, e.ForeignID, true, cycle);
           }
-
-          if (PalletMove != null)
-          {
-            PalletMove(e.Pallet, e.FromPosition, e.TargetPosition);
-          }
+          _onPalletMove(e);
 
           break;
 
@@ -306,9 +346,9 @@ namespace MazakMachineInterface
     #endregion
 
     #region Material
-    private List<LogMaterial> CreateMaterialWithoutIDs(LogEntry e, IFindPart findPart)
+    private List<LogMaterial> CreateMaterialWithoutIDs(LogEntry e)
     {
-      findPart.FindPart(e.Pallet, e.FullPartName, e.Process, out string unique, out int path, out int numProc);
+      _findPart.FindPart(e.Pallet, e.FullPartName, e.Process, out string unique, out int path, out int numProc);
 
       var ret = new List<LogMaterial>();
       ret.Add(new LogMaterial(-1, unique, e.Process, e.JobPartName, numProc, ""));
@@ -322,7 +362,7 @@ namespace MazakMachineInterface
       public int Path {get;set;}
     }
 
-    private List<LogMaterialAndPath> GetMaterialOnPallet(LogEntry e, IFindPart findPart, IList<MWI.LogEntry> oldEvents)
+    private List<LogMaterialAndPath> GetMaterialOnPallet(LogEntry e, IList<MWI.LogEntry> oldEvents)
     {
       var byFace = ParseMaterialFromPreviousEvents(
         jobPartName: e.JobPartName,
@@ -330,7 +370,7 @@ namespace MazakMachineInterface
         fixQty: e.FixedQuantity,
         isUnloadEnd: e.Code == LogCode.UnloadEnd,
         oldEvents: oldEvents);
-      findPart.FindPart(e.Pallet, e.FullPartName, e.Process, out string unique, out int path, out int numProc);
+      _findPart.FindPart(e.Pallet, e.FullPartName, e.Process, out string unique, out int path, out int numProc);
 
       var ret = new List<LogMaterialAndPath>();
 
@@ -411,7 +451,7 @@ namespace MazakMachineInterface
       return e.FullPartName + "," + e.Process.ToString() + "," + e.FixedQuantity.ToString();
     }
 
-    private List<MWI.LogEntry> CheckPendingLoads(int pallet, DateTime t, string foreignID, IFindPart findPart, bool palletCycle, List<MWI.LogEntry> cycle)
+    private List<MWI.LogEntry> CheckPendingLoads(int pallet, DateTime t, string foreignID, bool palletCycle, List<MWI.LogEntry> cycle)
     {
       var pending = _log.PendingLoads(pallet.ToString());
 
@@ -435,7 +475,6 @@ namespace MazakMachineInterface
       }
 
       var mat = new Dictionary<string, IEnumerable<LogMaterial>>();
-      var jobs = new Dictionary<string, JobPlan>();
 
       foreach (var p in pending)
       {
@@ -451,15 +490,9 @@ namespace MazakMachineInterface
         if (!int.TryParse(s[1], out proc)) proc = 1;
         if (!int.TryParse(s[2], out fixQty)) fixQty = 1;
 
-        findPart.FindPart(pallet, fullPartName, proc, out string unique, out int path, out int numProc);
+        _findPart.FindPart(pallet, fullPartName, proc, out string unique, out int path, out int numProc);
 
-        JobPlan job;
-        if (jobs.ContainsKey(unique)) {
-          job = jobs[unique];
-        } else {
-          job = _jobDB.LoadJob(unique);
-          jobs.Add(unique, job);
-        }
+        JobPlan job = GetJob(unique);
 
         var mats = new List<LogMaterial>();
         if (job != null && !string.IsNullOrEmpty(job.GetInputQueue(proc, path))) {
@@ -546,7 +579,7 @@ namespace MazakMachineInterface
         mat[p.Key] = mats;
       }
 
-      _log.CompletePalletCycle(pallet.ToString(), t, foreignID, mat, FMSSettings.SerialType, FMSSettings.SerialLength);
+      _log.CompletePalletCycle(pallet.ToString(), t, foreignID, mat, _settings.SerialType, _settings.SerialLength);
 
       if (palletCycle)
         return cycle;
@@ -557,17 +590,9 @@ namespace MazakMachineInterface
     private Dictionary<long, string> FindUnloadQueues(IEnumerable<LogMaterialAndPath> mats)
     {
       var ret = new Dictionary<long, string>();
-      var jobs = new Dictionary<string, JobPlan>();
 
       foreach (var mat in mats) {
-        JobPlan job;
-        if (jobs.ContainsKey(mat.Mat.JobUniqueStr)) {
-          job = jobs[mat.Mat.JobUniqueStr];
-        } else {
-          job = _jobDB.LoadJob(mat.Mat.JobUniqueStr);
-          jobs.Add(mat.Mat.JobUniqueStr, job);
-        }
-
+        JobPlan job = GetJob(mat.Mat.JobUniqueStr);
         if (job != null) {
           var q = job.GetOutputQueue(process: mat.Mat.Process, path: mat.Path);
           if (!string.IsNullOrEmpty(q)) {

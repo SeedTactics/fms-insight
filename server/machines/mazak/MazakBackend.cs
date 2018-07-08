@@ -48,7 +48,7 @@ namespace MazakMachineInterface
     private HoldPattern hold;
     private MazakQueues queues;
     private LoadOperations loadOper;
-    private LogTranslation logTrans;
+    private LogTranslationTimer logTrans;
     private ILogData logDataLoader;
 
     private JobLogDB jobLog;
@@ -78,7 +78,7 @@ namespace MazakMachineInterface
       get { return jobLog; }
     }
 
-    public LogTranslation LogTranslation
+    public LogTranslationTimer LogTranslation
     {
       get { return logTrans; }
     }
@@ -220,7 +220,7 @@ namespace MazakMachineInterface
                                 CheckPalletsUsedOnce, UseStartingOffsetForDueDate, DecrementPriorityOnDownload,
                                 settings,
                                 routingTrace);
-      logTrans = new LogTranslation(jobLog, jobDB, readOnlyDb, settings, logDataLoader);
+      logTrans = new LogTranslationTimer(jobLog, jobDB, readOnlyDb, settings, logDataLoader);
 
       logTrans.MachiningCompleted += HandleMachiningCompleted;
       logTrans.NewEntries += OnNewLogEntries;
