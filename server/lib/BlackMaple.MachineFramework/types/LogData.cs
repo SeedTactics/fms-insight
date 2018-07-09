@@ -286,7 +286,7 @@ namespace BlackMaple.MachineWatchInterface
         public string WorkorderId {get;set;}
 
         [DataMember(Name="parts", IsRequired=true)]
-        private List<WorkorderPartSummary> _parts;
+        private List<WorkorderPartSummary> _parts = new List<WorkorderPartSummary>();
 
         public List<WorkorderPartSummary> Parts
         {
