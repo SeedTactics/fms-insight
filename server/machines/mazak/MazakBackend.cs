@@ -48,7 +48,7 @@ namespace MazakMachineInterface
     private HoldPattern hold;
     private MazakQueues queues;
     private LoadOperations loadOper;
-    private ILogEvents logDataLoader;
+    private IMazakLogReader logDataLoader;
 
     private JobLogDB jobLog;
     private JobDB jobDB;
@@ -77,7 +77,7 @@ namespace MazakMachineInterface
       get { return jobLog; }
     }
 
-    public ILogEvents LogTranslation
+    public IMazakLogReader LogTranslation
     {
       get { return logDataLoader; }
     }
@@ -202,20 +202,22 @@ namespace MazakMachineInterface
 
       database = new TransactionDatabaseAccess(dbConnStr, MazakType);
       var readOnlyDb = new ReadonlyDatabaseAccess(dbConnStr, MazakType);
+      queues = new MazakQueues(jobLog, jobDB, loadOper, database);
+      loadOper = new LoadOperations(loadOperTrace, cfg, readOnlyDb.SmoothDB);
+
       if (MazakType == DatabaseAccess.MazakDbType.MazakWeb || MazakType == DatabaseAccess.MazakDbType.MazakSmooth)
-        logDataLoader = new LogDataWeb(logPath, jobLog, jobDB, readOnlyDb, settings);
+        logDataLoader = new LogDataWeb(logPath, jobLog, jobDB, readOnlyDb, queues, settings);
       else
       {
 #if USE_OLEDB
-				logDataLoader = new LogDataVerE(jobLog, jobDB, readOnlyDb, settings);
+				logDataLoader = new LogDataVerE(jobLog, jobDB, readOnlyDb, queues, settings);
 #else
         throw new Exception("Mazak Web and VerE are not supported on .NET core");
 #endif
       }
+
       hold = new HoldPattern(dataDirectory, database, readOnlyDb, holdTrace, true);
-      loadOper = new LoadOperations(loadOperTrace, cfg, readOnlyDb.SmoothDB);
-      queues = new MazakQueues(jobLog, jobDB, loadOper, readOnlyDb, database);
-      routing = new RoutingInfo(database,readOnlyDb, hold, queues, jobDB, jobLog, loadOper,
+      routing = new RoutingInfo(database,readOnlyDb, hold, logDataLoader, jobDB, jobLog, loadOper,
                                 CheckPalletsUsedOnce, UseStartingOffsetForDueDate, DecrementPriorityOnDownload,
                                 settings,
                                 routingTrace);
@@ -230,7 +232,6 @@ namespace MazakMachineInterface
       loadOper.LoadActions -= OnLoadActions;
       routing.Halt();
       hold.Shutdown();
-      queues.Shutdown();
       logDataLoader.Halt();
       loadOper.Halt();
       jobDB.Close();

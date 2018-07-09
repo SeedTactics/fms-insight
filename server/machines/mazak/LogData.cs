@@ -83,11 +83,12 @@ namespace MazakMachineInterface
 
   public delegate void PalletMoveDel(int pallet, string fromStation, string toStation);
   public delegate void NewEntriesDel(ReadOnlyDataSet dset);
-  public interface ILogEvents
+  public interface IMazakLogReader
   {
+    void RecheckQueues();
+    void Halt();
     event PalletMoveDel PalletMove;
     event NewEntriesDel NewEntries;
-    void Halt();
   }
 
 #if USE_OLEDB
@@ -97,6 +98,7 @@ namespace MazakMachineInterface
 
     private BlackMaple.MachineFramework.JobDB _jobDB;
     private BlackMaple.MachineFramework.JobLogDB _log;
+    private MazakQueues _queues;
     private IReadDataAccess _readDB;
     private BlackMaple.MachineFramework.FMSSettings FMSSettings { get; set; }
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LogDataVerE>();
@@ -110,11 +112,13 @@ namespace MazakMachineInterface
     public LogDataVerE(BlackMaple.MachineFramework.JobLogDB log,
                        BlackMaple.MachineFramework.JobDB jobDB,
                        IReadDataAccess readDB,
+                       MazakQueues queues,
                        BlackMaple.MachineFramework.FMSSettings settings)
     {
       _log = log;
       _jobDB = jobDB;
       _readDB = readDB;
+      _queues = queues;
       FMSSettings = settings;
       _lock = new object();
       _timer = new System.Timers.Timer(TimeSpan.FromMinutes(1).TotalMilliseconds);
@@ -125,6 +129,11 @@ namespace MazakMachineInterface
     public void Halt()
     {
       _timer.Stop();
+    }
+
+    public void RecheckQueues()
+    {
+      //do nothing, wait for 1 minute timeout
     }
 
     private void HandleElapsed(object sender, System.Timers.ElapsedEventArgs e)
@@ -150,6 +159,8 @@ namespace MazakMachineInterface
               Log.Error(ex, "Error translating log event at time " + ev.TimeUTC.ToLocalTime().ToString());
             }
           }
+
+          _queues.CheckQueues(dset);
 
           if (logs.Count > 0) {
             NewEntries?.Invoke(dset);
@@ -296,17 +307,20 @@ namespace MazakMachineInterface
 	}
 #endif
 
-  public class LogDataWeb : ILogEvents
+  public class LogDataWeb : IMazakLogReader
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LogDataWeb>();
 
-    private string _path;
     private BlackMaple.MachineFramework.JobDB _jobDB;
     private BlackMaple.MachineFramework.JobLogDB _log;
     private IReadDataAccess _readDB;
-    private BlackMaple.MachineFramework.FMSSettings _settings { get; set; }
+    private BlackMaple.MachineFramework.FMSSettings _settings;
+    private MazakQueues _queues;
+
+    private string _path;
     private AutoResetEvent _shutdown;
     private AutoResetEvent _newLogFile;
+    private AutoResetEvent _recheckQueues;
 
     private Thread _thread;
     private FileSystemWatcher _watcher;
@@ -315,15 +329,18 @@ namespace MazakMachineInterface
                       BlackMaple.MachineFramework.JobLogDB log,
                       BlackMaple.MachineFramework.JobDB jobDB,
                       IReadDataAccess readDB,
+                      MazakQueues queues,
                       BlackMaple.MachineFramework.FMSSettings settings)
     {
       _path = path;
       _log = log;
       _jobDB = jobDB;
       _readDB = readDB;
+      _queues = queues;
       _settings = settings;
       _shutdown = new AutoResetEvent(false);
       _newLogFile = new AutoResetEvent(false);
+      _recheckQueues = new AutoResetEvent(false);
       _thread = new Thread(new ThreadStart(ThreadFunc));
       _thread.Start();
       _watcher = new FileSystemWatcher(_path);
@@ -341,7 +358,7 @@ namespace MazakMachineInterface
 
           var sleepTime = TimeSpan.FromMinutes(1);
           Log.Debug("Sleeping for {mins} minutes", sleepTime.TotalMinutes);
-          var ret = WaitHandle.WaitAny(new WaitHandle[] { _shutdown, _newLogFile }, sleepTime, false);
+          var ret = WaitHandle.WaitAny(new WaitHandle[] { _shutdown, _newLogFile, _recheckQueues }, sleepTime, false);
           if (ret == 0) {
             Log.Debug("Thread shutdown");
             return;
@@ -368,6 +385,8 @@ namespace MazakMachineInterface
 
           DeleteLog(_log.MaxForeignID());
 
+          _queues.CheckQueues(dset);
+
           if (logs.Count > 0) {
             NewEntries?.Invoke(dset);
           }
@@ -386,6 +405,12 @@ namespace MazakMachineInterface
       if (!_thread.Join(TimeSpan.FromSeconds(15)))
         _thread.Abort();
     }
+
+    public void RecheckQueues()
+    {
+      _recheckQueues.Set();
+    }
+
 
     private FileStream WaitToOpenFile(string file)
     {

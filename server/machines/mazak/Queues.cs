@@ -45,118 +45,58 @@ namespace MazakMachineInterface
   {
     private static ILogger log = Serilog.Log.ForContext<MazakQueues>();
 
-    private Thread _thread;
-    private AutoResetEvent _shutdown;
-    private AutoResetEvent _recheckMaterial;
     private JobLogDB _log;
     private JobDB _jobDB;
     private LoadOperations _loadOper;
-    private IReadDataAccess _readonlyDB;
     private TransactionDatabaseAccess _transDB;
 
-    public MazakQueues(
-      JobLogDB log, JobDB jDB,
-      LoadOperations load, IReadDataAccess rDB, TransactionDatabaseAccess db,
-      bool startThread = true)
+    public MazakQueues(JobLogDB log, JobDB jDB, LoadOperations loadOper, TransactionDatabaseAccess trans)
     {
-      _readonlyDB = rDB;
-      _transDB = db;
       _jobDB = jDB;
       _log = log;
-      _loadOper = load;
-      _shutdown = new AutoResetEvent(false);
-      _recheckMaterial = new AutoResetEvent(false);
-
-      if (startThread) {
-        _thread = new Thread(new ThreadStart(ThreadFunc));
-        _thread.Start();
-      }
+      _transDB = trans;
+      _loadOper = loadOper;
     }
 
-    public void SignalRecheckMaterial()
-    {
-      _recheckMaterial.Set();
-    }
-
-    public void Shutdown()
-    {
-      _shutdown.Set();
-
-      if (!_thread.Join(TimeSpan.FromSeconds(15)))
-        _thread.Abort();
-    }
-
-    private void ThreadFunc()
+    public void CheckQueues(ReadOnlyDataSet read)
     {
       try {
-        for (;;)
+        if (!_transDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(3), true))
         {
+          //Downloads usually take a long time and they hold the db lock,
+          //so we will probably hit this timeout during the download.
+          //For this reason, we wait 3 minutes for the db lock and retry again after only 20 seconds.
+          //Thus during the download most of the waiting will be here for the db lock.
 
-#if DEBUG
-          var sleepTime = TimeSpan.FromMinutes(1);
-#else
-          var sleepTime = TimeSpan.FromMinutes(10);
-#endif
-          try
-          {
-            if (!_transDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(3), true))
-            {
-              //Downloads usually take a long time and they hold the db lock,
-              //so we will probably hit this timeout during the download.
-              //For this reason, we wait 3 minutes for the db lock and retry again after only 20 seconds.
-              //Thus during the download most of the waiting will be here for the db lock.
+          log.Debug("Unable to obtain mazak db lock, trying again soon.");
+        } else {
 
-              log.Debug("Unable to obtain mazak db lock, trying again in 20 seconds.");
-              sleepTime = TimeSpan.FromSeconds(20);
-            } else {
+          var loadOpers = _loadOper.CurrentLoadActions();
+          var transSet = CalculateScheduleChanges(read, loadOpers);
 
-              var read = _readonlyDB.LoadReadOnly();
-              var loadOpers = _loadOper.CurrentLoadActions();
-              var transSet = CalculateScheduleChanges(read, loadOpers, out bool foundAtLoad);
-
-              if (transSet.Schedule_t.Count > 0) {
-                _transDB.ClearTransactionDatabase();
-                var logs = new List<string>();
-                _transDB.SaveTransaction(transSet, logs, "Setting material from queues");
-                foreach (var msg in logs) {
-                  log.Warning(msg);
-                }
-              }
-
-              if (foundAtLoad) {
-                sleepTime = TimeSpan.FromMinutes(1);  // check again in one minute
-              }
+          if (transSet.Schedule_t.Count > 0) {
+            _transDB.ClearTransactionDatabase();
+            var logs = new List<string>();
+            _transDB.SaveTransaction(transSet, logs, "Setting material from queues");
+            foreach (var msg in logs) {
+              log.Warning(msg);
             }
-          } catch (Exception ex) {
-            log.Error(ex, "Error checking for new material");
-          } finally {
-            _transDB.MazakTransactionLock.ReleaseMutex();
-          }
-
-          log.Debug("Sleeping for {mins} minutes", sleepTime.TotalMinutes);
-          var ret = WaitHandle.WaitAny(new WaitHandle[] { _shutdown, _recheckMaterial }, sleepTime, false);
-
-          if (ret == 0)
-          {
-            //Shutdown was fired.
-            log.Debug("Thread Shutdown");
-            return;
           }
         }
 
       } catch (Exception ex) {
-        log.Error(ex, "Unhandled error in queue thread");
-        throw;
+        log.Error(ex, "Error checking for new material");
+      } finally {
+        _transDB.MazakTransactionLock.ReleaseMutex();
       }
     }
 
-    // internal for testing
-    internal TransactionDataSet CalculateScheduleChanges(ReadOnlyDataSet dset, IEnumerable<LoadAction> loadOpers, out bool foundAtLoad)
+    public TransactionDataSet CalculateScheduleChanges(ReadOnlyDataSet dset, IEnumerable<LoadAction> loadOpers)
     {
       log.Debug("Starting check for new queued material to add to mazak");
       var transSet = new TransactionDataSet();
 
-      var schs = LoadSchedules(dset, loadOpers, out foundAtLoad);
+      var schs = LoadSchedules(dset, loadOpers);
       if (!schs.Any()) return null;
 
       AttemptToAllocateCastings(schs);
@@ -185,9 +125,8 @@ namespace MazakMachineInterface
       public Dictionary<int, ScheduleWithQueuesProcess> Procs {get;set;}
     }
 
-    private IEnumerable<ScheduleWithQueues> LoadSchedules(ReadOnlyDataSet read, IEnumerable<LoadAction> loadOpers, out bool foundAtLoad)
+    private IEnumerable<ScheduleWithQueues> LoadSchedules(ReadOnlyDataSet read, IEnumerable<LoadAction> loadOpers)
     {
-      foundAtLoad = false;
       var schs = new List<ScheduleWithQueues>();
       foreach (var schRow in read.Schedule.OrderBy(s => s.DueDate)) {
         if (!MazakPart.IsSailPart(schRow.PartName)) continue;
@@ -205,7 +144,6 @@ namespace MazakMachineInterface
         foreach (var action in loadOpers) {
           if (action.Unique == job.UniqueStr && action.Path == path) {
             foundJobAtLoad = true;
-            foundAtLoad = true;
             log.Debug("Not editing queued material because {uniq} is in the process of being loaded or unload with action {@action}", job.UniqueStr, action);
             break;
           }

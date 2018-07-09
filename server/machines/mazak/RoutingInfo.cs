@@ -44,7 +44,7 @@ namespace MazakMachineInterface
     private TransactionDatabaseAccess database;
     private IReadDataAccess readDatabase;
     private HoldPattern hold;
-    private MazakQueues queues;
+    private IMazakLogReader logReader;
     private BlackMaple.MachineFramework.JobDB jobDB;
     private BlackMaple.MachineFramework.JobLogDB log;
     private LoadOperations loadOper;
@@ -62,17 +62,26 @@ namespace MazakMachineInterface
     public event NewCurrentStatus OnNewCurrentStatus;
     public void RaiseNewCurrentStatus(CurrentStatus s) => OnNewCurrentStatus?.Invoke(s);
 
-    public RoutingInfo(TransactionDatabaseAccess d, IReadDataAccess readDb, HoldPattern h, MazakQueues q,
-        BlackMaple.MachineFramework.JobDB jDB, BlackMaple.MachineFramework.JobLogDB jLog,
-        LoadOperations lOper,
-    bool check, bool useStarting, bool decrPriority, BlackMaple.MachineFramework.FMSSettings settings, System.Diagnostics.TraceSource t)
+    public RoutingInfo(
+      TransactionDatabaseAccess d,
+      IReadDataAccess readDb,
+      HoldPattern h,
+      IMazakLogReader logR,
+      BlackMaple.MachineFramework.JobDB jDB,
+      BlackMaple.MachineFramework.JobLogDB jLog,
+      LoadOperations lOper,
+      bool check,
+      bool useStarting,
+      bool decrPriority,
+      BlackMaple.MachineFramework.FMSSettings settings,
+      System.Diagnostics.TraceSource t)
     {
       database = d;
       readDatabase = readDb;
       fmsSettings = settings;
       hold = h;
       jobDB = jDB;
-      queues = q;
+      logReader = logR;
       log = jLog;
       loadOper = lOper;
       CheckPalletsUsedOnce = check;
@@ -932,7 +941,6 @@ namespace MazakMachineInterface
         AddSchedules(newJ.Jobs, logMessages);
 
         hold.SignalNewSchedules();
-        queues.SignalRecheckMaterial();
       }
       finally
       {
@@ -1491,7 +1499,7 @@ namespace MazakMachineInterface
       // the add to queue log entry will use the process, so later when we lookup the latest completed process
       // for the material in the queue, it will be correctly computed.
       log.RecordAddMaterialToQueue(matId, 0, queue, position);
-      queues.SignalRecheckMaterial();
+      logReader.RecheckQueues();
     }
 
     public void AddUnprocessedMaterialToQueue(string jobUnique, int process, string queue, int position, string serial)
@@ -1502,7 +1510,7 @@ namespace MazakMachineInterface
       // the add to queue log entry will use the process, so later when we lookup the latest completed process
       // for the material in the queue, it will be correctly computed.
       log.RecordAddMaterialToQueue(matId, process, queue, position);
-      queues.SignalRecheckMaterial();
+      logReader.RecheckQueues();
     }
 
     public void SetMaterialInQueue(long materialId, string queue, int position)
@@ -1515,13 +1523,13 @@ namespace MazakMachineInterface
         .DefaultIfEmpty(0)
         .Max();
       log.RecordAddMaterialToQueue(materialId, proc, queue, position);
-      queues.SignalRecheckMaterial();
+      logReader.RecheckQueues();
     }
 
     public void RemoveMaterialFromAllQueues(long materialId)
     {
       log.RecordRemoveMaterialFromAllQueues(materialId);
-      queues.SignalRecheckMaterial();
+      logReader.RecheckQueues();
     }
     #endregion
   }

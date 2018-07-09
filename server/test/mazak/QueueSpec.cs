@@ -60,7 +60,7 @@ namespace MachineWatchTest
       _jobDB = new JobDB(jobConn);
       _jobDB.CreateTables();
 
-      _queues = new MazakQueues(_logDB, _jobDB, null, null, null, startThread: false);
+      _queues = new MazakQueues(_logDB, _jobDB, null, null);
     }
 
 		public void Dispose()
@@ -72,9 +72,8 @@ namespace MachineWatchTest
     [Fact]
     public void Empty()
     {
-      var trans = _queues.CalculateScheduleChanges(new ReadOnlyDataSet(), new LoadAction[] {}, out bool foundAtLoad);
+      var trans = _queues.CalculateScheduleChanges(new ReadOnlyDataSet(), new LoadAction[] {});
       trans.Should().BeNull();
-      foundAtLoad.Should().BeFalse();
     }
 
     private ReadOnlyDataSet.ScheduleRow AddSchedule(ReadOnlyDataSet read, int schId, string unique, string part, int pri, int complete, int plan)
@@ -141,8 +140,7 @@ namespace MachineWatchTest
       //put something else at load station
       var action = new LoadAction(true, 1, "pppp", MazakPart.CreateComment("uuuu2", 1, false), 1, 1);
 
-      var trans = _queues.CalculateScheduleChanges(read, new [] {action}, out bool foundAtLoad);
-      foundAtLoad.Should().BeFalse();
+      var trans = _queues.CalculateScheduleChanges(read, new [] {action});
 
       trans.Schedule_t.Count.Should().Be(1);
       trans.Schedule_t[0].ScheduleID.Should().Be(10);
@@ -172,8 +170,7 @@ namespace MachineWatchTest
       _logDB.RecordAddMaterialToQueue(mat1, process: 0, queue: "thequeue", position: 0);
       _logDB.RecordAddMaterialToQueue(mat2, process: 0, queue: "thequeue", position: 1);
 
-      var trans = _queues.CalculateScheduleChanges(read, new LoadAction[] {}, out bool foundAtLoad);
-      foundAtLoad.Should().BeFalse();
+      var trans = _queues.CalculateScheduleChanges(read, new LoadAction[] {});
 
       trans.Schedule_t.Count.Should().Be(0);
       trans.ScheduleProcess_t.Count.Should().Be(0);
@@ -213,8 +210,7 @@ namespace MachineWatchTest
       });
 
       // should allocate 2 parts to uuuu, leave one unassigned, then update material quantity
-      var trans = _queues.CalculateScheduleChanges(read, new LoadAction[] {}, out bool foundAtLoad);
-      foundAtLoad.Should().BeFalse();
+      var trans = _queues.CalculateScheduleChanges(read, new LoadAction[] {});
 
       _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new [] {
         new JobLogDB.QueuedMaterial() {
@@ -263,8 +259,7 @@ namespace MachineWatchTest
       _logDB.RecordAddMaterialToQueue(mat4, process: 1, queue: "transQ", position: 1);
       _logDB.RecordAddMaterialToQueue(mat5, process: 1, queue: "transQ", position: 2);
 
-      var trans = _queues.CalculateScheduleChanges(read, new LoadAction[] {}, out bool foundAtLoad);
-      foundAtLoad.Should().BeFalse();
+      var trans = _queues.CalculateScheduleChanges(read, new LoadAction[] {});
 
       trans.Schedule_t.Count.Should().Be(1);
       trans.Schedule_t[0].ScheduleID.Should().Be(10);
@@ -302,8 +297,7 @@ namespace MachineWatchTest
       //put something else at load station
       var action = new LoadAction(true, 1, "pppp", MazakPart.CreateComment("uuuu", 1, false), 1, 1);
 
-      var trans = _queues.CalculateScheduleChanges(read, new [] {action}, out bool foundAtLoad);
-      foundAtLoad.Should().BeTrue();
+      var trans = _queues.CalculateScheduleChanges(read, new [] {action});
       trans.Should().BeNull();
     }
 
