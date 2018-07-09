@@ -542,6 +542,54 @@ namespace MachineWatchTest
         ));
     }
 
+    protected void ExpectAddToQueue(TestMaterial mat, int offset, string queue)
+    {
+      expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
+          cntr: -1,
+          mat: new [] { new BlackMaple.MachineWatchInterface.LogMaterial(
+						matID: mat.MaterialID,
+						uniq: mat.Unique,
+						proc: mat.Process,
+						part: mat.JobPartName,
+						numProc: mat.NumProcess,
+						face: mat.Face
+          )},
+          pal: "",
+          ty: BlackMaple.MachineWatchInterface.LogType.AddToQueue,
+          locName: queue,
+          locNum: -1,
+          prog: "",
+          start: false,
+          endTime: mat.EventStartTime.AddMinutes(offset),
+          result: "",
+          endOfRoute: false
+      ));
+    }
+
+    protected void ExpectRemoveFromQueue(TestMaterial mat, int offset, string queue)
+    {
+      expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
+          cntr: -1,
+          mat: new [] { new BlackMaple.MachineWatchInterface.LogMaterial(
+						matID: mat.MaterialID,
+						uniq: mat.Unique,
+						proc: mat.Process,
+						part: mat.JobPartName,
+						numProc: mat.NumProcess,
+						face: mat.Face
+          )},
+          pal: "",
+          ty: BlackMaple.MachineWatchInterface.LogType.RemoveFromQueue,
+          locName: queue,
+          locNum: 0,
+          prog: "",
+          start: false,
+          endTime: mat.EventStartTime.AddMinutes(offset).AddSeconds(1),
+          result: "",
+          endOfRoute: false
+      ));
+    }
+
     #endregion
 
     #region Checking Log
@@ -775,7 +823,6 @@ namespace MachineWatchTest
     [Fact]
     public void LargeFixedQuantites()
     {
-
       var t = DateTime.UtcNow.AddHours(-5);
       AddTestPart(pallet: 1, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1);
       AddTestPart(pallet: 1, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1);
@@ -915,7 +962,7 @@ namespace MachineWatchTest
       var proc1 = BuildMaterial(t, pal: 2, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matID: 1);
       var proc2 = BuildMaterial(t, pal: 2, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1, face: "2", matID: 1);
 
-      var j = new JobPlan("uuuu", 2, new[] {2, 2});
+      var j = new JobPlan("uuuu", 2);
       j.PartName = "pppp";
       j.AddInspection(new JobInspectionData(
         "insp_proc1", "counter1", 10, TimeSpan.FromMinutes(1000), inspSingleProc: 1));
@@ -987,6 +1034,55 @@ namespace MachineWatchTest
 
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
+    }
+
+    [Fact]
+    public void Queues()
+    {
+      var t = DateTime.UtcNow.AddHours(-5);
+      AddTestPart(pallet: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1);
+      AddTestPart(pallet: 9, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1);
+
+      var proc1 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matID: 1);
+      var proc1snd = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matID: 2);
+
+      var proc2 = BuildMaterial(t, pal: 9, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1, face: "2", matID: 1);
+
+      var j = new JobPlan("uuuu", 2);
+      j.PartName = "pppp";
+      j.SetOutputQueue(1, 1, "thequeue");
+      j.SetInputQueue(2, 1, "thequeue");
+      var newJobs = new NewJobs() {
+        Jobs = new List<JobPlan> {j}
+      };
+      jobDB.AddJobs(newJobs, null);
+
+      LoadStart(proc1, offset: 0, load: 1);
+      LoadEnd(proc1, offset: 5, cycleOffset: 6, load: 1, elapMin: 5);
+      MovePallet(t, pal: 8, offset: 6, load: 1, elapMin: 0);
+
+      MachStart(proc1, offset: 10, mach: 5);
+      MachEnd(proc1, offset: 15, mach: 5, elapMin: 5);
+
+      UnloadStart(proc1, offset: 20, load: 2);
+      LoadStart(proc1snd, offset: 20, load: 2);
+      UnloadEnd(proc1, offset: 24, load: 2, elapMin: 4);
+      ExpectAddToQueue(proc1, offset: 24, queue: "thequeue");
+      LoadEnd(proc1snd, offset: 24, cycleOffset: 25, load: 2, elapMin: 4);
+      MovePallet(t, pal: 8, offset: 25, load: 2, elapMin: 25-6);
+
+      LoadStart(proc2, offset: 28, load: 1);
+      LoadEnd(proc2, offset: 29, cycleOffset: 30, load: 1, elapMin: 1);
+      MovePallet(t, pal: 9, offset: 30, load: 1, elapMin: 0);
+      ExpectRemoveFromQueue(proc2, offset: 30, queue: "thequeue");
+
+      MachStart(proc2, offset: 30, mach: 6);
+      MachStart(proc1snd, offset: 35, mach: 3);
+      MachEnd(proc1snd, offset: 37, mach: 3, elapMin: 2);
+      MachEnd(proc2, offset: 39, mach: 6, elapMin: 9);
+
+      CheckExpected(t.AddHours(-1), t.AddHours(10));
+
     }
   }
 

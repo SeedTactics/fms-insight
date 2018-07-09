@@ -2232,6 +2232,10 @@ namespace BlackMaple.MachineFramework
                                 foreignID: reader.GetString(4),
                                 origMessage: null));
 
+                                foreach (var logMat in mat[key]) {
+                                    newEvts.AddRange(RemoveFromAllQueues(trans, logMat, timeUTC.AddSeconds(1)));
+                                }
+
                                 if (serialType == SerialType.AssignOneSerialPerCycle)
                                 {
 
