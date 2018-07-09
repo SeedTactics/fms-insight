@@ -66,21 +66,21 @@ namespace MachineWatchTest
             long m2 = _jobLog.AllocateMaterialID("U2", "P2", 66);
             long m3 = _jobLog.AllocateMaterialID("U3", "P3", 566);
 
-            _jobLog.GetMaterialDetails(m1).ShouldBeEquivalentTo(new MaterialDetails() {
+            _jobLog.GetMaterialDetails(m1).Should().BeEquivalentTo(new MaterialDetails() {
                 MaterialID = m1,
                 JobUnique = "U1",
                 PartName = "P1",
                 NumProcesses = 52,
             });
 
-            _jobLog.GetMaterialDetails(m2).ShouldBeEquivalentTo(new MaterialDetails() {
+            _jobLog.GetMaterialDetails(m2).Should().BeEquivalentTo(new MaterialDetails() {
                 MaterialID = m2,
                 JobUnique = "U2",
                 PartName = "P2",
                 NumProcesses = 66,
             });
 
-            _jobLog.GetMaterialDetails(m3).ShouldBeEquivalentTo(new MaterialDetails() {
+            _jobLog.GetMaterialDetails(m3).Should().BeEquivalentTo(new MaterialDetails() {
                 MaterialID = m3,
                 JobUnique = "U3",
                 PartName = "P3",
@@ -88,14 +88,14 @@ namespace MachineWatchTest
             });
 
             long m4 = _jobLog.AllocateMaterialIDForCasting("P4", 44);
-            _jobLog.GetMaterialDetails(m4).ShouldBeEquivalentTo(new MaterialDetails() {
+            _jobLog.GetMaterialDetails(m4).Should().BeEquivalentTo(new MaterialDetails() {
                 MaterialID = m4,
                 PartName = "P4",
                 NumProcesses = 44,
             });
 
             _jobLog.SetDetailsForMaterialID(m4, "U4", "P4444", 77);
-            _jobLog.GetMaterialDetails(m4).ShouldBeEquivalentTo(new MaterialDetails() {
+            _jobLog.GetMaterialDetails(m4).Should().BeEquivalentTo(new MaterialDetails() {
                 MaterialID = m4,
                 JobUnique = "U4",
                 PartName = "P4444",
@@ -124,7 +124,7 @@ namespace MachineWatchTest
                 lulNum: 2,
                 timeUTC: start.AddHours(1)
             );
-            loadStartActualCycle.ShouldBeEquivalentTo(
+            loadStartActualCycle.Should().BeEquivalentTo(
                 new LogEntry(
                     loadStartActualCycle.Counter, new LogMaterial[] { mat1, mat19 }, "pal",
                     LogType.LoadUnloadCycle, "L/U", 2,
@@ -146,7 +146,7 @@ namespace MachineWatchTest
                 elapsed: TimeSpan.FromMinutes(52),
                 active: TimeSpan.FromMinutes(25)
             );
-            loadEndActualCycle.ShouldBeEquivalentTo( new [] {
+            loadEndActualCycle.Should().BeEquivalentTo( new [] {
                 new LogEntry(
                     loadEndActualCycle.First().Counter, new LogMaterial[] { mat2, mat15 }, "aaaa",
                     LogType.LoadUnloadCycle, "L/U", 16,
@@ -163,7 +163,7 @@ namespace MachineWatchTest
                 program: "progggg",
                 timeUTC: start.AddHours(5).AddMinutes(10)
             );
-            machineStartActualCycle.ShouldBeEquivalentTo(
+            machineStartActualCycle.Should().BeEquivalentTo(
                 new LogEntry(
                     machineStartActualCycle.Counter, new LogMaterial[] { mat15 }, "rrrr",
                     LogType.MachineCycle, "ssssss", 152,
@@ -193,7 +193,7 @@ namespace MachineWatchTest
                     TimeSpan.FromMinutes(12), TimeSpan.FromMinutes(99));
             machineEndExpectedCycle.ProgramDetails["aa"] = "AA";
             machineEndExpectedCycle.ProgramDetails["bb"] = "BB";
-            machineEndActualCycle.ShouldBeEquivalentTo(machineEndExpectedCycle);
+            machineEndActualCycle.Should().BeEquivalentTo(machineEndExpectedCycle);
             logs.Add(machineEndActualCycle);
 
             var unloadStartActualCycle = _jobLog.RecordUnloadStart(
@@ -202,7 +202,7 @@ namespace MachineWatchTest
                 lulNum: 87,
                 timeUTC: start.AddHours(6).AddMinutes(10)
             );
-            unloadStartActualCycle.ShouldBeEquivalentTo(
+            unloadStartActualCycle.Should().BeEquivalentTo(
                 new LogEntry(
                     unloadStartActualCycle.Counter, new LogMaterial[] { mat15, mat19 }, "rrr",
                     LogType.LoadUnloadCycle, "L/U", 87,
@@ -218,7 +218,7 @@ namespace MachineWatchTest
                 elapsed: TimeSpan.FromMinutes(152),
                 active: TimeSpan.FromMinutes(55)
             );
-            unloadEndActualCycle.ShouldBeEquivalentTo( new [] {
+            unloadEndActualCycle.Should().BeEquivalentTo( new [] {
                 new LogEntry(
                     unloadEndActualCycle.First().Counter, new LogMaterial[] { mat2, mat19 }, "bb",
                     LogType.LoadUnloadCycle, "L/U", 14,
@@ -922,7 +922,7 @@ namespace MachineWatchTest
             var otherQueueMat = new LogMaterial(100, "uniq100", 100, "part100", 100);
             _jobLog.CreateMaterialID(100, "uniq100", "part100", 100);
             _jobLog.RecordAddMaterialToQueue(otherQueueMat, "BBBB", 0, start.AddHours(-1))
-                .ShouldAllBeEquivalentTo(new [] {AddToQueueExpectedEntry(otherQueueMat, 1, "BBBB", 0, start.AddHours(-1))});
+                .Should().BeEquivalentTo(new [] {AddToQueueExpectedEntry(otherQueueMat, 1, "BBBB", 0, start.AddHours(-1))});
 
 
             var expectedLogs = new List<LogEntry>();
@@ -936,21 +936,21 @@ namespace MachineWatchTest
 
             // add via LogMaterial with position -1
             _jobLog.RecordAddMaterialToQueue(mat1, "AAAA", -1, start)
-                .ShouldAllBeEquivalentTo(new [] {AddToQueueExpectedEntry(mat1, 2, "AAAA", -1, start)});
+                .Should().BeEquivalentTo(new [] {AddToQueueExpectedEntry(mat1, 2, "AAAA", -1, start)});
             expectedLogs.Add(AddToQueueExpectedEntry(mat1, 2, "AAAA", -1, start));
 
             _jobLog.GetMaterialInQueue("AAAA")
-                .ShouldAllBeEquivalentTo(new [] {
+                .Should().BeEquivalentTo(new [] {
                     new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartName = "part111", NumProcesses = 19}
                 });
 
             //adding with LogMaterial with position -1 and existing queue
             _jobLog.RecordAddMaterialToQueue(mat2, "AAAA", -1, start.AddMinutes(10))
-                .ShouldAllBeEquivalentTo(new [] {AddToQueueExpectedEntry(mat2, 3, "AAAA", -1, start.AddMinutes(10))});
+                .Should().BeEquivalentTo(new [] {AddToQueueExpectedEntry(mat2, 3, "AAAA", -1, start.AddMinutes(10))});
             expectedLogs.Add(AddToQueueExpectedEntry(mat2, 3, "AAAA", -1, start.AddMinutes(10)));
 
             _jobLog.GetMaterialInQueue("AAAA")
-                .ShouldAllBeEquivalentTo(new [] {
+                .Should().BeEquivalentTo(new [] {
                     new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
                     new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartName = "part2", NumProcesses = 22}
                 });
@@ -958,17 +958,17 @@ namespace MachineWatchTest
 
             //inserting into queue with LogMaterial
             _jobLog.RecordAddMaterialToQueue(mat3, "AAAA", 1, start.AddMinutes(20))
-                .ShouldAllBeEquivalentTo(new [] {AddToQueueExpectedEntry(mat3, 4, "AAAA", 1, start.AddMinutes(20))});
+                .Should().BeEquivalentTo(new [] {AddToQueueExpectedEntry(mat3, 4, "AAAA", 1, start.AddMinutes(20))});
             expectedLogs.Add(AddToQueueExpectedEntry(mat3, 4, "AAAA", 1, start.AddMinutes(20)));
 
             _jobLog.GetMaterialInQueue("AAAA")
-                .ShouldAllBeEquivalentTo(new [] {
+                .Should().BeEquivalentTo(new [] {
                     new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
                     new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartName = "part3", NumProcesses = 36},
                     new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 2, Unique = "uniq2", PartName = "part2", NumProcesses = 22}
                 });
             _jobLog.GetMaterialInAllQueues()
-                .ShouldAllBeEquivalentTo(new [] {
+                .Should().BeEquivalentTo(new [] {
                     new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
                     new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartName = "part3", NumProcesses = 36},
                     new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 2, Unique = "uniq2", PartName = "part2", NumProcesses = 22},
@@ -977,11 +977,11 @@ namespace MachineWatchTest
 
             //removing from queue with LogMaterial
             _jobLog.RecordRemoveMaterialFromAllQueues(mat3, start.AddMinutes(30))
-                .ShouldAllBeEquivalentTo(new [] {RemoveFromQueueExpectedEntry(mat3, 5, "AAAA", 1, start.AddMinutes(30))});
+                .Should().BeEquivalentTo(new [] {RemoveFromQueueExpectedEntry(mat3, 5, "AAAA", 1, start.AddMinutes(30))});
             expectedLogs.Add(RemoveFromQueueExpectedEntry(mat3, 5, "AAAA", 1, start.AddMinutes(30)));
 
             _jobLog.GetMaterialInQueue("AAAA")
-                .ShouldAllBeEquivalentTo(new [] {
+                .Should().BeEquivalentTo(new [] {
                     new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
                     new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartName = "part2", NumProcesses = 22}
                 });
@@ -989,11 +989,11 @@ namespace MachineWatchTest
 
             //add back in with matid only
             _jobLog.RecordAddMaterialToQueue(mat3.MaterialID, mat3.Process, "AAAA", 2, start.AddMinutes(40))
-                .ShouldAllBeEquivalentTo(new [] {AddToQueueExpectedEntry(mat3, 6, "AAAA", 2, start.AddMinutes(40))});
+                .Should().BeEquivalentTo(new [] {AddToQueueExpectedEntry(mat3, 6, "AAAA", 2, start.AddMinutes(40))});
             expectedLogs.Add(AddToQueueExpectedEntry(mat3, 6, "AAAA", 2, start.AddMinutes(40)));
 
             _jobLog.GetMaterialInQueue("AAAA")
-                .ShouldAllBeEquivalentTo(new [] {
+                .Should().BeEquivalentTo(new [] {
                     new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
                     new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartName = "part2", NumProcesses = 22},
                     new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 2, Unique = "uniq3", PartName = "part3", NumProcesses = 36}
@@ -1001,7 +1001,7 @@ namespace MachineWatchTest
 
             //add also removes from queue (rearrange material 1)
             _jobLog.RecordAddMaterialToQueue(mat1, "AAAA", 2, start.AddMinutes(50))
-                .ShouldAllBeEquivalentTo(new [] {
+                .Should().BeEquivalentTo(new [] {
                     RemoveFromQueueExpectedEntry(mat1, 7, "AAAA", 0, start.AddMinutes(50)),
                     AddToQueueExpectedEntry(mat1, 8, "AAAA", 2, start.AddMinutes(50))
                 });
@@ -1009,7 +1009,7 @@ namespace MachineWatchTest
             expectedLogs.Add(AddToQueueExpectedEntry(mat1, 8, "AAAA", 2, start.AddMinutes(50)));
 
             _jobLog.GetMaterialInQueue("AAAA")
-                .ShouldAllBeEquivalentTo(new [] {
+                .Should().BeEquivalentTo(new [] {
                     new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartName = "part2", NumProcesses = 22},
                     new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartName = "part3", NumProcesses = 36},
                     new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 2, Unique = "uniq1", PartName = "part111", NumProcesses = 19}
@@ -1017,18 +1017,18 @@ namespace MachineWatchTest
 
             //removing from queue with matid
             _jobLog.RecordRemoveMaterialFromAllQueues(mat2.MaterialID, start.AddMinutes(60))
-                .ShouldAllBeEquivalentTo(new [] {RemoveFromQueueExpectedEntry(mat2, 9, "AAAA", 0, start.AddMinutes(60))});
+                .Should().BeEquivalentTo(new [] {RemoveFromQueueExpectedEntry(mat2, 9, "AAAA", 0, start.AddMinutes(60))});
             expectedLogs.Add(RemoveFromQueueExpectedEntry(mat2, 9, "AAAA", 0, start.AddMinutes(60)));
 
             _jobLog.GetMaterialInQueue("AAAA")
-                .ShouldAllBeEquivalentTo(new [] {
+                .Should().BeEquivalentTo(new [] {
                     new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 0, Unique = "uniq3", PartName = "part3", NumProcesses = 36},
                     new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 1, Unique = "uniq1", PartName = "part111", NumProcesses = 19}
                 });
 
 
             _jobLog.GetLogEntries(start, DateTime.UtcNow)
-                .ShouldAllBeEquivalentTo(expectedLogs);
+                .Should().BeEquivalentTo(expectedLogs);
         }
 
         [Fact]
@@ -1053,7 +1053,7 @@ namespace MachineWatchTest
             expectedLogs.Add(AddToQueueExpectedEntry(mat2, 2, "AAAA", -1, start));
 
             _jobLog.GetMaterialInQueue("AAAA")
-                .ShouldAllBeEquivalentTo(new [] {
+                .Should().BeEquivalentTo(new [] {
                     new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
                     new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartName = "part2", NumProcesses = 22}
                 });
@@ -1061,7 +1061,7 @@ namespace MachineWatchTest
 
             // loading should remove from queue
             var loadEndActual = _jobLog.RecordLoadEnd(new[] {mat1}, "pal1", 16, start.AddMinutes(10), TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(20));
-            loadEndActual.ShouldAllBeEquivalentTo(new [] {
+            loadEndActual.Should().BeEquivalentTo(new [] {
                 new LogEntry(3, new [] {mat1}, "pal1",
                     LogType.LoadUnloadCycle, "L/U", 16,
                     "LOAD", false, start.AddMinutes(10), "LOAD", false,
@@ -1072,7 +1072,7 @@ namespace MachineWatchTest
             expectedLogs.AddRange(loadEndActual);
 
             _jobLog.GetMaterialInQueue("AAAA")
-                .ShouldAllBeEquivalentTo(new [] {
+                .Should().BeEquivalentTo(new [] {
                     new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartName = "part2", NumProcesses = 22}
                 });
 
@@ -1080,7 +1080,7 @@ namespace MachineWatchTest
             var unloadEndActual = _jobLog.RecordUnloadEnd(
                 new[] {mat1, mat3, mat4}, "pal5", 77, start.AddMinutes(30), TimeSpan.FromMinutes(52), TimeSpan.FromMinutes(23),
                 new Dictionary<long, string>() { {1, "AAAA"}, {3, "AAAA"}});
-            unloadEndActual.ShouldAllBeEquivalentTo(new [] {
+            unloadEndActual.Should().BeEquivalentTo(new [] {
                 new LogEntry(7, new [] {mat1, mat3, mat4}, "pal5",
                     LogType.LoadUnloadCycle, "L/U", 77,
                     "UNLOAD", false, start.AddMinutes(30), "UNLOAD", true,
@@ -1092,7 +1092,7 @@ namespace MachineWatchTest
             expectedLogs.AddRange(unloadEndActual);
 
             _jobLog.GetMaterialInQueue("AAAA")
-                .ShouldAllBeEquivalentTo(new [] {
+                .Should().BeEquivalentTo(new [] {
                     new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartName = "part2", NumProcesses = 22},
                     new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 1, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
                     new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 2, Unique = "uniq3", PartName = "part3", NumProcesses = 36}
@@ -1100,7 +1100,7 @@ namespace MachineWatchTest
 
 
             _jobLog.GetLogEntries(start, DateTime.UtcNow)
-                .ShouldAllBeEquivalentTo(expectedLogs);
+                .Should().BeEquivalentTo(expectedLogs);
         }
 
         [Fact]
@@ -1118,19 +1118,19 @@ namespace MachineWatchTest
             _jobLog.RecordAddMaterialToQueue(mat3, "queue1", 2);
 
             _jobLog.AllocateCastingsInQueue("queue1", "part5", "uniqAAA", numProcesses: 15, maxCount: 2)
-                .ShouldAllBeEquivalentTo(new long[] {});
+                .Should().BeEquivalentTo(new long[] {});
 
             _jobLog.AllocateCastingsInQueue("queue1", "part1", "uniqAAA", numProcesses: 6312, maxCount: 2)
-                .ShouldAllBeEquivalentTo(new[] {mat1.MaterialID, mat2.MaterialID});
+                .Should().BeEquivalentTo(new[] {mat1.MaterialID, mat2.MaterialID});
 
-            _jobLog.GetMaterialDetails(mat1.MaterialID).ShouldBeEquivalentTo(new MaterialDetails() {
+            _jobLog.GetMaterialDetails(mat1.MaterialID).Should().BeEquivalentTo(new MaterialDetails() {
                 MaterialID = mat1.MaterialID,
                 JobUnique = "uniqAAA",
                 PartName = "part1",
                 NumProcesses = 6312,
             });
 
-            _jobLog.GetMaterialDetails(mat2.MaterialID).ShouldBeEquivalentTo(new MaterialDetails() {
+            _jobLog.GetMaterialDetails(mat2.MaterialID).Should().BeEquivalentTo(new MaterialDetails() {
                 MaterialID = mat2.MaterialID,
                 JobUnique = "uniqAAA",
                 PartName = "part1",

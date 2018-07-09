@@ -20,7 +20,7 @@
     <PackageReference Include="System.Reflection" Version="*" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="*" />
 
-    <PackageReference Include="FluentAssertions" Version="4.*"/>
+    <PackageReference Include="FluentAssertions" Version="5.*"/>
   </ItemGroup>
 
 </Project>

@@ -387,7 +387,7 @@ namespace MachineWatchTest {
 			int forcedCnt = 0;
 			foreach (var d in _insp.LookupInspectionDecisions(matID)) {
 				if (d.InspType == iType) {
-					d.ShouldBeEquivalentTo(
+					d.Should().BeEquivalentTo(
 							new JobLogDB.Decision() {
 								MaterialID = matID,
 								InspType = iType,
@@ -433,7 +433,7 @@ namespace MachineWatchTest {
 					foundEntry = true;
 					var path = Newtonsoft.Json.JsonConvert.DeserializeObject<List<MaterialProcessActualPath>>(
 						entry.ProgramDetails["ActualPath"]);
-					path.ShouldAllBeEquivalentTo(expected);
+					path.Should().BeEquivalentTo(expected);
 					break;
 				}
 			}
