@@ -539,7 +539,13 @@ namespace MazakMachineInterface
         }
 
         var inspections = new List<JobInspectionData>();
-        foreach (var i in _jobDB.LoadInspections(mat.JobUniqueStr))
+        var job = GetJob(mat.JobUniqueStr);
+        if (job == null) {
+          Log.Debug("Couldn't find job for material {uniq}", mat.JobUniqueStr);
+          continue;
+        }
+
+        foreach (var i in job.GetInspections())
         {
           if (i.InspectSingleProcess <= 0 && mat.Process != mat.NumProcesses)
           {

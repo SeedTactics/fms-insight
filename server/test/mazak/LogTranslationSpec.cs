@@ -269,6 +269,33 @@ namespace MachineWatchTest
       ));
     }
 
+    protected void ExpectInspection(TestMaterial mat, string inspTy, string counter, bool result, IEnumerable<MaterialProcessActualPath> path)
+    {
+      var e = new BlackMaple.MachineWatchInterface.LogEntry(
+        cntr: -1,
+        mat: new [] {new BlackMaple.MachineWatchInterface.LogMaterial(
+          matID: mat.MaterialID,
+          uniq: mat.Unique,
+          proc: mat.Process,
+          part: mat.JobPartName,
+          numProc: mat.NumProcess,
+          face: ""
+        )},
+        pal: "",
+        ty: BlackMaple.MachineWatchInterface.LogType.Inspection,
+        locName: "Inspect",
+        locNum: 1,
+        prog: counter,
+        start: false,
+        endTime: DateTime.UtcNow,
+        result: result.ToString(),
+        endOfRoute: false
+      );
+      e.ProgramDetails["InspectionType"] = inspTy;
+      e.ProgramDetails["ActualPath"] = Newtonsoft.Json.JsonConvert.SerializeObject(path.ToList());
+      expected.Add(e);
+    }
+
     protected void LoadStart(TestMaterial mat, int offset, int load)
     {
       LoadStart(new [] {mat}, offset, load);
@@ -553,7 +580,7 @@ namespace MachineWatchTest
       UnloadStart(p, offset: 22, load: 1);
       UnloadEnd(p, offset: 23, load: 1, elapMin: 1);
 
-      CheckExpected(t.AddHours(-1), t.AddHours(5));
+      CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
     [Fact]
@@ -603,7 +630,7 @@ namespace MachineWatchTest
       UnloadEnd(p3, offset: 66, load: 6, elapMin: 4);
       MovePallet(t, offset: 66, load: 6, pal: 3, elapMin: 66 - 38);
 
-      CheckExpected(t.AddHours(-1), t.AddHours(5));
+      CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
     [Fact]
@@ -661,7 +688,7 @@ namespace MachineWatchTest
       UnloadEnd(p1d2, offset: 54, load: 1, elapMin: 2);
       MovePallet(t, offset: 55, load: 1, pal: 3, elapMin: 55 - 24);
 
-      CheckExpected(t.AddHours(-1), t.AddHours(5));
+      CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
     [Fact]
@@ -742,7 +769,7 @@ namespace MachineWatchTest
       UnloadStart(proc2path2, offset: 61, load: 1);
       UnloadEnd(proc2path2, offset: 63, load: 1, elapMin: 2, activeMin: 722);
 
-      CheckExpected(t.AddHours(-1), t.AddHours(5));
+      CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
     [Fact]
@@ -791,7 +818,7 @@ namespace MachineWatchTest
       LoadEnd(proc1thrd, offset: 45, cycleOffset:50, load: 1, elapMin: 5);
       MovePallet(t, pal: 1, offset: 50, load: 1, elapMin: 50-25);
 
-      CheckExpected(t.AddHours(-1), t.AddHours(5));
+      CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
     [Fact]
@@ -834,7 +861,7 @@ namespace MachineWatchTest
       UnloadEnd(p1, offset: 33, load: 1, elapMin: 3);
       MovePallet(t, offset: 33, load: 1, pal: 3, elapMin: 33-2);
 
-      CheckExpected(t.AddHours(-1), t.AddHours(5));
+      CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
     [Fact]
@@ -875,7 +902,91 @@ namespace MachineWatchTest
       UnloadEnd(p2, offset: 66, load: 1, elapMin: 6);
       MovePallet(t, offset: 66, load: 1, pal: 3, elapMin: 66 - 48);
 
-      CheckExpected(t.AddHours(-1), t.AddHours(5));
+      CheckExpected(t.AddHours(-1), t.AddHours(10));
+    }
+
+    [Fact]
+    public void Inspections()
+    {
+      var t = DateTime.UtcNow.AddHours(-5);
+      AddTestPart(pallet: 2, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1);
+      AddTestPart(pallet: 2, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1);
+
+      var proc1 = BuildMaterial(t, pal: 2, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matID: 1);
+      var proc2 = BuildMaterial(t, pal: 2, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1, face: "2", matID: 1);
+
+      var j = new JobPlan("uuuu", 2, new[] {2, 2});
+      j.PartName = "pppp";
+      j.AddInspection(new JobInspectionData(
+        "insp_proc1", "counter1", 10, TimeSpan.FromMinutes(1000), inspSingleProc: 1));
+      j.AddInspection(new JobInspectionData(
+        "insp_whole", "counter2", 15, TimeSpan.FromMinutes(1500), inspSingleProc: -1));
+      var newJobs = new NewJobs() {
+        Jobs = new List<JobPlan> {j}
+      };
+      jobDB.AddJobs(newJobs, null);
+
+      LoadStart(proc1, offset: 0, load: 6);
+      LoadEnd(proc1, offset: 2, cycleOffset: 5, load: 6, elapMin: 2);
+      MovePallet(t, offset: 5, pal: 2, load: 1, elapMin: 0);
+
+      MachStart(proc1, offset: 10, mach: 4);
+
+      MachEnd(proc1, offset: 20, mach: 4, elapMin: 10);
+      ExpectInspection(proc1, inspTy: "insp_proc1", counter: "counter1", result: false,
+        path: new [] {
+          new MaterialProcessActualPath() {
+            MaterialID = proc1.MaterialID,
+            Process = 1,
+            Pallet = "2",
+            LoadStation = 6,
+            Stops = new List<MaterialProcessActualPath.Stop> {
+              new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 4}
+            },
+            UnloadStation = -1
+          }
+        }
+      );
+
+      UnloadStart(proc1, offset: 24, load: 1);
+      LoadStart(proc2, offset: 24, load: 1);
+
+      UnloadEnd(proc1, offset: 28, load: 1, elapMin: 28-24);
+      LoadEnd(proc2, offset: 28, cycleOffset: 29, load: 1, elapMin: 28-24);
+      MovePallet(t, offset: 29, pal: 2, load: 1, elapMin: 29-5);
+
+      MachStart(proc2, offset: 40, mach: 7);
+      MachEnd(proc2, offset: 50, mach: 7, elapMin: 10);
+      ExpectInspection(proc2, inspTy: "insp_whole", counter: "counter2", result: false,
+        path: new [] {
+          new MaterialProcessActualPath() {
+            MaterialID = proc1.MaterialID,
+            Process = 1,
+            Pallet = "2",
+            LoadStation = 6,
+            Stops = new List<MaterialProcessActualPath.Stop> {
+              new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 4}
+            },
+            UnloadStation = 1
+          },
+          new MaterialProcessActualPath() {
+            MaterialID = proc1.MaterialID,
+            Process = 2,
+            Pallet = "2",
+            LoadStation = 1,
+            Stops = new List<MaterialProcessActualPath.Stop> {
+              new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 7}
+            },
+            UnloadStation = -1
+          }
+        }
+      );
+
+      UnloadStart(proc2, offset: 60, load: 2);
+      UnloadEnd(proc2, offset: 61, load: 2, elapMin: 1);
+
+
+      CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
   }
 
