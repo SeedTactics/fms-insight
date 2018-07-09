@@ -184,17 +184,16 @@ namespace Makino
 			SqlConnStr
 		}
 
+		private static Serilog.ILogger Log = Serilog.Log.ForContext<MakinoDB>();
+
 		private IDbConnection _db;
 		private StatusDB _status;
 		private string dbo;
-		private System.Diagnostics.TraceSource trace;
     private BlackMaple.MachineFramework.JobLogDB _logDb;
 
 		public MakinoDB(DBTypeEnum dbType, string dbConnStr, StatusDB status,
-				BlackMaple.MachineFramework.JobLogDB log,
-				System.Diagnostics.TraceSource t)
+				BlackMaple.MachineFramework.JobLogDB log)
 		{
-			trace = t;
 			_status = status;
 			_logDb = log;
 			switch (dbType) {
@@ -699,8 +698,7 @@ namespace Makino
 					if (orderName != "") {
 						foreach (var m in matIDs) {
 							if (m.Order != orderName) {
-								OutputTrace(System.Diagnostics.TraceEventType.Information,
-								            "Current material on pallet " + palletNum.ToString() +
+								Log.Debug("Current material on pallet " + palletNum.ToString() +
 								            " loc " + fixtureNum.ToString() + " was expecting orderID " +
 								            orderID.ToString() + " for order " + orderName.ToString() +
 								            ", but found order " + m.Order + " for part loaded at " + m.LoadedUTC.ToString());
@@ -771,8 +769,7 @@ namespace Makino
 		}
 
 		private void Load(string command, Action<IDataReader> onEachRow) {
-			trace.TraceEvent(System.Diagnostics.TraceEventType.Information, 0,
-				"Loading " + command.Substring(7));
+			Log.Debug("Loading " + command.Substring(7));
 
 			using (var cmd = _db.CreateCommand()) {
 				cmd.CommandText = command;
@@ -790,8 +787,7 @@ namespace Makino
 							}
 							row += "  ";
 						}
-						trace.TraceEvent(System.Diagnostics.TraceEventType.Information, 0,
-							row);
+						Log.Debug(row);
 
 						onEachRow(reader);
 					}
@@ -819,19 +815,6 @@ namespace Makino
 #if DEBUG
 		public static List<string> errors = new List<string>();
 #endif
-
-		private void OutputTrace(System.Diagnostics.TraceEventType t, string msg)
-		{
-			if (trace == null) {
-#if DEBUG
-				errors.Add(msg);
-#else
-				throw new ApplicationException(msg);
-#endif
-			} else {
-				trace.TraceEvent(t, 0, msg);
-			}
-		}
 		#endregion
 	}
 }

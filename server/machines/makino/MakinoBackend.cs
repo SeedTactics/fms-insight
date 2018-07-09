@@ -39,6 +39,8 @@ namespace Makino
 {
 	public class MakinoBackend : IFMSBackend, IFMSImplementation
 	{
+        private static Serilog.ILogger Log = Serilog.Log.ForContext<MakinoBackend>();
+
 		// Common databases from machine framework
 		private JobDB _jobDB;
 		private JobLogDB _log;
@@ -52,13 +54,6 @@ namespace Makino
 		private LogTimer _logTimer;
 #pragma warning restore 649
         private string _dataDirectory;
-
-		private System.Diagnostics.TraceSource trace =
-			new System.Diagnostics.TraceSource("Makino", System.Diagnostics.SourceLevels.All);
-		private System.Diagnostics.TraceSource logTrace =
-			new System.Diagnostics.TraceSource("Makino Log Timer", System.Diagnostics.SourceLevels.All);
-		private System.Diagnostics.TraceSource dbTrace =
-			new System.Diagnostics.TraceSource("Makino DB", System.Diagnostics.SourceLevels.All);
 
 		public void Init(string dataDir, IConfig cfg, FMSSettings settings)
 		{
@@ -78,11 +73,9 @@ namespace Makino
 
                 bool downloadOnlyOrders = cfg.GetValue<bool>("Makino", "Download Only Orders");
 
-				trace.TraceEvent(System.Diagnostics.TraceEventType.Information, 0,
-					"Starting makino backend" + Environment.NewLine +
-					"    Connection Str: " + dbConnStr +
-                    "    ADE Path: " + adePath +
-				    "    download only orders: " + downloadOnlyOrders.ToString());
+				Log.Information(
+                    "Starting makino backend. Connection Str: {connStr}, ADE Path: {path}, DownloadOnlyOrders: {downOnlyOrders}",
+                     dbConnStr, adePath, downloadOnlyOrders);
 
 				_dataDirectory = dataDir;
 
@@ -102,8 +95,8 @@ namespace Makino
                 _status = new StatusDB(statusConn);
                 _status.CreateTables();
 
-                _makinoDB = new MakinoDB(MakinoDB.DBTypeEnum.SqlLocal, "", _status, _log, dbTrace);
-                _logTimer = new LogTimer(_log, _jobDB, _makinoDB, _status, settings, logTrace);
+                _makinoDB = new MakinoDB(MakinoDB.DBTypeEnum.SqlLocal, "", _status, _log);
+                _logTimer = new LogTimer(_log, _jobDB, _makinoDB, _status, settings);
 #else
                 _log = new JobLogDB();
                 _log.Open(
@@ -125,9 +118,7 @@ namespace Makino
                 _logTimer.LogsProcessed += OnLogsProcessed;
 
 			} catch (Exception ex) {
-				trace.TraceEvent(System.Diagnostics.TraceEventType.Error, 0,
-					"Unhandled exception when initializing makino backend" + Environment.NewLine +
-					ex.ToString());
+                Log.Error(ex, "Error when initializing makino backend");
 			}
 		}
 
@@ -143,11 +134,7 @@ namespace Makino
 
 		public System.Collections.Generic.IEnumerable<System.Diagnostics.TraceSource> TraceSources()
 		{
-			return new System.Diagnostics.TraceSource[] {
-				trace,
-				logTrace,
-				dbTrace
-			};
+			return new System.Diagnostics.TraceSource[] {};
 		}
 
         private void OnLogsProcessed()

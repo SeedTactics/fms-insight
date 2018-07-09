@@ -39,13 +39,13 @@ namespace Makino
 {
 	public class LogTimer
 	{
+		private static Serilog.ILogger Log = Serilog.Log.ForContext<LogTimer>();
 		private object _lock;
 		private JobLogDB _log;
 		private JobDB _jobDB;
 		private MakinoDB _makinoDB;
 		private StatusDB _status;
 		private System.Timers.Timer _timer;
-		private System.Diagnostics.TraceSource _trace;
 
 		public delegate void LogsProcessedDel();
 		public event LogsProcessedDel LogsProcessed;
@@ -57,9 +57,7 @@ namespace Makino
         }
 
 		public LogTimer(
-			JobLogDB log, JobDB jobDB, MakinoDB makinoDB, StatusDB status,
-            FMSSettings settings,
-			System.Diagnostics.TraceSource trace)
+			JobLogDB log, JobDB jobDB, MakinoDB makinoDB, StatusDB status, FMSSettings settings)
 		{
 			_lock = new object();
 			_log = log;
@@ -67,7 +65,6 @@ namespace Makino
             Settings = settings;
 			_makinoDB = makinoDB;
 			_status = status;
-			_trace = trace;
             TimerSignaled(null, null);
 			_timer = new System.Timers.Timer(TimeSpan.FromMinutes(1).TotalMilliseconds);
 			_timer.Elapsed += TimerSignaled;
@@ -93,9 +90,7 @@ namespace Makino
 				}
 
 			} catch (Exception ex) {
-				_trace.TraceEvent(System.Diagnostics.TraceEventType.Error, 0,
-					"Unhandled error recording log data" + Environment.NewLine +
-					ex.ToString());
+				Log.Error(ex, "Unhandled error recording log data");
 			}
 		}
 
@@ -155,8 +150,7 @@ namespace Makino
 
             if (loc.Location != PalletLocationEnum.Machine)
             {
-                _trace.TraceEvent(System.Diagnostics.TraceEventType.Error, 0,
-                    "Creating machine cycle for device that is not a machine: " + loc.Location.ToString());
+                Log.Error("Creating machine cycle for device that is not a machine: " + loc.Location.ToString());
             }
 
             //count the number of parts
@@ -182,13 +176,13 @@ namespace Makino
 			var extraData = new Dictionary<string, string>();
             if (matList.Count > 0) {
                 var matID1 = ((LogMaterial)matList[0]).MaterialID;
-                _trace.TraceEvent(System.Diagnostics.TraceEventType.Information, 0,
-                    "Starting load of common values between the times of " + m.StartDateTimeLocal.ToString() +
-                    " and " + m.EndDateTimeLocal.ToString() + "on DeviceID " + m.DeviceID.ToString() +
-                    ". These values will be attached to part " + m.PartName + " with serial " + ConvertToBase62(matID1));
+								Log.Debug(
+                    "Starting load of common values between the times of {start} and {end} on DeviceID {deviceID}." +
+										"These values will be attached to part {part} with serial {serial}",
+										m.StartDateTimeLocal, m.EndDateTimeLocal, m.DeviceID, m.PartName, ConvertToBase62(matID1));
+
                 foreach (var v in _makinoDB.QueryCommonValues(m)) {
-                    _trace.TraceEvent(System.Diagnostics.TraceEventType.Information, 0,
-                        "Common value with number " + v.Number.ToString() + " and value " + v.Value);
+                    Log.Debug("Common value with number {num} and value {val}", + v.Number, v.Value);
                     extraData[v.Number.ToString()] = v.Value;
                 }
             }
@@ -236,8 +230,7 @@ namespace Makino
 
             if (loc.Location != PalletLocationEnum.LoadUnload)
             {
-                _trace.TraceEvent(System.Diagnostics.TraceEventType.Error, 0,
-                    "Creating machine cycle for device that is not a load: " + loc.Location.ToString());
+							Log.Error("Creating machine cycle for device that is not a load: " + loc.Location.ToString());
             }
 
             //calculate the elapsed time
@@ -316,13 +309,13 @@ namespace Makino
 			var rows = _status.FindMaterialIDs(pallet, fixturenum, endUTC);
 
 			if (rows.Count == 0) {
-				OutputTrace("Unable to find any material ids for pallet " + pallet.ToString() + "-" +
+				Log.Warning("Unable to find any material ids for pallet " + pallet.ToString() + "-" +
 					fixturenum.ToString() + " for order " + order + " for event at time " + endUTC.ToString());
 				rows = _status.CreateMaterialIDs(pallet, fixturenum, endUTC, order, AllocateMatIds(count, order, part, process), 0);
 			}
 
 			if (rows[0].Order != order) {
-				OutputTrace("MaterialIDs for pallet " + pallet.ToString() + "-" + fixturenum.ToString() +
+				Log.Warning("MaterialIDs for pallet " + pallet.ToString() + "-" + fixturenum.ToString() +
 					" for event at time " + endUTC.ToString() + " does not have matching orders: " +
 					"expected " + order + " but found " + rows[0].Order);
 
@@ -330,7 +323,7 @@ namespace Makino
 			}
 
 			if (rows.Count < count) {
-				OutputTrace("Pallet " + pallet.ToString() + "-" + fixturenum.ToString() +
+				Log.Warning("Pallet " + pallet.ToString() + "-" + fixturenum.ToString() +
 					" at event time " + endUTC.ToString() + " with order " + order + " was expected to have " +
 					count.ToString() + " material ids, but only " + rows.Count + " were loaded");
 
@@ -350,7 +343,7 @@ namespace Makino
 			var ret = new List<LogMaterial>();
 			foreach (var row in rows) {
                 if (Settings.SerialType != SerialType.NoAutomaticSerials)
-				    CreateSerial(row.MatID, order, part, process, fixturenum.ToString(), _log, Settings.SerialLength, _trace);
+				    CreateSerial(row.MatID, order, part, process, fixturenum.ToString(), _log, Settings.SerialLength);
 				//TODO: maxProcess
 				ret.Add(new LogMaterial(row.MatID, order, process, part, process, fixturenum.ToString()));
 			}
@@ -358,7 +351,7 @@ namespace Makino
 		}
 
 		public static void CreateSerial(long matID, string jobUniqe, string partName, int process, string face,
-                                        JobLogDB _log, int serLength, System.Diagnostics.TraceSource _trace)
+                                        JobLogDB _log, int serLength)
 		{
 			foreach (var stat in _log.GetLogForMaterial(matID)) {
 				if (stat.LogType == LogType.PartMark &&
@@ -379,9 +372,7 @@ namespace Makino
 			serial = serial.Substring(0, Math.Min(serLength, serial.Length));
 			serial = serial.PadLeft(10, '0');
 
-			if (_trace != null)
-				_trace.TraceEvent(System.Diagnostics.TraceEventType.Information, 0,
-				                  "Recording serial for matid: " + matID.ToString() + " - " + serial);
+			Log.Debug("Recording serial for matid: {matid} {serial}", matID, serial);
 
 
             var logMat = new LogMaterial(matID, jobUniqe, process, partName, process, face);
@@ -410,19 +401,6 @@ namespace Makino
 #if DEBUG
 		internal static List<string> errors = new List<string>();
 #endif
-
-		private void OutputTrace(string msg)
-		{
-			if (_trace == null) {
-#if DEBUG
-				errors.Add(msg);
-#else
-				throw new ApplicationException(msg);
-#endif
-			} else {
-				_trace.TraceEvent(System.Diagnostics.TraceEventType.Warning, 0, msg);
-			}
-		}
 	}
 }
 

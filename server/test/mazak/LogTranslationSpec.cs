@@ -1200,7 +1200,7 @@ namespace MachineWatchTest
       AddSchedule(1, "unitest", "testpart:0:1", 2, false);
       AddSchedule(2, "uniother", "otherpart:0:1", 2, false);
 
-      log = new LogTranslation(jobLog, new ConstantRead(dset), logRead, new System.Diagnostics.TraceSource("temp"));
+      log = new LogTranslation(jobLog, new ConstantRead(dset), logRead);
       log.Halt(); // stop the timer, we will inject events directly
     }
 
