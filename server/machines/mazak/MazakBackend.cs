@@ -220,14 +220,12 @@ namespace MazakMachineInterface
                                 settings,
                                 routingTrace);
 
-      logDataLoader.MachiningCompleted += HandleMachiningCompleted;
       logDataLoader.NewEntries += OnNewLogEntries;
       loadOper.LoadActions += OnLoadActions;
     }
 
     public void Halt()
     {
-      logDataLoader.MachiningCompleted -= HandleMachiningCompleted;
       logDataLoader.NewEntries -= OnNewLogEntries;
       loadOper.LoadActions -= OnLoadActions;
       routing.Halt();
@@ -272,57 +270,6 @@ namespace MazakMachineInterface
     public ILogDatabase LogDatabase()
     {
       return jobLog;
-    }
-
-
-    private void HandleMachiningCompleted(BlackMaple.MachineWatchInterface.LogEntry cycle, ReadOnlyDataSet dset)
-    {
-      foreach (LogMaterial mat in cycle.Material)
-      {
-        if (mat.MaterialID < 0 || mat.JobUniqueStr == null || mat.JobUniqueStr == "")
-        {
-          logTrace.TraceEvent(TraceEventType.Information, 0,
-                              "HandleMachiningCompleted: Skipping material id " + mat.MaterialID.ToString() +
-                              " part " + mat.PartName +
-                              " because the job unique string is empty");
-          continue;
-        }
-
-        var inspections = new List<JobInspectionData>();
-        foreach (var i in jobDB.LoadInspections(mat.JobUniqueStr))
-        {
-          if (i.InspectSingleProcess <= 0 && mat.Process != mat.NumProcesses)
-          {
-            logTrace.TraceEvent(TraceEventType.Information, 0, "Skipping inspection for material " + mat.MaterialID.ToString() +
-                      " inspection type " + i.InspectionType +
-                      " completed at time " + cycle.EndTimeUTC.ToLocalTime().ToString() + " on pallet " + cycle.Pallet.ToString() +
-                      " part " + mat.PartName +
-                      " because the process is not the maximum process");
-
-            continue;
-          }
-          if (i.InspectSingleProcess >= 1 && mat.Process != i.InspectSingleProcess)
-          {
-            logTrace.TraceEvent(TraceEventType.Information, 0, "Skipping inspection for material " + mat.MaterialID.ToString() +
-                      " inspection type " + i.InspectionType +
-                      " completed at time " + cycle.EndTimeUTC.ToLocalTime().ToString() + " on pallet " + cycle.Pallet.ToString() +
-                      " part " + mat.PartName +
-                      " process " + mat.Process.ToString() +
-                      " because the inspection is only on process " +
-                      i.InspectSingleProcess.ToString());
-
-            continue;
-          }
-
-          inspections.Add(i);
-        }
-
-        jobLog.MakeInspectionDecisions(mat.MaterialID, mat.JobUniqueStr, mat.PartName, mat.Process, inspections);
-        logTrace.TraceEvent(TraceEventType.Information, 0,
-                          "Making inspection decision for " + string.Join(",", inspections.Select(x => x.InspectionType)) + " material " + mat.MaterialID.ToString() +
-                          " completed at time " + cycle.EndTimeUTC.ToLocalTime().ToString() + " on pallet " + cycle.Pallet.ToString() +
-                          " part " + mat.PartName);
-      }
     }
 
     private void OnLoadActions(int lds, IEnumerable<LoadAction> actions)

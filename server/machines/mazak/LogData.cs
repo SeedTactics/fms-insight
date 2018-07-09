@@ -81,19 +81,17 @@ namespace MazakMachineInterface
     public string FromPosition;
   }
 
-  public delegate void MachiningCompletedDel(BlackMaple.MachineWatchInterface.LogEntry cycle, ReadOnlyDataSet dset);
   public delegate void PalletMoveDel(int pallet, string fromStation, string toStation);
   public delegate void NewEntriesDel(ReadOnlyDataSet dset);
   public interface ILogEvents
   {
-    event MachiningCompletedDel MachiningCompleted;
     event PalletMoveDel PalletMove;
     event NewEntriesDel NewEntries;
     void Halt();
   }
 
 #if USE_OLEDB
-	public class LogDataVerE
+	public class LogDataVerE : ILogEvents
 	{
     private const string DateTimeFormat = "yyyyMMddHHmmss";
 
@@ -106,7 +104,6 @@ namespace MazakMachineInterface
     private object _lock;
     private System.Timers.Timer _timer;
 
-    public event MachiningCompletedDel MachiningCompleted;
     public event PalletMoveDel PalletMove;
     public event NewEntriesDel NewEntries;
 
@@ -140,7 +137,6 @@ namespace MazakMachineInterface
 
           var logs = LoadLog(_log.MaxForeignID());
           var trans = new LogTranslation(_jobDB, _log, new FindPartFromReadOnlySet(dset), FMSSettings,
-            le => MachiningCompleted?.Invoke(le, dset),
             le => PalletMove?.Invoke(le.Pallet, le.FromPosition, le.TargetPosition)
           );
           foreach (var ev in logs)
@@ -335,7 +331,6 @@ namespace MazakMachineInterface
       _watcher.Changed += (sender, evt) => _newLogFile.Set();
     }
 
-    public event MachiningCompletedDel MachiningCompleted;
     public event PalletMoveDel PalletMove;
     public event NewEntriesDel NewEntries;
 
@@ -357,7 +352,6 @@ namespace MazakMachineInterface
           var dset = _readDB.LoadReadOnly();
           var logs = LoadLog(_log.MaxForeignID());
           var trans = new LogTranslation(_jobDB, _log, new FindPartFromReadOnlySet(dset), _settings,
-            le => MachiningCompleted?.Invoke(le, dset),
             le => PalletMove?.Invoke(le.Pallet, le.FromPosition, le.TargetPosition)
           );
           foreach (var ev in logs)
@@ -386,6 +380,7 @@ namespace MazakMachineInterface
 
     public void Halt()
     {
+      _watcher.EnableRaisingEvents = false;
       _shutdown.Set();
 
       if (!_thread.Join(TimeSpan.FromSeconds(15)))

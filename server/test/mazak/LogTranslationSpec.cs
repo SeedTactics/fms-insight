@@ -49,7 +49,6 @@ namespace MachineWatchTest
 		protected JobDB jobDB;
     protected LogTranslation log;
     protected List<BlackMaple.MachineWatchInterface.LogEntry> expected = new List<BlackMaple.MachineWatchInterface.LogEntry>();
-    protected List<BlackMaple.MachineWatchInterface.LogEntry> raisedByMachineCompleted = new List<BlackMaple.MachineWatchInterface.LogEntry>();
     protected List<MazakMachineInterface.LogEntry> raisedByPalletMove = new List<MazakMachineInterface.LogEntry>();
 		private List<TestPartData> partData;
 
@@ -73,7 +72,6 @@ namespace MachineWatchTest
 			};
 
       log = new LogTranslation(jobDB, jobLog, findPart, settings,
-        e => raisedByMachineCompleted.Add(e),
         e => raisedByPalletMove.Add(e)
       );
     }
@@ -245,7 +243,9 @@ namespace MachineWatchTest
         FromPosition = "",
       };
 
-      var expectedLog = new BlackMaple.MachineWatchInterface.LogEntry(
+      log.HandleEvent(e2);
+
+      expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
         cntr: -1,
         mat: mats.Select(mat => new BlackMaple.MachineWatchInterface.LogMaterial(
           matID: mat.MaterialID,
@@ -266,15 +266,7 @@ namespace MachineWatchTest
         endOfRoute: false,
         elapsed: TimeSpan.FromMinutes(elapMin),
         active: TimeSpan.FromMinutes(activeMin)
-      );
-
-      log.HandleEvent(e2);
-      raisedByMachineCompleted.ShouldAllBeEquivalentTo(new [] {expectedLog},
-        options => options.Excluding(x => x.Counter)
-      );
-      raisedByMachineCompleted.Clear();
-
-      expected.Add(expectedLog);
+      ));
     }
 
     protected void LoadStart(TestMaterial mat, int offset, int load)

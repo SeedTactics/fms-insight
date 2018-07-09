@@ -45,7 +45,6 @@ namespace MazakMachineInterface
     private IFindPart _findPart;
     private Dictionary<string, JobPlan> _jobs;
     private BlackMaple.MachineFramework.FMSSettings _settings;
-    private Action<MWI.LogEntry> _onMachiningCompleted;
     private Action<LogEntry> _onPalletMove;
 
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LogTranslation>();
@@ -54,14 +53,12 @@ namespace MazakMachineInterface
                           BlackMaple.MachineFramework.JobLogDB logDB,
                           IFindPart findPart,
                           BlackMaple.MachineFramework.FMSSettings settings,
-                          Action<MWI.LogEntry> onMachineCompleted,
                           Action<LogEntry> onPalletMove)
     {
       _jobDB = jDB;
       _log = logDB;
       _findPart = findPart;
       _settings = settings;
-      _onMachiningCompleted = onMachineCompleted;
       _onPalletMove = onPalletMove;
       _jobs = new Dictionary<string, JobPlan>();
     }
@@ -144,7 +141,7 @@ namespace MazakMachineInterface
               elapsed: elapsed,
               active: CalculateActiveMachining(machineMats.Select(m => m.Mat)),
               foreignId: e.ForeignID);
-            _onMachiningCompleted(s);
+            HandleMachiningCompleted(s);
           }
           else
           {
@@ -525,6 +522,56 @@ namespace MazakMachineInterface
         .Select(t => t.Ticks)
         .Sum();
       return TimeSpan.FromTicks(ticks);
+    }
+    #endregion
+
+    #region Inspections
+    private void HandleMachiningCompleted(BlackMaple.MachineWatchInterface.LogEntry cycle)
+    {
+      foreach (LogMaterial mat in cycle.Material)
+      {
+        if (mat.MaterialID < 0 || mat.JobUniqueStr == null || mat.JobUniqueStr == "")
+        {
+          Log.Debug("HandleMachiningCompleted: Skipping material id " + mat.MaterialID.ToString() +
+                    " part " + mat.PartName +
+                    " because the job unique string is empty");
+          continue;
+        }
+
+        var inspections = new List<JobInspectionData>();
+        foreach (var i in _jobDB.LoadInspections(mat.JobUniqueStr))
+        {
+          if (i.InspectSingleProcess <= 0 && mat.Process != mat.NumProcesses)
+          {
+            Log.Debug("Skipping inspection for material " + mat.MaterialID.ToString() +
+                      " inspection type " + i.InspectionType +
+                      " completed at time " + cycle.EndTimeUTC.ToLocalTime().ToString() + " on pallet " + cycle.Pallet.ToString() +
+                      " part " + mat.PartName +
+                      " because the process is not the maximum process");
+
+            continue;
+          }
+          if (i.InspectSingleProcess >= 1 && mat.Process != i.InspectSingleProcess)
+          {
+            Log.Debug("Skipping inspection for material " + mat.MaterialID.ToString() +
+                      " inspection type " + i.InspectionType +
+                      " completed at time " + cycle.EndTimeUTC.ToLocalTime().ToString() + " on pallet " + cycle.Pallet.ToString() +
+                      " part " + mat.PartName +
+                      " process " + mat.Process.ToString() +
+                      " because the inspection is only on process " +
+                      i.InspectSingleProcess.ToString());
+
+            continue;
+          }
+
+          inspections.Add(i);
+        }
+
+        _log.MakeInspectionDecisions(mat.MaterialID, mat.JobUniqueStr, mat.PartName, mat.Process, inspections);
+        Log.Debug("Making inspection decision for " + string.Join(",", inspections.Select(x => x.InspectionType)) + " material " + mat.MaterialID.ToString() +
+                  " completed at time " + cycle.EndTimeUTC.ToLocalTime().ToString() + " on pallet " + cycle.Pallet.ToString() +
+                  " part " + mat.PartName);
+      }
     }
     #endregion
   }
