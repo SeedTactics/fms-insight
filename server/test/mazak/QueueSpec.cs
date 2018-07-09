@@ -128,7 +128,45 @@ namespace MachineWatchTest
         Jobs = new List<JobPlan> {j}
       }, null);
 
-      // put 2 material in queue
+      // put 2 castings in queue, plus a different unique and a different process
+      var mat1 = _logDB.AllocateMaterialID("uuuu", "pppp", 1);
+      var mat2 = _logDB.AllocateMaterialID("uuuu", "pppp", 1);
+      var mat3 = _logDB.AllocateMaterialID("other", "pppp", 1);
+      var mat4 = _logDB.AllocateMaterialID("uuuu", "pppp", 1);
+      _logDB.RecordAddMaterialToQueue(mat1, process: 0, queue: "thequeue", position: 0);
+      _logDB.RecordAddMaterialToQueue(mat2, process: 0, queue: "thequeue", position: 1);
+      _logDB.RecordAddMaterialToQueue(mat3, process: 0, queue: "thequeue", position: 2);
+      _logDB.RecordAddMaterialToQueue(mat4, process: 1, queue: "thequeue", position: 3);
+
+      //put something else at load station
+      var action = new LoadAction(true, 1, "pppp", MazakPart.CreateComment("uuuu2", 1, false), 1, 1);
+
+      var trans = _queues.CalculateScheduleChanges(read, new [] {action}, out bool foundAtLoad);
+      foundAtLoad.Should().BeFalse();
+
+      trans.Schedule_t.Count.Should().Be(1);
+      trans.Schedule_t[0].ScheduleID.Should().Be(10);
+      trans.ScheduleProcess_t.Count.Should().Be(1);
+      trans.ScheduleProcess_t[0].ProcessMaterialQuantity.Should().Be(2); // set the 2 material
+    }
+
+    [Fact]
+    public void NoChanges()
+    {
+      var read = new ReadOnlyDataSet();
+
+      // plan 50, 40 completed, and 5 in process, and 2 as material.
+      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", pri: 10, plan: 50, complete: 40);
+      AddScheduleProcess(schRow, proc: 1, matQty: 2, exeQty: 5);
+
+      var j = new JobPlan("uuuu", 1);
+      j.PartName = "pppp";
+      j.SetInputQueue(1, 1, "thequeue");
+      _jobDB.AddJobs(new NewJobs() {
+        Jobs = new List<JobPlan> {j}
+      }, null);
+
+      // put 2 castings in queue which matches the material
       var mat1 = _logDB.AllocateMaterialID("uuuu", "pppp", 1);
       var mat2 = _logDB.AllocateMaterialID("uuuu", "pppp", 1);
       _logDB.RecordAddMaterialToQueue(mat1, process: 0, queue: "thequeue", position: 0);
@@ -137,10 +175,137 @@ namespace MachineWatchTest
       var trans = _queues.CalculateScheduleChanges(read, new LoadAction[] {}, out bool foundAtLoad);
       foundAtLoad.Should().BeFalse();
 
+      trans.Schedule_t.Count.Should().Be(0);
+      trans.ScheduleProcess_t.Count.Should().Be(0);
+    }
+
+    [Fact]
+    public void AllocateCastings()
+    {
+      var read = new ReadOnlyDataSet();
+
+      // plan 50, 43 completed, and 5 in process.  So there are 2 remaining.
+      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", pri: 10, plan: 50, complete: 43);
+      AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 5);
+
+      var j = new JobPlan("uuuu", 1);
+      j.PartName = "pppp";
+      j.SetInputQueue(1, 1, "thequeue");
+      _jobDB.AddJobs(new NewJobs() {
+        Jobs = new List<JobPlan> {j}
+      }, null);
+
+      // put 3 unassigned castings in queue
+      var mat1 = _logDB.AllocateMaterialIDForCasting("pppp", 1);
+      var mat2 = _logDB.AllocateMaterialIDForCasting("pppp", 1);
+      var mat3 = _logDB.AllocateMaterialIDForCasting("pppp", 1);
+      _logDB.RecordAddMaterialToQueue(mat1, process: 0, queue: "thequeue", position: 0);
+      _logDB.RecordAddMaterialToQueue(mat2, process: 0, queue: "thequeue", position: 1);
+      _logDB.RecordAddMaterialToQueue(mat3, process: 0, queue: "thequeue", position: 2);
+
+      _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new [] {
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "", PartName = "pppp", NumProcesses = 1},
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = mat2, Queue = "thequeue", Position = 1, Unique = "", PartName = "pppp", NumProcesses = 1},
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = mat3, Queue = "thequeue", Position = 2, Unique = "", PartName = "pppp", NumProcesses = 1},
+      });
+
+      // should allocate 2 parts to uuuu, leave one unassigned, then update material quantity
+      var trans = _queues.CalculateScheduleChanges(read, new LoadAction[] {}, out bool foundAtLoad);
+      foundAtLoad.Should().BeFalse();
+
+      _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new [] {
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "uuuu", PartName = "pppp", NumProcesses = 1},
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = mat2, Queue = "thequeue", Position = 1, Unique = "uuuu", PartName = "pppp", NumProcesses = 1},
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = mat3, Queue = "thequeue", Position = 2, Unique = "", PartName = "pppp", NumProcesses = 1},
+      });
+
       trans.Schedule_t.Count.Should().Be(1);
       trans.Schedule_t[0].ScheduleID.Should().Be(10);
       trans.ScheduleProcess_t.Count.Should().Be(1);
       trans.ScheduleProcess_t[0].ProcessMaterialQuantity.Should().Be(2); // set the 2 material
     }
+
+    [Fact]
+    public void MultipleProcesses()
+    {
+      var read = new ReadOnlyDataSet();
+
+      // plan 50, 30 completed.  proc1 has 5 in process, zero material.  proc2 has 3 in process, 1 material
+      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", pri: 10, plan: 50, complete: 30);
+      AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 5);
+      AddScheduleProcess(schRow, proc: 2, matQty: 1, exeQty: 3);
+
+      var j = new JobPlan("uuuu", 2);
+      j.PartName = "pppp";
+      j.SetInputQueue(1, 1, "castingQ");
+      j.SetInputQueue(2, 1, "transQ");
+      _jobDB.AddJobs(new NewJobs() {
+        Jobs = new List<JobPlan> {j}
+      }, null);
+
+      // put 2 castings in queue
+      var mat1 = _logDB.AllocateMaterialID("uuuu", "pppp", 2);
+      var mat2 = _logDB.AllocateMaterialID("uuuu", "pppp", 2);
+      _logDB.RecordAddMaterialToQueue(mat1, process: 0, queue: "castingQ", position: 0);
+      _logDB.RecordAddMaterialToQueue(mat2, process: 0, queue: "castingQ", position: 1);
+
+      // put 3 in-proc in queue
+      var mat3 = _logDB.AllocateMaterialID("uuuu", "pppp", 2);
+      var mat4 = _logDB.AllocateMaterialID("uuuu", "pppp", 2);
+      var mat5 = _logDB.AllocateMaterialID("uuuu", "pppp", 2);
+      _logDB.RecordAddMaterialToQueue(mat3, process: 1, queue: "transQ", position: 0);
+      _logDB.RecordAddMaterialToQueue(mat4, process: 1, queue: "transQ", position: 1);
+      _logDB.RecordAddMaterialToQueue(mat5, process: 1, queue: "transQ", position: 2);
+
+      var trans = _queues.CalculateScheduleChanges(read, new LoadAction[] {}, out bool foundAtLoad);
+      foundAtLoad.Should().BeFalse();
+
+      trans.Schedule_t.Count.Should().Be(1);
+      trans.Schedule_t[0].ScheduleID.Should().Be(10);
+      trans.ScheduleProcess_t.Count.Should().Be(2);
+      trans.ScheduleProcess_t[0].ProcessNumber.Should().Be(1);
+      trans.ScheduleProcess_t[0].ProcessMaterialQuantity.Should().Be(2); // set the 2 material
+      trans.ScheduleProcess_t[1].ProcessNumber.Should().Be(2);
+      trans.ScheduleProcess_t[1].ProcessMaterialQuantity.Should().Be(3); // set the 3 material
+    }
+
+    [Fact(Skip="pending")]
+    public void MultiplePaths()
+    {
+
+    }
+
+    [Fact]
+    public void SkipsWhenAtLoad()
+    {
+      var read = new ReadOnlyDataSet();
+      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", pri: 10, plan: 50, complete: 40);
+      AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 5);
+
+      var j = new JobPlan("uuuu", 1);
+      j.PartName = "pppp";
+      j.SetInputQueue(1, 1, "thequeue");
+      _jobDB.AddJobs(new NewJobs() {
+        Jobs = new List<JobPlan> {j}
+      }, null);
+
+      // put 1 castings in queue
+      var mat1 = _logDB.AllocateMaterialID("uuuu", "pppp", 1);
+      _logDB.RecordAddMaterialToQueue(mat1, process: 0, queue: "thequeue", position: 0);
+
+      //put something else at load station
+      var action = new LoadAction(true, 1, "pppp", MazakPart.CreateComment("uuuu", 1, false), 1, 1);
+
+      var trans = _queues.CalculateScheduleChanges(read, new [] {action}, out bool foundAtLoad);
+      foundAtLoad.Should().BeTrue();
+      trans.Should().BeNull();
+    }
+
   }
 }
