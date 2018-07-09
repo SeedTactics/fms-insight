@@ -77,14 +77,13 @@ namespace MazakMachineInterface
       _thread.SignalNewSchedules();
     }
 
+    private static Serilog.ILogger Log = Serilog.Log.ForContext<HoldPattern>();
     private TransitionThread _thread;
-    internal System.Diagnostics.TraceSource Trace;
     private TransactionDatabaseAccess database;
     private IReadDataAccess readDatabase;
 
-    public HoldPattern(string dbPath, TransactionDatabaseAccess d, IReadDataAccess readDb, System.Diagnostics.TraceSource t, bool createThread)
+    public HoldPattern(string dbPath, TransactionDatabaseAccess d, IReadDataAccess readDb, bool createThread)
     {
-      Trace = t;
       database = d;
       readDatabase = readDb;
       OpenDB(System.IO.Path.Combine(dbPath, "hold.db"));
@@ -93,9 +92,8 @@ namespace MazakMachineInterface
         _thread = new TransitionThread(this);
     }
 
-    public HoldPattern(SqliteConnection conn, TransactionDatabaseAccess d, IReadDataAccess readDb, System.Diagnostics.TraceSource t, bool createThread)
+    public HoldPattern(SqliteConnection conn, TransactionDatabaseAccess d, IReadDataAccess readDb, bool createThread)
     {
-      Trace = t;
       database = d;
       readDatabase = readDb;
       _connection = conn;
@@ -187,16 +185,14 @@ namespace MazakMachineInterface
               sleepTime = TimeSpan.FromMinutes(MaxSleepMinutes);
           }
 
-          _parent.Trace.TraceEvent(System.Diagnostics.TraceEventType.Information, 0,
-                            "Sleeping for " + sleepTime.TotalMinutes.ToString() + " minutes");
+          Log.Debug("Sleeping for {time}", sleepTime);
 
           var ret = WaitHandle.WaitAny(new WaitHandle[] { _shutdown, _newSchedules }, sleepTime, false);
 
           if (ret == 0)
           {
             //Shutdown was fired.
-            _parent.Trace.TraceEvent(System.Diagnostics.TraceEventType.Information, 0,
-                              "Shutdown");
+            Log.Debug("Hold shutdown");
             return;
           }
         }
@@ -250,10 +246,7 @@ namespace MazakMachineInterface
 
         _parent.database.SaveTransaction(transSet, logMessages, "Hold Mode", 10);
 
-        foreach (var s in logMessages)
-        {
-          _parent.Trace.TraceEvent(System.Diagnostics.TraceEventType.Error, 0, s);
-        }
+        Log.Error("Error updating holds. {msgs}", logMessages);
       }
 
       public MazakSchedule(HoldPattern parent, ReadOnlyDataSet.ScheduleRow s)
@@ -290,8 +283,7 @@ namespace MazakMachineInterface
           //For this reason, we wait 3 minutes for the db lock and retry again after only 20 seconds.
           //Thus during the download most of the waiting will be here for the db lock.
 
-          Trace.TraceEvent(System.Diagnostics.TraceEventType.Information, 0,
-                           "Unable to obtain mazak db lock, trying again in 20 seconds.");
+          Log.Debug("Unable to obtain mazak db lock, trying again in 20 seconds.");
           return TimeSpan.FromSeconds(20);
         }
 
@@ -307,8 +299,7 @@ namespace MazakMachineInterface
           var mazakSch = LoadMazakSchedules();
           var holds = new Dictionary<int, JobHold>(GetHoldPatterns());
 
-          Trace.TraceEvent(System.Diagnostics.TraceEventType.Information, 0,
-                           "Checking for hold transitions at UTC " + nowUTC.ToString());
+          Log.Debug("Checking for hold transitions at {time} ", nowUTC);
 
           var nextTimeUTC = DateTime.MaxValue;
 
@@ -333,12 +324,9 @@ namespace MazakMachineInterface
 
             HoldMode currentHoldMode = CalculateHoldMode(allHold, machHold);
 
-            Trace.TraceEvent(System.Diagnostics.TraceEventType.Information, 0,
-                             "Checking sch " + pair.Key.ToString() + ":" +
-                             " current mode = " + pair.Value.Hold.ToString() +
-                             " target mode = " + currentHoldMode.ToString() +
-                             " next all UTC = " + allNext.ToString() +
-                             " next mach UTC = " + machNext.ToString());
+            Log.Debug("Checking schedule {sch}, mode {mode}, target {targetMode}, next {allNext}, mach {machNext}",
+              pair.Key, pair.Value.Hold, currentHoldMode, allNext, machNext
+            );
 
             if (currentHoldMode != pair.Value.Hold)
             {
@@ -356,13 +344,11 @@ namespace MazakMachineInterface
           //Any leftover holds for which there is no schedule in mazak can be deleted
           foreach (var key in holds.Keys)
           {
-            Trace.TraceEvent(System.Diagnostics.TraceEventType.Information, 0,
-                             "Deleting hold info for schedule " + key.ToString());
+            Log.Debug("Deleting hold for schedule {key}", key);
             DeleteHold(key);
           }
 
-          Trace.TraceEvent(System.Diagnostics.TraceEventType.Information, 0,
-                           "Next hold transition UTC: " + nextTimeUTC.ToString());
+          Log.Debug("Next hold transition {next}", nextTimeUTC);
 
           if (nextTimeUTC == DateTime.MaxValue)
             return TimeSpan.MaxValue;
@@ -384,9 +370,7 @@ namespace MazakMachineInterface
       }
       catch (Exception ex)
       {
-        Trace.TraceEvent(System.Diagnostics.TraceEventType.Error, 0,
-                         "Unhandled error checking for hold transition" + Environment.NewLine +
-                         ex.ToString());
+        Log.Error(ex, "Unhanlded error checking for hold transition");
 
         //Try again in three minutes.
         return TimeSpan.FromMinutes(3);

@@ -47,7 +47,7 @@ namespace MachineWatchTest {
 		{
 			var holdConn = BlackMaple.MachineFramework.SqliteExtensions.ConnectMemory();
 			holdConn.Open();
-			var hold = new HoldPattern(holdConn, null, null, new System.Diagnostics.TraceSource("temp"), false);
+			var hold = new HoldPattern(holdConn, null, null, false);
 			hold.CreateTables();
 
 			var job1 = new JobPlan("Job1", 1, new int[] {2});

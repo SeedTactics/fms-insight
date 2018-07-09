@@ -43,6 +43,8 @@ namespace MazakMachineInterface
 {
   public class MazakBackend : IFMSBackend, IFMSImplementation
   {
+    private static Serilog.ILogger Log = Serilog.Log.ForContext<MazakBackend>();
+
     private TransactionDatabaseAccess database;
     private RoutingInfo routing;
     private HoldPattern hold;
@@ -181,11 +183,11 @@ namespace MazakMachineInterface
       }
 
       if (!System.IO.Directory.Exists(logPath))
-        logTrace.TraceEvent(TraceEventType.Error, 0, "Configured Log CSV directory " + logPath + " does not exist.");
+        Log.Error("Configured Log CSV directory {logPath} does not exist.", logPath);
 
-      logTrace.TraceData(TraceEventType.Warning, 0,
-          "Configured UseStartingOffsetForDueDate = " + UseStartingOffsetForDueDate.ToString() + " and " +
-          "DecrementPriorityOnDownload = " + DecrementPriorityOnDownload.ToString());
+      Log.Debug(
+        "Configured UseStartingOffsetForDueDate = {useStarting}, DecrementPriority = {decr} ",
+        UseStartingOffsetForDueDate, DecrementPriorityOnDownload);
 
       jobLog = new BlackMaple.MachineFramework.JobLogDB();
       jobLog.Open(
@@ -203,7 +205,7 @@ namespace MazakMachineInterface
       database = new TransactionDatabaseAccess(dbConnStr, MazakType);
       var readOnlyDb = new ReadonlyDatabaseAccess(dbConnStr, MazakType);
       queues = new MazakQueues(jobLog, jobDB, loadOper, database);
-      loadOper = new LoadOperations(loadOperTrace, cfg, readOnlyDb.SmoothDB);
+      loadOper = new LoadOperations(cfg, readOnlyDb.SmoothDB);
 
       if (MazakType == DatabaseAccess.MazakDbType.MazakWeb || MazakType == DatabaseAccess.MazakDbType.MazakSmooth)
         logDataLoader = new LogDataWeb(logPath, jobLog, jobDB, readOnlyDb, queues, settings);
@@ -216,11 +218,10 @@ namespace MazakMachineInterface
 #endif
       }
 
-      hold = new HoldPattern(dataDirectory, database, readOnlyDb, holdTrace, true);
+      hold = new HoldPattern(dataDirectory, database, readOnlyDb, true);
       routing = new RoutingInfo(database,readOnlyDb, hold, logDataLoader, jobDB, jobLog, loadOper,
                                 CheckPalletsUsedOnce, UseStartingOffsetForDueDate, DecrementPriorityOnDownload,
-                                settings,
-                                routingTrace);
+                                settings);
 
       logDataLoader.NewEntries += OnNewLogEntries;
       loadOper.LoadActions += OnLoadActions;
@@ -238,14 +239,9 @@ namespace MazakMachineInterface
       jobLog.Close();
     }
 
-    private TraceSource routingTrace = new TraceSource("Mazak", SourceLevels.All);
-    private TraceSource holdTrace = new TraceSource("Hold Transitions", SourceLevels.All);
-    private TraceSource loadOperTrace = new TraceSource("Load Operations", SourceLevels.All);
-    private TraceSource logTrace = new TraceSource("Log", SourceLevels.All);
-
     public IEnumerable<System.Diagnostics.TraceSource> TraceSources()
     {
-      return new TraceSource[] { routingTrace, holdTrace, loadOperTrace, logTrace };
+      return new TraceSource[] { };
     }
 
     public IInspectionControl InspectionControl()
@@ -309,12 +305,12 @@ namespace MazakMachineInterface
       if (System.IO.File.Exists(testPath))
       {
         //TODO: open database to check column existance for web vs E.
-        logTrace.TraceEvent(TraceEventType.Warning, 0, "Assuming Mazak WEB version.  If this is incorrect it can be changed in the settings.");
+        Log.Information("Assuming Mazak WEB version.  If this is incorrect it can be changed in the settings.");
         return DatabaseAccess.MazakDbType.MazakWeb;
       }
       else
       {
-        logTrace.TraceEvent(TraceEventType.Warning, 0, "Assuming Mazak Smooth version.  If this is incorrect it can be changed in the settings.");
+        Log.Information("Assuming Mazak Smooth version.  If this is incorrect it can be changed in the settings.");
         return DatabaseAccess.MazakDbType.MazakSmooth;
       }
     }

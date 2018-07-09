@@ -41,6 +41,8 @@ namespace MazakMachineInterface
 {
   public class RoutingInfo : IJobControl, IOldJobDecrement
   {
+    private static Serilog.ILogger Log = Serilog.Log.ForContext<RoutingInfo>();
+
     private TransactionDatabaseAccess database;
     private IReadDataAccess readDatabase;
     private HoldPattern hold;
@@ -57,8 +59,6 @@ namespace MazakMachineInterface
 
     public const int JobLookbackHours = 2 * 24;
 
-    private readonly System.Diagnostics.TraceSource trace;
-
     public event NewCurrentStatus OnNewCurrentStatus;
     public void RaiseNewCurrentStatus(CurrentStatus s) => OnNewCurrentStatus?.Invoke(s);
 
@@ -73,8 +73,7 @@ namespace MazakMachineInterface
       bool check,
       bool useStarting,
       bool decrPriority,
-      BlackMaple.MachineFramework.FMSSettings settings,
-      System.Diagnostics.TraceSource t)
+      BlackMaple.MachineFramework.FMSSettings settings)
     {
       database = d;
       readDatabase = readDb;
@@ -87,7 +86,6 @@ namespace MazakMachineInterface
       CheckPalletsUsedOnce = check;
       UseStartingOffsetForDueDate = useStarting;
       DecrementPriorityOnDownload = decrPriority;
-      trace = t;
 
       _copySchedulesTimer = new System.Timers.Timer(TimeSpan.FromMinutes(4.5).TotalMilliseconds);
       _copySchedulesTimer.Elapsed += (sender, args) => RecopyJobsToSystem();
@@ -100,7 +98,7 @@ namespace MazakMachineInterface
     }
 
     #region Reading
-    private static void CalculateMaxProcAndPath(ReadOnlyDataSet mazakSet, TraceSource trace,
+    private static void CalculateMaxProcAndPath(ReadOnlyDataSet mazakSet,
                                                out Dictionary<string, int> uniqueToMaxPath,
                                                out Dictionary<string, int> uniqueToMaxProcess)
     {
@@ -128,9 +126,9 @@ namespace MazakMachineInterface
 
           if (uniqueToMaxProcess.ContainsKey(jobUnique))
           {
-            if (trace != null && numProc != uniqueToMaxProcess[jobUnique])
+            if (numProc != uniqueToMaxProcess[jobUnique])
             {
-              trace.TraceEvent(TraceEventType.Warning, 0, "Paths for " + jobUnique + " have a different number of processes");
+              Log.Warning("Paths for {uniq} have a different number of processes", jobUnique);
             }
           }
           else
@@ -276,7 +274,7 @@ namespace MazakMachineInterface
       //Load process and path numbers
       Dictionary<string, int> uniqueToMaxPath;
       Dictionary<string, int> uniqueToMaxProcess;
-      CalculateMaxProcAndPath(mazakSet, trace, out uniqueToMaxPath, out uniqueToMaxProcess);
+      CalculateMaxProcAndPath(mazakSet, out uniqueToMaxPath, out uniqueToMaxProcess);
 
       var currentLoads = new List<LoadAction>(loadOper.CurrentLoadActions());
 
@@ -853,7 +851,7 @@ namespace MazakMachineInterface
 
       try
       {
-        trace.TraceEvent(TraceEventType.Information, 0, "Check valid routing info");
+        Log.Debug("Check valid routing info");
 
         // queue support is still being developed and tested
         foreach (var j in jobs) {
@@ -886,8 +884,6 @@ namespace MazakMachineInterface
         }
       }
 
-      trace.Flush();
-
       return logMessages;
     }
 
@@ -919,8 +915,8 @@ namespace MazakMachineInterface
         if (oldJobs.Jobs.Count > 0)
         {
           //there are jobs to copy
-          trace.TraceEvent(TraceEventType.Warning, 0, "Resuming copy of job schedules into mazak: "
-              + String.Join(",", oldJobs.Jobs.Select(j => j.UniqueStr).ToArray()));
+          Log.Information("Resuming copy of job schedules into mazak {uniqs}",
+              oldJobs.Jobs.Select(j => j.UniqueStr).ToList());
 
           AddSchedules(oldJobs.Jobs, logMessages);
         }
@@ -968,8 +964,8 @@ namespace MazakMachineInterface
           if (jobs.Jobs.Count == 0) return;
 
           //there are jobs to copy
-          trace.TraceEvent(TraceEventType.Warning, 0, "Resuming copy of job schedules into mazak: "
-              + String.Join(",", jobs.Jobs.Select(j => j.UniqueStr).ToArray()));
+          Log.Information("Resuming copy of job schedules into mazak {uniqs}",
+              jobs.Jobs.Select(j => j.UniqueStr).ToList());
 
           database.ClearTransactionDatabase();
 
@@ -977,9 +973,7 @@ namespace MazakMachineInterface
 
           AddSchedules(jobs.Jobs, logMessages);
           if (logMessages.Count > 0) {
-            trace.TraceEvent(TraceEventType.Error, 0,
-                "Error copying job schedules to mazak " +
-                String.Join(Environment.NewLine, logMessages.ToArray()));
+            Log.Error("Error copying job schedules to mazak {msgs}", logMessages);
           }
 
           hold.SignalNewSchedules();
@@ -994,8 +988,7 @@ namespace MazakMachineInterface
           database.MazakTransactionLock.ReleaseMutex();
         }
       } catch (Exception ex) {
-        trace.TraceEvent(TraceEventType.Error, 0,
-            "Error recopying job schedules to mazak " + ex.ToString());
+        Log.Error(ex, "Error recopying job schedules to mazak");
       }
     }
 
@@ -1078,8 +1071,8 @@ namespace MazakMachineInterface
         }
       }
 
-      trace.TraceEvent(TraceEventType.Information, 0, "Creating new schedule with UID = " + UID.ToString());
-      trace.TraceEvent(TraceEventType.Information, 0, "Saved Parts: " + DatabaseAccess.Join(savedParts, ", "));
+      Log.Debug("Creating new schedule with UID {uid}", UID);
+      Log.Debug("Saved Parts: {parts}", savedParts);
 
       var traceMessages = new List<string>();
 
@@ -1088,15 +1081,13 @@ namespace MazakMachineInterface
                                                    !string.IsNullOrEmpty(newGlobal), newGlobal,
                                                    CheckPalletsUsedOnce, database.MazakType);
 
-      trace.TraceEvent(TraceEventType.Information, 0, "Finished mapping with messages: " +
-        DatabaseAccess.Join(traceMessages, Environment.NewLine));
+      Log.Debug("Finished mapping with messages: {msgs}", traceMessages);
 
       //delete everything
       palletPartMap.DeletePartPallets(transSet);
       database.SaveTransaction(transSet, logMessages, "Delete Parts Pallets");
 
-      trace.TraceEvent(TraceEventType.Information, 0, "Completed deletion of parts and pallets with messages: " +
-        DatabaseAccess.Join(logMessages, Environment.NewLine));
+      Log.Debug("Completed deletion of parts and pallets with messages: {msgs}", logMessages);
 
       //have to delete fixtures after schedule, parts, and pallets are already deleted
       //also, add new fixtures
@@ -1105,28 +1096,22 @@ namespace MazakMachineInterface
       palletPartMap.AddFixtures(transSet);
       database.SaveTransaction(transSet, logMessages, "Fixtures");
 
-      trace.TraceEvent(TraceEventType.Information, 0, "Deleted fixtures with messages: " +
-        DatabaseAccess.Join(logMessages, Environment.NewLine));
+      Log.Debug("Deleted fixtures with messages: {msgs}", logMessages);
 
       //now save the pallets and parts
       transSet = new TransactionDataSet();
       palletPartMap.CreateRows(transSet);
       database.SaveTransaction(transSet, logMessages, "Add Parts");
 
-      trace.TraceEvent(TraceEventType.Information, 0, "Added parts and pallets with messages: " +
-        DatabaseAccess.Join(logMessages, Environment.NewLine));
-
+      Log.Debug("Added parts and pallets with messages: {msgs}", logMessages);
 
       if (logMessages.Count > 0)
       {
-        trace.TraceEvent(TraceEventType.Warning, 0, "Aborting schedule creation during download because" +
-          " mazak returned an error while creating parts and pallets");
-        trace.Flush();
+        Log.Error("Aborting schedule creation during download because" +
+          " mazak returned an error while creating parts and pallets. {msgs}", logMessages);
 
         throw BuildTransactionException("Error creating parts and pallets", logMessages);
       }
-
-      trace.Flush();
 
       return palletPartMap;
     }
@@ -1191,8 +1176,7 @@ namespace MazakMachineInterface
 
         database.SaveTransaction(transSet, logMessages, "Add Schedules");
 
-        trace.TraceEvent(TraceEventType.Information, 0, "Completed adding schedules with messages " +
-            DatabaseAccess.Join(logMessages, Environment.NewLine));
+        Log.Debug("Completed adding schedules with messages: {msgs}", logMessages);
 
         foreach (var j in jobs)
         {

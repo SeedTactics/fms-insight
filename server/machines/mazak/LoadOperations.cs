@@ -69,14 +69,15 @@ namespace MazakMachineInterface
 
   public class LoadOperations
   {
+    private static Serilog.ILogger Log = Serilog.Log.ForContext<LoadOperations>();
+
     public delegate void LoadActionsDel(int lds, IEnumerable<LoadAction> actions);
     public event LoadActionsDel LoadActions;
     private string mazakPath;
     private SmoothDB _smoothDB;
 
-    public LoadOperations(TraceSource t, BlackMaple.MachineFramework.IConfig cfg, SmoothDB smoothDB)
+    public LoadOperations(BlackMaple.MachineFramework.IConfig cfg, SmoothDB smoothDB)
     {
-      trace = t;
       mazakPath = cfg.GetValue<string>("Mazak", "Load CSV Path");
       _smoothDB = smoothDB;
       if (string.IsNullOrEmpty(mazakPath))
@@ -94,9 +95,8 @@ namespace MazakMachineInterface
 
         if (!Directory.Exists(mazakPath))
         {
-          trace.TraceEvent(TraceEventType.Error, 0,
-                           "Unable to determine the path to the mazak load CSV files.  Please add/update a setting" +
-                           " called 'Load CSV Path' in config file");
+          Log.Error("Unable to determine the path to the mazak load CSV files.  Please add/update a setting" +
+                    " called 'Load CSV Path' in config file");
           return;
         }
       }
@@ -121,7 +121,6 @@ namespace MazakMachineInterface
     private FileSystemWatcher _watcher;
     private object _lock = new object();
     private IDictionary<int, DateTime> lastWriteTime = new Dictionary<int, DateTime>();
-    private TraceSource trace;
 
 
     private void watcher_Changed(object sender, FileSystemEventArgs e)
@@ -151,16 +150,14 @@ namespace MazakMachineInterface
 
             if (lastWriteTime.ContainsKey(lds) && lastWriteTime[lds] == last)
             {
-              trace.TraceEvent(TraceEventType.Information, 0,
-                               "Skipping load " + lds.ToString() +
+              Log.Debug( "Skipping load " + lds.ToString() +
                                " file " + Path.GetFileName(file) + " because the file" +
                                " has not been modified.");
             }
             else
             {
 
-              trace.TraceEvent(TraceEventType.Information, 0,
-                               "Starting to process load station " + lds.ToString() +
+              Log.Debug( "Starting to process load station " + lds.ToString() +
                                " file " + Path.GetFileName(file));
 
               a = ReadFile(lds, file);
@@ -173,7 +170,7 @@ namespace MazakMachineInterface
         if (a == null || a.Count == 0)
           return;
 
-        trace.TraceEvent(TraceEventType.Information, 0, a.ToString());
+        Log.Debug(a.ToString());
 
         if (LoadActions != null && a != null)
           LoadActions(lds, a);
@@ -181,8 +178,7 @@ namespace MazakMachineInterface
       }
       catch (Exception ex)
       {
-        trace.TraceEvent(TraceEventType.Error, 0,
-                         "Unhandled error when reading mazak instructions" + Environment.NewLine + ex.ToString());
+        Log.Error(ex, "Unhandled error when reading mazak instructions");
       }
     }
 
