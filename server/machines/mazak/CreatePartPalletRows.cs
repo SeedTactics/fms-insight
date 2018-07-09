@@ -77,11 +77,16 @@ namespace MazakMachineInterface
     {
       get
       {
-        if (Job.ManuallyCreatedJob)
-          return Job.UniqueStr + "-Path" + Proc1Path.ToString() + "-1";
-        else
-          return Job.UniqueStr + "-Path" + Proc1Path.ToString() + "-0";
+        return CreateComment(Job.UniqueStr, Proc1Path, Job.ManuallyCreatedJob);
       }
+    }
+
+    public static string CreateComment(string unique, int proc1Path, bool manual)
+    {
+        if (manual)
+          return unique + "-Path" + proc1Path.ToString() + "-1";
+        else
+          return unique + "-Path" + proc1Path.ToString() + "-0";
     }
 
     public static bool IsSailPart(string partName)

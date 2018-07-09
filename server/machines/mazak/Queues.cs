@@ -54,7 +54,10 @@ namespace MazakMachineInterface
     private IReadDataAccess _readonlyDB;
     private TransactionDatabaseAccess _transDB;
 
-    public MazakQueues(JobLogDB log, JobDB jDB, LoadOperations load, IReadDataAccess rDB, TransactionDatabaseAccess db)
+    public MazakQueues(
+      JobLogDB log, JobDB jDB,
+      LoadOperations load, IReadDataAccess rDB, TransactionDatabaseAccess db,
+      bool startThread = true)
     {
       _readonlyDB = rDB;
       _transDB = db;
@@ -64,9 +67,10 @@ namespace MazakMachineInterface
       _shutdown = new AutoResetEvent(false);
       _recheckMaterial = new AutoResetEvent(false);
 
-      _thread = new Thread(new ThreadStart(ThreadFunc));
-      // disable queue thread for now
-      //_thread.Start();
+      if (startThread) {
+        _thread = new Thread(new ThreadStart(ThreadFunc));
+        _thread.Start();
+      }
     }
 
     public void SignalRecheckMaterial()
@@ -76,10 +80,10 @@ namespace MazakMachineInterface
 
     public void Shutdown()
     {
-      //_shutdown.Set();
+      _shutdown.Set();
 
-      //if (!_thread.Join(TimeSpan.FromSeconds(15)))
-      //  _thread.Abort();
+      if (!_thread.Join(TimeSpan.FromSeconds(15)))
+        _thread.Abort();
     }
 
     private void ThreadFunc()
@@ -105,7 +109,23 @@ namespace MazakMachineInterface
               log.Debug("Unable to obtain mazak db lock, trying again in 20 seconds.");
               sleepTime = TimeSpan.FromSeconds(20);
             } else {
-              sleepTime = CheckForNewMaterial() ?? sleepTime;
+
+              var read = _readonlyDB.LoadReadOnly();
+              var loadOpers = _loadOper.CurrentLoadActions();
+              var transSet = CalculateScheduleChanges(read, loadOpers, out bool foundAtLoad);
+
+              if (transSet.Schedule_t.Count > 0) {
+                _transDB.ClearTransactionDatabase();
+                var logs = new List<string>();
+                _transDB.SaveTransaction(transSet, logs, "Setting material from queues");
+                foreach (var msg in logs) {
+                  log.Warning(msg);
+                }
+              }
+
+              if (foundAtLoad) {
+                sleepTime = TimeSpan.FromMinutes(1);  // check again in one minute
+              }
             }
           } catch (Exception ex) {
             log.Error(ex, "Error checking for new material");
@@ -129,6 +149,23 @@ namespace MazakMachineInterface
         throw;
       }
     }
+
+    // internal for testing
+    internal TransactionDataSet CalculateScheduleChanges(ReadOnlyDataSet dset, IEnumerable<LoadAction> loadOpers, out bool foundAtLoad)
+    {
+      log.Debug("Starting check for new queued material to add to mazak");
+      var transSet = new TransactionDataSet();
+
+      var schs = LoadSchedules(dset, loadOpers, out foundAtLoad);
+      if (!schs.Any()) return null;
+
+      AttemptToAllocateCastings(schs);
+      CalculateTargetMatQty(dset, schs);
+      UpdateMazakMaterialCounts(transSet, schs);
+
+      return transSet;
+    }
+
 
     private class ScheduleWithQueuesProcess
     {
@@ -189,7 +226,7 @@ namespace MazakMachineInterface
         for (int proc = 1; proc <= job.NumProcesses; proc++) {
           ReadOnlyDataSet.ScheduleProcessRow schProcRow = null;
           foreach (var row in schRow.GetScheduleProcessRows()) {
-            if (schProcRow.ProcessNumber == proc) {
+            if (row.ProcessNumber == proc) {
               schProcRow = row;
               break;
             }
@@ -278,7 +315,11 @@ namespace MazakMachineInterface
               // TODO: deal with path groups
               if (matInQueue > curMazakSchMat) {
                 int remain = matInQueue - curMazakSchMat;
-                foreach (var p in queueGroup.Where(p => p.SchProcRow.ProcessMaterialQuantity == 0)) {
+                var potentialPaths =
+                  queueGroup
+                    .Where(p => p.SchProcRow.ProcessMaterialQuantity == 0)
+                    .OrderBy(p => p.SchProcRow.ProcessExecuteQuantity);
+                foreach (var p in potentialPaths) {
                   int fixQty = PartFixQuantity(read, p.SchProcRow);
                   if (fixQty <= remain) {
                     remain -= fixQty;
@@ -300,6 +341,7 @@ namespace MazakMachineInterface
 
         var tschRow = transDB.Schedule_t.NewSchedule_tRow();
         TransactionDatabaseAccess.BuildScheduleEditRow(tschRow, sch.SchRow, true);
+        transDB.Schedule_t.AddSchedule_tRow(tschRow);
 
         foreach (var proc in sch.Procs.Values) {
           var tschProcRow = transDB.ScheduleProcess_t.NewScheduleProcess_tRow();
@@ -309,36 +351,6 @@ namespace MazakMachineInterface
           }
           transDB.ScheduleProcess_t.AddScheduleProcess_tRow(tschProcRow);
         }
-      }
-    }
-
-    private TimeSpan? CheckForNewMaterial()
-    {
-      log.Debug("Starting check for new queued material to add to mazak");
-      var read = _readonlyDB.LoadReadOnly();
-      var loadOpers = _loadOper.CurrentLoadActions();
-      var transSet = new TransactionDataSet();
-
-      var schs = LoadSchedules(read, loadOpers, out bool foundAtLoad);
-      if (!schs.Any()) return null;
-
-      AttemptToAllocateCastings(schs);
-      CalculateTargetMatQty(read, schs);
-      UpdateMazakMaterialCounts(transSet, schs);
-
-      if (transSet.Schedule_t.Count > 0) {
-        _transDB.ClearTransactionDatabase();
-        var logs = new List<string>();
-        _transDB.SaveTransaction(transSet, logs, "Setting material from queues");
-        foreach (var msg in logs) {
-          log.Warning(msg);
-        }
-      }
-
-      if (foundAtLoad) {
-        return TimeSpan.FromMinutes(1);  // check again in one minute
-      } else {
-        return null; // default sleep time
       }
     }
 
