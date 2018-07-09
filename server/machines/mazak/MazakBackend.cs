@@ -48,8 +48,7 @@ namespace MazakMachineInterface
     private HoldPattern hold;
     private MazakQueues queues;
     private LoadOperations loadOper;
-    private LogTranslationTimer logTrans;
-    private ILogData logDataLoader;
+    private ILogEvents logDataLoader;
 
     private JobLogDB jobLog;
     private JobDB jobDB;
@@ -78,9 +77,9 @@ namespace MazakMachineInterface
       get { return jobLog; }
     }
 
-    public LogTranslationTimer LogTranslation
+    public ILogEvents LogTranslation
     {
-      get { return logTrans; }
+      get { return logDataLoader; }
     }
 
     FMSInfo IFMSImplementation.Info => new FMSInfo()
@@ -204,11 +203,11 @@ namespace MazakMachineInterface
       database = new TransactionDatabaseAccess(dbConnStr, MazakType);
       var readOnlyDb = new ReadonlyDatabaseAccess(dbConnStr, MazakType);
       if (MazakType == DatabaseAccess.MazakDbType.MazakWeb || MazakType == DatabaseAccess.MazakDbType.MazakSmooth)
-        logDataLoader = new LogDataWeb(logPath);
+        logDataLoader = new LogDataWeb(logPath, jobLog, jobDB, readOnlyDb, settings);
       else
       {
 #if USE_OLEDB
-				logDataLoader = new LogDataVerE(readOnlyDb);
+				logDataLoader = new LogDataVerE(jobLog, jobDB, readOnlyDb, settings);
 #else
         throw new Exception("Mazak Web and VerE are not supported on .NET core");
 #endif
@@ -220,22 +219,21 @@ namespace MazakMachineInterface
                                 CheckPalletsUsedOnce, UseStartingOffsetForDueDate, DecrementPriorityOnDownload,
                                 settings,
                                 routingTrace);
-      logTrans = new LogTranslationTimer(jobLog, jobDB, readOnlyDb, settings, logDataLoader);
 
-      logTrans.MachiningCompleted += HandleMachiningCompleted;
-      logTrans.NewEntries += OnNewLogEntries;
+      logDataLoader.MachiningCompleted += HandleMachiningCompleted;
+      logDataLoader.NewEntries += OnNewLogEntries;
       loadOper.LoadActions += OnLoadActions;
     }
 
     public void Halt()
     {
-      logTrans.MachiningCompleted -= HandleMachiningCompleted;
-      logTrans.NewEntries -= OnNewLogEntries;
+      logDataLoader.MachiningCompleted -= HandleMachiningCompleted;
+      logDataLoader.NewEntries -= OnNewLogEntries;
       loadOper.LoadActions -= OnLoadActions;
       routing.Halt();
       hold.Shutdown();
       queues.Shutdown();
-      logTrans.Halt();
+      logDataLoader.Halt();
       loadOper.Halt();
       jobDB.Close();
       jobLog.Close();

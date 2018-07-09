@@ -44,6 +44,12 @@ namespace MazakMachineInterface
     ReadOnlyDataSet LoadReadOnly();
   }
 
+  public interface IFindPart
+  {
+    void FindPart(int pallet, string mazakPartName, int proc, out string unique, out int path, out int numProc);
+  }
+
+
   public class DatabaseAccess
   {
     //Global Settings
@@ -871,4 +877,61 @@ namespace MazakMachineInterface
     }
 
 	}
+
+  public class FindPartFromReadOnlySet : IFindPart
+  {
+    private static Serilog.ILogger Log = Serilog.Log.ForContext<FindPartFromReadOnlySet>();
+    private ReadOnlyDataSet dset;
+    public FindPartFromReadOnlySet(ReadOnlyDataSet d) { dset = d;}
+    public void FindPart(int pallet, string mazakPartName, int proc, out string unique, out int path, out int numProc)
+    {
+      unique = "";
+      numProc = proc;
+      path = 1;
+
+      //first search pallets for the given schedule id.  Since the part name usually includes the UID assigned for this
+      //download, even if old log entries are being processed the correct unique string will still be loaded.
+      int scheduleID = -1;
+      foreach (ReadOnlyDataSet.PalletSubStatusRow palRow in dset.PalletSubStatus.Rows)
+      {
+        if (palRow.PalletNumber == pallet && palRow.PartName == mazakPartName && palRow.PartProcessNumber == proc)
+        {
+          scheduleID = palRow.ScheduleID;
+          break;
+        }
+      }
+
+      if (scheduleID >= 0)
+      {
+        foreach (ReadOnlyDataSet.ScheduleRow schRow in dset.Schedule.Rows)
+        {
+          if (schRow.ScheduleID == scheduleID && !schRow.IsCommentNull())
+          {
+            bool manual;
+            MazakPart.ParseComment(schRow.Comment, out unique, out path, out manual);
+            numProc = schRow.GetScheduleProcessRows().Length;
+            if (numProc < proc) numProc = proc;
+            return;
+          }
+        }
+      }
+
+      Log.Debug("Unable to find schedule ID for {part}-{proc} on pallet {pallet}", mazakPartName, proc, pallet);
+
+      // search for the first schedule for this part
+      foreach (ReadOnlyDataSet.ScheduleRow schRow in dset.Schedule.Rows)
+      {
+        if (schRow.PartName == mazakPartName && !schRow.IsCommentNull())
+        {
+          bool manual;
+          MazakPart.ParseComment(schRow.Comment, out unique, out path, out manual);
+          numProc = schRow.GetScheduleProcessRows().Length;
+          if (numProc < proc) numProc = proc;
+          return;
+        }
+      }
+
+      Log.Warning("Unable to find any schedule for log event {part}-{proc} on pallet {pallet}", mazakPartName, proc, pallet);
+    }
+  }
 }

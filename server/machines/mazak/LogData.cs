@@ -32,6 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.IO;
 
 namespace MazakMachineInterface
 {
@@ -79,26 +81,95 @@ namespace MazakMachineInterface
     public string FromPosition;
   }
 
-  public interface ILogData
+  public delegate void MachiningCompletedDel(BlackMaple.MachineWatchInterface.LogEntry cycle, ReadOnlyDataSet dset);
+  public delegate void PalletMoveDel(int pallet, string fromStation, string toStation);
+  public delegate void NewEntriesDel(ReadOnlyDataSet dset);
+  public interface ILogEvents
   {
-    List<LogEntry> LoadLog(string lastForeignID);
-    void DeleteLog(string lastForeignID);
+    event MachiningCompletedDel MachiningCompleted;
+    event PalletMoveDel PalletMove;
+    event NewEntriesDel NewEntries;
+    void Halt();
   }
 
 #if USE_OLEDB
-	public class LogDataVerE : ILogData
+	public class LogDataVerE
 	{
-		private IReadDataAccess _db;
-        private const string DateTimeFormat = "yyyyMMddHHmmss";
+    private const string DateTimeFormat = "yyyyMMddHHmmss";
 
-		public LogDataVerE(IReadDataAccess db)
-		{
-			_db = db;
-		}
+    private BlackMaple.MachineFramework.JobDB _jobDB;
+    private BlackMaple.MachineFramework.JobLogDB _log;
+    private IReadDataAccess _readDB;
+    private BlackMaple.MachineFramework.FMSSettings FMSSettings { get; set; }
+    private static Serilog.ILogger Log = Serilog.Log.ForContext<LogDataVerE>();
+
+    private object _lock;
+    private System.Timers.Timer _timer;
+
+    public event MachiningCompletedDel MachiningCompleted;
+    public event PalletMoveDel PalletMove;
+    public event NewEntriesDel NewEntries;
+
+    public LogDataVerE(BlackMaple.MachineFramework.JobLogDB log,
+                       BlackMaple.MachineFramework.JobDB jobDB,
+                       IReadDataAccess readDB,
+                       BlackMaple.MachineFramework.FMSSettings settings)
+    {
+      _log = log;
+      _jobDB = jobDB;
+      _readDB = readDB;
+      FMSSettings = settings;
+      _lock = new object();
+      _timer = new System.Timers.Timer(TimeSpan.FromMinutes(1).TotalMilliseconds);
+      _timer.Elapsed += HandleElapsed;
+      _timer.Start();
+    }
+
+    public void Halt()
+    {
+      _timer.Stop();
+    }
+
+    private void HandleElapsed(object sender, System.Timers.ElapsedEventArgs e)
+    {
+      lock (_lock)
+      {
+        try
+        {
+          var dset = _readDB.LoadReadOnly();
+
+          var logs = LoadLog(_log.MaxForeignID());
+          var trans = new LogTranslation(_jobDB, _log, new FindPartFromReadOnlySet(dset), FMSSettings,
+            le => MachiningCompleted?.Invoke(le, dset),
+            le => PalletMove?.Invoke(le.Pallet, le.FromPosition, le.TargetPosition)
+          );
+          foreach (var ev in logs)
+          {
+            try
+            {
+              trans.HandleEvent(ev);
+            }
+            catch (Exception ex)
+            {
+              Log.Error(ex, "Error translating log event at time " + ev.TimeUTC.ToLocalTime().ToString());
+            }
+          }
+
+          if (logs.Count > 0) {
+            NewEntries?.Invoke(dset);
+          }
+
+        }
+        catch (Exception ex)
+        {
+          Log.Error(ex, "Unhandled error processing log");
+        }
+      }
+    }
 
 		public List<LogEntry> LoadLog (string lastForeignID)
 		{
-			return _db.WithReadDBConnection(conn =>
+			return _readDB.WithReadDBConnection(conn =>
 			{
                 var trans = conn.BeginTransaction();
                 try {
@@ -226,38 +297,135 @@ namespace MazakMachineInterface
 				}
 			}
 		}
-
-		public void DeleteLog(string lastForeignID)
-		{
-			//do nothing
-		}
 	}
 #endif
 
-  public class LogDataWeb : ILogData
+  public class LogDataWeb : ILogEvents
   {
-    private string _path;
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LogDataWeb>();
 
-    public LogDataWeb(string path)
+    private string _path;
+    private BlackMaple.MachineFramework.JobDB _jobDB;
+    private BlackMaple.MachineFramework.JobLogDB _log;
+    private IReadDataAccess _readDB;
+    private BlackMaple.MachineFramework.FMSSettings _settings { get; set; }
+    private AutoResetEvent _shutdown;
+    private AutoResetEvent _newLogFile;
+
+    private Thread _thread;
+    private FileSystemWatcher _watcher;
+
+    public LogDataWeb(string path,
+                      BlackMaple.MachineFramework.JobLogDB log,
+                      BlackMaple.MachineFramework.JobDB jobDB,
+                      IReadDataAccess readDB,
+                      BlackMaple.MachineFramework.FMSSettings settings)
     {
       _path = path;
+      _log = log;
+      _jobDB = jobDB;
+      _readDB = readDB;
+      _settings = settings;
+      _shutdown = new AutoResetEvent(false);
+      _newLogFile = new AutoResetEvent(false);
+      _thread = new Thread(new ThreadStart(ThreadFunc));
+      _thread.Start();
+      _watcher = new FileSystemWatcher(_path);
+      _watcher.Created += (sender, evt) => _newLogFile.Set();
+      _watcher.Changed += (sender, evt) => _newLogFile.Set();
+    }
+
+    public event MachiningCompletedDel MachiningCompleted;
+    public event PalletMoveDel PalletMove;
+    public event NewEntriesDel NewEntries;
+
+    public void ThreadFunc()
+    {
+      for(;;) {
+        try {
+
+          var sleepTime = TimeSpan.FromMinutes(1);
+          Log.Debug("Sleeping for {mins} minutes", sleepTime.TotalMinutes);
+          var ret = WaitHandle.WaitAny(new WaitHandle[] { _shutdown, _newLogFile }, sleepTime, false);
+          if (ret == 0) {
+            Log.Debug("Thread shutdown");
+            return;
+          }
+
+          Thread.Sleep(TimeSpan.FromSeconds(1));
+
+          var dset = _readDB.LoadReadOnly();
+          var logs = LoadLog(_log.MaxForeignID());
+          var trans = new LogTranslation(_jobDB, _log, new FindPartFromReadOnlySet(dset), _settings,
+            le => MachiningCompleted?.Invoke(le, dset),
+            le => PalletMove?.Invoke(le.Pallet, le.FromPosition, le.TargetPosition)
+          );
+          foreach (var ev in logs)
+          {
+            try
+            {
+              trans.HandleEvent(ev);
+            }
+            catch (Exception ex)
+            {
+              Log.Error(ex, "Error translating log event at time " + ev.TimeUTC.ToLocalTime().ToString());
+            }
+          }
+
+          DeleteLog(_log.MaxForeignID());
+
+          if (logs.Count > 0) {
+            NewEntries?.Invoke(dset);
+          }
+
+        } catch (Exception ex) {
+          Log.Error(ex, "Error during log data processing");
+        }
+      }
+    }
+
+    public void Halt()
+    {
+      _shutdown.Set();
+
+      if (!_thread.Join(TimeSpan.FromSeconds(15)))
+        _thread.Abort();
+    }
+
+    private FileStream WaitToOpenFile(string file)
+    {
+      int cnt = 0;
+      while (cnt < 20) {
+        try {
+          return File.Open(file, FileMode.Open, FileAccess.Read, FileShare.None);
+        } catch (UnauthorizedAccessException ex) {
+          // do nothing
+          Log.Debug(ex, "Error opening {file}", file);
+        } catch (IOException ex) {
+          // do nothing
+          Log.Debug(ex, "Error opening {file}", file);
+        }
+        Log.Debug("Could not open file {file}, sleeping for 10 seconds", file);
+        Thread.Sleep(TimeSpan.FromSeconds(10));
+      }
+      throw new Exception("Unable to open file " + file);
     }
 
     public List<LogEntry> LoadLog(string lastForeignID)
     {
-      var files = new List<string>(System.IO.Directory.GetFiles(_path, "*.csv"));
+      var files = new List<string>(Directory.GetFiles(_path, "*.csv"));
       files.Sort();
 
       var ret = new List<LogEntry>();
 
       foreach (var f in files)
       {
-        var filename = System.IO.Path.GetFileName(f);
+        var filename = Path.GetFileName(f);
         if (filename.CompareTo(lastForeignID) <= 0)
           continue;
 
-        using (var stream = new System.IO.StreamReader(f))
+        using (var fstream = WaitToOpenFile(f))
+        using (var stream = new StreamReader(fstream))
         {
           while (stream.Peek() >= 0)
           {
@@ -305,18 +473,18 @@ namespace MazakMachineInterface
 
     public void DeleteLog(string lastForeignID)
     {
-      var files = new List<string>(System.IO.Directory.GetFiles(_path, "*.csv"));
+      var files = new List<string>(Directory.GetFiles(_path, "*.csv"));
       files.Sort();
 
       foreach (var f in files)
       {
-        var filename = System.IO.Path.GetFileName(f);
+        var filename = Path.GetFileName(f);
         if (filename.CompareTo(lastForeignID) > 0)
           break;
 
         try
         {
-          System.IO.File.Delete(f);
+          File.Delete(f);
         }
         catch (Exception ex)
         {
