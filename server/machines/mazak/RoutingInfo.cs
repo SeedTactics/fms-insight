@@ -848,14 +848,10 @@ namespace MazakMachineInterface
 
         // queue support is still being developed and tested
         foreach (var j in jobs) {
-          for (int proc = 1; proc <= j.NumProcesses; proc++) {
-            for (int path = 1; path <= j.GetNumPaths(proc); path++) {
-              if (!string.IsNullOrEmpty(j.GetInputQueue(proc, path))) {
-                logMessages.Add("Input queues are not yet supported (job " + j.UniqueStr + ")");
-              }
-              if (!string.IsNullOrEmpty(j.GetOutputQueue(proc, path))) {
-                logMessages.Add("Output queues are not yet supported (job " + j.UniqueStr + ")");
-              }
+          var proc = j.NumProcesses;
+          for (int path = 1; path <= j.GetNumPaths(proc); path++) {
+            if (!string.IsNullOrEmpty(j.GetOutputQueue(proc, path))) {
+              logMessages.Add("Output queues are not yet supported on final process (job " + j.UniqueStr + ")");
             }
           }
         }
