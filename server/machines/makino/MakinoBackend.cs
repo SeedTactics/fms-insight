@@ -132,11 +132,6 @@ namespace Makino
             if (_makinoDB != null) _makinoDB.Close();
 		}
 
-		public System.Collections.Generic.IEnumerable<System.Diagnostics.TraceSource> TraceSources()
-		{
-			return new System.Diagnostics.TraceSource[] {};
-		}
-
         private void OnLogsProcessed()
         {
             _jobs.RaiseNewCurrentStatus(_jobs.GetCurrentStatus());

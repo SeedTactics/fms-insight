@@ -82,11 +82,6 @@ namespace Cincron
             }
         }
 
-        public IEnumerable<System.Diagnostics.TraceSource> TraceSources()
-        {
-            return new System.Diagnostics.TraceSource[] { };
-        }
-
         public void Halt()
         {
             if (_msgWatcher != null) _msgWatcher.Halt();

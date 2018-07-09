@@ -137,11 +137,6 @@ namespace DebugMachineWatchApiServer
       LoadStatus(sampleDataPath, offset);
     }
 
-    public IEnumerable<System.Diagnostics.TraceSource> TraceSources()
-    {
-      return new System.Diagnostics.TraceSource[] { };
-    }
-
     public void Halt()
     {
       JobDB.Close();

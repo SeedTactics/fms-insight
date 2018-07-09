@@ -239,11 +239,6 @@ namespace MazakMachineInterface
       jobLog.Close();
     }
 
-    public IEnumerable<System.Diagnostics.TraceSource> TraceSources()
-    {
-      return new TraceSource[] { };
-    }
-
     public IInspectionControl InspectionControl()
     {
       return jobLog;

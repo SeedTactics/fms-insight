@@ -47,10 +47,6 @@ namespace BlackMaple.MachineFramework
         void Init(string dataDirectory, IConfig config, FMSSettings settings);
         void Halt();
 
-        //Trace listeners are registered before Init is called
-        //so that errors during Init can be recorded.
-        IEnumerable<System.Diagnostics.TraceSource> TraceSources();
-
         ILogDatabase LogDatabase();
         IJobDatabase JobDatabase();
         IJobControl JobControl();
@@ -67,8 +63,6 @@ namespace BlackMaple.MachineFramework
         //Once the halt function is called, the class is garbage collected.
         //A new class will be created when the service starts again
         void Halt();
-
-        System.Diagnostics.TraceSource TraceSource { get; }
     }
 
     [DataContract]

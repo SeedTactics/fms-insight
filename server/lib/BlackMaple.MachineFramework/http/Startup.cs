@@ -82,17 +82,6 @@ namespace BlackMaple.MachineFramework
                     Program.FMSSettings
                 );
 
-            System.Diagnostics.Trace.AutoFlush = true;
-            var traceListener = new SerilogTraceListener();
-            foreach (var s in _fmsImpl.Backend.TraceSources())
-            {
-                s.Listeners.Add(traceListener);
-            }
-            foreach (var w in _fmsImpl.Workers)
-            {
-                w.TraceSource.Listeners.Add(traceListener);
-            }
-
             var settings = new BlackMaple.MachineFramework.SettingStore(Program.ServerSettings.DataDirectory);
 
             #if SERVE_REMOTING
