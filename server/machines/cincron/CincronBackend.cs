@@ -39,8 +39,7 @@ namespace Cincron
 {
     public class CincronBackend : IFMSBackend, IFMSImplementation
     {
-        private System.Diagnostics.TraceSource trace =
-           new System.Diagnostics.TraceSource("Cincron", System.Diagnostics.SourceLevels.All);
+        private static Serilog.ILogger Log = Serilog.Log.ForContext<CincronBackend>();
 
         private JobLogDB _log;
         private MessageWatcher _msgWatcher;
@@ -66,31 +65,26 @@ namespace Cincron
                 msgFile = cfg.GetValue<string>("Cincron", "Message File");
 #endif
 
-                trace.TraceEvent(System.Diagnostics.TraceEventType.Warning, 0,
-                    "Starting cincron backend" + Environment.NewLine +
-                    "    message file: " + msgFile);
+                Log.Information("Starting cincron backend with message file {file}", msgFile);
 
                 if (!System.IO.File.Exists(msgFile)) {
-                    trace.TraceEvent(System.Diagnostics.TraceEventType.Error, 0,
-                        "Message file " + msgFile + " does not exist");
+                    Log.Error("Message file {file} does not exist", msgFile);
                 }
 
                 _log = new JobLogDB();
 
                 _log.Open(System.IO.Path.Combine(dataDirectory, "log.db"));
-                _msgWatcher = new MessageWatcher(msgFile, _log, trace);
+                _msgWatcher = new MessageWatcher(msgFile, _log);
                 _msgWatcher.Start();
 
             } catch (Exception ex) {
-                trace.TraceEvent(System.Diagnostics.TraceEventType.Error, 0,
-                    "Unhandled exception when initializing cincron backend" + Environment.NewLine +
-                    ex.ToString());
+                Log.Error(ex, "Unhandled exception when initializing cincron backend");
             }
         }
 
         public IEnumerable<System.Diagnostics.TraceSource> TraceSources()
         {
-            return new System.Diagnostics.TraceSource[] { trace };
+            return new System.Diagnostics.TraceSource[] { };
         }
 
         public void Halt()

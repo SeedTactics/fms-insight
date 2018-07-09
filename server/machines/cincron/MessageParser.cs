@@ -392,8 +392,10 @@ namespace Cincron
 
     public class MessageParser
     {
+        private static Serilog.ILogger Log = Serilog.Log.ForContext<MessageParser>();
+
         public static IList<CincronMessage>
-            ExtractMessages(string file, int prevMessageOffset, string prevMessage, System.Diagnostics.TraceSource trace)
+            ExtractMessages(string file, int prevMessageOffset, string prevMessage)
         {
             if (!File.Exists(file))
                 return new CincronMessage[] { };
@@ -421,12 +423,10 @@ namespace Cincron
                     if (prevMessageBuff.SequenceEqual(fileBuff)) {
                         f.Seek(prevMessageOffset, SeekOrigin.Begin);
                         prevMessageMatches = true;
-                        trace.TraceEvent(System.Diagnostics.TraceEventType.Information, 0,
-                            "Previous message matches");
+                        Log.Debug("Previous message matches");
                     } else {
                         //file rotated, start from the beginning
-                        trace.TraceEvent(System.Diagnostics.TraceEventType.Information, 0,
-                            "Previous message did not match, starting read from beginning");
+                        Log.Debug("Previous message did not match, starting read from beginning");
                         f.Seek(0, SeekOrigin.Begin);
                         prevMessageMatches = false;
                     }

@@ -41,16 +41,15 @@ namespace Cincron
 {
     public class MessageWatcher
     {
+        private static Serilog.ILogger Log = Serilog.Log.ForContext<MessageWatcher>();
         private JobLogDB _log;
         private string _msgFile;
         private object _lock;
         private System.Timers.Timer _timer;
-        private System.Diagnostics.TraceSource _trace;
 
-        public MessageWatcher(string msgFile, JobLogDB log, System.Diagnostics.TraceSource trace)
+        public MessageWatcher(string msgFile, JobLogDB log)
         {
             _msgFile = msgFile;
-            _trace = trace;
             _log = log;
             _lock = new object();
             _timer = new System.Timers.Timer(TimeSpan.FromMinutes(1).TotalMilliseconds);
@@ -81,8 +80,7 @@ namespace Cincron
         {
             lock (_lock) {
                 try {
-                    _trace.TraceEvent(System.Diagnostics.TraceEventType.Information, 0,
-                        "Starting to read " + _msgFile);
+                    Log.Debug("Starting to read {file}", _msgFile);
 
                     var msgs = LoadMessages();
                     var state = new MessageState();
@@ -96,8 +94,7 @@ namespace Cincron
                                 repeatCount = ((CincronMessage.PreviousMessageRepeated)nextMsg).NumRepeated + 1;
                             }
                         }
-                        _trace.TraceEvent(System.Diagnostics.TraceEventType.Information, 0,
-                           "Processing new message " + msg.ToString() + " repeated " + repeatCount.ToString());
+                        Log.Debug("Processing message {@msg} repeated {cnt}", msg, repeatCount);
 
                         HandleMessage(state, msg, repeatCount);
 
@@ -108,8 +105,7 @@ namespace Cincron
                     //for now, the next time this runs the events will be re-processed
 
                 } catch (Exception ex) {
-                    _trace.TraceEvent(System.Diagnostics.TraceEventType.Error, 0,
-                        "Unhandled error in message file watcher " + ex.ToString());
+                    Log.Error(ex, "Unhandled error in message file watcher");
                 }
             }
         }
@@ -123,16 +119,14 @@ namespace Cincron
                     var maxParts = max.Split('-'); //year-month-day-hour-min-sec-fileoffset
                     int offset;
                     if (maxParts.Length >= 7 && int.TryParse(maxParts[6], out offset)) {
-                        _trace.TraceEvent(System.Diagnostics.TraceEventType.Information, 0,
-                            "Starting reading at offset " + offset.ToString() + " with message " + expected.ToString());
-                        return MessageParser.ExtractMessages(_msgFile, offset, expected, _trace);
+                        Log.Debug("Starting read at offset {offset} with message {msg}", offset, expected);
+                        return MessageParser.ExtractMessages(_msgFile, offset, expected);
                     }
                 }
             }
 
-            _trace.TraceEvent(System.Diagnostics.TraceEventType.Information, 0,
-                "Starting reading message file from beginning");
-            return MessageParser.ExtractMessages(_msgFile, 0, "", _trace);
+            Log.Debug("Starting reading message file from beginning");
+            return MessageParser.ExtractMessages(_msgFile, 0, "");
         }
         #endregion
 
@@ -334,9 +328,7 @@ namespace Cincron
         private IEnumerable<LogMaterial> CreateLoadMaterial(CincronMessage.PartLoadStart load)
         {
             var matId = _log.AllocateMaterialID(load.WorkId, "", 1);
-            _trace.TraceEvent(System.Diagnostics.TraceEventType.Information, 0,
-                 "Creating new material id for load event: " + matId.ToString() +
-                 " work id " + load.WorkId);
+            Log.Debug("Creating new material id {matid} for load event with work id {workId}", matId, load.WorkId);
             return new LogMaterial[] {
                 new LogMaterial(
                     matID: matId,
@@ -356,8 +348,7 @@ namespace Cincron
                 }
             }
 
-            _trace.TraceEvent(System.Diagnostics.TraceEventType.Warning, 0,
-                "Unable to find existing material for pallet " + pal);
+            Log.Warning("Unable to find existing material for pallet {pal}", pal);
             var matId = _log.AllocateMaterialID("", "", 1);
             return new LogMaterial[] {
                 new LogMaterial(
@@ -385,8 +376,8 @@ namespace Cincron
                 part: partName,
                 numProc: 1));
 
-            _trace.TraceEvent(System.Diagnostics.TraceEventType.Information, 0,
-               "During unload, found " + state.PartCompletedMessages.Count.ToString() + " parts that were unloaded/completed");
+            Log.Debug("During unload, found {cnt} parts that were unloaded/completed",
+                state.PartCompletedMessages.Count);
 
             //allocate new materials, one per completed part in addition to the existing one
             //Seems that multiple part completed messages are not multiple completed parts?
