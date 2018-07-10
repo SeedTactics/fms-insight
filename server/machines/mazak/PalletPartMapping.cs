@@ -52,7 +52,7 @@ namespace MazakMachineInterface
 
     public clsPalletPartMapping(IEnumerable<JobPlan> routes,
                                 ReadOnlyDataSet readOnlySet, int uidVal, ISet<string> saved,
-                                IList<string> log, IList<string> trace,
+                                IList<string> log,
                                 bool updateGlobal, string newGlobal,
                                 bool checkPalletsUsedOnce,
                                 DatabaseAccess.MazakDbType mazakTy)
@@ -90,8 +90,7 @@ namespace MazakMachineInterface
         savedParts,
         mazakTy,
         checkPalletsUsedOnce,
-        log,
-        trace);
+        log);
     }
 
     public int GetNumberProcesses(JobPlan part)

@@ -384,6 +384,8 @@ namespace MazakMachineInterface
 
   public static class ConvertJobsToMazakParts
   {
+    private static Serilog.ILogger Log = Serilog.Log.ForContext<MazakJobs>();
+
     //Allows plugins to customize the process creation
     public delegate MazakProcess ProcessFromJobDelegate(MazakPart parent, int process, int pth);
     public static ProcessFromJobDelegate ProcessFromJob
@@ -396,8 +398,7 @@ namespace MazakMachineInterface
       ISet<string> savedParts,
       DatabaseAccess.MazakDbType MazakType,
       bool checkPalletsUsedOnce,
-      IList<string> log,
-      IList<string> trace)
+      IList<string> log)
     {
       var allParts = BuildMazakParts(jobs, downloadUID, currentSet, MazakType, log);
       var groups = CalculateGraphs(allParts, log);
@@ -405,7 +406,7 @@ namespace MazakMachineInterface
       if (checkPalletsUsedOnce)
         CheckPalletsUsedOnce(groups);
 
-      var usedFixtures = CalculateFixtures(groups, downloadUID, currentSet, savedParts, log, trace);
+      var usedFixtures = CalculateFixtures(groups, downloadUID, currentSet, savedParts, log);
 
       return new MazakJobs() {
         AllParts = allParts,
@@ -663,7 +664,7 @@ namespace MazakMachineInterface
     //This builds up the current part->fixture and pallet->fixture mapping
     private static ISet<string> CalculateFixtures(
       IEnumerable<ProcessPalletGroup> groups, int downloadUID, ReadOnlyDataSet currentSet, ISet<string> savedParts,
-      IList<string> log, IList<string> trace)
+      IList<string> log)
     {
       //We view each part pallet group as a bipartite graph between Parts and Pallets.
       //A fixture can represent any complete bipartite subgraph, so we need
@@ -699,7 +700,7 @@ namespace MazakMachineInterface
           }
         }
       }
-      trace.Add("Available Fixtures: " + DatabaseAccess.Join(availableFixtures.Keys, ", "));
+      Log.Debug("Available Fixtures: {fixs}", availableFixtures.Keys);
 
       //For each graph, create (or reuse) a fixture and add parts and pallets using this fixture.
       int graphNum = 0;
@@ -707,16 +708,10 @@ namespace MazakMachineInterface
       {
         graph.Pallets.Sort();
 
-        trace.Add("PartPalletGroup");
-
-        trace.Add("    Pallets: " + DatabaseAccess.Join(graph.Pallets, ", "));
-        var t = "    Parts: ";
-        foreach (var p in graph.Processes)
-          t += ", " + p.ToString();
-        trace.Add(t);
+        Log.Debug("Part Pallet group {@group}", graph);
 
         //check if we can reuse an existing fixture
-        CheckExistingFixture(graph, availableFixtures, currentSet, trace);
+        CheckExistingFixture(graph, availableFixtures, currentSet);
 
         if (graph.Fixture == null || graph.Fixture == "")
         {
@@ -725,11 +720,11 @@ namespace MazakMachineInterface
           //only add the first pallet to the name
           fixture += ":" + graph.Pallets[0].ToString();
           graph.Fixture = fixture;
-          trace.Add("    Creating new fixture: " + fixture);
+          Log.Debug("Creating new fixture {fix}", fixture);
         }
         else
         {
-          trace.Add("    Using existing fixture: " + graph.Fixture);
+          Log.Debug("Using existing fixture {fix}", graph.Fixture);
         }
 
         //Mark fixtures as used.
@@ -747,8 +742,7 @@ namespace MazakMachineInterface
     private static void CheckExistingFixture(
       ProcessPalletGroup graph,
       Dictionary<string, bool> availableFixtures,
-      ReadOnlyDataSet currentSet,
-      IList<string> trace)
+      ReadOnlyDataSet currentSet)
     {
       //we need a fixture that exactly matches this pallet list and has all the processes.
       //Also, the fixture must be contained in a saved part.
@@ -786,7 +780,7 @@ namespace MazakMachineInterface
             }
             else
             {
-              trace.Add("Skipping fixture " + fixture + " because the fixture has pallet " +
+              Log.Debug("Skipping fixture " + fixture + " because the fixture has pallet " +
                           palRow.PalletNumber.ToString() + " proc " + palRow.Fixture.Substring(idx + 1));
               goto nextFixture;
             }
@@ -800,7 +794,7 @@ namespace MazakMachineInterface
           if (!positionsFound[key])
           {
             useFixture = false;
-            trace.Add("Skipping fixture " + fixture + " because the fixture is missing " + key);
+            Log.Debug("Skipping fixture " + fixture + " because the fixture is missing " + key);
             break;
           }
         }

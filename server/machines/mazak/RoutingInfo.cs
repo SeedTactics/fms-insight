@@ -833,7 +833,6 @@ namespace MazakMachineInterface
     public List<string> CheckValidRoutes(IEnumerable<JobPlan> jobs)
     {
       var logMessages = new List<string>();
-      var traceMessages = new List<string>();
       ReadOnlyDataSet currentSet = null;
 
       if (!database.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
@@ -867,7 +866,7 @@ namespace MazakMachineInterface
         //need to ignore the warning that palletPartMap is not used.
 #pragma warning disable 168, 219
         var palletPartMap = new clsPalletPartMapping(jobs, currentSet, 1,
-                                                     new HashSet<string>(), logMessages, traceMessages, false, "",
+                                                     new HashSet<string>(), logMessages, false, "",
                                                      CheckPalletsUsedOnce, database.MazakType);
 #pragma warning restore 168, 219
 
@@ -1074,14 +1073,10 @@ namespace MazakMachineInterface
       Log.Debug("Creating new schedule with UID {uid}", UID);
       Log.Debug("Saved Parts: {parts}", savedParts);
 
-      var traceMessages = new List<string>();
-
       //build the pallet->part mapping
-      var palletPartMap = new clsPalletPartMapping(newJ.Jobs, currentSet, UID, savedParts, logMessages, traceMessages,
+      var palletPartMap = new clsPalletPartMapping(newJ.Jobs, currentSet, UID, savedParts, logMessages,
                                                    !string.IsNullOrEmpty(newGlobal), newGlobal,
                                                    CheckPalletsUsedOnce, database.MazakType);
-
-      Log.Debug("Finished mapping with messages: {msgs}", traceMessages);
 
       //delete everything
       palletPartMap.DeletePartPallets(transSet);

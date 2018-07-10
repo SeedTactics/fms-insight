@@ -88,7 +88,6 @@ namespace MachineWatchTest
 			job4.AddProcessOnPallet(1, 1, "21");
 
 			var log = new List<string>();
-			var trace = new List<string>();
 
 			var dset = CreateReadSet();
 
@@ -98,7 +97,7 @@ namespace MachineWatchTest
 			CreatePart(dset, "Job4", "Part4", 1, "Test");
 
 			var pMap = new clsPalletPartMapping(new JobPlan[] {job1, job2, job3, job4}, dset, 3,
-			                                    new HashSet<string>(), log, trace, true, "NewGlobal",
+			                                    new HashSet<string>(), log, true, "NewGlobal",
 			                                    false, DatabaseAccess.MazakDbType.MazakVersionE);
 
 			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
@@ -174,7 +173,6 @@ namespace MachineWatchTest
 			job4.AddProcessOnPallet(1, 1, "21");
 
 			var log = new List<string>();
-			var trace = new List<string>();
 
 			var dset = CreateReadSet();
 
@@ -224,7 +222,7 @@ namespace MachineWatchTest
 			CreatePallet(dset, 21, "Fixt:9:0:20", 2);
 
 			var pMap = new clsPalletPartMapping(new JobPlan[] {job1, job2, job3, job4}, dset, 3,
-			                                    savedParts, log, trace, true, "NewGlobal",
+			                                    savedParts, log, true, "NewGlobal",
 			                                    false,  DatabaseAccess.MazakDbType.MazakVersionE);
 
 			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
@@ -296,7 +294,6 @@ namespace MachineWatchTest
 			job4.AddProcessOnPallet(1, 1, "21");
 
 			var log = new List<string>();
-			var trace = new List<string>();
 
 			var dset = CreateReadSet();
 
@@ -306,7 +303,7 @@ namespace MachineWatchTest
 			CreatePart(dset, "Job4", "Part4", 1, "Test");
 
 			var pMap = new clsPalletPartMapping(new JobPlan[] {job1, job2, job3, job4}, dset, 3,
-			                                    new HashSet<string>(), log, trace, true, "NewGlobal",
+			                                    new HashSet<string>(), log, true, "NewGlobal",
 			                                    false,  DatabaseAccess.MazakDbType.MazakVersionE);
 
 			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
@@ -397,7 +394,6 @@ namespace MachineWatchTest
 			job2.AddProcessOnPallet(1, 2, "12");
 
 			var log = new List<string>();
-			var trace = new List<string>();
 
 			var dset = CreateReadSet();
 
@@ -405,7 +401,7 @@ namespace MachineWatchTest
 			CreatePart(dset, "Job2", "Part2", 2, "Test");
 
 			var pMap = new clsPalletPartMapping(new JobPlan[] {job1, job2}, dset, 3,
-			                                    new HashSet<string>(), log, trace, true, "NewGlobal",
+			                                    new HashSet<string>(), log, true, "NewGlobal",
 			                                    checkPalletUsedOnce,  DatabaseAccess.MazakDbType.MazakVersionE);
 
 			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
@@ -512,7 +508,6 @@ namespace MachineWatchTest
 
 
 			var log = new List<string>();
-			var trace = new List<string>();
 
 			var dset = CreateReadSet();
 
@@ -520,7 +515,7 @@ namespace MachineWatchTest
 			CreateProgram(dset, "1234");
 
 			var pMap = new clsPalletPartMapping(new JobPlan[] {job1, job2, job3, job4}, dset, 3,
-			                                    new HashSet<string>(), log, trace, true, "NewGlobal",
+			                                    new HashSet<string>(), log, true, "NewGlobal",
 			                                    false,  DatabaseAccess.MazakDbType.MazakVersionE);
 
 			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
@@ -644,13 +639,12 @@ namespace MachineWatchTest
 			AddBasicStopsWithProg(job3);
 
 			var log = new List<string>();
-			var trace = new List<string>();
 
 			var dset = new ReadOnlyDataSet();
 			CreateProgram(dset, "1234");
 
 		    var pMap = new clsPalletPartMapping(new JobPlan[] {job1, job2, job3}, dset, 3,
-			                                    new HashSet<string>(), log, trace, true, "NewGlobal",
+			                                    new HashSet<string>(), log, true, "NewGlobal",
 			                                    false,  DatabaseAccess.MazakDbType.MazakVersionE);
 
 			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
