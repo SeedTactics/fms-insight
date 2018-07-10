@@ -45,9 +45,11 @@ namespace MachineWatchTest
 	public class PalletMap
 	{
 		[Fact]
-		public void Basic()
+		public void BasicFromTemplate()
 		{
 			//Test everything copied from the template
+			// The JobPlan's have only 1 process but the template has 2 processes so
+			// the resulting parts should have 2 processes
 
 			var job1 = new JobPlan("Job1", 1, new int[] {2});
 			job1.PartName = "Part1";
@@ -146,6 +148,7 @@ namespace MachineWatchTest
 		[Fact]
 		public void UseExistingFixture()
 		{
+			//again, mazak parts are created from template, not the jobplan
 			var job1 = new JobPlan("Job1", 1, new int[] {2});
 			job1.PartName = "Part1";
 			job1.AddProcessOnPallet(1, 1, "4");
@@ -213,14 +216,6 @@ namespace MachineWatchTest
 			savedParts.Add("Part3:7:1");
 			CreatePallet(dset, 20, "Fixt:7:0:20", 1);
 
-			//group with a different number of processes
-			CreateFixture(dset, "Fixt:9:0:20:1");
-			CreateFixture(dset, "Fixt:9:0:20:2");
-			CreatePart(dset, "Job3.2", "Part3:9:1", 2, "Fixt:9:0:20");
-			savedParts.Add("Part3:9:1");
-			CreatePallet(dset, 20, "Fixt:9:0:20", 2);
-			CreatePallet(dset, 21, "Fixt:9:0:20", 2);
-
 			var pMap = new clsPalletPartMapping(new JobPlan[] {job1, job2, job3, job4}, dset, 3,
 			                                    savedParts, log, true, "NewGlobal",
 			                                    false,  DatabaseAccess.MazakDbType.MazakVersionE);
@@ -266,6 +261,7 @@ namespace MachineWatchTest
 		public void MultiProcess()
 		{
 			//A test where Jobs have different number of processes but the same pallet list
+			//again, mazak parts are created from template, not the jobplan
 
 			var job1 = new JobPlan("Job1", 1, new int[] {2});
 			job1.PartName = "Part1";
@@ -366,9 +362,9 @@ namespace MachineWatchTest
 				Assert.True(false, "Was expecting an exception");
 
 			} catch (Exception ex) {
-				Assert.Equal("Invalid pallet->part mapping. Part1 and Part2 do not " +
-				                "have matching pallet lists.  Part1 is assigned to 4,5" +
-				                " and Part2 is assigned to 4,5,6",
+				Assert.Equal("Invalid pallet->part mapping. Part1-1 and Part2-1 do not " +
+				                "have matching pallet lists.  Part1-1 is assigned to pallets 4,5" +
+				                " and Part2-1 is assigned to pallets 4,5,6",
 				                ex.Message);
 			}
 

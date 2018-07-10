@@ -222,7 +222,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private void CreatePalletRow(TransactionDataSet transSet, string pallet, string fixture, int graph)
+    private void CreatePalletRow(TransactionDataSet transSet, string pallet, string fixture, int fixGroup)
     {
       int palNum = int.Parse(pallet);
 
@@ -236,7 +236,7 @@ namespace MazakMachineInterface
 
       //we have the + 1 because UIDs and graphs start at 0, and the user might add other fixture-pallet
       //on group 0.
-      int fixGroup = (downloadUID * 10 + (graph % 10)) + 1;
+      fixGroup = (downloadUID * 10 + (fixGroup % 10)) + 1;
 
       //Add rows to both V1 and V2.
       TransactionDataSet.Pallet_tV2Row newRow2 = transSet.Pallet_tV2.NewPallet_tV2Row();
@@ -265,26 +265,15 @@ namespace MazakMachineInterface
       foreach (var p in mazakJobs.AllParts)
         p.CreateDatabaseRow(transSet);
 
-      int gNum = 0;
-      foreach (var g in mazakJobs.Groups)
+      foreach (var g in mazakJobs.Fixtures)
       {
-
-        var procs = new Dictionary<int, bool>();
-
         foreach (var p in g.Processes)
         {
-          p.CreateDatabaseRow(transSet, g.Fixture, MazakType);
-          procs[p.ProcessNumber] = true;
+          p.CreateDatabaseRow(transSet, g.MazakFixtureName, MazakType);
         }
 
-
-        foreach (var proc in procs.Keys)
-        {
-          foreach (var p in g.Pallets)
-            CreatePalletRow(transSet, p, g.Fixture + ":" + proc.ToString(), gNum);
-        }
-
-        gNum += 1;
+        foreach (var p in g.Pallets)
+          CreatePalletRow(transSet, p, g.MazakFixtureName, g.FixtureGroup);
       }
     }
   }

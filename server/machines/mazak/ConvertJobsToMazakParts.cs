@@ -31,6 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using BlackMaple.MachineWatchInterface;
 
@@ -238,7 +239,7 @@ namespace MazakMachineInterface
       var newPartProcRow = transSet.PartProcess_t.NewPartProcess_tRow();
       newPartProcRow.PartName = Part.PartName;
       newPartProcRow.ProcessNumber = ProcessNumber;
-      newPartProcRow.Fixture = fixture + ":" + ProcessNumber.ToString();
+      newPartProcRow.Fixture = fixture;
       newPartProcRow.FixQuantity = Math.Max(1, Job.PartsPerPallet(ProcessNumber, Path)).ToString();
 
       newPartProcRow.ContinueCut = 0;
@@ -333,7 +334,7 @@ namespace MazakMachineInterface
       var newPartProcRow = transSet.PartProcess_t.NewPartProcess_tRow();
       TransactionDatabaseAccess.BuildPartProcessRow(newPartProcRow, TemplateProcessRow);
       newPartProcRow.PartName = Part.PartName;
-      newPartProcRow.Fixture = fixture + ":" + ProcessNumber.ToString();
+      newPartProcRow.Fixture = fixture;
       newPartProcRow.ProcessNumber = ProcessNumber;
 
       newPartProcRow.FixLDS = new string(FixLDS);
@@ -361,21 +362,21 @@ namespace MazakMachineInterface
 
   //A group of parts and pallets where any part can run on any pallet.  In addition,
   //distinct processes can run at the same time on a pallet.
-  public class ProcessPalletGroup
+  public class MazakFixture
   {
+    public int FixtureGroup {get;set;}
+    public int Face {get;set;}
     public List<MazakProcess> Processes = new List<MazakProcess>();
     public List<string> Pallets = new List<string>();
 
-    //The mazak fixture name will be the name stored here with a :proc
-    //appended to the end.
-    public string Fixture;
+    public string MazakFixtureName {get;set;}
   }
 
   public class MazakJobs
   {
     //The representation of the mazak parts and pallets used to create the database rows
     public IEnumerable<MazakPart> AllParts {get;set;}
-    public IEnumerable<ProcessPalletGroup> Groups {get;set;}
+    public IEnumerable<MazakFixture> Fixtures {get;set;}
 
     //fixtures used by either existing or new parts.  Fixtures in the Mazak not in this list
     //will be deleted and fixtures appearing in this list but not yet in Mazak will be added.
@@ -401,16 +402,13 @@ namespace MazakMachineInterface
       IList<string> log)
     {
       var allParts = BuildMazakParts(jobs, downloadUID, currentSet, MazakType, log);
-      var groups = CalculateGraphs(allParts, log);
+      var groups = GroupProcessesIntoFixtures(allParts, checkPalletsUsedOnce, log);
 
-      if (checkPalletsUsedOnce)
-        CheckPalletsUsedOnce(groups);
-
-      var usedFixtures = CalculateFixtures(groups, downloadUID, currentSet, savedParts, log);
+      var usedFixtures = AssignMazakFixtures(groups, downloadUID, currentSet, savedParts, log);
 
       return new MazakJobs() {
         AllParts = allParts,
-        Groups = groups,
+        Fixtures = groups,
         UsedFixtures = usedFixtures
       };
     }
@@ -619,64 +617,79 @@ namespace MazakMachineInterface
 
     #region Fixtures
 
-    private static List<ProcessPalletGroup> CalculateGraphs(IEnumerable<MazakPart> allParts, IList<string> logMessages)
+    //group together the processes that use the same fixture
+    private static List<MazakFixture> GroupProcessesIntoFixtures(IEnumerable<MazakPart> allParts, bool checkPalletsUsedOnce, IList<string> logMessages)
     {
-      //Divide the full bipartite graph into complete bipartite graphs.
-      //As mentioned above, each part can be in only one component so
-      //we maintain a list of parts yet to process.
-      var groups = new List<ProcessPalletGroup>();
+      var fixtures = new List<MazakFixture>();
 
-      var remainingParts = new List<MazakProcess>();
-      foreach (var p in allParts)
-        remainingParts.AddRange(p.Processes);
+      // compute all pallet groups
+      var palletGroups = new HashSet<string>();
+      var seenPallets = new Dictionary<string, MazakProcess>();
+      foreach (var part in allParts) {
+        foreach (var proc in part.Processes) {
+          var palGroup = string.Join(',', proc.Pallets().OrderBy(p => p));
 
-      while (remainingParts.Count > 0)
-      {
-        var pPath = remainingParts[0];
-        remainingParts.RemoveAt(0);
+          if (checkPalletsUsedOnce && !palletGroups.Contains(palGroup)) {
+            foreach (var p in proc.Pallets()) {
+              if (seenPallets.ContainsKey(p)) {
+                var firstPart = seenPallets[p];
+                throw new BlackMaple.MachineFramework.BadRequestException(
+                    "Invalid pallet->part mapping. " +
+                    firstPart.Part.Job.PartName + "-" + firstPart.ProcessNumber.ToString() +
+                    " and " +
+                    proc.Part.Job.PartName + "-" + proc.ProcessNumber.ToString() +
+                    " do not have matching pallet lists.  " +
+                    firstPart.Part.Job.PartName + "-" + firstPart.ProcessNumber.ToString() +
+                    " is assigned to pallets " + string.Join(',', firstPart.Pallets()) +
+                    " and " +
+                    proc.Part.Job.PartName + "-" + proc.ProcessNumber.ToString() +
+                    " is assigned to pallets " + palGroup);
 
-        //we start a new graph for this part
-        var graph = new ProcessPalletGroup();
-        graph.Processes.Add(pPath);
-        groups.Add(graph);
-
-        //Add the pallets assigned to this part.
-        foreach (string palName in pPath.Pallets())
-        {
-          graph.Pallets.Add(palName);
-        }
-
-        //Since the graph must be complete bipartite, we can't add any more pallets.
-        //But it is possible to add more parts if they are assigned to these pallets
-        foreach (var part2 in new List<MazakProcess>(remainingParts))
-        {
-          if (CheckListEqual(graph.Pallets, part2.Pallets()))
-          {
-
-            graph.Processes.Add(part2);
-            remainingParts.Remove(part2);
+              }
+              seenPallets.Add(p, proc);
+            }
           }
+
+          palletGroups.Add(palGroup);
         }
       }
-      return groups;
+
+      //for each pallet group, add one fixture for each face
+      int groupNum = 0;
+      foreach (var palGroup in palletGroups) {
+        var byFace = new Dictionary<int, MazakFixture>();
+
+        foreach (var proc in allParts.SelectMany(p => p.Processes)) {
+
+          // check if pallets match
+          if (palGroup != string.Join(',', proc.Pallets().OrderBy(p => p)))
+            continue;
+
+          if (byFace.ContainsKey(proc.ProcessNumber)) {
+            byFace[proc.ProcessNumber].Processes.Add(proc);
+          } else {
+            //start a new face
+            var fix = new MazakFixture();
+            fix.FixtureGroup = groupNum;
+            fix.Face = proc.ProcessNumber;
+            fix.Processes.Add(proc);
+            fix.Pallets.AddRange(proc.Pallets());
+            byFace.Add(fix.Face, fix);
+            fixtures.Add(fix);
+          }
+        }
+
+        groupNum += 1;
+      }
+
+      return fixtures;
     }
 
-    //This builds up the current part->fixture and pallet->fixture mapping
-    private static ISet<string> CalculateFixtures(
-      IEnumerable<ProcessPalletGroup> groups, int downloadUID, ReadOnlyDataSet currentSet, ISet<string> savedParts,
+    private static ISet<string> AssignMazakFixtures(
+      IEnumerable<MazakFixture> groups, int downloadUID, ReadOnlyDataSet currentSet, ISet<string> savedParts,
       IList<string> log)
     {
-      //We view each part pallet group as a bipartite graph between Parts and Pallets.
-      //A fixture can represent any complete bipartite subgraph, so we need
-      //to divide the bipartite graph into a union of complete bipartite graphs.
-
-      //The only restriction to what can be represented in mazak is that while pallets
-      //can be repeated, a part can be in only one component.  But optionally we would
-      //like to give an error message if a pallet is repeated because repeated
-      //pallets sometimes represents a user configuration error.
-
       //First calculate the available fixtures
-      var availableFixtures = new Dictionary<string, bool>();
       var usedFixtures = new HashSet<string>();
       foreach (ReadOnlyDataSet.PartProcessRow partProc in currentSet.PartProcess.Rows)
       {
@@ -684,156 +697,71 @@ namespace MazakMachineInterface
         {
           if (savedParts.Contains(partProc.PartName))
           {
-            string fix = partProc.Fixture;
-
-            //add this fixture to the fixtures to save/create
-            usedFixtures.Add(fix);
-
-            //now strip off the process number (the final entry in the fixture)
-            //and add to available fixtures
-            int idx = fix.LastIndexOf(':');
-            if (idx >= 0)
-            {
-              fix = fix.Substring(0, idx);
-              availableFixtures[fix] = true;
-            }
+            usedFixtures.Add(partProc.Fixture);
           }
         }
       }
-      Log.Debug("Available Fixtures: {fixs}", availableFixtures.Keys);
+      Log.Debug("Available Fixtures: {fixs}", usedFixtures);
 
-      //For each graph, create (or reuse) a fixture and add parts and pallets using this fixture.
-      int graphNum = 0;
-      foreach (var graph in groups)
+      //For each group, create (or reuse) a fixture and add parts and pallets using this fixture.
+      foreach (var group in groups)
       {
-        graph.Pallets.Sort();
+        group.Pallets.Sort();
 
-        Log.Debug("Part Pallet group {@group}", graph);
+        Log.Debug("Searching for fixtures for group {@group}", group);
 
         //check if we can reuse an existing fixture
-        CheckExistingFixture(graph, availableFixtures, currentSet);
+        CheckExistingFixture(group, usedFixtures, currentSet);
 
-        if (graph.Fixture == null || graph.Fixture == "")
+        if (string.IsNullOrEmpty(group.MazakFixtureName))
         {
           //create a new fixture
-          var fixture = "Fixt:" + downloadUID.ToString() + ":" + graphNum.ToString();
-          //only add the first pallet to the name
-          fixture += ":" + graph.Pallets[0].ToString();
-          graph.Fixture = fixture;
-          Log.Debug("Creating new fixture {fix}", fixture);
-        }
-        else
-        {
-          Log.Debug("Using existing fixture {fix}", graph.Fixture);
-        }
-
-        //Mark fixtures as used.
-        foreach (var p in graph.Processes)
-        {
-          usedFixtures.Add(graph.Fixture + ":" + p.ProcessNumber.ToString());
+          var fixture =
+            "Fixt:" +
+            downloadUID.ToString() + ":" +
+            group.FixtureGroup.ToString() + ":" +
+            group.Pallets[0].ToString() + ":" +
+            group.Face.ToString();
+          group.MazakFixtureName = fixture;
+          Log.Debug("Creating new fixture {fix} for group {@group}", fixture, group);
         }
 
-        graphNum += 1;
+        usedFixtures.Add(group.MazakFixtureName);
       }
 
       return usedFixtures;
     }
 
     private static void CheckExistingFixture(
-      ProcessPalletGroup graph,
-      Dictionary<string, bool> availableFixtures,
+      MazakFixture group,
+      ISet<string> availableFixtures,
       ReadOnlyDataSet currentSet)
     {
       //we need a fixture that exactly matches this pallet list and has all the processes.
       //Also, the fixture must be contained in a saved part.
 
-      //calculate the list of (pallet,process) pairs which must exist
-      var positionsFound = new Dictionary<string, bool>();
-
-      //Add all positions.
-      foreach (var pal in graph.Pallets)
+      foreach (string fixture in availableFixtures)
       {
-        foreach (var part in graph.Processes)
-        {
-          positionsFound[pal + "^%##$" + part.ProcessNumber.ToString()] = false;
-        }
-      }
+        int idx = fixture.LastIndexOf(':');
+        if (idx < 0) continue; //skip, not one of our fixtures
 
-      foreach (string fixture in availableFixtures.Keys)
-      {
+        //try to parse face
+        if (!int.TryParse(fixture.Substring(idx+1), out int face)) continue;
+        if (face != group.Face) continue;
 
-        //reset found positions
-        foreach (var key in new List<string>(positionsFound.Keys))
-          positionsFound[key] = false;
-
-        foreach (ReadOnlyDataSet.PalletRow palRow in currentSet.Pallet.Rows)
-        {
-          int idx = palRow.Fixture.LastIndexOf(':');
-          if (idx >= 0 && palRow.Fixture.Substring(0, idx) == fixture)
-          {
-
-            var key = palRow.PalletNumber.ToString() + "^%##$" + palRow.Fixture.Substring(idx + 1);
-
-            if (positionsFound.ContainsKey(key))
-            {
-              positionsFound[key] = true;
-            }
-            else
-            {
-              Log.Debug("Skipping fixture " + fixture + " because the fixture has pallet " +
-                          palRow.PalletNumber.ToString() + " proc " + palRow.Fixture.Substring(idx + 1));
-              goto nextFixture;
-            }
-
+        //check pallets match
+        var onPallets = new HashSet<string>();
+        foreach (ReadOnlyDataSet.PalletRow palRow in currentSet.Pallet) {
+          if (palRow.Fixture == fixture) {
+            onPallets.Add(palRow.PalletNumber.ToString());
           }
         }
 
-        bool useFixture = true;
-        foreach (var key in positionsFound.Keys)
-        {
-          if (!positionsFound[key])
-          {
-            useFixture = false;
-            Log.Debug("Skipping fixture " + fixture + " because the fixture is missing " + key);
-            break;
-          }
-        }
+        if (!CheckListEqual(onPallets, group.Pallets)) continue;
 
-        if (useFixture)
-        {
-          graph.Fixture = fixture;
-          return;
-        }
-
-      nextFixture:;
-      }
-    }
-
-    private static void CheckPalletsUsedOnce(IEnumerable<ProcessPalletGroup> groups)
-    {
-      var usedPallets = new Dictionary<string, ProcessPalletGroup>();
-
-      foreach (var graph in groups)
-      {
-        foreach (var pal in graph.Pallets)
-        {
-          if (usedPallets.ContainsKey(pal))
-          {
-
-            var firstGraph = usedPallets[pal];
-            var firstPart = firstGraph.Processes[0].Job.PartName;
-            var secondPart = graph.Processes[0].Job.PartName;
-            var firstPallets = DatabaseAccess.Join(firstGraph.Pallets, ",");
-            var secondPallets = DatabaseAccess.Join(graph.Pallets, ",");
-
-            throw new BlackMaple.MachineFramework.BadRequestException(
-                "Invalid pallet->part mapping. " + firstPart + " and " + secondPart + " do not " +
-                "have matching pallet lists.  " + firstPart + " is assigned to " + firstPallets +
-                " and " + secondPart + " is assigned to " + secondPallets);
-          }
-
-          usedPallets.Add(pal, graph);
-        }
+        group.MazakFixtureName = fixture;
+        Log.Debug("Assigning existing fixture {fix} to group {@group}", fixture, group);
+        return;
       }
     }
 
