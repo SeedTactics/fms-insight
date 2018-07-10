@@ -372,6 +372,7 @@ namespace MazakMachineInterface
   //distinct processes can run at the same time on a pallet.
   public class MazakFixture
   {
+    public string BaseFixtureName {get;set;}
     public int FixtureGroup {get;set;}
     public string Face {get;set;}
     public List<MazakProcess> Processes = new List<MazakProcess>();
@@ -693,16 +694,19 @@ namespace MazakMachineInterface
           var plannedFixes = proc.Fixtures();
 
           string face;
+          string baseFixtureName;
           if (plannedFixes.Any()) {
             //check if correct fixture group
             if (fixGroup != jobFixtureToFixGroup(proc, plannedFixes))
               continue;
             face = plannedFixes.First().Face;
+            baseFixtureName = plannedFixes.First().Fixture;
           } else {
             // check if pallets match
             if (fixGroup != palsToFixGroup(proc.Pallets()))
               continue;
             face = proc.ProcessNumber.ToString();
+            baseFixtureName = groupNum.ToString() + ":" + proc.Pallets().First();
           }
 
           if (byFace.ContainsKey(face)) {
@@ -710,6 +714,7 @@ namespace MazakMachineInterface
           } else {
             //start a new face
             var fix = new MazakFixture();
+            fix.BaseFixtureName = baseFixtureName;
             fix.FixtureGroup = groupNum;
             fix.Face = face;
             fix.Processes.Add(proc);
@@ -759,8 +764,7 @@ namespace MazakMachineInterface
           var fixture =
             "Fixt:" +
             downloadUID.ToString() + ":" +
-            group.FixtureGroup.ToString() + ":" +
-            group.Pallets[0].ToString() + ":" +
+            group.BaseFixtureName + ":" +
             group.Face;
           group.MazakFixtureName = fixture;
           Log.Debug("Creating new fixture {fix} for group {@group}", fixture, group);
