@@ -692,6 +692,156 @@ namespace MachineWatchTest
 			AssertPartsPalletsDeleted(trans);
 		}
 
+		[Fact]
+		public void ManualFixtureAssignment()
+		{
+			var job1 = new JobPlan("Job1", 2, new int[] {2, 2});
+			job1.PartName = "Part1";
+			job1.SetPathGroup(1, 1, 1);
+			job1.SetPathGroup(1, 2, 2);
+			job1.SetPathGroup(2, 1, 1);
+			job1.SetPathGroup(2, 2, 2);
+
+			//proc 1 and proc 2 on same pallets
+			job1.AddProcessOnPallet(1, 1, "4");
+			job1.AddProcessOnPallet(1, 1, "5");
+			job1.AddProcessOnPallet(1, 2, "10");
+			job1.AddProcessOnPallet(1, 2, "11");
+			job1.AddProcessOnPallet(1, 2, "12");
+			job1.AddProcessOnPallet(2, 1, "4");
+			job1.AddProcessOnPallet(2, 1, "5");
+			job1.AddProcessOnPallet(2, 2, "10");
+			job1.AddProcessOnPallet(2, 2, "11");
+			job1.AddProcessOnPallet(2, 2, "12");
+
+			//each process uses different faces
+			job1.AddProcessOnFixture(1, 1, "fixAA", "face1");
+			job1.AddProcessOnFixture(2, 1, "fixAA", "face2");
+			job1.AddProcessOnFixture(1, 2, "fixBB", "face1");
+			job1.AddProcessOnFixture(2, 2, "fixBB", "face2");
+
+			AddBasicStopsWithProg(job1);
+
+			var job2 = new JobPlan("Job2", 2, new int[] {2, 2});
+			job2.PartName = "Part2";
+
+			//make path groups twisted
+			job2.SetPathGroup(1, 1, 1);
+			job2.SetPathGroup(1, 2, 2);
+			job2.SetPathGroup(2, 1, 2);
+			job2.SetPathGroup(2, 2, 1);
+
+			//process groups on the same pallet.
+			job2.AddProcessOnPallet(1, 1, "4");
+			job2.AddProcessOnPallet(1, 1, "5");
+			job2.AddProcessOnPallet(1, 2, "10");
+			job2.AddProcessOnPallet(1, 2, "11");
+			job2.AddProcessOnPallet(1, 2, "12");
+			job2.AddProcessOnPallet(2, 2, "4");
+			job2.AddProcessOnPallet(2, 2, "5");
+			job2.AddProcessOnPallet(2, 1, "10");
+			job2.AddProcessOnPallet(2, 1, "11");
+			job2.AddProcessOnPallet(2, 1, "12");
+
+			//each process uses different faces
+			job2.AddProcessOnFixture(1, 1, "fixAA", "face1");
+			job2.AddProcessOnFixture(2, 2, "fixAA", "face2");
+			job2.AddProcessOnFixture(1, 2, "fixBB", "face1");
+			job2.AddProcessOnFixture(2, 1, "fixBB", "face2");
+
+			AddBasicStopsWithProg(job2);
+
+			var job3 = new JobPlan("Job3", 1, new int[] {2});
+			job3.PartName = "Part3";
+			job3.AddProcessOnPallet(1, 1, "20");
+			job3.AddProcessOnPallet(1, 1, "21");
+			job3.AddProcessOnPallet(1, 2, "30");
+			job3.AddProcessOnPallet(1, 2, "31");
+
+			//job3 uses separate fixture than job 4
+			job3.AddProcessOnFixture(1, 1, "fix3", "face1");
+			job3.AddProcessOnFixture(1, 2, "fix3e", "face1");
+
+			AddBasicStopsWithProg(job3);
+
+			var job4 = new JobPlan("Job4", 1, new int[] {2});
+			job4.PartName = "Part4";
+			job4.AddProcessOnPallet(1, 1, "20");
+			job4.AddProcessOnPallet(1, 1, "21");
+			job4.AddProcessOnPallet(1, 2, "30");
+			job4.AddProcessOnPallet(1, 2, "31");
+
+			//job3 uses separate fixture than job 4
+			job4.AddProcessOnFixture(1, 1, "fix4", "face1");
+			job4.AddProcessOnFixture(1, 2, "fix4e", "face1");
+
+			AddBasicStopsWithProg(job4);
+
+			var log = new List<string>();
+
+			var dset = CreateReadSet();
+			CreateProgram(dset, "1234");
+
+			var pMap = new clsPalletPartMapping(new JobPlan[] {job1, job2, job3, job4}, dset, 3,
+			                                    new HashSet<string>(), log, true, "NewGlobal",
+			                                    false,  DatabaseAccess.MazakDbType.MazakVersionE);
+
+			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
+			if (log.Count > 0) Assert.True(false, log[0]);
+
+			CheckNewFixtures(pMap, new string[] {
+				"Fixt:3:0:4:face1",
+				"Fixt:3:0:4:face2",
+				"Fixt:3:1:10:face1",
+				"Fixt:3:1:10:face2",
+				"Fixt:3:2:20:face1",
+				"Fixt:3:3:30:face1",
+				"Fixt:3:4:20:face1",
+				"Fixt:3:5:30:face1",
+			});
+
+			var trans = new TransactionDataSet();
+			pMap.CreateRows(trans);
+
+			CheckPartProcessFromJob(trans, "Part1:3:1", 1, "Fixt:3:0:4:face1");
+			CheckPartProcessFromJob(trans, "Part1:3:1", 2, "Fixt:3:0:4:face2");
+			CheckPart(trans, "Part1:3:1", "Job1-Path1-0");
+
+			CheckPartProcessFromJob(trans, "Part1:3:2", 1, "Fixt:3:1:10:face1");
+			CheckPartProcessFromJob(trans, "Part1:3:2", 2, "Fixt:3:1:10:face2");
+			CheckPart(trans, "Part1:3:2", "Job1-Path2-0");
+
+			CheckPartProcessFromJob(trans, "Part2:3:1", 1, "Fixt:3:0:4:face1");
+			CheckPartProcessFromJob(trans, "Part2:3:1", 2, "Fixt:3:0:4:face2");
+			CheckPart(trans, "Part2:3:1", "Job2-Path1-0");
+
+			CheckPartProcessFromJob(trans, "Part2:3:2", 1, "Fixt:3:1:10:face1");
+			CheckPartProcessFromJob(trans, "Part2:3:2", 2, "Fixt:3:1:10:face2");
+			CheckPart(trans, "Part2:3:2", "Job2-Path2-0");
+
+			CheckPartProcessFromJob(trans, "Part3:3:1", 1, "Fixt:3:2:20:face1");
+			CheckPart(trans, "Part3:3:1", "Job3-Path1-0");
+
+			CheckPartProcessFromJob(trans, "Part3:3:2", 1, "Fixt:3:3:30:face1");
+			CheckPart(trans, "Part3:3:2", "Job3-Path2-0");
+
+			CheckPartProcessFromJob(trans, "Part4:3:1", 1, "Fixt:3:4:20:face1");
+			CheckPart(trans, "Part4:3:1", "Job4-Path1-0");
+
+			CheckPartProcessFromJob(trans, "Part4:3:2", 1, "Fixt:3:5:30:face1");
+			CheckPart(trans, "Part4:3:2", "Job4-Path2-0");
+
+			CheckPalletGroup(trans, 31, new [] {"Fixt:3:0:4:face1", "Fixt:3:0:4:face2"}, new int[] {4, 5});
+			CheckPalletGroup(trans, 32, new [] {"Fixt:3:1:10:face1", "Fixt:3:1:10:face2"}, new int[] {10, 11, 12});
+			CheckPalletGroup(trans, 33, new [] {"Fixt:3:2:20:face1"}, new int[] {20, 21});
+			CheckPalletGroup(trans, 34, new [] {"Fixt:3:3:30:face1"}, new int[] {30, 31});
+			CheckPalletGroup(trans, 35, new [] {"Fixt:3:4:20:face1"}, new int[] {20, 21});
+			CheckPalletGroup(trans, 36, new [] {"Fixt:3:5:30:face1"}, new int[] {30, 31});
+
+			AssertPartsPalletsDeleted(trans);
+
+		}
+
 		#region Checking
 		private ReadOnlyDataSet CreateReadSet()
 		{
@@ -820,17 +970,24 @@ namespace MachineWatchTest
 
 		private void CheckPalletGroup(TransactionDataSet dset, int groupNum, string fix, int numProc, IList<int> pals)
 		{
+			CheckPalletGroup(dset, groupNum,
+				Enumerable.Range(1, numProc).Select(i => fix + ":" + i.ToString()),
+				pals);
+		}
+
+		private void CheckPalletGroup(TransactionDataSet dset, int groupNum, IEnumerable<string> fixs, IList<int> pals)
+		{
 			int angle = groupNum * 1000;
 
 			foreach (int pal in pals) {
-				for (int i = 1; i <= numProc; i++) {
-					int angle2 = CheckPalletV1(dset, fix + ":" + i.ToString(), pal);
+				foreach (var fix in fixs) {
+					int angle2 = CheckPalletV1(dset, fix, pal);
 					if (angle2 == -1)
 						Assert.True(false, "Unable to find pallet " + pal.ToString() + " " + fix);
 
 					angle2.Should().Be(angle, because: "in same pallet group " + fix + " " + pal);
 
-					int g = CheckPalletV2(dset, fix + ":" + i.ToString(), pal);
+					int g = CheckPalletV2(dset, fix, pal);
 					if (g == -1)
 						Assert.True(false, "Unable to find pallet " + pal.ToString() + " " + fix);
 

@@ -200,6 +200,7 @@ namespace MazakMachineInterface
     }
 
     public abstract IEnumerable<string> Pallets();
+    public abstract IEnumerable<JobPlan.FixtureFace> Fixtures();
 
     public abstract TransactionDataSet.PartProcess_tRow
       CreateDatabaseRow(TransactionDataSet transSet, string fixture, DatabaseAccess.MazakDbType mazakTy);
@@ -232,6 +233,11 @@ namespace MazakMachineInterface
     public override IEnumerable<string> Pallets()
     {
       return Job.PlannedPallets(ProcessNumber, Path);
+    }
+
+    public override IEnumerable<JobPlan.FixtureFace> Fixtures()
+    {
+      return Job.PlannedFixtures(ProcessNumber, Path);
     }
 
     public override TransactionDataSet.PartProcess_tRow CreateDatabaseRow(TransactionDataSet transSet, string fixture, DatabaseAccess.MazakDbType mazakTy)
@@ -307,6 +313,8 @@ namespace MazakMachineInterface
       return Job.PlannedPallets(1, Part.Proc1Path);
     }
 
+    public override IEnumerable<JobPlan.FixtureFace> Fixtures() => Enumerable.Empty<JobPlan.FixtureFace>();
+
     public override TransactionDataSet.PartProcess_tRow CreateDatabaseRow(TransactionDataSet transSet, string fixture, DatabaseAccess.MazakDbType mazakTy)
     {
       char[] FixLDS = { '0', '0', '0', '0', '0', '0', '0', '0', '0', '0' };
@@ -365,7 +373,7 @@ namespace MazakMachineInterface
   public class MazakFixture
   {
     public int FixtureGroup {get;set;}
-    public int Face {get;set;}
+    public string Face {get;set;}
     public List<MazakProcess> Processes = new List<MazakProcess>();
     public List<string> Pallets = new List<string>();
 
@@ -622,14 +630,35 @@ namespace MazakMachineInterface
     {
       var fixtures = new List<MazakFixture>();
 
-      // compute all pallet groups
-      var palletGroups = new HashSet<string>();
+      string palsToFixGroup(IEnumerable<string> pals) {
+          return "pals:" + string.Join(',', pals.OrderBy(p => p));
+      }
+      string jobFixtureToFixGroup(MazakProcess proc, IEnumerable<JobPlan.FixtureFace> fixs)
+      {
+        if (fixs.Count() > 1) {
+          throw new BlackMaple.MachineFramework.BadRequestException(
+            "Invalid fixtures for " + proc.Job.PartName + "-" + proc.ProcessNumber.ToString() +
+            ".  There can be at most one fixture and face for the part.");
+        }
+        return "fix:" + fixs.First().Fixture;
+      }
+
+      // compute all fixture groups
+      var fixtureGroups = new HashSet<string>();
       var seenPallets = new Dictionary<string, MazakProcess>();
       foreach (var part in allParts) {
         foreach (var proc in part.Processes) {
-          var palGroup = string.Join(',', proc.Pallets().OrderBy(p => p));
 
-          if (checkPalletsUsedOnce && !palletGroups.Contains(palGroup)) {
+          string fixGroup;
+          var plannedFixs = proc.Fixtures();
+          if (plannedFixs.Any()) {
+            fixGroup = jobFixtureToFixGroup(proc, plannedFixs);
+          } else {
+            // fallback to pallet groups
+            fixGroup = palsToFixGroup(proc.Pallets());
+          }
+
+          if (checkPalletsUsedOnce && !fixtureGroups.Contains(fixGroup)) {
             foreach (var p in proc.Pallets()) {
               if (seenPallets.ContainsKey(p)) {
                 var firstPart = seenPallets[p];
@@ -643,35 +672,46 @@ namespace MazakMachineInterface
                     " is assigned to pallets " + string.Join(',', firstPart.Pallets()) +
                     " and " +
                     proc.Part.Job.PartName + "-" + proc.ProcessNumber.ToString() +
-                    " is assigned to pallets " + palGroup);
+                    " is assigned to pallets " + string.Join(',', proc.Pallets()));
 
               }
               seenPallets.Add(p, proc);
             }
           }
 
-          palletGroups.Add(palGroup);
+          fixtureGroups.Add(fixGroup);
         }
       }
 
-      //for each pallet group, add one fixture for each face
+      //for each fixture group, add one mazak fixture for each face
       int groupNum = 0;
-      foreach (var palGroup in palletGroups) {
-        var byFace = new Dictionary<int, MazakFixture>();
+      foreach (var fixGroup in fixtureGroups) {
+        var byFace = new Dictionary<string, MazakFixture>();
 
         foreach (var proc in allParts.SelectMany(p => p.Processes)) {
 
-          // check if pallets match
-          if (palGroup != string.Join(',', proc.Pallets().OrderBy(p => p)))
-            continue;
+          var plannedFixes = proc.Fixtures();
 
-          if (byFace.ContainsKey(proc.ProcessNumber)) {
-            byFace[proc.ProcessNumber].Processes.Add(proc);
+          string face;
+          if (plannedFixes.Any()) {
+            //check if correct fixture group
+            if (fixGroup != jobFixtureToFixGroup(proc, plannedFixes))
+              continue;
+            face = plannedFixes.First().Face;
+          } else {
+            // check if pallets match
+            if (fixGroup != palsToFixGroup(proc.Pallets()))
+              continue;
+            face = proc.ProcessNumber.ToString();
+          }
+
+          if (byFace.ContainsKey(face)) {
+            byFace[face].Processes.Add(proc);
           } else {
             //start a new face
             var fix = new MazakFixture();
             fix.FixtureGroup = groupNum;
-            fix.Face = proc.ProcessNumber;
+            fix.Face = face;
             fix.Processes.Add(proc);
             fix.Pallets.AddRange(proc.Pallets());
             byFace.Add(fix.Face, fix);
@@ -721,7 +761,7 @@ namespace MazakMachineInterface
             downloadUID.ToString() + ":" +
             group.FixtureGroup.ToString() + ":" +
             group.Pallets[0].ToString() + ":" +
-            group.Face.ToString();
+            group.Face;
           group.MazakFixtureName = fixture;
           Log.Debug("Creating new fixture {fix} for group {@group}", fixture, group);
         }
@@ -746,8 +786,7 @@ namespace MazakMachineInterface
         if (idx < 0) continue; //skip, not one of our fixtures
 
         //try to parse face
-        if (!int.TryParse(fixture.Substring(idx+1), out int face)) continue;
-        if (face != group.Face) continue;
+        if (fixture.Substring(idx+1) != group.Face) continue;
 
         //check pallets match
         var onPallets = new HashSet<string>();
