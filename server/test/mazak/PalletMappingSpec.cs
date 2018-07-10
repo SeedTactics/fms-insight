@@ -98,7 +98,7 @@ namespace MachineWatchTest
 			CreatePart(dset, "Job4", "Part4", 1, "Test");
 
 			var pMap = new clsPalletPartMapping(new JobPlan[] {job1, job2, job3, job4}, dset, 3,
-			                                    new List<string>(), log, trace, true, "NewGlobal",
+			                                    new HashSet<string>(), log, trace, true, "NewGlobal",
 			                                    false, DatabaseAccess.MazakDbType.MazakVersionE);
 
 			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
@@ -184,7 +184,7 @@ namespace MachineWatchTest
 			CreatePart(dset, "Job4", "Part4", 1, "Test");
 
 			//Create fixtures which match for Parts 1 and 2.
-			var savedParts = new List<string>();
+			var savedParts = new HashSet<string>();
 			CreateFixture(dset, "Fixt:2:0:4:1");
 			CreateFixture(dset, "Fixt:2:0:4:2");
 			CreateFixture(dset, "Fixt:2:0:10:1");
@@ -306,7 +306,7 @@ namespace MachineWatchTest
 			CreatePart(dset, "Job4", "Part4", 1, "Test");
 
 			var pMap = new clsPalletPartMapping(new JobPlan[] {job1, job2, job3, job4}, dset, 3,
-			                                    new List<string>(), log, trace, true, "NewGlobal",
+			                                    new HashSet<string>(), log, trace, true, "NewGlobal",
 			                                    false,  DatabaseAccess.MazakDbType.MazakVersionE);
 
 			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
@@ -405,7 +405,7 @@ namespace MachineWatchTest
 			CreatePart(dset, "Job2", "Part2", 2, "Test");
 
 			var pMap = new clsPalletPartMapping(new JobPlan[] {job1, job2}, dset, 3,
-			                                    new List<string>(), log, trace, true, "NewGlobal",
+			                                    new HashSet<string>(), log, trace, true, "NewGlobal",
 			                                    checkPalletUsedOnce,  DatabaseAccess.MazakDbType.MazakVersionE);
 
 			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
@@ -520,7 +520,7 @@ namespace MachineWatchTest
 			CreateProgram(dset, "1234");
 
 			var pMap = new clsPalletPartMapping(new JobPlan[] {job1, job2, job3, job4}, dset, 3,
-			                                    new List<string>(), log, trace, true, "NewGlobal",
+			                                    new HashSet<string>(), log, trace, true, "NewGlobal",
 			                                    false,  DatabaseAccess.MazakDbType.MazakVersionE);
 
 			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
@@ -650,7 +650,7 @@ namespace MachineWatchTest
 			CreateProgram(dset, "1234");
 
 		    var pMap = new clsPalletPartMapping(new JobPlan[] {job1, job2, job3}, dset, 3,
-			                                    new List<string>(), log, trace, true, "NewGlobal",
+			                                    new HashSet<string>(), log, trace, true, "NewGlobal",
 			                                    false,  DatabaseAccess.MazakDbType.MazakVersionE);
 
 			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));

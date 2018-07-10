@@ -867,7 +867,7 @@ namespace MazakMachineInterface
         //need to ignore the warning that palletPartMap is not used.
 #pragma warning disable 168, 219
         var palletPartMap = new clsPalletPartMapping(jobs, currentSet, 1,
-                                                     new List<string>(), logMessages, traceMessages, false, "",
+                                                     new HashSet<string>(), logMessages, traceMessages, false, "",
                                                      CheckPalletsUsedOnce, database.MazakType);
 #pragma warning restore 168, 219
 
@@ -1001,7 +1001,7 @@ namespace MazakMachineInterface
       var currentSet = readDatabase.LoadReadOnly();
 
       int UID = 0;
-      var savedParts = new List<string>();
+      var savedParts = new HashSet<string>();
 
       //first allocate a UID to use for this download
       UID = 0;
