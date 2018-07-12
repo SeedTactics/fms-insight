@@ -72,7 +72,7 @@ namespace MachineWatchTest
       var mat2_2 = new LogMaterial(2, "uuu1", 1, "part1", 2, face: "D");
       var mat3 = new LogMaterial(3, "uuu2", 1, "part2", 1, face: "E");
 
-      _log.GetLogEntries(now, now.AddDays(1)).ShouldAllBeEquivalentTo(new [] {
+      _log.GetLogEntries(now, now.AddDays(1)).Should().BeEquivalentTo(new [] {
         new LogEntry(
           cntr: -1,
           mat: new [] {mat1_1, mat2_1},
@@ -168,11 +168,51 @@ namespace MachineWatchTest
         options.Excluding(x => x.Counter)
       );
 
-      _log.SerialForMaterialID(1).Should().Be("serial1");
-      _log.WorkorderForMaterialID(1).Should().Be("work1");
-      _log.SerialForMaterialID(2).Should().Be("serial2");
-      _log.WorkorderForMaterialID(3).Should().Be("work3");
+      _log.GetMaterialDetails(1).Should().BeEquivalentTo(new MaterialDetails() {
+        MaterialID = 1,
+        JobUnique = "uuu1",
+        PartName = "part1",
+        NumProcesses = 2,
+        Workorder = "work1",
+        Serial = "serial1"
+      });
+      _log.GetMaterialDetails(2).Should().BeEquivalentTo(new MaterialDetails() {
+        MaterialID = 2,
+        JobUnique = "uuu1",
+        PartName = "part1",
+        NumProcesses = 2,
+        Workorder = null,
+        Serial = "serial2"
+      });
+      _log.GetMaterialDetails(3).Should().BeEquivalentTo(new MaterialDetails() {
+        MaterialID = 3,
+        JobUnique = "uuu2",
+        PartName = "part2",
+        NumProcesses = 1,
+        Workorder = "work3",
+        Serial = null
+      });
+    }
 
+    [Fact]
+    public void QueueTablesCorrectlyCreated()
+    {
+      var now = new DateTime(2018, 7, 12, 5, 6, 7, DateTimeKind.Utc);
+      var matId = _log.AllocateMaterialID("uuu5", "part5", 1);
+      var mat = new LogMaterial(matId, "uuu5", 1, "part5", 1);
+
+      _log.RecordAddMaterialToQueue(mat, "queue", 5, now.AddHours(2));
+
+      _log.GetMaterialInQueue("queue").Should().BeEquivalentTo(new [] {
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = matId,
+          Queue = "queue",
+          Position = 5,
+          Unique = "uuu5",
+          PartName = "part5",
+          NumProcesses = 1,
+        }
+      });
     }
 
     /*

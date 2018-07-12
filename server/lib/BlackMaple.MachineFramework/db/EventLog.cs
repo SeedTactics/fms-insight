@@ -489,7 +489,7 @@ namespace BlackMaple.MachineFramework
             cmd.ExecuteNonQuery();
             cmd.CommandText = "INSERT INTO matdetails(MaterialID, UniqueStr, Serial, Workorder, PartName, NumProcesses) " +
               " SELECT " +
-              "   MaterialID, UniqueStr, Serial, Workorder " +
+              "   MaterialID, UniqueStr, Serial, Workorder, " +
               "   (SELECT Part FROM material WHERE material.MaterialID = materialid.MaterialID LIMIT 1) as PartName, " +
               "   (SELECT NumProcess FROM material WHERE material.MaterialID = materialid.MaterialID LIMIT 1) as NumProcesses " +
               " FROM materialid";
