@@ -315,6 +315,7 @@ namespace MazakMachineInterface
     private BlackMaple.MachineFramework.JobLogDB _log;
     private IReadDataAccess _readDB;
     private BlackMaple.MachineFramework.FMSSettings _settings;
+    private BlackMaple.MachineFramework.ISendMaterialToExternalQueue _sendToExternal;
     private MazakQueues _queues;
 
     private string _path;
@@ -328,6 +329,7 @@ namespace MazakMachineInterface
     public LogDataWeb(string path,
                       BlackMaple.MachineFramework.JobLogDB log,
                       BlackMaple.MachineFramework.JobDB jobDB,
+                      BlackMaple.MachineFramework.ISendMaterialToExternalQueue sendToExternal,
                       IReadDataAccess readDB,
                       MazakQueues queues,
                       BlackMaple.MachineFramework.FMSSettings settings)
@@ -338,6 +340,7 @@ namespace MazakMachineInterface
       _readDB = readDB;
       _queues = queues;
       _settings = settings;
+      _sendToExternal = sendToExternal;
       _shutdown = new AutoResetEvent(false);
       _newLogFile = new AutoResetEvent(false);
       _recheckQueues = new AutoResetEvent(false);
@@ -371,11 +374,12 @@ namespace MazakMachineInterface
           var trans = new LogTranslation(_jobDB, _log, new FindPartFromReadOnlySet(dset), _settings,
             le => PalletMove?.Invoke(le.Pallet, le.FromPosition, le.TargetPosition)
           );
+          var sendToExternal = new List<BlackMaple.MachineFramework.MaterialToSendToExternalQueue>();
           foreach (var ev in logs)
           {
             try
             {
-              trans.HandleEvent(ev);
+              sendToExternal.AddRange(trans.HandleEvent(ev));
             }
             catch (Exception ex)
             {
@@ -386,6 +390,10 @@ namespace MazakMachineInterface
           DeleteLog(_log.MaxForeignID());
 
           _queues.CheckQueues(dset);
+
+          if (sendToExternal.Count > 0) {
+            _sendToExternal.Post(sendToExternal);
+          }
 
           if (logs.Count > 0) {
             NewEntries?.Invoke(dset);

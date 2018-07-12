@@ -74,9 +74,10 @@ namespace MazakMachineInterface
     }
 
     #region Events
-    public void HandleEvent(LogEntry e)
+    public List<BlackMaple.MachineFramework.MaterialToSendToExternalQueue> HandleEvent(LogEntry e)
     {
       var cycle = new List<MWI.LogEntry>();
+      var sendToExternal = new List<BlackMaple.MachineFramework.MaterialToSendToExternalQueue>();
       if (e.Pallet >= 1)
         cycle = _log.CurrentPalletLog(e.Pallet.ToString());
 
@@ -170,6 +171,7 @@ namespace MazakMachineInterface
 
           var mats = GetMaterialOnPallet(e, cycle);
           var queues = FindUnloadQueues(mats);
+          sendToExternal.AddRange(FindSendToExternalQueue(mats));
 
           _log.RecordUnloadEnd(
             mats: mats.Select(m => m.Mat),
@@ -192,8 +194,9 @@ namespace MazakMachineInterface
           _onPalletMove(e);
 
           break;
-
       }
+
+      return sendToExternal;
     }
     #endregion
 
@@ -447,8 +450,30 @@ namespace MazakMachineInterface
         JobPlan job = GetJob(mat.Mat.JobUniqueStr);
         if (job != null) {
           var q = job.GetOutputQueue(process: mat.Mat.Process, path: mat.Path);
-          if (!string.IsNullOrEmpty(q)) {
+          if (!string.IsNullOrEmpty(q) && _settings.Queues.ContainsKey(q)) {
             ret[mat.Mat.MaterialID] = q;
+          }
+        }
+      }
+
+      return ret;
+    }
+
+    private IEnumerable<BlackMaple.MachineFramework.MaterialToSendToExternalQueue> FindSendToExternalQueue(IEnumerable<LogMaterialAndPath> mats)
+    {
+      var ret = new List<BlackMaple.MachineFramework.MaterialToSendToExternalQueue>();
+
+      foreach (var mat in mats) {
+        JobPlan job = GetJob(mat.Mat.JobUniqueStr);
+        if (job != null) {
+          var q = job.GetOutputQueue(process: mat.Mat.Process, path: mat.Path);
+          if (!string.IsNullOrEmpty(q) && _settings.ExternalQueues.ContainsKey(q)) {
+            ret.Add(new BlackMaple.MachineFramework.MaterialToSendToExternalQueue() {
+              Server = _settings.ExternalQueues[q],
+              PartName = mat.Mat.PartName,
+              Queue = q,
+              Serial = _log.GetMaterialDetails(mat.Mat.MaterialID)?.Serial
+            });
           }
         }
       }

@@ -70,6 +70,8 @@ namespace MachineWatchTest
 			var settings = new FMSSettings() {
 				SerialType = SerialType.AssignOneSerialPerMaterial
 			};
+      settings.Queues["thequeue"] = new QueueSize() { MaxSizeBeforeStopUnloading = -1};
+      settings.ExternalQueues["externalq"] = "testserver";
 
       log = new LogTranslation(jobDB, jobLog, findPart, settings,
         e => raisedByPalletMove.Add(e)
@@ -456,6 +458,8 @@ namespace MachineWatchTest
       ));
     }
 
+    protected List<MaterialToSendToExternalQueue> sendToExternal = new List<MaterialToSendToExternalQueue>();
+
     protected void UnloadEnd(TestMaterial mat, int offset, int load, int elapMin, int activeMin = 0)
     {
       UnloadEnd(new [] {mat}, offset, load, elapMin, activeMin);
@@ -477,7 +481,7 @@ namespace MachineWatchTest
         FromPosition = "",
       };
 
-      log.HandleEvent(e2);
+      sendToExternal.AddRange(log.HandleEvent(e2));
 
       expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
 					cntr: -1,
@@ -1092,6 +1096,8 @@ namespace MachineWatchTest
       MachEnd(proc2, offset: 39, mach: 6, elapMin: 9);
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
+
+      sendToExternal.Should().BeEmpty();
     }
 
     [Fact]
@@ -1114,6 +1120,7 @@ namespace MachineWatchTest
       j.PartName = "pppp";
       j.SetOutputQueue(1, 1, "thequeue");
       j.SetInputQueue(2, 1, "thequeue");
+      j.SetOutputQueue(2, 1, "externalq");
       var newJobs = new NewJobs() {
         Jobs = new List<JobPlan> {j}
       };
@@ -1171,6 +1178,27 @@ namespace MachineWatchTest
       jobLog.GetMaterialInQueue("thequeue").Should().BeEmpty();
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
+
+      sendToExternal.Should().BeEquivalentTo(new [] {
+        new MaterialToSendToExternalQueue() {
+          Server = "testserver",
+          PartName = "pppp",
+          Queue = "externalq",
+          Serial = "0000000001"
+        },
+        new MaterialToSendToExternalQueue() {
+          Server = "testserver",
+          PartName = "pppp",
+          Queue = "externalq",
+          Serial = "0000000002"
+        },
+        new MaterialToSendToExternalQueue() {
+          Server = "testserver",
+          PartName = "pppp",
+          Queue = "externalq",
+          Serial = "0000000003"
+        },
+      });
     }
   }
 

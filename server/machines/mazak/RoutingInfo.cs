@@ -856,10 +856,30 @@ namespace MazakMachineInterface
 
         // queue support is still being developed and tested
         foreach (var j in jobs) {
-          var proc = j.NumProcesses;
-          for (int path = 1; path <= j.GetNumPaths(proc); path++) {
-            if (!string.IsNullOrEmpty(j.GetOutputQueue(proc, path))) {
-              logMessages.Add("Output queues are not yet supported on final process (job " + j.UniqueStr + ")");
+          for (int proc = 1; proc <= j.NumProcesses; proc++) {
+            for (int path = 1; path <= j.GetNumPaths(proc); path++) {
+
+              var inQueue = j.GetInputQueue(proc, path);
+              if (!string.IsNullOrEmpty(inQueue) && !fmsSettings.Queues.ContainsKey(inQueue)) {
+                logMessages.Add(
+                  " Job " + j.UniqueStr + " has an input queue " + inQueue + " which is not configured as a local queue in FMS Insight." +
+                  " All input queues must be local queues, not an external queue.");
+              }
+
+              var outQueue = j.GetOutputQueue(proc, path);
+              if (proc == j.NumProcesses) {
+                if (!string.IsNullOrEmpty(outQueue) && !fmsSettings.ExternalQueues.ContainsKey(outQueue)) {
+                  logMessages.Add("Output queues on the final process must be external queues." +
+                    " Job " + j.UniqueStr + " has a queue " + outQueue + " on the final process which is not configured " +
+                    " as an external queue");
+                }
+              } else {
+                if (!string.IsNullOrEmpty(outQueue) && !fmsSettings.Queues.ContainsKey(outQueue)) {
+                  logMessages.Add(
+                    " Job " + j.UniqueStr + " has an output queue " + outQueue + " which is not configured as a queue in FMS Insight." +
+                    " Non-final processes must have a configured local queue, not an external queue");
+                }
+              }
             }
           }
         }

@@ -206,9 +206,10 @@ namespace MazakMachineInterface
       var readOnlyDb = new ReadonlyDatabaseAccess(dbConnStr, MazakType);
       queues = new MazakQueues(jobLog, jobDB, loadOper, database);
       loadOper = new LoadOperations(cfg, readOnlyDb.SmoothDB);
+      var sendToExternal = new SendMaterialToExternalQueue();
 
       if (MazakType == DatabaseAccess.MazakDbType.MazakWeb || MazakType == DatabaseAccess.MazakDbType.MazakSmooth)
-        logDataLoader = new LogDataWeb(logPath, jobLog, jobDB, readOnlyDb, queues, settings);
+        logDataLoader = new LogDataWeb(logPath, jobLog, jobDB, sendToExternal, readOnlyDb, queues, settings);
       else
       {
 #if USE_OLEDB
