@@ -322,8 +322,40 @@ namespace MachineWatchTest
     [Fact]
     public void RemoveMat()
     {
-      // test removing material when the queue is smaller
-      throw new Exception("Removing material when remain = 0 fails");
+      var read = new ReadOnlyDataSet();
+
+      // plan 50, 30 completed.  proc1 has 5 in process, 2 material.  proc2 has 3 in process, 4 material
+      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 30);
+      AddScheduleProcess(schRow, proc: 1, matQty: 2, exeQty: 5);
+      AddScheduleProcess(schRow, proc: 2, matQty: 4, exeQty: 3);
+
+      var j = new JobPlan("uuuu", 2);
+      j.PartName = "pppp";
+      j.SetInputQueue(1, 1, "castingQ");
+      j.SetInputQueue(2, 1, "transQ");
+      _jobDB.AddJobs(new NewJobs() {
+        Jobs = new List<JobPlan> {j}
+      }, null);
+
+      // put only 1 casting in queue
+      var mat1 = _logDB.AllocateMaterialID("uuuu", "pppp", 2);
+      _logDB.RecordAddMaterialToQueue(mat1, process: 0, queue: "castingQ", position: 0);
+
+      // put 2 in-proc in queue
+      var mat2 = _logDB.AllocateMaterialID("uuuu", "pppp", 2);
+      var mat3 = _logDB.AllocateMaterialID("uuuu", "pppp", 2);
+      _logDB.RecordAddMaterialToQueue(mat2, process: 1, queue: "transQ", position: 0);
+      _logDB.RecordAddMaterialToQueue(mat3, process: 1, queue: "transQ", position: 1);
+
+      var trans = _queues.CalculateScheduleChanges(read, new LoadAction[] {});
+
+      trans.Schedule_t.Count.Should().Be(1);
+      trans.Schedule_t[0].ScheduleID.Should().Be(10);
+      trans.ScheduleProcess_t.Count.Should().Be(2);
+      trans.ScheduleProcess_t[0].ProcessNumber.Should().Be(1);
+      trans.ScheduleProcess_t[0].ProcessMaterialQuantity.Should().Be(1); // set the material back to 1
+      trans.ScheduleProcess_t[1].ProcessNumber.Should().Be(2);
+      trans.ScheduleProcess_t[1].ProcessMaterialQuantity.Should().Be(2); // set the material back to 2
     }
 
     [Fact(Skip="pending")]
