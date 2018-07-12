@@ -134,6 +134,10 @@ namespace BlackMaple.MachineFramework
       public Dictionary<string, MachineWatchInterface.QueueSize> Queues {get;}
         = new Dictionary<string, MachineWatchInterface.QueueSize>();
 
+      // key is queue name, value is IP address or DNS name of fms insight server with the queue
+      public Dictionary<string, string> ExternalQueues {get;}
+        = new Dictionary<string, string>();
+
       static public FMSSettings Load(IConfiguration config)
       {
         var s = new FMSSettings();
@@ -147,11 +151,18 @@ namespace BlackMaple.MachineFramework
         s.InstructionFilePath = fmsSection.GetValue<string>("InstructionFilePath");
 
         foreach (var q in config.GetSection("QUEUE").AsEnumerable()) {
-          if (int.TryParse(q.Value, out int count)) {
-            var key = q.Key.Substring(q.Key.IndexOf(':')+1);
+          var key = q.Key.Substring(q.Key.IndexOf(':')+1);
+          if (q.Key.IndexOf(':') >= 0 && !string.IsNullOrEmpty(key) && int.TryParse(q.Value, out int count)) {
             s.Queues[key] = new MachineWatchInterface.QueueSize() {
               MaxSizeBeforeStopUnloading = count > 0 ? (int?)count : null
             };
+          }
+        }
+
+        foreach (var q in config.GetSection("EXTERNAL_QUEUE").AsEnumerable()) {
+          var key = q.Key.Substring(q.Key.IndexOf(':')+1);
+          if (q.Key.IndexOf(':') >= 0 && !string.IsNullOrEmpty(key)) {
+            s.ExternalQueues[key] = q.Value;
           }
         }
 
