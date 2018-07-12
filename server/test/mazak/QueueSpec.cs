@@ -228,6 +228,55 @@ namespace MachineWatchTest
     }
 
     [Fact]
+    public void IgnoreAllocateWhenNoRemaining()
+    {
+      var read = new ReadOnlyDataSet();
+
+      // plan 50, 45 completed, and 5 in process.  So there are none remaining.
+      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 45);
+      AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 5);
+
+      var j = new JobPlan("uuuu", 1);
+      j.PartName = "pppp";
+      j.SetInputQueue(1, 1, "thequeue");
+      _jobDB.AddJobs(new NewJobs() {
+        Jobs = new List<JobPlan> {j}
+      }, null);
+
+      // put 3 unassigned castings in queue
+      var mat1 = _logDB.AllocateMaterialIDForCasting("pppp", 1);
+      var mat2 = _logDB.AllocateMaterialIDForCasting("pppp", 1);
+      var mat3 = _logDB.AllocateMaterialIDForCasting("pppp", 1);
+      _logDB.RecordAddMaterialToQueue(mat1, process: 0, queue: "thequeue", position: 0);
+      _logDB.RecordAddMaterialToQueue(mat2, process: 0, queue: "thequeue", position: 1);
+      _logDB.RecordAddMaterialToQueue(mat3, process: 0, queue: "thequeue", position: 2);
+
+      _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new [] {
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "", PartName = "pppp", NumProcesses = 1},
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = mat2, Queue = "thequeue", Position = 1, Unique = "", PartName = "pppp", NumProcesses = 1},
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = mat3, Queue = "thequeue", Position = 2, Unique = "", PartName = "pppp", NumProcesses = 1},
+      });
+
+      // should allocate no parts and leave schedule unchanged.
+      var trans = _queues.CalculateScheduleChanges(read, new LoadAction[] {});
+
+      _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new [] {
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "", PartName = "pppp", NumProcesses = 1},
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = mat2, Queue = "thequeue", Position = 1, Unique = "", PartName = "pppp", NumProcesses = 1},
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = mat3, Queue = "thequeue", Position = 2, Unique = "", PartName = "pppp", NumProcesses = 1},
+      });
+
+      trans.Schedule_t.Count.Should().Be(0);
+      trans.ScheduleProcess_t.Count.Should().Be(0);
+    }
+
+    [Fact]
     public void MultipleProcesses()
     {
       var read = new ReadOnlyDataSet();
