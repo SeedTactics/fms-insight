@@ -6,6 +6,8 @@
 
   <ItemGroup>
     <ProjectReference Include="../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj" />
+
+    <None Update="log.v17.db" CopyToOutputDirectory="Always"/>
   </ItemGroup>
 
   <ItemGroup>
