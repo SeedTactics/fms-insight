@@ -908,9 +908,10 @@ namespace MazakMachineInterface
           if (schRow.ScheduleID == scheduleID && !schRow.IsCommentNull())
           {
             bool manual;
-            MazakPart.ParseComment(schRow.Comment, out unique, out path, out manual);
+            MazakPart.ParseComment(schRow.Comment, out unique, out var procToPath, out manual);
             numProc = schRow.GetScheduleProcessRows().Length;
             if (numProc < proc) numProc = proc;
+            path = procToPath.PathForProc(proc);
             return;
           }
         }
@@ -924,9 +925,10 @@ namespace MazakMachineInterface
         if (schRow.PartName == mazakPartName && !schRow.IsCommentNull())
         {
           bool manual;
-          MazakPart.ParseComment(schRow.Comment, out unique, out path, out manual);
+          MazakPart.ParseComment(schRow.Comment, out unique, out var procToPath, out manual);
           numProc = schRow.GetScheduleProcessRows().Length;
           if (numProc < proc) numProc = proc;
+          path = procToPath.PathForProc(proc);
           return;
         }
       }

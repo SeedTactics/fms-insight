@@ -40,15 +40,15 @@ namespace MazakMachineInterface
   //A mazak part cooresponds to a (Job,PathGroup) pair.
   public class MazakPart
   {
+    private static Serilog.ILogger Log = Serilog.Log.ForContext<MazakPart>();
+
     public readonly JobPlan Job;
-    public readonly int Proc1Path;
     public readonly int DownloadID;
     public readonly List<MazakProcess> Processes;
 
-    public MazakPart(JobPlan j, int proc1Path, int downID)
+    public MazakPart(JobPlan j, int downID)
     {
       Job = j;
-      Proc1Path = proc1Path;
       DownloadID = downID;
       Processes = new List<MazakProcess>();
     }
@@ -70,7 +70,7 @@ namespace MazakMachineInterface
     {
       get
       {
-        return Job.PartName + ":" + DownloadID.ToString() + ":" + Proc1Path.ToString();
+        return Job.PartName + ":" + DownloadID.ToString() + ":" + Processes.First().Path.ToString();
       }
     }
 
@@ -78,16 +78,16 @@ namespace MazakMachineInterface
     {
       get
       {
-        return CreateComment(Job.UniqueStr, Proc1Path, Job.ManuallyCreatedJob);
+        return CreateComment(Job.UniqueStr, Processes.Select(p => p.Path), Job.ManuallyCreatedJob);
       }
     }
 
-    public static string CreateComment(string unique, int proc1Path, bool manual)
+    public static string CreateComment(string unique, IEnumerable<int> paths, bool manual)
     {
         if (manual)
-          return unique + "-Path" + proc1Path.ToString() + "-1";
+          return unique + "-Path" + string.Join('-', paths) + "-1";
         else
-          return unique + "-Path" + proc1Path.ToString() + "-0";
+          return unique + "-Path" + string.Join('-', paths) + "-0";
     }
 
     public static bool IsSailPart(string partName)
@@ -127,21 +127,29 @@ namespace MazakMachineInterface
       }
     }
 
-    public static int ParsePathFromPart(string str)
+    public interface IProcToPath
     {
-      string[] sSplit = str.Split(':');
-      int v;
-      if (sSplit.Length >= 3 && int.TryParse(sSplit[2], out v))
-      {
-        return v;
+      int PathForProc(int proc);
+    }
+    private class ProcToPath : IProcToPath
+    {
+      private string unique;
+      private IReadOnlyList<int> paths;
+      public ProcToPath(string u, IReadOnlyList<int> p) {
+        unique = u;
+        paths = p;
       }
-      else
-      {
-        return 1;
+      public int PathForProc(int proc) {
+        if (proc <= paths.Count)
+          return paths[proc-1];
+        else {
+          Log.Debug("Unable to find path for {uniq} proc {proc}", unique, proc);
+          return 1;
+        }
       }
     }
 
-    public static void ParseComment(string comment, out string unique, out int path, out bool manual)
+    public static void ParseComment(string comment, out string unique, out IProcToPath procToPath, out bool manual)
     {
       int idx = comment.LastIndexOf("-Path");
       int lastDash = comment.LastIndexOf("-");
@@ -163,15 +171,15 @@ namespace MazakMachineInterface
       if (idx >= 0)
       {
         unique = comment.Substring(0, idx);
-        if (!int.TryParse(comment.Substring(idx + 5), out path))
-        {
-          path = 1;
-        }
+        string[] pathsStr = comment.Substring(idx + 5).Split('-');
+        procToPath = new ProcToPath(unique, pathsStr.Select(p =>
+          int.TryParse(p, out int pNum) ? pNum : 1
+        ).ToList());
       }
       else
       {
         unique = comment;
-        path = 1;
+        procToPath = new ProcToPath(unique, new[] {1});
       }
     }
   }
@@ -187,16 +195,18 @@ namespace MazakMachineInterface
   {
     public readonly MazakPart Part;
     public readonly int ProcessNumber;
+    public readonly int Path;
 
     public JobPlan Job
     {
       get { return Part.Job; }
     }
 
-    protected MazakProcess(MazakPart parent, int p)
+    protected MazakProcess(MazakPart parent, int proc, int path)
     {
       Part = parent;
-      ProcessNumber = p;
+      ProcessNumber = proc;
+      Path = path;
     }
 
     public abstract IEnumerable<string> Pallets();
@@ -221,13 +231,9 @@ namespace MazakMachineInterface
 
   public class MazakProcessFromJob : MazakProcess
   {
-    //The path in the job for this process.
-    public readonly int Path;
-
     public MazakProcessFromJob(MazakPart parent, int process, int pth)
-      : base(parent, process)
+      : base(parent, process, pth)
     {
-      Path = pth;
     }
 
     public override IEnumerable<string> Pallets()
@@ -302,15 +308,15 @@ namespace MazakMachineInterface
     //Here, jobs have only one process.  The number of processes are copied from the template.
     public readonly ReadOnlyDataSet.PartProcessRow TemplateProcessRow;
 
-    public MazakProcessFromTemplate(MazakPart parent, ReadOnlyDataSet.PartProcessRow template)
-      : base(parent, template.ProcessNumber)
+    public MazakProcessFromTemplate(MazakPart parent, ReadOnlyDataSet.PartProcessRow template, int path)
+      : base(parent, template.ProcessNumber, path)
     {
       TemplateProcessRow = template;
     }
 
     public override IEnumerable<string> Pallets()
     {
-      return Job.PlannedPallets(1, Part.Proc1Path);
+      return Job.PlannedPallets(1, Path);
     }
 
     public override IEnumerable<JobPlan.FixtureFace> Fixtures() => Enumerable.Empty<JobPlan.FixtureFace>();
@@ -321,7 +327,7 @@ namespace MazakMachineInterface
       char[] UnfixLDS = { '0', '0', '0', '0', '0', '0', '0', '0', '0', '0' };
       char[] Cut = { '0', '0', '0', '0', '0', '0', '0', '0' };
 
-      foreach (var routeEntry in Job.GetMachiningStop(1, Part.Proc1Path))
+      foreach (var routeEntry in Job.GetMachiningStop(1, Path))
       {
         foreach (int statNum in routeEntry.Stations())
         {
@@ -329,12 +335,12 @@ namespace MazakMachineInterface
         }
       }
 
-      foreach (int statNum in Job.LoadStations(1, Part.Proc1Path))
+      foreach (int statNum in Job.LoadStations(1, Path))
       {
         FixLDS[statNum - 1] = statNum.ToString()[0];
       }
 
-      foreach (int statNum in Job.UnloadStations(1, Part.Proc1Path))
+      foreach (int statNum in Job.UnloadStations(1, Path))
       {
         UnfixLDS[statNum - 1] = statNum.ToString()[0];
       }
@@ -364,7 +370,7 @@ namespace MazakMachineInterface
     public override string ToString()
     {
       return "CopyFromTemplate " + base.Job.PartName + "-" + base.ProcessNumber.ToString() +
-        " path " + base.Part.Proc1Path.ToString();
+        " path " + base.Path.ToString();
     }
   }
 
@@ -436,10 +442,10 @@ namespace MazakMachineInterface
           //each path gets a MazakPart
           for (int path = 1; path <= job.GetNumPaths(1); path++)
           {
-            var mazakPart = new MazakPart(job, path, downloadID);
+            var mazakPart = new MazakPart(job, downloadID);
 
             string error;
-            BuildProcFromJobWithOneProc(job, mazakPart, mazakTy, currentSet, out error);
+            BuildProcFromJobWithOneProc(job, path, mazakPart, mazakTy, currentSet, out error);
             if (error == null || error == "")
               ret.Add(mazakPart);
             else
@@ -496,7 +502,7 @@ namespace MazakMachineInterface
           foreach (var grp in pathGroups)
           {
             //label the part by the path number on process 1.
-            var mazakPart = new MazakPart(job, grp.Key, downloadID);
+            var mazakPart = new MazakPart(job, downloadID);
             string error;
             BuildProcFromPathGroup(job, mazakPart, out error, mazakTy, currentSet,
                  (proc, path) => grp.Value == job.GetPathGroup(proc, path));
@@ -584,7 +590,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private static void BuildProcFromJobWithOneProc(JobPlan job, MazakPart mazak, DatabaseAccess.MazakDbType mazakTy,
+    private static void BuildProcFromJobWithOneProc(JobPlan job, int proc1path, MazakPart mazak, DatabaseAccess.MazakDbType mazakTy,
                                                     ReadOnlyDataSet currentSet, out string ErrorDuringCreate)
     {
       ErrorDuringCreate = null;
@@ -592,7 +598,7 @@ namespace MazakMachineInterface
       // first try building from the job
       string FromJobError;
       BuildProcFromPathGroup(job, mazak, out FromJobError, mazakTy, currentSet,
-            (proc, path) => path == mazak.Proc1Path);  // proc will always equal 1.
+            (proc, path) => path == proc1path);  // proc will always equal 1.
 
       if (FromJobError == null || FromJobError == "")
         return; //Success
@@ -619,7 +625,7 @@ namespace MazakMachineInterface
 
       foreach (ReadOnlyDataSet.PartProcessRow pRow in TemplateRow.GetPartProcessRows())
       {
-        mazak.Processes.Add(new MazakProcessFromTemplate(mazak, pRow));
+        mazak.Processes.Add(new MazakProcessFromTemplate(mazak, pRow, proc1path));
       }
     }
     #endregion

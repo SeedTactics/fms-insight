@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using BlackMaple.MachineWatchInterface;
 
 namespace MazakMachineInterface
@@ -170,10 +171,9 @@ namespace MazakMachineInterface
 
           //Check if the schedule is manually created, since we don't decrement those
           string unique;
-          int path;
           bool manual = false;
           if (!schRow.IsCommentNull())
-            MazakPart.ParseComment(schRow.Comment, out unique, out path, out manual);
+            MazakPart.ParseComment(schRow.Comment, out unique, out var paths, out manual);
 
           if (manual) continue;
 
@@ -343,13 +343,14 @@ namespace MazakMachineInterface
             int numRemove = schRow.PlanQuantity - cnt;
 
             string jobUnique = "";
-            int path = 1;
+            int proc1path = 1;
             bool manual = false;
             if (!schRow.IsCommentNull())
             {
-              MazakPart.ParseComment(schRow.Comment, out jobUnique, out path, out manual);
+              MazakPart.ParseComment(schRow.Comment, out jobUnique, out var procToPath, out manual);
+              proc1path = procToPath.PathForProc(proc: 1);
             }
-            var decrKey = new JobAndPath(jobUnique, path);
+            var decrKey = new JobAndPath(jobUnique, proc1path);
 
             if (parts.ContainsKey(decrKey))
             {

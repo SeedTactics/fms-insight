@@ -111,6 +111,7 @@ namespace MazakMachineInterface
     {
       public ReadOnlyDataSet.ScheduleProcessRow SchProcRow {get;set;}
       public string InputQueue {get;set;}
+      public int Path {get;set;}
       public int? TargetMaterialCount {get;set;}
     }
 
@@ -119,7 +120,6 @@ namespace MazakMachineInterface
       public ReadOnlyDataSet.ScheduleRow SchRow {get;set;}
       public string Unique {get;set;}
       public string PartName {get;set;}
-      public int Path {get;set;}
       public int NumProcesses {get;set;}
       public int RemainToLoad {get;set;}
       public Dictionary<int, ScheduleWithQueuesProcess> Procs {get;set;}
@@ -134,7 +134,7 @@ namespace MazakMachineInterface
         var remain  = schRow.PlanQuantity - CountCompletedOrInProc(schRow, proc: 1);
         if (remain <= 0) continue;
 
-        MazakPart.ParseComment(schRow.Comment, out string unique, out int path, out bool manual);
+        MazakPart.ParseComment(schRow.Comment, out string unique, out var procToPath, out bool manual);
 
         var job = _jobDB.LoadJob(unique);
         if (job == null) continue;
@@ -142,7 +142,7 @@ namespace MazakMachineInterface
         // only if no load or unload action is in process
         bool foundJobAtLoad = false;
         foreach (var action in loadOpers) {
-          if (action.Unique == job.UniqueStr && action.Path == path) {
+          if (action.Unique == job.UniqueStr && action.Path == procToPath.PathForProc(action.Process)) {
             foundJobAtLoad = true;
             log.Debug("Not editing queued material because {uniq} is in the process of being loaded or unload with action {@action}", job.UniqueStr, action);
             break;
@@ -155,7 +155,6 @@ namespace MazakMachineInterface
           SchRow = schRow,
           Unique = unique,
           PartName = job.PartName,
-          Path = path,
           NumProcesses = job.NumProcesses,
           RemainToLoad = remain,
           Procs = new Dictionary<int, ScheduleWithQueuesProcess>(),
@@ -174,8 +173,10 @@ namespace MazakMachineInterface
             missingProc = true;
             break;
           }
+          var path = procToPath.PathForProc(proc);
           sch.Procs.Add(proc, new ScheduleWithQueuesProcess() {
             SchProcRow = schProcRow,
+            Path = path,
             InputQueue = job.GetInputQueue(process: proc, path: path)
           });
         }

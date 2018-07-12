@@ -76,10 +76,10 @@ namespace MachineWatchTest
       trans.Should().BeNull();
     }
 
-    private ReadOnlyDataSet.ScheduleRow AddSchedule(ReadOnlyDataSet read, int schId, string unique, string part, int pri, int complete, int plan)
+    private ReadOnlyDataSet.ScheduleRow AddSchedule(ReadOnlyDataSet read, int schId, string unique, string part, int pri, int numProc, int complete, int plan)
     {
       return read.Schedule.AddScheduleRow(
-        Comment: MazakPart.CreateComment(unique, 1, false),
+        Comment: MazakPart.CreateComment(unique, Enumerable.Repeat(1, numProc), false),
         CompleteQuantity: complete,
         DueDate: DateTime.UtcNow.AddHours(pri),
         FixForMachine: 1,
@@ -117,7 +117,7 @@ namespace MachineWatchTest
       var read = new ReadOnlyDataSet();
 
       // plan 50, 40 completed, and 5 in process.  So there are 5 remaining.
-      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", pri: 10, plan: 50, complete: 40);
+      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 40);
       AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 5);
 
       var j = new JobPlan("uuuu", 1);
@@ -138,7 +138,7 @@ namespace MachineWatchTest
       _logDB.RecordAddMaterialToQueue(mat4, process: 1, queue: "thequeue", position: 3);
 
       //put something else at load station
-      var action = new LoadAction(true, 1, "pppp", MazakPart.CreateComment("uuuu2", 1, false), 1, 1);
+      var action = new LoadAction(true, 1, "pppp", MazakPart.CreateComment("uuuu2", new [] {1}, false), 1, 1);
 
       var trans = _queues.CalculateScheduleChanges(read, new [] {action});
 
@@ -154,7 +154,7 @@ namespace MachineWatchTest
       var read = new ReadOnlyDataSet();
 
       // plan 50, 40 completed, and 5 in process, and 2 as material.
-      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", pri: 10, plan: 50, complete: 40);
+      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 40);
       AddScheduleProcess(schRow, proc: 1, matQty: 2, exeQty: 5);
 
       var j = new JobPlan("uuuu", 1);
@@ -182,7 +182,7 @@ namespace MachineWatchTest
       var read = new ReadOnlyDataSet();
 
       // plan 50, 43 completed, and 5 in process.  So there are 2 remaining.
-      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", pri: 10, plan: 50, complete: 43);
+      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 43);
       AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 5);
 
       var j = new JobPlan("uuuu", 1);
@@ -233,7 +233,7 @@ namespace MachineWatchTest
       var read = new ReadOnlyDataSet();
 
       // plan 50, 30 completed.  proc1 has 5 in process, zero material.  proc2 has 3 in process, 1 material
-      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", pri: 10, plan: 50, complete: 30);
+      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 30);
       AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 5);
       AddScheduleProcess(schRow, proc: 2, matQty: 1, exeQty: 3);
 
@@ -287,7 +287,7 @@ namespace MachineWatchTest
     public void SkipsWhenAtLoad()
     {
       var read = new ReadOnlyDataSet();
-      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", pri: 10, plan: 50, complete: 40);
+      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 40);
       AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 5);
 
       var j = new JobPlan("uuuu", 1);
@@ -302,7 +302,7 @@ namespace MachineWatchTest
       _logDB.RecordAddMaterialToQueue(mat1, process: 0, queue: "thequeue", position: 0);
 
       //put something else at load station
-      var action = new LoadAction(true, 1, "pppp", MazakPart.CreateComment("uuuu", 1, false), 1, 1);
+      var action = new LoadAction(true, 1, "pppp", MazakPart.CreateComment("uuuu", new[] {1}, false), 1, 1);
 
       var trans = _queues.CalculateScheduleChanges(read, new [] {action});
       trans.Should().BeNull();

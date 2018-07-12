@@ -57,7 +57,8 @@ namespace MazakMachineInterface
       Process = proc;
       Qty = q;
       bool manual;
-      MazakPart.ParseComment(comment, out Unique, out Path, out manual);
+      MazakPart.ParseComment(comment, out Unique, out var procToPath, out manual);
+      Path = procToPath.PathForProc(proc);
     }
 
     public override string ToString()

@@ -218,12 +218,7 @@ namespace MazakMachineInterface
       {
         get
         {
-          string unique;
-          int path;
-          bool manual;
-
-          MazakPart.ParseComment(_schRow.Comment, out unique, out path, out manual);
-
+          MazakPart.ParseComment(_schRow.Comment, out string unique, out var paths, out var manual);
           return unique;
         }
       }
@@ -480,7 +475,7 @@ namespace MazakMachineInterface
     }
     #endregion
 
-    public void SaveHoldMode(int schID, JobPlan job, int path)
+    public void SaveHoldMode(int schID, JobPlan job, int proc1path)
     {
       lock (_dbLock)
       {
@@ -492,8 +487,8 @@ namespace MazakMachineInterface
 
           if (job.HoldEntireJob != null)
             InsertHold(schID, true, job.UniqueStr, job.HoldEntireJob, trans);
-          if (job.HoldMachining(1, path) != null)
-            InsertHold(schID, false, job.UniqueStr, job.HoldMachining(1, path), trans);
+          if (job.HoldMachining(1, proc1path) != null)
+            InsertHold(schID, false, job.UniqueStr, job.HoldMachining(1, proc1path), trans);
           trans.Commit();
         }
         catch
@@ -583,7 +578,7 @@ namespace MazakMachineInterface
       }
     }
 
-    public void LoadHoldIntoJob(int schID, JobPlan plan, int path)
+    public void LoadHoldIntoJob(int schID, JobPlan plan, int proc1path)
     {
       lock (_dbLock)
       {
@@ -612,7 +607,7 @@ namespace MazakMachineInterface
               if (reader.GetBoolean(0))
                 hold = plan.HoldEntireJob;
               else
-                hold = plan.HoldMachining(1, path);
+                hold = plan.HoldMachining(1, proc1path);
 
               hold.HoldUnholdPatternStartUTC = new DateTime(reader.GetInt64(1), DateTimeKind.Utc);
               hold.HoldUnholdPatternRepeats = reader.GetBoolean(2);
@@ -622,7 +617,7 @@ namespace MazakMachineInterface
 
           //clear existing hold pattern
           plan.HoldEntireJob.HoldUnholdPattern.Clear();
-          plan.HoldMachining(1, path).HoldUnholdPattern.Clear();
+          plan.HoldMachining(1, proc1path).HoldUnholdPattern.Clear();
 
           //hold pattern
           cmd.CommandText = "SELECT EntireJob, Span FROM hold_pattern " +
@@ -637,7 +632,7 @@ namespace MazakMachineInterface
               if (reader.GetBoolean(0))
                 hold = plan.HoldEntireJob;
               else
-                hold = plan.HoldMachining(1, path);
+                hold = plan.HoldMachining(1, proc1path);
 
               hold.HoldUnholdPattern.Add(TimeSpan.FromTicks(reader.GetInt64(1)));
             }

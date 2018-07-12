@@ -99,29 +99,28 @@ namespace MazakMachineInterface
 
     #region Reading
     private static void CalculateMaxProcAndPath(ReadOnlyDataSet mazakSet,
-                                               out Dictionary<string, int> uniqueToMaxPath,
+                                               out Dictionary<string, int> uniqueToMaxProc1Path,
                                                out Dictionary<string, int> uniqueToMaxProcess)
     {
-      uniqueToMaxPath = new Dictionary<string, int>();
+      uniqueToMaxProc1Path = new Dictionary<string, int>();
       uniqueToMaxProcess = new Dictionary<string, int>();
       foreach (ReadOnlyDataSet.PartRow partRow in mazakSet.Part.Rows)
       {
         if (MazakPart.IsSailPart(partRow.PartName) && !partRow.IsCommentNull())
         {
           string jobUnique = "";
-          int path = 1;
           bool manual = false;
           int numProc = partRow.GetPartProcessRows().Length;
 
-          MazakPart.ParseComment(partRow.Comment, out jobUnique, out path, out manual);
+          MazakPart.ParseComment(partRow.Comment, out jobUnique, out var paths, out manual);
 
-          if (uniqueToMaxPath.ContainsKey(jobUnique))
+          if (uniqueToMaxProc1Path.ContainsKey(jobUnique))
           {
-            uniqueToMaxPath[jobUnique] = Math.Max(uniqueToMaxPath[jobUnique], path);
+            uniqueToMaxProc1Path[jobUnique] = Math.Max(uniqueToMaxProc1Path[jobUnique], paths.PathForProc(proc: 1));
           }
           else
           {
-            uniqueToMaxPath.Add(jobUnique, path);
+            uniqueToMaxProc1Path.Add(jobUnique, paths.PathForProc(proc: 1));
           }
 
           if (uniqueToMaxProcess.ContainsKey(jobUnique))
@@ -139,11 +138,12 @@ namespace MazakMachineInterface
       }
     }
 
-    private static void AddRoutingToJob(ReadOnlyDataSet mazakSet, ReadOnlyDataSet.PartRow partRow, JobPlan job, int path, DatabaseAccess.MazakDbType mazakTy)
+    private static void AddRoutingToJob(ReadOnlyDataSet mazakSet, ReadOnlyDataSet.PartRow partRow, JobPlan job, MazakPart.IProcToPath procToPath, DatabaseAccess.MazakDbType mazakTy)
     {
       //Add routing and pallets
       foreach (ReadOnlyDataSet.PartProcessRow partProcRow in partRow.GetPartProcessRows())
       {
+        var path = procToPath.PathForProc(partProcRow.ProcessNumber);
         job.SetPartsPerPallet(partProcRow.ProcessNumber, path, partProcRow.FixQuantity);
         job.SetPathGroup(partProcRow.ProcessNumber, path, path);
 
@@ -194,9 +194,9 @@ namespace MazakMachineInterface
       }
     }
 
-    private static void AddCompletedToJob(ReadOnlyDataSet mazakSet, ReadOnlyDataSet.ScheduleRow schRow, InProcessJob job, int path)
+    private static void AddCompletedToJob(ReadOnlyDataSet mazakSet, ReadOnlyDataSet.ScheduleRow schRow, InProcessJob job, MazakPart.IProcToPath procToPath)
     {
-        job.SetCompleted(job.NumProcesses, path, schRow.CompleteQuantity);
+        job.SetCompleted(job.NumProcesses, procToPath.PathForProc(job.NumProcesses), schRow.CompleteQuantity);
 
         //in-proc and material for each process
         var counts = new Dictionary<int, int>(); //key is process, value is in-proc + mat
@@ -211,7 +211,7 @@ namespace MazakMachineInterface
             .Where(x => x.Key > proc)
             .Select(x => x.Value)
             .Sum();
-          job.SetCompleted(proc, path, cnt + schRow.CompleteQuantity);
+          job.SetCompleted(proc, procToPath.PathForProc(proc), cnt + schRow.CompleteQuantity);
         }
     }
 
@@ -282,7 +282,7 @@ namespace MazakMachineInterface
       foreach (var k in fmsSettings.Queues) curStatus.QueueSizes[k.Key] = k.Value;
 
       var jobsBySchID = new Dictionary<long, InProcessJob>();
-      var pathBySchID = new Dictionary<long, int>();
+      var pathBySchID = new Dictionary<long, MazakPart.IProcToPath>();
 
       foreach (ReadOnlyDataSet.ScheduleRow schRow in mazakSet.Schedule.Rows)
       {
@@ -306,16 +306,16 @@ namespace MazakMachineInterface
         int loc = partName.IndexOf(':');
         if (loc >= 0) partName = partName.Substring(0, loc);
         string jobUnique = "";
-        int path = 1;
+        MazakPart.IProcToPath procToPath = null;
         bool manual = false;
         if (!partRow.IsCommentNull())
-          MazakPart.ParseComment(partRow.Comment, out jobUnique, out path, out manual);
+          MazakPart.ParseComment(partRow.Comment, out jobUnique, out procToPath, out manual);
 
         if (!uniqueToMaxProcess.ContainsKey(jobUnique))
           continue;
 
         int numProc = uniqueToMaxProcess[jobUnique];
-        int maxPath = uniqueToMaxPath[jobUnique];
+        int maxProc1Path = uniqueToMaxPath[jobUnique];
 
         InProcessJob job;
 
@@ -326,28 +326,28 @@ namespace MazakMachineInterface
         }
         else
         {
-          var paths = new int[numProc];
+          var jobPaths = new int[numProc];
           for (int i = 0; i < numProc; i++)
-            paths[i] = maxPath;
-          job = new InProcessJob(jobUnique, numProc, paths);
+            jobPaths[i] = maxProc1Path;
+          job = new InProcessJob(jobUnique, numProc, jobPaths);
           job.PartName = partName;
           job.JobCopiedToSystem = true;
           curStatus.Jobs.Add(jobUnique, job);
         }
         jobsBySchID.Add(schRow.ScheduleID, job);
-        pathBySchID.Add(schRow.ScheduleID, path);
+        pathBySchID.Add(schRow.ScheduleID, procToPath);
 
         //Job Basics
-        job.SetPlannedCyclesOnFirstProcess(path, schRow.PlanQuantity);
-        AddCompletedToJob(mazakSet, schRow, job, path);
+        job.SetPlannedCyclesOnFirstProcess(procToPath.PathForProc(proc: 1), schRow.PlanQuantity);
+        AddCompletedToJob(mazakSet, schRow, job, procToPath);
         job.Priority = schRow.Priority;
         if (((HoldPattern.HoldMode)schRow.HoldMode) == HoldPattern.HoldMode.FullHold)
           job.HoldEntireJob.UserHold = true;
         else
           job.HoldEntireJob.UserHold = false;
-        hold.LoadHoldIntoJob(schRow.ScheduleID, job, path);
+        hold.LoadHoldIntoJob(schRow.ScheduleID, job, procToPath.PathForProc(proc: 1));
 
-        AddRoutingToJob(mazakSet, partRow, job, path, database.MazakType);
+        AddRoutingToJob(mazakSet, partRow, job, procToPath, database.MazakType);
       }
 
       foreach (var j in jobsBySchID.Values)
@@ -389,7 +389,7 @@ namespace MazakMachineInterface
             status.NumFaces = Math.Max(status.NumFaces, palSub.PartProcessNumber);
 
             var job = jobsBySchID[palSub.ScheduleID];
-            var path = pathBySchID[palSub.ScheduleID];
+            var procToPath = pathBySchID[palSub.ScheduleID];
 
             var matIDs = new Queue<long>(FindMatIDsFromOldCycles(oldCycles, job.UniqueStr, palSub.PartProcessNumber));
 
@@ -407,7 +407,7 @@ namespace MazakMachineInterface
                 JobUnique = job.UniqueStr,
                 PartName = job.PartName,
                 Process = palSub.PartProcessNumber,
-                Path = path,
+                Path = procToPath.PathForProc(palSub.PartProcessNumber),
                 Serial = matDetails?.Serial,
                 WorkorderId = matDetails?.Workorder,
                 SignaledInspections =
@@ -441,7 +441,7 @@ namespace MazakMachineInterface
                   LoadOntoFace = palSub.PartProcessNumber + 1,
                   LoadOntoPallet = status.Pallet,
                   ProcessAfterLoad = palSub.PartProcessNumber + 1,
-                  PathAfterLoad = path,
+                  PathAfterLoad = procToPath.PathForProc(palSub.PartProcessNumber + 1),
                 };
               }
               else if (unload != null)
@@ -452,7 +452,9 @@ namespace MazakMachineInterface
                         palSub.PartProcessNumber == job.NumProcesses
                             ? InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
                             : InProcessMaterialAction.ActionType.UnloadToInProcess,
-                  UnloadIntoQueue = job.GetOutputQueue(process: palSub.PartProcessNumber, path: path),
+                  UnloadIntoQueue = job.GetOutputQueue(
+                    process: palSub.PartProcessNumber,
+                    path: procToPath.PathForProc(palSub.PartProcessNumber)),
                 };
               }
             }
@@ -1049,10 +1051,7 @@ namespace MazakMachineInterface
             transSet.ScheduleProcess_t.AddScheduleProcess_tRow(newSchProcRow);
           }
 
-          string unique;
-          int path;
-          bool manual;
-          MazakPart.ParseComment(schRow.Comment, out unique, out path, out manual);
+          MazakPart.ParseComment(schRow.Comment, out string unique, out var paths, out bool manual);
           if (unique != null && unique != "")
             jobDB.ArchiveJob(unique);
 
@@ -1130,20 +1129,22 @@ namespace MazakMachineInterface
       int scheduleCount = 0;
       foreach (JobPlan part in jobs)
       {
-        for (int path = 1; path <= part.GetNumPaths(1); path++)
+        for (int proc1path = 1; proc1path <= part.GetNumPaths(1); proc1path++)
         {
-          if (part.GetPlannedCyclesOnFirstProcess(path) <= 0) continue;
+          if (part.GetPlannedCyclesOnFirstProcess(proc1path) <= 0) continue;
 
           //check if part exists downloaded
           int downloadUid = -1;
           string mazakPartName = "";
+          string mazakComment = "";
           foreach (ReadOnlyDataSet.PartRow partRow in currentSet.Part)
           {
             if (MazakPart.IsSailPart(partRow.PartName)) {
-              MazakPart.ParseComment(partRow.Comment, out string u, out int p, out bool m);
-              if (u == part.UniqueStr && p == path) {
+              MazakPart.ParseComment(partRow.Comment, out string u, out var ps, out bool m);
+              if (u == part.UniqueStr && ps.PathForProc(proc: 1) == proc1path) {
                 downloadUid = MazakPart.ParseUID(partRow.PartName);
                 mazakPartName = partRow.PartName;
+                mazakComment = partRow.Comment;
                 break;
               }
             }
@@ -1156,8 +1157,8 @@ namespace MazakMachineInterface
           if (!scheduledParts.Contains(mazakPartName))
           {
             int schid = FindNextScheduleId(usedScheduleIDs);
-            SchedulePart(transSet, schid, downloadUid, part.NumProcesses, part, path, now, scheduleCount);
-            hold.SaveHoldMode(schid, part, path);
+            SchedulePart(transSet, schid, mazakPartName, mazakComment, part.NumProcesses, part, proc1path, now, scheduleCount);
+            hold.SaveHoldMode(schid, part, proc1path);
             scheduleCount += 1;
           }
         }
@@ -1192,16 +1193,14 @@ namespace MazakMachineInterface
       return 1;
     }
 
-    private void SchedulePart(TransactionDataSet transSet, int SchID, int UID, int numProcess,
-                              JobPlan part, int path, DateTime now, int scheduleCount)
+    private void SchedulePart(TransactionDataSet transSet, int SchID, string mazakPartName, string mazakComment, int numProcess,
+                              JobPlan part, int proc1path, DateTime now, int scheduleCount)
     {
-      var tempMazakPart = new MazakPart(part, path, UID);
-
       var newSchRow = transSet.Schedule_t.NewSchedule_tRow();
       newSchRow.Command = TransactionDatabaseAccess.AddCommand;
       newSchRow.ScheduleID = SchID;
-      newSchRow.PartName = tempMazakPart.PartName;
-      newSchRow.PlanQuantity = part.GetPlannedCyclesOnFirstProcess(path);
+      newSchRow.PartName = mazakPartName;
+      newSchRow.PlanQuantity = part.GetPlannedCyclesOnFirstProcess(proc1path);
       newSchRow.CompleteQuantity = 0;
       newSchRow.FixForMachine = 0;
       newSchRow.MissingFixture = 0;
@@ -1210,12 +1209,12 @@ namespace MazakMachineInterface
       newSchRow.MixScheduleID = 0;
       newSchRow.ProcessingPriority = 0;
       newSchRow.Priority = 75;
-      newSchRow.Comment = tempMazakPart.Comment;
+      newSchRow.Comment = mazakComment;
 
       if (UseStartingOffsetForDueDate)
       {
-        if (part.GetSimulatedStartingTimeUTC(1, path) != DateTime.MinValue)
-          newSchRow.DueDate = part.GetSimulatedStartingTimeUTC(1, path);
+        if (part.GetSimulatedStartingTimeUTC(1, proc1path) != DateTime.MinValue)
+          newSchRow.DueDate = part.GetSimulatedStartingTimeUTC(1, proc1path);
         else
           newSchRow.DueDate = DateTime.Today;
         newSchRow.DueDate = newSchRow.DueDate.AddSeconds(5 * scheduleCount);
@@ -1228,12 +1227,12 @@ namespace MazakMachineInterface
       bool entireHold = false;
       if (part.HoldEntireJob != null) entireHold = part.HoldEntireJob.IsJobOnHold;
       bool machiningHold = false;
-      if (part.HoldMachining(1, path) != null) machiningHold = part.HoldMachining(1, path).IsJobOnHold;
+      if (part.HoldMachining(1, proc1path) != null) machiningHold = part.HoldMachining(1, proc1path).IsJobOnHold;
       newSchRow.HoldMode = (int)HoldPattern.CalculateHoldMode(entireHold, machiningHold);
 
       int matQty = newSchRow.PlanQuantity;
 
-      if (!string.IsNullOrEmpty(part.GetInputQueue(process: 1, path: path))) {
+      if (!string.IsNullOrEmpty(part.GetInputQueue(process: 1, path: proc1path))) {
         matQty = 0;
       }
 

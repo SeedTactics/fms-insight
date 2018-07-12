@@ -118,19 +118,19 @@ namespace MachineWatchTest
 
 			CheckPartProcess(trans, "Part1:3:1", 1, "Fixt:3:0:4:1", "1200000000", "0004000000", "10000000");
 			CheckPartProcess(trans, "Part1:3:1", 2, "Fixt:3:0:4:2", "1200000000", "0004000000", "10000000");
-			CheckPart(trans, "Part1:3:1", "Job1-Path1-0");
+			CheckPart(trans, "Part1:3:1", "Job1-Path1-1-0");
 
 			CheckPartProcess(trans, "Part1:3:2", 1, "Fixt:3:1:10:1", "0000500000", "0030000000", "00340000");
 			CheckPartProcess(trans, "Part1:3:2", 2, "Fixt:3:1:10:2", "0000500000", "0030000000", "00340000");
-			CheckPart(trans, "Part1:3:2", "Job1-Path2-0");
+			CheckPart(trans, "Part1:3:2", "Job1-Path2-2-0");
 
 			CheckPartProcess(trans, "Part2:3:1", 1, "Fixt:3:0:4:1");
 			CheckPartProcess(trans, "Part2:3:1", 2, "Fixt:3:0:4:2");
-			CheckPart(trans, "Part2:3:1", "Job2-Path1-0");
+			CheckPart(trans, "Part2:3:1", "Job2-Path1-1-0");
 
 			CheckPartProcess(trans, "Part2:3:2", 1, "Fixt:3:1:10:1");
 			CheckPartProcess(trans, "Part2:3:2", 2, "Fixt:3:1:10:2");
-			CheckPart(trans, "Part2:3:2", "Job2-Path2-0");
+			CheckPart(trans, "Part2:3:2", "Job2-Path2-2-0");
 
 			CheckPartProcess(trans, "Part3:3:1", 1, "Fixt:3:2:20:1");
 			CheckPart(trans, "Part3:3:1", "Job3-Path1-0");
@@ -232,19 +232,19 @@ namespace MachineWatchTest
 
 			CheckPartProcess(trans, "Part1:3:1", 1, "Fixt:2:0:4:1");
 			CheckPartProcess(trans, "Part1:3:1", 2, "Fixt:2:0:4:2");
-			CheckPart(trans, "Part1:3:1", "Job1-Path1-0");
+			CheckPart(trans, "Part1:3:1", "Job1-Path1-1-0");
 
 			CheckPartProcess(trans, "Part1:3:2", 1, "Fixt:2:0:10:1");
 			CheckPartProcess(trans, "Part1:3:2", 2, "Fixt:2:0:10:2");
-			CheckPart(trans, "Part1:3:2", "Job1-Path2-0");
+			CheckPart(trans, "Part1:3:2", "Job1-Path2-2-0");
 
 			CheckPartProcess(trans, "Part2:3:1", 1, "Fixt:2:0:4:1");
 			CheckPartProcess(trans, "Part2:3:1", 2, "Fixt:2:0:4:2");
-			CheckPart(trans, "Part2:3:1", "Job2-Path1-0");
+			CheckPart(trans, "Part2:3:1", "Job2-Path1-1-0");
 
 			CheckPartProcess(trans, "Part2:3:2", 1, "Fixt:2:0:10:1");
 			CheckPartProcess(trans, "Part2:3:2", 2, "Fixt:2:0:10:2");
-			CheckPart(trans, "Part2:3:2", "Job2-Path2-0");
+			CheckPart(trans, "Part2:3:2", "Job2-Path2-2-0");
 
 			CheckPartProcess(trans, "Part3:3:1", 1, "Fixt:3:2:20:1");
 			CheckPart(trans, "Part3:3:1", "Job3-Path1-0");
@@ -320,21 +320,21 @@ namespace MachineWatchTest
 
 			CheckPartProcess(trans, "Part1:3:1", 1, "Fixt:3:0:4:1");
 			CheckPartProcess(trans, "Part1:3:1", 2, "Fixt:3:0:4:2");
-			CheckPart(trans, "Part1:3:1", "Job1-Path1-0");
+			CheckPart(trans, "Part1:3:1", "Job1-Path1-1-0");
 
 			CheckPartProcess(trans, "Part1:3:2", 1, "Fixt:3:1:10:1");
 			CheckPartProcess(trans, "Part1:3:2", 2, "Fixt:3:1:10:2");
-			CheckPart(trans, "Part1:3:2", "Job1-Path2-0");
+			CheckPart(trans, "Part1:3:2", "Job1-Path2-2-0");
 
 			CheckPartProcess(trans, "Part2:3:1", 1, "Fixt:3:0:4:1");
 			CheckPartProcess(trans, "Part2:3:1", 2, "Fixt:3:0:4:2");
 			CheckPartProcess(trans, "Part2:3:1", 3, "Fixt:3:0:4:3");
-			CheckPart(trans, "Part2:3:1", "Job2-Path1-0");
+			CheckPart(trans, "Part2:3:1", "Job2-Path1-1-1-0");
 
 			CheckPartProcess(trans, "Part2:3:2", 1, "Fixt:3:1:10:1");
 			CheckPartProcess(trans, "Part2:3:2", 2, "Fixt:3:1:10:2");
 			CheckPartProcess(trans, "Part2:3:2", 3, "Fixt:3:1:10:3");
-			CheckPart(trans, "Part2:3:2", "Job2-Path2-0");
+			CheckPart(trans, "Part2:3:2", "Job2-Path2-2-2-0");
 
 			CheckPartProcess(trans, "Part3:3:1", 1, "Fixt:3:2:20:1");
 			CheckPart(trans, "Part3:3:1", "Job3-Path1-0");
@@ -417,19 +417,19 @@ namespace MachineWatchTest
 
 			CheckPartProcess(trans, "Part1:3:1", 1, "Fixt:3:0:4:1");
 			CheckPartProcess(trans, "Part1:3:1", 2, "Fixt:3:0:4:2");
-			CheckPart(trans, "Part1:3:1", "Job1-Path1-0");
+			CheckPart(trans, "Part1:3:1", "Job1-Path1-1-0");
 
 			CheckPartProcess(trans, "Part1:3:2", 1, "Fixt:3:1:10:1");
 			CheckPartProcess(trans, "Part1:3:2", 2, "Fixt:3:1:10:2");
-			CheckPart(trans, "Part1:3:2", "Job1-Path2-0");
+			CheckPart(trans, "Part1:3:2", "Job1-Path2-2-0");
 
 			CheckPartProcess(trans, "Part2:3:1", 1, "Fixt:3:2:4:1");
 			CheckPartProcess(trans, "Part2:3:1", 2, "Fixt:3:2:4:2");
-			CheckPart(trans, "Part2:3:1", "Job2-Path1-0");
+			CheckPart(trans, "Part2:3:1", "Job2-Path1-1-0");
 
 			CheckPartProcess(trans, "Part2:3:2", 1, "Fixt:3:1:10:1");
 			CheckPartProcess(trans, "Part2:3:2", 2, "Fixt:3:1:10:2");
-			CheckPart(trans, "Part2:3:2", "Job2-Path2-0");
+			CheckPart(trans, "Part2:3:2", "Job2-Path2-2-0");
 
 			CheckPalletGroup(trans, 31, "Fixt:3:0:4", 2, new int[] {4, 5});
 			CheckPalletGroup(trans, 32, "Fixt:3:1:10", 2, new int[] {10, 11, 12});
@@ -531,19 +531,19 @@ namespace MachineWatchTest
 
 			CheckPartProcessFromJob(trans, "Part1:3:1", 1, "Fixt:3:0:4:1");
 			CheckPartProcessFromJob(trans, "Part1:3:1", 2, "Fixt:3:0:4:2");
-			CheckPart(trans, "Part1:3:1", "Job1-Path1-0");
+			CheckPart(trans, "Part1:3:1", "Job1-Path1-1-0");
 
 			CheckPartProcessFromJob(trans, "Part1:3:2", 1, "Fixt:3:1:10:1");
 			CheckPartProcessFromJob(trans, "Part1:3:2", 2, "Fixt:3:1:10:2");
-			CheckPart(trans, "Part1:3:2", "Job1-Path2-0");
+			CheckPart(trans, "Part1:3:2", "Job1-Path2-2-0");
 
 			CheckPartProcessFromJob(trans, "Part2:3:1", 1, "Fixt:3:0:4:1");
 			CheckPartProcessFromJob(trans, "Part2:3:1", 2, "Fixt:3:0:4:2");
-			CheckPart(trans, "Part2:3:1", "Job2-Path1-0");
+			CheckPart(trans, "Part2:3:1", "Job2-Path1-2-0");
 
 			CheckPartProcessFromJob(trans, "Part2:3:2", 1, "Fixt:3:1:10:1");
 			CheckPartProcessFromJob(trans, "Part2:3:2", 2, "Fixt:3:1:10:2");
-			CheckPart(trans, "Part2:3:2", "Job2-Path2-0");
+			CheckPart(trans, "Part2:3:2", "Job2-Path2-1-0");
 
 			CheckPartProcessFromJob(trans, "Part3:3:1", 1, "Fixt:3:2:20:1");
 			CheckPart(trans, "Part3:3:1", "Job3-Path1-0");
@@ -660,27 +660,27 @@ namespace MachineWatchTest
 
 			CheckPartProcessFromJob(trans, "Part1:3:1", 1, "Fixt:3:0:4:1");
 			CheckPartProcessFromJob(trans, "Part1:3:1", 2, "Fixt:3:1:40:2");
-			CheckPart(trans, "Part1:3:1", "Job1-Path1-0");
+			CheckPart(trans, "Part1:3:1", "Job1-Path1-1-0");
 
 			CheckPartProcessFromJob(trans, "Part1:3:2", 1, "Fixt:3:2:10:1");
 			CheckPartProcessFromJob(trans, "Part1:3:2", 2, "Fixt:3:3:100:2");
-			CheckPart(trans, "Part1:3:2", "Job1-Path2-0");
+			CheckPart(trans, "Part1:3:2", "Job1-Path2-2-0");
 
 			CheckPartProcessFromJob(trans, "Part2:3:1", 1, "Fixt:3:0:4:1");
 			CheckPartProcessFromJob(trans, "Part2:3:1", 2, "Fixt:3:1:40:2");
-			CheckPart(trans, "Part2:3:1", "Job2-Path1-0");
+			CheckPart(trans, "Part2:3:1", "Job2-Path1-2-0");
 
 			CheckPartProcessFromJob(trans, "Part2:3:2", 1, "Fixt:3:2:10:1");
 			CheckPartProcessFromJob(trans, "Part2:3:2", 2, "Fixt:3:3:100:2");
-			CheckPart(trans, "Part2:3:2", "Job2-Path2-0");
+			CheckPart(trans, "Part2:3:2", "Job2-Path2-1-0");
 
 			CheckPartProcessFromJob(trans, "Part3:3:1", 1, "Fixt:3:0:4:1");
 			CheckPartProcessFromJob(trans, "Part3:3:1", 2, "Fixt:3:4:30:2");
-			CheckPart(trans, "Part3:3:1", "Job3-Path1-0");
+			CheckPart(trans, "Part3:3:1", "Job3-Path1-1-0");
 
 			CheckPartProcessFromJob(trans, "Part3:3:2", 1, "Fixt:3:5:22:1");
 			CheckPartProcessFromJob(trans, "Part3:3:2", 2, "Fixt:3:3:100:2");
-			CheckPart(trans, "Part3:3:2", "Job3-Path2-0");
+			CheckPart(trans, "Part3:3:2", "Job3-Path2-2-0");
 
 			CheckSingleProcPalletGroup(trans, 31, "Fixt:3:0:4:1", new int[] {4, 5});
 			CheckSingleProcPalletGroup(trans, 32, "Fixt:3:1:40:2", new int[] {40, 50});
@@ -805,19 +805,19 @@ namespace MachineWatchTest
 
 			CheckPartProcessFromJob(trans, "Part1:3:1", 1, "Fixt:3:fixAA:face1");
 			CheckPartProcessFromJob(trans, "Part1:3:1", 2, "Fixt:3:fixAA:face2");
-			CheckPart(trans, "Part1:3:1", "Job1-Path1-0");
+			CheckPart(trans, "Part1:3:1", "Job1-Path1-1-0");
 
 			CheckPartProcessFromJob(trans, "Part1:3:2", 1, "Fixt:3:fixBB:face1");
 			CheckPartProcessFromJob(trans, "Part1:3:2", 2, "Fixt:3:fixBB:face2");
-			CheckPart(trans, "Part1:3:2", "Job1-Path2-0");
+			CheckPart(trans, "Part1:3:2", "Job1-Path2-2-0");
 
 			CheckPartProcessFromJob(trans, "Part2:3:1", 1, "Fixt:3:fixAA:face1");
 			CheckPartProcessFromJob(trans, "Part2:3:1", 2, "Fixt:3:fixAA:face2");
-			CheckPart(trans, "Part2:3:1", "Job2-Path1-0");
+			CheckPart(trans, "Part2:3:1", "Job2-Path1-2-0");
 
 			CheckPartProcessFromJob(trans, "Part2:3:2", 1, "Fixt:3:fixBB:face1");
 			CheckPartProcessFromJob(trans, "Part2:3:2", 2, "Fixt:3:fixBB:face2");
-			CheckPart(trans, "Part2:3:2", "Job2-Path2-0");
+			CheckPart(trans, "Part2:3:2", "Job2-Path2-1-0");
 
 			CheckPartProcessFromJob(trans, "Part3:3:1", 1, "Fixt:3:fix3:face1");
 			CheckPart(trans, "Part3:3:1", "Job3-Path1-0");
