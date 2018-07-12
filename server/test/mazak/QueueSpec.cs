@@ -270,6 +270,13 @@ namespace MachineWatchTest
       trans.ScheduleProcess_t[1].ProcessMaterialQuantity.Should().Be(3); // set the 3 material
     }
 
+    [Fact]
+    public void RemoveMat()
+    {
+      // test removing material when the queue is smaller
+      throw new Exception("Removing material when remain = 0 fails");
+    }
+
     [Fact(Skip="pending")]
     public void MultiplePaths()
     {
