@@ -69,10 +69,22 @@ namespace MachineWatchTest
 			_jobDB.Close();
 		}
 
+    private class TestMazakData : IMazakData
+    {
+      public TestMazakData() => ReadSet = new ReadOnlyDataSet();
+      public TestMazakData(ReadOnlyDataSet dset) => ReadSet = dset;
+      public ReadOnlyDataSet ReadSet {get;}
+
+      public void FindPart(int pallet, string mazakPartName, int proc, out string unique, out int path, out int numProc)
+      {
+        throw new Exception("Unexpected call to find part");
+      }
+    }
+
     [Fact]
     public void Empty()
     {
-      var trans = _queues.CalculateScheduleChanges(new ReadOnlyDataSet(), new LoadAction[] {});
+      var trans = _queues.CalculateScheduleChanges(new TestMazakData(), new LoadAction[] {});
       trans.Should().BeNull();
     }
 
@@ -114,10 +126,10 @@ namespace MachineWatchTest
     [Fact]
     public void OneScheduleWithCasting()
     {
-      var read = new ReadOnlyDataSet();
+      var read = new TestMazakData();
 
       // plan 50, 40 completed, and 5 in process.  So there are 5 remaining.
-      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 40);
+      var schRow = AddSchedule(read.ReadSet, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 40);
       AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 5);
 
       var j = new JobPlan("uuuu", 1);
@@ -151,10 +163,10 @@ namespace MachineWatchTest
     [Fact]
     public void NoChanges()
     {
-      var read = new ReadOnlyDataSet();
+      var read = new TestMazakData();
 
       // plan 50, 40 completed, and 5 in process, and 2 as material.
-      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 40);
+      var schRow = AddSchedule(read.ReadSet, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 40);
       AddScheduleProcess(schRow, proc: 1, matQty: 2, exeQty: 5);
 
       var j = new JobPlan("uuuu", 1);
@@ -179,10 +191,10 @@ namespace MachineWatchTest
     [Fact]
     public void AllocateCastings()
     {
-      var read = new ReadOnlyDataSet();
+      var read = new TestMazakData();
 
       // plan 50, 43 completed, and 5 in process.  So there are 2 remaining.
-      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 43);
+      var schRow = AddSchedule(read.ReadSet, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 43);
       AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 5);
 
       var j = new JobPlan("uuuu", 1);
@@ -230,10 +242,10 @@ namespace MachineWatchTest
     [Fact]
     public void IgnoreAllocateWhenNoRemaining()
     {
-      var read = new ReadOnlyDataSet();
+      var read = new TestMazakData();
 
       // plan 50, 45 completed, and 5 in process.  So there are none remaining.
-      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 45);
+      var schRow = AddSchedule(read.ReadSet, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 45);
       AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 5);
 
       var j = new JobPlan("uuuu", 1);
@@ -279,10 +291,10 @@ namespace MachineWatchTest
     [Fact]
     public void MultipleProcesses()
     {
-      var read = new ReadOnlyDataSet();
+      var read = new TestMazakData();
 
       // plan 50, 30 completed.  proc1 has 5 in process, zero material.  proc2 has 3 in process, 1 material
-      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 30);
+      var schRow = AddSchedule(read.ReadSet, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 30);
       AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 5);
       AddScheduleProcess(schRow, proc: 2, matQty: 1, exeQty: 3);
 
@@ -322,10 +334,10 @@ namespace MachineWatchTest
     [Fact]
     public void RemoveMat()
     {
-      var read = new ReadOnlyDataSet();
+      var read = new TestMazakData();
 
       // plan 50, 30 completed.  proc1 has 5 in process, 2 material.  proc2 has 3 in process, 4 material
-      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 30);
+      var schRow = AddSchedule(read.ReadSet, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 30);
       AddScheduleProcess(schRow, proc: 1, matQty: 2, exeQty: 5);
       AddScheduleProcess(schRow, proc: 2, matQty: 4, exeQty: 3);
 
@@ -367,8 +379,8 @@ namespace MachineWatchTest
     [Fact]
     public void SkipsWhenAtLoad()
     {
-      var read = new ReadOnlyDataSet();
-      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 40);
+      var read = new TestMazakData();
+      var schRow = AddSchedule(read.ReadSet, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 40);
       AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 5);
 
       var j = new JobPlan("uuuu", 1);

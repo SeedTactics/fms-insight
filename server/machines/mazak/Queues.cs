@@ -48,9 +48,9 @@ namespace MazakMachineInterface
     private JobLogDB _log;
     private JobDB _jobDB;
     private LoadOperations _loadOper;
-    private TransactionDatabaseAccess _transDB;
+    private IWriteData _transDB;
 
-    public MazakQueues(JobLogDB log, JobDB jDB, LoadOperations loadOper, TransactionDatabaseAccess trans)
+    public MazakQueues(JobLogDB log, JobDB jDB, LoadOperations loadOper, IWriteData trans)
     {
       _jobDB = jDB;
       _log = log;
@@ -58,10 +58,10 @@ namespace MazakMachineInterface
       _loadOper = loadOper;
     }
 
-    public void CheckQueues(ReadOnlyDataSet read)
+    public void CheckQueues(IMazakData mazakData)
     {
       try {
-        if (!_transDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(3), true))
+        if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(3), true))
         {
           //Downloads usually take a long time and they hold the db lock,
           //so we will probably hit this timeout during the download.
@@ -72,7 +72,7 @@ namespace MazakMachineInterface
         } else {
 
           var loadOpers = _loadOper.CurrentLoadActions();
-          var transSet = CalculateScheduleChanges(read, loadOpers);
+          var transSet = CalculateScheduleChanges(mazakData, loadOpers);
 
           if (transSet.Schedule_t.Count > 0) {
             _transDB.ClearTransactionDatabase();
@@ -87,20 +87,20 @@ namespace MazakMachineInterface
       } catch (Exception ex) {
         log.Error(ex, "Error checking for new material");
       } finally {
-        _transDB.MazakTransactionLock.ReleaseMutex();
+        OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
       }
     }
 
-    public TransactionDataSet CalculateScheduleChanges(ReadOnlyDataSet dset, IEnumerable<LoadAction> loadOpers)
+    public TransactionDataSet CalculateScheduleChanges(IMazakData mazakData, IEnumerable<LoadAction> loadOpers)
     {
       log.Debug("Starting check for new queued material to add to mazak");
       var transSet = new TransactionDataSet();
 
-      var schs = LoadSchedules(dset, loadOpers);
+      var schs = LoadSchedules(mazakData, loadOpers);
       if (!schs.Any()) return null;
 
       AttemptToAllocateCastings(schs);
-      CalculateTargetMatQty(dset, schs);
+      CalculateTargetMatQty(mazakData, schs);
       UpdateMazakMaterialCounts(transSet, schs);
 
       return transSet;
@@ -123,10 +123,10 @@ namespace MazakMachineInterface
       public Dictionary<int, ScheduleWithQueuesProcess> Procs {get;set;}
     }
 
-    private IEnumerable<ScheduleWithQueues> LoadSchedules(ReadOnlyDataSet read, IEnumerable<LoadAction> loadOpers)
+    private IEnumerable<ScheduleWithQueues> LoadSchedules(IMazakData mazakData, IEnumerable<LoadAction> loadOpers)
     {
       var schs = new List<ScheduleWithQueues>();
-      foreach (var schRow in read.Schedule.OrderBy(s => s.DueDate)) {
+      foreach (var schRow in mazakData.ReadSet.Schedule.OrderBy(s => s.DueDate)) {
         if (!MazakPart.IsSailPart(schRow.PartName)) continue;
 
         MazakPart.ParseComment(schRow.Comment, out string unique, out var procToPath, out bool manual);
@@ -213,7 +213,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private void CheckCastingsForProc1(IGrouping<string, ScheduleWithQueues> job, ReadOnlyDataSet read)
+    private void CheckCastingsForProc1(IGrouping<string, ScheduleWithQueues> job, IMazakData mazakData)
     {
       string uniqueStr = job.Key;
 
@@ -246,7 +246,7 @@ namespace MazakMachineInterface
                 .Where(p => p.SchProcRow.ProcessMaterialQuantity == 0)
                 .OrderBy(p => p.SchProcRow.ProcessExecuteQuantity);
             foreach (var p in potentialPaths) {
-              int fixQty = PartFixQuantity(read, p.SchProcRow);
+              int fixQty = PartFixQuantity(mazakData, p.SchProcRow);
               if (fixQty <= remain) {
                 remain -= fixQty;
                 p.TargetMaterialCount = fixQty;
@@ -277,7 +277,7 @@ namespace MazakMachineInterface
 
     private class UnableToFindPathGroup : Exception {}
 
-    private void CheckInProcessMaterial(JobPlan jobPlan, IGrouping<string, ScheduleWithQueues> job, int proc, ReadOnlyDataSet read)
+    private void CheckInProcessMaterial(JobPlan jobPlan, IGrouping<string, ScheduleWithQueues> job, int proc)
     {
       string uniqueStr = job.Key;
       var paths = job.Select(s => s.Procs[proc]);
@@ -312,7 +312,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private void CalculateTargetMatQty(ReadOnlyDataSet read, IEnumerable<ScheduleWithQueues> schs)
+    private void CalculateTargetMatQty(IMazakData mazakData, IEnumerable<ScheduleWithQueues> schs)
     {
       // go through each job and process, and distribute the queued material among the various paths
       // for the job and process.
@@ -321,9 +321,9 @@ namespace MazakMachineInterface
         var numProc = job.First().Job.NumProcesses;
         log.Debug("Checking job {uniq} with schedules {@pathGroup}", uniqueStr, job);
 
-        CheckCastingsForProc1(job, read);
+        CheckCastingsForProc1(job, mazakData);
         for (int proc = 2; proc <= numProc; proc++) {
-          CheckInProcessMaterial(job.First().Job, job, proc, read);
+          CheckInProcessMaterial(job.First().Job, job, proc);
         }
 
       }
@@ -336,12 +336,12 @@ namespace MazakMachineInterface
         log.Debug("Updating material on schedule {schId} for job {uniq} to {@sch}", sch.SchRow.ScheduleID, sch.Unique, sch);
 
         var tschRow = transDB.Schedule_t.NewSchedule_tRow();
-        TransactionDatabaseAccess.BuildScheduleEditRow(tschRow, sch.SchRow, true);
+        OpenDatabaseKitTransactionDB.BuildScheduleEditRow(tschRow, sch.SchRow, true);
         transDB.Schedule_t.AddSchedule_tRow(tschRow);
 
         foreach (var proc in sch.Procs.Values) {
           var tschProcRow = transDB.ScheduleProcess_t.NewScheduleProcess_tRow();
-          TransactionDatabaseAccess.BuildScheduleProcEditRow(tschProcRow, proc.SchProcRow);
+          OpenDatabaseKitTransactionDB.BuildScheduleProcEditRow(tschProcRow, proc.SchProcRow);
           if (proc.TargetMaterialCount.HasValue) {
             tschProcRow.ProcessMaterialQuantity = proc.TargetMaterialCount.Value;
           }
@@ -413,8 +413,9 @@ namespace MazakMachineInterface
         return cnt;
     }
 
-    private int PartFixQuantity(ReadOnlyDataSet read, ReadOnlyDataSet.ScheduleProcessRow schProcRow)
+    private int PartFixQuantity(IMazakData mazakData, ReadOnlyDataSet.ScheduleProcessRow schProcRow)
     {
+      var read = mazakData.ReadSet;
       var schRow = schProcRow.ScheduleRow;
       foreach (var procRow in read.PartProcess) {
         if (procRow.PartName == schRow.PartName && procRow.ProcessNumber == schProcRow.ProcessNumber) {

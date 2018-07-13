@@ -65,7 +65,7 @@ namespace MachineWatchTest
       jobDB.CreateTables();
 
 			partData = new List<TestPartData>();
-			var findPart = new TestFindPart(partData);
+			var mazakData = new TestMazakData(partData);
 
 			var settings = new FMSSettings() {
 				SerialType = SerialType.AssignOneSerialPerMaterial
@@ -73,7 +73,7 @@ namespace MachineWatchTest
       settings.Queues["thequeue"] = new QueueSize() { MaxSizeBeforeStopUnloading = -1};
       settings.ExternalQueues["externalq"] = "testserver";
 
-      log = new LogTranslation(jobDB, jobLog, findPart, settings,
+      log = new LogTranslation(jobDB, jobLog, mazakData, settings,
         e => raisedByPalletMove.Add(e)
       );
     }
@@ -95,10 +95,10 @@ namespace MachineWatchTest
 			public int NumProc {get;set;}
 		}
 
-    private class TestFindPart : IFindPart
+    private class TestMazakData : IMazakData
     {
 			private IEnumerable<TestPartData> testPartData;
-			public TestFindPart(IEnumerable<TestPartData> td) { testPartData = td; }
+			public TestMazakData(IEnumerable<TestPartData> td) { testPartData = td; }
       public void FindPart(int pallet, string mazakPartName, int proc, out string unique, out int path, out int numProc)
       {
 				var data = testPartData
@@ -111,6 +111,12 @@ namespace MachineWatchTest
 				} else {
 					throw new Exception("Unable to find part for " + pallet.ToString() + " " + mazakPartName + " " + proc.ToString());
 				}
+      }
+
+      public ReadOnlyDataSet ReadSet {
+        get {
+          throw new Exception("Unexpected access to read set");
+        }
       }
     }
 

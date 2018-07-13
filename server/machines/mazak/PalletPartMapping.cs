@@ -48,14 +48,14 @@ namespace MazakMachineInterface
     private readonly int downloadUID;
     private readonly bool updateGlobalTag;
     private readonly string newGlobalTag;
-    private readonly DatabaseAccess.MazakDbType MazakType;
+    private readonly MazakDbType MazakType;
 
     public clsPalletPartMapping(IEnumerable<JobPlan> routes,
                                 ReadOnlyDataSet readOnlySet, int uidVal, ISet<string> saved,
                                 IList<string> log,
                                 bool updateGlobal, string newGlobal,
                                 bool checkPalletsUsedOnce,
-                                DatabaseAccess.MazakDbType mazakTy)
+                                MazakDbType mazakTy)
     {
       savedParts = saved;
 
@@ -117,7 +117,7 @@ namespace MazakMachineInterface
           if (!savedParts.Contains(partRow.PartName))
           {
             newPartRow = transSet.Part_t.NewPart_tRow();
-            newPartRow.Command = TransactionDatabaseAccess.DeleteCommand;
+            newPartRow.Command = OpenDatabaseKitTransactionDB.DeleteCommand;
             newPartRow.PartName = partRow.PartName;
             newPartRow.TotalProcess = partRow.GetPartProcessRows().Length;
             transSet.Part_t.AddPart_tRow(newPartRow);
@@ -136,11 +136,11 @@ namespace MazakMachineInterface
 
           if (!mazakJobs.UsedFixtures.Contains(palRow.Fixture))
           {
-            if (MazakType != DatabaseAccess.MazakDbType.MazakVersionE)
+            if (MazakType != MazakDbType.MazakVersionE)
             {
               //not found, we can delete it
               newPalRowV2 = transSet.Pallet_tV2.NewPallet_tV2Row();
-              newPalRowV2.Command = TransactionDatabaseAccess.DeleteCommand;
+              newPalRowV2.Command = OpenDatabaseKitTransactionDB.DeleteCommand;
               newPalRowV2.PalletNumber = palRow.PalletNumber;
               newPalRowV2.Fixture = palRow.Fixture;
               newPalRowV2.RecordID = palRow.RecordID;
@@ -152,7 +152,7 @@ namespace MazakMachineInterface
             {
               //not found, we can delete it
               newPalRowV1 = transSet.Pallet_tV1.NewPallet_tV1Row();
-              newPalRowV1.Command = TransactionDatabaseAccess.DeleteCommand;
+              newPalRowV1.Command = OpenDatabaseKitTransactionDB.DeleteCommand;
               newPalRowV1.PalletNumber = palRow.PalletNumber;
               newPalRowV1.Fixture = palRow.Fixture;
               newPalRowV1.RecordID = palRow.RecordID;
@@ -180,7 +180,7 @@ namespace MazakMachineInterface
           {
 
             newFixRow = transSet.Fixture_t.NewFixture_tRow();
-            newFixRow.Command = TransactionDatabaseAccess.DeleteCommand;
+            newFixRow.Command = OpenDatabaseKitTransactionDB.DeleteCommand;
             newFixRow.FixtureName = fixRow.FixtureName;
             transSet.Fixture_t.AddFixture_tRow(newFixRow);
           }
@@ -204,7 +204,7 @@ namespace MazakMachineInterface
         }
 
         TransactionDataSet.Fixture_tRow newFixRow = transSet.Fixture_t.NewFixture_tRow();
-        newFixRow.Command = TransactionDatabaseAccess.AddCommand;
+        newFixRow.Command = OpenDatabaseKitTransactionDB.AddCommand;
         newFixRow.FixtureName = fixture;
 
         //the comment can not be empty, or the database kit blows up.
@@ -240,7 +240,7 @@ namespace MazakMachineInterface
 
       //Add rows to both V1 and V2.
       TransactionDataSet.Pallet_tV2Row newRow2 = transSet.Pallet_tV2.NewPallet_tV2Row();
-      newRow2.Command = TransactionDatabaseAccess.AddCommand;
+      newRow2.Command = OpenDatabaseKitTransactionDB.AddCommand;
       newRow2.PalletNumber = palNum;
       newRow2.Fixture = fixture;
       newRow2.RecordID = 0;
@@ -248,7 +248,7 @@ namespace MazakMachineInterface
       transSet.Pallet_tV2.AddPallet_tV2Row(newRow2);
 
       TransactionDataSet.Pallet_tV1Row newRow1 = transSet.Pallet_tV1.NewPallet_tV1Row();
-      newRow1.Command = TransactionDatabaseAccess.AddCommand;
+      newRow1.Command = OpenDatabaseKitTransactionDB.AddCommand;
       newRow1.PalletNumber = palNum;
       newRow1.Fixture = fixture;
 

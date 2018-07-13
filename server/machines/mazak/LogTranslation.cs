@@ -42,22 +42,22 @@ namespace MazakMachineInterface
   {
     private BlackMaple.MachineFramework.JobDB _jobDB;
     private BlackMaple.MachineFramework.JobLogDB _log;
-    private IFindPart _findPart;
-    private Dictionary<string, JobPlan> _jobs;
     private BlackMaple.MachineFramework.FMSSettings _settings;
     private Action<LogEntry> _onPalletMove;
+    private IMazakData _findPart;
+    private Dictionary<string, JobPlan> _jobs;
 
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LogTranslation>();
 
     public LogTranslation(BlackMaple.MachineFramework.JobDB jDB,
                           BlackMaple.MachineFramework.JobLogDB logDB,
-                          IFindPart findPart,
+                          IMazakData mazakData,
                           BlackMaple.MachineFramework.FMSSettings settings,
                           Action<LogEntry> onPalletMove)
     {
       _jobDB = jDB;
       _log = logDB;
-      _findPart = findPart;
+      _findPart = mazakData;
       _settings = settings;
       _onPalletMove = onPalletMove;
       _jobs = new Dictionary<string, JobPlan>();

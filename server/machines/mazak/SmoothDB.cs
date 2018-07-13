@@ -38,7 +38,6 @@ using Dapper;
 
 namespace MazakMachineInterface
 {
-
   public class SmoothDB
   {
     private string _connStr;

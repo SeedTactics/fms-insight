@@ -38,33 +38,14 @@ using System.Data.OleDb;
 
 namespace MazakMachineInterface
 {
-  public interface IReadDataAccess
-  {
-    TResult WithReadDBConnection<TResult>(Func<IDbConnection, TResult> action);
-    ReadOnlyDataSet LoadReadOnly();
-  }
-
-  public interface IFindPart
-  {
-    void FindPart(int pallet, string mazakPartName, int proc, out string unique, out int path, out int numProc);
-  }
-
-
-  public class DatabaseAccess
+  public class OpenDatabaseKitDB
   {
     //Global Settings
-    public System.Threading.Mutex MazakTransactionLock = new System.Threading.Mutex();
+    public static System.Threading.Mutex MazakTransactionLock = new System.Threading.Mutex();
 
     protected string ready4ConectPath;
 
-    public enum MazakDbType
-    {
-      MazakVersionE,
-      MazakWeb,
-      MazakSmooth
-    }
-
-    public readonly MazakDbType MazakType;
+    public MazakDbType MazakType {get;}
 
     protected void CheckReadyForConnect()
     {
@@ -76,7 +57,7 @@ namespace MazakMachineInterface
       }
     }
 
-    public DatabaseAccess(string dbConnStr, MazakDbType ty)
+    protected OpenDatabaseKitDB(string dbConnStr, MazakDbType ty)
     {
       MazakType = ty;
       if (MazakType != MazakDbType.MazakSmooth)
@@ -84,69 +65,12 @@ namespace MazakMachineInterface
         ready4ConectPath = System.IO.Path.Combine(dbConnStr, "ready4Conect.mdb");
       }
     }
-
-    public static string BuildStationStr(int num, string str)
-    {
-      int i = 0;
-      string ret = "";
-      string[] arr = str.Split(' ');
-      string s = null;
-      for (i = 1; i <= num; i++)
-      {
-        foreach (string s_loopVariable in arr)
-        {
-          s = s_loopVariable;
-          int v;
-          if (int.TryParse(s, out v) && v == i)
-          {
-            ret += i.ToString();
-            goto found;
-          }
-        }
-        ret += "0";
-      found:;
-      }
-      return ret;
-    }
-
-    public static string ParsePallet(int p)
-    {
-      return p.ToString().PadLeft(2, '0');
-    }
-
-    public static string Join(System.Collections.IEnumerable lst)
-    {
-      return Join(lst, ",");
-    }
-    public static string Join(System.Collections.IEnumerable lst, string Seperator)
-    {
-      string ret = "";
-
-      if (lst == null)
-        return "";
-
-      object o = null;
-      foreach (object o_loopVariable in lst)
-      {
-        o = o_loopVariable;
-        ret += Seperator + o.ToString();
-      }
-
-      if (ret.Length > 0)
-      {
-        return ret.Substring(Seperator.Length);
-      }
-      else
-      {
-        return ret;
-      }
-    }
   }
 
-	public class TransactionDatabaseAccess
-		: DatabaseAccess
+	public class OpenDatabaseKitTransactionDB
+		: OpenDatabaseKitDB, IWriteData
 	{
-    public TransactionDatabaseAccess(string dbConnStr, MazakDbType ty)
+    public OpenDatabaseKitTransactionDB(string dbConnStr, MazakDbType ty)
 			: base(dbConnStr, ty)
     {
       databaseConnStr = dbConnStr;
@@ -320,11 +244,7 @@ namespace MazakMachineInterface
       throw new Exception("Transaction database is locked and can not be accessed");
     }
 
-    public void SaveTransaction(TransactionDataSet dset, System.Collections.Generic.IList<string> log, string prefix)
-    {
-      SaveTransaction(dset, log, prefix, -1);
-    }
-    public void SaveTransaction(TransactionDataSet dset, System.Collections.Generic.IList<string> log, string prefix, int checkInterval)
+    public void SaveTransaction(TransactionDataSet dset, System.Collections.Generic.IList<string> log, string prefix, int checkInterval = -1)
     {
       CheckReadyForConnect();
 
@@ -670,8 +590,8 @@ namespace MazakMachineInterface
     }
 	}
 
-	public class ReadonlyDatabaseAccess
-	  : DatabaseAccess, IReadDataAccess
+	public class OpenDatabaseKitReadDB
+	  : OpenDatabaseKitDB, IReadDataAccess
 	{
     private string _connectionStr;
     private string _fixtureSelect;
@@ -686,7 +606,7 @@ namespace MazakMachineInterface
 
     public SmoothDB SmoothDB {get;}
 
-    public ReadonlyDatabaseAccess(string dbConnStr, MazakDbType ty)
+    public OpenDatabaseKitReadDB(string dbConnStr, MazakDbType ty)
 			: base(dbConnStr, ty)
 		{
       if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE)
@@ -876,36 +796,54 @@ namespace MazakMachineInterface
       });
     }
 
-	}
+    public IMazakData LoadMazakData() => new OpenDatabaseKitMazakData(LoadReadOnly());
 
-  public class FindPartFromReadOnlySet : IFindPart
-  {
-    private static Serilog.ILogger Log = Serilog.Log.ForContext<FindPartFromReadOnlySet>();
-    private ReadOnlyDataSet dset;
-    public FindPartFromReadOnlySet(ReadOnlyDataSet d) { dset = d;}
-    public void FindPart(int pallet, string mazakPartName, int proc, out string unique, out int path, out int numProc)
+    private class OpenDatabaseKitMazakData : IMazakData
     {
-      unique = "";
-      numProc = proc;
-      path = 1;
+      private static Serilog.ILogger Log = Serilog.Log.ForContext<OpenDatabaseKitMazakData>();
+      public ReadOnlyDataSet ReadSet {get;}
+      public OpenDatabaseKitMazakData(ReadOnlyDataSet d) { ReadSet = d;}
 
-      //first search pallets for the given schedule id.  Since the part name usually includes the UID assigned for this
-      //download, even if old log entries are being processed the correct unique string will still be loaded.
-      int scheduleID = -1;
-      foreach (ReadOnlyDataSet.PalletSubStatusRow palRow in dset.PalletSubStatus.Rows)
+      public void FindPart(int pallet, string mazakPartName, int proc, out string unique, out int path, out int numProc)
       {
-        if (palRow.PalletNumber == pallet && palRow.PartName == mazakPartName && palRow.PartProcessNumber == proc)
+        unique = "";
+        numProc = proc;
+        path = 1;
+
+        //first search pallets for the given schedule id.  Since the part name usually includes the UID assigned for this
+        //download, even if old log entries are being processed the correct unique string will still be loaded.
+        int scheduleID = -1;
+        foreach (ReadOnlyDataSet.PalletSubStatusRow palRow in ReadSet.PalletSubStatus.Rows)
         {
-          scheduleID = palRow.ScheduleID;
-          break;
+          if (palRow.PalletNumber == pallet && palRow.PartName == mazakPartName && palRow.PartProcessNumber == proc)
+          {
+            scheduleID = palRow.ScheduleID;
+            break;
+          }
         }
-      }
 
-      if (scheduleID >= 0)
-      {
-        foreach (ReadOnlyDataSet.ScheduleRow schRow in dset.Schedule.Rows)
+        if (scheduleID >= 0)
         {
-          if (schRow.ScheduleID == scheduleID && !schRow.IsCommentNull())
+          foreach (ReadOnlyDataSet.ScheduleRow schRow in ReadSet.Schedule.Rows)
+          {
+            if (schRow.ScheduleID == scheduleID && !schRow.IsCommentNull())
+            {
+              bool manual;
+              MazakPart.ParseComment(schRow.Comment, out unique, out var procToPath, out manual);
+              numProc = schRow.GetScheduleProcessRows().Length;
+              if (numProc < proc) numProc = proc;
+              path = procToPath.PathForProc(proc);
+              return;
+            }
+          }
+        }
+
+        Log.Debug("Unable to find schedule ID for {part}-{proc} on pallet {pallet}", mazakPartName, proc, pallet);
+
+        // search for the first schedule for this part
+        foreach (ReadOnlyDataSet.ScheduleRow schRow in ReadSet.Schedule.Rows)
+        {
+          if (schRow.PartName == mazakPartName && !schRow.IsCommentNull())
           {
             bool manual;
             MazakPart.ParseComment(schRow.Comment, out unique, out var procToPath, out manual);
@@ -915,25 +853,9 @@ namespace MazakMachineInterface
             return;
           }
         }
+
+        Log.Warning("Unable to find any schedule for log event {part}-{proc} on pallet {pallet}", mazakPartName, proc, pallet);
       }
-
-      Log.Debug("Unable to find schedule ID for {part}-{proc} on pallet {pallet}", mazakPartName, proc, pallet);
-
-      // search for the first schedule for this part
-      foreach (ReadOnlyDataSet.ScheduleRow schRow in dset.Schedule.Rows)
-      {
-        if (schRow.PartName == mazakPartName && !schRow.IsCommentNull())
-        {
-          bool manual;
-          MazakPart.ParseComment(schRow.Comment, out unique, out var procToPath, out manual);
-          numProc = schRow.GetScheduleProcessRows().Length;
-          if (numProc < proc) numProc = proc;
-          path = procToPath.PathForProc(proc);
-          return;
-        }
-      }
-
-      Log.Warning("Unable to find any schedule for log event {part}-{proc} on pallet {pallet}", mazakPartName, proc, pallet);
     }
-  }
+	}
 }

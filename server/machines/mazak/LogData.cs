@@ -369,9 +369,9 @@ namespace MazakMachineInterface
 
           Thread.Sleep(TimeSpan.FromSeconds(1));
 
-          var dset = _readDB.LoadReadOnly();
+          var mazakData = _readDB.LoadMazakData();
           var logs = LoadLog(_log.MaxForeignID());
-          var trans = new LogTranslation(_jobDB, _log, new FindPartFromReadOnlySet(dset), _settings,
+          var trans = new LogTranslation(_jobDB, _log, mazakData, _settings,
             le => PalletMove?.Invoke(le.Pallet, le.FromPosition, le.TargetPosition)
           );
           var sendToExternal = new List<BlackMaple.MachineFramework.MaterialToSendToExternalQueue>();
@@ -389,14 +389,14 @@ namespace MazakMachineInterface
 
           DeleteLog(_log.MaxForeignID());
 
-          _queues.CheckQueues(dset);
+          _queues.CheckQueues(mazakData);
 
           if (sendToExternal.Count > 0) {
             _sendToExternal.Post(sendToExternal);
           }
 
           if (logs.Count > 0) {
-            NewEntries?.Invoke(dset);
+            NewEntries?.Invoke(mazakData.ReadSet);
           }
 
         } catch (Exception ex) {

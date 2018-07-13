@@ -43,7 +43,7 @@ namespace MazakMachineInterface
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<RoutingInfo>();
 
-    private TransactionDatabaseAccess database;
+    private IWriteData writeDb;
     private IReadDataAccess readDatabase;
     private HoldPattern hold;
     private IMazakLogReader logReader;
@@ -63,7 +63,7 @@ namespace MazakMachineInterface
     public void RaiseNewCurrentStatus(CurrentStatus s) => OnNewCurrentStatus?.Invoke(s);
 
     public RoutingInfo(
-      TransactionDatabaseAccess d,
+      IWriteData d,
       IReadDataAccess readDb,
       HoldPattern h,
       IMazakLogReader logR,
@@ -75,7 +75,7 @@ namespace MazakMachineInterface
       bool decrPriority,
       BlackMaple.MachineFramework.FMSSettings settings)
     {
-      database = d;
+      writeDb = d;
       readDatabase = readDb;
       fmsSettings = settings;
       hold = h;
@@ -138,7 +138,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private static void AddRoutingToJob(ReadOnlyDataSet mazakSet, ReadOnlyDataSet.PartRow partRow, JobPlan job, MazakPart.IProcToPath procToPath, DatabaseAccess.MazakDbType mazakTy)
+    private static void AddRoutingToJob(ReadOnlyDataSet mazakSet, ReadOnlyDataSet.PartRow partRow, JobPlan job, MazakPart.IProcToPath procToPath, MazakDbType mazakTy)
     {
       //Add routing and pallets
       foreach (ReadOnlyDataSet.PartProcessRow partProcRow in partRow.GetPartProcessRows())
@@ -152,7 +152,7 @@ namespace MazakMachineInterface
         string cutStr = partProcRow.CutMc;
         string removeStr = partProcRow.RemoveLDS;
 
-        if (mazakTy != DatabaseAccess.MazakDbType.MazakVersionE)
+        if (mazakTy != MazakDbType.MazakVersionE)
         {
           fixStr = ConvertStatIntV2ToV1(Convert.ToInt32(fixStr));
           cutStr = ConvertStatIntV2ToV1(Convert.ToInt32(cutStr));
@@ -252,7 +252,7 @@ namespace MazakMachineInterface
     public CurrentStatus GetCurrentStatus()
     {
       ReadOnlyDataSet mazakSet = null;
-      if (!database.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
+      if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
       {
         throw new Exception("Unable to obtain mazak database lock");
       }
@@ -262,7 +262,7 @@ namespace MazakMachineInterface
       }
       finally
       {
-        database.MazakTransactionLock.ReleaseMutex();
+        OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
       }
 
       return GetCurrentStatus(mazakSet);
@@ -347,7 +347,7 @@ namespace MazakMachineInterface
           job.HoldEntireJob.UserHold = false;
         hold.LoadHoldIntoJob(schRow.ScheduleID, job, procToPath.PathForProc(proc: 1));
 
-        AddRoutingToJob(mazakSet, partRow, job, procToPath, database.MazakType);
+        AddRoutingToJob(mazakSet, partRow, job, procToPath, writeDb.MazakType);
       }
 
       foreach (var j in jobsBySchID.Values)
@@ -714,7 +714,7 @@ namespace MazakMachineInterface
       {
         if (palLocRow.PalletNumber == palletNum)
         {
-          if (database.MazakType != DatabaseAccess.MazakDbType.MazakVersionE)
+          if (writeDb.MazakType != MazakDbType.MazakVersionE)
           {
             return ParseStatNameWeb(palLocRow.PalletPosition);
           }
@@ -837,7 +837,7 @@ namespace MazakMachineInterface
       var logMessages = new List<string>();
       ReadOnlyDataSet currentSet = null;
 
-      if (!database.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
+      if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
       {
         throw new Exception("Unable to obtain mazak database lock");
       }
@@ -847,7 +847,7 @@ namespace MazakMachineInterface
       }
       finally
       {
-        database.MazakTransactionLock.ReleaseMutex();
+        OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
       }
 
       try
@@ -889,7 +889,7 @@ namespace MazakMachineInterface
 #pragma warning disable 168, 219
         var palletPartMap = new clsPalletPartMapping(jobs, currentSet, 1,
                                                      new HashSet<string>(), logMessages, false, "",
-                                                     CheckPalletsUsedOnce, database.MazakType);
+                                                     CheckPalletsUsedOnce, writeDb.MazakType);
 #pragma warning restore 168, 219
 
       }
@@ -910,13 +910,13 @@ namespace MazakMachineInterface
 
     public void AddJobs(NewJobs newJ, string expectedPreviousScheduleId)
     {
-      if (!database.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
+      if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
       {
         throw new Exception("Unable to obtain mazak database lock");
       }
       try
       {
-        database.ClearTransactionDatabase();
+        writeDb.ClearTransactionDatabase();
         List<string> logMessages = new List<string>();
 
         // check previous schedule id
@@ -963,19 +963,19 @@ namespace MazakMachineInterface
       {
         try
         {
-          database.ClearTransactionDatabase();
+          writeDb.ClearTransactionDatabase();
         }
         catch
         {
         }
-        database.MazakTransactionLock.ReleaseMutex();
+        OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
       }
     }
 
     public void RecopyJobsToSystem()
     {
       try {
-        if (!database.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
+        if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
         {
           throw new Exception("Unable to obtain mazak database lock");
         }
@@ -988,7 +988,7 @@ namespace MazakMachineInterface
           Log.Information("Resuming copy of job schedules into mazak {uniqs}",
               jobs.Jobs.Select(j => j.UniqueStr).ToList());
 
-          database.ClearTransactionDatabase();
+          writeDb.ClearTransactionDatabase();
 
           List<string> logMessages = new List<string>();
 
@@ -1003,10 +1003,10 @@ namespace MazakMachineInterface
         {
           try
           {
-            database.ClearTransactionDatabase();
+            writeDb.ClearTransactionDatabase();
           }
           catch { }
-          database.MazakTransactionLock.ReleaseMutex();
+          OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
         }
       } catch (Exception ex) {
         Log.Error(ex, "Error recopying job schedules to mazak");
@@ -1057,7 +1057,7 @@ namespace MazakMachineInterface
         TransactionDataSet.Schedule_tRow newSchRow = transSet.Schedule_t.NewSchedule_tRow();
         if (schRow.PlanQuantity == schRow.CompleteQuantity)
         {
-          newSchRow.Command = TransactionDatabaseAccess.DeleteCommand;
+          newSchRow.Command = OpenDatabaseKitTransactionDB.DeleteCommand;
           newSchRow.ScheduleID = schRow.ScheduleID;
           newSchRow.PartName = schRow.PartName;
 
@@ -1082,7 +1082,7 @@ namespace MazakMachineInterface
 
           if (DecrementPriorityOnDownload)
           {
-            TransactionDatabaseAccess.BuildScheduleEditRow(newSchRow, schRow, false);
+            OpenDatabaseKitTransactionDB.BuildScheduleEditRow(newSchRow, schRow, false);
             newSchRow.Priority = Math.Max(newSchRow.Priority - 1, 1);
             transSet.Schedule_t.AddSchedule_tRow(newSchRow);
           }
@@ -1095,11 +1095,11 @@ namespace MazakMachineInterface
       //build the pallet->part mapping
       var palletPartMap = new clsPalletPartMapping(newJ.Jobs, currentSet, UID, savedParts, logMessages,
                                                    !string.IsNullOrEmpty(newGlobal), newGlobal,
-                                                   CheckPalletsUsedOnce, database.MazakType);
+                                                   CheckPalletsUsedOnce, writeDb.MazakType);
 
       //delete everything
       palletPartMap.DeletePartPallets(transSet);
-      database.SaveTransaction(transSet, logMessages, "Delete Parts Pallets");
+      writeDb.SaveTransaction(transSet, logMessages, "Delete Parts Pallets");
 
       Log.Debug("Completed deletion of parts and pallets with messages: {msgs}", logMessages);
 
@@ -1108,14 +1108,14 @@ namespace MazakMachineInterface
       transSet = new TransactionDataSet();
       palletPartMap.DeleteFixtures(transSet);
       palletPartMap.AddFixtures(transSet);
-      database.SaveTransaction(transSet, logMessages, "Fixtures");
+      writeDb.SaveTransaction(transSet, logMessages, "Fixtures");
 
       Log.Debug("Deleted fixtures with messages: {msgs}", logMessages);
 
       //now save the pallets and parts
       transSet = new TransactionDataSet();
       palletPartMap.CreateRows(transSet);
-      database.SaveTransaction(transSet, logMessages, "Add Parts");
+      writeDb.SaveTransaction(transSet, logMessages, "Add Parts");
 
       Log.Debug("Added parts and pallets with messages: {msgs}", logMessages);
 
@@ -1190,7 +1190,7 @@ namespace MazakMachineInterface
         if (UseStartingOffsetForDueDate)
           SortSchedulesByDate(transSet);
 
-        database.SaveTransaction(transSet, logMessages, "Add Schedules");
+        writeDb.SaveTransaction(transSet, logMessages, "Add Schedules");
 
         Log.Debug("Completed adding schedules with messages: {msgs}", logMessages);
 
@@ -1217,7 +1217,7 @@ namespace MazakMachineInterface
                               JobPlan part, int proc1path, DateTime now, int scheduleCount)
     {
       var newSchRow = transSet.Schedule_t.NewSchedule_tRow();
-      newSchRow.Command = TransactionDatabaseAccess.AddCommand;
+      newSchRow.Command = OpenDatabaseKitTransactionDB.AddCommand;
       newSchRow.ScheduleID = SchID;
       newSchRow.PartName = mazakPartName;
       newSchRow.PlanQuantity = part.GetPlannedCyclesOnFirstProcess(proc1path);
@@ -1344,50 +1344,50 @@ namespace MazakMachineInterface
 
     public Dictionary<JobAndPath, int> OldDecrementJobQuantites()
     {
-      if (!database.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
+      if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
       {
         throw new Exception("Unable to obtain mazak database lock");
       }
 
       try
       {
-        database.ClearTransactionDatabase();
-        return modDecrementPlanQty.DecrementPlanQty(database, readDatabase);
+        writeDb.ClearTransactionDatabase();
+        return modDecrementPlanQty.DecrementPlanQty(writeDb, readDatabase);
       }
       finally
       {
         try
         {
-          database.ClearTransactionDatabase();
+          writeDb.ClearTransactionDatabase();
         }
         catch
         {
         }
-        database.MazakTransactionLock.ReleaseMutex();
+        OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
       }
     }
 
     public void OldFinalizeDecrement()
     {
-      if (!database.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
+      if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
       {
         throw new Exception("Unable to obtain mazak database lock");
       }
 
       try
       {
-        modDecrementPlanQty.FinalizeDecement(database, readDatabase);
+        modDecrementPlanQty.FinalizeDecement(writeDb, readDatabase);
       }
       finally
       {
         try
         {
-          database.ClearTransactionDatabase();
+          writeDb.ClearTransactionDatabase();
         }
         catch
         {
         }
-        database.MazakTransactionLock.ReleaseMutex();
+        OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
       }
     }
 

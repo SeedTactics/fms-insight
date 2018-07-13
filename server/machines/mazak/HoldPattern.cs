@@ -79,10 +79,10 @@ namespace MazakMachineInterface
 
     private static Serilog.ILogger Log = Serilog.Log.ForContext<HoldPattern>();
     private TransitionThread _thread;
-    private TransactionDatabaseAccess database;
+    private IWriteData database;
     private IReadDataAccess readDatabase;
 
-    public HoldPattern(string dbPath, TransactionDatabaseAccess d, IReadDataAccess readDb, bool createThread)
+    public HoldPattern(string dbPath, IWriteData d, IReadDataAccess readDb, bool createThread)
     {
       database = d;
       readDatabase = readDb;
@@ -92,7 +92,7 @@ namespace MazakMachineInterface
         _thread = new TransitionThread(this);
     }
 
-    public HoldPattern(SqliteConnection conn, TransactionDatabaseAccess d, IReadDataAccess readDb, bool createThread)
+    public HoldPattern(SqliteConnection conn, IWriteData d, IReadDataAccess readDb, bool createThread)
     {
       database = d;
       readDatabase = readDb;
@@ -233,7 +233,7 @@ namespace MazakMachineInterface
         TransactionDataSet transSet = new TransactionDataSet();
 
         TransactionDataSet.Schedule_tRow newSchRow = transSet.Schedule_t.NewSchedule_tRow();
-        TransactionDatabaseAccess.BuildScheduleEditRow(newSchRow, _schRow, false);
+        OpenDatabaseKitTransactionDB.BuildScheduleEditRow(newSchRow, _schRow, false);
         newSchRow.HoldMode = (int)newHold;
         transSet.Schedule_t.AddSchedule_tRow(newSchRow);
 
@@ -271,7 +271,7 @@ namespace MazakMachineInterface
     {
       try
       {
-        if (!database.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(3), true))
+        if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(3), true))
         {
           //Downloads usually take a long time and they hold the db lock,
           //so we will probably hit this timeout during the download.
@@ -360,7 +360,7 @@ namespace MazakMachineInterface
           catch
           {
           }
-          database.MazakTransactionLock.ReleaseMutex();
+          OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
         }
       }
       catch (Exception ex)

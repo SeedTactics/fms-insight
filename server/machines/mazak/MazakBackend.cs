@@ -45,7 +45,7 @@ namespace MazakMachineInterface
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<MazakBackend>();
 
-    private TransactionDatabaseAccess database;
+    private OpenDatabaseKitTransactionDB database;
     private RoutingInfo routing;
     private HoldPattern hold;
     private MazakQueues queues;
@@ -56,12 +56,12 @@ namespace MazakMachineInterface
     private JobDB jobDB;
 
     //Settings
-    public DatabaseAccess.MazakDbType MazakType;
+    public MazakDbType MazakType;
     public bool UseStartingOffsetForDueDate;
     public bool DecrementPriorityOnDownload;
     public bool CheckPalletsUsedOnce;
 
-    public TransactionDatabaseAccess Database
+    public IWriteData Database
     {
       get
       {
@@ -100,7 +100,7 @@ namespace MazakMachineInterface
       // database settings
       string sqlConnectString = cfg.GetValue<string>("Mazak", "SQL ConnectionString");
       string dbConnStr;
-      if (MazakType == DatabaseAccess.MazakDbType.MazakSmooth)
+      if (MazakType == MazakDbType.MazakSmooth)
       {
         if (!string.IsNullOrEmpty(sqlConnectString))
         {
@@ -203,13 +203,13 @@ namespace MazakMachineInterface
       else
         jobDB.Open(System.IO.Path.Combine(dataDirectory, "mazakjobs.db"));
 
-      database = new TransactionDatabaseAccess(dbConnStr, MazakType);
-      var readOnlyDb = new ReadonlyDatabaseAccess(dbConnStr, MazakType);
+      database = new OpenDatabaseKitTransactionDB(dbConnStr, MazakType);
+      var readOnlyDb = new OpenDatabaseKitReadDB(dbConnStr, MazakType);
       queues = new MazakQueues(jobLog, jobDB, loadOper, database);
       loadOper = new LoadOperations(cfg, readOnlyDb.SmoothDB);
       var sendToExternal = new SendMaterialToExternalQueue();
 
-      if (MazakType == DatabaseAccess.MazakDbType.MazakWeb || MazakType == DatabaseAccess.MazakDbType.MazakSmooth)
+      if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakSmooth)
         logDataLoader = new LogDataWeb(logPath, jobLog, jobDB, sendToExternal, readOnlyDb, queues, settings);
       else
       {
@@ -276,18 +276,18 @@ namespace MazakMachineInterface
       routing.RaiseNewCurrentStatus(routing.GetCurrentStatus(dset));
     }
 
-    private DatabaseAccess.MazakDbType DetectMazakType(IConfig cfg, string localDbPath)
+    private MazakDbType DetectMazakType(IConfig cfg, string localDbPath)
     {
       var verE = cfg.GetValue<bool>("Mazak", "VersionE");
       var webver = cfg.GetValue<bool>("Mazak", "Web Version");
       var smoothVer = cfg.GetValue<bool>("Mazak", "Smooth Version");
 
       if (verE)
-        return DatabaseAccess.MazakDbType.MazakVersionE;
+        return MazakDbType.MazakVersionE;
       else if (webver)
-        return DatabaseAccess.MazakDbType.MazakWeb;
+        return MazakDbType.MazakWeb;
       else if (smoothVer)
-        return DatabaseAccess.MazakDbType.MazakSmooth;
+        return MazakDbType.MazakSmooth;
 
       string testPath;
       if (string.IsNullOrEmpty(localDbPath))
@@ -303,12 +303,12 @@ namespace MazakMachineInterface
       {
         //TODO: open database to check column existance for web vs E.
         Log.Information("Assuming Mazak WEB version.  If this is incorrect it can be changed in the settings.");
-        return DatabaseAccess.MazakDbType.MazakWeb;
+        return MazakDbType.MazakWeb;
       }
       else
       {
         Log.Information("Assuming Mazak Smooth version.  If this is incorrect it can be changed in the settings.");
-        return DatabaseAccess.MazakDbType.MazakSmooth;
+        return MazakDbType.MazakSmooth;
       }
     }
   }

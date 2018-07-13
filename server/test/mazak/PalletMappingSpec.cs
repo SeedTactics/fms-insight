@@ -100,7 +100,7 @@ namespace MachineWatchTest
 
 			var pMap = new clsPalletPartMapping(new JobPlan[] {job1, job2, job3, job4}, dset, 3,
 			                                    new HashSet<string>(), log, true, "NewGlobal",
-			                                    false, DatabaseAccess.MazakDbType.MazakVersionE);
+			                                    false, MazakDbType.MazakVersionE);
 
 			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
 			if (log.Count > 0) Assert.True(false, log[0]);
@@ -218,7 +218,7 @@ namespace MachineWatchTest
 
 			var pMap = new clsPalletPartMapping(new JobPlan[] {job1, job2, job3, job4}, dset, 3,
 			                                    savedParts, log, true, "NewGlobal",
-			                                    false,  DatabaseAccess.MazakDbType.MazakVersionE);
+			                                    false,  MazakDbType.MazakVersionE);
 
 			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
 			if (log.Count > 0) Assert.True(false, log[0]);
@@ -300,7 +300,7 @@ namespace MachineWatchTest
 
 			var pMap = new clsPalletPartMapping(new JobPlan[] {job1, job2, job3, job4}, dset, 3,
 			                                    new HashSet<string>(), log, true, "NewGlobal",
-			                                    false,  DatabaseAccess.MazakDbType.MazakVersionE);
+			                                    false,  MazakDbType.MazakVersionE);
 
 			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
 			if (log.Count > 0) Assert.True(false, log[0]);
@@ -398,7 +398,7 @@ namespace MachineWatchTest
 
 			var pMap = new clsPalletPartMapping(new JobPlan[] {job1, job2}, dset, 3,
 			                                    new HashSet<string>(), log, true, "NewGlobal",
-			                                    checkPalletUsedOnce,  DatabaseAccess.MazakDbType.MazakVersionE);
+			                                    checkPalletUsedOnce,  MazakDbType.MazakVersionE);
 
 			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
 			if (log.Count > 0) Assert.True(false, log[0]);
@@ -512,7 +512,7 @@ namespace MachineWatchTest
 
 			var pMap = new clsPalletPartMapping(new JobPlan[] {job1, job2, job3, job4}, dset, 3,
 			                                    new HashSet<string>(), log, true, "NewGlobal",
-			                                    false,  DatabaseAccess.MazakDbType.MazakVersionE);
+			                                    false,  MazakDbType.MazakVersionE);
 
 			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
 			if (log.Count > 0) Assert.True(false, log[0]);
@@ -641,7 +641,7 @@ namespace MachineWatchTest
 
 		    var pMap = new clsPalletPartMapping(new JobPlan[] {job1, job2, job3}, dset, 3,
 			                                    new HashSet<string>(), log, true, "NewGlobal",
-			                                    false,  DatabaseAccess.MazakDbType.MazakVersionE);
+			                                    false,  MazakDbType.MazakVersionE);
 
 			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
 			if (log.Count > 0) Assert.True(false, log[0]);
@@ -784,7 +784,7 @@ namespace MachineWatchTest
 
 			var pMap = new clsPalletPartMapping(new JobPlan[] {job1, job2, job3, job4}, dset, 3,
 			                                    new HashSet<string>(), log, true, "NewGlobal",
-			                                    false,  DatabaseAccess.MazakDbType.MazakVersionE);
+			                                    false, MazakDbType.MazakVersionE);
 
 			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
 			if (log.Count > 0) Assert.True(false, log[0]);

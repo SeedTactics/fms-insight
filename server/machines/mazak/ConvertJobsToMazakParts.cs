@@ -57,7 +57,7 @@ namespace MazakMachineInterface
     {
       var newPartRow = transSet.Part_t.NewPart_tRow();
 
-      newPartRow.Command = TransactionDatabaseAccess.AddCommand;
+      newPartRow.Command = OpenDatabaseKitTransactionDB.AddCommand;
       newPartRow.PartName = PartName;
       newPartRow.Comment = Comment;
       newPartRow.Price = 0;
@@ -213,7 +213,7 @@ namespace MazakMachineInterface
     public abstract IEnumerable<JobPlan.FixtureFace> Fixtures();
 
     public abstract TransactionDataSet.PartProcess_tRow
-      CreateDatabaseRow(TransactionDataSet transSet, string fixture, DatabaseAccess.MazakDbType mazakTy);
+      CreateDatabaseRow(TransactionDataSet transSet, string fixture, MazakDbType mazakTy);
 
     protected static int ConvertStatStrV1ToV2(string v1str)
     {
@@ -246,7 +246,7 @@ namespace MazakMachineInterface
       return Job.PlannedFixtures(ProcessNumber, Path);
     }
 
-    public override TransactionDataSet.PartProcess_tRow CreateDatabaseRow(TransactionDataSet transSet, string fixture, DatabaseAccess.MazakDbType mazakTy)
+    public override TransactionDataSet.PartProcess_tRow CreateDatabaseRow(TransactionDataSet transSet, string fixture, MazakDbType mazakTy)
     {
       var newPartProcRow = transSet.PartProcess_t.NewPartProcess_tRow();
       newPartProcRow.PartName = Part.PartName;
@@ -284,7 +284,7 @@ namespace MazakMachineInterface
       newPartProcRow.RemoveLDS = new string(UnfixLDS);
       newPartProcRow.CutMc = new string(Cut);
 
-      if (mazakTy != DatabaseAccess.MazakDbType.MazakVersionE)
+      if (mazakTy != MazakDbType.MazakVersionE)
       {
         newPartProcRow.FixLDS = ConvertStatStrV1ToV2(newPartProcRow.FixLDS).ToString();
         newPartProcRow.RemoveLDS = ConvertStatStrV1ToV2(newPartProcRow.RemoveLDS).ToString();
@@ -321,7 +321,7 @@ namespace MazakMachineInterface
 
     public override IEnumerable<JobPlan.FixtureFace> Fixtures() => Enumerable.Empty<JobPlan.FixtureFace>();
 
-    public override TransactionDataSet.PartProcess_tRow CreateDatabaseRow(TransactionDataSet transSet, string fixture, DatabaseAccess.MazakDbType mazakTy)
+    public override TransactionDataSet.PartProcess_tRow CreateDatabaseRow(TransactionDataSet transSet, string fixture, MazakDbType mazakTy)
     {
       char[] FixLDS = { '0', '0', '0', '0', '0', '0', '0', '0', '0', '0' };
       char[] UnfixLDS = { '0', '0', '0', '0', '0', '0', '0', '0', '0', '0' };
@@ -346,7 +346,7 @@ namespace MazakMachineInterface
       }
 
       var newPartProcRow = transSet.PartProcess_t.NewPartProcess_tRow();
-      TransactionDatabaseAccess.BuildPartProcessRow(newPartProcRow, TemplateProcessRow);
+      OpenDatabaseKitTransactionDB.BuildPartProcessRow(newPartProcRow, TemplateProcessRow);
       newPartProcRow.PartName = Part.PartName;
       newPartProcRow.Fixture = fixture;
       newPartProcRow.ProcessNumber = ProcessNumber;
@@ -355,7 +355,7 @@ namespace MazakMachineInterface
       newPartProcRow.RemoveLDS = new string(UnfixLDS);
       newPartProcRow.CutMc = new string(Cut);
 
-      if (mazakTy != DatabaseAccess.MazakDbType.MazakVersionE)
+      if (mazakTy != MazakDbType.MazakVersionE)
       {
         newPartProcRow.FixLDS = ConvertStatStrV1ToV2(newPartProcRow.FixLDS).ToString();
         newPartProcRow.RemoveLDS = ConvertStatStrV1ToV2(newPartProcRow.RemoveLDS).ToString();
@@ -412,7 +412,7 @@ namespace MazakMachineInterface
       int downloadUID,
       ReadOnlyDataSet currentSet,
       ISet<string> savedParts,
-      DatabaseAccess.MazakDbType MazakType,
+      MazakDbType MazakType,
       bool checkPalletsUsedOnce,
       IList<string> log)
     {
@@ -429,7 +429,7 @@ namespace MazakMachineInterface
     }
 
     #region Parts
-    private static List<MazakPart> BuildMazakParts(IEnumerable<JobPlan> jobs, int downloadID, ReadOnlyDataSet currentSet, DatabaseAccess.MazakDbType mazakTy,
+    private static List<MazakPart> BuildMazakParts(IEnumerable<JobPlan> jobs, int downloadID, ReadOnlyDataSet currentSet, MazakDbType mazakTy,
                                                   IList<string> log)
     {
       var ret = new List<MazakPart>();
@@ -524,7 +524,7 @@ namespace MazakMachineInterface
     //Func<int, int, bool> only introduced in .NET 3.5
     private delegate bool MatchFunc(int proc, int path);
 
-    private static void BuildProcFromPathGroup(JobPlan job, MazakPart mazak, out string ErrorDuringCreate, DatabaseAccess.MazakDbType mazakTy,
+    private static void BuildProcFromPathGroup(JobPlan job, MazakPart mazak, out string ErrorDuringCreate, MazakDbType mazakTy,
                                                    ReadOnlyDataSet currentSet, MatchFunc matchPath)
     {
       ErrorDuringCreate = null;
@@ -556,7 +556,7 @@ namespace MazakMachineInterface
                   ErrorDuringCreate = "Part " + job.PartName + " has no programs.";
                   return;
                 }
-                if (mazakTy == DatabaseAccess.MazakDbType.MazakVersionE)
+                if (mazakTy == MazakDbType.MazakVersionE)
                 {
                   int progNum;
                   if (!int.TryParse(p.Program, out progNum))
@@ -590,7 +590,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private static void BuildProcFromJobWithOneProc(JobPlan job, int proc1path, MazakPart mazak, DatabaseAccess.MazakDbType mazakTy,
+    private static void BuildProcFromJobWithOneProc(JobPlan job, int proc1path, MazakPart mazak, MazakDbType mazakTy,
                                                     ReadOnlyDataSet currentSet, out string ErrorDuringCreate)
     {
       ErrorDuringCreate = null;
