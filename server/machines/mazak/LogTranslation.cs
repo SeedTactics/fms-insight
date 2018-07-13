@@ -44,20 +44,20 @@ namespace MazakMachineInterface
     private BlackMaple.MachineFramework.JobLogDB _log;
     private BlackMaple.MachineFramework.FMSSettings _settings;
     private Action<LogEntry> _onPalletMove;
-    private IMazakData _findPart;
+    private MazakSchedulesAndLoadActions _mazakSchedules;
     private Dictionary<string, JobPlan> _jobs;
 
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LogTranslation>();
 
     public LogTranslation(BlackMaple.MachineFramework.JobDB jDB,
                           BlackMaple.MachineFramework.JobLogDB logDB,
-                          IMazakData mazakData,
+                          MazakSchedulesAndLoadActions mazakSch,
                           BlackMaple.MachineFramework.FMSSettings settings,
                           Action<LogEntry> onPalletMove)
     {
       _jobDB = jDB;
       _log = logDB;
-      _findPart = mazakData;
+      _mazakSchedules = mazakSch;
       _settings = settings;
       _onPalletMove = onPalletMove;
       _jobs = new Dictionary<string, JobPlan>();
@@ -203,7 +203,7 @@ namespace MazakMachineInterface
     #region Material
     private List<LogMaterial> CreateMaterialWithoutIDs(LogEntry e)
     {
-      _findPart.FindPart(e.Pallet, e.FullPartName, e.Process, out string unique, out int path, out int numProc);
+      _mazakSchedules.FindSchedule(e.FullPartName, e.Process, out string unique, out int path, out int numProc);
 
       var ret = new List<LogMaterial>();
       ret.Add(new LogMaterial(-1, unique, e.Process, e.JobPartName, numProc, ""));
@@ -225,7 +225,7 @@ namespace MazakMachineInterface
         fixQty: e.FixedQuantity,
         isUnloadEnd: e.Code == LogCode.UnloadEnd,
         oldEvents: oldEvents);
-      _findPart.FindPart(e.Pallet, e.FullPartName, e.Process, out string unique, out int path, out int numProc);
+      _mazakSchedules.FindSchedule(e.FullPartName, e.Process, out string unique, out int path, out int numProc);
 
       var ret = new List<LogMaterialAndPath>();
 
@@ -345,7 +345,7 @@ namespace MazakMachineInterface
         if (!int.TryParse(s[1], out proc)) proc = 1;
         if (!int.TryParse(s[2], out fixQty)) fixQty = 1;
 
-        _findPart.FindPart(pallet, fullPartName, proc, out string unique, out int path, out int numProc);
+        _mazakSchedules.FindSchedule(fullPartName, proc, out string unique, out int path, out int numProc);
 
         JobPlan job = GetJob(unique);
 
@@ -535,7 +535,7 @@ namespace MazakMachineInterface
     }
 
     private TimeSpan CalculateActiveLoadTime(LogEntry e) {
-      _findPart.FindPart(e.Pallet, e.FullPartName, e.Process, out string unique, out int path, out int numProc);
+      _mazakSchedules.FindSchedule(e.FullPartName, e.Process, out string unique, out int path, out int numProc);
       var job = GetJob(unique);
       if (job == null) return TimeSpan.Zero;
       return TimeSpan.FromTicks(job.GetExpectedLoadTime(e.Process, path).Ticks * e.FixedQuantity);

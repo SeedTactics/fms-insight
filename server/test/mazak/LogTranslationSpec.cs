@@ -50,7 +50,8 @@ namespace MachineWatchTest
     protected LogTranslation log;
     protected List<BlackMaple.MachineWatchInterface.LogEntry> expected = new List<BlackMaple.MachineWatchInterface.LogEntry>();
     protected List<MazakMachineInterface.LogEntry> raisedByPalletMove = new List<MazakMachineInterface.LogEntry>();
-		private List<TestPartData> partData;
+    protected MazakSchedulesAndLoadActions mazakData;
+    private List<MazakScheduleRow> _schedules;
 
     protected LogTestBase()
     {
@@ -64,8 +65,8 @@ namespace MachineWatchTest
       jobDB = new JobDB(jobConn);
       jobDB.CreateTables();
 
-			partData = new List<TestPartData>();
-			var mazakData = new TestMazakData(partData);
+			_schedules = new List<MazakScheduleRow>();
+			mazakData = new MazakSchedulesAndLoadActions(_schedules, new LoadAction[] {});
 
 			var settings = new FMSSettings() {
 				SerialType = SerialType.AssignOneSerialPerMaterial
@@ -85,60 +86,17 @@ namespace MachineWatchTest
 		}
 
     #region Find Part
-		private class TestPartData {
-			public int Pallet {get;set;}
-			public string MazakPartName {get;set;}
-			public int Proc {get;set;}
+		protected void AddTestPart(string unique, string part, int proc, int numProc, int path) {
+			var sch = new MazakScheduleRow() {
+				PartName = part + ":4:" + path.ToString(),
+        Comment = MazakPart.CreateComment(unique, Enumerable.Repeat(path, numProc), false),
+			};
+      for (int i = 0; i < numProc; i++) {
+        sch.Processes.Add(new MazakScheduleProcessRow(sch) {
 
-			public string Unique {get;set;}
-			public int Path {get;set;}
-			public int NumProc {get;set;}
-		}
-
-    private class TestMazakData : IMazakData
-    {
-			private IEnumerable<TestPartData> testPartData;
-			public TestMazakData(IEnumerable<TestPartData> td) { testPartData = td; }
-
-      public IEnumerable<MazakScheduleRow> LoadSchedules()
-      {
-        throw new Exception("Unexpected call to load schedules");
+        });
       }
-
-      public void FindPart(int pallet, string mazakPartName, int proc, out string unique, out int path, out int numProc)
-      {
-				var data = testPartData
-					.Where(p => p.Pallet == pallet && p.MazakPartName == mazakPartName && p.Proc == proc)
-					.FirstOrDefault();
-				if (data != null) {
-						unique = data.Unique;
-						path = data.Path;
-						numProc = data.NumProc;
-				} else {
-					throw new Exception("Unable to find part for " + pallet.ToString() + " " + mazakPartName + " " + proc.ToString());
-				}
-      }
-
-      public int PartFixQuantity(string mazakPartName, int proc)
-      {
-        throw new Exception("Unexpected access to part fix quantity");
-      }
-
-      public IEnumerable<LoadAction> CurrentLoadActions()
-      {
-        throw new Exception("Unexpected call to load actions");
-      }
-    }
-
-		protected void AddTestPart(int pallet, string unique, string part, int proc, int numProc, int path) {
-			partData.Add(new TestPartData() {
-				Pallet = pallet,
-				MazakPartName = part + ":4:" + path.ToString(),
-				Proc = proc,
-				Unique = unique,
-				Path = path,
-				NumProc = numProc
-			});
+      _schedules.Add(sch);
 		}
     #endregion
 
@@ -644,7 +602,7 @@ namespace MachineWatchTest
     {
       var t = DateTime.UtcNow.AddHours(-5);
 
-			AddTestPart(pallet: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, path: 1);
+			AddTestPart(unique: "unique", part: "part1", proc: 1, numProc: 1, path: 1);
 
       var p = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, face: "1", numProc: 1, matID: 1);
 
@@ -666,8 +624,8 @@ namespace MachineWatchTest
     {
       var t = DateTime.UtcNow.AddHours(-5);
 
-      AddTestPart(pallet: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, path: 1);
-      AddTestPart(pallet: 6, unique: "unique", part: "part1", proc: 1, numProc: 1, path: 1);
+      AddTestPart(unique: "unique", part: "part1", proc: 1, numProc: 1, path: 1);
+      AddTestPart(unique: "unique", part: "part1", proc: 1, numProc: 1, path: 1);
 
       var p1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, face: "1", matID: 1);
       var p2 = BuildMaterial(t, pal: 6, unique: "unique", part: "part1", proc: 1, numProc: 1, face: "1", matID: 2);
@@ -716,9 +674,9 @@ namespace MachineWatchTest
     {
       var t = DateTime.UtcNow.AddHours(-5);
 
-      AddTestPart(pallet: 3, unique: "unique", part: "part1", proc: 1, numProc: 2, path: 1);
-      AddTestPart(pallet: 3, unique: "unique", part: "part1", proc: 2, numProc: 2, path: 1);
-      AddTestPart(pallet: 6, unique: "unique", part: "part1", proc: 1, numProc: 2, path: 1);
+      AddTestPart(unique: "unique", part: "part1", proc: 1, numProc: 2, path: 1);
+      AddTestPart(unique: "unique", part: "part1", proc: 2, numProc: 2, path: 1);
+      AddTestPart(unique: "unique", part: "part1", proc: 1, numProc: 2, path: 1);
 
       var p1d1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 2, face: "1", matID: 1);
       var p1d2 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 2, numProc: 2, face: "2", matID: 1);
@@ -773,10 +731,10 @@ namespace MachineWatchTest
     public void ActiveTime()
     {
       var t = DateTime.UtcNow.AddHours(-5);
-      AddTestPart(pallet: 2, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1);
-      AddTestPart(pallet: 2, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1);
-      AddTestPart(pallet: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 2);
-      AddTestPart(pallet: 4, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 2);
+      AddTestPart(unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1);
+      AddTestPart(unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1);
+      AddTestPart(unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 2);
+      AddTestPart(unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 2);
 
       var proc1path1 = BuildMaterial(t, pal: 2, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matID: 1);
       var proc2path1 = BuildMaterial(t, pal: 2, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1, face: "2", matID: 1);
@@ -854,8 +812,8 @@ namespace MachineWatchTest
     public void LargeFixedQuantites()
     {
       var t = DateTime.UtcNow.AddHours(-5);
-      AddTestPart(pallet: 1, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1);
-      AddTestPart(pallet: 1, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1);
+      AddTestPart(unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1);
+      AddTestPart(unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1);
 
       var proc1 = BuildMaterial(t, pal: 1, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matIDs: new long[] {1, 2, 3});
       var proc2 = BuildMaterial(t, pal: 1, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1, face: "2", matIDs: new long[] {1, 2, 3});
@@ -903,7 +861,7 @@ namespace MachineWatchTest
     {
       var t = DateTime.UtcNow.AddHours(-5);
 
-      AddTestPart(pallet: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, path: 1);
+      AddTestPart(unique: "unique", part: "part1", proc: 1, numProc: 1, path: 1);
 
       var p1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, face: "1", matID: 1);
 
@@ -946,7 +904,7 @@ namespace MachineWatchTest
     {
       var t = DateTime.UtcNow.AddHours(-5);
 
-      AddTestPart(pallet: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, path: 1);
+      AddTestPart(unique: "unique", part: "part1", proc: 1, numProc: 1, path: 1);
 
       var p1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, face: "1", matID: 1);
       var p2 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, face: "1", matID: 2);
@@ -986,8 +944,8 @@ namespace MachineWatchTest
     public void Inspections()
     {
       var t = DateTime.UtcNow.AddHours(-5);
-      AddTestPart(pallet: 2, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1);
-      AddTestPart(pallet: 2, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1);
+      AddTestPart(unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1);
+      AddTestPart(unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1);
 
       var proc1 = BuildMaterial(t, pal: 2, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matID: 1);
       var proc2 = BuildMaterial(t, pal: 2, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1, face: "2", matID: 1);
@@ -1070,8 +1028,8 @@ namespace MachineWatchTest
     public void Queues()
     {
       var t = DateTime.UtcNow.AddHours(-5);
-      AddTestPart(pallet: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1);
-      AddTestPart(pallet: 9, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1);
+      AddTestPart(unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1);
+      AddTestPart(unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1);
 
       var proc1 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matID: 1);
       var proc1snd = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matID: 2);
@@ -1122,8 +1080,8 @@ namespace MachineWatchTest
       // run multiple process 1s.  Also have multiple parts on a face.
 
       var t = DateTime.UtcNow.AddHours(-5);
-      AddTestPart(pallet: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1);
-      AddTestPart(pallet: 5, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1);
+      AddTestPart(unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1);
+      AddTestPart(unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1);
 
       var proc1 = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matIDs: new long[] {1, 2, 3});
       var proc1snd = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matIDs: new long[] {4, 5, 6});

@@ -56,7 +56,7 @@ namespace MazakMachineInterface
       _transDB = trans;
     }
 
-    public void CheckQueues(IMazakData mazakData)
+    public void CheckQueues(MazakSchedulesAndLoadActions mazakData)
     {
       try {
         if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(3), true))
@@ -88,7 +88,7 @@ namespace MazakMachineInterface
       }
     }
 
-    public TransactionDataSet CalculateScheduleChanges(IMazakData mazakData)
+    public TransactionDataSet CalculateScheduleChanges(MazakSchedulesAndLoadActions mazakData)
     {
       log.Debug("Starting check for new queued material to add to mazak");
       var transSet = new TransactionDataSet();
@@ -120,11 +120,11 @@ namespace MazakMachineInterface
       public Dictionary<int, ScheduleWithQueuesProcess> Procs {get;set;}
     }
 
-    private IEnumerable<ScheduleWithQueues> LoadSchedules(IMazakData mazakData)
+    private IEnumerable<ScheduleWithQueues> LoadSchedules(MazakSchedulesAndLoadActions mazakData)
     {
-      var loadOpers = mazakData.CurrentLoadActions();
+      var loadOpers = mazakData.LoadActions;
       var schs = new List<ScheduleWithQueues>();
-      foreach (var schRow in mazakData.LoadSchedules().OrderBy(s => s.DueDate)) {
+      foreach (var schRow in mazakData.Schedules.OrderBy(s => s.DueDate)) {
         if (!MazakPart.IsSailPart(schRow.PartName)) continue;
 
         MazakPart.ParseComment(schRow.Comment, out string unique, out var procToPath, out bool manual);
@@ -211,7 +211,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private void CheckCastingsForProc1(IGrouping<string, ScheduleWithQueues> job, IMazakData mazakData)
+    private void CheckCastingsForProc1(IGrouping<string, ScheduleWithQueues> job, MazakSchedulesAndLoadActions mazakData)
     {
       string uniqueStr = job.Key;
 
@@ -244,7 +244,7 @@ namespace MazakMachineInterface
                 .Where(p => p.SchProcRow.ProcessMaterialQuantity == 0)
                 .OrderBy(p => p.SchProcRow.ProcessExecuteQuantity);
             foreach (var p in potentialPaths) {
-              int fixQty = mazakData.PartFixQuantity(p.SchProcRow.MazakScheduleRow.PartName, p.SchProcRow.ProcessNumber);
+              int fixQty = p.SchProcRow.FixQuantity;
               if (fixQty <= remain) {
                 remain -= fixQty;
                 p.TargetMaterialCount = fixQty;
@@ -310,7 +310,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private void CalculateTargetMatQty(IMazakData mazakData, IEnumerable<ScheduleWithQueues> schs)
+    private void CalculateTargetMatQty(MazakSchedulesAndLoadActions mazakData, IEnumerable<ScheduleWithQueues> schs)
     {
       // go through each job and process, and distribute the queued material among the various paths
       // for the job and process.

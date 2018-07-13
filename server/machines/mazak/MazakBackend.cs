@@ -274,7 +274,7 @@ namespace MazakMachineInterface
       routing.RaiseNewCurrentStatus(routing.GetCurrentStatus());
     }
 
-    private void OnNewLogEntries(IMazakData data)
+    private void OnNewLogEntries()
     {
       routing.RaiseNewCurrentStatus(routing.GetCurrentStatus());
     }

@@ -760,7 +760,7 @@ namespace MazakMachineInterface
       return c;
     }
 
-    private ReadOnlyDataSet LoadReadOnly()
+    public ReadOnlyDataSet LoadReadSet()
     {
       return WithReadDBConnection(conn =>
       {
@@ -838,108 +838,58 @@ namespace MazakMachineInterface
       });
     }
 
-    public IMazakData LoadMazakData() => new OpenDatabaseKitMazakData(LoadReadOnly(), _loadOper);
-    public (IMazakData, ReadOnlyDataSet) LoadDataAndReadSet()
+    public MazakSchedulesAndLoadActions LoadSchedules()
     {
-      var dset = LoadReadOnly();
-      return (new OpenDatabaseKitMazakData(dset, _loadOper), dset);
+      return new MazakSchedulesAndLoadActions(
+        s: CreateSchedules(LoadReadSet()),
+        a: _loadOper.CurrentLoadActions()
+      );
+    }
+    public MazakData LoadAllData()
+    {
+      var dset = LoadReadSet();
+      return new MazakData(
+        s: CreateSchedules(dset),
+        a: _loadOper.CurrentLoadActions(),
+        p: CreateParts(dset)
+      );
+    }
+    public static IEnumerable<MazakScheduleRow> CreateSchedules(ReadOnlyDataSet dset)
+    {
+      var ret = new List<MazakScheduleRow>();
+      foreach (var schRow in dset.Schedule) {
+        var sch = new MazakScheduleRow(schRow);
+        ret.Add(sch);
+        foreach (var proc in schRow.GetScheduleProcessRows()) {
+          var mProc = new MazakScheduleProcessRow(sch, proc);
+          sch.Processes.Add(mProc);
+        }
+      }
+      return ret;
+    }
+    public static IEnumerable<MazakPartRow> CreateParts(ReadOnlyDataSet dset)
+    {
+      var ret = new List<MazakPartRow>();
+      foreach (var partRow in dset.Part) {
+        var part = new MazakPartRow(partRow);
+        ret.Add(part);
+        foreach (var proc in partRow.GetPartProcessRows()) {
+          var mProc = new MazakPartProcessRow(part, proc);
+          part.Processes.Add(mProc);
+        }
+      }
+      return ret;
     }
 
-    private class OpenDatabaseKitMazakData : IMazakData
+    public (MazakData, ReadOnlyDataSet) LoadDataAndReadSet()
     {
-      private static Serilog.ILogger Log = Serilog.Log.ForContext<OpenDatabaseKitMazakData>();
-      private ReadOnlyDataSet ReadSet {get;}
-      private LoadOperationsFromFile _loadOper;
-      private IEnumerable<LoadAction> _actions = null;
-      public OpenDatabaseKitMazakData(ReadOnlyDataSet d, LoadOperationsFromFile o)
-      {
-        ReadSet = d;
-        _loadOper = o;
-      }
-
-      public IEnumerable<MazakScheduleRow> LoadSchedules()
-      {
-        var ret = new List<MazakScheduleRow>();
-        foreach (var schRow in ReadSet.Schedule) {
-          var sch = new MazakScheduleRow(schRow);
-          ret.Add(sch);
-          foreach (var proc in schRow.GetScheduleProcessRows()) {
-            var mProc = new MazakScheduleProcessRow(sch, proc);
-            sch.Processes.Add(mProc);
-          }
-        }
-        return ret;
-      }
-
-      public IEnumerable<LoadAction> CurrentLoadActions()
-      {
-        if (_actions == null)
-          _actions = _loadOper.CurrentLoadActions();
-        return _actions;
-      }
-
-      public void FindPart(int pallet, string mazakPartName, int proc, out string unique, out int path, out int numProc)
-      {
-        unique = "";
-        numProc = proc;
-        path = 1;
-
-        //first search pallets for the given schedule id.  Since the part name usually includes the UID assigned for this
-        //download, even if old log entries are being processed the correct unique string will still be loaded.
-        int scheduleID = -1;
-        foreach (ReadOnlyDataSet.PalletSubStatusRow palRow in ReadSet.PalletSubStatus.Rows)
-        {
-          if (palRow.PalletNumber == pallet && palRow.PartName == mazakPartName && palRow.PartProcessNumber == proc)
-          {
-            scheduleID = palRow.ScheduleID;
-            break;
-          }
-        }
-
-        if (scheduleID >= 0)
-        {
-          foreach (ReadOnlyDataSet.ScheduleRow schRow in ReadSet.Schedule.Rows)
-          {
-            if (schRow.ScheduleID == scheduleID && !schRow.IsCommentNull())
-            {
-              bool manual;
-              MazakPart.ParseComment(schRow.Comment, out unique, out var procToPath, out manual);
-              numProc = schRow.GetScheduleProcessRows().Length;
-              if (numProc < proc) numProc = proc;
-              path = procToPath.PathForProc(proc);
-              return;
-            }
-          }
-        }
-
-        Log.Debug("Unable to find schedule ID for {part}-{proc} on pallet {pallet}", mazakPartName, proc, pallet);
-
-        // search for the first schedule for this part
-        foreach (ReadOnlyDataSet.ScheduleRow schRow in ReadSet.Schedule.Rows)
-        {
-          if (schRow.PartName == mazakPartName && !schRow.IsCommentNull())
-          {
-            bool manual;
-            MazakPart.ParseComment(schRow.Comment, out unique, out var procToPath, out manual);
-            numProc = schRow.GetScheduleProcessRows().Length;
-            if (numProc < proc) numProc = proc;
-            path = procToPath.PathForProc(proc);
-            return;
-          }
-        }
-
-        Log.Warning("Unable to find any schedule for log event {part}-{proc} on pallet {pallet}", mazakPartName, proc, pallet);
-      }
-
-      public int PartFixQuantity(string mazakPartName, int proc)
-      {
-        foreach (var procRow in ReadSet.PartProcess) {
-          if (procRow.PartName == mazakPartName && procRow.ProcessNumber == proc) {
-            return procRow.FixQuantity;
-          }
-        }
-        return 1;
-      }
+      var dset = LoadReadSet();
+      var data = new MazakData(
+        s: CreateSchedules(dset),
+        a: _loadOper.CurrentLoadActions(),
+        p: CreateParts(dset)
+      );
+      return (data, dset);
     }
 	}
 }

@@ -249,7 +249,7 @@ namespace MazakMachineInterface
     public CurrentStatus GetCurrentStatus()
     {
       ReadOnlyDataSet mazakSet = null;
-      IMazakData mazakData;
+      MazakData mazakData;
       if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
       {
         throw new Exception("Unable to obtain mazak database lock");
@@ -266,7 +266,7 @@ namespace MazakMachineInterface
       return GetCurrentStatus(mazakSet, mazakData);
     }
 
-    public CurrentStatus GetCurrentStatus(ReadOnlyDataSet mazakSet, IMazakData mazakData)
+    public CurrentStatus GetCurrentStatus(ReadOnlyDataSet mazakSet, MazakData mazakData)
     {
 
       //Load process and path numbers
@@ -274,7 +274,7 @@ namespace MazakMachineInterface
       Dictionary<string, int> uniqueToMaxProcess;
       CalculateMaxProcAndPath(mazakSet, out uniqueToMaxPath, out uniqueToMaxProcess);
 
-      var currentLoads = new List<LoadAction>(mazakData.CurrentLoadActions());
+      var currentLoads = new List<LoadAction>(mazakData.LoadActions);
 
       var curStatus = new CurrentStatus();
       foreach (var k in fmsSettings.Queues) curStatus.QueueSizes[k.Key] = k.Value;
@@ -841,7 +841,7 @@ namespace MazakMachineInterface
       }
       try
       {
-        IMazakData mazakData;
+        MazakData mazakData;
         (mazakData, currentSet) = readDatabase.LoadDataAndReadSet();
       }
       finally

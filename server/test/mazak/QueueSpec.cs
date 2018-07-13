@@ -69,36 +69,20 @@ namespace MachineWatchTest
 			_jobDB.Close();
 		}
 
-    private class TestMazakData : IMazakData
+    private class TestMazakData
     {
       public List<MazakScheduleRow> Schedules {get;} = new List<MazakScheduleRow>();
       public List<LoadAction> LoadActions {get;} = new List<LoadAction>();
 
-      public IEnumerable<MazakScheduleRow> LoadSchedules()
-      {
-        return Schedules;
-      }
-
-      public void FindPart(int pallet, string mazakPartName, int proc, out string unique, out int path, out int numProc)
-      {
-        throw new Exception("Unexpected call to find part");
-      }
-
-      public int PartFixQuantity(string mazakPartName, int proc)
-      {
-        throw new Exception("Unexpected call to find fix quantity");
-      }
-
-      public IEnumerable<LoadAction> CurrentLoadActions()
-      {
-        return LoadActions;
+      public MazakSchedulesAndLoadActions ToData() {
+        return new MazakSchedulesAndLoadActions(Schedules, LoadActions);
       }
     }
 
     [Fact]
     public void Empty()
     {
-      var trans = _queues.CalculateScheduleChanges(new TestMazakData());
+      var trans = _queues.CalculateScheduleChanges(new TestMazakData().ToData());
       trans.Should().BeNull();
     }
 
@@ -166,7 +150,7 @@ namespace MachineWatchTest
       //put something else at load station
       var action = new LoadAction(true, 1, "pppp", MazakPart.CreateComment("uuuu2", new [] {1}, false), 1, 1);
 
-      var trans = _queues.CalculateScheduleChanges(read);
+      var trans = _queues.CalculateScheduleChanges(read.ToData());
 
       trans.Schedule_t.Count.Should().Be(1);
       trans.Schedule_t[0].ScheduleID.Should().Be(10);
@@ -196,7 +180,7 @@ namespace MachineWatchTest
       _logDB.RecordAddMaterialToQueue(mat1, process: 0, queue: "thequeue", position: 0);
       _logDB.RecordAddMaterialToQueue(mat2, process: 0, queue: "thequeue", position: 1);
 
-      var trans = _queues.CalculateScheduleChanges(read);
+      var trans = _queues.CalculateScheduleChanges(read.ToData());
 
       trans.Schedule_t.Count.Should().Be(0);
       trans.ScheduleProcess_t.Count.Should().Be(0);
@@ -236,7 +220,7 @@ namespace MachineWatchTest
       });
 
       // should allocate 2 parts to uuuu, leave one unassigned, then update material quantity
-      var trans = _queues.CalculateScheduleChanges(read);
+      var trans = _queues.CalculateScheduleChanges(read.ToData());
 
       _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new [] {
         new JobLogDB.QueuedMaterial() {
@@ -287,7 +271,7 @@ namespace MachineWatchTest
       });
 
       // should allocate no parts and leave schedule unchanged.
-      var trans = _queues.CalculateScheduleChanges(read);
+      var trans = _queues.CalculateScheduleChanges(read.ToData());
 
       _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new [] {
         new JobLogDB.QueuedMaterial() {
@@ -334,7 +318,7 @@ namespace MachineWatchTest
       _logDB.RecordAddMaterialToQueue(mat4, process: 1, queue: "transQ", position: 1);
       _logDB.RecordAddMaterialToQueue(mat5, process: 1, queue: "transQ", position: 2);
 
-      var trans = _queues.CalculateScheduleChanges(read);
+      var trans = _queues.CalculateScheduleChanges(read.ToData());
 
       trans.Schedule_t.Count.Should().Be(1);
       trans.Schedule_t[0].ScheduleID.Should().Be(10);
@@ -373,7 +357,7 @@ namespace MachineWatchTest
       _logDB.RecordAddMaterialToQueue(mat2, process: 1, queue: "transQ", position: 0);
       _logDB.RecordAddMaterialToQueue(mat3, process: 1, queue: "transQ", position: 1);
 
-      var trans = _queues.CalculateScheduleChanges(read);
+      var trans = _queues.CalculateScheduleChanges(read.ToData());
 
       trans.Schedule_t.Count.Should().Be(1);
       trans.Schedule_t[0].ScheduleID.Should().Be(10);
@@ -412,7 +396,7 @@ namespace MachineWatchTest
       var action = new LoadAction(true, 1, "pppp", MazakPart.CreateComment("uuuu", new[] {1}, false), 1, 1);
       read.LoadActions.Add(action);
 
-      var trans = _queues.CalculateScheduleChanges(read);
+      var trans = _queues.CalculateScheduleChanges(read.ToData());
       trans.Should().BeNull();
     }
 

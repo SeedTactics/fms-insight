@@ -82,7 +82,7 @@ namespace MazakMachineInterface
   }
 
   public delegate void PalletMoveDel(int pallet, string fromStation, string toStation);
-  public delegate void NewEntriesDel(IMazakData data);
+  public delegate void NewEntriesDel();
   public interface IMazakLogReader
   {
     void RecheckQueues();
@@ -369,7 +369,7 @@ namespace MazakMachineInterface
 
           Thread.Sleep(TimeSpan.FromSeconds(1));
 
-          var mazakData = _readDB.LoadMazakData();
+          var mazakData = _readDB.LoadSchedules();
           var logs = LoadLog(_log.MaxForeignID());
           var trans = new LogTranslation(_jobDB, _log, mazakData, _settings,
             le => PalletMove?.Invoke(le.Pallet, le.FromPosition, le.TargetPosition)
@@ -396,7 +396,7 @@ namespace MazakMachineInterface
           }
 
           if (logs.Count > 0) {
-            NewEntries?.Invoke(mazakData);
+            NewEntries?.Invoke();
           }
 
         } catch (Exception ex) {

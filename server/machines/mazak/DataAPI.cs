@@ -51,6 +51,68 @@ namespace MazakMachineInterface
     void SaveTransaction(TransactionDataSet dset, System.Collections.Generic.IList<string> log, string prefix, int checkInterval = -1);
   }
 
+  public class MazakPartRow
+  {
+    public int Id {get;set;}
+    public string Comment {get;set;}
+    public string PartName {get;set;}
+    public int? Price {get;set;}
+
+    public IList<MazakPartProcessRow> Processes {get;} = new List<MazakPartProcessRow>();
+
+    public MazakPartRow() {}
+    public MazakPartRow(ReadOnlyDataSet.PartRow p)
+    {
+      Id = p.id;
+      Comment = p.IsCommentNull() ? null : p.Comment;
+      PartName = p.PartName;
+      Price = p.IsPriceNull() ? null : (int?) p.Price;
+    }
+  }
+
+  public class MazakPartProcessRow
+  {
+    public int MazakPartRowId {get;set;}
+    public MazakPartRow MazakPartRow {get;set;}
+
+    public string PartName {get;set;}
+    public int ProcessNumber {get;set;}
+
+    public int FixQuantity {get;set;}
+    public int? ContinueCut {get;set;}
+    public string CutMc {get;set;}
+    public string FixLDS {get;set;}
+    public string FixPhoto {get;set;}
+    public string Fixture {get;set;}
+    public string MainProgram {get;set;}
+    public string RemoveLDS {get;set;}
+    public string RemovePhoto {get;set;}
+    public int? WashType {get;set;}
+
+    public MazakPartProcessRow(MazakPartRow p)
+    {
+      MazakPartRowId = p.Id;
+      MazakPartRow = p;
+    }
+    public MazakPartProcessRow(MazakPartRow p, ReadOnlyDataSet.PartProcessRow r)
+    {
+      MazakPartRowId = p.Id;
+      MazakPartRow = p;
+      PartName = r.PartName;
+      ProcessNumber = r.ProcessNumber;
+      FixQuantity = r.IsFixQuantityNull() ? 1 : r.FixQuantity;
+      ContinueCut = r.IsContinueCutNull() ? null : (int?) r.ContinueCut;
+      CutMc = r.IsCutMcNull() ? null : r.CutMc;
+      FixLDS = r.IsFixLDSNull() ? null : r.FixLDS;
+      FixPhoto = r.IsFixPhotoNull() ? null : r.FixPhoto;
+      Fixture = r.IsFixtureNull() ? null : r.Fixture;
+      MainProgram = r.IsMainProgramNull() ? null : r.MainProgram;
+      RemoveLDS = r.IsRemoveLDSNull() ? null : r.RemoveLDS;
+      RemovePhoto = r.IsRemovePhotoNull() ? null : r.RemovePhoto;
+      WashType = r.IsWashTypeNull() ? null : (int?) r.WashType;
+    }
+  }
+
   public class MazakScheduleRow
   {
     public int Id {get;set;}
@@ -92,6 +154,7 @@ namespace MazakMachineInterface
       ProcessingPriority = s.IsProcessingPriorityNull() ? null : (int?)s.ProcessingPriority;
       Reserved = s.IsReservedNull() ? null : (int?)s.Reserved;
       UpdatedFlag = s.IsUpdatedFlagNull() ? null : (int?)s.UpdatedFlag;
+
     }
   }
 
@@ -99,6 +162,7 @@ namespace MazakMachineInterface
   {
     public int MazakScheduleRowId {get;set;}
     public MazakScheduleRow MazakScheduleRow {get;set;}
+    public int FixQuantity {get;set;}
 
     public int ProcessNumber {get;set;}
     public int ProcessMaterialQuantity {get;set;}
@@ -122,24 +186,66 @@ namespace MazakMachineInterface
       ProcessBadQuantity = p.ProcessBadQuantity;
       ProcessMachine = p.ProcessMachine;
       UpdatedFlag = p.UpdatedFlag;
-    }
 
+      FixQuantity = 1;
+      foreach (var partRow in ((ReadOnlyDataSet)p.Table.DataSet).PartProcess) {
+        if (partRow.PartName == sch.PartName && partRow.ProcessNumber == ProcessNumber) {
+          FixQuantity = partRow.FixQuantity;
+          break;
+        }
+      }
+    }
   }
 
-  public interface IMazakData
+  public class MazakSchedulesAndLoadActions
   {
-    IEnumerable<MazakScheduleRow> LoadSchedules();
-    void FindPart(int pallet, string mazakPartName, int proc, out string unique, out int path, out int numProc);
-    int PartFixQuantity(string mazakPartName, int proc);
-    IEnumerable<LoadAction> CurrentLoadActions();
+    public IEnumerable<MazakScheduleRow> Schedules {get;}
+    public IEnumerable<LoadAction> LoadActions {get;}
+
+    public MazakSchedulesAndLoadActions(IEnumerable<MazakScheduleRow> s, IEnumerable<LoadAction> a)
+    {
+      Schedules = s;
+      LoadActions = a;
+    }
+
+    public void FindSchedule(string mazakPartName, int proc, out string unique, out int path, out int numProc)
+    {
+      unique = "";
+      numProc = proc;
+      path = 1;
+      foreach (var schRow in Schedules)
+      {
+        if (schRow.PartName == mazakPartName && !string.IsNullOrEmpty(schRow.Comment))
+        {
+          bool manual;
+          MazakPart.ParseComment(schRow.Comment, out unique, out var procToPath, out manual);
+          numProc = schRow.Processes.Count;
+          if (numProc < proc) numProc = proc;
+          path = procToPath.PathForProc(proc);
+          return;
+        }
+      }
+    }
+  }
+
+  public class MazakData : MazakSchedulesAndLoadActions
+  {
+    public IEnumerable<MazakPartRow> Parts {get;}
+    public MazakData(IEnumerable<MazakScheduleRow> s, IEnumerable<LoadAction> a, IEnumerable<MazakPartRow> p)
+      : base(s, a)
+    {
+      Parts = p;
+    }
   }
 
   public interface IReadDataAccess
   {
-    IMazakData LoadMazakData();
+    MazakSchedulesAndLoadActions LoadSchedules();
+    MazakData LoadAllData();
 
     //these are only here during the transition until the entire read uses just IMazakData
-    (IMazakData, ReadOnlyDataSet) LoadDataAndReadSet();
+    ReadOnlyDataSet LoadReadSet();
+    (MazakData, ReadOnlyDataSet) LoadDataAndReadSet();
     TResult WithReadDBConnection<TResult>(Func<IDbConnection, TResult> action);
   }
 
