@@ -56,7 +56,7 @@ namespace BlackMaple.MachineFramework
             _connection = c;
         }
 
-        public void Open(string filename, string oldInspDbFile = null)
+        public void Open(string filename, string oldInspDbFile = null, long? firstMaterialIdOnEmpty = null)
         {
             if (System.IO.File.Exists(filename))
             {
@@ -70,7 +70,7 @@ namespace BlackMaple.MachineFramework
                 _connection.Open();
                 try
                 {
-                    CreateTables();
+                    CreateTables(firstMaterialIdOnEmpty);
                 }
                 catch
                 {
@@ -88,7 +88,7 @@ namespace BlackMaple.MachineFramework
 
         private const int Version = 18;
 
-        public void CreateTables()
+        public void CreateTables(long? firstMaterialId)
         {
             var cmd = _connection.CreateCommand();
 
@@ -158,6 +158,12 @@ namespace BlackMaple.MachineFramework
             cmd.ExecuteNonQuery();
             cmd.CommandText = "CREATE INDEX queues_idx ON queues(Queue, Position)";
             cmd.ExecuteNonQuery();
+
+            if (firstMaterialId.HasValue && firstMaterialId.Value > 0 && firstMaterialId.Value < long.MaxValue / 2) {
+                cmd.CommandText = "INSERT INTO sqlite_sequence(name, seq) VALUES ('matdetails',$v)";
+                cmd.Parameters.Add("v", SqliteType.Integer).Value = firstMaterialId.Value - 1;
+                cmd.ExecuteNonQuery();
+            }
         }
 
         private void UpdateTables(string inspDbFile)

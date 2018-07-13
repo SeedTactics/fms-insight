@@ -83,7 +83,7 @@ namespace Makino
                 var logConn = SqliteExtensions.ConnectMemory();
                 logConn.Open();
                 _log = new JobLogDB(logConn);
-                _log.CreateTables();
+                _log.CreateTables(firstMaterialId: null);
 
                 var jobConn = SqliteExtensions.ConnectMemory();
                 jobConn.Open();

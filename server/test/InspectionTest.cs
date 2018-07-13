@@ -49,7 +49,7 @@ namespace MachineWatchTest {
       var logConn = SqliteExtensions.ConnectMemory();
       logConn.Open();
       _insp = new JobLogDB(logConn);
-      _insp.CreateTables();
+      _insp.CreateTables(firstMaterialId: null);
 		}
 
 		public void Dispose()

@@ -51,7 +51,7 @@ namespace MachineWatchTest
             var connection = BlackMaple.MachineFramework.SqliteExtensions.ConnectMemory();
             connection.Open();
             _jobLog = new JobLogDB(connection);
-            _jobLog.CreateTables();
+            _jobLog.CreateTables(firstMaterialId: null);
         }
 
         public void Dispose()
@@ -65,6 +65,9 @@ namespace MachineWatchTest
             long m1 = _jobLog.AllocateMaterialID("U1", "P1", 52);
             long m2 = _jobLog.AllocateMaterialID("U2", "P2", 66);
             long m3 = _jobLog.AllocateMaterialID("U3", "P3", 566);
+            m1.Should().Be(1);
+            m2.Should().Be(2);
+            m3.Should().Be(3);
 
             _jobLog.GetMaterialDetails(m1).Should().BeEquivalentTo(new MaterialDetails() {
                 MaterialID = m1,
@@ -1291,5 +1294,41 @@ namespace MachineWatchTest
                 endOfRoute: false);
         }
         #endregion
+    }
+
+    public class LogStartingMaterialIDSpec : IDisposable
+    {
+        private JobLogDB _jobLog;
+
+        public LogStartingMaterialIDSpec()
+        {
+            var connection = BlackMaple.MachineFramework.SqliteExtensions.ConnectMemory();
+            connection.Open();
+            _jobLog = new JobLogDB(connection);
+            _jobLog.CreateTables(firstMaterialId: 500);
+        }
+
+        public void Dispose()
+        {
+            _jobLog.Close();
+        }
+
+        [Fact]
+        public void MaterialIDs()
+        {
+            long m1 = _jobLog.AllocateMaterialID("U1", "P1", 52);
+            long m2 = _jobLog.AllocateMaterialID("U2", "P2", 66);
+            long m3 = _jobLog.AllocateMaterialID("U3", "P3", 566);
+            m1.Should().Be(500);
+            m2.Should().Be(501);
+            m3.Should().Be(502);
+
+            _jobLog.GetMaterialDetails(m1).Should().BeEquivalentTo(new MaterialDetails() {
+                MaterialID = m1,
+                JobUnique = "U1",
+                PartName = "P1",
+                NumProcesses = 52,
+            });
+        }
     }
 }
