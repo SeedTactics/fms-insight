@@ -65,9 +65,8 @@ namespace MazakMachineInterface
 
     public (IMazakData, ReadOnlyDataSet) LoadDataAndReadSet()
     {
-      OpenDatabaseKitReadDB.OpenDatabaseKitMazakData baseMazakData =
-        (OpenDatabaseKitReadDB.OpenDatabaseKitMazakData)_openReadDB.LoadMazakData();
-      return (new SmoothMazakData(_connStr, baseMazakData), baseMazakData.ReadSet);
+      var (baseMazakData, readSet) = _openReadDB.LoadDataAndReadSet();
+      return (new SmoothMazakData(_connStr, baseMazakData), readSet);
     }
 
     private class SmoothMazakData : IMazakData
