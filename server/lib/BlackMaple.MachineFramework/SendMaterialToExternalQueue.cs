@@ -76,13 +76,9 @@ namespace BlackMaple.MachineFramework
           client.BaseAddress = builder.Uri;
 
           foreach (var mat in mats) {
+            var q = "?queue=" + WebUtility.UrlEncode(mat.Queue) + "&position=-1";
 
-            var q = HttpUtility.ParseQueryString(String.Empty);
-            q["queue"] = mat.Queue;
-            q["position"] = "-1";
-            builder.Query = q.ToString();
-
-            var resp = await client.PostAsync("/part/" + WebUtility.UrlEncode(mat.PartName) + "/casting",
+            var resp = await client.PostAsync("/part/" + WebUtility.UrlEncode(mat.PartName) + "/casting" + q,
                                               new StringContent(mat.Serial));
 
             if (!resp.IsSuccessStatusCode) {
