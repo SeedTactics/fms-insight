@@ -53,7 +53,7 @@ namespace MachineWatchTest
       var logConn = BlackMaple.MachineFramework.SqliteExtensions.ConnectMemory();
       logConn.Open();
       _logDB = new JobLogDB(logConn);
-      _logDB.CreateTables(firstMaterialId: null);
+      _logDB.CreateTables(firstSerialOnEmpty: null);
 
       var jobConn = BlackMaple.MachineFramework.SqliteExtensions.ConnectMemory();
       jobConn.Open();

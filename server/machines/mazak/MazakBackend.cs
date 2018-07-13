@@ -192,7 +192,8 @@ namespace MazakMachineInterface
       jobLog = new BlackMaple.MachineFramework.JobLogDB();
       jobLog.Open(
         System.IO.Path.Combine(dataDirectory, "log.db"),
-        System.IO.Path.Combine(dataDirectory, "insp.db")
+        System.IO.Path.Combine(dataDirectory, "insp.db"),
+        firstSerialOnEmpty: settings.StartingSerial
       );
 
       jobDB = new BlackMaple.MachineFramework.JobDB();

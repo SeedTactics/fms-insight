@@ -73,7 +73,10 @@ namespace Cincron
 
                 _log = new JobLogDB();
 
-                _log.Open(System.IO.Path.Combine(dataDirectory, "log.db"));
+                _log.Open(
+                    System.IO.Path.Combine(dataDirectory, "log.db"),
+                    firstSerialOnEmpty: settings.StartingSerial
+                );
                 _msgWatcher = new MessageWatcher(msgFile, _log);
                 _msgWatcher.Start();
 

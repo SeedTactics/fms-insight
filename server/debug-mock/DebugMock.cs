@@ -106,7 +106,7 @@ namespace DebugMachineWatchApiServer
         var conn = SqliteExtensions.ConnectMemory();
         conn.Open();
         LogDB = new JobLogDB(conn);
-        LogDB.CreateTables(firstMaterialId: null);
+        LogDB.CreateTables(firstSerialOnEmpty: null);
 
         conn = SqliteExtensions.ConnectMemory();
         conn.Open();

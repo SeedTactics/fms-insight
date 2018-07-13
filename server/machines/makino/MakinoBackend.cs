@@ -79,29 +79,11 @@ namespace Makino
 
 				_dataDirectory = dataDir;
 
-#if DEBUG
-                var logConn = SqliteExtensions.ConnectMemory();
-                logConn.Open();
-                _log = new JobLogDB(logConn);
-                _log.CreateTables(firstMaterialId: null);
-
-                var jobConn = SqliteExtensions.ConnectMemory();
-                jobConn.Open();
-                _jobDB = new JobDB(jobConn);
-                _jobDB.CreateTables();
-
-                var statusConn = SqliteExtensions.ConnectMemory();
-                statusConn.Open();
-                _status = new StatusDB(statusConn);
-                _status.CreateTables();
-
-                _makinoDB = new MakinoDB(MakinoDB.DBTypeEnum.SqlLocal, "", _status, _log);
-                _logTimer = new LogTimer(_log, _jobDB, _makinoDB, _status, settings);
-#else
                 _log = new JobLogDB();
                 _log.Open(
                     System.IO.Path.Combine(_dataDirectory, "log.db"),
-                    System.IO.Path.Combine(_dataDirectory, "inspections.db")
+                    System.IO.Path.Combine(_dataDirectory, "inspections.db"),
+                    firstSerialOnEmpty: settings.StartingSerial
                 );
 
                 _jobDB = new BlackMaple.MachineFramework.JobDB();
@@ -109,9 +91,13 @@ namespace Makino
 
                 _status = new StatusDB(System.IO.Path.Combine(_dataDirectory, "makino.db"));
 
-                _makinoDB = new MakinoDB(MakinoDB.DBTypeEnum.SqlConnStr, dbConnStr, _status, _log, dbTrace);
-                _logTimer = new LogTimer(_log, _jobDB, _makinoDB, _status, settings, logTrace);
+#if DEBUG
+                _makinoDB = new MakinoDB(MakinoDB.DBTypeEnum.SqlLocal, "", _status, _log);
+#else
+                _makinoDB = new MakinoDB(MakinoDB.DBTypeEnum.SqlConnStr, dbConnStr, _status, _log);
 #endif
+
+                _logTimer = new LogTimer(_log, _jobDB, _makinoDB, _status, settings);
 
                 _jobs = new Jobs(_makinoDB, _jobDB, adePath, downloadOnlyOrders);
 

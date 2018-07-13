@@ -179,7 +179,7 @@ namespace Makino
 								Log.Debug(
                     "Starting load of common values between the times of {start} and {end} on DeviceID {deviceID}." +
 										"These values will be attached to part {part} with serial {serial}",
-										m.StartDateTimeLocal, m.EndDateTimeLocal, m.DeviceID, m.PartName, ConvertToBase62(matID1));
+										m.StartDateTimeLocal, m.EndDateTimeLocal, m.DeviceID, m.PartName, JobLogDB.ConvertToBase62(matID1));
 
                 foreach (var v in _makinoDB.QueryCommonValues(m)) {
                     Log.Debug("Common value with number {num} and value {val}", + v.Number, v.Value);
@@ -365,7 +365,7 @@ namespace Makino
 				}
 			}
 
-			var serial = ConvertToBase62(matID);
+			var serial = JobLogDB.ConvertToBase62(matID);
 
 			//length 10 gets us to 1.5e18 which is not quite 2^64
 			//still large enough so we will practically never roll around
@@ -378,25 +378,6 @@ namespace Makino
             var logMat = new LogMaterial(matID, jobUniqe, process, partName, process, face);
             _log.RecordSerialForMaterialID(logMat, serial);
 		}
-
-		private static string ConvertToBase62(long num)
-		{
-			string baseChars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-			string res = "";
-			long cur = num;
-
-			while (cur > 0) {
-				long quotient = cur / 62;
-				int remainder = (int)cur % 62;
-
-				res = baseChars[remainder] + res;
-				cur = quotient;
-			}
-
-			return res;
-		}
-
 
 #if DEBUG
 		internal static List<string> errors = new List<string>();

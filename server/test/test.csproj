@@ -22,6 +22,7 @@
     <PackageReference Include="Microsoft.Data.Sqlite" Version="*" />
 
     <PackageReference Include="FluentAssertions" Version="5.*"/>
+    <PackageReference Include="AutoFixture" Version="4.*"/>
   </ItemGroup>
 
 </Project>

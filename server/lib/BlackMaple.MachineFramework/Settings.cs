@@ -129,6 +129,7 @@ namespace BlackMaple.MachineFramework
     {
       public SerialType SerialType {get;set;} = SerialType.NoAutomaticSerials;
       public int SerialLength {get;set;} = 10;
+      public string StartingSerial {get;set;} = null;
       public string InstructionFilePath {get;set;}
 
       public Dictionary<string, MachineWatchInterface.QueueSize> Queues {get;}
@@ -147,6 +148,7 @@ namespace BlackMaple.MachineFramework
           s.SerialType = SerialType.AssignOneSerialPerMaterial;
         }
         s.SerialLength = fmsSection.GetValue<int>("SerialLength", 10);
+        s.StartingSerial = fmsSection.GetValue<string>("StartingSerial", null);
 
         s.InstructionFilePath = fmsSection.GetValue<string>("InstructionFilePath");
 

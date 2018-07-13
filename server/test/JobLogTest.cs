@@ -39,6 +39,7 @@ using Microsoft.Data.Sqlite;
 using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
 using FluentAssertions;
+using AutoFixture;
 
 namespace MachineWatchTest
 {
@@ -51,7 +52,7 @@ namespace MachineWatchTest
             var connection = BlackMaple.MachineFramework.SqliteExtensions.ConnectMemory();
             connection.Open();
             _jobLog = new JobLogDB(connection);
-            _jobLog.CreateTables(firstMaterialId: null);
+            _jobLog.CreateTables(firstSerialOnEmpty: null);
         }
 
         public void Dispose()
@@ -1305,7 +1306,7 @@ namespace MachineWatchTest
             var connection = BlackMaple.MachineFramework.SqliteExtensions.ConnectMemory();
             connection.Open();
             _jobLog = new JobLogDB(connection);
-            _jobLog.CreateTables(firstMaterialId: 500);
+            _jobLog.CreateTables(firstSerialOnEmpty: "AbCd12");
         }
 
         public void Dispose()
@@ -1314,14 +1315,23 @@ namespace MachineWatchTest
         }
 
         [Fact]
+        public void ConvertSerials()
+        {
+            var fixture = new Fixture();
+            var matId = fixture.Create<long>();
+            JobLogDB.ConvertFromBase62(JobLogDB.ConvertToBase62(matId)).Should().Be(matId);
+        }
+
+
+        [Fact]
         public void MaterialIDs()
         {
             long m1 = _jobLog.AllocateMaterialID("U1", "P1", 52);
             long m2 = _jobLog.AllocateMaterialID("U2", "P2", 66);
             long m3 = _jobLog.AllocateMaterialID("U3", "P3", 566);
-            m1.Should().Be(500);
-            m2.Should().Be(501);
-            m3.Should().Be(502);
+            m1.Should().Be(33152428148);
+            m2.Should().Be(33152428149);
+            m3.Should().Be(33152428150);
 
             _jobLog.GetMaterialDetails(m1).Should().BeEquivalentTo(new MaterialDetails() {
                 MaterialID = m1,

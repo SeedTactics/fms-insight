@@ -56,7 +56,7 @@ namespace BlackMaple.MachineFramework
             _connection = c;
         }
 
-        public void Open(string filename, string oldInspDbFile = null, long? firstMaterialIdOnEmpty = null)
+        public void Open(string filename, string oldInspDbFile = null, string firstSerialOnEmpty = null)
         {
             if (System.IO.File.Exists(filename))
             {
@@ -70,7 +70,7 @@ namespace BlackMaple.MachineFramework
                 _connection.Open();
                 try
                 {
-                    CreateTables(firstMaterialIdOnEmpty);
+                    CreateTables(firstSerialOnEmpty);
                 }
                 catch
                 {
@@ -88,7 +88,7 @@ namespace BlackMaple.MachineFramework
 
         private const int Version = 18;
 
-        public void CreateTables(long? firstMaterialId)
+        public void CreateTables(string firstSerialOnEmpty)
         {
             var cmd = _connection.CreateCommand();
 
@@ -159,9 +159,12 @@ namespace BlackMaple.MachineFramework
             cmd.CommandText = "CREATE INDEX queues_idx ON queues(Queue, Position)";
             cmd.ExecuteNonQuery();
 
-            if (firstMaterialId.HasValue && firstMaterialId.Value > 0 && firstMaterialId.Value < long.MaxValue / 2) {
+            if (!string.IsNullOrEmpty(firstSerialOnEmpty)) {
+                long matId = ConvertFromBase62(firstSerialOnEmpty) - 1;
+                if (matId > 0x6FFF_FFFF_FFFF_FFFF)
+                    throw new Exception("Serial " + firstSerialOnEmpty + " is too large");
                 cmd.CommandText = "INSERT INTO sqlite_sequence(name, seq) VALUES ('matdetails',$v)";
-                cmd.Parameters.Add("v", SqliteType.Integer).Value = firstMaterialId.Value - 1;
+                cmd.Parameters.Add("v", SqliteType.Integer).Value = matId;
                 cmd.ExecuteNonQuery();
             }
         }
@@ -2322,23 +2325,41 @@ namespace BlackMaple.MachineFramework
             }
         }
 
+        private static string Base62Chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
         public static string ConvertToBase62(long num)
         {
-            string baseChars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
             string res = "";
             long cur = num;
 
             while (cur > 0)
             {
                 long quotient = cur / 62;
-                int remainder = (int)cur % 62;
+                int remainder = (int)(cur % 62);
 
-                res = baseChars[remainder] + res;
+                res = Base62Chars[remainder] + res;
                 cur = quotient;
             }
 
             return res;
+        }
+
+        public static long ConvertFromBase62(string msg)
+        {
+            long res = 0;
+            int len = msg.Length;
+            long multiplier = 1;
+
+            for (int i = 0; i < len; i++) {
+                char c = msg[len - i - 1];
+                int idx = Base62Chars.IndexOf(c);
+                if (idx < 0)
+                    throw new Exception("Serial " + msg + " has an invalid character " + c);
+                res += idx * multiplier;
+                multiplier *= 62;
+            }
+            return res;
+
         }
         #endregion
 
