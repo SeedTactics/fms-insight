@@ -123,6 +123,11 @@ namespace MachineWatchTest
       {
         throw new Exception("Unexpected access to part fix quantity");
       }
+
+      public IEnumerable<LoadAction> CurrentLoadActions()
+      {
+        throw new Exception("Unexpected call to load actions");
+      }
     }
 
 		protected void AddTestPart(int pallet, string unique, string part, int proc, int numProc, int path) {

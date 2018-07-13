@@ -35,113 +35,166 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Data.SqlClient;
 using Dapper;
+using System;
+using System.Data;
 
 namespace MazakMachineInterface
 {
-  public class SmoothDB
+  public class SmoothReadOnlyDB : IReadDataAccess
   {
+    // for now, some stuff is proxied to the open database kit databases
+    private OpenDatabaseKitReadDB _openReadDB;
     private string _connStr;
 
-    public SmoothDB(string connectionStr)
+    public SmoothReadOnlyDB(string connectionStr, OpenDatabaseKitReadDB readDb)
     {
       _connStr = connectionStr + ";Database=PMC_Basic";
+      _openReadDB = readDb;
     }
 
-    public IEnumerable<LoadAction> CurrentLoadActions()
+    public TResult WithReadDBConnection<TResult>(Func<IDbConnection, TResult> action)
     {
-      using (var conn = new SqlConnection(_connStr))
+      //this is only used for VersionE log loading
+      throw new NotImplementedException();
+    }
+
+    public IMazakData LoadMazakData()
+    {
+      return new SmoothMazakData(_connStr, _openReadDB.LoadMazakData());
+    }
+
+    public (IMazakData, ReadOnlyDataSet) LoadDataAndReadSet()
+    {
+      OpenDatabaseKitReadDB.OpenDatabaseKitMazakData baseMazakData =
+        (OpenDatabaseKitReadDB.OpenDatabaseKitMazakData)_openReadDB.LoadMazakData();
+      return (new SmoothMazakData(_connStr, baseMazakData), baseMazakData.ReadSet);
+    }
+
+    private class SmoothMazakData : IMazakData
+    {
+      private string _connStr;
+      private IMazakData _baseData; //for now, some stuff is proxied to open database kit
+      public SmoothMazakData(string connStr, IMazakData d)
       {
-        return LoadActions(conn).Concat(RemoveActions(conn));
+        _connStr = connStr;
+        _baseData = d;
       }
-    }
 
-    private class FixWork
-    {
-      public int a9_prcnum {get;set;}
-      public string a9_ptnam {get;set;}
-      public int a9_fixqty {get;set;}
-      public string a6_pos {get;set;}
-      public string a1_schcom {get;set;}
-    }
-
-    private IEnumerable<LoadAction> LoadActions(SqlConnection conn)
-    {
-        var qry =
-          "SELECT a9_prcnum, a9_ptnam, a9_fixqty, a6_pos, a1_schcom " +
-            "FROM A9_FixWork " +
-            "LEFT OUTER JOIN M4_PalletData ON M4_PalletData.PalletDataID = a9_PalletDataID_ra " +
-            "LEFT OUTER JOIN A6_PositionData ON a6_pltnum = m4_pltnum " +
-            "LEFT OUTER JOIN A1_Schedule ON A1_Schedule.ScheduleID = a9_ScheduleID";
-        var ret = new List<LoadAction>();
-        var elems = conn.Query(qry);
-        foreach (var e in conn.Query<FixWork>(qry))
+      #region LoadActions
+      public IEnumerable<LoadAction> CurrentLoadActions()
+      {
+        using (var conn = new SqlConnection(_connStr))
         {
-            int stat;
-            if (e.a6_pos.StartsWith("LS"))
-            {
-              if (!int.TryParse(e.a6_pos.Substring(2,2), out stat))
-                continue;
-            } else {
-              continue;
-            }
-
-            string part = e.a9_ptnam;
-            string comment = e.a1_schcom;
-            int idx = part.IndexOf(':');
-            if (idx >= 0)
-            {
-              part = part.Substring(0, idx);
-            }
-            int proc = e.a9_prcnum;
-            int qty = e.a9_fixqty;
-
-            ret.Add(new LoadAction(true, stat, part, comment, proc, qty));
+          return LoadActions(conn).Concat(RemoveActions(conn));
         }
-        return ret;
-    }
+      }
 
-    private class RemoveWork
-    {
-      public int a8_prcnum {get;set;}
-      public string a8_ptnam {get;set;}
-      public int a8_fixqty {get;set;}
-      public string a6_pos {get;set;}
-      public string a1_schcom {get;set;}
-    }
+      private class FixWork
+      {
+        public int a9_prcnum {get;set;}
+        public string a9_ptnam {get;set;}
+        public int a9_fixqty {get;set;}
+        public string a6_pos {get;set;}
+        public string a1_schcom {get;set;}
+      }
 
-    private IEnumerable<LoadAction> RemoveActions(SqlConnection conn)
-    {
-        var qry =
-          "SELECT a8_prcnum,a8_ptnam,a8_fixqty,a6_pos,a1_schcom " +
-            "FROM A8_RemoveWork " +
-            "LEFT OUTER JOIN A6_PositionData ON a6_pltnum = a8_1 " +
-            "LEFT OUTER JOIN A1_Schedule ON A1_Schedule.ScheduleID = a8_ScheduleID";
-        var ret = new List<LoadAction>();
-        var elems = conn.Query(qry);
-        foreach (var e in conn.Query<RemoveWork>(qry))
-        {
-            int stat;
-            if (e.a6_pos.StartsWith("LS"))
-            {
-              if (!int.TryParse(e.a6_pos.Substring(2,2), out stat))
+      private IEnumerable<LoadAction> LoadActions(SqlConnection conn)
+      {
+          var qry =
+            "SELECT a9_prcnum, a9_ptnam, a9_fixqty, a6_pos, a1_schcom " +
+              "FROM A9_FixWork " +
+              "LEFT OUTER JOIN M4_PalletData ON M4_PalletData.PalletDataID = a9_PalletDataID_ra " +
+              "LEFT OUTER JOIN A6_PositionData ON a6_pltnum = m4_pltnum " +
+              "LEFT OUTER JOIN A1_Schedule ON A1_Schedule.ScheduleID = a9_ScheduleID";
+          var ret = new List<LoadAction>();
+          var elems = conn.Query(qry);
+          foreach (var e in conn.Query<FixWork>(qry))
+          {
+              int stat;
+              if (e.a6_pos.StartsWith("LS"))
+              {
+                if (!int.TryParse(e.a6_pos.Substring(2,2), out stat))
+                  continue;
+              } else {
                 continue;
-            } else {
-              continue;
-            }
+              }
 
-            string part = e.a8_ptnam;
-            string comment = e.a1_schcom;
-            int idx = part.IndexOf(':');
-            if (idx >= 0)
-            {
-              part = part.Substring(0, idx);
-            }
-            int proc = e.a8_prcnum;
-            int qty = e.a8_fixqty;
+              string part = e.a9_ptnam;
+              string comment = e.a1_schcom;
+              int idx = part.IndexOf(':');
+              if (idx >= 0)
+              {
+                part = part.Substring(0, idx);
+              }
+              int proc = e.a9_prcnum;
+              int qty = e.a9_fixqty;
 
-            ret.Add(new LoadAction(false, stat, part, comment, proc, qty));
-        }
-        return ret;
+              ret.Add(new LoadAction(true, stat, part, comment, proc, qty));
+          }
+          return ret;
+      }
+
+      private class RemoveWork
+      {
+        public int a8_prcnum {get;set;}
+        public string a8_ptnam {get;set;}
+        public int a8_fixqty {get;set;}
+        public string a6_pos {get;set;}
+        public string a1_schcom {get;set;}
+      }
+
+      private IEnumerable<LoadAction> RemoveActions(SqlConnection conn)
+      {
+          var qry =
+            "SELECT a8_prcnum,a8_ptnam,a8_fixqty,a6_pos,a1_schcom " +
+              "FROM A8_RemoveWork " +
+              "LEFT OUTER JOIN A6_PositionData ON a6_pltnum = a8_1 " +
+              "LEFT OUTER JOIN A1_Schedule ON A1_Schedule.ScheduleID = a8_ScheduleID";
+          var ret = new List<LoadAction>();
+          var elems = conn.Query(qry);
+          foreach (var e in conn.Query<RemoveWork>(qry))
+          {
+              int stat;
+              if (e.a6_pos.StartsWith("LS"))
+              {
+                if (!int.TryParse(e.a6_pos.Substring(2,2), out stat))
+                  continue;
+              } else {
+                continue;
+              }
+
+              string part = e.a8_ptnam;
+              string comment = e.a1_schcom;
+              int idx = part.IndexOf(':');
+              if (idx >= 0)
+              {
+                part = part.Substring(0, idx);
+              }
+              int proc = e.a8_prcnum;
+              int qty = e.a8_fixqty;
+
+              ret.Add(new LoadAction(false, stat, part, comment, proc, qty));
+          }
+          return ret;
+      }
+      #endregion
+
+      #region Schedules and Parts
+      public IEnumerable<MazakScheduleRow> LoadSchedules()
+      {
+        return _baseData.LoadSchedules();
+      }
+
+      public void FindPart(int pallet, string mazakPartName, int proc, out string unique, out int path, out int numProc)
+      {
+        _baseData.FindPart(pallet, mazakPartName, proc, out unique, out path, out numProc);
+      }
+
+      public int PartFixQuantity(string mazakPartName, int proc)
+      {
+        return _baseData.PartFixQuantity(mazakPartName, proc);
+      }
+      #endregion
     }
 
   }

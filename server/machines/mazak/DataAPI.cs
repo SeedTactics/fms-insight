@@ -44,11 +44,11 @@ namespace MazakMachineInterface
     MazakSmooth
   }
 
-  public interface IReadDataAccess
+  public interface IWriteData
   {
-    TResult WithReadDBConnection<TResult>(Func<IDbConnection, TResult> action);
-    ReadOnlyDataSet LoadReadOnly();
-    IMazakData LoadMazakData();
+    MazakDbType MazakType {get;}
+    void ClearTransactionDatabase();
+    void SaveTransaction(TransactionDataSet dset, System.Collections.Generic.IList<string> log, string prefix, int checkInterval = -1);
   }
 
   public class MazakScheduleRow
@@ -126,18 +126,21 @@ namespace MazakMachineInterface
 
   }
 
-  public interface IWriteData
-  {
-    MazakDbType MazakType {get;}
-    void ClearTransactionDatabase();
-    void SaveTransaction(TransactionDataSet dset, System.Collections.Generic.IList<string> log, string prefix, int checkInterval = -1);
-  }
-
   public interface IMazakData
   {
     IEnumerable<MazakScheduleRow> LoadSchedules();
     void FindPart(int pallet, string mazakPartName, int proc, out string unique, out int path, out int numProc);
     int PartFixQuantity(string mazakPartName, int proc);
+    IEnumerable<LoadAction> CurrentLoadActions();
+  }
+
+  public interface IReadDataAccess
+  {
+    IMazakData LoadMazakData();
+
+    //these are only here during the transition until the entire read uses just IMazakData
+    (IMazakData, ReadOnlyDataSet) LoadDataAndReadSet();
+    TResult WithReadDBConnection<TResult>(Func<IDbConnection, TResult> action);
   }
 
 }

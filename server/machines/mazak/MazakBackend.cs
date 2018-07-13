@@ -45,11 +45,11 @@ namespace MazakMachineInterface
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<MazakBackend>();
 
-    private OpenDatabaseKitTransactionDB database;
+    private OpenDatabaseKitTransactionDB _writeDB;
     private RoutingInfo routing;
     private HoldPattern hold;
     private MazakQueues queues;
-    private LoadOperations loadOper;
+    private LoadOperationsFromFile loadOper;
     private IMazakLogReader logDataLoader;
 
     private JobLogDB jobLog;
@@ -61,17 +61,12 @@ namespace MazakMachineInterface
     public bool DecrementPriorityOnDownload;
     public bool CheckPalletsUsedOnce;
 
-    public IWriteData Database
+    public IWriteData WriteDB
     {
       get
       {
-        return database;
+        return _writeDB;
       }
-    }
-
-    public LoadOperations LoadOperations
-    {
-      get { return loadOper; }
     }
 
     public JobLogDB JobLog
@@ -203,10 +198,18 @@ namespace MazakMachineInterface
       else
         jobDB.Open(System.IO.Path.Combine(dataDirectory, "mazakjobs.db"));
 
-      database = new OpenDatabaseKitTransactionDB(dbConnStr, MazakType);
-      var readOnlyDb = new OpenDatabaseKitReadDB(dbConnStr, MazakType);
-      queues = new MazakQueues(jobLog, jobDB, loadOper, database);
-      loadOper = new LoadOperations(cfg, readOnlyDb.SmoothDB);
+      _writeDB = new OpenDatabaseKitTransactionDB(dbConnStr, MazakType);
+
+      loadOper = new LoadOperationsFromFile(cfg);
+
+      var openReadDb = new OpenDatabaseKitReadDB(dbConnStr, MazakType, loadOper);
+      IReadDataAccess readOnlyDb;
+      if (MazakType == MazakDbType.MazakSmooth)
+        readOnlyDb = new SmoothReadOnlyDB(dbConnStr, openReadDb);
+      else
+        readOnlyDb = openReadDb;
+
+      queues = new MazakQueues(jobLog, jobDB, _writeDB);
       var sendToExternal = new SendMaterialToExternalQueue();
 
       if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakSmooth)
@@ -220,8 +223,8 @@ namespace MazakMachineInterface
 #endif
       }
 
-      hold = new HoldPattern(dataDirectory, database, readOnlyDb, true);
-      routing = new RoutingInfo(database,readOnlyDb, hold, logDataLoader, jobDB, jobLog, loadOper,
+      hold = new HoldPattern(dataDirectory, _writeDB, readOnlyDb, true);
+      routing = new RoutingInfo(_writeDB, readOnlyDb, hold, logDataLoader, jobDB, jobLog,
                                 CheckPalletsUsedOnce, UseStartingOffsetForDueDate, DecrementPriorityOnDownload,
                                 settings);
 

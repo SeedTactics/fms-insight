@@ -68,19 +68,17 @@ namespace MazakMachineInterface
     }
   }
 
-  public class LoadOperations
+  public class LoadOperationsFromFile
   {
-    private static Serilog.ILogger Log = Serilog.Log.ForContext<LoadOperations>();
+    private static Serilog.ILogger Log = Serilog.Log.ForContext<LoadOperationsFromFile>();
 
     public delegate void LoadActionsDel(int lds, IEnumerable<LoadAction> actions);
     public event LoadActionsDel LoadActions;
     private string mazakPath;
-    private SmoothDB _smoothDB;
 
-    public LoadOperations(BlackMaple.MachineFramework.IConfig cfg, SmoothDB smoothDB)
+    public LoadOperationsFromFile(BlackMaple.MachineFramework.IConfig cfg)
     {
       mazakPath = cfg.GetValue<string>("Mazak", "Load CSV Path");
-      _smoothDB = smoothDB;
       if (string.IsNullOrEmpty(mazakPath))
       {
 #if DEBUG
@@ -185,7 +183,6 @@ namespace MazakMachineInterface
 
     public IEnumerable<LoadAction> CurrentLoadActions()
     {
-      if (_smoothDB != null) return _smoothDB.CurrentLoadActions();
       if (!Directory.Exists(mazakPath))
         return new List<LoadAction>();
 

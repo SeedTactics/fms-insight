@@ -49,7 +49,6 @@ namespace MazakMachineInterface
     private IMazakLogReader logReader;
     private BlackMaple.MachineFramework.JobDB jobDB;
     private BlackMaple.MachineFramework.JobLogDB log;
-    private LoadOperations loadOper;
     private System.Timers.Timer _copySchedulesTimer;
     private readonly BlackMaple.MachineFramework.FMSSettings fmsSettings;
 
@@ -69,7 +68,6 @@ namespace MazakMachineInterface
       IMazakLogReader logR,
       BlackMaple.MachineFramework.JobDB jDB,
       BlackMaple.MachineFramework.JobLogDB jLog,
-      LoadOperations lOper,
       bool check,
       bool useStarting,
       bool decrPriority,
@@ -82,7 +80,6 @@ namespace MazakMachineInterface
       jobDB = jDB;
       logReader = logR;
       log = jLog;
-      loadOper = lOper;
       CheckPalletsUsedOnce = check;
       UseStartingOffsetForDueDate = useStarting;
       DecrementPriorityOnDownload = decrPriority;
@@ -252,23 +249,24 @@ namespace MazakMachineInterface
     public CurrentStatus GetCurrentStatus()
     {
       ReadOnlyDataSet mazakSet = null;
+      IMazakData mazakData;
       if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
       {
         throw new Exception("Unable to obtain mazak database lock");
       }
       try
       {
-        mazakSet = readDatabase.LoadReadOnly();
+        (mazakData, mazakSet) = readDatabase.LoadDataAndReadSet();
       }
       finally
       {
         OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
       }
 
-      return GetCurrentStatus(mazakSet);
+      return GetCurrentStatus(mazakSet, mazakData);
     }
 
-    public CurrentStatus GetCurrentStatus(ReadOnlyDataSet mazakSet)
+    public CurrentStatus GetCurrentStatus(ReadOnlyDataSet mazakSet, IMazakData mazakData)
     {
 
       //Load process and path numbers
@@ -276,7 +274,7 @@ namespace MazakMachineInterface
       Dictionary<string, int> uniqueToMaxProcess;
       CalculateMaxProcAndPath(mazakSet, out uniqueToMaxPath, out uniqueToMaxProcess);
 
-      var currentLoads = new List<LoadAction>(loadOper.CurrentLoadActions());
+      var currentLoads = new List<LoadAction>(mazakData.CurrentLoadActions());
 
       var curStatus = new CurrentStatus();
       foreach (var k in fmsSettings.Queues) curStatus.QueueSizes[k.Key] = k.Value;
@@ -843,7 +841,8 @@ namespace MazakMachineInterface
       }
       try
       {
-        currentSet = readDatabase.LoadReadOnly();
+        IMazakData mazakData;
+        (mazakData, currentSet) = readDatabase.LoadDataAndReadSet();
       }
       finally
       {
@@ -1019,7 +1018,7 @@ namespace MazakMachineInterface
         string newGlobal)
     {
       TransactionDataSet transSet = new TransactionDataSet();
-      var currentSet = readDatabase.LoadReadOnly();
+      var (mazakData, currentSet) = readDatabase.LoadDataAndReadSet();
 
       int UID = 0;
       var savedParts = new HashSet<string>();
@@ -1133,7 +1132,7 @@ namespace MazakMachineInterface
     private void AddSchedules(IEnumerable<JobPlan> jobs,
                               IList<string> logMessages)
     {
-      var currentSet = readDatabase.LoadReadOnly();
+      var (mazakData, currentSet) = readDatabase.LoadDataAndReadSet();
       var transSet = new TransactionDataSet();
       var now = DateTime.Now;
 

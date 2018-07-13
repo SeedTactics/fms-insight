@@ -257,7 +257,7 @@ namespace MazakMachineInterface
     private IDictionary<int, MazakSchedule> LoadMazakSchedules()
     {
       var ret = new Dictionary<int, MazakSchedule>();
-      ReadOnlyDataSet currentSet = readDatabase.LoadReadOnly();
+      (var _mazakData, ReadOnlyDataSet currentSet) = readDatabase.LoadDataAndReadSet();
 
       foreach (ReadOnlyDataSet.ScheduleRow schRow in currentSet.Schedule.Rows)
       {

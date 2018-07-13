@@ -47,15 +47,13 @@ namespace MazakMachineInterface
 
     private JobLogDB _log;
     private JobDB _jobDB;
-    private LoadOperations _loadOper;
     private IWriteData _transDB;
 
-    public MazakQueues(JobLogDB log, JobDB jDB, LoadOperations loadOper, IWriteData trans)
+    public MazakQueues(JobLogDB log, JobDB jDB, IWriteData trans)
     {
       _jobDB = jDB;
       _log = log;
       _transDB = trans;
-      _loadOper = loadOper;
     }
 
     public void CheckQueues(IMazakData mazakData)
@@ -71,8 +69,7 @@ namespace MazakMachineInterface
           log.Debug("Unable to obtain mazak db lock, trying again soon.");
         } else {
 
-          var loadOpers = _loadOper.CurrentLoadActions();
-          var transSet = CalculateScheduleChanges(mazakData, loadOpers);
+          var transSet = CalculateScheduleChanges(mazakData);
 
           if (transSet.Schedule_t.Count > 0) {
             _transDB.ClearTransactionDatabase();
@@ -91,12 +88,12 @@ namespace MazakMachineInterface
       }
     }
 
-    public TransactionDataSet CalculateScheduleChanges(IMazakData mazakData, IEnumerable<LoadAction> loadOpers)
+    public TransactionDataSet CalculateScheduleChanges(IMazakData mazakData)
     {
       log.Debug("Starting check for new queued material to add to mazak");
       var transSet = new TransactionDataSet();
 
-      var schs = LoadSchedules(mazakData, loadOpers);
+      var schs = LoadSchedules(mazakData);
       if (!schs.Any()) return null;
 
       AttemptToAllocateCastings(schs);
@@ -123,8 +120,9 @@ namespace MazakMachineInterface
       public Dictionary<int, ScheduleWithQueuesProcess> Procs {get;set;}
     }
 
-    private IEnumerable<ScheduleWithQueues> LoadSchedules(IMazakData mazakData, IEnumerable<LoadAction> loadOpers)
+    private IEnumerable<ScheduleWithQueues> LoadSchedules(IMazakData mazakData)
     {
+      var loadOpers = mazakData.CurrentLoadActions();
       var schs = new List<ScheduleWithQueues>();
       foreach (var schRow in mazakData.LoadSchedules().OrderBy(s => s.DueDate)) {
         if (!MazakPart.IsSailPart(schRow.PartName)) continue;

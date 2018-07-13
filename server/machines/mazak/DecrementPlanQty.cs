@@ -87,7 +87,7 @@ namespace MazakMachineInterface
       IWriteData writeDb, IReadDataAccess readDb)
     {
       var logMessages = new List<string>();
-      var currentSet = readDb.LoadReadOnly();
+      var (mazakData, currentSet) = readDb.LoadDataAndReadSet();
       var IdsLeftToDecrement = LoadIdsToDecrement(currentSet);
 
       //If nothing is left, just return the stored decrement values.
@@ -132,7 +132,7 @@ namespace MazakMachineInterface
           System.Threading.Thread.Sleep(TimeSpan.FromSeconds(15));
         }
 
-        currentSet = readDb.LoadReadOnly();
+        (mazakData, currentSet) = readDb.LoadDataAndReadSet();
       }
 
       if (logMessages.Count > 0)
@@ -140,7 +140,8 @@ namespace MazakMachineInterface
         throw RoutingInfo.BuildTransactionException("Error decrementing schedule", logMessages);
       }
 
-      return LoadDecrementOffsets(readDb.LoadReadOnly());
+      (mazakData, currentSet) = readDb.LoadDataAndReadSet();
+      return LoadDecrementOffsets(currentSet);
     }
 
     private class ScheduleId
@@ -373,7 +374,7 @@ namespace MazakMachineInterface
       //We  just lower the plan count (which we can do with the SafeEditCommand), so this is much
       //easier than the above.
 
-      ReadOnlyDataSet currentSet = readDb.LoadReadOnly();
+      var (mazakData, currentSet) = readDb.LoadDataAndReadSet();
       TransactionDataSet transSet = new TransactionDataSet();
       TransactionDataSet.Schedule_tRow newSchRow = null;
       List<string> log = new List<string>();

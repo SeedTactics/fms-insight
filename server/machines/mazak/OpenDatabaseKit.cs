@@ -646,11 +646,12 @@ namespace MazakMachineInterface
     private string _palPositionSelect;
     private string _mainProgSelect;
 
-    public SmoothDB SmoothDB {get;}
+    private LoadOperationsFromFile _loadOper;
 
-    public OpenDatabaseKitReadDB(string dbConnStr, MazakDbType ty)
+    public OpenDatabaseKitReadDB(string dbConnStr, MazakDbType ty, LoadOperationsFromFile loadOper)
 			: base(dbConnStr, ty)
 		{
+      _loadOper = loadOper;
       if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE)
       {
         _connectionStr = "Provider=Microsoft.Jet.OLEDB.4.0;Password=\"\";User ID=Admin;" +
@@ -660,7 +661,6 @@ namespace MazakMachineInterface
       else
       {
         _connectionStr = dbConnStr + ";Database=FCREADDAT01";
-        SmoothDB = new SmoothDB(_connectionStr);
       }
 
       _fixtureSelect = "SELECT Comment, FixtureName, ID, Reserved, UpdatedFlag FROM Fixture";
@@ -760,7 +760,7 @@ namespace MazakMachineInterface
       return c;
     }
 
-    public ReadOnlyDataSet LoadReadOnly()
+    private ReadOnlyDataSet LoadReadOnly()
     {
       return WithReadDBConnection(conn =>
       {
@@ -838,13 +838,24 @@ namespace MazakMachineInterface
       });
     }
 
-    public IMazakData LoadMazakData() => new OpenDatabaseKitMazakData(LoadReadOnly());
+    public IMazakData LoadMazakData() => new OpenDatabaseKitMazakData(LoadReadOnly(), _loadOper);
+    public (IMazakData, ReadOnlyDataSet) LoadDataAndReadSet()
+    {
+      var dset = LoadReadOnly();
+      return (new OpenDatabaseKitMazakData(dset, _loadOper), dset);
+    }
 
     private class OpenDatabaseKitMazakData : IMazakData
     {
       private static Serilog.ILogger Log = Serilog.Log.ForContext<OpenDatabaseKitMazakData>();
       private ReadOnlyDataSet ReadSet {get;}
-      public OpenDatabaseKitMazakData(ReadOnlyDataSet d) { ReadSet = d;}
+      private LoadOperationsFromFile _loadOper;
+      private IEnumerable<LoadAction> _actions = null;
+      public OpenDatabaseKitMazakData(ReadOnlyDataSet d, LoadOperationsFromFile o)
+      {
+        ReadSet = d;
+        _loadOper = o;
+      }
 
       public IEnumerable<MazakScheduleRow> LoadSchedules()
       {
@@ -858,6 +869,13 @@ namespace MazakMachineInterface
           }
         }
         return ret;
+      }
+
+      public IEnumerable<LoadAction> CurrentLoadActions()
+      {
+        if (_actions == null)
+          _actions = _loadOper.CurrentLoadActions();
+        return _actions;
       }
 
       public void FindPart(int pallet, string mazakPartName, int proc, out string unique, out int path, out int numProc)

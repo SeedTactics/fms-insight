@@ -60,7 +60,7 @@ namespace MachineWatchTest
       _jobDB = new JobDB(jobConn);
       _jobDB.CreateTables();
 
-      _queues = new MazakQueues(_logDB, _jobDB, null, null);
+      _queues = new MazakQueues(_logDB, _jobDB, null);
     }
 
 		public void Dispose()
@@ -72,6 +72,7 @@ namespace MachineWatchTest
     private class TestMazakData : IMazakData
     {
       public List<MazakScheduleRow> Schedules {get;} = new List<MazakScheduleRow>();
+      public List<LoadAction> LoadActions {get;} = new List<LoadAction>();
 
       public IEnumerable<MazakScheduleRow> LoadSchedules()
       {
@@ -87,12 +88,17 @@ namespace MachineWatchTest
       {
         throw new Exception("Unexpected call to find fix quantity");
       }
+
+      public IEnumerable<LoadAction> CurrentLoadActions()
+      {
+        return LoadActions;
+      }
     }
 
     [Fact]
     public void Empty()
     {
-      var trans = _queues.CalculateScheduleChanges(new TestMazakData(), new LoadAction[] {});
+      var trans = _queues.CalculateScheduleChanges(new TestMazakData());
       trans.Should().BeNull();
     }
 
@@ -160,7 +166,7 @@ namespace MachineWatchTest
       //put something else at load station
       var action = new LoadAction(true, 1, "pppp", MazakPart.CreateComment("uuuu2", new [] {1}, false), 1, 1);
 
-      var trans = _queues.CalculateScheduleChanges(read, new [] {action});
+      var trans = _queues.CalculateScheduleChanges(read);
 
       trans.Schedule_t.Count.Should().Be(1);
       trans.Schedule_t[0].ScheduleID.Should().Be(10);
@@ -190,7 +196,7 @@ namespace MachineWatchTest
       _logDB.RecordAddMaterialToQueue(mat1, process: 0, queue: "thequeue", position: 0);
       _logDB.RecordAddMaterialToQueue(mat2, process: 0, queue: "thequeue", position: 1);
 
-      var trans = _queues.CalculateScheduleChanges(read, new LoadAction[] {});
+      var trans = _queues.CalculateScheduleChanges(read);
 
       trans.Schedule_t.Count.Should().Be(0);
       trans.ScheduleProcess_t.Count.Should().Be(0);
@@ -230,7 +236,7 @@ namespace MachineWatchTest
       });
 
       // should allocate 2 parts to uuuu, leave one unassigned, then update material quantity
-      var trans = _queues.CalculateScheduleChanges(read, new LoadAction[] {});
+      var trans = _queues.CalculateScheduleChanges(read);
 
       _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new [] {
         new JobLogDB.QueuedMaterial() {
@@ -281,7 +287,7 @@ namespace MachineWatchTest
       });
 
       // should allocate no parts and leave schedule unchanged.
-      var trans = _queues.CalculateScheduleChanges(read, new LoadAction[] {});
+      var trans = _queues.CalculateScheduleChanges(read);
 
       _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new [] {
         new JobLogDB.QueuedMaterial() {
@@ -328,7 +334,7 @@ namespace MachineWatchTest
       _logDB.RecordAddMaterialToQueue(mat4, process: 1, queue: "transQ", position: 1);
       _logDB.RecordAddMaterialToQueue(mat5, process: 1, queue: "transQ", position: 2);
 
-      var trans = _queues.CalculateScheduleChanges(read, new LoadAction[] {});
+      var trans = _queues.CalculateScheduleChanges(read);
 
       trans.Schedule_t.Count.Should().Be(1);
       trans.Schedule_t[0].ScheduleID.Should().Be(10);
@@ -367,7 +373,7 @@ namespace MachineWatchTest
       _logDB.RecordAddMaterialToQueue(mat2, process: 1, queue: "transQ", position: 0);
       _logDB.RecordAddMaterialToQueue(mat3, process: 1, queue: "transQ", position: 1);
 
-      var trans = _queues.CalculateScheduleChanges(read, new LoadAction[] {});
+      var trans = _queues.CalculateScheduleChanges(read);
 
       trans.Schedule_t.Count.Should().Be(1);
       trans.Schedule_t[0].ScheduleID.Should().Be(10);
@@ -404,8 +410,9 @@ namespace MachineWatchTest
 
       //put something else at load station
       var action = new LoadAction(true, 1, "pppp", MazakPart.CreateComment("uuuu", new[] {1}, false), 1, 1);
+      read.LoadActions.Add(action);
 
-      var trans = _queues.CalculateScheduleChanges(read, new [] {action});
+      var trans = _queues.CalculateScheduleChanges(read);
       trans.Should().BeNull();
     }
 
