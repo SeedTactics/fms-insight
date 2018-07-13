@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
+using System.Collections.Generic;
 using System.Data;
 
 namespace MazakMachineInterface
@@ -50,6 +51,81 @@ namespace MazakMachineInterface
     IMazakData LoadMazakData();
   }
 
+  public class MazakScheduleRow
+  {
+    public int Id {get;set;}
+    public string Comment {get;set;}
+    public string PartName {get;set;}
+    public int PlanQuantity {get;set;}
+    public int CompleteQuantity {get;set;}
+    public int Priority {get;set;}
+
+    public DateTime? DueDate {get;set;}
+    public int? FixForMachine {get;set;}
+    public int? HoldMode {get;set;}
+    public int? MissingFixture {get;set;}
+    public int? MissingProgram {get;set;}
+    public int? MissingTool {get;set;}
+    public int? MixScheduleID {get;set;}
+    public int? ProcessingPriority {get;set;}
+    public int? Reserved {get;set;}
+    public int? UpdatedFlag {get;set;}
+
+    public IList<MazakScheduleProcessRow> Processes {get;} = new List<MazakScheduleProcessRow>();
+
+    public MazakScheduleRow() {}
+    public MazakScheduleRow(ReadOnlyDataSet.ScheduleRow s)
+    {
+      Id = s.ScheduleID;
+      Comment = s.IsCommentNull() ? null : s.Comment;
+      PartName = s.PartName;
+      PlanQuantity = s.PlanQuantity;
+      CompleteQuantity = s.CompleteQuantity;
+      Priority = s.Priority;
+      DueDate = s.IsDueDateNull() ? null : (DateTime?)s.DueDate;
+      FixForMachine = s.IsFixForMachineNull() ? null : (int?)s.FixForMachine;
+      HoldMode = s.IsHoldModeNull() ? null : (int?)s.HoldMode;
+      MissingFixture = s.IsMissingFixtureNull() ? null : (int?)s.MissingFixture;
+      MissingProgram = s.IsMissingProgramNull() ? null : (int?)s.MissingProgram;
+      MissingTool = s.IsMissingToolNull() ? null : (int?)s.MissingTool;
+      MixScheduleID = s.IsMixScheduleIDNull() ? null : (int?)s.MixScheduleID;
+      ProcessingPriority = s.IsProcessingPriorityNull() ? null : (int?)s.ProcessingPriority;
+      Reserved = s.IsReservedNull() ? null : (int?)s.Reserved;
+      UpdatedFlag = s.IsUpdatedFlagNull() ? null : (int?)s.UpdatedFlag;
+    }
+  }
+
+  public class MazakScheduleProcessRow
+  {
+    public int MazakScheduleRowId {get;set;}
+    public MazakScheduleRow MazakScheduleRow {get;set;}
+
+    public int ProcessNumber {get;set;}
+    public int ProcessMaterialQuantity {get;set;}
+    public int ProcessExecuteQuantity {get;set;}
+    public int ProcessBadQuantity {get;set;}
+    public int ProcessMachine {get;set;}
+    public int UpdatedFlag {get;set;}
+
+    public MazakScheduleProcessRow(MazakScheduleRow sch)
+    {
+      MazakScheduleRowId = sch.Id;
+      MazakScheduleRow = sch;
+    }
+    public MazakScheduleProcessRow(MazakScheduleRow sch, ReadOnlyDataSet.ScheduleProcessRow p)
+    {
+      MazakScheduleRowId = sch.Id;
+      MazakScheduleRow = sch;
+      ProcessNumber = p.ProcessNumber;
+      ProcessMaterialQuantity = p.ProcessMaterialQuantity;
+      ProcessExecuteQuantity = p.ProcessExecuteQuantity;
+      ProcessBadQuantity = p.ProcessBadQuantity;
+      ProcessMachine = p.ProcessMachine;
+      UpdatedFlag = p.UpdatedFlag;
+    }
+
+  }
+
   public interface IWriteData
   {
     MazakDbType MazakType {get;}
@@ -59,8 +135,9 @@ namespace MazakMachineInterface
 
   public interface IMazakData
   {
+    IEnumerable<MazakScheduleRow> LoadSchedules();
     void FindPart(int pallet, string mazakPartName, int proc, out string unique, out int path, out int numProc);
-    ReadOnlyDataSet ReadSet {get;}
+    int PartFixQuantity(string mazakPartName, int proc);
   }
 
 }

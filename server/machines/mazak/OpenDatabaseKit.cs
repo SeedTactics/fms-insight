@@ -573,6 +573,39 @@ namespace MazakMachineInterface
         newRow.ProcessingPriority = curRow.ProcessingPriority;
       newRow.ScheduleID = curRow.ScheduleID;
     }
+    public static void BuildScheduleEditRow(TransactionDataSet.Schedule_tRow newRow, MazakScheduleRow curRow, bool updateMaterial)
+    {
+      if (updateMaterial)
+      {
+        newRow.Command = ScheduleMaterialEditCommand;
+      }
+      else
+      {
+        newRow.Command = ScheduleSafeEditCommand;
+      }
+      newRow.Comment = curRow.Comment;
+      newRow.CompleteQuantity = curRow.CompleteQuantity;
+      if (curRow.DueDate.HasValue)
+        newRow.DueDate = curRow.DueDate.Value;
+      if (curRow.FixForMachine.HasValue)
+        newRow.FixForMachine = curRow.FixForMachine.Value;
+      if (curRow.HoldMode.HasValue)
+        newRow.HoldMode = curRow.HoldMode.Value;
+      if (curRow.MissingFixture.HasValue)
+        newRow.MissingFixture = curRow.MissingFixture.Value;
+      if (curRow.MissingProgram.HasValue)
+        newRow.MissingProgram = curRow.MissingProgram.Value;
+      if (curRow.MissingTool.HasValue)
+        newRow.MissingTool = curRow.MissingTool.Value;
+      if (curRow.MixScheduleID.HasValue)
+        newRow.MixScheduleID = curRow.MixScheduleID.Value;
+      newRow.PartName = curRow.PartName;
+      newRow.PlanQuantity = curRow.PlanQuantity;
+      newRow.Priority = curRow.Priority;
+      if (curRow.ProcessingPriority.HasValue)
+        newRow.ProcessingPriority = curRow.ProcessingPriority.Value;
+      newRow.ScheduleID = curRow.Id;
+    }
     public static void BuildScheduleProcEditRow(TransactionDataSet.ScheduleProcess_tRow newRow, ReadOnlyDataSet.ScheduleProcessRow curRow)
     {
       if (!curRow.IsProcessBadQuantityNull())
@@ -587,6 +620,15 @@ namespace MazakMachineInterface
         newRow.ProcessNumber = curRow.ProcessNumber;
       if (!curRow.IsScheduleIDNull())
         newRow.ScheduleID = curRow.ScheduleID;
+    }
+    public static void BuildScheduleProcEditRow(TransactionDataSet.ScheduleProcess_tRow newRow, MazakScheduleProcessRow curRow)
+    {
+      newRow.ProcessBadQuantity = curRow.ProcessBadQuantity;
+      newRow.ProcessExecuteQuantity = curRow.ProcessExecuteQuantity;
+      newRow.ProcessMachine = curRow.ProcessMachine;
+      newRow.ProcessMaterialQuantity = curRow.ProcessMaterialQuantity;
+      newRow.ProcessNumber = curRow.ProcessNumber;
+      newRow.ScheduleID = curRow.MazakScheduleRowId;
     }
 	}
 
@@ -801,8 +843,22 @@ namespace MazakMachineInterface
     private class OpenDatabaseKitMazakData : IMazakData
     {
       private static Serilog.ILogger Log = Serilog.Log.ForContext<OpenDatabaseKitMazakData>();
-      public ReadOnlyDataSet ReadSet {get;}
+      private ReadOnlyDataSet ReadSet {get;}
       public OpenDatabaseKitMazakData(ReadOnlyDataSet d) { ReadSet = d;}
+
+      public IEnumerable<MazakScheduleRow> LoadSchedules()
+      {
+        var ret = new List<MazakScheduleRow>();
+        foreach (var schRow in ReadSet.Schedule) {
+          var sch = new MazakScheduleRow(schRow);
+          ret.Add(sch);
+          foreach (var proc in schRow.GetScheduleProcessRows()) {
+            var mProc = new MazakScheduleProcessRow(sch, proc);
+            sch.Processes.Add(mProc);
+          }
+        }
+        return ret;
+      }
 
       public void FindPart(int pallet, string mazakPartName, int proc, out string unique, out int path, out int numProc)
       {
@@ -855,6 +911,16 @@ namespace MazakMachineInterface
         }
 
         Log.Warning("Unable to find any schedule for log event {part}-{proc} on pallet {pallet}", mazakPartName, proc, pallet);
+      }
+
+      public int PartFixQuantity(string mazakPartName, int proc)
+      {
+        foreach (var procRow in ReadSet.PartProcess) {
+          if (procRow.PartName == mazakPartName && procRow.ProcessNumber == proc) {
+            return procRow.FixQuantity;
+          }
+        }
+        return 1;
       }
     }
 	}

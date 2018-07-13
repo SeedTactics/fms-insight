@@ -82,7 +82,7 @@ namespace MazakMachineInterface
   }
 
   public delegate void PalletMoveDel(int pallet, string fromStation, string toStation);
-  public delegate void NewEntriesDel(ReadOnlyDataSet dset);
+  public delegate void NewEntriesDel(IMazakData data);
   public interface IMazakLogReader
   {
     void RecheckQueues();
@@ -396,7 +396,7 @@ namespace MazakMachineInterface
           }
 
           if (logs.Count > 0) {
-            NewEntries?.Invoke(mazakData.ReadSet);
+            NewEntries?.Invoke(mazakData);
           }
 
         } catch (Exception ex) {

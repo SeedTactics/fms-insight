@@ -99,6 +99,12 @@ namespace MachineWatchTest
     {
 			private IEnumerable<TestPartData> testPartData;
 			public TestMazakData(IEnumerable<TestPartData> td) { testPartData = td; }
+
+      public IEnumerable<MazakScheduleRow> LoadSchedules()
+      {
+        throw new Exception("Unexpected call to load schedules");
+      }
+
       public void FindPart(int pallet, string mazakPartName, int proc, out string unique, out int path, out int numProc)
       {
 				var data = testPartData
@@ -113,10 +119,9 @@ namespace MachineWatchTest
 				}
       }
 
-      public ReadOnlyDataSet ReadSet {
-        get {
-          throw new Exception("Unexpected access to read set");
-        }
+      public int PartFixQuantity(string mazakPartName, int proc)
+      {
+        throw new Exception("Unexpected access to part fix quantity");
       }
     }
 

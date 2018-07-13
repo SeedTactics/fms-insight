@@ -271,9 +271,9 @@ namespace MazakMachineInterface
       routing.RaiseNewCurrentStatus(routing.GetCurrentStatus());
     }
 
-    private void OnNewLogEntries(ReadOnlyDataSet dset)
+    private void OnNewLogEntries(IMazakData data)
     {
-      routing.RaiseNewCurrentStatus(routing.GetCurrentStatus(dset));
+      routing.RaiseNewCurrentStatus(routing.GetCurrentStatus());
     }
 
     private MazakDbType DetectMazakType(IConfig cfg, string localDbPath)

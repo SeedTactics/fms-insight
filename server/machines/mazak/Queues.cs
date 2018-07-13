@@ -109,7 +109,7 @@ namespace MazakMachineInterface
 
     private class ScheduleWithQueuesProcess
     {
-      public ReadOnlyDataSet.ScheduleProcessRow SchProcRow {get;set;}
+      public MazakScheduleProcessRow SchProcRow {get;set;}
       public string InputQueue {get;set;}
       public int PathGroup {get;set;}
       public int? TargetMaterialCount {get;set;}
@@ -117,7 +117,7 @@ namespace MazakMachineInterface
 
     private class ScheduleWithQueues
     {
-      public ReadOnlyDataSet.ScheduleRow SchRow {get;set;}
+      public MazakScheduleRow SchRow {get;set;}
       public string Unique {get;set;}
       public JobPlan Job {get;set;}
       public Dictionary<int, ScheduleWithQueuesProcess> Procs {get;set;}
@@ -126,7 +126,7 @@ namespace MazakMachineInterface
     private IEnumerable<ScheduleWithQueues> LoadSchedules(IMazakData mazakData, IEnumerable<LoadAction> loadOpers)
     {
       var schs = new List<ScheduleWithQueues>();
-      foreach (var schRow in mazakData.ReadSet.Schedule.OrderBy(s => s.DueDate)) {
+      foreach (var schRow in mazakData.LoadSchedules().OrderBy(s => s.DueDate)) {
         if (!MazakPart.IsSailPart(schRow.PartName)) continue;
 
         MazakPart.ParseComment(schRow.Comment, out string unique, out var procToPath, out bool manual);
@@ -154,15 +154,15 @@ namespace MazakMachineInterface
         };
         bool missingProc = false;
         for (int proc = 1; proc <= job.NumProcesses; proc++) {
-          ReadOnlyDataSet.ScheduleProcessRow schProcRow = null;
-          foreach (var row in schRow.GetScheduleProcessRows()) {
+          MazakScheduleProcessRow schProcRow = null;
+          foreach (var row in schRow.Processes) {
             if (row.ProcessNumber == proc) {
               schProcRow = row;
               break;
             }
           }
           if (schProcRow == null) {
-            log.Error("Unable to find process {proc} for job {uniq} and schedule {schid}", proc, job.UniqueStr, schRow.ScheduleID);
+            log.Error("Unable to find process {proc} for job {uniq} and schedule {schid}", proc, job.UniqueStr, schRow.Id);
             missingProc = true;
             break;
           }
@@ -246,7 +246,7 @@ namespace MazakMachineInterface
                 .Where(p => p.SchProcRow.ProcessMaterialQuantity == 0)
                 .OrderBy(p => p.SchProcRow.ProcessExecuteQuantity);
             foreach (var p in potentialPaths) {
-              int fixQty = PartFixQuantity(mazakData, p.SchProcRow);
+              int fixQty = mazakData.PartFixQuantity(p.SchProcRow.MazakScheduleRow.PartName, p.SchProcRow.ProcessNumber);
               if (fixQty <= remain) {
                 remain -= fixQty;
                 p.TargetMaterialCount = fixQty;
@@ -333,7 +333,7 @@ namespace MazakMachineInterface
     {
       foreach (var sch in schs) {
         if (!sch.Procs.Values.Any(p => p.TargetMaterialCount.HasValue)) continue;
-        log.Debug("Updating material on schedule {schId} for job {uniq} to {@sch}", sch.SchRow.ScheduleID, sch.Unique, sch);
+        log.Debug("Updating material on schedule {schId} for job {uniq} to {@sch}", sch.SchRow.Id, sch.Unique, sch);
 
         var tschRow = transDB.Schedule_t.NewSchedule_tRow();
         OpenDatabaseKitTransactionDB.BuildScheduleEditRow(tschRow, sch.SchRow, true);
@@ -400,10 +400,10 @@ namespace MazakMachineInterface
       throw new UnableToFindPathGroup();
     }
 
-    private int CountCompletedOrInProc(ReadOnlyDataSet.ScheduleRow schRow)
+    private int CountCompletedOrInProc(MazakScheduleRow schRow)
     {
         var cnt = schRow.CompleteQuantity;
-        foreach (var schProcRow in schRow.GetScheduleProcessRows()) {
+        foreach (var schProcRow in schRow.Processes) {
           if (schProcRow.ProcessNumber == 1) {
             cnt += schProcRow.ProcessBadQuantity + schProcRow.ProcessExecuteQuantity;
           } else {
@@ -412,18 +412,5 @@ namespace MazakMachineInterface
         }
         return cnt;
     }
-
-    private int PartFixQuantity(IMazakData mazakData, ReadOnlyDataSet.ScheduleProcessRow schProcRow)
-    {
-      var read = mazakData.ReadSet;
-      var schRow = schProcRow.ScheduleRow;
-      foreach (var procRow in read.PartProcess) {
-        if (procRow.PartName == schRow.PartName && procRow.ProcessNumber == schProcRow.ProcessNumber) {
-          return procRow.FixQuantity;
-        }
-      }
-      return 1;
-    }
-
   }
 }
