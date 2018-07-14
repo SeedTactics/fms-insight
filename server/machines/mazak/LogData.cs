@@ -369,7 +369,7 @@ namespace MazakMachineInterface
 
           Thread.Sleep(TimeSpan.FromSeconds(1));
 
-          var mazakData = _readDB.LoadSchedules();
+          var mazakData = _readDB.LoadSchedulesAndLoadActions();
           var logs = LoadLog(_log.MaxForeignID());
           var trans = new LogTranslation(_jobDB, _log, mazakData, _settings,
             le => PalletMove?.Invoke(le.Pallet, le.FromPosition, le.TargetPosition)

@@ -54,11 +54,6 @@
   </Choose>
 
   <ItemGroup>
-    <None Include="ReadOnlyDataSet.xsd">
-      <SubType>Designer</SubType>
-      <Generator>MSDataSetGenerator</Generator>
-      <LastGenOutput>ReadOnlyDataSet.Designer.cs</LastGenOutput>
-    </None>
     <None Include="TransactionDataSet.xsd">
       <SubType>Designer</SubType>
       <Generator>MSDataSetGenerator</Generator>

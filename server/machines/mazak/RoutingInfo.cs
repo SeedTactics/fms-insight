@@ -95,7 +95,7 @@ namespace MazakMachineInterface
     }
 
     #region Reading
-    private static void CalculateMaxProcAndPath(MazakData mazakData,
+    private static void CalculateMaxProcAndPath(MazakSchedulesPartsPallets mazakData,
                                                out Dictionary<string, int> uniqueToMaxProc1Path,
                                                out Dictionary<string, int> uniqueToMaxProcess)
     {
@@ -135,7 +135,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private static void AddRoutingToJob(ReadOnlyDataSet mazakSet, MazakPartRow partRow, JobPlan job, MazakPart.IProcToPath procToPath, MazakDbType mazakTy)
+    private static void AddRoutingToJob(MazakSchedulesPartsPallets mazakData, MazakPartRow partRow, JobPlan job, MazakPart.IProcToPath procToPath, MazakDbType mazakTy)
     {
       //Add routing and pallets
       foreach (var partProcRow in partRow.Processes)
@@ -178,7 +178,7 @@ namespace MazakMachineInterface
         }
 
         //Planned Pallets
-        foreach (ReadOnlyDataSet.PalletRow palRow in mazakSet.Pallet.Rows)
+        foreach (var palRow in mazakData.Pallets)
         {
           if (palRow.PalletNumber > 0
               && palRow.Fixture == partProcRow.Fixture
@@ -248,25 +248,24 @@ namespace MazakMachineInterface
 
     public CurrentStatus GetCurrentStatus()
     {
-      ReadOnlyDataSet mazakSet = null;
-      MazakData mazakData;
+      MazakSchedulesPartsPallets mazakData;
       if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
       {
         throw new Exception("Unable to obtain mazak database lock");
       }
       try
       {
-        (mazakData, mazakSet) = readDatabase.LoadDataAndReadSet();
+        mazakData = readDatabase.LoadAllData();
       }
       finally
       {
         OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
       }
 
-      return GetCurrentStatus(mazakSet, mazakData);
+      return GetCurrentStatus(mazakData);
     }
 
-    public CurrentStatus GetCurrentStatus(ReadOnlyDataSet mazakSet, MazakData mazakData)
+    public CurrentStatus GetCurrentStatus(MazakSchedulesPartsPallets mazakData)
     {
 
       //Load process and path numbers
@@ -345,7 +344,7 @@ namespace MazakMachineInterface
           job.HoldEntireJob.UserHold = false;
         hold.LoadHoldIntoJob(schRow.Id, job, procToPath.PathForProc(proc: 1));
 
-        AddRoutingToJob(mazakSet, partRow, job, procToPath, writeDb.MazakType);
+        AddRoutingToJob(mazakData, partRow, job, procToPath, writeDb.MazakType);
       }
 
       foreach (var j in jobsBySchID.Values)
@@ -353,13 +352,13 @@ namespace MazakMachineInterface
 
       //Now add pallets
 
-      foreach (ReadOnlyDataSet.PalletRow palRow in mazakSet.Pallet.Rows)
+      foreach (var palRow in mazakData.Pallets)
       {
         if (palRow.PalletNumber > 0 && !curStatus.Pallets.ContainsKey(palRow.PalletNumber.ToString()))
         {
 
           var palName = palRow.PalletNumber.ToString();
-          var palLoc = FindPalletLocation(mazakSet, palRow.PalletNumber);
+          var palLoc = FindPalletLocation(mazakData, palRow.PalletNumber);
 
           //Create the pallet
           PalletStatus status = new PalletStatus()
@@ -375,7 +374,7 @@ namespace MazakMachineInterface
           var oldCycles = log.CurrentPalletLog(palName);
 
           //Add the material currently on the pallet
-          foreach (ReadOnlyDataSet.PalletSubStatusRow palSub in mazakSet.PalletSubStatus.Rows)
+          foreach (var palSub in mazakData.PalletSubStatuses)
           {
             if (palSub.PalletNumber != palRow.PalletNumber)
               continue;
@@ -706,9 +705,9 @@ namespace MazakMachineInterface
       return ret.Keys;
     }
 
-    private PalletLocation FindPalletLocation(ReadOnlyDataSet readSet, int palletNum)
+    private PalletLocation FindPalletLocation(MazakSchedulesPartsPallets mazakData, int palletNum)
     {
-      foreach (ReadOnlyDataSet.PalletPositionRow palLocRow in readSet.PalletPosition.Rows)
+      foreach (var palLocRow in mazakData.PalletPositions)
       {
         if (palLocRow.PalletNumber == palletNum)
         {
@@ -833,7 +832,7 @@ namespace MazakMachineInterface
     public List<string> CheckValidRoutes(IEnumerable<JobPlan> jobs)
     {
       var logMessages = new List<string>();
-      ReadOnlyDataSet currentSet = null;
+      MazakAllData mazakData;
 
       if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
       {
@@ -841,8 +840,7 @@ namespace MazakMachineInterface
       }
       try
       {
-        MazakData mazakData;
-        (mazakData, currentSet) = readDatabase.LoadDataAndReadSet();
+        mazakData = readDatabase.LoadAllData();
       }
       finally
       {
@@ -886,7 +884,7 @@ namespace MazakMachineInterface
         //The reason we create the clsPalletPartMapping is to see if it throws any exceptions.  We therefore
         //need to ignore the warning that palletPartMap is not used.
 #pragma warning disable 168, 219
-        var palletPartMap = new clsPalletPartMapping(jobs, currentSet, 1,
+        var palletPartMap = new clsPalletPartMapping(jobs, mazakData, 1,
                                                      new HashSet<string>(), logMessages, false, "",
                                                      CheckPalletsUsedOnce, writeDb.MazakType);
 #pragma warning restore 168, 219
@@ -1018,7 +1016,7 @@ namespace MazakMachineInterface
         string newGlobal)
     {
       TransactionDataSet transSet = new TransactionDataSet();
-      var (mazakData, currentSet) = readDatabase.LoadDataAndReadSet();
+      var mazakData = readDatabase.LoadAllData();
 
       int UID = 0;
       var savedParts = new HashSet<string>();
@@ -1028,14 +1026,14 @@ namespace MazakMachineInterface
       while (UID < int.MaxValue)
       {
         //check schedule rows for UID
-        foreach (ReadOnlyDataSet.ScheduleRow schRow in currentSet.Schedule.Rows)
+        foreach (var schRow in mazakData.Schedules)
         {
           if (MazakPart.ParseUID(schRow.PartName) == UID)
             goto found;
         }
 
         //check fixture rows for UID
-        foreach (ReadOnlyDataSet.FixtureRow fixRow in currentSet.Fixture.Rows)
+        foreach (var fixRow in mazakData.Fixtures)
         {
           if (MazakPart.ParseUID(fixRow.FixtureName) == UID)
             goto found;
@@ -1051,21 +1049,21 @@ namespace MazakMachineInterface
       }
 
       //remove all completed production
-      foreach (ReadOnlyDataSet.ScheduleRow schRow in currentSet.Schedule.Rows)
+      foreach (var schRow in mazakData.Schedules)
       {
         TransactionDataSet.Schedule_tRow newSchRow = transSet.Schedule_t.NewSchedule_tRow();
         if (schRow.PlanQuantity == schRow.CompleteQuantity)
         {
           newSchRow.Command = OpenDatabaseKitTransactionDB.DeleteCommand;
-          newSchRow.ScheduleID = schRow.ScheduleID;
+          newSchRow.ScheduleID = schRow.Id;
           newSchRow.PartName = schRow.PartName;
 
           transSet.Schedule_t.AddSchedule_tRow(newSchRow);
 
-          foreach (ReadOnlyDataSet.ScheduleProcessRow schProcRow in schRow.GetScheduleProcessRows())
+          foreach (var schProcRow in schRow.Processes)
           {
             var newSchProcRow = transSet.ScheduleProcess_t.NewScheduleProcess_tRow();
-            newSchProcRow.ScheduleID = schProcRow.ScheduleID;
+            newSchProcRow.ScheduleID = schProcRow.MazakScheduleRowId;
             newSchProcRow.ProcessNumber = schProcRow.ProcessNumber;
             transSet.ScheduleProcess_t.AddScheduleProcess_tRow(newSchProcRow);
           }
@@ -1092,7 +1090,7 @@ namespace MazakMachineInterface
       Log.Debug("Saved Parts: {parts}", savedParts);
 
       //build the pallet->part mapping
-      var palletPartMap = new clsPalletPartMapping(newJ.Jobs, currentSet, UID, savedParts, logMessages,
+      var palletPartMap = new clsPalletPartMapping(newJ.Jobs, mazakData, UID, savedParts, logMessages,
                                                    !string.IsNullOrEmpty(newGlobal), newGlobal,
                                                    CheckPalletsUsedOnce, writeDb.MazakType);
 
@@ -1132,15 +1130,15 @@ namespace MazakMachineInterface
     private void AddSchedules(IEnumerable<JobPlan> jobs,
                               IList<string> logMessages)
     {
-      var (mazakData, currentSet) = readDatabase.LoadDataAndReadSet();
+      var mazakData = readDatabase.LoadSchedulesPartsPallets();
       var transSet = new TransactionDataSet();
       var now = DateTime.Now;
 
       var usedScheduleIDs = new HashSet<int>();
       var scheduledParts = new HashSet<string>();
-      foreach (ReadOnlyDataSet.ScheduleRow schRow in currentSet.Schedule.Rows)
+      foreach (var schRow in mazakData.Schedules)
       {
-        usedScheduleIDs.Add(schRow.ScheduleID);
+        usedScheduleIDs.Add(schRow.Id);
         scheduledParts.Add(schRow.PartName);
       }
 
@@ -1156,7 +1154,7 @@ namespace MazakMachineInterface
           int downloadUid = -1;
           string mazakPartName = "";
           string mazakComment = "";
-          foreach (ReadOnlyDataSet.PartRow partRow in currentSet.Part)
+          foreach (var partRow in mazakData.Parts)
           {
             if (MazakPart.IsSailPart(partRow.PartName)) {
               MazakPart.ParseComment(partRow.Comment, out string u, out var ps, out bool m);
@@ -1198,18 +1196,6 @@ namespace MazakMachineInterface
           jobDB.MarkJobCopiedToSystem(j.UniqueStr);
         }
       }
-    }
-
-    private int FindFixQty(string part, ReadOnlyDataSet currentSet)
-    {
-      foreach (ReadOnlyDataSet.PartProcessRow partProcRow in currentSet.PartProcess.Rows)
-      {
-        if (partProcRow.PartName == part && partProcRow.ProcessNumber == 1)
-        {
-          return partProcRow.FixQuantity;
-        }
-      }
-      return 1;
     }
 
     private void SchedulePart(TransactionDataSet transSet, int SchID, string mazakPartName, string mazakComment, int numProcess,
@@ -1394,25 +1380,14 @@ namespace MazakMachineInterface
     #endregion
 
     #region "Helpers"
-    internal static int CountMaterial(ReadOnlyDataSet.ScheduleRow schRow)
+    internal static int CountMaterial(MazakScheduleRow schRow)
     {
       int cnt = schRow.CompleteQuantity;
-      foreach (ReadOnlyDataSet.ScheduleProcessRow schProcRow in schRow.GetScheduleProcessRows())
+      foreach (var schProcRow in schRow.Processes)
       {
         cnt += schProcRow.ProcessMaterialQuantity;
         cnt += schProcRow.ProcessExecuteQuantity;
         cnt += schProcRow.ProcessBadQuantity;
-      }
-
-      return cnt;
-    }
-
-    private static int CountInExecution(ReadOnlyDataSet.ScheduleRow schRow)
-    {
-      int cnt = 0;
-      foreach (ReadOnlyDataSet.ScheduleProcessRow schProcRow in schRow.GetScheduleProcessRows())
-      {
-        cnt += schProcRow.ProcessExecuteQuantity;
       }
 
       return cnt;
@@ -1440,25 +1415,6 @@ namespace MazakMachineInterface
         s += Environment.NewLine + r;
       }
       return new Exception(s);
-    }
-
-    internal static int FindNumberProcesses(ReadOnlyDataSet dset, JobPlan part)
-    {
-      foreach (ReadOnlyDataSet.PartRow pRow in dset.Part.Rows)
-      {
-        if (pRow.PartName == part.PartName)
-        {
-
-          int procNum = 0;
-          foreach (ReadOnlyDataSet.PartProcessRow proc in pRow.GetPartProcessRows())
-          {
-            procNum = Math.Max(procNum, proc.ProcessNumber);
-          }
-          return procNum;
-        }
-      }
-
-      return 0;
     }
 
     private static string ConvertStatIntV2ToV1(int statNum)

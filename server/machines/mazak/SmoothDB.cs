@@ -45,52 +45,49 @@ namespace MazakMachineInterface
     // for now, some stuff is proxied to the open database kit databases
     private OpenDatabaseKitReadDB _openReadDB;
     private string _connStr;
+    private string _readConnStr;
 
     public SmoothReadOnlyDB(string connectionStr, OpenDatabaseKitReadDB readDb)
     {
       _connStr = connectionStr + ";Database=PMC_Basic";
+      _readConnStr = connectionStr + ";Database=FCREADDAT01";
       _openReadDB = readDb;
     }
 
     public TResult WithReadDBConnection<TResult>(Func<IDbConnection, TResult> action)
     {
-      //this is only used for VersionE log loading
-      throw new NotImplementedException();
+      using (var conn = new SqlConnection(_readConnStr))
+      {
+        return action(conn);
+      }
     }
 
-    public MazakSchedulesAndLoadActions LoadSchedules()
+    public MazakSchedules LoadSchedules()
     {
-      var dset = _openReadDB.LoadReadSet();
-      return new MazakSchedulesAndLoadActions(
-        s: OpenDatabaseKitReadDB.CreateSchedules(dset),
-        a: CurrentLoadActions()
-      );
+      return _openReadDB.LoadSchedules();
     }
 
-    public MazakData LoadAllData()
+    public MazakSchedulesAndLoadActions LoadSchedulesAndLoadActions()
     {
-      var dset = _openReadDB.LoadReadSet();
-      return new MazakData(
-        s: OpenDatabaseKitReadDB.CreateSchedules(dset),
-        a: CurrentLoadActions(),
-        p: OpenDatabaseKitReadDB.CreateParts(dset)
-      );
+      var sch = _openReadDB.LoadSchedules();
+      return new MazakSchedulesAndLoadActions() {
+        Schedules = sch.Schedules,
+        LoadActions = CurrentLoadActions()
+      };
     }
 
-    public ReadOnlyDataSet LoadReadSet()
+    public MazakSchedulesPartsPallets LoadSchedulesPartsPallets()
     {
-      return _openReadDB.LoadReadSet();
+      var sch = _openReadDB.LoadSchedulesPartsPallets(includeLoadActions: false);
+      sch.LoadActions = CurrentLoadActions();
+      return sch;
     }
 
-    (MazakData, ReadOnlyDataSet) IReadDataAccess.LoadDataAndReadSet()
+    public MazakAllData LoadAllData()
     {
-      var dset = _openReadDB.LoadReadSet();
-      var data = new MazakData(
-        s: OpenDatabaseKitReadDB.CreateSchedules(dset),
-        a: CurrentLoadActions(),
-        p: OpenDatabaseKitReadDB.CreateParts(dset)
-      );
-      return (data, dset);
+      var all = _openReadDB.LoadAllData(includeLoadActions: false);
+      all.LoadActions = CurrentLoadActions();
+      return all;
     }
 
     #region LoadActions

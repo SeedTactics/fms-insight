@@ -306,9 +306,9 @@ namespace MazakMachineInterface
   public class MazakProcessFromTemplate : MazakProcess
   {
     //Here, jobs have only one process.  The number of processes are copied from the template.
-    public readonly ReadOnlyDataSet.PartProcessRow TemplateProcessRow;
+    public readonly MazakPartProcessRow TemplateProcessRow;
 
-    public MazakProcessFromTemplate(MazakPart parent, ReadOnlyDataSet.PartProcessRow template, int path)
+    public MazakProcessFromTemplate(MazakPart parent, MazakPartProcessRow template, int path)
       : base(parent, template.ProcessNumber, path)
     {
       TemplateProcessRow = template;
@@ -410,16 +410,16 @@ namespace MazakMachineInterface
     public static MazakJobs JobsToMazak(
       IEnumerable<JobPlan> jobs,
       int downloadUID,
-      ReadOnlyDataSet currentSet,
+      MazakSchedulesPartsPallets mazakData,
       ISet<string> savedParts,
       MazakDbType MazakType,
       bool checkPalletsUsedOnce,
       IList<string> log)
     {
-      var allParts = BuildMazakParts(jobs, downloadUID, currentSet, MazakType, log);
+      var allParts = BuildMazakParts(jobs, downloadUID, mazakData, MazakType, log);
       var groups = GroupProcessesIntoFixtures(allParts, checkPalletsUsedOnce, log);
 
-      var usedFixtures = AssignMazakFixtures(groups, downloadUID, currentSet, savedParts, log);
+      var usedFixtures = AssignMazakFixtures(groups, downloadUID, mazakData, savedParts, log);
 
       return new MazakJobs() {
         AllParts = allParts,
@@ -429,7 +429,7 @@ namespace MazakMachineInterface
     }
 
     #region Parts
-    private static List<MazakPart> BuildMazakParts(IEnumerable<JobPlan> jobs, int downloadID, ReadOnlyDataSet currentSet, MazakDbType mazakTy,
+    private static List<MazakPart> BuildMazakParts(IEnumerable<JobPlan> jobs, int downloadID, MazakSchedulesPartsPallets mazakData, MazakDbType mazakTy,
                                                   IList<string> log)
     {
       var ret = new List<MazakPart>();
@@ -445,7 +445,7 @@ namespace MazakMachineInterface
             var mazakPart = new MazakPart(job, downloadID);
 
             string error;
-            BuildProcFromJobWithOneProc(job, path, mazakPart, mazakTy, currentSet, out error);
+            BuildProcFromJobWithOneProc(job, path, mazakPart, mazakTy, mazakData, out error);
             if (error == null || error == "")
               ret.Add(mazakPart);
             else
@@ -504,7 +504,7 @@ namespace MazakMachineInterface
             //label the part by the path number on process 1.
             var mazakPart = new MazakPart(job, downloadID);
             string error;
-            BuildProcFromPathGroup(job, mazakPart, out error, mazakTy, currentSet,
+            BuildProcFromPathGroup(job, mazakPart, out error, mazakTy, mazakData,
                  (proc, path) => grp.Value == job.GetPathGroup(proc, path));
 
             if (error == null || error == "")
@@ -525,7 +525,7 @@ namespace MazakMachineInterface
     private delegate bool MatchFunc(int proc, int path);
 
     private static void BuildProcFromPathGroup(JobPlan job, MazakPart mazak, out string ErrorDuringCreate, MazakDbType mazakTy,
-                                                   ReadOnlyDataSet currentSet, MatchFunc matchPath)
+                                                   MazakSchedulesPartsPallets mazakData, MatchFunc matchPath)
     {
       ErrorDuringCreate = null;
 
@@ -566,15 +566,11 @@ namespace MazakMachineInterface
                     return;
                   }
                 }
-                foreach (ReadOnlyDataSet.MainProgramRow mRow in currentSet.MainProgram.Rows)
-                {
-                  if (!mRow.IsMainProgramNull() && mRow.MainProgram == p.Program)
-                    goto foundProg;
+                if (!mazakData.MainPrograms.Contains(p.Program)) {
+                  ErrorDuringCreate = "Part " + job.PartName + " program " + p.Program +
+                      " does not exist in the cell controller.";
+                  return;
                 }
-                ErrorDuringCreate = "Part " + job.PartName + " program " + p.Program +
-                    " does not exist in the cell controller.";
-                return;
-              foundProg:;
               }
             }
 
@@ -591,13 +587,13 @@ namespace MazakMachineInterface
     }
 
     private static void BuildProcFromJobWithOneProc(JobPlan job, int proc1path, MazakPart mazak, MazakDbType mazakTy,
-                                                    ReadOnlyDataSet currentSet, out string ErrorDuringCreate)
+                                                    MazakSchedulesPartsPallets mazakData, out string ErrorDuringCreate)
     {
       ErrorDuringCreate = null;
 
       // first try building from the job
       string FromJobError;
-      BuildProcFromPathGroup(job, mazak, out FromJobError, mazakTy, currentSet,
+      BuildProcFromPathGroup(job, mazak, out FromJobError, mazakTy, mazakData,
             (proc, path) => path == proc1path);  // proc will always equal 1.
 
       if (FromJobError == null || FromJobError == "")
@@ -606,9 +602,9 @@ namespace MazakMachineInterface
       mazak.Processes.Clear();
 
       // No programs, so check for a template row
-      ReadOnlyDataSet.PartRow TemplateRow = null;
+      MazakPartRow TemplateRow = null;
 
-      foreach (ReadOnlyDataSet.PartRow pRow in currentSet.Part.Rows)
+      foreach (var pRow in mazakData.Parts)
       {
         if (pRow.PartName == job.PartName)
         {
@@ -623,7 +619,7 @@ namespace MazakMachineInterface
         return;
       }
 
-      foreach (ReadOnlyDataSet.PartProcessRow pRow in TemplateRow.GetPartProcessRows())
+      foreach (var pRow in TemplateRow.Processes)
       {
         mazak.Processes.Add(new MazakProcessFromTemplate(mazak, pRow, proc1path));
       }
@@ -737,12 +733,12 @@ namespace MazakMachineInterface
     }
 
     private static ISet<string> AssignMazakFixtures(
-      IEnumerable<MazakFixture> groups, int downloadUID, ReadOnlyDataSet currentSet, ISet<string> savedParts,
+      IEnumerable<MazakFixture> groups, int downloadUID, MazakSchedulesPartsPallets mazakData, ISet<string> savedParts,
       IList<string> log)
     {
       //First calculate the available fixtures
       var usedFixtures = new HashSet<string>();
-      foreach (ReadOnlyDataSet.PartProcessRow partProc in currentSet.PartProcess.Rows)
+      foreach (var partProc in mazakData.Parts.SelectMany(p => p.Processes))
       {
         if (partProc.PartName.IndexOf(':') >= 0)
         {
@@ -762,7 +758,7 @@ namespace MazakMachineInterface
         Log.Debug("Searching for fixtures for group {@group}", group);
 
         //check if we can reuse an existing fixture
-        CheckExistingFixture(group, usedFixtures, currentSet);
+        CheckExistingFixture(group, usedFixtures, mazakData);
 
         if (string.IsNullOrEmpty(group.MazakFixtureName))
         {
@@ -785,7 +781,7 @@ namespace MazakMachineInterface
     private static void CheckExistingFixture(
       MazakFixture group,
       ISet<string> availableFixtures,
-      ReadOnlyDataSet currentSet)
+      MazakSchedulesPartsPallets mazakData)
     {
       //we need a fixture that exactly matches this pallet list and has all the processes.
       //Also, the fixture must be contained in a saved part.
@@ -800,7 +796,7 @@ namespace MazakMachineInterface
 
         //check pallets match
         var onPallets = new HashSet<string>();
-        foreach (ReadOnlyDataSet.PalletRow palRow in currentSet.Pallet) {
+        foreach (var palRow in mazakData.Pallets) {
           if (palRow.Fixture == fixture) {
             onPallets.Add(palRow.PalletNumber.ToString());
           }

@@ -66,7 +66,10 @@ namespace MachineWatchTest
       jobDB.CreateTables();
 
 			_schedules = new List<MazakScheduleRow>();
-			mazakData = new MazakSchedulesAndLoadActions(_schedules, new LoadAction[] {});
+			mazakData = new MazakSchedulesAndLoadActions() {
+        Schedules = _schedules,
+        LoadActions = new LoadAction[] {}
+      };
 
 			var settings = new FMSSettings() {
 				SerialType = SerialType.AssignOneSerialPerMaterial
@@ -92,8 +95,9 @@ namespace MachineWatchTest
         Comment = MazakPart.CreateComment(unique, Enumerable.Repeat(path, numProc), false),
 			};
       for (int i = 0; i < numProc; i++) {
-        sch.Processes.Add(new MazakScheduleProcessRow(sch) {
-
+        sch.Processes.Add(new MazakScheduleProcessRow() {
+          MazakScheduleRowId = sch.Id,
+          MazakScheduleRow = sch
         });
       }
       _schedules.Add(sch);

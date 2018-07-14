@@ -75,7 +75,10 @@ namespace MachineWatchTest
       public List<LoadAction> LoadActions {get;} = new List<LoadAction>();
 
       public MazakSchedulesAndLoadActions ToData() {
-        return new MazakSchedulesAndLoadActions(Schedules, LoadActions);
+        return new MazakSchedulesAndLoadActions() {
+          Schedules = Schedules,
+          LoadActions = LoadActions
+        };
       }
     }
 
@@ -111,7 +114,9 @@ namespace MachineWatchTest
 
     private void AddScheduleProcess(MazakScheduleRow schRow, int proc, int matQty, int exeQty)
     {
-      schRow.Processes.Add(new MazakScheduleProcessRow(schRow) {
+      schRow.Processes.Add(new MazakScheduleProcessRow() {
+        MazakScheduleRowId = schRow.Id,
+        MazakScheduleRow = schRow,
         ProcessBadQuantity = 0,
         ProcessExecuteQuantity = exeQty,
         ProcessMachine = 1,

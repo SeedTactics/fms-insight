@@ -211,7 +211,7 @@ namespace MazakMachineInterface
     {
       public int SchId
       {
-        get { return _schRow.ScheduleID; }
+        get { return _schRow.Id; }
       }
 
       public string UniqueStr
@@ -244,24 +244,24 @@ namespace MazakMachineInterface
         Log.Error("Error updating holds. {msgs}", logMessages);
       }
 
-      public MazakSchedule(HoldPattern parent, ReadOnlyDataSet.ScheduleRow s)
+      public MazakSchedule(HoldPattern parent, MazakScheduleRow s)
       {
         _parent = parent;
         _schRow = s;
       }
 
       private HoldPattern _parent;
-      private ReadOnlyDataSet.ScheduleRow _schRow;
+      private MazakScheduleRow _schRow;
     }
 
     private IDictionary<int, MazakSchedule> LoadMazakSchedules()
     {
       var ret = new Dictionary<int, MazakSchedule>();
-      (var _mazakData, ReadOnlyDataSet currentSet) = readDatabase.LoadDataAndReadSet();
+      var mazakData = readDatabase.LoadSchedules();
 
-      foreach (ReadOnlyDataSet.ScheduleRow schRow in currentSet.Schedule.Rows)
+      foreach (var schRow in mazakData.Schedules)
       {
-        ret.Add(schRow.ScheduleID, new MazakSchedule(this, schRow));
+        ret.Add(schRow.Id, new MazakSchedule(this, schRow));
       }
 
       return ret;

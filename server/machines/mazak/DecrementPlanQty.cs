@@ -87,13 +87,13 @@ namespace MazakMachineInterface
       IWriteData writeDb, IReadDataAccess readDb)
     {
       var logMessages = new List<string>();
-      var (mazakData, currentSet) = readDb.LoadDataAndReadSet();
-      var IdsLeftToDecrement = LoadIdsToDecrement(currentSet);
+      var mazakData = readDb.LoadSchedules();
+      var IdsLeftToDecrement = LoadIdsToDecrement(mazakData);
 
       //If nothing is left, just return the stored decrement values.
       if (IdsLeftToDecrement.Count == 0)
       {
-        return LoadDecrementOffsets(currentSet);
+        return LoadDecrementOffsets(mazakData);
       }
 
       for (int retryCount = 0; retryCount < MaxRetryTimes; retryCount++)
@@ -107,7 +107,7 @@ namespace MazakMachineInterface
 
         foreach (var schID in idsCopy)
         {
-          if (DecrementSingleSchedule(currentSet, schID.SchId, logMessages, writeDb))
+          if (DecrementSingleSchedule(mazakData, schID.SchId, logMessages, writeDb))
           {
             IdsLeftToDecrement.Remove(schID);
           }
@@ -120,7 +120,7 @@ namespace MazakMachineInterface
         if (IdsLeftToDecrement.Count == 0)
           break;
 
-        HoldSchedules(currentSet, IdsLeftToDecrement, logMessages, writeDb);
+        HoldSchedules(mazakData, IdsLeftToDecrement, logMessages, writeDb);
 
         //we run a garbage collection here, so that hopefully it won't be triggered during the decrement.
         //The further in time we are between the load of the readonly set and the current time, the better
@@ -132,7 +132,7 @@ namespace MazakMachineInterface
           System.Threading.Thread.Sleep(TimeSpan.FromSeconds(15));
         }
 
-        (mazakData, currentSet) = readDb.LoadDataAndReadSet();
+        mazakData = readDb.LoadSchedules();
       }
 
       if (logMessages.Count > 0)
@@ -140,8 +140,8 @@ namespace MazakMachineInterface
         throw RoutingInfo.BuildTransactionException("Error decrementing schedule", logMessages);
       }
 
-      (mazakData, currentSet) = readDb.LoadDataAndReadSet();
-      return LoadDecrementOffsets(currentSet);
+      mazakData = readDb.LoadSchedules();
+      return LoadDecrementOffsets(mazakData);
     }
 
     private class ScheduleId
@@ -159,12 +159,12 @@ namespace MazakMachineInterface
     }
 
     //Load the schedule ids to decrement
-    private static List<ScheduleId> LoadIdsToDecrement(ReadOnlyDataSet currentSet)
+    private static List<ScheduleId> LoadIdsToDecrement(MazakSchedules mazakSet)
     {
       //load the list of Schedule IDs that need to be decremented
       var IdsLeftToDecrement = new List<ScheduleId>();
 
-      foreach (ReadOnlyDataSet.ScheduleRow schRow in currentSet.Schedule.Rows)
+      foreach (var schRow in mazakSet.Schedules)
       {
         //only deal with parts we created
         if (MazakPart.IsSailPart(schRow.PartName))
@@ -173,27 +173,16 @@ namespace MazakMachineInterface
           //Check if the schedule is manually created, since we don't decrement those
           string unique;
           bool manual = false;
-          if (!schRow.IsCommentNull())
+          if (!string.IsNullOrEmpty(schRow.Comment))
             MazakPart.ParseComment(schRow.Comment, out unique, out var paths, out manual);
 
           if (manual) continue;
 
-          //find the fixQuantity
-          int fix = 1;
-          foreach (ReadOnlyDataSet.PartProcessRow partProcRow in currentSet.PartProcess.Rows)
+          foreach (var schProcRow in schRow.Processes)
           {
-            if (partProcRow.PartName == schRow.PartName && partProcRow.ProcessNumber == 1)
+            if (schProcRow.ProcessNumber == 1 && schProcRow.ProcessMaterialQuantity >= schProcRow.FixQuantity)
             {
-              fix = partProcRow.FixQuantity;
-              break;
-            }
-          }
-
-          foreach (ReadOnlyDataSet.ScheduleProcessRow schProcRow in schRow.GetScheduleProcessRows())
-          {
-            if (schProcRow.ProcessNumber == 1 && schProcRow.ProcessMaterialQuantity >= fix)
-            {
-              IdsLeftToDecrement.Add(new ScheduleId(schRow.ScheduleID));
+              IdsLeftToDecrement.Add(new ScheduleId(schRow.Id));
             }
           }
         }
@@ -204,15 +193,15 @@ namespace MazakMachineInterface
 
     //Try and decrement a single schedule, returning true if we were successful or an unrecoverable error
     //occured and false if we should retry this decrement again.
-    private static bool DecrementSingleSchedule(ReadOnlyDataSet currentSet, int schID,
+    private static bool DecrementSingleSchedule(MazakSchedules currentSet, int schID,
                                                 IList<string> logMessages,
                                                 IWriteData database)
     {
       //Find the schedule row.
-      ReadOnlyDataSet.ScheduleRow schRow = null;
-      foreach (ReadOnlyDataSet.ScheduleRow schRow2 in currentSet.Schedule.Rows)
+      MazakScheduleRow schRow = null;
+      foreach (var schRow2 in currentSet.Schedules)
       {
-        if (schRow2.ScheduleID == schID)
+        if (schRow2.Id == schID)
         {
           schRow = schRow2;
           break;
@@ -231,7 +220,7 @@ namespace MazakMachineInterface
 
       int numRows = 0;
 
-      foreach (ReadOnlyDataSet.ScheduleProcessRow schProcRow in schRow.GetScheduleProcessRows())
+      foreach (var schProcRow in schRow.Processes)
       {
         var newSchProcRow = transSet.ScheduleProcess_t.NewScheduleProcess_tRow();
         OpenDatabaseKitTransactionDB.BuildScheduleProcEditRow(newSchProcRow, schProcRow);
@@ -273,7 +262,7 @@ namespace MazakMachineInterface
     }
 
 
-    private static void HoldSchedules(ReadOnlyDataSet currentSet, IList<ScheduleId> schIds,
+    private static void HoldSchedules(MazakSchedules currentSet, IList<ScheduleId> schIds,
                                       IList<string> logMessages,
                                       IWriteData database)
     {
@@ -289,10 +278,10 @@ namespace MazakMachineInterface
         {
 
           //Find the schedule row.
-          ReadOnlyDataSet.ScheduleRow schRow = null;
-          foreach (ReadOnlyDataSet.ScheduleRow schRow2 in currentSet.Schedule.Rows)
+          MazakScheduleRow schRow = null;
+          foreach (var schRow2 in currentSet.Schedules)
           {
-            if (schRow2.ScheduleID == schId.SchId)
+            if (schRow2.Id == schId.SchId)
             {
               schRow = schRow2;
               break;
@@ -322,17 +311,17 @@ namespace MazakMachineInterface
         schId.PutOnHold = true;
     }
 
-    private static Dictionary<JobAndPath, int> LoadDecrementOffsets(ReadOnlyDataSet currentSet)
+    private static Dictionary<JobAndPath, int> LoadDecrementOffsets(MazakSchedules mazakData)
     {
       var parts = new Dictionary<JobAndPath, int>();
 
-      foreach (ReadOnlyDataSet.ScheduleRow schRow in currentSet.Schedule.Rows)
+      foreach (var schRow in mazakData.Schedules)
       {
         if (MazakPart.IsSailPart(schRow.PartName))
         {
 
           int cnt = schRow.CompleteQuantity;
-          foreach (ReadOnlyDataSet.ScheduleProcessRow schProcRow in schRow.GetScheduleProcessRows())
+          foreach (var schProcRow in schRow.Processes)
           {
             cnt += schProcRow.ProcessMaterialQuantity;
             cnt += schProcRow.ProcessExecuteQuantity;
@@ -346,7 +335,7 @@ namespace MazakMachineInterface
             string jobUnique = "";
             int proc1path = 1;
             bool manual = false;
-            if (!schRow.IsCommentNull())
+            if (!string.IsNullOrEmpty(schRow.Comment))
             {
               MazakPart.ParseComment(schRow.Comment, out jobUnique, out var procToPath, out manual);
               proc1path = procToPath.PathForProc(proc: 1);
@@ -374,7 +363,7 @@ namespace MazakMachineInterface
       //We  just lower the plan count (which we can do with the SafeEditCommand), so this is much
       //easier than the above.
 
-      var (mazakData, currentSet) = readDb.LoadDataAndReadSet();
+      var mazakData = readDb.LoadSchedules();
       TransactionDataSet transSet = new TransactionDataSet();
       TransactionDataSet.Schedule_tRow newSchRow = null;
       List<string> log = new List<string>();
@@ -382,7 +371,7 @@ namespace MazakMachineInterface
       writeDb.ClearTransactionDatabase();
 
       //now we update all the plan quantites to match
-      foreach (ReadOnlyDataSet.ScheduleRow schRow in currentSet.Schedule.Rows)
+      foreach (var schRow in mazakData.Schedules)
       {
         if (MazakPart.IsSailPart(schRow.PartName))
         {

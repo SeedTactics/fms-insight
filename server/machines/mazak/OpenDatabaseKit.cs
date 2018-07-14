@@ -31,10 +31,12 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
 using System.Data.OleDb;
+using Dapper;
 
 namespace MazakMachineInterface
 {
@@ -499,79 +501,22 @@ namespace MazakMachineInterface
       }
     }
 
-    public static void BuildPartRow(TransactionDataSet.Part_tRow newRow, ReadOnlyDataSet.PartRow curRow)
+    public static void BuildPartProcessRow(TransactionDataSet.PartProcess_tRow newRow, MazakPartProcessRow curRow)
     {
-      newRow.Command = EditCommand;
-      if (!curRow.IsCommentNull())
-        newRow.Comment = curRow.Comment;
-      if (!curRow.IsPriceNull())
-        newRow.Price = curRow.Price;
-      newRow.TotalProcess = curRow.GetPartProcessRows().Length;
-    }
-    public static void BuildPartProcessRow(TransactionDataSet.PartProcess_tRow newRow, ReadOnlyDataSet.PartProcessRow curRow)
-    {
-      if (!curRow.IsContinueCutNull())
-        newRow.ContinueCut = curRow.ContinueCut;
-      if (!curRow.IsCutMcNull())
-        newRow.CutMc = curRow.CutMc;
-      if (!curRow.IsFixLDSNull())
-        newRow.FixLDS = curRow.FixLDS;
-      if (!curRow.IsFixPhotoNull())
-        newRow.FixPhoto = curRow.FixPhoto;
-      if (!curRow.IsFixQuantityNull())
-        newRow.FixQuantity = curRow.FixQuantity.ToString();
-      if (!curRow.IsFixtureNull())
-        newRow.Fixture = curRow.Fixture;
-      if (!curRow.IsMainProgramNull())
-        newRow.MainProgram = curRow.MainProgram;
-      if (!curRow.IsPartNameNull())
-        newRow.PartName = curRow.PartName;
-      if (!curRow.IsProcessNumberNull())
-        newRow.ProcessNumber = curRow.ProcessNumber;
-      if (!curRow.IsRemoveLDSNull())
-        newRow.RemoveLDS = curRow.RemoveLDS;
-      if (!curRow.IsRemovePhotoNull())
-        newRow.RemovePhoto = curRow.RemovePhoto;
-      if (!curRow.IsWashTypeNull())
-        newRow.WashType = curRow.WashType;
-    }
-    public static void BuildScheduleEditRow(TransactionDataSet.Schedule_tRow newRow, ReadOnlyDataSet.ScheduleRow curRow, bool updateMaterial)
-    {
-      if (updateMaterial)
-      {
-        newRow.Command = ScheduleMaterialEditCommand;
-      }
-      else
-      {
-        newRow.Command = ScheduleSafeEditCommand;
-      }
-      if (!curRow.IsCommentNull())
-        newRow.Comment = curRow.Comment;
-      if (!curRow.IsCompleteQuantityNull())
-        newRow.CompleteQuantity = curRow.CompleteQuantity;
-      if (!curRow.IsDueDateNull())
-        newRow.DueDate = curRow.DueDate;
-      if (!curRow.IsFixForMachineNull())
-        newRow.FixForMachine = curRow.FixForMachine;
-      if (!curRow.IsHoldModeNull())
-        newRow.HoldMode = curRow.HoldMode;
-      if (!curRow.IsMissingFixtureNull())
-        newRow.MissingFixture = curRow.MissingFixture;
-      if (!curRow.IsMissingProgramNull())
-        newRow.MissingProgram = curRow.MissingProgram;
-      if (!curRow.IsMissingToolNull())
-        newRow.MissingTool = curRow.MissingTool;
-      if (!curRow.IsMixScheduleIDNull())
-        newRow.MixScheduleID = curRow.MixScheduleID;
-      if (!curRow.IsPartNameNull())
-        newRow.PartName = curRow.PartName;
-      if (!curRow.IsPlanQuantityNull())
-        newRow.PlanQuantity = curRow.PlanQuantity;
-      if (!curRow.IsPriorityNull())
-        newRow.Priority = curRow.Priority;
-      if (!curRow.IsProcessingPriorityNull())
-        newRow.ProcessingPriority = curRow.ProcessingPriority;
-      newRow.ScheduleID = curRow.ScheduleID;
+      if (curRow.ContinueCut.HasValue)
+        newRow.ContinueCut = curRow.ContinueCut.Value;
+      newRow.CutMc = curRow.CutMc;
+      newRow.FixLDS = curRow.FixLDS;
+      newRow.FixPhoto = curRow.FixPhoto;
+      newRow.FixQuantity = curRow.FixQuantity.ToString();
+      newRow.Fixture = curRow.Fixture;
+      newRow.MainProgram = curRow.MainProgram;
+      newRow.PartName = curRow.PartName;
+      newRow.ProcessNumber = curRow.ProcessNumber;
+      newRow.RemoveLDS = curRow.RemoveLDS;
+      newRow.RemovePhoto = curRow.RemovePhoto;
+      if (curRow.WashType.HasValue)
+        newRow.WashType = curRow.WashType.Value;
     }
     public static void BuildScheduleEditRow(TransactionDataSet.Schedule_tRow newRow, MazakScheduleRow curRow, bool updateMaterial)
     {
@@ -605,21 +550,6 @@ namespace MazakMachineInterface
       if (curRow.ProcessingPriority.HasValue)
         newRow.ProcessingPriority = curRow.ProcessingPriority.Value;
       newRow.ScheduleID = curRow.Id;
-    }
-    public static void BuildScheduleProcEditRow(TransactionDataSet.ScheduleProcess_tRow newRow, ReadOnlyDataSet.ScheduleProcessRow curRow)
-    {
-      if (!curRow.IsProcessBadQuantityNull())
-        newRow.ProcessBadQuantity = curRow.ProcessBadQuantity;
-      if (!curRow.IsProcessExecuteQuantityNull())
-        newRow.ProcessExecuteQuantity = curRow.ProcessExecuteQuantity;
-      if (!curRow.IsProcessMachineNull())
-        newRow.ProcessMachine = curRow.ProcessMachine;
-      if (!curRow.IsProcessMaterialQuantityNull())
-        newRow.ProcessMaterialQuantity = curRow.ProcessMaterialQuantity;
-      if (!curRow.IsProcessNumberNull())
-        newRow.ProcessNumber = curRow.ProcessNumber;
-      if (!curRow.IsScheduleIDNull())
-        newRow.ScheduleID = curRow.ScheduleID;
     }
     public static void BuildScheduleProcEditRow(TransactionDataSet.ScheduleProcess_tRow newRow, MazakScheduleProcessRow curRow)
     {
@@ -663,24 +593,27 @@ namespace MazakMachineInterface
         _connectionStr = dbConnStr + ";Database=FCREADDAT01";
       }
 
-      _fixtureSelect = "SELECT Comment, FixtureName, ID, Reserved, UpdatedFlag FROM Fixture";
+      _fixtureSelect = "SELECT Comment, FixtureName FROM Fixture";
 
       if (MazakType != MazakDbType.MazakVersionE)
       {
-        _palletSelect = "SELECT FixtureGroup AS FixtureGroupV2, Fixture, PalletNumber, RecordID, Reserved, UpdatedFlag FROM Pallet";
+        _palletSelect = "SELECT FixtureGroup AS FixtureGroupV2, Fixture, PalletNumber, RecordID FROM Pallet";
       }
       else
       {
-        _palletSelect = "SELECT Angle AS AngleV1, Fixture, PalletNumber, RecordID, Reserved, UpdatedFlag FROM Pallet";
+        _palletSelect = "SELECT Angle AS AngleV1, Fixture, PalletNumber, RecordID FROM Pallet";
       }
 
-      _partSelect = "SELECT Comment, id, PartName, Price, Reserved, UpdatedFlag FROM Part";
-      _partProcSelect = "SELECT ContinueCut, CutMc, CuttingID, FixLDS, FixPhoto, FixQuantity, Fixture, MainProgram, PartName, ProcessNumber, RemoveLDS, RemovePhoto, Reserved, UpdatedFlag, WashType FROM PartProcess";
-      _scheduleSelect = "SELECT Comment, CompleteQuantity, DueDate, FixForMachine, HoldMode, MissingFixture, MissingProgram, MissingTool, MixScheduleID, PartName, PlanQuantity, Priority, ProcessingPriority, Reserved, ScheduleID, UpdatedFlag FROM Schedule";
-      _scheduleProcSelect = "SELECT ID, ProcessBadQuantity, ProcessExecuteQuantity, ProcessMachine, ProcessMaterialQuantity, ProcessNumber, ScheduleID, UpdatedFlag FROM ScheduleProcess";
-      _palSubStatusSelect = "SELECT ErrorStatus, FixQuantity, FixtureName, id, MeasureCode, PalletID, PalletNumber, PalletStatus, PartName, PartProcessNumber, ProgramNumber, Reserved, ScheduleID, UpdatedFlag FROM PalletSubStatus";
-      _palPositionSelect = "SELECT id, PalletNumber, PalletPosition FROM PalletPosition";
-      _mainProgSelect = "SELECT id, MainProgram, Comment FROM MainProgram";
+      _partSelect = "SELECT Comment, Id, PartName, Price FROM Part";
+      _partProcSelect = "SELECT ContinueCut, CutMc, FixLDS, FixPhoto, FixQuantity, Fixture, MainProgram, PartName, ProcessNumber, RemoveLDS, RemovePhoto, WashType FROM PartProcess";
+      _scheduleSelect = "SELECT Comment, CompleteQuantity, DueDate, FixForMachine, HoldMode, MissingFixture, MissingProgram, MissingTool, MixScheduleID, PartName, PlanQuantity, Priority, ProcessingPriority, Reserved, ScheduleID As Id, UpdatedFlag FROM Schedule";
+      _scheduleProcSelect = "SELECT " +
+        " a.ProcessBadQuantity, a.ProcessExecuteQuantity, a.ProcessMachine, a.ProcessMaterialQuantity, a.ProcessNumber, a.ScheduleID As MazakScheduleRowId, a.UpdatedFlag, b.FixQuantity " +
+        " FROM ScheduleProcess a " +
+        " LEFT OUTER JOIN PartProcess b ON a.PartName = b.PartName AND a.ProcessNumber = b.ProcessNumber";
+      _palSubStatusSelect = "SELECT FixQuantity, FixtureName, PalletNumber, PartName, PartProcessNumber, ScheduleID FROM PalletSubStatus";
+      _palPositionSelect = "SELECT PalletNumber, PalletPosition FROM PalletPosition";
+      _mainProgSelect = "SELECT MainProgram FROM MainProgram";
   	}
 
     public TResult WithReadDBConnection<TResult>(Func<IDbConnection, TResult> action)
@@ -760,136 +693,129 @@ namespace MazakMachineInterface
       return c;
     }
 
-    public ReadOnlyDataSet LoadReadSet()
+    private IEnumerable<MazakScheduleRow> LoadSchedules(IDbConnection conn, IDbTransaction trans)
     {
-      return WithReadDBConnection(conn =>
-      {
-        ReadOnlyDataSet dset = new ReadOnlyDataSet();
-        dset.EnforceConstraints = false;
+      var schs = conn.Query<MazakScheduleRow>(_scheduleSelect, transaction: trans);
+      var schDict = schs.ToDictionary(s => s.Id, s => s);
 
-        var trans = conn.BeginTransaction(IsolationLevel.ReadCommitted);
-        try
-        {
+      var procs = conn.Query<MazakScheduleProcessRow>(_scheduleProcSelect, transaction: trans);
+      foreach (var proc in procs) {
+        if (schDict.ContainsKey(proc.MazakScheduleRowId)) {
+          proc.MazakScheduleRow = schDict[proc.MazakScheduleRowId];
+          schDict[proc.MazakScheduleRowId].Processes.Add(proc);
+        }
+      }
+      return schs;
+    }
+    public MazakSchedules LoadSchedules()
+    {
+      return WithReadDBConnection(conn => {
+        var trans = conn.BeginTransaction();
+        try {
 
-          using (var cmd = CreateCommand(conn, _fixtureSelect, trans))
-          using (var reader = cmd.ExecuteReader())
-          {
-            dset.Fixture.Load(reader);
-          }
-
-          using (var cmd = CreateCommand(conn, _palletSelect, trans))
-          using (var reader = cmd.ExecuteReader())
-          {
-            dset.Pallet.Load(reader);
-          }
-
-          using (var cmd = CreateCommand(conn, _palPositionSelect, trans))
-          using (var reader = cmd.ExecuteReader())
-          {
-            dset.PalletPosition.Load(reader);
-          }
-
-          using (var cmd = CreateCommand(conn, _partSelect, trans))
-          using (var reader = cmd.ExecuteReader())
-          {
-            dset.Part.Load(reader);
-          }
-
-          using (var cmd = CreateCommand(conn, _partProcSelect, trans))
-          using (var reader = cmd.ExecuteReader())
-          {
-            dset.PartProcess.Load(reader);
-          }
-
-          using (var cmd = CreateCommand(conn, _scheduleSelect, trans))
-          using (var reader = cmd.ExecuteReader())
-          {
-            dset.Schedule.Load(reader);
-          }
-
-          using (var cmd = CreateCommand(conn, _scheduleProcSelect, trans))
-          using (var reader = cmd.ExecuteReader())
-          {
-            dset.ScheduleProcess.Load(reader);
-          }
-
-          using (var cmd = CreateCommand(conn, _palSubStatusSelect, trans))
-          using (var reader = cmd.ExecuteReader())
-          {
-            dset.PalletSubStatus.Load(reader);
-          }
-
-          using (var cmd = CreateCommand(conn, _mainProgSelect, trans))
-          using (var reader = cmd.ExecuteReader())
-          {
-            dset.MainProgram.Load(reader);
-          }
+          var ret = new MazakSchedules() {
+            Schedules = LoadSchedules(conn, trans)
+          };
 
           trans.Commit();
-        }
-        catch
-        {
+
+          return ret;
+        } catch {
           trans.Rollback();
           throw;
         }
-
-        return dset;
-
       });
     }
 
-    public MazakSchedulesAndLoadActions LoadSchedules()
+    public MazakSchedulesAndLoadActions LoadSchedulesAndLoadActions()
     {
-      return new MazakSchedulesAndLoadActions(
-        s: CreateSchedules(LoadReadSet()),
-        a: _loadOper.CurrentLoadActions()
-      );
-    }
-    public MazakData LoadAllData()
-    {
-      var dset = LoadReadSet();
-      return new MazakData(
-        s: CreateSchedules(dset),
-        a: _loadOper.CurrentLoadActions(),
-        p: CreateParts(dset)
-      );
-    }
-    public static IEnumerable<MazakScheduleRow> CreateSchedules(ReadOnlyDataSet dset)
-    {
-      var ret = new List<MazakScheduleRow>();
-      foreach (var schRow in dset.Schedule) {
-        var sch = new MazakScheduleRow(schRow);
-        ret.Add(sch);
-        foreach (var proc in schRow.GetScheduleProcessRows()) {
-          var mProc = new MazakScheduleProcessRow(sch, proc);
-          sch.Processes.Add(mProc);
-        }
-      }
-      return ret;
-    }
-    public static IEnumerable<MazakPartRow> CreateParts(ReadOnlyDataSet dset)
-    {
-      var ret = new List<MazakPartRow>();
-      foreach (var partRow in dset.Part) {
-        var part = new MazakPartRow(partRow);
-        ret.Add(part);
-        foreach (var proc in partRow.GetPartProcessRows()) {
-          var mProc = new MazakPartProcessRow(part, proc);
-          part.Processes.Add(mProc);
-        }
-      }
-      return ret;
+      var sch = LoadSchedules();
+      return new MazakSchedulesAndLoadActions() {
+        Schedules = sch.Schedules,
+        LoadActions = _loadOper.CurrentLoadActions()
+      };
     }
 
-    public (MazakData, ReadOnlyDataSet) LoadDataAndReadSet()
+    private MazakSchedulesPartsPallets LoadSchedulesPartsPallets(IDbConnection conn, IDbTransaction trans)
     {
-      var dset = LoadReadSet();
-      var data = new MazakData(
-        s: CreateSchedules(dset),
-        a: _loadOper.CurrentLoadActions(),
-        p: CreateParts(dset)
-      );
-      return (data, dset);
+      var parts = conn.Query<MazakPartRow>(_partSelect, transaction: trans);
+      var partsByName = parts.ToDictionary(p => p.PartName, p => p);
+      var procs = conn.Query<MazakPartProcessRow>(_partProcSelect, transaction: trans);
+      foreach (var proc in procs) {
+        if (partsByName.ContainsKey(proc.PartName)) {
+          var part = partsByName[proc.PartName];
+          part.Processes.Add(proc);
+          proc.MazakPartRowId = part.Id;
+          proc.MazakPartRow = part;
+        }
+      }
+
+      return new MazakSchedulesPartsPallets() {
+        Schedules = LoadSchedules(conn, trans),
+        Parts = parts,
+        Pallets = conn.Query<MazakPalletRow>(_palletSelect, transaction: trans),
+        PalletSubStatuses = conn.Query<MazakPalletSubStatusRow>(_palSubStatusSelect, transaction: trans),
+        PalletPositions = conn.Query<MazakPalletPositionRow>(_palPositionSelect, transaction: trans),
+        MainPrograms = conn.Query<string>(_mainProgSelect, transaction: trans).ToHashSet(),
+      };
     }
-	}
+    public MazakSchedulesPartsPallets LoadSchedulesPartsPallets()
+    {
+      return LoadSchedulesPartsPallets(includeLoadActions: true);
+    }
+    public MazakSchedulesPartsPallets LoadSchedulesPartsPallets(bool includeLoadActions)
+    {
+      var data = WithReadDBConnection(conn => {
+        var trans = conn.BeginTransaction();
+        try {
+          var ret = LoadSchedulesPartsPallets(conn, trans);
+          trans.Commit();
+          return ret;
+        } catch {
+          trans.Rollback();
+          throw;
+        }
+      });
+
+      if (includeLoadActions) {
+        data.LoadActions = _loadOper.CurrentLoadActions();
+      }
+      return data;
+    }
+
+    public MazakAllData LoadAllData()
+    {
+      return LoadAllData(includeLoadActions: true);
+    }
+
+    public MazakAllData LoadAllData(bool includeLoadActions)
+    {
+      var data = WithReadDBConnection(conn => {
+        var trans = conn.BeginTransaction();
+        try {
+          var schs = LoadSchedulesPartsPallets(conn, trans);
+          var ret = new MazakAllData() {
+            Schedules = schs.Schedules,
+            Parts = schs.Parts,
+            Pallets = schs.Pallets,
+            PalletSubStatuses = schs.PalletSubStatuses,
+            PalletPositions = schs.PalletPositions,
+            MainPrograms = schs.MainPrograms,
+            Fixtures = conn.Query<MazakFixtureRow>(_fixtureSelect, transaction: trans)
+          };
+
+          trans.Commit();
+          return ret;
+        } catch {
+          trans.Rollback();
+          throw;
+        }
+      });
+
+      if (includeLoadActions) {
+        data.LoadActions = _loadOper.CurrentLoadActions();
+      }
+      return data;
+    }
+  }
 }

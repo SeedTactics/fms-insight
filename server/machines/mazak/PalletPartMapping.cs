@@ -44,14 +44,14 @@ namespace MazakMachineInterface
     private readonly ISet<string> savedParts;
 
     private readonly MazakJobs mazakJobs;
-    private readonly ReadOnlyDataSet currentSet;
+    private readonly MazakAllData mazakData;
     private readonly int downloadUID;
     private readonly bool updateGlobalTag;
     private readonly string newGlobalTag;
     private readonly MazakDbType MazakType;
 
     public clsPalletPartMapping(IEnumerable<JobPlan> routes,
-                                ReadOnlyDataSet readOnlySet, int uidVal, ISet<string> saved,
+                                MazakAllData md, int uidVal, ISet<string> saved,
                                 IList<string> log,
                                 bool updateGlobal, string newGlobal,
                                 bool checkPalletsUsedOnce,
@@ -59,7 +59,7 @@ namespace MazakMachineInterface
     {
       savedParts = saved;
 
-      currentSet = readOnlySet;
+      mazakData = md;
       downloadUID = uidVal;
       updateGlobalTag = updateGlobal;
       newGlobalTag = newGlobal;
@@ -86,7 +86,7 @@ namespace MazakMachineInterface
 
       mazakJobs = ConvertJobsToMazakParts.JobsToMazak(routes,
         downloadUID,
-        currentSet,
+        mazakData,
         savedParts,
         mazakTy,
         checkPalletsUsedOnce,
@@ -110,7 +110,7 @@ namespace MazakMachineInterface
       TransactionDataSet.Pallet_tV1Row newPalRowV1 = null;
       TransactionDataSet.Pallet_tV2Row newPalRowV2 = null;
 
-      foreach (ReadOnlyDataSet.PartRow partRow in currentSet.Part.Rows)
+      foreach (var partRow in mazakData.Parts)
       {
         if (MazakPart.IsSailPart(partRow.PartName))
         {
@@ -119,13 +119,13 @@ namespace MazakMachineInterface
             newPartRow = transSet.Part_t.NewPart_tRow();
             newPartRow.Command = OpenDatabaseKitTransactionDB.DeleteCommand;
             newPartRow.PartName = partRow.PartName;
-            newPartRow.TotalProcess = partRow.GetPartProcessRows().Length;
+            newPartRow.TotalProcess = partRow.Processes.Count;
             transSet.Part_t.AddPart_tRow(newPartRow);
           }
         }
       }
 
-      foreach (ReadOnlyDataSet.PalletRow palRow in currentSet.Pallet.Rows)
+      foreach (var palRow in mazakData.Pallets)
       {
         int idx = palRow.Fixture.IndexOf(':');
 
@@ -169,7 +169,7 @@ namespace MazakMachineInterface
     {
       TransactionDataSet.Fixture_tRow newFixRow = null;
 
-      foreach (ReadOnlyDataSet.FixtureRow fixRow in currentSet.Fixture.Rows)
+      foreach (var fixRow in mazakData.Fixtures)
       {
         int idx = fixRow.FixtureName.IndexOf(':');
 
@@ -195,7 +195,7 @@ namespace MazakMachineInterface
       foreach (string fixture in mazakJobs.UsedFixtures)
       {
         //check if this fixture exists already... could exist already if we reuse fixtures
-        foreach (ReadOnlyDataSet.FixtureRow fixRow in currentSet.Fixture.Rows)
+        foreach (var fixRow in mazakData.Fixtures)
         {
           if (fixRow.FixtureName == fixture)
           {
@@ -226,7 +226,7 @@ namespace MazakMachineInterface
     {
       int palNum = int.Parse(pallet);
 
-      foreach (ReadOnlyDataSet.PalletRow palRow in currentSet.Pallet.Rows)
+      foreach (var palRow in mazakData.Pallets)
       {
         if (palRow.PalletNumber == palNum && palRow.Fixture == fixture)
         {

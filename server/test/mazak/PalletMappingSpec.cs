@@ -636,7 +636,7 @@ namespace MachineWatchTest
 
 			var log = new List<string>();
 
-			var dset = new ReadOnlyDataSet();
+			var dset = new MazakTestData();
 			CreateProgram(dset, "1234");
 
 		    var pMap = new clsPalletPartMapping(new JobPlan[] {job1, job2, job3}, dset, 3,
@@ -843,37 +843,59 @@ namespace MachineWatchTest
 		}
 
 		#region Checking
-		private ReadOnlyDataSet CreateReadSet()
+		private class MazakTestData : MazakAllData
 		{
-			var dset = new ReadOnlyDataSet();
+			public List<MazakPartRow> TestParts {get;} = new List<MazakPartRow>();
+			public List<MazakFixtureRow> TestFixtures {get;} = new List<MazakFixtureRow>();
+			public List<MazakPalletRow> TestPallets {get;} = new List<MazakPalletRow>();
+
+			public MazakTestData() {
+				Schedules = new List<MazakScheduleRow>();
+				Parts = TestParts;
+				Fixtures = TestFixtures;
+				Pallets = TestPallets;
+				MainPrograms = new HashSet<string>();
+			}
+		}
+
+		private MazakTestData CreateReadSet()
+		{
+			var dset = new MazakTestData();
 			CreateFixture(dset, "Test");
 			return dset;
 		}
 
-		private void CreatePart(ReadOnlyDataSet dset, string unique, string name, int numProc, string fix)
+		private void CreatePart(MazakTestData dset, string unique, string name, int numProc, string fix)
 		{
-			var pRow = dset.Part.AddPartRow("comment", 0, name, 0, 0);
+			var pRow = new MazakPartRow() { Comment = "comment", PartName = name};
+			dset.TestParts.Add(pRow);
 
 			for (int proc = 1; proc <= numProc; proc++) {
-				dset.PartProcess.AddPartProcessRow(0, "", 0, "", "", 1, fix + ":" + proc.ToString(), "2", pRow, proc, "", "", 0, 0);
+				pRow.Processes.Add(new MazakPartProcessRow() {
+					MazakPartRowId = pRow.Id,
+					MazakPartRow = pRow,
+					ProcessNumber = proc,
+					Fixture = fix + ":" + proc.ToString(),
+					PartName = name,
+				});
 			}
 		}
 
-		private void CreateFixture(ReadOnlyDataSet dset, string name)
+		private void CreateFixture(MazakTestData dset, string name)
 		{
-			dset.Fixture.AddFixtureRow("comment", name, 0, 0);
+			dset.TestFixtures.Add(new MazakFixtureRow() {Comment = "comment", FixtureName = name});
 		}
 
-		private void CreatePallet(ReadOnlyDataSet dset, int pal, string fix, int numProc)
+		private void CreatePallet(MazakTestData dset, int pal, string fix, int numProc)
 		{
 			for (int i = 1; i <= numProc; i++) {
-				dset.Pallet.AddPalletRow(999, fix + ":" + i.ToString(), pal, 0, 0, 0);
+				dset.TestPallets.Add(new MazakPalletRow() {Fixture = fix + ":" + i.ToString(), PalletNumber = pal });
 			}
 		}
 
-		private void CreateProgram(ReadOnlyDataSet dset, string program)
+		private void CreateProgram(MazakTestData dset, string program)
 		{
-			dset.MainProgram.AddMainProgramRow(program, "", 0);
+			dset.MainPrograms.Add(program);
 		}
 
 		private void AddBasicStopsWithProg(JobPlan job)
