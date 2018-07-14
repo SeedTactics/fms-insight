@@ -392,7 +392,7 @@ namespace MazakMachineInterface
           _queues.CheckQueues(mazakData);
 
           if (sendToExternal.Count > 0) {
-            _sendToExternal.Post(sendToExternal);
+            _sendToExternal.Post(sendToExternal).Wait(TimeSpan.FromSeconds(30));
           }
 
           if (logs.Count > 0) {
