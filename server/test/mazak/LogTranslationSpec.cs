@@ -368,6 +368,7 @@ namespace MachineWatchTest
       ));
 
       foreach (var mat in mats) {
+        if (mat.Process > 1) continue;
         expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
             cntr: -1,
             mat: new [] {new BlackMaple.MachineWatchInterface.LogMaterial(

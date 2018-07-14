@@ -2260,6 +2260,24 @@ namespace BlackMaple.MachineFramework
                                     }
                                     if (matID >= 0)
                                     {
+                                        using (var checkConn = _connection.CreateCommand()) {
+                                            checkConn.Transaction = trans;
+                                            checkConn.CommandText = "SELECT Serial FROM matdetails WHERE MaterialID = $mid LIMIT 1";
+                                            checkConn.Parameters.Add("mid", SqliteType.Integer).Value = matID;
+                                            var existingSerial = checkConn.ExecuteScalar();
+                                            if (   existingSerial != null
+                                                && existingSerial != DBNull.Value
+                                                && !string.IsNullOrEmpty(existingSerial.ToString())
+                                               )
+                                            {
+                                                //already has an assigned serial, skip assignment
+                                                matID = -1;
+
+                                            }
+                                        }
+                                    }
+                                    if (matID >= 0)
+                                    {
                                         var serial = ConvertToBase62(matID);
                                         serial = serial.Substring(0, Math.Min(serLength, serial.Length));
                                         serial = serial.PadLeft(serLength, '0');
@@ -2283,24 +2301,39 @@ namespace BlackMaple.MachineFramework
                                 }
                                 else if (serialType == SerialType.AssignOneSerialPerMaterial)
                                 {
-                                    foreach (var m in mat[key])
-                                    {
-                                        var serial = ConvertToBase62(m.MaterialID);
-                                        serial = serial.Substring(0, Math.Min(serLength, serial.Length));
-                                        serial = serial.PadLeft(serLength, '0');
-                                        if (m.MaterialID < 0) continue;
-                                        newEvts.Add(AddLogEntry(trans, new MachineWatchInterface.LogEntry(-1,
-                                            new BlackMaple.MachineWatchInterface.LogMaterial[] {m},
-                                            "",
-                                            MachineWatchInterface.LogType.PartMark, "Mark", 1,
-                                            "MARK",
-                                            false,
-                                            timeUTC.AddSeconds(2),
-                                            serial,
-                                            false), null, null));
-                                        RecordSerialForMaterialID(trans, m.MaterialID, serial);
-                                    }
+                                    using (var checkConn = _connection.CreateCommand()) {
+                                        checkConn.Transaction = trans;
+                                        checkConn.CommandText = "SELECT Serial FROM matdetails WHERE MaterialID = $mid LIMIT 1";
+                                        checkConn.Parameters.Add("mid", SqliteType.Integer);
+                                        foreach (var m in mat[key])
+                                        {
+                                            checkConn.Parameters[0].Value = m.MaterialID;
+                                            var existingSerial = checkConn.ExecuteScalar();
+                                            if (   existingSerial != null
+                                                && existingSerial != DBNull.Value
+                                                && !string.IsNullOrEmpty(existingSerial.ToString())
+                                                )
+                                            {
+                                                //already has an assigned serial, skip assignment
+                                                continue;
+                                            }
 
+                                            var serial = ConvertToBase62(m.MaterialID);
+                                            serial = serial.Substring(0, Math.Min(serLength, serial.Length));
+                                            serial = serial.PadLeft(serLength, '0');
+                                            if (m.MaterialID < 0) continue;
+                                            newEvts.Add(AddLogEntry(trans, new MachineWatchInterface.LogEntry(-1,
+                                                new BlackMaple.MachineWatchInterface.LogMaterial[] {m},
+                                                "",
+                                                MachineWatchInterface.LogType.PartMark, "Mark", 1,
+                                                "MARK",
+                                                false,
+                                                timeUTC.AddSeconds(2),
+                                                serial,
+                                                false), null, null));
+                                            RecordSerialForMaterialID(trans, m.MaterialID, serial);
+                                        }
+                                    }
                                 }
                             }
                         }

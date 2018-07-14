@@ -542,12 +542,19 @@ namespace MachineWatchTest
                 _jobLog.AllocateMaterialID("unique2", "part2", 2), "unique2", 2, "part2", 2, "face2");
             var mat3 = new LogMaterial(
                 _jobLog.AllocateMaterialID("unique3", "part3", 3), "unique3", 3, "part3", 3, "face3");
+            var mat4 = new LogMaterial(
+                _jobLog.AllocateMaterialID("unique4", "part4", 4), "unique4", 4, "part4", 4, "face4");
 
             var serial1 = JobLogDB.ConvertToBase62(mat1.MaterialID).PadLeft(10, '0');
             var serial2 = JobLogDB.ConvertToBase62(mat2.MaterialID).PadLeft(10, '0');
             var serial3 = JobLogDB.ConvertToBase62(mat3.MaterialID).PadLeft(10, '0');
 
             var t = DateTime.UtcNow.AddHours(-1);
+
+            //mat4 already has a serial
+            _jobLog.RecordSerialForMaterialID(mat4, "themat4serial", t.AddMinutes(1));
+            var ser4 = new LogEntry(0, new LogMaterial[] { mat4 },
+                                  "", LogType.PartMark, "Mark", 1, "MARK", false, t.AddMinutes(1), "themat4serial", false);
 
             var log1 = new LogEntry(0, new LogMaterial[] { mat1, mat2 },
                                   "pal1", LogType.GeneralMessage, "ABC", 1,
@@ -596,9 +603,9 @@ namespace MachineWatchTest
                                   "", LogType.PartMark, "Mark", 1, "MARK", false,
               t.AddMinutes(45).AddSeconds(2), serial2, false);
 
-            mat["key2"] = new LogMaterial[] { mat3 };
+            mat["key2"] = new LogMaterial[] { mat3, mat4 };
 
-            var nLoad2 = new LogEntry(0, new LogMaterial[] { mat3 },
+            var nLoad2 = new LogEntry(0, new LogMaterial[] { mat3, mat4 },
                                     "pal1", LogType.LoadUnloadCycle, "L/U", 7, "LOAD", false,
                                     t.AddMinutes(45).AddSeconds(1), "LOAD", false, TimeSpan.FromMinutes(44), TimeSpan.FromMinutes(49));
 
@@ -608,7 +615,7 @@ namespace MachineWatchTest
 
             _jobLog.CompletePalletCycle("pal1", t.AddMinutes(45), "for3", mat, SerialType.AssignOneSerialPerMaterial, 10);
 
-            CheckLog(new LogEntry[] { log1, log2, palCycle, nLoad1, nLoad2, ser1, ser2, ser3 },
+            CheckLog(new LogEntry[] { ser4, log1, log2, palCycle, nLoad1, nLoad2, ser1, ser2, ser3 },
                      _jobLog.GetLogEntries(t.AddMinutes(-10), t.AddHours(1)), t.AddMinutes(-10));
 
             CheckEqual(nLoad1, _jobLog.StationLogByForeignID("for1")[0]);
@@ -627,11 +634,18 @@ namespace MachineWatchTest
                 _jobLog.AllocateMaterialID("unique2", "part2", 2), "unique2", 2, "part2", 2, "face2");
             var mat3 = new LogMaterial(
                 _jobLog.AllocateMaterialID("unique3", "part3", 3), "unique3", 3, "part3", 3, "face3");
+            var mat4 = new LogMaterial(
+                _jobLog.AllocateMaterialID("unique4", "part4", 4), "unique4", 4, "part4", 4, "face4");
 
             var serial1 = JobLogDB.ConvertToBase62(mat1.MaterialID).PadLeft(10, '0');
             var serial3 = JobLogDB.ConvertToBase62(mat3.MaterialID).PadLeft(10, '0');
 
             var t = DateTime.UtcNow.AddHours(-1);
+
+            //mat4 already has a serial
+            _jobLog.RecordSerialForMaterialID(mat4, "themat4serial", t.AddMinutes(1));
+            var ser4 = new LogEntry(0, new LogMaterial[] { mat4 },
+                                  "", LogType.PartMark, "Mark", 1, "MARK", false, t.AddMinutes(1), "themat4serial", false);
 
             var log1 = new LogEntry(0, new LogMaterial[] { mat1, mat2 },
                                   "pal1", LogType.GeneralMessage, "ABC", 1,
@@ -645,6 +659,7 @@ namespace MachineWatchTest
 
             _jobLog.AddPendingLoad("pal1", "key1", 5, TimeSpan.FromMinutes(32), TimeSpan.FromMinutes(38), "for1");
             _jobLog.AddPendingLoad("pal1", "key2", 7, TimeSpan.FromMinutes(44), TimeSpan.FromMinutes(49), "for2");
+            _jobLog.AddPendingLoad("pal1", "key3", 6, TimeSpan.FromMinutes(55), TimeSpan.FromMinutes(61), "for2.5");
 
             var mat = new Dictionary<string, IEnumerable<LogMaterial>>();
 
@@ -672,9 +687,15 @@ namespace MachineWatchTest
                                   "", LogType.PartMark, "Mark", 1, "MARK", false,
               t.AddMinutes(45).AddSeconds(2), serial3, false);
 
+            mat["key3"] = new LogMaterial[] { mat4 };
+
+            var nLoad3 = new LogEntry(0, new LogMaterial[] { mat4 },
+                                    "pal1", LogType.LoadUnloadCycle, "L/U", 6, "LOAD", false,
+                                    t.AddMinutes(45).AddSeconds(1), "LOAD", false, TimeSpan.FromMinutes(55), TimeSpan.FromMinutes(61));
+
             _jobLog.CompletePalletCycle("pal1", t.AddMinutes(45), "for3", mat, SerialType.AssignOneSerialPerCycle, 10);
 
-            CheckLog(new LogEntry[] { log1, log2, palCycle, nLoad1, nLoad2, ser1, ser3 },
+            CheckLog(new LogEntry[] { ser4, log1, log2, palCycle, nLoad1, nLoad2, nLoad3, ser1, ser3 },
                      _jobLog.GetLogEntries(t.AddMinutes(-10), t.AddHours(1)), t.AddMinutes(-10));
 
             CheckEqual(nLoad1, _jobLog.StationLogByForeignID("for1")[0]);
