@@ -47,6 +47,8 @@ namespace MazakMachineInterface
     private string _connStr;
     private string _readConnStr;
 
+    public MazakDbType MazakType => MazakDbType.MazakSmooth;
+
     public SmoothReadOnlyDB(string connectionStr, OpenDatabaseKitReadDB readDb)
     {
       _connStr = connectionStr + ";Database=PMC_Basic";

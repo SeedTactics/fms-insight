@@ -459,6 +459,7 @@ namespace BlackMaple.MachineWatchInterface
         public JobHoldPattern HoldEntireJob
         {
             get { return _holdJob; }
+            set { _holdJob = value; }
         }
         public JobHoldPattern HoldMachining(int process, int path)
         {
@@ -468,10 +469,26 @@ namespace BlackMaple.MachineWatchInterface
                 throw new IndexOutOfRangeException("Invalid process or path number");
             }
         }
+        public void SetHoldMachining(int process, int path, JobHoldPattern hold)
+        {
+            if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process)) {
+                _procPath[process - 1].Paths[path - 1].HoldMachining = hold;
+            } else {
+                throw new IndexOutOfRangeException("Invalid process or path number");
+            }
+        }
         public JobHoldPattern HoldLoadUnload(int process, int path)
         {
             if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process)) {
                 return _procPath[process - 1][path - 1].HoldLoadUnload;
+            } else {
+                throw new IndexOutOfRangeException("Invalid process or path number");
+            }
+        }
+        public void SetHoldLoadUnload(int process, int path, JobHoldPattern hold)
+        {
+            if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process)) {
+                _procPath[process - 1].Paths[path - 1].HoldLoadUnload = hold;
             } else {
                 throw new IndexOutOfRangeException("Invalid process or path number");
             }

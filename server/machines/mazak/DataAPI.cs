@@ -194,6 +194,7 @@ namespace MazakMachineInterface
 
   public interface IReadDataAccess
   {
+    MazakDbType MazakType {get;}
     MazakSchedules LoadSchedules();
     MazakSchedulesAndLoadActions LoadSchedulesAndLoadActions();
     MazakSchedulesPartsPallets LoadSchedulesPartsPallets();
