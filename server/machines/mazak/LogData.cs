@@ -188,7 +188,7 @@ namespace MazakMachineInterface
                 var trans = conn.BeginTransaction();
                 try {
 
-                    System.Data.OleDb.OleDbCommand cmd = (System.Data.OleDb.OleDbCommand)conn.CreateCommand();
+                    using (System.Data.OleDb.OleDbCommand cmd = (System.Data.OleDb.OleDbCommand)conn.CreateCommand()) {
                     ((System.Data.IDbCommand)cmd).Transaction = trans;
 
                     long epoch = 1;
@@ -274,6 +274,7 @@ namespace MazakMachineInterface
                     trans.Commit();
 
                     return ret;
+                    }
                 } catch {
                     trans.Rollback();
                     throw;
@@ -284,7 +285,7 @@ namespace MazakMachineInterface
 		private void CheckIDRollover(System.Data.IDbTransaction trans, System.Data.IDbConnection conn,
 			ref long epoch, ref long lastID, DateTime lastDate)
 		{
-			var cmd = conn.CreateCommand();
+			using (var cmd = conn.CreateCommand()) {
 			cmd.Transaction = trans;
 			cmd.CommandText = "SELECT Date FROM Log WHERE ID = ?";
             var param = (System.Data.OleDb.OleDbParameter)cmd.CreateParameter();
@@ -310,6 +311,7 @@ namespace MazakMachineInterface
 					lastID = 0;
 				}
 			}
+      }
 		}
 	}
 #endif

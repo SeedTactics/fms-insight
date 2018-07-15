@@ -462,7 +462,7 @@ namespace MazakMachineInterface
         try
         {
 
-          var cmd = MazakTransactionConnection.CreateCommand();
+          using (var cmd = MazakTransactionConnection.CreateCommand()) {
           cmd.Transaction = trans;
 
           foreach (string table in TransactionTables)
@@ -474,6 +474,7 @@ namespace MazakMachineInterface
           }
 
           trans.Commit();
+          }
         }
         catch
         {
@@ -683,14 +684,6 @@ namespace MazakMachineInterface
         conn.Open();
         return conn;
       }
-    }
-
-    private static IDbCommand CreateCommand(IDbConnection conn, string select, IDbTransaction trans)
-    {
-      var c = conn.CreateCommand();
-      c.CommandText = select;
-      c.Transaction = trans;
-      return c;
     }
 
     private IEnumerable<MazakScheduleRow> LoadSchedules(IDbConnection conn, IDbTransaction trans)

@@ -2692,6 +2692,7 @@ namespace BlackMaple.MachineFramework
         private IList<Decision> LookupInspectionDecisions(IDbTransaction trans, long matID)
         {
             List<Decision> ret = new List<Decision>();
+            using (var detailCmd = _connection.CreateCommand())
             using (var cmd = _connection.CreateCommand()) {
             ((IDbCommand)cmd).Transaction = trans;
             cmd.CommandText = "SELECT Counter, StationLoc, Program, TimeUTC, Result " +
@@ -2704,7 +2705,6 @@ namespace BlackMaple.MachineFramework
             cmd.Parameters.Add("$loc1", SqliteType.Integer).Value = MachineWatchInterface.LogType.InspectionForce;
             cmd.Parameters.Add("$loc2", SqliteType.Integer).Value = MachineWatchInterface.LogType.Inspection;
 
-            var detailCmd = _connection.CreateCommand();
             ((IDbCommand)detailCmd).Transaction = trans;
             detailCmd.CommandText = "SELECT Value FROM program_details WHERE Counter = $cntr AND Key = 'InspectionType'";
             detailCmd.Parameters.Add("cntr", SqliteType.Integer);

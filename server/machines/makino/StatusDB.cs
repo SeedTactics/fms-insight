@@ -82,7 +82,7 @@ namespace Makino
 
 		public void CreateTables()
 		{
-			var cmd = _connection.CreateCommand();
+			using (var cmd = _connection.CreateCommand()) {
 
 			cmd.CommandText = "CREATE TABLE version(ver INTEGER)";
 			cmd.ExecuteNonQuery();
@@ -93,11 +93,12 @@ namespace Makino
 			cmd.ExecuteNonQuery();
 			cmd.CommandText = "CREATE INDEX matids_idx ON matids(MaterialID)";
 			cmd.ExecuteNonQuery();
+			}
 		}
 
 		private void UpdateTables()
 		{
-			var cmd = _connection.CreateCommand();
+			using (var cmd = _connection.CreateCommand()) {
 
 			cmd.CommandText = "SELECT ver FROM version";
 
@@ -137,6 +138,7 @@ namespace Makino
 			cmd.Transaction = null;
 			cmd.CommandText = "VACUUM";
 			cmd.ExecuteNonQuery();
+			}
 		}
 
 		public void SetFirstMaterialID(long matID)

@@ -413,7 +413,7 @@ namespace MazakMachineInterface
 
     public void CreateTables()
     {
-      var cmd = _connection.CreateCommand();
+      using (var cmd = _connection.CreateCommand()) {
 
       cmd.CommandText = "CREATE TABLE version(ver INTEGER)";
       cmd.ExecuteNonQuery();
@@ -425,12 +425,13 @@ namespace MazakMachineInterface
 
       cmd.CommandText = "CREATE TABLE hold_pattern(SchID INTEGER, EntireJob INTEGER, Idx INTEGER, Span INTEGER, PRIMARY KEY(SchId, Idx, EntireJob))";
       cmd.ExecuteNonQuery();
+      }
     }
 
 
     private void UpdateTables()
     {
-      var cmd = _connection.CreateCommand();
+      using (var cmd = _connection.CreateCommand()) {
 
       cmd.CommandText = "SELECT ver FROM version";
       long ver = (long)cmd.ExecuteScalar();
@@ -463,15 +464,17 @@ namespace MazakMachineInterface
       cmd.CommandText = "VACUUM";
       cmd.Parameters.Clear();
       cmd.ExecuteNonQuery();
+      }
     }
 
     private void Ver0ToVer1(IDbTransaction trans)
     {
-      IDbCommand cmd = _connection.CreateCommand();
+      using (IDbCommand cmd = _connection.CreateCommand()) {
       cmd.Transaction = trans;
 
       cmd.CommandText = "ALTER TABLE holds ADD UniqueStr TEXT";
       cmd.ExecuteNonQuery();
+      }
     }
     #endregion
 
@@ -501,7 +504,7 @@ namespace MazakMachineInterface
 
     private void InsertHold(int schId, bool entire, string unique, JobHoldPattern newHold, IDbTransaction trans)
     {
-      var cmd = _connection.CreateCommand();
+      using (var cmd = _connection.CreateCommand()) {
       ((IDbCommand)cmd).Transaction = trans;
 
       //Use insert or replace to allow saving more than once.
@@ -527,6 +530,7 @@ namespace MazakMachineInterface
         cmd.Parameters[3].Value = newHold.HoldUnholdPattern[i].Ticks;
         cmd.ExecuteNonQuery();
       }
+      }
     }
 
     // internal for testing only!
@@ -551,7 +555,7 @@ namespace MazakMachineInterface
 
     private void DeleteHoldTrans(int schId, IDbTransaction trans)
     {
-      var cmd = _connection.CreateCommand();
+      using (var cmd = _connection.CreateCommand()) {
       ((IDbCommand)cmd).Transaction = trans;
 
       cmd.CommandText = "DELETE FROM holds WHERE SchId = $schid";
@@ -560,6 +564,7 @@ namespace MazakMachineInterface
 
       cmd.CommandText = "DELETE FROM hold_pattern WHERE SchId = $schid";
       cmd.ExecuteNonQuery();
+      }
     }
 
     public class JobHold
@@ -586,7 +591,7 @@ namespace MazakMachineInterface
 
         try
         {
-          var cmd = _connection.CreateCommand();
+          using (var cmd = _connection.CreateCommand()) {
           cmd.Transaction = trans;
 
                     cmd.CommandText = "SELECT EntireJob, HoldPatternStartUTC, HoldPatternRepeats,UniqueStr FROM holds " +
@@ -640,6 +645,7 @@ namespace MazakMachineInterface
 
         skip_load:
           trans.Commit();
+          }
         }
         catch
         {
@@ -656,7 +662,7 @@ namespace MazakMachineInterface
       {
         var ret = new Dictionary<int, JobHold>();
 
-        var cmd = _connection.CreateCommand();
+        using (var cmd = _connection.CreateCommand()) {
 
         //hold
         cmd.CommandText = "SELECT SchId, EntireJob, HoldPatternStartUTC, HoldPatternRepeats, UniqueStr FROM holds";
@@ -719,6 +725,7 @@ namespace MazakMachineInterface
         }
 
         return ret;
+        }
       }
     }
     #endregion
