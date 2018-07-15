@@ -96,8 +96,8 @@ namespace MazakMachineInterface
       var schs = LoadSchedules(mazakData);
       if (!schs.Any()) return null;
 
-      AttemptToAllocateCastings(schs);
       CalculateTargetMatQty(mazakData, schs);
+      AttemptToAllocateCastings(schs, mazakData);
       UpdateMazakMaterialCounts(transSet, schs);
 
       return transSet;
@@ -178,35 +178,18 @@ namespace MazakMachineInterface
       return schs;
     }
 
-    private void AttemptToAllocateCastings(IEnumerable<ScheduleWithQueues> schs)
+    private void CalculateTargetMatQty(MazakSchedulesAndLoadActions mazakData, IEnumerable<ScheduleWithQueues> schs)
     {
-      // go through each job and check for castings in an input queue that have not yet been assigned to a job
+      // go through each job and process, and distribute the queued material among the various paths
+      // for the job and process.
       foreach (var job in schs.GroupBy(s => s.Unique)) {
         var uniqueStr = job.Key;
-        var partName = job.First().Job.PartName;
         var numProc = job.First().Job.NumProcesses;
-        log.Debug("Checking job {uniq} with for unallocated castings", uniqueStr);
+        log.Debug("Checking job {uniq} with schedules {@pathGroup}", uniqueStr, job);
 
-        // check for any raw material to assign to the job
-        var proc1Queues =
-          job
-          .Select(s => s.Procs[1].InputQueue)
-          .Where(q => !string.IsNullOrEmpty(q))
-          .Distinct();
-        foreach (var queue in proc1Queues) {
-          var remain = job.Select(s =>
-            s.SchRow.PlanQuantity - CountCompletedOrInProc(s.SchRow)
-          ).Sum();
-          if (remain <= 0) continue;
-
-          var partsToAllocate =
-            _log.GetMaterialInQueue(queue)
-            .Where(m => string.IsNullOrEmpty(m.Unique) && m.PartName == partName)
-            .Any();
-          if (partsToAllocate) {
-            log.Debug("Found {part} in queue {queue} without an assigned job, assigning {remain} to job {uniq}", queue, partName, remain, uniqueStr);
-            _log.AllocateCastingsInQueue(queue, partName, uniqueStr, numProc, remain);
-          }
+        CheckCastingsForProc1(job, mazakData);
+        for (int proc = 2; proc <= numProc; proc++) {
+          CheckInProcessMaterial(job.First().Job, job, proc);
         }
       }
     }
@@ -310,20 +293,43 @@ namespace MazakMachineInterface
       }
     }
 
-    private void CalculateTargetMatQty(MazakSchedulesAndLoadActions mazakData, IEnumerable<ScheduleWithQueues> schs)
+    private void AttemptToAllocateCastings(IEnumerable<ScheduleWithQueues> schs, MazakSchedulesAndLoadActions mazakData)
     {
-      // go through each job and process, and distribute the queued material among the various paths
-      // for the job and process.
+      // go through each job and check for castings in an input queue that have not yet been assigned to a job
       foreach (var job in schs.GroupBy(s => s.Unique)) {
         var uniqueStr = job.Key;
+        var partName = job.First().Job.PartName;
         var numProc = job.First().Job.NumProcesses;
-        log.Debug("Checking job {uniq} with schedules {@pathGroup}", uniqueStr, job);
+        log.Debug("Checking job {uniq} with for unallocated castings", uniqueStr);
 
-        CheckCastingsForProc1(job, mazakData);
-        for (int proc = 2; proc <= numProc; proc++) {
-          CheckInProcessMaterial(job.First().Job, job, proc);
+        bool needRecheckProc1 = false;
+
+        // check for any raw material to assign to the job
+        var proc1Queues =
+          job
+          .Select(s => s.Procs[1].InputQueue)
+          .Where(q => !string.IsNullOrEmpty(q))
+          .Distinct();
+        foreach (var queue in proc1Queues) {
+          var remain = job.Select(s =>
+            s.SchRow.PlanQuantity - CountCompletedOrInProc(s)
+          ).Sum();
+          if (remain <= 0) continue;
+
+          var partsToAllocate =
+            _log.GetMaterialInQueue(queue)
+            .Where(m => string.IsNullOrEmpty(m.Unique) && m.PartName == partName)
+            .Any();
+          if (partsToAllocate) {
+            log.Debug("Found {part} in queue {queue} without an assigned job, assigning {remain} to job {uniq}", queue, partName, remain, uniqueStr);
+            var newMats = _log.AllocateCastingsInQueue(queue, partName, uniqueStr, numProc, remain);
+            log.Debug("Alloacted new ids {@matIds} to {unique}, recalculating proc1 castings", newMats, uniqueStr);
+            needRecheckProc1 = true;
+          }
         }
 
+        if (needRecheckProc1)
+          CheckCastingsForProc1(job, mazakData);
       }
     }
 
@@ -398,15 +404,12 @@ namespace MazakMachineInterface
       throw new UnableToFindPathGroup();
     }
 
-    private int CountCompletedOrInProc(MazakScheduleRow schRow)
+    private int CountCompletedOrInProc(ScheduleWithQueues sch)
     {
-        var cnt = schRow.CompleteQuantity;
-        foreach (var schProcRow in schRow.Processes) {
-          if (schProcRow.ProcessNumber == 1) {
-            cnt += schProcRow.ProcessBadQuantity + schProcRow.ProcessExecuteQuantity;
-          } else {
-            cnt += schProcRow.ProcessBadQuantity + schProcRow.ProcessExecuteQuantity + schProcRow.ProcessMaterialQuantity;
-          }
+        var cnt = sch.SchRow.CompleteQuantity;
+        foreach (var schProcRow in sch.Procs.Values) {
+          cnt += schProcRow.SchProcRow.ProcessBadQuantity + schProcRow.SchProcRow.ProcessExecuteQuantity;
+          cnt += schProcRow.TargetMaterialCount ?? schProcRow.SchProcRow.ProcessMaterialQuantity;
         }
         return cnt;
     }

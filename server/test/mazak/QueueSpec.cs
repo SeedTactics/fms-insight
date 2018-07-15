@@ -243,6 +243,70 @@ namespace MachineWatchTest
     }
 
     [Fact]
+    public void AllocateCastingsAndMatQtyChanges()
+    {
+      var read = new TestMazakData();
+
+      // plan 50, 43 completed, and 3 in process, 0 material in mazak, but 2 assigned in queue.
+      // So there are 2 remaining unallocated castings.
+      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 43);
+      AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 3);
+
+      var j = new JobPlan("uuuu", 1);
+      j.PartName = "pppp";
+      j.SetInputQueue(1, 1, "thequeue");
+      _jobDB.AddJobs(new NewJobs() {
+        Jobs = new List<JobPlan> {j}
+      }, null);
+
+      // put 2 assigned castings and 3 unassigned castings in queue
+      var mat1 = _logDB.AllocateMaterialIDForCasting("pppp", 1);
+      var mat2 = _logDB.AllocateMaterialIDForCasting("pppp", 1);
+      var mat3 = _logDB.AllocateMaterialIDForCasting("pppp", 1);
+      var mat4 = _logDB.AllocateMaterialID("uuuu", "pppp", 1);
+      var mat5 = _logDB.AllocateMaterialID("uuuu", "pppp", 1);
+      _logDB.RecordAddMaterialToQueue(mat1, process: 0, queue: "thequeue", position: 0);
+      _logDB.RecordAddMaterialToQueue(mat2, process: 0, queue: "thequeue", position: 1);
+      _logDB.RecordAddMaterialToQueue(mat3, process: 0, queue: "thequeue", position: 2);
+      _logDB.RecordAddMaterialToQueue(mat4, process: 0, queue: "thequeue", position: 3);
+      _logDB.RecordAddMaterialToQueue(mat5, process: 0, queue: "thequeue", position: 4);
+
+      _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new [] {
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "", PartName = "pppp", NumProcesses = 1},
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = mat2, Queue = "thequeue", Position = 1, Unique = "", PartName = "pppp", NumProcesses = 1},
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = mat3, Queue = "thequeue", Position = 2, Unique = "", PartName = "pppp", NumProcesses = 1},
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = mat4, Queue = "thequeue", Position = 3, Unique = "uuuu", PartName = "pppp", NumProcesses = 1},
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = mat5, Queue = "thequeue", Position = 4, Unique = "uuuu", PartName = "pppp", NumProcesses = 1},
+      });
+
+      // should allocate 2 parts to uuuu, leave one unassigned, then update material quantity
+      var trans = _queues.CalculateScheduleChanges(read.ToData());
+
+      _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new [] {
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "uuuu", PartName = "pppp", NumProcesses = 1},
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = mat2, Queue = "thequeue", Position = 1, Unique = "uuuu", PartName = "pppp", NumProcesses = 1},
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = mat3, Queue = "thequeue", Position = 2, Unique = "", PartName = "pppp", NumProcesses = 1},
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = mat4, Queue = "thequeue", Position = 3, Unique = "uuuu", PartName = "pppp", NumProcesses = 1},
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = mat5, Queue = "thequeue", Position = 4, Unique = "uuuu", PartName = "pppp", NumProcesses = 1},
+      });
+
+      trans.Schedule_t.Count.Should().Be(1);
+      trans.Schedule_t[0].ScheduleID.Should().Be(10);
+      trans.ScheduleProcess_t.Count.Should().Be(1);
+      trans.ScheduleProcess_t[0].ProcessMaterialQuantity.Should().Be(4); // set all 4 material
+    }
+
+    [Fact]
     public void IgnoreAllocateWhenNoRemaining()
     {
       var read = new TestMazakData();
