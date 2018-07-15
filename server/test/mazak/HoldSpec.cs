@@ -45,7 +45,7 @@ namespace MachineWatchTest {
 		[Fact]
 		public void HoldDb()
 		{
-			var holdConn = BlackMaple.MachineFramework.SqliteExtensions.ConnectMemory();
+			var holdConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
 			holdConn.Open();
 			var hold = new HoldPattern(holdConn, null, null, false);
 			hold.CreateTables();

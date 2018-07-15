@@ -50,12 +50,12 @@ namespace MachineWatchTest
 
     public QueueSpec()
     {
-      var logConn = BlackMaple.MachineFramework.SqliteExtensions.ConnectMemory();
+			var logConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
       logConn.Open();
       _logDB = new JobLogDB(logConn);
       _logDB.CreateTables(firstSerialOnEmpty: null);
 
-      var jobConn = BlackMaple.MachineFramework.SqliteExtensions.ConnectMemory();
+			var jobConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
       jobConn.Open();
       _jobDB = new JobDB(jobConn);
       _jobDB.CreateTables();

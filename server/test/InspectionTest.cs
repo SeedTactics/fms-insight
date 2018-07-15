@@ -46,7 +46,7 @@ namespace MachineWatchTest {
 
     public InspectionTest()
 		{
-      var logConn = SqliteExtensions.ConnectMemory();
+			var logConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
       logConn.Open();
       _insp = new JobLogDB(logConn);
       _insp.CreateTables(firstSerialOnEmpty: null);

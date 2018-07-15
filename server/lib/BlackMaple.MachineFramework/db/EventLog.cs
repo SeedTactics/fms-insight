@@ -60,13 +60,13 @@ namespace BlackMaple.MachineFramework
         {
             if (System.IO.File.Exists(filename))
             {
-                _connection = SqliteExtensions.Connect(filename, newFile: false);
+                _connection = new SqliteConnection("Data Source=" + filename);
                 _connection.Open();
                 UpdateTables(oldInspDbFile);
             }
             else
             {
-                _connection = SqliteExtensions.Connect(filename, newFile: true);
+                _connection = new SqliteConnection("Data Source=" + filename);
                 _connection.Open();
                 try
                 {

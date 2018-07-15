@@ -55,12 +55,12 @@ namespace MachineWatchTest
 
     protected LogTestBase()
     {
-      var logConn = BlackMaple.MachineFramework.SqliteExtensions.ConnectMemory();
+			var logConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
       logConn.Open();
       jobLog = new JobLogDB(logConn);
       jobLog.CreateTables(firstSerialOnEmpty: null);
 
-      var jobConn = BlackMaple.MachineFramework.SqliteExtensions.ConnectMemory();
+			var jobConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
       jobConn.Open();
       jobDB = new JobDB(jobConn);
       jobDB.CreateTables();

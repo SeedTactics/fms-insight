@@ -49,7 +49,7 @@ namespace MachineWatchTest
 
         public JobLogTest()
         {
-            var connection = BlackMaple.MachineFramework.SqliteExtensions.ConnectMemory();
+			var connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
             connection.Open();
             _jobLog = new JobLogDB(connection);
             _jobLog.CreateTables(firstSerialOnEmpty: null);
@@ -1324,7 +1324,7 @@ namespace MachineWatchTest
 
         public LogStartingMaterialIDSpec()
         {
-            var connection = BlackMaple.MachineFramework.SqliteExtensions.ConnectMemory();
+			var connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
             connection.Open();
             _jobLog = new JobLogDB(connection);
             _jobLog.CreateTables(firstSerialOnEmpty: "AbCd12");

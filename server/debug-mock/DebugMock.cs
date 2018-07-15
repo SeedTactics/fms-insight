@@ -103,12 +103,12 @@ namespace DebugMachineWatchApiServer
       }
       else
       {
-        var conn = SqliteExtensions.ConnectMemory();
+        var conn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
         conn.Open();
         LogDB = new JobLogDB(conn);
         LogDB.CreateTables(firstSerialOnEmpty: null);
 
-        conn = SqliteExtensions.ConnectMemory();
+        conn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
         conn.Open();
         JobDB = new JobDB(conn);
         JobDB.CreateTables();

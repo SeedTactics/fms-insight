@@ -382,13 +382,13 @@ namespace MazakMachineInterface
     {
       if (System.IO.File.Exists(filename))
       {
-        _connection = BlackMaple.MachineFramework.SqliteExtensions.Connect(filename, false);
+        _connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=" + filename);
         _connection.Open();
         UpdateTables();
       }
       else
       {
-        _connection = BlackMaple.MachineFramework.SqliteExtensions.Connect(filename, true);
+        _connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=" + filename);
         _connection.Open();
         try
         {

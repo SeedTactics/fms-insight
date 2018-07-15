@@ -47,12 +47,12 @@ namespace Makino
 		{
 			_lock = new object();
 			if (System.IO.File.Exists(filename)) {
-				_connection = BlackMaple.MachineFramework.SqliteExtensions.Connect(filename, newFile: false);
+        _connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=" + filename);
 				_connection.Open();
 				UpdateTables();
 			}
 			else {
-				_connection = BlackMaple.MachineFramework.SqliteExtensions.Connect(filename, newFile: true);
+        _connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=" + filename);
 				_connection.Open();
 				try {
 					CreateTables();
