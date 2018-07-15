@@ -92,7 +92,7 @@ namespace MazakMachineInterface
   }
 
 #if USE_OLEDB
-	public class LogDataVerE : ILogEvents
+	public class LogDataVerE : IMazakLogReader
 	{
     private const string DateTimeFormat = "yyyyMMddHHmmss";
 
@@ -100,6 +100,7 @@ namespace MazakMachineInterface
     private BlackMaple.MachineFramework.JobLogDB _log;
     private MazakQueues _queues;
     private IReadDataAccess _readDB;
+    private BlackMaple.MachineFramework.ISendMaterialToExternalQueue _sendToExternal;
     private BlackMaple.MachineFramework.FMSSettings FMSSettings { get; set; }
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LogDataVerE>();
 
@@ -111,6 +112,7 @@ namespace MazakMachineInterface
 
     public LogDataVerE(BlackMaple.MachineFramework.JobLogDB log,
                        BlackMaple.MachineFramework.JobDB jobDB,
+                       BlackMaple.MachineFramework.ISendMaterialToExternalQueue send,
                        IReadDataAccess readDB,
                        MazakQueues queues,
                        BlackMaple.MachineFramework.FMSSettings settings)
@@ -119,6 +121,7 @@ namespace MazakMachineInterface
       _jobDB = jobDB;
       _readDB = readDB;
       _queues = queues;
+      _sendToExternal = send;
       FMSSettings = settings;
       _lock = new object();
       _timer = new System.Timers.Timer(TimeSpan.FromMinutes(1).TotalMilliseconds);
@@ -142,17 +145,17 @@ namespace MazakMachineInterface
       {
         try
         {
-          var dset = _readDB.LoadReadOnly();
-
+          var mazakData = _readDB.LoadSchedulesAndLoadActions();
           var logs = LoadLog(_log.MaxForeignID());
-          var trans = new LogTranslation(_jobDB, _log, new FindPartFromReadOnlySet(dset), FMSSettings,
+          var trans = new LogTranslation(_jobDB, _log, mazakData, FMSSettings,
             le => PalletMove?.Invoke(le.Pallet, le.FromPosition, le.TargetPosition)
           );
+          var sendToExternal = new List<BlackMaple.MachineFramework.MaterialToSendToExternalQueue>();
           foreach (var ev in logs)
           {
             try
             {
-              trans.HandleEvent(ev);
+              sendToExternal.AddRange(trans.HandleEvent(ev));
             }
             catch (Exception ex)
             {
@@ -160,10 +163,14 @@ namespace MazakMachineInterface
             }
           }
 
-          _queues.CheckQueues(dset);
+          _queues.CheckQueues(mazakData);
+
+          if (sendToExternal.Count > 0) {
+            _sendToExternal.Post(sendToExternal);
+          }
 
           if (logs.Count > 0) {
-            NewEntries?.Invoke(dset);
+            NewEntries?.Invoke();
           }
 
         }
@@ -172,6 +179,11 @@ namespace MazakMachineInterface
           Log.Error(ex, "Unhandled error processing log");
         }
       }
+    }
+
+    public void RecheckQueues()
+    {
+      //do nothing, queues will be rechecked on next timer
     }
 
 		public List<LogEntry> LoadLog (string lastForeignID)
