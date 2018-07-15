@@ -181,11 +181,6 @@ namespace MazakMachineInterface
       }
     }
 
-    public void RecheckQueues()
-    {
-      //do nothing, queues will be rechecked on next timer
-    }
-
 		public List<LogEntry> LoadLog (string lastForeignID)
 		{
 			return _readDB.WithReadDBConnection(conn =>
