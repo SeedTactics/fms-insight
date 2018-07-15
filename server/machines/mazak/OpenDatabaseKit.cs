@@ -749,7 +749,7 @@ namespace MazakMachineInterface
         Pallets = conn.Query<MazakPalletRow>(_palletSelect, transaction: trans),
         PalletSubStatuses = conn.Query<MazakPalletSubStatusRow>(_palSubStatusSelect, transaction: trans),
         PalletPositions = conn.Query<MazakPalletPositionRow>(_palPositionSelect, transaction: trans),
-        MainPrograms = conn.Query<string>(_mainProgSelect, transaction: trans).ToHashSet(),
+        MainPrograms = new HashSet<string>(conn.Query<string>(_mainProgSelect, transaction: trans)),
       };
     }
     public MazakSchedulesPartsPallets LoadSchedulesPartsPallets()
