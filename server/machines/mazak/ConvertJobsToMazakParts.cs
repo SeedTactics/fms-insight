@@ -85,9 +85,9 @@ namespace MazakMachineInterface
     public static string CreateComment(string unique, IEnumerable<int> paths, bool manual)
     {
         if (manual)
-          return unique + "-Path" + string.Join('-', paths) + "-1";
+          return unique + "-Path" + string.Join("-", paths) + "-1";
         else
-          return unique + "-Path" + string.Join('-', paths) + "-0";
+          return unique + "-Path" + string.Join("-", paths) + "-0";
     }
 
     public static bool IsSailPart(string partName)
@@ -634,7 +634,7 @@ namespace MazakMachineInterface
       var fixtures = new List<MazakFixture>();
 
       string palsToFixGroup(IEnumerable<string> pals) {
-          return "pals:" + string.Join(',', pals.OrderBy(p => p));
+          return "pals:" + string.Join(",", pals.OrderBy(p => p));
       }
       string jobFixtureToFixGroup(MazakProcess proc, IEnumerable<JobPlan.FixtureFace> fixs)
       {
@@ -672,10 +672,10 @@ namespace MazakMachineInterface
                     proc.Part.Job.PartName + "-" + proc.ProcessNumber.ToString() +
                     " do not have matching pallet lists.  " +
                     firstPart.Part.Job.PartName + "-" + firstPart.ProcessNumber.ToString() +
-                    " is assigned to pallets " + string.Join(',', firstPart.Pallets()) +
+                    " is assigned to pallets " + string.Join(",", firstPart.Pallets()) +
                     " and " +
                     proc.Part.Job.PartName + "-" + proc.ProcessNumber.ToString() +
-                    " is assigned to pallets " + string.Join(',', proc.Pallets()));
+                    " is assigned to pallets " + string.Join(",", proc.Pallets()));
 
               }
               seenPallets.Add(p, proc);
