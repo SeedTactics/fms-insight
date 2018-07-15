@@ -90,7 +90,7 @@ namespace BlackMaple.MachineFramework
 
         public void CreateTables(string firstSerialOnEmpty)
         {
-            var cmd = _connection.CreateCommand();
+            using (var cmd = _connection.CreateCommand()) {
 
             cmd.CommandText = "CREATE TABLE version(ver INTEGER)";
             cmd.ExecuteNonQuery();
@@ -167,11 +167,13 @@ namespace BlackMaple.MachineFramework
                 cmd.Parameters.Add("v", SqliteType.Integer).Value = matId;
                 cmd.ExecuteNonQuery();
             }
+
+            }
         }
 
         private void UpdateTables(string inspDbFile)
         {
-            var cmd = _connection.CreateCommand();
+            using (var cmd = _connection.CreateCommand()) {
 
             cmd.CommandText = "SELECT ver FROM version";
 
@@ -275,30 +277,34 @@ namespace BlackMaple.MachineFramework
             cmd.Transaction = null;
             cmd.CommandText = "VACUUM";
             cmd.ExecuteNonQuery();
+            }
         }
 
         private void Ver0ToVer1(IDbTransaction trans)
         {
-            IDbCommand cmd = _connection.CreateCommand();
+            using (IDbCommand cmd = _connection.CreateCommand()) {
             cmd.Transaction = trans;
             cmd.CommandText = "ALTER TABLE material ADD Part TEXT";
             cmd.ExecuteNonQuery();
+            }
         }
 
         private void Ver1ToVer2(IDbTransaction trans)
         {
-            IDbCommand cmd = _connection.CreateCommand();
+            using (IDbCommand cmd = _connection.CreateCommand()) {
             cmd.Transaction = trans;
             cmd.CommandText = "ALTER TABLE material ADD NumProcess INTEGER";
             cmd.ExecuteNonQuery();
+            }
         }
 
         private void Ver2ToVer3(IDbTransaction trans)
         {
-            IDbCommand cmd = _connection.CreateCommand();
+            using (IDbCommand cmd = _connection.CreateCommand()) {
             cmd.Transaction = trans;
             cmd.CommandText = "ALTER TABLE stations ADD EndOfRoute INTEGER";
             cmd.ExecuteNonQuery();
+            }
         }
 
         private void Ver3ToVer4(IDbTransaction trans)
@@ -308,23 +314,25 @@ namespace BlackMaple.MachineFramework
 
         private void Ver4ToVer5(IDbTransaction trans)
         {
-            IDbCommand cmd = _connection.CreateCommand();
+            using (IDbCommand cmd = _connection.CreateCommand()) {
             cmd.Transaction = trans;
             cmd.CommandText = "ALTER TABLE stations ADD Elapsed INTEGER";
             cmd.ExecuteNonQuery();
+            }
         }
 
         private void Ver5ToVer6(IDbTransaction trans)
         {
-            IDbCommand cmd = _connection.CreateCommand();
+            using (IDbCommand cmd = _connection.CreateCommand()) {
             cmd.Transaction = trans;
             cmd.CommandText = "ALTER TABLE material ADD Face TEXT";
             cmd.ExecuteNonQuery();
+            }
         }
 
         private void Ver6ToVer7(IDbTransaction trans)
         {
-            IDbCommand cmd = _connection.CreateCommand();
+            using (IDbCommand cmd = _connection.CreateCommand()) {
             cmd.Transaction = trans;
             cmd.CommandText = "ALTER TABLE stations ADD ForeignID TEXT";
             cmd.ExecuteNonQuery();
@@ -332,11 +340,12 @@ namespace BlackMaple.MachineFramework
             cmd.ExecuteNonQuery();
             cmd.CommandText = "CREATE INDEX stations_foreign ON stations(ForeignID)";
             cmd.ExecuteNonQuery();
+            }
         }
 
         private void Ver7ToVer8(IDbTransaction trans)
         {
-            IDbCommand cmd = _connection.CreateCommand();
+            using (IDbCommand cmd = _connection.CreateCommand()) {
             cmd.Transaction = trans;
             cmd.CommandText = "CREATE TABLE pendingloads(Pallet TEXT, Key TEXT, LoadStation INTEGER, Elapsed INTEGER, ForeignID TEXT)";
             cmd.ExecuteNonQuery();
@@ -349,21 +358,22 @@ namespace BlackMaple.MachineFramework
             cmd.ExecuteNonQuery();
             cmd.CommandText = "CREATE INDEX stations_pal ON stations(Pallet, Result)";
             cmd.ExecuteNonQuery();
-
+            }
         }
 
         private void Ver8ToVer9(IDbTransaction trans)
         {
-            IDbCommand cmd = _connection.CreateCommand();
+            using (IDbCommand cmd = _connection.CreateCommand()) {
             cmd.Transaction = trans;
             cmd.CommandText = "CREATE TABLE program_details(Counter INTEGER, Key TEXT, Value TEXT, " +
                 "PRIMARY KEY(Counter, Key))";
             cmd.ExecuteNonQuery();
+            }
         }
 
         private void Ver9ToVer10(IDbTransaction trans)
         {
-            IDbCommand cmd = _connection.CreateCommand();
+            using (IDbCommand cmd = _connection.CreateCommand()) {
             cmd.Transaction = trans;
             cmd.CommandText = "ALTER TABLE stations ADD ActiveTime INTEGER";
             cmd.ExecuteNonQuery();
@@ -373,61 +383,68 @@ namespace BlackMaple.MachineFramework
             cmd.ExecuteNonQuery();
             cmd.CommandText = "CREATE INDEX materialid_serial ON materialid(Serial) WHERE Serial IS NOT NULL";
             cmd.ExecuteNonQuery();
+            }
         }
 
         private void Ver10ToVer11(IDbTransaction trans)
         {
-            IDbCommand cmd = _connection.CreateCommand();
+            using (IDbCommand cmd = _connection.CreateCommand()) {
             cmd.Transaction = trans;
             cmd.CommandText = "ALTER TABLE stations ADD OriginalMessage TEXT";
             cmd.ExecuteNonQuery();
+            }
         }
 
         private void Ver11ToVer12(IDbTransaction trans)
         {
-            IDbCommand cmd = _connection.CreateCommand();
+            using (IDbCommand cmd = _connection.CreateCommand()) {
             cmd.Transaction = trans;
             cmd.CommandText = "ALTER TABLE materialid ADD Workorder TEXT";
             cmd.ExecuteNonQuery();
             cmd.CommandText = "CREATE INDEX materialid_workorder ON materialid(Workorder) WHERE Workorder IS NOT NULL";
             cmd.ExecuteNonQuery();
+            }
         }
 
         private void Ver12ToVer13(IDbTransaction trans)
         {
-            IDbCommand cmd = _connection.CreateCommand();
+            using (IDbCommand cmd = _connection.CreateCommand()) {
             cmd.Transaction = trans;
             cmd.CommandText = "ALTER TABLE stations ADD StationName TEXT";
             cmd.ExecuteNonQuery();
+            }
         }
 
         private void Ver13ToVer14(IDbTransaction trans)
         {
-            IDbCommand cmd = _connection.CreateCommand();
+            using (IDbCommand cmd = _connection.CreateCommand()) {
             cmd.Transaction = trans;
             cmd.CommandText = "CREATE TABLE sersettings(ID INTEGER PRIMARY KEY, SerialType INTEGER, SerialLength INTEGER, DepositProc INTEGER, FilenameTemplate TEXT, ProgramTemplate TEXT)";
             cmd.ExecuteNonQuery();
+            }
         }
 
         private void Ver14ToVer15(IDbTransaction trans)
         {
-            IDbCommand cmd = _connection.CreateCommand();
+            using (IDbCommand cmd = _connection.CreateCommand()) {
             cmd.Transaction = trans;
             cmd.CommandText = "CREATE INDEX materialid_uniq ON materialid(UniqueStr)";
             cmd.ExecuteNonQuery();
+            }
         }
 
         private void Ver15ToVer16(IDbTransaction trans)
         {
-            IDbCommand cmd = _connection.CreateCommand();
+            using (IDbCommand cmd = _connection.CreateCommand()) {
             cmd.Transaction = trans;
             cmd.CommandText = "DROP TABLE sersettings";
             cmd.ExecuteNonQuery();
+            }
         }
 
         private bool Ver16ToVer17(IDbTransaction trans, string inspDbFile)
         {
-            var cmd = _connection.CreateCommand();
+            using (var cmd = _connection.CreateCommand()) {
             ((IDbCommand)cmd).Transaction = trans;
 
             cmd.CommandText = "CREATE TABLE inspection_counters(Counter TEXT PRIMARY KEY, Val INTEGER, LastUTC INTEGER)";
@@ -449,20 +466,22 @@ namespace BlackMaple.MachineFramework
 
             cmd.CommandText = "INSERT INTO main.inspection_next_piece SELECT * FROM insp.next_piece";
             cmd.ExecuteNonQuery();
+            }
 
             return true;
         }
 
         private void DetachInspectionDb()
         {
-            var cmd = _connection.CreateCommand();
+            using (var cmd = _connection.CreateCommand()) {
             cmd.CommandText = "DETACH DATABASE insp";
             cmd.ExecuteNonQuery();
+            }
         }
 
         private void Ver17ToVer18(IDbTransaction trans)
         {
-            IDbCommand cmd = _connection.CreateCommand();
+            using (IDbCommand cmd = _connection.CreateCommand()) {
             cmd.Transaction = trans;
             cmd.CommandText = "CREATE TABLE queues(MaterialID INTEGER, Queue TEXT, Position INTEGER, PRIMARY KEY(MaterialID, Queue))";
             cmd.ExecuteNonQuery();
@@ -509,6 +528,7 @@ namespace BlackMaple.MachineFramework
             cmd.ExecuteNonQuery();
             cmd.CommandText = "DROP TABLE materialid";
             cmd.ExecuteNonQuery();
+            }
         }
 
         #endregion
@@ -520,7 +540,7 @@ namespace BlackMaple.MachineFramework
         #region Loading
         private List<MachineWatchInterface.LogEntry> LoadLog(IDataReader reader)
         {
-            var matCmd = _connection.CreateCommand();
+            using (var matCmd = _connection.CreateCommand()) {
             matCmd.CommandText = "SELECT stations_mat.MaterialID, UniqueStr, Process, PartName, NumProcesses, Face " +
               " FROM stations_mat " +
               " LEFT OUTER JOIN matdetails ON stations_mat.MaterialID = matdetails.MaterialID " +
@@ -528,7 +548,7 @@ namespace BlackMaple.MachineFramework
               " ORDER BY stations_mat.Counter ASC";
             matCmd.Parameters.Add("cntr", SqliteType.Integer);
 
-            var detailCmd = _connection.CreateCommand();
+            using (var detailCmd = _connection.CreateCommand()) {
             detailCmd.CommandText = "SELECT Key, Value FROM program_details WHERE Counter = $cntr";
             detailCmd.Parameters.Add("cntr", SqliteType.Integer);
 
@@ -646,13 +666,15 @@ namespace BlackMaple.MachineFramework
             }
 
             return lst;
+
+            }} // close usings
         }
 
         public List<MachineWatchInterface.LogEntry> GetLogEntries(System.DateTime startUTC, System.DateTime endUTC)
         {
             lock (_lock)
             {
-                var cmd = _connection.CreateCommand();
+                using (var cmd = _connection.CreateCommand()) {
                 cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
                      " FROM stations WHERE TimeUTC >= $start AND TimeUTC <= $end ORDER BY Counter ASC";
 
@@ -663,6 +685,7 @@ namespace BlackMaple.MachineFramework
                 {
                     return LoadLog(reader);
                 }
+                }
             }
         }
 
@@ -670,7 +693,7 @@ namespace BlackMaple.MachineFramework
         {
             lock (_lock)
             {
-                var cmd = _connection.CreateCommand();
+                using (var cmd = _connection.CreateCommand()) {
                 cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
                      " FROM stations WHERE Counter > $cntr ORDER BY Counter ASC";
                 cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
@@ -679,6 +702,7 @@ namespace BlackMaple.MachineFramework
                 {
                     return LoadLog(reader);
                 }
+                }
             }
         }
 
@@ -686,7 +710,7 @@ namespace BlackMaple.MachineFramework
         {
             lock (_lock)
             {
-                var cmd = _connection.CreateCommand();
+                using (var cmd = _connection.CreateCommand()) {
                 cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
                      " FROM stations WHERE ForeignID = $foreign ORDER BY Counter ASC";
                 cmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignID;
@@ -695,6 +719,7 @@ namespace BlackMaple.MachineFramework
                 {
                     return LoadLog(reader);
                 }
+                }
             }
         }
 
@@ -702,7 +727,7 @@ namespace BlackMaple.MachineFramework
         {
             lock (_lock)
             {
-                var cmd = _connection.CreateCommand();
+                using (var cmd = _connection.CreateCommand()) {
                 cmd.CommandText = "SELECT OriginalMessage " +
                      " FROM stations WHERE ForeignID = $foreign ORDER BY Counter DESC LIMIT 1";
                 cmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignID;
@@ -721,6 +746,7 @@ namespace BlackMaple.MachineFramework
                         }
                     }
                 }
+                }
             }
             return "";
         }
@@ -729,7 +755,7 @@ namespace BlackMaple.MachineFramework
         {
             lock (_lock)
             {
-                var cmd = _connection.CreateCommand();
+                using (var cmd = _connection.CreateCommand()) {
                 cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
                      " FROM stations WHERE Counter IN (SELECT Counter FROM stations_mat WHERE MaterialID = $mat) ORDER BY Counter ASC";
                 cmd.Parameters.Add("mat", SqliteType.Integer).Value = materialID;
@@ -738,6 +764,7 @@ namespace BlackMaple.MachineFramework
                 {
                     return LoadLog(reader);
                 }
+                }
             }
         }
 
@@ -745,7 +772,7 @@ namespace BlackMaple.MachineFramework
         {
             lock (_lock)
             {
-                var cmd = _connection.CreateCommand();
+                using (var cmd = _connection.CreateCommand()) {
                 cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
                     " FROM stations WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.Serial = $ser) ORDER BY Counter ASC";
                 cmd.Parameters.Add("ser", SqliteType.Text).Value = serial;
@@ -754,6 +781,7 @@ namespace BlackMaple.MachineFramework
                 {
                     return LoadLog(reader);
                 }
+                }
             }
         }
 
@@ -761,7 +789,7 @@ namespace BlackMaple.MachineFramework
         {
             lock (_lock)
             {
-                var cmd = _connection.CreateCommand();
+                using (var cmd = _connection.CreateCommand()) {
                 cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
                     " FROM stations WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.UniqueStr = $uniq) ORDER BY Counter ASC";
                 cmd.Parameters.Add("uniq", SqliteType.Text).Value = jobUnique;
@@ -770,6 +798,7 @@ namespace BlackMaple.MachineFramework
                 {
                     return LoadLog(reader);
                 }
+                }
             }
         }
 
@@ -777,7 +806,7 @@ namespace BlackMaple.MachineFramework
         {
             lock (_lock)
             {
-                var cmd = _connection.CreateCommand();
+                using (var cmd = _connection.CreateCommand()) {
                 cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
                     " FROM stations WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.Workorder = $work) ORDER BY Counter ASC";
                 cmd.Parameters.Add("work", SqliteType.Text).Value = workorder;
@@ -785,6 +814,7 @@ namespace BlackMaple.MachineFramework
                 using (var reader = cmd.ExecuteReader())
                 {
                     return LoadLog(reader);
+                }
                 }
             }
         }
@@ -815,7 +845,7 @@ namespace BlackMaple.MachineFramework
 
             lock (_lock)
             {
-                var cmd = _connection.CreateCommand();
+                using (var cmd = _connection.CreateCommand()) {
                 cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
                     " FROM stations WHERE Counter IN (" + searchCompleted + ") ORDER BY Counter ASC";
                 cmd.Parameters.Add("loadty", SqliteType.Integer)
@@ -827,6 +857,7 @@ namespace BlackMaple.MachineFramework
                 {
                     return LoadLog(reader);
                 }
+                }
             }
         }
 
@@ -834,7 +865,7 @@ namespace BlackMaple.MachineFramework
         {
             lock (_lock)
             {
-                var cmd = _connection.CreateCommand();
+                using (var cmd = _connection.CreateCommand()) {
                 cmd.CommandText = "SELECT TimeUTC FROM stations where Pallet = $pal AND Result = 'PalletCycle' " +
                                      "ORDER BY Counter DESC LIMIT 1";
                 cmd.Parameters.Add("pal", SqliteType.Text).Value = pallet;
@@ -844,6 +875,7 @@ namespace BlackMaple.MachineFramework
                     return DateTime.MinValue;
                 else
                     return new DateTime((long)date, DateTimeKind.Utc);
+                }
             }
         }
 
@@ -852,7 +884,7 @@ namespace BlackMaple.MachineFramework
         {
             lock (_lock)
             {
-                var cmd = _connection.CreateCommand();
+                using (var cmd = _connection.CreateCommand()) {
                 cmd.CommandText = "SELECT MAX(Counter) FROM stations where Pallet = $pal AND Result = 'PalletCycle'";
                 cmd.Parameters.Add("pal", SqliteType.Text).Value = pallet;
 
@@ -881,6 +913,7 @@ namespace BlackMaple.MachineFramework
                         return LoadLog(reader);
                     }
                 }
+                }
             }
         }
 
@@ -888,7 +921,7 @@ namespace BlackMaple.MachineFramework
         {
             lock (_lock)
             {
-                var cmd = _connection.CreateCommand();
+                using (var cmd = _connection.CreateCommand()) {
                 cmd.CommandText = "SELECT MAX(TimeUTC) FROM stations";
 
                 System.DateTime ret = DateTime.MinValue;
@@ -905,6 +938,7 @@ namespace BlackMaple.MachineFramework
                 }
 
                 return ret;
+                }
             }
         }
 
@@ -912,7 +946,7 @@ namespace BlackMaple.MachineFramework
         {
             lock (_lock)
             {
-                var cmd = _connection.CreateCommand();
+                using (var cmd = _connection.CreateCommand()) {
 
                 cmd.CommandText = "SELECT MAX(ForeignID) FROM stations";
                 var maxStat = cmd.ExecuteScalar();
@@ -935,6 +969,7 @@ namespace BlackMaple.MachineFramework
                     else
                         return l;
                 }
+                }
             }
         }
 
@@ -942,7 +977,7 @@ namespace BlackMaple.MachineFramework
         {
             lock (_lock)
             {
-                var cmd = _connection.CreateCommand();
+                using (var cmd = _connection.CreateCommand()) {
                 cmd.CommandText = "SELECT ForeignID FROM stations WHERE Counter = $cntr";
                 cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
                 var ret = cmd.ExecuteScalar();
@@ -952,6 +987,7 @@ namespace BlackMaple.MachineFramework
                     return "";
                 else
                     return (string)ret;
+                }
             }
         }
 
@@ -1135,7 +1171,7 @@ namespace BlackMaple.MachineFramework
         #region Adding
         private MachineWatchInterface.LogEntry AddLogEntry(IDbTransaction trans, MachineWatchInterface.LogEntry log, string foreignID, string origMessage)
         {
-            var cmd = _connection.CreateCommand();
+            using (var cmd = _connection.CreateCommand()) {
             ((IDbCommand)cmd).Transaction = trans;
 
             cmd.CommandText = "INSERT INTO stations(Pallet, StationLoc, StationName, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, ForeignID,OriginalMessage)" +
@@ -1177,11 +1213,12 @@ namespace BlackMaple.MachineFramework
             AddProgramDetail(ctr, log.ProgramDetails, trans);
 
             return new MachineWatchInterface.LogEntry(log, ctr);
+            }
         }
 
         private void AddMaterial(long counter, IEnumerable<MachineWatchInterface.LogMaterial> mat, IDbTransaction trans)
         {
-            var cmd = _connection.CreateCommand();
+            using (var cmd = _connection.CreateCommand()) {
             ((IDbCommand)cmd).Transaction = trans;
 
             cmd.CommandText = "INSERT INTO stations_mat(Counter,MaterialID,Process,Face)" +
@@ -1198,11 +1235,12 @@ namespace BlackMaple.MachineFramework
                 cmd.Parameters[3].Value = m.Face;
                 cmd.ExecuteNonQuery();
             }
+            }
         }
 
         private void AddProgramDetail(long counter, IDictionary<string, string> details, IDbTransaction trans)
         {
-            var cmd = _connection.CreateCommand();
+            using (var cmd = _connection.CreateCommand()) {
             ((IDbCommand)cmd).Transaction = trans;
 
             cmd.CommandText = "INSERT INTO program_details(Counter,Key,Value) VALUES($cntr,$key,$val)";
@@ -1215,6 +1253,7 @@ namespace BlackMaple.MachineFramework
                 cmd.Parameters[1].Value = pair.Key;
                 cmd.Parameters[2].Value = pair.Value;
                 cmd.ExecuteNonQuery();
+            }
             }
         }
 
@@ -1688,13 +1727,14 @@ namespace BlackMaple.MachineFramework
         public void SetDetailsForMaterialID(long matID, string unique, string part, int numProc)
         {
             lock (_lock) {
-                var cmd = _connection.CreateCommand();
+                using (var cmd = _connection.CreateCommand()) {
                 cmd.CommandText = "UPDATE matdetails SET UniqueStr = $uniq, PartName = $part, NumProcesses = $numproc WHERE MaterialID = $mat";
                 cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
                 cmd.Parameters.Add("part", SqliteType.Text).Value = part;
                 cmd.Parameters.Add("numproc", SqliteType.Integer).Value = numProc;
                 cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
                 cmd.ExecuteNonQuery();
+                }
             }
         }
 
@@ -1702,13 +1742,14 @@ namespace BlackMaple.MachineFramework
         {
             lock (_lock)
             {
-                var cmd = _connection.CreateCommand();
+                using (var cmd = _connection.CreateCommand()) {
                 cmd.CommandText = "INSERT INTO matdetails(MaterialID, UniqueStr, PartName, NumProcesses) VALUES ($mid, $uniq, $part, $numproc)";
                 cmd.Parameters.Add("mid", SqliteType.Integer).Value = matID;
                 cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
                 cmd.Parameters.Add("part", SqliteType.Text).Value = part;
                 cmd.Parameters.Add("numproc", SqliteType.Integer).Value = numProc;
                 cmd.ExecuteNonQuery();
+                }
             }
         }
 
@@ -1716,7 +1757,7 @@ namespace BlackMaple.MachineFramework
         {
             lock (_lock)
             {
-                var cmd = _connection.CreateCommand();
+                using (var cmd = _connection.CreateCommand()) {
                 cmd.CommandText = "SELECT UniqueStr, PartName, NumProcesses, Workorder, Serial FROM matdetails WHERE MaterialID = $mat";
                 cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
 
@@ -1735,12 +1776,13 @@ namespace BlackMaple.MachineFramework
                 }
 
                 return null;
+                }
             }
         }
 
         private void RecordSerialForMaterialID(IDbTransaction trans, long matID, string serial)
         {
-            var cmd = _connection.CreateCommand();
+            using (var cmd = _connection.CreateCommand()) {
             ((IDbCommand)cmd).Transaction = trans;
             cmd.CommandText = "UPDATE matdetails SET Serial = $ser WHERE MaterialID = $mat";
             if (string.IsNullOrEmpty(serial))
@@ -1749,11 +1791,12 @@ namespace BlackMaple.MachineFramework
                 cmd.Parameters.Add("ser", SqliteType.Text).Value = serial;
             cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
             cmd.ExecuteNonQuery();
+            }
         }
 
         private void RecordWorkorderForMaterialID(IDbTransaction trans, long matID, string workorder)
         {
-            var cmd = _connection.CreateCommand();
+            using (var cmd = _connection.CreateCommand()) {
             ((IDbCommand)cmd).Transaction = trans;
             cmd.CommandText = "UPDATE matdetails SET Workorder = $work WHERE MaterialID = $mat";
             if (string.IsNullOrEmpty(workorder))
@@ -1762,6 +1805,7 @@ namespace BlackMaple.MachineFramework
                 cmd.Parameters.Add("work", SqliteType.Text).Value = workorder;
             cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
             cmd.ExecuteNonQuery();
+            }
 
         }
         #endregion
@@ -1821,7 +1865,7 @@ namespace BlackMaple.MachineFramework
 
             ret.Add(AddLogEntry(trans, log, null, null));
 
-            var cmd = _connection.CreateCommand();
+            using (var cmd = _connection.CreateCommand()) {
             ((IDbCommand)cmd).Transaction = trans;
 
             if (position >= 0) {
@@ -1841,6 +1885,7 @@ namespace BlackMaple.MachineFramework
                 cmd.Parameters.Add("m", SqliteType.Integer).Value = mat.MaterialID;
                 cmd.Parameters.Add("q", SqliteType.Text).Value = queue;
                 cmd.ExecuteNonQuery();
+            }
             }
 
             return ret;
@@ -1999,7 +2044,7 @@ namespace BlackMaple.MachineFramework
                 var ret = new List<QueuedMaterial>();
                 try
                 {
-                    var cmd = _connection.CreateCommand();
+                    using (var cmd = _connection.CreateCommand()) {
                     cmd.Transaction = trans;
                     cmd.CommandText = "SELECT queues.MaterialID, Position, UniqueStr, PartName, NumProcesses " +
                       " FROM queues " +
@@ -2020,6 +2065,7 @@ namespace BlackMaple.MachineFramework
                         }
                     }
                     trans.Commit();
+                    }
                     return ret;
                 }
                 catch
@@ -2038,7 +2084,7 @@ namespace BlackMaple.MachineFramework
                 var ret = new List<QueuedMaterial>();
                 try
                 {
-                    var cmd = _connection.CreateCommand();
+                    using (var cmd = _connection.CreateCommand()) {
                     cmd.Transaction = trans;
                     cmd.CommandText = "SELECT queues.MaterialID, Queue, Position, UniqueStr, PartName, NumProcesses " +
                       " FROM queues " +
@@ -2058,6 +2104,7 @@ namespace BlackMaple.MachineFramework
                     }
                     trans.Commit();
                     return ret;
+                    }
                 }
                 catch
                 {
@@ -2078,7 +2125,7 @@ namespace BlackMaple.MachineFramework
 
                 try
                 {
-                    var cmd = _connection.CreateCommand();
+                    using (var cmd = _connection.CreateCommand()) {
                     cmd.Transaction = trans;
 
                     cmd.CommandText = "INSERT INTO pendingloads(Pallet, Key, LoadStation, Elapsed, ActiveTime, ForeignID)" +
@@ -2094,6 +2141,7 @@ namespace BlackMaple.MachineFramework
                     cmd.ExecuteNonQuery();
 
                     trans.Commit();
+                    }
                 }
                 catch
                 {
@@ -2122,7 +2170,7 @@ namespace BlackMaple.MachineFramework
                 var trans = _connection.BeginTransaction();
                 try
                 {
-                    var cmd = _connection.CreateCommand();
+                    using (var cmd = _connection.CreateCommand()) {
                     cmd.Transaction = trans;
 
                     cmd.CommandText = "SELECT Key, LoadStation, Elapsed, ActiveTime, ForeignID FROM pendingloads WHERE Pallet = $pal";
@@ -2145,6 +2193,7 @@ namespace BlackMaple.MachineFramework
                     }
 
                     trans.Commit();
+                    }
                 }
                 catch
                 {
@@ -2173,7 +2222,7 @@ namespace BlackMaple.MachineFramework
                 try
                 {
 
-                    var lastTimeCmd = _connection.CreateCommand();
+                    using (var lastTimeCmd = _connection.CreateCommand()) {
                     lastTimeCmd.CommandText = "SELECT TimeUTC FROM stations where Pallet = $pal AND Result = 'PalletCycle' " +
                                             "ORDER BY Counter DESC LIMIT 1";
                     lastTimeCmd.Parameters.Add("pal", SqliteType.Text).Value = pal;
@@ -2211,7 +2260,7 @@ namespace BlackMaple.MachineFramework
                     }
 
                     // Copy over pending loads
-                    var loadPending = _connection.CreateCommand();
+                    using (var loadPending = _connection.CreateCommand()) {
                     loadPending.Transaction = trans;
                     loadPending.CommandText = "SELECT Key, LoadStation, Elapsed, ActiveTime, ForeignID FROM pendingloads WHERE Pallet = $pal";
                     loadPending.Parameters.Add("pal", SqliteType.Text).Value = pal;
@@ -2338,14 +2387,17 @@ namespace BlackMaple.MachineFramework
                             }
                         }
                     }
+                    }
 
-                    var delCmd = _connection.CreateCommand();
+                    using (var delCmd = _connection.CreateCommand()) {
                     delCmd.Transaction = trans;
                     delCmd.CommandText = "DELETE FROM pendingloads WHERE Pallet = $pal";
                     delCmd.Parameters.Add("pal", SqliteType.Text).Value = pal;
                     delCmd.ExecuteNonQuery();
+                    }
 
                     trans.Commit();
+                    }
                 }
                 catch
                 {
@@ -2532,7 +2584,7 @@ namespace BlackMaple.MachineFramework
                 }
             }
 
-            var cmd = _connection.CreateCommand();
+            using (var cmd = _connection.CreateCommand()) {
             ((IDbCommand)cmd).Transaction = trans;
             cmd.CommandText = "SELECT Pallet, StationLoc, StationName, StationNum, Process " +
                 " FROM stations " +
@@ -2577,7 +2629,7 @@ namespace BlackMaple.MachineFramework
                             break;
                     }
                 }
-            }
+            }}
 
             return byProc;
         }
@@ -2640,7 +2692,7 @@ namespace BlackMaple.MachineFramework
         private IList<Decision> LookupInspectionDecisions(IDbTransaction trans, long matID)
         {
             List<Decision> ret = new List<Decision>();
-            var cmd = _connection.CreateCommand();
+            using (var cmd = _connection.CreateCommand()) {
             ((IDbCommand)cmd).Transaction = trans;
             cmd.CommandText = "SELECT Counter, StationLoc, Program, TimeUTC, Result " +
                 " FROM stations " +
@@ -2704,7 +2756,7 @@ namespace BlackMaple.MachineFramework
                         });
                     }
                 }
-            }
+            }}
             return ret;
         }
 
@@ -2903,7 +2955,7 @@ namespace BlackMaple.MachineFramework
         {
             lock (_lock)
             {
-                var cmd = _connection.CreateCommand();
+                using (var cmd = _connection.CreateCommand()) {
 
                 cmd.CommandText = "INSERT OR REPLACE INTO inspection_next_piece(StatType, StatNum, InspType)" +
                     " VALUES ($loc,$locnum,$insp)";
@@ -2912,6 +2964,7 @@ namespace BlackMaple.MachineFramework
                 cmd.Parameters.Add("insp", SqliteType.Text).Value = inspType;
 
                 cmd.ExecuteNonQuery();
+                }
             }
         }
 
@@ -2921,8 +2974,8 @@ namespace BlackMaple.MachineFramework
 
             lock (_lock)
             {
-                var cmd = _connection.CreateCommand();
-                var cmd2 = _connection.CreateCommand();
+                using (var cmd = _connection.CreateCommand())
+                using (var cmd2 = _connection.CreateCommand()) {
 
                 cmd.CommandText = "SELECT InspType FROM inspection_next_piece WHERE StatType = $loc AND StatNum = $locnum";
                 cmd.Parameters.Add("loc", SqliteType.Integer).Value = (int)palLoc.Location;
@@ -2962,6 +3015,7 @@ namespace BlackMaple.MachineFramework
                 {
                     trans.Rollback();
                     throw;
+                }
                 }
 
                 foreach (var log in logs)
