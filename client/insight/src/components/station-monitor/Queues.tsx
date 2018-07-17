@@ -590,7 +590,7 @@ export const Queues = queueStyles<QueueProps>(props => {
             >
               {
                 region.material.map((m, matIdx) =>
-                  <InProcMaterial key={matIdx} mat={m} onOpen={props.openMat} includePalletInAction/>
+                  <InProcMaterial key={matIdx} mat={m} onOpen={props.openMat}/>
                 )
               }
             </WhiteboardRegion>

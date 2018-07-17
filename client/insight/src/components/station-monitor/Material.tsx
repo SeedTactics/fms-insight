@@ -88,18 +88,24 @@ export class PartIdenticon extends React.PureComponent<{part: string, size?: num
   }
 }
 
-function materialAction(mat: Readonly<api.IInProcessMaterial>, includePalletInAction: boolean): string | undefined {
+function materialAction(mat: Readonly<api.IInProcessMaterial>, displaySinglePallet?: string): string | undefined {
   switch (mat.action.type) {
     case api.ActionType.Loading:
       switch (mat.location.type) {
         case api.LocType.OnPallet:
-          return "Transfer to face " + (mat.action.loadOntoFace || 0).toString();
+          if (displaySinglePallet === undefined || displaySinglePallet === mat.location.pallet) {
+            return "Transfer to face " + (mat.action.loadOntoFace || 0).toString();
+          } else {
+            return undefined;
+          }
         default:
-          if (includePalletInAction) {
+          if (displaySinglePallet === undefined) {
             return "Load onto face " + (mat.action.loadOntoFace || 0).toString()
               + " of pal " + mat.action.loadOntoPallet;
-          } else {
+          } else if (displaySinglePallet === mat.action.loadOntoPallet) {
             return "Load onto face " + (mat.action.loadOntoFace || 0).toString();
+          } else {
+            return undefined;
           }
       }
     case api.ActionType.UnloadToInProcess:
@@ -236,7 +242,7 @@ export class MatSummary extends React.PureComponent<MaterialSummaryProps> {
 
 export interface InProcMaterialProps {
   readonly mat: Readonly<api.IInProcessMaterial>; // TODO: deep readonly
-  readonly includePalletInAction?: boolean;
+  readonly displaySinglePallet?: string;
   onOpen: (m: Readonly<MaterialSummary>) => void;
 }
 
@@ -245,7 +251,7 @@ export class InProcMaterial extends React.PureComponent<InProcMaterialProps> {
     return (
       <MatSummaryWithStyles
         mat={inproc_mat_to_summary(this.props.mat)}
-        action={materialAction(this.props.mat, this.props.includePalletInAction || false)}
+        action={materialAction(this.props.mat, this.props.displaySinglePallet)}
         onOpen={this.props.onOpen}
       />
     );

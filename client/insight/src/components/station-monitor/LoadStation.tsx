@@ -279,7 +279,12 @@ export const LoadStation = loadStyles<LoadStationProps>(props => {
               col1.map((mat, idx) => (
                 <WhiteboardRegion key={idx} label={mat.label}>
                   { mat.material.map((m, matIdx) =>
-                    <InProcMaterial key={matIdx} mat={m} onOpen={props.openMat}/>)
+                    <InProcMaterial
+                      key={matIdx}
+                      mat={m}
+                      onOpen={props.openMat}
+                      displaySinglePallet={props.data.pallet ? props.data.pallet.pallet : ""}
+                    />)
                   }
                 </WhiteboardRegion>
               ))
@@ -293,7 +298,12 @@ export const LoadStation = loadStyles<LoadStationProps>(props => {
               col2.map((mat, idx) => (
                 <WhiteboardRegion key={idx} label={mat.label}>
                   { mat.material.map((m, matIdx) =>
-                    <InProcMaterial key={matIdx} mat={m} onOpen={props.openMat}/>)
+                    <InProcMaterial
+                      key={matIdx}
+                      mat={m}
+                      onOpen={props.openMat}
+                      displaySinglePallet={props.data.pallet ? props.data.pallet.pallet : ""}
+                    />)
                   }
                 </WhiteboardRegion>
               ))

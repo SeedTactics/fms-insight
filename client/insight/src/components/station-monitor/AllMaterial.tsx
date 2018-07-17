@@ -65,7 +65,7 @@ export function Wash(props: AllMatProps) {
           {regions.map((mats, region) =>
             <WhiteboardRegion key={region} label={region} borderBottom flexStart>
               {mats.map((m, idx) =>
-                <InProcMaterial key={idx} mat={m} onOpen={props.openMat} includePalletInAction/>
+                <InProcMaterial key={idx} mat={m} onOpen={props.openMat}/>
               )}
             </WhiteboardRegion>
           ).valueSeq()
