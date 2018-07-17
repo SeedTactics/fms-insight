@@ -1339,14 +1339,16 @@ namespace BlackMaple.MachineFramework
 
             cmd.ExecuteNonQuery();
 
-            cmd.CommandText = "INSERT INTO scheduled_bookings(UniqueStr, BookingId) VALUES ($uniq,$booking)";
-            cmd.Parameters.Clear();
-            cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
-            cmd.Parameters.Add("booking", SqliteType.Text);
-            foreach (var b in job.ScheduledBookingIds)
-            {
-                cmd.Parameters[1].Value = b;
-                cmd.ExecuteNonQuery();
+            if (job.ScheduledBookingIds != null) {
+                cmd.CommandText = "INSERT INTO scheduled_bookings(UniqueStr, BookingId) VALUES ($uniq,$booking)";
+                cmd.Parameters.Clear();
+                cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
+                cmd.Parameters.Add("booking", SqliteType.Text);
+                foreach (var b in job.ScheduledBookingIds)
+                {
+                    cmd.Parameters[1].Value = b;
+                    cmd.ExecuteNonQuery();
+                }
             }
 
             cmd.CommandText = "INSERT INTO numpaths(UniqueStr, Process, NumPaths) VALUES ($uniq,$proc,$path)";
@@ -1387,6 +1389,7 @@ namespace BlackMaple.MachineFramework
             {
                 for (int j = 1; j <= job.GetNumPaths(i); j++)
                 {
+                    if (job.GetSimulatedProduction(i, j) == null) continue;
                     foreach (var prod in job.GetSimulatedProduction(i, j))
                     {
                         cmd.Parameters[1].Value = i;
@@ -1619,6 +1622,8 @@ namespace BlackMaple.MachineFramework
 
         private void AddJobInspection(IDbTransaction trans, MachineWatchInterface.JobPlan job)
         {
+            if (job.GetInspections() == null) return;
+
             using (var cmd = _connection.CreateCommand()) {
             ((IDbCommand)cmd).Transaction = trans;
 
