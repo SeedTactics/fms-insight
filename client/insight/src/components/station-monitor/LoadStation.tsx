@@ -50,6 +50,7 @@ import { MaterialSummary } from '../../data/events';
 import SelectWorkorderDialog from './SelectWorkorder';
 import SetSerialDialog from './EnterSerial';
 import SelectInspTypeDialog from './SelectInspType';
+import SerialScanner from './QRScan';
 
 const palletStyles = withStyles(() => ({
   palletContainerFill: {
@@ -314,6 +315,7 @@ export const LoadStation = loadStyles<LoadStationProps>(props => {
         <SetSerialDialog/>
         <SelectInspTypeDialog/>
         <ConnectedMaterialDialog/>
+        <SerialScanner/>
       </main>
     </DocumentTitle>
   );

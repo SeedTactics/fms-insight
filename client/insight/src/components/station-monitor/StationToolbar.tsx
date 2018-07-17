@@ -47,11 +47,14 @@ import ListItemSecondaryAction from '@material-ui/core/ListItemSecondaryAction';
 import IconButton from '@material-ui/core/IconButton';
 import DeleteIcon from '@material-ui/icons/Delete';
 import Typography from '@material-ui/core/Typography';
+import CameraAlt from '@material-ui/icons/CameraAlt';
+import { Tooltip } from '@material-ui/core';
 
 import * as routes from '../../data/routes';
 import { Store, connect, DispatchAction, mkAC } from '../../store/store';
 import * as api from '../../data/api';
 import * as operators from '../../data/operators';
+import * as guiState from '../../data/gui-state';
 
 export interface OperatorSelectProps {
   readonly operators: Set<string>;
@@ -158,6 +161,7 @@ export interface StationToolbarProps {
   readonly displayAllMaterial: () => void;
   readonly setOperator: DispatchAction<operators.ActionType.SetOperator>;
   readonly removeOperator: DispatchAction<operators.ActionType.RemoveOperator>;
+  readonly openQrCodeScan: () => void;
 }
 
 const freeMaterialSym = "@@insight_free_material@@";
@@ -364,6 +368,14 @@ export function StationToolbar(props: StationToolbarProps) {
             </Select>
             : undefined
         }
+        { window.location.protocol === "https:" || window.location.hostname === "localhost" ?
+        <Tooltip title="Scan QR Code">
+          <IconButton onClick={props.openQrCodeScan} style={{height: "25px"}}>
+            <CameraAlt/>
+          </IconButton>
+        </Tooltip>
+        : undefined
+        }
       </div>
       <div>
         <OperatorSelect
@@ -393,5 +405,6 @@ export default connect(
     displayAllMaterial: routes.displayAllMaterial,
     setOperator: mkAC(operators.ActionType.SetOperator),
     removeOperator: mkAC(operators.ActionType.RemoveOperator),
+    openQrCodeScan: () => ({type: guiState.ActionType.SetScanQrCodeDialog, open: true}),
   }
 )(StationToolbar);

@@ -46,6 +46,7 @@ import * as matDetails from '../../data/material-details';
 import * as guiState from '../../data/gui-state';
 import SelectWorkorderDialog from './SelectWorkorder';
 import { MaterialSummaryAndCompletedData } from '../../data/events.matsummary';
+import SerialScanner from './QRScan';
 
 export interface WashDialogProps extends MaterialDialogProps {
   readonly operator?: string;
@@ -144,6 +145,7 @@ export function Wash(props: WashProps) {
         </Grid>
         <SelectWorkorderDialog/>
         <ConnectedWashDialog/>
+        <SerialScanner/>
       </main>
     </DocumentTitle>
   );

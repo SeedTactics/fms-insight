@@ -44,6 +44,7 @@ import { Store, connect, mkAC, AppActionBeforeMiddleware } from '../../store/sto
 import { MaterialDialogProps, MaterialDialog, MatSummary, WhiteboardRegion, InstructionButton } from './Material';
 import * as matDetails from '../../data/material-details';
 import { MaterialSummaryAndCompletedData } from '../../data/events.matsummary';
+import SerialScanner from './QRScan';
 
 export interface InspDialogProps extends MaterialDialogProps {
   readonly operator?: string;
@@ -147,6 +148,7 @@ export function Inspection(props: InspectionProps) {
           </Grid>
         </Grid>
         <ConnectedInspDialog/>
+        <SerialScanner/>
       </main>
     </DocumentTitle>
   );

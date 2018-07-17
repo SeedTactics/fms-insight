@@ -77,6 +77,20 @@ exports[`displays an empty queue page: empty queues 1`] = `
         Free Material
       </WithStyles(MenuItem)>
     </WithStyles(Select)>
+    <WithStyles(Tooltip)
+      title="Scan QR Code"
+    >
+      <WithStyles(IconButton)
+        onClick={[MockFunction]}
+        style={
+          Object {
+            "height": "25px",
+          }
+        }
+      >
+        <pure(CameraAlt) />
+      </WithStyles(IconButton)>
+    </WithStyles(Tooltip)>
   </div>
   <div>
     <OperatorSelect
@@ -203,6 +217,20 @@ exports[`displays the load with no queues: load with no queues 1`] = `
         </WithStyles(MenuItem)>
       </WithStyles(Select)>
     </WithStyles(FormControl)>
+    <WithStyles(Tooltip)
+      title="Scan QR Code"
+    >
+      <WithStyles(IconButton)
+        onClick={[MockFunction]}
+        style={
+          Object {
+            "height": "25px",
+          }
+        }
+      >
+        <pure(CameraAlt) />
+      </WithStyles(IconButton)>
+    </WithStyles(Tooltip)>
   </div>
   <div>
     <OperatorSelect
@@ -303,6 +331,20 @@ exports[`displays the toolbar for all inspection: inspection all toolbar 1`] = `
         i2
       </WithStyles(MenuItem)>
     </WithStyles(Select)>
+    <WithStyles(Tooltip)
+      title="Scan QR Code"
+    >
+      <WithStyles(IconButton)
+        onClick={[MockFunction]}
+        style={
+          Object {
+            "height": "25px",
+          }
+        }
+      >
+        <pure(CameraAlt) />
+      </WithStyles(IconButton)>
+    </WithStyles(Tooltip)>
   </div>
   <div>
     <OperatorSelect
@@ -372,6 +414,20 @@ exports[`displays the toolbar for all material: all material toolbar 1`] = `
         All Material
       </WithStyles(MenuItem)>
     </WithStyles(Select)>
+    <WithStyles(Tooltip)
+      title="Scan QR Code"
+    >
+      <WithStyles(IconButton)
+        onClick={[MockFunction]}
+        style={
+          Object {
+            "height": "25px",
+          }
+        }
+      >
+        <pure(CameraAlt) />
+      </WithStyles(IconButton)>
+    </WithStyles(Tooltip)>
   </div>
   <div>
     <OperatorSelect
@@ -501,6 +557,20 @@ exports[`displays the toolbar for load with one queue: load with one queue 1`] =
         </WithStyles(MenuItem)>
       </WithStyles(Select)>
     </WithStyles(FormControl)>
+    <WithStyles(Tooltip)
+      title="Scan QR Code"
+    >
+      <WithStyles(IconButton)
+        onClick={[MockFunction]}
+        style={
+          Object {
+            "height": "25px",
+          }
+        }
+      >
+        <pure(CameraAlt) />
+      </WithStyles(IconButton)>
+    </WithStyles(Tooltip)>
   </div>
   <div>
     <OperatorSelect
@@ -644,6 +714,20 @@ exports[`displays the toolbar for load with three queues: load toolbar 1`] = `
         </WithStyles(MenuItem)>
       </WithStyles(Select)>
     </WithStyles(FormControl)>
+    <WithStyles(Tooltip)
+      title="Scan QR Code"
+    >
+      <WithStyles(IconButton)
+        onClick={[MockFunction]}
+        style={
+          Object {
+            "height": "25px",
+          }
+        }
+      >
+        <pure(CameraAlt) />
+      </WithStyles(IconButton)>
+    </WithStyles(Tooltip)>
   </div>
   <div>
     <OperatorSelect
@@ -768,6 +852,20 @@ exports[`displays the toolbar for queue page with three queues: queue toolbar 1`
         d
       </WithStyles(MenuItem)>
     </WithStyles(Select)>
+    <WithStyles(Tooltip)
+      title="Scan QR Code"
+    >
+      <WithStyles(IconButton)
+        onClick={[MockFunction]}
+        style={
+          Object {
+            "height": "25px",
+          }
+        }
+      >
+        <pure(CameraAlt) />
+      </WithStyles(IconButton)>
+    </WithStyles(Tooltip)>
   </div>
   <div>
     <OperatorSelect
@@ -868,6 +966,20 @@ exports[`displays the toolbar for single inspection type: inspection i1 selected
         i2
       </WithStyles(MenuItem)>
     </WithStyles(Select)>
+    <WithStyles(Tooltip)
+      title="Scan QR Code"
+    >
+      <WithStyles(IconButton)
+        onClick={[MockFunction]}
+        style={
+          Object {
+            "height": "25px",
+          }
+        }
+      >
+        <pure(CameraAlt) />
+      </WithStyles(IconButton)>
+    </WithStyles(Tooltip)>
   </div>
   <div>
     <OperatorSelect
@@ -937,6 +1049,20 @@ exports[`displays the toolbar for wash: wash toolbar 1`] = `
         All Material
       </WithStyles(MenuItem)>
     </WithStyles(Select)>
+    <WithStyles(Tooltip)
+      title="Scan QR Code"
+    >
+      <WithStyles(IconButton)
+        onClick={[MockFunction]}
+        style={
+          Object {
+            "height": "25px",
+          }
+        }
+      >
+        <pure(CameraAlt) />
+      </WithStyles(IconButton)>
+    </WithStyles(Tooltip)>
   </div>
   <div>
     <OperatorSelect

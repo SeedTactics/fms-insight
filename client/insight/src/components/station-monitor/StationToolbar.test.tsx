@@ -68,6 +68,7 @@ it('displays the toolbar for load with one queue', () => {
       currentOperator="o1"
       setOperator={jest.fn()}
       removeOperator={jest.fn()}
+      openQrCodeScan={jest.fn()}
     />);
   expect(val).toMatchSnapshot('load with one queue');
 });
@@ -95,6 +96,7 @@ it('displays the load with no queues', () => {
       currentOperator="o1"
       setOperator={jest.fn()}
       removeOperator={jest.fn()}
+      openQrCodeScan={jest.fn()}
     />);
   expect(val).toMatchSnapshot('load with no queues');
 });
@@ -124,6 +126,7 @@ it('displays the toolbar for load with three queues', () => {
       currentOperator="o1"
       setOperator={jest.fn()}
       removeOperator={jest.fn()}
+      openQrCodeScan={jest.fn()}
     />);
   expect(val).toMatchSnapshot('load toolbar');
 });
@@ -153,6 +156,7 @@ it('displays the toolbar for wash', () => {
       currentOperator="o1"
       setOperator={jest.fn()}
       removeOperator={jest.fn()}
+      openQrCodeScan={jest.fn()}
     />);
   expect(val).toMatchSnapshot('wash toolbar');
 });
@@ -178,6 +182,7 @@ it('displays the toolbar for all material', () => {
       currentOperator="o1"
       setOperator={jest.fn()}
       removeOperator={jest.fn()}
+      openQrCodeScan={jest.fn()}
     />);
   expect(val).toMatchSnapshot('all material toolbar');
 });
@@ -207,6 +212,7 @@ it('displays the toolbar for all inspection', () => {
       currentOperator="o1"
       setOperator={jest.fn()}
       removeOperator={jest.fn()}
+      openQrCodeScan={jest.fn()}
     />);
   expect(val).toMatchSnapshot('inspection all toolbar');
 });
@@ -237,6 +243,7 @@ it('displays the toolbar for single inspection type', () => {
       currentOperator="o1"
       setOperator={jest.fn()}
       removeOperator={jest.fn()}
+      openQrCodeScan={jest.fn()}
     />);
   expect(val).toMatchSnapshot('inspection i1 selected toolbar');
 });
@@ -266,6 +273,7 @@ it('displays an empty queue page', () => {
       currentOperator="o1"
       setOperator={jest.fn()}
       removeOperator={jest.fn()}
+      openQrCodeScan={jest.fn()}
     />);
   expect(val).toMatchSnapshot('empty queues');
 });
@@ -295,6 +303,7 @@ it('displays the toolbar for queue page with three queues', () => {
       currentOperator="o1"
       setOperator={jest.fn()}
       removeOperator={jest.fn()}
+      openQrCodeScan={jest.fn()}
     />);
   expect(val).toMatchSnapshot('queue toolbar');
 });
@@ -319,6 +328,7 @@ it("changes the station type", () => {
       currentOperator="o1"
       setOperator={jest.fn()}
       removeOperator={jest.fn()}
+      openQrCodeScan={jest.fn()}
     />);
 
   // tslint:disable-next-line:no-any
@@ -368,6 +378,7 @@ it("changes the load station number", () => {
       currentOperator="o1"
       setOperator={jest.fn()}
       removeOperator={jest.fn()}
+      openQrCodeScan={jest.fn()}
     />);
 
   // tslint:disable-next-line:no-any
@@ -405,6 +416,7 @@ it("changes the load queues", () => {
       currentOperator="o1"
       setOperator={jest.fn()}
       removeOperator={jest.fn()}
+      openQrCodeScan={jest.fn()}
     />);
 
   // tslint:disable-next-line:no-any
@@ -456,6 +468,7 @@ it("changes the standalone queues", () => {
       currentOperator="o1"
       setOperator={jest.fn()}
       removeOperator={jest.fn()}
+      openQrCodeScan={jest.fn()}
     />);
 
   // tslint:disable-next-line:no-any

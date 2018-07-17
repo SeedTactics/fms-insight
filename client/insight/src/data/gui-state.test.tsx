@@ -120,6 +120,22 @@ it("closes the serial dialog", () => {
   expect(s.serial_dialog_open).toBe(false);
 });
 
+it("opens the qr code scan dialog", () => {
+  let s = gui.reducer(gui.initial, {
+    type: gui.ActionType.SetScanQrCodeDialog,
+    open: true
+  });
+  expect(s.scan_qr_dialog_open).toBe(true);
+});
+
+it("closes the qr code scan dialog", () => {
+  let s = gui.reducer(gui.initial, {
+    type: gui.ActionType.SetScanQrCodeDialog,
+    open: false
+  });
+  expect(s.scan_qr_dialog_open).toBe(false);
+});
+
 it("sets the add mat dialog state", () => {
   let s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetAddMatToQueueDialog,

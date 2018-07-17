@@ -56,6 +56,7 @@ import * as guiState from '../../data/gui-state';
 import { Store, connect, mkAC, AppActionBeforeMiddleware, DispatchAction } from '../../store/store';
 import * as matDetails from '../../data/material-details';
 import { MaterialSummary } from '../../data/events';
+import SerialScanner from './QRScan';
 
 interface ExistingMatInQueueDialogBodyProps {
   readonly display_material: matDetails.MaterialDetail;
@@ -597,6 +598,7 @@ export const Queues = queueStyles<QueueProps>(props => {
           ))
         }
         <ConnectedMaterialDialog/>
+        <SerialScanner/>
       </main>
     </DocumentTitle>
   );

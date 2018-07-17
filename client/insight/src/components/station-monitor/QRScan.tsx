@@ -32,63 +32,52 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from 'react';
-import DocumentTitle from 'react-document-title';
+import QrReader from 'react-qr-reader';
+import { Dialog, Button, DialogActions, DialogContent, DialogTitle } from '@material-ui/core';
+import { connect } from '../../store/store';
+import * as guiState from '../../data/gui-state';
+import { openMaterialBySerial } from '../../data/material-details';
 
-import { MaterialSummary } from '../../data/events';
-import { Store, connect, mkAC } from '../../store/store';
-import { MaterialDialog, WhiteboardRegion, InProcMaterial } from './Material';
-import * as matDetails from '../../data/material-details';
-import { AllMaterialBins, selectAllMaterialIntoBins } from '../../data/all-material-bins';
-import { createSelector } from 'reselect';
-import SerialScanner from './QRScan';
-
-const ConnectedAllMatDialog = connect(
-  st => ({
-    display_material: st.MaterialDetails.material,
-  }),
-  {
-    onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
-  }
-)(MaterialDialog);
-
-export interface AllMatProps {
-  readonly allMat: AllMaterialBins;
-  readonly openMat: (mat: MaterialSummary) => void;
+export interface QrScanProps {
+  readonly dialogOpen: boolean;
+  readonly onClose: () => void;
+  readonly onScan: (s: string) => void;
 }
 
-export function Wash(props: AllMatProps) {
-  const regions = props.allMat.toSeq().sortBy((mats, region) => region);
-
+export function SerialScanner(props: QrScanProps) {
+  function onScan(s: string | undefined | null): void {
+    if (s === undefined || s == null || s === "") { return; }
+    props.onScan(s);
+  }
   return (
-    <DocumentTitle title="All Material - FMS Insight">
-      <main style={{padding: '8px'}}>
-        <div>
-          {regions.map((mats, region) =>
-            <WhiteboardRegion key={region} label={region} borderBottom flexStart>
-              {mats.map((m, idx) =>
-                <InProcMaterial key={idx} mat={m} onOpen={props.openMat}/>
-              )}
-            </WhiteboardRegion>
-          ).valueSeq()
-          }
+    <Dialog
+      open={props.dialogOpen}
+      onClose={props.onClose}
+      maxWidth="md"
+    >
+      <DialogTitle>
+        Scan a part's serial
+      </DialogTitle>
+      <DialogContent>
+        <div style={{minWidth: "20em"}}>
+          {props.dialogOpen ? <QrReader onScan={onScan} onError={console.log}/> : undefined}
         </div>
-        <ConnectedAllMatDialog/>
-        <SerialScanner/>
-      </main>
-    </DocumentTitle>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={props.onClose} color="secondary">
+          Cancel
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }
 
-export const extractMaterialRegions = createSelector(
-  (st: Store) => st.Current.current_status,
-  selectAllMaterialIntoBins
-);
-
 export default connect(
-  (st: Store) => ({
-    allMat: extractMaterialRegions(st)
+  s => ({
+    dialogOpen: s.Gui.scan_qr_dialog_open,
   }),
   {
-    openMat: matDetails.openMaterialDialog,
-  }
-)(Wash);
+    onClose: () => ({ type: guiState.ActionType.SetScanQrCodeDialog, open: false}),
+    onScan: openMaterialBySerial
+  },
+)(SerialScanner);
