@@ -130,6 +130,11 @@ namespace MazakMachineInterface
       if (logPath == null || logPath == "")
         logPath = "c:\\Mazak\\FMS\\Log";
 
+      if (!System.IO.Directory.Exists(logPath)) {
+        Log.Error("Log CSV Directory {path} does not exist.  Set the directory in the config.ini file.", logPath);
+        throw new Exception("Log CSV Directory " + logPath + " does not exist");
+      }
+
       // general config
       string useStartingForDue = cfg.GetValue<string>("Mazak", "Use Starting Offset For Due Date");
       string useStarting = cfg.GetValue<string>("Mazak", "Use Starting Offset");

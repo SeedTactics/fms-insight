@@ -17,6 +17,14 @@
            "preLaunchTask": "mazak:build",
            "env": {
                "Mazak__SQL ConnectionString": "Server=172.16.11.6;User Id=mazakpmc;Password=Fms-978",
+               "Mazak__Log CSV Path": "../../../logcsv",
+               "QUEUE__castings": "-1",
+               "QUEUE__queueAAA": "-1",
+               "QUEUE__queueBBB": "-1",
+               "QUEUE__queueCCC": "1",
+               "FMS__AutomaticSerials": "true",
+               "FMS__StartingSerial": "abcd",
+               "SERVER__EnableDebugLog": "true"
            }
        },
         {

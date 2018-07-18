@@ -71,7 +71,7 @@ namespace MazakMachineInterface
 
           var transSet = CalculateScheduleChanges(mazakData);
 
-          if (transSet.Schedule_t.Count > 0) {
+          if (transSet != null && transSet.Schedule_t.Count > 0) {
             _transDB.ClearTransactionDatabase();
             var logs = new List<string>();
             _transDB.SaveTransaction(transSet, logs, "Setting material from queues");
