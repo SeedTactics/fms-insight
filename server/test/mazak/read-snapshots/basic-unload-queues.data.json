@@ -1,0 +1,377 @@
+{
+  "Fixtures": [
+    {
+      "FixtureName": "Fixt:0:fixtureAA1:1",
+      "Comment": "schId1234"
+    },
+    {
+      "FixtureName": "Fixt:0:fixtureAA2:2",
+      "Comment": "schId1234"
+    },
+    {
+      "FixtureName": "Fixt:0:fixtureBB:1",
+      "Comment": "schId1234"
+    },
+    {
+      "FixtureName": "Fixt:0:fixtureCC:1",
+      "Comment": "schId1234"
+    },
+    {
+      "FixtureName": "Fixt:0:fixtureCC:2",
+      "Comment": "schId1234"
+    }
+  ],
+  "Parts": [
+    {
+      "Id": 1035,
+      "Comment": "aaa-schId1234-Path1-1-0",
+      "PartName": "aaa:0:1",
+      "Price": 0,
+      "Processes": [
+        {
+          "MazakPartRowId": 1035,
+          "PartName": "aaa:0:1",
+          "ProcessNumber": 1,
+          "FixQuantity": 1,
+          "ContinueCut": 0,
+          "CutMc": "15",
+          "FixLDS": "3",
+          "FixPhoto": "",
+          "Fixture": "Fixt:0:fixtureAA1:1",
+          "MainProgram": "1001",
+          "RemoveLDS": "3",
+          "RemovePhoto": "",
+          "WashType": 0
+        },
+        {
+          "MazakPartRowId": 1035,
+          "PartName": "aaa:0:1",
+          "ProcessNumber": 2,
+          "FixQuantity": 1,
+          "ContinueCut": 0,
+          "CutMc": "15",
+          "FixLDS": "3",
+          "FixPhoto": "",
+          "Fixture": "Fixt:0:fixtureAA2:2",
+          "MainProgram": "1002",
+          "RemoveLDS": "3",
+          "RemovePhoto": "",
+          "WashType": 0
+        }
+      ]
+    },
+    {
+      "Id": 1036,
+      "Comment": "bbb-schId1234-Path1-1-0",
+      "PartName": "bbb:0:1",
+      "Price": 0,
+      "Processes": [
+        {
+          "MazakPartRowId": 1036,
+          "PartName": "bbb:0:1",
+          "ProcessNumber": 1,
+          "FixQuantity": 1,
+          "ContinueCut": 0,
+          "CutMc": "15",
+          "FixLDS": "3",
+          "FixPhoto": "",
+          "Fixture": "Fixt:0:fixtureBB:1",
+          "MainProgram": "1001",
+          "RemoveLDS": "3",
+          "RemovePhoto": "",
+          "WashType": 0
+        },
+        {
+          "MazakPartRowId": 1036,
+          "PartName": "bbb:0:1",
+          "ProcessNumber": 2,
+          "FixQuantity": 1,
+          "ContinueCut": 0,
+          "CutMc": "15",
+          "FixLDS": "3",
+          "FixPhoto": "",
+          "Fixture": "Fixt:0:fixtureBB:1",
+          "MainProgram": "1002",
+          "RemoveLDS": "3",
+          "RemovePhoto": "",
+          "WashType": 0
+        }
+      ]
+    },
+    {
+      "Id": 1037,
+      "Comment": "ccc-schId1234-Path1-1-0",
+      "PartName": "ccc:0:1",
+      "Price": 0,
+      "Processes": [
+        {
+          "MazakPartRowId": 1037,
+          "PartName": "ccc:0:1",
+          "ProcessNumber": 1,
+          "FixQuantity": 2,
+          "ContinueCut": 0,
+          "CutMc": "15",
+          "FixLDS": "3",
+          "FixPhoto": "",
+          "Fixture": "Fixt:0:fixtureCC:1",
+          "MainProgram": "1003",
+          "RemoveLDS": "3",
+          "RemovePhoto": "",
+          "WashType": 0
+        },
+        {
+          "MazakPartRowId": 1037,
+          "PartName": "ccc:0:1",
+          "ProcessNumber": 2,
+          "FixQuantity": 2,
+          "ContinueCut": 0,
+          "CutMc": "15",
+          "FixLDS": "3",
+          "FixPhoto": "",
+          "Fixture": "Fixt:0:fixtureCC:2",
+          "MainProgram": "1004",
+          "RemoveLDS": "3",
+          "RemovePhoto": "",
+          "WashType": 0
+        }
+      ]
+    }
+  ],
+  "Pallets": [
+    {
+      "PalletNumber": 1,
+      "Fixture": "Fixt:0:fixtureAA1:1",
+      "RecordID": 1064,
+      "AngleV1": 0,
+      "FixtureGroupV2": 1
+    },
+    {
+      "PalletNumber": 1,
+      "Fixture": "Fixt:0:fixtureAA2:2",
+      "RecordID": 1065,
+      "AngleV1": 0,
+      "FixtureGroupV2": 2
+    },
+    {
+      "PalletNumber": 2,
+      "Fixture": "Fixt:0:fixtureBB:1",
+      "RecordID": 1066,
+      "AngleV1": 0,
+      "FixtureGroupV2": 3
+    },
+    {
+      "PalletNumber": 5,
+      "Fixture": "Fixt:0:fixtureCC:1",
+      "RecordID": 1067,
+      "AngleV1": 0,
+      "FixtureGroupV2": 4
+    },
+    {
+      "PalletNumber": 6,
+      "Fixture": "Fixt:0:fixtureCC:2",
+      "RecordID": 1068,
+      "AngleV1": 0,
+      "FixtureGroupV2": 5
+    }
+  ],
+  "PalletSubStatuses": [
+    {
+      "PalletNumber": 5,
+      "FixtureName": "Fixt:0:fixtureCC:1",
+      "ScheduleID": 3,
+      "PartName": "ccc:0:1",
+      "PartProcessNumber": 1,
+      "FixQuantity": 2
+    },
+    {
+      "PalletNumber": 6,
+      "FixtureName": "Fixt:0:fixtureCC:2",
+      "ScheduleID": 3,
+      "PartName": "ccc:0:1",
+      "PartProcessNumber": 2,
+      "FixQuantity": 2
+    },
+    {
+      "PalletNumber": 1,
+      "FixtureName": "Fixt:0:fixtureAA1:1",
+      "ScheduleID": 1,
+      "PartName": "aaa:0:1",
+      "PartProcessNumber": 1,
+      "FixQuantity": 1
+    }
+  ],
+  "PalletPositions": [
+    {
+      "PalletNumber": 1,
+      "PalletPosition": "M011"
+    },
+    {
+      "PalletNumber": 6,
+      "PalletPosition": "M013"
+    },
+    {
+      "PalletNumber": 5,
+      "PalletPosition": "LS011"
+    },
+    {
+      "PalletNumber": 2,
+      "PalletPosition": "S002"
+    },
+    {
+      "PalletNumber": 3,
+      "PalletPosition": "S003"
+    },
+    {
+      "PalletNumber": 4,
+      "PalletPosition": "S004"
+    }
+  ],
+  "LoadActions": [
+    {
+      "LoadStation": 1,
+      "LoadEvent": true,
+      "Unique": "ccc-schId1234",
+      "Part": "ccc",
+      "Process": 1,
+      "Path": 1,
+      "Qty": 2
+    },
+    {
+      "LoadStation": 1,
+      "LoadEvent": false,
+      "Unique": "ccc-schId1234",
+      "Part": "ccc",
+      "Process": 1,
+      "Path": 1,
+      "Qty": 2
+    }
+  ],
+  "MainPrograms": [
+    "1001",
+    "1002",
+    "1003",
+    "1004"
+  ],
+  "Schedules": [
+    {
+      "Id": 1,
+      "Comment": "aaa-schId1234-Path1-1-0",
+      "PartName": "aaa:0:1",
+      "PlanQuantity": 11,
+      "CompleteQuantity": 0,
+      "Priority": 75,
+      "DueDate": "2018-07-18T22:25:28Z",
+      "FixForMachine": 0,
+      "HoldMode": 0,
+      "MissingFixture": 0,
+      "MissingProgram": 0,
+      "MissingTool": 0,
+      "MixScheduleID": 0,
+      "ProcessingPriority": 0,
+      "Reserved": 1,
+      "UpdatedFlag": 0,
+      "Processes": [
+        {
+          "MazakScheduleRowId": 1,
+          "FixQuantity": 1,
+          "ProcessNumber": 1,
+          "ProcessMaterialQuantity": 0,
+          "ProcessExecuteQuantity": 1,
+          "ProcessBadQuantity": 0,
+          "ProcessMachine": 0,
+          "UpdatedFlag": 0
+        },
+        {
+          "MazakScheduleRowId": 1,
+          "FixQuantity": 1,
+          "ProcessNumber": 2,
+          "ProcessMaterialQuantity": 0,
+          "ProcessExecuteQuantity": 0,
+          "ProcessBadQuantity": 0,
+          "ProcessMachine": 0,
+          "UpdatedFlag": 0
+        }
+      ]
+    },
+    {
+      "Id": 2,
+      "Comment": "bbb-schId1234-Path1-1-0",
+      "PartName": "bbb:0:1",
+      "PlanQuantity": 20,
+      "CompleteQuantity": 0,
+      "Priority": 75,
+      "DueDate": "2018-07-18T22:16:05Z",
+      "FixForMachine": 0,
+      "HoldMode": 0,
+      "MissingFixture": 0,
+      "MissingProgram": 0,
+      "MissingTool": 0,
+      "MixScheduleID": 0,
+      "ProcessingPriority": 0,
+      "Reserved": 2,
+      "UpdatedFlag": 0,
+      "Processes": [
+        {
+          "MazakScheduleRowId": 2,
+          "FixQuantity": 1,
+          "ProcessNumber": 1,
+          "ProcessMaterialQuantity": 0,
+          "ProcessExecuteQuantity": 0,
+          "ProcessBadQuantity": 0,
+          "ProcessMachine": 0,
+          "UpdatedFlag": 0
+        },
+        {
+          "MazakScheduleRowId": 2,
+          "FixQuantity": 1,
+          "ProcessNumber": 2,
+          "ProcessMaterialQuantity": 0,
+          "ProcessExecuteQuantity": 0,
+          "ProcessBadQuantity": 0,
+          "ProcessMachine": 0,
+          "UpdatedFlag": 0
+        }
+      ]
+    },
+    {
+      "Id": 3,
+      "Comment": "ccc-schId1234-Path1-1-0",
+      "PartName": "ccc:0:1",
+      "PlanQuantity": 38,
+      "CompleteQuantity": 0,
+      "Priority": 75,
+      "DueDate": "2018-07-18T22:39:58Z",
+      "FixForMachine": 0,
+      "HoldMode": 0,
+      "MissingFixture": 0,
+      "MissingProgram": 0,
+      "MissingTool": 0,
+      "MixScheduleID": 0,
+      "ProcessingPriority": 0,
+      "Reserved": 3,
+      "UpdatedFlag": 0,
+      "Processes": [
+        {
+          "MazakScheduleRowId": 3,
+          "FixQuantity": 2,
+          "ProcessNumber": 1,
+          "ProcessMaterialQuantity": 34,
+          "ProcessExecuteQuantity": 2,
+          "ProcessBadQuantity": 0,
+          "ProcessMachine": 0,
+          "UpdatedFlag": 0
+        },
+        {
+          "MazakScheduleRowId": 3,
+          "FixQuantity": 2,
+          "ProcessNumber": 2,
+          "ProcessMaterialQuantity": 0,
+          "ProcessExecuteQuantity": 2,
+          "ProcessBadQuantity": 0,
+          "ProcessMachine": 0,
+          "UpdatedFlag": 0
+        }
+      ]
+    }
+  ]
+}

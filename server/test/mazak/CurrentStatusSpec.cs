@@ -46,7 +46,7 @@ namespace MachineWatchTest
 {
   public class CurrentStatusSpec : IDisposable
   {
-    private JobLogDB _logDB;
+    private JobLogDB _emptyLog;
 		private JobDB _jobDB;
     private JsonSerializerSettings jsonSettings;
     private FMSSettings _settings;
@@ -55,8 +55,8 @@ namespace MachineWatchTest
     {
 			var logConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
       logConn.Open();
-      _logDB = new JobLogDB(logConn);
-      _logDB.CreateTables(firstSerialOnEmpty: null);
+      _emptyLog = new JobLogDB(logConn);
+      _emptyLog.CreateTables(firstSerialOnEmpty: null);
 
 			var jobConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
       jobConn.Open();
@@ -80,7 +80,7 @@ namespace MachineWatchTest
 
 		public void Dispose()
 		{
-			_logDB.Close();
+			_emptyLog.Close();
 			_jobDB.Close();
 		}
 
@@ -88,7 +88,7 @@ namespace MachineWatchTest
     [Fact]
     public void CreateSnapshot()
     {
-      var scenario = "basic-cutting";
+      var scenario = "basic-unload-queues";
 
       var newJobs = JsonConvert.DeserializeObject<NewJobs>(
         File.ReadAllText(
@@ -108,7 +108,15 @@ namespace MachineWatchTest
         JsonConvert.SerializeObject(all, jsonSettings)
       );
 
-      var status = BuildCurrentStatus.Build(_jobDB, _logDB, _settings, MazakDbType.MazakSmooth, all);
+      var logDb = _emptyLog;
+      var existingLogPath =
+        Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".log.db");
+      if (File.Exists(existingLogPath)) {
+        logDb = new JobLogDB();
+        logDb.Open(existingLogPath);
+      }
+
+      var status = BuildCurrentStatus.Build(_jobDB, logDb, _settings, MazakDbType.MazakSmooth, all);
 
       File.WriteAllText(
         Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".status.json"),
@@ -121,6 +129,8 @@ namespace MachineWatchTest
     [InlineData("basic-no-material")]
     [InlineData("basic-load-material")]
     [InlineData("basic-cutting")]
+    [InlineData("basic-load-queue")]
+    [InlineData("basic-unload-queues")]
     public void StatusSnapshot(string scenario)
     {
       var newJobs = JsonConvert.DeserializeObject<NewJobs>(
@@ -136,7 +146,22 @@ namespace MachineWatchTest
           jsonSettings
       );
 
-      var status = BuildCurrentStatus.Build(_jobDB, _logDB, _settings, MazakDbType.MazakSmooth, allData);
+      var logDb = _emptyLog;
+      bool close = false;
+      var existingLogPath =
+        Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".log.db");
+      if (File.Exists(existingLogPath)) {
+        logDb = new JobLogDB();
+        logDb.Open(existingLogPath);
+        close = true;
+      }
+
+      CurrentStatus status;
+      try {
+        status = BuildCurrentStatus.Build(_jobDB, logDb, _settings, MazakDbType.MazakSmooth, allData);
+      } finally {
+        if (close) logDb.Close();
+      }
 
       var expectedStatus = JsonConvert.DeserializeObject<CurrentStatus>(
         File.ReadAllText(

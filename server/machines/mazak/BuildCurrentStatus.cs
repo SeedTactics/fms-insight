@@ -448,6 +448,10 @@ namespace MazakMachineInterface
             jobFromDb.GetExpectedLoadTime(proc, path));
           jobFromMazak.SetExpectedUnloadTime(proc, path,
             jobFromDb.GetExpectedUnloadTime(proc, path));
+          jobFromMazak.SetInputQueue(proc, path,
+            jobFromDb.GetInputQueue(proc, path));
+          jobFromMazak.SetOutputQueue(proc, path,
+            jobFromDb.GetOutputQueue(proc, path));
 
           var mazakStops = jobFromMazak.GetMachiningStop(proc, path).ToList();
           var dbStops = jobFromDb.GetMachiningStop(proc, path).ToList();
@@ -524,16 +528,31 @@ namespace MazakMachineInterface
                 queuedMat = queuedMats[queue];
               else {
                 queuedMat = log.GetMaterialInQueue(queue).ToList();
+                queuedMats.Add(queue, queuedMat);
               }
             }
           }
           long matId = -1;
+          var loc = new InProcessMaterialLocation()
+            {
+              Type = InProcessMaterialLocation.LocType.Free
+            };
           if (queuedMat != null) {
-            matId = queuedMat
+            var mat = queuedMat
               .Where(m => m.Unique == operation.Unique)
-              .Select(m => m.MaterialID)
-              .DefaultIfEmpty(-1)
+              .Select(m => (JobLogDB.QueuedMaterial?)m)
+              .DefaultIfEmpty(null)
               .First();
+            if (mat.HasValue) {
+              matId = mat.Value.MaterialID;
+              loc = new InProcessMaterialLocation()
+                {
+                  Type = InProcessMaterialLocation.LocType.InQueue,
+                  CurrentQueue = mat.Value.Queue,
+                  QueuePosition = mat.Value.Position,
+                };
+              queuedMat.RemoveAll(m => m.MaterialID == mat.Value.MaterialID);
+            }
           }
           var inProcMat = new InProcessMaterial()
           {
@@ -542,10 +561,7 @@ namespace MazakMachineInterface
             PartName = operation.Part,
             Process = operation.Process,
             Path = operation.Path,
-            Location = new InProcessMaterialLocation()
-            {
-              Type = InProcessMaterialLocation.LocType.Free,
-            },
+            Location = loc,
             Action = new InProcessMaterialAction()
             {
               Type = InProcessMaterialAction.ActionType.Loading,
