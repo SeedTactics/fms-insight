@@ -45,7 +45,7 @@ namespace MazakMachineInterface
 
     private IWriteData writeDb;
     private IReadDataAccess readDatabase;
-    private HoldPattern hold;
+    private IHoldManagement hold;
     private IMazakLogReader logReader;
     private BlackMaple.MachineFramework.JobDB jobDB;
     private BlackMaple.MachineFramework.JobLogDB log;
@@ -64,7 +64,7 @@ namespace MazakMachineInterface
     public RoutingInfo(
       IWriteData d,
       IReadDataAccess readDb,
-      HoldPattern h,
+      IHoldManagement h,
       IMazakLogReader logR,
       BlackMaple.MachineFramework.JobDB jDB,
       BlackMaple.MachineFramework.JobLogDB jLog,

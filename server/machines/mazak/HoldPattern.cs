@@ -39,7 +39,13 @@ using Microsoft.Data.Sqlite;
 
 namespace MazakMachineInterface
 {
-  public class HoldPattern
+  public interface IHoldManagement
+  {
+    void SignalNewSchedules();
+    void SaveHoldMode(int schID, JobPlan job, int proc1path);
+  }
+
+  public class HoldPattern : IHoldManagement
   {
     #region Public API
     //Each schedule can be in one of four states: Shift1, Shift2, Preperation, or FullHold.
