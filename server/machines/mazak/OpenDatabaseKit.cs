@@ -617,7 +617,7 @@ namespace MazakMachineInterface
       _partProcFixQty = "SELECT PartName, ProcessNumber, FixQuantity FROM PartProcess";
 
       _palSubStatusSelect = "SELECT FixQuantity, FixtureName, PalletNumber, PartName, PartProcessNumber, ScheduleID FROM PalletSubStatus";
-      _palPositionSelect = "SELECT PalletNumber, PalletPosition FROM PalletPosition";
+      _palPositionSelect = "SELECT PalletNumber, PalletPosition FROM PalletPosition WHERE PalletNumber > 0";
       _mainProgSelect = "SELECT MainProgram FROM MainProgram";
   	}
 
@@ -707,7 +707,6 @@ namespace MazakMachineInterface
         proc.FixQuantity = 1;
         if (schDict.ContainsKey(proc.MazakScheduleRowId)) {
           var schRow = schDict[proc.MazakScheduleRowId];
-          proc.MazakScheduleRow = schRow;
           schRow.Processes.Add(proc);
 
           foreach (var p in fixQtys) {
@@ -761,7 +760,6 @@ namespace MazakMachineInterface
           var part = partsByName[proc.PartName];
           part.Processes.Add(proc);
           proc.MazakPartRowId = part.Id;
-          proc.MazakPartRow = part;
         }
         fixQty.Add(new PartProcessFixQty() {
           PartName = proc.PartName,

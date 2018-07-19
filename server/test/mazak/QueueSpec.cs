@@ -118,7 +118,6 @@ namespace MachineWatchTest
     {
       schRow.Processes.Add(new MazakScheduleProcessRow() {
         MazakScheduleRowId = schRow.Id,
-        MazakScheduleRow = schRow,
         ProcessBadQuantity = 0,
         ProcessExecuteQuantity = exeQty,
         ProcessMachine = 1,

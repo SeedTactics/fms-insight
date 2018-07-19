@@ -64,7 +64,6 @@ namespace MazakMachineInterface
   public class MazakPartProcessRow
   {
     public int MazakPartRowId {get;set;}
-    public MazakPartRow MazakPartRow {get;set;}
 
     public string PartName {get;set;}
     public int ProcessNumber {get;set;}
@@ -107,7 +106,6 @@ namespace MazakMachineInterface
   public class MazakScheduleProcessRow
   {
     public int MazakScheduleRowId {get;set;}
-    public MazakScheduleRow MazakScheduleRow {get;set;}
     public int FixQuantity {get;set;}
 
     public int ProcessNumber {get;set;}

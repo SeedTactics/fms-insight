@@ -97,7 +97,6 @@ namespace MachineWatchTest
       for (int i = 0; i < numProc; i++) {
         sch.Processes.Add(new MazakScheduleProcessRow() {
           MazakScheduleRowId = sch.Id,
-          MazakScheduleRow = sch
         });
       }
       _schedules.Add(sch);
