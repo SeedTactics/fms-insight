@@ -88,7 +88,7 @@ namespace MachineWatchTest
     [Fact]
     public void CreateSnapshot()
     {
-      var scenario = "basic-load-material";
+      var scenario = "basic-cutting";
 
       var newJobs = JsonConvert.DeserializeObject<NewJobs>(
         File.ReadAllText(
@@ -120,6 +120,7 @@ namespace MachineWatchTest
     [Theory]
     [InlineData("basic-no-material")]
     [InlineData("basic-load-material")]
+    [InlineData("basic-cutting")]
     public void StatusSnapshot(string scenario)
     {
       var newJobs = JsonConvert.DeserializeObject<NewJobs>(
