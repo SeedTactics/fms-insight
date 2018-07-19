@@ -41,12 +41,12 @@ namespace MazakMachineInterface
 
   public class LoadAction
   {
-    public readonly int LoadStation;
-    public readonly bool LoadEvent;
-    public readonly string Unique;
-    public readonly string Part;
-    public readonly int Process;
-    public readonly int Path;
+    public int LoadStation {get;set;}
+    public bool LoadEvent {get;set;}
+    public string Unique {get;set;}
+    public string Part {get;set;}
+    public int Process {get;set;}
+    public int Path {get;set;}
     public int Qty {get;set;}
 
     public LoadAction(bool l, int stat, string p, string comment, int proc, int q)
@@ -56,10 +56,17 @@ namespace MazakMachineInterface
       Part = p;
       Process = proc;
       Qty = q;
-      bool manual;
-      MazakPart.ParseComment(comment, out Unique, out var procToPath, out manual);
-      Path = procToPath.PathForProc(proc);
+      if (string.IsNullOrEmpty(comment)) {
+        Unique = "";
+        Path = 1;
+      } else {
+        MazakPart.ParseComment(comment, out string uniq, out var procToPath, out bool manual);
+        Unique = uniq;
+        Path = procToPath.PathForProc(proc);
+      }
     }
+
+    [Newtonsoft.Json.JsonConstructor] private LoadAction() {} //for json deserialize
 
     public override string ToString()
     {

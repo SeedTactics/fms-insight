@@ -74,6 +74,7 @@ namespace MachineWatchTest
       jsonSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
       jsonSettings.DateTimeZoneHandling = DateTimeZoneHandling.Utc;
       jsonSettings.Formatting = Formatting.Indented;
+      jsonSettings.ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor;
 
     }
 
@@ -87,7 +88,15 @@ namespace MachineWatchTest
     [Fact]
     public void CreateSnapshot()
     {
-      var scenario = "basic-no-material";
+      var scenario = "basic-load-material";
+
+      var newJobs = JsonConvert.DeserializeObject<NewJobs>(
+        File.ReadAllText(
+          Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".jobs.json")),
+          jsonSettings
+      );
+      _jobDB.AddJobs(newJobs, null);
+
       var connStr = "Server=172.16.11.6;User Id=mazakpmc;Password=Fms-978";
       var open = new OpenDatabaseKitReadDB(connStr, MazakDbType.MazakSmooth, null);
       var smooth = new SmoothReadOnlyDB(connStr, open);
@@ -98,11 +107,19 @@ namespace MachineWatchTest
         Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".data.json"),
         JsonConvert.SerializeObject(all, jsonSettings)
       );
+
+      var status = BuildCurrentStatus.Build(_jobDB, _logDB, _settings, MazakDbType.MazakSmooth, all);
+
+      File.WriteAllText(
+        Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".status.json"),
+        JsonConvert.SerializeObject(status, jsonSettings)
+      );
     }
     */
 
     [Theory]
     [InlineData("basic-no-material")]
+    [InlineData("basic-load-material")]
     public void StatusSnapshot(string scenario)
     {
       var newJobs = JsonConvert.DeserializeObject<NewJobs>(
