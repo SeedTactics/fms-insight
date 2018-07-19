@@ -21,7 +21,7 @@
                "QUEUE__castings": "-1",
                "QUEUE__queueAAA": "-1",
                "QUEUE__queueBBB": "-1",
-               "QUEUE__queueCCC": "1",
+               "QUEUE__queueCCC": "2",
                "FMS__AutomaticSerials": "true",
                "FMS__StartingSerial": "abcd",
                "SERVER__EnableDebugLog": "true"

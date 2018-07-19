@@ -382,7 +382,7 @@ namespace MazakMachineInterface
               routeStop = new JobMachiningStop("MC");
               job.AddMachiningStop(partProcRow.ProcessNumber, path, routeStop);
             }
-            routeStop.AddProgram(int.Parse(c.ToString()), "");
+            routeStop.AddProgram(int.Parse(c.ToString()), partProcRow.MainProgram);
           }
         }
 
@@ -444,6 +444,10 @@ namespace MazakMachineInterface
             jobFromDb.GetSimulatedAverageFlowTime(proc, path));
           jobFromMazak.SetSimulatedProduction(proc, path,
             jobFromDb.GetSimulatedProduction(proc, path));
+          jobFromMazak.SetExpectedLoadTime(proc, path,
+            jobFromDb.GetExpectedLoadTime(proc, path));
+          jobFromMazak.SetExpectedUnloadTime(proc, path,
+            jobFromDb.GetExpectedUnloadTime(proc, path));
 
           var mazakStops = jobFromMazak.GetMachiningStop(proc, path).ToList();
           var dbStops = jobFromDb.GetMachiningStop(proc, path).ToList();
