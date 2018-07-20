@@ -17,7 +17,8 @@
       "client-dashboard",
       "client-station-monitor",
       "client-efficiency",
-      "client-cost-per-piece"
+      "client-cost-per-piece",
+      "client-scanners"
     ],
     "Integrations": ["mazak", "makino"]
   }

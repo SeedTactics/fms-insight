@@ -26,7 +26,7 @@ and then edit the option value.  Remember to restart the FMS Insight server.  If
 errors are present, FMS Insight will generate an error message with details into the
 [event log](server-errors.md).
 
-#### Databases
+## Databases
 
 FMS Insight uses [SQLite](https://www.sqlite.org/) to store data about the cell.
 The primary data stored is a log of the activity of all parts, pallets, machines, jobs,
