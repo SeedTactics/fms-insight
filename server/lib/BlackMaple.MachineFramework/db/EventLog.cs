@@ -2205,6 +2205,49 @@ namespace BlackMaple.MachineFramework
             }
         }
 
+        public List<PendingLoad> AllPendingLoads()
+        {
+            lock (_lock)
+            {
+                var ret = new List<PendingLoad>();
+
+                var trans = _connection.BeginTransaction();
+                try
+                {
+                    using (var cmd = _connection.CreateCommand()) {
+                    cmd.Transaction = trans;
+
+                    cmd.CommandText = "SELECT Key, LoadStation, Elapsed, ActiveTime, ForeignID, Pallet FROM pendingloads";
+
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var p = default(PendingLoad);
+                            p.Key = reader.GetString(0);
+                            p.LoadStation = reader.GetInt32(1);
+                            p.Elapsed = new TimeSpan(reader.GetInt64(2));
+                            if (!reader.IsDBNull(3))
+                                p.ActiveOperationTime = TimeSpan.FromTicks(reader.GetInt64(3));
+                            p.ForeignID = reader.GetString(4);
+                            p.Pallet = reader.GetString(5);
+                            ret.Add(p);
+                        }
+                    }
+
+                    trans.Commit();
+                    }
+                }
+                catch
+                {
+                    trans.Rollback();
+                    throw;
+                }
+
+                return ret;
+            }
+        }
+
         public void CompletePalletCycle(string pal, DateTime timeUTC, string foreignID)
         {
             CompletePalletCycle(pal, timeUTC, foreignID, null, SerialType.NoAutomaticSerials, 10);

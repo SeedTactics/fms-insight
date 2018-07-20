@@ -535,6 +535,7 @@ namespace MachineWatchTest
         public void PendingLoadOneSerialPerMat()
         {
             Assert.Equal(0, _jobLog.PendingLoads("pal1").Count);
+            _jobLog.AllPendingLoads().Should().BeEmpty();
 
             var mat1 = new LogMaterial(
                 _jobLog.AllocateMaterialID("unique", "part1", 1), "unique", 1, "part1", 1, "face1");
@@ -569,19 +570,42 @@ namespace MachineWatchTest
             _jobLog.AddPendingLoad("pal1", "key1", 5, TimeSpan.FromMinutes(32), TimeSpan.FromMinutes(38), "for1");
             _jobLog.AddPendingLoad("pal1", "key2", 7, TimeSpan.FromMinutes(44), TimeSpan.FromMinutes(49), "for2");
 
-            var pLoads = _jobLog.PendingLoads("pal1");
-            Assert.Equal(2, pLoads.Count);
-            Assert.Equal("pal1", pLoads[0].Pallet);
-            Assert.Equal("key1", pLoads[0].Key);
-            Assert.Equal(5, pLoads[0].LoadStation);
-            Assert.Equal(TimeSpan.FromMinutes(32), pLoads[0].Elapsed);
-            Assert.Equal("for1", pLoads[0].ForeignID);
-
-            Assert.Equal("pal1", pLoads[1].Pallet);
-            Assert.Equal("key2", pLoads[1].Key);
-            Assert.Equal(7, pLoads[1].LoadStation);
-            Assert.Equal(TimeSpan.FromMinutes(44), pLoads[1].Elapsed);
-            Assert.Equal("for2", pLoads[1].ForeignID);
+            _jobLog.PendingLoads("pal1").Should().BeEquivalentTo(new [] {
+                new JobLogDB.PendingLoad() {
+                    Pallet = "pal1",
+                    Key = "key1",
+                    LoadStation = 5,
+                    Elapsed = TimeSpan.FromMinutes(32),
+                    ForeignID = "for1",
+                    ActiveOperationTime = TimeSpan.FromMinutes(38)
+                },
+                new JobLogDB.PendingLoad() {
+                    Pallet = "pal1",
+                    Key = "key2",
+                    LoadStation = 7,
+                    Elapsed = TimeSpan.FromMinutes(44),
+                    ForeignID = "for2",
+                    ActiveOperationTime = TimeSpan.FromMinutes(49)
+                }
+            });
+            _jobLog.AllPendingLoads().Should().BeEquivalentTo(new [] {
+                new JobLogDB.PendingLoad() {
+                    Pallet = "pal1",
+                    Key = "key1",
+                    LoadStation = 5,
+                    Elapsed = TimeSpan.FromMinutes(32),
+                    ForeignID = "for1",
+                    ActiveOperationTime = TimeSpan.FromMinutes(38)
+                },
+                new JobLogDB.PendingLoad() {
+                    Pallet = "pal1",
+                    Key = "key2",
+                    LoadStation = 7,
+                    Elapsed = TimeSpan.FromMinutes(44),
+                    ForeignID = "for2",
+                    ActiveOperationTime = TimeSpan.FromMinutes(49)
+                }
+            });
 
             var mat = new Dictionary<string, IEnumerable<LogMaterial>>();
 
