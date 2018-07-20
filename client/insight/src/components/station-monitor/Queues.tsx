@@ -53,7 +53,7 @@ import { InProcMaterial, WhiteboardRegion, MaterialDetailTitle, MaterialDetailCo
 import * as api from '../../data/api';
 import * as routes from '../../data/routes';
 import * as guiState from '../../data/gui-state';
-import { Store, connect, mkAC, AppActionBeforeMiddleware, DispatchAction } from '../../store/store';
+import { Store, connect, AppActionBeforeMiddleware, DispatchAction } from '../../store/store';
 import * as matDetails from '../../data/material-details';
 import { MaterialSummary } from '../../data/events';
 import SerialScanner from './QRScan';
@@ -326,10 +326,118 @@ class AddNewMaterialBody extends React.PureComponent<AddNewMaterialProps, AddNew
   }
 }
 
+export interface QueueMatDialogProps {
+  readonly display_material: matDetails.MaterialDetail | null;
+  readonly material_currently_in_queue: boolean;
+  readonly addMatQueue?: string;
+  readonly queueNames: ReadonlyArray<string>;
+
+  readonly onClose: DispatchAction<matDetails.ActionType.CloseMaterialDialog>;
+  readonly removeFromQueue: (mat: matDetails.MaterialDetail) => void;
+  readonly addNewMat: (d: matDetails.AddNewMaterialToQueueData) => void;
+  readonly addExistingMat: (d: matDetails.AddExistingMaterialToQueueData) => void;
+}
+
+export function QueueMatDialog(props: QueueMatDialogProps) {
+  let body: JSX.Element | undefined;
+
+  if (props.display_material === null) {
+    body = <p>None</p>;
+  } else {
+    if (props.material_currently_in_queue) {
+      body = (
+        <ExistingMatInQueueDialogBody
+          display_material={props.display_material}
+          onClose={props.onClose}
+          removeFromQueue={props.removeFromQueue}
+        />
+      );
+    } else if (props.display_material.materialID >= 0 || props.display_material.loading_events) {
+      body = (
+        <AddSerialFound
+          queues={props.queueNames}
+          display_material={props.display_material}
+          queue_name={props.addMatQueue}
+          onClose={props.onClose}
+          addMat={props.addExistingMat}
+        />
+      );
+    } else {
+      body = (
+        <AddNewMaterialBody
+          queues={props.queueNames}
+          not_found_serial={props.display_material.serial}
+          queue_name={props.addMatQueue}
+          onClose={props.onClose}
+          addMat={props.addNewMat}
+        />
+      );
+    }
+  }
+
+  return (
+    <Dialog
+      open={props.display_material !== null}
+      onClose={props.onClose}
+      maxWidth="md"
+    >
+      {body}
+    </Dialog>
+
+  );
+}
+
+const selectMatCurrentlyInQueue = createSelector(
+  (st: Store) => st.MaterialDetails.material,
+  (st: Store) => st.Current.current_status.material,
+  function (mat: matDetails.MaterialDetail | null,
+            allMats: ReadonlyArray<api.IInProcessMaterial>
+           ) {
+    if (mat === null) { return false; }
+    if (mat.materialID < 0) { return false; }
+    for (let inProcMat of allMats) {
+      if (inProcMat.materialID === mat.materialID) {
+        return inProcMat.location.type === api.LocType.InQueue;
+      }
+    }
+    return false;
+  }
+);
+
+const ConnectedMaterialDialog = connect(
+  st => ({
+    display_material: st.MaterialDetails.material,
+    material_currently_in_queue: selectMatCurrentlyInQueue(st),
+    addMatQueue: st.Gui.add_mat_to_queue,
+    queueNames: st.Route.standalone_queues,
+  }),
+  {
+    onClose: () => [
+      {type: matDetails.ActionType.CloseMaterialDialog},
+      {type: guiState.ActionType.SetAddMatToQueueName, queue: undefined}
+    ],
+    removeFromQueue: (mat: matDetails.MaterialDetail) => [
+      matDetails.removeFromQueue(mat),
+      {type: matDetails.ActionType.CloseMaterialDialog},
+      {type: guiState.ActionType.SetAddMatToQueueName, queue: undefined}
+    ] as AppActionBeforeMiddleware,
+    addNewMat: (d: matDetails.AddNewMaterialToQueueData) => [
+      matDetails.addNewMaterialToQueue(d),
+      {type: matDetails.ActionType.CloseMaterialDialog},
+      {type: guiState.ActionType.SetAddMatToQueueName, queue: undefined}
+    ],
+    addExistingMat: (d: matDetails.AddExistingMaterialToQueueData) => [
+      matDetails.addExistingMaterialToQueue(d),
+      {type: matDetails.ActionType.CloseMaterialDialog},
+      {type: guiState.ActionType.SetAddMatToQueueName, queue: undefined}
+    ],
+  }
+)(QueueMatDialog);
+
 interface ChooseSerialOrDirectJobProps {
-  readonly queue_name: string;
-  readonly setDialogSt: DispatchAction<guiState.ActionType.SetAddMatToQueueDialog>;
-  readonly lookupSerial: (s: string, queue: string) => void;
+  readonly dialog_open: boolean;
+  readonly lookupSerial: (s: string) => void;
+  readonly selectJobWithoutSerial: () => void;
   readonly onClose: () => void;
 }
 
@@ -342,7 +450,11 @@ class ChooseSerialOrDirectJob extends React.PureComponent<ChooseSerialOrDirectJo
 
   render() {
     return (
-      <>
+      <Dialog
+        open={this.props.dialog_open}
+        onClose={this.props.onClose}
+        maxWidth="md"
+      >
         <DialogTitle>
           Lookup Material
         </DialogTitle>
@@ -375,7 +487,7 @@ class ChooseSerialOrDirectJob extends React.PureComponent<ChooseSerialOrDirectJo
                   variant="raised"
                   color="secondary"
                   onClick={() => this.state.serial
-                    ? this.props.lookupSerial(this.state.serial || "", this.props.queue_name)
+                    ? this.props.lookupSerial(this.state.serial || "")
                     : undefined}
                 >
                   Lookup Serial
@@ -386,10 +498,7 @@ class ChooseSerialOrDirectJob extends React.PureComponent<ChooseSerialOrDirectJo
               <Button
                 variant="raised"
                 color="secondary"
-                onClick={() => this.props.setDialogSt({
-                  queue: this.props.queue_name,
-                  st: guiState.AddMatToQueueDialogState.DialogOpenToAddMaterial
-                })}
+                onClick={this.props.selectJobWithoutSerial}
               >
                 Manually Select Job
               </Button>
@@ -401,137 +510,30 @@ class ChooseSerialOrDirectJob extends React.PureComponent<ChooseSerialOrDirectJo
             Cancel
           </Button>
         </DialogActions>
-      </>
+      </Dialog>
     );
   }
 }
 
-export interface QueueMatDialogProps {
-  readonly display_material: matDetails.MaterialDetail | null;
-  readonly addMatState: guiState.AddMatToQueueDialogState;
-  readonly addMatQueue?: string;
-  readonly queueNames: ReadonlyArray<string>;
-
-  readonly onClose: DispatchAction<matDetails.ActionType.CloseMaterialDialog>;
-  readonly removeFromQueue: (mat: matDetails.MaterialDetail) => void;
-  readonly addNewMat: (d: matDetails.AddNewMaterialToQueueData) => void;
-  readonly addExistingMat: (d: matDetails.AddExistingMaterialToQueueData) => void;
-  readonly setAddDialogSt: DispatchAction<guiState.ActionType.SetAddMatToQueueDialog>;
-  readonly lookupSerial: (s: string) => void;
-}
-
-export function QueueMatDialog(props: QueueMatDialogProps) {
-  let body: JSX.Element | undefined;
-
-  switch (props.addMatState) {
-    case guiState.AddMatToQueueDialogState.DialogClosed:
-      // existing material
-      if (props.display_material === null) {
-        body = <p>None</p>;
-      } else {
-        body = (
-          <ExistingMatInQueueDialogBody
-            display_material={props.display_material}
-            onClose={props.onClose}
-            removeFromQueue={props.removeFromQueue}
-          />
-        );
-      }
-      break;
-
-    case guiState.AddMatToQueueDialogState.DialogOpenChooseSerialOrJob:
-      body = (
-        <ChooseSerialOrDirectJob
-          queue_name={props.addMatQueue || ""}
-          setDialogSt={props.setAddDialogSt}
-          lookupSerial={props.lookupSerial}
-          onClose={props.onClose}
-        />
-      );
-      break;
-
-    case guiState.AddMatToQueueDialogState.DialogOpenToAddMaterial:
-      if (props.display_material === null) {
-        body = (
-          <AddNewMaterialBody
-            queues={props.queueNames}
-            queue_name={props.addMatQueue}
-            onClose={props.onClose}
-            addMat={props.addNewMat}
-          />
-        );
-      } else if (props.display_material.materialID >= 0 || props.display_material.loading_events) {
-        body = (
-          <AddSerialFound
-            queues={props.queueNames}
-            display_material={props.display_material}
-            queue_name={props.addMatQueue}
-            onClose={props.onClose}
-            addMat={props.addExistingMat}
-          />
-        );
-      } else {
-        body = (
-          <AddNewMaterialBody
-            queues={props.queueNames}
-            not_found_serial={props.display_material.serial}
-            queue_name={props.addMatQueue}
-            onClose={props.onClose}
-            addMat={props.addNewMat}
-          />
-        );
-      }
-  }
-
-  return (
-    <Dialog
-      open={props.display_material !== null || props.addMatState !== guiState.AddMatToQueueDialogState.DialogClosed}
-      onClose={props.onClose}
-      maxWidth="md"
-    >
-      {body}
-    </Dialog>
-
-  );
-}
-
-const ConnectedMaterialDialog = connect(
+const ConnectedChooseSerialOrDirectJobDialog = connect(
   st => ({
-    display_material: st.MaterialDetails.material,
-    addMatState: st.Gui.add_mat_to_queue_st,
-    addMatQueue: st.Gui.add_mat_to_queue,
-    queueNames: st.Route.standalone_queues,
+    dialog_open: st.Gui.queue_dialog_mode_open,
   }),
   {
     onClose: () => [
-      {type: matDetails.ActionType.CloseMaterialDialog},
-      {type: guiState.ActionType.SetAddMatToQueueDialog, st: guiState.AddMatToQueueDialogState.DialogClosed}
-    ],
-    removeFromQueue: (mat: matDetails.MaterialDetail) => [
-      matDetails.removeFromQueue(mat),
-      {type: matDetails.ActionType.CloseMaterialDialog},
+      { type: guiState.ActionType.SetAddMatToQueueModeDialogOpen, open: false},
+      { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined}
     ] as AppActionBeforeMiddleware,
-    addNewMat: (d: matDetails.AddNewMaterialToQueueData) => [
-      matDetails.addNewMaterialToQueue(d),
-      {type: matDetails.ActionType.CloseMaterialDialog},
-      {type: guiState.ActionType.SetAddMatToQueueDialog, st: guiState.AddMatToQueueDialogState.DialogClosed}
-    ],
-    addExistingMat: (d: matDetails.AddExistingMaterialToQueueData) => [
-      matDetails.addExistingMaterialToQueue(d),
-      {type: matDetails.ActionType.CloseMaterialDialog},
-      {type: guiState.ActionType.SetAddMatToQueueDialog, st: guiState.AddMatToQueueDialogState.DialogClosed}
-    ],
-    lookupSerial: (serial: string, queue: string) => [
+    lookupSerial: (serial: string) => [
       matDetails.openMaterialBySerial(serial),
-      {
-        type: guiState.ActionType.SetAddMatToQueueDialog,
-        queue,
-        st: guiState.AddMatToQueueDialogState.DialogOpenToAddMaterial
-      }
-    ],
-    setAddDialogSt: mkAC(guiState.ActionType.SetAddMatToQueueDialog),
+      {type: guiState.ActionType.SetAddMatToQueueModeDialogOpen, open: false}
+    ] as AppActionBeforeMiddleware,
+    selectJobWithoutSerial: () => [
+      {type: guiState.ActionType.SetAddMatToQueueModeDialogOpen, open: false},
+      matDetails.openMaterialDialogWithEmptyMat(),
+    ] as AppActionBeforeMiddleware,
   }
-)(QueueMatDialog);
+)(ChooseSerialOrDirectJob);
 
 const queueStyles = withStyles(() => ({
   mainScrollable: {
@@ -543,7 +545,7 @@ const queueStyles = withStyles(() => ({
 export interface QueueProps {
   readonly data: LoadStationAndQueueData;
   openMat: (m: Readonly<MaterialSummary>) => void;
-  setAddDialogSt: DispatchAction<guiState.ActionType.SetAddMatToQueueDialog>;
+  openAddToQueue: (queueName: string) => void;
 }
 
 export const Queues = queueStyles<QueueProps>(props => {
@@ -584,10 +586,9 @@ export const Queues = queueStyles<QueueProps>(props => {
               label={region.label}
               borderBottom
               flexStart
-              onAddMaterial={region.free ? undefined : () => props.setAddDialogSt({
-                queue: region.label,
-                st: guiState.AddMatToQueueDialogState.DialogOpenChooseSerialOrJob
-              })}
+              onAddMaterial={region.free ? undefined : () =>
+                props.openAddToQueue(region.label)
+              }
             >
               {
                 region.material.map((m, matIdx) =>
@@ -598,6 +599,7 @@ export const Queues = queueStyles<QueueProps>(props => {
           ))
         }
         <ConnectedMaterialDialog/>
+        <ConnectedChooseSerialOrDirectJobDialog/>
         <SerialScanner/>
       </main>
     </DocumentTitle>
@@ -621,7 +623,10 @@ export default connect(
     data: buildQueueData(st)
   }),
   {
+    openAddToQueue: (queueName: string) => [
+      { type: guiState.ActionType.SetAddMatToQueueModeDialogOpen, open: true},
+      { type: guiState.ActionType.SetAddMatToQueueName, queue: queueName}
+    ] as AppActionBeforeMiddleware,
     openMat: matDetails.openMaterialDialog,
-    setAddDialogSt: mkAC(guiState.ActionType.SetAddMatToQueueDialog),
   }
 )(Queues);

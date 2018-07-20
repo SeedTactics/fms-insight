@@ -35,26 +35,19 @@ import { AppActionBeforeMiddleware } from "./store";
 import { openMaterialBySerial } from "../data/material-details";
 import * as guiState from '../data/gui-state';
 
-enum ScanMode {
-  LoadMaterialDetails,
-  AddToQueue,
-}
-
 export function initBarcodeListener(
   dispatch: (a: AppActionBeforeMiddleware | AppActionBeforeMiddleware[]) => void
 ): void {
   let timeout: NodeJS.Timer | undefined;
   let scanActive: boolean = false;
   let scannedTxt: string = "";
-  let scanMode: ScanMode = ScanMode.LoadMaterialDetails;
 
   function cancelDetection() {
     scannedTxt = "";
     scanActive = false;
   }
 
-  function startDetection(m: ScanMode) {
-    scanMode = m;
+  function startDetection() {
     scannedTxt = "";
     scanActive = true;
     timeout = setTimeout(cancelDetection, 10 * 1000);
@@ -67,29 +60,24 @@ export function initBarcodeListener(
     }
     scanActive = false;
 
-    switch (scanMode) {
-      case ScanMode.LoadMaterialDetails:
-        dispatch(openMaterialBySerial(scannedTxt));
-        break;
-      case ScanMode.AddToQueue:
-        dispatch([
-          openMaterialBySerial(scannedTxt),
-          {
-            type: guiState.ActionType.SetAddMatToQueueDialog,
-            queue: undefined,
-            st: guiState.AddMatToQueueDialogState.DialogOpenToAddMaterial,
-          }
-        ]);
+    let serial = scannedTxt;
+    let commaIdx = serial.indexOf(",");
+    if (commaIdx >= 0) {
+      serial = serial.substring(0, commaIdx);
     }
+
+    dispatch([
+      openMaterialBySerial(serial),
+      {
+        type: guiState.ActionType.SetAddMatToQueueName,
+        queue: undefined,
+      }
+    ]);
   }
 
   function onKeyDown(k: KeyboardEvent) {
     if (k.keyCode === 112) { // F1
-      startDetection(ScanMode.LoadMaterialDetails);
-      k.stopPropagation();
-      k.preventDefault();
-    } else if (k.keyCode === 113) { // F2
-      startDetection(ScanMode.AddToQueue);
+      startDetection();
       k.stopPropagation();
       k.preventDefault();
     } else if (scanActive && k.keyCode === 13) { // Enter

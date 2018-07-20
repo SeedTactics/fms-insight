@@ -109,6 +109,19 @@ it('handles material error', () => {
   expect(s.load_error).toEqual(new Error("aaaa"));
 });
 
+it('opens without loading', () => {
+  const action: mat.Action = {
+    type: mat.ActionType.OpenMaterialDialogWithoutLoad,
+    mat: m,
+  };
+  const initialSt = {
+    material: null,
+    add_mat_in_progress: false,
+  };
+  let s = mat.reducer(initialSt, action);
+  expect(s.material).toEqual(m);
+});
+
 it('clears the material', () => {
   const action: mat.Action = {
     type: mat.ActionType.CloseMaterialDialog,

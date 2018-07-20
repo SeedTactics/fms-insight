@@ -45,9 +45,15 @@ export interface QrScanProps {
 }
 
 export function SerialScanner(props: QrScanProps) {
-  function onScan(s: string | undefined | null): void {
-    if (s === undefined || s == null || s === "") { return; }
-    props.onScan(s);
+  function onScan(serial: string | undefined | null): void {
+    if (serial === undefined || serial == null) { return; }
+    let commaIdx = serial.indexOf(",");
+    if (commaIdx >= 0) {
+      serial = serial.substring(0, commaIdx);
+    }
+    serial = serial.replace(/[^0-9a-zA-Z-_]/g, "");
+    if (serial === "") { return; }
+    props.onScan(serial);
   }
   return (
     <Dialog
@@ -78,6 +84,12 @@ export default connect(
   }),
   {
     onClose: () => ({ type: guiState.ActionType.SetScanQrCodeDialog, open: false}),
-    onScan: openMaterialBySerial
+    onScan: (s: string) => [
+      openMaterialBySerial(s),
+      {
+        type: guiState.ActionType.SetAddMatToQueueName,
+        queue: undefined,
+      }
+    ]
   },
 )(SerialScanner);

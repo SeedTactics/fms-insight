@@ -37,12 +37,6 @@ export enum PlannedOrActual {
   PlannedMinusActual = 'PlannedOrActual',
 }
 
-export enum AddMatToQueueDialogState {
-  DialogClosed,
-  DialogOpenChooseSerialOrJob,
-  DialogOpenToAddMaterial,
-}
-
 export enum ActionType {
   SetSelectedStationCyclePart = 'Gui_SetSelectedStationCyclePart',
   SetSelectedPalletCycle = 'Gui_SetSelectedPalletCycle',
@@ -51,7 +45,8 @@ export enum ActionType {
   SetWorkorderDialogOpen = 'Gui_SetWorkorderDialog',
   SetInspTypeDialogOpen = 'Gui_SetInspTypeDialog',
   SetSerialDialogOpen = 'Gui_SetSerialDialogOpen',
-  SetAddMatToQueueDialog = 'Gui_SetAddMatToQueueDialog',
+  SetAddMatToQueueModeDialogOpen = 'Gui_SetAddMatToQueueModeDialogOpen',
+  SetAddMatToQueueName = 'Gui_SetAddMatToQueueName',
   SetScanQrCodeDialog = 'Gui_ScanQrCodeDialog',
 }
 
@@ -63,7 +58,8 @@ export type Action =
   | { type: ActionType.SetWorkorderDialogOpen, open: boolean }
   | { type: ActionType.SetInspTypeDialogOpen, open: boolean }
   | { type: ActionType.SetSerialDialogOpen, open: boolean }
-  | { type: ActionType.SetAddMatToQueueDialog, queue?: string, st: AddMatToQueueDialogState }
+  | { type: ActionType.SetAddMatToQueueModeDialogOpen, open: boolean }
+  | { type: ActionType.SetAddMatToQueueName, queue: string | undefined}
   | { type: ActionType.SetScanQrCodeDialog, open: boolean }
   ;
 
@@ -76,7 +72,7 @@ export interface State {
   readonly insptype_dialog_open: boolean;
   readonly serial_dialog_open: boolean;
   readonly scan_qr_dialog_open: boolean;
-  readonly add_mat_to_queue_st: AddMatToQueueDialogState;
+  readonly queue_dialog_mode_open: boolean;
   readonly add_mat_to_queue?: string;
 }
 
@@ -87,7 +83,7 @@ export const initial: State = {
   insptype_dialog_open: false,
   serial_dialog_open: false,
   scan_qr_dialog_open: false,
-  add_mat_to_queue_st: AddMatToQueueDialogState.DialogClosed,
+  queue_dialog_mode_open: false,
 };
 
 export function reducer(s: State, a: Action): State {
@@ -109,8 +105,10 @@ export function reducer(s: State, a: Action): State {
       return {...s, serial_dialog_open: a.open };
     case ActionType.SetScanQrCodeDialog:
       return {...s, scan_qr_dialog_open: a.open };
-    case ActionType.SetAddMatToQueueDialog:
-      return {...s, add_mat_to_queue_st: a.st, add_mat_to_queue: a.queue };
+    case ActionType.SetAddMatToQueueModeDialogOpen:
+      return {...s, queue_dialog_mode_open: a.open };
+    case ActionType.SetAddMatToQueueName:
+      return {...s, add_mat_to_queue: a.queue };
     default:
       return s;
   }

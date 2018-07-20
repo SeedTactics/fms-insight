@@ -138,10 +138,16 @@ it("closes the qr code scan dialog", () => {
 
 it("sets the add mat dialog state", () => {
   let s = gui.reducer(gui.initial, {
-    type: gui.ActionType.SetAddMatToQueueDialog,
-    st: gui.AddMatToQueueDialogState.DialogOpenChooseSerialOrJob,
-    queue: "abc",
+    type: gui.ActionType.SetAddMatToQueueModeDialogOpen,
+    open: true,
   });
-  expect(s.add_mat_to_queue_st).toEqual(gui.AddMatToQueueDialogState.DialogOpenChooseSerialOrJob);
-  expect(s.add_mat_to_queue).toEqual("abc");
+  expect(s.queue_dialog_mode_open).toBe(true);
+});
+
+it("sets the add mat queue name", () => {
+  let s = gui.reducer(gui.initial, {
+    type: gui.ActionType.SetAddMatToQueueName,
+    queue: "aaaa",
+  });
+  expect(s.add_mat_to_queue).toEqual("aaaa");
 });

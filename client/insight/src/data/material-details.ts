@@ -40,6 +40,7 @@ import { JobsBackend, LogBackend } from './backend';
 
 export enum ActionType {
   OpenMaterialDialog = 'MaterialDetails_Open',
+  OpenMaterialDialogWithoutLoad = 'MaterialDetails_OpenWithoutLoad',
   CloseMaterialDialog = 'MaterialDetails_Close',
   UpdateMaterial = 'MaterialDetails_UpdateMaterial',
   LoadWorkorders = 'OrderAssign_LoadWorkorders',
@@ -77,6 +78,10 @@ export type Action =
       type: ActionType.OpenMaterialDialog,
       initial: MaterialDetail,
       pledge: Pledge<ReadonlyArray<Readonly<api.ILogEntry>>>
+    }
+  | {
+      type: ActionType.OpenMaterialDialogWithoutLoad,
+      mat: MaterialDetail,
     }
   | {
       type: ActionType.UpdateMaterial,
@@ -117,6 +122,27 @@ export function openMaterialDialog(mat: Readonly<MaterialSummary>):  ABF {
       workorders: [],
     } as MaterialDetail,
     pledge: LogBackend.logForMaterial(mat.materialID),
+  };
+}
+
+export function openMaterialDialogWithEmptyMat():  ABF {
+  return {
+    type: ActionType.OpenMaterialDialogWithoutLoad,
+    mat: {
+      materialID: -1,
+      partName: "",
+      jobUnique: "",
+      serial: "",
+      workorderId: "",
+      signaledInspections: [],
+      completedInspections: [],
+      loading_events: false,
+      updating_material: false,
+      events: [],
+      loading_workorders: false,
+      saving_workorder: false,
+      workorders: [],
+    } as MaterialDetail,
   };
 }
 
@@ -438,6 +464,8 @@ export function reducer(s: State, a: Action): State {
         default:
           return s;
       }
+    case ActionType.OpenMaterialDialogWithoutLoad:
+      return {...s, material: a.mat};
 
     case ActionType.CloseMaterialDialog:
       return {...s, material: null};
