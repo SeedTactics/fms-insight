@@ -2,16 +2,16 @@
 
 exports[`displays a single station oee: station oee gauge 1`] = `
 <Tooltip
+  TransitionComponent={[Function]}
   classes={
     Object {
-      "open": "MuiTooltip-open-2",
       "popper": "MuiTooltip-popper-1",
-      "tooltip": "MuiTooltip-tooltip-3",
-      "tooltipPlacementBottom": "MuiTooltip-tooltipPlacementBottom-8",
-      "tooltipPlacementLeft": "MuiTooltip-tooltipPlacementLeft-5",
-      "tooltipPlacementRight": "MuiTooltip-tooltipPlacementRight-6",
-      "tooltipPlacementTop": "MuiTooltip-tooltipPlacementTop-7",
-      "touch": "MuiTooltip-touch-4",
+      "tooltip": "MuiTooltip-tooltip-2",
+      "tooltipPlacementBottom": "MuiTooltip-tooltipPlacementBottom-7",
+      "tooltipPlacementLeft": "MuiTooltip-tooltipPlacementLeft-4",
+      "tooltipPlacementRight": "MuiTooltip-tooltipPlacementRight-5",
+      "tooltipPlacementTop": "MuiTooltip-tooltipPlacementTop-6",
+      "touch": "MuiTooltip-touch-3",
     }
   }
   disableFocusListener={false}
@@ -217,7 +217,7 @@ exports[`displays a single station oee: station oee gauge 1`] = `
           "fontFamily": "\\"Roboto\\", \\"Helvetica\\", \\"Arial\\", sans-serif",
           "fontSize": "2.8125rem",
           "fontWeight": 400,
-          "lineHeight": "1.06667em",
+          "lineHeight": "1.13333em",
           "marginLeft": "-.02em",
         },
         "display3": Object {
@@ -358,16 +358,16 @@ exports[`displays a single station oee: station oee gauge 1`] = `
 
 exports[`displays a single station without oee: station empty guage 1`] = `
 <Tooltip
+  TransitionComponent={[Function]}
   classes={
     Object {
-      "open": "MuiTooltip-open-2",
       "popper": "MuiTooltip-popper-1",
-      "tooltip": "MuiTooltip-tooltip-3",
-      "tooltipPlacementBottom": "MuiTooltip-tooltipPlacementBottom-8",
-      "tooltipPlacementLeft": "MuiTooltip-tooltipPlacementLeft-5",
-      "tooltipPlacementRight": "MuiTooltip-tooltipPlacementRight-6",
-      "tooltipPlacementTop": "MuiTooltip-tooltipPlacementTop-7",
-      "touch": "MuiTooltip-touch-4",
+      "tooltip": "MuiTooltip-tooltip-2",
+      "tooltipPlacementBottom": "MuiTooltip-tooltipPlacementBottom-7",
+      "tooltipPlacementLeft": "MuiTooltip-tooltipPlacementLeft-4",
+      "tooltipPlacementRight": "MuiTooltip-tooltipPlacementRight-5",
+      "tooltipPlacementTop": "MuiTooltip-tooltipPlacementTop-6",
+      "touch": "MuiTooltip-touch-3",
     }
   }
   disableFocusListener={false}
@@ -573,7 +573,7 @@ exports[`displays a single station without oee: station empty guage 1`] = `
           "fontFamily": "\\"Roboto\\", \\"Helvetica\\", \\"Arial\\", sans-serif",
           "fontSize": "2.8125rem",
           "fontWeight": 400,
-          "lineHeight": "1.06667em",
+          "lineHeight": "1.13333em",
           "marginLeft": "-.02em",
         },
         "display3": Object {

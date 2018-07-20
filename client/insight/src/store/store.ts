@@ -113,7 +113,7 @@ export function initStore() {
     : (f: any) => f;
   /* tslint:enable */
 
-  const store: redux.Store<Store, AppAction> = createStore(
+  const store = createStore<Store, AppAction, {}, {}>(
     combineReducers(
       {
         Current: currentStatus.reducer,

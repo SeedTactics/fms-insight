@@ -66,7 +66,7 @@ export function SerialScanner(props: QrScanProps) {
       </DialogTitle>
       <DialogContent>
         <div style={{minWidth: "20em"}}>
-          {props.dialogOpen ? <QrReader onScan={onScan} onError={console.log}/> : undefined}
+          {props.dialogOpen ? <QrReader onScan={onScan} onError={() => (0)}/> : undefined}
         </div>
       </DialogContent>
       <DialogActions>
