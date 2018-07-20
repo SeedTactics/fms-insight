@@ -205,7 +205,12 @@ namespace MazakMachineInterface
 
       _writeDB = new OpenDatabaseKitTransactionDB(dbConnStr, MazakType);
 
-      loadOper = new LoadOperationsFromFile(cfg);
+      if (MazakType == MazakDbType.MazakVersionE)
+        loadOper = new LoadOperationsFromFile(cfg, enableWatcher: true);
+      else if (MazakType == MazakDbType.MazakWeb)
+        loadOper = new LoadOperationsFromFile(cfg, enableWatcher: false); // web instead watches the log csv files
+      else
+        loadOper = null; // smooth db doesn't use the load operations file
 
       var openReadDb = new OpenDatabaseKitReadDB(dbConnStr, MazakType, loadOper);
       IReadDataAccess readOnlyDb;
@@ -234,17 +239,17 @@ namespace MazakMachineInterface
                                 settings);
 
       logDataLoader.NewEntries += OnNewLogEntries;
-      loadOper.LoadActions += OnLoadActions;
+      if (loadOper != null) loadOper.LoadActions += OnLoadActions;
     }
 
     public void Halt()
     {
       logDataLoader.NewEntries -= OnNewLogEntries;
-      loadOper.LoadActions -= OnLoadActions;
+      if (loadOper != null) loadOper.LoadActions -= OnLoadActions;
       routing.Halt();
       hold.Shutdown();
       logDataLoader.Halt();
-      loadOper.Halt();
+      if (loadOper != null) loadOper.Halt();
       jobDB.Close();
       jobLog.Close();
     }

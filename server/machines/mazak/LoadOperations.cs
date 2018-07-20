@@ -38,43 +38,6 @@ using System.Collections.Generic;
 
 namespace MazakMachineInterface
 {
-
-  public class LoadAction
-  {
-    public int LoadStation {get;set;}
-    public bool LoadEvent {get;set;}
-    public string Unique {get;set;}
-    public string Part {get;set;}
-    public int Process {get;set;}
-    public int Path {get;set;}
-    public int Qty {get;set;}
-
-    public LoadAction(bool l, int stat, string p, string comment, int proc, int q)
-    {
-      LoadStation = stat;
-      LoadEvent = l;
-      Part = p;
-      Process = proc;
-      Qty = q;
-      if (string.IsNullOrEmpty(comment)) {
-        Unique = "";
-        Path = 1;
-      } else {
-        MazakPart.ParseComment(comment, out string uniq, out var procToPath, out bool manual);
-        Unique = uniq;
-        Path = procToPath.PathForProc(proc);
-      }
-    }
-
-    [Newtonsoft.Json.JsonConstructor] private LoadAction() {} //for json deserialize
-
-    public override string ToString()
-    {
-      return (LoadEvent ? "Load " : "Unload ") +
-        Part + "-" + Process.ToString() + " qty: " + Qty.ToString();
-    }
-  }
-
   public class LoadOperationsFromFile
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LoadOperationsFromFile>();
@@ -83,16 +46,12 @@ namespace MazakMachineInterface
     public event LoadActionsDel LoadActions;
     private string mazakPath;
 
-    public LoadOperationsFromFile(BlackMaple.MachineFramework.IConfig cfg)
+    public LoadOperationsFromFile(BlackMaple.MachineFramework.IConfig cfg, bool enableWatcher)
     {
       mazakPath = cfg.GetValue<string>("Mazak", "Load CSV Path");
       if (string.IsNullOrEmpty(mazakPath))
       {
-#if DEBUG
-        mazakPath = @"\\172.16.11.14\mazak\FMS\LDS";
-#else
-                mazakPath = "c:\\mazak\\FMS\\LDS\\";
-#endif
+        mazakPath = "c:\\mazak\\FMS\\LDS\\";
       }
 
       if (!Directory.Exists(mazakPath))
@@ -107,10 +66,12 @@ namespace MazakMachineInterface
         }
       }
 
-      _watcher = new FileSystemWatcher(mazakPath, "*.csv");
-      //_watcher.Created += watcher_Changed;
-      _watcher.Changed += watcher_Changed;
-      _watcher.EnableRaisingEvents = true;
+      if (enableWatcher) {
+        _watcher = new FileSystemWatcher(mazakPath, "*.csv");
+        //_watcher.Created += watcher_Changed;
+        _watcher.Changed += watcher_Changed;
+        _watcher.EnableRaisingEvents = true;
+      }
     }
 
     public void Halt()
@@ -127,7 +88,6 @@ namespace MazakMachineInterface
     private FileSystemWatcher _watcher;
     private object _lock = new object();
     private IDictionary<int, DateTime> lastWriteTime = new Dictionary<int, DateTime>();
-
 
     private void watcher_Changed(object sender, FileSystemEventArgs e)
     {

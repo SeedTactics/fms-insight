@@ -146,6 +146,43 @@ namespace MazakMachineInterface
     public string Comment {get;set;}
   }
 
+  public class LoadAction
+  {
+    public int LoadStation {get;set;}
+    public bool LoadEvent {get;set;}
+    public string Unique {get;set;}
+    public string Part {get;set;}
+    public int Process {get;set;}
+    public int Path {get;set;}
+    public int Qty {get;set;}
+
+    public LoadAction(bool l, int stat, string p, string comment, int proc, int q)
+    {
+      LoadStation = stat;
+      LoadEvent = l;
+      Part = p;
+      Process = proc;
+      Qty = q;
+      if (string.IsNullOrEmpty(comment)) {
+        Unique = "";
+        Path = 1;
+      } else {
+        MazakPart.ParseComment(comment, out string uniq, out var procToPath, out bool manual);
+        Unique = uniq;
+        Path = procToPath.PathForProc(proc);
+      }
+    }
+
+    [Newtonsoft.Json.JsonConstructor] public LoadAction() {}
+
+    public override string ToString()
+    {
+      return (LoadEvent ? "Load " : "Unload ") +
+        Part + "-" + Process.ToString() + " qty: " + Qty.ToString();
+    }
+  }
+
+
   public class MazakSchedules
   {
     public IEnumerable<MazakScheduleRow> Schedules {get;set;}
