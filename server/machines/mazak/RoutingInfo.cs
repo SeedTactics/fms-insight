@@ -717,6 +717,7 @@ namespace MazakMachineInterface
       // for the material in the queue, it will be correctly computed.
       log.RecordAddMaterialToQueue(matId, 0, queue, position);
       logReader.RecheckQueues();
+      RaiseNewCurrentStatus(GetCurrentStatus());
     }
 
     public void AddUnprocessedMaterialToQueue(string jobUnique, int process, string queue, int position, string serial)
@@ -728,6 +729,7 @@ namespace MazakMachineInterface
       // for the material in the queue, it will be correctly computed.
       log.RecordAddMaterialToQueue(matId, process, queue, position);
       logReader.RecheckQueues();
+      RaiseNewCurrentStatus(GetCurrentStatus());
     }
 
     public void SetMaterialInQueue(long materialId, string queue, int position)
@@ -741,12 +743,14 @@ namespace MazakMachineInterface
         .Max();
       log.RecordAddMaterialToQueue(materialId, proc, queue, position);
       logReader.RecheckQueues();
+      RaiseNewCurrentStatus(GetCurrentStatus());
     }
 
     public void RemoveMaterialFromAllQueues(long materialId)
     {
       log.RecordRemoveMaterialFromAllQueues(materialId);
       logReader.RecheckQueues();
+      RaiseNewCurrentStatus(GetCurrentStatus());
     }
     #endregion
   }
