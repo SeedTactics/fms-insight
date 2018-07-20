@@ -133,11 +133,22 @@ namespace MachineWatchTest
     [InlineData("basic-unload-queues")]
     public void StatusSnapshot(string scenario)
     {
+      /*
+      Symlinks not supported on Windows
       var newJobs = JsonConvert.DeserializeObject<NewJobs>(
         File.ReadAllText(
           Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".jobs.json")),
           jsonSettings
       );
+      */
+      NewJobs newJobs = null;
+      if (scenario.Contains("basic")) {
+        newJobs = JsonConvert.DeserializeObject<NewJobs>(
+          File.ReadAllText(
+            Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
+            jsonSettings
+        );
+      }
       _jobDB.AddJobs(newJobs, null);
 
       var allData = JsonConvert.DeserializeObject<MazakAllData>(
