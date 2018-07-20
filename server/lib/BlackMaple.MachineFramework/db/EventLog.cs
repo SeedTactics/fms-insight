@@ -2136,7 +2136,10 @@ namespace BlackMaple.MachineFramework
                     cmd.Parameters.Add("load", SqliteType.Integer).Value = load;
                     cmd.Parameters.Add("elapsed", SqliteType.Integer).Value = elapsed.Ticks;
                     cmd.Parameters.Add("active", SqliteType.Integer).Value = active.Ticks;
-                    cmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignID;
+                    if (string.IsNullOrEmpty(foreignID))
+                        cmd.Parameters.Add("foreign", SqliteType.Text).Value = DBNull.Value;
+                    else
+                        cmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignID;
 
                     cmd.ExecuteNonQuery();
 
@@ -2187,7 +2190,10 @@ namespace BlackMaple.MachineFramework
                             p.Elapsed = new TimeSpan(reader.GetInt64(2));
                             if (!reader.IsDBNull(3))
                                 p.ActiveOperationTime = TimeSpan.FromTicks(reader.GetInt64(3));
-                            p.ForeignID = reader.GetString(4);
+                            if (reader.IsDBNull(4))
+                                p.ForeignID = null;
+                            else
+                                p.ForeignID = reader.GetString(4);
                             ret.Add(p);
                         }
                     }
@@ -2229,7 +2235,10 @@ namespace BlackMaple.MachineFramework
                             p.Elapsed = new TimeSpan(reader.GetInt64(2));
                             if (!reader.IsDBNull(3))
                                 p.ActiveOperationTime = TimeSpan.FromTicks(reader.GetInt64(3));
-                            p.ForeignID = reader.GetString(4);
+                            if (reader.IsDBNull(4))
+                                p.ForeignID = null;
+                            else
+                                p.ForeignID = reader.GetString(4);
                             p.Pallet = reader.GetString(5);
                             ret.Add(p);
                         }
@@ -2330,7 +2339,7 @@ namespace BlackMaple.MachineFramework
                                     elapsed: TimeSpan.FromTicks(reader.GetInt64(2)),
                                     active: reader.IsDBNull(3) ? TimeSpan.Zero : TimeSpan.FromTicks(reader.GetInt64(3))
                                 ),
-                                foreignID: reader.GetString(4),
+                                foreignID: reader.IsDBNull(4) ? null : reader.GetString(4),
                                 origMessage: null));
 
                                 foreach (var logMat in mat[key]) {

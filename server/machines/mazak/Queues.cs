@@ -124,6 +124,7 @@ namespace MazakMachineInterface
     {
       var loadOpers = mazakData.LoadActions;
       var schs = new List<ScheduleWithQueues>();
+      var pending = _log.AllPendingLoads();
       foreach (var schRow in mazakData.Schedules.OrderBy(s => s.DueDate)) {
         if (!MazakPart.IsSailPart(schRow.PartName)) continue;
 
@@ -138,6 +139,14 @@ namespace MazakMachineInterface
           if (action.Unique == job.UniqueStr && action.Path == procToPath.PathForProc(action.Process)) {
             foundJobAtLoad = true;
             log.Debug("Not editing queued material because {uniq} is in the process of being loaded or unload with action {@action}", job.UniqueStr, action);
+            break;
+          }
+        }
+        foreach (var pendingLoad in pending) {
+          var s = pendingLoad.Key.Split(',');
+          if (schRow.PartName == s[0]) {
+            log.Debug("Not editing queued material because found a pending load {@pendingLoad}", pendingLoad);
+            foundJobAtLoad = true;
             break;
           }
         }

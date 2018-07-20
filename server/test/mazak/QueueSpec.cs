@@ -770,5 +770,30 @@ namespace MachineWatchTest
       trans.Should().BeNull();
     }
 
+    [Fact]
+    public void SkipsWhenExistsPendingLoad()
+    {
+      var read = new TestMazakData();
+      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 40);
+      AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 5);
+
+      var j = new JobPlan("uuuu", 1);
+      j.PartName = "pppp";
+      j.SetInputQueue(1, 1, "thequeue");
+      _jobDB.AddJobs(new NewJobs() {
+        Jobs = new List<JobPlan> {j}
+      }, null);
+
+      // put 1 castings in queue
+      var mat1 = _logDB.AllocateMaterialID("uuuu", "pppp", 1);
+      _logDB.RecordAddMaterialToQueue(mat1, process: 0, queue: "thequeue", position: 0);
+
+      //add a pending load
+      _logDB.AddPendingLoad("pal1", "pppp:10:1,unused", load: 5, elapsed: TimeSpan.FromMinutes(2), active: TimeSpan.FromMinutes(3), foreignID: null);
+
+      var trans = _queues.CalculateScheduleChanges(read.ToData());
+      trans.Should().BeNull();
+    }
+
   }
 }
