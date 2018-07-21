@@ -164,6 +164,12 @@ namespace MazakMachineInterface
             "PartProcess_1, PartProcess_2, PartProcess_3, PartProcess_4, FixTime, RemoveTime, CreateToolList_RA" +
             " FROM PartProcess_t");
         TransactionAdapters.Add(PartProcess_t_Adapter);
+
+        Schedule_t_Adapter = createAdapter("SELECT Command, Comment, CompleteQuantity, DueDate, FixForMachine, HoldMode, MissingFixture, MissingProgram, MissingTool, MixScheduleID, PartName, PlanQuantity, Priority, ProcessingPriority, Reserved, ScheduleID, TransactionStatus, Schedule_1, Schedule_2, Schedule_3, Schedule_4, Schedule_5, Schedule_6, StartDate, SetNumber, SetQuantity, SetNumberSets FROM Schedule_t");
+        TransactionAdapters.Add(Schedule_t_Adapter);
+
+        ScheduleProcess_t_Adapter = createAdapter("SELECT ProcessBadQuantity, ProcessExecuteQuantity, ProcessMachine, ProcessMaterialQuantity, ProcessNumber, Reserved, ScheduleID, FixedMachineFlag, FixedMachineNumber, ScheduleProcess_1, ScheduleProcess_2, ScheduleProcess_3, ScheduleProcess_4, ScheduleProcess_5 FROM ScheduleProcess_t");
+        TransactionAdapters.Add(ScheduleProcess_t_Adapter);
       }
       else
       {
@@ -172,13 +178,14 @@ namespace MazakMachineInterface
 
         PartProcess_t_Adapter = createAdapter("SELECT ContinueCut, CutMc, FixLDS, FixPhoto, FixQuantity, Fixture, MainProgram, PartName, ProcessNumber, RemoveLDS, RemovePhoto, Reserved, WashType FROM PartProcess_t");
         TransactionAdapters.Add(PartProcess_t_Adapter);
+
+        Schedule_t_Adapter = createAdapter("SELECT Command, Comment, CompleteQuantity, DueDate, FixForMachine, HoldMode, MissingFixture, MissingProgram, MissingTool, MixScheduleID, PartName, PlanQuantity, Priority, ProcessingPriority, Reserved, ScheduleID, TransactionStatus FROM Schedule_t");
+        TransactionAdapters.Add(Schedule_t_Adapter);
+
+        ScheduleProcess_t_Adapter = createAdapter("SELECT ProcessBadQuantity, ProcessExecuteQuantity, ProcessMachine, ProcessMaterialQuantity, ProcessNumber, Reserved, ScheduleID FROM ScheduleProcess_t");
+        TransactionAdapters.Add(ScheduleProcess_t_Adapter);
       }
 
-      Schedule_t_Adapter = createAdapter("SELECT Command, Comment, CompleteQuantity, DueDate, FixForMachine, HoldMode, MissingFixture, MissingProgram, MissingTool, MixScheduleID, PartName, PlanQuantity, Priority, ProcessingPriority, Reserved, ScheduleID, TransactionStatus FROM Schedule_t");
-      TransactionAdapters.Add(Schedule_t_Adapter);
-
-      ScheduleProcess_t_Adapter = createAdapter("SELECT ProcessBadQuantity, ProcessExecuteQuantity, ProcessMachine, ProcessMaterialQuantity, ProcessNumber, Reserved, ScheduleID FROM ScheduleProcess_t");
-      TransactionAdapters.Add(ScheduleProcess_t_Adapter);
     }
 
     private void EnsureInsertCommands()
@@ -246,6 +253,62 @@ namespace MazakMachineInterface
       throw new Exception("Transaction database is locked and can not be accessed");
     }
 
+    public static void CreateExtraSmoothCols(TransactionDataSet dset, MazakDbType MazakType)
+    {
+      if (MazakType != MazakDbType.MazakSmooth) return;
+      dset.Part_t.Columns.Add("MaterialName", typeof(string));
+      dset.Part_t.Columns.Add("Part_1", typeof(int));
+      dset.Part_t.Columns.Add("Part_2", typeof(int));
+      dset.Part_t.Columns.Add("Part_3", typeof(string));
+      dset.Part_t.Columns.Add("Part_4", typeof(int));
+      dset.Part_t.Columns.Add("Part_5", typeof(int));
+      foreach (var row in dset.Part_t)
+      {
+        row["MaterialName"] = ' ';
+        row["Part_1"] = 0;
+        row["Part_2"] = 0;
+        row["Part_3"] = ' ';
+        row["Part_4"] = 0;
+        row["Part_5"] = 0;
+      }
+      dset.PartProcess_t.Columns.Add("PartProcess_1", typeof(int));
+      dset.PartProcess_t.Columns.Add("PartProcess_2", typeof(int));
+      dset.PartProcess_t.Columns.Add("PartProcess_3", typeof(int));
+      dset.PartProcess_t.Columns.Add("PartProcess_4", typeof(int));
+      dset.PartProcess_t.Columns.Add("FixTime", typeof(int));
+      dset.PartProcess_t.Columns.Add("RemoveTime", typeof(int));
+      dset.PartProcess_t.Columns.Add("CreateToolList_RA", typeof(int));
+      foreach (var row in dset.PartProcess_t)
+      {
+        row["PartProcess_1"] = 0;
+        row["PartProcess_2"] = 0;
+        row["PartProcess_3"] = 0;
+        row["PartProcess_4"] = 0;
+        row["FixTime"] = 0;
+        row["RemoveTime"] = 0;
+        row["CreateToolList_RA"] = 0;
+      }
+
+      dset.Schedule_t.Columns.Add("Schedule_1", typeof(int));
+      dset.Schedule_t.Columns.Add("Schedule_2", typeof(int));
+      dset.Schedule_t.Columns.Add("Schedule_3", typeof(int));
+      dset.Schedule_t.Columns.Add("Schedule_4", typeof(int));
+      dset.Schedule_t.Columns.Add("Schedule_5", typeof(int));
+      dset.Schedule_t.Columns.Add("Schedule_6", typeof(int));
+      dset.Schedule_t.Columns.Add("StartDate", typeof(DateTime));
+      dset.Schedule_t.Columns.Add("SetNumber", typeof(int));
+      dset.Schedule_t.Columns.Add("SetQuantity", typeof(int));
+      dset.Schedule_t.Columns.Add("SetNumberSets", typeof(int));
+
+      dset.ScheduleProcess_t.Columns.Add("FixedMachineFlag", typeof(int));
+      dset.ScheduleProcess_t.Columns.Add("FixedMachineNumber", typeof(int));
+      dset.ScheduleProcess_t.Columns.Add("ScheduleProcess_1", typeof(int));
+      dset.ScheduleProcess_t.Columns.Add("ScheduleProcess_2", typeof(int));
+      dset.ScheduleProcess_t.Columns.Add("ScheduleProcess_3", typeof(int));
+      dset.ScheduleProcess_t.Columns.Add("ScheduleProcess_4", typeof(int));
+      dset.ScheduleProcess_t.Columns.Add("ScheduleProcess_5", typeof(int));
+    }
+
     public void SaveTransaction(TransactionDataSet dset, System.Collections.Generic.IList<string> log, string prefix, int checkInterval = -1)
     {
       CheckReadyForConnect();
@@ -266,38 +329,8 @@ namespace MazakMachineInterface
 
       if (MazakType == MazakDbType.MazakSmooth)
       {
-        dset.Part_t.Columns.Add("MaterialName", typeof(string));
-        dset.Part_t.Columns.Add("Part_1", typeof(int));
-        dset.Part_t.Columns.Add("Part_2", typeof(int));
-        dset.Part_t.Columns.Add("Part_3", typeof(string));
-        dset.Part_t.Columns.Add("Part_4", typeof(int));
-        dset.Part_t.Columns.Add("Part_5", typeof(int));
-        foreach (var row in dset.Part_t)
-        {
-          row["MaterialName"] = ' ';
-          row["Part_1"] = 0;
-          row["Part_2"] = 0;
-          row["Part_3"] = ' ';
-          row["Part_4"] = 0;
-          row["Part_5"] = 0;
-        }
-        dset.PartProcess_t.Columns.Add("PartProcess_1", typeof(int));
-        dset.PartProcess_t.Columns.Add("PartProcess_2", typeof(int));
-        dset.PartProcess_t.Columns.Add("PartProcess_3", typeof(int));
-        dset.PartProcess_t.Columns.Add("PartProcess_4", typeof(int));
-        dset.PartProcess_t.Columns.Add("FixTime", typeof(int));
-        dset.PartProcess_t.Columns.Add("RemoveTime", typeof(int));
-        dset.PartProcess_t.Columns.Add("CreateToolList_RA", typeof(int));
-        foreach (var row in dset.PartProcess_t)
-        {
-          row["PartProcess_1"] = 0;
-          row["PartProcess_2"] = 0;
-          row["PartProcess_3"] = 0;
-          row["PartProcess_4"] = 0;
-          row["FixTime"] = 0;
-          row["RemoveTime"] = 0;
-          row["CreateToolList_RA"] = 0;
-        }
+        if (!dset.Part_t.Columns.Contains("MaterialName"))
+          CreateExtraSmoothCols(dset, MazakType);
       }
 
       OpenTransaction();
@@ -519,6 +552,7 @@ namespace MazakMachineInterface
       if (curRow.WashType.HasValue)
         newRow.WashType = curRow.WashType.Value;
     }
+
     public static void BuildScheduleEditRow(TransactionDataSet.Schedule_tRow newRow, MazakScheduleRow curRow, bool updateMaterial)
     {
       if (updateMaterial)
@@ -551,7 +585,20 @@ namespace MazakMachineInterface
       if (curRow.ProcessingPriority.HasValue)
         newRow.ProcessingPriority = curRow.ProcessingPriority.Value;
       newRow.ScheduleID = curRow.Id;
+
+      if (newRow.Table.Columns.Contains("Schedule_1")) {
+        if (curRow.Schedule_1.HasValue) newRow["Schedule_1"] = curRow.Schedule_1.Value;
+        if (curRow.Schedule_2.HasValue) newRow["Schedule_2"] = curRow.Schedule_2.Value;
+        if (curRow.Schedule_3.HasValue) newRow["Schedule_3"] = curRow.Schedule_3.Value;
+        if (curRow.Schedule_4.HasValue) newRow["Schedule_4"] = curRow.Schedule_4.Value;
+        if (curRow.Schedule_5.HasValue) newRow["Schedule_5"] = curRow.Schedule_5.Value;
+        if (curRow.Schedule_6.HasValue) newRow["Schedule_6"] = curRow.Schedule_6.Value;
+        if (curRow.StartDate.HasValue) newRow["StartDate"] = curRow.StartDate.Value;
+        if (curRow.SetNumber.HasValue) newRow["SetNumber"] = curRow.SetNumber.Value;
+        if (curRow.SetNumberSets.HasValue) newRow["SetNumberSets"] = curRow.SetNumberSets.Value;
+      }
     }
+
     public static void BuildScheduleProcEditRow(TransactionDataSet.ScheduleProcess_tRow newRow, MazakScheduleProcessRow curRow)
     {
       newRow.ProcessBadQuantity = curRow.ProcessBadQuantity;
@@ -560,6 +607,16 @@ namespace MazakMachineInterface
       newRow.ProcessMaterialQuantity = curRow.ProcessMaterialQuantity;
       newRow.ProcessNumber = curRow.ProcessNumber;
       newRow.ScheduleID = curRow.MazakScheduleRowId;
+
+      if (newRow.Table.Columns.Contains("FixedMachineFlag")) {
+        if (curRow.FixedMachineFlag.HasValue) newRow["FixedMachineFlag"] = curRow.FixedMachineFlag.Value;
+        if (curRow.FixedMachineNumber.HasValue) newRow["FixedMachineNumber"] = curRow.FixedMachineNumber.Value;
+        if (curRow.ScheduleProcess_1.HasValue) newRow["ScheduleProcess_1"] = curRow.ScheduleProcess_1.Value;
+        if (curRow.ScheduleProcess_2.HasValue) newRow["ScheduleProcess_2"] = curRow.ScheduleProcess_2.Value;
+        if (curRow.ScheduleProcess_3.HasValue) newRow["ScheduleProcess_3"] = curRow.ScheduleProcess_3.Value;
+        if (curRow.ScheduleProcess_4.HasValue) newRow["ScheduleProcess_4"] = curRow.ScheduleProcess_4.Value;
+        if (curRow.ScheduleProcess_5.HasValue) newRow["ScheduleProcess_5"] = curRow.ScheduleProcess_5.Value;
+      }
     }
 	}
 
@@ -608,12 +665,19 @@ namespace MazakMachineInterface
 
       _partSelect = "SELECT Comment, Id, PartName, Price FROM Part";
       _partProcSelect = "SELECT ContinueCut, CutMc, FixLDS, FixPhoto, FixQuantity, Fixture, MainProgram, PartName, ProcessNumber, RemoveLDS, RemovePhoto, WashType FROM PartProcess";
-      _scheduleSelect = "SELECT Comment, CompleteQuantity, DueDate, FixForMachine, HoldMode, MissingFixture, MissingProgram, MissingTool, MixScheduleID, PartName, PlanQuantity, Priority, ProcessingPriority, Reserved, ScheduleID As Id, UpdatedFlag FROM Schedule";
+
+      if (MazakType != MazakDbType.MazakSmooth) {
+        _scheduleSelect = "SELECT Comment, CompleteQuantity, DueDate, FixForMachine, HoldMode, MissingFixture, MissingProgram, MissingTool, MixScheduleID, PartName, PlanQuantity, Priority, ProcessingPriority, Reserved, ScheduleID As Id, UpdatedFlag FROM Schedule";
+        _scheduleProcSelect = "SELECT ProcessBadQuantity, ProcessExecuteQuantity, ProcessMachine, ProcessMaterialQuantity, ProcessNumber, ScheduleID As MazakScheduleRowId, UpdatedFlag " +
+          " FROM ScheduleProcess";
+      } else {
+        _scheduleSelect = "SELECT Comment, CompleteQuantity, DueDate, FixForMachine, HoldMode, MissingFixture, MissingProgram, MissingTool, MixScheduleID, PartName, PlanQuantity, Priority, ProcessingPriority, Reserved, ScheduleID As Id, UpdatedFlag, Schedule_1, Schedule_2, Schedule_3, Schedule_4, Schedule_5, Schedule_6, StartDate, SetNumber, SetQuantity, SetNumberSets FROM Schedule";
+        _scheduleProcSelect = "SELECT ProcessBadQuantity, ProcessExecuteQuantity, ProcessMachine, ProcessMaterialQuantity, ProcessNumber, ScheduleID As MazakScheduleRowId, UpdatedFlag, FixedMachineFlag, FixedMachineNumber, ScheduleProcess_1, ScheduleProcess_2, ScheduleProcess_3, ScheduleProcess_4, ScheduleProcess_5 " +
+          " FROM ScheduleProcess";
+      }
 
       // normally would use a join to determine FixQuantity as part of the schedule proc row,
       // but the mazak readdb has no indexes and no keys, so everything is a table scan.
-      _scheduleProcSelect = "SELECT ProcessBadQuantity, ProcessExecuteQuantity, ProcessMachine, ProcessMaterialQuantity, ProcessNumber, ScheduleID As MazakScheduleRowId, UpdatedFlag " +
-        " FROM ScheduleProcess";
       _partProcFixQty = "SELECT PartName, ProcessNumber, FixQuantity FROM PartProcess";
 
       _palSubStatusSelect = "SELECT FixQuantity, FixtureName, PalletNumber, PartName, PartProcessNumber, ScheduleID FROM PalletSubStatus";

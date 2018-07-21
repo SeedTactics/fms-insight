@@ -100,6 +100,18 @@ namespace MazakMachineInterface
     public int? Reserved {get;set;}
     public int? UpdatedFlag {get;set;}
 
+    //these are only on Smooth
+    public int? Schedule_1 {get;set;}
+    public int? Schedule_2 {get;set;}
+    public int? Schedule_3 {get;set;}
+    public int? Schedule_4 {get;set;}
+    public int? Schedule_5 {get;set;}
+    public int? Schedule_6 {get;set;}
+    public DateTime? StartDate {get;set;}
+    public int? SetNumber {get;set;}
+    public int? SetQuantity {get;set;}
+    public int? SetNumberSets {get;set;}
+
     public IList<MazakScheduleProcessRow> Processes {get;} = new List<MazakScheduleProcessRow>();
   }
 
@@ -114,6 +126,15 @@ namespace MazakMachineInterface
     public int ProcessBadQuantity {get;set;}
     public int ProcessMachine {get;set;}
     public int UpdatedFlag {get;set;}
+
+    // these are only on Smooth
+    public int? FixedMachineFlag {get;set;}
+    public int? FixedMachineNumber {get;set;}
+    public int? ScheduleProcess_1 {get;set;}
+    public int? ScheduleProcess_2 {get;set;}
+    public int? ScheduleProcess_3 {get;set;}
+    public int? ScheduleProcess_4 {get;set;}
+    public int? ScheduleProcess_5 {get;set;}
   }
   public class MazakPalletRow
   {

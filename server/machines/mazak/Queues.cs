@@ -92,6 +92,7 @@ namespace MazakMachineInterface
     {
       log.Debug("Starting check for new queued material to add to mazak");
       var transSet = new TransactionDataSet();
+      OpenDatabaseKitTransactionDB.CreateExtraSmoothCols(transSet, _transDB.MazakType);
 
       var schs = LoadSchedules(mazakData);
       if (!schs.Any()) return null;
