@@ -753,6 +753,7 @@ namespace BlackMaple.MachineFramework
 
         public List<MachineWatchInterface.LogEntry> GetLogForMaterial(long materialID)
         {
+            if (materialID < 0) return new List<MachineWatchInterface.LogEntry>();
             lock (_lock)
             {
                 using (var cmd = _connection.CreateCommand()) {
