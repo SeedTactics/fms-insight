@@ -63,22 +63,22 @@ namespace MazakMachineInterface
 
   public class LogEntry
   {
-    public DateTime TimeUTC;
-    public LogCode Code;
-    public string ForeignID;
+    public DateTime TimeUTC {get;set;}
+    public LogCode Code {get;set;}
+    public string ForeignID {get;set;}
 
     //Only sometimes filled in depending on the log code
-    public int Pallet;
-    public string FullPartName; //Full part name in the mazak system
-    public string JobPartName;  //Part name with : stripped off
-    public int Process;
-    public int FixedQuantity;
-    public string Program;
-    public int StationNumber;
+    public int Pallet {get;set;}
+    public string FullPartName {get;set;} //Full part name in the mazak system
+    public string JobPartName {get;set;}  //Part name with : stripped off
+    public int Process {get;set;}
+    public int FixedQuantity {get;set;}
+    public string Program {get;set;}
+    public int StationNumber {get;set;}
 
     //Only filled in for pallet movement
-    public string TargetPosition;
-    public string FromPosition;
+    public string TargetPosition {get;set;}
+    public string FromPosition {get;set;}
   }
 
   public delegate void PalletMoveDel(int pallet, string fromStation, string toStation);
@@ -356,8 +356,11 @@ namespace MazakMachineInterface
       _thread = new Thread(new ThreadStart(ThreadFunc));
       _thread.Start();
       _watcher = new FileSystemWatcher(_path);
-      _watcher.Created += (sender, evt) => _newLogFile.Set();
-      _watcher.Changed += (sender, evt) => _newLogFile.Set();
+      _watcher.Filter = "*.csv";
+      _watcher.Created += (sender, evt) =>
+        _newLogFile.Set();
+      //_watcher.Changed += (sender, evt) => _newLogFile.Set();
+      _watcher.EnableRaisingEvents = true;
     }
 
     public event PalletMoveDel PalletMove;
@@ -485,18 +488,22 @@ namespace MazakMachineInterface
             e.TimeUTC = e.TimeUTC.ToUniversalTime();
             e.Code = (LogCode)code;
 
-            if (!int.TryParse(s[13], out e.Pallet))
-              e.Pallet = -1;
+            e.Pallet = -1;
+            if (int.TryParse(s[13], out var pal))
+              e.Pallet = pal;
             e.FullPartName = s[10].Trim();
             int idx = e.FullPartName.IndexOf(':');
             if (idx > 0)
               e.JobPartName = e.FullPartName.Substring(0, idx);
             else
               e.JobPartName = e.FullPartName;
-            int.TryParse(s[11], out e.Process);
-            int.TryParse(s[12], out e.FixedQuantity);
+            int.TryParse(s[11], out var proc);
+            e.Process = proc;
+            int.TryParse(s[12], out var fixQty);
+            e.FixedQuantity = fixQty;
             e.Program = s[14];
-            int.TryParse(s[8], out e.StationNumber);
+            int.TryParse(s[8], out var statNum);
+            e.StationNumber = statNum;
             e.FromPosition = s[16];
             e.TargetPosition = s[17];
 
