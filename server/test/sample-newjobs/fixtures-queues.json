@@ -494,7 +494,7 @@
                             ],
                             "Fixtures": [
                                 {
-                                    "Fixture": "fixtureCC",
+                                    "Fixture": "fixtureCC5",
                                     "Face": "1"
                                 }
                             ],
@@ -615,7 +615,7 @@
                             ],
                             "Fixtures": [
                                 {
-                                    "Fixture": "fixtureCC",
+                                    "Fixture": "fixtureCC6",
                                     "Face": "2"
                                 }
                             ],

@@ -1,0 +1,3691 @@
+{
+    "Jobs": [
+        {
+            "RouteStartUTC": "2018-07-21T19:39:49.89949Z",
+            "RouteEndUTC": "2018-07-22T19:39:49.899505Z",
+            "Archived": false,
+            "CopiedToSystem": false,
+            "PartName": "aaa",
+            "Unique": "aaa-schId1234",
+            "Priority": 100,
+            "ScheduleId": "schId1234",
+            "Bookings": [
+                "book1",
+                "book2"
+            ],
+            "ManuallyCreated": false,
+            "CreateMarkingData": false,
+            "Inspections": [],
+            "CyclesOnFirstProcess": [
+                30
+            ],
+            "ProcsAndPaths": [
+                {
+                    "paths": [
+                        {
+                            "PathGroup": 0,
+                            "Pallets": [
+                                "1",
+                                "2",
+                                "3",
+                                "4"
+                            ],
+                            "Fixtures": [
+                                {
+                                    "Fixture": "abfix",
+                                    "Face": "1"
+                                }
+                            ],
+                            "Load": [
+                                1,
+                                2
+                            ],
+                            "ExpectedLoadTime": "PT5M",
+                            "Unload": [
+                                1,
+                                2
+                            ],
+                            "ExpectedUnloadTime": "PT5M",
+                            "Stops": [
+                                {
+                                    "Stations": {
+                                        "1": "1001",
+                                        "2": "1001",
+                                        "3": "1001",
+                                        "4": "1001"
+                                    },
+                                    "Tools": {},
+                                    "StationGroup": "MC",
+                                    "ExpectedCycleTime": "PT12M12S"
+                                }
+                            ],
+                            "SimulatedProduction": [
+                                {
+                                    "TimeUTC": "2018-07-21T20:16:09.89949Z",
+                                    "Quantity": 1
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T20:17:25.89949Z",
+                                    "Quantity": 2
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T20:34:57.89949Z",
+                                    "Quantity": 3
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T20:36:13.89949Z",
+                                    "Quantity": 4
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T21:00:31.89949Z",
+                                    "Quantity": 5
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T21:01:47.89949Z",
+                                    "Quantity": 6
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T21:24:23.89949Z",
+                                    "Quantity": 7
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T21:25:39.89949Z",
+                                    "Quantity": 8
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T21:48:45.89949Z",
+                                    "Quantity": 9
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T21:50:01.89949Z",
+                                    "Quantity": 10
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T22:13:07.89949Z",
+                                    "Quantity": 11
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T22:14:23.89949Z",
+                                    "Quantity": 12
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T22:37:29.89949Z",
+                                    "Quantity": 13
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T22:38:45.89949Z",
+                                    "Quantity": 14
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T23:01:51.89949Z",
+                                    "Quantity": 15
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T23:03:07.89949Z",
+                                    "Quantity": 16
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T23:26:13.89949Z",
+                                    "Quantity": 17
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T23:27:29.89949Z",
+                                    "Quantity": 18
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T23:50:35.89949Z",
+                                    "Quantity": 19
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T23:51:51.89949Z",
+                                    "Quantity": 20
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T00:14:57.89949Z",
+                                    "Quantity": 21
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T00:16:13.89949Z",
+                                    "Quantity": 22
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T00:39:19.89949Z",
+                                    "Quantity": 23
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T00:40:35.89949Z",
+                                    "Quantity": 24
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T01:03:41.89949Z",
+                                    "Quantity": 25
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T01:04:57.89949Z",
+                                    "Quantity": 26
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T01:28:03.89949Z",
+                                    "Quantity": 27
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T01:29:19.89949Z",
+                                    "Quantity": 28
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T01:52:25.89949Z",
+                                    "Quantity": 29
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T01:53:41.89949Z",
+                                    "Quantity": 30
+                                }
+                            ],
+                            "SimulatedStartingUTC": "2018-07-21T20:16:09.89949Z",
+                            "SimulatedAverageFlowTime": "PT1H3M58S",
+                            "PartsPerPallet": 1
+                        }
+                    ]
+                },
+                {
+                    "paths": [
+                        {
+                            "PathGroup": 0,
+                            "Pallets": [
+                                "1",
+                                "2",
+                                "3",
+                                "4"
+                            ],
+                            "Fixtures": [
+                                {
+                                    "Fixture": "abfix",
+                                    "Face": "2"
+                                }
+                            ],
+                            "Load": [
+                                1,
+                                2
+                            ],
+                            "ExpectedLoadTime": "PT5M",
+                            "Unload": [
+                                1,
+                                2
+                            ],
+                            "ExpectedUnloadTime": "PT5M",
+                            "Stops": [
+                                {
+                                    "Stations": {
+                                        "1": "1002",
+                                        "2": "1002",
+                                        "3": "1002",
+                                        "4": "1002"
+                                    },
+                                    "Tools": {},
+                                    "StationGroup": "MC",
+                                    "ExpectedCycleTime": "PT9M18S"
+                                }
+                            ],
+                            "SimulatedProduction": [
+                                {
+                                    "TimeUTC": "2018-07-21T21:00:31.89949Z",
+                                    "Quantity": 1
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T21:01:47.89949Z",
+                                    "Quantity": 2
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T21:24:23.89949Z",
+                                    "Quantity": 3
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T21:25:39.89949Z",
+                                    "Quantity": 4
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T21:48:45.89949Z",
+                                    "Quantity": 5
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T21:50:01.89949Z",
+                                    "Quantity": 6
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T22:13:07.89949Z",
+                                    "Quantity": 7
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T22:14:23.89949Z",
+                                    "Quantity": 8
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T22:37:29.89949Z",
+                                    "Quantity": 9
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T22:38:45.89949Z",
+                                    "Quantity": 10
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T23:01:51.89949Z",
+                                    "Quantity": 11
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T23:03:07.89949Z",
+                                    "Quantity": 12
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T23:26:13.89949Z",
+                                    "Quantity": 13
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T23:27:29.89949Z",
+                                    "Quantity": 14
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T23:50:35.89949Z",
+                                    "Quantity": 15
+                                },
+                                {
+                                    "TimeUTC": "2018-07-21T23:51:51.89949Z",
+                                    "Quantity": 16
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T00:14:57.89949Z",
+                                    "Quantity": 17
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T00:16:13.89949Z",
+                                    "Quantity": 18
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T00:39:19.89949Z",
+                                    "Quantity": 19
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T00:40:35.89949Z",
+                                    "Quantity": 20
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T01:03:41.89949Z",
+                                    "Quantity": 21
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T01:04:57.89949Z",
+                                    "Quantity": 22
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T01:28:03.89949Z",
+                                    "Quantity": 23
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T01:29:19.89949Z",
+                                    "Quantity": 24
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T01:52:25.89949Z",
+                                    "Quantity": 25
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T01:53:41.89949Z",
+                                    "Quantity": 26
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T02:16:13.89949Z",
+                                    "Quantity": 27
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T02:17:29.89949Z",
+                                    "Quantity": 28
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T02:40:01.89949Z",
+                                    "Quantity": 29
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T02:41:17.89949Z",
+                                    "Quantity": 30
+                                }
+                            ],
+                            "SimulatedStartingUTC": "2018-07-21T21:00:31.89949Z",
+                            "SimulatedAverageFlowTime": "PT1H7M40.5333333S",
+                            "PartsPerPallet": 1
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "RouteStartUTC": "2018-07-21T19:39:49.89949Z",
+            "RouteEndUTC": "2018-07-22T19:39:49.899505Z",
+            "Archived": false,
+            "CopiedToSystem": false,
+            "PartName": "bbb",
+            "Unique": "bbb-schId1234",
+            "Priority": 100,
+            "ScheduleId": "schId1234",
+            "Bookings": [
+                "book1",
+                "book2"
+            ],
+            "ManuallyCreated": false,
+            "CreateMarkingData": false,
+            "Inspections": [],
+            "CyclesOnFirstProcess": [
+                40
+            ],
+            "ProcsAndPaths": [
+                {
+                    "paths": [
+                        {
+                            "PathGroup": 0,
+                            "Pallets": [
+                                "1",
+                                "2",
+                                "3",
+                                "4"
+                            ],
+                            "Fixtures": [
+                                {
+                                    "Fixture": "abfix",
+                                    "Face": "1"
+                                }
+                            ],
+                            "Load": [
+                                1,
+                                2
+                            ],
+                            "ExpectedLoadTime": "PT5M",
+                            "Unload": [
+                                1,
+                                2
+                            ],
+                            "ExpectedUnloadTime": "PT5M",
+                            "Stops": [
+                                {
+                                    "Stations": {
+                                        "1": "1001",
+                                        "2": "1001",
+                                        "3": "1001",
+                                        "4": "1001"
+                                    },
+                                    "Tools": {},
+                                    "StationGroup": "MC",
+                                    "ExpectedCycleTime": "PT4M"
+                                }
+                            ],
+                            "SimulatedProduction": [
+                                {
+                                    "TimeUTC": "2018-07-22T02:16:13.89949Z",
+                                    "Quantity": 1
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T02:17:29.89949Z",
+                                    "Quantity": 2
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T02:40:01.89949Z",
+                                    "Quantity": 3
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T02:41:17.89949Z",
+                                    "Quantity": 4
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T03:03:49.89949Z",
+                                    "Quantity": 5
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T03:05:05.89949Z",
+                                    "Quantity": 6
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T03:27:37.89949Z",
+                                    "Quantity": 7
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T03:28:53.89949Z",
+                                    "Quantity": 8
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T03:51:25.89949Z",
+                                    "Quantity": 9
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T03:52:41.89949Z",
+                                    "Quantity": 10
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T04:15:13.89949Z",
+                                    "Quantity": 11
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T04:16:29.89949Z",
+                                    "Quantity": 12
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T04:39:01.89949Z",
+                                    "Quantity": 13
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T04:40:17.89949Z",
+                                    "Quantity": 14
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T05:02:49.89949Z",
+                                    "Quantity": 15
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T05:04:05.89949Z",
+                                    "Quantity": 16
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T05:26:37.89949Z",
+                                    "Quantity": 17
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T05:27:53.89949Z",
+                                    "Quantity": 18
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T05:50:25.89949Z",
+                                    "Quantity": 19
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T05:51:41.89949Z",
+                                    "Quantity": 20
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T06:14:13.89949Z",
+                                    "Quantity": 21
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T06:15:29.89949Z",
+                                    "Quantity": 22
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T06:38:01.89949Z",
+                                    "Quantity": 23
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T06:39:17.89949Z",
+                                    "Quantity": 24
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T07:01:49.89949Z",
+                                    "Quantity": 25
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T07:03:05.89949Z",
+                                    "Quantity": 26
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T07:25:37.89949Z",
+                                    "Quantity": 27
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T07:26:53.89949Z",
+                                    "Quantity": 28
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T07:49:25.89949Z",
+                                    "Quantity": 29
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T07:50:41.89949Z",
+                                    "Quantity": 30
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T08:13:13.89949Z",
+                                    "Quantity": 31
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T08:14:29.89949Z",
+                                    "Quantity": 32
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T08:37:01.89949Z",
+                                    "Quantity": 33
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T08:38:17.89949Z",
+                                    "Quantity": 34
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T09:00:49.89949Z",
+                                    "Quantity": 35
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T09:02:05.89949Z",
+                                    "Quantity": 36
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T09:19:37.89949Z",
+                                    "Quantity": 37
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T09:20:53.89949Z",
+                                    "Quantity": 38
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T09:42:41.89949Z",
+                                    "Quantity": 39
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T09:43:57.89949Z",
+                                    "Quantity": 40
+                                }
+                            ],
+                            "SimulatedStartingUTC": "2018-07-22T02:16:13.89949Z",
+                            "SimulatedAverageFlowTime": "PT1H7M5.5S",
+                            "PartsPerPallet": 1
+                        }
+                    ]
+                },
+                {
+                    "paths": [
+                        {
+                            "PathGroup": 0,
+                            "Pallets": [
+                                "1",
+                                "2",
+                                "3",
+                                "4"
+                            ],
+                            "Fixtures": [
+                                {
+                                    "Fixture": "abfix",
+                                    "Face": "2"
+                                }
+                            ],
+                            "Load": [
+                                1,
+                                2
+                            ],
+                            "ExpectedLoadTime": "PT5M",
+                            "Unload": [
+                                1,
+                                2
+                            ],
+                            "ExpectedUnloadTime": "PT5M",
+                            "Stops": [
+                                {
+                                    "Stations": {
+                                        "1": "1002",
+                                        "2": "1002",
+                                        "3": "1002",
+                                        "4": "1002"
+                                    },
+                                    "Tools": {},
+                                    "StationGroup": "MC",
+                                    "ExpectedCycleTime": "PT20M"
+                                }
+                            ],
+                            "SimulatedProduction": [
+                                {
+                                    "TimeUTC": "2018-07-22T03:03:49.89949Z",
+                                    "Quantity": 1
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T03:05:05.89949Z",
+                                    "Quantity": 2
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T03:27:37.89949Z",
+                                    "Quantity": 3
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T03:28:53.89949Z",
+                                    "Quantity": 4
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T03:51:25.89949Z",
+                                    "Quantity": 5
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T03:52:41.89949Z",
+                                    "Quantity": 6
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T04:15:13.89949Z",
+                                    "Quantity": 7
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T04:16:29.89949Z",
+                                    "Quantity": 8
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T04:39:01.89949Z",
+                                    "Quantity": 9
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T04:40:17.89949Z",
+                                    "Quantity": 10
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T05:02:49.89949Z",
+                                    "Quantity": 11
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T05:04:05.89949Z",
+                                    "Quantity": 12
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T05:26:37.89949Z",
+                                    "Quantity": 13
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T05:27:53.89949Z",
+                                    "Quantity": 14
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T05:50:25.89949Z",
+                                    "Quantity": 15
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T05:51:41.89949Z",
+                                    "Quantity": 16
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T06:14:13.89949Z",
+                                    "Quantity": 17
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T06:15:29.89949Z",
+                                    "Quantity": 18
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T06:38:01.89949Z",
+                                    "Quantity": 19
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T06:39:17.89949Z",
+                                    "Quantity": 20
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T07:01:49.89949Z",
+                                    "Quantity": 21
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T07:03:05.89949Z",
+                                    "Quantity": 22
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T07:25:37.89949Z",
+                                    "Quantity": 23
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T07:26:53.89949Z",
+                                    "Quantity": 24
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T07:49:25.89949Z",
+                                    "Quantity": 25
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T07:50:41.89949Z",
+                                    "Quantity": 26
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T08:13:13.89949Z",
+                                    "Quantity": 27
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T08:14:29.89949Z",
+                                    "Quantity": 28
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T08:37:01.89949Z",
+                                    "Quantity": 29
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T08:38:17.89949Z",
+                                    "Quantity": 30
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T09:00:49.89949Z",
+                                    "Quantity": 31
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T09:02:05.89949Z",
+                                    "Quantity": 32
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T09:19:37.89949Z",
+                                    "Quantity": 33
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T09:20:53.89949Z",
+                                    "Quantity": 34
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T09:42:41.89949Z",
+                                    "Quantity": 35
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T09:43:57.89949Z",
+                                    "Quantity": 36
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T09:57:33.89949Z",
+                                    "Quantity": 37
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T09:58:49.89949Z",
+                                    "Quantity": 38
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T10:16:37.89949Z",
+                                    "Quantity": 39
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T10:17:53.89949Z",
+                                    "Quantity": 40
+                                }
+                            ],
+                            "SimulatedStartingUTC": "2018-07-22T03:03:49.89949Z",
+                            "SimulatedAverageFlowTime": "PT1H5M23.8S",
+                            "PartsPerPallet": 1
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "RouteStartUTC": "2018-07-21T19:39:49.89949Z",
+            "RouteEndUTC": "2018-07-22T19:39:49.899505Z",
+            "Archived": false,
+            "CopiedToSystem": false,
+            "PartName": "ccc",
+            "Unique": "ccc-schId1234",
+            "Priority": 100,
+            "ScheduleId": "schId1234",
+            "Bookings": [
+                "book1",
+                "book2"
+            ],
+            "ManuallyCreated": false,
+            "CreateMarkingData": false,
+            "Inspections": [],
+            "CyclesOnFirstProcess": [
+                22
+            ],
+            "ProcsAndPaths": [
+                {
+                    "paths": [
+                        {
+                            "PathGroup": 0,
+                            "Pallets": [
+                                "1",
+                                "2",
+                                "3",
+                                "4"
+                            ],
+                            "Fixtures": [
+                                {
+                                    "Fixture": "cccfix",
+                                    "Face": "1"
+                                }
+                            ],
+                            "Load": [
+                                1,
+                                2
+                            ],
+                            "ExpectedLoadTime": "PT5M",
+                            "Unload": [
+                                1,
+                                2
+                            ],
+                            "ExpectedUnloadTime": "PT5M",
+                            "Stops": [
+                                {
+                                    "Stations": {
+                                        "1": "1003",
+                                        "2": "1003",
+                                        "3": "1003",
+                                        "4": "1003"
+                                    },
+                                    "Tools": {},
+                                    "StationGroup": "MC",
+                                    "ExpectedCycleTime": "PT40M"
+                                }
+                            ],
+                            "SimulatedProduction": [
+                                {
+                                    "TimeUTC": "2018-07-22T10:55:25.89949Z",
+                                    "Quantity": 1
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T10:56:41.89949Z",
+                                    "Quantity": 2
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T11:14:29.89949Z",
+                                    "Quantity": 3
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T11:15:45.89949Z",
+                                    "Quantity": 4
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T12:13:47.89949Z",
+                                    "Quantity": 5
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T12:15:03.89949Z",
+                                    "Quantity": 6
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T12:37:55.89949Z",
+                                    "Quantity": 7
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T12:39:11.89949Z",
+                                    "Quantity": 8
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T13:32:29.89949Z",
+                                    "Quantity": 9
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T13:33:45.89949Z",
+                                    "Quantity": 10
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T13:56:17.89949Z",
+                                    "Quantity": 11
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T13:57:33.89949Z",
+                                    "Quantity": 12
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T14:50:51.89949Z",
+                                    "Quantity": 13
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T14:52:07.89949Z",
+                                    "Quantity": 14
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T15:14:39.89949Z",
+                                    "Quantity": 15
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T15:15:55.89949Z",
+                                    "Quantity": 16
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T16:09:13.89949Z",
+                                    "Quantity": 17
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T16:10:29.89949Z",
+                                    "Quantity": 18
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T16:28:01.89949Z",
+                                    "Quantity": 19
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T16:29:17.89949Z",
+                                    "Quantity": 20
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T17:22:35.89949Z",
+                                    "Quantity": 21
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T17:23:51.89949Z",
+                                    "Quantity": 22
+                                }
+                            ],
+                            "SimulatedStartingUTC": "2018-07-22T10:55:25.89949Z",
+                            "SimulatedAverageFlowTime": "PT1H31M29.6363636S",
+                            "PartsPerPallet": 1
+                        }
+                    ]
+                },
+                {
+                    "paths": [
+                        {
+                            "PathGroup": 0,
+                            "Pallets": [
+                                "1",
+                                "2",
+                                "3",
+                                "4"
+                            ],
+                            "Fixtures": [
+                                {
+                                    "Fixture": "cccfix",
+                                    "Face": "2"
+                                }
+                            ],
+                            "Load": [
+                                1,
+                                2
+                            ],
+                            "ExpectedLoadTime": "PT5M",
+                            "Unload": [
+                                1,
+                                2
+                            ],
+                            "ExpectedUnloadTime": "PT5M",
+                            "Stops": [
+                                {
+                                    "Stations": {
+                                        "1": "1004",
+                                        "2": "1004",
+                                        "3": "1004",
+                                        "4": "1004"
+                                    },
+                                    "Tools": {},
+                                    "StationGroup": "MC",
+                                    "ExpectedCycleTime": "PT15M30S"
+                                }
+                            ],
+                            "SimulatedProduction": [
+                                {
+                                    "TimeUTC": "2018-07-22T12:13:47.89949Z",
+                                    "Quantity": 1
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T12:15:03.89949Z",
+                                    "Quantity": 2
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T12:37:55.89949Z",
+                                    "Quantity": 3
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T12:39:11.89949Z",
+                                    "Quantity": 4
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T13:32:29.89949Z",
+                                    "Quantity": 5
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T13:33:45.89949Z",
+                                    "Quantity": 6
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T13:56:17.89949Z",
+                                    "Quantity": 7
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T13:57:33.89949Z",
+                                    "Quantity": 8
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T14:50:51.89949Z",
+                                    "Quantity": 9
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T14:52:07.89949Z",
+                                    "Quantity": 10
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T15:14:39.89949Z",
+                                    "Quantity": 11
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T15:15:55.89949Z",
+                                    "Quantity": 12
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T16:09:13.89949Z",
+                                    "Quantity": 13
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T16:10:29.89949Z",
+                                    "Quantity": 14
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T16:28:01.89949Z",
+                                    "Quantity": 15
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T16:29:17.89949Z",
+                                    "Quantity": 16
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T16:51:23.89949Z",
+                                    "Quantity": 17
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T16:52:39.89949Z",
+                                    "Quantity": 18
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T17:22:35.89949Z",
+                                    "Quantity": 19
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T17:23:51.89949Z",
+                                    "Quantity": 20
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T17:45:57.89949Z",
+                                    "Quantity": 21
+                                },
+                                {
+                                    "TimeUTC": "2018-07-22T17:47:13.89949Z",
+                                    "Quantity": 22
+                                }
+                            ],
+                            "SimulatedStartingUTC": "2018-07-22T12:13:47.89949Z",
+                            "SimulatedAverageFlowTime": "PT1H26M7.8181818S",
+                            "PartsPerPallet": 1
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "StationUse": [
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-21T19:41:05.89949Z",
+            "EndUTC": "2018-07-21T19:46:05.89949Z",
+            "UtilizationTime": "PT5M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-21T19:42:21.89949Z",
+            "EndUTC": "2018-07-21T19:47:21.89949Z",
+            "UtilizationTime": "PT5M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-21T19:47:31.89949Z",
+            "EndUTC": "2018-07-21T19:59:43.89949Z",
+            "UtilizationTime": "PT12M12S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-21T19:48:47.89949Z",
+            "EndUTC": "2018-07-21T20:00:59.89949Z",
+            "UtilizationTime": "PT12M12S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-21T19:49:53.89949Z",
+            "EndUTC": "2018-07-21T19:54:53.89949Z",
+            "UtilizationTime": "PT5M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-21T19:51:09.89949Z",
+            "EndUTC": "2018-07-21T19:56:09.89949Z",
+            "UtilizationTime": "PT5M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-21T19:56:19.89949Z",
+            "EndUTC": "2018-07-21T20:08:31.89949Z",
+            "UtilizationTime": "PT12M12S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-21T19:57:35.89949Z",
+            "EndUTC": "2018-07-21T20:09:47.89949Z",
+            "UtilizationTime": "PT12M12S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-21T20:01:09.89949Z",
+            "EndUTC": "2018-07-21T20:16:09.89949Z",
+            "UtilizationTime": "PT15M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-21T20:02:25.89949Z",
+            "EndUTC": "2018-07-21T20:17:25.89949Z",
+            "UtilizationTime": "PT15M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-21T20:17:35.89949Z",
+            "EndUTC": "2018-07-21T20:26:53.89949Z",
+            "UtilizationTime": "PT9M18S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-21T20:18:51.89949Z",
+            "EndUTC": "2018-07-21T20:28:09.89949Z",
+            "UtilizationTime": "PT9M18S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-21T20:19:57.89949Z",
+            "EndUTC": "2018-07-21T20:34:57.89949Z",
+            "UtilizationTime": "PT15M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-21T20:21:13.89949Z",
+            "EndUTC": "2018-07-21T20:36:13.89949Z",
+            "UtilizationTime": "PT15M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-21T20:26:53.89949Z",
+            "EndUTC": "2018-07-21T20:39:05.89949Z",
+            "UtilizationTime": "PT12M12S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-21T20:28:09.89949Z",
+            "EndUTC": "2018-07-21T20:40:21.89949Z",
+            "UtilizationTime": "PT12M12S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-21T20:36:23.89949Z",
+            "EndUTC": "2018-07-21T20:45:41.89949Z",
+            "UtilizationTime": "PT9M18S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-21T20:37:39.89949Z",
+            "EndUTC": "2018-07-21T20:46:57.89949Z",
+            "UtilizationTime": "PT9M18S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-21T20:40:31.89949Z",
+            "EndUTC": "2018-07-21T21:00:31.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-21T20:41:47.89949Z",
+            "EndUTC": "2018-07-21T21:01:47.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-21T20:45:41.89949Z",
+            "EndUTC": "2018-07-21T20:57:53.89949Z",
+            "UtilizationTime": "PT12M12S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-21T20:46:57.89949Z",
+            "EndUTC": "2018-07-21T20:59:09.89949Z",
+            "UtilizationTime": "PT12M12S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-21T21:02:01.89949Z",
+            "EndUTC": "2018-07-21T21:11:19.89949Z",
+            "UtilizationTime": "PT9M18S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-21T21:03:17.89949Z",
+            "EndUTC": "2018-07-21T21:12:35.89949Z",
+            "UtilizationTime": "PT9M18S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-21T21:04:23.89949Z",
+            "EndUTC": "2018-07-21T21:24:23.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-21T21:05:39.89949Z",
+            "EndUTC": "2018-07-21T21:25:39.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-21T21:11:19.89949Z",
+            "EndUTC": "2018-07-21T21:23:31.89949Z",
+            "UtilizationTime": "PT12M12S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-21T21:12:35.89949Z",
+            "EndUTC": "2018-07-21T21:24:47.89949Z",
+            "UtilizationTime": "PT12M12S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-21T21:26:23.89949Z",
+            "EndUTC": "2018-07-21T21:35:41.89949Z",
+            "UtilizationTime": "PT9M18S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-21T21:27:39.89949Z",
+            "EndUTC": "2018-07-21T21:36:57.89949Z",
+            "UtilizationTime": "PT9M18S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-21T21:28:45.89949Z",
+            "EndUTC": "2018-07-21T21:48:45.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-21T21:30:01.89949Z",
+            "EndUTC": "2018-07-21T21:50:01.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-21T21:35:41.89949Z",
+            "EndUTC": "2018-07-21T21:47:53.89949Z",
+            "UtilizationTime": "PT12M12S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-21T21:36:57.89949Z",
+            "EndUTC": "2018-07-21T21:49:09.89949Z",
+            "UtilizationTime": "PT12M12S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-21T21:50:45.89949Z",
+            "EndUTC": "2018-07-21T22:00:03.89949Z",
+            "UtilizationTime": "PT9M18S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-21T21:52:01.89949Z",
+            "EndUTC": "2018-07-21T22:01:19.89949Z",
+            "UtilizationTime": "PT9M18S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-21T21:53:07.89949Z",
+            "EndUTC": "2018-07-21T22:13:07.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-21T21:54:23.89949Z",
+            "EndUTC": "2018-07-21T22:14:23.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-21T22:00:03.89949Z",
+            "EndUTC": "2018-07-21T22:12:15.89949Z",
+            "UtilizationTime": "PT12M12S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-21T22:01:19.89949Z",
+            "EndUTC": "2018-07-21T22:13:31.89949Z",
+            "UtilizationTime": "PT12M12S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-21T22:15:07.89949Z",
+            "EndUTC": "2018-07-21T22:24:25.89949Z",
+            "UtilizationTime": "PT9M18S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-21T22:16:23.89949Z",
+            "EndUTC": "2018-07-21T22:25:41.89949Z",
+            "UtilizationTime": "PT9M18S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-21T22:17:29.89949Z",
+            "EndUTC": "2018-07-21T22:37:29.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-21T22:18:45.89949Z",
+            "EndUTC": "2018-07-21T22:38:45.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-21T22:24:25.89949Z",
+            "EndUTC": "2018-07-21T22:36:37.89949Z",
+            "UtilizationTime": "PT12M12S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-21T22:25:41.89949Z",
+            "EndUTC": "2018-07-21T22:37:53.89949Z",
+            "UtilizationTime": "PT12M12S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-21T22:39:29.89949Z",
+            "EndUTC": "2018-07-21T22:48:47.89949Z",
+            "UtilizationTime": "PT9M18S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-21T22:40:45.89949Z",
+            "EndUTC": "2018-07-21T22:50:03.89949Z",
+            "UtilizationTime": "PT9M18S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-21T22:41:51.89949Z",
+            "EndUTC": "2018-07-21T23:01:51.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-21T22:43:07.89949Z",
+            "EndUTC": "2018-07-21T23:03:07.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-21T22:48:47.89949Z",
+            "EndUTC": "2018-07-21T23:00:59.89949Z",
+            "UtilizationTime": "PT12M12S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-21T22:50:03.89949Z",
+            "EndUTC": "2018-07-21T23:02:15.89949Z",
+            "UtilizationTime": "PT12M12S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-21T23:03:51.89949Z",
+            "EndUTC": "2018-07-21T23:13:09.89949Z",
+            "UtilizationTime": "PT9M18S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-21T23:05:07.89949Z",
+            "EndUTC": "2018-07-21T23:14:25.89949Z",
+            "UtilizationTime": "PT9M18S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-21T23:06:13.89949Z",
+            "EndUTC": "2018-07-21T23:26:13.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-21T23:07:29.89949Z",
+            "EndUTC": "2018-07-21T23:27:29.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-21T23:13:09.89949Z",
+            "EndUTC": "2018-07-21T23:25:21.89949Z",
+            "UtilizationTime": "PT12M12S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-21T23:14:25.89949Z",
+            "EndUTC": "2018-07-21T23:26:37.89949Z",
+            "UtilizationTime": "PT12M12S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-21T23:28:13.89949Z",
+            "EndUTC": "2018-07-21T23:37:31.89949Z",
+            "UtilizationTime": "PT9M18S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-21T23:29:29.89949Z",
+            "EndUTC": "2018-07-21T23:38:47.89949Z",
+            "UtilizationTime": "PT9M18S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-21T23:30:35.89949Z",
+            "EndUTC": "2018-07-21T23:50:35.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-21T23:31:51.89949Z",
+            "EndUTC": "2018-07-21T23:51:51.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-21T23:37:31.89949Z",
+            "EndUTC": "2018-07-21T23:49:43.89949Z",
+            "UtilizationTime": "PT12M12S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-21T23:38:47.89949Z",
+            "EndUTC": "2018-07-21T23:50:59.89949Z",
+            "UtilizationTime": "PT12M12S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-21T23:52:35.89949Z",
+            "EndUTC": "2018-07-22T00:01:53.89949Z",
+            "UtilizationTime": "PT9M18S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-21T23:53:51.89949Z",
+            "EndUTC": "2018-07-22T00:03:09.89949Z",
+            "UtilizationTime": "PT9M18S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-21T23:54:57.89949Z",
+            "EndUTC": "2018-07-22T00:14:57.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-21T23:56:13.89949Z",
+            "EndUTC": "2018-07-22T00:16:13.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T00:01:53.89949Z",
+            "EndUTC": "2018-07-22T00:14:05.89949Z",
+            "UtilizationTime": "PT12M12S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T00:03:09.89949Z",
+            "EndUTC": "2018-07-22T00:15:21.89949Z",
+            "UtilizationTime": "PT12M12S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T00:16:57.89949Z",
+            "EndUTC": "2018-07-22T00:26:15.89949Z",
+            "UtilizationTime": "PT9M18S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T00:18:13.89949Z",
+            "EndUTC": "2018-07-22T00:27:31.89949Z",
+            "UtilizationTime": "PT9M18S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T00:19:19.89949Z",
+            "EndUTC": "2018-07-22T00:39:19.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T00:20:35.89949Z",
+            "EndUTC": "2018-07-22T00:40:35.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T00:26:15.89949Z",
+            "EndUTC": "2018-07-22T00:38:27.89949Z",
+            "UtilizationTime": "PT12M12S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T00:27:31.89949Z",
+            "EndUTC": "2018-07-22T00:39:43.89949Z",
+            "UtilizationTime": "PT12M12S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T00:41:19.89949Z",
+            "EndUTC": "2018-07-22T00:50:37.89949Z",
+            "UtilizationTime": "PT9M18S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T00:42:35.89949Z",
+            "EndUTC": "2018-07-22T00:51:53.89949Z",
+            "UtilizationTime": "PT9M18S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T00:43:41.89949Z",
+            "EndUTC": "2018-07-22T01:03:41.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T00:44:57.89949Z",
+            "EndUTC": "2018-07-22T01:04:57.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T00:50:37.89949Z",
+            "EndUTC": "2018-07-22T01:02:49.89949Z",
+            "UtilizationTime": "PT12M12S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T00:51:53.89949Z",
+            "EndUTC": "2018-07-22T01:04:05.89949Z",
+            "UtilizationTime": "PT12M12S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T01:05:41.89949Z",
+            "EndUTC": "2018-07-22T01:14:59.89949Z",
+            "UtilizationTime": "PT9M18S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T01:06:57.89949Z",
+            "EndUTC": "2018-07-22T01:16:15.89949Z",
+            "UtilizationTime": "PT9M18S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T01:08:03.89949Z",
+            "EndUTC": "2018-07-22T01:28:03.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T01:09:19.89949Z",
+            "EndUTC": "2018-07-22T01:29:19.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T01:14:59.89949Z",
+            "EndUTC": "2018-07-22T01:27:11.89949Z",
+            "UtilizationTime": "PT12M12S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T01:16:15.89949Z",
+            "EndUTC": "2018-07-22T01:28:27.89949Z",
+            "UtilizationTime": "PT12M12S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T01:30:03.89949Z",
+            "EndUTC": "2018-07-22T01:39:21.89949Z",
+            "UtilizationTime": "PT9M18S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T01:31:19.89949Z",
+            "EndUTC": "2018-07-22T01:40:37.89949Z",
+            "UtilizationTime": "PT9M18S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T01:32:25.89949Z",
+            "EndUTC": "2018-07-22T01:52:25.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T01:33:41.89949Z",
+            "EndUTC": "2018-07-22T01:53:41.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T01:39:21.89949Z",
+            "EndUTC": "2018-07-22T01:43:21.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T01:40:37.89949Z",
+            "EndUTC": "2018-07-22T01:44:37.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T01:53:51.89949Z",
+            "EndUTC": "2018-07-22T02:03:09.89949Z",
+            "UtilizationTime": "PT9M18S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T01:55:07.89949Z",
+            "EndUTC": "2018-07-22T02:04:25.89949Z",
+            "UtilizationTime": "PT9M18S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T01:56:13.89949Z",
+            "EndUTC": "2018-07-22T02:16:13.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T01:57:29.89949Z",
+            "EndUTC": "2018-07-22T02:17:29.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T02:03:09.89949Z",
+            "EndUTC": "2018-07-22T02:07:09.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T02:04:25.89949Z",
+            "EndUTC": "2018-07-22T02:08:25.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T02:17:39.89949Z",
+            "EndUTC": "2018-07-22T02:37:39.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T02:18:55.89949Z",
+            "EndUTC": "2018-07-22T02:38:55.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T02:20:01.89949Z",
+            "EndUTC": "2018-07-22T02:40:01.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T02:21:17.89949Z",
+            "EndUTC": "2018-07-22T02:41:17.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T02:37:39.89949Z",
+            "EndUTC": "2018-07-22T02:41:39.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T02:38:55.89949Z",
+            "EndUTC": "2018-07-22T02:42:55.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T02:41:27.89949Z",
+            "EndUTC": "2018-07-22T03:01:27.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T02:42:43.89949Z",
+            "EndUTC": "2018-07-22T03:02:43.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T02:43:49.89949Z",
+            "EndUTC": "2018-07-22T03:03:49.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T02:45:05.89949Z",
+            "EndUTC": "2018-07-22T03:05:05.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T03:01:27.89949Z",
+            "EndUTC": "2018-07-22T03:05:27.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T03:02:43.89949Z",
+            "EndUTC": "2018-07-22T03:06:43.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T03:05:15.89949Z",
+            "EndUTC": "2018-07-22T03:25:15.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T03:06:31.89949Z",
+            "EndUTC": "2018-07-22T03:26:31.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T03:07:37.89949Z",
+            "EndUTC": "2018-07-22T03:27:37.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T03:08:53.89949Z",
+            "EndUTC": "2018-07-22T03:28:53.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T03:25:15.89949Z",
+            "EndUTC": "2018-07-22T03:29:15.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T03:26:31.89949Z",
+            "EndUTC": "2018-07-22T03:30:31.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T03:29:03.89949Z",
+            "EndUTC": "2018-07-22T03:49:03.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T03:30:19.89949Z",
+            "EndUTC": "2018-07-22T03:50:19.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T03:31:25.89949Z",
+            "EndUTC": "2018-07-22T03:51:25.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T03:32:41.89949Z",
+            "EndUTC": "2018-07-22T03:52:41.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T03:49:03.89949Z",
+            "EndUTC": "2018-07-22T03:53:03.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T03:50:19.89949Z",
+            "EndUTC": "2018-07-22T03:54:19.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T03:52:51.89949Z",
+            "EndUTC": "2018-07-22T04:12:51.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T03:54:07.89949Z",
+            "EndUTC": "2018-07-22T04:14:07.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T03:55:13.89949Z",
+            "EndUTC": "2018-07-22T04:15:13.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T03:56:29.89949Z",
+            "EndUTC": "2018-07-22T04:16:29.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T04:12:51.89949Z",
+            "EndUTC": "2018-07-22T04:16:51.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T04:14:07.89949Z",
+            "EndUTC": "2018-07-22T04:18:07.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T04:16:39.89949Z",
+            "EndUTC": "2018-07-22T04:36:39.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T04:17:55.89949Z",
+            "EndUTC": "2018-07-22T04:37:55.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T04:19:01.89949Z",
+            "EndUTC": "2018-07-22T04:39:01.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T04:20:17.89949Z",
+            "EndUTC": "2018-07-22T04:40:17.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T04:36:39.89949Z",
+            "EndUTC": "2018-07-22T04:40:39.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T04:37:55.89949Z",
+            "EndUTC": "2018-07-22T04:41:55.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T04:40:27.89949Z",
+            "EndUTC": "2018-07-22T05:00:27.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T04:41:43.89949Z",
+            "EndUTC": "2018-07-22T05:01:43.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T04:42:49.89949Z",
+            "EndUTC": "2018-07-22T05:02:49.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T04:44:05.89949Z",
+            "EndUTC": "2018-07-22T05:04:05.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T05:00:27.89949Z",
+            "EndUTC": "2018-07-22T05:04:27.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T05:01:43.89949Z",
+            "EndUTC": "2018-07-22T05:05:43.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T05:04:15.89949Z",
+            "EndUTC": "2018-07-22T05:24:15.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T05:05:31.89949Z",
+            "EndUTC": "2018-07-22T05:25:31.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T05:06:37.89949Z",
+            "EndUTC": "2018-07-22T05:26:37.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T05:07:53.89949Z",
+            "EndUTC": "2018-07-22T05:27:53.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T05:24:15.89949Z",
+            "EndUTC": "2018-07-22T05:28:15.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T05:25:31.89949Z",
+            "EndUTC": "2018-07-22T05:29:31.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T05:28:03.89949Z",
+            "EndUTC": "2018-07-22T05:48:03.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T05:29:19.89949Z",
+            "EndUTC": "2018-07-22T05:49:19.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T05:30:25.89949Z",
+            "EndUTC": "2018-07-22T05:50:25.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T05:31:41.89949Z",
+            "EndUTC": "2018-07-22T05:51:41.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T05:48:03.89949Z",
+            "EndUTC": "2018-07-22T05:52:03.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T05:49:19.89949Z",
+            "EndUTC": "2018-07-22T05:53:19.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T05:51:51.89949Z",
+            "EndUTC": "2018-07-22T06:11:51.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T05:53:07.89949Z",
+            "EndUTC": "2018-07-22T06:13:07.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T05:54:13.89949Z",
+            "EndUTC": "2018-07-22T06:14:13.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T05:55:29.89949Z",
+            "EndUTC": "2018-07-22T06:15:29.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T06:11:51.89949Z",
+            "EndUTC": "2018-07-22T06:15:51.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T06:13:07.89949Z",
+            "EndUTC": "2018-07-22T06:17:07.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T06:15:39.89949Z",
+            "EndUTC": "2018-07-22T06:35:39.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T06:16:55.89949Z",
+            "EndUTC": "2018-07-22T06:36:55.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T06:18:01.89949Z",
+            "EndUTC": "2018-07-22T06:38:01.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T06:19:17.89949Z",
+            "EndUTC": "2018-07-22T06:39:17.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T06:35:39.89949Z",
+            "EndUTC": "2018-07-22T06:39:39.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T06:36:55.89949Z",
+            "EndUTC": "2018-07-22T06:40:55.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T06:39:27.89949Z",
+            "EndUTC": "2018-07-22T06:59:27.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T06:40:43.89949Z",
+            "EndUTC": "2018-07-22T07:00:43.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T06:41:49.89949Z",
+            "EndUTC": "2018-07-22T07:01:49.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T06:43:05.89949Z",
+            "EndUTC": "2018-07-22T07:03:05.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T06:59:27.89949Z",
+            "EndUTC": "2018-07-22T07:03:27.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T07:00:43.89949Z",
+            "EndUTC": "2018-07-22T07:04:43.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T07:03:15.89949Z",
+            "EndUTC": "2018-07-22T07:23:15.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T07:04:31.89949Z",
+            "EndUTC": "2018-07-22T07:24:31.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T07:05:37.89949Z",
+            "EndUTC": "2018-07-22T07:25:37.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T07:06:53.89949Z",
+            "EndUTC": "2018-07-22T07:26:53.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T07:23:15.89949Z",
+            "EndUTC": "2018-07-22T07:27:15.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T07:24:31.89949Z",
+            "EndUTC": "2018-07-22T07:28:31.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T07:27:03.89949Z",
+            "EndUTC": "2018-07-22T07:47:03.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T07:28:19.89949Z",
+            "EndUTC": "2018-07-22T07:48:19.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T07:29:25.89949Z",
+            "EndUTC": "2018-07-22T07:49:25.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T07:30:41.89949Z",
+            "EndUTC": "2018-07-22T07:50:41.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T07:47:03.89949Z",
+            "EndUTC": "2018-07-22T07:51:03.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T07:48:19.89949Z",
+            "EndUTC": "2018-07-22T07:52:19.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T07:50:51.89949Z",
+            "EndUTC": "2018-07-22T08:10:51.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T07:52:07.89949Z",
+            "EndUTC": "2018-07-22T08:12:07.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T07:53:13.89949Z",
+            "EndUTC": "2018-07-22T08:13:13.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T07:54:29.89949Z",
+            "EndUTC": "2018-07-22T08:14:29.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T08:10:51.89949Z",
+            "EndUTC": "2018-07-22T08:14:51.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T08:12:07.89949Z",
+            "EndUTC": "2018-07-22T08:16:07.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T08:14:39.89949Z",
+            "EndUTC": "2018-07-22T08:34:39.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T08:15:55.89949Z",
+            "EndUTC": "2018-07-22T08:35:55.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T08:17:01.89949Z",
+            "EndUTC": "2018-07-22T08:37:01.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T08:18:17.89949Z",
+            "EndUTC": "2018-07-22T08:38:17.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T08:34:39.89949Z",
+            "EndUTC": "2018-07-22T08:38:39.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T08:35:55.89949Z",
+            "EndUTC": "2018-07-22T08:39:55.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T08:38:27.89949Z",
+            "EndUTC": "2018-07-22T08:58:27.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T08:39:43.89949Z",
+            "EndUTC": "2018-07-22T08:59:43.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T08:40:49.89949Z",
+            "EndUTC": "2018-07-22T09:00:49.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T08:42:05.89949Z",
+            "EndUTC": "2018-07-22T09:02:05.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T08:58:27.89949Z",
+            "EndUTC": "2018-07-22T09:02:27.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T08:59:43.89949Z",
+            "EndUTC": "2018-07-22T09:03:43.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T09:02:15.89949Z",
+            "EndUTC": "2018-07-22T09:22:15.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T09:03:31.89949Z",
+            "EndUTC": "2018-07-22T09:23:31.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T09:04:37.89949Z",
+            "EndUTC": "2018-07-22T09:19:37.89949Z",
+            "UtilizationTime": "PT15M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T09:05:53.89949Z",
+            "EndUTC": "2018-07-22T09:20:53.89949Z",
+            "UtilizationTime": "PT15M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T09:21:03.89949Z",
+            "EndUTC": "2018-07-22T09:41:03.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T09:22:15.89949Z",
+            "EndUTC": "2018-07-22T09:26:15.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T09:22:19.89949Z",
+            "EndUTC": "2018-07-22T09:42:19.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T09:23:31.89949Z",
+            "EndUTC": "2018-07-22T09:27:31.89949Z",
+            "UtilizationTime": "PT4M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T09:27:41.89949Z",
+            "EndUTC": "2018-07-22T09:42:41.89949Z",
+            "UtilizationTime": "PT15M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T09:28:57.89949Z",
+            "EndUTC": "2018-07-22T09:43:57.89949Z",
+            "UtilizationTime": "PT15M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T09:45:11.89949Z",
+            "EndUTC": "2018-07-22T10:05:11.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T09:46:27.89949Z",
+            "EndUTC": "2018-07-22T10:06:27.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T09:47:33.89949Z",
+            "EndUTC": "2018-07-22T09:57:33.89949Z",
+            "UtilizationTime": "PT10M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T09:48:49.89949Z",
+            "EndUTC": "2018-07-22T09:58:49.89949Z",
+            "UtilizationTime": "PT10M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T09:58:59.89949Z",
+            "EndUTC": "2018-07-22T10:38:59.89949Z",
+            "UtilizationTime": "PT40M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T10:00:15.89949Z",
+            "EndUTC": "2018-07-22T10:40:15.89949Z",
+            "UtilizationTime": "PT40M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T10:06:37.89949Z",
+            "EndUTC": "2018-07-22T10:16:37.89949Z",
+            "UtilizationTime": "PT10M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T10:07:53.89949Z",
+            "EndUTC": "2018-07-22T10:17:53.89949Z",
+            "UtilizationTime": "PT10M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T10:18:03.89949Z",
+            "EndUTC": "2018-07-22T10:58:03.89949Z",
+            "UtilizationTime": "PT40M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T10:19:19.89949Z",
+            "EndUTC": "2018-07-22T10:59:19.89949Z",
+            "UtilizationTime": "PT40M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T10:40:25.89949Z",
+            "EndUTC": "2018-07-22T10:55:25.89949Z",
+            "UtilizationTime": "PT15M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T10:41:41.89949Z",
+            "EndUTC": "2018-07-22T10:56:41.89949Z",
+            "UtilizationTime": "PT15M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T10:56:51.89949Z",
+            "EndUTC": "2018-07-22T11:12:21.89949Z",
+            "UtilizationTime": "PT15M30S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T10:58:07.89949Z",
+            "EndUTC": "2018-07-22T11:13:37.89949Z",
+            "UtilizationTime": "PT15M30S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T10:59:29.89949Z",
+            "EndUTC": "2018-07-22T11:14:29.89949Z",
+            "UtilizationTime": "PT15M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T11:00:45.89949Z",
+            "EndUTC": "2018-07-22T11:15:45.89949Z",
+            "UtilizationTime": "PT15M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T11:12:21.89949Z",
+            "EndUTC": "2018-07-22T11:52:21.89949Z",
+            "UtilizationTime": "PT40M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T11:13:37.89949Z",
+            "EndUTC": "2018-07-22T11:53:37.89949Z",
+            "UtilizationTime": "PT40M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T11:15:55.89949Z",
+            "EndUTC": "2018-07-22T11:31:25.89949Z",
+            "UtilizationTime": "PT15M30S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T11:17:11.89949Z",
+            "EndUTC": "2018-07-22T11:32:41.89949Z",
+            "UtilizationTime": "PT15M30S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T11:31:25.89949Z",
+            "EndUTC": "2018-07-22T12:11:25.89949Z",
+            "UtilizationTime": "PT40M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T11:32:41.89949Z",
+            "EndUTC": "2018-07-22T12:12:41.89949Z",
+            "UtilizationTime": "PT40M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T11:53:47.89949Z",
+            "EndUTC": "2018-07-22T12:13:47.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T11:55:03.89949Z",
+            "EndUTC": "2018-07-22T12:15:03.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T12:15:33.89949Z",
+            "EndUTC": "2018-07-22T12:31:03.89949Z",
+            "UtilizationTime": "PT15M30S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T12:16:49.89949Z",
+            "EndUTC": "2018-07-22T12:32:19.89949Z",
+            "UtilizationTime": "PT15M30S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T12:17:55.89949Z",
+            "EndUTC": "2018-07-22T12:37:55.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T12:19:11.89949Z",
+            "EndUTC": "2018-07-22T12:39:11.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T12:31:03.89949Z",
+            "EndUTC": "2018-07-22T13:11:03.89949Z",
+            "UtilizationTime": "PT40M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T12:32:19.89949Z",
+            "EndUTC": "2018-07-22T13:12:19.89949Z",
+            "UtilizationTime": "PT40M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T12:39:21.89949Z",
+            "EndUTC": "2018-07-22T12:54:51.89949Z",
+            "UtilizationTime": "PT15M30S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T12:40:37.89949Z",
+            "EndUTC": "2018-07-22T12:56:07.89949Z",
+            "UtilizationTime": "PT15M30S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T12:54:51.89949Z",
+            "EndUTC": "2018-07-22T13:34:51.89949Z",
+            "UtilizationTime": "PT40M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T12:56:07.89949Z",
+            "EndUTC": "2018-07-22T13:36:07.89949Z",
+            "UtilizationTime": "PT40M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T13:12:29.89949Z",
+            "EndUTC": "2018-07-22T13:32:29.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T13:13:45.89949Z",
+            "EndUTC": "2018-07-22T13:33:45.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T13:33:55.89949Z",
+            "EndUTC": "2018-07-22T13:49:25.89949Z",
+            "UtilizationTime": "PT15M30S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T13:35:11.89949Z",
+            "EndUTC": "2018-07-22T13:50:41.89949Z",
+            "UtilizationTime": "PT15M30S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T13:36:17.89949Z",
+            "EndUTC": "2018-07-22T13:56:17.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T13:37:33.89949Z",
+            "EndUTC": "2018-07-22T13:57:33.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T13:49:25.89949Z",
+            "EndUTC": "2018-07-22T14:29:25.89949Z",
+            "UtilizationTime": "PT40M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T13:50:41.89949Z",
+            "EndUTC": "2018-07-22T14:30:41.89949Z",
+            "UtilizationTime": "PT40M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T13:57:43.89949Z",
+            "EndUTC": "2018-07-22T14:13:13.89949Z",
+            "UtilizationTime": "PT15M30S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T13:58:59.89949Z",
+            "EndUTC": "2018-07-22T14:14:29.89949Z",
+            "UtilizationTime": "PT15M30S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T14:13:13.89949Z",
+            "EndUTC": "2018-07-22T14:53:13.89949Z",
+            "UtilizationTime": "PT40M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T14:14:29.89949Z",
+            "EndUTC": "2018-07-22T14:54:29.89949Z",
+            "UtilizationTime": "PT40M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T14:30:51.89949Z",
+            "EndUTC": "2018-07-22T14:50:51.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T14:32:07.89949Z",
+            "EndUTC": "2018-07-22T14:52:07.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T14:52:17.89949Z",
+            "EndUTC": "2018-07-22T15:07:47.89949Z",
+            "UtilizationTime": "PT15M30S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T14:53:33.89949Z",
+            "EndUTC": "2018-07-22T15:09:03.89949Z",
+            "UtilizationTime": "PT15M30S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T14:54:39.89949Z",
+            "EndUTC": "2018-07-22T15:14:39.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T14:55:55.89949Z",
+            "EndUTC": "2018-07-22T15:15:55.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T15:07:47.89949Z",
+            "EndUTC": "2018-07-22T15:47:47.89949Z",
+            "UtilizationTime": "PT40M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T15:09:03.89949Z",
+            "EndUTC": "2018-07-22T15:49:03.89949Z",
+            "UtilizationTime": "PT40M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T15:16:05.89949Z",
+            "EndUTC": "2018-07-22T15:31:35.89949Z",
+            "UtilizationTime": "PT15M30S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T15:17:21.89949Z",
+            "EndUTC": "2018-07-22T15:32:51.89949Z",
+            "UtilizationTime": "PT15M30S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T15:31:35.89949Z",
+            "EndUTC": "2018-07-22T16:11:35.89949Z",
+            "UtilizationTime": "PT40M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T15:32:51.89949Z",
+            "EndUTC": "2018-07-22T16:12:51.89949Z",
+            "UtilizationTime": "PT40M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T15:49:13.89949Z",
+            "EndUTC": "2018-07-22T16:09:13.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T15:50:29.89949Z",
+            "EndUTC": "2018-07-22T16:10:29.89949Z",
+            "UtilizationTime": "PT20M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T16:10:39.89949Z",
+            "EndUTC": "2018-07-22T16:26:09.89949Z",
+            "UtilizationTime": "PT15M30S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T16:11:55.89949Z",
+            "EndUTC": "2018-07-22T16:27:25.89949Z",
+            "UtilizationTime": "PT15M30S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T16:13:01.89949Z",
+            "EndUTC": "2018-07-22T16:28:01.89949Z",
+            "UtilizationTime": "PT15M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T16:14:17.89949Z",
+            "EndUTC": "2018-07-22T16:29:17.89949Z",
+            "UtilizationTime": "PT15M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T16:26:09.89949Z",
+            "EndUTC": "2018-07-22T17:06:09.89949Z",
+            "UtilizationTime": "PT40M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T16:27:25.89949Z",
+            "EndUTC": "2018-07-22T17:07:25.89949Z",
+            "UtilizationTime": "PT40M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T16:29:27.89949Z",
+            "EndUTC": "2018-07-22T16:44:57.89949Z",
+            "UtilizationTime": "PT15M30S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 3,
+            "StartUTC": "2018-07-22T16:30:43.89949Z",
+            "EndUTC": "2018-07-22T16:46:13.89949Z",
+            "UtilizationTime": "PT15M30S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T16:46:23.89949Z",
+            "EndUTC": "2018-07-22T16:51:23.89949Z",
+            "UtilizationTime": "PT5M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T16:47:39.89949Z",
+            "EndUTC": "2018-07-22T16:52:39.89949Z",
+            "UtilizationTime": "PT5M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T17:07:35.89949Z",
+            "EndUTC": "2018-07-22T17:22:35.89949Z",
+            "UtilizationTime": "PT15M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T17:08:51.89949Z",
+            "EndUTC": "2018-07-22T17:23:51.89949Z",
+            "UtilizationTime": "PT15M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T17:24:01.89949Z",
+            "EndUTC": "2018-07-22T17:39:31.89949Z",
+            "UtilizationTime": "PT15M30S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "MC",
+            "StationNum": 4,
+            "StartUTC": "2018-07-22T17:25:17.89949Z",
+            "EndUTC": "2018-07-22T17:40:47.89949Z",
+            "UtilizationTime": "PT15M30S",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 1,
+            "StartUTC": "2018-07-22T17:40:57.89949Z",
+            "EndUTC": "2018-07-22T17:45:57.89949Z",
+            "UtilizationTime": "PT5M",
+            "PlannedDownTime": "PT0S"
+        },
+        {
+            "ScheduleId": "schId1234",
+            "StationGroup": "L/U",
+            "StationNum": 2,
+            "StartUTC": "2018-07-22T17:42:13.89949Z",
+            "EndUTC": "2018-07-22T17:47:13.89949Z",
+            "UtilizationTime": "PT5M",
+            "PlannedDownTime": "PT0S"
+        }
+    ],
+    "ExtraParts": {
+        "aaa": 0,
+        "bbb": 0,
+        "ccc": 22
+    },
+    "ArchiveCompletedJobs": true,
+    "ScheduleId": "schId1234",
+    "QueueSizes": {},
+    "CurrentUnfilledWorkorders": []
+}

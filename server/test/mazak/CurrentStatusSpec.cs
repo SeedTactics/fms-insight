@@ -88,11 +88,12 @@ namespace MachineWatchTest
     [Fact]
     public void CreateSnapshot()
     {
-      var scenario = "basic-unload-queues";
+      var scenario = "multiface-transfer-faces-and-unload";
+      var jobsFile = "multi-face.json";
 
       var newJobs = JsonConvert.DeserializeObject<NewJobs>(
         File.ReadAllText(
-          Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".jobs.json")),
+          Path.Combine("..", "..", "..", "sample-newjobs", jobsFile)),
           jsonSettings
       );
       _jobDB.AddJobs(newJobs, null);
@@ -131,6 +132,9 @@ namespace MachineWatchTest
     [InlineData("basic-cutting")]
     [InlineData("basic-load-queue")]
     [InlineData("basic-unload-queues")]
+    [InlineData("multiface-inital-load")]
+    [InlineData("multiface-transfer-faces")]
+    [InlineData("multiface-transfer-faces-and-unload")]
     public void StatusSnapshot(string scenario)
     {
       /*
@@ -146,6 +150,12 @@ namespace MachineWatchTest
         newJobs = JsonConvert.DeserializeObject<NewJobs>(
           File.ReadAllText(
             Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
+            jsonSettings
+        );
+      } else if (scenario.Contains("multiface")) {
+        newJobs = JsonConvert.DeserializeObject<NewJobs>(
+          File.ReadAllText(
+            Path.Combine("..", "..", "..", "sample-newjobs", "multi-face.json")),
             jsonSettings
         );
       }
