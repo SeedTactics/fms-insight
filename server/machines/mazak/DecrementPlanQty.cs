@@ -211,6 +211,7 @@ namespace MazakMachineInterface
       if (schRow == null) return true;
 
       var transSet = new TransactionDataSet();
+      OpenDatabaseKitTransactionDB.CreateExtraSmoothCols(transSet, database.MazakType);
       TransactionDataSet.Schedule_tRow newSchRow = transSet.Schedule_t.NewSchedule_tRow();
       OpenDatabaseKitTransactionDB.BuildScheduleEditRow(newSchRow, schRow, true);
       transSet.Schedule_t.AddSchedule_tRow(newSchRow);
@@ -267,6 +268,7 @@ namespace MazakMachineInterface
                                       IWriteData database)
     {
       TransactionDataSet transSet = new TransactionDataSet();
+      OpenDatabaseKitTransactionDB.CreateExtraSmoothCols(transSet, database.MazakType);
 
       var schIdsPutOnHold = new List<ScheduleId>();
 
@@ -365,6 +367,7 @@ namespace MazakMachineInterface
 
       var mazakData = readDb.LoadSchedules();
       TransactionDataSet transSet = new TransactionDataSet();
+      OpenDatabaseKitTransactionDB.CreateExtraSmoothCols(transSet, readDb.MazakType);
       TransactionDataSet.Schedule_tRow newSchRow = null;
       List<string> log = new List<string>();
 

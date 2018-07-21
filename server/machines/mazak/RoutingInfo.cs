@@ -305,6 +305,7 @@ namespace MazakMachineInterface
         string newGlobal)
     {
       TransactionDataSet transSet = new TransactionDataSet();
+      OpenDatabaseKitTransactionDB.CreateExtraSmoothCols(transSet, readDatabase.MazakType);
       var mazakData = readDatabase.LoadAllData();
 
       int UID = 0;

@@ -237,6 +237,7 @@ namespace MazakMachineInterface
       public void ChangeHoldMode(HoldMode newHold)
       {
         TransactionDataSet transSet = new TransactionDataSet();
+        OpenDatabaseKitTransactionDB.CreateExtraSmoothCols(transSet, _parent.database.MazakType);
 
         TransactionDataSet.Schedule_tRow newSchRow = transSet.Schedule_t.NewSchedule_tRow();
         OpenDatabaseKitTransactionDB.BuildScheduleEditRow(newSchRow, _schRow, false);
