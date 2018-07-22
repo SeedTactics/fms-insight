@@ -72,6 +72,10 @@ const palletStyles = withStyles(() => ({
     color: 'rgba(0,0,0,0.5)',
     fontSize: 'small',
   },
+  labelPalletNum: {
+    color: 'rgba(0,0,0,0.5)',
+    fontSize: 'xx-large',
+  },
   faceContainer: {
     marginLeft: '4em',
     marginRight: '4em',
@@ -87,39 +91,35 @@ export const PalletColumn = palletStyles<LoadStationProps>(props => {
   }
 
   const maxFace = props.data.face.map((m, face) => face).max();
-  const palLabel = "Pallet " + (props.data.pallet ? props.data.pallet.pallet : "");
 
   let palDetails: JSX.Element;
   if (props.data.face.size === 1) {
     const mat = props.data.face.first();
     palDetails = (
-      <WhiteboardRegion label={palLabel} spaceAround>
-        { (mat || []).map((m, idx) =>
-          <InProcMaterial key={idx} mat={m} onOpen={props.openMat}/>)
-        }
-      </WhiteboardRegion>
+      <div className={props.classes.faceContainer}>
+        <WhiteboardRegion label={""} spaceAround>
+          { (mat || []).map((m, idx) =>
+            <InProcMaterial key={idx} mat={m} onOpen={props.openMat}/>)
+          }
+        </WhiteboardRegion>
+      </div>
     );
   } else {
     palDetails = (
-      <>
-        <div className={props.classes.labelContainer}>
-          <span className={props.classes.label}>{palLabel}</span>
-        </div>
-        <div className={props.classes.faceContainer}>
-          {
-            props.data.face.toSeq().sortBy((data, face) => face).map((data, face) =>
-              <div key={face}>
-                <WhiteboardRegion label={"Face " + face.toString()} spaceAround>
-                  { data.map((m, idx) =>
-                    <InProcMaterial key={idx} mat={m} onOpen={props.openMat}/>)
-                  }
-                </WhiteboardRegion>
-                {face === maxFace ? undefined : <Divider key={1}/>}
-              </div>
-            ).valueSeq()
-          }
-        </div>
-      </>
+      <div className={props.classes.faceContainer}>
+        {
+          props.data.face.toSeq().sortBy((data, face) => face).map((data, face) =>
+            <div key={face}>
+              <WhiteboardRegion label={"Face " + face.toString()} spaceAround>
+                { data.map((m, idx) =>
+                  <InProcMaterial key={idx} mat={m} onOpen={props.openMat}/>)
+                }
+              </WhiteboardRegion>
+              {face === maxFace ? undefined : <Divider key={1}/>}
+            </div>
+          ).valueSeq()
+        }
+      </div>
     );
   }
 
@@ -132,6 +132,13 @@ export const PalletColumn = palletStyles<LoadStationProps>(props => {
       </WhiteboardRegion>
       <Divider/>
       <div className={palletClass}>
+        <div className={props.classes.labelContainer}>
+          <div className={props.classes.label}>Pallet</div>
+          {props.data.pallet ?
+            <div className={props.classes.labelPalletNum}>{props.data.pallet.pallet}</div>
+            : undefined
+          }
+        </div>
         {palDetails}
       </div>
       <Divider/>

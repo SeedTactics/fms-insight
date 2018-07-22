@@ -446,17 +446,20 @@ const WhiteboardRegionWithStyle = whiteboardRegionStyle<WhiteboardRegionProps>(p
   }
   return (
     <div className={mainClasses.join(' ')}>
-      <div className={props.classes.labelContainer}>
-        <span className={props.classes.label}>
-          {props.label}
-        </span>
-        { props.onAddMaterial ?
-          <IconButton onClick={props.onAddMaterial} className={props.classes.addButton}>
-            <AddIcon className={props.classes.addButton}/>
-          </IconButton>
-          : undefined
-        }
-      </div>
+      { props.label !== "" || props.onAddMaterial ?
+        <div className={props.classes.labelContainer}>
+          <span className={props.classes.label}>
+            {props.label}
+          </span>
+          { props.onAddMaterial ?
+            <IconButton onClick={props.onAddMaterial} className={props.classes.addButton}>
+              <AddIcon className={props.classes.addButton}/>
+            </IconButton>
+            : undefined
+          }
+        </div>
+        : undefined
+      }
       <div className={props.classes.contentContainer} style={{justifyContent}}>
         {props.children}
       </div>
