@@ -70,7 +70,7 @@ namespace BlackMaple.MachineFramework
       try {
         var builder = new UriBuilder(mats.Key);
         if (builder.Scheme == "") builder.Scheme = "http";
-        if (builder.Port == 0) builder.Port = 5000;
+        if (builder.Port == 80 && !mats.Key.Contains(':')) builder.Port = 5000;
 
         using (var client = new HttpClient()) {
           client.BaseAddress = builder.Uri;
