@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Data;
 
@@ -44,11 +45,15 @@ namespace MazakMachineInterface
     MazakSmooth
   }
 
-  public interface IWriteData
+  public enum MazakWriteCommand
   {
-    MazakDbType MazakType {get;}
-    void ClearTransactionDatabase();
-    void SaveTransaction(TransactionDataSet dset, System.Collections.Generic.IList<string> log, string prefix, int checkInterval = -1);
+    ForceUnlockEdit = 3,
+    Add = 4,
+    Delete = 5,
+    Edit = 6,
+    ScheduleSafeEdit = 7,
+    ScheduleMaterialEdit = 8,
+    Error = 9,
   }
 
   public class MazakPartRow
@@ -56,9 +61,30 @@ namespace MazakMachineInterface
     public int Id {get;set;}
     public string Comment {get;set;}
     public string PartName {get;set;}
-    public int? Price {get;set;}
+    public int Price {get;set;}
+    public int TotalProcess => Processes.Count();
 
-    public IList<MazakPartProcessRow> Processes {get;} = new List<MazakPartProcessRow>();
+    // these columns are new on smooth
+    public string MaterialName {get;set;}
+    public int Part_1 {get;set;}
+    public int Part_2 {get;set;}
+    public int Part_3 {get;set;}
+    public int Part_4 {get;set;}
+    public int Part_5 {get;set;}
+
+    public IList<MazakPartProcessRow> Processes {get;set;} = new List<MazakPartProcessRow>();
+
+    public MazakWriteCommand Command {get;set;} // only for transaction DB
+
+    public MazakPartRow Clone()
+    {
+      var p = (MazakPartRow)MemberwiseClone();
+      p.Processes =
+        Processes
+        .Select(proc => proc.Clone())
+        .ToList();
+      return p;
+    }
   }
 
   public class MazakPartProcessRow
@@ -69,7 +95,7 @@ namespace MazakMachineInterface
     public int ProcessNumber {get;set;}
 
     public int FixQuantity {get;set;}
-    public int? ContinueCut {get;set;}
+    public int ContinueCut {get;set;}
     public string CutMc {get;set;}
     public string FixLDS {get;set;}
     public string FixPhoto {get;set;}
@@ -77,7 +103,18 @@ namespace MazakMachineInterface
     public string MainProgram {get;set;}
     public string RemoveLDS {get;set;}
     public string RemovePhoto {get;set;}
-    public int? WashType {get;set;}
+    public int WashType {get;set;}
+
+    // these are new on smooth
+    public int PartProcess_1 {get;set;}
+    public int PartProcess_2 {get;set;}
+    public int PartProcess_3 {get;set;}
+    public int PartProcess_4 {get;set;}
+    public int FixTime {get;set;}
+    public int RemoveTime {get;set;}
+    public int CreateToolList_RA {get;set;}
+
+    public MazakPartProcessRow Clone() => (MazakPartProcessRow)MemberwiseClone();
   }
 
   public class MazakScheduleRow
@@ -90,29 +127,39 @@ namespace MazakMachineInterface
     public int Priority {get;set;}
 
     public DateTime? DueDate {get;set;}
-    public int? FixForMachine {get;set;}
-    public int? HoldMode {get;set;}
-    public int? MissingFixture {get;set;}
-    public int? MissingProgram {get;set;}
-    public int? MissingTool {get;set;}
-    public int? MixScheduleID {get;set;}
-    public int? ProcessingPriority {get;set;}
-    public int? Reserved {get;set;}
-    public int? UpdatedFlag {get;set;}
+    public int FixForMachine {get;set;}
+    public int HoldMode {get;set;}
+    public int MissingFixture {get;set;}
+    public int MissingProgram {get;set;}
+    public int MissingTool {get;set;}
+    public int MixScheduleID {get;set;}
+    public int ProcessingPriority {get;set;}
 
     //these are only on Smooth
-    public int? Schedule_1 {get;set;}
-    public int? Schedule_2 {get;set;}
-    public int? Schedule_3 {get;set;}
-    public int? Schedule_4 {get;set;}
-    public int? Schedule_5 {get;set;}
-    public int? Schedule_6 {get;set;}
+    public int Schedule_1 {get;set;}
+    public int Schedule_2 {get;set;}
+    public int Schedule_3 {get;set;}
+    public int Schedule_4 {get;set;}
+    public int Schedule_5 {get;set;}
+    public int Schedule_6 {get;set;}
     public DateTime? StartDate {get;set;}
-    public int? SetNumber {get;set;}
-    public int? SetQuantity {get;set;}
-    public int? SetNumberSets {get;set;}
+    public int SetNumber {get;set;}
+    public int SetQuantity {get;set;}
+    public int SetNumberSets {get;set;}
 
-    public IList<MazakScheduleProcessRow> Processes {get;} = new List<MazakScheduleProcessRow>();
+    public IList<MazakScheduleProcessRow> Processes {get;set;} = new List<MazakScheduleProcessRow>();
+
+    public MazakWriteCommand Command {get;set;} // only for transaction DB
+
+    public MazakScheduleRow Clone()
+    {
+      var s = (MazakScheduleRow)MemberwiseClone();
+      s.Processes =
+        Processes
+        .Select(proc => proc.Clone())
+        .ToList();
+      return s;
+    }
   }
 
   public class MazakScheduleProcessRow
@@ -125,17 +172,19 @@ namespace MazakMachineInterface
     public int ProcessExecuteQuantity {get;set;}
     public int ProcessBadQuantity {get;set;}
     public int ProcessMachine {get;set;}
-    public int UpdatedFlag {get;set;}
 
     // these are only on Smooth
-    public int? FixedMachineFlag {get;set;}
-    public int? FixedMachineNumber {get;set;}
-    public int? ScheduleProcess_1 {get;set;}
-    public int? ScheduleProcess_2 {get;set;}
-    public int? ScheduleProcess_3 {get;set;}
-    public int? ScheduleProcess_4 {get;set;}
-    public int? ScheduleProcess_5 {get;set;}
+    public int FixedMachineFlag {get;set;}
+    public int FixedMachineNumber {get;set;}
+    public int ScheduleProcess_1 {get;set;}
+    public int ScheduleProcess_2 {get;set;}
+    public int ScheduleProcess_3 {get;set;}
+    public int ScheduleProcess_4 {get;set;}
+    public int ScheduleProcess_5 {get;set;}
+
+    public MazakScheduleProcessRow Clone() => (MazakScheduleProcessRow)MemberwiseClone();
   }
+
   public class MazakPalletRow
   {
     public int PalletNumber {get;set;}
@@ -143,6 +192,9 @@ namespace MazakMachineInterface
     public int RecordID {get;set;}
     public int AngleV1 {get;set;}
     public int FixtureGroupV2 {get;set;}
+    public MazakWriteCommand Command {get;set;} // only for transaction DB
+
+    public MazakPalletRow Clone() => (MazakPalletRow)MemberwiseClone();
   }
 
   public class MazakPalletSubStatusRow
@@ -165,6 +217,9 @@ namespace MazakMachineInterface
   {
     public string FixtureName {get;set;}
     public string Comment {get;set;}
+    public MazakWriteCommand Command {get;set;} // only for transaction DB
+
+    public MazakFixtureRow Clone() => (MazakFixtureRow)MemberwiseClone();
   }
 
   public class LoadAction
@@ -257,6 +312,20 @@ namespace MazakMachineInterface
     MazakAllData LoadAllData();
 
     TResult WithReadDBConnection<TResult>(Func<IDbConnection, TResult> action);
+  }
+
+  public class MazakWriteData
+  {
+    public IList<MazakScheduleRow> Schedules {get;set;} = new List<MazakScheduleRow>();
+    public IList<MazakPartRow> Parts {get;set;} = new List<MazakPartRow>();
+    public IList<MazakPalletRow> Pallets {get;set;} = new List<MazakPalletRow>();
+    public IList<MazakFixtureRow> Fixtures {get;set;} = new List<MazakFixtureRow>();
+  }
+
+  public interface IWriteData
+  {
+    MazakDbType MazakType {get;}
+    void Save(MazakWriteData data, string prefix, System.Collections.Generic.IList<string> log);
   }
 
 }

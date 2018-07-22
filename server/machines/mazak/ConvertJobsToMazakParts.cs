@@ -53,17 +53,15 @@ namespace MazakMachineInterface
       Processes = new List<MazakProcess>();
     }
 
-    public void CreateDatabaseRow(TransactionDataSet transSet)
+    public void CreateDatabaseRow(MazakWriteData transSet)
     {
-      var newPartRow = transSet.Part_t.NewPart_tRow();
+      var newPartRow = new MazakPartRow();
 
-      newPartRow.Command = OpenDatabaseKitTransactionDB.AddCommand;
+      newPartRow.Command = MazakWriteCommand.Add;
       newPartRow.PartName = PartName;
       newPartRow.Comment = Comment;
       newPartRow.Price = 0;
-      newPartRow.TotalProcess = Processes.Count;
-
-      transSet.Part_t.AddPart_tRow(newPartRow);
+      transSet.Parts.Add(newPartRow);
     }
 
     public string PartName
@@ -212,8 +210,7 @@ namespace MazakMachineInterface
     public abstract IEnumerable<string> Pallets();
     public abstract IEnumerable<JobPlan.FixtureFace> Fixtures();
 
-    public abstract TransactionDataSet.PartProcess_tRow
-      CreateDatabaseRow(TransactionDataSet transSet, string fixture, MazakDbType mazakTy);
+    public abstract void CreateDatabaseRow(MazakPartRow newPart, string fixture, MazakDbType mazakTy);
 
     protected static int ConvertStatStrV1ToV2(string v1str)
     {
@@ -246,13 +243,13 @@ namespace MazakMachineInterface
       return Job.PlannedFixtures(ProcessNumber, Path);
     }
 
-    public override TransactionDataSet.PartProcess_tRow CreateDatabaseRow(TransactionDataSet transSet, string fixture, MazakDbType mazakTy)
+    public override void CreateDatabaseRow(MazakPartRow newPart, string fixture, MazakDbType mazakTy)
     {
-      var newPartProcRow = transSet.PartProcess_t.NewPartProcess_tRow();
+      var newPartProcRow = new MazakPartProcessRow();
       newPartProcRow.PartName = Part.PartName;
       newPartProcRow.ProcessNumber = ProcessNumber;
       newPartProcRow.Fixture = fixture;
-      newPartProcRow.FixQuantity = Math.Max(1, Job.PartsPerPallet(ProcessNumber, Path)).ToString();
+      newPartProcRow.FixQuantity = Math.Max(1, Job.PartsPerPallet(ProcessNumber, Path));
 
       newPartProcRow.ContinueCut = 0;
       //newPartProcRow.FixPhoto = "";
@@ -291,9 +288,7 @@ namespace MazakMachineInterface
         newPartProcRow.CutMc = ConvertStatStrV1ToV2(newPartProcRow.CutMc).ToString();
       }
 
-      transSet.PartProcess_t.AddPartProcess_tRow(newPartProcRow);
-
-      return newPartProcRow;
+      newPart.Processes.Add(newPartProcRow);
     }
 
     public override string ToString()
@@ -321,7 +316,7 @@ namespace MazakMachineInterface
 
     public override IEnumerable<JobPlan.FixtureFace> Fixtures() => Enumerable.Empty<JobPlan.FixtureFace>();
 
-    public override TransactionDataSet.PartProcess_tRow CreateDatabaseRow(TransactionDataSet transSet, string fixture, MazakDbType mazakTy)
+    public override void CreateDatabaseRow(MazakPartRow newPart, string fixture, MazakDbType mazakTy)
     {
       char[] FixLDS = { '0', '0', '0', '0', '0', '0', '0', '0', '0', '0' };
       char[] UnfixLDS = { '0', '0', '0', '0', '0', '0', '0', '0', '0', '0' };
@@ -345,8 +340,7 @@ namespace MazakMachineInterface
         UnfixLDS[statNum - 1] = statNum.ToString()[0];
       }
 
-      var newPartProcRow = transSet.PartProcess_t.NewPartProcess_tRow();
-      OpenDatabaseKitTransactionDB.BuildPartProcessRow(newPartProcRow, TemplateProcessRow);
+      var newPartProcRow = TemplateProcessRow.Clone();
       newPartProcRow.PartName = Part.PartName;
       newPartProcRow.Fixture = fixture;
       newPartProcRow.ProcessNumber = ProcessNumber;
@@ -362,9 +356,7 @@ namespace MazakMachineInterface
         newPartProcRow.CutMc = ConvertStatStrV1ToV2(newPartProcRow.CutMc).ToString();
       }
 
-      transSet.PartProcess_t.AddPartProcess_tRow(newPartProcRow);
-
-      return newPartProcRow;
+      newPart.Processes.Add(newPartProcRow);
     }
 
     public override string ToString()

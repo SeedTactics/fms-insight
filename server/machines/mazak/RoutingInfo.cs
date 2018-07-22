@@ -202,7 +202,6 @@ namespace MazakMachineInterface
       }
       try
       {
-        writeDb.ClearTransactionDatabase();
         List<string> logMessages = new List<string>();
 
         // check previous schedule id
@@ -247,13 +246,6 @@ namespace MazakMachineInterface
       }
       finally
       {
-        try
-        {
-          writeDb.ClearTransactionDatabase();
-        }
-        catch
-        {
-        }
         OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
       }
     }
@@ -274,8 +266,6 @@ namespace MazakMachineInterface
           Log.Information("Resuming copy of job schedules into mazak {uniqs}",
               jobs.Jobs.Select(j => j.UniqueStr).ToList());
 
-          writeDb.ClearTransactionDatabase();
-
           List<string> logMessages = new List<string>();
 
           AddSchedules(jobs.Jobs, logMessages);
@@ -287,11 +277,6 @@ namespace MazakMachineInterface
         }
         finally
         {
-          try
-          {
-            writeDb.ClearTransactionDatabase();
-          }
-          catch { }
           OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
         }
       } catch (Exception ex) {
@@ -304,8 +289,7 @@ namespace MazakMachineInterface
             IList<string> logMessages,
         string newGlobal)
     {
-      TransactionDataSet transSet = new TransactionDataSet();
-      OpenDatabaseKitTransactionDB.CreateExtraSmoothCols(transSet, readDatabase.MazakType);
+      var transSet = new MazakWriteData();
       var mazakData = readDatabase.LoadAllData();
 
       int UID = 0;
@@ -341,22 +325,11 @@ namespace MazakMachineInterface
       //remove all completed production
       foreach (var schRow in mazakData.Schedules)
       {
-        TransactionDataSet.Schedule_tRow newSchRow = transSet.Schedule_t.NewSchedule_tRow();
+        var newSchRow = schRow.Clone();
         if (schRow.PlanQuantity == schRow.CompleteQuantity)
         {
-          newSchRow.Command = OpenDatabaseKitTransactionDB.DeleteCommand;
-          newSchRow.ScheduleID = schRow.Id;
-          newSchRow.PartName = schRow.PartName;
-
-          transSet.Schedule_t.AddSchedule_tRow(newSchRow);
-
-          foreach (var schProcRow in schRow.Processes)
-          {
-            var newSchProcRow = transSet.ScheduleProcess_t.NewScheduleProcess_tRow();
-            newSchProcRow.ScheduleID = schProcRow.MazakScheduleRowId;
-            newSchProcRow.ProcessNumber = schProcRow.ProcessNumber;
-            transSet.ScheduleProcess_t.AddScheduleProcess_tRow(newSchProcRow);
-          }
+          newSchRow.Command = MazakWriteCommand.Delete;
+          transSet.Schedules.Add(newSchRow);
 
           MazakPart.ParseComment(schRow.Comment, out string unique, out var paths, out bool manual);
           if (unique != null && unique != "")
@@ -369,9 +342,9 @@ namespace MazakMachineInterface
 
           if (DecrementPriorityOnDownload)
           {
-            OpenDatabaseKitTransactionDB.BuildScheduleEditRow(newSchRow, schRow, false);
+            newSchRow.Command = MazakWriteCommand.ScheduleSafeEdit;
             newSchRow.Priority = Math.Max(newSchRow.Priority - 1, 1);
-            transSet.Schedule_t.AddSchedule_tRow(newSchRow);
+            transSet.Schedules.Add(newSchRow);
           }
         }
       }
@@ -386,23 +359,23 @@ namespace MazakMachineInterface
 
       //delete everything
       palletPartMap.DeletePartPallets(transSet);
-      writeDb.SaveTransaction(transSet, logMessages, "Delete Parts Pallets");
+      writeDb.Save(transSet, "Delete Parts Pallets", logMessages);
 
       Log.Debug("Completed deletion of parts and pallets with messages: {msgs}", logMessages);
 
       //have to delete fixtures after schedule, parts, and pallets are already deleted
       //also, add new fixtures
-      transSet = new TransactionDataSet();
+      transSet = new MazakWriteData();
       palletPartMap.DeleteFixtures(transSet);
       palletPartMap.AddFixtures(transSet);
-      writeDb.SaveTransaction(transSet, logMessages, "Fixtures");
+      writeDb.Save(transSet, "Fixtures", logMessages);
 
       Log.Debug("Deleted fixtures with messages: {msgs}", logMessages);
 
       //now save the pallets and parts
-      transSet = new TransactionDataSet();
+      transSet = new MazakWriteData();
       palletPartMap.CreateRows(transSet);
-      writeDb.SaveTransaction(transSet, logMessages, "Add Parts");
+      writeDb.Save(transSet, "Add Parts", logMessages);
 
       Log.Debug("Added parts and pallets with messages: {msgs}", logMessages);
 
@@ -421,7 +394,7 @@ namespace MazakMachineInterface
                               IList<string> logMessages)
     {
       var mazakData = readDatabase.LoadSchedulesPartsPallets();
-      var transSet = new TransactionDataSet();
+      var transSet = new MazakWriteData();
       var now = DateTime.Now;
 
       var usedScheduleIDs = new HashSet<int>();
@@ -471,13 +444,13 @@ namespace MazakMachineInterface
         }
       }
 
-      if (transSet.Schedule_t.Rows.Count > 0)
+      if (transSet.Schedules.Any())
       {
 
         if (UseStartingOffsetForDueDate)
           SortSchedulesByDate(transSet);
 
-        writeDb.SaveTransaction(transSet, logMessages, "Add Schedules");
+        writeDb.Save(transSet, "Add Schedules", logMessages);
 
         Log.Debug("Completed adding schedules with messages: {msgs}", logMessages);
 
@@ -488,12 +461,12 @@ namespace MazakMachineInterface
       }
     }
 
-    private void SchedulePart(TransactionDataSet transSet, int SchID, string mazakPartName, string mazakComment, int numProcess,
+    private void SchedulePart(MazakWriteData transSet, int SchID, string mazakPartName, string mazakComment, int numProcess,
                               JobPlan part, int proc1path, DateTime now, int scheduleCount)
     {
-      var newSchRow = transSet.Schedule_t.NewSchedule_tRow();
-      newSchRow.Command = OpenDatabaseKitTransactionDB.AddCommand;
-      newSchRow.ScheduleID = SchID;
+      var newSchRow = new MazakScheduleRow();
+      newSchRow.Command = MazakWriteCommand.Add;
+      newSchRow.Id = SchID;
       newSchRow.PartName = mazakPartName;
       newSchRow.PlanQuantity = part.GetPlannedCyclesOnFirstProcess(proc1path);
       newSchRow.CompleteQuantity = 0;
@@ -508,11 +481,12 @@ namespace MazakMachineInterface
 
       if (UseStartingOffsetForDueDate)
       {
+        DateTime d;
         if (part.GetSimulatedStartingTimeUTC(1, proc1path) != DateTime.MinValue)
-          newSchRow.DueDate = part.GetSimulatedStartingTimeUTC(1, proc1path);
+          d = part.GetSimulatedStartingTimeUTC(1, proc1path);
         else
-          newSchRow.DueDate = DateTime.Today;
-        newSchRow.DueDate = newSchRow.DueDate.AddSeconds(5 * scheduleCount);
+          d = DateTime.Today;
+        newSchRow.DueDate = d.AddSeconds(5 * scheduleCount);
       }
       else
       {
@@ -534,8 +508,8 @@ namespace MazakMachineInterface
       //need to add all the ScheduleProcess rows
       for (int i = 1; i <= numProcess; i++)
       {
-        var newSchProcRow = transSet.ScheduleProcess_t.NewScheduleProcess_tRow();
-        newSchProcRow.ScheduleID = SchID;
+        var newSchProcRow = new MazakScheduleProcessRow();
+        newSchProcRow.MazakScheduleRowId = SchID;
         newSchProcRow.ProcessNumber = i;
         if (i == 1)
         {
@@ -549,33 +523,18 @@ namespace MazakMachineInterface
         newSchProcRow.ProcessExecuteQuantity = 0;
         newSchProcRow.ProcessMachine = 0;
 
-        transSet.ScheduleProcess_t.AddScheduleProcess_tRow(newSchProcRow);
+        newSchRow.Processes.Add(newSchProcRow);
       }
 
-      transSet.Schedule_t.AddSchedule_tRow(newSchRow);
+      transSet.Schedules.Add(newSchRow);
     }
 
-    private static void SortSchedulesByDate(TransactionDataSet transSet)
+    private static void SortSchedulesByDate(MazakWriteData transSet)
     {
-      transSet.EnforceConstraints = false;
-
-      var scheduleCopy = (TransactionDataSet.Schedule_tDataTable)transSet.Schedule_t.Copy();
-      var rows = new List<TransactionDataSet.Schedule_tRow>();
-      foreach (TransactionDataSet.Schedule_tRow r in scheduleCopy.Rows)
-        rows.Add(r);
-      rows.Sort((x, y) => x.DueDate.CompareTo(y.DueDate));
-      transSet.Schedule_t.Rows.Clear();
-      foreach (var r in rows)
-      {
-        //ImportRow has a really bad "feature" that it won't import
-        //a detached row, so we must copy the entire table. Actually,
-        //we must have three copies of the rows: the copy of the original table,
-        //the list so we can call sort, and the filled output table. GAH!
-        //Mono imports detached rows just fine....
-        transSet.Schedule_t.ImportRow(r);
-      }
-
-      transSet.EnforceConstraints = true;
+      transSet.Schedules =
+        transSet.Schedules
+        .OrderBy(x => x.DueDate)
+        .ToList();
     }
 
     private void AddJobsToDB(NewJobs newJ)
@@ -626,18 +585,10 @@ namespace MazakMachineInterface
 
       try
       {
-        writeDb.ClearTransactionDatabase();
         return modDecrementPlanQty.DecrementPlanQty(writeDb, readDatabase);
       }
       finally
       {
-        try
-        {
-          writeDb.ClearTransactionDatabase();
-        }
-        catch
-        {
-        }
         OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
       }
     }
@@ -655,13 +606,6 @@ namespace MazakMachineInterface
       }
       finally
       {
-        try
-        {
-          writeDb.ClearTransactionDatabase();
-        }
-        catch
-        {
-        }
         OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
       }
     }

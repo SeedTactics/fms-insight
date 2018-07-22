@@ -71,10 +71,9 @@ namespace MazakMachineInterface
 
           var transSet = CalculateScheduleChanges(mazakData);
 
-          if (transSet != null && transSet.Schedule_t.Count > 0) {
-            _transDB.ClearTransactionDatabase();
+          if (transSet != null && transSet.Schedules.Count() > 0) {
             var logs = new List<string>();
-            _transDB.SaveTransaction(transSet, logs, "Setting material from queues");
+            _transDB.Save(transSet, "Setting material from queues", logs);
             foreach (var msg in logs) {
               log.Warning(msg);
             }
@@ -88,20 +87,16 @@ namespace MazakMachineInterface
       }
     }
 
-    public TransactionDataSet CalculateScheduleChanges(MazakSchedulesAndLoadActions mazakData)
+    public MazakWriteData CalculateScheduleChanges(MazakSchedulesAndLoadActions mazakData)
     {
       log.Debug("Starting check for new queued material to add to mazak");
-      var transSet = new TransactionDataSet();
-      OpenDatabaseKitTransactionDB.CreateExtraSmoothCols(transSet, _transDB.MazakType);
 
       var schs = LoadSchedules(mazakData);
       if (!schs.Any()) return null;
 
       CalculateTargetMatQty(mazakData, schs);
       AttemptToAllocateCastings(schs, mazakData);
-      UpdateMazakMaterialCounts(transSet, schs);
-
-      return transSet;
+      return UpdateMazakMaterialCounts(schs);
     }
 
 
@@ -354,25 +349,28 @@ namespace MazakMachineInterface
       }
     }
 
-    private void UpdateMazakMaterialCounts(TransactionDataSet transDB, IEnumerable<ScheduleWithQueues> schs)
+    private MazakWriteData UpdateMazakMaterialCounts(IEnumerable<ScheduleWithQueues> schs)
     {
+      var newSchs = new List<MazakScheduleRow>();
       foreach (var sch in schs) {
         if (!sch.Procs.Values.Any(p => p.TargetMaterialCount.HasValue)) continue;
         log.Debug("Updating material on schedule {schId} for job {uniq} to {@sch}", sch.SchRow.Id, sch.Unique, sch);
 
-        var tschRow = transDB.Schedule_t.NewSchedule_tRow();
-        OpenDatabaseKitTransactionDB.BuildScheduleEditRow(tschRow, sch.SchRow, true);
-        transDB.Schedule_t.AddSchedule_tRow(tschRow);
+        var newSch = sch.SchRow.Clone();
+        newSch.Command = MazakWriteCommand.ScheduleMaterialEdit;
+        newSchs.Add(newSch);
 
-        foreach (var proc in sch.Procs.Values) {
-          var tschProcRow = transDB.ScheduleProcess_t.NewScheduleProcess_tRow();
-          OpenDatabaseKitTransactionDB.BuildScheduleProcEditRow(tschProcRow, proc.SchProcRow);
-          if (proc.TargetMaterialCount.HasValue) {
-            tschProcRow.ProcessMaterialQuantity = proc.TargetMaterialCount.Value;
+        foreach (var newProc in newSch.Processes) {
+          var oldProc = sch.Procs[newProc.ProcessNumber];
+          if (oldProc.TargetMaterialCount.HasValue) {
+            newProc.ProcessMaterialQuantity = oldProc.TargetMaterialCount.Value;
           }
-          transDB.ScheduleProcess_t.AddScheduleProcess_tRow(tschProcRow);
         }
       }
+
+      return new MazakWriteData() {
+        Schedules = newSchs
+      };
     }
 
     private int FindNextProcess(long matId)

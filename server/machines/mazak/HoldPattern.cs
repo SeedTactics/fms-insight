@@ -236,17 +236,15 @@ namespace MazakMachineInterface
 
       public void ChangeHoldMode(HoldMode newHold)
       {
-        TransactionDataSet transSet = new TransactionDataSet();
-        OpenDatabaseKitTransactionDB.CreateExtraSmoothCols(transSet, _parent.database.MazakType);
-
-        TransactionDataSet.Schedule_tRow newSchRow = transSet.Schedule_t.NewSchedule_tRow();
-        OpenDatabaseKitTransactionDB.BuildScheduleEditRow(newSchRow, _schRow, false);
+        var transSet = new MazakWriteData();
+        var newSchRow = _schRow.Clone();
+        newSchRow.Command = MazakWriteCommand.ScheduleSafeEdit;
         newSchRow.HoldMode = (int)newHold;
-        transSet.Schedule_t.AddSchedule_tRow(newSchRow);
+        transSet.Schedules.Add(newSchRow);
 
         var logMessages = new List<string>();
 
-        _parent.database.SaveTransaction(transSet, logMessages, "Hold Mode", 10);
+        _parent.database.Save(transSet, "Hold Mode", logMessages);
 
         Log.Error("Error updating holds. {msgs}", logMessages);
       }
@@ -291,8 +289,6 @@ namespace MazakMachineInterface
 
         try
         {
-          database.ClearTransactionDatabase();
-
           //Store the current time, this is the time we use to calculate the hold pattern.
           //It is important that this time be fixed for all schedule calculations, otherwise
           //we might miss a transition if it occurs while we are running this function.
@@ -360,13 +356,6 @@ namespace MazakMachineInterface
         }
         finally
         {
-          try
-          {
-            database.ClearTransactionDatabase();
-          }
-          catch
-          {
-          }
           OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
         }
       }

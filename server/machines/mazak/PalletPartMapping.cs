@@ -31,6 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Data;
 using BlackMaple.MachineWatchInterface;
@@ -104,23 +105,17 @@ namespace MazakMachineInterface
     }
 
     //This deletes all the part and pallet data in the databases that are no longer used
-    public void DeletePartPallets(TransactionDataSet transSet)
+    public void DeletePartPallets(MazakWriteData transSet)
     {
-      TransactionDataSet.Part_tRow newPartRow = null;
-      TransactionDataSet.Pallet_tV1Row newPalRowV1 = null;
-      TransactionDataSet.Pallet_tV2Row newPalRowV2 = null;
-
       foreach (var partRow in mazakData.Parts)
       {
         if (MazakPart.IsSailPart(partRow.PartName))
         {
           if (!savedParts.Contains(partRow.PartName))
           {
-            newPartRow = transSet.Part_t.NewPart_tRow();
-            newPartRow.Command = OpenDatabaseKitTransactionDB.DeleteCommand;
-            newPartRow.PartName = partRow.PartName;
-            newPartRow.TotalProcess = partRow.Processes.Count;
-            transSet.Part_t.AddPart_tRow(newPartRow);
+            var newPartRow = partRow.Clone();
+            newPartRow.Command = MazakWriteCommand.Delete;
+            transSet.Parts.Add(newPartRow);
           }
         }
       }
@@ -136,39 +131,17 @@ namespace MazakMachineInterface
 
           if (!mazakJobs.UsedFixtures.Contains(palRow.Fixture))
           {
-            if (MazakType != MazakDbType.MazakVersionE)
-            {
-              //not found, we can delete it
-              newPalRowV2 = transSet.Pallet_tV2.NewPallet_tV2Row();
-              newPalRowV2.Command = OpenDatabaseKitTransactionDB.DeleteCommand;
-              newPalRowV2.PalletNumber = palRow.PalletNumber;
-              newPalRowV2.Fixture = palRow.Fixture;
-              newPalRowV2.RecordID = palRow.RecordID;
-              newPalRowV2.FixtureGroup = palRow.FixtureGroupV2;
-              transSet.Pallet_tV2.AddPallet_tV2Row(newPalRowV2);
-
-            }
-            else
-            {
-              //not found, we can delete it
-              newPalRowV1 = transSet.Pallet_tV1.NewPallet_tV1Row();
-              newPalRowV1.Command = OpenDatabaseKitTransactionDB.DeleteCommand;
-              newPalRowV1.PalletNumber = palRow.PalletNumber;
-              newPalRowV1.Fixture = palRow.Fixture;
-              newPalRowV1.RecordID = palRow.RecordID;
-              newPalRowV1.Angle = palRow.AngleV1;
-              transSet.Pallet_tV1.AddPallet_tV1Row(newPalRowV1);
-            }
-
+            //not found, can delete it
+            var newPalRow = palRow.Clone();
+            newPalRow.Command = MazakWriteCommand.Delete;
+            transSet.Pallets.Add(newPalRow);
           }
         }
       }
     }
 
-    public void DeleteFixtures(TransactionDataSet transSet)
+    public void DeleteFixtures(MazakWriteData transSet)
     {
-      TransactionDataSet.Fixture_tRow newFixRow = null;
-
       foreach (var fixRow in mazakData.Fixtures)
       {
         int idx = fixRow.FixtureName.IndexOf(':');
@@ -178,18 +151,16 @@ namespace MazakMachineInterface
 
           if (!mazakJobs.UsedFixtures.Contains(fixRow.FixtureName))
           {
-
-            newFixRow = transSet.Fixture_t.NewFixture_tRow();
-            newFixRow.Command = OpenDatabaseKitTransactionDB.DeleteCommand;
-            newFixRow.FixtureName = fixRow.FixtureName;
-            transSet.Fixture_t.AddFixture_tRow(newFixRow);
+            var newFixRow = fixRow.Clone();
+            newFixRow.Command = MazakWriteCommand.Delete;
+            transSet.Fixtures.Add(newFixRow);
           }
         }
       }
     }
 
     //This creates all the new fixtures in the databases
-    public void AddFixtures(TransactionDataSet transSet)
+    public void AddFixtures(MazakWriteData transSet)
     {
       //first get the fixture table the way we want it
       foreach (string fixture in mazakJobs.UsedFixtures)
@@ -203,8 +174,8 @@ namespace MazakMachineInterface
           }
         }
 
-        TransactionDataSet.Fixture_tRow newFixRow = transSet.Fixture_t.NewFixture_tRow();
-        newFixRow.Command = OpenDatabaseKitTransactionDB.AddCommand;
+        var newFixRow = new MazakFixtureRow();
+        newFixRow.Command = MazakWriteCommand.Add;
         newFixRow.FixtureName = fixture;
 
         //the comment can not be empty, or the database kit blows up.
@@ -216,13 +187,13 @@ namespace MazakMachineInterface
         {
           newFixRow.Comment = "SAIL";
         }
-        transSet.Fixture_t.AddFixture_tRow(newFixRow);
+        transSet.Fixtures.Add(newFixRow);
       found:;
 
       }
     }
 
-    private void CreatePalletRow(TransactionDataSet transSet, string pallet, string fixture, int fixGroup)
+    private void CreatePalletRow(MazakWriteData transSet, string pallet, string fixture, int fixGroup)
     {
       int palNum = int.Parse(pallet);
 
@@ -239,37 +210,33 @@ namespace MazakMachineInterface
       fixGroup = (downloadUID * 10 + (fixGroup % 10)) + 1;
 
       //Add rows to both V1 and V2.
-      TransactionDataSet.Pallet_tV2Row newRow2 = transSet.Pallet_tV2.NewPallet_tV2Row();
-      newRow2.Command = OpenDatabaseKitTransactionDB.AddCommand;
-      newRow2.PalletNumber = palNum;
-      newRow2.Fixture = fixture;
-      newRow2.RecordID = 0;
-      newRow2.FixtureGroup = fixGroup;
-      transSet.Pallet_tV2.AddPallet_tV2Row(newRow2);
-
-      TransactionDataSet.Pallet_tV1Row newRow1 = transSet.Pallet_tV1.NewPallet_tV1Row();
-      newRow1.Command = OpenDatabaseKitTransactionDB.AddCommand;
-      newRow1.PalletNumber = palNum;
-      newRow1.Fixture = fixture;
+      var newRow = new MazakPalletRow();
+      newRow.Command = MazakWriteCommand.Add;
+      newRow.PalletNumber = palNum;
+      newRow.Fixture = fixture;
+      newRow.RecordID = 0;
+      newRow.FixtureGroupV2 = fixGroup;
 
       //combos with an angle in the range 0-999, and we don't want to conflict with that
-      newRow1.Angle = (fixGroup * 1000);
+      newRow.AngleV1 = (fixGroup * 1000);
 
-      transSet.Pallet_tV1.AddPallet_tV1Row(newRow1);
+      transSet.Pallets.Add(newRow);
     }
 
     //This creates all the new parts, pallets in the databases
     //Returns all the parts that were sucessfully created
-    public void CreateRows(TransactionDataSet transSet)
+    public void CreateRows(MazakWriteData transSet)
     {
       foreach (var p in mazakJobs.AllParts)
         p.CreateDatabaseRow(transSet);
+
+      var byName = transSet.Parts.ToDictionary(p => p.PartName, p => p);
 
       foreach (var g in mazakJobs.Fixtures)
       {
         foreach (var p in g.Processes)
         {
-          p.CreateDatabaseRow(transSet, g.MazakFixtureName, MazakType);
+          p.CreateDatabaseRow(byName[p.Part.PartName], g.MazakFixtureName, MazakType);
         }
 
         foreach (var p in g.Pallets)

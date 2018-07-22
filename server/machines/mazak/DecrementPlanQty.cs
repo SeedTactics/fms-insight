@@ -210,26 +210,21 @@ namespace MazakMachineInterface
 
       if (schRow == null) return true;
 
-      var transSet = new TransactionDataSet();
-      OpenDatabaseKitTransactionDB.CreateExtraSmoothCols(transSet, database.MazakType);
-      TransactionDataSet.Schedule_tRow newSchRow = transSet.Schedule_t.NewSchedule_tRow();
-      OpenDatabaseKitTransactionDB.BuildScheduleEditRow(newSchRow, schRow, true);
-      transSet.Schedule_t.AddSchedule_tRow(newSchRow);
+      var transSet = new MazakWriteData();
+      var newSchRow = schRow.Clone();
+      newSchRow.Command = MazakWriteCommand.ScheduleMaterialEdit;
+      transSet.Schedules.Add(newSchRow);
 
       //Clear any holds made from a previous error.
       newSchRow.HoldMode = 0;
 
       int numRows = 0;
 
-      foreach (var schProcRow in schRow.Processes)
+      foreach (var newSchProcRow in newSchRow.Processes)
       {
-        var newSchProcRow = transSet.ScheduleProcess_t.NewScheduleProcess_tRow();
-        OpenDatabaseKitTransactionDB.BuildScheduleProcEditRow(newSchProcRow, schProcRow);
-        transSet.ScheduleProcess_t.AddScheduleProcess_tRow(newSchProcRow);
-
         newSchProcRow.ProcessBadQuantity = 0;
 
-        if (schProcRow.ProcessNumber == 1)
+        if (newSchProcRow.ProcessNumber == 1)
         {
           newSchProcRow.ProcessMaterialQuantity = 0;
         }
@@ -238,7 +233,7 @@ namespace MazakMachineInterface
       }
 
       var log = new List<string>();
-      database.SaveTransaction(transSet, log, "Decrement", numRows + 1);
+      database.Save(transSet, "Decrement", log);
       if (log.Count > 0)
       {
         if (log.Count == 1 && log[0].ToString().StartsWith("Mazak transaction returned error 8"))
@@ -267,8 +262,7 @@ namespace MazakMachineInterface
                                       IList<string> logMessages,
                                       IWriteData database)
     {
-      TransactionDataSet transSet = new TransactionDataSet();
-      OpenDatabaseKitTransactionDB.CreateExtraSmoothCols(transSet, database.MazakType);
+      var transSet = new MazakWriteData();
 
       var schIdsPutOnHold = new List<ScheduleId>();
 
@@ -294,19 +288,19 @@ namespace MazakMachineInterface
 
           if (schRow.HoldMode != (int)HoldPattern.HoldMode.FullHold)
           {
-            TransactionDataSet.Schedule_tRow newSchRow = transSet.Schedule_t.NewSchedule_tRow();
-            OpenDatabaseKitTransactionDB.BuildScheduleEditRow(newSchRow, schRow, false);
+            var newSchRow = schRow.Clone();
+            newSchRow.Command = MazakWriteCommand.ScheduleSafeEdit;
             newSchRow.HoldMode = (int)HoldPattern.HoldMode.FullHold;
-            transSet.Schedule_t.AddSchedule_tRow(newSchRow);
+            transSet.Schedules.Add(newSchRow);
           }
 
           schIdsPutOnHold.Add(schId);
         }
       }
 
-      if (transSet.Schedule_t.Rows.Count > 0)
+      if (transSet.Schedules.Any())
       {
-        database.SaveTransaction(transSet, logMessages, "Decrement Unhold", 10);
+        database.Save(transSet, "Decrement Unhold", logMessages);
       }
 
       foreach (var schId in schIdsPutOnHold)
@@ -366,12 +360,8 @@ namespace MazakMachineInterface
       //easier than the above.
 
       var mazakData = readDb.LoadSchedules();
-      TransactionDataSet transSet = new TransactionDataSet();
-      OpenDatabaseKitTransactionDB.CreateExtraSmoothCols(transSet, readDb.MazakType);
-      TransactionDataSet.Schedule_tRow newSchRow = null;
+      var transSet = new MazakWriteData();
       List<string> log = new List<string>();
-
-      writeDb.ClearTransactionDatabase();
 
       //now we update all the plan quantites to match
       foreach (var schRow in mazakData.Schedules)
@@ -382,18 +372,18 @@ namespace MazakMachineInterface
           int cnt = RoutingInfo.CountMaterial(schRow);
           if (schRow.PlanQuantity != cnt)
           {
-            newSchRow = transSet.Schedule_t.NewSchedule_tRow();
-            OpenDatabaseKitTransactionDB.BuildScheduleEditRow(newSchRow, schRow, false);
+            var newSchRow = schRow.Clone();
+            newSchRow.Command = MazakWriteCommand.ScheduleSafeEdit;
             newSchRow.PlanQuantity = cnt;
             newSchRow.HoldMode = 0;
-            transSet.Schedule_t.AddSchedule_tRow(newSchRow);
+            transSet.Schedules.Add(newSchRow);
           }
         }
       }
 
-      if (transSet.Schedule_t.Rows.Count > 0)
+      if (transSet.Schedules.Any())
       {
-        writeDb.SaveTransaction(transSet, log, "Decrement Finalize");
+        writeDb.Save(transSet, "Decrement Finalize", log);
       }
 
       if (log.Count > 0)

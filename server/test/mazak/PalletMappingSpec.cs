@@ -113,7 +113,7 @@ namespace MachineWatchTest
 				"Fixt:3:2:20:1"
 			});
 
-			var trans = new TransactionDataSet();
+			var trans = new MazakWriteData();
 			pMap.CreateRows(trans);
 
 			CheckPartProcess(trans, "Part1:3:1", 1, "Fixt:3:0:4:1", "1200000000", "0004000000", "10000000");
@@ -227,7 +227,7 @@ namespace MachineWatchTest
 				"Fixt:3:2:20:1"
 			});
 
-			var trans = new TransactionDataSet();
+			var trans = new MazakWriteData();
 			pMap.CreateRows(trans);
 
 			CheckPartProcess(trans, "Part1:3:1", 1, "Fixt:2:0:4:1");
@@ -315,7 +315,7 @@ namespace MachineWatchTest
 				"Fixt:3:2:20:1"
 			});
 
-			var trans = new TransactionDataSet();
+			var trans = new MazakWriteData();
 			pMap.CreateRows(trans);
 
 			CheckPartProcess(trans, "Part1:3:1", 1, "Fixt:3:0:4:1");
@@ -412,7 +412,7 @@ namespace MachineWatchTest
 				"Fixt:3:2:4:2",
 			});
 
-			var trans = new TransactionDataSet();
+			var trans = new MazakWriteData();
 			pMap.CreateRows(trans);
 
 			CheckPartProcess(trans, "Part1:3:1", 1, "Fixt:3:0:4:1");
@@ -526,7 +526,7 @@ namespace MachineWatchTest
 				"Fixt:3:3:30:1"
 			});
 
-			var trans = new TransactionDataSet();
+			var trans = new MazakWriteData();
 			pMap.CreateRows(trans);
 
 			CheckPartProcessFromJob(trans, "Part1:3:1", 1, "Fixt:3:0:4:1");
@@ -655,7 +655,7 @@ namespace MachineWatchTest
 				"Fixt:3:5:22:1"
 			});
 
-			var trans = new TransactionDataSet();
+			var trans = new MazakWriteData();
 			pMap.CreateRows(trans);
 
 			CheckPartProcessFromJob(trans, "Part1:3:1", 1, "Fixt:3:0:4:1");
@@ -800,7 +800,7 @@ namespace MachineWatchTest
 				"Fixt:3:fix4e:face1",
 			});
 
-			var trans = new TransactionDataSet();
+			var trans = new MazakWriteData();
 			pMap.CreateRows(trans);
 
 			CheckPartProcessFromJob(trans, "Part1:3:1", 1, "Fixt:3:fixAA:face1");
@@ -912,13 +912,13 @@ namespace MachineWatchTest
 
 		private void CheckNewFixtures(clsPalletPartMapping map, ICollection<string> newFix)
 		{
-			var trans = new TransactionDataSet();
+			var trans = new MazakWriteData();
 			map.AddFixtures(trans);
 
 			foreach (string fix in newFix) {
-				foreach (TransactionDataSet.Fixture_tRow row in new System.Collections.ArrayList(trans.Fixture_t.Rows)) {
+				foreach (var row in trans.Fixtures.ToList()) {
 					if (row.FixtureName == fix) {
-						row.Delete();
+						trans.Fixtures.Remove(row);
 						goto found;
 					}
 				}
@@ -926,144 +926,101 @@ namespace MachineWatchTest
 			found:;
 			}
 
-			foreach (TransactionDataSet.Fixture_tRow row in trans.Fixture_t) {
-				if (row.RowState != System.Data.DataRowState.Deleted)
-					Assert.True(false, "Extra fixture created: " + row.FixtureName);
+			foreach (var row in trans.Fixtures) {
+				Assert.True(false, "Extra fixture created: " + row.FixtureName);
 			}
 		}
 
-		private void CheckPartProcess(TransactionDataSet dset, string part, int proc, string fixture)
+		private void CheckPartProcess(MazakWriteData dset, string part, int proc, string fixture)
 		{
 			CheckPartProcess(dset, part, proc, fixture, "0000000000", "0000000000", "00000000");
 		}
-		private void CheckPartProcessFromJob(TransactionDataSet dset, string part, int proc, string fixture)
+		private void CheckPartProcessFromJob(MazakWriteData dset, string part, int proc, string fixture)
 		{
 			//checks stuff created with AddBasicStopsWithProg
 			CheckPartProcess(dset, part, proc, fixture, "1000000000", "1000000000", "10000000");
 		}
 
-		private void CheckPartProcess(TransactionDataSet dset, string part, int proc, string fixture,
+		private void CheckPartProcess(MazakWriteData dset, string part, int proc, string fixture,
 		                              string fix, string rem, string cut)
 		{
-			foreach (TransactionDataSet.PartProcess_tRow row in dset.PartProcess_t.Rows) {
-				if (row.RowState != System.Data.DataRowState.Deleted &&
-				    row.PartName == part && row.ProcessNumber == proc) {
-					row.Fixture.Should().Be(fixture, because: "on " + part);
-					row.FixLDS.Should().Be(fix, because: "on " + part);
-					row.RemoveLDS.Should().Be(rem, because: "on " + part);
-					row.CutMc.Should().Be(cut, because: "on " + part);
-					row.Delete();
-					break;
+			foreach (var mpart in dset.Parts) {
+				if (mpart.PartName != part) continue;
+				foreach (var row in mpart.Processes) {
+					if (row.PartName == part && row.ProcessNumber == proc) {
+						row.Fixture.Should().Be(fixture, because: "on " + part);
+						row.FixLDS.Should().Be(fix, because: "on " + part);
+						row.RemoveLDS.Should().Be(rem, because: "on " + part);
+						row.CutMc.Should().Be(cut, because: "on " + part);
+						mpart.Processes.Remove(row);
+						break;
+					}
 				}
 			}
 		}
 
-		private void CheckPart(TransactionDataSet dset, string part, string comment)
+		private void CheckPart(MazakWriteData dset, string part, string comment)
 		{
-			foreach (TransactionDataSet.Part_tRow row in dset.Part_t.Rows) {
-				if (row.RowState != System.Data.DataRowState.Deleted &&
-				    row.PartName == part) {
+			foreach (var row in dset.Parts) {
+				if (row.PartName == part) {
 					Assert.Equal(comment, row.Comment);
-					row.Delete();
+					row.Processes.Should().BeEmpty();
+					dset.Parts.Remove(row);
 					break;
 				}
 			}
 		}
 
-		private void CheckSingleProcPalletGroup(TransactionDataSet dset, int groupNum, string fix, IList<int> pals)
+		private void CheckSingleProcPalletGroup(MazakWriteData dset, int groupNum, string fix, IList<int> pals)
 		{
 			int angle = groupNum * 1000;
 
 			foreach (int pal in pals) {
-				int angle2 = CheckPalletV1(dset, fix, pal);
-				if (angle2 == -1)
-					Assert.True(false, "Unable to find pallet " + pal.ToString() + " " + fix);
-
-				angle2.Should().Be(angle, because: "in same pallet group " + fix + " " + pal);
-
-				int g = CheckPalletV2(dset, fix, pal);
-				if (g == -1)
-					Assert.True(false, "Unable to find pallet " + pal.ToString() + " " + fix);
-
-				g.Should().Be(groupNum, because: "in same pallet group " + fix + " " + pal);
+				CheckPallet(dset, fix, pal, angle, groupNum);
 			}
 		}
 
-		private void CheckPalletGroup(TransactionDataSet dset, int groupNum, string fix, int numProc, IList<int> pals)
+		private void CheckPalletGroup(MazakWriteData dset, int groupNum, string fix, int numProc, IList<int> pals)
 		{
 			CheckPalletGroup(dset, groupNum,
 				Enumerable.Range(1, numProc).Select(i => fix + ":" + i.ToString()),
 				pals);
 		}
 
-		private void CheckPalletGroup(TransactionDataSet dset, int groupNum, IEnumerable<string> fixs, IList<int> pals)
+		private void CheckPalletGroup(MazakWriteData dset, int groupNum, IEnumerable<string> fixs, IList<int> pals)
 		{
 			int angle = groupNum * 1000;
 
 			foreach (int pal in pals) {
 				foreach (var fix in fixs) {
-					int angle2 = CheckPalletV1(dset, fix, pal);
-					if (angle2 == -1)
-						Assert.True(false, "Unable to find pallet " + pal.ToString() + " " + fix);
-
-					angle2.Should().Be(angle, because: "in same pallet group " + fix + " " + pal);
-
-					int g = CheckPalletV2(dset, fix, pal);
-					if (g == -1)
-						Assert.True(false, "Unable to find pallet " + pal.ToString() + " " + fix);
-
-					g.Should().Be(groupNum, because: "in same pallet group " + fix + " " + pal);
+					CheckPallet(dset, fix, pal, angle, groupNum);
 				}
 			}
 		}
 
-		private int CheckPalletV1(TransactionDataSet dset, string fix, int pal)
+		private void CheckPallet(MazakWriteData dset, string fix, int pal, int expectedAngle, int expectedFixGroup)
 		{
-			foreach (TransactionDataSet.Pallet_tV1Row row in dset.Pallet_tV1.Rows) {
-				if (row.RowState != System.Data.DataRowState.Deleted &&
-				    row.PalletNumber == pal && row.Fixture == fix) {
-					int angle = row.Angle;
-					row.Delete();
-					return angle;
+			foreach (var row in dset.Pallets.ToList()) {
+				if (row.PalletNumber == pal && row.Fixture == fix) {
+					row.AngleV1.Should().Be(expectedAngle);
+					row.FixtureGroupV2.Should().Be(expectedFixGroup);
+					dset.Pallets.Remove(row);
 				}
 			}
-
-			return -1;
 		}
 
-		private int CheckPalletV2(TransactionDataSet dset, string fix, int pal)
+		private void AssertPartsPalletsDeleted(MazakWriteData dset)
 		{
-			foreach (TransactionDataSet.Pallet_tV2Row row in dset.Pallet_tV2.Rows) {
-				if (row.RowState != System.Data.DataRowState.Deleted &&
-				    row.PalletNumber == pal && row.Fixture == fix) {
-					int g = row.FixtureGroup;
-					row.Delete();
-					return g;
-				}
-			}
-			return -1;
-		}
-
-		private void AssertPartsPalletsDeleted(TransactionDataSet dset)
-		{
-			foreach (TransactionDataSet.PartProcess_tRow row in dset.PartProcess_t.Rows) {
-				if (row.RowState != System.Data.DataRowState.Deleted)
-					Assert.True(false, "Extra part process row: " + row.PartName + " " + row.ProcessNumber.ToString());
+			foreach (var row in dset.Parts) {
+				Assert.True(false, "Extra part row: " + row.PartName);
 			}
 
-			foreach (TransactionDataSet.Part_tRow row in dset.Part_t.Rows) {
-				if (row.RowState != System.Data.DataRowState.Deleted)
-					Assert.True(false, "Extra part row: " + row.PartName);
+			foreach (var row in dset.Pallets) {
+				Assert.True(false, "Extra pallet row: " + row.PalletNumber.ToString() + " " + row.Fixture);
 			}
 
-			foreach (TransactionDataSet.Pallet_tV1Row row in dset.Pallet_tV1.Rows) {
-				if (row.RowState != System.Data.DataRowState.Deleted)
-					Assert.True(false, "Extra pallet row: " + row.PalletNumber.ToString() + " " + row.Fixture);
-			}
-
-			foreach (TransactionDataSet.Pallet_tV2Row row in dset.Pallet_tV2.Rows) {
-				if (row.RowState != System.Data.DataRowState.Deleted)
-					Assert.True(false, "Extra pallet v2 row: " + row.PalletNumber.ToString() + " " + row.Fixture);
+			foreach (var row in dset.Fixtures) {
+				Assert.True(false, "Extra fixture row: " + row.FixtureName);
 			}
 		}
 		#endregion

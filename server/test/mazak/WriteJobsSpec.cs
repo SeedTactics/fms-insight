@@ -151,8 +151,6 @@ namespace MachineWatchTest
       );
 
       _routing.AddJobs(newJobs, null);
-
-      _writeMock.Received().ClearTransactionDatabase();
     }
   }
 }

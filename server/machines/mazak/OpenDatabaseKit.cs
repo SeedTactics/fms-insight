@@ -46,6 +46,7 @@ namespace MazakMachineInterface
     public static System.Threading.Mutex MazakTransactionLock = new System.Threading.Mutex();
 
     protected string ready4ConectPath;
+    protected string _connectionStr;
 
     public MazakDbType MazakType {get;}
 
@@ -67,171 +68,27 @@ namespace MazakMachineInterface
         ready4ConectPath = System.IO.Path.Combine(dbConnStr, "ready4Conect.mdb");
       }
     }
-  }
 
-	public class OpenDatabaseKitTransactionDB
-		: OpenDatabaseKitDB, IWriteData
-	{
-    public OpenDatabaseKitTransactionDB(string dbConnStr, MazakDbType ty)
-			: base(dbConnStr, ty)
+    private IDbConnection OpenReadonlyOleDb()
     {
-      databaseConnStr = dbConnStr;
-      InitializeTransaction();
-    }
-
-    private string databaseConnStr;
-
-    //List of commands for the transaction database.
-    public const int ForceUnlockEditCommand = 3;
-    public const int AddCommand = 4;
-    public const int DeleteCommand = 5;
-    public const int EditCommand = 6;
-    public const int ScheduleSafeEditCommand = 7;
-    public const int ScheduleMaterialEditCommand = 8;
-    public const int ErrorCommand = 9;
-
-    protected const int WaitCount = 5;
-
-
-    //For the transaction database
-    private IDbConnection MazakTransactionConnection;
-    private System.Data.Common.DbDataAdapter Fixture_t_Adapter;
-    private System.Data.Common.DbDataAdapter Pallet_tV2_Adapter;
-    private System.Data.Common.DbDataAdapter Pallet_tV1_Adapter;
-    private System.Data.Common.DbDataAdapter PartProcess_t_Adapter;
-    private System.Data.Common.DbDataAdapter Part_t_Adapter;
-    private System.Data.Common.DbDataAdapter ScheduleProcess_t_Adapter;
-    private System.Data.Common.DbDataAdapter Schedule_t_Adapter;
-
-    private IList<System.Data.Common.DbDataAdapter> TransactionAdapters = new List<System.Data.Common.DbDataAdapter>();
-    private readonly string[] TransactionTables = {
-      "fixture_t",
-      "pallet_t",
-      "Part_t",
-      "PartProcess_t",
-      "Schedule_t",
-      "ScheduleProcess_t"
-    };
-
-    private void InitializeTransaction()
-    {
-      Func<String, System.Data.Common.DbDataAdapter> createAdapter;
-      if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE)
-      {
 #if USE_OLEDB
-        var transConn = new OleDbConnection();
-        transConn.ConnectionString = "Provider=Microsoft.Jet.OLEDB.4.0;Password=\"\";" +
-            "User ID=Admin;" +
-            "Data Source=" + System.IO.Path.Combine(databaseConnStr, "FCNETUSER1.mdb") + ";" +
-            "Mode=Share Deny None;";
-
-        MazakTransactionConnection = transConn;
-        createAdapter = s => new OleDbDataAdapter(s, transConn);
-#else
-        throw new Exception("Mazak Web and VerE are not supported on .NET Core");
-#endif
-      }
-      else
-      {
-        var dbConn = new System.Data.SqlClient.SqlConnection(databaseConnStr + ";Database=FCNETUSER01");
-        MazakTransactionConnection = dbConn;
-        createAdapter = s => new System.Data.SqlClient.SqlDataAdapter(s, dbConn);
-      }
-
-
-      Fixture_t_Adapter = createAdapter("SELECT Command, Comment, FixtureName, Reserved, TransactionStatus FROM Fixture_t");
-      TransactionAdapters.Add(Fixture_t_Adapter);
-
-      if (MazakType == MazakDbType.MazakVersionE)
-      {
-        Pallet_tV1_Adapter = createAdapter("SELECT Angle, Command, Fixture, PalletNumber, RecordID, TransactionStatus FROM Pallet_t");
-        TransactionAdapters.Add(Pallet_tV1_Adapter);
-      }
-      else
-      {
-        Pallet_tV2_Adapter = createAdapter("SELECT Command, Fixture, FixtureGroup, PalletNumber, RecordID, TransactionStatus FROM Pallet_t");
-        TransactionAdapters.Add(Pallet_tV2_Adapter);
-      }
-
-      if (MazakType == MazakDbType.MazakSmooth)
-      {
-        Part_t_Adapter = createAdapter("SELECT Command, Comment, PartName, Price, Reserved, TotalProcess," +
-            "MaterialName, Part_1, Part_2, Part_3, Part_4, Part_5, TransactionStatus FROM Part_t");
-        TransactionAdapters.Add(Part_t_Adapter);
-
-        PartProcess_t_Adapter = createAdapter("SELECT ContinueCut, CutMc, FixLDS, FixPhoto, FixQuantity," +
-            " Fixture, MainProgram, PartName, ProcessNumber, RemoveLDS, RemovePhoto, Reserved, WashType, " +
-            "PartProcess_1, PartProcess_2, PartProcess_3, PartProcess_4, FixTime, RemoveTime, CreateToolList_RA" +
-            " FROM PartProcess_t");
-        TransactionAdapters.Add(PartProcess_t_Adapter);
-
-        Schedule_t_Adapter = createAdapter("SELECT Command, Comment, CompleteQuantity, DueDate, FixForMachine, HoldMode, MissingFixture, MissingProgram, MissingTool, MixScheduleID, PartName, PlanQuantity, Priority, ProcessingPriority, Reserved, ScheduleID, TransactionStatus, Schedule_1, Schedule_2, Schedule_3, Schedule_4, Schedule_5, Schedule_6, StartDate, SetNumber, SetQuantity, SetNumberSets FROM Schedule_t");
-        TransactionAdapters.Add(Schedule_t_Adapter);
-
-        ScheduleProcess_t_Adapter = createAdapter("SELECT ProcessBadQuantity, ProcessExecuteQuantity, ProcessMachine, ProcessMaterialQuantity, ProcessNumber, Reserved, ScheduleID, FixedMachineFlag, FixedMachineNumber, ScheduleProcess_1, ScheduleProcess_2, ScheduleProcess_3, ScheduleProcess_4, ScheduleProcess_5 FROM ScheduleProcess_t");
-        TransactionAdapters.Add(ScheduleProcess_t_Adapter);
-      }
-      else
-      {
-        Part_t_Adapter = createAdapter("SELECT Command, Comment, PartName, Price, Reserved, TotalProcess, TransactionStatus FROM Part_t");
-        TransactionAdapters.Add(Part_t_Adapter);
-
-        PartProcess_t_Adapter = createAdapter("SELECT ContinueCut, CutMc, FixLDS, FixPhoto, FixQuantity, Fixture, MainProgram, PartName, ProcessNumber, RemoveLDS, RemovePhoto, Reserved, WashType FROM PartProcess_t");
-        TransactionAdapters.Add(PartProcess_t_Adapter);
-
-        Schedule_t_Adapter = createAdapter("SELECT Command, Comment, CompleteQuantity, DueDate, FixForMachine, HoldMode, MissingFixture, MissingProgram, MissingTool, MixScheduleID, PartName, PlanQuantity, Priority, ProcessingPriority, Reserved, ScheduleID, TransactionStatus FROM Schedule_t");
-        TransactionAdapters.Add(Schedule_t_Adapter);
-
-        ScheduleProcess_t_Adapter = createAdapter("SELECT ProcessBadQuantity, ProcessExecuteQuantity, ProcessMachine, ProcessMaterialQuantity, ProcessNumber, Reserved, ScheduleID FROM ScheduleProcess_t");
-        TransactionAdapters.Add(ScheduleProcess_t_Adapter);
-      }
-
-    }
-
-    private void EnsureInsertCommands()
-    {
-      foreach (var adapter in TransactionAdapters)
-      {
-        if (adapter.InsertCommand == null) {
-          System.Data.Common.DbCommandBuilder builder;
-          if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE)
-          {
-    #if USE_OLEDB
-            builder = new OleDbCommandBuilder((OleDbDataAdapter)adapter);
-    #else
-            throw new Exception("Mazak Web and VerE are not supported on .NET Core");
-    #endif
-          }
-          else
-          {
-            builder = new System.Data.SqlClient.SqlCommandBuilder((System.Data.SqlClient.SqlDataAdapter)adapter);
-          }
-
-          adapter.InsertCommand = builder.GetInsertCommand();
-        }
-      }
-    }
-
-    private void OpenTransaction()
-    {
       int attempts = 0;
 
+      var conn = new OleDbConnection(_connectionStr);
       while (attempts < 20)
       {
         try
         {
-          MazakTransactionConnection.Open();
-          EnsureInsertCommands();
-          return;
-#if USE_OLEDB
+          conn.Open();
+          return conn;
 				} catch (OleDbException ex) {
 					if (!(ex.Message.ToLower().IndexOf("could not use") >= 0)) {
 						if (!(ex.Message.ToLower().IndexOf("try again") >= 0)) {
 							//if this is not a locking exception, throw it
-							throw new Exception(ex.ToString());
+              conn.Dispose();
+							throw new DataException(ex.ToString());
 						}
 					}
-#endif
         }
         catch (Exception ex)
         {
@@ -240,6 +97,7 @@ namespace MazakMachineInterface
             if (!(ex.Message.ToLower().IndexOf("try again") >= 0))
             {
               //if this is not a locking exception, throw it
+              conn.Dispose();
               throw;
             }
           }
@@ -250,380 +108,500 @@ namespace MazakMachineInterface
         attempts += 1;
       }
 
-      throw new Exception("Transaction database is locked and can not be accessed");
-    }
-
-    public static void CreateExtraSmoothCols(TransactionDataSet dset, MazakDbType MazakType)
-    {
-      if (MazakType != MazakDbType.MazakSmooth) return;
-      dset.Part_t.Columns.Add("MaterialName", typeof(string));
-      dset.Part_t.Columns.Add("Part_1", typeof(int));
-      dset.Part_t.Columns.Add("Part_2", typeof(int));
-      dset.Part_t.Columns.Add("Part_3", typeof(string));
-      dset.Part_t.Columns.Add("Part_4", typeof(int));
-      dset.Part_t.Columns.Add("Part_5", typeof(int));
-      foreach (var row in dset.Part_t)
-      {
-        row["MaterialName"] = ' ';
-        row["Part_1"] = 0;
-        row["Part_2"] = 0;
-        row["Part_3"] = ' ';
-        row["Part_4"] = 0;
-        row["Part_5"] = 0;
-      }
-      dset.PartProcess_t.Columns.Add("PartProcess_1", typeof(int));
-      dset.PartProcess_t.Columns.Add("PartProcess_2", typeof(int));
-      dset.PartProcess_t.Columns.Add("PartProcess_3", typeof(int));
-      dset.PartProcess_t.Columns.Add("PartProcess_4", typeof(int));
-      dset.PartProcess_t.Columns.Add("FixTime", typeof(int));
-      dset.PartProcess_t.Columns.Add("RemoveTime", typeof(int));
-      dset.PartProcess_t.Columns.Add("CreateToolList_RA", typeof(int));
-      foreach (var row in dset.PartProcess_t)
-      {
-        row["PartProcess_1"] = 0;
-        row["PartProcess_2"] = 0;
-        row["PartProcess_3"] = 0;
-        row["PartProcess_4"] = 0;
-        row["FixTime"] = 0;
-        row["RemoveTime"] = 0;
-        row["CreateToolList_RA"] = 0;
-      }
-
-      dset.Schedule_t.Columns.Add("Schedule_1", typeof(int));
-      dset.Schedule_t.Columns.Add("Schedule_2", typeof(int));
-      dset.Schedule_t.Columns.Add("Schedule_3", typeof(int));
-      dset.Schedule_t.Columns.Add("Schedule_4", typeof(int));
-      dset.Schedule_t.Columns.Add("Schedule_5", typeof(int));
-      dset.Schedule_t.Columns.Add("Schedule_6", typeof(int));
-      dset.Schedule_t.Columns.Add("StartDate", typeof(DateTime));
-      dset.Schedule_t.Columns.Add("SetNumber", typeof(int));
-      dset.Schedule_t.Columns.Add("SetQuantity", typeof(int));
-      dset.Schedule_t.Columns.Add("SetNumberSets", typeof(int));
-
-      dset.ScheduleProcess_t.Columns.Add("FixedMachineFlag", typeof(int));
-      dset.ScheduleProcess_t.Columns.Add("FixedMachineNumber", typeof(int));
-      dset.ScheduleProcess_t.Columns.Add("ScheduleProcess_1", typeof(int));
-      dset.ScheduleProcess_t.Columns.Add("ScheduleProcess_2", typeof(int));
-      dset.ScheduleProcess_t.Columns.Add("ScheduleProcess_3", typeof(int));
-      dset.ScheduleProcess_t.Columns.Add("ScheduleProcess_4", typeof(int));
-      dset.ScheduleProcess_t.Columns.Add("ScheduleProcess_5", typeof(int));
-    }
-
-    public void SaveTransaction(TransactionDataSet dset, System.Collections.Generic.IList<string> log, string prefix, int checkInterval = -1)
-    {
-      CheckReadyForConnect();
-
-      if (checkInterval <= 0)
-      {
-        int totalRows = 0;
-        totalRows += dset.Fixture_t.Rows.Count;
-        totalRows += dset.Pallet_tV1.Rows.Count;
-        totalRows += dset.Pallet_tV2.Rows.Count;
-        totalRows += dset.Part_t.Rows.Count;
-        totalRows += dset.PartProcess_t.Rows.Count;
-        totalRows += dset.Schedule_t.Rows.Count;
-        totalRows += dset.ScheduleProcess_t.Rows.Count;
-        checkInterval = 10 + totalRows;
-        //We wait 10 seconds plus one second for every row in the table
-      }
-
-      if (MazakType == MazakDbType.MazakSmooth)
-      {
-        if (!dset.Part_t.Columns.Contains("MaterialName"))
-          CreateExtraSmoothCols(dset, MazakType);
-      }
-
-      OpenTransaction();
-
-      try
-      {
-        var trans = MazakTransactionConnection.BeginTransaction(IsolationLevel.ReadCommitted);
-        try
-        {
-          SetTransactionTransaction(trans);
-
-          Fixture_t_Adapter.Update(dset.Fixture_t);
-          if (MazakType != MazakDbType.MazakVersionE)
-          {
-            Pallet_tV2_Adapter.Update(dset.Pallet_tV2);
-          }
-          else
-          {
-            Pallet_tV1_Adapter.Update(dset.Pallet_tV1);
-          }
-          PartProcess_t_Adapter.Update(dset.PartProcess_t);
-          Part_t_Adapter.Update(dset.Part_t);
-          ScheduleProcess_t_Adapter.Update(dset.ScheduleProcess_t);
-          Schedule_t_Adapter.Update(dset.Schedule_t);
-
-          trans.Commit();
-        }
-        catch (Exception ex)
-        {
-          trans.Rollback();
-          throw ex;
-        }
-#if USE_OLEDB
-			} catch (OleDbException ex) {
-				throw new Exception(ex.ToString());
+      conn.Dispose();
+      throw new Exception("Mazak database is locked and can not be accessed");
+#else
+      throw new Exception("Mazak Web and VerE are not supported on .NET Core");
 #endif
-      }
-      finally
-      {
-        MazakTransactionConnection.Close();
-      }
-
-      int i = 0;
-      for (i = 0; i <= WaitCount; i++)
-      {
-        System.Threading.Thread.Sleep(TimeSpan.FromSeconds(checkInterval));
-        if (CheckTransactionErrors(prefix, log))
-        {
-          goto success;
-        }
-      }
-      throw new Exception("Timeout during download: open database kit is not running");
-    success:
-
-
-      ClearTransactionDatabase();
     }
 
-    private bool CheckTransactionErrors(string prefix, System.Collections.Generic.IList<string> log)
+    protected IDbConnection CreateConnection()
     {
-      TransactionDataSet transSet = new TransactionDataSet();
-
-      CheckReadyForConnect();
-
-      OpenTransaction();
-      try
+      if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE)
       {
-        var trans = MazakTransactionConnection.BeginTransaction(IsolationLevel.ReadCommitted);
-        try
-        {
-          SetTransactionTransaction(trans);
-
-          Fixture_t_Adapter.Fill(transSet.Fixture_t);
-          if (MazakType != MazakDbType.MazakVersionE)
-          {
-            Pallet_tV2_Adapter.Fill(transSet.Pallet_tV2);
-          }
-          else
-          {
-            Pallet_tV1_Adapter.Fill(transSet.Pallet_tV1);
-          }
-          Part_t_Adapter.Fill(transSet.Part_t);
-          Schedule_t_Adapter.Fill(transSet.Schedule_t);
-
-          trans.Commit();
-        }
-        catch (Exception ex)
-        {
-          trans.Rollback();
-          throw ex;
-        }
-
-#if USE_OLEDB
-			} catch (OleDbException ex) {
-				throw new Exception(ex.ToString());
-#endif
-      }
-      finally
-      {
-        MazakTransactionConnection.Close();
-      }
-
-      DataTable[] lst = {
-        transSet.Fixture_t,
-        transSet.Pallet_tV1,
-        transSet.Pallet_tV2,
-        transSet.Part_t,
-        transSet.Schedule_t
-      };
-      foreach (DataTable dataTable in lst)
-      {
-        try
-        {
-          foreach (DataRow dataRow in dataTable.Rows)
-          {
-            if (!dataRow.IsNull("Command"))
-            {
-              if (Convert.ToInt32(dataRow["Command"]) == ErrorCommand)
-              {
-                log.Add(prefix + " Mazak transaction returned error " + dataRow["TransactionStatus"].ToString() + " on row " + ConvertRowToString(dataRow));
-              }
-              else
-              {
-                return false;
-              }
-            }
-          }
-        }
-        catch
-        {
-        }
-      }
-
-      return true;
-    }
-    private string ConvertRowToString(DataRow row)
-    {
-      DataColumn col = null;
-      string res = "";
-      foreach (DataColumn col_loopVariable in row.Table.Columns)
-      {
-        col = col_loopVariable;
-        if (row.IsNull(col))
-        {
-          res += col.ColumnName + ":(null);";
-        }
-        else
-        {
-          res += col.ColumnName + ":" + row[col].ToString() + ";";
-        }
-      }
-      return res;
-    }
-    public void ClearTransactionDatabase()
-    {
-      CheckReadyForConnect();
-
-      OpenTransaction();
-      try
-      {
-        var trans = MazakTransactionConnection.BeginTransaction(IsolationLevel.ReadCommitted);
-        try
-        {
-
-          using (var cmd = MazakTransactionConnection.CreateCommand()) {
-          cmd.Transaction = trans;
-
-          foreach (string table in TransactionTables)
-          {
-
-            cmd.CommandText = "DELETE FROM " + table;
-            cmd.ExecuteNonQuery();
-
-          }
-
-          trans.Commit();
-          }
-        }
-        catch
-        {
-          trans.Rollback();
-          throw;
-        }
-
-#if USE_OLEDB
-			} catch (OleDbException ex) {
-				throw new Exception(ex.ToString());
-#endif
-      }
-      finally
-      {
-        MazakTransactionConnection.Close();
-      }
-    }
-
-    private void SetTransactionTransaction(IDbTransaction trans)
-    {
-      foreach (var adapter in TransactionAdapters)
-      {
-        ((IDbCommand)adapter.SelectCommand).Transaction = trans;
-        ((IDbCommand)adapter.InsertCommand).Transaction = trans;
-      }
-    }
-
-    public static void BuildPartProcessRow(TransactionDataSet.PartProcess_tRow newRow, MazakPartProcessRow curRow)
-    {
-      if (curRow.ContinueCut.HasValue)
-        newRow.ContinueCut = curRow.ContinueCut.Value;
-      newRow.CutMc = curRow.CutMc;
-      newRow.FixLDS = curRow.FixLDS;
-      newRow.FixPhoto = curRow.FixPhoto;
-      newRow.FixQuantity = curRow.FixQuantity.ToString();
-      newRow.Fixture = curRow.Fixture;
-      newRow.MainProgram = curRow.MainProgram;
-      newRow.PartName = curRow.PartName;
-      newRow.ProcessNumber = curRow.ProcessNumber;
-      newRow.RemoveLDS = curRow.RemoveLDS;
-      newRow.RemovePhoto = curRow.RemovePhoto;
-      if (curRow.WashType.HasValue)
-        newRow.WashType = curRow.WashType.Value;
-    }
-
-    public static void BuildScheduleEditRow(TransactionDataSet.Schedule_tRow newRow, MazakScheduleRow curRow, bool updateMaterial)
-    {
-      if (updateMaterial)
-      {
-        newRow.Command = ScheduleMaterialEditCommand;
+        return OpenReadonlyOleDb();
       }
       else
       {
-        newRow.Command = ScheduleSafeEditCommand;
-      }
-      newRow.Comment = curRow.Comment;
-      newRow.CompleteQuantity = curRow.CompleteQuantity;
-      if (curRow.DueDate.HasValue)
-        newRow.DueDate = curRow.DueDate.Value;
-      if (curRow.FixForMachine.HasValue)
-        newRow.FixForMachine = curRow.FixForMachine.Value;
-      if (curRow.HoldMode.HasValue)
-        newRow.HoldMode = curRow.HoldMode.Value;
-      if (curRow.MissingFixture.HasValue)
-        newRow.MissingFixture = curRow.MissingFixture.Value;
-      if (curRow.MissingProgram.HasValue)
-        newRow.MissingProgram = curRow.MissingProgram.Value;
-      if (curRow.MissingTool.HasValue)
-        newRow.MissingTool = curRow.MissingTool.Value;
-      if (curRow.MixScheduleID.HasValue)
-        newRow.MixScheduleID = curRow.MixScheduleID.Value;
-      newRow.PartName = curRow.PartName;
-      newRow.PlanQuantity = curRow.PlanQuantity;
-      newRow.Priority = curRow.Priority;
-      if (curRow.ProcessingPriority.HasValue)
-        newRow.ProcessingPriority = curRow.ProcessingPriority.Value;
-      newRow.ScheduleID = curRow.Id;
-
-      if (newRow.Table.Columns.Contains("Schedule_1")) {
-        if (curRow.Schedule_1.HasValue) newRow["Schedule_1"] = curRow.Schedule_1.Value;
-        if (curRow.Schedule_2.HasValue) newRow["Schedule_2"] = curRow.Schedule_2.Value;
-        if (curRow.Schedule_3.HasValue) newRow["Schedule_3"] = curRow.Schedule_3.Value;
-        if (curRow.Schedule_4.HasValue) newRow["Schedule_4"] = curRow.Schedule_4.Value;
-        if (curRow.Schedule_5.HasValue) newRow["Schedule_5"] = curRow.Schedule_5.Value;
-        if (curRow.Schedule_6.HasValue) newRow["Schedule_6"] = curRow.Schedule_6.Value;
-        if (curRow.StartDate.HasValue) newRow["StartDate"] = curRow.StartDate.Value;
-        if (curRow.SetNumber.HasValue) newRow["SetNumber"] = curRow.SetNumber.Value;
-        if (curRow.SetNumberSets.HasValue) newRow["SetNumberSets"] = curRow.SetNumberSets.Value;
+        var conn = new System.Data.SqlClient.SqlConnection(_connectionStr);
+        conn.Open();
+        return conn;
       }
     }
 
-    public static void BuildScheduleProcEditRow(TransactionDataSet.ScheduleProcess_tRow newRow, MazakScheduleProcessRow curRow)
+  }
+
+	public class OpenDatabaseKitTransactionDB
+		: OpenDatabaseKitDB, IWriteData
+	{
+    private static Serilog.ILogger Log = Serilog.Log.ForContext<OpenDatabaseKitTransactionDB>();
+
+    public OpenDatabaseKitTransactionDB(string dbConnStr, MazakDbType ty)
+			: base(dbConnStr, ty)
     {
-      newRow.ProcessBadQuantity = curRow.ProcessBadQuantity;
-      newRow.ProcessExecuteQuantity = curRow.ProcessExecuteQuantity;
-      newRow.ProcessMachine = curRow.ProcessMachine;
-      newRow.ProcessMaterialQuantity = curRow.ProcessMaterialQuantity;
-      newRow.ProcessNumber = curRow.ProcessNumber;
-      newRow.ScheduleID = curRow.MazakScheduleRowId;
-
-      if (newRow.Table.Columns.Contains("FixedMachineFlag")) {
-        if (curRow.FixedMachineFlag.HasValue) newRow["FixedMachineFlag"] = curRow.FixedMachineFlag.Value;
-        if (curRow.FixedMachineNumber.HasValue) newRow["FixedMachineNumber"] = curRow.FixedMachineNumber.Value;
-        if (curRow.ScheduleProcess_1.HasValue) newRow["ScheduleProcess_1"] = curRow.ScheduleProcess_1.Value;
-        if (curRow.ScheduleProcess_2.HasValue) newRow["ScheduleProcess_2"] = curRow.ScheduleProcess_2.Value;
-        if (curRow.ScheduleProcess_3.HasValue) newRow["ScheduleProcess_3"] = curRow.ScheduleProcess_3.Value;
-        if (curRow.ScheduleProcess_4.HasValue) newRow["ScheduleProcess_4"] = curRow.ScheduleProcess_4.Value;
-        if (curRow.ScheduleProcess_5.HasValue) newRow["ScheduleProcess_5"] = curRow.ScheduleProcess_5.Value;
+      if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE)
+      {
+        _connectionStr = "Provider=Microsoft.Jet.OLEDB.4.0;Password=\"\";" +
+            "User ID=Admin;" +
+            "Data Source=" + System.IO.Path.Combine(dbConnStr, "FCNETUSER1.mdb") + ";" +
+            "Mode=Share Deny None;";
+      } else {
+        _connectionStr = dbConnStr + ";Database=FCNETUSER01";
       }
     }
+
+    private const int WaitCount = 5;
+
+    public void Save(MazakWriteData data, string prefix, System.Collections.Generic.IList<string> log)
+    {
+      CheckReadyForConnect();
+
+      int checkInterval = data.Schedules.Count() + data.Pallets.Count() + data.Parts.Count() + data.Fixtures.Count();
+
+      Log.Debug("Writing {@data} to transaction db", data);
+
+      try {
+        using (var conn = CreateConnection())
+        {
+          var trans = conn.BeginTransaction(IsolationLevel.ReadCommitted);
+          try {
+
+            ClearTransactionDatabase(conn, trans);
+            SaveData(data, conn, trans);
+            trans.Commit();
+          } catch {
+            trans.Rollback();
+            throw;
+          }
+
+          int i = 0;
+          for (i = 0; i <= WaitCount; i++)
+          {
+            System.Threading.Thread.Sleep(TimeSpan.FromSeconds(checkInterval));
+            if (CheckTransactionErrors(conn, prefix, log))
+            {
+              return;
+            }
+          }
+          throw new Exception("Timeout during download: open database kit is not running or responding");
+        }
+#if USE_OLEDB
+			} catch (OleDbException ex) {
+				throw new Exception(ex.ToString());
+#endif
+      } finally {}
+    }
+
+    private void SaveData(MazakWriteData data, IDbConnection conn, IDbTransaction trans)
+    {
+      conn.Execute(
+        @"INSERT INTO Fixture_t(
+          FixtureName,
+          Comment,
+          Command,
+          TransactionStatus
+        ) VALUES (
+          @FixtureName,
+          @Comment,
+          @Command,
+          0
+        )",
+        data.Fixtures,
+        transaction: trans
+      );
+
+      if (MazakType == MazakDbType.MazakVersionE) {
+        // pallet version 1
+        conn.Execute(
+          @"INSERT INTO Pallet_t(
+            PalletNumber,
+            Fixture,
+            RecordID,
+            Angle,
+            Command,
+            TransactionStatus
+          ) VALUES (
+            @PalletNumber,
+            @Fixture,
+            @RecordID,
+            @AngleV1,
+            @Command,
+            0
+          )",
+          data.Pallets,
+          transaction: trans
+        );
+      } else {
+        // pallet version 2
+        conn.Execute(
+          @"INSERT INTO Pallet_t(
+            PalletNumber,
+            Fixture,
+            RecordID,
+            FixtureGroup,
+            Command,
+            TransactionStatus
+          ) VALUES (
+            @PalletNumber,
+            @Fixture,
+            @RecordID,
+            @FixtureGroupV2,
+            @Command,
+            0
+          )",
+          data.Pallets,
+          transaction: trans
+        );
+      }
+
+      if (MazakType == MazakDbType.MazakSmooth) {
+        conn.Execute(
+          @"INSERT INTO ScheduleProcess_t(
+            ScheduleID,
+            ProcessNumber,
+            ProcessMaterialQuantity,
+            ProcessExecuteQuantity,
+            ProcessBadQuantity,
+            ProcessMachine,
+            FixedMachineFlag,
+            FixedMachineNumber,
+            ScheduleProcess_1,
+            ScheduleProcess_2,
+            ScheduleProcess_3,
+            ScheduleProcess_4,
+            ScheduleProcess_5
+          ) VALUES (
+            @MazakScheduleRowId,
+            @ProcessNumber,
+            @ProcessMaterialQuantity,
+            @ProcessExecuteQuantity,
+            @ProcessBadQuantity,
+            @ProcessMachine,
+            @FixedMachineFlag,
+            @FixedMachineNumber,
+            @ScheduleProcess_1,
+            @ScheduleProcess_2,
+            @ScheduleProcess_3,
+            @ScheduleProcess_4,
+            @ScheduleProcess_5
+          )",
+          data.Schedules.SelectMany(s => s.Processes),
+          transaction: trans
+        );
+        conn.Execute(
+          @"INSERT INTO Schedule_t(
+            ScheduleID,
+            Comment,
+            PartName,
+            PlanQuantity,
+            CompleteQuantity,
+            Priority,
+            DueDate,
+            FixForMachine,
+            HoldMode,
+            MissingFixture,
+            MissingProgram,
+            MissingTool,
+            MixScheduleID,
+            ProcessingPriority,
+            Command,
+            TransactionStatus,
+            Schedule_1,
+            Schedule_2,
+            Schedule_3,
+            Schedule_4,
+            Schedule_5,
+            Schedule_6,
+            StartDate,
+            SetNumber,
+            SetQuantity,
+            SetNumberSets
+          ) VALUES (
+            @Id,
+            @Comment,
+            @PartName,
+            @PlanQuantity,
+            @CompleteQuantity,
+            @Priority,
+            @DueDate,
+            @FixForMachine,
+            @HoldMode,
+            @MissingFixture,
+            @MissingProgram,
+            @MissingTool,
+            @MixScheduleID,
+            @ProcessingPriority,
+            @Command,
+            0,
+            @Schedule_1,
+            @Schedule_2,
+            @Schedule_3,
+            @Schedule_4,
+            @Schedule_5,
+            @Schedule_6,
+            @StartDate,
+            @SetNumber,
+            @SetQuantity,
+            @SetNumberSets
+          )",
+          data.Schedules,
+          transaction: trans
+        );
+        conn.Execute(
+          @"INSERT INTO PartProcess_t(
+            PartName,
+            ProcessNumber,
+            FixQuantity,
+            ContinueCut,
+            CutMc,
+            FixLDS,
+            FixPhoto,
+            Fixture,
+            MainProgram,
+            RemoveLDS,
+            RemovePhoto,
+            WashType,
+            PartProcess_1,
+            PartProcess_2,
+            PartProcess_3,
+            PartProcess_4,
+            FixTime,
+            RemoveTime,
+            CreateToolList_RA
+          ) VALUES(
+            @PartName,
+            @ProcessNumber,
+            @FixQuantity,
+            @ContinueCut,
+            @CutMc,
+            @FixLDS,
+            @FixPhoto,
+            @Fixture,
+            @MainProgram,
+            @RemoveLDS,
+            @REmovePhoto,
+            @WashType,
+            @PartProcess_1,
+            @PartProcess_2,
+            @PartProcess_3,
+            @PartProcess_4,
+            @FixTime,
+            @RemoveTime,
+            @CreateToolList_RA
+          )",
+          data.Parts.SelectMany(p => p.Processes),
+          transaction: trans
+        );
+        conn.Execute(
+          @"INSERT INTO Part_t(
+            PartName,
+            Comment,
+            Price,
+            TotalProcess,
+            Command,
+            TransactionStatus,
+            MaterialName,
+            Part_1,
+            Part_2,
+            Part_3,
+            Part_4,
+            Part_5
+          ) VALUES (
+            @PartName,
+            @Comment,
+            @Price,
+            @TotalProcess,
+            @Command,
+            0,
+            @MaterialName,
+            @Part_1,
+            @Part_2,
+            @Part_3,
+            @Part_4,
+            @Part_5
+          )",
+          data.Parts,
+          transaction: trans
+        );
+
+      } else {
+        // mazak ver e and web
+        conn.Execute(
+          @"INSERT INTO ScheduleProcess_t(
+            ScheduleID,
+            ProcessNumber,
+            ProcessMaterialQuantity,
+            ProcessExecuteQuantity,
+            ProcessBadQuantity,
+            ProcessMachine
+          ) VALUES (
+            @MazakScheduleRowId,
+            @ProcessNumber,
+            @ProcessMaterialQuantity,
+            @ProcessExecuteQuantity,
+            @ProcessBadQuantity,
+            @ProcessMachine)",
+          data.Schedules.SelectMany(s => s.Processes),
+          transaction: trans
+        );
+        conn.Execute(
+          @"INSERT INTO Schedule_t(
+            ScheduleID,
+            Comment,
+            PartName,
+            PlanQuantity,
+            CompleteQuantity,
+            Priority,
+            DueDate,
+            FixForMachine,
+            HoldMode,
+            MissingFixture,
+            MissingProgram,
+            MissingTool,
+            MixScheduleID,
+            ProcessingPriority,
+            Command,
+            TransactionStatus
+          ) VALUES (
+            @Id,
+            @Comment,
+            @PartName,
+            @PlanQuantity,
+            @CompleteQuantity,
+            @Priority,
+            @DueDate,
+            @FixForMachine,
+            @HoldMode,
+            @MissingFixture,
+            @MissingProgram,
+            @MissingTool,
+            @MixScheduleID,
+            @ProcessingPriority,
+            @Command,
+            0
+          )",
+          data.Schedules,
+          transaction: trans
+        );
+        conn.Execute(
+          @"INSERT INTO PartProcess_t(
+            PartName,
+            ProcessNumber,
+            FixQuantity,
+            ContinueCut,
+            CutMc,
+            FixLDS,
+            FixPhoto,
+            Fixture,
+            MainProgram,
+            RemoveLDS,
+            RemovePhoto,
+            WashType
+          ) VALUES(
+            @PartName,
+            @ProcessNumber,
+            @FixQuantity,
+            @ContinueCut,
+            @CutMc,
+            @FixLDS,
+            @FixPhoto,
+            @Fixture,
+            @MainProgram,
+            @RemoveLDS,
+            @REmovePhoto,
+            @WashType
+          )",
+          data.Parts.SelectMany(p => p.Processes),
+          transaction: trans
+        );
+        conn.Execute(
+          @"INSERT INTO Part_t(
+            PartName,
+            Comment,
+            Price,
+            TotalProcess,
+            Command,
+            TransactionStatus
+          ) VALUES (
+            @PartName,
+            @Comment,
+            @Price,
+            @TotalProcess,
+            @Command,
+            0
+          )",
+          data.Parts,
+          transaction: trans
+        );
+      }
+    }
+
+    private class CommandStatus
+    {
+      public MazakWriteCommand Command {get;set;}
+      public int TransactionStatus {get;set;}
+    }
+
+    private bool CheckTransactionErrors(IDbConnection conn, string prefix, System.Collections.Generic.IList<string> log)
+    {
+      string[] TransactionTables = {
+        "Fixture_t",
+        "Pallet_t",
+        "Part_t",
+        "Schedule_t",
+      };
+      var trans = conn.BeginTransaction(IsolationLevel.ReadCommitted);
+      try
+      {
+        bool foundUnprocesssedRow = false;
+        foreach (var table in TransactionTables) {
+          var ret = conn.Query<CommandStatus>("SELECT Command, TransactionStatus FROM " + table);
+          foreach (var row in ret) {
+            if (row.Command == MazakWriteCommand.Error)
+            {
+              log.Add(prefix + " Mazak transaction returned error " + row.TransactionStatus.ToString());
+            } else {
+              foundUnprocesssedRow = true;
+            }
+          }
+        }
+        trans.Commit();
+        return !foundUnprocesssedRow;
+      }
+      catch (Exception ex)
+      {
+        trans.Rollback();
+        throw ex;
+      }
+    }
+
+    private void ClearTransactionDatabase(IDbConnection conn, IDbTransaction trans)
+    {
+      string[] TransactionTables = {
+        "Fixture_t",
+        "Pallet_t",
+        "Part_t",
+        "PartProcess_t",
+        "Schedule_t",
+        "ScheduleProcess_t"
+      };
+
+      using (var cmd = conn.CreateCommand()) {
+        cmd.Transaction = trans;
+        foreach (string table in TransactionTables)
+        {
+          cmd.CommandText = "DELETE FROM " + table;
+          cmd.ExecuteNonQuery();
+
+        }
+      }
+    }
+
 	}
 
 	public class OpenDatabaseKitReadDB
 	  : OpenDatabaseKitDB, IReadDataAccess
 	{
-    private string _connectionStr;
     private string _fixtureSelect;
     private string _palletSelect;
     private string _partSelect;
@@ -691,66 +669,6 @@ namespace MazakMachineInterface
       using (var conn = CreateConnection())
       {
         return action(conn);
-      }
-    }
-
-    private IDbConnection OpenReadonlyOleDb()
-    {
-#if USE_OLEDB
-      int attempts = 0;
-
-      var conn = new OleDbConnection(_connectionStr);
-      while (attempts < 20)
-      {
-        try
-        {
-          conn.Open();
-          return conn;
-				} catch (OleDbException ex) {
-					if (!(ex.Message.ToLower().IndexOf("could not use") >= 0)) {
-						if (!(ex.Message.ToLower().IndexOf("try again") >= 0)) {
-							//if this is not a locking exception, throw it
-              conn.Dispose();
-							throw new DataException(ex.ToString());
-						}
-					}
-        }
-        catch (Exception ex)
-        {
-          if (!(ex.Message.ToLower().IndexOf("could not use") >= 0))
-          {
-            if (!(ex.Message.ToLower().IndexOf("try again") >= 0))
-            {
-              //if this is not a locking exception, throw it
-              conn.Dispose();
-              throw;
-            }
-          }
-        }
-
-        System.Threading.Thread.Sleep(TimeSpan.FromSeconds(1));
-
-        attempts += 1;
-      }
-
-      conn.Dispose();
-      throw new Exception("Readonly database is locked and can not be accessed");
-#else
-      throw new Exception("Mazak Web and VerE are not supported on .NET Core");
-#endif
-    }
-
-    private IDbConnection CreateConnection()
-    {
-      if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE)
-      {
-        return OpenReadonlyOleDb();
-      }
-      else
-      {
-        var conn = new System.Data.SqlClient.SqlConnection(_connectionStr);
-        conn.Open();
-        return conn;
       }
     }
 
