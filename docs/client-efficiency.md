@@ -4,12 +4,16 @@ title: Efficiency
 sidebar_label: Efficiency
 ---
 
-The efficiency tab shows some charts and graphs for a monthly summary of the
-operation of the cell.  These reports are designed to expose potential inefficiencies
-and problems, allowing you to gradually alter the flexibility or operation of the cell
-to improve performance.  We suggest you review the efficiency data once per month.
-At the top of the tab, you can choose to view either the data from the past 30 days or view
-data for a specific month.
+The best metric for continuous improvement of an FMS is not cost/piece but
+instead is the bottlenecks and utilization of system resources (the
+goal is to produce more stuff with the same machines and quality). The
+efficiency tab shows some charts and graphs for a monthly summary of the
+operation of the cell, displaying reports that in our experience are very
+helpful to find and fix bottlenecks. We suggest you review this data once a
+month and use these reports to gradually alter the flexibility or operation
+of the cell to improve the performance. The [improve an FMS](improve-fms.md)
+documentation goes into more details about how to make the most of these
+efficiency calculations.
 
 ## Station Cycles
 

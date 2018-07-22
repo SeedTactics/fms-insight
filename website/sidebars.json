@@ -3,7 +3,8 @@
     "Basics": [
       "overview",
       "getting-started",
-      "material-tracking"
+      "material-tracking",
+      "improve-fms"
     ],
     "Server": [
       "server-config",
