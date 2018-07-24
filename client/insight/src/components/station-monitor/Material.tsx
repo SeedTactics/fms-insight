@@ -346,6 +346,7 @@ export interface MaterialDialogProps {
   display_material: matDetails.MaterialDetail | null;
   buttons?: JSX.Element;
   onClose: DispatchAction<matDetails.ActionType.CloseMaterialDialog>;
+  extraDialogElements?: JSX.Element;
 }
 
 export function MaterialDialog(props: MaterialDialogProps) {
@@ -362,6 +363,7 @@ export function MaterialDialog(props: MaterialDialogProps) {
         <DialogContent>
           <MaterialDetailContent mat={mat}/>
         </DialogContent>
+        {props.extraDialogElements}
         <DialogActions>
           {props.buttons}
           <Button onClick={props.onClose} color="secondary">

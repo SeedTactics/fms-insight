@@ -36,6 +36,7 @@ import * as im from 'immutable';
 import { addHours } from 'date-fns';
 import Grid from '@material-ui/core/Grid';
 import Button from '@material-ui/core/Button';
+import { DialogActions } from '@material-ui/core';
 import { createSelector } from 'reselect';
 import DocumentTitle from 'react-document-title';
 
@@ -46,6 +47,43 @@ import * as matDetails from '../../data/material-details';
 import { MaterialSummaryAndCompletedData } from '../../data/events.matsummary';
 import SerialScanner from './QRScan';
 
+export interface InspButtonsProps {
+  readonly display_material: matDetails.MaterialDetail;
+  readonly operator?: string;
+  readonly inspection_type: string;
+  readonly completeInspection: (comp: matDetails.CompleteInspectionData) => void;
+}
+
+export function InspButtons(props: InspButtonsProps) {
+  function markInspComplete(success: boolean) {
+    if (!props.display_material) {
+      return;
+    }
+
+    props.completeInspection({
+      mat: props.display_material,
+      inspType: props.inspection_type,
+      success,
+      operator: props.operator,
+    });
+  }
+
+  return (
+    <>
+      {props.display_material && props.display_material.partName !== "" ?
+        <InstructionButton part={props.display_material.partName} type={props.inspection_type}/>
+        : undefined
+      }
+      <Button color="primary" onClick={() => markInspComplete(true)}>
+        Mark {props.inspection_type} Success
+      </Button>
+      <Button color="primary" onClick={() => markInspComplete(false)}>
+        Mark {props.inspection_type} Failed
+      </Button>
+    </>
+  );
+}
+
 export interface InspDialogProps extends MaterialDialogProps {
   readonly operator?: string;
   readonly focusInspectionType: string;
@@ -53,37 +91,45 @@ export interface InspDialogProps extends MaterialDialogProps {
 }
 
 export function InspDialog(props: InspDialogProps) {
-  function markInspComplete(success: boolean) {
-    if (!props.display_material || !props.focusInspectionType || props.focusInspectionType === "") {
-      return;
+  const displayMat = props.display_material;
+  let singleInspectionType: string | undefined;
+  let multipleInspTypes: ReadonlyArray<string> | undefined;
+  if (props.focusInspectionType) {
+    singleInspectionType = props.focusInspectionType;
+  } else if (displayMat) {
+    if (displayMat.signaledInspections.length === 1) {
+      singleInspectionType = displayMat.signaledInspections[0];
+    } else if (displayMat.signaledInspections.length > 1) {
+      multipleInspTypes = displayMat.signaledInspections;
     }
-
-    props.completeInspection({
-      mat: props.display_material,
-      inspType: props.focusInspectionType,
-      success,
-      operator: props.operator,
-    });
   }
-
   return (
     <MaterialDialog
       display_material={props.display_material}
       onClose={props.onClose}
+      extraDialogElements={
+        !displayMat || !multipleInspTypes ? undefined :
+          <>
+            {multipleInspTypes.map(i => (
+              <DialogActions key={i}>
+                <InspButtons
+                  display_material={displayMat}
+                  operator={props.operator}
+                  inspection_type={i}
+                  completeInspection={props.completeInspection}
+                />
+              </DialogActions>
+            ))}
+          </>
+      }
       buttons={
-        props.focusInspectionType === "" ? undefined :
-        <>
-          {props.display_material && props.display_material.partName !== "" ?
-            <InstructionButton part={props.display_material.partName} type={props.focusInspectionType}/>
-            : undefined
-          }
-          <Button color="primary" onClick={() => markInspComplete(true)}>
-            Mark Inspection Success
-          </Button>
-          <Button color="primary" onClick={() => markInspComplete(false)}>
-            Mark Inspection Failed
-          </Button>
-        </>
+        !singleInspectionType || !displayMat ? undefined :
+        <InspButtons
+          display_material={displayMat}
+          operator={props.operator}
+          inspection_type={singleInspectionType}
+          completeInspection={props.completeInspection}
+        />
       }
     />
   );
