@@ -57,24 +57,21 @@ namespace BlackMaple.MachineFramework
 
     public interface IBackgroundWorker
     {
-        //The init function should initialize a timer or spawn a thread and then return
         void Init(IFMSBackend backend, string dataDirectory, IConfig config, FMSSettings settings);
-
-        //Once the halt function is called, the class is garbage collected.
-        //A new class will be created when the service starts again
         void Halt();
     }
 
     [DataContract]
-    public class FMSInfo
+    public class FMSNameAndVersion
     {
         [DataMember] public string Name {get;set;}
         [DataMember] public string Version {get;set;}
     }
 
+
     public interface IFMSImplementation
     {
-        FMSInfo Info {get;}
+        FMSNameAndVersion NameAndVersion {get;}
         IFMSBackend Backend {get;}
         IList<IBackgroundWorker> Workers {get;}
     }

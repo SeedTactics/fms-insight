@@ -97,7 +97,7 @@ namespace BlackMaple.MachineFramework
             #endif
 
             services
-                .AddSingleton<FMSInfo>(_fmsImpl.Info)
+                .AddSingleton<FMSNameAndVersion>(_fmsImpl.NameAndVersion)
                 .AddSingleton<IStoreSettings>(settings)
                 .AddSingleton<BlackMaple.MachineFramework.IFMSBackend>(_fmsImpl.Backend)
                 .AddSingleton<Controllers.WebsocketManager>(

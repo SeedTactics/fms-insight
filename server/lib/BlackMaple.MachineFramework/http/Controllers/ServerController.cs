@@ -35,16 +35,27 @@ using System.IO;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using BlackMaple.MachineWatchInterface;
+using System.Runtime.Serialization;
 
 namespace BlackMaple.MachineFramework.Controllers
 {
+    [DataContract]
+    public class FMSInfo
+    {
+        [DataMember] public string Name {get;set;}
+        [DataMember] public string Version {get;set;}
+        [DataMember] public bool RequireScanAtWash {get;set;}
+        [DataMember] public bool RequireWorkorderBeforeAllowWashComplete {get;set;}
+        [DataMember] public IReadOnlyList<string> AdditionalLogServers {get;set;}
+    }
+
     [Route("api/v1/[controller]")]
     public class serverController : ControllerBase
     {
-        private FMSInfo _info;
+        private FMSNameAndVersion _info;
         private IStoreSettings _settings;
 
-        public serverController(FMSInfo info, IStoreSettings s)
+        public serverController(FMSNameAndVersion info, IStoreSettings s)
         {
             _settings = s;
             _info = info;
@@ -53,7 +64,13 @@ namespace BlackMaple.MachineFramework.Controllers
         [HttpGet("fms-information")]
         public FMSInfo FMSInformation()
         {
-            return _info;
+            return new FMSInfo() {
+                Name = _info.Name,
+                Version = _info.Version,
+                RequireScanAtWash = Program.FMSSettings.RequireScanAtWash,
+                RequireWorkorderBeforeAllowWashComplete = Program.FMSSettings.RequireWorkorderBeforeAllowWashComplete,
+                AdditionalLogServers = Program.FMSSettings.AdditionalLogServers
+            };
         }
 
         [HttpGet("settings/{id}")]

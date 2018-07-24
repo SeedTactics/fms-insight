@@ -44,10 +44,10 @@ namespace Cincron
         private JobLogDB _log;
         private MessageWatcher _msgWatcher;
 
-        public FMSInfo Info => new FMSInfo()
+        public FMSNameAndVersion NameAndVersion => new FMSNameAndVersion()
             {
                 Name = "Cincron",
-                Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString()
+                Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
             };
         public IFMSBackend Backend => this;
         public IList<IBackgroundWorker> Workers => new List<IBackgroundWorker>();

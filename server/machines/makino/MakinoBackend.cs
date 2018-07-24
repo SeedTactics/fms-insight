@@ -168,13 +168,13 @@ namespace Makino
             get { return _dataDirectory; }
         }
 
-    public FMSInfo Info => new FMSInfo()
+        public FMSNameAndVersion NameAndVersion => new FMSNameAndVersion()
 		{
 			Name = "Makino",
-			Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString()
+			Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
 		};
-    public IFMSBackend Backend => this;
-    public IList<IBackgroundWorker> Workers => new List<IBackgroundWorker>();
+        public IFMSBackend Backend => this;
+        public IList<IBackgroundWorker> Workers => new List<IBackgroundWorker>();
   }
 
   public static class MakinoProgram

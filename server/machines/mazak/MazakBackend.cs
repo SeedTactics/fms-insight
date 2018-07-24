@@ -79,10 +79,10 @@ namespace MazakMachineInterface
       get { return logDataLoader; }
     }
 
-    FMSInfo IFMSImplementation.Info => new FMSInfo()
+    FMSNameAndVersion IFMSImplementation.NameAndVersion => new FMSNameAndVersion()
     {
       Name = "Mazak",
-      Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString()
+      Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
     };
     IFMSBackend IFMSImplementation.Backend => this;
     IList<IBackgroundWorker> IFMSImplementation.Workers => new List<IBackgroundWorker>();

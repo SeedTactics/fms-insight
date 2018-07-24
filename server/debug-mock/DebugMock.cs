@@ -59,8 +59,8 @@ namespace DebugMachineWatchApiServer
   }
   public class MockFMSImplementation : IFMSImplementation
   {
-    public FMSInfo Info { get; }
-        = new FMSInfo()
+    public FMSNameAndVersion NameAndVersion { get; }
+        = new FMSNameAndVersion()
         {
           Name = "mock",
           Version = "1.2.3.4"

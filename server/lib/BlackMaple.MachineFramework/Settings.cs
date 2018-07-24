@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
+using System.Linq;
 using System.IO;
 using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
@@ -131,6 +132,8 @@ namespace BlackMaple.MachineFramework
       public int SerialLength {get;set;} = 10;
       public string StartingSerial {get;set;} = null;
       public string InstructionFilePath {get;set;}
+      public bool RequireScanAtWash {get;set;}
+      public bool RequireWorkorderBeforeAllowWashComplete {get;set;}
 
       public Dictionary<string, MachineWatchInterface.QueueSize> Queues {get;}
         = new Dictionary<string, MachineWatchInterface.QueueSize>();
@@ -138,6 +141,8 @@ namespace BlackMaple.MachineFramework
       // key is queue name, value is IP address or DNS name of fms insight server with the queue
       public Dictionary<string, string> ExternalQueues {get;}
         = new Dictionary<string, string>();
+
+      public IReadOnlyList<string> AdditionalLogServers {get;set;}
 
       static public FMSSettings Load(IConfiguration config)
       {
@@ -149,6 +154,14 @@ namespace BlackMaple.MachineFramework
         }
         s.SerialLength = fmsSection.GetValue<int>("SerialLength", 10);
         s.StartingSerial = fmsSection.GetValue<string>("StartingSerial", null);
+        s.RequireScanAtWash = fmsSection.GetValue<bool>("RequireScanAtWash", false);
+        s.RequireWorkorderBeforeAllowWashComplete = fmsSection.GetValue<bool>("RequireWorkorderBeforeAllowWashComplete", false);
+        s.AdditionalLogServers =
+          fmsSection.GetValue<string>("AdditionalLogServers", "")
+          .Split(',')
+          .Select(x => x.Trim())
+          .Where(x => !string.IsNullOrEmpty(x))
+          .ToList();
 
         s.InstructionFilePath = fmsSection.GetValue<string>("InstructionFilePath");
 
