@@ -78,7 +78,10 @@ export function initMockBackend(
     fMSInformation() {
       return Promise.resolve({
         name: "Sample",
-        version: "1.0.0"
+        version: "1.0.0",
+        requireScanAtWash: false,
+        requireWorkorderBeforeAllowWashComplete: false,
+        additionalLogServers: []
       });
     }
   };
