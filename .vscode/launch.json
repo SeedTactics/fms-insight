@@ -31,7 +31,7 @@
             "name": "Mock Server",
             "type": "coreclr",
             "request": "launch",
-            "program": "${workspaceRoot}/server/debug-mock/bin/Debug/netcoreapp2.1/debugmock.dll",
+            "program": "${workspaceRoot}/server/debug-mock/bin/Debug/netcoreapp2.1/BlackMaple.MachineFramework.DebugMock.dll",
             "args": [],
             "cwd": "${workspaceRoot}/server/debug-mock/bin/Debug/netcoreapp2.1",
             "stopAtEntry": false,

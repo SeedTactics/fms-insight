@@ -78,8 +78,8 @@ namespace BlackMaple.MachineFramework
           foreach (var mat in mats) {
             var q = "?queue=" + WebUtility.UrlEncode(mat.Queue) + "&position=-1";
 
-            var resp = await client.PostAsync("/part/" + WebUtility.UrlEncode(mat.PartName) + "/casting" + q,
-                                              new StringContent(mat.Serial));
+            var resp = await client.PostAsync("/api/v1/jobs/part/" + WebUtility.UrlEncode(mat.PartName) + "/casting" + q,
+                new StringContent(Newtonsoft.Json.JsonConvert.SerializeObject(mat.Serial), System.Text.Encoding.UTF8, "application/json"));
 
             if (!resp.IsSuccessStatusCode) {
               var body = await resp.Content.ReadAsStringAsync();
