@@ -44,12 +44,15 @@ import { Store, connect, AppActionBeforeMiddleware, mkAC } from '../../store/sto
 import { MaterialDialog, WhiteboardRegion, MatSummary, MaterialDialogProps, InstructionButton } from './Material';
 import * as matDetails from '../../data/material-details';
 import * as guiState from '../../data/gui-state';
+import * as api from '../../data/api';
 import SelectWorkorderDialog from './SelectWorkorder';
 import { MaterialSummaryAndCompletedData } from '../../data/events.matsummary';
 import SerialScanner from './QRScan';
+import Tooltip from '@material-ui/core/Tooltip';
 
 export interface WashDialogProps extends MaterialDialogProps {
   readonly operator?: string;
+  readonly fmsInfo?: Readonly<api.IFMSInfo>;
   readonly completeWash: (mat: matDetails.CompleteWashData) => void;
   readonly openSelectWorkorder: (mat: matDetails.MaterialDetail) => void;
 }
@@ -68,6 +71,19 @@ export function WashDialog(props: WashDialogProps) {
     }
     props.openSelectWorkorder(props.display_material);
   }
+
+  const requireScan = props.fmsInfo ? props.fmsInfo.requireScanAtWash : false;
+  const requireWork = props.fmsInfo ? props.fmsInfo.requireWorkorderBeforeAllowWashComplete : false;
+  let disallowCompleteReason: string | undefined;
+
+  if (requireScan && props.display_material && !props.display_material.openedViaBarcodeScanner) {
+    disallowCompleteReason = "Scan required at wash";
+  } else if (requireWork && props.display_material) {
+    if (props.display_material.workorderId === undefined || props.display_material.workorderId === "") {
+      disallowCompleteReason = "No workorder assigned";
+    }
+  }
+
   return (
     <MaterialDialog
       display_material={props.display_material}
@@ -78,9 +94,20 @@ export function WashDialog(props: WashDialogProps) {
             <InstructionButton part={props.display_material.partName} type="wash"/>
             : undefined
           }
-          <Button color="primary" onClick={markWashComplete}>
-            Mark Wash Complete
-          </Button>
+          {
+            disallowCompleteReason ?
+              <Tooltip title={disallowCompleteReason} placement="top">
+                <div>
+                  <Button color="primary" disabled>
+                    Mark Wash Complete
+                  </Button>
+                </div>
+              </Tooltip>
+              :
+              <Button color="primary" onClick={markWashComplete}>
+                Mark Wash Complete
+              </Button>
+          }
           <Button color="primary" onClick={openAssignWorkorder}>
             {
               props.display_material && props.display_material.workorderId ?
@@ -98,6 +125,7 @@ const ConnectedWashDialog = connect(
   st => ({
     display_material: st.MaterialDetails.material,
     operator: st.Operators.current,
+    fmsInfo: st.ServerSettings.fmsInfo
   }),
   {
     onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),

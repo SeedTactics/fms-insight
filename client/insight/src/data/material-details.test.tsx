@@ -63,6 +63,7 @@ const m: Readonly<mat.MaterialDetail> = {
   events: [],
   loading_workorders: false,
   workorders: [],
+  openedViaBarcodeScanner: false,
 };
 
 it('starts an open', () => {
@@ -332,6 +333,7 @@ it("successfully processes events", () => {
     loading_workorders: false,
     saving_workorder: false,
     workorders: [],
+    openedViaBarcodeScanner: false,
   };
   const after = {...initial,
     materialID: logmat.id,

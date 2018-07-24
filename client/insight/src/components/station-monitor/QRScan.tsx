@@ -85,7 +85,7 @@ export default connect(
   {
     onClose: () => ({ type: guiState.ActionType.SetScanQrCodeDialog, open: false}),
     onScan: (s: string) => [
-      openMaterialBySerial(s),
+      openMaterialBySerial(s, true),
       {
         type: guiState.ActionType.SetAddMatToQueueName,
         queue: undefined,

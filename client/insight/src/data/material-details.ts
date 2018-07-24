@@ -60,6 +60,7 @@ export interface MaterialDetail {
   readonly workorderId?: string;
   readonly signaledInspections: ReadonlyArray<string>;
   readonly completedInspections: ReadonlyArray<string>;
+  readonly openedViaBarcodeScanner: boolean;
 
   readonly updating_material: boolean;
 
@@ -120,6 +121,7 @@ export function openMaterialDialog(mat: Readonly<MaterialSummary>):  ABF {
       loading_workorders: false,
       saving_workorder: false,
       workorders: [],
+      openedViaBarcodeScanner: false,
     } as MaterialDetail,
     pledge: LogBackend.logForMaterial(mat.materialID),
   };
@@ -142,11 +144,12 @@ export function openMaterialDialogWithEmptyMat():  ABF {
       loading_workorders: false,
       saving_workorder: false,
       workorders: [],
+      openedViaBarcodeScanner: false,
     } as MaterialDetail,
   };
 }
 
-export function openMaterialBySerial(serial: string): ABF {
+export function openMaterialBySerial(serial: string, openedByBarcode: boolean): ABF {
   return {
     type: ActionType.OpenMaterialDialog,
     initial: {
@@ -163,6 +166,7 @@ export function openMaterialBySerial(serial: string): ABF {
       loading_workorders: false,
       saving_workorder: false,
       workorders: [],
+      openedViaBarcodeScanner: openedByBarcode,
     } as MaterialDetail,
     pledge: LogBackend.logForSerial(serial),
   };
