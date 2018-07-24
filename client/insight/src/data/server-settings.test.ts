@@ -51,6 +51,9 @@ it('loads data', () => {
         fmsInfo: {
           name: "test",
           version: "1.2.3.4",
+          requireScanAtWash: false,
+          requireWorkorderBeforeAllowWashComplete: false,
+          additionalLogServers: []
         },
         latestVersion: {
           version: "hello",
