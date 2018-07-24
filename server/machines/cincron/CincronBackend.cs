@@ -37,20 +37,12 @@ using BlackMaple.MachineWatchInterface;
 
 namespace Cincron
 {
-    public class CincronBackend : IFMSBackend, IFMSImplementation
+    public class CincronBackend : IFMSBackend
     {
         private static Serilog.ILogger Log = Serilog.Log.ForContext<CincronBackend>();
 
         private JobLogDB _log;
         private MessageWatcher _msgWatcher;
-
-        public FMSNameAndVersion NameAndVersion => new FMSNameAndVersion()
-            {
-                Name = "Cincron",
-                Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
-            };
-        public IFMSBackend Backend => this;
-        public IList<IBackgroundWorker> Workers => new List<IBackgroundWorker>();
 
         public void Init(string dataDirectory, IConfig cfg, FMSSettings settings)
         {
@@ -117,6 +109,22 @@ namespace Cincron
         }
     }
 
+    public class CincronImplementation : IFMSImplementation
+    {
+        public FMSNameAndVersion NameAndVersion => new FMSNameAndVersion()
+            {
+                Name = "Cincron",
+                Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
+            };
+        public IFMSBackend Backend {get;} = new CincronBackend();
+        public IList<IBackgroundWorker> Workers {get;} = new List<IBackgroundWorker>();
+
+        public string CustomizeInstructionPath(string part, string type)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
     public static class CincronProgram
     {
         public static void Main()
@@ -126,7 +134,7 @@ namespace Cincron
             #else
             var useService = true;
             #endif
-            Program.Run(useService, new CincronBackend());
+            Program.Run(useService, new CincronImplementation());
         }
     }
 }

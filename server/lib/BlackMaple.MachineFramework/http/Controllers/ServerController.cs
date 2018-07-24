@@ -31,6 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using System;
 using System.IO;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
@@ -52,21 +53,22 @@ namespace BlackMaple.MachineFramework.Controllers
     [Route("api/v1/[controller]")]
     public class serverController : ControllerBase
     {
-        private FMSNameAndVersion _info;
         private IStoreSettings _settings;
+        private IFMSImplementation _fmsImpl;
 
-        public serverController(FMSNameAndVersion info, IStoreSettings s)
+        public serverController(IFMSImplementation impl, IStoreSettings s)
         {
             _settings = s;
-            _info = info;
+            _fmsImpl = impl;
         }
 
         [HttpGet("fms-information")]
         public FMSInfo FMSInformation()
         {
+            var info = _fmsImpl.NameAndVersion;
             return new FMSInfo() {
-                Name = _info.Name,
-                Version = _info.Version,
+                Name = info.Name,
+                Version = info.Version,
                 RequireScanAtWash = Program.FMSSettings.RequireScanAtWash,
                 RequireWorkorderBeforeAllowWashComplete = Program.FMSSettings.RequireWorkorderBeforeAllowWashComplete,
                 AdditionalLogServers = Program.FMSSettings.AdditionalLogServers
@@ -90,6 +92,12 @@ namespace BlackMaple.MachineFramework.Controllers
         [ProducesResponseType(404)]
         public IActionResult FindInstructions(string part, [FromQuery] string type)
         {
+            try {
+                var file = _fmsImpl.CustomizeInstructionPath(part, type);
+                return Redirect("/instructions/" + file);
+            } catch (NotImplementedException) {
+                // do nothing, continue with default impl
+            }
             if (string.IsNullOrEmpty(Program.FMSSettings.InstructionFilePath)) {
                 return NotFound("Error: instruction directory must be configured in FMS Insight config file.");
             }

@@ -57,6 +57,7 @@ namespace DebugMachineWatchApiServer
       BlackMaple.MachineFramework.Program.Run(false, new MockFMSImplementation());
     }
   }
+
   public class MockFMSImplementation : IFMSImplementation
   {
     public FMSNameAndVersion NameAndVersion { get; }
@@ -71,6 +72,11 @@ namespace DebugMachineWatchApiServer
 
     public IList<IBackgroundWorker> Workers { get; }
         = new List<IBackgroundWorker>();
+
+    public string CustomizeInstructionPath(string part, string type)
+    {
+      throw new NotImplementedException();
+    }
   }
 
   public class MockServerBackend : IFMSBackend, IJobControl, IOldJobDecrement

@@ -74,6 +74,12 @@ namespace BlackMaple.MachineFramework
         FMSNameAndVersion NameAndVersion {get;}
         IFMSBackend Backend {get;}
         IList<IBackgroundWorker> Workers {get;}
+
+        // allows an implementation to override the algorithm which
+        // finds an instruction file on disk given a part and type.
+        // If this throws NotImplementedException(), the default
+        // of searching for a file containing the part and type is used.
+        string CustomizeInstructionPath(string part, string type);
     }
 
 }

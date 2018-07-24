@@ -41,7 +41,7 @@ using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
 {
-  public class MazakBackend : IFMSBackend, IFMSImplementation
+  public class MazakBackend : IFMSBackend
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<MazakBackend>();
 
@@ -78,14 +78,6 @@ namespace MazakMachineInterface
     {
       get { return logDataLoader; }
     }
-
-    FMSNameAndVersion IFMSImplementation.NameAndVersion => new FMSNameAndVersion()
-    {
-      Name = "Mazak",
-      Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
-    };
-    IFMSBackend IFMSImplementation.Backend => this;
-    IList<IBackgroundWorker> IFMSImplementation.Workers => new List<IBackgroundWorker>();
 
     public void Init(string dataDirectory, IConfig cfg, FMSSettings settings)
     {
@@ -324,6 +316,29 @@ namespace MazakMachineInterface
         return MazakDbType.MazakSmooth;
       }
     }
+
+    public string CustomizeInstructionPath(string part, string type)
+    {
+        throw new NotImplementedException();
+    }
+  }
+
+  public class MazakImplementation : IFMSImplementation
+  {
+    public FMSNameAndVersion NameAndVersion => new FMSNameAndVersion()
+    {
+      Name = "Mazak",
+      Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
+    };
+
+    public IFMSBackend Backend {get;} = new MazakBackend();
+
+    public IList<IBackgroundWorker> Workers {get;} = new List<IBackgroundWorker>();
+
+    public string CustomizeInstructionPath(string part, string type)
+    {
+      throw new NotImplementedException();
+    }
   }
 
   public static class MazakProgram
@@ -335,7 +350,7 @@ namespace MazakMachineInterface
 #else
 			var useService = true;
 #endif
-      Program.Run(useService, new MazakBackend());
+      Program.Run(useService, new MazakImplementation());
     }
   }
 }

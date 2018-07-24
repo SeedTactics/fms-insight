@@ -37,7 +37,7 @@ using BlackMaple.MachineWatchInterface;
 
 namespace Makino
 {
-	public class MakinoBackend : IFMSBackend, IFMSImplementation
+	public class MakinoBackend : IFMSBackend
 	{
         private static Serilog.ILogger Log = Serilog.Log.ForContext<MakinoBackend>();
 
@@ -167,15 +167,23 @@ namespace Makino
         {
             get { return _dataDirectory; }
         }
+    }
 
+    public class MakinoImplementation : IFMSImplementation
+    {
         public FMSNameAndVersion NameAndVersion => new FMSNameAndVersion()
 		{
 			Name = "Makino",
 			Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
 		};
-        public IFMSBackend Backend => this;
-        public IList<IBackgroundWorker> Workers => new List<IBackgroundWorker>();
-  }
+        public IFMSBackend Backend {get;} = new MakinoBackend();
+        public IList<IBackgroundWorker> Workers {get;} = new List<IBackgroundWorker>();
+
+        public string CustomizeInstructionPath(string part, string type)
+        {
+            throw new NotImplementedException();
+        }
+    }
 
   public static class MakinoProgram
   {
@@ -186,7 +194,7 @@ namespace Makino
 #else
 			var useService = true;
 #endif
-      Program.Run(useService, new MakinoBackend());
+      Program.Run(useService, new MakinoImplementation());
     }
   }
 }
