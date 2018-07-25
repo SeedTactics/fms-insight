@@ -665,7 +665,7 @@ namespace MazakMachineInterface
           new LogMaterial(
             matID: matId,
             uniq: "",
-            proc: 1,
+            proc: 0,
             part: part,
             numProc: 1),
           serial);
@@ -687,7 +687,7 @@ namespace MazakMachineInterface
           new LogMaterial(
             matID: matId,
             uniq: jobUnique,
-            proc: 1,
+            proc: process,
             part: job.PartName,
             numProc: job.NumProcesses),
           serial);
