@@ -196,14 +196,14 @@ namespace MazakMachineInterface
     {
       conn.Execute(
         @"INSERT INTO Fixture_t(
-          FixtureName,
-          Comment,
           Command,
+          Comment,
+          FixtureName,
           TransactionStatus
         ) VALUES (
-          @FixtureName,
-          @Comment,
           @Command,
+          @Comment,
+          @FixtureName,
           0
         )",
         data.Fixtures,
@@ -214,18 +214,18 @@ namespace MazakMachineInterface
         // pallet version 1
         conn.Execute(
           @"INSERT INTO Pallet_t(
-            PalletNumber,
-            Fixture,
-            RecordID,
             Angle,
             Command,
+            Fixture,
+            PalletNumber,
+            RecordID,   
             TransactionStatus
           ) VALUES (
-            @PalletNumber,
-            @Fixture,
-            @RecordID,
             @AngleV1,
             @Command,
+            @Fixture,
+            @PalletNumber,
+            @RecordID,
             0
           )",
           data.Pallets,
@@ -235,18 +235,18 @@ namespace MazakMachineInterface
         // pallet version 2
         conn.Execute(
           @"INSERT INTO Pallet_t(
-            PalletNumber,
-            Fixture,
-            RecordID,
-            FixtureGroup,
             Command,
+            Fixture,
+            FixtureGroup,
+            PalletNumber,
+            RecordID,
             TransactionStatus
           ) VALUES (
-            @PalletNumber,
-            @Fixture,
-            @RecordID,
-            @FixtureGroupV2,
             @Command,
+            @Fixture,
+            @FixtureGroupV2,
+            @PalletNumber,
+            @RecordID,
             0
           )",
           data.Pallets,
@@ -433,55 +433,56 @@ namespace MazakMachineInterface
         conn.Execute(
           @"INSERT INTO ScheduleProcess_t(
             ScheduleID,
-            ProcessNumber,
-            ProcessMaterialQuantity,
-            ProcessExecuteQuantity,
             ProcessBadQuantity,
-            ProcessMachine
+            ProcessExecuteQuantity,
+            ProcessMachine,
+            ProcessMaterialQuantity,
+            ProcessNumber
           ) VALUES (
             @MazakScheduleRowId,
-            @ProcessNumber,
-            @ProcessMaterialQuantity,
-            @ProcessExecuteQuantity,
             @ProcessBadQuantity,
-            @ProcessMachine)",
+            @ProcessExecuteQuantity,
+            @ProcessMachine,
+            @ProcessMaterialQuantity,
+            @ProcessNumber
+          )",
           data.Schedules.SelectMany(s => s.Processes),
           transaction: trans
         );
         conn.Execute(
           @"INSERT INTO Schedule_t(
-            ScheduleID,
+            Command,
             Comment,
-            PartName,
-            PlanQuantity,
             CompleteQuantity,
-            Priority,
             DueDate,
             FixForMachine,
             HoldMode,
+            ScheduleID,
             MissingFixture,
             MissingProgram,
             MissingTool,
             MixScheduleID,
+            PartName,
+            PlanQuantity,
+            Priority,
             ProcessingPriority,
-            Command,
             TransactionStatus
           ) VALUES (
-            @Id,
+            @Command,
             @Comment,
-            @PartName,
-            @PlanQuantity,
             @CompleteQuantity,
-            @Priority,
             @DueDate,
             @FixForMachine,
             @HoldMode,
+            @Id,
             @MissingFixture,
             @MissingProgram,
             @MissingTool,
             @MixScheduleID,
+            @PartName,
+            @PlanQuantity,
+            @Priority,
             @ProcessingPriority,
-            @Command,
             0
           )",
           data.Schedules,
@@ -489,30 +490,30 @@ namespace MazakMachineInterface
         );
         conn.Execute(
           @"INSERT INTO PartProcess_t(
-            PartName,
-            ProcessNumber,
-            FixQuantity,
             ContinueCut,
             CutMc,
             FixLDS,
             FixPhoto,
+            FixQuantity,
             Fixture,
             MainProgram,
+            PartName,
+            ProcessNumber,
             RemoveLDS,
             RemovePhoto,
             WashType
           ) VALUES(
-            @PartName,
-            @ProcessNumber,
-            @FixQuantity,
             @ContinueCut,
             @CutMc,
             @FixLDS,
             @FixPhoto,
+            @FixQuantity,
             @Fixture,
             @MainProgram,
+            @PartName,
+            @ProcessNumber,
             @RemoveLDS,
-            @REmovePhoto,
+            @RemovePhoto,
             @WashType
           )",
           data.Parts.SelectMany(p => p.Processes),
@@ -520,18 +521,18 @@ namespace MazakMachineInterface
         );
         conn.Execute(
           @"INSERT INTO Part_t(
-            PartName,
+            Command,
             Comment,
+            PartName,
             Price,
             TotalProcess,
-            Command,
             TransactionStatus
           ) VALUES (
-            @PartName,
+            @Command,
             @Comment,
+            @PartName,
             @Price,
             @TotalProcess,
-            @Command,
             0
           )",
           data.Parts,

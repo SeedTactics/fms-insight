@@ -29,8 +29,9 @@
   </Choose>
 
   <ItemGroup>
-    <ProjectReference Include="../../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj"/>
-    <PackageReference Include="Dapper" Version="1.50.*"/>
+    <ProjectReference Include="../../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj" />
+    <PackageReference Include="Dapper" Version="1.50.*" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="2.1.0" />
   </ItemGroup>
 
   <Choose>
@@ -47,7 +48,7 @@
 
       <When Condition="$(TargetFramework) == 'netcoreapp2.1'">
           <ItemGroup>
-            <PackageReference Include="System.Data.SqlClient" Version="4.5.0"/>
+            <PackageReference Include="System.Data.SqlClient" Version="4.5.0" />
           </ItemGroup>
       </When>
   </Choose>

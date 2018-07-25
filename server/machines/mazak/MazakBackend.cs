@@ -122,7 +122,7 @@ namespace MazakMachineInterface
       if (logPath == null || logPath == "")
         logPath = "c:\\Mazak\\FMS\\Log";
 
-      if (!System.IO.Directory.Exists(logPath)) {
+      if (MazakType != MazakDbType.MazakVersionE && !System.IO.Directory.Exists(logPath)) {
         Log.Error("Log CSV Directory {path} does not exist.  Set the directory in the config.ini file.", logPath);
         throw new Exception("Log CSV Directory " + logPath + " does not exist");
       }
@@ -173,9 +173,6 @@ namespace MazakMachineInterface
             settings.SerialType = SerialType.AssignOneSerialPerCycle;
         }
       }
-
-      if (!System.IO.Directory.Exists(logPath))
-        Log.Error("Configured Log CSV directory {logPath} does not exist.", logPath);
 
       Log.Debug(
         "Configured UseStartingOffsetForDueDate = {useStarting}, DecrementPriority = {decr} ",
