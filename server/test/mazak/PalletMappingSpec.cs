@@ -872,7 +872,6 @@ namespace MachineWatchTest
 
 			for (int proc = 1; proc <= numProc; proc++) {
 				pRow.Processes.Add(new MazakPartProcessRow() {
-					MazakPartRowId = pRow.Id,
 					ProcessNumber = proc,
 					Fixture = fix + ":" + proc.ToString(),
 					PartName = name,

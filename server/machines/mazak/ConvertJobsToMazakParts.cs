@@ -61,6 +61,8 @@ namespace MazakMachineInterface
       newPartRow.PartName = PartName;
       newPartRow.Comment = Comment;
       newPartRow.Price = 0;
+      newPartRow.MaterialName = "";
+      newPartRow.TotalProcess = Processes.Count;
       transSet.Parts.Add(newPartRow);
     }
 

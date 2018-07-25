@@ -240,6 +240,8 @@ namespace MazakMachineInterface
         //copy them to the system
         AddJobsToDB(newJ);
 
+        System.Threading.Thread.Sleep(TimeSpan.FromSeconds(5));
+
         AddSchedules(newJ.Jobs, logMessages);
 
         hold.SignalNewSchedules();

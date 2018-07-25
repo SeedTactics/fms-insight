@@ -58,11 +58,10 @@ namespace MazakMachineInterface
 
   public class MazakPartRow
   {
-    public int Id {get;set;}
-    public string Comment {get;set;}
     public string PartName {get;set;}
+    public string Comment {get;set;}
     public int Price {get;set;}
-    public int TotalProcess => Processes.Count();
+    public int TotalProcess {get;set;}
 
     // these columns are new on smooth
     public string MaterialName {get;set;}
@@ -71,6 +70,8 @@ namespace MazakMachineInterface
     public int Part_3 {get;set;}
     public int Part_4 {get;set;}
     public int Part_5 {get;set;}
+    public int CheckCount {get;set;}
+    public int ProductCount {get;set;}
 
     public IList<MazakPartProcessRow> Processes {get;set;} = new List<MazakPartProcessRow>();
 
@@ -89,8 +90,6 @@ namespace MazakMachineInterface
 
   public class MazakPartProcessRow
   {
-    public int MazakPartRowId {get;set;}
-
     public string PartName {get;set;}
     public int ProcessNumber {get;set;}
 

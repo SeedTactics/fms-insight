@@ -405,7 +405,9 @@ namespace MazakMachineInterface
             Part_2,
             Part_3,
             Part_4,
-            Part_5
+            Part_5,
+            CheckCount,
+            ProductCount
           ) VALUES (
             @PartName,
             @Comment,
@@ -418,7 +420,9 @@ namespace MazakMachineInterface
             @Part_2,
             @Part_3,
             @Part_4,
-            @Part_5
+            @Part_5,
+            @CheckCount,
+            @ProductCount
           )",
           data.Parts,
           transaction: trans
@@ -538,7 +542,7 @@ namespace MazakMachineInterface
 
     private class CommandStatus
     {
-      public MazakWriteCommand Command {get;set;}
+      public MazakWriteCommand? Command {get;set;}
       public int TransactionStatus {get;set;}
     }
 
@@ -555,9 +559,10 @@ namespace MazakMachineInterface
       {
         bool foundUnprocesssedRow = false;
         foreach (var table in TransactionTables) {
-          var ret = conn.Query<CommandStatus>("SELECT Command, TransactionStatus FROM " + table);
+          var ret = conn.Query<CommandStatus>("SELECT Command, TransactionStatus FROM " + table, transaction: trans);
           foreach (var row in ret) {
-            if (row.Command == MazakWriteCommand.Error)
+            if (!row.Command.HasValue) continue;
+            if (row.Command.Value == MazakWriteCommand.Error)
             {
               log.Add(prefix + " Mazak transaction returned error " + row.TransactionStatus.ToString());
             } else {
@@ -630,28 +635,143 @@ namespace MazakMachineInterface
         _connectionStr = dbConnStr + ";Database=FCREADDAT01";
       }
 
-      _fixtureSelect = "SELECT Comment, FixtureName FROM Fixture";
+      _fixtureSelect = "SELECT FixtureName, Comment FROM Fixture";
 
       if (MazakType != MazakDbType.MazakVersionE)
       {
-        _palletSelect = "SELECT FixtureGroup AS FixtureGroupV2, Fixture, PalletNumber, RecordID FROM Pallet";
+        _palletSelect = "SELECT PalletNumber, FixtureGroup AS FixtureGroupV2, Fixture, RecordID FROM Pallet";
       }
       else
       {
-        _palletSelect = "SELECT Angle AS AngleV1, Fixture, PalletNumber, RecordID FROM Pallet";
+        _palletSelect = "SELECT PalletNumber, Angle AS AngleV1, Fixture, RecordID FROM Pallet";
       }
 
-      _partSelect = "SELECT Comment, Id, PartName, Price FROM Part";
-      _partProcSelect = "SELECT ContinueCut, CutMc, FixLDS, FixPhoto, FixQuantity, Fixture, MainProgram, PartName, ProcessNumber, RemoveLDS, RemovePhoto, WashType FROM PartProcess";
-
       if (MazakType != MazakDbType.MazakSmooth) {
-        _scheduleSelect = "SELECT Comment, CompleteQuantity, DueDate, FixForMachine, HoldMode, MissingFixture, MissingProgram, MissingTool, MixScheduleID, PartName, PlanQuantity, Priority, ProcessingPriority, Reserved, ScheduleID As Id, UpdatedFlag FROM Schedule";
-        _scheduleProcSelect = "SELECT ProcessBadQuantity, ProcessExecuteQuantity, ProcessMachine, ProcessMaterialQuantity, ProcessNumber, ScheduleID As MazakScheduleRowId, UpdatedFlag " +
-          " FROM ScheduleProcess";
+        _partSelect = "SELECT Id, PartName, Comment, Price, TotalProcess FROM Part";
+        _partSelect = @"SELECT
+            PartName,
+            Comment,
+            Price,
+            TotalProcess
+          FROM Part";
+        _partProcSelect = "SELECT ContinueCut, CutMc, FixLDS, FixPhoto, FixQuantity, Fixture, MainProgram, PartName, ProcessNumber, RemoveLDS, RemovePhoto, WashType FROM PartProcess";
+        _partProcSelect = @"SELECT
+            PartName,
+            ProcessNumber,
+            FixQuantity,
+            ContinueCut,
+            CutMc,
+            FixLDS,
+            FixPhoto,
+            Fixture,
+            MainProgram,
+            RemoveLDS,
+            RemovePhoto,
+            WashType
+          FROM PartProcess";
+
+        _scheduleSelect = @"SELECT
+            ScheduleID As Id,
+            Comment,
+            PartName,
+            PlanQuantity,
+            CompleteQuantity,
+            Priority,
+            DueDate,
+            FixForMachine,
+            HoldMode,
+            MissingFixture,
+            MissingProgram,
+            MissingTool,
+            MixScheduleID,
+            ProcessingPriority
+          FROM Schedule";
+        _scheduleProcSelect = @"SELECT
+            ScheduleID As MazakScheduleRowId,
+            ProcessNumber,
+            ProcessMaterialQuantity,
+            ProcessExecuteQuantity,
+            ProcessBadQuantity,
+            ProcessMachine
+          FROM ScheduleProcess";
       } else {
-        _scheduleSelect = "SELECT Comment, CompleteQuantity, DueDate, FixForMachine, HoldMode, MissingFixture, MissingProgram, MissingTool, MixScheduleID, PartName, PlanQuantity, Priority, ProcessingPriority, Reserved, ScheduleID As Id, UpdatedFlag, Schedule_1, Schedule_2, Schedule_3, Schedule_4, Schedule_5, Schedule_6, StartDate, SetNumber, SetQuantity, SetNumberSets FROM Schedule";
-        _scheduleProcSelect = "SELECT ProcessBadQuantity, ProcessExecuteQuantity, ProcessMachine, ProcessMaterialQuantity, ProcessNumber, ScheduleID As MazakScheduleRowId, UpdatedFlag, FixedMachineFlag, FixedMachineNumber, ScheduleProcess_1, ScheduleProcess_2, ScheduleProcess_3, ScheduleProcess_4, ScheduleProcess_5 " +
-          " FROM ScheduleProcess";
+        _partSelect = @"SELECT
+            PartName,
+            Comment,
+            Price,
+            TotalProcess,
+            MaterialName,
+            Part_1,
+            Part_2,
+            Part_3,
+            Part_4,
+            Part_5,
+            CheckCount,
+            ProductCount
+          FROM Part";
+        _partProcSelect = @"SELECT
+            PartName,
+            ProcessNumber,
+            FixQuantity,
+            ContinueCut,
+            CutMc,
+            FixLDS,
+            FixPhoto,
+            Fixture,
+            MainProgram,
+            RemoveLDS,
+            RemovePhoto,
+            WashType,
+            PartProcess_1,
+            PartProcess_2,
+            PartProcess_3,
+            PartProcess_4,
+            FixTime,
+            RemoveTime,
+            CreateToolList_RA
+          FROM PartProcess";
+
+        _scheduleSelect = @"SELECT
+            ScheduleID As Id,
+            Comment,
+            PartName,
+            PlanQuantity,
+            CompleteQuantity,
+            Priority,
+            DueDate,
+            FixForMachine,
+            HoldMode,
+            MissingFixture,
+            MissingProgram,
+            MissingTool,
+            MixScheduleID,
+            ProcessingPriority,
+            Schedule_1,
+            Schedule_2,
+            Schedule_3,
+            Schedule_4,
+            Schedule_5,
+            Schedule_6,
+            StartDate,
+            SetNumber,
+            SetQuantity,
+            SetNumberSets
+          FROM Schedule";
+        _scheduleProcSelect = @"SELECT
+            ScheduleID As MazakScheduleRowId,
+            ProcessNumber,
+            ProcessMaterialQuantity,
+            ProcessExecuteQuantity,
+            ProcessBadQuantity,
+            ProcessMachine,
+            FixedMachineFlag,
+            FixedMachineNumber,
+            ScheduleProcess_1,
+            ScheduleProcess_2,
+            ScheduleProcess_3,
+            ScheduleProcess_4,
+            ScheduleProcess_5
+          FROM ScheduleProcess";
       }
 
       // normally would use a join to determine FixQuantity as part of the schedule proc row,
@@ -741,7 +861,6 @@ namespace MazakMachineInterface
         if (partsByName.ContainsKey(proc.PartName)) {
           var part = partsByName[proc.PartName];
           part.Processes.Add(proc);
-          proc.MazakPartRowId = part.Id;
         }
         fixQty.Add(new PartProcessFixQty() {
           PartName = proc.PartName,
