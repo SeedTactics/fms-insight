@@ -223,9 +223,9 @@ namespace MazakMachineInterface
       }
 
       hold = new HoldPattern(dataDirectory, _writeDB, readOnlyDb, true);
-      routing = new RoutingInfo(_writeDB, readOnlyDb, hold, logDataLoader, jobDB, jobLog,
-                                CheckPalletsUsedOnce, UseStartingOffsetForDueDate, DecrementPriorityOnDownload,
-                                settings);
+      var writeJobs = new WriteJobs(_writeDB, readOnlyDb, hold, jobDB, jobLog, CheckPalletsUsedOnce, UseStartingOffsetForDueDate, DecrementPriorityOnDownload);
+      routing = new RoutingInfo(_writeDB, readOnlyDb, logDataLoader, jobDB, jobLog, writeJobs,
+                                CheckPalletsUsedOnce, settings);
 
       logDataLoader.NewEntries += OnNewLogEntries;
       if (loadOper != null) loadOper.LoadActions += OnLoadActions;

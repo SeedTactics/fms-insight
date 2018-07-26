@@ -137,7 +137,7 @@ namespace MazakMachineInterface
 
       if (logMessages.Count > 0)
       {
-        throw RoutingInfo.BuildTransactionException("Error decrementing schedule", logMessages);
+        throw WriteJobs.BuildTransactionException("Error decrementing schedule", logMessages);
       }
 
       mazakData = readDb.LoadSchedules();
@@ -369,7 +369,7 @@ namespace MazakMachineInterface
         if (MazakPart.IsSailPart(schRow.PartName))
         {
           //only deal with schedules we have created
-          int cnt = RoutingInfo.CountMaterial(schRow);
+          int cnt = CountMaterial(schRow);
           if (schRow.PlanQuantity != cnt)
           {
             var newSchRow = schRow.Clone();
@@ -388,8 +388,22 @@ namespace MazakMachineInterface
 
       if (log.Count > 0)
       {
-        throw RoutingInfo.BuildTransactionException("Error finalizing decrement", log);
+        throw WriteJobs.BuildTransactionException("Error finalizing decrement", log);
       }
     }
+
+    private static int CountMaterial(MazakScheduleRow schRow)
+    {
+      int cnt = schRow.CompleteQuantity;
+      foreach (var schProcRow in schRow.Processes)
+      {
+        cnt += schProcRow.ProcessMaterialQuantity;
+        cnt += schProcRow.ProcessExecuteQuantity;
+        cnt += schProcRow.ProcessBadQuantity;
+      }
+
+      return cnt;
+    }
+
   }
 }

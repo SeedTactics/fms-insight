@@ -49,7 +49,7 @@ namespace MachineWatchTest
   {
     private JobLogDB _logDB;
 		private JobDB _jobDB;
-    private RoutingInfo _routing;
+    private IWriteJobs _writeJobs;
     private IWriteData _writeMock;
     private IReadDataAccess _readMock;
     private JsonSerializerSettings jsonSettings;
@@ -101,17 +101,15 @@ namespace MachineWatchTest
       _settings.Queues["queueBBB"] = new QueueSize();
       _settings.Queues["queueCCC"] = new QueueSize();
 
-      _routing = new RoutingInfo(
+      _writeJobs = new WriteJobs(
         _writeMock,
         _readMock,
         Substitute.For<IHoldManagement>(),
-        Substitute.For<IMazakLogReader>(),
         _jobDB,
         _logDB,
         check: false,
         useStarting: true,
-        decrPriority: false,
-        settings: _settings);
+        decrPriority: false);
 
         jsonSettings = new JsonSerializerSettings();
         jsonSettings.Converters.Add(new BlackMaple.MachineFramework.TimespanConverter());
@@ -126,20 +124,6 @@ namespace MachineWatchTest
 			_jobDB.Close();
 		}
 
-    [Theory]
-    [InlineData("fixtures-queues")]
-    public void CheckValid(string newJobsFile)
-    {
-      var newJobs = JsonConvert.DeserializeObject<NewJobs>(
-        File.ReadAllText(
-          Path.Combine("..", "..", "..", "sample-newjobs", newJobsFile + ".json")),
-          jsonSettings
-      );
-
-      _routing.CheckValidRoutes(newJobs.Jobs)
-        .Should().BeEmpty();
-    }
-
     [Theory(Skip="pending")]
     [InlineData("fixtures-queues")]
     public void CreateTransactions(string newJobsFile)
@@ -150,7 +134,7 @@ namespace MachineWatchTest
           jsonSettings
       );
 
-      _routing.AddJobs(newJobs, null);
+      _writeJobs.AddJobs(newJobs, null);
     }
   }
 }

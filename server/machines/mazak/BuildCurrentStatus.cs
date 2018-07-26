@@ -284,7 +284,7 @@ namespace MazakMachineInterface
       }
 
 
-      var notCopied = jobDB.LoadJobsNotCopiedToSystem(DateTime.UtcNow.AddHours(-RoutingInfo.JobLookbackHours), DateTime.UtcNow);
+      var notCopied = jobDB.LoadJobsNotCopiedToSystem(DateTime.UtcNow.AddHours(-WriteJobs.JobLookbackHours), DateTime.UtcNow);
       foreach (var j in notCopied.Jobs)
       {
         if (curStatus.Jobs.ContainsKey(j.UniqueStr))
