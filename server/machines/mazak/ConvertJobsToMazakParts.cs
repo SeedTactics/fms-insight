@@ -237,12 +237,12 @@ namespace MazakMachineInterface
 
     public override IEnumerable<string> Pallets()
     {
-      return Job.PlannedPallets(ProcessNumber, Path);
+      return Job.PlannedPallets(ProcessNumber, Path) ?? Enumerable.Empty<string>();
     }
 
     public override IEnumerable<JobPlan.FixtureFace> Fixtures()
     {
-      return Job.PlannedFixtures(ProcessNumber, Path);
+      return Job.PlannedFixtures(ProcessNumber, Path) ?? Enumerable.Empty<JobPlan.FixtureFace>();
     }
 
     public override void CreateDatabaseRow(MazakPartRow newPart, string fixture, MazakDbType mazakTy)
