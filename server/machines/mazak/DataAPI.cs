@@ -60,14 +60,14 @@ namespace MazakMachineInterface
   {
     public string PartName {get;set;}
     public string Comment {get;set;}
-    public int Price {get;set;}
+    public double Price {get;set;}
     public int TotalProcess {get;set;}
 
     // these columns are new on smooth
     public string MaterialName {get;set;}
     public int Part_1 {get;set;}
     public int Part_2 {get;set;}
-    public int Part_3 {get;set;}
+    public string Part_3 {get;set;}
     public int Part_4 {get;set;}
     public int Part_5 {get;set;}
     public int CheckCount {get;set;}
