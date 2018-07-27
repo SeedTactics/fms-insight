@@ -41,7 +41,7 @@ namespace MazakMachineInterface
   public interface IWriteJobs
   {
     void AddJobs(NewJobs newJ, string expectedPreviousScheduleId);
-    void RecopyJobsToMazak();
+    void RecopyJobsToMazak(DateTime? nowUtc = null);
   }
 
   public class WriteJobs : IWriteJobs
@@ -127,9 +127,10 @@ namespace MazakMachineInterface
         hold.SignalNewSchedules();
     }
 
-    public void RecopyJobsToMazak()
+    public void RecopyJobsToMazak(DateTime? nowUtc = null)
     {
-      var jobs = jobDB.LoadJobsNotCopiedToSystem(DateTime.UtcNow.AddHours(-JobLookbackHours), DateTime.UtcNow.AddHours(1));
+      var now = nowUtc ?? DateTime.UtcNow;
+      var jobs = jobDB.LoadJobsNotCopiedToSystem(now.AddHours(-JobLookbackHours), now.AddHours(1));
       if (jobs.Jobs.Count == 0) return;
 
       //there are jobs to copy
@@ -222,7 +223,8 @@ namespace MazakMachineInterface
 
       //delete everything
       palletPartMap.DeletePartPallets(transSet);
-      writeDb.Save(transSet, "Delete Parts Pallets", logMessages);
+      if (transSet.Parts.Any() || transSet.Pallets.Any())
+        writeDb.Save(transSet, "Delete Parts Pallets", logMessages);
 
       Log.Debug("Completed deletion of parts and pallets with messages: {msgs}", logMessages);
 
@@ -314,6 +316,10 @@ namespace MazakMachineInterface
           SortSchedulesByDate(transSet);
 
         writeDb.Save(transSet, "Add Schedules", logMessages);
+        if (logMessages.Count > 0) {
+          Log.Error("Error saving schedules to mazak {@msgs}", logMessages);
+          throw BuildTransactionException("Error creating schedules", logMessages);
+        }
 
         Log.Debug("Completed adding schedules with messages: {msgs}", logMessages);
 

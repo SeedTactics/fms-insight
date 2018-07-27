@@ -47,10 +47,38 @@ namespace MachineWatchTest
 {
   public class WriteJobsSpec : IDisposable
   {
+    private class WriteMock : IWriteData
+    {
+      public MazakDbType MazakType => MazakDbType.MazakSmooth;
+      public MazakWriteData DeletePartsPals {get;set;}
+      public MazakWriteData Fixtures {get;set;}
+      public MazakWriteData AddParts {get;set;}
+      public MazakWriteData AddSchedules {get;set;}
+      public string errorForPrefix;
+
+      public void Save(MazakWriteData data, string prefix, IList<string> log)
+      {
+        if (errorForPrefix == prefix) {
+          log.Add("Sample error");
+        }
+        if (prefix == "Delete Parts Pallets") {
+          DeletePartsPals = data;
+        } else if (prefix == "Fixtures") {
+          Fixtures = data;
+        } else if (prefix == "Add Parts") {
+          AddParts = data;
+        } else if (prefix == "Add Schedules") {
+          AddSchedules = data;
+        } else {
+          Assert.True(false, "Unexpected prefix " + prefix);
+        }
+      }
+    }
+
     private JobLogDB _logDB;
 		private JobDB _jobDB;
     private IWriteJobs _writeJobs;
-    private IWriteData _writeMock;
+    private WriteMock _writeMock;
     private IReadDataAccess _readMock;
     private JsonSerializerSettings jsonSettings;
     private FMSSettings _settings;
@@ -67,10 +95,10 @@ namespace MachineWatchTest
       _jobDB = new JobDB(jobConn);
       _jobDB.CreateTables();
 
-      _writeMock = Substitute.For<IWriteData>();
-      _writeMock.MazakType.Returns(MazakDbType.MazakSmooth);
+      _writeMock = new WriteMock();
 
       _readMock = Substitute.For<IReadDataAccess>();
+      _readMock.MazakType.Returns(MazakDbType.MazakSmooth);
       _readMock.LoadAllData().Returns(new MazakAllData() {
         Schedules = Enumerable.Empty<MazakScheduleRow>(),
         Parts = Enumerable.Empty<MazakPartRow>(),
@@ -83,10 +111,10 @@ namespace MachineWatchTest
         }),
         Fixtures = Enumerable.Empty<MazakFixtureRow>()
       });
-      _readMock.LoadSchedulesPartsPallets().Returns(new MazakSchedulesPartsPallets() {
+      _readMock.LoadSchedulesPartsPallets().Returns(x => new MazakSchedulesPartsPallets() {
         Schedules = Enumerable.Empty<MazakScheduleRow>(),
-        Parts = Enumerable.Empty<MazakPartRow>(),
-        Pallets = Enumerable.Empty<MazakPalletRow>(),
+        Parts = _writeMock.AddParts.Parts,
+        Pallets = _writeMock.AddParts.Pallets,
         PalletSubStatuses = Enumerable.Empty<MazakPalletSubStatusRow>(),
         PalletPositions = Enumerable.Empty<MazakPalletPositionRow>(),
         LoadActions = Enumerable.Empty<LoadAction>(),
@@ -124,17 +152,164 @@ namespace MachineWatchTest
 			_jobDB.Close();
 		}
 
-    [Theory(Skip="pending")]
-    [InlineData("fixtures-queues")]
-    public void CreateTransactions(string newJobsFile)
+    public void ShouldMatchSnapshot<T>(T val, string snapshot)
     {
-      var newJobs = JsonConvert.DeserializeObject<NewJobs>(
+      var expected = JsonConvert.DeserializeObject<T>(
         File.ReadAllText(
-          Path.Combine("..", "..", "..", "sample-newjobs", newJobsFile + ".json")),
+          Path.Combine("..", "..", "..", "mazak", "write-snapshots", snapshot)),
           jsonSettings
       );
 
+      val.Should().BeEquivalentTo(expected);
+    }
+
+    [Fact]
+    public void RejectsMismatchedPreviousSchedule()
+    {
+      var newJobs = JsonConvert.DeserializeObject<NewJobs>(
+        File.ReadAllText(
+          Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
+          jsonSettings
+      );
+      _jobDB.AddJobs(newJobs, null);
+
+      var newJobsMultiFace = JsonConvert.DeserializeObject<NewJobs>(
+        File.ReadAllText(
+          Path.Combine("..", "..", "..", "sample-newjobs", "multi-face.json")),
+          jsonSettings
+      );
+
+      _writeJobs.Invoking(x => x.AddJobs(newJobsMultiFace, "xxxx"))
+        .Should()
+        .Throw<BadRequestException>()
+        .WithMessage(
+        "Expected previous schedule ID does not match current schedule ID.  Another user may have already created a schedule."
+      );
+    }
+
+    [Fact]
+    public void BasicCreate()
+    {
+      var newJobs = JsonConvert.DeserializeObject<NewJobs>(
+        File.ReadAllText(
+          Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
+          jsonSettings
+      );
       _writeJobs.AddJobs(newJobs, null);
+
+      _writeMock.DeletePartsPals.Should().BeNull();
+      ShouldMatchSnapshot(_writeMock.Fixtures, "fixtures-queues-fixtures.json");
+      ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
+      ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
+
+      var start = newJobs.Jobs.First().RouteStartingTimeUTC;
+      _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).Jobs.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ErrorDuringPartsPallets()
+    {
+      _writeMock.errorForPrefix = "Add Parts";
+
+      var newJobs = JsonConvert.DeserializeObject<NewJobs>(
+        File.ReadAllText(
+          Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
+          jsonSettings
+      );
+      _writeJobs.Invoking(x => x.AddJobs(newJobs, null))
+        .Should()
+        .Throw<Exception>()
+        .WithMessage("Error creating parts and pallets" + Environment.NewLine + "Sample error");
+
+      _writeMock.DeletePartsPals.Should().BeNull();
+      ShouldMatchSnapshot(_writeMock.Fixtures, "fixtures-queues-fixtures.json");
+      ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
+      _writeMock.AddSchedules.Should().BeNull();
+
+      var start = newJobs.Jobs.First().RouteStartingTimeUTC;
+      _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).Jobs.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ErrorDuringSchedule()
+    {
+      _writeMock.errorForPrefix = "Add Schedules";
+
+      var newJobs = JsonConvert.DeserializeObject<NewJobs>(
+        File.ReadAllText(
+          Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
+          jsonSettings
+      );
+      _writeJobs.Invoking(x => x.AddJobs(newJobs, null))
+        .Should()
+        .Throw<Exception>()
+        .WithMessage("Error creating schedules" + Environment.NewLine + "Sample error");
+
+      _writeMock.DeletePartsPals.Should().BeNull();
+      ShouldMatchSnapshot(_writeMock.Fixtures, "fixtures-queues-fixtures.json");
+      ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
+      ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
+
+      var start = newJobs.Jobs.First().RouteStartingTimeUTC;
+      _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).Jobs
+        .Should().BeEquivalentTo(
+          newJobs.Jobs,
+          options => options
+            .Excluding(j => j.Comment)
+            .Excluding(j => j.HoldEntireJob));
+
+      //try again still with error
+      _writeMock.AddSchedules = null;
+      _writeJobs.Invoking(x => x.RecopyJobsToMazak(start))
+        .Should()
+        .Throw<Exception>()
+        .WithMessage("Error creating schedules" + Environment.NewLine + "Sample error");
+
+      ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
+      _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).Jobs
+        .Should().BeEquivalentTo(
+          newJobs.Jobs,
+          options => options
+            .Excluding(j => j.Comment)
+            .Excluding(j => j.HoldEntireJob));
+
+      //finally succeed without error
+      _writeMock.errorForPrefix = null;
+      _writeJobs.RecopyJobsToMazak(start);
+      ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
+
+      _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).Jobs.Should().BeEmpty();
+    }
+
+
+    [Fact(Skip="pending")]
+    public void RecopyJobsDuringNextAdd()
+    {
+
+    }
+
+    [Fact(Skip="pending")]
+    public void DeleteCompletedSchedules()
+    {
+
+    }
+
+    [Fact(Skip="pending")]
+    public void DeletePartsPalletsWithoutSchedule()
+    {
+
+    }
+
+    [Fact(Skip="pending")]
+    public void DecrementPriority()
+    {
+
+    }
+
+    [Fact(Skip="pending")]
+    public void StartingOffsetForDueDate()
+    {
+
     }
   }
 }
