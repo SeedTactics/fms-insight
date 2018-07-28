@@ -42,7 +42,6 @@ namespace MazakMachineInterface
   public interface IHoldManagement
   {
     void SignalNewSchedules();
-    void SaveHoldMode(int schID, JobPlan job, int proc1path);
   }
 
   public class HoldPattern : IHoldManagement
@@ -87,22 +86,13 @@ namespace MazakMachineInterface
     private TransitionThread _thread;
     private IWriteData database;
     private IReadDataAccess readDatabase;
+    private BlackMaple.MachineFramework.JobDB jobDB;
 
-    public HoldPattern(string dbPath, IWriteData d, IReadDataAccess readDb, bool createThread)
+    public HoldPattern(IWriteData d, IReadDataAccess readDb, BlackMaple.MachineFramework.JobDB jdb, bool createThread)
     {
       database = d;
       readDatabase = readDb;
-      OpenDB(System.IO.Path.Combine(dbPath, "hold.db"));
-
-      if (createThread)
-        _thread = new TransitionThread(this);
-    }
-
-    public HoldPattern(SqliteConnection conn, IWriteData d, IReadDataAccess readDb, bool createThread)
-    {
-      database = d;
-      readDatabase = readDb;
-      _connection = conn;
+      jobDB = jdb;
 
       if (createThread)
         _thread = new TransitionThread(this);
@@ -112,7 +102,6 @@ namespace MazakMachineInterface
     {
       if (_thread != null)
         _thread.SignalShutdown();
-      CloseDB();
     }
     #endregion
 
@@ -234,6 +223,9 @@ namespace MazakMachineInterface
         get { return (HoldMode)_schRow.HoldMode; }
       }
 
+      public JobHoldPattern HoldEntireJob {get;}
+      public JobHoldPattern HoldMachining {get;}
+
       public void ChangeHoldMode(HoldMode newHold)
       {
         var transSet = new MazakWriteData();
@@ -249,6 +241,15 @@ namespace MazakMachineInterface
       {
         _parent = parent;
         _schRow = s;
+
+        if (MazakPart.IsSailPart(_schRow.PartName)) {
+          MazakPart.ParseComment(_schRow.Comment, out string unique, out var paths, out var manual);
+          var job = parent.jobDB.LoadJob(unique);
+          if (job != null) {
+            HoldEntireJob = job.HoldEntireJob;
+            HoldMachining = job.HoldMachining(process: 1, path: paths.PathForProc(proc: 1));
+          }
+        }
       }
 
       private HoldPattern _parent;
@@ -291,7 +292,6 @@ namespace MazakMachineInterface
           var nowUTC = DateTime.UtcNow;
 
           var mazakSch = LoadMazakSchedules();
-          var holds = new Dictionary<int, JobHold>(GetHoldPatterns());
 
           Log.Debug("Checking for hold transitions at {time} ", nowUTC);
 
@@ -299,22 +299,15 @@ namespace MazakMachineInterface
 
           foreach (var pair in mazakSch)
           {
-            if (!holds.ContainsKey(pair.Key))
-              continue;
+            bool allHold = false;
+            DateTime allNext = DateTime.MaxValue;
+            bool machHold = false;
+            DateTime machNext = DateTime.MaxValue;
 
-            var hold = holds[pair.Key];
-
-            //Sometimes the schedule id is reused, so check that the unique strings match
-            if (hold.UniqueStr != pair.Value.UniqueStr)
-              continue;
-
-            bool allHold;
-            DateTime allNext;
-            bool machHold;
-            DateTime machNext;
-
-            hold.HoldEntireJob.HoldInformation(nowUTC, out allHold, out allNext);
-            hold.HoldMachining.HoldInformation(nowUTC, out machHold, out machNext);
+            if (pair.Value.HoldEntireJob != null)
+              pair.Value.HoldEntireJob.HoldInformation(nowUTC, out allHold, out allNext);
+            if (pair.Value.HoldMachining != null)
+              pair.Value.HoldMachining.HoldInformation(nowUTC, out machHold, out machNext);
 
             HoldMode currentHoldMode = CalculateHoldMode(allHold, machHold);
 
@@ -331,15 +324,6 @@ namespace MazakMachineInterface
               nextTimeUTC = allNext;
             if (machNext < nextTimeUTC)
               nextTimeUTC = machNext;
-
-            holds.Remove(pair.Key);
-          }
-
-          //Any leftover holds for which there is no schedule in mazak can be deleted
-          foreach (var key in holds.Keys)
-          {
-            Log.Debug("Deleting hold for schedule {key}", key);
-            DeleteHold(key);
           }
 
           Log.Debug("Next hold transition {next}", nextTimeUTC);
@@ -364,362 +348,6 @@ namespace MazakMachineInterface
       }
     }
 
-    #endregion
-
-    #region Database
-    private SqliteConnection _connection;
-
-    private object _dbLock = new object();
-    private void OpenDB(string filename)
-    {
-      if (System.IO.File.Exists(filename))
-      {
-        _connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=" + filename);
-        _connection.Open();
-        UpdateTables();
-      }
-      else
-      {
-        _connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=" + filename);
-        _connection.Open();
-        try
-        {
-          CreateTables();
-        }
-        catch
-        {
-          _connection.Close();
-          System.IO.File.Delete(filename);
-          throw;
-        }
-      }
-    }
-
-    private void CloseDB()
-    {
-      _connection.Close();
-    }
-
-    #region Tables
-    private const int Version = 1;
-
-    public void CreateTables()
-    {
-      using (var cmd = _connection.CreateCommand()) {
-
-      cmd.CommandText = "CREATE TABLE version(ver INTEGER)";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText = "INSERT INTO version VALUES(" + Version.ToString() + ")";
-      cmd.ExecuteNonQuery();
-
-      cmd.CommandText = "CREATE TABLE holds(SchID INTEGER, EntireJob INTEGER, UniqueStr TEXT, HoldPatternStartUTC INTEGER, HoldPatternRepeats INTEGER, PRIMARY KEY(SchId, EntireJob))";
-      cmd.ExecuteNonQuery();
-
-      cmd.CommandText = "CREATE TABLE hold_pattern(SchID INTEGER, EntireJob INTEGER, Idx INTEGER, Span INTEGER, PRIMARY KEY(SchId, Idx, EntireJob))";
-      cmd.ExecuteNonQuery();
-      }
-    }
-
-
-    private void UpdateTables()
-    {
-      using (var cmd = _connection.CreateCommand()) {
-
-      cmd.CommandText = "SELECT ver FROM version";
-      long ver = (long)cmd.ExecuteScalar();
-
-      if (ver == Version)
-        return;
-
-      var trans = _connection.BeginTransaction();
-
-      try
-      {
-
-        if (ver < 1)
-          Ver0ToVer1(trans);
-
-        cmd.Transaction = trans;
-        cmd.CommandText = "UPDATE version SET ver = $ver";
-        cmd.Parameters.Add("ver", SqliteType.Integer).Value = Version;
-        cmd.ExecuteNonQuery();
-
-        trans.Commit();
-      }
-      catch
-      {
-        trans.Rollback();
-        throw;
-      }
-
-      cmd.Transaction = null;
-      cmd.CommandText = "VACUUM";
-      cmd.Parameters.Clear();
-      cmd.ExecuteNonQuery();
-      }
-    }
-
-    private void Ver0ToVer1(IDbTransaction trans)
-    {
-      using (IDbCommand cmd = _connection.CreateCommand()) {
-      cmd.Transaction = trans;
-
-      cmd.CommandText = "ALTER TABLE holds ADD UniqueStr TEXT";
-      cmd.ExecuteNonQuery();
-      }
-    }
-    #endregion
-
-    public void SaveHoldMode(int schID, JobPlan job, int proc1path)
-    {
-      lock (_dbLock)
-      {
-        var trans = _connection.BeginTransaction();
-        try
-        {
-          //Schedule ids can be reused, so make sure the old schedule hold data is gone.
-          DeleteHoldTrans(schID, trans);
-
-          if (job.HoldEntireJob != null)
-            InsertHold(schID, true, job.UniqueStr, job.HoldEntireJob, trans);
-          if (job.HoldMachining(1, proc1path) != null)
-            InsertHold(schID, false, job.UniqueStr, job.HoldMachining(1, proc1path), trans);
-          trans.Commit();
-        }
-        catch
-        {
-          trans.Rollback();
-          throw;
-        }
-      }
-    }
-
-    private void InsertHold(int schId, bool entire, string unique, JobHoldPattern newHold, IDbTransaction trans)
-    {
-      using (var cmd = _connection.CreateCommand()) {
-      ((IDbCommand)cmd).Transaction = trans;
-
-      //Use insert or replace to allow saving more than once.
-      cmd.CommandText = "INSERT INTO holds(SchId,EntireJob,UniqueStr,HoldPatternStartUTC,HoldPatternRepeats)" +
-                " VALUES ($schid,$job,$uniq,$hs,$hr)";
-      cmd.Parameters.Add("schid", SqliteType.Integer).Value = schId;
-      cmd.Parameters.Add("job", SqliteType.Integer).Value = entire;
-      cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
-      cmd.Parameters.Add("hs", SqliteType.Integer).Value = newHold.HoldUnholdPatternStartUTC.Ticks;
-      cmd.Parameters.Add("hr", SqliteType.Integer).Value = newHold.HoldUnholdPatternRepeats;
-      cmd.ExecuteNonQuery();
-
-      cmd.CommandText = "INSERT INTO hold_pattern(SchId,EntireJob,Idx,Span) " +
-                "VALUES ($schid,$job,$idx,$span)";
-      cmd.Parameters.Clear();
-      cmd.Parameters.Add("schid", SqliteType.Integer).Value = schId;
-      cmd.Parameters.Add("job", SqliteType.Integer).Value = entire;
-      cmd.Parameters.Add("idx", SqliteType.Integer);
-      cmd.Parameters.Add("span", SqliteType.Integer);
-      for (int i = 0; i < newHold.HoldUnholdPattern.Count; i++)
-      {
-        cmd.Parameters[2].Value = i;
-        cmd.Parameters[3].Value = newHold.HoldUnholdPattern[i].Ticks;
-        cmd.ExecuteNonQuery();
-      }
-      }
-    }
-
-    // internal for testing only!
-    internal void DeleteHold(int schId)
-    {
-      lock (_dbLock)
-      {
-        var trans = _connection.BeginTransaction();
-        try
-        {
-          DeleteHoldTrans(schId, trans);
-
-          trans.Commit();
-        }
-        catch
-        {
-          trans.Rollback();
-          throw;
-        }
-      }
-    }
-
-    private void DeleteHoldTrans(int schId, IDbTransaction trans)
-    {
-      using (var cmd = _connection.CreateCommand()) {
-      ((IDbCommand)cmd).Transaction = trans;
-
-      cmd.CommandText = "DELETE FROM holds WHERE SchId = $schid";
-      cmd.Parameters.Add("schid", SqliteType.Integer).Value = schId;
-      cmd.ExecuteNonQuery();
-
-      cmd.CommandText = "DELETE FROM hold_pattern WHERE SchId = $schid";
-      cmd.ExecuteNonQuery();
-      }
-    }
-
-    public class JobHold
-    {
-      public int SchId;
-      public string UniqueStr;
-      public JobHoldPattern HoldEntireJob;
-      public JobHoldPattern HoldMachining;
-
-      public JobHold(int s, string u)
-      {
-        SchId = s;
-        UniqueStr = u;
-        HoldEntireJob = new JobHoldPattern();
-        HoldMachining = new JobHoldPattern();
-      }
-    }
-
-    public void LoadHoldIntoJob(int schID, JobPlan plan, int proc1path)
-    {
-      lock (_dbLock)
-      {
-        var trans = _connection.BeginTransaction();
-
-        try
-        {
-          using (var cmd = _connection.CreateCommand()) {
-          cmd.Transaction = trans;
-
-                    cmd.CommandText = "SELECT EntireJob, HoldPatternStartUTC, HoldPatternRepeats,UniqueStr FROM holds " +
-                                  "WHERE SchID = $schid";
-          cmd.Parameters.Add("schid", SqliteType.Integer).Value = schID;
-
-          using (var reader = cmd.ExecuteReader())
-          {
-            while (reader.Read())
-            {
-
-              //Sometimes schedule ids are reused before we can delete the data, so check
-              //that the unique string matches before loading.
-              if (reader.IsDBNull(3) || plan.UniqueStr != reader.GetString(3))
-                goto skip_load;
-
-              JobHoldPattern hold;
-              if (reader.GetBoolean(0))
-                hold = plan.HoldEntireJob;
-              else
-                hold = plan.HoldMachining(1, proc1path);
-
-              hold.HoldUnholdPatternStartUTC = new DateTime(reader.GetInt64(1), DateTimeKind.Utc);
-              hold.HoldUnholdPatternRepeats = reader.GetBoolean(2);
-
-            }
-          }
-
-          //clear existing hold pattern
-          plan.HoldEntireJob.HoldUnholdPattern.Clear();
-          plan.HoldMachining(1, proc1path).HoldUnholdPattern.Clear();
-
-          //hold pattern
-          cmd.CommandText = "SELECT EntireJob, Span FROM hold_pattern " +
-                        "WHERE SchId = $schid ORDER BY Idx ASC";
-
-          using (var reader = cmd.ExecuteReader())
-          {
-            while (reader.Read())
-            {
-
-              JobHoldPattern hold;
-              if (reader.GetBoolean(0))
-                hold = plan.HoldEntireJob;
-              else
-                hold = plan.HoldMachining(1, proc1path);
-
-              hold.HoldUnholdPattern.Add(TimeSpan.FromTicks(reader.GetInt64(1)));
-            }
-          }
-
-        skip_load:
-          trans.Commit();
-          }
-        }
-        catch
-        {
-          trans.Rollback();
-          throw;
-        }
-      }
-    }
-
-    // internal for testing only
-    internal IDictionary<int, JobHold> GetHoldPatterns()
-    {
-      lock (_dbLock)
-      {
-        var ret = new Dictionary<int, JobHold>();
-
-        using (var cmd = _connection.CreateCommand()) {
-
-        //hold
-        cmd.CommandText = "SELECT SchId, EntireJob, HoldPatternStartUTC, HoldPatternRepeats, UniqueStr FROM holds";
-
-        using (var reader = cmd.ExecuteReader())
-        {
-          while (reader.Read())
-          {
-            int schid = reader.GetInt32(0);
-            string unique;
-
-            if (reader.IsDBNull(4))
-              unique = "";
-            else
-              unique = reader.GetString(4);
-
-            JobHold h;
-            if (ret.ContainsKey(schid))
-              h = ret[schid];
-            else
-            {
-              h = new JobHold(schid, unique);
-              ret.Add(schid, h);
-            }
-
-            JobHoldPattern hold;
-            if (reader.GetBoolean(1))
-              hold = h.HoldEntireJob;
-            else
-              hold = h.HoldMachining;
-
-            hold.HoldUnholdPatternStartUTC = new DateTime(reader.GetInt64(2), DateTimeKind.Utc);
-            hold.HoldUnholdPatternRepeats = reader.GetBoolean(3);
-          }
-        }
-
-        //hold pattern
-        cmd.CommandText = "SELECT EntireJob, Span FROM hold_pattern " +
-                    "WHERE SchId = $schid ORDER BY Idx ASC";
-        cmd.Parameters.Add("schid", SqliteType.Integer);
-
-        foreach (var pair in ret)
-        {
-          cmd.Parameters[0].Value = pair.Key;
-
-          using (var reader = cmd.ExecuteReader())
-          {
-            while (reader.Read())
-            {
-
-              JobHoldPattern hold;
-              if (reader.GetBoolean(0))
-                hold = pair.Value.HoldEntireJob;
-              else
-                hold = pair.Value.HoldMachining;
-
-              hold.HoldUnholdPattern.Add(TimeSpan.FromTicks(reader.GetInt64(1)));
-            }
-          }
-        }
-
-        return ret;
-        }
-      }
-    }
     #endregion
   }
 }

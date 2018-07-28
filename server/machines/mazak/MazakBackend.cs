@@ -222,7 +222,7 @@ namespace MazakMachineInterface
 #endif
       }
 
-      hold = new HoldPattern(dataDirectory, _writeDB, readOnlyDb, true);
+      hold = new HoldPattern(_writeDB, readOnlyDb, jobDB, true);
       var writeJobs = new WriteJobs(_writeDB, readOnlyDb, hold, jobDB, jobLog, settings, CheckPalletsUsedOnce, UseStartingOffsetForDueDate, DecrementPriorityOnDownload);
       routing = new RoutingInfo(_writeDB, readOnlyDb, logDataLoader, jobDB, jobLog, writeJobs,
                                 CheckPalletsUsedOnce, settings);
