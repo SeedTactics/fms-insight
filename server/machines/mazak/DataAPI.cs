@@ -64,10 +64,21 @@ namespace MazakMachineInterface
     public int TotalProcess {get;set;}
 
     // these columns are new on smooth
-    public string MaterialName {get;set;}
+    private string _matName;
+    public string MaterialName
+    {
+      get => _matName ?? "";
+      set => _matName = value;
+    }
     public int Part_1 {get;set;}
     public int Part_2 {get;set;}
-    public string Part_3 {get;set;}
+
+    private string _part3;
+    public string Part_3
+    {
+      get => _part3 ?? "";
+      set => _part3 = value;
+    }
     public int Part_4 {get;set;}
     public int Part_5 {get;set;}
     public int CheckCount {get;set;}
