@@ -324,7 +324,7 @@ namespace MazakMachineInterface
   public interface IWriteData
   {
     MazakDbType MazakType {get;}
-    void Save(MazakWriteData data, string prefix, System.Collections.Generic.IList<string> log);
+    void Save(MazakWriteData data, string prefix);
   }
 
 }

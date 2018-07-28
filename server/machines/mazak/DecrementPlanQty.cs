@@ -37,7 +37,7 @@ using BlackMaple.MachineWatchInterface;
 
 namespace MazakMachineInterface
 {
-  public static class modDecrementPlanQty
+  public class modDecrementPlanQty
   {
     //Because we want to lower the Material count, we have a possible loss of data.
     //If we update the mazak schedule entries when the pallet is at the load station,
@@ -82,11 +82,11 @@ namespace MazakMachineInterface
     //Therefore, we sleep a little bit and try again.
 
     private const int MaxRetryTimes = 25;
+    private static Serilog.ILogger Log = Serilog.Log.ForContext<modDecrementPlanQty>();
 
     internal static Dictionary<JobAndPath, int> DecrementPlanQty(
       IWriteData writeDb, IReadDataAccess readDb)
     {
-      var logMessages = new List<string>();
       var mazakData = readDb.LoadSchedules();
       var IdsLeftToDecrement = LoadIdsToDecrement(mazakData);
 
@@ -107,7 +107,7 @@ namespace MazakMachineInterface
 
         foreach (var schID in idsCopy)
         {
-          if (DecrementSingleSchedule(mazakData, schID.SchId, logMessages, writeDb))
+          if (DecrementSingleSchedule(mazakData, schID.SchId, writeDb))
           {
             IdsLeftToDecrement.Remove(schID);
           }
@@ -120,7 +120,7 @@ namespace MazakMachineInterface
         if (IdsLeftToDecrement.Count == 0)
           break;
 
-        HoldSchedules(mazakData, IdsLeftToDecrement, logMessages, writeDb);
+        HoldSchedules(mazakData, IdsLeftToDecrement, writeDb);
 
         //we run a garbage collection here, so that hopefully it won't be triggered during the decrement.
         //The further in time we are between the load of the readonly set and the current time, the better
@@ -133,11 +133,6 @@ namespace MazakMachineInterface
         }
 
         mazakData = readDb.LoadSchedules();
-      }
-
-      if (logMessages.Count > 0)
-      {
-        throw WriteJobs.BuildTransactionException("Error decrementing schedule", logMessages);
       }
 
       mazakData = readDb.LoadSchedules();
@@ -193,9 +188,7 @@ namespace MazakMachineInterface
 
     //Try and decrement a single schedule, returning true if we were successful or an unrecoverable error
     //occured and false if we should retry this decrement again.
-    private static bool DecrementSingleSchedule(MazakSchedules currentSet, int schID,
-                                                IList<string> logMessages,
-                                                IWriteData database)
+    private static bool DecrementSingleSchedule(MazakSchedules currentSet, int schID, IWriteData database)
     {
       //Find the schedule row.
       MazakScheduleRow schRow = null;
@@ -232,34 +225,24 @@ namespace MazakMachineInterface
         numRows += 1;
       }
 
-      var log = new List<string>();
-      database.Save(transSet, "Decrement", log);
-      if (log.Count > 0)
-      {
-        if (log.Count == 1 && log[0].ToString().StartsWith("Mazak transaction returned error 8"))
+      try {
+        database.Save(transSet, "Decrement");
+        return true;
+      } catch (OpenDatabaseKitTransactionError ex) {
+        if (ex.Message.StartsWith("Mazak transaction returned error 8"))
         {
           return false;
         }
         else
         {
-          foreach (string s in log)
-          {
-            logMessages.Add(s);
-          }
-          //we return that true because we don't want to retry this because we got some other error.
-          //Eventually, an exception will be thrown with the values in logMessages.
-          return true;
+          throw;
         }
-      }
-      else
-      {
-        return true;
       }
     }
 
 
-    private static void HoldSchedules(MazakSchedules currentSet, IList<ScheduleId> schIds,
-                                      IList<string> logMessages,
+    private static void HoldSchedules(MazakSchedules currentSet,
+                                      IList<ScheduleId> schIds,
                                       IWriteData database)
     {
       var transSet = new MazakWriteData();
@@ -300,7 +283,7 @@ namespace MazakMachineInterface
 
       if (transSet.Schedules.Any())
       {
-        database.Save(transSet, "Decrement Unhold", logMessages);
+        database.Save(transSet, "Decrement Unhold");
       }
 
       foreach (var schId in schIdsPutOnHold)
@@ -361,7 +344,6 @@ namespace MazakMachineInterface
 
       var mazakData = readDb.LoadSchedules();
       var transSet = new MazakWriteData();
-      List<string> log = new List<string>();
 
       //now we update all the plan quantites to match
       foreach (var schRow in mazakData.Schedules)
@@ -383,12 +365,7 @@ namespace MazakMachineInterface
 
       if (transSet.Schedules.Any())
       {
-        writeDb.Save(transSet, "Decrement Finalize", log);
-      }
-
-      if (log.Count > 0)
-      {
-        throw WriteJobs.BuildTransactionException("Error finalizing decrement", log);
+        writeDb.Save(transSet, "Decrement Finalize");
       }
     }
 

@@ -242,11 +242,7 @@ namespace MazakMachineInterface
         newSchRow.HoldMode = (int)newHold;
         transSet.Schedules.Add(newSchRow);
 
-        var logMessages = new List<string>();
-
-        _parent.database.Save(transSet, "Hold Mode", logMessages);
-
-        Log.Error("Error updating holds. {msgs}", logMessages);
+        _parent.database.Save(transSet, "Hold Mode");
       }
 
       public MazakSchedule(HoldPattern parent, MazakScheduleRow s)

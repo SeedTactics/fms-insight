@@ -40,6 +40,12 @@ using Dapper;
 
 namespace MazakMachineInterface
 {
+  public class OpenDatabaseKitTransactionError : Exception
+  {
+    public OpenDatabaseKitTransactionError(string msg) : base(msg) {}
+  }
+
+
   public class OpenDatabaseKitDB
   {
     //Global Settings
@@ -152,7 +158,7 @@ namespace MazakMachineInterface
 
     private const int WaitCount = 5;
 
-    public void Save(MazakWriteData data, string prefix, System.Collections.Generic.IList<string> log)
+    public void Save(MazakWriteData data, string prefix)
     {
       CheckReadyForConnect();
 
@@ -174,11 +180,10 @@ namespace MazakMachineInterface
             throw;
           }
 
-          int i = 0;
-          for (i = 0; i <= WaitCount; i++)
+          for (int i = 0; i <= WaitCount; i++)
           {
             System.Threading.Thread.Sleep(TimeSpan.FromSeconds(checkInterval));
-            if (CheckTransactionErrors(conn, prefix, log))
+            if (CheckTransactionErrors(conn, prefix))
             {
               return;
             }
@@ -218,7 +223,7 @@ namespace MazakMachineInterface
             Command,
             Fixture,
             PalletNumber,
-            RecordID,   
+            RecordID,
             TransactionStatus
           ) VALUES (
             @AngleV1,
@@ -547,7 +552,7 @@ namespace MazakMachineInterface
       public int TransactionStatus {get;set;}
     }
 
-    private bool CheckTransactionErrors(IDbConnection conn, string prefix, System.Collections.Generic.IList<string> log)
+    private bool CheckTransactionErrors(IDbConnection conn, string prefix)
     {
       string[] TransactionTables = {
         "Fixture_t",
@@ -556,9 +561,10 @@ namespace MazakMachineInterface
         "Schedule_t",
       };
       var trans = conn.BeginTransaction(IsolationLevel.ReadCommitted);
+      bool foundUnprocesssedRow = false;
+      var log = new List<string>();
       try
       {
-        bool foundUnprocesssedRow = false;
         foreach (var table in TransactionTables) {
           var ret = conn.Query<CommandStatus>("SELECT Command, TransactionStatus FROM " + table, transaction: trans);
           foreach (var row in ret) {
@@ -572,13 +578,21 @@ namespace MazakMachineInterface
           }
         }
         trans.Commit();
-        return !foundUnprocesssedRow;
       }
       catch (Exception ex)
       {
         trans.Rollback();
         throw ex;
       }
+
+      if (log.Any()) {
+        Log.Error("Error communicating with Open Database kit {@errs}", log);
+        throw new OpenDatabaseKitTransactionError(
+          string.Join(Environment.NewLine, log)
+        );
+      }
+
+      return !foundUnprocesssedRow;
     }
 
     private void ClearTransactionDatabase(IDbConnection conn, IDbTransaction trans)

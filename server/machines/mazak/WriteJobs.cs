@@ -97,8 +97,6 @@ namespace MazakMachineInterface
           }
         }
 
-        var logMessages = new List<string>();
-
         //check for an old schedule that has not yet been copied
         var oldJobs = jobDB.LoadJobsNotCopiedToSystem(DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddHours(1));
         if (oldJobs.Jobs.Count > 0)
@@ -107,16 +105,12 @@ namespace MazakMachineInterface
           Log.Information("Resuming copy of job schedules into mazak {uniqs}",
               oldJobs.Jobs.Select(j => j.UniqueStr).ToList());
 
-          AddSchedules(oldJobs.Jobs, logMessages);
+          AddSchedules(oldJobs.Jobs);
         }
 
         //add fixtures, pallets, parts.  If this fails, just throw an exception,
         //they will be deleted during the next download.
-        AddFixturesPalletsParts(newJ, logMessages, newJ.ScheduleId);
-        if (logMessages.Count > 0)
-        {
-          throw BuildTransactionException("Error downloading jobs", logMessages);
-        }
+        AddFixturesPalletsParts(newJ);
 
         //Now that the parts have been added and we are confident that there no problems with the jobs,
         //add them to the database.  Once this occurrs, the timer will pick up and eventually
@@ -125,7 +119,7 @@ namespace MazakMachineInterface
 
         System.Threading.Thread.Sleep(TimeSpan.FromSeconds(5));
 
-        AddSchedules(newJ.Jobs, logMessages);
+        AddSchedules(newJ.Jobs);
 
         hold.SignalNewSchedules();
     }
@@ -142,19 +136,13 @@ namespace MazakMachineInterface
 
       List<string> logMessages = new List<string>();
 
-      AddSchedules(jobs.Jobs, logMessages);
-      if (logMessages.Count > 0) {
-        Log.Error("Error copying job schedules to mazak {msgs}", logMessages);
-      }
+      AddSchedules(jobs.Jobs);
 
       hold.SignalNewSchedules();
     }
 
 
-    private void AddFixturesPalletsParts(
-            NewJobs newJ,
-            IList<string> logMessages,
-        string newGlobal)
+    private void AddFixturesPalletsParts(NewJobs newJ)
     {
       var mazakData = readDatabase.LoadAllData();
 
@@ -190,11 +178,11 @@ namespace MazakMachineInterface
         mazakData, DecrementPriorityOnDownload
       );
       if (transSet.Schedules.Any())
-        writeDb.Save(transSet, "Update schedules", logMessages);
+        writeDb.Save(transSet, "Update schedules");
 
       Log.Debug("Saved Parts: {parts}", savedParts);
 
-
+      var jobErrs = new List<string>();
       var mazakJobs = ConvertJobsToMazakParts.JobsToMazak(
         newJ.Jobs,
         UID,
@@ -203,53 +191,35 @@ namespace MazakMachineInterface
         writeDb.MazakType,
         CheckPalletsUsedOnce,
         fmsSettings,
-        logMessages);
+        jobErrs);
+      if (jobErrs.Any()) {
+        throw new BlackMaple.MachineFramework.BadRequestException(
+          string.Join(Environment.NewLine, jobErrs)
+        );
+      }
 
       //delete everything
       transSet = mazakJobs.DeleteOldPartPalletRows();
       if (transSet.Parts.Any() || transSet.Pallets.Any())
-        writeDb.Save(transSet, "Delete Parts Pallets", logMessages);
-
-      Log.Debug("Completed deletion of parts and pallets with messages: {msgs}", logMessages);
+        writeDb.Save(transSet, "Delete Parts Pallets");
 
       //have to delete fixtures after schedule, parts, and pallets are already deleted
       //also, add new fixtures
       transSet = mazakJobs.CreateDeleteFixtureDatabaseRows();
-      writeDb.Save(transSet, "Fixtures", logMessages);
-
-      Log.Debug("Deleted fixtures with messages: {msgs}", logMessages);
+      writeDb.Save(transSet, "Fixtures");
 
       //now save the pallets and parts
       transSet = mazakJobs.CreatePartPalletDatabaseRows();
-      writeDb.Save(transSet, "Add Parts", logMessages);
-
-      Log.Debug("Added parts and pallets with messages: {msgs}", logMessages);
-
-      if (logMessages.Count > 0)
-      {
-        Log.Error("Aborting schedule creation during download because" +
-          " mazak returned an error while creating parts and pallets. {msgs}", logMessages);
-
-        throw BuildTransactionException("Error creating parts and pallets", logMessages);
-      }
+      writeDb.Save(transSet, "Add Parts");
     }
 
-    private void AddSchedules(IEnumerable<JobPlan> jobs,
-                              IList<string> logMessages)
+    private void AddSchedules(IEnumerable<JobPlan> jobs)
     {
       var mazakData = readDatabase.LoadSchedulesPartsPallets();
       var transSet = BuildMazakSchedules.AddSchedules(mazakData, jobs, UseStartingOffsetForDueDate);
-
       if (transSet.Schedules.Any())
       {
-        writeDb.Save(transSet, "Add Schedules", logMessages);
-        if (logMessages.Count > 0) {
-          Log.Error("Error saving schedules to mazak {@msgs}", logMessages);
-          throw BuildTransactionException("Error creating schedules", logMessages);
-        }
-
-        Log.Debug("Completed adding schedules with messages: {msgs}", logMessages);
-
+        writeDb.Save(transSet, "Add Schedules");
         foreach (var j in jobs)
         {
           jobDB.MarkJobCopiedToSystem(j.UniqueStr);
@@ -284,16 +254,5 @@ namespace MazakMachineInterface
       }
       jobDB.AddJobs(newJ, null);
     }
-
-    public static Exception BuildTransactionException(string msg, IList<string> log)
-    {
-      string s = msg;
-      foreach (string r in log)
-      {
-        s += Environment.NewLine + r;
-      }
-      return new Exception(s);
-    }
-
   }
 }

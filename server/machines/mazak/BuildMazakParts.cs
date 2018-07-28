@@ -550,13 +550,13 @@ namespace MazakMachineInterface
       MazakDbType MazakType,
       bool checkPalletsUsedOnce,
       BlackMaple.MachineFramework.FMSSettings fmsSettings,
-      IList<string> log)
+      IList<string> errors)
     {
-      Validate(jobs, fmsSettings);
-      var allParts = BuildMazakParts(jobs, downloadUID, mazakData, MazakType, log);
-      var groups = GroupProcessesIntoFixtures(allParts, checkPalletsUsedOnce, log);
+      Validate(jobs, fmsSettings, errors);
+      var allParts = BuildMazakParts(jobs, downloadUID, mazakData, MazakType, errors);
+      var groups = GroupProcessesIntoFixtures(allParts, checkPalletsUsedOnce, errors);
 
-      var usedFixtures = AssignMazakFixtures(groups, downloadUID, mazakData, savedParts, log);
+      var usedFixtures = AssignMazakFixtures(groups, downloadUID, mazakData, savedParts, errors);
 
       return new MazakJobs() {
         OldMazakData = mazakData,
@@ -570,10 +570,9 @@ namespace MazakMachineInterface
     }
 
     #region Validate
-    private static void Validate(IEnumerable<JobPlan> jobs, BlackMaple.MachineFramework.FMSSettings fmsSettings)
+    private static void Validate(
+      IEnumerable<JobPlan> jobs, BlackMaple.MachineFramework.FMSSettings fmsSettings, IList<string> errs)
     {
-      var errs = new List<string>();
-
       //only allow numeric pallets and check queues
       foreach (JobPlan part in jobs)
       {
@@ -613,11 +612,6 @@ namespace MazakMachineInterface
             }
           }
         }
-      }
-      if (errs.Any()) {
-        throw new BlackMaple.MachineFramework.BadRequestException(
-          string.Join(Environment.NewLine, errs)
-        );
       }
     }
     #endregion

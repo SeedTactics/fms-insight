@@ -72,11 +72,7 @@ namespace MazakMachineInterface
           var transSet = CalculateScheduleChanges(mazakData);
 
           if (transSet != null && transSet.Schedules.Count() > 0) {
-            var logs = new List<string>();
-            _transDB.Save(transSet, "Setting material from queues", logs);
-            foreach (var msg in logs) {
-              log.Warning(msg);
-            }
+            _transDB.Save(transSet, "Setting material from queues");
           }
         }
 

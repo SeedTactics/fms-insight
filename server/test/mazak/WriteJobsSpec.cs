@@ -56,11 +56,8 @@ namespace MachineWatchTest
       public MazakWriteData AddSchedules {get;set;}
       public string errorForPrefix;
 
-      public void Save(MazakWriteData data, string prefix, IList<string> log)
+      public void Save(MazakWriteData data, string prefix)
       {
-        if (errorForPrefix == prefix) {
-          log.Add("Sample error");
-        }
         if (prefix == "Delete Parts Pallets") {
           DeletePartsPals = data;
         } else if (prefix == "Fixtures") {
@@ -71,6 +68,9 @@ namespace MachineWatchTest
           AddSchedules = data;
         } else {
           Assert.True(false, "Unexpected prefix " + prefix);
+        }
+        if (errorForPrefix == prefix) {
+          throw new Exception("Sample error");
         }
       }
     }
@@ -220,7 +220,7 @@ namespace MachineWatchTest
       _writeJobs.Invoking(x => x.AddJobs(newJobs, null))
         .Should()
         .Throw<Exception>()
-        .WithMessage("Error creating parts and pallets" + Environment.NewLine + "Sample error");
+        .WithMessage("Sample error");
 
       _writeMock.DeletePartsPals.Should().BeNull();
       ShouldMatchSnapshot(_writeMock.Fixtures, "fixtures-queues-fixtures.json");
@@ -244,7 +244,7 @@ namespace MachineWatchTest
       _writeJobs.Invoking(x => x.AddJobs(newJobs, null))
         .Should()
         .Throw<Exception>()
-        .WithMessage("Error creating schedules" + Environment.NewLine + "Sample error");
+        .WithMessage("Sample error");
 
       _writeMock.DeletePartsPals.Should().BeNull();
       ShouldMatchSnapshot(_writeMock.Fixtures, "fixtures-queues-fixtures.json");
@@ -264,7 +264,7 @@ namespace MachineWatchTest
       _writeJobs.Invoking(x => x.RecopyJobsToMazak(start))
         .Should()
         .Throw<Exception>()
-        .WithMessage("Error creating schedules" + Environment.NewLine + "Sample error");
+        .WithMessage("Sample error");
 
       ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
       _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).Jobs

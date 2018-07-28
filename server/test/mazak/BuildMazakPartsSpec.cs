@@ -106,10 +106,8 @@ namespace MachineWatchTest
 				MazakDbType.MazakVersionE,
 				checkPalletsUsedOnce: false,
 				fmsSettings: new FMSSettings(),
-				log: log
+				errors: log
 			);
-
-			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
 			if (log.Count > 0) Assert.True(false, log[0]);
 
 			CheckNewFixtures(pMap, new string[] {
@@ -230,10 +228,8 @@ namespace MachineWatchTest
 				MazakDbType.MazakVersionE,
 				checkPalletsUsedOnce: false,
 				fmsSettings: new FMSSettings(),
-				log: log
+				errors: log
 			);
-
-			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
 			if (log.Count > 0) Assert.True(false, log[0]);
 
 			CheckNewFixtures(pMap, new string[] {
@@ -318,9 +314,8 @@ namespace MachineWatchTest
 				MazakDbType.MazakVersionE,
 				checkPalletsUsedOnce: false,
 				fmsSettings: new FMSSettings(),
-				log: log
+				errors: log
 			);
-			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
 			if (log.Count > 0) Assert.True(false, log[0]);
 
 			CheckNewFixtures(pMap, new string[] {
@@ -421,10 +416,8 @@ namespace MachineWatchTest
 				MazakDbType.MazakVersionE,
 				checkPalletsUsedOnce: checkPalletUsedOnce,
 				fmsSettings: new FMSSettings(),
-				log: log
+				errors: log
 			);
-
-			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
 			if (log.Count > 0) Assert.True(false, log[0]);
 
 			CheckNewFixtures(pMap, new string[] {
@@ -541,11 +534,8 @@ namespace MachineWatchTest
 				MazakDbType.MazakVersionE,
 				checkPalletsUsedOnce: false,
 				fmsSettings: new FMSSettings(),
-				log: log
+				errors: log
 			);
-
-
-			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
 			if (log.Count > 0) Assert.True(false, log[0]);
 
 			CheckNewFixtures(pMap, new string[] {
@@ -677,9 +667,8 @@ namespace MachineWatchTest
 				MazakDbType.MazakVersionE,
 				checkPalletsUsedOnce: false,
 				fmsSettings: new FMSSettings(),
-				log: log
+				errors: log
 			);
-			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
 			if (log.Count > 0) Assert.True(false, log[0]);
 
 			CheckNewFixtures(pMap, new string[] {
@@ -825,10 +814,8 @@ namespace MachineWatchTest
 				MazakDbType.MazakVersionE,
 				checkPalletsUsedOnce: false,
 				fmsSettings: new FMSSettings(),
-				log: log
+				errors: log
 			);
-
-			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
 			if (log.Count > 0) Assert.True(false, log[0]);
 
 			CheckNewFixtures(pMap, new string[] {
