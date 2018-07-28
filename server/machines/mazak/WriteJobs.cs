@@ -157,13 +157,9 @@ namespace MazakMachineInterface
         string newGlobal)
     {
       var mazakData = readDatabase.LoadAllData();
-      MazakWriteData transSet;
-
-      int UID = 0;
-      var savedParts = new HashSet<string>();
 
       //first allocate a UID to use for this download
-      UID = 0;
+      int UID = 0;
       while (UID < int.MaxValue)
       {
         //check schedule rows for UID
@@ -188,36 +184,14 @@ namespace MazakMachineInterface
       {
         throw new Exception("Unable to find unused UID");
       }
-
-      //remove all completed production
-      transSet = new MazakWriteData();
-      foreach (var schRow in mazakData.Schedules)
-      {
-        var newSchRow = schRow.Clone();
-        if (schRow.PlanQuantity == schRow.CompleteQuantity)
-        {
-          newSchRow.Command = MazakWriteCommand.Delete;
-          transSet.Schedules.Add(newSchRow);
-
-          MazakPart.ParseComment(schRow.Comment, out string unique, out var paths, out bool manual);
-          if (unique != null && unique != "")
-            jobDB.ArchiveJob(unique);
-
-        }
-        else
-        {
-          savedParts.Add(schRow.PartName);
-
-          if (DecrementPriorityOnDownload)
-          {
-            newSchRow.Command = MazakWriteCommand.ScheduleSafeEdit;
-            newSchRow.Priority = Math.Max(newSchRow.Priority - 1, 1);
-            transSet.Schedules.Add(newSchRow);
-          }
-        }
-      }
-
       Log.Debug("Creating new schedule with UID {uid}", UID);
+
+      var (transSet, savedParts) = BuildMazakSchedules.RemoveCompletedAndDecrementSchedules(
+        mazakData, DecrementPriorityOnDownload
+      );
+      if (transSet.Schedules.Any())
+        writeDb.Save(transSet, "Update schedules", logMessages);
+
       Log.Debug("Saved Parts: {parts}", savedParts);
 
 
@@ -264,62 +238,10 @@ namespace MazakMachineInterface
                               IList<string> logMessages)
     {
       var mazakData = readDatabase.LoadSchedulesPartsPallets();
-      var transSet = new MazakWriteData();
-      var now = DateTime.Now;
-
-      var usedScheduleIDs = new HashSet<int>();
-      var scheduledParts = new HashSet<string>();
-      foreach (var schRow in mazakData.Schedules)
-      {
-        usedScheduleIDs.Add(schRow.Id);
-        scheduledParts.Add(schRow.PartName);
-      }
-
-      //now add the new schedule
-      int scheduleCount = 0;
-      foreach (JobPlan part in jobs)
-      {
-        for (int proc1path = 1; proc1path <= part.GetNumPaths(1); proc1path++)
-        {
-          if (part.GetPlannedCyclesOnFirstProcess(proc1path) <= 0) continue;
-
-          //check if part exists downloaded
-          int downloadUid = -1;
-          string mazakPartName = "";
-          string mazakComment = "";
-          foreach (var partRow in mazakData.Parts)
-          {
-            if (MazakPart.IsSailPart(partRow.PartName)) {
-              MazakPart.ParseComment(partRow.Comment, out string u, out var ps, out bool m);
-              if (u == part.UniqueStr && ps.PathForProc(proc: 1) == proc1path) {
-                downloadUid = MazakPart.ParseUID(partRow.PartName);
-                mazakPartName = partRow.PartName;
-                mazakComment = partRow.Comment;
-                break;
-              }
-            }
-          }
-          if (downloadUid < 0) {
-            throw new BlackMaple.MachineFramework.BadRequestException(
-              "Attempting to create schedule for " + part.UniqueStr + " but a part does not exist");
-          }
-
-          if (!scheduledParts.Contains(mazakPartName))
-          {
-            int schid = FindNextScheduleId(usedScheduleIDs);
-            SchedulePart(transSet, schid, mazakPartName, mazakComment, part.NumProcesses, part, proc1path, now, scheduleCount);
-            hold.SaveHoldMode(schid, part, proc1path);
-            scheduleCount += 1;
-          }
-        }
-      }
+      var transSet = BuildMazakSchedules.AddSchedules(mazakData, jobs, UseStartingOffsetForDueDate);
 
       if (transSet.Schedules.Any())
       {
-
-        if (UseStartingOffsetForDueDate)
-          SortSchedulesByDate(transSet);
-
         writeDb.Save(transSet, "Add Schedules", logMessages);
         if (logMessages.Count > 0) {
           Log.Error("Error saving schedules to mazak {@msgs}", logMessages);
@@ -333,82 +255,6 @@ namespace MazakMachineInterface
           jobDB.MarkJobCopiedToSystem(j.UniqueStr);
         }
       }
-    }
-
-    private void SchedulePart(MazakWriteData transSet, int SchID, string mazakPartName, string mazakComment, int numProcess,
-                              JobPlan part, int proc1path, DateTime now, int scheduleCount)
-    {
-      var newSchRow = new MazakScheduleRow();
-      newSchRow.Command = MazakWriteCommand.Add;
-      newSchRow.Id = SchID;
-      newSchRow.PartName = mazakPartName;
-      newSchRow.PlanQuantity = part.GetPlannedCyclesOnFirstProcess(proc1path);
-      newSchRow.CompleteQuantity = 0;
-      newSchRow.FixForMachine = 0;
-      newSchRow.MissingFixture = 0;
-      newSchRow.MissingProgram = 0;
-      newSchRow.MissingTool = 0;
-      newSchRow.MixScheduleID = 0;
-      newSchRow.ProcessingPriority = 0;
-      newSchRow.Priority = 75;
-      newSchRow.Comment = mazakComment;
-
-      if (UseStartingOffsetForDueDate)
-      {
-        DateTime d;
-        if (part.GetSimulatedStartingTimeUTC(1, proc1path) != DateTime.MinValue)
-          d = part.GetSimulatedStartingTimeUTC(1, proc1path);
-        else
-          d = DateTime.Today;
-        newSchRow.DueDate = d.AddSeconds(5 * scheduleCount);
-      }
-      else
-      {
-        newSchRow.DueDate = DateTime.Parse("1/1/2008 12:00:00 AM");
-      }
-
-      bool entireHold = false;
-      if (part.HoldEntireJob != null) entireHold = part.HoldEntireJob.IsJobOnHold;
-      bool machiningHold = false;
-      if (part.HoldMachining(1, proc1path) != null) machiningHold = part.HoldMachining(1, proc1path).IsJobOnHold;
-      newSchRow.HoldMode = (int)HoldPattern.CalculateHoldMode(entireHold, machiningHold);
-
-      int matQty = newSchRow.PlanQuantity;
-
-      if (!string.IsNullOrEmpty(part.GetInputQueue(process: 1, path: proc1path))) {
-        matQty = 0;
-      }
-
-      //need to add all the ScheduleProcess rows
-      for (int i = 1; i <= numProcess; i++)
-      {
-        var newSchProcRow = new MazakScheduleProcessRow();
-        newSchProcRow.MazakScheduleRowId = SchID;
-        newSchProcRow.ProcessNumber = i;
-        if (i == 1)
-        {
-          newSchProcRow.ProcessMaterialQuantity = matQty;
-        }
-        else
-        {
-          newSchProcRow.ProcessMaterialQuantity = 0;
-        }
-        newSchProcRow.ProcessBadQuantity = 0;
-        newSchProcRow.ProcessExecuteQuantity = 0;
-        newSchProcRow.ProcessMachine = 0;
-
-        newSchRow.Processes.Add(newSchProcRow);
-      }
-
-      transSet.Schedules.Add(newSchRow);
-    }
-
-    private static void SortSchedulesByDate(MazakWriteData transSet)
-    {
-      transSet.Schedules =
-        transSet.Schedules
-        .OrderBy(x => x.DueDate)
-        .ToList();
     }
 
     private void AddJobsToDB(NewJobs newJ)
@@ -437,19 +283,6 @@ namespace MazakMachineInterface
         }
       }
       jobDB.AddJobs(newJ, null);
-    }
-
-    private static int FindNextScheduleId(HashSet<int> usedScheduleIds)
-    {
-      for (int i = 1; i <= 9999; i++)
-      {
-        if (!usedScheduleIds.Contains(i))
-        {
-          usedScheduleIds.Add(i);
-          return i;
-        }
-      }
-      throw new Exception("All Schedule Ids are currently being used");
     }
 
     public static Exception BuildTransactionException(string msg, IList<string> log)
