@@ -5,27 +5,27 @@
   "Fixtures": [
     {
       "FixtureName": "Fixt:0:fixtureAA1:1",
-      "Comment": "schId1234",
+      "Comment": "Insight",
       "Command": "Add"
     },
     {
       "FixtureName": "Fixt:0:fixtureAA2:2",
-      "Comment": "schId1234",
+      "Comment": "Insight",
       "Command": "Add"
     },
     {
       "FixtureName": "Fixt:0:fixtureBB:1",
-      "Comment": "schId1234",
+      "Comment": "Insight",
       "Command": "Add"
     },
     {
       "FixtureName": "Fixt:0:fixtureCC5:1",
-      "Comment": "schId1234",
+      "Comment": "Insight",
       "Command": "Add"
     },
     {
       "FixtureName": "Fixt:0:fixtureCC6:2",
-      "Comment": "schId1234",
+      "Comment": "Insight",
       "Command": "Add"
     }
   ]

@@ -53,6 +53,7 @@ namespace MazakMachineInterface
     private IHoldManagement hold;
     private BlackMaple.MachineFramework.JobDB jobDB;
     private BlackMaple.MachineFramework.JobLogDB log;
+    private FMSSettings fmsSettings;
 
     private bool UseStartingOffsetForDueDate;
     private bool DecrementPriorityOnDownload;
@@ -66,6 +67,7 @@ namespace MazakMachineInterface
       IHoldManagement h,
       BlackMaple.MachineFramework.JobDB jDB,
       BlackMaple.MachineFramework.JobLogDB jLog,
+      FMSSettings settings,
       bool check,
       bool useStarting,
       bool decrPriority
@@ -77,6 +79,7 @@ namespace MazakMachineInterface
       log = jLog;
       CheckPalletsUsedOnce = check;
       UseStartingOffsetForDueDate = useStarting;
+      fmsSettings = settings;
       DecrementPriorityOnDownload = decrPriority;
     }
 
@@ -109,7 +112,7 @@ namespace MazakMachineInterface
 
         //add fixtures, pallets, parts.  If this fails, just throw an exception,
         //they will be deleted during the next download.
-        var palPartMap = AddFixturesPalletsParts(newJ, logMessages, newJ.ScheduleId);
+        AddFixturesPalletsParts(newJ, logMessages, newJ.ScheduleId);
         if (logMessages.Count > 0)
         {
           throw BuildTransactionException("Error downloading jobs", logMessages);
@@ -148,13 +151,13 @@ namespace MazakMachineInterface
     }
 
 
-    private clsPalletPartMapping AddFixturesPalletsParts(
+    private void AddFixturesPalletsParts(
             NewJobs newJ,
             IList<string> logMessages,
         string newGlobal)
     {
-      var transSet = new MazakWriteData();
       var mazakData = readDatabase.LoadAllData();
+      MazakWriteData transSet;
 
       int UID = 0;
       var savedParts = new HashSet<string>();
@@ -187,6 +190,7 @@ namespace MazakMachineInterface
       }
 
       //remove all completed production
+      transSet = new MazakWriteData();
       foreach (var schRow in mazakData.Schedules)
       {
         var newSchRow = schRow.Clone();
@@ -216,13 +220,19 @@ namespace MazakMachineInterface
       Log.Debug("Creating new schedule with UID {uid}", UID);
       Log.Debug("Saved Parts: {parts}", savedParts);
 
-      //build the pallet->part mapping
-      var palletPartMap = new clsPalletPartMapping(newJ.Jobs, mazakData, UID, savedParts, logMessages,
-                                                   !string.IsNullOrEmpty(newGlobal), newGlobal,
-                                                   CheckPalletsUsedOnce, writeDb.MazakType);
+
+      var mazakJobs = ConvertJobsToMazakParts.JobsToMazak(
+        newJ.Jobs,
+        UID,
+        mazakData,
+        savedParts,
+        writeDb.MazakType,
+        CheckPalletsUsedOnce,
+        fmsSettings,
+        logMessages);
 
       //delete everything
-      palletPartMap.DeletePartPallets(transSet);
+      transSet = mazakJobs.DeleteOldPartPalletRows();
       if (transSet.Parts.Any() || transSet.Pallets.Any())
         writeDb.Save(transSet, "Delete Parts Pallets", logMessages);
 
@@ -230,16 +240,13 @@ namespace MazakMachineInterface
 
       //have to delete fixtures after schedule, parts, and pallets are already deleted
       //also, add new fixtures
-      transSet = new MazakWriteData();
-      palletPartMap.DeleteFixtures(transSet);
-      palletPartMap.AddFixtures(transSet);
+      transSet = mazakJobs.CreateDeleteFixtureDatabaseRows();
       writeDb.Save(transSet, "Fixtures", logMessages);
 
       Log.Debug("Deleted fixtures with messages: {msgs}", logMessages);
 
       //now save the pallets and parts
-      transSet = new MazakWriteData();
-      palletPartMap.CreateRows(transSet);
+      transSet = mazakJobs.CreatePartPalletDatabaseRows();
       writeDb.Save(transSet, "Add Parts", logMessages);
 
       Log.Debug("Added parts and pallets with messages: {msgs}", logMessages);
@@ -251,8 +258,6 @@ namespace MazakMachineInterface
 
         throw BuildTransactionException("Error creating parts and pallets", logMessages);
       }
-
-      return palletPartMap;
     }
 
     private void AddSchedules(IEnumerable<JobPlan> jobs,

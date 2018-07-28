@@ -44,14 +44,14 @@ using Newtonsoft.Json;
 
 namespace MachineWatchTest
 {
-  public class CurrentStatusSpec : IDisposable
+  public class BuildCurrentStatusSpec : IDisposable
   {
     private JobLogDB _emptyLog;
 		private JobDB _jobDB;
     private JsonSerializerSettings jsonSettings;
     private FMSSettings _settings;
 
-    public CurrentStatusSpec()
+    public BuildCurrentStatusSpec()
     {
 			var logConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
       logConn.Open();

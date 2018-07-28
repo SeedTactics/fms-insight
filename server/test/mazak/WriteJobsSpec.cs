@@ -135,6 +135,7 @@ namespace MachineWatchTest
         Substitute.For<IHoldManagement>(),
         _jobDB,
         _logDB,
+        _settings,
         check: false,
         useStarting: true,
         decrPriority: false);

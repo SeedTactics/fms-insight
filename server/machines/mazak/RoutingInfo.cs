@@ -132,42 +132,19 @@ namespace MazakMachineInterface
       {
         Log.Debug("Check valid routing info");
 
-        // queue support is still being developed and tested
-        foreach (var j in jobs) {
-          for (int proc = 1; proc <= j.NumProcesses; proc++) {
-            for (int path = 1; path <= j.GetNumPaths(proc); path++) {
-
-              var inQueue = j.GetInputQueue(proc, path);
-              if (!string.IsNullOrEmpty(inQueue) && !fmsSettings.Queues.ContainsKey(inQueue)) {
-                logMessages.Add(
-                  " Job " + j.UniqueStr + " has an input queue " + inQueue + " which is not configured as a local queue in FMS Insight." +
-                  " All input queues must be local queues, not an external queue.");
-              }
-
-              var outQueue = j.GetOutputQueue(proc, path);
-              if (proc == j.NumProcesses) {
-                if (!string.IsNullOrEmpty(outQueue) && !fmsSettings.ExternalQueues.ContainsKey(outQueue)) {
-                  logMessages.Add("Output queues on the final process must be external queues." +
-                    " Job " + j.UniqueStr + " has a queue " + outQueue + " on the final process which is not configured " +
-                    " as an external queue");
-                }
-              } else {
-                if (!string.IsNullOrEmpty(outQueue) && !fmsSettings.Queues.ContainsKey(outQueue)) {
-                  logMessages.Add(
-                    " Job " + j.UniqueStr + " has an output queue " + outQueue + " which is not configured as a queue in FMS Insight." +
-                    " Non-final processes must have a configured local queue, not an external queue");
-                }
-              }
-            }
-          }
-        }
 
         //The reason we create the clsPalletPartMapping is to see if it throws any exceptions.  We therefore
         //need to ignore the warning that palletPartMap is not used.
 #pragma warning disable 168, 219
-        var palletPartMap = new clsPalletPartMapping(jobs, mazakData, 1,
-                                                     new HashSet<string>(), logMessages, false, "",
-                                                     CheckPalletsUsedOnce, writeDb.MazakType);
+      var mazakJobs = ConvertJobsToMazakParts.JobsToMazak(
+        jobs,
+        1,
+        mazakData,
+        new HashSet<string>(),
+        writeDb.MazakType,
+        CheckPalletsUsedOnce,
+        fmsSettings,
+        logMessages);
 #pragma warning restore 168, 219
 
       }

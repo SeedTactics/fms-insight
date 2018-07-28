@@ -42,7 +42,7 @@ using FluentAssertions;
 
 namespace MachineWatchTest
 {
-	public class PalletMap
+	public class BuildMazakPartsSpec
 	{
 		[Fact]
 		public void BasicFromTemplate()
@@ -98,9 +98,16 @@ namespace MachineWatchTest
 			CreatePart(dset, "Job3", "Part3", 1, "Test");
 			CreatePart(dset, "Job4", "Part4", 1, "Test");
 
-			var pMap = new clsPalletPartMapping(new JobPlan[] {job1, job2, job3, job4}, dset, 3,
-			                                    new HashSet<string>(), log, true, "NewGlobal",
-			                                    false, MazakDbType.MazakVersionE);
+			var pMap = ConvertJobsToMazakParts.JobsToMazak(
+				new JobPlan[] {job1, job2, job3, job4},
+				3,
+				dset,
+				new HashSet<string>(),
+				MazakDbType.MazakVersionE,
+				checkPalletsUsedOnce: false,
+				fmsSettings: new FMSSettings(),
+				log: log
+			);
 
 			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
 			if (log.Count > 0) Assert.True(false, log[0]);
@@ -113,8 +120,7 @@ namespace MachineWatchTest
 				"Fixt:3:2:20:1"
 			});
 
-			var trans = new MazakWriteData();
-			pMap.CreateRows(trans);
+			var trans = pMap.CreatePartPalletDatabaseRows();
 
 			CheckPartProcess(trans, "Part1:3:1", 1, "Fixt:3:0:4:1", "1200000000", "0004000000", "10000000");
 			CheckPartProcess(trans, "Part1:3:1", 2, "Fixt:3:0:4:2", "1200000000", "0004000000", "10000000");
@@ -216,9 +222,16 @@ namespace MachineWatchTest
 			savedParts.Add("Part3:7:1");
 			CreatePallet(dset, 20, "Fixt:7:0:20", 1);
 
-			var pMap = new clsPalletPartMapping(new JobPlan[] {job1, job2, job3, job4}, dset, 3,
-			                                    savedParts, log, true, "NewGlobal",
-			                                    false,  MazakDbType.MazakVersionE);
+			var pMap = ConvertJobsToMazakParts.JobsToMazak(
+				new JobPlan[] {job1, job2, job3, job4},
+				3,
+				dset,
+				savedParts,
+				MazakDbType.MazakVersionE,
+				checkPalletsUsedOnce: false,
+				fmsSettings: new FMSSettings(),
+				log: log
+			);
 
 			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
 			if (log.Count > 0) Assert.True(false, log[0]);
@@ -227,8 +240,7 @@ namespace MachineWatchTest
 				"Fixt:3:2:20:1"
 			});
 
-			var trans = new MazakWriteData();
-			pMap.CreateRows(trans);
+			var trans = pMap.CreatePartPalletDatabaseRows();
 
 			CheckPartProcess(trans, "Part1:3:1", 1, "Fixt:2:0:4:1");
 			CheckPartProcess(trans, "Part1:3:1", 2, "Fixt:2:0:4:2");
@@ -298,10 +310,16 @@ namespace MachineWatchTest
 			CreatePart(dset, "Job3", "Part3", 1, "Test");
 			CreatePart(dset, "Job4", "Part4", 1, "Test");
 
-			var pMap = new clsPalletPartMapping(new JobPlan[] {job1, job2, job3, job4}, dset, 3,
-			                                    new HashSet<string>(), log, true, "NewGlobal",
-			                                    false,  MazakDbType.MazakVersionE);
-
+			var pMap = ConvertJobsToMazakParts.JobsToMazak(
+				new JobPlan[] {job1, job2, job3, job4},
+				3,
+				dset,
+				new HashSet<string>(),
+				MazakDbType.MazakVersionE,
+				checkPalletsUsedOnce: false,
+				fmsSettings: new FMSSettings(),
+				log: log
+			);
 			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
 			if (log.Count > 0) Assert.True(false, log[0]);
 
@@ -315,8 +333,7 @@ namespace MachineWatchTest
 				"Fixt:3:2:20:1"
 			});
 
-			var trans = new MazakWriteData();
-			pMap.CreateRows(trans);
+			var trans = pMap.CreatePartPalletDatabaseRows();
 
 			CheckPartProcess(trans, "Part1:3:1", 1, "Fixt:3:0:4:1");
 			CheckPartProcess(trans, "Part1:3:1", 2, "Fixt:3:0:4:2");
@@ -396,9 +413,16 @@ namespace MachineWatchTest
 			CreatePart(dset, "Job1", "Part1", 2, "Test");
 			CreatePart(dset, "Job2", "Part2", 2, "Test");
 
-			var pMap = new clsPalletPartMapping(new JobPlan[] {job1, job2}, dset, 3,
-			                                    new HashSet<string>(), log, true, "NewGlobal",
-			                                    checkPalletUsedOnce,  MazakDbType.MazakVersionE);
+			var pMap = ConvertJobsToMazakParts.JobsToMazak(
+				new JobPlan[] {job1, job2},
+				3,
+				dset,
+				new HashSet<string>(),
+				MazakDbType.MazakVersionE,
+				checkPalletsUsedOnce: checkPalletUsedOnce,
+				fmsSettings: new FMSSettings(),
+				log: log
+			);
 
 			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
 			if (log.Count > 0) Assert.True(false, log[0]);
@@ -412,8 +436,7 @@ namespace MachineWatchTest
 				"Fixt:3:2:4:2",
 			});
 
-			var trans = new MazakWriteData();
-			pMap.CreateRows(trans);
+			var trans = pMap.CreatePartPalletDatabaseRows();
 
 			CheckPartProcess(trans, "Part1:3:1", 1, "Fixt:3:0:4:1");
 			CheckPartProcess(trans, "Part1:3:1", 2, "Fixt:3:0:4:2");
@@ -510,9 +533,17 @@ namespace MachineWatchTest
 			CreatePart(dset, "Job4", "Part4", 1, "Test");
 			CreateProgram(dset, "1234");
 
-			var pMap = new clsPalletPartMapping(new JobPlan[] {job1, job2, job3, job4}, dset, 3,
-			                                    new HashSet<string>(), log, true, "NewGlobal",
-			                                    false,  MazakDbType.MazakVersionE);
+			var pMap = ConvertJobsToMazakParts.JobsToMazak(
+				new JobPlan[] {job1, job2, job3, job4},
+				3,
+				dset,
+				new HashSet<string>(),
+				MazakDbType.MazakVersionE,
+				checkPalletsUsedOnce: false,
+				fmsSettings: new FMSSettings(),
+				log: log
+			);
+
 
 			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
 			if (log.Count > 0) Assert.True(false, log[0]);
@@ -526,8 +557,7 @@ namespace MachineWatchTest
 				"Fixt:3:3:30:1"
 			});
 
-			var trans = new MazakWriteData();
-			pMap.CreateRows(trans);
+			var trans = pMap.CreatePartPalletDatabaseRows();
 
 			CheckPartProcessFromJob(trans, "Part1:3:1", 1, "Fixt:3:0:4:1");
 			CheckPartProcessFromJob(trans, "Part1:3:1", 2, "Fixt:3:0:4:2");
@@ -639,10 +669,16 @@ namespace MachineWatchTest
 			var dset = new MazakTestData();
 			CreateProgram(dset, "1234");
 
-		    var pMap = new clsPalletPartMapping(new JobPlan[] {job1, job2, job3}, dset, 3,
-			                                    new HashSet<string>(), log, true, "NewGlobal",
-			                                    false,  MazakDbType.MazakVersionE);
-
+			var pMap = ConvertJobsToMazakParts.JobsToMazak(
+				new JobPlan[] {job1, job2, job3},
+				3,
+				dset,
+				new HashSet<string>(),
+				MazakDbType.MazakVersionE,
+				checkPalletsUsedOnce: false,
+				fmsSettings: new FMSSettings(),
+				log: log
+			);
 			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
 			if (log.Count > 0) Assert.True(false, log[0]);
 
@@ -655,8 +691,7 @@ namespace MachineWatchTest
 				"Fixt:3:5:22:1"
 			});
 
-			var trans = new MazakWriteData();
-			pMap.CreateRows(trans);
+			var trans = pMap.CreatePartPalletDatabaseRows();
 
 			CheckPartProcessFromJob(trans, "Part1:3:1", 1, "Fixt:3:0:4:1");
 			CheckPartProcessFromJob(trans, "Part1:3:1", 2, "Fixt:3:1:40:2");
@@ -782,9 +817,16 @@ namespace MachineWatchTest
 			var dset = CreateReadSet();
 			CreateProgram(dset, "1234");
 
-			var pMap = new clsPalletPartMapping(new JobPlan[] {job1, job2, job3, job4}, dset, 3,
-			                                    new HashSet<string>(), log, true, "NewGlobal",
-			                                    false, MazakDbType.MazakVersionE);
+			var pMap = ConvertJobsToMazakParts.JobsToMazak(
+				new JobPlan[] {job1, job2, job3, job4},
+				3,
+				dset,
+				new HashSet<string>(),
+				MazakDbType.MazakVersionE,
+				checkPalletsUsedOnce: false,
+				fmsSettings: new FMSSettings(),
+				log: log
+			);
 
 			//Console.WriteLine(DatabaseAccess.Join(trace, Environment.NewLine));
 			if (log.Count > 0) Assert.True(false, log[0]);
@@ -800,8 +842,7 @@ namespace MachineWatchTest
 				"Fixt:3:fix4e:face1",
 			});
 
-			var trans = new MazakWriteData();
-			pMap.CreateRows(trans);
+			var trans = pMap.CreatePartPalletDatabaseRows();
 
 			CheckPartProcessFromJob(trans, "Part1:3:1", 1, "Fixt:3:fixAA:face1");
 			CheckPartProcessFromJob(trans, "Part1:3:1", 2, "Fixt:3:fixAA:face2");
@@ -839,6 +880,29 @@ namespace MachineWatchTest
 			CheckPalletGroup(trans, 36, new [] {"Fixt:3:fix4e:face1"}, new int[] {30, 31});
 
 			AssertPartsPalletsDeleted(trans);
+		}
+
+		[Fact(Skip="pending")]
+		public void DeleteCompletedParts()
+		{
+
+		}
+
+		[Fact(Skip="pending")]
+		public void DeleteOldFixtures()
+		{
+
+		}
+
+		[Fact(Skip="pending")]
+		public void ErrorsOnNonNumericPallet()
+		{
+
+		}
+
+		[Fact(Skip="pending")]
+		public void ErrorsOnInvalidQueues()
+		{
 
 		}
 
@@ -909,10 +973,9 @@ namespace MachineWatchTest
 			}
 		}
 
-		private void CheckNewFixtures(clsPalletPartMapping map, ICollection<string> newFix)
+		private void CheckNewFixtures(MazakJobs map, ICollection<string> newFix)
 		{
-			var trans = new MazakWriteData();
-			map.AddFixtures(trans);
+			var trans = map.CreateDeleteFixtureDatabaseRows();
 
 			foreach (string fix in newFix) {
 				foreach (var row in trans.Fixtures.ToList()) {

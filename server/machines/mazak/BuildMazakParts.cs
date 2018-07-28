@@ -53,17 +53,16 @@ namespace MazakMachineInterface
       Processes = new List<MazakProcess>();
     }
 
-    public void CreateDatabaseRow(MazakWriteData transSet)
+    public MazakPartRow ToDatabaseRow()
     {
       var newPartRow = new MazakPartRow();
-
       newPartRow.Command = MazakWriteCommand.Add;
       newPartRow.PartName = PartName;
       newPartRow.Comment = Comment;
       newPartRow.Price = 0;
       newPartRow.MaterialName = "";
       newPartRow.TotalProcess = Processes.Count;
-      transSet.Parts.Add(newPartRow);
+      return newPartRow;
     }
 
     public string PartName
@@ -379,10 +378,52 @@ namespace MazakMachineInterface
     public List<string> Pallets = new List<string>();
 
     public string MazakFixtureName {get;set;}
+
+    public IEnumerable<MazakPalletRow> CreateDatabasePalletRows(MazakSchedulesPartsPallets oldData, int downloadUID)
+    {
+      var ret = new List<MazakPalletRow>();
+      foreach (var pallet in Pallets) {
+        int palNum = int.Parse(pallet);
+
+        bool foundExisting = false;
+        foreach (var palRow in oldData.Pallets)
+        {
+          if (palRow.PalletNumber == palNum && palRow.Fixture == MazakFixtureName)
+          {
+            foundExisting = true;
+            break;
+          }
+        }
+        if (foundExisting) continue;
+
+        //we have the + 1 because UIDs and graphs start at 0, and the user might add other fixture-pallet
+        //on group 0.
+        var fixGroup = (downloadUID * 10 + (FixtureGroup % 10)) + 1;
+
+        //Add rows to both V1 and V2.
+        var newRow = new MazakPalletRow();
+        newRow.Command = MazakWriteCommand.Add;
+        newRow.PalletNumber = palNum;
+        newRow.Fixture = MazakFixtureName;
+        newRow.RecordID = 0;
+        newRow.FixtureGroupV2 = fixGroup;
+
+        //combos with an angle in the range 0-999, and we don't want to conflict with that
+        newRow.AngleV1 = (fixGroup * 1000);
+
+        ret.Add(newRow);
+      }
+      return ret;
+    }
   }
 
   public class MazakJobs
   {
+    public MazakAllData OldMazakData {get;set;}
+    public MazakDbType MazakType {get;set;}
+    public int DownloadUID {get;set;}
+    public ISet<string> SavedParts {get;set;}
+
     //The representation of the mazak parts and pallets used to create the database rows
     public IEnumerable<MazakPart> AllParts {get;set;}
     public IEnumerable<MazakFixture> Fixtures {get;set;}
@@ -390,6 +431,106 @@ namespace MazakMachineInterface
     //fixtures used by either existing or new parts.  Fixtures in the Mazak not in this list
     //will be deleted and fixtures appearing in this list but not yet in Mazak will be added.
     public ISet<string> UsedFixtures {get;set;}
+
+    public MazakWriteData CreateDeleteFixtureDatabaseRows()
+    {
+      var ret = new MazakWriteData();
+
+      //delete unused fixtures
+      foreach (var fixRow in OldMazakData.Fixtures)
+      {
+        if (fixRow.Comment == "Insight")
+        {
+          if (!UsedFixtures.Contains(fixRow.FixtureName))
+          {
+            var newFixRow = fixRow.Clone();
+            newFixRow.Command = MazakWriteCommand.Delete;
+            ret.Fixtures.Add(newFixRow);
+          }
+        }
+      }
+
+      //add new fixtures
+      foreach (string fixture in UsedFixtures)
+      {
+        //check if this fixture exists already... could exist already if we reuse fixtures
+        foreach (var fixRow in OldMazakData.Fixtures)
+        {
+          if (fixRow.FixtureName == fixture)
+          {
+            goto found;
+          }
+        }
+
+        var newFixRow = new MazakFixtureRow();
+        newFixRow.Command = MazakWriteCommand.Add;
+        newFixRow.FixtureName = fixture;
+        newFixRow.Comment = "Insight";
+        ret.Fixtures.Add(newFixRow);
+      found:;
+      }
+
+      return ret;
+    }
+
+    public MazakWriteData CreatePartPalletDatabaseRows()
+    {
+      var ret = new MazakWriteData();
+      foreach (var p in AllParts)
+        ret.Parts.Add(p.ToDatabaseRow());
+
+      var byName = ret.Parts.ToDictionary(p => p.PartName, p => p);
+
+      foreach (var g in Fixtures)
+      {
+        foreach (var p in g.Processes)
+        {
+          p.CreateDatabaseRow(byName[p.Part.PartName], g.MazakFixtureName, MazakType);
+        }
+
+        foreach (var p in g.CreateDatabasePalletRows(OldMazakData, DownloadUID))
+          ret.Pallets.Add(p);
+      }
+
+      return ret;
+    }
+
+    public MazakWriteData DeleteOldPartPalletRows()
+    {
+      var transSet = new MazakWriteData();
+      foreach (var partRow in OldMazakData.Parts)
+      {
+        if (MazakPart.IsSailPart(partRow.PartName))
+        {
+          if (!SavedParts.Contains(partRow.PartName))
+          {
+            var newPartRow = partRow.Clone();
+            newPartRow.Command = MazakWriteCommand.Delete;
+            transSet.Parts.Add(newPartRow);
+          }
+        }
+      }
+
+      foreach (var palRow in OldMazakData.Pallets)
+      {
+        int idx = palRow.Fixture.IndexOf(':');
+
+        if (idx >= 0)
+        {
+          //check if this fixture is being used by a new schedule
+          //or is a fixture used by a part in savedParts
+
+          if (!UsedFixtures.Contains(palRow.Fixture))
+          {
+            //not found, can delete it
+            var newPalRow = palRow.Clone();
+            newPalRow.Command = MazakWriteCommand.Delete;
+            transSet.Pallets.Add(newPalRow);
+          }
+        }
+      }
+      return transSet;
+    }
   }
 
   public static class ConvertJobsToMazakParts
@@ -404,23 +545,82 @@ namespace MazakMachineInterface
     public static MazakJobs JobsToMazak(
       IEnumerable<JobPlan> jobs,
       int downloadUID,
-      MazakSchedulesPartsPallets mazakData,
+      MazakAllData mazakData,
       ISet<string> savedParts,
       MazakDbType MazakType,
       bool checkPalletsUsedOnce,
+      BlackMaple.MachineFramework.FMSSettings fmsSettings,
       IList<string> log)
     {
+      Validate(jobs, fmsSettings);
       var allParts = BuildMazakParts(jobs, downloadUID, mazakData, MazakType, log);
       var groups = GroupProcessesIntoFixtures(allParts, checkPalletsUsedOnce, log);
 
       var usedFixtures = AssignMazakFixtures(groups, downloadUID, mazakData, savedParts, log);
 
       return new MazakJobs() {
+        OldMazakData = mazakData,
+        MazakType = MazakType,
+        DownloadUID = downloadUID,
+        SavedParts = savedParts,
         AllParts = allParts,
         Fixtures = groups,
         UsedFixtures = usedFixtures
       };
     }
+
+    #region Validate
+    private static void Validate(IEnumerable<JobPlan> jobs, BlackMaple.MachineFramework.FMSSettings fmsSettings)
+    {
+      var errs = new List<string>();
+
+      //only allow numeric pallets and check queues
+      foreach (JobPlan part in jobs)
+      {
+        for (int proc = 1; proc <= part.NumProcesses; proc++)
+        {
+          for (int path = 1; path <= part.GetNumPaths(proc); path++)
+          {
+            foreach (string palName in part.PlannedPallets(proc, path))
+            {
+              int v;
+              if (!int.TryParse(palName, out v))
+              {
+                errs.Add("Invalid pallet->part mapping. " + palName + " is not numeric.");
+              }
+            }
+
+            var inQueue = part.GetInputQueue(proc, path);
+            if (!string.IsNullOrEmpty(inQueue) && !fmsSettings.Queues.ContainsKey(inQueue)) {
+              errs.Add(
+                " Job " + part.UniqueStr + " has an input queue " + inQueue + " which is not configured as a local queue in FMS Insight." +
+                " All input queues must be local queues, not an external queue.");
+            }
+
+            var outQueue = part.GetOutputQueue(proc, path);
+            if (proc == part.NumProcesses) {
+              if (!string.IsNullOrEmpty(outQueue) && !fmsSettings.ExternalQueues.ContainsKey(outQueue)) {
+                errs.Add("Output queues on the final process must be external queues." +
+                  " Job " + part.UniqueStr + " has a queue " + outQueue + " on the final process which is not configured " +
+                  " as an external queue");
+              }
+            } else {
+              if (!string.IsNullOrEmpty(outQueue) && !fmsSettings.Queues.ContainsKey(outQueue)) {
+                errs.Add(
+                  " Job " + part.UniqueStr + " has an output queue " + outQueue + " which is not configured as a queue in FMS Insight." +
+                  " Non-final processes must have a configured local queue, not an external queue");
+              }
+            }
+          }
+        }
+      }
+      if (errs.Any()) {
+        throw new BlackMaple.MachineFramework.BadRequestException(
+          string.Join(Environment.NewLine, errs)
+        );
+      }
+    }
+    #endregion
 
     #region Parts
     private static List<MazakPart> BuildMazakParts(IEnumerable<JobPlan> jobs, int downloadID, MazakSchedulesPartsPallets mazakData, MazakDbType mazakTy,
