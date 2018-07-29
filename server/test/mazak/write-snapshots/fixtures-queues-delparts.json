@@ -1,0 +1,45 @@
+{
+  "Schedules": [],
+  "Parts": [
+    {
+      "PartName": "part1:1:1",
+      "Comment": "uniq1-Path1-0",
+      "Price": 0.0,
+      "TotalProcess": 0,
+      "MaterialName": "",
+      "Part_1": 0,
+      "Part_2": 0,
+      "Part_3": "",
+      "Part_4": 0,
+      "Part_5": 0,
+      "CheckCount": 0,
+      "ProductCount": 0,
+      "Processes": [
+        {
+          "PartName": "part1:1:1",
+          "ProcessNumber": 1,
+          "FixQuantity": 5,
+          "ContinueCut": 0,
+          "CutMc": null,
+          "FixLDS": null,
+          "FixPhoto": null,
+          "Fixture": "fixtoremove",
+          "MainProgram": null,
+          "RemoveLDS": null,
+          "RemovePhoto": null,
+          "WashType": 0,
+          "PartProcess_1": 0,
+          "PartProcess_2": 0,
+          "PartProcess_3": 0,
+          "PartProcess_4": 0,
+          "FixTime": 0,
+          "RemoveTime": 0,
+          "CreateToolList_RA": 0
+        }
+      ],
+      "Command": "Delete"
+    }
+  ],
+  "Pallets": [],
+  "Fixtures": []
+}

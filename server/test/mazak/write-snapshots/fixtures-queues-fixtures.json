@@ -4,6 +4,11 @@
   "Pallets": [],
   "Fixtures": [
     {
+      "FixtureName": "fixtoremove",
+      "Comment": "Insight",
+      "Command": "Delete"
+    },
+    {
       "FixtureName": "Fixt:0:fixtureAA1:1",
       "Comment": "Insight",
       "Command": "Add"

@@ -54,6 +54,7 @@ namespace MachineWatchTest
       public MazakWriteData Fixtures {get;set;}
       public MazakWriteData AddParts {get;set;}
       public MazakWriteData AddSchedules {get;set;}
+      public MazakWriteData UpdateSchedules {get;set;}
       public string errorForPrefix;
 
       public void Save(MazakWriteData data, string prefix)
@@ -66,6 +67,8 @@ namespace MachineWatchTest
           AddParts = data;
         } else if (prefix == "Add Schedules") {
           AddSchedules = data;
+        } else if (prefix == "Update schedules") {
+          UpdateSchedules = data;
         } else {
           Assert.True(false, "Unexpected prefix " + prefix);
         }
@@ -100,16 +103,86 @@ namespace MachineWatchTest
       _readMock = Substitute.For<IReadDataAccess>();
       _readMock.MazakType.Returns(MazakDbType.MazakSmooth);
       _readMock.LoadAllData().Returns(new MazakAllData() {
-        Schedules = Enumerable.Empty<MazakScheduleRow>(),
-        Parts = Enumerable.Empty<MazakPartRow>(),
-        Pallets = Enumerable.Empty<MazakPalletRow>(),
+        Schedules = new [] {
+          // a completed schedule, should be deleted
+					new MazakScheduleRow()
+					{
+						Id = 1,
+						PartName = "part1:1:1",
+						Comment = MazakPart.CreateComment("uniq1", new [] {1}, false),
+						PlanQuantity = 15,
+						CompleteQuantity = 15,
+						Priority = 50,
+						Processes = {
+							new MazakScheduleProcessRow() {
+								MazakScheduleRowId = 1,
+								FixedMachineFlag = 1,
+								ProcessNumber = 1
+							}
+						}
+					},
+          // a non-completed schedule, should be decremented
+					new MazakScheduleRow()
+					{
+						Id = 2,
+						PartName = "part2:1:1",
+						Comment = MazakPart.CreateComment("uniq2", new [] {1}, false),
+						PlanQuantity = 15,
+						CompleteQuantity = 10,
+						Priority = 50,
+						Processes = {
+							new MazakScheduleProcessRow() {
+								MazakScheduleRowId = 1,
+								FixedMachineFlag = 1,
+								ProcessNumber = 1,
+								ProcessMaterialQuantity = 3,
+								ProcessExecuteQuantity = 2
+							}
+						}
+					},
+        },
+        Parts = new [] {
+          // should be deleted, since corresponding schedule is deleted
+					new MazakPartRow() {
+						PartName = "part1:1:1",
+						Comment = MazakPart.CreateComment("uniq1", new[] {1}, false),
+            Processes = {
+              new MazakPartProcessRow() {
+                PartName = "part1:1:1",
+                ProcessNumber = 1,
+                FixQuantity = 5,
+                Fixture = "fixtoremove"
+              }
+            }
+					},
+          //should be kept, since schedule is kept
+					new MazakPartRow() {
+						PartName = "part2:1:1",
+						Comment = MazakPart.CreateComment("uniq2", new[] {1}, false),
+            Processes = {
+              new MazakPartProcessRow() {
+                PartName = "part2:1:1",
+                ProcessNumber = 1,
+                FixQuantity = 2,
+                Fixture = "fixtokeep"
+              }
+            }
+					},
+        },
+        Fixtures = new[] {
+          new MazakFixtureRow() { FixtureName = "fixtoremove", Comment = "Insight" },
+          new MazakFixtureRow() { FixtureName = "fixtokeep", Comment = "Insight"}
+        },
+        Pallets = new[] {
+          new MazakPalletRow() { PalletNumber = 5, Fixture = "fixtoremove"},
+          new MazakPalletRow() { PalletNumber = 6, Fixture = "fixtokeep"}
+        },
         PalletSubStatuses = Enumerable.Empty<MazakPalletSubStatusRow>(),
         PalletPositions = Enumerable.Empty<MazakPalletPositionRow>(),
         LoadActions = Enumerable.Empty<LoadAction>(),
         MainPrograms = new HashSet<string>(new [] {
           "1001", "1002", "1003", "1004"
         }),
-        Fixtures = Enumerable.Empty<MazakFixtureRow>()
       });
       _readMock.LoadSchedulesPartsPallets().Returns(x => new MazakSchedulesPartsPallets() {
         Schedules = Enumerable.Empty<MazakScheduleRow>(),
@@ -138,7 +211,7 @@ namespace MachineWatchTest
         _settings,
         check: false,
         useStarting: true,
-        decrPriority: false);
+        decrPriority: true);
 
         jsonSettings = new JsonSerializerSettings();
         jsonSettings.Converters.Add(new BlackMaple.MachineFramework.TimespanConverter());
@@ -155,6 +228,12 @@ namespace MachineWatchTest
 
     public void ShouldMatchSnapshot<T>(T val, string snapshot)
     {
+      /*
+      File.WriteAllText(
+          Path.Combine("..", "..", "..", "mazak", "write-snapshots", snapshot),
+          JsonConvert.SerializeObject(val, jsonSettings)
+      );
+      */
       var expected = JsonConvert.DeserializeObject<T>(
         File.ReadAllText(
           Path.Combine("..", "..", "..", "mazak", "write-snapshots", snapshot)),
@@ -198,7 +277,8 @@ namespace MachineWatchTest
       );
       _writeJobs.AddJobs(newJobs, null);
 
-      _writeMock.DeletePartsPals.Should().BeNull();
+      ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
+      ShouldMatchSnapshot(_writeMock.DeletePartsPals, "fixtures-queues-delparts.json");
       ShouldMatchSnapshot(_writeMock.Fixtures, "fixtures-queues-fixtures.json");
       ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
       ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
@@ -222,7 +302,8 @@ namespace MachineWatchTest
         .Throw<Exception>()
         .WithMessage("Sample error");
 
-      _writeMock.DeletePartsPals.Should().BeNull();
+      ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
+      ShouldMatchSnapshot(_writeMock.DeletePartsPals, "fixtures-queues-delparts.json");
       ShouldMatchSnapshot(_writeMock.Fixtures, "fixtures-queues-fixtures.json");
       ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
       _writeMock.AddSchedules.Should().BeNull();
@@ -246,7 +327,8 @@ namespace MachineWatchTest
         .Throw<Exception>()
         .WithMessage("Sample error");
 
-      _writeMock.DeletePartsPals.Should().BeNull();
+      ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
+      ShouldMatchSnapshot(_writeMock.DeletePartsPals, "fixtures-queues-delparts.json");
       ShouldMatchSnapshot(_writeMock.Fixtures, "fixtures-queues-fixtures.json");
       ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
       ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
@@ -280,37 +362,6 @@ namespace MachineWatchTest
       ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
 
       _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).Jobs.Should().BeEmpty();
-    }
-
-
-    [Fact(Skip="pending")]
-    public void RecopyJobsDuringNextAdd()
-    {
-
-    }
-
-    [Fact(Skip="pending")]
-    public void DeleteCompletedSchedules()
-    {
-
-    }
-
-    [Fact(Skip="pending")]
-    public void DeletePartsPalletsWithoutSchedule()
-    {
-
-    }
-
-    [Fact(Skip="pending")]
-    public void DecrementPriority()
-    {
-
-    }
-
-    [Fact(Skip="pending")]
-    public void StartingOffsetForDueDate()
-    {
-
     }
   }
 }
