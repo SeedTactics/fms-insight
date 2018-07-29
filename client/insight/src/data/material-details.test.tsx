@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as mat from './material-details';
+import * as im from 'immutable';
 import { PledgeStatus } from '../store/middleware';
 // import * as api from './api';
 import {
@@ -318,6 +319,7 @@ it("successfully processes events", () => {
     fakeSerial(logmat, "theserial"),
     fakeWorkorderAssign(logmat, "work1234"),
   ];
+  const sortedEvts = im.Seq(evts).sortBy(e => e.endUTC).toArray();
 
   const initial = {
     materialID: -1,
@@ -343,7 +345,7 @@ it("successfully processes events", () => {
     completedInspections: ["compinsp"],
     serial: "theserial",
     workorderId: "work1234",
-    events: evts,
+    events: sortedEvts,
     loading_events: false,
   };
 
@@ -353,7 +355,7 @@ it("successfully processes events", () => {
     pledge: { status: PledgeStatus.Completed, result: evts }
   };
   const initialSt = {
-    material: {...m, loading_events: true},
+    material: {...initial, loading_events: true},
     add_mat_in_progress: false,
   };
   let s = mat.reducer(initialSt, action);
@@ -399,4 +401,44 @@ it("errors during add new material", () => {
   expect(st.material).toEqual(m);
   expect(st.add_mat_in_progress).toBe(false);
   expect(st.add_mat_error).toEqual(new Error("an error"));
+});
+
+it("adds extra logs", () => {
+  const evts1 = fakeCycle(new Date(), 55);
+  const evts2 = fakeCycle(new Date(), 12);
+
+  const initial = {
+    materialID: -1,
+    partName: "adouh",
+    jobUnique: "sdfoudj",
+    serial: "eiwewg",
+    workorderId: "aeawef",
+    signaledInspections: [],
+    completedInspections: [],
+    loading_events: true,
+    updating_material: false,
+    events: evts1,
+    loading_workorders: false,
+    saving_workorder: false,
+    workorders: [],
+    openedViaBarcodeScanner: false,
+  };
+  const after = {...initial,
+    events:
+      im.Seq(evts1)
+      .concat(evts2)
+      .sortBy(e => e.endUTC)
+      .toArray(),
+  };
+
+  const action: mat.Action = {
+    type: mat.ActionType.LoadLogFromOtherServer,
+    pledge: { status: PledgeStatus.Completed, result: evts2 }
+  };
+  const initialSt = {
+    material: initial,
+    add_mat_in_progress: false,
+  };
+  let s = mat.reducer(initialSt, action);
+  expect(s.material).toEqual(after);
 });

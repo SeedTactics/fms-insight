@@ -67,6 +67,11 @@ export interface LogAPI {
 export let ServerBackend: ServerAPI = new api.ServerClient();
 export let JobsBackend: JobAPI = new api.JobsClient();
 export let LogBackend: LogAPI = new api.LogClient();
+export let OtherLogBackends: ReadonlyArray<LogAPI> = [];
+
+export function setOtherLogBackends(servers: ReadonlyArray<string>) {
+  OtherLogBackends = servers.map(s => new api.LogClient(s));
+}
 
 export function initMockBackend(
   curSt: Readonly<api.ICurrentStatus>,

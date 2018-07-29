@@ -36,6 +36,7 @@ using System.Collections.Generic;
 using System.Runtime.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using BlackMaple.MachineWatchInterface;
+using Microsoft.AspNetCore.Cors;
 
 namespace BlackMaple.MachineFramework.Controllers
 {
@@ -112,6 +113,7 @@ namespace BlackMaple.MachineFramework.Controllers
         }
 
         [HttpGet("events/for-serial/{serial}")]
+        [EnableCors("AllowOtherLogServers")]
         public List<LogEntry> LogForSerial(string serial)
         {
             return _server.GetLogForSerial(serial);

@@ -34,13 +34,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as im from 'immutable';
 
 import * as api from './api';
-import { Pledge, PledgeStatus, ActionBeforeMiddleware } from '../store/middleware';
+import { Pledge, PledgeStatus, ActionBeforeMiddleware, PledgeToPromise } from '../store/middleware';
 import { MaterialSummary } from './events';
-import { JobsBackend, LogBackend } from './backend';
+import { JobsBackend, LogBackend, OtherLogBackends } from './backend';
 
 export enum ActionType {
   OpenMaterialDialog = 'MaterialDetails_Open',
   OpenMaterialDialogWithoutLoad = 'MaterialDetails_OpenWithoutLoad',
+  LoadLogFromOtherServer = 'MaterialDetails_LoadLogFromOtherServer',
   CloseMaterialDialog = 'MaterialDetails_Close',
   UpdateMaterial = 'MaterialDetails_UpdateMaterial',
   LoadWorkorders = 'OrderAssign_LoadWorkorders',
@@ -81,6 +82,10 @@ export type Action =
       pledge: Pledge<ReadonlyArray<Readonly<api.ILogEntry>>>
     }
   | {
+      type: ActionType.LoadLogFromOtherServer,
+      pledge: Pledge<ReadonlyArray<Readonly<api.ILogEntry>>>
+    }
+  | {
       type: ActionType.OpenMaterialDialogWithoutLoad,
       mat: MaterialDetail,
     }
@@ -105,7 +110,7 @@ export type Action =
 type ABF = ActionBeforeMiddleware<Action>;
 
 export function openMaterialDialog(mat: Readonly<MaterialSummary>):  ABF {
-  return {
+  const mainLoad = {
     type: ActionType.OpenMaterialDialog,
     initial: {
       materialID: mat.materialID,
@@ -124,7 +129,18 @@ export function openMaterialDialog(mat: Readonly<MaterialSummary>):  ABF {
       openedViaBarcodeScanner: false,
     } as MaterialDetail,
     pledge: LogBackend.logForMaterial(mat.materialID),
-  };
+  } as PledgeToPromise<Action>;
+
+  let extra: ReadonlyArray<PledgeToPromise<Action>> = [];
+  if (mat.serial && mat.serial !== "") {
+    const serial = mat.serial;
+    extra = OtherLogBackends.map(b => ({
+        type: ActionType.LoadLogFromOtherServer,
+        pledge: b.logForSerial(serial)
+      } as PledgeToPromise<Action>)
+    );
+  }
+  return [mainLoad].concat(extra);
 }
 
 export function openMaterialDialogWithEmptyMat():  ABF {
@@ -150,7 +166,7 @@ export function openMaterialDialogWithEmptyMat():  ABF {
 }
 
 export function openMaterialBySerial(serial: string, openedByBarcode: boolean): ABF {
-  return {
+  const mainLoad = {
     type: ActionType.OpenMaterialDialog,
     initial: {
       materialID: -1,
@@ -169,7 +185,16 @@ export function openMaterialBySerial(serial: string, openedByBarcode: boolean): 
       openedViaBarcodeScanner: openedByBarcode,
     } as MaterialDetail,
     pledge: LogBackend.logForSerial(serial),
-  };
+  } as PledgeToPromise<Action>;
+  let extra: ReadonlyArray<PledgeToPromise<Action>> = [];
+  if (serial !== "") {
+    extra = OtherLogBackends.map(b => ({
+        type: ActionType.LoadLogFromOtherServer,
+        pledge: b.logForSerial(serial)
+      } as PledgeToPromise<Action>)
+    );
+  }
+  return [mainLoad].concat(extra);
 }
 
 export interface ForceInspectionData {
@@ -437,11 +462,17 @@ function processEvents(evts: ReadonlyArray<Readonly<api.ILogEntry>>, mat: Materi
     }
   });
 
+  var allEvents =
+    im.Seq(mat.events)
+    .concat(evts)
+    .sortBy(e => e.endUTC)
+    .toArray();
+
   return {...mat,
     signaledInspections: inspTypes.toSeq().sort().toArray(),
     completedInspections: completedTypes.toSeq().sort().toArray(),
     loading_events: false,
-    events: evts,
+    events: allEvents,
   };
 }
 
@@ -454,7 +485,7 @@ export function reducer(s: State, a: Action): State {
           return {...s, material: a.initial, load_error: undefined};
 
         case PledgeStatus.Completed:
-          return {...s, material: processEvents(a.pledge.result, a.initial)};
+          return {...s, material: processEvents(a.pledge.result, s.material || a.initial)};
 
         case PledgeStatus.Error:
           return {...s,
@@ -468,6 +499,26 @@ export function reducer(s: State, a: Action): State {
         default:
           return s;
       }
+
+    case ActionType.LoadLogFromOtherServer:
+      if (a.pledge.status === PledgeStatus.Completed) {
+        if (s.material) {
+          return {...s,
+            material: {...s.material,
+              events:
+                im.Seq(s.material.events)
+                .concat(a.pledge.result)
+                .sortBy(e => e.endUTC)
+                .toArray()
+            }
+          };
+        } else {
+          return s; // happens if the dialog is closed before the response arrives
+        }
+      } else {
+        return s; // ignore starting and errors for other servers
+      }
+
     case ActionType.OpenMaterialDialogWithoutLoad:
       return {...s, material: a.mat};
 

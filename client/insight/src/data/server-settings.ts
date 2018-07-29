@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as api from './api';
-import { ServerBackend } from './backend';
+import { ServerBackend, setOtherLogBackends } from './backend';
 import { Pledge, PledgeStatus, ActionBeforeMiddleware } from '../store/middleware';
 
 export enum ActionType {
@@ -63,6 +63,10 @@ export const initial: State = {};
 
 async function loadInfo(): Promise<LoadReturn> {
   const fmsInfo = await ServerBackend.fMSInformation();
+
+  if (fmsInfo.additionalLogServers && fmsInfo.additionalLogServers.length > 0) {
+    setOtherLogBackends(fmsInfo.additionalLogServers);
+  }
 
   let url: string | undefined;
   let latestVersion: LatestInstaller | undefined;

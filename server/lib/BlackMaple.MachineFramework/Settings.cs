@@ -157,10 +157,17 @@ namespace BlackMaple.MachineFramework
         s.RequireScanAtWash = fmsSection.GetValue<bool>("RequireScanAtWash", false);
         s.RequireWorkorderBeforeAllowWashComplete = fmsSection.GetValue<bool>("RequireWorkorderBeforeAllowWashComplete", false);
         s.AdditionalLogServers =
-          fmsSection.GetValue<string>("AdditionalLogServers", "")
+          fmsSection.GetValue<string>("AdditionalServersForLogs", "")
           .Split(',')
-          .Select(x => x.Trim())
-          .Where(x => !string.IsNullOrEmpty(x))
+          .Where(x => !string.IsNullOrWhiteSpace(x))
+          .Select(x => {
+            var uri = new UriBuilder(x);
+            if (uri.Scheme == "") uri.Scheme = "http";
+            if (uri.Port == 80 && x.IndexOf(':') < 0) uri.Port = 5000;
+            var uriS = uri.Uri.ToString();
+            // remove trailing slash
+            return uriS.Substring(0, uriS.Length - 1);
+          })
           .ToList();
 
         s.InstructionFilePath = fmsSection.GetValue<string>("InstructionFilePath");

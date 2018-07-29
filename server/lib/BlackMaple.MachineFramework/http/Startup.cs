@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Threading;
 using BlackMaple.MachineWatchInterface;
@@ -108,6 +109,14 @@ namespace BlackMaple.MachineFramework
                 );
 
             services
+                .AddCors(options =>
+                    options.AddPolicy("AllowOtherLogServers", builder =>
+                        builder
+                        .WithOrigins(Program.FMSSettings.AdditionalLogServers.ToArray())
+                        .WithMethods("GET")
+                        .WithHeaders("content-type")
+                    )
+                )
                 .AddMvcCore(options => {
                     options.ModelBinderProviders.Insert(0, new DateTimeBinderProvider());
                 })
@@ -132,6 +141,7 @@ namespace BlackMaple.MachineFramework
             IServiceProvider services,
             Controllers.WebsocketManager wsManager)
         {
+            app.UseCors("AllowOtherLogServers");
             app.UseMiddleware(typeof(ErrorHandlingMiddleware));
             app.UseMvc();
             app.UseStaticFiles();
