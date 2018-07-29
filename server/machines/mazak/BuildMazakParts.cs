@@ -637,7 +637,7 @@ namespace MazakMachineInterface
             if (error == null || error == "")
               ret.Add(mazakPart);
             else
-              log.Add(error + " Skipping part.");
+              log.Add(error);
           }
 
         }
@@ -657,7 +657,7 @@ namespace MazakMachineInterface
             {
               log.Add("Part " + job.PartName + " has a path group where process 1 " +
                 "has more than one part in a group.  This configuration is not supported by" +
-                " the Mazak cell controller.  Skipping part.");
+                " the Mazak cell controller.");
               goto skipPart;
             }
 
@@ -698,7 +698,7 @@ namespace MazakMachineInterface
             if (error == null || error == "")
               ret.Add(mazakPart);
             else
-              log.Add(error + " Skipping part.");
+              log.Add(error);
           }
 
         }

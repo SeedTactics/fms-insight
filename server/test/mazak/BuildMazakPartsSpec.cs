@@ -116,7 +116,7 @@ namespace MachineWatchTest
 				"Fixt:3:1:10:1",
 				"Fixt:3:1:10:2",
 				"Fixt:3:2:20:1"
-			});
+			}, new[] {"Test"});
 
 			var trans = pMap.CreatePartPalletDatabaseRows();
 
@@ -234,7 +234,7 @@ namespace MachineWatchTest
 
 			CheckNewFixtures(pMap, new string[] {
 				"Fixt:3:2:20:1"
-			});
+			}, new [] {"Test"});
 
 			var trans = pMap.CreatePartPalletDatabaseRows();
 
@@ -326,7 +326,7 @@ namespace MachineWatchTest
 				"Fixt:3:1:10:2",
 				"Fixt:3:1:10:3",
 				"Fixt:3:2:20:1"
-			});
+			}, new [] {"Test"});
 
 			var trans = pMap.CreatePartPalletDatabaseRows();
 
@@ -427,7 +427,7 @@ namespace MachineWatchTest
 				"Fixt:3:1:10:2",
 				"Fixt:3:2:4:1",
 				"Fixt:3:2:4:2",
-			});
+			}, new[] {"Test"});
 
 			var trans = pMap.CreatePartPalletDatabaseRows();
 
@@ -525,6 +525,7 @@ namespace MachineWatchTest
 
 			CreatePart(dset, "Job4", "Part4", 1, "Test");
 			CreateProgram(dset, "1234");
+			CreateFixture(dset, "unusedfixture");
 
 			var pMap = ConvertJobsToMazakParts.JobsToMazak(
 				new JobPlan[] {job1, job2, job3, job4},
@@ -538,14 +539,17 @@ namespace MachineWatchTest
 			);
 			if (log.Count > 0) Assert.True(false, log[0]);
 
-			CheckNewFixtures(pMap, new string[] {
-				"Fixt:3:0:4:1",
-				"Fixt:3:0:4:2",
-				"Fixt:3:1:10:1",
-				"Fixt:3:1:10:2",
-				"Fixt:3:2:20:1",
-				"Fixt:3:3:30:1"
-			});
+			CheckNewFixtures(pMap,
+				new string[] {
+					"Fixt:3:0:4:1",
+					"Fixt:3:0:4:2",
+					"Fixt:3:1:10:1",
+					"Fixt:3:1:10:2",
+					"Fixt:3:2:20:1",
+					"Fixt:3:3:30:1"
+				},
+				new [] {"unusedfixture", "Test"}
+			);
 
 			var trans = pMap.CreatePartPalletDatabaseRows();
 
@@ -589,7 +593,7 @@ namespace MachineWatchTest
 		public void DifferentPallets()
 		{
 			//Test when processes have different pallet lists
-		    var job1 = new JobPlan("Job1", 2, new int[] {2, 2});
+			var job1 = new JobPlan("Job1", 2, new int[] {2, 2});
 			job1.PartName = "Part1";
 			job1.SetPathGroup(1, 1, 1);
 			job1.SetPathGroup(1, 2, 2);
@@ -827,7 +831,7 @@ namespace MachineWatchTest
 				"Fixt:3:fix3e:face1",
 				"Fixt:3:fix4:face1",
 				"Fixt:3:fix4e:face1",
-			});
+			}, new [] {"Test"});
 
 			var trans = pMap.CreatePartPalletDatabaseRows();
 
@@ -869,28 +873,105 @@ namespace MachineWatchTest
 			AssertPartsPalletsDeleted(trans);
 		}
 
-		[Fact(Skip="pending")]
-		public void DeleteCompletedParts()
+		[Fact]
+		public void DeleteUnusedPartsPals()
 		{
+			//Test when processes have different pallet lists
+			var job1 = new JobPlan("Job1", 2, new int[] {2, 2});
+			job1.PartName = "Part1";
+			job1.SetPathGroup(1, 1, 1);
+			job1.SetPathGroup(1, 2, 2);
+			job1.SetPathGroup(2, 1, 1);
+			job1.SetPathGroup(2, 2, 2);
 
+			job1.AddProcessOnPallet(1, 1, "4");
+			job1.AddProcessOnPallet(1, 1, "5");
+			job1.AddProcessOnPallet(1, 2, "10");
+			job1.AddProcessOnPallet(1, 2, "11");
+			job1.AddProcessOnPallet(1, 2, "12");
+			job1.AddProcessOnPallet(2, 1, "40");
+			job1.AddProcessOnPallet(2, 1, "50");
+			job1.AddProcessOnPallet(2, 2, "100");
+			job1.AddProcessOnPallet(2, 2, "110");
+			job1.AddProcessOnPallet(2, 2, "120");
+
+			AddBasicStopsWithProg(job1);
+
+			var dset = CreateReadSet();
+			CreateFixture(dset, "aaaa:1");
+			CreatePart(dset, "uniq1", "part1:1:1", 1, "aaaa");
+			CreatePart(dset, "uniq2", "part2:1:1", 1, "Test");
+			CreatePallet(dset, 5, "aaaa", 1); // this should be deleted since part1:1:1 is being deleted
+			CreatePallet(dset, 6, "Test", 1); // this should be kept because part2:1:1 is being kept
+			CreateProgram(dset, "1234");
+
+			var log = new List<string>();
+			var pMap = ConvertJobsToMazakParts.JobsToMazak(
+				new JobPlan[] {job1},
+				3,
+				dset,
+				new HashSet<string>() { "part2:1:1" },
+				MazakDbType.MazakVersionE,
+				checkPalletsUsedOnce: false,
+				fmsSettings: new FMSSettings(),
+				errors: log
+			);
+			if (log.Count > 0) Assert.True(false, log[0]);
+
+			var del = pMap.DeleteOldPartPalletRows();
+			del.Pallets.Should().BeEquivalentTo(new [] {
+				new MazakPalletRow()
+				{
+					PalletNumber = 5,
+					Fixture = "aaaa:1",
+					Command = MazakWriteCommand.Delete
+				}
+			});
+			dset.TestParts[0].Command = MazakWriteCommand.Delete;
+			del.Parts.Should().BeEquivalentTo(new [] {
+				dset.TestParts[0]
+			});
+			del.Fixtures.Should().BeEmpty();
+			del.Schedules.Should().BeEmpty();
 		}
 
-		[Fact(Skip="pending")]
-		public void DeleteOldFixtures()
+		[Fact]
+		public void ErrorsOnMissingProgram()
 		{
+			//Test when processes have different pallet lists
+			var job1 = new JobPlan("Job1", 2, new int[] {2, 2});
+			job1.PartName = "Part1";
+			job1.SetPathGroup(1, 1, 1);
+			job1.SetPathGroup(1, 2, 2);
+			job1.SetPathGroup(2, 1, 1);
+			job1.SetPathGroup(2, 2, 2);
 
-		}
+			job1.AddProcessOnPallet(1, 1, "4");
+			job1.AddProcessOnPallet(1, 2, "10");
+			job1.AddProcessOnPallet(2, 1, "40");
+			job1.AddProcessOnPallet(2, 2, "100");
 
-		[Fact(Skip="pending")]
-		public void ErrorsOnNonNumericPallet()
-		{
+			AddBasicStopsWithProg(job1);
 
-		}
+			var dset = CreateReadSet();
 
-		[Fact(Skip="pending")]
-		public void ErrorsOnInvalidQueues()
-		{
+			var log = new List<string>();
+			var pMap = ConvertJobsToMazakParts.JobsToMazak(
+				new JobPlan[] {job1},
+				3,
+				dset,
+				new HashSet<string>(),
+				MazakDbType.MazakVersionE,
+				checkPalletsUsedOnce: false,
+				fmsSettings: new FMSSettings(),
+				errors: log
+			);
 
+			log.Should().BeEquivalentTo(new[] {
+				// one for each process
+				"Part Part1 program 1234 does not exist in the cell controller.",
+				"Part Part1 program 1234 does not exist in the cell controller."
+			});
 		}
 
 		#region Checking
@@ -899,9 +980,10 @@ namespace MachineWatchTest
 			public List<MazakPartRow> TestParts {get;} = new List<MazakPartRow>();
 			public List<MazakFixtureRow> TestFixtures {get;} = new List<MazakFixtureRow>();
 			public List<MazakPalletRow> TestPallets {get;} = new List<MazakPalletRow>();
+			public List<MazakScheduleRow> TestSchedules {get;} = new List<MazakScheduleRow>();
 
 			public MazakTestData() {
-				Schedules = new List<MazakScheduleRow>();
+				Schedules = TestSchedules;
 				Parts = TestParts;
 				Fixtures = TestFixtures;
 				Pallets = TestPallets;
@@ -932,7 +1014,7 @@ namespace MachineWatchTest
 
 		private void CreateFixture(MazakTestData dset, string name)
 		{
-			dset.TestFixtures.Add(new MazakFixtureRow() {Comment = "comment", FixtureName = name});
+			dset.TestFixtures.Add(new MazakFixtureRow() {Comment = "Insight", FixtureName = name});
 		}
 
 		private void CreatePallet(MazakTestData dset, int pal, string fix, int numProc)
@@ -960,24 +1042,25 @@ namespace MachineWatchTest
 			}
 		}
 
-		private void CheckNewFixtures(MazakJobs map, ICollection<string> newFix)
+		private void CheckNewFixtures(MazakJobs map, ICollection<string> newFix, ICollection<string> delFix = null)
 		{
-			var trans = map.CreateDeleteFixtureDatabaseRows();
-
-			foreach (string fix in newFix) {
-				foreach (var row in trans.Fixtures.ToList()) {
-					if (row.FixtureName == fix) {
-						trans.Fixtures.Remove(row);
-						goto found;
-					}
-				}
-				Assert.True(false, "Did not create fixture " + fix);
-			found:;
-			}
-
-			foreach (var row in trans.Fixtures) {
-				Assert.True(false, "Extra fixture created: " + row.FixtureName);
-			}
+			var add = newFix
+				.Select(f => new MazakFixtureRow() {
+					FixtureName = f,
+					Comment = "Insight",
+					Command = MazakWriteCommand.Add
+				});
+			var del = (delFix ?? Enumerable.Empty<string>())
+				.Select(f => new MazakFixtureRow() {
+					FixtureName = f,
+					Comment = "Insight",
+					Command = MazakWriteCommand.Delete
+				});
+			var actions = map.CreateDeleteFixtureDatabaseRows();
+			actions.Fixtures.Should().BeEquivalentTo(add.Concat(del));
+			actions.Schedules.Should().BeEmpty();
+			actions.Parts.Should().BeEmpty();
+			actions.Pallets.Should().BeEmpty();
 		}
 
 		private void CheckPartProcess(MazakWriteData dset, string part, int proc, string fixture)
