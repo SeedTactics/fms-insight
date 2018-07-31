@@ -33,118 +33,108 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from 'react';
 import * as im from 'immutable';
-import * as api from '../../data/api';
+import {
+  MoveMaterialArrow,
+  MoveMaterialArrowData,
+  computeArrows,
+  MoveMaterialIdentifier,
+  MoveMaterialNodeKind
+} from '../../data/move-arrows';
 
-export type MoveMaterialDestination = string;
-export type MoveMaterialIdentifier = string;
-
-export interface MoveMaterialArrowData<T> {
-  readonly container: T | null;
-  readonly material: im.Map<MoveMaterialIdentifier, T>;
-  readonly destinations: im.Map<MoveMaterialDestination, T>;
-  readonly actions: im.Map<MoveMaterialIdentifier, Readonly<api.IInProcessMaterialAction>>;
-}
-
-export interface MoveMaterialArrow {
-  readonly fromX: number;
-  readonly fromY: number;
-  readonly toX: number;
-  readonly toY: number;
-}
-
-export function computeArrows(data: MoveMaterialArrowData<ClientRect>): ReadonlyArray<MoveMaterialArrow> {
-  return [];
-}
-
-export function arrowToPath(arr: MoveMaterialArrow): string {
-  const startControlX = 0;
-  const startControlY = 0;
-  const endControlX = 0;
-  const endControlY = 0;
-  const curve = `C ${startControlX},${startControlY} ${endControlX},${endControlY} ${arr.toX},${arr.fromX}`;
-
-  return `M${arr.fromX},${arr.fromY} ` + curve;
-}
-
-function elementToRect(e: Element): ClientRect {
-  var r = e.getBoundingClientRect();
-  return {
-    left: r.left + window.scrollX,
-    top: r.top + window.scrollY,
-    width: r.width,
-    height: r.height,
-    bottom: r.bottom + window.scrollY,
-    right: r.right + window.scrollX,
-  };
-}
-
-type MoveMaterialArrowContainerState = MoveMaterialArrowData<Element>;
-
-export class MoveMaterialArrowContainer extends React.Component<{}, MoveMaterialArrowContainerState> {
-  state = {
-    container: null,
-    material: im.Map<MoveMaterialIdentifier, Element>(),
-    actions: im.Map<MoveMaterialIdentifier, Readonly<api.IInProcessMaterialAction>>(),
-    destinations: im.Map<MoveMaterialDestination, Element>(),
-  } as MoveMaterialArrowContainerState;
-
-  registerMaterial = (id: MoveMaterialIdentifier) => (ref: Element | null) => {
-    if (ref) {
-      this.setState({material: this.state.material.set(id, ref)});
-    } else {
-      this.setState({material: this.state.material.remove(id)});
-    }
+export class MoveMaterialArrows extends React.PureComponent<MoveMaterialArrowData<Element>> {
+  static elementToRect(e: Element): ClientRect {
+    var r = e.getBoundingClientRect();
+    return {
+      left: r.left + window.scrollX,
+      top: r.top + window.scrollY,
+      width: r.width,
+      height: r.height,
+      bottom: r.bottom + window.scrollY,
+      right: r.right + window.scrollX,
+    };
   }
 
-  registerAction = (id: MoveMaterialIdentifier, action: Readonly<api.IInProcessMaterialAction> | null) => {
-    if (action) {
-      this.setState({actions: this.state.actions.set(id, action)});
-    } else {
-      this.setState({actions: this.state.actions.remove(id)});
-    }
+  static arrowToPath(arr: MoveMaterialArrow): string {
+    // mid point of line
+    const mpx = (arr.fromX + arr.toX) / 2;
+    const mpy = (arr.fromY + arr.toY) / 2;
+
+    // angle of perpendicular to line
+    const theta = Math.atan2(arr.toY - arr.fromY, arr.toX - arr.fromX) + Math.PI * arr.curveDirection / 2;
+
+    // control points
+    const cx = mpx + 50 * Math.cos(theta);
+    const cy = mpy + 50 * Math.sin(theta);
+
+    return `M${arr.fromX},${arr.fromY} Q ${cx} ${cy} ${arr.toX} ${arr.fromX}`;
   }
 
-  registerDestination = (id: MoveMaterialDestination) => (ref: Element | null) => {
-    if (ref) {
-      this.setState({destinations: this.state.destinations.set(id, ref)});
-    } else {
-      this.setState({destinations: this.state.destinations.remove(id)});
-    }
-  }
-
-  getChildContext = () => ({
-    registerMaterial: this.registerMaterial,
-    registerAction: this.registerAction,
-    registerDestination: this.registerDestination,
-  })
-
-  arrowElements(): JSX.Element {
-    const elemData = this.state;
+  render() {
     const data: MoveMaterialArrowData<ClientRect> = {
-      container: elemData.container !== null ? elementToRect(elemData.container) : null,
-      material: elemData.material.map(elementToRect),
-      destinations: elemData.destinations.map(elementToRect),
-      actions: elemData.actions
+      container: this.props.container !== null ? MoveMaterialArrows.elementToRect(this.props.container) : null,
+      nodes: this.props.nodes.map(MoveMaterialArrows.elementToRect),
+      node_type: this.props.node_type
     };
     const arrows = computeArrows(data);
 
     return (
-      <>
+      <g>
         {arrows.map((arr, idx) =>
           <path
             key={idx}
             style={{fill: "none", stroke: "rgba(0,0,0,0.5)", strokeWidth: 5}}
-            d={arrowToPath(arr)}
-            markerEnd={`url(${location.href}#arrow)`}
+            d={MoveMaterialArrows.arrowToPath(arr)}
+            markerEnd={`url(#arrow)`}
           />
         )}
-      </>
+      </g>
     );
+  }
+}
+
+interface MoveMaterialArrowContext {
+  readonly registerNode: (id: MoveMaterialIdentifier) => (ref: Element | null) => void;
+  readonly registerNodeKind: (id: MoveMaterialIdentifier, kind: MoveMaterialNodeKind | null) => void;
+}
+const MoveMaterialArrowCtx = React.createContext<MoveMaterialArrowContext | undefined>(undefined);
+
+export class MoveMaterialArrowContainer extends React.PureComponent<{}, MoveMaterialArrowData<Element>> {
+  state = {
+    container: null,
+    nodes: im.Map<MoveMaterialIdentifier, Element>(),
+    node_type: im.Map<MoveMaterialIdentifier, MoveMaterialNodeKind>(),
+  } as MoveMaterialArrowData<Element>;
+
+  readonly ctx: MoveMaterialArrowContext | undefined = undefined;
+
+  constructor(props: {}) {
+    super(props);
+    this.ctx = {
+      registerNode: this.registerNode,
+      registerNodeKind: this.registerNodeKind
+    };
+  }
+
+  registerNode = (id: MoveMaterialIdentifier) => (ref: Element | null) => {
+    if (ref) {
+      this.setState({nodes: this.state.nodes.set(id, ref)});
+    } else {
+      this.setState({
+        nodes: this.state.nodes.remove(id),
+        node_type: this.state.node_type.remove(id),
+      });
+    }
+  }
+
+  registerNodeKind = (id: MoveMaterialIdentifier, kind: MoveMaterialNodeKind | null) => {
+    if (kind) {
+      this.setState({node_type: this.state.node_type.set(id, kind)});
+    } else {
+      this.setState({node_type: this.state.node_type.remove(id)});
+    }
   }
 
   render() {
-    const arrowPath = "M0,0 L0,10 L6,5 z";
-    const arrows = this.arrowElements();
     return (
       <div style={{position: "relative"}}>
         <svg style={{position: 'absolute', width: '100%', height: '100%', top: 0, right: 0}}>
@@ -154,19 +144,64 @@ export class MoveMaterialArrowContainer extends React.Component<{}, MoveMaterial
               markerWidth={10}
               markerHeight={6}
               refX="0"
-              refY={5}
+              refY="5"
               orient="auto"
               markerUnits="strokeWidth"
             >
-              <path d={arrowPath} fill="rgba(0,0,0,0.5)" />
+              <path d="M0,0 L0,10 L6,5 z" fill="rgba(0,0,0,0.5)"/>
             </marker>
           </defs>
-          {arrows}
+          <MoveMaterialArrows {...this.state}/>
         </svg>
         <div ref={r => this.setState({container: r})}>
-          {this.props.children}
+          <MoveMaterialArrowCtx.Provider value={this.ctx}>
+            {this.props.children}
+          </MoveMaterialArrowCtx.Provider>
         </div>
       </div>
     );
   }
+}
+
+interface MoveMaterialArrowNodeProps {
+  readonly kind: MoveMaterialNodeKind | null;
+  readonly ctx: MoveMaterialArrowContext;
+}
+
+class MoveMaterialArrowNodeHelper extends React.PureComponent<MoveMaterialArrowNodeProps> {
+  readonly ident = Symbol("MoveMaterialArrowNode");
+
+  constructor(props: MoveMaterialArrowNodeProps) {
+    super(props);
+    if (props.kind) {
+      props.ctx.registerNodeKind(this.ident, props.kind);
+    }
+  }
+
+  componentDidUpdate(oldProps: MoveMaterialArrowNodeProps) {
+    if (oldProps.kind !== this.props.kind) {
+      this.props.ctx.registerNodeKind(this.ident, this.props.kind);
+    }
+  }
+
+  render() {
+    return (
+      <div ref={this.props.ctx.registerNode(this.ident)}>
+        {this.props.children}
+      </div>
+    );
+  }
+
+}
+
+export function MoveMaterialArrowNode(kind: MoveMaterialNodeKind | null, children?: JSX.Element) {
+  return (
+    <MoveMaterialArrowCtx.Consumer>
+      {ctx => ctx === undefined ? undefined :
+        <MoveMaterialArrowNodeHelper ctx={ctx} kind={kind}>
+          {children}
+        </MoveMaterialArrowNodeHelper>
+      }
+    </MoveMaterialArrowCtx.Consumer>
+  );
 }
