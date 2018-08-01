@@ -51,6 +51,8 @@ import SelectWorkorderDialog from './SelectWorkorder';
 import SetSerialDialog from './EnterSerial';
 import SelectInspTypeDialog from './SelectInspType';
 import SerialScanner from './QRScan';
+import { MoveMaterialArrowContainer, MoveMaterialArrowNode } from './MoveMaterialArrows';
+import { MoveMaterialNodeKindType } from '../../data/move-arrows';
 
 const palletStyles = withStyles(() => ({
   palletContainerFill: {
@@ -97,11 +99,19 @@ export const PalletColumn = palletStyles<LoadStationProps>(props => {
     const mat = props.data.face.first();
     palDetails = (
       <div className={props.classes.faceContainer}>
-        <WhiteboardRegion label={""} spaceAround>
-          { (mat || []).map((m, idx) =>
-            <InProcMaterial key={idx} mat={m} onOpen={props.openMat}/>)
-          }
-        </WhiteboardRegion>
+        <MoveMaterialArrowNode type={MoveMaterialNodeKindType.PalletFaceZone} face={maxFace || 1}>
+          <WhiteboardRegion label={""} spaceAround>
+            { (mat || []).map((m, idx) =>
+              <MoveMaterialArrowNode
+                key={idx}
+                type={MoveMaterialNodeKindType.Material}
+                action={m.action}
+              >
+                <InProcMaterial mat={m} onOpen={props.openMat}/>
+              </MoveMaterialArrowNode>)
+            }
+          </WhiteboardRegion>
+        </MoveMaterialArrowNode>
       </div>
     );
   } else {
@@ -110,11 +120,20 @@ export const PalletColumn = palletStyles<LoadStationProps>(props => {
         {
           props.data.face.toSeq().sortBy((data, face) => face).map((data, face) =>
             <div key={face}>
-              <WhiteboardRegion label={"Face " + face.toString()} spaceAround>
-                { data.map((m, idx) =>
-                  <InProcMaterial key={idx} mat={m} onOpen={props.openMat}/>)
-                }
-              </WhiteboardRegion>
+              <MoveMaterialArrowNode type={MoveMaterialNodeKindType.PalletFaceZone} face={face}>
+                <WhiteboardRegion label={"Face " + face.toString()} spaceAround>
+                  { data.map((m, idx) =>
+                    <MoveMaterialArrowNode
+                      key={idx}
+                      type={MoveMaterialNodeKindType.Material}
+                      action={m.action}
+                    >
+                      <InProcMaterial mat={m} onOpen={props.openMat}/>
+                    </MoveMaterialArrowNode>
+                    )
+                  }
+                </WhiteboardRegion>
+              </MoveMaterialArrowNode>
               {face === maxFace ? undefined : <Divider key={1}/>}
             </div>
           ).valueSeq()
@@ -126,8 +145,14 @@ export const PalletColumn = palletStyles<LoadStationProps>(props => {
   return (
     <>
       <WhiteboardRegion label="Raw Material" spaceAround>
-        { props.data.castings.map((m, idx) =>
-          <InProcMaterial key={idx} mat={m} onOpen={props.openMat}/>)
+        { props.data.castings.map((m, idx) => (
+          <MoveMaterialArrowNode
+            key={idx}
+            type={MoveMaterialNodeKindType.Material}
+            action={m.action}
+          >
+            <InProcMaterial mat={m} onOpen={props.openMat}/>
+          </MoveMaterialArrowNode>))
         }
       </WhiteboardRegion>
       <Divider/>
@@ -142,7 +167,9 @@ export const PalletColumn = palletStyles<LoadStationProps>(props => {
         {palDetails}
       </div>
       <Divider/>
-      <WhiteboardRegion label="Completed Material"/>
+      <MoveMaterialArrowNode type={MoveMaterialNodeKindType.CompletedMaterialZone}>
+        <WhiteboardRegion label="Completed Material"/>
+      </MoveMaterialArrowNode>
     </>
   );
 });
@@ -260,6 +287,7 @@ export const LoadStation = loadStyles<LoadStationProps>(props => {
     .map((mats, q) => ({
       label: q,
       material: mats,
+      isFree: false
     }))
     .valueSeq();
 
@@ -268,6 +296,7 @@ export const LoadStation = loadStyles<LoadStationProps>(props => {
     cells = im.Seq([{
       label: "In Process Material",
       material: props.data.free,
+      isFree: true
     }]).concat(queues);
   }
 
@@ -276,54 +305,89 @@ export const LoadStation = loadStyles<LoadStationProps>(props => {
 
   return (
     <DocumentTitle title={"Load " + props.data.loadNum.toString() + " - FMS Insight"}>
-      <main className={props.fillViewPort ? props.classes.mainFillViewport : props.classes.mainScrollable}>
-        <div className={props.classes.palCol}>
-          <PalletColumn {...palProps}/>
-        </div>
-        {
-          col1.size === 0 ? undefined :
-          <div className={props.classes.queueCol}>
-            {
-              col1.map((mat, idx) => (
-                <WhiteboardRegion key={idx} label={mat.label}>
-                  { mat.material.map((m, matIdx) =>
-                    <InProcMaterial
-                      key={matIdx}
-                      mat={m}
-                      onOpen={props.openMat}
-                      displaySinglePallet={props.data.pallet ? props.data.pallet.pallet : ""}
-                    />)
-                  }
-                </WhiteboardRegion>
-              ))
-            }
+      <MoveMaterialArrowContainer>
+        <main className={props.fillViewPort ? props.classes.mainFillViewport : props.classes.mainScrollable}>
+          <div className={props.classes.palCol}>
+            <PalletColumn {...palProps}/>
           </div>
-        }
-        {
-          col2.size === 0 ? undefined :
-          <div className={props.classes.queueCol}>
-            {
-              col2.map((mat, idx) => (
-                <WhiteboardRegion key={idx} label={mat.label}>
-                  { mat.material.map((m, matIdx) =>
-                    <InProcMaterial
-                      key={matIdx}
-                      mat={m}
-                      onOpen={props.openMat}
-                      displaySinglePallet={props.data.pallet ? props.data.pallet.pallet : ""}
-                    />)
-                  }
-                </WhiteboardRegion>
-              ))
-            }
-          </div>
-        }
-        <SelectWorkorderDialog/>
-        <SetSerialDialog/>
-        <SelectInspTypeDialog/>
-        <ConnectedMaterialDialog/>
-        <SerialScanner/>
-      </main>
+          {
+            col1.size === 0 ? undefined :
+            <div className={props.classes.queueCol}>
+              {
+                col1.map((mat, idx) => (
+                  <MoveMaterialArrowNode
+                    key={idx}
+                    {... mat.isFree
+                        ? {type: MoveMaterialNodeKindType.FreeMaterialZone}
+                        : {type: MoveMaterialNodeKindType.QueueZone, queue: mat.label}
+                    }
+                  >
+                    <WhiteboardRegion label={mat.label}>
+                      { mat.material.map((m, matIdx) =>
+                        <MoveMaterialArrowNode
+                          key={matIdx}
+                          type={MoveMaterialNodeKindType.Material}
+                          action={
+                            props.data.pallet && m.action.loadOntoPallet === props.data.pallet.pallet
+                              ? m.action : null
+                          }
+                        >
+                          <InProcMaterial
+                            key={matIdx}
+                            mat={m}
+                            onOpen={props.openMat}
+                            displaySinglePallet={props.data.pallet ? props.data.pallet.pallet : ""}
+                          />
+                        </MoveMaterialArrowNode>)
+                      }
+                    </WhiteboardRegion>
+                  </MoveMaterialArrowNode>
+                ))
+              }
+            </div>
+          }
+          {
+            col2.size === 0 ? undefined :
+            <div className={props.classes.queueCol}>
+              {
+                col2.map((mat, idx) => (
+                  <MoveMaterialArrowNode
+                    key={idx}
+                    {... mat.isFree
+                        ? {type: MoveMaterialNodeKindType.FreeMaterialZone}
+                        : {type: MoveMaterialNodeKindType.QueueZone, queue: mat.label}
+                    }
+                  >
+                    <WhiteboardRegion label={mat.label}>
+                      { mat.material.map((m, matIdx) =>
+                        <MoveMaterialArrowNode
+                          key={matIdx}
+                          type={MoveMaterialNodeKindType.Material}
+                          action={
+                            props.data.pallet && m.action.loadOntoPallet === props.data.pallet.pallet
+                              ? m.action : null
+                          }
+                        >
+                          <InProcMaterial
+                            mat={m}
+                            onOpen={props.openMat}
+                            displaySinglePallet={props.data.pallet ? props.data.pallet.pallet : ""}
+                          />
+                        </MoveMaterialArrowNode>)
+                      }
+                    </WhiteboardRegion>
+                  </MoveMaterialArrowNode>
+                ))
+              }
+            </div>
+          }
+          <SelectWorkorderDialog/>
+          <SetSerialDialog/>
+          <SelectInspTypeDialog/>
+          <ConnectedMaterialDialog/>
+          <SerialScanner/>
+        </main>
+      </MoveMaterialArrowContainer>
     </DocumentTitle>
   );
 });

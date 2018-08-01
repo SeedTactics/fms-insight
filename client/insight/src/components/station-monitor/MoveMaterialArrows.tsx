@@ -66,7 +66,7 @@ export class MoveMaterialArrows extends React.PureComponent<MoveMaterialArrowDat
     const cx = mpx + 50 * Math.cos(theta);
     const cy = mpy + 50 * Math.sin(theta);
 
-    return `M${arr.fromX},${arr.fromY} Q ${cx} ${cy} ${arr.toX} ${arr.fromX}`;
+    return `M${arr.fromX},${arr.fromY} Q ${cx} ${cy} ${arr.toX} ${arr.toY}`;
   }
 
   render() {
@@ -82,7 +82,7 @@ export class MoveMaterialArrows extends React.PureComponent<MoveMaterialArrowDat
         {arrows.map((arr, idx) =>
           <path
             key={idx}
-            style={{fill: "none", stroke: "rgba(0,0,0,0.5)", strokeWidth: 5}}
+            style={{fill: "none", stroke: "rgba(0,0,0,0.5)", strokeWidth: 2}}
             d={MoveMaterialArrows.arrowToPath(arr)}
             markerEnd={`url(#arrow)`}
           />
@@ -110,27 +110,29 @@ export class MoveMaterialArrowContainer extends React.PureComponent<{}, MoveMate
   constructor(props: {}) {
     super(props);
     this.ctx = {
-      registerNode: this.registerNode,
-      registerNodeKind: this.registerNodeKind
+      registerNode: this.registerNode.bind(this),
+      registerNodeKind: this.registerNodeKind.bind(this)
     };
   }
 
-  registerNode = (id: MoveMaterialIdentifier) => (ref: Element | null) => {
-    if (ref) {
-      this.setState({nodes: this.state.nodes.set(id, ref)});
-    } else {
-      this.setState({
-        nodes: this.state.nodes.remove(id),
-        node_type: this.state.node_type.remove(id),
-      });
-    }
+  registerNode(id: MoveMaterialIdentifier) {
+    return (ref: Element | null) => {
+      if (ref) {
+        this.setState(s => ({nodes: s.nodes.set(id, ref)}));
+      } else {
+        this.setState(s => ({
+          nodes: s.nodes.remove(id),
+          node_type: s.node_type.remove(id),
+        }));
+      }
+    };
   }
 
-  registerNodeKind = (id: MoveMaterialIdentifier, kind: MoveMaterialNodeKind | null) => {
+  registerNodeKind(id: MoveMaterialIdentifier, kind: MoveMaterialNodeKind | null) {
     if (kind) {
-      this.setState({node_type: this.state.node_type.set(id, kind)});
+      this.setState(s => ({node_type: s.node_type.set(id, kind)}));
     } else {
-      this.setState({node_type: this.state.node_type.remove(id)});
+      this.setState(s => ({node_type: s.node_type.remove(id)}));
     }
   }
 
@@ -141,14 +143,14 @@ export class MoveMaterialArrowContainer extends React.PureComponent<{}, MoveMate
           <defs>
             <marker
               id="arrow"
-              markerWidth={10}
-              markerHeight={6}
+              markerWidth={6}
+              markerHeight={10}
               refX="0"
-              refY="5"
+              refY="3"
               orient="auto"
               markerUnits="strokeWidth"
             >
-              <path d="M0,0 L0,10 L6,5 z" fill="rgba(0,0,0,0.5)"/>
+              <path d="M0,0 L0,6 L5,3 z" fill="rgba(0,0,0,0.5)"/>
             </marker>
           </defs>
           <MoveMaterialArrows {...this.state}/>
@@ -163,22 +165,20 @@ export class MoveMaterialArrowContainer extends React.PureComponent<{}, MoveMate
   }
 }
 
-interface MoveMaterialArrowNodeProps {
-  readonly kind: MoveMaterialNodeKind | null;
+interface MoveMaterialArrowNodeHelperProps {
+  readonly kind: MoveMaterialNodeKind;
   readonly ctx: MoveMaterialArrowContext;
 }
 
-class MoveMaterialArrowNodeHelper extends React.PureComponent<MoveMaterialArrowNodeProps> {
+class MoveMaterialArrowNodeHelper extends React.PureComponent<MoveMaterialArrowNodeHelperProps> {
   readonly ident = Symbol("MoveMaterialArrowNode");
 
-  constructor(props: MoveMaterialArrowNodeProps) {
+  constructor(props: MoveMaterialArrowNodeHelperProps) {
     super(props);
-    if (props.kind) {
-      props.ctx.registerNodeKind(this.ident, props.kind);
-    }
+    props.ctx.registerNodeKind(this.ident, props.kind);
   }
 
-  componentDidUpdate(oldProps: MoveMaterialArrowNodeProps) {
+  componentDidUpdate(oldProps: MoveMaterialArrowNodeHelperProps) {
     if (oldProps.kind !== this.props.kind) {
       this.props.ctx.registerNodeKind(this.ident, this.props.kind);
     }
@@ -191,17 +191,19 @@ class MoveMaterialArrowNodeHelper extends React.PureComponent<MoveMaterialArrowN
       </div>
     );
   }
-
 }
 
-export function MoveMaterialArrowNode(kind: MoveMaterialNodeKind | null, children?: JSX.Element) {
-  return (
-    <MoveMaterialArrowCtx.Consumer>
-      {ctx => ctx === undefined ? undefined :
-        <MoveMaterialArrowNodeHelper ctx={ctx} kind={kind}>
-          {children}
-        </MoveMaterialArrowNodeHelper>
-      }
-    </MoveMaterialArrowCtx.Consumer>
-  );
+export class MoveMaterialArrowNode extends React.PureComponent<MoveMaterialNodeKind> {
+  render() {
+    const {children, ...kind} = this.props;
+    return (
+      <MoveMaterialArrowCtx.Consumer>
+        {ctx => ctx === undefined ? undefined :
+          <MoveMaterialArrowNodeHelper ctx={ctx} kind={kind}>
+            {children}
+          </MoveMaterialArrowNodeHelper>
+        }
+      </MoveMaterialArrowCtx.Consumer>
+    );
+  }
 }

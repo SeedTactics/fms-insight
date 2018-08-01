@@ -45,7 +45,7 @@ export enum MoveMaterialNodeKindType {
 }
 
 export type MoveMaterialNodeKind =
-  | { readonly type: MoveMaterialNodeKindType.Material, readonly action: Readonly<api.IInProcessMaterialAction> }
+  | { readonly type: MoveMaterialNodeKindType.Material, readonly action: Readonly<api.IInProcessMaterialAction> | null }
   | { readonly type: MoveMaterialNodeKindType.FreeMaterialZone }
   | { readonly type: MoveMaterialNodeKindType.CompletedMaterialZone }
   | { readonly type: MoveMaterialNodeKindType.PalletFaceZone, readonly face: number }
@@ -90,7 +90,11 @@ function buildMatByKind(data: MoveMaterialArrowData<ClientRect>): MoveMaterialBy
         case MoveMaterialNodeKindType.QueueZone:
           return {...acc, queues: acc.queues.set(kind.queue, node) };
         case MoveMaterialNodeKindType.Material:
-          return {...acc, material: acc.material.push([node, kind.action])};
+          if (kind.action) {
+            return {...acc, material: acc.material.push([node, kind.action])};
+          } else {
+            return acc;
+          }
       }
     },
     {
@@ -114,10 +118,12 @@ export function computeArrows(data: MoveMaterialArrowData<ClientRect>): Readonly
       switch (action.type) {
         case api.ActionType.UnloadToCompletedMaterial:
           return {
-            fromX: rect.left + rect.width / 2,
-            fromY: rect.bottom + 2,
-            toX: rect.left + rect.width / 2,
-            toY: byKind.completedMaterial ? byKind.completedMaterial.top + 10 : container.bottom + 10,
+            fromX: rect.left,
+            fromY: rect.top + rect.height / 2,
+            toX: rect.left,
+            toY: byKind.completedMaterial
+              ? byKind.completedMaterial.top + byKind.completedMaterial.height / 2
+              : container.bottom - 10,
             curveDirection: 1,
           } as MoveMaterialArrow;
         case api.ActionType.UnloadToInProcess:
@@ -128,9 +134,9 @@ export function computeArrows(data: MoveMaterialArrowData<ClientRect>): Readonly
             dest = byKind.freeMaterial;
           }
           return {
-            fromX: rect.right + 2,
+            fromX: rect.right,
             fromY: rect.top + rect.height / 2,
-            toX: dest ? dest.left + 10 : container.right - 10,
+            toX: dest ? dest.left - 5 : container.right - 2,
             toY: dest ? dest.top + dest.height / 2 : rect.top + rect.height / 2,
             curveDirection: 1,
           } as MoveMaterialArrow;
@@ -138,11 +144,11 @@ export function computeArrows(data: MoveMaterialArrowData<ClientRect>): Readonly
           if (action.loadOntoFace) {
             const face = byKind.faces.get(action.loadOntoFace);
             if (face) {
+              const fromQueue = rect.left > face.right;
               return {
-                // fromX,Y should detect when coming from queue
-                fromX: rect.left + rect.width / 2,
-                fromY: rect.bottom + 2,
-                toX: rect.left + rect.width / 2,
+                fromX: rect.left,
+                fromY: rect.top + rect.height / 2,
+                toX: fromQueue ? face.right - 10 : rect.left,
                 toY: face.top + 10,
                 curveDirection: 1,
               } as MoveMaterialArrow;
@@ -154,5 +160,12 @@ export function computeArrows(data: MoveMaterialArrowData<ClientRect>): Readonly
     }
   )
   .filter((e): e is MoveMaterialArrow => e !== null)
+  .map(arr => ({
+    fromX: arr.fromX - container.left,
+    fromY: arr.fromY - container.top,
+    toX: arr.toX - container.left,
+    toY: arr.toY - container.top,
+    curveDirection: arr.curveDirection,
+  }))
   .toArray();
 }
