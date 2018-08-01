@@ -41,7 +41,7 @@ export interface State {
 }
 
 export const initial: State = {
-  websocket_reconnecting: true
+  websocket_reconnecting: process.env.REACT_APP_MOCK_DATA ? false : true
 };
 
 export enum ActionType {

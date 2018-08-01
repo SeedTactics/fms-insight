@@ -41,6 +41,7 @@ import * as operators from '../data/operators';
 import * as serverSettings from '../data/server-settings';
 import * as ccp from '../data/cost-per-piece';
 import * as websocket from './websocket';
+import { initMockData } from '../data/mock-data';
 
 import { pledgeMiddleware, arrayMiddleware, ActionBeforeMiddleware } from './middleware';
 import * as tstore from './typed-store';
@@ -140,7 +141,11 @@ export function initStore() {
     )
   );
 
-  websocket.openWebsocket(a => store.dispatch(a), () => store.getState().Events);
+  if (process.env.REACT_APP_MOCK_DATA) {
+    initMockData(a => store.dispatch(a));
+  } else {
+    websocket.openWebsocket(a => store.dispatch(a), () => store.getState().Events);
+  }
   initBarcodeListener(a => store.dispatch(a as redux.Action));
 
   const operatorOnStateChange = operators.createOnStateChange();

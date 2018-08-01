@@ -60,6 +60,23 @@
             "problemMatcher": []
         },
         {
+            "label": "insight-mock-data:dev",
+            "command": "yarn start",
+            "options": {
+                "cwd": "${workspaceFolder}/client/insight",
+                "env": {
+                    "BROWSER": "no",
+                    "REACT_APP_MOCK_DATA": "true"
+                }
+            },
+            "type": "shell",
+            "presentation": {
+                "reveal": "silent",
+                "panel": "dedicated"
+            },
+            "problemMatcher": []
+        },
+        {
             "label": "docs:dev",
             "command": "yarn start",
             "options": {
