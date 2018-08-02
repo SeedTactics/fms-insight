@@ -109,7 +109,9 @@ function Header(p: HeaderProps) {
         <Tab label="Station Monitor" value={TabType.StationMonitor}/>
         <Tab label="Efficiency" value={TabType.Efficiency}/>
         <Tab label="Cost/Piece" value={TabType.CostPerPiece}/>
-        <Tab label="Data Export" value={TabType.DataExport}/>
+        { process.env.REACT_APP_MOCK_DATA ? undefined :
+          <Tab label="Data Export" value={TabType.DataExport}/>
+        }
       </Tabs>
     );
 

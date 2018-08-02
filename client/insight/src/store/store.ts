@@ -100,12 +100,14 @@ export const mkAC: ActionCreatorFactory =
 
 export function initStore() {
   const history = createHistory();
-  const router = connectRoutes(
-    history,
-    routes.routeMap,
-    {
-      querySerializer: queryString
-    });
+  const router =
+    process.env.REACT_APP_MOCK_DATA ? undefined :
+    connectRoutes(
+      history,
+      routes.routeMap,
+      {
+        querySerializer: queryString
+      });
 
   /* tslint:disable */
   const devTools =
@@ -126,19 +128,28 @@ export function initStore() {
         Operators: operators.reducer,
         ServerSettings: serverSettings.reducer,
         CostPerPiece: ccp.reducer,
-        location: router.reducer,
+        location: router ? router.reducer : (s: object, a: object) => s || {},
       // tslint:disable-next-line:no-any
       } as any // bug in typescript types for combineReducers
     ),
-    compose(
-      router.enhancer,
-      applyMiddleware(
-          arrayMiddleware,
-          pledgeMiddleware,
-          router.middleware
-      ),
-      devTools
-    )
+    router ?
+      compose(
+        router.enhancer,
+        applyMiddleware(
+            arrayMiddleware,
+            pledgeMiddleware,
+            router.middleware
+        ),
+        devTools
+      )
+      :
+      compose(
+        applyMiddleware(
+            arrayMiddleware,
+            pledgeMiddleware,
+        ),
+        devTools
+      )
   );
 
   if (process.env.REACT_APP_MOCK_DATA) {

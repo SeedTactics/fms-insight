@@ -35,7 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as api from './api';
 import * as im from 'immutable';
-import { addSeconds, differenceInSeconds } from 'date-fns';
+import { addSeconds, differenceInSeconds, addDays } from 'date-fns';
 import * as events from './events';
 import * as current from './current-status';
 
@@ -69,8 +69,8 @@ function parseEvts(raw: string, offsetSeconds: number): im.Seq.Indexed<api.LogEn
 // tslint:disable-next-line:no-any
 export function initMockData(d: (a: any) => void) {
   if (process.env.REACT_APP_MOCK_DATA) {
-    const jan18 = new Date(Date.UTC(2018, 1, 1, 0, 0, 0));
-    const offsetSeconds = differenceInSeconds(new Date(), jan18);
+    const jan18 = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
+    const offsetSeconds = differenceInSeconds(addDays(new Date(), -28), jan18);
 
     const statusJson = require("../sample-data/status-mock.json");
     const status = api.CurrentStatus.fromJS(statusJson);
@@ -122,6 +122,7 @@ export function initMockData(d: (a: any) => void) {
           require("raw-loader!../sample-data/events-insp-results.json"),
           offsetSeconds)
       )
+      .sortBy(e => e.endUTC)
       .toArray();
 
     initMockBackend(
