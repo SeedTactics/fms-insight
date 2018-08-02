@@ -119,7 +119,10 @@ test_script:
     Remove-Item env:REACT_APP_MOCK_DATA
     $env:CI = "true"
     yarn --cwd client/insight test 2>&1 | Write-Host
-    if ($? -ne 0) { exit $? }
+    if ($? -ne 0) {
+        Write-Host "Exit code is $?"
+        exit $?
+    }
 
 artifacts:
   - path: '**/*.nupkg'
