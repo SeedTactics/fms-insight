@@ -107,6 +107,7 @@ build_script:
     $env:REACT_APP_MOCK_DATA = "true"
     $env:PUBLIC_URL = "/demo"
     yarn --cwd client/insight build
+    Remove-Item env:REACT_APP_MOCK_DATA
     yarn --cwd website install
     yarn --cwd website run build
     Copy-Item "client\insight\build\*" -Destination "website\build\fms-insight\demo" -Recurse -Force
@@ -115,9 +116,8 @@ build_script:
 test_script:
 - ps: dotnet test server/test
 
-- ps: |
-    Remove-Item env:REACT_APP_MOCK_DATA
-    $env:CI = "true"
+- cmd: |
+    setx /m CI "true"
     yarn --cwd client/insight test
 
 artifacts:
