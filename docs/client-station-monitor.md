@@ -38,7 +38,10 @@ the queue can be displayed along with the pallet regions.
 
 When a material sticky note is clicked or tapped, a dialog will open with a log of events for the
 piece of material.  In the dialog, a serial can be entered or changed, the part can be
-marked for inspection, and assigned to a workorder.
+marked for inspection, assigned to a workorder, and [load instructions](part-instructions.md) can
+be opened.
+An attached [barcode scanner](client-scanners.md) can also be used to open the material
+dialog.
 
 ## Queues
 
@@ -56,6 +59,8 @@ scan a barcode, or manually select a job for the added material.
 By clicking or tapping on a material sticky note, a dialog will open with
 details about the specific piece of material. The dialog will have a button
 at the bottom labeled "Remove From Queue".
+An attached [barcode scanner](client-scanners.md) can also be used to open the material
+dialog.
 
 ## Inspection
 
@@ -76,10 +81,11 @@ successfully inspected or failed. When clicked or tapped, this will record an
 event in the log and move the virtual sticky note from the left to the right.
 The top toolbar on the right allows an operator name to be entered and this
 operator name will be attached to the created inspection completed log entry.
+Finally, the operator can open [inspection instructions](part-instructions.md).
 
-Finally, an attached barcode scanner can also be used to open the material
+An attached [barcode scanner](client-scanners.md) can also be used to open the material
 dialog. This allows viewing details and marking as inspected or uninspected
-any part by scanned serial.
+any part by scanned serial (even if the part is not on the screen because more than 36 hours has passed).
 
 ## Wash
 
@@ -96,11 +102,12 @@ log of events for the piece of material. There is a button to mark a piece of
 material as completing wash. When clicked or tapped, this will record an
 event in the log and move the virtual sticky note from the left to the right.
 The top toolbar on the right allows an operator name to be entered and this
-operator name will be attached to the created inspection completed log entry.
+operator name will be attached to the created wash completed log entry.
+Finally, the operator can open [wash instructions](part-instructions.md).
 
-Finally, an attached barcode scanner can also be used to open the material
-dialog. This allows viewing details and marking as inspected or uninspected
-any part by scanned serial.
+An attached [barcode scanner](client-scanners.md) can also be used to open the material
+dialog. This allows viewing details and marking as wash completed
+any part by scanned serial (even if the part is not on the screen because more than 36 hours has passed).
 
 ## All Material
 
