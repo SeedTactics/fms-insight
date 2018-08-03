@@ -139,13 +139,24 @@ function Header(p: HeaderProps) {
     const largeAppBar = (
       <AppBar position="static">
         <Toolbar>
-          <Tooltip title={tooltip}>
-            <img
-              src="/seedtactics-logo.svg"
-              alt="Logo"
-              style={{height: '30px', marginRight: '1em'}}
-            />
-          </Tooltip>
+          { process.env.REACT_APP_MOCK_DATA
+            ?
+              <a href="/">
+                <img
+                  src="/demo/seedtactics-logo.svg"
+                  alt="Logo"
+                  style={{height: '30px', marginRight: '1em'}}
+                />
+              </a>
+            :
+              <Tooltip title={tooltip}>
+                <img
+                  src="/seedtactics-logo.svg"
+                  alt="Logo"
+                  style={{height: '30px', marginRight: '1em'}}
+                />
+              </Tooltip>
+          }
           <Typography variant="title" style={{'marginRight': '2em'}}>Insight</Typography>
           {tabs(false)}
           <LoadingIcon/>
