@@ -4,17 +4,18 @@ title: Getting Started
 sidebar_label: Getting Started
 ---
 
-FMS Insight is a program which runs on an flexible machining system (FMS)
-cell controller which provides a server which logs and interacts with the cell
-controller and an HTML client which displays a dashboard, station monitor, and
-data analytics.
+FMS Insight is a program which runs on a flexible machining system (FMS)
+cell controller which provides material tracking by serial, operator instructions
+and data displays for loading/unloading, inspection decisions, data analytics to improve
+the performance, and simplify job data creation in the cell controller.
+Learn more in the [overview](overview.md).
+
+## Downloads
 
 The simplest configuration is to install FMS Insight directly on the cell
 controller itself. FMS Insight requires .NET Framework
 4.6.1, which is pre-installed on Windows 7 and 10 so typically no dependencies
 must be installed first.
-
-## Downloads
 
 The following are links to the latest installers for FMS Insight for each supported cell controller.
 The installers will also upgrade an existing install to the latest version.
@@ -59,9 +60,10 @@ on the factory floor by operators throughout the processes. The station
 monitor screens are designed with touch-screens in mind, so we suggest either
 mounting tablets or small touchscreen computers at various stations on the
 factory floor. At these stations, the operator can view instructions and
-details about the current operation and parts can be marked for inspection,
-marked with a serial, record or the completion of inspection or wash.  Barcode
-readers and scanners can be attached to make operator data entry a breeze.
+details about the current operation, parts can be signaled for inspection,
+marked with a serial, and the operator can record the completion of an
+inspection or wash. Barcode readers and scanners can be attached to make
+operator data entry a breeze.
 
 ## Automatic job download
 
