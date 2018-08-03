@@ -75,6 +75,9 @@ class Footer extends React.Component {
             <a href={this.docUrl('client-launch.html', this.props.language)}>
               Client
             </a>
+            <a href="/demo/index.html">
+              Demo
+            </a>
           </div>
           <div>
             <h5>More</h5>
