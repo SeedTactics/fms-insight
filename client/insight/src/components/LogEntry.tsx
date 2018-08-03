@@ -220,8 +220,8 @@ export class LogEntries extends React.PureComponent<LogEntriesProps> {
         </TableHead>
         <TableBody>
           {
-            this.props.entries.map(e => (
-              <LogEntry key={e.counter} entry={e}/>
+            this.props.entries.map((e, idx) => (
+              <LogEntry key={idx} entry={e}/>
             ))
           }
         </TableBody>
