@@ -123,6 +123,20 @@ export function initMockData(d: (a: any) => void) {
           offsetSeconds)
       )
       .sortBy(e => e.endUTC)
+      .filter(e => {
+        if (e.type === api.LogType.InspectionResult) {
+          // filter out a couple inspection results so they are uninspected
+          // and display as uninspected on the station monitor screen
+          var mid = e.material[0].id;
+          if (mid === 2993 || mid === 2974) {
+            return false;
+          } else {
+            return true;
+          }
+        } else {
+          return true;
+        }
+      })
       .toArray();
 
     initMockBackend(

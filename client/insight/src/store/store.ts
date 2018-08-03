@@ -46,6 +46,7 @@ import { initMockData } from '../data/mock-data';
 import { pledgeMiddleware, arrayMiddleware, ActionBeforeMiddleware } from './middleware';
 import * as tstore from './typed-store';
 
+import * as im from 'immutable';
 import { connectRoutes, LocationState } from 'redux-first-router';
 import createHistory from 'history/createBrowserHistory';
 import * as queryString from 'query-string';
@@ -110,10 +111,14 @@ export function initStore() {
       });
 
   /* tslint:disable */
-  const devTools =
-    (window as any)['__REDUX_DEVTOOLS_EXTENSION__']
-    ? (window as any)['__REDUX_DEVTOOLS_EXTENSION__']()
-    : (f: any) => f;
+  const composeEnhancers =
+    typeof window === 'object' &&
+    (window as any)['__REDUX_DEVTOOLS_EXTENSION_COMPOSE__'] ?
+      (window as any)['__REDUX_DEVTOOLS_EXTENSION_COMPOSE__']({
+        serialize: {
+          immutable: im
+        }
+      }) : compose;
   /* tslint:enable */
 
   const store = createStore<Store, AppAction, {}, {}>(
@@ -133,22 +138,20 @@ export function initStore() {
       } as any // bug in typescript types for combineReducers
     ),
     router ?
-      compose(
+      composeEnhancers(
         router.enhancer,
         applyMiddleware(
             arrayMiddleware,
             pledgeMiddleware,
             router.middleware
-        ),
-        devTools
+        )
       )
       :
-      compose(
+      composeEnhancers(
         applyMiddleware(
             arrayMiddleware,
             pledgeMiddleware,
-        ),
-        devTools
+        )
       )
   );
 
