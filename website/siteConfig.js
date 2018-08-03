@@ -42,11 +42,47 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* List of projects/orgs using your project for the users page */
 const users = [
   {
-    caption: 'User1',
-    image: '/test-site/img/docusaurus.svg',
-    infoLink: 'https://www.facebook.com',
+    caption: "Applied Engineering",
+    image: '/img/users/applied.jpg',
+    infoLink: 'http://www.appliedeng.com',
+    pinned: true
+  },
+  {
+    caption: "Blackhawk Engineering",
+    image: '/img/users/blackhawk.png',
+    infoLink: 'http://www.blackhawkengineering.com/',
+    pinned: true
+  },
+  {
+    caption: 'Caterpillar',
+    image: '/img/users/cat.jpg',
+    infoLink: 'https://www.caterpillar.com',
     pinned: true,
   },
+  {
+    caption: 'Ditch Witch',
+    image: '/img/users/ditchwitch.jpg',
+    infoLink: 'https://www.ditchwitch.com/',
+    pinned: true
+  },
+  {
+    caption: "Geater Machining & Manufacturing",
+    image: '/img/users/geater.jpg',
+    infoLink: 'http://www.geater.com/',
+    pinned: true
+  },
+  {
+    caption: "John Deere",
+    image: '/img/users/deere.png',
+    infoLink: 'https://www.deere.com',
+    pinned: true
+  },
+  {
+    caption: "Parker Hannifin",
+    image: '/img/users/parker.svg',
+    infoLink: 'https://www.parker.com',
+    pinned: true
+  }
 ];
 
 const siteConfig = {
@@ -54,6 +90,7 @@ const siteConfig = {
   tagline: 'Open source data analytics and monitoring for flexible manfuacturing systems',
   url: 'https://fms-insight.seedtactics.com' /* your website url */,
   baseUrl: '/' /* base url for your project */,
+  cleanUrl: true,
   // For github.io type URLs, you would set the url and baseUrl like:
   //   url: 'https://facebook.github.io',
   //   baseUrl: '/test-site/',
@@ -71,7 +108,7 @@ const siteConfig = {
   ],
 
   // If you have users set above, you add it here:
-  //users,
+  users,
 
   /* path to images for header/footer */
   headerIcon: 'img/seedtactics-logo.svg',
