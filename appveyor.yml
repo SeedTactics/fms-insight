@@ -104,10 +104,7 @@ build_script:
     ./build/insight-installer-build.ps1 cincron
 
 - ps: |
-    $env:REACT_APP_MOCK_DATA = "true"
-    $env:PUBLIC_URL = "/demo"
-    yarn --cwd client/insight build
-    Remove-Item env:REACT_APP_MOCK_DATA
+    yarn --cwd client/insight run mock-data
     yarn --cwd website install
     yarn --cwd website run build
     Copy-Item "client\insight\build" -Destination "website\build\fms-insight\demo" -Recurse -Force

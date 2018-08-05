@@ -73,12 +73,14 @@ export function setOtherLogBackends(servers: ReadonlyArray<string>) {
   OtherLogBackends = servers.map(s => new api.LogClient(s));
 }
 
-export function initMockBackend(
-  curSt: Readonly<api.ICurrentStatus>,
-  jobs: Readonly<api.IHistoricData>,
-  workorders: Map<string, ReadonlyArray<Readonly<api.IPartWorkorder>>>,
-  events: Readonly<api.ILogEntry>[],
-) {
+export interface MockData {
+  readonly curSt: Readonly<api.ICurrentStatus>;
+  readonly jobs: Readonly<api.IHistoricData>;
+  readonly workorders: Map<string, ReadonlyArray<Readonly<api.IPartWorkorder>>>;
+  readonly events: Readonly<api.ILogEntry>[];
+}
+
+function initMockBackend(data: Promise<MockData>) {
   ServerBackend = {
     fMSInformation() {
       return Promise.resolve({
@@ -93,13 +95,13 @@ export function initMockBackend(
 
   JobsBackend = {
     history(startUTC: Date, endUTC: Date): Promise<Readonly<api.IHistoricData>> {
-      return Promise.resolve(jobs);
+      return data.then(d => d.jobs);
     },
     currentStatus(): Promise<Readonly<api.ICurrentStatus>> {
-      return Promise.resolve(curSt);
+      return data.then(d => d.curSt);
     },
     mostRecentUnfilledWorkordersForPart(part: string): Promise<ReadonlyArray<Readonly<api.IPartWorkorder>>> {
-      return Promise.resolve(workorders.get(part) || []);
+      return data.then(d => d.workorders.get(part) || []);
     },
 
     removeMaterialFromAllQueues(materialId: number): Promise<void> {
@@ -119,16 +121,18 @@ export function initMockBackend(
   };
 
   const serialsToMatId =
-    im.Map(
-      im.Seq(events)
-      .filter(e => e.type === api.LogType.PartMark)
-      .flatMap(e => e.material.map(m => [e.result, m.id] as [string, number]))
-    );
+    data.then(d =>
+      im.Map(
+        im.Seq(d.events)
+        .filter(e => e.type === api.LogType.PartMark)
+        .flatMap(e => e.material.map(m => [e.result, m.id] as [string, number]))
+      )
+  );
 
   LogBackend = {
     get(startUTC: Date, endUTC: Date): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
-      return Promise.resolve(
-        im.Seq(events)
+      return data.then(d =>
+        im.Seq(d.events)
         .filter(e => e.endUTC >= startUTC && e.endUTC <= endUTC)
         .toArray()
       );
@@ -138,19 +142,21 @@ export function initMockBackend(
       return Promise.resolve([]);
     },
     logForMaterial(materialID: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
-      return Promise.resolve(
-        im.Seq(events)
+      return data.then(d =>
+        im.Seq(d.events)
         .filter(e => im.Seq(e.material).some(m => m.id === materialID))
         .toArray()
       );
     },
     logForSerial(serial: string): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
-      var mId = serialsToMatId.get(serial);
-      if (mId) {
-        return this.logForMaterial(mId);
-      } else {
-        return Promise.resolve([]);
-      }
+      return serialsToMatId.then(s => {
+        var mId = s.get(serial);
+        if (mId) {
+          return this.logForMaterial(mId);
+        } else {
+          return Promise.resolve([]);
+        }
+      });
     },
     getWorkorders(ids: string[]): Promise<ReadonlyArray<Readonly<api.IWorkorderSummary>>> {
       // no workorder summaries
@@ -175,8 +181,10 @@ export function initMockBackend(
           "InspectionType": inspType,
         }
       };
-      events.push(evt);
-      return Promise.resolve(evt);
+      return data.then(d => {
+        d.events.push(evt);
+        return evt;
+      });
     },
     recordInspectionCompleted(insp: api.NewInspectionCompleted): Promise<Readonly<api.ILogEntry>> {
       const evt: api.ILogEntry = {
@@ -194,8 +202,10 @@ export function initMockBackend(
         active: insp.active,
         details: insp.extraData
       };
-      events.push(evt);
-      return Promise.resolve(evt);
+      return data.then(d => {
+        d.events.push(evt);
+        return evt;
+      });
     },
     recordWashCompleted(wash: api.NewWash): Promise<Readonly<api.ILogEntry>> {
       const evt: api.ILogEntry = {
@@ -213,8 +223,10 @@ export function initMockBackend(
         active: wash.active,
         details: wash.extraData
       };
-      events.push(evt);
-      return Promise.resolve(evt);
+      return data.then(d => {
+        d.events.push(evt);
+        return evt;
+      });
     },
     setWorkorder(workorder: string, mat: api.LogMaterial): Promise<Readonly<api.ILogEntry>> {
       const evt: api.ILogEntry =  {
@@ -231,8 +243,10 @@ export function initMockBackend(
         elapsed: '00:00:00',
         active: '00:00:00'
       };
-      events.push(evt);
-      return Promise.resolve(evt);
+      return data.then(d => {
+        d.events.push(evt);
+        return evt;
+      });
     },
     setSerial(serial: string, mat: api.LogMaterial): Promise<Readonly<api.ILogEntry>> {
       const evt: api.ILogEntry = {
@@ -249,8 +263,20 @@ export function initMockBackend(
         elapsed: '00:00:00',
         active: '00:00:00'
       };
-      events.push(evt);
-      return Promise.resolve(evt);
+      return data.then(d => {
+        d.events.push(evt);
+        return evt;
+      });
     },
   };
+}
+
+export function registerMockBackend() {
+  if (process.env.REACT_APP_MOCK_DATA) {
+    const mockDataPromise = new Promise<MockData>(function(resolve: (d: MockData) => void) {
+      // tslint:disable-next-line:no-any
+      (window as any).FMS_INSIGHT_RESOLVE_MOCK_DATA = resolve;
+    });
+    initMockBackend(mockDataPromise);
+  }
 }

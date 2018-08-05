@@ -41,7 +41,6 @@ import * as operators from '../data/operators';
 import * as serverSettings from '../data/server-settings';
 import * as ccp from '../data/cost-per-piece';
 import * as websocket from './websocket';
-import { initMockData } from '../data/mock-data';
 
 import { pledgeMiddleware, arrayMiddleware, ActionBeforeMiddleware } from './middleware';
 import * as tstore from './typed-store';
@@ -53,6 +52,7 @@ import * as queryString from 'query-string';
 import * as reactRedux from 'react-redux';
 import * as redux from 'redux';
 import { initBarcodeListener } from './barcode';
+import { registerMockBackend } from '../data/backend';
 
 export interface Store {
   readonly Current: currentStatus.State;
@@ -156,7 +156,11 @@ export function initStore() {
   );
 
   if (process.env.REACT_APP_MOCK_DATA) {
-    initMockData(a => store.dispatch(a));
+    registerMockBackend();
+    // tslint:disable-next-line:no-any
+    store.dispatch(events.loadLast30Days() as any);
+    // tslint:disable-next-line:no-any
+    store.dispatch(currentStatus.loadCurrentStatus() as any);
   } else {
     websocket.openWebsocket(a => store.dispatch(a), () => store.getState().Events);
   }

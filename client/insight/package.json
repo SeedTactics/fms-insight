@@ -47,7 +47,8 @@
     "build": "react-scripts-ts build",
     "test": "react-scripts-ts test --env=jsdom",
     "eject": "react-scripts-ts eject",
-    "nswag": "./node_modules/nswag/bin/nswag.js swagger2tsclient /runtime:NetCore20 /input:../../server/fms-insight-api-1.4.0.json /output:src/data/api.ts"
+    "nswag": "./node_modules/nswag/bin/nswag.js swagger2tsclient /runtime:NetCore20 /input:../../server/fms-insight-api-1.4.0.json /output:src/data/api.ts",
+    "mock-data": "./node_modules/.bin/webpack --config webpack.mockdata.config.js"
   },
   "devDependencies": {
     "@types/enzyme": "^3.1.8",
@@ -71,11 +72,15 @@
     "nswag": "^11.14.0",
     "raw-loader": "^0.5.1",
     "react-scripts-ts": "^2.13.0",
+    "source-map-explorer": "^1.5.0",
     "typescript": "^3.0.0"
   },
   "jest": {
     "snapshotSerializers": [
       "enzyme-to-json/serializer"
-    ]
+    ],
+    "moduleNameMapper": {
+      "^raw-loader!(.*)": "<rootDir>/src/mock-data/$1"
+    }
   }
 }

@@ -38,7 +38,7 @@ import * as guiState from '../data/gui-state';
 export function initBarcodeListener(
   dispatch: (a: AppActionBeforeMiddleware | AppActionBeforeMiddleware[]) => void
 ): void {
-  let timeout: NodeJS.Timer | undefined;
+  let timeout: number | undefined;
   let scanActive: boolean = false;
   let scannedTxt: string = "";
 
@@ -50,7 +50,7 @@ export function initBarcodeListener(
   function startDetection() {
     scannedTxt = "";
     scanActive = true;
-    timeout = setTimeout(cancelDetection, 10 * 1000);
+    timeout = window.setTimeout(cancelDetection, 10 * 1000);
   }
 
   function success() {
