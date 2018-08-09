@@ -42,7 +42,7 @@
             "name": "Launch Chrome",
             "type": "chrome",
             "request": "launch",
-            "url": "http://localhost:3000",
+            "url": "http://localhost:1234",
             "webRoot": "${workspaceFolder}/client/insight/src",
             "runtimeExecutable": "/usr/bin/chromium",
             "sourceMapPathOverrides": {
