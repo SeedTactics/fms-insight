@@ -314,20 +314,18 @@ exports[`displays a single station oee: station oee gauge 1`] = `
   <svg
     viewBox="0 0 400 400"
   >
-    <React.Fragment>
-      <path
-        d="M 263.86689373476094 335.72405786990294 A 150 150 1.5707963267948966 0 0 200 50"
-        fill="transparent"
-        stroke="#795548"
-        strokeWidth={10}
-      />
-      <path
-        d="M 199.99999999999997 50 A 150 150 1.5707963267948966 1 0 263.86689373476094 335.72405786990294"
-        fill="transparent"
-        stroke="#E0E0E0"
-        strokeWidth={10}
-      />
-    </React.Fragment>
+    <path
+      d="M 263.86689373476094 335.72405786990294 A 150 150 1.5707963267948966 0 0 200 50"
+      fill="transparent"
+      stroke="#795548"
+      strokeWidth={10}
+    />
+    <path
+      d="M 199.99999999999997 50 A 150 150 1.5707963267948966 1 0 263.86689373476094 335.72405786990294"
+      fill="transparent"
+      stroke="#E0E0E0"
+      strokeWidth={10}
+    />
     <text
       style={
         Object {
