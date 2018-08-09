@@ -45,7 +45,6 @@ import { MarkSeries,
 import Card from '@material-ui/core/Card';
 import CardContent from '@material-ui/core/CardContent';
 import CardHeader from '@material-ui/core/CardHeader';
-import * as numerable from 'numeral';
 import Select from '@material-ui/core/Select';
 import MenuItem from '@material-ui/core/MenuItem';
 import { PartIdenticon } from '../station-monitor/Material';
@@ -118,7 +117,7 @@ export class CycleChart extends React.PureComponent<CycleChartProps, CycleChartS
     return [
       {title: 'Time', value: format(tip.x, 'MMM D, YYYY, H:mm a')},
       {title: this.props.series_label, value: tip.series},
-      {title: 'Cycle Time', value: numerable(tip.y).format('0.0') + " minutes"},
+      {title: 'Cycle Time', value: (tip.y).toFixed(1) + " minutes"},
     ];
   }
 

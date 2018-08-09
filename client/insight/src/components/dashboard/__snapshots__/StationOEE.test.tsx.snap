@@ -278,7 +278,7 @@ exports[`displays a single station oee: station oee gauge 1`] = `
     }
   }
   title={
-    <UNDEFINED>
+    <React.Fragment>
       <div>
         <span>
           OEE
@@ -302,13 +302,13 @@ exports[`displays a single station oee: station oee gauge 1`] = `
           Part
           : 
         </span>
-        <UNDEFINED>
+        <React.Fragment>
           <span>
             aaa-2 (loading)
           </span>
-        </UNDEFINED>
+        </React.Fragment>
       </div>
-    </UNDEFINED>
+    </React.Fragment>
   }
 >
   <svg
@@ -634,7 +634,7 @@ exports[`displays a single station without oee: station empty guage 1`] = `
     }
   }
   title={
-    <UNDEFINED>
+    <React.Fragment>
       <div>
         <span>
           OEE
@@ -653,7 +653,7 @@ exports[`displays a single station without oee: station empty guage 1`] = `
           none
         </span>
       </div>
-    </UNDEFINED>
+    </React.Fragment>
   }
 >
   <svg

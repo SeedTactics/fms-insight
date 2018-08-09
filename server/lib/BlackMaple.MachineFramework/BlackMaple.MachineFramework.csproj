@@ -23,11 +23,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="..\..\..\client\insight\build\**\*">
+    <Content Include="..\..\..\client\insight\dist\**\*">
       <PackagePath>contentFiles\any\any\wwwroot</PackagePath>
       <PackageCopyToOutput>true</PackageCopyToOutput>
     </Content>
-    <ContentWithTargetPath Include="..\..\..\client\insight\build\**\*">
+    <ContentWithTargetPath Include="..\..\..\client\insight\dist\**\*">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <TargetPath>wwwroot/%(RecursiveDir)%(FileName)%(Extension)</TargetPath>
     </ContentWithTargetPath>

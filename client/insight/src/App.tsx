@@ -51,6 +51,7 @@ import * as routes from './data/routes';
 import { Store, connect } from './store/store';
 import * as api from './data/api';
 import { LatestInstaller } from './data/server-settings';
+import logo from './seedtactics-logo.svg';
 
 const tabsStyle = {
   'alignSelf': 'flex-end' as 'flex-end',
@@ -143,7 +144,7 @@ function Header(p: HeaderProps) {
             ?
               <a href="/">
                 <img
-                  src="/demo/seedtactics-logo.svg"
+                  src={logo}
                   alt="Logo"
                   style={{height: '30px', marginRight: '1em'}}
                 />
@@ -151,7 +152,7 @@ function Header(p: HeaderProps) {
             :
               <Tooltip title={tooltip}>
                 <img
-                  src="/seedtactics-logo.svg"
+                  src={logo}
                   alt="Logo"
                   style={{height: '30px', marginRight: '1em'}}
                 />

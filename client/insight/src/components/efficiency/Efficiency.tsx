@@ -36,7 +36,6 @@ import WorkIcon from '@material-ui/icons/Work';
 import BasketIcon from '@material-ui/icons/ShoppingBasket';
 import { addMonths, addDays } from 'date-fns';
 import { createSelector } from 'reselect';
-import * as numeral from 'numeral';
 import ExtensionIcon from '@material-ui/icons/Extension';
 import HourglassIcon from '@material-ui/icons/HourglassFull';
 import DocumentTitle from 'react-document-title';
@@ -183,7 +182,7 @@ export const stationOeeActualPointsSelector = createSelector(
           x: dayAndStat.get("day", null),
           y: dayAndStat.get("station", null),
           color: pct,
-          label: numeral(pct).format('0.0%')
+          label: (pct * 100).toFixed(1) + "%"
         };
       })
       .valueSeq()
@@ -205,7 +204,7 @@ export const stationOeePlannedPointsSelector = createSelector(
           x: dayAndStat.get("day", null),
           y: dayAndStat.get("station", null),
           color: pct,
-          label: numeral(pct).format('0.0%')
+          label: (pct * 100).toFixed(1) + "%"
         };
       })
       .valueSeq()
@@ -286,7 +285,7 @@ export const completedActualPointsSelector = createSelector(
           x: dayAndStat.get("day", null),
           y: dayAndStat.get("part", null),
           color: val,
-          label: numeral(val).format('0,0')
+          label: val.toFixed(1)
         };
       })
       .valueSeq()
@@ -307,7 +306,7 @@ export const completedPlannedPointsSelector = createSelector(
           x: dayAndStat.get("day", null),
           y: dayAndStat.get("part", null),
           color: val,
-          label: numeral(val).format('0,0')
+          label: val.toFixed(1)
         };
       })
       .valueSeq()

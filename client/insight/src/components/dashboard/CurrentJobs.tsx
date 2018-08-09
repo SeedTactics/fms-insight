@@ -34,7 +34,6 @@ import * as React from 'react';
 import * as im from 'immutable';
 import { duration } from 'moment';
 import { createSelector } from 'reselect';
-import * as numerable from 'numeral';
 
 import * as api from '../../data/api';
 import { connect, Store } from '../../store/store';
@@ -170,7 +169,7 @@ function format_hint(j: CompletedDataPoint) {
     {title: "Part", value: j.part},
     {title: "Completed", value: j.completedCount},
     {title: "Planned", value: j.totalCount},
-    {title: "Remaining Time", value: numerable(j.totalPlan - j.completed).format('0.0') + " hours"}
+    {title: "Remaining Time", value: (j.totalPlan - j.completed).toFixed(1) + " hours"}
   ];
 }
 

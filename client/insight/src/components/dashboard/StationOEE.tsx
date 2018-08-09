@@ -34,7 +34,6 @@ import * as React from 'react';
 import Grid from '@material-ui/core/Grid';
 import * as im from 'immutable';
 import { createSelector } from 'reselect';
-import * as numeral from 'numeral';
 import Tooltip from '@material-ui/core/Tooltip';
 import TimeAgo from 'react-timeago';
 
@@ -116,7 +115,7 @@ function computeTooltip(p: StationOEEProps): JSX.Element {
 
   let entries: {title: string, value: JSX.Element}[] = [];
 
-  entries.push({title: "OEE", value: <span>{numeral(p.oee).format('0.0%')}</span>});
+  entries.push({title: "OEE", value: <span>{(p.oee * 100).toFixed(1) + "%"}</span>});
 
   if (p.pallet === undefined) {
     entries.push({title: "Pallet", value: <span>none</span>});

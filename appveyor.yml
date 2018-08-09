@@ -104,18 +104,15 @@ build_script:
     ./build/insight-installer-build.ps1 cincron
 
 - ps: |
-    yarn --cwd client/insight run mock-data
+    yarn --cwd client/insight run build-demo
     yarn --cwd website install
     yarn --cwd website run build
-    Copy-Item "client\insight\build" -Destination "website\build\fms-insight\demo" -Recurse -Force
+    Copy-Item "client\insight\demo" -Destination "website\build\fms-insight\demo" -Recurse -Force
     7z a website.zip .\website\build\fms-insight\*
 
 test_script:
-- ps: dotnet test server/test
-
-- cmd: |
-    setx /m CI "true"
-    yarn --cwd client/insight test
+- cmd: dotnet test server/test
+- cmd: yarn --cwd client/insight test
 
 artifacts:
   - path: '**/*.nupkg'

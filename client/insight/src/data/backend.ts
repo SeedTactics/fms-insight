@@ -64,9 +64,10 @@ export interface LogAPI {
   setSerial(serial: string, mat: api.LogMaterial): Promise<Readonly<api.ILogEntry>>;
 }
 
-export let ServerBackend: ServerAPI = new api.ServerClient();
-export let JobsBackend: JobAPI = new api.JobsClient();
-export let LogBackend: LogAPI = new api.LogClient();
+const backendUrl = process.env.NODE_ENV === "production" ? "" : "http://localhost:5000";
+export let ServerBackend: ServerAPI = new api.ServerClient(backendUrl);
+export let JobsBackend: JobAPI = new api.JobsClient(backendUrl);
+export let LogBackend: LogAPI = new api.LogClient(backendUrl);
 export let OtherLogBackends: ReadonlyArray<LogAPI> = [];
 
 export function setOtherLogBackends(servers: ReadonlyArray<string>) {
@@ -77,7 +78,7 @@ export interface MockData {
   readonly curSt: Readonly<api.ICurrentStatus>;
   readonly jobs: Readonly<api.IHistoricData>;
   readonly workorders: Map<string, ReadonlyArray<Readonly<api.IPartWorkorder>>>;
-  readonly events: Readonly<api.ILogEntry>[];
+  readonly events: Promise<Readonly<api.ILogEntry>[]>;
 }
 
 function initMockBackend(data: Promise<MockData>) {
@@ -121,32 +122,32 @@ function initMockBackend(data: Promise<MockData>) {
   };
 
   const serialsToMatId =
-    data.then(d =>
+    data.then(d => d.events.then(evts =>
       im.Map(
-        im.Seq(d.events)
+        im.Seq(evts)
         .filter(e => e.type === api.LogType.PartMark)
         .flatMap(e => e.material.map(m => [e.result, m.id] as [string, number]))
       )
-  );
+    ));
 
   LogBackend = {
     get(startUTC: Date, endUTC: Date): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
-      return data.then(d =>
-        im.Seq(d.events)
+      return data.then(d => d.events.then(evts =>
+        im.Seq(evts)
         .filter(e => e.endUTC >= startUTC && e.endUTC <= endUTC)
         .toArray()
-      );
+      ));
     },
     recent(lastSeenCounter: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
       // no recent events, everything is static
       return Promise.resolve([]);
     },
     logForMaterial(materialID: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
-      return data.then(d =>
-        im.Seq(d.events)
+      return data.then(d => d.events.then(evts =>
+        im.Seq(evts)
         .filter(e => im.Seq(e.material).some(m => m.id === materialID))
         .toArray()
-      );
+      ));
     },
     logForSerial(serial: string): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
       return serialsToMatId.then(s => {
@@ -181,10 +182,10 @@ function initMockBackend(data: Promise<MockData>) {
           "InspectionType": inspType,
         }
       };
-      return data.then(d => {
-        d.events.push(evt);
+      return data.then(d => d.events.then(evts => {
+        evts.push(evt);
         return evt;
-      });
+      }));
     },
     recordInspectionCompleted(insp: api.NewInspectionCompleted): Promise<Readonly<api.ILogEntry>> {
       const evt: api.ILogEntry = {
@@ -202,10 +203,10 @@ function initMockBackend(data: Promise<MockData>) {
         active: insp.active,
         details: insp.extraData
       };
-      return data.then(d => {
-        d.events.push(evt);
+      return data.then(d => d.events.then(evts => {
+        evts.push(evt);
         return evt;
-      });
+      }));
     },
     recordWashCompleted(wash: api.NewWash): Promise<Readonly<api.ILogEntry>> {
       const evt: api.ILogEntry = {
@@ -223,10 +224,10 @@ function initMockBackend(data: Promise<MockData>) {
         active: wash.active,
         details: wash.extraData
       };
-      return data.then(d => {
-        d.events.push(evt);
+      return data.then(d => d.events.then(evts => {
+        evts.push(evt);
         return evt;
-      });
+      }));
     },
     setWorkorder(workorder: string, mat: api.LogMaterial): Promise<Readonly<api.ILogEntry>> {
       const evt: api.ILogEntry =  {
@@ -243,10 +244,10 @@ function initMockBackend(data: Promise<MockData>) {
         elapsed: '00:00:00',
         active: '00:00:00'
       };
-      return data.then(d => {
-        d.events.push(evt);
+      return data.then(d => d.events.then(evts => {
+        evts.push(evt);
         return evt;
-      });
+      }));
     },
     setSerial(serial: string, mat: api.LogMaterial): Promise<Readonly<api.ILogEntry>> {
       const evt: api.ILogEntry = {
@@ -263,10 +264,10 @@ function initMockBackend(data: Promise<MockData>) {
         elapsed: '00:00:00',
         active: '00:00:00'
       };
-      return data.then(d => {
-        d.events.push(evt);
+      return data.then(d => d.events.then(evts => {
+        evts.push(evt);
         return evt;
-      });
+      }));
     },
   };
 }

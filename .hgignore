@@ -4,6 +4,9 @@ obj/
 integration.pdf
 node_modules/
 client/insight/build/
+client/insight/.cache/
+client/insight/dist/
+client/insight/demo/
 
 website/build/
 website/yarn.lock

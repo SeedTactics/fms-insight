@@ -111,7 +111,7 @@ class HomeSplash extends React.Component {
             { /* <Button href="#try">Try It Out</Button> */ }
             <Button href={docUrl('getting-started.html', language)}>Get Started</Button>
             <Button href="https://bitbucket.org/blackmaple/fms-insight">Source Code</Button>
-            <Button href="/demo/index.html">View Demo</Button>
+            <Button href="/demo/demo.html">View Demo</Button>
           </PromoSection>
         </div>
       </SplashContainer>

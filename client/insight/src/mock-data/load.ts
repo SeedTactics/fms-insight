@@ -48,23 +48,48 @@ function offsetJob(j: api.JobPlan, offsetSeconds: number) {
   }
 }
 
-function loadEventsJson(): ReadonlyArray<object> {
-  // use raw-loader because webpack chokes with out of memory on this large file
-  const evtJson = require("raw-loader!./events.json");
+async function loadEventsJson(offsetSeconds: number): Promise<Readonly<api.ILogEntry>[]> {
+  const evtJson = require("./events-json.txt");
+  let evtsSeq: im.Seq.Indexed<object>;
   if (typeof(evtJson) === "string") {
-    // webpack provides the raw content as a string
-    return JSON.parse(evtJson);
+    // parcel provides the url to the file
+    const req = await fetch(evtJson);
+    const rawEvts = await req.json();
+    evtsSeq = im.Seq.Indexed(rawEvts);
   } else {
     // jest loads the json and parses it already into an array
-    return evtJson;
+    evtsSeq = im.Seq.Indexed(evtJson);
   }
+
+  return evtsSeq
+    .map((evt: object) => {
+        const e = api.LogEntry.fromJS(evt);
+        e.endUTC = addSeconds(e.endUTC, offsetSeconds);
+        return e;
+    })
+    .sortBy(e => e.endUTC)
+    .filter(e => {
+      if (e.type === api.LogType.InspectionResult) {
+        // filter out a couple inspection results so they are uninspected
+        // and display as uninspected on the station monitor screen
+        var mid = e.material[0].id;
+        if (mid === 2993 || mid === 2974) {
+          return false;
+        } else {
+          return true;
+        }
+      } else {
+        return true;
+      }
+    })
+    .toArray();
 }
 
 export interface MockData {
   readonly curSt: Readonly<api.ICurrentStatus>;
   readonly jobs: Readonly<api.IHistoricData>;
   readonly workorders: Map<string, ReadonlyArray<Readonly<api.IPartWorkorder>>>;
-  readonly events: Readonly<api.ILogEntry>[];
+  readonly events: Promise<Readonly<api.ILogEntry>[]>;
 }
 
 export function loadMockData(offsetSeconds: number): MockData {
@@ -103,34 +128,10 @@ export function loadMockData(offsetSeconds: number): MockData {
     stationUse: jobs.stationUse || []
   };
 
-  const evts =
-    im.Seq.Indexed(loadEventsJson())
-    .map((evt: object) => {
-        const e = api.LogEntry.fromJS(evt);
-        e.endUTC = addSeconds(e.endUTC, offsetSeconds);
-        return e;
-    })
-    .sortBy(e => e.endUTC)
-    .filter(e => {
-      if (e.type === api.LogType.InspectionResult) {
-        // filter out a couple inspection results so they are uninspected
-        // and display as uninspected on the station monitor screen
-        var mid = e.material[0].id;
-        if (mid === 2993 || mid === 2974) {
-          return false;
-        } else {
-          return true;
-        }
-      } else {
-        return true;
-      }
-    })
-    .toArray();
-
   return {
     curSt: status,
     jobs: historic,
     workorders: new Map<string, ReadonlyArray<Readonly<api.IPartWorkorder>>>(),
-    events: evts
+    events: loadEventsJson(offsetSeconds)
   };
 }
