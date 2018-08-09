@@ -64,10 +64,13 @@ export interface LogAPI {
   setSerial(serial: string, mat: api.LogMaterial): Promise<Readonly<api.ILogEntry>>;
 }
 
-const backendUrl = process.env.NODE_ENV === "production" ? "" : "http://localhost:5000";
-export let ServerBackend: ServerAPI = new api.ServerClient(backendUrl);
-export let JobsBackend: JobAPI = new api.JobsClient(backendUrl);
-export let LogBackend: LogAPI = new api.LogClient(backendUrl);
+export const BackendHost = process.env.NODE_ENV === "production" ? undefined : "localhost:5000";
+const BackendUrl = BackendHost ? "http://" + BackendHost : undefined;
+export const DemoMode = (window as any).FMS_INSIGHT_DEMO_MODE || false;
+
+export let ServerBackend: ServerAPI = new api.ServerClient(BackendUrl);
+export let JobsBackend: JobAPI = new api.JobsClient(BackendUrl);
+export let LogBackend: LogAPI = new api.LogClient(BackendUrl);
 export let OtherLogBackends: ReadonlyArray<LogAPI> = [];
 
 export function setOtherLogBackends(servers: ReadonlyArray<string>) {
@@ -273,7 +276,7 @@ function initMockBackend(data: Promise<MockData>) {
 }
 
 export function registerMockBackend() {
-  if (process.env.REACT_APP_MOCK_DATA) {
+  if (DemoMode) {
     const mockDataPromise = new Promise<MockData>(function(resolve: (d: MockData) => void) {
       // tslint:disable-next-line:no-any
       (window as any).FMS_INSIGHT_RESOLVE_MOCK_DATA = resolve;

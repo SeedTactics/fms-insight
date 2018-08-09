@@ -112,7 +112,13 @@ namespace BlackMaple.MachineFramework
                 .AddCors(options =>
                     options.AddPolicy("AllowOtherLogServers", builder =>
                         builder
-                        .WithOrigins(Program.FMSSettings.AdditionalLogServers.ToArray())
+                        .WithOrigins(
+                            Program.FMSSettings.AdditionalLogServers
+                            #if DEBUG
+                            .Concat(new[] {"http://localhost:1234"}) // parcel bundler url
+                            #endif
+                            .ToArray()
+                        )
                         .WithMethods("GET")
                         .WithHeaders("content-type")
                     )

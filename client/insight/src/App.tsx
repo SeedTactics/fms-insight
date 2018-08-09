@@ -52,6 +52,7 @@ import { Store, connect } from './store/store';
 import * as api from './data/api';
 import { LatestInstaller } from './data/server-settings';
 import logo from './seedtactics-logo.svg';
+import { DemoMode } from './data/backend';
 
 const tabsStyle = {
   'alignSelf': 'flex-end' as 'flex-end',
@@ -110,7 +111,7 @@ function Header(p: HeaderProps) {
         <Tab label="Station Monitor" value={TabType.StationMonitor}/>
         <Tab label="Efficiency" value={TabType.Efficiency}/>
         <Tab label="Cost/Piece" value={TabType.CostPerPiece}/>
-        { process.env.REACT_APP_MOCK_DATA ? undefined :
+        { DemoMode ? undefined :
           <Tab label="Data Export" value={TabType.DataExport}/>
         }
       </Tabs>
@@ -140,7 +141,7 @@ function Header(p: HeaderProps) {
     const largeAppBar = (
       <AppBar position="static">
         <Toolbar>
-          { process.env.REACT_APP_MOCK_DATA
+          { DemoMode
             ?
               <a href="/">
                 <img

@@ -35,13 +35,14 @@ import ReconnectingWebSocket from 'reconnecting-websocket';
 import * as events from '../data/events';
 import * as current from '../data/current-status';
 import { LogEntry, NewJobs, CurrentStatus } from '../data/api';
+import { DemoMode, BackendHost } from '../data/backend';
 
 export interface State {
   websocket_reconnecting: boolean;
 }
 
 export const initial: State = {
-  websocket_reconnecting: process.env.REACT_APP_MOCK_DATA ? false : true
+  websocket_reconnecting: DemoMode ? false : true
 };
 
 export enum ActionType {
@@ -69,13 +70,13 @@ export function reducer(s: State, a: Action): State {
 // tslint:disable-next-line:no-any
 export function openWebsocket(d: (a: any) => void, getEvtState: () => events.State) {
   const loc = window.location;
-  let uri = "";
+  let uri: string;
   if (loc.protocol === "https:") {
       uri = "wss:";
   } else {
       uri = "ws:";
   }
-  uri += "//" + loc.host + "/api/v1/events";
+  uri += "//" + (BackendHost || loc.host) + "/api/v1/events";
 
   const websocket = new ReconnectingWebSocket(uri);
   websocket.onopen = () => {

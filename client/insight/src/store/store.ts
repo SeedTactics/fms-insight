@@ -52,7 +52,7 @@ import * as queryString from 'query-string';
 import * as reactRedux from 'react-redux';
 import * as redux from 'redux';
 import { initBarcodeListener } from './barcode';
-import { registerMockBackend } from '../data/backend';
+import { registerMockBackend, DemoMode } from '../data/backend';
 
 export interface Store {
   readonly Current: currentStatus.State;
@@ -102,7 +102,7 @@ export const mkAC: ActionCreatorFactory =
 export function initStore() {
   const history = createHistory();
   const router =
-    process.env.REACT_APP_MOCK_DATA ? undefined :
+    DemoMode ? undefined :
     connectRoutes(
       history,
       routes.routeMap,
@@ -155,7 +155,7 @@ export function initStore() {
       )
   );
 
-  if (process.env.REACT_APP_MOCK_DATA) {
+  if (DemoMode) {
     registerMockBackend();
     // tslint:disable-next-line:no-any
     store.dispatch(events.loadLast30Days() as any);

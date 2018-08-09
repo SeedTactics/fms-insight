@@ -4,11 +4,11 @@
   "license": "BSD-3-Clause",
   "private": true,
   "scripts": {
-    "start": "./node_modules/.bin/parcel src/index.html",
-    "build": "./node_modules/.bin/parcel build --experimental-scope-hoisting src/index.html",
-    "build-demo": "REACT_APP_MOCK_DATA=true ./node_modules/.bin/parcel build --experimental-scope-hoisting --out-dir demo --public-url /demo/ src/demo.html",
-    "test": "./node_modules/.bin/jest",
-    "test:watch": "./node_modules/.bin/jest --watch",
+    "start": "parcel src/index.html",
+    "build": "parcel build src/index.html",
+    "build-demo": "parcel build --out-dir demo --public-url /demo/ src/demo.html",
+    "test": "jest",
+    "test:watch": "jest --watch",
     "nswag": "./node_modules/nswag/bin/nswag.js swagger2tsclient /runtime:NetCore20 /input:../../server/fms-insight-api-1.4.0.json /output:src/data/api.ts"
   },
   "dependencies": {
