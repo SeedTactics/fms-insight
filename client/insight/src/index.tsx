@@ -42,7 +42,7 @@ import MuiThemeProvider from '@material-ui/core/styles/MuiThemeProvider';
 import createMuiTheme from '@material-ui/core/styles/createMuiTheme';
 import 'react-vis/dist/style.css';
 
-import App from './App';
+import App from './components/App';
 import { unregister } from './registerServiceWorker';
 import { initStore } from './store/store';
 

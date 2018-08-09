@@ -41,18 +41,18 @@ import HelpOutline from '@material-ui/icons/HelpOutline';
 import IconButton from '@material-ui/core/IconButton';
 import Tooltip from '@material-ui/core/Tooltip';
 
-import Dashboard from './components/dashboard/Dashboard';
-import CostPerPiece from './components/cost-per-piece/CostPerPiece';
-import Efficiency from './components/efficiency/Efficiency';
-import StationMonitor from './components/station-monitor/StationMonitor';
-import DataExport from './components/data-export/DataExport';
-import LoadingIcon from './components/LoadingIcon';
-import * as routes from './data/routes';
-import { Store, connect } from './store/store';
-import * as api from './data/api';
-import { LatestInstaller } from './data/server-settings';
-import logo from './seedtactics-logo.svg';
-import { DemoMode } from './data/backend';
+import Dashboard from './dashboard/Dashboard';
+import CostPerPiece from './cost-per-piece/CostPerPiece';
+import Efficiency from './efficiency/Efficiency';
+import StationMonitor from './station-monitor/StationMonitor';
+import DataExport from './data-export/DataExport';
+import LoadingIcon from './LoadingIcon';
+import * as routes from '../data/routes';
+import { Store, connect } from '../store/store';
+import * as api from '../data/api';
+import { LatestInstaller } from '../data/server-settings';
+import logo from '../seedtactics-logo.svg';
+import { DemoMode } from '../data/backend';
 
 const tabsStyle = {
   'alignSelf': 'flex-end' as 'flex-end',

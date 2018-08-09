@@ -34,7 +34,7 @@ import * as React from 'react';
 import { shallow } from 'enzyme';
 
 import { App, AppProps } from './App';
-import * as routes from './data/routes';
+import * as routes from '../data/routes';
 
 function appProps(current: routes.RouteLocation): AppProps {
   let monitor: routes.StationMonitorType = routes.StationMonitorType.LoadUnload;
