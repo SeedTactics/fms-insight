@@ -109,6 +109,7 @@ namespace BlackMaple.MachineFramework
                 );
 
             services
+                .AddResponseCompression()
                 .AddCors(options =>
                     options.AddPolicy("AllowOtherLogServers", builder =>
                         builder
@@ -147,6 +148,7 @@ namespace BlackMaple.MachineFramework
             IServiceProvider services,
             Controllers.WebsocketManager wsManager)
         {
+            app.UseResponseCompression();
             app.UseCors("AllowOtherLogServers");
             app.UseMiddleware(typeof(ErrorHandlingMiddleware));
             app.UseMvc();
