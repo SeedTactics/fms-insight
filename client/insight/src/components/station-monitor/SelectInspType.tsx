@@ -46,7 +46,7 @@ import TextField from '@material-ui/core/TextField';
 import * as im from 'immutable';
 
 import { MaterialDetailTitle } from './Material';
-import { Store, connect, mkAC, AppActionBeforeMiddleware } from '../../store/store';
+import { Store, connect, mkAC, AppActionBeforeMiddleware, DispatchAction } from '../../store/store';
 import * as matDetails from '../../data/material-details';
 import * as guiState from '../../data/gui-state';
 
@@ -86,7 +86,7 @@ export class ManualInspTypeEntry extends React.PureComponent<ManualInspTypeEntry
 export interface SelectInspTypeProps {
   readonly inspTypes: im.Set<string>;
   readonly mats: matDetails.MaterialDetail | null;
-  readonly onClose: () => void;
+  readonly onClose: DispatchAction<guiState.ActionType.SetInspTypeDialogOpen>;
   readonly forceInspection: (data: matDetails.ForceInspectionData) => void;
 }
 
@@ -127,7 +127,7 @@ export function SelectInspTypeDialog(props: SelectInspTypeProps) {
             {inspList}
           </DialogContent>
           <DialogActions>
-            <Button onClick={props.onClose} color="primary">
+            <Button onClick={() => props.onClose({open: false})} color="primary">
               Cancel
             </Button>
           </DialogActions>
@@ -138,7 +138,7 @@ export function SelectInspTypeDialog(props: SelectInspTypeProps) {
   return (
     <Dialog
       open={props.mats !== null}
-      onClose={props.onClose}
+      onClose={() => props.onClose({open: false})}
       maxWidth="md"
     >
       {body}
