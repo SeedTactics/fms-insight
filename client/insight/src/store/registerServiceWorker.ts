@@ -30,45 +30,44 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from 'react';
-import * as ReactDOM from 'react-dom';
-import { Provider } from 'react-redux';
 
-import 'typeface-roboto';
-import CssBaseline from '@material-ui/core/CssBaseline';
-import green from '@material-ui/core/colors/green';
-import brown from '@material-ui/core/colors/brown';
-import MuiThemeProvider from '@material-ui/core/styles/MuiThemeProvider';
-import createMuiTheme from '@material-ui/core/styles/createMuiTheme';
-import 'react-vis/dist/style.css';
-
-import App from './components/App';
-import { unregister } from './store/registerServiceWorker';
-import { initStore } from './store/store';
-
-const theme = createMuiTheme({
-  palette: {
-    primary: green,
-    secondary: brown
+export default function register() {
+  if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      const swUrl = `/service-worker.js`;
+      navigator.serviceWorker
+        .register(swUrl)
+        .then(registration => {
+          registration.onupdatefound = () => {
+            const installingWorker = registration.installing;
+            if (installingWorker) {
+              installingWorker.onstatechange = () => {
+                if (installingWorker.state === 'installed') {
+                  if (navigator.serviceWorker.controller) {
+                    // At this point, the old content will have been purged and
+                    // the fresh content will have been added to the cache.
+                    // It's the perfect time to display a 'New content is
+                    // available; please refresh.' message in your web app.
+                    console.log('New content is available; please refresh.');
+                  } else {
+                    console.log('Content is cached for offline use.');
+                  }
+                }
+              };
+            }
+          };
+        })
+        .catch(error => {
+          console.error('Error during service worker registration:', error);
+        });
+    });
   }
-});
+}
 
-const store = initStore();
-
-ReactDOM.render(
-  <MuiThemeProvider theme={theme}>
-    <CssBaseline/>
-    <Provider store={store}>
-      {/* <React.StrictMode> */}
-        <App />
-      {/* </React.StrictMode> */}
-    </Provider>
-  </MuiThemeProvider>,
-  document.getElementById('root') as HTMLElement
-);
-
-// the service worker currently doesn't work because the /swagger and /instruction routes
-// are redirected by the service worker to /index.html.  Need to whitelist these routes
-// before the service worker is correct.
-// registerServiceWorker();
-unregister();
+export function unregister() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then(registration => {
+      registration.unregister();
+    });
+  }
+}
