@@ -31,44 +31,17 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as reactRedux from 'react-redux';
-
 type RemoveTypeProp<P> = P extends "type" ? never : P;
 type RemoveType<A> = { [P in RemoveTypeProp<keyof A>]: A[P] };
 export type GetActionTypes<A> = A extends {type: infer T} ? T : never;
 export type ActionPayload<A, T> = A extends {type: T} ? RemoveType<A> : never;
-export type DispatchFn<Args> =
-  {} extends Args
-  ? () => void
-  : (payload: Args) => void;
-export type DispatchAction<A, T> = DispatchFn<ActionPayload<A, T>>;
-
-// Specialized type for connect
 export type ActionCreator<A, Args> = (args: Args) => A;
+export type DispatchFn<Args> =
+  {} extends Args ? () => void
+  : (payload: Args) => void;
 export type ActionCreatorToDispatch<A, Creators> = {
   [P in keyof Creators]:
     Creators[P] extends ActionCreator<A, infer Args> ? DispatchFn<Args> :
     never;
 };
-
-// react-redux 6.0 has wierd bug around InferableComponentEnhancerWithProps
-// in its attempt to support decorators.
-// e.g. https://github.com/DefinitelyTyped/DefinitelyTyped/issues/25874
-// so copy one without decorator support here for now.
-export interface InferableComponentEnhancerWithProps<TInjectedProps, TNeedsProps> {
-    <P extends TInjectedProps>(component: React.ComponentType<P>):
-        React.ComponentClass<reactRedux.Omit<P, keyof TInjectedProps> & TNeedsProps>
-     & {WrappedComponent: React.ComponentType<P>}
-   ;
-}
-
-export interface Connect<A, S> {
-  <P, TOwnProps = {}>(getProps: (s: S) => P):
-    InferableComponentEnhancerWithProps<P, TOwnProps>;
-
-  <P, TOwnProps = {}>(getProps: (s: S, ownProps: TOwnProps) => P):
-    InferableComponentEnhancerWithProps<P, TOwnProps>;
-
-  <P, Creators, TOwnProps = {}>(getProps: (s: S) => P, actionCreators: Creators):
-    InferableComponentEnhancerWithProps<P & ActionCreatorToDispatch<A, Creators>, TOwnProps>;
-}
+export type DispatchAction<A, T> = DispatchFn<ActionPayload<A, T>>;

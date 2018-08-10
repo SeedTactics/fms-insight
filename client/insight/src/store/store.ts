@@ -43,7 +43,6 @@ import * as ccp from '../data/cost-per-piece';
 import * as websocket from './websocket';
 
 import { pledgeMiddleware, arrayMiddleware, ActionBeforeMiddleware } from './middleware';
-import * as tstore from './typed-store';
 
 import * as im from 'immutable';
 import { connectRoutes, LocationState } from 'redux-first-router';
@@ -53,6 +52,7 @@ import * as reactRedux from 'react-redux';
 import * as redux from 'redux';
 import { initBarcodeListener } from './barcode';
 import { registerMockBackend, DemoMode } from '../data/backend';
+import { DispatchFn, ActionPayload, ActionCreatorToDispatch, GetActionTypes } from './action-types';
 
 export interface Store {
   readonly Current: currentStatus.State;
@@ -78,13 +78,23 @@ export type AppAction =
   ;
 
 export type AppActionBeforeMiddleware = ActionBeforeMiddleware<AppAction>;
-export type DispatchAction<T> = tstore.DispatchAction<AppAction, T>;
+export type DispatchAction<T> = DispatchFn<ActionPayload<AppAction, T>>;
 
-export const connect: tstore.Connect<AppActionBeforeMiddleware, Store> = reactRedux.connect;
+export interface Connect {
+  <P, TOwnProps = {}>(getProps: (s: Store) => P):
+    reactRedux.InferableComponentEnhancerWithProps<P, TOwnProps>;
+
+  <P, TOwnProps = {}>(getProps: (s: Store, ownProps: TOwnProps) => P):
+    reactRedux.InferableComponentEnhancerWithProps<P, TOwnProps>;
+
+  <P, Creators, TOwnProps = {}>(getProps: (s: Store) => P, actionCreators: Creators):
+    reactRedux.InferableComponentEnhancerWithProps<P & ActionCreatorToDispatch<AppActionBeforeMiddleware, Creators>, TOwnProps>;
+}
+export const connect: Connect = reactRedux.connect;
 
 export interface ActionCreatorFactory {
-  <T extends tstore.GetActionTypes<AppAction>>(ty: T):
-    (payload: tstore.ActionPayload<AppActionBeforeMiddleware, T>) => AppActionBeforeMiddleware;
+  <T extends GetActionTypes<AppAction>>(ty: T):
+    (payload: ActionPayload<AppActionBeforeMiddleware, T>) => AppActionBeforeMiddleware;
 }
 export const mkAC: ActionCreatorFactory =
   // any is needed for payload since typescript can't guarantee that ActionPayload<A, T> is

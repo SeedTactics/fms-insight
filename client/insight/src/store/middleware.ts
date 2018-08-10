@@ -50,7 +50,6 @@ export type PledgeToPromise<AP> = {
 
 export type ActionBeforeMiddleware<A> = PledgeToPromise<A> | PledgeToPromise<A>[];
 
-// tslint:disable
 export const pledgeMiddleware: Middleware =
   ({dispatch}) => next => (action: any) => {
     if (action.pledge && action.pledge instanceof Promise) {
