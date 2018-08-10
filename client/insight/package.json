@@ -91,6 +91,7 @@
     }
   },
   "sw-precache": {
+    "navigateFallback": "index.html",
     "navigateFallbackWhitelist": [
       "^(?!\/(swagger|api|instructions)\/).*"
     ]

@@ -67,8 +67,4 @@ ReactDOM.render(
   document.getElementById('root') as HTMLElement
 );
 
-// the service worker currently doesn't work because the /swagger and /instruction routes
-// are redirected by the service worker to /index.html.  Need to whitelist these routes
-// before the service worker is correct.
-// registerServiceWorker();
 unregister();

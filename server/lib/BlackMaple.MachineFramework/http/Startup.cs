@@ -150,7 +150,14 @@ namespace BlackMaple.MachineFramework
             app.UseCors("AllowOtherLogServers");
             app.UseMiddleware(typeof(ErrorHandlingMiddleware));
             app.UseMvc();
-            app.UseStaticFiles();
+
+            // https://github.com/aspnet/Home/issues/2442
+            var fileExt = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
+            fileExt.Mappings[".webmanifest"] = "application/manifest+json";
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                ContentTypeProvider = fileExt
+            });
 
             if (!string.IsNullOrEmpty(Program.FMSSettings.InstructionFilePath))
             {
