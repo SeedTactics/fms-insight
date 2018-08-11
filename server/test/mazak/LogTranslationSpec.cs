@@ -72,7 +72,8 @@ namespace MachineWatchTest
       };
 
 			var settings = new FMSSettings() {
-				SerialType = SerialType.AssignOneSerialPerMaterial
+				SerialType = SerialType.AssignOneSerialPerMaterial,
+        SerialLength = 10
 			};
       settings.Queues["thequeue"] = new QueueSize() { MaxSizeBeforeStopUnloading = -1};
       settings.ExternalQueues["externalq"] = "testserver";
