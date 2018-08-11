@@ -161,7 +161,7 @@ namespace BlackMaple.MachineFramework
 
             if (!string.IsNullOrEmpty(firstSerialOnEmpty)) {
                 long matId = ConvertFromBase62(firstSerialOnEmpty) - 1;
-                if (matId > 0x6FFF_FFFF_FFFF_FFFF)
+                if (matId > 9007199254740991) // 2^53 - 1, the max size in a javascript 64-bit precision double
                     throw new Exception("Serial " + firstSerialOnEmpty + " is too large");
                 cmd.CommandText = "INSERT INTO sqlite_sequence(name, seq) VALUES ('matdetails',$v)";
                 cmd.Parameters.Add("v", SqliteType.Integer).Value = matId;

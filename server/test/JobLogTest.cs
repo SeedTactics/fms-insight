@@ -1385,5 +1385,16 @@ namespace MachineWatchTest
                 NumProcesses = 52,
             });
         }
+
+        [Fact]
+        public void ErrorsTooLarge()
+        {
+			var connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
+            connection.Open();
+            var l = new JobLogDB(connection);
+            l.Invoking(x => x.CreateTables(firstSerialOnEmpty: "A000000000"))
+                .Should().Throw<Exception>().WithMessage("Serial A000000000 is too large");
+            l.Close();
+        }
     }
 }

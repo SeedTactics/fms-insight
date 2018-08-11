@@ -129,7 +129,7 @@ namespace BlackMaple.MachineFramework
     public class FMSSettings
     {
       public SerialType SerialType {get;set;} = SerialType.NoAutomaticSerials;
-      public int SerialLength {get;set;} = 10;
+      public int SerialLength {get;set;} = 9;
       public string StartingSerial {get;set;} = null;
       public string InstructionFilePath {get;set;}
       public bool RequireScanAtWash {get;set;}
