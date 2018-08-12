@@ -49,16 +49,16 @@ function offsetJob(j: api.JobPlan, offsetSeconds: number) {
 }
 
 async function loadEventsJson(offsetSeconds: number): Promise<Readonly<api.ILogEntry>[]> {
-  const evtJson = require("./events-json.txt");
+  const evtJson: string = require("./events-json.txt");
   let evtsSeq: im.Seq.Indexed<object>;
-  if (typeof(evtJson) === "string") {
+  if (evtJson.startsWith('[')) {
+    // jest loads the contents as a string
+    evtsSeq = im.Seq.Indexed(JSON.parse(evtJson));
+  } else {
     // parcel provides the url to the file
     const req = await fetch(evtJson);
     const rawEvts = await req.json();
     evtsSeq = im.Seq.Indexed(rawEvts);
-  } else {
-    // jest loads the json and parses it already into an array
-    evtsSeq = im.Seq.Indexed(evtJson);
   }
 
   return evtsSeq

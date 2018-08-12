@@ -69,9 +69,6 @@
       "enzyme-to-json/serializer"
     ],
     "testURL": "http://localhost",
-    "transform": {
-      "^.+\\.tsx?$": "ts-jest"
-    },
     "setupTestFrameworkScriptFile": "<rootDir>/setupTests.ts",
     "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$",
     "moduleFileExtensions": [
@@ -81,8 +78,10 @@
       "jsx",
       "json"
     ],
-    "moduleNameMapper": {
-      ".*\\.svg$": "<rootDir>/file-mock.js"
+    "transform": {
+      "^.+\\.tsx?$": "ts-jest",
+      ".*\\.svg$": "<rootDir>/file-mock.js",
+      ".*events-json.txt$": "<rootDir>/file-mock.js"
     },
     "globals": {
       "ts-jest": {

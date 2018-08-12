@@ -32,6 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as ccp from './cost-per-piece';
+import * as cycles from './events.cycles';
+import { loadMockData } from '../mock-data/load';
 
 it("loads the initial state", () => {
   // tslint:disable no-any
@@ -150,4 +152,25 @@ it("sets the operator cost per hour", () => {
   expect(JSON.parse(localStorage.getItem("cost-per-piece") || "")).toEqual({...ccp.initial.input,
     operatorCostPerHour: 67,
   });
+});
+
+it("computes part costs", async () => {
+  const data = loadMockData(30 * 24 * 60 * 60);
+  const evts = await data.events;
+  const cycleState = cycles.process_events({type: cycles.ExpireOldDataType.NoExpire}, evts, cycles.initial);
+  const costInput: ccp.CostInput = {
+    machineCostPerYear: {
+      "Machine": 1234,
+    },
+    partMaterialCost: {
+      "aaa": 15,
+      "bbb": 19
+    },
+    numOperators: 2,
+    operatorCostPerHour: 5432
+  };
+
+  expect(
+    ccp.compute_monthly_cost(costInput, cycleState.by_part_then_stat)
+  ).toMatchSnapshot("cost calcs");
 });
