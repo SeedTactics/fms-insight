@@ -43,7 +43,7 @@ import createMuiTheme from '@material-ui/core/styles/createMuiTheme';
 import 'react-vis/dist/style.css';
 
 import App from './components/App';
-import { unregister } from './store/registerServiceWorker';
+import { register } from './store/registerServiceWorker';
 import { initStore } from './store/store';
 
 const theme = createMuiTheme({
@@ -67,4 +67,4 @@ ReactDOM.render(
   document.getElementById('root') as HTMLElement
 );
 
-unregister();
+register();

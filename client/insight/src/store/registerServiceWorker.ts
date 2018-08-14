@@ -31,35 +31,22 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+let windowRefreshing: boolean = false;
+
 export function register() {
   if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       const swUrl = `/service-worker.js`;
       navigator.serviceWorker
         .register(swUrl)
-        .then(registration => {
-          registration.onupdatefound = () => {
-            const installingWorker = registration.installing;
-            if (installingWorker) {
-              installingWorker.onstatechange = () => {
-                if (installingWorker.state === 'installed') {
-                  if (navigator.serviceWorker.controller) {
-                    // At this point, the old content will have been purged and
-                    // the fresh content will have been added to the cache.
-                    // It's the perfect time to display a 'New content is
-                    // available; please refresh.' message in your web app.
-                    console.log('New content is available; please refresh.');
-                  } else {
-                    console.log('Content is cached for offline use.');
-                  }
-                }
-              };
-            }
-          };
-        })
         .catch(error => {
           console.error('Error during service worker registration:', error);
         });
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (windowRefreshing) return;
+        windowRefreshing = true;
+        window.location.reload();
+      })
     });
   }
 }
