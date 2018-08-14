@@ -167,7 +167,6 @@ export function loadLast30Days(): ABF {
             type: ActionType.LoadRecentJobHistory,
             now: now,
             pledge: JobsBackend.history(thirtyDaysAgo, now)
-
         }
     ];
 }
