@@ -262,7 +262,7 @@ export function StationToolbar(props: StationToolbarProps) {
 
   return (
     <nav style={toolbarStyle}>
-      <div style={{flexGrow: 1}}>
+      <div style={{display: "flex", alignItems: "flex-end", flexGrow: 1}}>
         <Select
           value={props.current_route.station_monitor}
           onChange={e => setStation(e.target.value)}

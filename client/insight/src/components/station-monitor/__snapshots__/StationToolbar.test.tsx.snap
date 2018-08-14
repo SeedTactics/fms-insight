@@ -17,6 +17,8 @@ exports[`displays an empty queue page: empty queues 1`] = `
   <div
     style={
       Object {
+        "alignItems": "flex-end",
+        "display": "flex",
         "flexGrow": 1,
       }
     }
@@ -125,6 +127,8 @@ exports[`displays the load with no queues: load with no queues 1`] = `
   <div
     style={
       Object {
+        "alignItems": "flex-end",
+        "display": "flex",
         "flexGrow": 1,
       }
     }
@@ -265,6 +269,8 @@ exports[`displays the toolbar for all inspection: inspection all toolbar 1`] = `
   <div
     style={
       Object {
+        "alignItems": "flex-end",
+        "display": "flex",
         "flexGrow": 1,
       }
     }
@@ -379,6 +385,8 @@ exports[`displays the toolbar for all material: all material toolbar 1`] = `
   <div
     style={
       Object {
+        "alignItems": "flex-end",
+        "display": "flex",
         "flexGrow": 1,
       }
     }
@@ -462,6 +470,8 @@ exports[`displays the toolbar for load with one queue: load with one queue 1`] =
   <div
     style={
       Object {
+        "alignItems": "flex-end",
+        "display": "flex",
         "flexGrow": 1,
       }
     }
@@ -605,6 +615,8 @@ exports[`displays the toolbar for load with three queues: load toolbar 1`] = `
   <div
     style={
       Object {
+        "alignItems": "flex-end",
+        "display": "flex",
         "flexGrow": 1,
       }
     }
@@ -762,6 +774,8 @@ exports[`displays the toolbar for queue page with three queues: queue toolbar 1`
   <div
     style={
       Object {
+        "alignItems": "flex-end",
+        "display": "flex",
         "flexGrow": 1,
       }
     }
@@ -900,6 +914,8 @@ exports[`displays the toolbar for single inspection type: inspection i1 selected
   <div
     style={
       Object {
+        "alignItems": "flex-end",
+        "display": "flex",
         "flexGrow": 1,
       }
     }
@@ -1014,6 +1030,8 @@ exports[`displays the toolbar for wash: wash toolbar 1`] = `
   <div
     style={
       Object {
+        "alignItems": "flex-end",
+        "display": "flex",
         "flexGrow": 1,
       }
     }
