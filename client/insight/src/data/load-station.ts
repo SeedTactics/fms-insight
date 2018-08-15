@@ -34,12 +34,66 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as im from 'immutable';
 import * as api from './api';
 
+export interface PalletData {
+  pallet: api.IPalletStatus;
+  material: api.IInProcessMaterial[];
+}
+
+export function buildPallets(st: Readonly<api.ICurrentStatus>): im.Map<string, {pal?: PalletData, queued?: PalletData}> {
+
+  const matByPallet = new Map<string, api.IInProcessMaterial[]>();
+  for (let mat of st.material) {
+    if (mat.location.type === api.LocType.OnPallet && mat.location.pallet !== undefined) {
+      const mats = matByPallet.get(mat.location.pallet) || [];
+      mats.push(mat);
+      matByPallet.set(mat.location.pallet, mats);
+    }
+  }
+
+  const m = new Map<string, {pal?: PalletData, queued?: PalletData}>();
+  for (let pal of Object.values(st.pallets)) {
+    switch (pal.currentPalletLocation.loc) {
+      case api.PalletLocationEnum.LoadUnload:
+      case api.PalletLocationEnum.Machine:
+        const stat = pal.currentPalletLocation.group + " #" + pal.currentPalletLocation.num.toString();
+        m.set(
+          stat,
+          {...(m.get(stat) ||  {}),
+            pal: {
+              pallet: pal,
+              material: matByPallet.get(pal.pallet) || []
+            }
+          }
+        );
+        break;
+
+      case api.PalletLocationEnum.MachineQueue:
+        const stat2 = pal.currentPalletLocation.group + " #" + pal.currentPalletLocation.num.toString();
+        m.set(
+          stat2,
+          {...(m.get(stat2) ||  {}),
+            queued: {
+              pallet: pal,
+              material: matByPallet.get(pal.pallet) || []
+            }
+          }
+        );
+        break;
+
+      // TODO: buffer and cart
+    }
+  }
+
+  return im.Map(m);
+}
+
 export type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
 
 export interface LoadStationAndQueueData {
   readonly loadNum: number;
   readonly pallet?: Readonly<api.IPalletStatus>;
   readonly face: im.Map<number, MaterialList>;
+  readonly stationStatus?: im.Map<string, {pal?: PalletData, queued?: PalletData}>;
   readonly castings: MaterialList;
   readonly free?: MaterialList;
   readonly queues: im.Map<string, MaterialList>;
@@ -66,6 +120,7 @@ export function selectLoadStationAndQueueProps(
   let byFace: im.Map<number, api.IInProcessMaterial[]> = im.Map();
   let palName: string | undefined;
   let castings: im.Seq.Indexed<api.IInProcessMaterial> = im.Seq.Indexed();
+  let stationStatus: im.Map<string, {pal?: PalletData, queued?: PalletData}> | undefined;
 
   // load pallet material
   if (pal !== undefined) {
@@ -92,10 +147,13 @@ export function selectLoadStationAndQueueProps(
                 && m.action.loadOntoPallet === palName
                 && m.action.processAfterLoad === 1
                 && m.location.type === api.LocType.Free);
-  } else if (displayFree) {
-    castings = im.Seq(curSt.material)
-      .filter(m => m.action.processAfterLoad === 1
-                && m.location.type === api.LocType.Free);
+  } else {
+    stationStatus = buildPallets(curSt);
+    if (displayFree) {
+      castings = im.Seq(curSt.material)
+        .filter(m => m.action.processAfterLoad === 1
+                  && m.location.type === api.LocType.Free);
+    }
   }
 
   // now free and queued material
@@ -122,6 +180,7 @@ export function selectLoadStationAndQueueProps(
     loadNum,
     pallet: pal,
     face: byFace,
+    stationStatus: stationStatus,
     castings: castings.toArray(),
     free: free,
     queues: queueNames.merge(queueMat),

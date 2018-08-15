@@ -42,11 +42,7 @@ import { StationInUse } from '../../data/events';
 import * as api from '../../data/api';
 import { duration } from 'moment';
 import { addSeconds } from 'date-fns';
-
-interface PalletData {
-  pallet: api.IPalletStatus;
-  material: api.IInProcessMaterial[];
-}
+import { PalletData, buildPallets } from '../../data/load-station';
 
 export interface StationOEEProps {
   readonly date_of_current_status: Date | undefined;
@@ -244,54 +240,6 @@ export function stationHoursInLastWeek(use: im.List<StationInUse>): im.Map<strin
         m.set(s.station, (m.get(s.station) || 0) + s.hours);
     });
     return im.Map(m);
-}
-
-export function buildPallets(st: api.ICurrentStatus): im.Map<string, {pal?: PalletData, queued?: PalletData}> {
-
-  const matByPallet = new Map<string, api.IInProcessMaterial[]>();
-  for (let mat of st.material) {
-    if (mat.location.type === api.LocType.OnPallet && mat.location.pallet !== undefined) {
-      const mats = matByPallet.get(mat.location.pallet) || [];
-      mats.push(mat);
-      matByPallet.set(mat.location.pallet, mats);
-    }
-  }
-
-  const m = new Map<string, {pal?: PalletData, queued?: PalletData}>();
-  for (let pal of Object.values(st.pallets)) {
-    switch (pal.currentPalletLocation.loc) {
-      case api.PalletLocationEnum.LoadUnload:
-      case api.PalletLocationEnum.Machine:
-        const stat = pal.currentPalletLocation.group + " #" + pal.currentPalletLocation.num.toString();
-        m.set(
-          stat,
-          {...(m.get(stat) ||  {}),
-            pal: {
-              pallet: pal,
-              material: matByPallet.get(pal.pallet) || []
-            }
-          }
-        );
-        break;
-
-      case api.PalletLocationEnum.MachineQueue:
-        const stat2 = pal.currentPalletLocation.group + " #" + pal.currentPalletLocation.num.toString();
-        m.set(
-          stat2,
-          {...(m.get(stat2) ||  {}),
-            queued: {
-              pallet: pal,
-              material: matByPallet.get(pal.pallet) || []
-            }
-          }
-        );
-        break;
-
-      // TODO: buffer and cart
-    }
-  }
-
-  return im.Map(m);
 }
 
 const oeeSelector = createSelector(
