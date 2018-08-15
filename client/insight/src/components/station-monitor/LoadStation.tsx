@@ -38,8 +38,11 @@ import * as im from 'immutable';
 import { createSelector } from 'reselect';
 import DocumentTitle from 'react-document-title';
 import Button from '@material-ui/core/Button';
+import TimeAgo from 'react-timeago';
+import { addSeconds } from 'date-fns';
+import { duration } from 'moment';
 
-import { LoadStationAndQueueData, selectLoadStationAndQueueProps } from '../../data/load-station';
+import { LoadStationAndQueueData, selectLoadStationAndQueueProps, PalletData } from '../../data/load-station';
 import { MaterialDialog, InProcMaterial, WhiteboardRegion, MaterialDialogProps, InstructionButton } from './Material';
 import * as api from '../../data/api';
 import * as routes from '../../data/routes';
@@ -54,6 +57,85 @@ import SerialScanner from './QRScan';
 import { MoveMaterialArrowContainer, MoveMaterialArrowNode } from './MoveMaterialArrows';
 import { MoveMaterialNodeKindType } from '../../data/move-arrows';
 
+interface StationStatusProps {
+  byStation: im.Map<string, {pal?: PalletData, queue?: PalletData}>;
+  dateOfCurrentStatus: Date;
+}
+
+function stationPalMaterialStatus(mat: Readonly<api.IInProcessMaterial>, dateOfCurrentStatus: Date): JSX.Element {
+  const name = mat.partName + "-" + mat.process.toString();
+
+  let matStatus = "";
+  let matTime: JSX.Element | undefined;
+  switch (mat.action.type) {
+    case api.ActionType.Loading:
+      matStatus = " (loading)";
+      break;
+    case api.ActionType.UnloadToCompletedMaterial:
+    case api.ActionType.UnloadToInProcess:
+      matStatus = " (unloading)";
+      break;
+    case api.ActionType.Machining:
+      matStatus = " (machining)";
+      if (mat.action.expectedRemainingMachiningTime && dateOfCurrentStatus) {
+        matStatus += " completing ";
+        const seconds = duration(mat.action.expectedRemainingMachiningTime).asSeconds();
+        matTime = <TimeAgo date={addSeconds(dateOfCurrentStatus, seconds)}/>;
+      }
+      break;
+  }
+
+  return (
+    <>
+      <span>{name + matStatus}</span>
+      {matTime}
+    </>
+  )
+}
+
+const stationStatusStyles = withStyles(() => ({
+  defList: {
+    color: "rgba(0,0,0,0.6)",
+  },
+  defItem: {
+    marginTop: "1em",
+  }
+}));
+
+const StationStatus = stationStatusStyles<StationStatusProps>(props => {
+  if (props.byStation.size === 0) return <div/>;
+  return (
+    <dl className={props.classes.defList}>
+      {props.byStation.toSeq().sortBy((p, s) => s).map((pals, stat) =>
+        <React.Fragment key={stat}>
+          {pals.pal ?
+            <>
+              <dt className={props.classes.defItem}>
+                {stat} - Pallet {pals.pal.pallet.pallet} - worktable
+              </dt>
+              { pals.pal.material.map((mat, idx) =>
+                <dd key={idx}>{stationPalMaterialStatus(mat, props.dateOfCurrentStatus)}</dd>
+              )}
+            </>
+            : undefined
+          }
+          {pals.queue ?
+            <>
+              <dt className={props.classes.defList}>
+                {stat} - Pallet {pals.queue.pallet.pallet} - queue
+              </dt>
+              { pals.queue.material.map((mat, idx) =>
+                <dd key={idx}>{stationPalMaterialStatus(mat, props.dateOfCurrentStatus)}</dd>
+              )}
+            </>
+            : undefined
+          }
+        </React.Fragment>
+      ).valueSeq()}
+    </dl>
+  );
+});
+
 const palletStyles = withStyles(() => ({
   palletContainerFill: {
     width: '100%',
@@ -64,6 +146,17 @@ const palletStyles = withStyles(() => ({
     width: '100%',
     position: 'relative' as 'relative',
     minHeight: '12em',
+  },
+  statStatusFill: {
+    width: '100%',
+    flexGrow: 1,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statStatusScroll: {
+    width: "100%",
+    minHeight: '12em'
   },
   labelContainer: {
     position: 'absolute' as 'absolute',
@@ -86,10 +179,13 @@ const palletStyles = withStyles(() => ({
 
 export const PalletColumn = palletStyles<LoadStationProps>(props => {
   let palletClass: string;
+  let statStatusClass: string;
   if (props.fillViewPort) {
     palletClass = props.classes.palletContainerFill;
+    statStatusClass = props.classes.statStatusFill;
   } else {
     palletClass = props.classes.palletContainerScroll;
+    statStatusClass = props.classes.statStatusScroll;
   }
 
   const maxFace = props.data.face.map((m, face) => face).max();
@@ -156,16 +252,25 @@ export const PalletColumn = palletStyles<LoadStationProps>(props => {
         }
       </WhiteboardRegion>
       <Divider/>
-      <div className={palletClass}>
-        <div className={props.classes.labelContainer}>
-          <div className={props.classes.label}>Pallet</div>
-          {props.data.pallet ?
-            <div className={props.classes.labelPalletNum}>{props.data.pallet.pallet}</div>
-            : undefined
-          }
+      {props.data.stationStatus && props.dateOfCurrentStatus ? // stationStatus is defined only when no pallet is present
+        <div className={statStatusClass}>
+          <StationStatus
+            byStation={props.data.stationStatus}
+            dateOfCurrentStatus={props.dateOfCurrentStatus}
+          />
         </div>
-        {palDetails}
-      </div>
+        :
+        <div className={palletClass}>
+          <div className={props.classes.labelContainer}>
+            <div className={props.classes.label}>Pallet</div>
+            {props.data.pallet ?
+              <div className={props.classes.labelPalletNum}>{props.data.pallet.pallet}</div>
+              : undefined
+            }
+          </div>
+          {palDetails}
+        </div>
+      }
       <Divider/>
       <MoveMaterialArrowNode type={MoveMaterialNodeKindType.CompletedMaterialZone}>
         <WhiteboardRegion label="Completed Material"/>
@@ -275,6 +380,7 @@ const loadStyles = withStyles(() => ({
 export interface LoadStationProps {
   readonly fillViewPort: boolean;
   readonly data: LoadStationAndQueueData;
+  readonly dateOfCurrentStatus: Date | null;
   openMat: (m: Readonly<MaterialSummary>) => void;
 }
 
@@ -407,6 +513,7 @@ const buildLoadData = createSelector(
 export default connect(
   (st: Store) => ({
     data: buildLoadData(st),
+    dateOfCurrentStatus: st.Current.date_of_current_status || null,
   }),
   {
     openMat: matDetails.openMaterialDialog,
