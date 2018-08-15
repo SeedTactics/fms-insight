@@ -230,6 +230,7 @@ it("loads 30 days for analysis", () => {
   const cycles = stationCycles.process_events(
     {type: stationCycles.ExpireOldDataType.NoExpire},
     fakeCycle(new Date(), 3),
+    true,
     stationCycles.initial);
 
   let st = events.reducer(

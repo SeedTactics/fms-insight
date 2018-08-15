@@ -238,6 +238,7 @@ function safeAssign<T extends R, R>(o: T, n: R): T {
 
 function processRecentLogEntries(now: Date, evts: Iterable<api.ILogEntry>, s: Last30Days): Last30Days {
     const thirtyDaysAgo = addDays(now, -30);
+    const initialLoad = s.latest_log_counter === undefined;
     let lastCounter = s.latest_log_counter;
     let lastNewEvent = im.Seq(evts).maxBy(e => e.counter);
     let last10Evts = s.most_recent_10_events;
@@ -259,6 +260,7 @@ function processRecentLogEntries(now: Date, evts: Iterable<api.ILogEntry>, s: La
             cycles: cycles.process_events(
                 {type: cycles.ExpireOldDataType.ExpireEarlierThan, d: thirtyDaysAgo},
                 evts,
+                initialLoad,
                 s.cycles),
             most_recent_10_events: last10Evts,
             mat_summary: matsummary.process_events(now, evts, s.mat_summary),
@@ -277,6 +279,7 @@ function processSpecificMonthLogEntries(evts: Iterable<api.ILogEntry>, s: Analys
             cycles: cycles.process_events(
                 {type: cycles.ExpireOldDataType.NoExpire},
                 evts,
+                true, // initial load is true
                 s.cycles),
             inspection: inspection.process_events(
                 {type: cycles.ExpireOldDataType.NoExpire},

@@ -206,6 +206,32 @@ Object {
         ],
       },
     },
+    "estimatedCycleTimes": Immutable.Map {
+      "partCCC-3": Immutable.Map {
+        "MC": Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 18,
+          "medianMinutes": 18,
+        },
+      },
+      "partBBB-2": Immutable.Map {
+        "MC": Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 24,
+          "medianMinutes": 24,
+        },
+      },
+      "partAAA-1": Immutable.Map {
+        "MC": Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 30,
+          "medianMinutes": 30,
+        },
+      },
+    },
     "station_groups": Immutable.Set [
       "L/U",
       "MC",
@@ -480,6 +506,32 @@ Object {
             "y": 3,
           },
         ],
+      },
+    },
+    "estimatedCycleTimes": Immutable.Map {
+      "part222-2": Immutable.Map {
+        "MC": Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 18,
+          "medianMinutes": 18,
+        },
+      },
+      "part222-1": Immutable.Map {
+        "MC": Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 24,
+          "medianMinutes": 24,
+        },
+      },
+      "part111-1": Immutable.Map {
+        "MC": Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 30,
+          "medianMinutes": 30,
+        },
       },
     },
     "station_groups": Immutable.Set [
@@ -1017,6 +1069,32 @@ Object {
             "y": 3,
           },
         ],
+      },
+    },
+    "estimatedCycleTimes": Immutable.Map {
+      "part222-2": Immutable.Map {
+        "MC": Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 18,
+          "medianMinutes": 18,
+        },
+      },
+      "part222-1": Immutable.Map {
+        "MC": Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 24,
+          "medianMinutes": 24,
+        },
+      },
+      "part111-1": Immutable.Map {
+        "MC": Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 30,
+          "medianMinutes": 30,
+        },
       },
     },
     "station_groups": Immutable.Set [
@@ -1570,6 +1648,32 @@ Object {
             "y": 3,
           },
         ],
+      },
+    },
+    "estimatedCycleTimes": Immutable.Map {
+      "part222-2": Immutable.Map {
+        "MC": Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 18,
+          "medianMinutes": 18,
+        },
+      },
+      "part222-1": Immutable.Map {
+        "MC": Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 24,
+          "medianMinutes": 24,
+        },
+      },
+      "part111-1": Immutable.Map {
+        "MC": Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 30,
+          "medianMinutes": 30,
+        },
       },
     },
     "station_groups": Immutable.Set [
@@ -2133,6 +2237,32 @@ Object {
             "y": 3,
           },
         ],
+      },
+    },
+    "estimatedCycleTimes": Immutable.Map {
+      "part222-2": Immutable.Map {
+        "MC": Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 18,
+          "medianMinutes": 18,
+        },
+      },
+      "part222-1": Immutable.Map {
+        "MC": Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 24,
+          "medianMinutes": 24,
+        },
+      },
+      "part111-1": Immutable.Map {
+        "MC": Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 30,
+          "medianMinutes": 30,
+        },
       },
     },
     "station_groups": Immutable.Set [

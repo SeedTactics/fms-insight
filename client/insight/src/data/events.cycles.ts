@@ -50,16 +50,25 @@ export interface PartCycleData extends CycleData {
   readonly completed: boolean; // did this cycle result in a completed part
 }
 
+export interface StatisticalCycleTime {
+  readonly medianMinutes: number;
+  readonly MAD_belowMinutes: number // MAD of points below the median
+  readonly MAD_aboveMinutes: number // MAD of points below the median
+  readonly expectedCycleMinutes: number;
+}
+
 export interface CycleState {
   readonly by_part_then_stat: im.Map<string, im.Map<string, ReadonlyArray<PartCycleData>>>;
   readonly by_pallet: im.Map<string, ReadonlyArray<CycleData>>;
   readonly station_groups: im.Set<string>;
+  readonly estimatedCycleTimes: im.Map<string, im.Map<string, StatisticalCycleTime>>;
 }
 
 export const initial: CycleState = {
   by_part_then_stat: im.Map(),
   by_pallet: im.Map(),
   station_groups: im.Set(),
+  estimatedCycleTimes: im.Map(),
 };
 
 export enum ExpireOldDataType {
@@ -107,15 +116,143 @@ function stat_name_and_num(e: PartCycleData): string {
   }
 }
 
+// Assume: samples come from two distributions:
+//  - the program runs without interruption, giving a guassian iid around the cycle time.
+//  - the program is interrupted or stopped, which adds a random amount to the program
+//    and results in an outlier.
+//  - the program doesn't run at all, which results in a random short cycle time.
+// We use median absolute deviation to detect outliers, remove the outliers,
+// then compute average to find cycle time.
+
+function isOutlier(s: StatisticalCycleTime, mins: number): boolean {
+  if (s.medianMinutes === 0) return false;
+  if (mins < s.medianMinutes) {
+    return (s.medianMinutes - mins) / s.MAD_belowMinutes > 2;
+  } else {
+    return (mins - s.medianMinutes) / s.MAD_aboveMinutes > 2;
+  }
+}
+
+function median(vals: im.Seq.Indexed<number>): number {
+  const sorted = vals.sort().toArray();
+  const cnt = sorted.length;
+  if (cnt == 0) return 0;
+  const half = Math.floor(sorted.length/2);
+  if (sorted.length % 2 == 0)
+  {
+      //average two middle
+      return (sorted[half - 1] + sorted[half]) / 2;
+  }
+  else
+  {
+      //return middle
+      return sorted[half];
+  }
+}
+
+function estimateCycleTimes(cycles: im.Seq.Indexed<number>): StatisticalCycleTime {
+  //compute median
+  const medianMinutes = median(cycles);
+
+  //absolute deviation from median, but use different values for below and above
+  //median.  Below is assumed to be from fake cycles and above is from interrupted programs.
+  //since we assume gaussian, use consistantcy constant of 1.4826
+
+  let MAD_belowMinutes = 1.4826 * median(
+      cycles
+      .filter(x => x <= medianMinutes)
+      .map(x => medianMinutes - x)
+  );
+  if (MAD_belowMinutes < 0.01) MAD_belowMinutes = 0.01;
+
+  let MAD_aboveMinutes = 1.4826 * median(
+      cycles
+      .filter(x => x >= medianMinutes)
+      .map(x => x - medianMinutes)
+  );
+  if (MAD_aboveMinutes < 0.01) MAD_aboveMinutes = 0.01;
+
+  const statCycleTime = {
+    medianMinutes,
+    MAD_belowMinutes,
+    MAD_aboveMinutes,
+    expectedCycleMinutes: 0
+  };
+
+  //filter to only inliers
+  var inliers = cycles.filter(x => !isOutlier(statCycleTime, x)).toArray();
+  //compute average of inliers
+  const expectedCycleMinutes =
+    inliers.reduce((sum, x) => sum + x, 0)
+    /
+    inliers.length;
+
+  return {...statCycleTime, expectedCycleMinutes};
+}
+
+function estimateCycleTimesOfParts(
+  cycles: Iterable<api.ILogEntry>,
+): im.Map<string, im.Map<string, StatisticalCycleTime>> {
+  const ret =
+    im.Seq(cycles)
+    .filter(c => c.type === api.LogType.MachineCycle && !c.startofcycle)
+    .flatMap(c => c.material.map(m => ({cycle: c, mat: m})))
+    .groupBy(e => part_and_proc(e.mat))
+    .map(cyclesForPart =>
+      cyclesForPart
+      .groupBy(c => c.cycle.loc)
+      .map(cyclesForPartAndStat =>
+        estimateCycleTimes(
+          cyclesForPartAndStat
+          .map(p => duration(p.cycle.elapsed).asMinutes())
+          .toIndexedSeq()
+          .cacheResult()
+        )
+      ).toMap()
+    ).toMap();
+  return ret;
+}
+
+function activeMinutes(
+  partAndProc: string,
+  cycle: Readonly<api.ILogEntry>,
+  estimated: im.Map<string, im.Map<string, StatisticalCycleTime>>
+) {
+  const cMins = duration(cycle.active).asMinutes();
+  if (cycle.type === api.LogType.MachineCycle && (cycle.active === "" || cMins <= 0)) {
+    const byStat = estimated.get(partAndProc);
+    if (byStat) {
+      const e = byStat.get(cycle.loc);
+      if (e) {
+        return e.expectedCycleMinutes;
+      } else {
+        return 0;
+      }
+    } else {
+      return 0;
+    }
+  } else {
+    return cMins;
+  }
+}
+
 export function process_events(
   expire: ExpireOldData,
   newEvts: Iterable<api.ILogEntry>,
+  initialLoad: boolean,
   st: CycleState): CycleState {
 
     let evtsSeq = im.Seq(newEvts);
     let parts = st.by_part_then_stat;
     let pals = st.by_pallet;
     let statGroups = st.station_groups;
+
+    let estimatedCycleTimes: im.Map<string, im.Map<string, StatisticalCycleTime>>;
+    if (initialLoad) {
+      estimatedCycleTimes = estimateCycleTimesOfParts(newEvts)
+    } else {
+      estimatedCycleTimes = st.estimatedCycleTimes;
+    }
 
     switch (expire.type) {
       case ExpireOldDataType.ExpireEarlierThan:
@@ -165,12 +302,12 @@ export function process_events(
       )
       .flatMap(c => c.material.map(m => ({cycle: c, mat: m})))
       .groupBy(e => part_and_proc(e.mat))
-      .map(cyclesForPart =>
+      .map((cyclesForPart, partAndProc) =>
         cyclesForPart.toSeq()
           .map(e => ({
             x: e.cycle.endUTC,
             y: duration(e.cycle.elapsed).asMinutes(),
-            active: duration(e.cycle.active).asMinutes(),
+            active: activeMinutes(partAndProc, e.cycle, estimatedCycleTimes),
             completed: e.cycle.type === api.LogType.LoadUnloadCycle && e.cycle.result === "UNLOAD",
             part: e.mat.part,
             process: e.mat.proc,
@@ -225,11 +362,19 @@ export function process_events(
       statGroups = statGroups.union(newStatGroups);
     }
 
-    return {...st,
+    const newSt = {...st,
       by_part_then_stat: parts,
       by_pallet: pals,
       station_groups: statGroups,
     };
+
+    if (initialLoad) {
+      return {...newSt,
+        estimatedCycleTimes: estimatedCycleTimes
+      };
+    } else {
+      return newSt;
+    }
 }
 
 type DayAndStation = im.Record<{day: Date, station: string}>;

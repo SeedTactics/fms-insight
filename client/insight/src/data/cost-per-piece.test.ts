@@ -157,7 +157,7 @@ it("sets the operator cost per hour", () => {
 it("computes part costs", async () => {
   const data = loadMockData(30 * 24 * 60 * 60);
   const evts = await data.events;
-  const cycleState = cycles.process_events({type: cycles.ExpireOldDataType.NoExpire}, evts, cycles.initial);
+  const cycleState = cycles.process_events({type: cycles.ExpireOldDataType.NoExpire}, evts, true, cycles.initial);
   const costInput: ccp.CostInput = {
     machineCostPerYear: {
       "Machine": 1234,
