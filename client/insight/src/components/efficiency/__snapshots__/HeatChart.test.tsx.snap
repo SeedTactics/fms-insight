@@ -1,387 +1,1032 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`displays a cycle chart: heat chart 1`] = `
-<FlexibleXYPlot
-  colorRange={
-    Array [
-      "#E8F5E9",
-      "#1B5E20",
-    ]
-  }
-  height={750}
-  margin={
-    Object {
-      "bottom": 60,
-      "left": 100,
-    }
-  }
-  xType="ordinal"
-  yType="ordinal"
->
-  <XAxis
-    attr="x"
-    attrAxis="y"
-    orientation="bottom"
-    tickFormat={[Function]}
-    tickLabelAngle={-45}
-  />
-  <YAxis
-    attr="y"
-    attrAxis="x"
-    orientation="left"
-  />
-  <HeatmapSeries
-    className=""
-    data={
-      Array [
-        Object {
-          "color": 1,
-          "label": "1",
-          "x": 2018-03-01T00:00:00.000Z,
-          "y": "aaa",
-        },
-        Object {
-          "color": 2,
-          "label": "2",
-          "x": 2018-03-02T00:00:00.000Z,
-          "y": "aaa",
-        },
-        Object {
-          "color": 3,
-          "label": "3",
-          "x": 2018-03-03T00:00:00.000Z,
-          "y": "aaa",
-        },
-        Object {
-          "color": 4,
-          "label": "4",
-          "x": 2018-03-01T00:00:00.000Z,
-          "y": "bbb",
-        },
-        Object {
-          "color": 5,
-          "label": "5",
-          "x": 2018-03-02T00:00:00.000Z,
-          "y": "bbb",
-        },
-        Object {
-          "color": 6,
-          "label": "6",
-          "x": 2018-03-03T00:00:00.000Z,
-          "y": "bbb",
-        },
-      ]
-    }
-    onValueMouseOut={[Function]}
-    onValueMouseOver={[Function]}
-    stack={false}
-    style={Object {}}
-  />
-</FlexibleXYPlot>
+<div>
+  <div
+    style="width: 100%; height: 100%;"
+  >
+    <div
+      class="rv-xy-plot "
+      style="width: 0px; height: 750px;"
+    >
+      <svg
+        class="rv-xy-plot__inner"
+        height="750"
+        width="0"
+      >
+        <g
+          class="rv-xy-plot__axis rv-xy-plot__axis--horizontal "
+          transform="translate(100,690)"
+        >
+          <line
+            class="rv-xy-plot__axis__line"
+            x1="0"
+            x2="-110"
+            y1="0"
+            y2="0"
+          />
+          <g
+            class="rv-xy-plot__axis__ticks"
+            transform="translate(0, 0)"
+          >
+            <g
+              class="rv-xy-plot__axis__tick"
+              transform="translate(-18.33333333333333, 0)"
+            >
+              <line
+                class="rv-xy-plot__axis__tick__line"
+                x1="0"
+                x2="0"
+                y1="-6"
+                y2="6"
+              />
+              <text
+                class="rv-xy-plot__axis__tick__text"
+                dy="0"
+                text-anchor="end"
+                transform="translate(0, 14) rotate(-45)"
+              >
+                Wed Feb 28
+              </text>
+            </g>
+            <g
+              class="rv-xy-plot__axis__tick"
+              transform="translate(-54.99999999999999, 0)"
+            >
+              <line
+                class="rv-xy-plot__axis__tick__line"
+                x1="0"
+                x2="0"
+                y1="-6"
+                y2="6"
+              />
+              <text
+                class="rv-xy-plot__axis__tick__text"
+                dy="0"
+                text-anchor="end"
+                transform="translate(0, 14) rotate(-45)"
+              >
+                Thu Mar 1
+              </text>
+            </g>
+            <g
+              class="rv-xy-plot__axis__tick"
+              transform="translate(-91.66666666666666, 0)"
+            >
+              <line
+                class="rv-xy-plot__axis__tick__line"
+                x1="0"
+                x2="0"
+                y1="-6"
+                y2="6"
+              />
+              <text
+                class="rv-xy-plot__axis__tick__text"
+                dy="0"
+                text-anchor="end"
+                transform="translate(0, 14) rotate(-45)"
+              >
+                Fri Mar 2
+              </text>
+            </g>
+          </g>
+        </g>
+        <g
+          class="rv-xy-plot__axis rv-xy-plot__axis--vertical "
+          transform="translate(0,10)"
+        >
+          <line
+            class="rv-xy-plot__axis__line"
+            x1="100"
+            x2="100"
+            y1="0"
+            y2="680"
+          />
+          <g
+            class="rv-xy-plot__axis__ticks"
+            transform="translate(100, 0)"
+          >
+            <g
+              class="rv-xy-plot__axis__tick"
+              transform="translate(0, 510)"
+            >
+              <line
+                class="rv-xy-plot__axis__tick__line"
+                x1="6"
+                x2="-6"
+                y1="0"
+                y2="0"
+              />
+              <text
+                class="rv-xy-plot__axis__tick__text"
+                dy="0.32em"
+                text-anchor="end"
+                transform="translate(-14, 0)"
+              >
+                aaa
+              </text>
+            </g>
+            <g
+              class="rv-xy-plot__axis__tick"
+              transform="translate(0, 170)"
+            >
+              <line
+                class="rv-xy-plot__axis__tick__line"
+                x1="6"
+                x2="-6"
+                y1="0"
+                y2="0"
+              />
+              <text
+                class="rv-xy-plot__axis__tick__text"
+                dy="0.32em"
+                text-anchor="end"
+                transform="translate(-14, 0)"
+              >
+                bbb
+              </text>
+            </g>
+          </g>
+        </g>
+        <g
+          class="rv-xy-plot__series rv-xy-plot__series--heatmap "
+          transform="translate(100,10)"
+        >
+          <rect
+            height="340"
+            style="stroke: rgb(232, 245, 233); fill: rgb(232, 245, 233); opacity: 1;"
+            width="36.666666666666664"
+            x="-36.66666666666666"
+            y="340"
+          />
+          <rect
+            height="340"
+            style="stroke: rgb(191, 215, 193); fill: rgb(191, 215, 193); opacity: 1;"
+            width="36.666666666666664"
+            x="-73.33333333333333"
+            y="340"
+          />
+          <rect
+            height="340"
+            style="stroke: rgb(150, 185, 153); fill: rgb(150, 185, 153); opacity: 1;"
+            width="36.666666666666664"
+            x="-109.99999999999999"
+            y="340"
+          />
+          <rect
+            height="340"
+            style="stroke: rgb(109, 154, 112); fill: rgb(109, 154, 112); opacity: 1;"
+            width="36.666666666666664"
+            x="-36.66666666666666"
+            y="0"
+          />
+          <rect
+            height="340"
+            style="stroke: rgb(68, 124, 72); fill: rgb(68, 124, 72); opacity: 1;"
+            width="36.666666666666664"
+            x="-73.33333333333333"
+            y="0"
+          />
+          <rect
+            height="340"
+            style="stroke: rgb(27, 94, 32); fill: rgb(27, 94, 32); opacity: 1;"
+            width="36.666666666666664"
+            x="-109.99999999999999"
+            y="0"
+          />
+        </g>
+      </svg>
+    </div>
+  </div>
+</div>
 `;
 
 exports[`displays a selectable heat chart with actual points: selectable heat chart with actual data 1`] = `
-<WithStyles(Card)
-  raised={true}
->
-  <WithStyles(CardHeader)
-    title={
+<div>
+  <div
+    class="MuiPaper-root-2 MuiPaper-elevation8-12 MuiPaper-rounded-3 MuiCard-root-1"
+  >
+    <div
+      class="MuiCardHeader-root-29"
+    >
       <div
-        style={
-          Object {
-            "alignItems": "center",
-            "display": "flex",
-            "flexWrap": "wrap",
-          }
-        }
+        class="MuiCardHeader-content-32"
       >
-        <pure(Work) />
-        <div
-          style={
-            Object {
-              "marginLeft": "10px",
-              "marginRight": "3em",
-            }
-          }
+        <span
+          class="MuiTypography-root-35 MuiTypography-headline-40 MuiCardHeader-title-33"
         >
-          cardlabel
-        </div>
-        <div
-          style={
-            Object {
-              "flexGrow": 1,
-            }
-          }
-        />
-        <WithStyles(Select)
-          autoWidth={true}
-          displayEmpty={true}
-          onChange={[Function]}
-          value="Actual"
-        >
-          <WithStyles(MenuItem)
-            value="Actual"
+          <div
+            style="display: flex; flex-wrap: wrap; align-items: center;"
           >
-            Actual
-          </WithStyles(MenuItem)>
-          <WithStyles(MenuItem)
-            value="Planned"
-          >
-            Planned
-          </WithStyles(MenuItem)>
-        </WithStyles(Select)>
+            <svg
+              aria-hidden="true"
+              class="MuiSvgIcon-root-60"
+              focusable="false"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M0 0h24v24H0z"
+                fill="none"
+              />
+              <path
+                d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"
+              />
+            </svg>
+            <div
+              style="margin-left: 10px; margin-right: 3em;"
+            >
+              cardlabel
+            </div>
+            <div />
+            <div
+              class="MuiInput-root-72 MuiInput-underline-76"
+            >
+              <div
+                class="MuiSelect-root-67"
+              >
+                <div
+                  aria-haspopup="true"
+                  aria-pressed="false"
+                  class="MuiSelect-select-68 MuiSelect-selectMenu-69 MuiInput-input-80"
+                  role="button"
+                  tabindex="0"
+                >
+                  Actual
+                </div>
+                <input
+                  type="hidden"
+                  value="Actual"
+                />
+                <svg
+                  aria-hidden="true"
+                  class="MuiSvgIcon-root-60 MuiSelect-icon-71"
+                  focusable="false"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M7 10l5 5 5-5z"
+                  />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </span>
       </div>
-    }
-  />
-  <WithStyles(CardContent)>
-    <HeatChart
-      label_title="colorlabel"
-      points={
-        Array [
-          Object {
-            "color": 1,
-            "label": "1",
-            "x": 2018-03-01T00:00:00.000Z,
-            "y": "aaa",
-          },
-          Object {
-            "color": 2,
-            "label": "2",
-            "x": 2018-03-02T00:00:00.000Z,
-            "y": "aaa",
-          },
-          Object {
-            "color": 3,
-            "label": "3",
-            "x": 2018-03-03T00:00:00.000Z,
-            "y": "aaa",
-          },
-          Object {
-            "color": 4,
-            "label": "4",
-            "x": 2018-03-01T00:00:00.000Z,
-            "y": "bbb",
-          },
-          Object {
-            "color": 5,
-            "label": "5",
-            "x": 2018-03-02T00:00:00.000Z,
-            "y": "bbb",
-          },
-          Object {
-            "color": 6,
-            "label": "6",
-            "x": 2018-03-03T00:00:00.000Z,
-            "y": "bbb",
-          },
-        ]
-      }
-      row_count={2}
-    />
-  </WithStyles(CardContent)>
-</WithStyles(Card)>
+    </div>
+    <div
+      class="MuiCardContent-root-89"
+    >
+      <div
+        style="width: 100%; height: 100%;"
+      >
+        <div
+          class="rv-xy-plot "
+          style="width: 0px; height: 150px;"
+        >
+          <svg
+            class="rv-xy-plot__inner"
+            height="150"
+            width="0"
+          >
+            <g
+              class="rv-xy-plot__axis rv-xy-plot__axis--horizontal "
+              transform="translate(100,90)"
+            >
+              <line
+                class="rv-xy-plot__axis__line"
+                x1="0"
+                x2="-110"
+                y1="0"
+                y2="0"
+              />
+              <g
+                class="rv-xy-plot__axis__ticks"
+                transform="translate(0, 0)"
+              >
+                <g
+                  class="rv-xy-plot__axis__tick"
+                  transform="translate(-18.33333333333333, 0)"
+                >
+                  <line
+                    class="rv-xy-plot__axis__tick__line"
+                    x1="0"
+                    x2="0"
+                    y1="-6"
+                    y2="6"
+                  />
+                  <text
+                    class="rv-xy-plot__axis__tick__text"
+                    dy="0"
+                    text-anchor="end"
+                    transform="translate(0, 14) rotate(-45)"
+                  >
+                    Wed Feb 28
+                  </text>
+                </g>
+                <g
+                  class="rv-xy-plot__axis__tick"
+                  transform="translate(-54.99999999999999, 0)"
+                >
+                  <line
+                    class="rv-xy-plot__axis__tick__line"
+                    x1="0"
+                    x2="0"
+                    y1="-6"
+                    y2="6"
+                  />
+                  <text
+                    class="rv-xy-plot__axis__tick__text"
+                    dy="0"
+                    text-anchor="end"
+                    transform="translate(0, 14) rotate(-45)"
+                  >
+                    Thu Mar 1
+                  </text>
+                </g>
+                <g
+                  class="rv-xy-plot__axis__tick"
+                  transform="translate(-91.66666666666666, 0)"
+                >
+                  <line
+                    class="rv-xy-plot__axis__tick__line"
+                    x1="0"
+                    x2="0"
+                    y1="-6"
+                    y2="6"
+                  />
+                  <text
+                    class="rv-xy-plot__axis__tick__text"
+                    dy="0"
+                    text-anchor="end"
+                    transform="translate(0, 14) rotate(-45)"
+                  >
+                    Fri Mar 2
+                  </text>
+                </g>
+              </g>
+            </g>
+            <g
+              class="rv-xy-plot__axis rv-xy-plot__axis--vertical "
+              transform="translate(0,10)"
+            >
+              <line
+                class="rv-xy-plot__axis__line"
+                x1="100"
+                x2="100"
+                y1="0"
+                y2="80"
+              />
+              <g
+                class="rv-xy-plot__axis__ticks"
+                transform="translate(100, 0)"
+              >
+                <g
+                  class="rv-xy-plot__axis__tick"
+                  transform="translate(0, 60)"
+                >
+                  <line
+                    class="rv-xy-plot__axis__tick__line"
+                    x1="6"
+                    x2="-6"
+                    y1="0"
+                    y2="0"
+                  />
+                  <text
+                    class="rv-xy-plot__axis__tick__text"
+                    dy="0.32em"
+                    text-anchor="end"
+                    transform="translate(-14, 0)"
+                  >
+                    aaa
+                  </text>
+                </g>
+                <g
+                  class="rv-xy-plot__axis__tick"
+                  transform="translate(0, 20)"
+                >
+                  <line
+                    class="rv-xy-plot__axis__tick__line"
+                    x1="6"
+                    x2="-6"
+                    y1="0"
+                    y2="0"
+                  />
+                  <text
+                    class="rv-xy-plot__axis__tick__text"
+                    dy="0.32em"
+                    text-anchor="end"
+                    transform="translate(-14, 0)"
+                  >
+                    bbb
+                  </text>
+                </g>
+              </g>
+            </g>
+            <g
+              class="rv-xy-plot__series rv-xy-plot__series--heatmap "
+              transform="translate(100,10)"
+            >
+              <rect
+                height="40"
+                style="stroke: rgb(232, 245, 233); fill: rgb(232, 245, 233); opacity: 1;"
+                width="36.666666666666664"
+                x="-36.66666666666666"
+                y="40"
+              />
+              <rect
+                height="40"
+                style="stroke: rgb(191, 215, 193); fill: rgb(191, 215, 193); opacity: 1;"
+                width="36.666666666666664"
+                x="-73.33333333333333"
+                y="40"
+              />
+              <rect
+                height="40"
+                style="stroke: rgb(150, 185, 153); fill: rgb(150, 185, 153); opacity: 1;"
+                width="36.666666666666664"
+                x="-109.99999999999999"
+                y="40"
+              />
+              <rect
+                height="40"
+                style="stroke: rgb(109, 154, 112); fill: rgb(109, 154, 112); opacity: 1;"
+                width="36.666666666666664"
+                x="-36.66666666666666"
+                y="0"
+              />
+              <rect
+                height="40"
+                style="stroke: rgb(68, 124, 72); fill: rgb(68, 124, 72); opacity: 1;"
+                width="36.666666666666664"
+                x="-73.33333333333333"
+                y="0"
+              />
+              <rect
+                height="40"
+                style="stroke: rgb(27, 94, 32); fill: rgb(27, 94, 32); opacity: 1;"
+                width="36.666666666666664"
+                x="-109.99999999999999"
+                y="0"
+              />
+            </g>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 `;
 
 exports[`displays a selectable heat chart with planned minus actual points: selectable heat chart with planned minus actual data 1`] = `
-<WithStyles(Card)
-  raised={true}
->
-  <WithStyles(CardHeader)
-    title={
+<div>
+  <div
+    class="MuiPaper-root-180 MuiPaper-elevation8-190 MuiPaper-rounded-181 MuiCard-root-179"
+  >
+    <div
+      class="MuiCardHeader-root-207"
+    >
       <div
-        style={
-          Object {
-            "alignItems": "center",
-            "display": "flex",
-            "flexWrap": "wrap",
-          }
-        }
+        class="MuiCardHeader-content-210"
       >
-        <pure(Work) />
-        <div
-          style={
-            Object {
-              "marginLeft": "10px",
-              "marginRight": "3em",
-            }
-          }
+        <span
+          class="MuiTypography-root-213 MuiTypography-headline-218 MuiCardHeader-title-211"
         >
-          cardlabel
-        </div>
-        <div
-          style={
-            Object {
-              "flexGrow": 1,
-            }
-          }
-        />
-        <WithStyles(Select)
-          autoWidth={true}
-          displayEmpty={true}
-          onChange={[Function]}
-          value="PlannedOrActual"
-        >
-          <WithStyles(MenuItem)
-            value="Actual"
+          <div
+            style="display: flex; flex-wrap: wrap; align-items: center;"
           >
-            Actual
-          </WithStyles(MenuItem)>
-          <WithStyles(MenuItem)
-            value="Planned"
-          >
-            Planned
-          </WithStyles(MenuItem)>
-        </WithStyles(Select)>
+            <svg
+              aria-hidden="true"
+              class="MuiSvgIcon-root-238"
+              focusable="false"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M0 0h24v24H0z"
+                fill="none"
+              />
+              <path
+                d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"
+              />
+            </svg>
+            <div
+              style="margin-left: 10px; margin-right: 3em;"
+            >
+              cardlabel
+            </div>
+            <div />
+            <div
+              class="MuiInput-root-250 MuiInput-underline-254"
+            >
+              <div
+                class="MuiSelect-root-245"
+              >
+                <div
+                  aria-haspopup="true"
+                  aria-pressed="false"
+                  class="MuiSelect-select-246 MuiSelect-selectMenu-247 MuiInput-input-258"
+                  role="button"
+                  tabindex="0"
+                >
+                  <span>
+                    ​
+                  </span>
+                </div>
+                <input
+                  type="hidden"
+                  value="PlannedOrActual"
+                />
+                <svg
+                  aria-hidden="true"
+                  class="MuiSvgIcon-root-238 MuiSelect-icon-249"
+                  focusable="false"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M7 10l5 5 5-5z"
+                  />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </span>
       </div>
-    }
-  />
-  <WithStyles(CardContent)>
-    <HeatChart
-      label_title="colorlabel"
-      points={
-        Array [
-          Object {
-            "color": 1,
-            "label": "1",
-            "x": 2018-03-01T00:00:00.000Z,
-            "y": "aaa",
-          },
-          Object {
-            "color": 2,
-            "label": "2",
-            "x": 2018-03-02T00:00:00.000Z,
-            "y": "aaa",
-          },
-          Object {
-            "color": 3,
-            "label": "3",
-            "x": 2018-03-03T00:00:00.000Z,
-            "y": "aaa",
-          },
-          Object {
-            "color": 4,
-            "label": "4",
-            "x": 2018-03-01T00:00:00.000Z,
-            "y": "bbb",
-          },
-          Object {
-            "color": 5,
-            "label": "5",
-            "x": 2018-03-02T00:00:00.000Z,
-            "y": "bbb",
-          },
-          Object {
-            "color": 6,
-            "label": "6",
-            "x": 2018-03-03T00:00:00.000Z,
-            "y": "bbb",
-          },
-        ]
-      }
-      row_count={2}
-    />
-  </WithStyles(CardContent)>
-</WithStyles(Card)>
+    </div>
+    <div
+      class="MuiCardContent-root-267"
+    >
+      <div
+        style="width: 100%; height: 100%;"
+      >
+        <div
+          class="rv-xy-plot "
+          style="width: 0px; height: 150px;"
+        >
+          <svg
+            class="rv-xy-plot__inner"
+            height="150"
+            width="0"
+          >
+            <g
+              class="rv-xy-plot__axis rv-xy-plot__axis--horizontal "
+              transform="translate(100,90)"
+            >
+              <line
+                class="rv-xy-plot__axis__line"
+                x1="0"
+                x2="-110"
+                y1="0"
+                y2="0"
+              />
+              <g
+                class="rv-xy-plot__axis__ticks"
+                transform="translate(0, 0)"
+              >
+                <g
+                  class="rv-xy-plot__axis__tick"
+                  transform="translate(-18.33333333333333, 0)"
+                >
+                  <line
+                    class="rv-xy-plot__axis__tick__line"
+                    x1="0"
+                    x2="0"
+                    y1="-6"
+                    y2="6"
+                  />
+                  <text
+                    class="rv-xy-plot__axis__tick__text"
+                    dy="0"
+                    text-anchor="end"
+                    transform="translate(0, 14) rotate(-45)"
+                  >
+                    Wed Feb 28
+                  </text>
+                </g>
+                <g
+                  class="rv-xy-plot__axis__tick"
+                  transform="translate(-54.99999999999999, 0)"
+                >
+                  <line
+                    class="rv-xy-plot__axis__tick__line"
+                    x1="0"
+                    x2="0"
+                    y1="-6"
+                    y2="6"
+                  />
+                  <text
+                    class="rv-xy-plot__axis__tick__text"
+                    dy="0"
+                    text-anchor="end"
+                    transform="translate(0, 14) rotate(-45)"
+                  >
+                    Thu Mar 1
+                  </text>
+                </g>
+                <g
+                  class="rv-xy-plot__axis__tick"
+                  transform="translate(-91.66666666666666, 0)"
+                >
+                  <line
+                    class="rv-xy-plot__axis__tick__line"
+                    x1="0"
+                    x2="0"
+                    y1="-6"
+                    y2="6"
+                  />
+                  <text
+                    class="rv-xy-plot__axis__tick__text"
+                    dy="0"
+                    text-anchor="end"
+                    transform="translate(0, 14) rotate(-45)"
+                  >
+                    Fri Mar 2
+                  </text>
+                </g>
+              </g>
+            </g>
+            <g
+              class="rv-xy-plot__axis rv-xy-plot__axis--vertical "
+              transform="translate(0,10)"
+            >
+              <line
+                class="rv-xy-plot__axis__line"
+                x1="100"
+                x2="100"
+                y1="0"
+                y2="80"
+              />
+              <g
+                class="rv-xy-plot__axis__ticks"
+                transform="translate(100, 0)"
+              >
+                <g
+                  class="rv-xy-plot__axis__tick"
+                  transform="translate(0, 60)"
+                >
+                  <line
+                    class="rv-xy-plot__axis__tick__line"
+                    x1="6"
+                    x2="-6"
+                    y1="0"
+                    y2="0"
+                  />
+                  <text
+                    class="rv-xy-plot__axis__tick__text"
+                    dy="0.32em"
+                    text-anchor="end"
+                    transform="translate(-14, 0)"
+                  >
+                    aaa
+                  </text>
+                </g>
+                <g
+                  class="rv-xy-plot__axis__tick"
+                  transform="translate(0, 20)"
+                >
+                  <line
+                    class="rv-xy-plot__axis__tick__line"
+                    x1="6"
+                    x2="-6"
+                    y1="0"
+                    y2="0"
+                  />
+                  <text
+                    class="rv-xy-plot__axis__tick__text"
+                    dy="0.32em"
+                    text-anchor="end"
+                    transform="translate(-14, 0)"
+                  >
+                    bbb
+                  </text>
+                </g>
+              </g>
+            </g>
+            <g
+              class="rv-xy-plot__series rv-xy-plot__series--heatmap "
+              transform="translate(100,10)"
+            >
+              <rect
+                height="40"
+                style="stroke: rgb(232, 245, 233); fill: rgb(232, 245, 233); opacity: 1;"
+                width="36.666666666666664"
+                x="-36.66666666666666"
+                y="40"
+              />
+              <rect
+                height="40"
+                style="stroke: rgb(191, 215, 193); fill: rgb(191, 215, 193); opacity: 1;"
+                width="36.666666666666664"
+                x="-73.33333333333333"
+                y="40"
+              />
+              <rect
+                height="40"
+                style="stroke: rgb(150, 185, 153); fill: rgb(150, 185, 153); opacity: 1;"
+                width="36.666666666666664"
+                x="-109.99999999999999"
+                y="40"
+              />
+              <rect
+                height="40"
+                style="stroke: rgb(109, 154, 112); fill: rgb(109, 154, 112); opacity: 1;"
+                width="36.666666666666664"
+                x="-36.66666666666666"
+                y="0"
+              />
+              <rect
+                height="40"
+                style="stroke: rgb(68, 124, 72); fill: rgb(68, 124, 72); opacity: 1;"
+                width="36.666666666666664"
+                x="-73.33333333333333"
+                y="0"
+              />
+              <rect
+                height="40"
+                style="stroke: rgb(27, 94, 32); fill: rgb(27, 94, 32); opacity: 1;"
+                width="36.666666666666664"
+                x="-109.99999999999999"
+                y="0"
+              />
+            </g>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 `;
 
 exports[`displays a selectable heat chart with planned points: selectable heat chart with planned data 1`] = `
-<WithStyles(Card)
-  raised={true}
->
-  <WithStyles(CardHeader)
-    title={
+<div>
+  <div
+    class="MuiPaper-root-91 MuiPaper-elevation8-101 MuiPaper-rounded-92 MuiCard-root-90"
+  >
+    <div
+      class="MuiCardHeader-root-118"
+    >
       <div
-        style={
-          Object {
-            "alignItems": "center",
-            "display": "flex",
-            "flexWrap": "wrap",
-          }
-        }
+        class="MuiCardHeader-content-121"
       >
-        <pure(Work) />
-        <div
-          style={
-            Object {
-              "marginLeft": "10px",
-              "marginRight": "3em",
-            }
-          }
+        <span
+          class="MuiTypography-root-124 MuiTypography-headline-129 MuiCardHeader-title-122"
         >
-          cardlabel
-        </div>
-        <div
-          style={
-            Object {
-              "flexGrow": 1,
-            }
-          }
-        />
-        <WithStyles(Select)
-          autoWidth={true}
-          displayEmpty={true}
-          onChange={[Function]}
-          value="Planned"
-        >
-          <WithStyles(MenuItem)
-            value="Actual"
+          <div
+            style="display: flex; flex-wrap: wrap; align-items: center;"
           >
-            Actual
-          </WithStyles(MenuItem)>
-          <WithStyles(MenuItem)
-            value="Planned"
-          >
-            Planned
-          </WithStyles(MenuItem)>
-        </WithStyles(Select)>
+            <svg
+              aria-hidden="true"
+              class="MuiSvgIcon-root-149"
+              focusable="false"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M0 0h24v24H0z"
+                fill="none"
+              />
+              <path
+                d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"
+              />
+            </svg>
+            <div
+              style="margin-left: 10px; margin-right: 3em;"
+            >
+              cardlabel
+            </div>
+            <div />
+            <div
+              class="MuiInput-root-161 MuiInput-underline-165"
+            >
+              <div
+                class="MuiSelect-root-156"
+              >
+                <div
+                  aria-haspopup="true"
+                  aria-pressed="false"
+                  class="MuiSelect-select-157 MuiSelect-selectMenu-158 MuiInput-input-169"
+                  role="button"
+                  tabindex="0"
+                >
+                  Planned
+                </div>
+                <input
+                  type="hidden"
+                  value="Planned"
+                />
+                <svg
+                  aria-hidden="true"
+                  class="MuiSvgIcon-root-149 MuiSelect-icon-160"
+                  focusable="false"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M7 10l5 5 5-5z"
+                  />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </span>
       </div>
-    }
-  />
-  <WithStyles(CardContent)>
-    <HeatChart
-      label_title="colorlabel"
-      points={
-        Array [
-          Object {
-            "color": 1,
-            "label": "1",
-            "x": 2018-03-01T00:00:00.000Z,
-            "y": "aaa",
-          },
-          Object {
-            "color": 2,
-            "label": "2",
-            "x": 2018-03-02T00:00:00.000Z,
-            "y": "aaa",
-          },
-          Object {
-            "color": 3,
-            "label": "3",
-            "x": 2018-03-03T00:00:00.000Z,
-            "y": "aaa",
-          },
-          Object {
-            "color": 4,
-            "label": "4",
-            "x": 2018-03-01T00:00:00.000Z,
-            "y": "bbb",
-          },
-          Object {
-            "color": 5,
-            "label": "5",
-            "x": 2018-03-02T00:00:00.000Z,
-            "y": "bbb",
-          },
-          Object {
-            "color": 6,
-            "label": "6",
-            "x": 2018-03-03T00:00:00.000Z,
-            "y": "bbb",
-          },
-        ]
-      }
-      row_count={2}
-    />
-  </WithStyles(CardContent)>
-</WithStyles(Card)>
+    </div>
+    <div
+      class="MuiCardContent-root-178"
+    >
+      <div
+        style="width: 100%; height: 100%;"
+      >
+        <div
+          class="rv-xy-plot "
+          style="width: 0px; height: 150px;"
+        >
+          <svg
+            class="rv-xy-plot__inner"
+            height="150"
+            width="0"
+          >
+            <g
+              class="rv-xy-plot__axis rv-xy-plot__axis--horizontal "
+              transform="translate(100,90)"
+            >
+              <line
+                class="rv-xy-plot__axis__line"
+                x1="0"
+                x2="-110"
+                y1="0"
+                y2="0"
+              />
+              <g
+                class="rv-xy-plot__axis__ticks"
+                transform="translate(0, 0)"
+              >
+                <g
+                  class="rv-xy-plot__axis__tick"
+                  transform="translate(-18.33333333333333, 0)"
+                >
+                  <line
+                    class="rv-xy-plot__axis__tick__line"
+                    x1="0"
+                    x2="0"
+                    y1="-6"
+                    y2="6"
+                  />
+                  <text
+                    class="rv-xy-plot__axis__tick__text"
+                    dy="0"
+                    text-anchor="end"
+                    transform="translate(0, 14) rotate(-45)"
+                  >
+                    Wed Feb 28
+                  </text>
+                </g>
+                <g
+                  class="rv-xy-plot__axis__tick"
+                  transform="translate(-54.99999999999999, 0)"
+                >
+                  <line
+                    class="rv-xy-plot__axis__tick__line"
+                    x1="0"
+                    x2="0"
+                    y1="-6"
+                    y2="6"
+                  />
+                  <text
+                    class="rv-xy-plot__axis__tick__text"
+                    dy="0"
+                    text-anchor="end"
+                    transform="translate(0, 14) rotate(-45)"
+                  >
+                    Thu Mar 1
+                  </text>
+                </g>
+                <g
+                  class="rv-xy-plot__axis__tick"
+                  transform="translate(-91.66666666666666, 0)"
+                >
+                  <line
+                    class="rv-xy-plot__axis__tick__line"
+                    x1="0"
+                    x2="0"
+                    y1="-6"
+                    y2="6"
+                  />
+                  <text
+                    class="rv-xy-plot__axis__tick__text"
+                    dy="0"
+                    text-anchor="end"
+                    transform="translate(0, 14) rotate(-45)"
+                  >
+                    Fri Mar 2
+                  </text>
+                </g>
+              </g>
+            </g>
+            <g
+              class="rv-xy-plot__axis rv-xy-plot__axis--vertical "
+              transform="translate(0,10)"
+            >
+              <line
+                class="rv-xy-plot__axis__line"
+                x1="100"
+                x2="100"
+                y1="0"
+                y2="80"
+              />
+              <g
+                class="rv-xy-plot__axis__ticks"
+                transform="translate(100, 0)"
+              >
+                <g
+                  class="rv-xy-plot__axis__tick"
+                  transform="translate(0, 60)"
+                >
+                  <line
+                    class="rv-xy-plot__axis__tick__line"
+                    x1="6"
+                    x2="-6"
+                    y1="0"
+                    y2="0"
+                  />
+                  <text
+                    class="rv-xy-plot__axis__tick__text"
+                    dy="0.32em"
+                    text-anchor="end"
+                    transform="translate(-14, 0)"
+                  >
+                    aaa
+                  </text>
+                </g>
+                <g
+                  class="rv-xy-plot__axis__tick"
+                  transform="translate(0, 20)"
+                >
+                  <line
+                    class="rv-xy-plot__axis__tick__line"
+                    x1="6"
+                    x2="-6"
+                    y1="0"
+                    y2="0"
+                  />
+                  <text
+                    class="rv-xy-plot__axis__tick__text"
+                    dy="0.32em"
+                    text-anchor="end"
+                    transform="translate(-14, 0)"
+                  >
+                    bbb
+                  </text>
+                </g>
+              </g>
+            </g>
+            <g
+              class="rv-xy-plot__series rv-xy-plot__series--heatmap "
+              transform="translate(100,10)"
+            >
+              <rect
+                height="40"
+                style="stroke: rgb(232, 245, 233); fill: rgb(232, 245, 233); opacity: 1;"
+                width="36.666666666666664"
+                x="-36.66666666666666"
+                y="40"
+              />
+              <rect
+                height="40"
+                style="stroke: rgb(191, 215, 193); fill: rgb(191, 215, 193); opacity: 1;"
+                width="36.666666666666664"
+                x="-73.33333333333333"
+                y="40"
+              />
+              <rect
+                height="40"
+                style="stroke: rgb(150, 185, 153); fill: rgb(150, 185, 153); opacity: 1;"
+                width="36.666666666666664"
+                x="-109.99999999999999"
+                y="40"
+              />
+              <rect
+                height="40"
+                style="stroke: rgb(109, 154, 112); fill: rgb(109, 154, 112); opacity: 1;"
+                width="36.666666666666664"
+                x="-36.66666666666666"
+                y="0"
+              />
+              <rect
+                height="40"
+                style="stroke: rgb(68, 124, 72); fill: rgb(68, 124, 72); opacity: 1;"
+                width="36.666666666666664"
+                x="-73.33333333333333"
+                y="0"
+              />
+              <rect
+                height="40"
+                style="stroke: rgb(27, 94, 32); fill: rgb(27, 94, 32); opacity: 1;"
+                width="36.666666666666664"
+                x="-109.99999999999999"
+                y="0"
+              />
+            </g>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 `;

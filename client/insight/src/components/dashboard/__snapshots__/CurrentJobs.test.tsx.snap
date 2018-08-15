@@ -36,374 +36,719 @@ Object {
 `;
 
 exports[`renders the current jobs with filling viewport: current job graph filling viewport 1`] = `
-<FillViewportPlot
-  cnt={3}
->
-  <XAxis
-    attr="x"
-    attrAxis="y"
-    orientation="bottom"
-  />
-  <YAxis
-    attr="y"
-    attrAxis="x"
-    orientation="left"
-    tickFormat={[Function]}
-  />
-  <HorizontalGridLines
-    attr="y"
-    direction="horizontal"
-  />
-  <VerticalGridLines
-    attr="x"
-    direction="vertical"
-  />
-  <HorizontalBarSeries
-    className=""
-    color="#795548"
-    data={
-      Array [
-        Object {
-          "completed": 4,
-          "completedCount": 6,
-          "part": "ddd",
-          "totalCount": 9,
-          "totalPlan": 8,
-          "x": 12,
-          "y": 1,
-        },
-        Object {
-          "completed": 2,
-          "completedCount": 3,
-          "part": "eee",
-          "totalCount": 100,
-          "totalPlan": 7,
-          "x": 7,
-          "y": 2,
-        },
-        Object {
-          "completed": 1,
-          "completedCount": 8,
-          "part": "fff",
-          "totalCount": 99,
-          "totalPlan": 3,
-          "x": 9,
-          "y": 3,
-        },
-      ]
-    }
-    onValueMouseOut={[Function]}
-    onValueMouseOver={[Function]}
-    stack={false}
-    style={Object {}}
-  />
-  <AbstractSeries
-    animation={false}
-    className=""
-    customComponent={[Function]}
-    data={
-      Array [
-        Object {
-          "x": 40,
-          "y": 1,
-        },
-        Object {
-          "x": 33,
-          "y": 2,
-        },
-        Object {
-          "x": 24,
-          "y": 3,
-        },
-      ]
-    }
-    stack={false}
-    style={Object {}}
-  />
-</FillViewportPlot>
+<div>
+  <div
+    style="display: flex; flex-direction: column;"
+  >
+    <div
+      style="position: relative;"
+    >
+      <div
+        style="position: absolute; top: 0px; left: 0px; bottom: 0px; right: 0px;"
+      >
+        <div
+          style="width: 100%; height: 100%;"
+        >
+          <div
+            class="rv-xy-plot "
+            style="width: 0px; height: 0px;"
+          >
+            <svg
+              class="rv-xy-plot__inner"
+              height="0"
+              width="0"
+            >
+              <g
+                class="rv-xy-plot__axis rv-xy-plot__axis--horizontal "
+                transform="translate(70,-40)"
+              >
+                <line
+                  class="rv-xy-plot__axis__line"
+                  x1="0"
+                  x2="-80"
+                  y1="0"
+                  y2="0"
+                />
+                <g
+                  class="rv-xy-plot__axis__ticks"
+                  transform="translate(0, 0)"
+                >
+                  <g
+                    class="rv-xy-plot__axis__tick"
+                    transform="translate(0, 0)"
+                  >
+                    <line
+                      class="rv-xy-plot__axis__tick__line"
+                      x1="0"
+                      x2="0"
+                      y1="-6"
+                      y2="6"
+                    />
+                    <text
+                      class="rv-xy-plot__axis__tick__text"
+                      dy="0.72em"
+                      text-anchor="middle"
+                      transform="translate(0, 14)"
+                    >
+                      0
+                    </text>
+                  </g>
+                  <g
+                    class="rv-xy-plot__axis__tick"
+                    transform="translate(-20, 0)"
+                  >
+                    <line
+                      class="rv-xy-plot__axis__tick__line"
+                      x1="0"
+                      x2="0"
+                      y1="-6"
+                      y2="6"
+                    />
+                    <text
+                      class="rv-xy-plot__axis__tick__text"
+                      dy="0.72em"
+                      text-anchor="middle"
+                      transform="translate(0, 14)"
+                    >
+                      10
+                    </text>
+                  </g>
+                  <g
+                    class="rv-xy-plot__axis__tick"
+                    transform="translate(-40, 0)"
+                  >
+                    <line
+                      class="rv-xy-plot__axis__tick__line"
+                      x1="0"
+                      x2="0"
+                      y1="-6"
+                      y2="6"
+                    />
+                    <text
+                      class="rv-xy-plot__axis__tick__text"
+                      dy="0.72em"
+                      text-anchor="middle"
+                      transform="translate(0, 14)"
+                    >
+                      20
+                    </text>
+                  </g>
+                  <g
+                    class="rv-xy-plot__axis__tick"
+                    transform="translate(-60, 0)"
+                  >
+                    <line
+                      class="rv-xy-plot__axis__tick__line"
+                      x1="0"
+                      x2="0"
+                      y1="-6"
+                      y2="6"
+                    />
+                    <text
+                      class="rv-xy-plot__axis__tick__text"
+                      dy="0.72em"
+                      text-anchor="middle"
+                      transform="translate(0, 14)"
+                    >
+                      30
+                    </text>
+                  </g>
+                  <g
+                    class="rv-xy-plot__axis__tick"
+                    transform="translate(-80, 0)"
+                  >
+                    <line
+                      class="rv-xy-plot__axis__tick__line"
+                      x1="0"
+                      x2="0"
+                      y1="-6"
+                      y2="6"
+                    />
+                    <text
+                      class="rv-xy-plot__axis__tick__text"
+                      dy="0.72em"
+                      text-anchor="middle"
+                      transform="translate(0, 14)"
+                    >
+                      40
+                    </text>
+                  </g>
+                </g>
+              </g>
+              <g
+                class="rv-xy-plot__axis rv-xy-plot__axis--vertical "
+                transform="translate(0,10)"
+              >
+                <line
+                  class="rv-xy-plot__axis__line"
+                  x1="70"
+                  x2="70"
+                  y1="0"
+                  y2="-50"
+                />
+                <g
+                  class="rv-xy-plot__axis__ticks"
+                  transform="translate(70, 0)"
+                >
+                  <g
+                    class="rv-xy-plot__axis__tick"
+                    transform="translate(0, -41.66666666666667)"
+                  >
+                    <line
+                      class="rv-xy-plot__axis__tick__line"
+                      x1="6"
+                      x2="-6"
+                      y1="0"
+                      y2="0"
+                    />
+                    <text
+                      class="rv-xy-plot__axis__tick__text"
+                      dy="0.32em"
+                      text-anchor="end"
+                      transform="translate(-14, 0)"
+                    >
+                      ddd
+                    </text>
+                  </g>
+                  <g
+                    class="rv-xy-plot__axis__tick"
+                    transform="translate(0, -25.000000000000004)"
+                  >
+                    <line
+                      class="rv-xy-plot__axis__tick__line"
+                      x1="6"
+                      x2="-6"
+                      y1="0"
+                      y2="0"
+                    />
+                    <text
+                      class="rv-xy-plot__axis__tick__text"
+                      dy="0.32em"
+                      text-anchor="end"
+                      transform="translate(-14, 0)"
+                    >
+                      eee
+                    </text>
+                  </g>
+                  <g
+                    class="rv-xy-plot__axis__tick"
+                    transform="translate(0, -8.333333333333336)"
+                  >
+                    <line
+                      class="rv-xy-plot__axis__tick__line"
+                      x1="6"
+                      x2="-6"
+                      y1="0"
+                      y2="0"
+                    />
+                    <text
+                      class="rv-xy-plot__axis__tick__text"
+                      dy="0.32em"
+                      text-anchor="end"
+                      transform="translate(-14, 0)"
+                    >
+                      fff
+                    </text>
+                  </g>
+                </g>
+              </g>
+              <g
+                class="rv-xy-plot__grid-lines"
+                transform="translate(70,10)"
+              >
+                <line
+                  class="rv-xy-plot__grid-lines__line"
+                  x1="0"
+                  x2="-80"
+                  y1="-41.66666666666667"
+                  y2="-41.66666666666667"
+                />
+                <line
+                  class="rv-xy-plot__grid-lines__line"
+                  x1="0"
+                  x2="-80"
+                  y1="-25.000000000000004"
+                  y2="-25.000000000000004"
+                />
+                <line
+                  class="rv-xy-plot__grid-lines__line"
+                  x1="0"
+                  x2="-80"
+                  y1="-8.333333333333336"
+                  y2="-8.333333333333336"
+                />
+              </g>
+              <g
+                class="rv-xy-plot__grid-lines"
+                transform="translate(70,10)"
+              >
+                <line
+                  class="rv-xy-plot__grid-lines__line"
+                  x1="0"
+                  x2="0"
+                  y1="0"
+                  y2="-50"
+                />
+                <line
+                  class="rv-xy-plot__grid-lines__line"
+                  x1="-20"
+                  x2="-20"
+                  y1="0"
+                  y2="-50"
+                />
+                <line
+                  class="rv-xy-plot__grid-lines__line"
+                  x1="-40"
+                  x2="-40"
+                  y1="0"
+                  y2="-50"
+                />
+                <line
+                  class="rv-xy-plot__grid-lines__line"
+                  x1="-60"
+                  x2="-60"
+                  y1="0"
+                  y2="-50"
+                />
+                <line
+                  class="rv-xy-plot__grid-lines__line"
+                  x1="-80"
+                  x2="-80"
+                  y1="0"
+                  y2="-50"
+                />
+              </g>
+              <g
+                class="rv-xy-plot__series rv-xy-plot__series--bar "
+                transform="translate(70,10)"
+              >
+                <rect
+                  height="14.166666666666668"
+                  style="opacity: 1; stroke: #795548; fill: #795548;"
+                  width="24"
+                  x="-24"
+                  y="-48.75000000000001"
+                />
+                <rect
+                  height="14.166666666666668"
+                  style="opacity: 1; stroke: #795548; fill: #795548;"
+                  width="14"
+                  x="-14"
+                  y="-32.083333333333336"
+                />
+                <rect
+                  height="14.166666666666668"
+                  style="opacity: 1; stroke: #795548; fill: #795548;"
+                  width="18"
+                  x="-18"
+                  y="-15.41666666666667"
+                />
+              </g>
+              <g
+                class="rv-xy-plot__series rv-xy-plot__series--custom-svg-wrapper "
+                transform="translate(70,10)"
+              >
+                <g
+                  class="rv-xy-plot__series--custom-svg"
+                  transform="translate(-80,-41.66666666666667)"
+                >
+                  <rect
+                    fill="black"
+                    height="10"
+                    width="4"
+                    x="-2"
+                    y="-5"
+                  />
+                </g>
+                <g
+                  class="rv-xy-plot__series--custom-svg"
+                  transform="translate(-66,-25.000000000000004)"
+                >
+                  <rect
+                    fill="black"
+                    height="10"
+                    width="4"
+                    x="-2"
+                    y="-5"
+                  />
+                </g>
+                <g
+                  class="rv-xy-plot__series--custom-svg"
+                  transform="translate(-48,-8.333333333333336)"
+                >
+                  <rect
+                    fill="black"
+                    height="10"
+                    width="4"
+                    x="-2"
+                    y="-5"
+                  />
+                </g>
+              </g>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      style="text-align: center; margin-bottom: 8px; color: rgb(107, 107, 118);"
+    >
+      Machine Hours
+    </div>
+  </div>
+</div>
 `;
 
 exports[`renders the current jobs: current job graph scrollable 1`] = `
-<ScrollablePlot
-  cnt={3}
->
-  <XAxis
-    attr="x"
-    attrAxis="y"
-    orientation="bottom"
-  />
-  <YAxis
-    attr="y"
-    attrAxis="x"
-    orientation="left"
-    tickFormat={[Function]}
-  />
-  <HorizontalGridLines
-    attr="y"
-    direction="horizontal"
-  />
-  <VerticalGridLines
-    attr="x"
-    direction="vertical"
-  />
-  <HorizontalBarSeries
-    className=""
-    color="#795548"
-    data={
-      Array [
-        Object {
-          "completed": 5,
-          "completedCount": 1,
-          "part": "abc",
-          "totalCount": 11,
-          "totalPlan": 10,
-          "x": 10,
-          "y": 1,
-        },
-        Object {
-          "completed": 1,
-          "completedCount": 6,
-          "part": "def",
-          "totalCount": 9,
-          "totalPlan": 1,
-          "x": 11,
-          "y": 2,
-        },
-        Object {
-          "completed": 0,
-          "completedCount": 0,
-          "part": "zzz",
-          "totalCount": 6,
-          "totalPlan": 15,
-          "x": 16,
-          "y": 3,
-        },
-      ]
-    }
-    onValueMouseOut={[Function]}
-    onValueMouseOver={[Function]}
-    stack={false}
-    style={Object {}}
-  />
-  <AbstractSeries
-    animation={false}
-    className=""
-    customComponent={[Function]}
-    data={
-      Array [
-        Object {
-          "x": 16,
-          "y": 1,
-        },
-        Object {
-          "x": 17,
-          "y": 2,
-        },
-        Object {
-          "x": 22,
-          "y": 3,
-        },
-      ]
-    }
-    stack={false}
-    style={Object {}}
-  />
-</ScrollablePlot>
-`;
-
-exports[`shows hint for mouse over: after mousing out of value 1`] = `
-<ScrollablePlot
-  cnt={3}
->
-  <XAxis
-    attr="x"
-    attrAxis="y"
-    orientation="bottom"
-  />
-  <YAxis
-    attr="y"
-    attrAxis="x"
-    orientation="left"
-    tickFormat={[Function]}
-  />
-  <HorizontalGridLines
-    attr="y"
-    direction="horizontal"
-  />
-  <VerticalGridLines
-    attr="x"
-    direction="vertical"
-  />
-  <HorizontalBarSeries
-    className=""
-    color="#795548"
-    data={
-      Array [
-        Object {
-          "completed": 5,
-          "completedCount": 1,
-          "part": "abc",
-          "totalCount": 11,
-          "totalPlan": 10,
-          "x": 10,
-          "y": 1,
-        },
-        Object {
-          "completed": 1,
-          "completedCount": 6,
-          "part": "def",
-          "totalCount": 9,
-          "totalPlan": 1,
-          "x": 11,
-          "y": 2,
-        },
-        Object {
-          "completed": 0,
-          "completedCount": 0,
-          "part": "zzz",
-          "totalCount": 6,
-          "totalPlan": 15,
-          "x": 16,
-          "y": 3,
-        },
-      ]
-    }
-    onValueMouseOut={[Function]}
-    onValueMouseOver={[Function]}
-    stack={false}
-    style={Object {}}
-  />
-  <AbstractSeries
-    animation={false}
-    className=""
-    customComponent={[Function]}
-    data={
-      Array [
-        Object {
-          "x": 16,
-          "y": 1,
-        },
-        Object {
-          "x": 17,
-          "y": 2,
-        },
-        Object {
-          "x": 22,
-          "y": 3,
-        },
-      ]
-    }
-    stack={false}
-    style={Object {}}
-  />
-</ScrollablePlot>
-`;
-
-exports[`shows hint for mouse over: after mousing over first data point 1`] = `
-<ScrollablePlot
-  cnt={3}
->
-  <XAxis
-    attr="x"
-    attrAxis="y"
-    orientation="bottom"
-  />
-  <YAxis
-    attr="y"
-    attrAxis="x"
-    orientation="left"
-    tickFormat={[Function]}
-  />
-  <HorizontalGridLines
-    attr="y"
-    direction="horizontal"
-  />
-  <VerticalGridLines
-    attr="x"
-    direction="vertical"
-  />
-  <HorizontalBarSeries
-    className=""
-    color="#795548"
-    data={
-      Array [
-        Object {
-          "completed": 5,
-          "completedCount": 1,
-          "part": "abc",
-          "totalCount": 11,
-          "totalPlan": 10,
-          "x": 10,
-          "y": 1,
-        },
-        Object {
-          "completed": 1,
-          "completedCount": 6,
-          "part": "def",
-          "totalCount": 9,
-          "totalPlan": 1,
-          "x": 11,
-          "y": 2,
-        },
-        Object {
-          "completed": 0,
-          "completedCount": 0,
-          "part": "zzz",
-          "totalCount": 6,
-          "totalPlan": 15,
-          "x": 16,
-          "y": 3,
-        },
-      ]
-    }
-    onValueMouseOut={[Function]}
-    onValueMouseOver={[Function]}
-    stack={false}
-    style={Object {}}
-  />
-  <AbstractSeries
-    animation={false}
-    className=""
-    customComponent={[Function]}
-    data={
-      Array [
-        Object {
-          "x": 16,
-          "y": 1,
-        },
-        Object {
-          "x": 17,
-          "y": 2,
-        },
-        Object {
-          "x": 22,
-          "y": 3,
-        },
-      ]
-    }
-    stack={false}
-    style={Object {}}
-  />
-  <Hint
-    align={
-      Object {
-        "horizontal": "auto",
-        "vertical": "auto",
-      }
-    }
-    format={[Function]}
-    style={Object {}}
-    value={
-      Object {
-        "completed": 5,
-        "completedCount": 1,
-        "part": "abc",
-        "totalCount": 11,
-        "totalPlan": 10,
-        "x": 10,
-        "y": 1,
-      }
-    }
-  />
-</ScrollablePlot>
+<div>
+  <div>
+    <div
+      style="width: 100%; height: 100%;"
+    >
+      <div
+        class="rv-xy-plot "
+        style="width: 0px; height: 120px;"
+      >
+        <svg
+          class="rv-xy-plot__inner"
+          height="120"
+          width="0"
+        >
+          <g
+            class="rv-xy-plot__axis rv-xy-plot__axis--horizontal "
+            transform="translate(70,80)"
+          >
+            <line
+              class="rv-xy-plot__axis__line"
+              x1="0"
+              x2="-80"
+              y1="0"
+              y2="0"
+            />
+            <g
+              class="rv-xy-plot__axis__ticks"
+              transform="translate(0, 0)"
+            >
+              <g
+                class="rv-xy-plot__axis__tick"
+                transform="translate(0, 0)"
+              >
+                <line
+                  class="rv-xy-plot__axis__tick__line"
+                  x1="0"
+                  x2="0"
+                  y1="-6"
+                  y2="6"
+                />
+                <text
+                  class="rv-xy-plot__axis__tick__text"
+                  dy="0.72em"
+                  text-anchor="middle"
+                  transform="translate(0, 14)"
+                >
+                  0
+                </text>
+              </g>
+              <g
+                class="rv-xy-plot__axis__tick"
+                transform="translate(-18.18181818181818, 0)"
+              >
+                <line
+                  class="rv-xy-plot__axis__tick__line"
+                  x1="0"
+                  x2="0"
+                  y1="-6"
+                  y2="6"
+                />
+                <text
+                  class="rv-xy-plot__axis__tick__text"
+                  dy="0.72em"
+                  text-anchor="middle"
+                  transform="translate(0, 14)"
+                >
+                  5
+                </text>
+              </g>
+              <g
+                class="rv-xy-plot__axis__tick"
+                transform="translate(-36.36363636363636, 0)"
+              >
+                <line
+                  class="rv-xy-plot__axis__tick__line"
+                  x1="0"
+                  x2="0"
+                  y1="-6"
+                  y2="6"
+                />
+                <text
+                  class="rv-xy-plot__axis__tick__text"
+                  dy="0.72em"
+                  text-anchor="middle"
+                  transform="translate(0, 14)"
+                >
+                  10
+                </text>
+              </g>
+              <g
+                class="rv-xy-plot__axis__tick"
+                transform="translate(-54.54545454545454, 0)"
+              >
+                <line
+                  class="rv-xy-plot__axis__tick__line"
+                  x1="0"
+                  x2="0"
+                  y1="-6"
+                  y2="6"
+                />
+                <text
+                  class="rv-xy-plot__axis__tick__text"
+                  dy="0.72em"
+                  text-anchor="middle"
+                  transform="translate(0, 14)"
+                >
+                  15
+                </text>
+              </g>
+              <g
+                class="rv-xy-plot__axis__tick"
+                transform="translate(-72.72727272727272, 0)"
+              >
+                <line
+                  class="rv-xy-plot__axis__tick__line"
+                  x1="0"
+                  x2="0"
+                  y1="-6"
+                  y2="6"
+                />
+                <text
+                  class="rv-xy-plot__axis__tick__text"
+                  dy="0.72em"
+                  text-anchor="middle"
+                  transform="translate(0, 14)"
+                >
+                  20
+                </text>
+              </g>
+            </g>
+          </g>
+          <g
+            class="rv-xy-plot__axis rv-xy-plot__axis--vertical "
+            transform="translate(0,10)"
+          >
+            <line
+              class="rv-xy-plot__axis__line"
+              x1="70"
+              x2="70"
+              y1="0"
+              y2="70"
+            />
+            <g
+              class="rv-xy-plot__axis__ticks"
+              transform="translate(70, 0)"
+            >
+              <g
+                class="rv-xy-plot__axis__tick"
+                transform="translate(0, 58.33333333333333)"
+              >
+                <line
+                  class="rv-xy-plot__axis__tick__line"
+                  x1="6"
+                  x2="-6"
+                  y1="0"
+                  y2="0"
+                />
+                <text
+                  class="rv-xy-plot__axis__tick__text"
+                  dy="0.32em"
+                  text-anchor="end"
+                  transform="translate(-14, 0)"
+                >
+                  abc
+                </text>
+              </g>
+              <g
+                class="rv-xy-plot__axis__tick"
+                transform="translate(0, 35)"
+              >
+                <line
+                  class="rv-xy-plot__axis__tick__line"
+                  x1="6"
+                  x2="-6"
+                  y1="0"
+                  y2="0"
+                />
+                <text
+                  class="rv-xy-plot__axis__tick__text"
+                  dy="0.32em"
+                  text-anchor="end"
+                  transform="translate(-14, 0)"
+                >
+                  def
+                </text>
+              </g>
+              <g
+                class="rv-xy-plot__axis__tick"
+                transform="translate(0, 11.666666666666668)"
+              >
+                <line
+                  class="rv-xy-plot__axis__tick__line"
+                  x1="6"
+                  x2="-6"
+                  y1="0"
+                  y2="0"
+                />
+                <text
+                  class="rv-xy-plot__axis__tick__text"
+                  dy="0.32em"
+                  text-anchor="end"
+                  transform="translate(-14, 0)"
+                >
+                  zzz
+                </text>
+              </g>
+            </g>
+          </g>
+          <g
+            class="rv-xy-plot__grid-lines"
+            transform="translate(70,10)"
+          >
+            <line
+              class="rv-xy-plot__grid-lines__line"
+              x1="0"
+              x2="-80"
+              y1="58.33333333333333"
+              y2="58.33333333333333"
+            />
+            <line
+              class="rv-xy-plot__grid-lines__line"
+              x1="0"
+              x2="-80"
+              y1="35"
+              y2="35"
+            />
+            <line
+              class="rv-xy-plot__grid-lines__line"
+              x1="0"
+              x2="-80"
+              y1="11.666666666666668"
+              y2="11.666666666666668"
+            />
+          </g>
+          <g
+            class="rv-xy-plot__grid-lines"
+            transform="translate(70,10)"
+          >
+            <line
+              class="rv-xy-plot__grid-lines__line"
+              x1="0"
+              x2="0"
+              y1="0"
+              y2="70"
+            />
+            <line
+              class="rv-xy-plot__grid-lines__line"
+              x1="-18.18181818181818"
+              x2="-18.18181818181818"
+              y1="0"
+              y2="70"
+            />
+            <line
+              class="rv-xy-plot__grid-lines__line"
+              x1="-36.36363636363636"
+              x2="-36.36363636363636"
+              y1="0"
+              y2="70"
+            />
+            <line
+              class="rv-xy-plot__grid-lines__line"
+              x1="-54.54545454545454"
+              x2="-54.54545454545454"
+              y1="0"
+              y2="70"
+            />
+            <line
+              class="rv-xy-plot__grid-lines__line"
+              x1="-72.72727272727272"
+              x2="-72.72727272727272"
+              y1="0"
+              y2="70"
+            />
+          </g>
+          <g
+            class="rv-xy-plot__series rv-xy-plot__series--bar "
+            transform="translate(70,10)"
+          >
+            <rect
+              height="19.83333333333333"
+              style="opacity: 1; stroke: #795548; fill: #795548;"
+              width="36.36363636363636"
+              x="-36.36363636363636"
+              y="48.416666666666664"
+            />
+            <rect
+              height="19.83333333333333"
+              style="opacity: 1; stroke: #795548; fill: #795548;"
+              width="40"
+              x="-40"
+              y="25.083333333333336"
+            />
+            <rect
+              height="19.83333333333333"
+              style="opacity: 1; stroke: #795548; fill: #795548;"
+              width="58.18181818181819"
+              x="-58.18181818181819"
+              y="1.7500000000000036"
+            />
+          </g>
+          <g
+            class="rv-xy-plot__series rv-xy-plot__series--custom-svg-wrapper "
+            transform="translate(70,10)"
+          >
+            <g
+              class="rv-xy-plot__series--custom-svg"
+              transform="translate(-58.18181818181819,58.33333333333333)"
+            >
+              <rect
+                fill="black"
+                height="10"
+                width="4"
+                x="-2"
+                y="-5"
+              />
+            </g>
+            <g
+              class="rv-xy-plot__series--custom-svg"
+              transform="translate(-61.81818181818181,35)"
+            >
+              <rect
+                fill="black"
+                height="10"
+                width="4"
+                x="-2"
+                y="-5"
+              />
+            </g>
+            <g
+              class="rv-xy-plot__series--custom-svg"
+              transform="translate(-80,11.666666666666668)"
+            >
+              <rect
+                fill="black"
+                height="10"
+                width="4"
+                x="-2"
+                y="-5"
+              />
+            </g>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div
+      style="text-align: center;"
+    >
+      Machine Hours
+    </div>
+  </div>
+</div>
 `;

@@ -32,7 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from 'react';
-import { shallow } from 'enzyme';
+import {render, cleanup} from 'react-testing-library';
+afterEach(cleanup);
 import { Set } from 'immutable';
 
 import { StationToolbar } from './StationToolbar';
@@ -54,7 +55,7 @@ it('displays the toolbar for load with one queue', () => {
   const displayWash = jest.fn();
   const displayQueues = jest.fn();
 
-  let val = shallow(
+  let {container} = render(
     <StationToolbar
       current_route={basicState}
       queues={{"a": {}, "b": {}}}
@@ -70,7 +71,7 @@ it('displays the toolbar for load with one queue', () => {
       removeOperator={jest.fn()}
       openQrCodeScan={jest.fn()}
     />);
-  expect(val).toMatchSnapshot('load with one queue');
+  expect(container).toMatchSnapshot('load with one queue');
 });
 
 it('displays the load with no queues', () => {
@@ -82,7 +83,7 @@ it('displays the load with no queues', () => {
     load_queues: [],
   };
 
-  let val = shallow(
+  let {container} = render(
     <StationToolbar
       current_route={st}
       queues={{}}
@@ -98,7 +99,7 @@ it('displays the load with no queues', () => {
       removeOperator={jest.fn()}
       openQrCodeScan={jest.fn()}
     />);
-  expect(val).toMatchSnapshot('load with no queues');
+  expect(container).toMatchSnapshot('load with no queues');
 });
 
 it('displays the toolbar for load with three queues', () => {
@@ -112,7 +113,7 @@ it('displays the toolbar for load with three queues', () => {
     load_queues: ["a", "b", "c"],
   };
 
-  let val = shallow(
+  let {container} = render(
     <StationToolbar
       current_route={st}
       queues={{"a": {}, "b": {}, "c": {}, "d": {}}}
@@ -128,7 +129,7 @@ it('displays the toolbar for load with three queues', () => {
       removeOperator={jest.fn()}
       openQrCodeScan={jest.fn()}
     />);
-  expect(val).toMatchSnapshot('load toolbar');
+  expect(container).toMatchSnapshot('load toolbar');
 });
 
 it('displays the toolbar for wash', () => {
@@ -142,7 +143,7 @@ it('displays the toolbar for wash', () => {
     load_queues: [],
   };
 
-  let val = shallow(
+  let {container} = render(
     <StationToolbar
       current_route={st}
       queues={{}}
@@ -158,7 +159,7 @@ it('displays the toolbar for wash', () => {
       removeOperator={jest.fn()}
       openQrCodeScan={jest.fn()}
     />);
-  expect(val).toMatchSnapshot('wash toolbar');
+  expect(container).toMatchSnapshot('wash toolbar');
 });
 
 it('displays the toolbar for all material', () => {
@@ -168,7 +169,7 @@ it('displays the toolbar for all material', () => {
     load_queues: [],
   };
 
-  let val = shallow(
+  let {container} = render(
     <StationToolbar
       current_route={st}
       queues={{}}
@@ -184,7 +185,7 @@ it('displays the toolbar for all material', () => {
       removeOperator={jest.fn()}
       openQrCodeScan={jest.fn()}
     />);
-  expect(val).toMatchSnapshot('all material toolbar');
+  expect(container).toMatchSnapshot('all material toolbar');
 });
 
 it('displays the toolbar for all inspection', () => {
@@ -198,7 +199,7 @@ it('displays the toolbar for all inspection', () => {
     load_queues: [],
   };
 
-  let val = shallow(
+  let {container} = render(
     <StationToolbar
       current_route={st}
       queues={{}}
@@ -214,7 +215,7 @@ it('displays the toolbar for all inspection', () => {
       removeOperator={jest.fn()}
       openQrCodeScan={jest.fn()}
     />);
-  expect(val).toMatchSnapshot('inspection all toolbar');
+  expect(container).toMatchSnapshot('inspection all toolbar');
 });
 
 it('displays the toolbar for single inspection type', () => {
@@ -229,7 +230,7 @@ it('displays the toolbar for single inspection type', () => {
     load_queues: [],
   };
 
-  let val = shallow(
+  let {container} = render(
     <StationToolbar
       current_route={st}
       queues={{}}
@@ -245,7 +246,7 @@ it('displays the toolbar for single inspection type', () => {
       removeOperator={jest.fn()}
       openQrCodeScan={jest.fn()}
     />);
-  expect(val).toMatchSnapshot('inspection i1 selected toolbar');
+  expect(container).toMatchSnapshot('inspection i1 selected toolbar');
 });
 
 it('displays an empty queue page', () => {
@@ -259,7 +260,7 @@ it('displays an empty queue page', () => {
     standalone_queues: [],
   };
 
-  let val = shallow(
+  let {container} = render(
     <StationToolbar
       current_route={st}
       queues={{}}
@@ -275,7 +276,7 @@ it('displays an empty queue page', () => {
       removeOperator={jest.fn()}
       openQrCodeScan={jest.fn()}
     />);
-  expect(val).toMatchSnapshot('empty queues');
+  expect(container).toMatchSnapshot('empty queues');
 });
 
 it('displays the toolbar for queue page with three queues', () => {
@@ -289,7 +290,7 @@ it('displays the toolbar for queue page with three queues', () => {
     standalone_queues: ["a", "b", "c"],
   };
 
-  let val = shallow(
+  let {container} = render(
     <StationToolbar
       current_route={st}
       queues={{"a": {}, "b": {}, "c": {}, "d": {}}}
@@ -305,190 +306,5 @@ it('displays the toolbar for queue page with three queues', () => {
       removeOperator={jest.fn()}
       openQrCodeScan={jest.fn()}
     />);
-  expect(val).toMatchSnapshot('queue toolbar');
-});
-
-it("changes the station type", () => {
-  const displayLoad = jest.fn();
-  const displayInsp = jest.fn();
-  const displayWash = jest.fn();
-  const displayQueues = jest.fn();
-
-  const val = shallow(
-    <StationToolbar
-      current_route={basicState}
-      queues={{}}
-      insp_types={Set()}
-      displayLoadStation={displayLoad}
-      displayInspection={displayInsp}
-      displayWash={displayWash}
-      displayQueues={displayQueues}
-      displayAllMaterial={jest.fn()}
-      operators={Set(["o1", "o2"])}
-      currentOperator="o1"
-      setOperator={jest.fn()}
-      removeOperator={jest.fn()}
-      openQrCodeScan={jest.fn()}
-    />);
-
-  // tslint:disable-next-line:no-any
-  const onChange = val.find("WithStyles(Select)").first().prop("onChange") as any;
-
-  onChange({target: {value: routes.StationMonitorType.Wash}});
-  expect(displayWash).toHaveBeenCalled();
-  displayWash.mockReset();
-
-  onChange({target: {value: routes.StationMonitorType.Inspection}});
-  expect(displayInsp).toHaveBeenCalledWith(undefined);
-  displayInsp.mockReset();
-
-  onChange({target: {value: routes.StationMonitorType.LoadUnload}});
-  expect(displayLoad).toHaveBeenCalledWith(
-    basicState.selected_load_id,
-    basicState.load_queues,
-    false
-  );
-  displayLoad.mockReset();
-
-  onChange({target: {value: routes.StationMonitorType.Queues}});
-  expect(displayQueues).toHaveBeenCalledWith(
-    basicState.standalone_queues,
-    false
-  );
-  displayQueues.mockReset();
-});
-
-it("changes the load station number", () => {
-  const displayLoad = jest.fn();
-  const displayInsp = jest.fn();
-  const displayWash = jest.fn();
-  const displayQueues = jest.fn();
-
-  const val = shallow(
-    <StationToolbar
-      current_route={basicState}
-      queues={{}}
-      insp_types={Set()}
-      displayLoadStation={displayLoad}
-      displayInspection={displayInsp}
-      displayWash={displayWash}
-      displayQueues={displayQueues}
-      displayAllMaterial={jest.fn()}
-      operators={Set(["o1", "o2"])}
-      currentOperator="o1"
-      setOperator={jest.fn()}
-      removeOperator={jest.fn()}
-      openQrCodeScan={jest.fn()}
-    />);
-
-  // tslint:disable-next-line:no-any
-  const onChange = val.find("WithStyles(Input)").first().prop("onChange") as any;
-  onChange({target: {value: "12"}});
-
-  expect(displayLoad).toHaveBeenCalledWith(
-    12,
-    basicState.load_queues,
-    false
-  );
-
-  expect(displayInsp).not.toHaveBeenCalled();
-  expect(displayWash).not.toHaveBeenCalled();
-  expect(displayQueues).not.toHaveBeenCalled();
-});
-
-it("changes the load queues", () => {
-  const displayLoad = jest.fn();
-  const displayInsp = jest.fn();
-  const displayWash = jest.fn();
-  const displayQueues = jest.fn();
-
-  const val = shallow(
-    <StationToolbar
-      current_route={basicState}
-      queues={{}}
-      insp_types={Set()}
-      displayLoadStation={displayLoad}
-      displayInspection={displayInsp}
-      displayWash={displayWash}
-      displayQueues={displayQueues}
-      displayAllMaterial={jest.fn()}
-      operators={Set(["o1", "o2"])}
-      currentOperator="o1"
-      setOperator={jest.fn()}
-      removeOperator={jest.fn()}
-      openQrCodeScan={jest.fn()}
-    />);
-
-  // tslint:disable-next-line:no-any
-  const onChange = val.find("WithStyles(Select)").last().prop("onChange") as any;
-
-  onChange({target: {value: ["a", "b"]}});
-  expect(displayLoad).toHaveBeenCalledWith(
-    basicState.selected_load_id,
-    ["a", "b"],
-    false
-  );
-
-  displayLoad.mockReset();
-
-  onChange({target: {value: []}});
-  expect(displayLoad).toHaveBeenCalledWith(
-    basicState.selected_load_id,
-    [],
-    false
-  );
-
-  expect(displayWash).not.toHaveBeenCalled();
-  expect(displayInsp).not.toHaveBeenCalled();
-  expect(displayQueues).not.toHaveBeenCalled();
-});
-
-it("changes the standalone queues", () => {
-  const displayLoad = jest.fn();
-  const displayInsp = jest.fn();
-  const displayWash = jest.fn();
-  const displayQueues = jest.fn();
-
-  const st = {...basicState,
-    current_route: routes.RouteLocation.Queues,
-    station_monitor: routes.StationMonitorType.Queues,
-  };
-
-  const val = shallow(
-    <StationToolbar
-      current_route={st}
-      queues={{}}
-      insp_types={Set()}
-      displayLoadStation={displayLoad}
-      displayInspection={displayInsp}
-      displayWash={displayWash}
-      displayQueues={displayQueues}
-      displayAllMaterial={jest.fn()}
-      operators={Set(["o1", "o2"])}
-      currentOperator="o1"
-      setOperator={jest.fn()}
-      removeOperator={jest.fn()}
-      openQrCodeScan={jest.fn()}
-    />);
-
-  // tslint:disable-next-line:no-any
-  const onChange = val.find("WithStyles(Select)").last().prop("onChange") as any;
-
-  onChange({target: {value: ["a", "b"]}});
-  expect(displayQueues).toHaveBeenCalledWith(
-    ["a", "b"],
-    false
-  );
-
-  displayQueues.mockReset();
-
-  onChange({target: {value: []}});
-  expect(displayQueues).toHaveBeenCalledWith(
-    [],
-    false
-  );
-
-  expect(displayWash).not.toHaveBeenCalled();
-  expect(displayInsp).not.toHaveBeenCalled();
-  expect(displayLoad).not.toHaveBeenCalled();
+  expect(container).toMatchSnapshot('queue toolbar');
 });

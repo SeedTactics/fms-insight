@@ -32,7 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from 'react';
-import { shallow } from 'enzyme';
+import { render, cleanup } from 'react-testing-library';
+afterEach(cleanup);
 
 import { jobsToPoints, CurrentJobs } from './CurrentJobs';
 import * as api from '../../data/api';
@@ -48,9 +49,9 @@ it('renders the current jobs', () => {
     {x: 17, y: 2},
     {x: 22, y: 3}
   ];
-  const val = shallow(
+  const {container} = render(
     <CurrentJobs completedData={completedData} planData={planData} fillViewport={false}/>);
-  expect(val).toMatchSnapshot('current job graph scrollable');
+  expect(container).toMatchSnapshot('current job graph scrollable');
 });
 
 it('renders the current jobs with filling viewport', () => {
@@ -64,36 +65,9 @@ it('renders the current jobs with filling viewport', () => {
     {x: 33, y: 2},
     {x: 24, y: 3}
   ];
-  const val = shallow(
+  const {container} = render(
     <CurrentJobs completedData={completedData} planData={planData} fillViewport={true}/>);
-  expect(val).toMatchSnapshot('current job graph filling viewport');
-});
-
-it("shows hint for mouse over", () => {
-  const completedData = [
-    {x: 10, y: 1, part: 'abc', completed: 5, completedCount: 1, totalPlan: 10, totalCount: 11},
-    {x: 11, y: 2, part: 'def', completed: 1, completedCount: 6, totalPlan: 1, totalCount: 9},
-    {x: 16, y: 3, part: 'zzz', completed: 0, completedCount: 0, totalPlan: 15, totalCount: 6}
-  ];
-  const planData = [
-    {x: 16, y: 1},
-    {x: 17, y: 2},
-    {x: 22, y: 3}
-  ];
-  const val = shallow(
-    <CurrentJobs completedData={completedData} planData={planData} fillViewport={false}/>);
-
-  // tslint:disable-next-line:no-any
-  const mouseOver = val.find("HorizontalBarSeries").prop("onValueMouseOver") as any;
-  mouseOver(completedData[0]);
-  val.update();
-  expect(val).toMatchSnapshot("after mousing over first data point");
-
-  // tslint:disable-next-line:no-any
-  const mouseOut = val.find("HorizontalBarSeries").prop("onValueMouseOut") as any;
-  mouseOut();
-  val.update();
-  expect(val).toMatchSnapshot("after mousing out of value");
+  expect(container).toMatchSnapshot('current job graph filling viewport');
 });
 
 it('converts events to points', () => {

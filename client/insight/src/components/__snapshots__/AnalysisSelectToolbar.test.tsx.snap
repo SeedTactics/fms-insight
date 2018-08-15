@@ -1,91 +1,193 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`displays the toolbar: last 30 selected with january 1`] = `
-<nav
-  style={
-    Object {
-      "alignItems": "center",
-      "backgroundColor": "#E0E0E0",
-      "display": "flex",
-      "justifyContent": "space-evenly",
-      "minHeight": "2.5em",
-      "paddingLeft": "24px",
-      "paddingRight": "24px",
-    }
-  }
->
-  <WithStyles(FormControlLabel)
-    control={
-      <WithStyles(Radio)
-        checked={true}
-        onChange={[Function]}
-      />
-    }
-    label="Last 30 days"
-  />
-  <div>
-    <WithStyles(FormControlLabel)
-      control={
-        <WithStyles(Radio)
-          checked={false}
-          onChange={[Function]}
+<div>
+  <nav
+    style="display: flex; background-color: rgb(224, 224, 224); padding-left: 24px; padding-right: 24px; min-height: 2.5em; align-items: center; justify-content: space-evenly;"
+  >
+    <label
+      class="MuiFormControlLabel-root-1"
+    >
+      <span
+        class="MuiButtonBase-root-20 MuiIconButton-root-14 MuiSwitchBase-root-10 MuiRadio-root-5 MuiRadio-colorSecondary-9 MuiSwitchBase-checked-11 MuiRadio-checked-6"
+      >
+        <span
+          class="MuiIconButton-label-19"
+        >
+          <svg
+            aria-hidden="true"
+            class="MuiSvgIcon-root-23"
+            focusable="false"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0-5C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"
+            />
+          </svg>
+          <input
+            class="MuiSwitchBase-input-13"
+            type="radio"
+            value=""
+          />
+        </span>
+        <span
+          class="MuiTouchRipple-root-30"
         />
-      }
-      label="Select Month"
-    />
-    <TextField
-      onBlur={[Function]}
-      onChange={[Function]}
-      required={false}
-      select={false}
-      type="month"
-      value="2017-12"
-    />
-  </div>
-</nav>
+      </span>
+      <span
+        class="MuiTypography-root-37 MuiTypography-body1-46 MuiFormControlLabel-label-4"
+      >
+        Last 30 days
+      </span>
+    </label>
+    <div>
+      <label
+        class="MuiFormControlLabel-root-1"
+      >
+        <span
+          class="MuiButtonBase-root-20 MuiIconButton-root-14 MuiSwitchBase-root-10 MuiRadio-root-5 MuiRadio-colorSecondary-9"
+        >
+          <span
+            class="MuiIconButton-label-19"
+          >
+            <svg
+              aria-hidden="true"
+              class="MuiSvgIcon-root-23"
+              focusable="false"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"
+              />
+            </svg>
+            <input
+              class="MuiSwitchBase-input-13"
+              type="radio"
+              value=""
+            />
+          </span>
+          <span
+            class="MuiTouchRipple-root-30"
+          />
+        </span>
+        <span
+          class="MuiTypography-root-37 MuiTypography-body1-46 MuiFormControlLabel-label-4"
+        >
+          Select Month
+        </span>
+      </label>
+      <div
+        class="MuiFormControl-root-62"
+      >
+        <div
+          class="MuiInput-root-66 MuiInput-formControl-67 MuiInput-underline-70"
+        >
+          <input
+            aria-invalid="false"
+            class="MuiInput-input-74 MuiInput-inputType-77"
+            placeholder="Choose Month"
+            type="month"
+            value="2017-12"
+          />
+        </div>
+      </div>
+    </div>
+  </nav>
+</div>
 `;
 
 exports[`displays the toolbar: specific month with february 1`] = `
-<nav
-  style={
-    Object {
-      "alignItems": "center",
-      "backgroundColor": "#E0E0E0",
-      "display": "flex",
-      "justifyContent": "space-evenly",
-      "minHeight": "2.5em",
-      "paddingLeft": "24px",
-      "paddingRight": "24px",
-    }
-  }
->
-  <WithStyles(FormControlLabel)
-    control={
-      <WithStyles(Radio)
-        checked={false}
-        onChange={[Function]}
-      />
-    }
-    label="Last 30 days"
-  />
-  <div>
-    <WithStyles(FormControlLabel)
-      control={
-        <WithStyles(Radio)
-          checked={true}
-          onChange={[Function]}
+<div>
+  <nav
+    style="display: flex; background-color: rgb(224, 224, 224); padding-left: 24px; padding-right: 24px; min-height: 2.5em; align-items: center; justify-content: space-evenly;"
+  >
+    <label
+      class="MuiFormControlLabel-root-1"
+    >
+      <span
+        class="MuiButtonBase-root-20 MuiIconButton-root-14 MuiSwitchBase-root-10 MuiRadio-root-5 MuiRadio-colorSecondary-9"
+      >
+        <span
+          class="MuiIconButton-label-19"
+        >
+          <svg
+            aria-hidden="true"
+            class="MuiSvgIcon-root-23"
+            focusable="false"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"
+            />
+          </svg>
+          <input
+            class="MuiSwitchBase-input-13"
+            type="radio"
+            value=""
+          />
+        </span>
+        <span
+          class="MuiTouchRipple-root-30"
         />
-      }
-      label="Select Month"
-    />
-    <TextField
-      onBlur={[Function]}
-      onChange={[Function]}
-      required={false}
-      select={false}
-      type="month"
-      value="2018-01"
-    />
-  </div>
-</nav>
+      </span>
+      <span
+        class="MuiTypography-root-37 MuiTypography-body1-46 MuiFormControlLabel-label-4"
+      >
+        Last 30 days
+      </span>
+    </label>
+    <div>
+      <label
+        class="MuiFormControlLabel-root-1"
+      >
+        <span
+          class="MuiButtonBase-root-20 MuiIconButton-root-14 MuiSwitchBase-root-10 MuiRadio-root-5 MuiRadio-colorSecondary-9 MuiSwitchBase-checked-11 MuiRadio-checked-6"
+        >
+          <span
+            class="MuiIconButton-label-19"
+          >
+            <svg
+              aria-hidden="true"
+              class="MuiSvgIcon-root-23"
+              focusable="false"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0-5C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"
+              />
+            </svg>
+            <input
+              class="MuiSwitchBase-input-13"
+              type="radio"
+              value=""
+            />
+          </span>
+          <span
+            class="MuiTouchRipple-root-30"
+          />
+        </span>
+        <span
+          class="MuiTypography-root-37 MuiTypography-body1-46 MuiFormControlLabel-label-4"
+        >
+          Select Month
+        </span>
+      </label>
+      <div
+        class="MuiFormControl-root-62"
+      >
+        <div
+          class="MuiInput-root-66 MuiInput-formControl-67 MuiInput-underline-70"
+        >
+          <input
+            aria-invalid="false"
+            class="MuiInput-input-74 MuiInput-inputType-77"
+            placeholder="Choose Month"
+            type="month"
+            value="2018-01"
+          />
+        </div>
+      </div>
+    </div>
+  </nav>
+</div>
 `;

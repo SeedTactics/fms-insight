@@ -32,7 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from 'react';
-import { shallow } from 'enzyme';
+import {render, cleanup} from 'react-testing-library';
+afterEach(cleanup);
 import WorkIcon from '@material-ui/icons/Work';
 
 import { HeatChart, HeatChartProps, SelectableHeatChart, SelectableHeatChartProps } from './HeatChart';
@@ -55,8 +56,8 @@ it('displays a cycle chart', () => {
     row_count: 10,
   };
 
-  const val = shallow(<HeatChart {...props}/>);
-  expect(val).toMatchSnapshot('heat chart');
+  const {container} = render(<HeatChart {...props}/>);
+  expect(container).toMatchSnapshot('heat chart');
 });
 
 it('displays a selectable heat chart with actual points', () => {
@@ -69,8 +70,8 @@ it('displays a selectable heat chart with actual points', () => {
     setType: jest.fn()
   };
 
-  const val = shallow(<SelectableHeatChart {...props}/>);
-  expect(val).toMatchSnapshot('selectable heat chart with actual data');
+  const {container} = render(<SelectableHeatChart {...props}/>);
+  expect(container).toMatchSnapshot('selectable heat chart with actual data');
 });
 
 it('displays a selectable heat chart with planned points', () => {
@@ -83,8 +84,8 @@ it('displays a selectable heat chart with planned points', () => {
     setType: jest.fn()
   };
 
-  const val = shallow(<SelectableHeatChart {...props}/>);
-  expect(val).toMatchSnapshot('selectable heat chart with planned data');
+  const {container} = render(<SelectableHeatChart {...props}/>);
+  expect(container).toMatchSnapshot('selectable heat chart with planned data');
 });
 
 it('displays a selectable heat chart with planned minus actual points', () => {
@@ -97,6 +98,6 @@ it('displays a selectable heat chart with planned minus actual points', () => {
     setType: jest.fn()
   };
 
-  const val = shallow(<SelectableHeatChart {...props}/>);
-  expect(val).toMatchSnapshot('selectable heat chart with planned minus actual data');
+  const {container} = render(<SelectableHeatChart {...props}/>);
+  expect(container).toMatchSnapshot('selectable heat chart with planned minus actual data');
 });

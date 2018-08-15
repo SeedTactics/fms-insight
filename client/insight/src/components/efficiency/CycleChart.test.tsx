@@ -33,10 +33,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from 'react';
 import * as im from 'immutable';
-import { shallow } from 'enzyme';
-import WorkIcon from '@material-ui/icons/Work';
 
-import { CycleChart, CycleChartProps, SelectableCycleChartProps, SelectableCycleChart } from './CycleChart';
+import {render, cleanup} from 'react-testing-library';
+afterEach(cleanup);
+
+import { CycleChart, CycleChartProps } from './CycleChart';
 
 it('displays a cycle chart', () => {
   const props: CycleChartProps = {
@@ -49,8 +50,8 @@ it('displays a cycle chart', () => {
     series_label: "serieslabel"
   };
 
-  const val = shallow(<CycleChart {...props}/>);
-  expect(val).toMatchSnapshot('cycle chart');
+  const {container} = render(<CycleChart {...props}/>);
+  expect(container).toMatchSnapshot('cycle chart');
 });
 
 it("displays an empty chart", () => {
@@ -60,38 +61,6 @@ it("displays an empty chart", () => {
     default_date_range: [new Date(Date.UTC(2018, 2, 5)), new Date(Date.UTC(2018, 2, 10))],
   };
 
-  const val = shallow(<CycleChart {...props}/>);
-  expect(val).toMatchSnapshot('empty cycle chart');
-});
-
-const selectProps: SelectableCycleChartProps = {
-    points:
-      im.Map({
-        "111": im.Map({
-            "aaa": [{x: new Date(Date.UTC(2018, 1, 1)), y: 15}, {x: new Date(Date.UTC(2018, 1, 2)), y: 66}],
-            "bbb": [{x: new Date(Date.UTC(2018, 2, 2)), y: 53}, {x: new Date(Date.UTC(2018, 2, 3)), y: 55}],
-            "ccc": [{x: new Date(Date.UTC(2018, 3, 3)), y: 6}],
-          }),
-        "222": im.Map({
-            "aaa": [{x: new Date(Date.UTC(2018, 4, 4)), y: 62}, {x: new Date(Date.UTC(2018, 4, 45)), y: 512}],
-          }),
-      }),
-    series_label: "serieslabel",
-    select_label: "sellabel",
-    card_label: 'cardheader',
-    icon: <WorkIcon/>,
-    selected: undefined,
-    setSelected: jest.fn()
-  };
-
-it('displays a selectable cycle chart with nothing selected', () => {
-  const props = {...selectProps, selected: 'selectedval'};
-  const val = shallow(<SelectableCycleChart {...props}/>);
-  expect(val).toMatchSnapshot('selectable cycle chart with nothing selected');
-});
-
-it('displays a selectable cycle chart with something selected', () => {
-  const props = {...selectProps, selected: '111'};
-  const val = shallow(<SelectableCycleChart {...props}/>);
-  expect(val).toMatchSnapshot('selectable cycle chart with something selected');
+  const {container} = render(<CycleChart {...props}/>);
+  expect(container).toMatchSnapshot('empty cycle chart');
 });

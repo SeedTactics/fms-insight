@@ -30,10 +30,43 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from 'react';
-import { shallow } from 'enzyme';
 
-import { App, AppProps } from './App';
+import * as React from 'react';
+
+function mockComponent(name: string): (props: {[key: string]: object}) => JSX.Element {
+  return props => (
+    <div data-mock-component={name}>
+      {Object.getOwnPropertyNames(props).sort().map(p =>
+        <span data-prop={p}>
+          {JSON.stringify(props[p], null, 2)}
+        </span>
+      )}
+    </div>
+  );
+}
+
+jest.mock("./LoadingIcon", () => ({
+  default: mockComponent("LoadingIcon")
+}));
+jest.mock("./cost-per-piece/CostPerPiece", () => ({
+  default: mockComponent("CostPerPiece")
+}));
+jest.mock("./dashboard/Dashboard", () => ({
+  default: mockComponent("Dashboard")
+}));
+jest.mock("./efficiency/Efficiency", () => ({
+  default: mockComponent("Efficiency")
+}));
+jest.mock("./station-monitor/StationMonitor", () => ({
+  default: mockComponent("StationMonitor")
+}));
+jest.mock("./data-export/DataExport", () => ({
+  default: mockComponent("DataExport")
+}));
+
+import * as rtest from 'react-testing-library';
+
+import { App, AppProps, TabType } from './App';
 import * as routes from '../data/routes';
 
 function appProps(current: routes.RouteLocation): AppProps {
@@ -55,85 +88,47 @@ function appProps(current: routes.RouteLocation): AppProps {
       standalone_queues: ["r1", "r2"],
       standalone_free_material: true,
     },
-    fmsInfo: null,
-    latestVersion: null,
+    fmsInfo: {
+      name: "apptest",
+      version: "1.2.3.4",
+      requireScanAtWash: false,
+      requireWorkorderBeforeAllowWashComplete: false,
+    },
+    latestVersion: {
+      date: new Date(2018, 7, 5, 15, 45, 3),
+      version: "9.8.7"
+    },
     setRoute: jest.fn(),
   };
 }
 
-it('renders the dashboard', () => {
-  const props = appProps(routes.RouteLocation.Dashboard);
-  const val = shallow(<App {...props}/>);
-  const header = val.find("Header").dive();
-  expect(val).toMatchSnapshot("dashboard");
-  expect(header).toMatchSnapshot("dashboard header");
+afterEach(rtest.cleanup);
 
-  // tslint:disable-next-line:no-any
-  const onTabChange = header.find("WithStyles(Tabs)").first().prop("onChange") as any;
-  onTabChange(null, routes.RouteLocation.CostPerPiece);
-  expect(props.setRoute).toHaveBeenCalledWith({ty: routes.RouteLocation.CostPerPiece, curSt: props.route});
-});
+describe("Application", () => {
+  it('renders the app', () => {
+    const props = appProps(routes.RouteLocation.Dashboard);
+    const result = rtest.render(<App {...props}/>);
+    expect(result.container).toMatchSnapshot("dashboard");
+  });
 
-it('renders the load monitor', () => {
-  const props = appProps(routes.RouteLocation.LoadMonitor);
-  const val = shallow(<App {...props}/>);
-  const header = val.find("Header").dive();
-  expect(val).toMatchSnapshot("station monitor");
-  expect(header).toMatchSnapshot("station monitor header");
-});
+  it("switches a tab", () => {
+    const props = appProps(routes.RouteLocation.Dashboard);
+    const result = rtest.render(<App {...props}/>);
 
-it('renders the inspection monitor', () => {
-  const props = appProps(routes.RouteLocation.InspectionMonitor);
-  const val = shallow(<App {...props}/>);
-  const header = val.find("Header").dive();
-  expect(val).toMatchSnapshot("inspection monitor");
-  expect(header).toMatchSnapshot("inspection monitor header");
-});
+    rtest.fireEvent.click(result.getByText("Cost/Piece"));
+    expect(props.setRoute).toHaveBeenCalledWith({ty: TabType.CostPerPiece, curSt: props.route});
 
-it('renders the wash monitor', () => {
-  const props = appProps(routes.RouteLocation.WashMonitor);
-  const val = shallow(<App {...props}/>);
-  const header = val.find("Header").dive();
-  expect(val).toMatchSnapshot("wash monitor");
-  expect(header).toMatchSnapshot("wash monitor header");
-});
+    rtest.fireEvent.click(result.getByText("Station Monitor"));
+    expect(props.setRoute).toHaveBeenCalledWith({ty: TabType.StationMonitor, curSt: props.route});
 
-it('renders the queue monitor', () => {
-  const props = appProps(routes.RouteLocation.Queues);
-  const val = shallow(<App {...props}/>);
-  const header = val.find("Header").dive();
-  expect(val).toMatchSnapshot("queue monitor");
-  expect(header).toMatchSnapshot("queue monitor header");
-});
+    rtest.fireEvent.click(result.getByText("Data Export"));
+    expect(props.setRoute).toHaveBeenCalledWith({ty: TabType.DataExport, curSt: props.route});
 
-it('renders the all material monitor', () => {
-  const props = appProps(routes.RouteLocation.AllMaterial);
-  const val = shallow(<App {...props}/>);
-  const header = val.find("Header").dive();
-  expect(val).toMatchSnapshot("all material monitor");
-  expect(header).toMatchSnapshot("all material monitor header");
-});
+    rtest.fireEvent.click(result.getByText("Efficiency"));
+    expect(props.setRoute).toHaveBeenCalledWith({ty: TabType.Efficiency, curSt: props.route});
 
-it('renders the cost per piece', () => {
-  const props = appProps(routes.RouteLocation.CostPerPiece);
-  const val = shallow(<App {...props}/>);
-  const header = val.find("Header").dive();
-  expect(val).toMatchSnapshot("cost per piece");
-  expect(header).toMatchSnapshot("cost per piece header");
-});
+    rtest.fireEvent.click(result.getByText("Dashboard"));
+    expect(props.setRoute).toHaveBeenCalledWith({ty: TabType.Dashboard, curSt: props.route});
+  });
 
-it('renders the efficiency', () => {
-  const props = appProps(routes.RouteLocation.Efficiency);
-  const val = shallow(<App {...props}/>);
-  const header = val.find("Header").dive();
-  expect(val).toMatchSnapshot("efficiency");
-  expect(header).toMatchSnapshot("efficiency header");
-});
-
-it('renders the data export page', () => {
-  const props = appProps(routes.RouteLocation.DataExport);
-  const val = shallow(<App {...props}/>);
-  const header = val.find("Header").dive();
-  expect(val).toMatchSnapshot("data export");
-  expect(header).toMatchSnapshot("data export header");
 });

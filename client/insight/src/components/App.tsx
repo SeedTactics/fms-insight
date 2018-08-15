@@ -59,7 +59,7 @@ const tabsStyle = {
   'flexGrow': 1
 };
 
-enum TabType {
+export enum TabType {
   Dashboard,
   StationMonitor,
   Efficiency,
