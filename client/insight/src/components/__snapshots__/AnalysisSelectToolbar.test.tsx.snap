@@ -85,7 +85,6 @@ exports[`displays the toolbar: last 30 selected with january 1`] = `
           <input
             aria-invalid="false"
             class="MuiInput-input-74 MuiInput-inputType-77"
-            placeholder="Choose Month"
             type="month"
             value="2017-12"
           />
@@ -181,7 +180,6 @@ exports[`displays the toolbar: specific month with february 1`] = `
           <input
             aria-invalid="false"
             class="MuiInput-input-74 MuiInput-inputType-77"
-            placeholder="Choose Month"
             type="month"
             value="2018-01"
           />
