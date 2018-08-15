@@ -171,14 +171,4 @@ export function inspectionDataToSankey(d: ReadonlyArray<InspectionLogEntry>): Sa
     nodes: sankeyNodes,
     links: sankeyLinks,
   };
-
-  /*
-  return {
-    nodes: [{name: 'a'}, {name: 'b'}, {name: 'c'}],
-    links: [
-      {source: 0, target: 1, value: 10},
-      {source: 0, target: 2, value: 20},
-      {source: 1, target: 2, value: 20}
-    ],
-  };*/
 }

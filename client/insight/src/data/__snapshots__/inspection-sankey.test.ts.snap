@@ -1,0 +1,234 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`creates inspection sankey: part aaa CMM sankey 1`] = `
+Object {
+  "links": Array [
+    Object {
+      "source": 12,
+      "target": 10,
+      "value": 30,
+    },
+    Object {
+      "source": 0,
+      "target": 8,
+      "value": 6,
+    },
+    Object {
+      "source": 6,
+      "target": 8,
+      "value": 2,
+    },
+    Object {
+      "source": 2,
+      "target": 10,
+      "value": 31,
+    },
+    Object {
+      "source": 14,
+      "target": 1,
+      "value": 97,
+    },
+    Object {
+      "source": 7,
+      "target": 11,
+      "value": 119,
+    },
+    Object {
+      "source": 4,
+      "target": 10,
+      "value": 32,
+    },
+    Object {
+      "source": 11,
+      "target": 4,
+      "value": 35,
+    },
+    Object {
+      "source": 11,
+      "target": 15,
+      "value": 84,
+    },
+    Object {
+      "source": 5,
+      "target": 6,
+      "value": 24,
+    },
+    Object {
+      "source": 12,
+      "target": 8,
+      "value": 2,
+    },
+    Object {
+      "source": 4,
+      "target": 8,
+      "value": 2,
+    },
+    Object {
+      "source": 15,
+      "target": 10,
+      "value": 76,
+    },
+    Object {
+      "source": 1,
+      "target": 3,
+      "value": 2,
+    },
+    Object {
+      "source": 15,
+      "target": 8,
+      "value": 8,
+    },
+    Object {
+      "source": 13,
+      "target": 10,
+      "value": 52,
+    },
+    Object {
+      "source": 14,
+      "target": 2,
+      "value": 34,
+    },
+    Object {
+      "source": 6,
+      "target": 10,
+      "value": 21,
+    },
+    Object {
+      "source": 7,
+      "target": 14,
+      "value": 131,
+    },
+    Object {
+      "source": 6,
+      "target": 3,
+      "value": 1,
+    },
+    Object {
+      "source": 13,
+      "target": 8,
+      "value": 6,
+    },
+    Object {
+      "source": 7,
+      "target": 5,
+      "value": 82,
+    },
+    Object {
+      "source": 0,
+      "target": 10,
+      "value": 47,
+    },
+    Object {
+      "source": 2,
+      "target": 8,
+      "value": 3,
+    },
+    Object {
+      "source": 5,
+      "target": 13,
+      "value": 58,
+    },
+    Object {
+      "source": 12,
+      "target": 3,
+      "value": 1,
+    },
+    Object {
+      "source": 9,
+      "target": 12,
+      "value": 33,
+    },
+    Object {
+      "source": 1,
+      "target": 10,
+      "value": 87,
+    },
+    Object {
+      "source": 4,
+      "target": 3,
+      "value": 1,
+    },
+    Object {
+      "source": 1,
+      "target": 8,
+      "value": 8,
+    },
+    Object {
+      "source": 9,
+      "target": 0,
+      "value": 53,
+    },
+    Object {
+      "source": 7,
+      "target": 9,
+      "value": 86,
+    },
+  ],
+  "nodes": Array [
+    Object {
+      "name": "P1,M1",
+      "unique": "->P1,M1->P1,M1",
+    },
+    Object {
+      "name": "P1,M2",
+      "unique": "->P1,M2->P1,M2",
+    },
+    Object {
+      "name": "P1,M1",
+      "unique": "->P1,M2->P1,M1",
+    },
+    Object {
+      "name": "failed",
+      "unique": "@@failed",
+    },
+    Object {
+      "name": "P2,M1",
+      "unique": "->P2,M2->P2,M1",
+    },
+    Object {
+      "name": "P2,M1",
+      "unique": "->P2,M1",
+    },
+    Object {
+      "name": "P2,M2",
+      "unique": "->P2,M1->P2,M2",
+    },
+    Object {
+      "name": "raw",
+      "unique": "",
+    },
+    Object {
+      "name": "success",
+      "unique": "@@success",
+    },
+    Object {
+      "name": "P1,M1",
+      "unique": "->P1,M1",
+    },
+    Object {
+      "name": "uninspected",
+      "unique": "@@uninspected",
+    },
+    Object {
+      "name": "P2,M2",
+      "unique": "->P2,M2",
+    },
+    Object {
+      "name": "P1,M2",
+      "unique": "->P1,M1->P1,M2",
+    },
+    Object {
+      "name": "P2,M1",
+      "unique": "->P2,M1->P2,M1",
+    },
+    Object {
+      "name": "P1,M2",
+      "unique": "->P1,M2",
+    },
+    Object {
+      "name": "P2,M2",
+      "unique": "->P2,M2->P2,M2",
+    },
+  ],
+}
+`;
