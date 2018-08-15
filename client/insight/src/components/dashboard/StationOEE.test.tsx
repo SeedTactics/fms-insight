@@ -32,36 +32,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from 'react';
-import { StationOEE, StationOEEs, stationHoursInLastWeek } from './StationOEE';
+import { StationOEE, StationOEEs } from './StationOEE';
 import * as im from 'immutable';
 import * as rtest from 'react-testing-library';
 afterEach(rtest.cleanup);
 
 import * as api from '../../data/api';
 
-it('calculates station hours', () => {
-  const date = new Date();
-  const hours = [
-    {date, station: 'zzz', hours: 2},
-    {date, station: 'abc', hours: 4},
-    {date, station: 'abc', hours: 10},
-    {date, station: 'zzz', hours: 5},
-    {date, station: 'zzz', hours: 4},
-    {date, station: 'abc', hours: 11},
-  ];
-
-  expect(stationHoursInLastWeek(im.List(hours)).toArray()).toEqual(
-    [
-      ["zzz", 2 + 5 + 4],
-      ["abc", 4 + 10 + 11],
-    ]
-  );
-});
-
 it('displays station hours', () => {
-  const hours = im.Map({
-    "abc #1": 40,
-    "zzz #1": 3,
+  const mins = im.Map({
+    "abc #1": 40 * 60,
+    "zzz #1": 3 * 60,
   });
   const pals = im.Map({
     "aaa #1": {
@@ -84,8 +65,7 @@ it('displays station hours', () => {
   const {container} = rtest.render(
     <StationOEEs
       date_of_current_status={new Date(Date.UTC(2016, 3, 5, 2, 7, 2))}
-      system_active_hours_per_week={100}
-      station_active_hours_past_week={hours}
+      station_active_minutes_past_week={mins}
       pallets={pals}
     />);
   expect(container).toMatchSnapshot('station oee table');

@@ -49,14 +49,6 @@ it('creates initial state', () => {
   expect(s).toBe(events.initial);
 });
 
-it('sets the system hours', () => {
-  let s = events.reducer(events.initial, {
-    type: events.ActionType.SetSystemHours,
-    hours: 5
-  });
-  expect(s.last30.oee.system_active_hours_per_week).toBe(5);
-});
-
 it('responds to loading', () => {
   let st = events.reducer(
     {...events.initial, loading_error: new Error('hello')},
@@ -332,4 +324,32 @@ it("bins actual cycles by day", () => {
   );
 
   expect(byDayAndPart).toMatchSnapshot("cycles binned by day and part");
+});
+
+it("computes station oee", () => {
+  const now = new Date(2018, 2, 5);
+
+  const evts = ([] as ILogEntry[])
+    .concat(
+      fakeCycle(now, 30),
+      fakeCycle(addDays(now, -3), 20),
+      fakeCycle(addDays(now, -15), 15),
+    );
+  const st = events.reducer(
+    events.initial,
+    {
+      type: events.ActionType.LoadRecentLogEntries,
+      now: addDays(now, 1),
+      pledge: {
+        status: PledgeStatus.Completed,
+        result: evts
+      }
+    });
+
+  let statMins = events.stationMinutes(
+    st.last30.cycles.by_part_then_stat,
+    addDays(now, -7)
+  );
+
+  expect(statMins).toMatchSnapshot("station minutes for last week");
 });

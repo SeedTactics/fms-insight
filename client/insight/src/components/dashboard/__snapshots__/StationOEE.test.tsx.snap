@@ -114,13 +114,13 @@ exports[`displays station hours: station oee table 1`] = `
         viewBox="0 0 400 400"
       >
         <path
-          d="M 288.167787843871 321.3525491562421 A 150 150 1.5707963267948966 0 0 200 50"
+          d="M 349.580569577177 188.79048596203634 A 150 150 1.5707963267948966 0 0 200 50"
           fill="transparent"
           stroke="#795548"
           stroke-width="10"
         />
         <path
-          d="M 199.99999999999997 50 A 150 150 1.5707963267948966 1 0 288.167787843871 321.3525491562421"
+          d="M 199.99999999999997 50 A 150 150 1.5707963267948966 1 0 349.580569577177 188.79048596203634"
           fill="transparent"
           stroke="#E0E0E0"
           stroke-width="10"
@@ -149,15 +149,11 @@ exports[`displays station hours: station oee table 1`] = `
       <svg
         viewBox="0 0 400 400"
       >
-        <path
-          d="M 228.1071971878587 52.656912390696704 A 150 150 1.5707963267948966 0 0 200 50"
+        <circle
+          cx="200"
+          cy="200"
           fill="transparent"
-          stroke="#795548"
-          stroke-width="10"
-        />
-        <path
-          d="M 199.99999999999997 50 A 150 150 1.5707963267948966 1 0 228.1071971878587 52.656912390696704"
-          fill="transparent"
+          r="150"
           stroke="#E0E0E0"
           stroke-width="10"
         />

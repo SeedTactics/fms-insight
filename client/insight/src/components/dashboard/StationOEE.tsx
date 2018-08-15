@@ -38,10 +38,10 @@ import Tooltip from '@material-ui/core/Tooltip';
 import TimeAgo from 'react-timeago';
 
 import { connect, Store } from '../../store/store';
-import { StationInUse } from '../../data/events';
+import { stationMinutes } from '../../data/events';
 import * as api from '../../data/api';
 import { duration } from 'moment';
-import { addSeconds } from 'date-fns';
+import { addSeconds, addDays } from 'date-fns';
 import { PalletData, buildPallets } from '../../data/load-station';
 
 export interface StationOEEProps {
@@ -202,14 +202,13 @@ export interface StationHours {
 
 export interface Props {
   date_of_current_status: Date | undefined;
-  station_active_hours_past_week: im.Map<string, number>;
+  station_active_minutes_past_week: im.Map<string, number>;
   pallets: im.Map<string, {pal?: PalletData, queued?: PalletData}>;
-  system_active_hours_per_week: number;
 }
 
 export function StationOEEs(p: Props) {
   const stats =
-    im.Set(p.station_active_hours_past_week.keySeq())
+    im.Set(p.station_active_minutes_past_week.keySeq())
     .union(im.Set(p.pallets.keySeq()))
     .toSeq()
     .sortBy(s => [s.startsWith("L/U"), s]) // put machines first
@@ -222,7 +221,7 @@ export function StationOEEs(p: Props) {
             <StationOEE
               date_of_current_status={p.date_of_current_status}
               station={stat}
-              oee={p.station_active_hours_past_week.get(stat, 0) / p.system_active_hours_per_week}
+              oee={p.station_active_minutes_past_week.get(stat, 0) / (60 * 24 * 7)}
               pallet={p.pallets.get(stat, {pal: undefined}).pal}
               queuedPallet={p.pallets.get(stat, {queued: undefined}).queued}
             />
@@ -234,17 +233,11 @@ export function StationOEEs(p: Props) {
   // TODO: buffer and cart
 }
 
-export function stationHoursInLastWeek(use: im.List<StationInUse>): im.Map<string, number> {
-    const m = new Map<string, number>();
-    use.forEach(s => {
-        m.set(s.station, (m.get(s.station) || 0) + s.hours);
-    });
-    return im.Map(m);
-}
-
 const oeeSelector = createSelector(
-  (s: Store) => s.Events.last30.oee.last_week_of_hours,
-  stationHoursInLastWeek
+  (s: Store) => s.Events.last30.cycles.by_part_then_stat,
+  (s: Store) => s.Current.date_of_current_status,
+  (byPartThenStat, lastStTime) =>
+    lastStTime ? stationMinutes(byPartThenStat, addDays(lastStTime, -7)) : im.Map<string, number>()
 );
 
 const palSelector = createSelector(
@@ -255,8 +248,7 @@ const palSelector = createSelector(
 export default connect(
   s => ({
     date_of_current_status: s.Current.date_of_current_status,
-    station_active_hours_past_week: oeeSelector(s),
-    system_active_hours_per_week: s.Events.last30.oee.system_active_hours_per_week,
+    station_active_minutes_past_week: oeeSelector(s),
     pallets: palSelector(s),
   })
 )(StationOEEs);

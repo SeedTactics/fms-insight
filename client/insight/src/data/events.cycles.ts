@@ -286,3 +286,29 @@ export function binCyclesByDayAndPart(
     )
     .toMap();
 }
+
+export function stationMinutes(
+    byPartThenStat: im.Map<string, im.Map<string, ReadonlyArray<PartCycleData>>>,
+    cutoff: Date
+  ): im.Map<string, number> {
+
+  return byPartThenStat.valueSeq()
+    .flatMap((byStation, part) =>
+      byStation.toSeq()
+      .map((points, station) =>
+        im.Seq(points)
+        .filter(p => p.x >= cutoff)
+        .map(p => ({
+          station,
+          active: p.active
+        }))
+      )
+      .valueSeq()
+      .flatMap(x => x)
+    )
+    .groupBy(x => x.station)
+    .map(points =>
+      points.reduce((sum, p) => sum + p.active, 0)
+    )
+    .toMap();
+}

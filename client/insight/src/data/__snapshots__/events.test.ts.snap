@@ -46,6 +46,14 @@ Immutable.Map {
 }
 `;
 
+exports[`computes station oee: station minutes for last week 1`] = `
+Immutable.Map {
+  "L/U #1": 12,
+  "MC #1": 50,
+  "L/U #2": 6,
+}
+`;
+
 exports[`loads a specific month for analysis: selected month with 27 days ago, 2 days ago, and today 1`] = `
 Object {
   "cycles": Object {
@@ -852,41 +860,6 @@ Object {
       "type": "InspectionResult",
     },
   ],
-  "oee": Object {
-    "last_week_of_hours": Immutable.List [
-      Object {
-        "date": 2018-02-02T09:09:05.000Z,
-        "hours": 0.1,
-        "station": "L/U #1",
-      },
-      Object {
-        "date": 2018-02-02T09:42:05.000Z,
-        "hours": 0.5,
-        "station": "MC #1",
-      },
-      Object {
-        "date": 2018-02-02T09:52:05.000Z,
-        "hours": 0.05,
-        "station": "L/U #2",
-      },
-      Object {
-        "date": 2018-02-08T09:09:05.000Z,
-        "hours": 0.1,
-        "station": "L/U #1",
-      },
-      Object {
-        "date": 2018-02-08T09:24:05.000Z,
-        "hours": 0.2,
-        "station": "MC #1",
-      },
-      Object {
-        "date": 2018-02-08T09:34:05.000Z,
-        "hours": 0.05,
-        "station": "L/U #2",
-      },
-    ],
-    "system_active_hours_per_week": 168,
-  },
   "sim_use": Object {
     "production": Immutable.List [],
     "station_use": Immutable.List [],
@@ -1448,41 +1421,6 @@ Object {
       "type": "InspectionResult",
     },
   ],
-  "oee": Object {
-    "last_week_of_hours": Immutable.List [
-      Object {
-        "date": 2018-01-31T09:09:05.000Z,
-        "hours": 0.1,
-        "station": "L/U #1",
-      },
-      Object {
-        "date": 2018-01-31T09:36:05.000Z,
-        "hours": 0.4,
-        "station": "MC #1",
-      },
-      Object {
-        "date": 2018-01-31T09:46:05.000Z,
-        "hours": 0.05,
-        "station": "L/U #2",
-      },
-      Object {
-        "date": 2018-02-02T09:09:05.000Z,
-        "hours": 0.1,
-        "station": "L/U #1",
-      },
-      Object {
-        "date": 2018-02-02T09:42:05.000Z,
-        "hours": 0.5,
-        "station": "MC #1",
-      },
-      Object {
-        "date": 2018-02-02T09:52:05.000Z,
-        "hours": 0.05,
-        "station": "L/U #2",
-      },
-    ],
-    "system_active_hours_per_week": 168,
-  },
   "sim_use": Object {
     "production": Immutable.List [],
     "station_use": Immutable.List [],
@@ -2038,41 +1976,6 @@ Object {
       "type": "InspectionResult",
     },
   ],
-  "oee": Object {
-    "last_week_of_hours": Immutable.List [
-      Object {
-        "date": 2018-02-02T09:09:05.000Z,
-        "hours": 0.1,
-        "station": "L/U #1",
-      },
-      Object {
-        "date": 2018-02-02T09:42:05.000Z,
-        "hours": 0.5,
-        "station": "MC #1",
-      },
-      Object {
-        "date": 2018-02-02T09:52:05.000Z,
-        "hours": 0.05,
-        "station": "L/U #2",
-      },
-      Object {
-        "date": 2018-02-08T09:09:05.000Z,
-        "hours": 0.1,
-        "station": "L/U #1",
-      },
-      Object {
-        "date": 2018-02-08T09:24:05.000Z,
-        "hours": 0.2,
-        "station": "MC #1",
-      },
-      Object {
-        "date": 2018-02-08T09:34:05.000Z,
-        "hours": 0.05,
-        "station": "L/U #2",
-      },
-    ],
-    "system_active_hours_per_week": 168,
-  },
   "sim_use": Object {
     "production": Immutable.List [],
     "station_use": Immutable.List [],
@@ -2652,41 +2555,6 @@ Object {
       "type": "InspectionResult",
     },
   ],
-  "oee": Object {
-    "last_week_of_hours": Immutable.List [
-      Object {
-        "date": 2018-01-31T09:09:05.000Z,
-        "hours": 0.1,
-        "station": "L/U #1",
-      },
-      Object {
-        "date": 2018-01-31T09:36:05.000Z,
-        "hours": 0.4,
-        "station": "MC #1",
-      },
-      Object {
-        "date": 2018-01-31T09:46:05.000Z,
-        "hours": 0.05,
-        "station": "L/U #2",
-      },
-      Object {
-        "date": 2018-02-02T09:09:05.000Z,
-        "hours": 0.1,
-        "station": "L/U #1",
-      },
-      Object {
-        "date": 2018-02-02T09:42:05.000Z,
-        "hours": 0.5,
-        "station": "MC #1",
-      },
-      Object {
-        "date": 2018-02-02T09:52:05.000Z,
-        "hours": 0.05,
-        "station": "L/U #2",
-      },
-    ],
-    "system_active_hours_per_week": 168,
-  },
   "sim_use": Object {
     "production": Immutable.List [],
     "station_use": Immutable.List [],

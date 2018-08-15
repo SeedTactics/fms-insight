@@ -35,15 +35,13 @@ import { PledgeStatus, Pledge, ActionBeforeMiddleware } from '../store/middlewar
 import * as im from 'immutable';
 
 import * as api from './api';
-import * as oee from './events.oee';
 import * as cycles from './events.cycles';
 import * as matsummary from './events.matsummary';
 import * as simuse from './events.simuse';
 import * as inspection from './events.inspection';
 import { JobsBackend, LogBackend } from './backend';
 
-export { OeeState, StationInUse } from './events.oee';
-export { CycleState, CycleData, binCyclesByDayAndStat, binCyclesByDayAndPart } from './events.cycles';
+export { CycleState, CycleData, binCyclesByDayAndStat, binCyclesByDayAndPart, stationMinutes } from './events.cycles';
 export { MaterialSummary } from './events.matsummary';
 export { SimUseState, binSimStationUseByDayAndStat, binSimProductionByDayAndPart } from './events.simuse';
 export {
@@ -64,11 +62,11 @@ export interface Last30Days {
 
     readonly latest_scheduleId: string | undefined;
 
-    readonly oee: oee.OeeState;
     readonly cycles: cycles.CycleState;
-    readonly mat_summary: matsummary.MatSummaryState;
     readonly sim_use: simuse.SimUseState;
     readonly inspection: inspection.InspectionState;
+
+    readonly mat_summary: matsummary.MatSummaryState;
 }
 
 export interface AnalysisMonth {
@@ -109,7 +107,6 @@ export const initial: State = {
         latest_log_counter: undefined,
         latest_scheduleId: undefined,
         most_recent_10_events: [],
-        oee: oee.initial,
         cycles: cycles.initial,
         mat_summary: matsummary.initial,
         sim_use: simuse.initial,
@@ -126,12 +123,10 @@ export enum ActionType {
     LoadRecentJobHistory = 'Events_LoadRecentJobHistory',
     LoadSpecificMonthLogEntries = 'Events_LoadSpecificMonthLogEntries',
     LoadSpecificMonthJobHistory = 'Events_LoadSpecificMonthJobHistory',
-    SetSystemHours = 'Events_SetSystemHours',
     ReceiveNewLogEntries = 'Events_NewLogEntries',
     ReceiveNewJobs = 'Events_ReceiveNewJobs',
 }
 
-// TODO: use Plege when typescript 2.8 shows up
 export type Action =
   | {type: ActionType.SetAnalysisLast30Days }
   | {type: ActionType.SetAnalysisMonth, month: Date }
@@ -149,7 +144,6 @@ export type Action =
     }
   | {type: ActionType.ReceiveNewLogEntries, now: Date, events: ReadonlyArray<Readonly<api.ILogEntry>>}
   | {type: ActionType.ReceiveNewJobs, now: Date, jobs: Readonly<api.IHistoricData>}
-  | {type: ActionType.SetSystemHours, hours: number}
   ;
 
 type ABF = ActionBeforeMiddleware<Action>;
@@ -262,7 +256,6 @@ function processRecentLogEntries(now: Date, evts: Iterable<api.ILogEntry>, s: La
         s,
         {
             latest_log_counter: lastCounter,
-            oee: oee.process_events(now, evts, s.oee),
             cycles: cycles.process_events(
                 {type: cycles.ExpireOldDataType.ExpireEarlierThan, d: thirtyDaysAgo},
                 evts,
@@ -367,13 +360,6 @@ export function reducer(s: State, a: Action): State {
         case ActionType.ReceiveNewJobs:
             return {...s,
                 last30: processRecentJobs(a.now, a.jobs, s.last30)
-            };
-
-        case ActionType.SetSystemHours:
-            return {...s,
-                last30: {...s.last30,
-                    oee: {...s.last30.oee, system_active_hours_per_week: a.hours}
-                },
             };
 
         case ActionType.SetAnalysisLast30Days:
