@@ -35,8 +35,7 @@ import * as React from 'react';
 import { render, cleanup } from 'react-testing-library';
 afterEach(cleanup);
 
-import { jobsToPoints, CurrentJobs } from './CurrentJobs';
-import * as api from '../../data/api';
+import { CurrentJobs } from './CurrentJobs';
 
 it('renders the current jobs', () => {
   const completedData = [
@@ -68,105 +67,4 @@ it('renders the current jobs with filling viewport', () => {
   const {container} = render(
     <CurrentJobs completedData={completedData} planData={planData} fillViewport={true}/>);
   expect(container).toMatchSnapshot('current job graph filling viewport');
-});
-
-it('converts events to points', () => {
-  const dummyHold: api.IJobHoldPattern = {
-    userHold: false,
-    reasonForUserHold: '',
-    holdUnholdPattern: [],
-    holdUnholdPatternStartUTC: new Date(),
-    holdUnholdPatternRepeats: false,
-  };
-  const jobs: api.IInProcessJob[] = [
-    {
-      routeStartUTC: new Date(),
-      routeEndUTC: new Date(),
-      archived: false,
-      copiedToSystem: true,
-      partName: "part1",
-      unique: "uniq1",
-      priority: 10,
-      manuallyCreated: false,
-      createMarkingData: true,
-      holdEntireJob: new api.JobHoldPattern(dummyHold),
-      cyclesOnFirstProcess: [40, 42],
-      completed: [[20, 21], [22]],
-      procsAndPaths: [
-        new api.ProcessInfo({
-          paths: [
-            new api.ProcPathInfo({
-              pathGroup: 1,
-              pallets: ["pal1"],
-              load: [1],
-              unload: [2],
-              stops: [
-                new api.JobMachiningStop({
-                  stations: { "1": "progabc" },
-                  tools: {},
-                  stationGroup: "MC",
-                  expectedCycleTime: "01:15:00",
-                })
-              ],
-              expectedLoadTime: '00:05:00',
-              expectedUnloadTime: '00:04:00',
-              simulatedStartingUTC: new Date(),
-              simulatedAverageFlowTime: "",
-              holdMachining: new api.JobHoldPattern(dummyHold),
-              holdLoadUnload: new api.JobHoldPattern(dummyHold),
-              partsPerPallet: 1,
-            }),
-            new api.ProcPathInfo({
-              pathGroup: 1,
-              pallets: ["pal2"],
-              load: [1],
-              unload: [2],
-              stops: [
-                new api.JobMachiningStop({
-                  stations: { "1": "progabc" },
-                  tools: {},
-                  stationGroup: "MC",
-                  expectedCycleTime: "01:15:00",
-                })
-              ],
-              expectedLoadTime: '00:05:00',
-              expectedUnloadTime: '00:04:00',
-              simulatedStartingUTC: new Date(),
-              simulatedAverageFlowTime: "",
-              holdMachining: new api.JobHoldPattern(dummyHold),
-              holdLoadUnload: new api.JobHoldPattern(dummyHold),
-              partsPerPallet: 1,
-            })
-          ]
-        }),
-        new api.ProcessInfo({
-          paths: [
-            new api.ProcPathInfo({
-              pathGroup: 1,
-              pallets: ["pal1"],
-              stops: [
-                new api.JobMachiningStop({
-                  stations: { "1": "progabc" },
-                  tools: {},
-                  stationGroup: "MC",
-                  expectedCycleTime: "00:45:00",
-                })
-              ],
-              expectedLoadTime: '00:05:00',
-              expectedUnloadTime: '00:04:00',
-              load: [1],
-              unload: [2],
-              simulatedStartingUTC: new Date(),
-              simulatedAverageFlowTime: "",
-              holdMachining: new api.JobHoldPattern(dummyHold),
-              holdLoadUnload: new api.JobHoldPattern(dummyHold),
-              partsPerPallet: 1,
-            })
-          ]
-        })
-      ]
-    }
-  ];
-  const points = jobsToPoints(jobs);
-  expect(points).toMatchSnapshot('points for sample jobs');
 });

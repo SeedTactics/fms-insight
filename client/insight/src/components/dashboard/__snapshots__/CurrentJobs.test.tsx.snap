@@ -1,40 +1,5 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`converts events to points: points for sample jobs 1`] = `
-Object {
-  "completedData": Array [
-    Object {
-      "completed": 16.5,
-      "completedCount": 22,
-      "part": "part1-2",
-      "totalCount": 82,
-      "totalPlan": 61.5,
-      "x": 16.5,
-      "y": 0,
-    },
-    Object {
-      "completed": 51.25,
-      "completedCount": 41,
-      "part": "part1-1",
-      "totalCount": 82,
-      "totalPlan": 102.5,
-      "x": 51.25,
-      "y": 1,
-    },
-  ],
-  "planData": Array [
-    Object {
-      "x": 61.5,
-      "y": 0,
-    },
-    Object {
-      "x": 102.5,
-      "y": 1,
-    },
-  ],
-}
-`;
-
 exports[`renders the current jobs with filling viewport: current job graph filling viewport 1`] = `
 <div>
   <div

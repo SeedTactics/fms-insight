@@ -31,11 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
-import * as im from 'immutable';
-import { duration } from 'moment';
 import { createSelector } from 'reselect';
 
-import * as api from '../../data/api';
 import { connect, Store } from '../../store/store';
 import {
   FlexibleWidthXYPlot,
@@ -49,66 +46,11 @@ import {
   Hint
 } from 'react-vis';
 
+import { CompletedDataPoint, jobsToPoints, DataPoints } from '../../data/job-bullet';
+
 // --------------------------------------------------------------------------------
 // Data
 // --------------------------------------------------------------------------------
-
-interface DataPoint {
-  readonly part: string;
-  readonly completed: number;
-  readonly completedCount: number;
-  readonly totalPlan: number;
-  readonly totalCount: number;
-}
-
-function displayJob(job: api.IInProcessJob, proc: number): DataPoint {
-  const totalPlan = job.cyclesOnFirstProcess.reduce((a, b) => a + b, 0);
-  const completed = job.completed[proc].reduce((a, b) => a + b, 0);
-
-  const stops = job.procsAndPaths[proc].paths[0].stops;
-  let cycleTime = duration();
-  for (let i = 0; i < stops.length; i++) {
-    const x = duration(stops[i].expectedCycleTime);
-    cycleTime = cycleTime.add(x);
-  }
-  const cycleTimeHours = cycleTime.asHours();
-  return {
-    part: job.partName + '-' + (proc + 1).toString(),
-    completed: cycleTimeHours * completed,
-    completedCount: completed,
-    totalPlan: cycleTimeHours * totalPlan,
-    totalCount: totalPlan,
-  };
-}
-
-export interface CompletedDataPoint extends DataPoint {
-  readonly x: number;
-  readonly y: number;
-}
-
-export interface DataPoints {
-  readonly completedData: ReadonlyArray<CompletedDataPoint>;
-  readonly planData: ReadonlyArray<{x: number, y: number}>;
-}
-
-export function jobsToPoints(jobs: ReadonlyArray<Readonly<api.IInProcessJob>>): DataPoints {
-  const points = im.Seq(jobs)
-    .flatMap(j =>
-      im.Range(0, j.procsAndPaths.length).map(proc =>
-        displayJob(j, proc)
-      )
-    )
-    .sortBy(pt => pt.part)
-    .reverse()
-    .cacheResult();
-  const completedData =
-    points.map((pt, i) => ({...pt, x: pt.completed, y: i}))
-        .toArray();
-  const planData =
-    points.map((pt, i) => ({x: pt.totalPlan, y: i}))
-        .toArray();
-  return {completedData, planData};
-}
 
 // --------------------------------------------------------------------------------
 // Plot
