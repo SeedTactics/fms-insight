@@ -90,7 +90,7 @@ const siteConfig = {
   tagline: 'Open source data analytics and monitoring for flexible manfuacturing systems',
   url: 'https://fms-insight.seedtactics.com' /* your website url */,
   baseUrl: '/' /* base url for your project */,
-  cleanUrl: true,
+  cleanUrl: false,
   // For github.io type URLs, you would set the url and baseUrl like:
   //   url: 'https://facebook.github.io',
   //   baseUrl: '/test-site/',
