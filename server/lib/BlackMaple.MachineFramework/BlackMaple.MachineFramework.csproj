@@ -3,7 +3,7 @@
   <PropertyGroup>
     <PackageId>BlackMaple.MachineFramework</PackageId>
     <AssemblyName>BlackMaple.MachineFramework</AssemblyName>
-    <VersionPrefix>8.2.1</VersionPrefix>
+    <VersionPrefix>9.0.0</VersionPrefix>
 
     <Title>SeedTactics Utility Library for FMS Insight Plugins</Title>
     <Company>Black Maple Software, LLC</Company>
