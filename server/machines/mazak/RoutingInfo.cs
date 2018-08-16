@@ -248,6 +248,9 @@ namespace MazakMachineInterface
     #region Queues
     public void AddUnallocatedCastingToQueue(string part, string queue, int position, string serial)
     {
+      if (!fmsSettings.Queues.ContainsKey(queue)) {
+        throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
+      }
       // num proc will be set later once it is allocated inside the MazakQueues thread
       var matId = log.AllocateMaterialIDForCasting(part, 1);
       if (!string.IsNullOrEmpty(serial)) {
@@ -269,6 +272,9 @@ namespace MazakMachineInterface
 
     public void AddUnprocessedMaterialToQueue(string jobUnique, int process, string queue, int position, string serial)
     {
+      if (!fmsSettings.Queues.ContainsKey(queue)) {
+        throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
+      }
       var job = jobDB.LoadJob(jobUnique);
       if (job == null) throw new BlackMaple.MachineFramework.BadRequestException("Unable to find job " + jobUnique);
       var matId = log.AllocateMaterialID(jobUnique, job.PartName, job.NumProcesses);
@@ -291,6 +297,9 @@ namespace MazakMachineInterface
 
     public void SetMaterialInQueue(long materialId, string queue, int position)
     {
+      if (!fmsSettings.Queues.ContainsKey(queue)) {
+        throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
+      }
       var proc =
         log.GetLogForMaterial(materialId)
         .SelectMany(e => e.Material)
