@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { addDays, addHours, differenceInMinutes, addMinutes } from 'date-fns';
+import { addDays, addHours, differenceInMinutes, differenceInSeconds, addMinutes } from 'date-fns';
 import { duration } from 'moment';
 
 import { PledgeStatus } from '../store/middleware';
@@ -41,6 +41,7 @@ import * as simuse from './events.simuse';
 import * as inspection from './events.inspection';
 import { fakeCycle } from './events.fake';
 import { ILogEntry } from './api';
+import { loadMockData } from '../mock-data/load';
 
 it('creates initial state', () => {
   // tslint:disable no-any
@@ -353,4 +354,42 @@ it("computes station oee", () => {
   );
 
   expect(statMins).toMatchSnapshot("station minutes for last week");
+});
+
+it("loads events from mock data", async () => {
+  const now = new Date(2018, 7, 5);
+  const jan18 = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
+  const offsetSeconds = differenceInSeconds(addDays(now, -28), jan18);
+  const data = loadMockData(offsetSeconds);
+  const evts = await data.events;
+  const st = events.reducer(
+    events.initial,
+    {
+      type: events.ActionType.LoadRecentLogEntries,
+      now: new Date(),
+      pledge: {
+        status: PledgeStatus.Completed,
+        result: evts
+      }
+    });
+  expect(st.last30).toMatchSnapshot("all mock data");
+});
+
+it("estimates the cycle times using MAD", async () => {
+  const now = new Date(2018, 7, 5);
+  const jan18 = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
+  const offsetSeconds = differenceInSeconds(addDays(now, -28), jan18);
+  const data = loadMockData(offsetSeconds);
+  const evts = await data.events;
+  const st = events.reducer(
+    events.initial,
+    {
+      type: events.ActionType.LoadRecentLogEntries,
+      now: new Date(),
+      pledge: {
+        status: PledgeStatus.Completed,
+        result: evts.map(e => ({...e, active: ""}))
+      }
+    });
+  expect(st.last30).toMatchSnapshot("all mock data with estimated active time");
 });
