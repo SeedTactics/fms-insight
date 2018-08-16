@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as api from './api';
 import * as im from 'immutable'; // consider collectable.js at some point?
 import { duration } from 'moment';
-import { startOfDay } from 'date-fns';
+import { startOfDay, addMinutes, differenceInMinutes } from 'date-fns';
 
 export interface CycleData {
   readonly x: Date;
@@ -377,6 +377,31 @@ export function process_events(
     }
 }
 
+function splitPartCycleToDays(cycle: CycleData, totalVal: number):
+    Array<{day: Date, value: number}> {
+  const startDay = startOfDay(cycle.x);
+  const endTime = addMinutes(cycle.x, totalVal);
+  const endDay = startOfDay(endTime);
+  if (startDay.getTime() === endDay.getTime()) {
+    return [{
+      day: startDay,
+      value: totalVal,
+    }];
+  } else {
+    const startDayPct = differenceInMinutes(endDay, cycle.x) / totalVal;
+    return [
+      {
+        day: startDay,
+        value: totalVal * startDayPct
+      },
+      {
+        day: endDay,
+        value: totalVal * (1 - startDayPct)
+      }
+    ];
+  }
+}
+
 type DayAndStation = im.Record<{day: Date, station: string}>;
 const mkDayAndStation = im.Record({day: new Date(), station: ""});
 
@@ -389,11 +414,9 @@ export function binCyclesByDayAndStat(
     .flatMap(byStation => (
       byStation.toSeq()
       .map((points, station) =>
-        im.Seq(points).map(point => ({
-          day: startOfDay(point.x),
-          station: station,
-          value: extractValue(point)
-        }))
+        im.Seq(points).flatMap(point =>
+          splitPartCycleToDays(point, extractValue(point)).map(x => ({...x, station}))
+        )
       )
       .valueSeq()
       .flatMap(x => x)
