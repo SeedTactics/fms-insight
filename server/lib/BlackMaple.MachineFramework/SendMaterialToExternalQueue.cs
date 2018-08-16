@@ -78,13 +78,15 @@ namespace BlackMaple.MachineFramework
           foreach (var mat in mats) {
             var q = "?queue=" + WebUtility.UrlEncode(mat.Queue) + "&position=-1";
 
+            Log.Debug("Sending {@mat} to external queue at {server}", mat, builder.Uri);
+
             var resp = await client.PostAsync("/api/v1/jobs/part/" + WebUtility.UrlEncode(mat.PartName) + "/casting" + q,
                 new StringContent(Newtonsoft.Json.JsonConvert.SerializeObject(mat.Serial), System.Text.Encoding.UTF8, "application/json"));
 
             if (!resp.IsSuccessStatusCode) {
               var body = await resp.Content.ReadAsStringAsync();
-              Log.Error("Received error {code} when trying to add material {@mat} to external queue: {err}",
-                resp.StatusCode, mat, body);
+              Log.Error("Received error {code} when trying to add material {@mat} to external queue at {server}: {err}",
+                resp.StatusCode, mat, builder.Uri, body);
             }
           }
         }
