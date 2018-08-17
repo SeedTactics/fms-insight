@@ -1,11 +1,11 @@
 version: '{build}'
 image: Visual Studio 2017
 cache:
-  - client/insight/node_modules
-  - website/node_modules
-  - '%USERPROFILE%\.nuget\packages'
+  #- client/insight/node_modules
+  #- website/node_modules
+  #- '%USERPROFILE%\.nuget\packages'
 install:
-- ps: Install-Product node 9
+- ps: Install-Product node 10
 environment:
   bitbucket_auth:
     secure: rWSLJHgb9I+I5jdorS8K2T415gRW5nJ2Z23pM3DmhqQ=
