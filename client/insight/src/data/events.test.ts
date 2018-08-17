@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { addDays, addHours, differenceInMinutes, differenceInSeconds, addMinutes } from 'date-fns';
+import { addDays, addHours, differenceInMinutes, addMinutes } from 'date-fns';
 import { duration } from 'moment';
 
 import { PledgeStatus } from '../store/middleware';
@@ -41,7 +41,6 @@ import * as simuse from './events.simuse';
 import * as inspection from './events.inspection';
 import { fakeCycle } from './events.fake';
 import { ILogEntry } from './api';
-import { loadMockData } from '../mock-data/load';
 
 it('creates initial state', () => {
   // tslint:disable no-any
