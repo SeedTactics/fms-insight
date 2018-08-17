@@ -1,8 +1,7 @@
 version: '{build}'
 image: Visual Studio 2017
 cache:
-  #- client/insight/node_modules
-  #- website/node_modules
+  - "%LOCALAPPDATA%\\Yarn"
   #- '%USERPROFILE%\.nuget\packages'
 install:
 - ps: Install-Product node 10
@@ -44,7 +43,7 @@ build_script:
         server/lib/BlackMaple.MachineWatchInterface
 
 - ps: |
-    yarn --cwd client/insight install
+    yarn --cwd client/insight install --frozen-lockfile
     yarn --cwd client/insight run build
     dotnet pack `
         --include-symbols `
@@ -105,7 +104,7 @@ build_script:
 
 - ps: |
     yarn --cwd client/insight run build-demo
-    yarn --cwd website install
+    yarn --cwd website install --frozen-lockfile
     yarn --cwd website run build
     Copy-Item "client\insight\demo" -Destination "website\build\fms-insight\demo" -Recurse -Force
     7z a website.zip .\website\build\fms-insight\*
