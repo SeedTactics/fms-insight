@@ -2,7 +2,7 @@ version: '{build}'
 image: Visual Studio 2017
 cache:
   - "%LOCALAPPDATA%\\Yarn"
-  #- '%USERPROFILE%\.nuget\packages'
+  - '%USERPROFILE%\.nuget\packages'
 install:
 - ps: Install-Product node 10
 environment:
