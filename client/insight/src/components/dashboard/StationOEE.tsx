@@ -45,7 +45,7 @@ import { addSeconds, addDays } from 'date-fns';
 import { PalletData, buildPallets } from '../../data/load-station';
 
 interface StationOEEProps {
-  readonly date_of_current_status: Date | undefined;
+  readonly dateOfCurrentStatus: Date | undefined;
   readonly station: string;
   readonly oee: number;
   readonly pallet?: PalletData;
@@ -133,10 +133,10 @@ function computeTooltip(p: StationOEEProps): JSX.Element {
           break;
         case api.ActionType.Machining:
           matStatus = " (machining)";
-          if (mat.action.expectedRemainingMachiningTime && p.date_of_current_status) {
+          if (mat.action.expectedRemainingMachiningTime && p.dateOfCurrentStatus) {
             matStatus += " completing ";
             const seconds = duration(mat.action.expectedRemainingMachiningTime).asSeconds();
-            matTime = <TimeAgo date={addSeconds(p.date_of_current_status, seconds)}/>;
+            matTime = <TimeAgo date={addSeconds(p.dateOfCurrentStatus, seconds)}/>;
           }
           break;
       }
@@ -196,7 +196,7 @@ class StationOEE extends React.PureComponent<StationOEEProps> {
 }
 
 interface Props {
-  date_of_current_status: Date | undefined;
+  dateOfCurrentStatus: Date | undefined;
   station_active_minutes_past_week: im.Map<string, number>;
   pallets: im.Map<string, {pal?: PalletData, queued?: PalletData}>;
 }
@@ -214,7 +214,7 @@ function StationOEEs(p: Props) {
         stats.map((stat, idx) => (
           <Grid item xs={12} sm={6} md={4} lg={3} key={idx}>
             <StationOEE
-              date_of_current_status={p.date_of_current_status}
+              dateOfCurrentStatus={p.dateOfCurrentStatus}
               station={stat}
               oee={p.station_active_minutes_past_week.get(stat, 0) / (60 * 24 * 7)}
               pallet={p.pallets.get(stat, {pal: undefined}).pal}
@@ -242,7 +242,7 @@ const palSelector = createSelector(
 
 export default connect(
   s => ({
-    date_of_current_status: s.Current.date_of_current_status,
+    dateOfCurrentStatus: s.Current.date_of_current_status,
     station_active_minutes_past_week: oeeSelector(s),
     pallets: palSelector(s),
   })
