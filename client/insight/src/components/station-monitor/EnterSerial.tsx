@@ -44,7 +44,7 @@ import { Store, connect, mkAC, AppActionBeforeMiddleware, DispatchAction } from 
 import * as matDetails from '../../data/material-details';
 import * as guiState from '../../data/gui-state';
 
-export interface ManualSerialEntryProps {
+interface ManualSerialEntryProps {
   readonly mat: matDetails.MaterialDetail;
   readonly assignSerial: (data: matDetails.AssignSerialData) => void;
 }
@@ -53,7 +53,7 @@ interface ManualSerialEntryState {
   readonly serial: string;
 }
 
-export class ManualSerialEntry extends React.PureComponent<ManualSerialEntryProps, ManualSerialEntryState> {
+class ManualSerialEntry extends React.PureComponent<ManualSerialEntryProps, ManualSerialEntryState> {
   state = {serial: ""};
 
   render() {
@@ -76,13 +76,13 @@ export class ManualSerialEntry extends React.PureComponent<ManualSerialEntryProp
   }
 }
 
-export interface EnterSerialProps {
+interface EnterSerialProps {
   readonly mats: matDetails.MaterialDetail | null;
   readonly onClose: DispatchAction<guiState.ActionType.SetSerialDialogOpen>;
   readonly assignSerial: (data: matDetails.AssignSerialData) => void;
 }
 
-export function EnterSerialDialog(props: EnterSerialProps) {
+function EnterSerialDialog(props: EnterSerialProps) {
   let body: JSX.Element | undefined;
 
   if (props.mats === null) {

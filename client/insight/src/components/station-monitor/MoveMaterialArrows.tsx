@@ -41,7 +41,7 @@ import {
   MoveMaterialNodeKind
 } from '../../data/move-arrows';
 
-export class MoveMaterialArrows extends React.PureComponent<MoveMaterialArrowData<Element>> {
+class MoveMaterialArrows extends React.PureComponent<MoveMaterialArrowData<Element>> {
   static elementToRect(e: Element): ClientRect {
     var r = e.getBoundingClientRect();
     return {

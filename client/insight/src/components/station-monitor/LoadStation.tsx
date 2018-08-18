@@ -177,7 +177,7 @@ const palletStyles = withStyles(() => ({
   },
 }));
 
-export const PalletColumn = palletStyles<LoadStationProps>(props => {
+const PalletColumn = palletStyles<LoadStationProps>(props => {
   let palletClass: string;
   let statStatusClass: string;
   if (props.fillViewPort) {
@@ -279,13 +279,13 @@ export const PalletColumn = palletStyles<LoadStationProps>(props => {
   );
 });
 
-export interface LoadMatDialogProps extends MaterialDialogProps {
+interface LoadMatDialogProps extends MaterialDialogProps {
   readonly openSelectWorkorder: (mat: matDetails.MaterialDetail) => void;
   readonly openSetSerial: () => void;
   readonly openForceInspection: () => void;
 }
 
-export function LoadMatDialog(props: LoadMatDialogProps) {
+function LoadMatDialog(props: LoadMatDialogProps) {
   function openAssignWorkorder() {
     if (!props.display_material) {
       return;
@@ -377,14 +377,14 @@ const loadStyles = withStyles(() => ({
   },
 }));
 
-export interface LoadStationProps {
+interface LoadStationProps {
   readonly fillViewPort: boolean;
   readonly data: LoadStationAndQueueData;
   readonly dateOfCurrentStatus: Date | null;
   openMat: (m: Readonly<MaterialSummary>) => void;
 }
 
-export const LoadStation = loadStyles<LoadStationProps>(props => {
+const LoadStation = loadStyles<LoadStationProps>(props => {
   const palProps = {...props, classes: undefined};
 
   let queues = props.data.queues

@@ -50,7 +50,7 @@ import { Store, connect, mkAC, AppActionBeforeMiddleware, DispatchAction } from 
 import * as matDetails from '../../data/material-details';
 import * as guiState from '../../data/gui-state';
 
-export interface ManualInspTypeEntryProps {
+interface ManualInspTypeEntryProps {
   readonly mat: matDetails.MaterialDetail;
   readonly forceInspection: (data: matDetails.ForceInspectionData) => void;
 }
@@ -59,7 +59,7 @@ interface ManualInspTypeEntryState {
   readonly inspType: string;
 }
 
-export class ManualInspTypeEntry extends React.PureComponent<ManualInspTypeEntryProps, ManualInspTypeEntryState> {
+class ManualInspTypeEntry extends React.PureComponent<ManualInspTypeEntryProps, ManualInspTypeEntryState> {
   state = {inspType: ""};
 
   render() {
@@ -83,14 +83,14 @@ export class ManualInspTypeEntry extends React.PureComponent<ManualInspTypeEntry
   }
 }
 
-export interface SelectInspTypeProps {
+interface SelectInspTypeProps {
   readonly inspTypes: im.Set<string>;
   readonly mats: matDetails.MaterialDetail | null;
   readonly onClose: DispatchAction<guiState.ActionType.SetInspTypeDialogOpen>;
   readonly forceInspection: (data: matDetails.ForceInspectionData) => void;
 }
 
-export function SelectInspTypeDialog(props: SelectInspTypeProps) {
+function SelectInspTypeDialog(props: SelectInspTypeProps) {
   let body: JSX.Element | undefined;
 
   if (props.mats === null) {

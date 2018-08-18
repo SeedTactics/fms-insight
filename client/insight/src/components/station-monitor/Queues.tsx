@@ -326,7 +326,7 @@ class AddNewMaterialBody extends React.PureComponent<AddNewMaterialProps, AddNew
   }
 }
 
-export interface QueueMatDialogProps {
+interface QueueMatDialogProps {
   readonly display_material: matDetails.MaterialDetail | null;
   readonly material_currently_in_queue: boolean;
   readonly addMatQueue?: string;
@@ -338,7 +338,7 @@ export interface QueueMatDialogProps {
   readonly addExistingMat: (d: matDetails.AddExistingMaterialToQueueData) => void;
 }
 
-export function QueueMatDialog(props: QueueMatDialogProps) {
+function QueueMatDialog(props: QueueMatDialogProps) {
   let body: JSX.Element | undefined;
 
   if (props.display_material === null) {
@@ -542,13 +542,13 @@ const queueStyles = withStyles(() => ({
   },
 }));
 
-export interface QueueProps {
+interface QueueProps {
   readonly data: LoadStationAndQueueData;
   openMat: (m: Readonly<MaterialSummary>) => void;
   openAddToQueue: (queueName: string) => void;
 }
 
-export const Queues = queueStyles<QueueProps>(props => {
+const Queues = queueStyles<QueueProps>(props => {
 
   let queues = props.data.queues
     .toSeq()

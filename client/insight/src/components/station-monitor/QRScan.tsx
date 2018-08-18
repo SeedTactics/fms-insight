@@ -38,13 +38,13 @@ import { connect } from '../../store/store';
 import * as guiState from '../../data/gui-state';
 import { openMaterialBySerial } from '../../data/material-details';
 
-export interface QrScanProps {
+interface QrScanProps {
   readonly dialogOpen: boolean;
   readonly onClose: () => void;
   readonly onScan: (s: string) => void;
 }
 
-export function SerialScanner(props: QrScanProps) {
+function SerialScanner(props: QrScanProps) {
   function onScan(serial: string | undefined | null): void {
     if (serial === undefined || serial == null) { return; }
     let commaIdx = serial.indexOf(",");

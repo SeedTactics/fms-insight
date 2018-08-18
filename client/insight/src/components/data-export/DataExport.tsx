@@ -49,11 +49,11 @@ import * as api from '../../data/api';
 import { Store, connect } from '../../store/store';
 import { LogEntries } from '../LogEntry';
 
-export interface CSVLogExportState {
+interface CSVLogExportState {
   readonly exportDate: string;
 }
 
-export class CSVLogExport extends React.PureComponent<{}, CSVLogExportState> {
+class CSVLogExport extends React.PureComponent<{}, CSVLogExportState> {
   state: CSVLogExportState = {
     exportDate: df.format(df.addDays(new Date(), -1), "YYYY-MM-DD"),
   };
@@ -116,11 +116,11 @@ export class CSVLogExport extends React.PureComponent<{}, CSVLogExportState> {
   }
 }
 
-export interface CSVWorkorderExportState {
+interface CSVWorkorderExportState {
   readonly exportWorkorder: string;
 }
 
-export class CSVWorkorderExport extends React.PureComponent<{}, CSVWorkorderExportState> {
+class CSVWorkorderExport extends React.PureComponent<{}, CSVWorkorderExportState> {
   state: CSVWorkorderExportState = {
     exportWorkorder: "",
   };
@@ -180,11 +180,11 @@ export class CSVWorkorderExport extends React.PureComponent<{}, CSVWorkorderExpo
   }
 }
 
-export interface RecentEventsProps {
+interface RecentEventsProps {
   events: ReadonlyArray<Readonly<api.ILogEntry>>;
 }
 
-export function RecentEvents(p: RecentEventsProps) {
+function RecentEvents(p: RecentEventsProps) {
   return (
     <Card style={{margin: '2em'}}>
       <CardHeader

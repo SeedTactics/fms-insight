@@ -54,7 +54,7 @@ export interface CycleChartPoint {
   readonly y: number;
 }
 
-export interface CycleChartProps {
+interface CycleChartProps {
   readonly points: im.Map<string, ReadonlyArray<CycleChartPoint>>;
   readonly series_label: string;
   readonly default_date_range?: Date[];
@@ -83,7 +83,7 @@ function memoize<A, R>(f: (x: A) => R): ((x: A) => R) {
   };
 }
 
-export class CycleChart extends React.PureComponent<CycleChartProps, CycleChartState> {
+class CycleChart extends React.PureComponent<CycleChartProps, CycleChartState> {
   state = {
     tooltip: undefined,
     disabled_series: {}

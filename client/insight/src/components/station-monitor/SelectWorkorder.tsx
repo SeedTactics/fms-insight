@@ -73,7 +73,7 @@ function WorkorderIcon({work}: {work: matDetails.WorkorderPlanAndSummary}) {
   }
 }
 
-export interface ManualWorkorderEntryProps {
+interface ManualWorkorderEntryProps {
   readonly mat: matDetails.MaterialDetail;
   readonly assignWorkorder: (data: matDetails.AssignWorkorderData) => void;
 }
@@ -82,7 +82,7 @@ interface ManualWorkorderEntryState {
   readonly workorder: string;
 }
 
-export class ManualWorkorderEntry extends React.PureComponent<ManualWorkorderEntryProps, ManualWorkorderEntryState> {
+class ManualWorkorderEntry extends React.PureComponent<ManualWorkorderEntryProps, ManualWorkorderEntryState> {
   state = {workorder: ""};
 
   render() {
@@ -105,13 +105,13 @@ export class ManualWorkorderEntry extends React.PureComponent<ManualWorkorderEnt
   }
 }
 
-export interface SelectWorkorderProps {
+interface SelectWorkorderProps {
   readonly mats: matDetails.MaterialDetail | null;
   readonly onClose: DispatchAction<guiState.ActionType.SetWorkorderDialogOpen>;
   readonly assignWorkorder: (data: matDetails.AssignWorkorderData) => void;
 }
 
-export function SelectWorkorderDialog(props: SelectWorkorderProps) {
+function SelectWorkorderDialog(props: SelectWorkorderProps) {
   let body: JSX.Element | undefined;
 
   if (props.mats === null) {

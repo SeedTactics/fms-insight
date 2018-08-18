@@ -55,7 +55,7 @@ import {
   InspectionLogEntry,
 } from '../../data/events.inspection';
 
-export interface InspectionSankeyDiagramProps {
+interface InspectionSankeyDiagramProps {
   readonly sankey: SankeyDiagram;
 }
 
@@ -84,7 +84,7 @@ interface InspectionSankeyDiagramState {
   readonly activeLink?: D3Link;
 }
 
-export class InspectionSankeyDiagram
+class InspectionSankeyDiagram
     extends React.PureComponent<InspectionSankeyDiagramProps, InspectionSankeyDiagramState> {
   state: InspectionSankeyDiagramState = {};
 
@@ -133,7 +133,7 @@ class ConvertInspectionDataToSankey extends React.PureComponent<{data: ReadonlyA
   }
 }
 
-export interface InspectionSankeyProps {
+interface InspectionSankeyProps {
   readonly inspectionlogs: im.Map<PartAndInspType, ReadonlyArray<InspectionLogEntry>>;
 }
 
@@ -142,7 +142,7 @@ interface InspectionSankeyState {
   readonly selectedInspectType?: string;
 }
 
-export class InspectionSankey extends React.Component<InspectionSankeyProps, InspectionSankeyState> {
+class InspectionSankey extends React.Component<InspectionSankeyProps, InspectionSankeyState> {
   state: InspectionSankeyState = {};
 
   render() {

@@ -52,14 +52,14 @@ import InspectionSankey from './InspectionSankey';
 // Station Cycles
 // --------------------------------------------------------------------------------
 
-export interface PartStationCycleChartProps {
+interface PartStationCycleChartProps {
   readonly points: im.Map<string, im.Map<string, ReadonlyArray<events.CycleData>>>;
   readonly default_date_range?: Date[];
   readonly selected?: string;
   readonly setSelected: (s: string) => void;
 }
 
-export function PartStationCycleChart(props: PartStationCycleChartProps) {
+function PartStationCycleChart(props: PartStationCycleChartProps) {
   return (
     <SelectableCycleChart
       select_label="Part"
@@ -72,7 +72,7 @@ export function PartStationCycleChart(props: PartStationCycleChartProps) {
   );
 }
 
-export function stationCycleSelector(st: Store) {
+function stationCycleSelector(st: Store) {
   if (st.Events.analysis_period === events.AnalysisPeriod.Last30Days) {
     const now = new Date();
     const oneMonthAgo = addDays(now, -30);
@@ -102,14 +102,14 @@ const ConnectedPartStationCycleChart = connect(
 // Pallet Cycles
 // --------------------------------------------------------------------------------
 
-export interface PalletCycleChartProps {
+interface PalletCycleChartProps {
   readonly points: im.Map<string, ReadonlyArray<events.CycleData>>;
   readonly default_date_range?: Date[];
   readonly selected?: string;
   readonly setSelected: (s: string) => void;
 }
 
-export function PalletCycleChart(props: PalletCycleChartProps) {
+function PalletCycleChart(props: PalletCycleChartProps) {
   const points = props.points.map((cs, pal) => im.Map({[pal]: cs}));
   return (
     <SelectableCycleChart
@@ -124,7 +124,7 @@ export function PalletCycleChart(props: PalletCycleChartProps) {
   );
 }
 
-export function palletCycleSelector(st: Store) {
+function palletCycleSelector(st: Store) {
   if (st.Events.analysis_period === events.AnalysisPeriod.Last30Days) {
     const now = new Date();
     const oneMonthAgo = addDays(now, -30);
@@ -153,13 +153,13 @@ const ConnectedPalletCycleChart = connect(
 // Oee Heatmap
 // --------------------------------------------------------------------------------
 
-export interface StationOeeHeatmapProps {
+interface HeatmapProps {
   readonly planned_or_actual: guiState.PlannedOrActual;
   readonly setType: (p: guiState.PlannedOrActual) => void;
   readonly points: ReadonlyArray<HeatChartPoint>;
 }
 
-export function StationOeeHeatmap(props: StationOeeHeatmapProps) {
+function StationOeeHeatmap(props: HeatmapProps) {
   return (
     <SelectableHeatChart
       card_label="Station OEE"
@@ -170,7 +170,7 @@ export function StationOeeHeatmap(props: StationOeeHeatmapProps) {
   );
 }
 
-export const stationOeeActualPointsSelector = createSelector(
+const stationOeeActualPointsSelector = createSelector(
   (cycles: events.CycleState) => cycles.by_part_then_stat,
   byPartThenStat => {
     let pts = events.binCyclesByDayAndStat(byPartThenStat, c => c.active);
@@ -192,7 +192,7 @@ export const stationOeeActualPointsSelector = createSelector(
   }
 );
 
-export const stationOeePlannedPointsSelector = createSelector(
+const stationOeePlannedPointsSelector = createSelector(
   (sim: events.SimUseState) => sim.station_use,
   statUse => {
     let pts = events.binSimStationUseByDayAndStat(statUse.toSeq(), c => c.utilizationTime - c.plannedDownTime);
@@ -214,7 +214,7 @@ export const stationOeePlannedPointsSelector = createSelector(
   }
 );
 
-export function stationOeePoints(st: Store) {
+function stationOeePoints(st: Store) {
   let cycles: events.CycleState;
   let sim: events.SimUseState;
   if (st.Events.analysis_period === events.AnalysisPeriod.Last30Days) {
@@ -254,15 +254,7 @@ const ConnectedStationOeeHeatmap = connect(
 // Completed Heatmap
 // --------------------------------------------------------------------------------
 
-export interface CompletedCountHeatmapProps {
-  readonly planned_or_actual: guiState.PlannedOrActual;
-  readonly setType: (p: guiState.PlannedOrActual) => void;
-  readonly actual_points: ReadonlyArray<HeatChartPoint>;
-  readonly planned_points: ReadonlyArray<HeatChartPoint>;
-  readonly planned_minus_actual_points: ReadonlyArray<HeatChartPoint>;
-}
-
-export function CompletedCountHeatmap(props: StationOeeHeatmapProps) {
+function CompletedCountHeatmap(props: HeatmapProps) {
   return (
     <SelectableHeatChart
       card_label="Part Production"
@@ -274,7 +266,7 @@ export function CompletedCountHeatmap(props: StationOeeHeatmapProps) {
   );
 }
 
-export const completedActualPointsSelector = createSelector(
+const completedActualPointsSelector = createSelector(
   (cycles: events.CycleState) => cycles.by_part_then_stat,
   byPartThenStat => {
     let pts = events.binCyclesByDayAndPart(byPartThenStat, c => c.completed ? 1 : 0);
@@ -295,7 +287,7 @@ export const completedActualPointsSelector = createSelector(
   }
 );
 
-export const completedPlannedPointsSelector = createSelector(
+const completedPlannedPointsSelector = createSelector(
   (simUse: events.SimUseState) => simUse.production,
   production => {
     let pts = events.binSimProductionByDayAndPart(production.toSeq());
@@ -316,7 +308,7 @@ export const completedPlannedPointsSelector = createSelector(
   }
 );
 
-export function completedPoints(st: Store) {
+function completedPoints(st: Store) {
   let cycles: events.CycleState;
   let sim: events.SimUseState;
   if (st.Events.analysis_period === events.AnalysisPeriod.Last30Days) {

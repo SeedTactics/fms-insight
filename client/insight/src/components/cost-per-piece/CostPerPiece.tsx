@@ -52,7 +52,7 @@ import { createSelector } from 'reselect';
 import BuildIcon from '@material-ui/icons/Build';
 import AnalysisSelectToolbar from '../AnalysisSelectToolbar';
 
-export interface CostPerPieceInputProps {
+interface CostPerPieceInputProps {
   readonly statGroups: im.Set<string>;
   readonly input: ccp.CostInput;
 
@@ -62,7 +62,7 @@ export interface CostPerPieceInputProps {
   readonly setOperCostPerHour: DispatchAction<ccp.ActionType.SetOperatorCostPerHour>;
 }
 
-export function CostPerPieceInput(props: CostPerPieceInputProps) {
+function CostPerPieceInput(props: CostPerPieceInputProps) {
   return (
     <div style={{display: 'flex', justifyContent: 'center'}}>
       <Card style={{maxWidth: '45em', width: '100%'}}>
@@ -141,14 +141,14 @@ const ConnectedCostPerPieceInput = connect(
   }
 )(CostPerPieceInput);
 
-export interface CostPerPieceOutputProps {
+interface CostPerPieceOutputProps {
   readonly input: ccp.CostInput;
   readonly costs: ReadonlyArray<ccp.PartCost>;
 
   readonly setPartMatCost: DispatchAction<ccp.ActionType.SetPartMaterialCost>;
 }
 
-export function CostPerPieceOutput(props: CostPerPieceOutputProps) {
+function CostPerPieceOutput(props: CostPerPieceOutputProps) {
   const format = Intl.NumberFormat(undefined, {
     maximumFractionDigits: 1,
   });
@@ -213,7 +213,7 @@ export function CostPerPieceOutput(props: CostPerPieceOutputProps) {
   );
 }
 
-export const calcCostPerPiece = createSelector(
+const calcCostPerPiece = createSelector(
   (s: Store) =>
       s.Events.analysis_period === AnalysisPeriod.Last30Days
        ? s.Events.last30.cycles.by_part_then_stat

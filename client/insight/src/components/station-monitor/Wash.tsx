@@ -50,14 +50,14 @@ import { MaterialSummaryAndCompletedData } from '../../data/events.matsummary';
 import SerialScanner from './QRScan';
 import Tooltip from '@material-ui/core/Tooltip';
 
-export interface WashDialogProps extends MaterialDialogProps {
+interface WashDialogProps extends MaterialDialogProps {
   readonly operator?: string;
   readonly fmsInfo?: Readonly<api.IFMSInfo>;
   readonly completeWash: (mat: matDetails.CompleteWashData) => void;
   readonly openSelectWorkorder: (mat: matDetails.MaterialDetail) => void;
 }
 
-export function WashDialog(props: WashDialogProps) {
+function WashDialog(props: WashDialogProps) {
   function markWashComplete() {
     if (!props.display_material) {
       return;
@@ -143,12 +143,12 @@ const ConnectedWashDialog = connect(
   }
 )(WashDialog);
 
-export interface WashProps {
+interface WashProps {
   readonly recent_completed: ReadonlyArray<MaterialSummaryAndCompletedData>;
   readonly openMat: (mat: MaterialSummary) => void;
 }
 
-export function Wash(props: WashProps) {
+function Wash(props: WashProps) {
   const unwashed = im.Seq(props.recent_completed).filter(m => m.wash_completed === undefined);
   const washed = im.Seq(props.recent_completed).filter(m => m.wash_completed !== undefined);
 
@@ -179,7 +179,7 @@ export function Wash(props: WashProps) {
   );
 }
 
-export const extractRecentCompleted = createSelector(
+const extractRecentCompleted = createSelector(
   (st: Store) => st.Events.last30.mat_summary.matsById,
   (mats: im.Map<number, MaterialSummaryAndCompletedData>): ReadonlyArray<MaterialSummaryAndCompletedData> => {
     const cutoff = addHours(new Date(), -36);

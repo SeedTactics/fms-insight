@@ -51,12 +51,12 @@ const ConnectedAllMatDialog = connect(
   }
 )(MaterialDialog);
 
-export interface AllMatProps {
+interface AllMatProps {
   readonly allMat: AllMaterialBins;
   readonly openMat: (mat: MaterialSummary) => void;
 }
 
-export function Wash(props: AllMatProps) {
+function Wash(props: AllMatProps) {
   const regions = props.allMat.toSeq().sortBy((mats, region) => region);
 
   return (
@@ -79,7 +79,7 @@ export function Wash(props: AllMatProps) {
   );
 }
 
-export const extractMaterialRegions = createSelector(
+const extractMaterialRegions = createSelector(
   (st: Store) => st.Current.current_status,
   selectAllMaterialIntoBins
 );

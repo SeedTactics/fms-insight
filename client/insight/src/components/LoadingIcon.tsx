@@ -36,7 +36,7 @@ import CircularProgress from '@material-ui/core/CircularProgress';
 import { connect, Store } from '../store/store';
 import Tooltip from '@material-ui/core/Tooltip';
 
-export function LoadingIcon({loading}: {loading: boolean}) {
+function LoadingIcon({loading}: {loading: boolean}) {
   if (loading) {
     return (
       <Tooltip title="Loading">

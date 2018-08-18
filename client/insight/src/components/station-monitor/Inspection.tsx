@@ -47,14 +47,14 @@ import * as matDetails from '../../data/material-details';
 import { MaterialSummaryAndCompletedData } from '../../data/events.matsummary';
 import SerialScanner from './QRScan';
 
-export interface InspButtonsProps {
+interface InspButtonsProps {
   readonly display_material: matDetails.MaterialDetail;
   readonly operator?: string;
   readonly inspection_type: string;
   readonly completeInspection: (comp: matDetails.CompleteInspectionData) => void;
 }
 
-export function InspButtons(props: InspButtonsProps) {
+function InspButtons(props: InspButtonsProps) {
   function markInspComplete(success: boolean) {
     if (!props.display_material) {
       return;
@@ -84,13 +84,13 @@ export function InspButtons(props: InspButtonsProps) {
   );
 }
 
-export interface InspDialogProps extends MaterialDialogProps {
+interface InspDialogProps extends MaterialDialogProps {
   readonly operator?: string;
   readonly focusInspectionType: string;
   readonly completeInspection: (comp: matDetails.CompleteInspectionData) => void;
 }
 
-export function InspDialog(props: InspDialogProps) {
+function InspDialog(props: InspDialogProps) {
   const displayMat = props.display_material;
   let singleInspectionType: string | undefined;
   let multipleInspTypes: ReadonlyArray<string> | undefined;
@@ -150,18 +150,18 @@ const ConnectedInspDialog = connect(
   }
 )(InspDialog);
 
-export interface PartsForInspection {
+interface PartsForInspection {
   readonly waiting_to_inspect: ReadonlyArray<MaterialSummary>;
   readonly inspect_completed: ReadonlyArray<MaterialSummary>;
 }
 
-export interface InspectionProps {
+interface InspectionProps {
   readonly recent_inspections: PartsForInspection;
   readonly focusInspectionType: string;
   readonly openMat: (mat: MaterialSummary) => void;
 }
 
-export function Inspection(props: InspectionProps) {
+function Inspection(props: InspectionProps) {
 
   let title = "Inspection - FMS Insight";
   if (props.focusInspectionType !== "") {
@@ -200,7 +200,7 @@ export function Inspection(props: InspectionProps) {
   );
 }
 
-export const extractRecentInspections = createSelector(
+const extractRecentInspections = createSelector(
   (st: Store) => st.Events.last30.mat_summary.matsById,
   (st: Store) => st.Route.selected_insp_type,
   (mats: im.Map<number, MaterialSummaryAndCompletedData>, inspType: string | undefined): PartsForInspection => {
