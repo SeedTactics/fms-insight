@@ -32,39 +32,45 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from 'react';
-import { render, cleanup } from 'react-testing-library';
+import { render, cleanup, wait } from 'react-testing-library';
 afterEach(cleanup);
+import { Provider } from 'react-redux';
+import 'jest-dom/extend-expect';
 
-import { CurrentJobs } from './CurrentJobs';
+(window as any).FMS_INSIGHT_DEMO_MODE = true;
+import { initStore } from '../store/store';
+import Dashboard from '../components/dashboard/Dashboard';
+import LoadingIcon from '../components/LoadingIcon';
+import { differenceInSeconds, addDays } from "date-fns";
+import { loadMockData } from "../mock-data/load";
 
-it('renders the current jobs', () => {
-  const completedData = [
-    {x: 10, y: 1, part: 'abc', completed: 5, completedCount: 1, totalPlan: 10, totalCount: 11},
-    {x: 11, y: 2, part: 'def', completed: 1, completedCount: 6, totalPlan: 1, totalCount: 9},
-    {x: 16, y: 3, part: 'zzz', completed: 0, completedCount: 0, totalPlan: 15, totalCount: 6}
-  ];
-  const planData = [
-    {x: 16, y: 1},
-    {x: 17, y: 2},
-    {x: 22, y: 3}
-  ];
-  const {container} = render(
-    <CurrentJobs completedData={completedData} planData={planData} fillViewport={false}/>);
-  expect(container).toMatchSnapshot('current job graph scrollable');
+it("renders the dashboard", async () => {
+  const store = initStore();
+
+  const result = render(
+    <Provider store={store}>
+      <div>
+        <LoadingIcon />
+        <Dashboard />
+      </div>
+    </Provider>
+  );
+
+  expect(result.getByTestId("loading-icon")).toBeInTheDocument();
+
+  const jan18 = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
+  const offsetSeconds = differenceInSeconds(addDays(new Date(2018, 7, 5, 15, 33, 0), -28), jan18);
+
+  // tslint:disable-next-line:no-any
+  (window as any).FMS_INSIGHT_RESOLVE_MOCK_DATA(
+    loadMockData(offsetSeconds)
+  );
+
+  await wait(() =>
+    expect(result.queryByTestId("loading-icon")).not.toBeInTheDocument()
+  );
+
+  expect(result.container.querySelector("div.rv-xy-plot")).toMatchSnapshot("current jobs plot");
+  expect(result.getByTestId("stationoee-container")).toMatchSnapshot("station oee");
 });
 
-it('renders the current jobs with filling viewport', () => {
-  const completedData = [
-    {x: 12, y: 1, part: 'ddd', completed: 4, completedCount: 6, totalPlan: 8, totalCount: 9},
-    {x: 7, y: 2, part: 'eee', completed: 2, completedCount: 3, totalPlan: 7, totalCount: 100},
-    {x: 9, y: 3, part: 'fff', completed: 1, completedCount: 8, totalPlan: 3, totalCount: 99}
-  ];
-  const planData = [
-    {x: 40, y: 1},
-    {x: 33, y: 2},
-    {x: 24, y: 3}
-  ];
-  const {container} = render(
-    <CurrentJobs completedData={completedData} planData={planData} fillViewport={true}/>);
-  expect(container).toMatchSnapshot('current job graph filling viewport');
-});

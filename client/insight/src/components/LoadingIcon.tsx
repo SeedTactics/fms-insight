@@ -40,7 +40,7 @@ function LoadingIcon({loading}: {loading: boolean}) {
   if (loading) {
     return (
       <Tooltip title="Loading">
-        <CircularProgress color="secondary"/>
+        <CircularProgress data-testid="loading-icon" color="secondary"/>
       </Tooltip>
     );
   } else {

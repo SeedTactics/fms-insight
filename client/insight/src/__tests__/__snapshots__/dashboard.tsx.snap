@@ -1,0 +1,813 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`renders the dashboard: current jobs plot 1`] = `
+<div
+  class="rv-xy-plot "
+  style="width: 0px; height: 360px;"
+>
+  <svg
+    class="rv-xy-plot__inner"
+    height="360"
+    width="0"
+  >
+    <g
+      class="rv-xy-plot__axis rv-xy-plot__axis--horizontal "
+      transform="translate(70,320)"
+    >
+      <line
+        class="rv-xy-plot__axis__line"
+        x1="0"
+        x2="-80"
+        y1="0"
+        y2="0"
+      />
+      <g
+        class="rv-xy-plot__axis__ticks"
+        transform="translate(0, 0)"
+      >
+        <g
+          class="rv-xy-plot__axis__tick"
+          transform="translate(0, 0)"
+        >
+          <line
+            class="rv-xy-plot__axis__tick__line"
+            x1="0"
+            x2="0"
+            y1="-6"
+            y2="6"
+          />
+          <text
+            class="rv-xy-plot__axis__tick__text"
+            dy="0.72em"
+            text-anchor="middle"
+            transform="translate(0, 14)"
+          >
+            0
+          </text>
+        </g>
+        <g
+          class="rv-xy-plot__axis__tick"
+          transform="translate(-14.167650531286895, 0)"
+        >
+          <line
+            class="rv-xy-plot__axis__tick__line"
+            x1="0"
+            x2="0"
+            y1="-6"
+            y2="6"
+          />
+          <text
+            class="rv-xy-plot__axis__tick__text"
+            dy="0.72em"
+            text-anchor="middle"
+            transform="translate(0, 14)"
+          >
+            5
+          </text>
+        </g>
+        <g
+          class="rv-xy-plot__axis__tick"
+          transform="translate(-28.33530106257379, 0)"
+        >
+          <line
+            class="rv-xy-plot__axis__tick__line"
+            x1="0"
+            x2="0"
+            y1="-6"
+            y2="6"
+          />
+          <text
+            class="rv-xy-plot__axis__tick__text"
+            dy="0.72em"
+            text-anchor="middle"
+            transform="translate(0, 14)"
+          >
+            10
+          </text>
+        </g>
+        <g
+          class="rv-xy-plot__axis__tick"
+          transform="translate(-42.502951593860686, 0)"
+        >
+          <line
+            class="rv-xy-plot__axis__tick__line"
+            x1="0"
+            x2="0"
+            y1="-6"
+            y2="6"
+          />
+          <text
+            class="rv-xy-plot__axis__tick__text"
+            dy="0.72em"
+            text-anchor="middle"
+            transform="translate(0, 14)"
+          >
+            15
+          </text>
+        </g>
+        <g
+          class="rv-xy-plot__axis__tick"
+          transform="translate(-56.67060212514758, 0)"
+        >
+          <line
+            class="rv-xy-plot__axis__tick__line"
+            x1="0"
+            x2="0"
+            y1="-6"
+            y2="6"
+          />
+          <text
+            class="rv-xy-plot__axis__tick__text"
+            dy="0.72em"
+            text-anchor="middle"
+            transform="translate(0, 14)"
+          >
+            20
+          </text>
+        </g>
+        <g
+          class="rv-xy-plot__axis__tick"
+          transform="translate(-70.83825265643446, 0)"
+        >
+          <line
+            class="rv-xy-plot__axis__tick__line"
+            x1="0"
+            x2="0"
+            y1="-6"
+            y2="6"
+          />
+          <text
+            class="rv-xy-plot__axis__tick__text"
+            dy="0.72em"
+            text-anchor="middle"
+            transform="translate(0, 14)"
+          >
+            25
+          </text>
+        </g>
+      </g>
+    </g>
+    <g
+      class="rv-xy-plot__axis rv-xy-plot__axis--vertical "
+      transform="translate(0,10)"
+    >
+      <line
+        class="rv-xy-plot__axis__line"
+        x1="70"
+        x2="70"
+        y1="0"
+        y2="310"
+      />
+      <g
+        class="rv-xy-plot__axis__ticks"
+        transform="translate(70, 0)"
+      >
+        <g
+          class="rv-xy-plot__axis__tick"
+          transform="translate(0, 292.77777777777777)"
+        >
+          <line
+            class="rv-xy-plot__axis__tick__line"
+            x1="6"
+            x2="-6"
+            y1="0"
+            y2="0"
+          />
+          <text
+            class="rv-xy-plot__axis__tick__text"
+            dy="0.32em"
+            text-anchor="end"
+            transform="translate(-14, 0)"
+          >
+            zzz-1
+          </text>
+        </g>
+        <g
+          class="rv-xy-plot__axis__tick"
+          transform="translate(0, 258.3333333333333)"
+        >
+          <line
+            class="rv-xy-plot__axis__tick__line"
+            x1="6"
+            x2="-6"
+            y1="0"
+            y2="0"
+          />
+          <text
+            class="rv-xy-plot__axis__tick__text"
+            dy="0.32em"
+            text-anchor="end"
+            transform="translate(-14, 0)"
+          >
+            yyy-1
+          </text>
+        </g>
+        <g
+          class="rv-xy-plot__axis__tick"
+          transform="translate(0, 223.88888888888889)"
+        >
+          <line
+            class="rv-xy-plot__axis__tick__line"
+            x1="6"
+            x2="-6"
+            y1="0"
+            y2="0"
+          />
+          <text
+            class="rv-xy-plot__axis__tick__text"
+            dy="0.32em"
+            text-anchor="end"
+            transform="translate(-14, 0)"
+          >
+            xxx-1
+          </text>
+        </g>
+        <g
+          class="rv-xy-plot__axis__tick"
+          transform="translate(0, 189.44444444444446)"
+        >
+          <line
+            class="rv-xy-plot__axis__tick__line"
+            x1="6"
+            x2="-6"
+            y1="0"
+            y2="0"
+          />
+          <text
+            class="rv-xy-plot__axis__tick__text"
+            dy="0.32em"
+            text-anchor="end"
+            transform="translate(-14, 0)"
+          >
+            ccc-2
+          </text>
+        </g>
+        <g
+          class="rv-xy-plot__axis__tick"
+          transform="translate(0, 155)"
+        >
+          <line
+            class="rv-xy-plot__axis__tick__line"
+            x1="6"
+            x2="-6"
+            y1="0"
+            y2="0"
+          />
+          <text
+            class="rv-xy-plot__axis__tick__text"
+            dy="0.32em"
+            text-anchor="end"
+            transform="translate(-14, 0)"
+          >
+            ccc-1
+          </text>
+        </g>
+        <g
+          class="rv-xy-plot__axis__tick"
+          transform="translate(0, 120.55555555555556)"
+        >
+          <line
+            class="rv-xy-plot__axis__tick__line"
+            x1="6"
+            x2="-6"
+            y1="0"
+            y2="0"
+          />
+          <text
+            class="rv-xy-plot__axis__tick__text"
+            dy="0.32em"
+            text-anchor="end"
+            transform="translate(-14, 0)"
+          >
+            bbb-2
+          </text>
+        </g>
+        <g
+          class="rv-xy-plot__axis__tick"
+          transform="translate(0, 86.11111111111111)"
+        >
+          <line
+            class="rv-xy-plot__axis__tick__line"
+            x1="6"
+            x2="-6"
+            y1="0"
+            y2="0"
+          />
+          <text
+            class="rv-xy-plot__axis__tick__text"
+            dy="0.32em"
+            text-anchor="end"
+            transform="translate(-14, 0)"
+          >
+            bbb-1
+          </text>
+        </g>
+        <g
+          class="rv-xy-plot__axis__tick"
+          transform="translate(0, 51.66666666666667)"
+        >
+          <line
+            class="rv-xy-plot__axis__tick__line"
+            x1="6"
+            x2="-6"
+            y1="0"
+            y2="0"
+          />
+          <text
+            class="rv-xy-plot__axis__tick__text"
+            dy="0.32em"
+            text-anchor="end"
+            transform="translate(-14, 0)"
+          >
+            aaa-2
+          </text>
+        </g>
+        <g
+          class="rv-xy-plot__axis__tick"
+          transform="translate(0, 17.22222222222223)"
+        >
+          <line
+            class="rv-xy-plot__axis__tick__line"
+            x1="6"
+            x2="-6"
+            y1="0"
+            y2="0"
+          />
+          <text
+            class="rv-xy-plot__axis__tick__text"
+            dy="0.32em"
+            text-anchor="end"
+            transform="translate(-14, 0)"
+          >
+            aaa-1
+          </text>
+        </g>
+      </g>
+    </g>
+    <g
+      class="rv-xy-plot__grid-lines"
+      transform="translate(70,10)"
+    >
+      <line
+        class="rv-xy-plot__grid-lines__line"
+        x1="0"
+        x2="-80"
+        y1="292.77777777777777"
+        y2="292.77777777777777"
+      />
+      <line
+        class="rv-xy-plot__grid-lines__line"
+        x1="0"
+        x2="-80"
+        y1="258.3333333333333"
+        y2="258.3333333333333"
+      />
+      <line
+        class="rv-xy-plot__grid-lines__line"
+        x1="0"
+        x2="-80"
+        y1="223.88888888888889"
+        y2="223.88888888888889"
+      />
+      <line
+        class="rv-xy-plot__grid-lines__line"
+        x1="0"
+        x2="-80"
+        y1="189.44444444444446"
+        y2="189.44444444444446"
+      />
+      <line
+        class="rv-xy-plot__grid-lines__line"
+        x1="0"
+        x2="-80"
+        y1="155"
+        y2="155"
+      />
+      <line
+        class="rv-xy-plot__grid-lines__line"
+        x1="0"
+        x2="-80"
+        y1="120.55555555555556"
+        y2="120.55555555555556"
+      />
+      <line
+        class="rv-xy-plot__grid-lines__line"
+        x1="0"
+        x2="-80"
+        y1="86.11111111111111"
+        y2="86.11111111111111"
+      />
+      <line
+        class="rv-xy-plot__grid-lines__line"
+        x1="0"
+        x2="-80"
+        y1="51.66666666666667"
+        y2="51.66666666666667"
+      />
+      <line
+        class="rv-xy-plot__grid-lines__line"
+        x1="0"
+        x2="-80"
+        y1="17.22222222222223"
+        y2="17.22222222222223"
+      />
+    </g>
+    <g
+      class="rv-xy-plot__grid-lines"
+      transform="translate(70,10)"
+    >
+      <line
+        class="rv-xy-plot__grid-lines__line"
+        x1="0"
+        x2="0"
+        y1="0"
+        y2="310"
+      />
+      <line
+        class="rv-xy-plot__grid-lines__line"
+        x1="-14.167650531286895"
+        x2="-14.167650531286895"
+        y1="0"
+        y2="310"
+      />
+      <line
+        class="rv-xy-plot__grid-lines__line"
+        x1="-28.33530106257379"
+        x2="-28.33530106257379"
+        y1="0"
+        y2="310"
+      />
+      <line
+        class="rv-xy-plot__grid-lines__line"
+        x1="-42.502951593860686"
+        x2="-42.502951593860686"
+        y1="0"
+        y2="310"
+      />
+      <line
+        class="rv-xy-plot__grid-lines__line"
+        x1="-56.67060212514758"
+        x2="-56.67060212514758"
+        y1="0"
+        y2="310"
+      />
+      <line
+        class="rv-xy-plot__grid-lines__line"
+        x1="-70.83825265643446"
+        x2="-70.83825265643446"
+        y1="0"
+        y2="310"
+      />
+    </g>
+    <g
+      class="rv-xy-plot__series rv-xy-plot__series--bar "
+      transform="translate(70,10)"
+    >
+      <rect
+        height="29.27777777777779"
+        style="opacity: 1; stroke: #795548; fill: #795548;"
+        width="61.81818181818183"
+        x="-61.81818181818183"
+        y="278.13888888888886"
+      />
+      <rect
+        height="29.27777777777779"
+        style="opacity: 1; stroke: #795548; fill: #795548;"
+        width="23.612750885478157"
+        x="-23.612750885478157"
+        y="243.69444444444443"
+      />
+      <rect
+        height="29.27777777777779"
+        style="opacity: 1; stroke: #795548; fill: #795548;"
+        width="0.8264462809917356"
+        x="-0.8264462809917356"
+        y="209.25"
+      />
+      <rect
+        height="29.27777777777779"
+        style="opacity: 1; stroke: #795548; fill: #795548;"
+        width="0"
+        x="0"
+        y="174.80555555555557"
+      />
+      <rect
+        height="29.27777777777779"
+        style="opacity: 1; stroke: #795548; fill: #795548;"
+        width="0"
+        x="0"
+        y="140.36111111111111"
+      />
+      <rect
+        height="29.27777777777779"
+        style="opacity: 1; stroke: #795548; fill: #795548;"
+        width="0"
+        x="0"
+        y="105.91666666666666"
+      />
+      <rect
+        height="29.27777777777779"
+        style="opacity: 1; stroke: #795548; fill: #795548;"
+        width="1.511216056670602"
+        x="-1.511216056670602"
+        y="71.47222222222221"
+      />
+      <rect
+        height="29.27777777777779"
+        style="opacity: 1; stroke: #795548; fill: #795548;"
+        width="0.8783943329397874"
+        x="-0.8783943329397874"
+        y="37.02777777777778"
+      />
+      <rect
+        height="29.27777777777779"
+        style="opacity: 1; stroke: #795548; fill: #795548;"
+        width="2.8807556080283354"
+        x="-2.8807556080283354"
+        y="2.583333333333334"
+      />
+    </g>
+    <g
+      class="rv-xy-plot__series rv-xy-plot__series--custom-svg-wrapper "
+      transform="translate(70,10)"
+    >
+      <g
+        class="rv-xy-plot__series--custom-svg"
+        transform="translate(-80,292.77777777777777)"
+      >
+        <rect
+          fill="black"
+          height="10"
+          width="4"
+          x="-2"
+          y="-5"
+        />
+      </g>
+      <g
+        class="rv-xy-plot__series--custom-svg"
+        transform="translate(-66.11570247933885,258.3333333333333)"
+      >
+        <rect
+          fill="black"
+          height="10"
+          width="4"
+          x="-2"
+          y="-5"
+        />
+      </g>
+      <g
+        class="rv-xy-plot__series--custom-svg"
+        transform="translate(-2.4793388429752063,223.88888888888889)"
+      >
+        <rect
+          fill="black"
+          height="10"
+          width="4"
+          x="-2"
+          y="-5"
+        />
+      </g>
+      <g
+        class="rv-xy-plot__series--custom-svg"
+        transform="translate(-12.443919716646992,189.44444444444446)"
+      >
+        <rect
+          fill="black"
+          height="10"
+          width="4"
+          x="-2"
+          y="-5"
+        />
+      </g>
+      <g
+        class="rv-xy-plot__series--custom-svg"
+        transform="translate(-32.11334120425029,155)"
+      >
+        <rect
+          fill="black"
+          height="10"
+          width="4"
+          x="-2"
+          y="-5"
+        />
+      </g>
+      <g
+        class="rv-xy-plot__series--custom-svg"
+        transform="translate(-9.445100354191263,120.55555555555556)"
+      >
+        <rect
+          fill="black"
+          height="10"
+          width="4"
+          x="-2"
+          y="-5"
+        />
+      </g>
+      <g
+        class="rv-xy-plot__series--custom-svg"
+        transform="translate(-1.8890200708382523,86.11111111111111)"
+      >
+        <rect
+          fill="black"
+          height="10"
+          width="4"
+          x="-2"
+          y="-5"
+        />
+      </g>
+      <g
+        class="rv-xy-plot__series--custom-svg"
+        transform="translate(-7.027154663518299,51.66666666666667)"
+      >
+        <rect
+          fill="black"
+          height="10"
+          width="4"
+          x="-2"
+          y="-5"
+        />
+      </g>
+      <g
+        class="rv-xy-plot__series--custom-svg"
+        transform="translate(-9.218417945690673,17.22222222222223)"
+      >
+        <rect
+          fill="black"
+          height="10"
+          width="4"
+          x="-2"
+          y="-5"
+        />
+      </g>
+    </g>
+  </svg>
+</div>
+`;
+
+exports[`renders the dashboard: station oee 1`] = `
+<div
+  class="MuiGrid-container-17 MuiGrid-justify-xs-space-around-37"
+  data-testid="stationoee-container"
+>
+  <div
+    class="MuiGrid-item-18 MuiGrid-grid-xs-12-57 MuiGrid-grid-sm-6-65 MuiGrid-grid-md-4-77 MuiGrid-grid-lg-3-90"
+  >
+    <svg
+      viewBox="0 0 400 400"
+    >
+      <circle
+        cx="200"
+        cy="200"
+        fill="transparent"
+        r="150"
+        stroke="#E0E0E0"
+        stroke-width="10"
+      />
+      <text
+        style="font-size: 45px;"
+        text-anchor="middle"
+        x="200"
+        y="190"
+      >
+        Machine #1
+      </text>
+      <text
+        style="font-size: 30px;"
+        text-anchor="middle"
+        x="200"
+        y="250"
+      >
+        Pal 4
+      </text>
+    </svg>
+  </div>
+  <div
+    class="MuiGrid-item-18 MuiGrid-grid-xs-12-57 MuiGrid-grid-sm-6-65 MuiGrid-grid-md-4-77 MuiGrid-grid-lg-3-90"
+  >
+    <svg
+      viewBox="0 0 400 400"
+    >
+      <circle
+        cx="200"
+        cy="200"
+        fill="transparent"
+        r="150"
+        stroke="#E0E0E0"
+        stroke-width="10"
+      />
+      <text
+        style="font-size: 45px;"
+        text-anchor="middle"
+        x="200"
+        y="190"
+      >
+        Machine #2
+      </text>
+      <text
+        style="font-size: 30px;"
+        text-anchor="middle"
+        x="200"
+        y="250"
+      >
+        Pal 6
+      </text>
+    </svg>
+  </div>
+  <div
+    class="MuiGrid-item-18 MuiGrid-grid-xs-12-57 MuiGrid-grid-sm-6-65 MuiGrid-grid-md-4-77 MuiGrid-grid-lg-3-90"
+  >
+    <svg
+      viewBox="0 0 400 400"
+    >
+      <circle
+        cx="200"
+        cy="200"
+        fill="transparent"
+        r="150"
+        stroke="#E0E0E0"
+        stroke-width="10"
+      />
+      <text
+        style="font-size: 45px;"
+        text-anchor="middle"
+        x="200"
+        y="190"
+      >
+        Machine #3
+      </text>
+      <text
+        style="font-size: 30px;"
+        text-anchor="middle"
+        x="200"
+        y="250"
+      >
+        Pal 8
+      </text>
+    </svg>
+  </div>
+  <div
+    class="MuiGrid-item-18 MuiGrid-grid-xs-12-57 MuiGrid-grid-sm-6-65 MuiGrid-grid-md-4-77 MuiGrid-grid-lg-3-90"
+  >
+    <svg
+      viewBox="0 0 400 400"
+    >
+      <circle
+        cx="200"
+        cy="200"
+        fill="transparent"
+        r="150"
+        stroke="#E0E0E0"
+        stroke-width="10"
+      />
+      <text
+        style="font-size: 45px;"
+        text-anchor="middle"
+        x="200"
+        y="190"
+      >
+        L/U #1
+      </text>
+      <text
+        style="font-size: 30px;"
+        text-anchor="middle"
+        x="200"
+        y="250"
+      >
+        Pal 1
+      </text>
+    </svg>
+  </div>
+  <div
+    class="MuiGrid-item-18 MuiGrid-grid-xs-12-57 MuiGrid-grid-sm-6-65 MuiGrid-grid-md-4-77 MuiGrid-grid-lg-3-90"
+  >
+    <svg
+      viewBox="0 0 400 400"
+    >
+      <circle
+        cx="200"
+        cy="200"
+        fill="transparent"
+        r="150"
+        stroke="#E0E0E0"
+        stroke-width="10"
+      />
+      <text
+        style="font-size: 45px;"
+        text-anchor="middle"
+        x="200"
+        y="190"
+      >
+        L/U #2
+      </text>
+      <text
+        style="font-size: 30px;"
+        text-anchor="middle"
+        x="200"
+        y="250"
+      >
+        Pal 5
+      </text>
+    </svg>
+  </div>
+</div>
+`;

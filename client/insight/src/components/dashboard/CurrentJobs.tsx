@@ -98,7 +98,7 @@ const targetMark = () => (
   <rect x="-2" y="-5" width="4" height="10" fill="black"/>
 );
 
-export interface CurrentJobsProps extends DataPoints {
+interface CurrentJobsProps extends DataPoints {
   readonly fillViewport: boolean;
 }
 
@@ -115,7 +115,7 @@ function format_hint(j: CompletedDataPoint) {
   ];
 }
 
-export class CurrentJobs extends React.PureComponent<CurrentJobsProps, JobState> {
+class CurrentJobs extends React.PureComponent<CurrentJobsProps, JobState> {
   state: JobState = {};
 
   setHint = (j: CompletedDataPoint) => {

@@ -40,8 +40,8 @@ import 'jest-dom/extend-expect';
 function mockComponent(name: string): (props: {[key: string]: object}) => JSX.Element {
   return props => (
     <div data-testid={"mock-component-" + name}>
-      {Object.getOwnPropertyNames(props).sort().map(p =>
-        <span data-prop={p}>
+      {Object.getOwnPropertyNames(props).sort().map((p, idx) =>
+        <span key={idx} data-prop={p}>
           {JSON.stringify(props[p], null, 2)}
         </span>
       )}

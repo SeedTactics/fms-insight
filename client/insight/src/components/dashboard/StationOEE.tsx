@@ -44,7 +44,7 @@ import { duration } from 'moment';
 import { addSeconds, addDays } from 'date-fns';
 import { PalletData, buildPallets } from '../../data/load-station';
 
-export interface StationOEEProps {
+interface StationOEEProps {
   readonly date_of_current_status: Date | undefined;
   readonly station: string;
   readonly oee: number;
@@ -162,7 +162,7 @@ function computeTooltip(p: StationOEEProps): JSX.Element {
   );
 }
 
-export function StationOEEWithStyles(p: StationOEEProps) {
+function StationOEEWithStyles(p: StationOEEProps) {
   let pallet: string = "Empty";
   if (p.pallet !== undefined) {
     pallet = p.pallet.pallet.pallet;
@@ -189,24 +189,19 @@ export function StationOEEWithStyles(p: StationOEEProps) {
 
 // decorate doesn't work well with classes yet.
 // https://github.com/Microsoft/TypeScript/issues/4881
-export class StationOEE extends React.PureComponent<StationOEEProps> {
+class StationOEE extends React.PureComponent<StationOEEProps> {
   render() {
     return <StationOEEWithStyles {...this.props}/>;
   }
 }
 
-export interface StationHours {
-    readonly station: string;
-    readonly hours: number;
-}
-
-export interface Props {
+interface Props {
   date_of_current_status: Date | undefined;
   station_active_minutes_past_week: im.Map<string, number>;
   pallets: im.Map<string, {pal?: PalletData, queued?: PalletData}>;
 }
 
-export function StationOEEs(p: Props) {
+function StationOEEs(p: Props) {
   const stats =
     im.Set(p.station_active_minutes_past_week.keySeq())
     .union(im.Set(p.pallets.keySeq()))
@@ -214,7 +209,7 @@ export function StationOEEs(p: Props) {
     .sortBy(s => [s.startsWith("L/U"), s]) // put machines first
     .cacheResult();
   return (
-    <Grid container justify="space-around">
+    <Grid data-testid="stationoee-container" container justify="space-around">
       {
         stats.map((stat, idx) => (
           <Grid item xs={12} sm={6} md={4} lg={3} key={idx}>
