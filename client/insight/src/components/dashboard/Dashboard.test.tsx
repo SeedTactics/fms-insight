@@ -38,11 +38,11 @@ import { Provider } from 'react-redux';
 import 'jest-dom/extend-expect';
 
 (window as any).FMS_INSIGHT_DEMO_MODE = true;
-import { initStore } from '../store/store';
-import Dashboard from '../components/dashboard/Dashboard';
-import LoadingIcon from '../components/LoadingIcon';
+import { initStore } from '../../store/store';
+import Dashboard from './Dashboard';
+import LoadingIcon from '../LoadingIcon';
 import { differenceInSeconds, addDays } from "date-fns";
-import { loadMockData } from "../mock-data/load";
+import { loadMockData } from "../../mock-data/load";
 
 it("renders the dashboard", async () => {
   const store = initStore();

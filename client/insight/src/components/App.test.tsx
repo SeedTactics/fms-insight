@@ -49,25 +49,25 @@ function mockComponent(name: string): (props: {[key: string]: object}) => JSX.El
   );
 }
 
-jest.mock("../components/cost-per-piece/CostPerPiece", () => ({
+jest.mock("./cost-per-piece/CostPerPiece", () => ({
   default: mockComponent("CostPerPiece")
 }));
-jest.mock("../components/dashboard/Dashboard", () => ({
+jest.mock("./dashboard/Dashboard", () => ({
   default: mockComponent("Dashboard")
 }));
-jest.mock("../components/efficiency/Efficiency", () => ({
+jest.mock("./efficiency/Efficiency", () => ({
   default: mockComponent("Efficiency")
 }));
-jest.mock("../components/station-monitor/StationMonitor", () => ({
+jest.mock("./station-monitor/StationMonitor", () => ({
   default: mockComponent("StationMonitor")
 }));
-jest.mock("../components/data-export/DataExport", () => ({
+jest.mock("./data-export/DataExport", () => ({
   default: mockComponent("DataExport")
 }));
 
 (window as any).FMS_INSIGHT_DEMO_MODE = true;
 import { initStore } from '../store/store';
-import App from '../components/App';
+import App from './App';
 
 it("renders the app shell", () => {
   const store = initStore();
