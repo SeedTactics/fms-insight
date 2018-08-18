@@ -44,6 +44,23 @@
             "problemMatcher": "$msCompile"
         },
         {
+            "label": "insight:check",
+            "type": "shell",
+            "command": "./node_modules/.bin/tsc",
+            "args": ["--watch", "--noEmit"],
+            "isBackground": true,
+            "options": {
+                "cwd": "${workspaceFolder}/client/insight"
+            },
+            "presentation": {
+                "reveal": "never",
+                "echo": false,
+                "focus": false,
+                "panel": "dedicated"
+            },
+            "problemMatcher": "$tsc-watch"
+        },
+        {
             "label": "insight:dev",
             "command": "yarn start",
             "options": {
