@@ -65,6 +65,7 @@ jest.mock("./data-export/DataExport", () => ({
   default: mockComponent("DataExport")
 }));
 
+// tslint:disable-next-line:no-any
 (window as any).FMS_INSIGHT_DEMO_MODE = true;
 import { initStore } from '../store/store';
 import App from './App';
@@ -111,4 +112,3 @@ it("renders the app shell", () => {
     result.queryByTestId("mock-component-Dashboard")
   ).toBeInTheDocument();
 });
-

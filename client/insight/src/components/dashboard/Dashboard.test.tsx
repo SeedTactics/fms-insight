@@ -37,6 +37,7 @@ afterEach(cleanup);
 import { Provider } from 'react-redux';
 import 'jest-dom/extend-expect';
 
+// tslint:disable-next-line:no-any
 (window as any).FMS_INSIGHT_DEMO_MODE = true;
 import { initStore } from '../../store/store';
 import Dashboard from './Dashboard';
@@ -73,4 +74,3 @@ it("renders the dashboard", async () => {
   expect(result.container.querySelector("div.rv-xy-plot")).toMatchSnapshot("current jobs plot");
   expect(result.getByTestId("stationoee-container")).toMatchSnapshot("station oee");
 });
-
