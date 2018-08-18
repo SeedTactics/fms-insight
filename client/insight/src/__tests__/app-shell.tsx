@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from 'react';
-import { render, cleanup } from 'react-testing-library';
+import { render, cleanup, fireEvent } from 'react-testing-library';
 afterEach(cleanup);
 import { Provider } from 'react-redux';
 import 'jest-dom/extend-expect';
@@ -84,5 +84,31 @@ it("renders the app shell", () => {
   expect(
     result.queryByTestId("mock-component-StationMonitor")
   ).not.toBeInTheDocument();
+  expect(
+    result.queryByTestId("mock-component-Efficiency")
+  ).not.toBeInTheDocument();
+  expect(
+    result.queryByTestId("mock-component-CostPerPiece")
+  ).not.toBeInTheDocument();
+
+  fireEvent.click(result.getByText("Station Monitor"));
+  expect(
+    result.queryByTestId("mock-component-StationMonitor")
+  ).toBeInTheDocument();
+
+  fireEvent.click(result.getByText("Efficiency"));
+  expect(
+    result.queryByTestId("mock-component-Efficiency")
+  ).toBeInTheDocument();
+
+  fireEvent.click(result.getByText("Cost/Piece"));
+  expect(
+    result.queryByTestId("mock-component-CostPerPiece")
+  ).toBeInTheDocument();
+
+  fireEvent.click(result.getByText("Dashboard"));
+  expect(
+    result.queryByTestId("mock-component-Dashboard")
+  ).toBeInTheDocument();
 });
 

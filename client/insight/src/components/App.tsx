@@ -59,7 +59,7 @@ const tabsStyle = {
   'flexGrow': 1
 };
 
-export enum TabType {
+enum TabType {
   Dashboard,
   StationMonitor,
   Efficiency,
@@ -198,14 +198,14 @@ function Header(p: HeaderProps) {
     );
 }
 
-export interface AppProps {
+interface AppProps {
   route: routes.State;
   fmsInfo: Readonly<api.IFMSInfo> | null;
   latestVersion: LatestInstaller | null;
   setRoute: (arg: {ty: TabType, curSt: routes.State}) => void;
 }
 
-export class App extends React.PureComponent<AppProps> {
+class App extends React.PureComponent<AppProps> {
   render() {
     let page: JSX.Element;
     switch (this.props.route.current) {
