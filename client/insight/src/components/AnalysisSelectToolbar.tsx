@@ -49,7 +49,7 @@ const toolbarStyle = {
   'justifyContent': 'space-evenly' as 'space-evenly'
 };
 
-export interface AnalysisSelectToolbarProps {
+interface AnalysisSelectToolbarProps {
   period: events.AnalysisPeriod;
   period_month: Date;
   analyzeLast30Days: () => void;
@@ -57,7 +57,7 @@ export interface AnalysisSelectToolbarProps {
   setMonth: (month: Date) => void;
 }
 
-export class AnalysisSelectToolbar extends React.PureComponent<AnalysisSelectToolbarProps, {temp_month?: Date}> {
+class AnalysisSelectToolbar extends React.PureComponent<AnalysisSelectToolbarProps, {temp_month?: Date}> {
 
   state = {temp_month: undefined} as {temp_month?: Date};
 
