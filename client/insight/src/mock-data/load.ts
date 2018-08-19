@@ -85,6 +85,11 @@ async function loadEventsJson(offsetSeconds: number): Promise<Readonly<api.ILogE
     .toArray();
 }
 
+function loadNewJobs(): ReadonlyArray<api.NewJobs> {
+  const newJobs = require("./newjobs.json");
+  return newJobs.map(api.NewJobs.fromJS);
+}
+
 export interface MockData {
   readonly curSt: Readonly<api.ICurrentStatus>;
   readonly jobs: Readonly<api.IHistoricData>;
@@ -110,22 +115,24 @@ export function loadMockData(offsetSeconds: number): MockData {
     }
   }
 
-  const jobs = api.NewJobs.fromJS(require("./newjobs.json"));
-  for (const j of jobs.jobs) {
-    offsetJob(j, offsetSeconds);
-  }
-  for (const s of jobs.stationUse || []) {
-    s.startUTC = addSeconds(s.startUTC, offsetSeconds);
-    s.endUTC = addSeconds(s.endUTC, offsetSeconds);
-  }
-  for (const w of jobs.currentUnfilledWorkorders || []) {
-    w.dueDate = addSeconds(w.dueDate, offsetSeconds);
+  const allNewJobs = loadNewJobs();
+  const historicJobs: {[key: string]: api.JobPlan} = {};
+  for (const newJ of allNewJobs) {
+    for (const j of newJ.jobs) {
+      offsetJob(j, offsetSeconds);
+      historicJobs[j.unique] = j;
+    }
+    for (const s of newJ.stationUse || []) {
+      s.startUTC = addSeconds(s.startUTC, offsetSeconds);
+      s.endUTC = addSeconds(s.endUTC, offsetSeconds);
+    }
+    for (const w of newJ.currentUnfilledWorkorders || []) {
+      w.dueDate = addSeconds(w.dueDate, offsetSeconds);
+    }
   }
   const historic: api.IHistoricData = {
-    jobs: jobs.jobs.reduce(
-      (acc, j) => { acc[j.unique] = j; return acc; },
-      {} as {[key: string]: api.JobPlan}),
-    stationUse: jobs.stationUse || []
+    jobs: historicJobs,
+    stationUse: im.Seq(allNewJobs).flatMap(j => j.stationUse || []).toArray()
   };
 
   return {

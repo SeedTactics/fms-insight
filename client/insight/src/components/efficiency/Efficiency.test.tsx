@@ -98,7 +98,7 @@ it("renders the cost/piece page", async () => {
   );
   expect(
     result.getByTestId("station-oee-heatmap").querySelectorAll("g.rv-xy-plot__series--heatmap > rect").length
-  ).toBe(0); // mock data is empty for planned
+  ).toBeGreaterThan(0);
 
   // completed counts
   expect(
@@ -111,7 +111,7 @@ it("renders the cost/piece page", async () => {
   );
   expect(
     result.getByTestId("completed-heatmap").querySelectorAll("g.rv-xy-plot__series--heatmap > rect").length
-  ).toBe(0); // mock data is empty for planned
+  ).toBeGreaterThan(0);
 
   // inspection sankey
   fireEvent.click(within(result.getByTestId("inspection-sankey")).getByText("Select Inspection Type"));
