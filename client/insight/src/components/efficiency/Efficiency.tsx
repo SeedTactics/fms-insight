@@ -38,7 +38,7 @@ import { addMonths, addDays } from 'date-fns';
 import { createSelector } from 'reselect';
 import ExtensionIcon from '@material-ui/icons/Extension';
 import HourglassIcon from '@material-ui/icons/HourglassFull';
-import DocumentTitle from 'react-document-title';
+const DocumentTitle = require('react-document-title'); // https://github.com/gaearon/react-document-title/issues/58
 
 import AnalysisSelectToolbar from '../AnalysisSelectToolbar';
 import { SelectableCycleChart } from './CycleChart';
@@ -354,17 +354,19 @@ export default function Efficiency() {
       <>
         <AnalysisSelectToolbar/>
         <main style={{'padding': '24px'}}>
-          <ConnectedPartStationCycleChart/>
-          <div style={{marginTop: '3em'}}>
+          <div data-testid="part-cycle-chart">
+            <ConnectedPartStationCycleChart/>
+          </div>
+          <div data-testid="pallet-cycle-chart" style={{marginTop: '3em'}}>
             <ConnectedPalletCycleChart/>
           </div>
-          <div style={{marginTop: '3em'}}>
+          <div data-testid="station-oee-heatmap" style={{marginTop: '3em'}}>
             <ConnectedStationOeeHeatmap/>
           </div>
-          <div style={{marginTop: '3em'}}>
+          <div data-testid="completed-heatmap" style={{marginTop: '3em'}}>
             <ConnectedCompletedCountHeatmap/>
           </div>
-          <div style={{marginTop: '3em'}}>
+          <div data-testid="inspection-sankey" style={{marginTop: '3em'}}>
             <InspectionSankey/>
           </div>
         </main>

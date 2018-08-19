@@ -168,6 +168,7 @@ class InspectionSankey extends React.Component<InspectionSankeyProps, Inspection
               </div>
               <div style={{flexGrow: 1}}/>
               <Select
+                name="inspection-sankey-select-type"
                 autoWidth
                 displayEmpty
                 style={{marginRight: '1em'}}
@@ -187,6 +188,7 @@ class InspectionSankey extends React.Component<InspectionSankeyProps, Inspection
                 }
               </Select>
               <Select
+                name="inspection-sankey-select-part"
                 autoWidth
                 displayEmpty
                 value={this.state.selectedPart || ""}

@@ -54,7 +54,7 @@ export interface HeatChartPoint {
   readonly label: string;
 }
 
-export interface HeatChartProps {
+interface HeatChartProps {
   readonly points: ReadonlyArray<HeatChartPoint>;
   readonly row_count: number;
   readonly label_title: string;
@@ -76,7 +76,7 @@ function tick_format(d: Date): string {
   return format(d, "ddd MMM D");
 }
 
-export class HeatChart extends React.PureComponent<HeatChartProps, HeatChartState> {
+class HeatChart extends React.PureComponent<HeatChartProps, HeatChartState> {
   state: HeatChartState = {};
 
   render() {
@@ -126,6 +126,7 @@ export function SelectableHeatChart(props: SelectableHeatChartProps) {
             </div>
             <div style={{flexGrow: 1}}/>
             <Select
+              name={props.card_label.replace(" ", "-") + "-heatchart-planned-or-actual"}
               autoWidth
               displayEmpty
               value={props.planned_or_actual}

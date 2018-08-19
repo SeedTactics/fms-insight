@@ -213,6 +213,7 @@ export function SelectableCycleChart(props: SelectableCycleChartProps) {
             </div>
             <div style={{flexGrow: 1}}/>
             <Select
+              name={props.card_label.replace(" ", "-") + "-cycle-chart-select"}
               autoWidth
               displayEmpty
               value={validValue ? props.selected : ""}
