@@ -59,14 +59,14 @@ export interface AnalysisSelectToolbarProps {
 
 export class AnalysisSelectToolbar extends React.PureComponent<AnalysisSelectToolbarProps, {temp_month?: Date}> {
 
-  state = {temp_month: undefined};
+  state = {temp_month: undefined} as {temp_month?: Date};
 
   setTempMonth = (m: Date) => {
     this.setState({temp_month: startOfMonth(m)});
   }
 
   blurMonth = () => {
-    var m = this.state.temp_month;
+    const m = this.state.temp_month;
     if (m === undefined) { return; }
     if (this.props.period_month === m) { return; }
 
@@ -106,6 +106,7 @@ export class AnalysisSelectToolbar extends React.PureComponent<AnalysisSelectToo
           />
           <TextField
             type="month"
+            placeholder="Choose Month"
             value={format(curMonth, 'YYYY-MM')}
             onChange={m => this.setTempMonth(parse(m.target.value))}
             onBlur={() => this.blurMonth()}

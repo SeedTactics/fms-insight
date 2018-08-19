@@ -35,7 +35,7 @@ import Grid from '@material-ui/core/Grid';
 import Card from '@material-ui/core/Card';
 import CardContent from '@material-ui/core/CardContent';
 import Hidden from '@material-ui/core/Hidden';
-const DocumentTitle = require('react-document-title'); //https://github.com/gaearon/react-document-title/issues/58
+const DocumentTitle = require('react-document-title'); // https://github.com/gaearon/react-document-title/issues/58
 
 import StationOEEs from './StationOEE';
 import CurrentJobs from './CurrentJobs';

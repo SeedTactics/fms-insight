@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from 'react';
-import DocumentTitle from 'react-document-title';
+const DocumentTitle = require('react-document-title'); // https://github.com/gaearon/react-document-title/issues/58
 import * as im from 'immutable';
 import * as ccp from '../../data/cost-per-piece';
 import { DispatchAction, connect, mkAC, Store } from '../../store/store';
@@ -78,6 +78,7 @@ function CostPerPieceInput(props: CostPerPieceInputProps) {
         <CardContent>
           <div style={{display: "flex", justifyContent: 'space-around'}}>
             <TextField
+              id="num-operators"
               type="number"
               label="Number of Operators"
               inputProps={{min: 0}}
@@ -85,6 +86,7 @@ function CostPerPieceInput(props: CostPerPieceInputProps) {
               onChange={e => props.setNumOper({numOpers: parseFloat(e.target.value)})}
             />
             <TextField
+              id="cost-per-oper-hour"
               type="number"
               label="Cost per operator per hour"
               inputProps={{min: 0}}
@@ -93,7 +95,7 @@ function CostPerPieceInput(props: CostPerPieceInputProps) {
             />
           </div>
           <Divider style={{margin: '15px'}}/>
-          <Table>
+          <Table data-testid="station-cost-table">
             <TableHead>
               <TableRow>
                 <TableCell>Station</TableCell>
@@ -164,7 +166,7 @@ function CostPerPieceOutput(props: CostPerPieceOutputProps) {
           </div>}
       />
       <CardContent>
-        <Table>
+        <Table data-testid="part-cost-table">
           <TableHead>
             <TableRow>
               <TableCell>Part</TableCell>
