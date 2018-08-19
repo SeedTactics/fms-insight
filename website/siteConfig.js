@@ -105,6 +105,8 @@ const siteConfig = {
   // For no header links in the top nav bar -> headerLinks: [],
   headerLinks: [
     {doc: 'overview', label: 'Docs'},
+    {href: 'https://bitbucket.org/blackmaple/fms-insight', label: "Source Code"},
+    {href: '/demo/demo.html', label: "Demo"}
   ],
 
   // If you have users set above, you add it here:
