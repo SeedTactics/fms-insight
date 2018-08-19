@@ -30,42 +30,37 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 import * as React from 'react';
-import * as ReactDOM from 'react-dom';
-import { Provider } from 'react-redux';
+import * as redux from 'redux';
+import { loadMockData } from './mock-data/load';
+import { Store, AppAction, initStore } from './store/store';
+import { differenceInSeconds, addDays } from 'date-fns';
 
-import 'typeface-roboto';
-import CssBaseline from '@material-ui/core/CssBaseline';
-import green from '@material-ui/core/colors/green';
-import brown from '@material-ui/core/colors/brown';
-import MuiThemeProvider from '@material-ui/core/styles/MuiThemeProvider';
-import createMuiTheme from '@material-ui/core/styles/createMuiTheme';
-import 'react-vis/dist/style.css';
+export function mockComponent(name: string): (props: {[key: string]: object}) => JSX.Element {
+  return props => (
+    <div data-testid={"mock-component-" + name}>
+      {Object.getOwnPropertyNames(props).sort().map((p, idx) =>
+        <span key={idx} data-prop={p}>
+          {JSON.stringify(props[p], null, 2)}
+        </span>
+      )}
+    </div>
+  );
+}
 
-import App from './components/App';
-import { register } from './store/registerServiceWorker';
-import { initStore } from './store/store';
-import { DemoMode } from './data/backend';
+export async function createTestStore(): Promise<redux.Store<Store, AppAction>> {
+  const store = initStore(true);
 
-const theme = createMuiTheme({
-  palette: {
-    primary: green,
-    secondary: brown
-  }
-});
+  const jan18 = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
+  const offsetSeconds = differenceInSeconds(addDays(new Date(2018, 7, 5, 15, 33, 0), -28), jan18);
 
-const store = initStore(DemoMode);
+  const mockD = loadMockData(offsetSeconds);
 
-ReactDOM.render(
-  <MuiThemeProvider theme={theme}>
-    <CssBaseline/>
-    <Provider store={store}>
-      {/* <React.StrictMode> */}
-        <App />
-      {/* </React.StrictMode> */}
-    </Provider>
-  </MuiThemeProvider>,
-  document.getElementById('root') as HTMLElement
-);
+  await mockD.events;
 
-register();
+  // tslint:disable-next-line:no-any
+  (window as any).FMS_INSIGHT_RESOLVE_MOCK_DATA(mockD);
+
+  return store;
+}

@@ -646,11 +646,11 @@ exports[`renders the dashboard: current jobs plot 1`] = `
 
 exports[`renders the dashboard: station oee 1`] = `
 <div
-  class="MuiGrid-container-17 MuiGrid-justify-xs-space-around-37"
+  class="MuiGrid-container-1 MuiGrid-justify-xs-space-around-21"
   data-testid="stationoee-container"
 >
   <div
-    class="MuiGrid-item-18 MuiGrid-grid-xs-12-57 MuiGrid-grid-sm-6-65 MuiGrid-grid-md-4-77 MuiGrid-grid-lg-3-90"
+    class="MuiGrid-item-2 MuiGrid-grid-xs-12-41 MuiGrid-grid-sm-6-49 MuiGrid-grid-md-4-61 MuiGrid-grid-lg-3-74"
   >
     <svg
       viewBox="0 0 400 400"
@@ -682,7 +682,7 @@ exports[`renders the dashboard: station oee 1`] = `
     </svg>
   </div>
   <div
-    class="MuiGrid-item-18 MuiGrid-grid-xs-12-57 MuiGrid-grid-sm-6-65 MuiGrid-grid-md-4-77 MuiGrid-grid-lg-3-90"
+    class="MuiGrid-item-2 MuiGrid-grid-xs-12-41 MuiGrid-grid-sm-6-49 MuiGrid-grid-md-4-61 MuiGrid-grid-lg-3-74"
   >
     <svg
       viewBox="0 0 400 400"
@@ -714,7 +714,7 @@ exports[`renders the dashboard: station oee 1`] = `
     </svg>
   </div>
   <div
-    class="MuiGrid-item-18 MuiGrid-grid-xs-12-57 MuiGrid-grid-sm-6-65 MuiGrid-grid-md-4-77 MuiGrid-grid-lg-3-90"
+    class="MuiGrid-item-2 MuiGrid-grid-xs-12-41 MuiGrid-grid-sm-6-49 MuiGrid-grid-md-4-61 MuiGrid-grid-lg-3-74"
   >
     <svg
       viewBox="0 0 400 400"
@@ -746,7 +746,7 @@ exports[`renders the dashboard: station oee 1`] = `
     </svg>
   </div>
   <div
-    class="MuiGrid-item-18 MuiGrid-grid-xs-12-57 MuiGrid-grid-sm-6-65 MuiGrid-grid-md-4-77 MuiGrid-grid-lg-3-90"
+    class="MuiGrid-item-2 MuiGrid-grid-xs-12-41 MuiGrid-grid-sm-6-49 MuiGrid-grid-md-4-61 MuiGrid-grid-lg-3-74"
   >
     <svg
       viewBox="0 0 400 400"
@@ -778,7 +778,7 @@ exports[`renders the dashboard: station oee 1`] = `
     </svg>
   </div>
   <div
-    class="MuiGrid-item-18 MuiGrid-grid-xs-12-57 MuiGrid-grid-sm-6-65 MuiGrid-grid-md-4-77 MuiGrid-grid-lg-3-90"
+    class="MuiGrid-item-2 MuiGrid-grid-xs-12-41 MuiGrid-grid-sm-6-49 MuiGrid-grid-md-4-61 MuiGrid-grid-lg-3-74"
   >
     <svg
       viewBox="0 0 400 400"

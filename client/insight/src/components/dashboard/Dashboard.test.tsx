@@ -32,43 +32,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from 'react';
-import { render, cleanup, wait } from 'react-testing-library';
+import { render, cleanup } from 'react-testing-library';
 afterEach(cleanup);
 import { Provider } from 'react-redux';
 import 'jest-dom/extend-expect';
 
-// tslint:disable-next-line:no-any
-(window as any).FMS_INSIGHT_DEMO_MODE = true;
-import { initStore } from '../../store/store';
 import Dashboard from './Dashboard';
-import LoadingIcon from '../LoadingIcon';
-import { differenceInSeconds, addDays } from "date-fns";
-import { loadMockData } from "../../mock-data/load";
+import { createTestStore } from '../../test-util';
 
 it("renders the dashboard", async () => {
-  const store = initStore();
+  const store = await createTestStore();
 
   const result = render(
     <Provider store={store}>
-      <div>
-        <LoadingIcon />
-        <Dashboard />
-      </div>
+      <Dashboard />
     </Provider>
-  );
-
-  expect(result.getByTestId("loading-icon")).toBeInTheDocument();
-
-  const jan18 = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
-  const offsetSeconds = differenceInSeconds(addDays(new Date(2018, 7, 5, 15, 33, 0), -28), jan18);
-
-  // tslint:disable-next-line:no-any
-  (window as any).FMS_INSIGHT_RESOLVE_MOCK_DATA(
-    loadMockData(offsetSeconds)
-  );
-
-  await wait(() =>
-    expect(result.queryByTestId("loading-icon")).not.toBeInTheDocument()
   );
 
   expect(result.container.querySelector("div.rv-xy-plot")).toMatchSnapshot("current jobs plot");

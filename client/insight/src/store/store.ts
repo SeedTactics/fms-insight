@@ -51,7 +51,7 @@ import * as queryString from 'query-string';
 import * as reactRedux from 'react-redux';
 import * as redux from 'redux';
 import { initBarcodeListener } from './barcode';
-import { registerMockBackend, DemoMode } from '../data/backend';
+import { registerMockBackend } from '../data/backend';
 import { DispatchFn, ActionPayload, ActionCreatorToDispatch, GetActionTypes } from './action-types';
 
 export interface Store {
@@ -88,7 +88,8 @@ export interface Connect {
     reactRedux.InferableComponentEnhancerWithProps<P, TOwnProps>;
 
   <P, Creators, TOwnProps = {}>(getProps: (s: Store) => P, actionCreators: Creators):
-    reactRedux.InferableComponentEnhancerWithProps<P & ActionCreatorToDispatch<AppActionBeforeMiddleware, Creators>, TOwnProps>;
+    reactRedux.InferableComponentEnhancerWithProps<P & ActionCreatorToDispatch<AppActionBeforeMiddleware, Creators>,
+                                                   TOwnProps>;
 }
 export const connect: Connect = reactRedux.connect;
 
@@ -109,10 +110,10 @@ export const mkAC: ActionCreatorFactory =
     }
   };
 
-export function initStore() {
+export function initStore(demo: boolean) {
   const history = createHistory();
   const router =
-    DemoMode ? undefined :
+    demo ? undefined :
     connectRoutes(
       history,
       routes.routeMap,
@@ -165,7 +166,7 @@ export function initStore() {
       )
   );
 
-  if (DemoMode) {
+  if (demo) {
     registerMockBackend();
     // tslint:disable-next-line:no-any
     store.dispatch(events.loadLast30Days() as any);

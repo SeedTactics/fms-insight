@@ -35,14 +35,14 @@ import ReconnectingWebSocket from 'reconnecting-websocket';
 import * as events from '../data/events';
 import * as current from '../data/current-status';
 import { LogEntry, NewJobs, CurrentStatus } from '../data/api';
-import { DemoMode, BackendHost } from '../data/backend';
+import { BackendHost } from '../data/backend';
 
 export interface State {
   websocket_reconnecting: boolean;
 }
 
 export const initial: State = {
-  websocket_reconnecting: DemoMode ? false : true
+  websocket_reconnecting: false,
 };
 
 export enum ActionType {
@@ -69,6 +69,7 @@ export function reducer(s: State, a: Action): State {
 
 // tslint:disable-next-line:no-any
 export function openWebsocket(d: (a: any) => void, getEvtState: () => events.State) {
+  d({type: ActionType.WebsocketClose}); // set initial loading spinner
   const loc = window.location;
   let uri: string;
   if (loc.protocol === "https:") {

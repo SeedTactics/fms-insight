@@ -66,6 +66,7 @@ export interface LogAPI {
 
 export const BackendHost = process.env.NODE_ENV === "production" ? undefined : "localhost:5000";
 const BackendUrl = BackendHost ? "http://" + BackendHost : undefined;
+// tslint:disable-next-line:no-any
 export const DemoMode = (window as any).FMS_INSIGHT_DEMO_MODE || false;
 
 export let ServerBackend: ServerAPI = new api.ServerClient(BackendUrl);
@@ -276,11 +277,9 @@ function initMockBackend(data: Promise<MockData>) {
 }
 
 export function registerMockBackend() {
-  if (DemoMode) {
-    const mockDataPromise = new Promise<MockData>(function(resolve: (d: MockData) => void) {
-      // tslint:disable-next-line:no-any
-      (window as any).FMS_INSIGHT_RESOLVE_MOCK_DATA = resolve;
-    });
-    initMockBackend(mockDataPromise);
-  }
+  const mockDataPromise = new Promise<MockData>(function(resolve: (d: MockData) => void) {
+    // tslint:disable-next-line:no-any
+    (window as any).FMS_INSIGHT_RESOLVE_MOCK_DATA = resolve;
+  });
+  initMockBackend(mockDataPromise);
 }

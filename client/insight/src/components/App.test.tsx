@@ -32,22 +32,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from 'react';
-import { render, cleanup, fireEvent } from 'react-testing-library';
+import { wait, render, cleanup, fireEvent } from 'react-testing-library';
 afterEach(cleanup);
 import { Provider } from 'react-redux';
 import 'jest-dom/extend-expect';
+import { differenceInSeconds, addDays } from 'date-fns';
 
-function mockComponent(name: string): (props: {[key: string]: object}) => JSX.Element {
-  return props => (
-    <div data-testid={"mock-component-" + name}>
-      {Object.getOwnPropertyNames(props).sort().map((p, idx) =>
-        <span key={idx} data-prop={p}>
-          {JSON.stringify(props[p], null, 2)}
-        </span>
-      )}
-    </div>
-  );
-}
+import { mockComponent } from '../test-util';
+import { initStore } from '../store/store';
+import { loadMockData } from '../mock-data/load';
 
 jest.mock("./cost-per-piece/CostPerPiece", () => ({
   default: mockComponent("CostPerPiece")
@@ -65,18 +58,29 @@ jest.mock("./data-export/DataExport", () => ({
   default: mockComponent("DataExport")
 }));
 
-// tslint:disable-next-line:no-any
-(window as any).FMS_INSIGHT_DEMO_MODE = true;
-import { initStore } from '../store/store';
 import App from './App';
 
-it("renders the app shell", () => {
-  const store = initStore();
+it("renders the app shell", async () => {
+  const store = initStore(true);
 
   const result = render(
     <Provider store={store}>
       <App />
     </Provider>
+  );
+
+  expect(result.getByTestId("loading-icon")).toBeInTheDocument();
+
+  const jan18 = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
+  const offsetSeconds = differenceInSeconds(addDays(new Date(2018, 7, 5, 15, 33, 0), -28), jan18);
+
+  // tslint:disable-next-line:no-any
+  (window as any).FMS_INSIGHT_RESOLVE_MOCK_DATA(
+    loadMockData(offsetSeconds)
+  );
+
+  await wait(() =>
+    expect(result.queryByTestId("loading-icon")).not.toBeInTheDocument()
   );
 
   expect(

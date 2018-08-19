@@ -40,13 +40,14 @@ export function register() {
       navigator.serviceWorker
         .register(swUrl)
         .catch(error => {
+          // tslint:disable-next-line:no-console
           console.error('Error during service worker registration:', error);
         });
       navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (windowRefreshing) return;
+        if (windowRefreshing) { return; }
         windowRefreshing = true;
         window.location.reload();
-      })
+      });
     });
   }
 }
