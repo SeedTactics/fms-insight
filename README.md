@@ -52,11 +52,11 @@ nuget as [BlackMaple.FMSInsight.API](https://www.nuget.org/packages/BlackMaple.F
 ### HTML Client
 
 The client is written using React, Redux, Typescript, and MaterialUI.  The
-client is compiled using webpack (actually create-react-app-ts) and the resulting
+client is compiled using parcel and the resulting
 HTML and Javascript is included in the server builds.  The code lives in
 [client/insight](https://bitbucket.org/blackmaple/fms-insight/src/default/client/insight/).
 
-I use VSCode as an editor and there are VSCode tasks for launching webpack in
+I use VSCode as an editor and there are VSCode tasks for launching parcel in
 development/watch mode and a debug configuration for launching Chrome. There
 is also a mock server which I use while developing the client. The mock
 server lives in
