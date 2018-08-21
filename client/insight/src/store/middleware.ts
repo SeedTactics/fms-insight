@@ -30,47 +30,58 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { Middleware } from 'redux';
+import { Middleware } from "redux";
 
 export enum PledgeStatus {
-    Starting = 'Pledge_Starting',
-    Completed = 'Pledge_Completed',
-    Error = 'Pledge_Error'
+  Starting = "Pledge_Starting",
+  Completed = "Pledge_Completed",
+  Error = "Pledge_Error"
 }
 
 export type Pledge<T> =
   | { status: PledgeStatus.Starting }
-  | { status: PledgeStatus.Completed, result: T }
-  | { status: PledgeStatus.Error, error: Error }
-  ;
+  | { status: PledgeStatus.Completed; result: T }
+  | { status: PledgeStatus.Error; error: Error };
 
 export type PledgeToPromise<AP> = {
-  [P in keyof AP]: "pledge" extends P ? AP[P] extends Pledge<infer R> ? Promise<R> : AP[P] : AP[P];
+  [P in keyof AP]: "pledge" extends P
+    ? AP[P] extends Pledge<infer R> ? Promise<R> : AP[P]
+    : AP[P]
 };
 
-export type ActionBeforeMiddleware<A> = PledgeToPromise<A> | PledgeToPromise<A>[];
+export type ActionBeforeMiddleware<A> =
+  | PledgeToPromise<A>
+  | PledgeToPromise<A>[];
 
-export const pledgeMiddleware: Middleware =
-  ({dispatch}) => next => (action: any) => {
-    if (action.pledge && action.pledge instanceof Promise) {
-        dispatch({...action, pledge: {status: PledgeStatus.Starting}});
-        action.pledge
-        .then((r: any) => {
-            dispatch({...action, pledge: {status: PledgeStatus.Completed, result: r}});
-        })
-        .catch((e: Error) => {
-            dispatch({...action, pledge: {status: PledgeStatus.Error, error: e}});
+export const pledgeMiddleware: Middleware = ({ dispatch }) => next => (
+  action: any
+) => {
+  if (action.pledge && action.pledge instanceof Promise) {
+    dispatch({ ...action, pledge: { status: PledgeStatus.Starting } });
+    action.pledge
+      .then((r: any) => {
+        dispatch({
+          ...action,
+          pledge: { status: PledgeStatus.Completed, result: r }
         });
-    } else {
-        return next(action);
-    }
-  };
+      })
+      .catch((e: Error) => {
+        dispatch({
+          ...action,
+          pledge: { status: PledgeStatus.Error, error: e }
+        });
+      });
+  } else {
+    return next(action);
+  }
+};
 
-export const arrayMiddleware: Middleware =
-    ({dispatch}) => (next) => (action: any) => {
-      if (action instanceof Array) {
-        action.map(dispatch);
-      } else {
-        return next(action);
-      }
-  };
+export const arrayMiddleware: Middleware = ({ dispatch }) => next => (
+  action: any
+) => {
+  if (action instanceof Array) {
+    action.map(dispatch);
+  } else {
+    return next(action);
+  }
+};

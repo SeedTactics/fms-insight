@@ -31,21 +31,26 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as im from 'immutable';
+import * as im from "immutable";
 
-import * as api from './api';
-import { Pledge, PledgeStatus, ActionBeforeMiddleware, PledgeToPromise } from '../store/middleware';
-import { MaterialSummary } from './events';
-import { JobsBackend, LogBackend, OtherLogBackends } from './backend';
+import * as api from "./api";
+import {
+  Pledge,
+  PledgeStatus,
+  ActionBeforeMiddleware,
+  PledgeToPromise
+} from "../store/middleware";
+import { MaterialSummary } from "./events";
+import { JobsBackend, LogBackend, OtherLogBackends } from "./backend";
 
 export enum ActionType {
-  OpenMaterialDialog = 'MaterialDetails_Open',
-  OpenMaterialDialogWithoutLoad = 'MaterialDetails_OpenWithoutLoad',
-  LoadLogFromOtherServer = 'MaterialDetails_LoadLogFromOtherServer',
-  CloseMaterialDialog = 'MaterialDetails_Close',
-  UpdateMaterial = 'MaterialDetails_UpdateMaterial',
-  LoadWorkorders = 'OrderAssign_LoadWorkorders',
-  AddNewMaterialToQueue = 'MaterialDetails_AddNewMaterialToQueue',
+  OpenMaterialDialog = "MaterialDetails_Open",
+  OpenMaterialDialogWithoutLoad = "MaterialDetails_OpenWithoutLoad",
+  LoadLogFromOtherServer = "MaterialDetails_LoadLogFromOtherServer",
+  CloseMaterialDialog = "MaterialDetails_Close",
+  UpdateMaterial = "MaterialDetails_UpdateMaterial",
+  LoadWorkorders = "OrderAssign_LoadWorkorders",
+  AddNewMaterialToQueue = "MaterialDetails_AddNewMaterialToQueue"
 }
 
 export interface WorkorderPlanAndSummary {
@@ -74,42 +79,41 @@ export interface MaterialDetail {
 
 export type Action =
   | {
-      type: ActionType.CloseMaterialDialog,
+      type: ActionType.CloseMaterialDialog;
     }
   | {
-      type: ActionType.OpenMaterialDialog,
-      initial: MaterialDetail,
-      pledge: Pledge<ReadonlyArray<Readonly<api.ILogEntry>>>
+      type: ActionType.OpenMaterialDialog;
+      initial: MaterialDetail;
+      pledge: Pledge<ReadonlyArray<Readonly<api.ILogEntry>>>;
     }
   | {
-      type: ActionType.LoadLogFromOtherServer,
-      pledge: Pledge<ReadonlyArray<Readonly<api.ILogEntry>>>
+      type: ActionType.LoadLogFromOtherServer;
+      pledge: Pledge<ReadonlyArray<Readonly<api.ILogEntry>>>;
     }
   | {
-      type: ActionType.OpenMaterialDialogWithoutLoad,
-      mat: MaterialDetail,
+      type: ActionType.OpenMaterialDialogWithoutLoad;
+      mat: MaterialDetail;
     }
   | {
-      type: ActionType.UpdateMaterial,
-      newCompletedInspection?: string,
-      newWorkorder?: string,
-      newSerial?: string,
-      newSignaledInspection?: string,
-      pledge: Pledge<Readonly<api.ILogEntry> | undefined>,
+      type: ActionType.UpdateMaterial;
+      newCompletedInspection?: string;
+      newWorkorder?: string;
+      newSerial?: string;
+      newSignaledInspection?: string;
+      pledge: Pledge<Readonly<api.ILogEntry> | undefined>;
     }
   | {
-      type: ActionType.LoadWorkorders,
-      pledge: Pledge<ReadonlyArray<WorkorderPlanAndSummary>>,
+      type: ActionType.LoadWorkorders;
+      pledge: Pledge<ReadonlyArray<WorkorderPlanAndSummary>>;
     }
   | {
-      type: ActionType.AddNewMaterialToQueue,
-      pledge: Pledge<void>,
-    }
-  ;
+      type: ActionType.AddNewMaterialToQueue;
+      pledge: Pledge<void>;
+    };
 
 type ABF = ActionBeforeMiddleware<Action>;
 
-export function openMaterialDialog(mat: Readonly<MaterialSummary>):  ABF {
+export function openMaterialDialog(mat: Readonly<MaterialSummary>): ABF {
   const mainLoad = {
     type: ActionType.OpenMaterialDialog,
     initial: {
@@ -126,24 +130,26 @@ export function openMaterialDialog(mat: Readonly<MaterialSummary>):  ABF {
       loading_workorders: false,
       saving_workorder: false,
       workorders: [],
-      openedViaBarcodeScanner: false,
+      openedViaBarcodeScanner: false
     } as MaterialDetail,
-    pledge: LogBackend.logForMaterial(mat.materialID),
+    pledge: LogBackend.logForMaterial(mat.materialID)
   } as PledgeToPromise<Action>;
 
   let extra: ReadonlyArray<PledgeToPromise<Action>> = [];
   if (mat.serial && mat.serial !== "") {
     const serial = mat.serial;
-    extra = OtherLogBackends.map(b => ({
-        type: ActionType.LoadLogFromOtherServer,
-        pledge: b.logForSerial(serial)
-      } as PledgeToPromise<Action>)
+    extra = OtherLogBackends.map(
+      b =>
+        ({
+          type: ActionType.LoadLogFromOtherServer,
+          pledge: b.logForSerial(serial)
+        } as PledgeToPromise<Action>)
     );
   }
   return [mainLoad].concat(extra);
 }
 
-export function openMaterialDialogWithEmptyMat():  ABF {
+export function openMaterialDialogWithEmptyMat(): ABF {
   return {
     type: ActionType.OpenMaterialDialogWithoutLoad,
     mat: {
@@ -160,12 +166,15 @@ export function openMaterialDialogWithEmptyMat():  ABF {
       loading_workorders: false,
       saving_workorder: false,
       workorders: [],
-      openedViaBarcodeScanner: false,
-    } as MaterialDetail,
+      openedViaBarcodeScanner: false
+    } as MaterialDetail
   };
 }
 
-export function openMaterialBySerial(serial: string, openedByBarcode: boolean): ABF {
+export function openMaterialBySerial(
+  serial: string,
+  openedByBarcode: boolean
+): ABF {
   const mainLoad = {
     type: ActionType.OpenMaterialDialog,
     initial: {
@@ -182,16 +191,18 @@ export function openMaterialBySerial(serial: string, openedByBarcode: boolean): 
       loading_workorders: false,
       saving_workorder: false,
       workorders: [],
-      openedViaBarcodeScanner: openedByBarcode,
+      openedViaBarcodeScanner: openedByBarcode
     } as MaterialDetail,
-    pledge: LogBackend.logForSerial(serial),
+    pledge: LogBackend.logForSerial(serial)
   } as PledgeToPromise<Action>;
   let extra: ReadonlyArray<PledgeToPromise<Action>> = [];
   if (serial !== "") {
-    extra = OtherLogBackends.map(b => ({
-        type: ActionType.LoadLogFromOtherServer,
-        pledge: b.logForSerial(serial)
-      } as PledgeToPromise<Action>)
+    extra = OtherLogBackends.map(
+      b =>
+        ({
+          type: ActionType.LoadLogFromOtherServer,
+          pledge: b.logForSerial(serial)
+        } as PledgeToPromise<Action>)
     );
   }
   return [mainLoad].concat(extra);
@@ -203,19 +214,23 @@ export interface ForceInspectionData {
   readonly inspect: boolean;
 }
 
-export function forceInspection({mat, inspType, inspect}: ForceInspectionData): ABF {
+export function forceInspection({
+  mat,
+  inspType,
+  inspect
+}: ForceInspectionData): ABF {
   const logMat = new api.LogMaterial({
     id: mat.materialID,
     uniq: mat.jobUnique,
     part: mat.partName,
     proc: 1,
     numproc: 1,
-    face: "1",
+    face: "1"
   });
   return {
     type: ActionType.UpdateMaterial,
     newSignaledInspection: inspType,
-    pledge: LogBackend.setInspectionDecision(inspType, logMat, inspect),
+    pledge: LogBackend.setInspectionDecision(inspType, logMat, inspect)
   };
 }
 
@@ -226,26 +241,33 @@ export interface CompleteInspectionData {
   readonly operator?: string;
 }
 
-export function completeInspection({mat, inspType, success, operator}: CompleteInspectionData): ABF {
+export function completeInspection({
+  mat,
+  inspType,
+  success,
+  operator
+}: CompleteInspectionData): ABF {
   return {
     type: ActionType.UpdateMaterial,
     newCompletedInspection: inspType,
-    pledge: LogBackend.recordInspectionCompleted(new api.NewInspectionCompleted({
-      material: new api.LogMaterial({
-        id: mat.materialID,
-        uniq: mat.jobUnique,
-        part: mat.partName,
-        proc: 1,
-        numproc: 1,
-        face: "1",
-      }),
-      inspectionLocationNum: 1,
-      inspectionType: inspType,
-      success,
-      active: 'PT0S',
-      elapsed: 'PT0S',
-      extraData: operator ? {operator} : undefined
-    }))
+    pledge: LogBackend.recordInspectionCompleted(
+      new api.NewInspectionCompleted({
+        material: new api.LogMaterial({
+          id: mat.materialID,
+          uniq: mat.jobUnique,
+          part: mat.partName,
+          proc: 1,
+          numproc: 1,
+          face: "1"
+        }),
+        inspectionLocationNum: 1,
+        inspectionType: inspType,
+        success,
+        active: "PT0S",
+        elapsed: "PT0S",
+        extraData: operator ? { operator } : undefined
+      })
+    )
   };
 }
 
@@ -257,27 +279,31 @@ export interface CompleteWashData {
 export function completeWash(d: CompleteWashData): ABF {
   return {
     type: ActionType.UpdateMaterial,
-    pledge: LogBackend.recordWashCompleted(new api.NewWash({
-      material: new api.LogMaterial({
-        id: d.mat.materialID,
-        uniq: d.mat.jobUnique,
-        part: d.mat.partName,
-        proc: 1,
-        numproc: 1,
-        face: "1",
-      }),
-      washLocationNum: 1,
-      active: 'PT0S',
-      elapsed: 'PT0S',
-      extraData: d.operator ? {operator: d.operator} : undefined
-    }))
+    pledge: LogBackend.recordWashCompleted(
+      new api.NewWash({
+        material: new api.LogMaterial({
+          id: d.mat.materialID,
+          uniq: d.mat.jobUnique,
+          part: d.mat.partName,
+          proc: 1,
+          numproc: 1,
+          face: "1"
+        }),
+        washLocationNum: 1,
+        active: "PT0S",
+        elapsed: "PT0S",
+        extraData: d.operator ? { operator: d.operator } : undefined
+      })
+    )
   };
 }
 
 export function removeFromQueue(mat: MaterialDetail): ABF {
   return {
     type: ActionType.UpdateMaterial,
-    pledge: JobsBackend.removeMaterialFromAllQueues(mat.materialID).then(() => undefined)
+    pledge: JobsBackend.removeMaterialFromAllQueues(mat.materialID).then(
+      () => undefined
+    )
   };
 }
 
@@ -286,7 +312,7 @@ export interface AssignWorkorderData {
   readonly workorder: string;
 }
 
-export function assignWorkorder({mat, workorder}: AssignWorkorderData): ABF {
+export function assignWorkorder({ mat, workorder }: AssignWorkorderData): ABF {
   return {
     type: ActionType.UpdateMaterial,
     newWorkorder: workorder,
@@ -298,7 +324,7 @@ export function assignWorkorder({mat, workorder}: AssignWorkorderData): ABF {
         part: mat.partName,
         proc: 1,
         numproc: 1,
-        face: "1",
+        face: "1"
       })
     )
   };
@@ -309,7 +335,7 @@ export interface AssignSerialData {
   readonly serial: string;
 }
 
-export function assignSerial({mat, serial}: AssignSerialData): ABF {
+export function assignSerial({ mat, serial }: AssignSerialData): ABF {
   return {
     type: ActionType.UpdateMaterial,
     newSerial: serial,
@@ -321,27 +347,27 @@ export function assignSerial({mat, serial}: AssignSerialData): ABF {
         part: mat.partName,
         proc: 1,
         numproc: 1,
-        face: "1",
+        face: "1"
       })
     )
   };
 }
 
 export function computeWorkorders(
-    partName: string,
-    workorders: ReadonlyArray<api.IPartWorkorder>,
-    summaries: ReadonlyArray<api.IWorkorderSummary>): ReadonlyArray<WorkorderPlanAndSummary> {
-
+  partName: string,
+  workorders: ReadonlyArray<api.IPartWorkorder>,
+  summaries: ReadonlyArray<api.IWorkorderSummary>
+): ReadonlyArray<WorkorderPlanAndSummary> {
   const workMap = new Map<string, WorkorderPlanAndSummary>();
   for (const w of workorders) {
-    workMap.set(w.workorderId, {plan: w});
+    workMap.set(w.workorderId, { plan: w });
   }
   for (const s of summaries) {
     for (const w of s.parts) {
       if (w.name === partName) {
         const planAndS = workMap.get(s.id);
         if (planAndS) {
-          workMap.set(s.id, {...planAndS, summary: w});
+          workMap.set(s.id, { ...planAndS, summary: w });
         }
       }
     }
@@ -353,17 +379,17 @@ export function computeWorkorders(
 }
 
 export function loadWorkorders(mat: MaterialDetail): ABF {
-
   return {
     type: ActionType.LoadWorkorders,
-    pledge:
-      JobsBackend.mostRecentUnfilledWorkordersForPart(mat.partName)
-      .then(workorders => {
-        return LogBackend.getWorkorders(workorders.map(w => w.workorderId))
-          .then(summaries => {
-            return computeWorkorders(mat.partName, workorders, summaries);
-          });
-      })
+    pledge: JobsBackend.mostRecentUnfilledWorkordersForPart(mat.partName).then(
+      workorders => {
+        return LogBackend.getWorkorders(
+          workorders.map(w => w.workorderId)
+        ).then(summaries => {
+          return computeWorkorders(mat.partName, workorders, summaries);
+        });
+      }
+    )
   };
 }
 
@@ -373,13 +399,18 @@ export interface AddExistingMaterialToQueueData {
   readonly queuePosition: number;
 }
 
-export function addExistingMaterialToQueue(d: AddExistingMaterialToQueueData): ABF {
+export function addExistingMaterialToQueue(
+  d: AddExistingMaterialToQueueData
+): ABF {
   return {
     type: ActionType.AddNewMaterialToQueue,
-    pledge: JobsBackend.setMaterialInQueue(d.materialId, new api.QueuePosition({
-      queue: d.queue,
-      position: d.queuePosition
-    })),
+    pledge: JobsBackend.setMaterialInQueue(
+      d.materialId,
+      new api.QueuePosition({
+        queue: d.queue,
+        position: d.queuePosition
+      })
+    )
   };
 }
 
@@ -395,7 +426,11 @@ export function addNewMaterialToQueue(d: AddNewMaterialToQueueData) {
   return {
     type: ActionType.AddNewMaterialToQueue,
     pledge: JobsBackend.addUnprocessedMaterialToQueue(
-      d.jobUnique, d.lastCompletedProcess || -1, d.queue, d.queuePosition, d.serial || ""
+      d.jobUnique,
+      d.lastCompletedProcess || -1,
+      d.queue,
+      d.queuePosition,
+      d.serial || ""
     )
   };
 }
@@ -411,33 +446,36 @@ export interface State {
 
 export const initial: State = {
   material: null,
-  add_mat_in_progress: false,
+  add_mat_in_progress: false
 };
 
-function processEvents(evts: ReadonlyArray<Readonly<api.ILogEntry>>, mat: MaterialDetail): MaterialDetail {
+function processEvents(
+  evts: ReadonlyArray<Readonly<api.ILogEntry>>,
+  mat: MaterialDetail
+): MaterialDetail {
   let inspTypes = im.Set(mat.signaledInspections);
   let completedTypes = im.Set(mat.completedInspections);
 
   evts.forEach(e => {
     e.material.forEach(m => {
       if (mat.materialID < 0) {
-        mat = {...mat, materialID: m.id};
+        mat = { ...mat, materialID: m.id };
       }
       if (mat.partName === "") {
-        mat = {...mat, partName: m.part};
+        mat = { ...mat, partName: m.part };
       }
       if (mat.jobUnique === "") {
-        mat = {...mat, jobUnique: m.uniq};
+        mat = { ...mat, jobUnique: m.uniq };
       }
     });
 
     switch (e.type) {
       case api.LogType.PartMark:
-        mat = {...mat, serial: e.result};
+        mat = { ...mat, serial: e.result };
         break;
 
       case api.LogType.OrderAssignment:
-        mat = {...mat, workorderId: e.result};
+        mat = { ...mat, workorderId: e.result };
         break;
 
       case api.LogType.Inspection:
@@ -458,42 +496,55 @@ function processEvents(evts: ReadonlyArray<Readonly<api.ILogEntry>>, mat: Materi
       case api.LogType.InspectionResult:
         completedTypes = completedTypes.add(e.program);
         break;
-
     }
   });
 
-  var allEvents =
-    im.Seq(mat.events)
+  var allEvents = im
+    .Seq(mat.events)
     .concat(evts)
     .sortBy(e => e.endUTC)
     .toArray();
 
-  return {...mat,
-    signaledInspections: inspTypes.toSeq().sort().toArray(),
-    completedInspections: completedTypes.toSeq().sort().toArray(),
+  return {
+    ...mat,
+    signaledInspections: inspTypes
+      .toSeq()
+      .sort()
+      .toArray(),
+    completedInspections: completedTypes
+      .toSeq()
+      .sort()
+      .toArray(),
     loading_events: false,
-    events: allEvents,
+    events: allEvents
   };
 }
 
 export function reducer(s: State, a: Action): State {
-  if (s === undefined) { return initial; }
+  if (s === undefined) {
+    return initial;
+  }
   switch (a.type) {
     case ActionType.OpenMaterialDialog:
       switch (a.pledge.status) {
         case PledgeStatus.Starting:
-          return {...s, material: a.initial, load_error: undefined};
+          return { ...s, material: a.initial, load_error: undefined };
 
         case PledgeStatus.Completed:
-          return {...s, material: processEvents(a.pledge.result, s.material || a.initial)};
+          return {
+            ...s,
+            material: processEvents(a.pledge.result, s.material || a.initial)
+          };
 
         case PledgeStatus.Error:
-          return {...s,
-            material: {...a.initial,
+          return {
+            ...s,
+            material: {
+              ...a.initial,
               loading_events: false,
-              events: [],
+              events: []
             },
-            load_error: a.pledge.error,
+            load_error: a.pledge.error
           };
 
         default:
@@ -503,10 +554,12 @@ export function reducer(s: State, a: Action): State {
     case ActionType.LoadLogFromOtherServer:
       if (a.pledge.status === PledgeStatus.Completed) {
         if (s.material) {
-          return {...s,
-            material: {...s.material,
-              events:
-                im.Seq(s.material.events)
+          return {
+            ...s,
+            material: {
+              ...s.material,
+              events: im
+                .Seq(s.material.events)
                 .concat(a.pledge.result)
                 .sortBy(e => e.endUTC)
                 .toArray()
@@ -520,74 +573,94 @@ export function reducer(s: State, a: Action): State {
       }
 
     case ActionType.OpenMaterialDialogWithoutLoad:
-      return {...s, material: a.mat};
+      return { ...s, material: a.mat };
 
     case ActionType.CloseMaterialDialog:
-      return {...s, material: null};
+      return { ...s, material: null };
 
     case ActionType.UpdateMaterial:
-      if (!s.material) { return s; }
+      if (!s.material) {
+        return s;
+      }
       switch (a.pledge.status) {
         case PledgeStatus.Starting:
-          return {...s,
-            material: {...s.material,
+          return {
+            ...s,
+            material: {
+              ...s.material,
               updating_material: true
             },
-            update_error: undefined,
+            update_error: undefined
           };
         case PledgeStatus.Completed:
           const oldMatEnd = s.material;
-          return {...s, material: {...oldMatEnd,
-              completedInspections:
-                a.newCompletedInspection
-                  ? [...oldMatEnd.completedInspections, a.newCompletedInspection]
-                  : oldMatEnd.completedInspections,
-              signaledInspections:
-                a.newSignaledInspection
-                  ? [...oldMatEnd.signaledInspections, a.newSignaledInspection]
-                  : oldMatEnd.signaledInspections,
+          return {
+            ...s,
+            material: {
+              ...oldMatEnd,
+              completedInspections: a.newCompletedInspection
+                ? [...oldMatEnd.completedInspections, a.newCompletedInspection]
+                : oldMatEnd.completedInspections,
+              signaledInspections: a.newSignaledInspection
+                ? [...oldMatEnd.signaledInspections, a.newSignaledInspection]
+                : oldMatEnd.signaledInspections,
               workorderId: a.newWorkorder || oldMatEnd.workorderId,
               serial: a.newSerial || oldMatEnd.serial,
-              events: a.pledge.result ? [...oldMatEnd.events, a.pledge.result] : oldMatEnd.events,
-              updating_material: false,
-            },
+              events: a.pledge.result
+                ? [...oldMatEnd.events, a.pledge.result]
+                : oldMatEnd.events,
+              updating_material: false
+            }
           };
 
         case PledgeStatus.Error:
-          return {...s, material:
-            {...s.material,
+          return {
+            ...s,
+            material: {
+              ...s.material,
               updating_material: false
             },
-            update_error: a.pledge.error,
+            update_error: a.pledge.error
           };
 
-        default: return s;
+        default:
+          return s;
       }
 
     case ActionType.LoadWorkorders:
-      if (!s.material) { return s; }
+      if (!s.material) {
+        return s;
+      }
       switch (a.pledge.status) {
         case PledgeStatus.Starting:
-          return {...s,
-            material: {...s.material,
+          return {
+            ...s,
+            material: {
+              ...s.material,
               loading_workorders: true
             },
             load_workorders_error: undefined
           };
 
         case PledgeStatus.Completed:
-          return {...s, material: {...s.material,
-            loading_workorders: false,
-            workorders: a.pledge.result,
-          }};
+          return {
+            ...s,
+            material: {
+              ...s.material,
+              loading_workorders: false,
+              workorders: a.pledge.result
+            }
+          };
 
         case PledgeStatus.Error:
-          return {...s,
-            material: {...s.material,
+          return {
+            ...s,
+            material: {
+              ...s.material,
               loading_workorders: false,
-              workorders: [],
+              workorders: []
             },
-            load_workorders_error: a.pledge.error,
+            load_workorders_error: a.pledge.error
           };
 
         default:
@@ -597,12 +670,17 @@ export function reducer(s: State, a: Action): State {
     case ActionType.AddNewMaterialToQueue:
       switch (a.pledge.status) {
         case PledgeStatus.Starting:
-          return {...s, add_mat_in_progress: true, add_mat_error: undefined};
+          return { ...s, add_mat_in_progress: true, add_mat_error: undefined };
         case PledgeStatus.Completed:
-          return {...s, add_mat_in_progress: false };
+          return { ...s, add_mat_in_progress: false };
         case PledgeStatus.Error:
-          return {...s, add_mat_in_progress: false, add_mat_error: a.pledge.error };
-        default: return s;
+          return {
+            ...s,
+            add_mat_in_progress: false,
+            add_mat_error: a.pledge.error
+          };
+        default:
+          return s;
       }
 
     default:

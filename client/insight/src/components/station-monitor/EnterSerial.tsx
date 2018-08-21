@@ -31,18 +31,24 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from 'react';
-import Button from '@material-ui/core/Button';
-import Dialog from '@material-ui/core/Dialog';
-import DialogActions from '@material-ui/core/DialogActions';
-import DialogContent from '@material-ui/core/DialogContent';
-import DialogTitle from '@material-ui/core/DialogTitle';
-import TextField from '@material-ui/core/TextField';
+import * as React from "react";
+import Button from "@material-ui/core/Button";
+import Dialog from "@material-ui/core/Dialog";
+import DialogActions from "@material-ui/core/DialogActions";
+import DialogContent from "@material-ui/core/DialogContent";
+import DialogTitle from "@material-ui/core/DialogTitle";
+import TextField from "@material-ui/core/TextField";
 
-import { MaterialDetailTitle } from './Material';
-import { Store, connect, mkAC, AppActionBeforeMiddleware, DispatchAction } from '../../store/store';
-import * as matDetails from '../../data/material-details';
-import * as guiState from '../../data/gui-state';
+import { MaterialDetailTitle } from "./Material";
+import {
+  Store,
+  connect,
+  mkAC,
+  AppActionBeforeMiddleware,
+  DispatchAction
+} from "../../store/store";
+import * as matDetails from "../../data/material-details";
+import * as guiState from "../../data/gui-state";
 
 interface ManualSerialEntryProps {
   readonly mat: matDetails.MaterialDetail;
@@ -53,17 +59,24 @@ interface ManualSerialEntryState {
   readonly serial: string;
 }
 
-class ManualSerialEntry extends React.PureComponent<ManualSerialEntryProps, ManualSerialEntryState> {
-  state = {serial: ""};
+class ManualSerialEntry extends React.PureComponent<
+  ManualSerialEntryProps,
+  ManualSerialEntryState
+> {
+  state = { serial: "" };
 
   render() {
     return (
       <TextField
         label={this.state.serial === "" ? "Serial" : "Serial (press enter)"}
         value={this.state.serial}
-        onChange={e => this.setState({serial: e.target.value})}
+        onChange={e => this.setState({ serial: e.target.value })}
         onKeyPress={e => {
-          if (e.key === "Enter" && this.state.serial && this.state.serial !== "") {
+          if (
+            e.key === "Enter" &&
+            this.state.serial &&
+            this.state.serial !== ""
+          ) {
             e.preventDefault();
             this.props.assignSerial({
               mat: this.props.mat,
@@ -95,13 +108,16 @@ function EnterSerialDialog(props: EnterSerialProps) {
       body = (
         <>
           <DialogTitle disableTypography>
-            <MaterialDetailTitle partName={mat.partName} serial={mat.serial}/>
+            <MaterialDetailTitle partName={mat.partName} serial={mat.serial} />
           </DialogTitle>
           <DialogContent>
-            <ManualSerialEntry mat={mat} assignSerial={props.assignSerial}/>
+            <ManualSerialEntry mat={mat} assignSerial={props.assignSerial} />
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => props.onClose({open: false})} color="primary">
+            <Button
+              onClick={() => props.onClose({ open: false })}
+              color="primary"
+            >
               Cancel
             </Button>
           </DialogActions>
@@ -112,7 +128,7 @@ function EnterSerialDialog(props: EnterSerialProps) {
   return (
     <Dialog
       open={props.mats !== null}
-      onClose={() => props.onClose({open: false})}
+      onClose={() => props.onClose({ open: false })}
       maxWidth="md"
     >
       {body}
@@ -122,13 +138,14 @@ function EnterSerialDialog(props: EnterSerialProps) {
 
 export default connect(
   (st: Store) => ({
-    mats: st.Gui.serial_dialog_open ? st.MaterialDetails.material : null,
+    mats: st.Gui.serial_dialog_open ? st.MaterialDetails.material : null
   }),
   {
     onClose: mkAC(guiState.ActionType.SetSerialDialogOpen),
-    assignSerial: (data: matDetails.AssignSerialData) => [
-      matDetails.assignSerial(data),
-      { type: guiState.ActionType.SetSerialDialogOpen, open: false, }
-    ] as AppActionBeforeMiddleware,
+    assignSerial: (data: matDetails.AssignSerialData) =>
+      [
+        matDetails.assignSerial(data),
+        { type: guiState.ActionType.SetSerialDialogOpen, open: false }
+      ] as AppActionBeforeMiddleware
   }
 )(EnterSerialDialog);

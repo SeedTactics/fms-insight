@@ -31,9 +31,12 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as im from 'immutable';
-import * as api from './api';
-import { InspectionLogResultType, InspectionLogEntry } from './events.inspection';
+import * as im from "immutable";
+import * as api from "./api";
+import {
+  InspectionLogResultType,
+  InspectionLogEntry
+} from "./events.inspection";
 
 export interface SankeyNode {
   readonly unique: string; // full unique of node
@@ -51,10 +54,10 @@ export interface SankeyDiagram {
   readonly links: ReadonlyArray<SankeyLink>;
 }
 
-type NodeR = im.Record<{unique: string, name: string}>;
-const mkNodeR = im.Record({unique: "", name: ""});
+type NodeR = im.Record<{ unique: string; name: string }>;
+const mkNodeR = im.Record({ unique: "", name: "" });
 
-const mkEdgeR = im.Record({from: 0, to: 0});
+const mkEdgeR = im.Record({ from: 0, to: 0 });
 
 interface Edge {
   readonly from: NodeR;
@@ -62,21 +65,21 @@ interface Edge {
 }
 
 function edgesForPath(
-    actualPath: ReadonlyArray<Readonly<api.IMaterialProcessActualPath>>,
-    toInspect: boolean,
-    result: boolean | undefined
+  actualPath: ReadonlyArray<Readonly<api.IMaterialProcessActualPath>>,
+  toInspect: boolean,
+  result: boolean | undefined
 ): Edge[] {
   let path = "";
-  let prevNode = mkNodeR({unique: "", name: "raw"});
+  let prevNode = mkNodeR({ unique: "", name: "raw" });
   let edges: Edge[] = [];
   for (const proc of actualPath) {
     for (const stop of proc.stops) {
       const cur = "P" + proc.pallet + ",M" + stop.stationNum;
       path += "->" + cur;
-      const nextNode = mkNodeR({unique: path, name: cur});
+      const nextNode = mkNodeR({ unique: path, name: cur });
       edges.push({
         from: prevNode,
-        to: nextNode,
+        to: nextNode
       });
       prevNode = nextNode;
     }
@@ -86,55 +89,60 @@ function edgesForPath(
     if (result) {
       edges.push({
         from: prevNode,
-        to: mkNodeR({unique: "@@success", name: "success"})
+        to: mkNodeR({ unique: "@@success", name: "success" })
       });
     } else {
       edges.push({
         from: prevNode,
-        to: mkNodeR({unique: "@@failed", name: "failed"})
+        to: mkNodeR({ unique: "@@failed", name: "failed" })
       });
     }
   } else {
     edges.push({
       from: prevNode,
-      to: mkNodeR({unique: "@@uninspected", name: "uninspected"})
+      to: mkNodeR({ unique: "@@uninspected", name: "uninspected" })
     });
   }
 
   return edges;
 }
 
-export function inspectionDataToSankey(d: ReadonlyArray<InspectionLogEntry>): SankeyDiagram {
+export function inspectionDataToSankey(
+  d: ReadonlyArray<InspectionLogEntry>
+): SankeyDiagram {
   const entrySeq = im.Seq(d);
 
-  const matIdToInspResult =
-    entrySeq
+  const matIdToInspResult = entrySeq
     .filter(e => e.result.type === InspectionLogResultType.Completed)
     .toKeyedSeq()
     .mapKeys((idx, e) => e.materialID)
-    .map(e => e.result.type === InspectionLogResultType.Completed ? e.result.success : false)
-    .toMap()
-    ;
+    .map(
+      e =>
+        e.result.type === InspectionLogResultType.Completed
+          ? e.result.success
+          : false
+    )
+    .toMap();
 
   // create all the edges, likely with duplicate edges between nodes
-  const edges =
-    entrySeq
-    .flatMap(c => {
-      if (c.result.type === InspectionLogResultType.Triggered) {
-        return edgesForPath(c.result.actualPath, c.result.toInspect, matIdToInspResult.get(c.materialID));
-      } else {
-        return [];
-      }
-    })
-    ;
+  const edges = entrySeq.flatMap(c => {
+    if (c.result.type === InspectionLogResultType.Triggered) {
+      return edgesForPath(
+        c.result.actualPath,
+        c.result.toInspect,
+        matIdToInspResult.get(c.materialID)
+      );
+    } else {
+      return [];
+    }
+  });
 
   // extract the nodes and assign an index
   const nodes = edges
     .flatMap(e => [e.from, e.to])
     .toSet()
     .toIndexedSeq()
-    .map((node, idx) => ({ idx, node }))
-    ;
+    .map((node, idx) => ({ idx, node }));
 
   // create the sankey nodes to return
   const sankeyNodes = nodes
@@ -142,8 +150,7 @@ export function inspectionDataToSankey(d: ReadonlyArray<InspectionLogEntry>): Sa
       unique: s.node.get("unique", ""),
       name: s.node.get("name", "")
     }))
-    .toArray()
-    ;
+    .toArray();
 
   // create a map from NodeR to index
   const nodesToIdx = nodes
@@ -154,21 +161,22 @@ export function inspectionDataToSankey(d: ReadonlyArray<InspectionLogEntry>): Sa
 
   // create the sankey links to return by counting Edges between nodes
   const sankeyLinks = edges
-    .countBy(e => mkEdgeR({
-      from: nodesToIdx.get(e.from, 0),
-      to: nodesToIdx.get(e.to, 0),
-    }))
+    .countBy(e =>
+      mkEdgeR({
+        from: nodesToIdx.get(e.from, 0),
+        to: nodesToIdx.get(e.to, 0)
+      })
+    )
     .map((value, link) => ({
       source: link.get("from", 0),
       target: link.get("to", 0),
-      value,
+      value
     }))
     .valueSeq()
-    .toArray()
-    ;
+    .toArray();
 
   return {
     nodes: sankeyNodes,
-    links: sankeyLinks,
+    links: sankeyLinks
   };
 }

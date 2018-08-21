@@ -30,83 +30,84 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from 'react';
-import * as api from '../data/api';
-import { format } from 'date-fns';
-import Table from '@material-ui/core/Table';
-import TableBody from '@material-ui/core/TableBody';
-import TableCell from '@material-ui/core/TableCell';
-import TableHead from '@material-ui/core/TableHead';
-import TableRow from '@material-ui/core/TableRow';
+import * as React from "react";
+import * as api from "../data/api";
+import { format } from "date-fns";
+import Table from "@material-ui/core/Table";
+import TableBody from "@material-ui/core/TableBody";
+import TableCell from "@material-ui/core/TableCell";
+import TableHead from "@material-ui/core/TableHead";
+import TableRow from "@material-ui/core/TableRow";
 
 export interface LogEntryProps {
-    entry: api.ILogEntry;
+  entry: api.ILogEntry;
 }
 
 function logType(entry: api.ILogEntry): string {
   switch (entry.type) {
     case api.LogType.LoadUnloadCycle:
-      if (entry.result === 'LOAD') {
+      if (entry.result === "LOAD") {
         if (entry.startofcycle) {
-          return 'Start Load';
+          return "Start Load";
         } else {
-          return 'End Load';
+          return "End Load";
         }
       } else {
         if (entry.startofcycle) {
-          return 'Start Unload';
+          return "Start Unload";
         } else {
-          return 'End Unload';
+          return "End Unload";
         }
       }
 
     case api.LogType.MachineCycle:
       if (entry.startofcycle) {
-        return 'Cycle Start';
+        return "Cycle Start";
       } else {
-        return 'Cycle End';
+        return "Cycle End";
       }
 
     case api.LogType.PartMark:
-      return 'Serial';
+      return "Serial";
 
     case api.LogType.OrderAssignment:
-      return 'Workorder';
+      return "Workorder";
 
     case api.LogType.Inspection:
     case api.LogType.InspectionForce:
-      return 'Signal';
+      return "Signal";
 
     case api.LogType.PalletCycle:
-      return 'Pallet Cycle';
+      return "Pallet Cycle";
 
     case api.LogType.FinalizeWorkorder:
-      return 'Finalize Workorder';
+      return "Finalize Workorder";
 
     case api.LogType.Wash:
-      return 'Wash';
+      return "Wash";
 
     case api.LogType.InspectionResult:
-      return 'Inspection';
+      return "Inspection";
 
     case api.LogType.AddToQueue:
-      return 'Queue';
+      return "Queue";
 
     case api.LogType.RemoveFromQueue:
-      return 'Queue';
+      return "Queue";
 
     default:
-      return 'Message';
-
+      return "Message";
   }
 }
 
 function displayMat(mats: ReadonlyArray<api.ILogMaterial>) {
-  let mat = '';
+  let mat = "";
   mats.forEach(m => {
-    if (mat.length > 0) { mat += ', '; }
+    if (mat.length > 0) {
+      mat += ", ";
+    }
     if (m.numproc > 1) {
-      mat += m.part + '[' + m.proc.toString() + ']';
+      mat += m.part + "[" + m.proc.toString() + "]";
     } else {
       mat += m.part;
     }
@@ -117,65 +118,80 @@ function displayMat(mats: ReadonlyArray<api.ILogMaterial>) {
 function display(entry: api.ILogEntry): string {
   switch (entry.type) {
     case api.LogType.LoadUnloadCycle:
-      return displayMat(entry.material) +
-        ' on pallet ' + entry.pal +
-        ' at station ' + entry.locnum.toString();
+      return (
+        displayMat(entry.material) +
+        " on pallet " +
+        entry.pal +
+        " at station " +
+        entry.locnum.toString()
+      );
 
     case api.LogType.MachineCycle:
       let msg;
-      msg = displayMat(entry.material) +
-        ' on pallet ' + entry.pal +
-        ' at machine ' + entry.locnum.toString();
-      if (entry.program && entry.program !== '') {
-        msg += ' with program ' + entry.program;
+      msg =
+        displayMat(entry.material) +
+        " on pallet " +
+        entry.pal +
+        " at machine " +
+        entry.locnum.toString();
+      if (entry.program && entry.program !== "") {
+        msg += " with program " + entry.program;
       }
       return msg;
 
     case api.LogType.PartMark:
-      return displayMat(entry.material) +
-        ' marked with ' + entry.result;
+      return displayMat(entry.material) + " marked with " + entry.result;
 
     case api.LogType.OrderAssignment:
-      return displayMat(entry.material) +
-        ' assigned to workorder ' + entry.result;
+      return (
+        displayMat(entry.material) + " assigned to workorder " + entry.result
+      );
 
     case api.LogType.PalletCycle:
-      return 'Pallet ' + entry.pal + ' completed route';
+      return "Pallet " + entry.pal + " completed route";
 
     case api.LogType.Inspection:
       const inspName = (entry.details || {}).InspectionType || "";
-      let inspected = entry.result.toLowerCase() === 'true' || entry.result === '1';
+      let inspected =
+        entry.result.toLowerCase() === "true" || entry.result === "1";
       if (inspected) {
-        return displayMat(entry.material) +
-          ' signaled for inspection ' + inspName;
+        return (
+          displayMat(entry.material) + " signaled for inspection " + inspName
+        );
       } else {
-        return displayMat(entry.material) +
-          ' skipped inspection ' + inspName;
+        return displayMat(entry.material) + " skipped inspection " + inspName;
       }
 
     case api.LogType.InspectionForce:
       const forceInspName = entry.program;
-      let forced = entry.result.toLowerCase() === 'true' || entry.result === '1';
+      let forced =
+        entry.result.toLowerCase() === "true" || entry.result === "1";
       if (forced) {
-        return displayMat(entry.material) +
-          ' declared for inspection ' + forceInspName;
+        return (
+          displayMat(entry.material) +
+          " declared for inspection " +
+          forceInspName
+        );
       } else {
-        return displayMat(entry.material) +
-          ' passed over for inspection ' + forceInspName;
+        return (
+          displayMat(entry.material) +
+          " passed over for inspection " +
+          forceInspName
+        );
       }
 
     case api.LogType.FinalizeWorkorder:
-      return 'Finalize workorder ' + entry.result;
+      return "Finalize workorder " + entry.result;
 
     case api.LogType.InspectionResult:
       if (entry.result.toLowerCase() === "false") {
-        return entry.program + ' Failed';
+        return entry.program + " Failed";
       } else {
-        return entry.program + ' Succeeded';
+        return entry.program + " Succeeded";
       }
 
     case api.LogType.Wash:
-      return 'Wash Completed';
+      return "Wash Completed";
 
     case api.LogType.AddToQueue:
       return displayMat(entry.material) + " added to queue " + entry.loc;
@@ -183,7 +199,8 @@ function display(entry: api.ILogEntry): string {
     case api.LogType.RemoveFromQueue:
       return displayMat(entry.material) + " removed from queue " + entry.loc;
 
-    default: return entry.result;
+    default:
+      return entry.result;
   }
 }
 
@@ -191,12 +208,14 @@ export class LogEntry extends React.PureComponent<LogEntryProps> {
   render() {
     return (
       <TableRow>
-        <TableCell padding="dense">{format(this.props.entry.endUTC, "MMM D, YY")}</TableCell>
-        <TableCell padding="dense">{format(this.props.entry.endUTC, "hh:mm A")}</TableCell>
-        <TableCell padding="dense">{logType(this.props.entry)}</TableCell>
         <TableCell padding="dense">
-          {display(this.props.entry)}
+          {format(this.props.entry.endUTC, "MMM D, YY")}
         </TableCell>
+        <TableCell padding="dense">
+          {format(this.props.entry.endUTC, "hh:mm A")}
+        </TableCell>
+        <TableCell padding="dense">{logType(this.props.entry)}</TableCell>
+        <TableCell padding="dense">{display(this.props.entry)}</TableCell>
       </TableRow>
     );
   }
@@ -219,11 +238,9 @@ export class LogEntries extends React.PureComponent<LogEntriesProps> {
           </TableRow>
         </TableHead>
         <TableBody>
-          {
-            this.props.entries.map((e, idx) => (
-              <LogEntry key={idx} entry={e}/>
-            ))
-          }
+          {this.props.entries.map((e, idx) => (
+            <LogEntry key={idx} entry={e} />
+          ))}
         </TableBody>
       </Table>
     );

@@ -31,21 +31,28 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as cs from './current-status';
-import * as api from './api';
+import * as cs from "./current-status";
+import * as api from "./api";
 import {
-  fakeMaterial, fakeSerial, fakeWorkorderAssign, fakeInspSignal, fakeInspComplete, fakeInspForce
-} from './events.fake';
+  fakeMaterial,
+  fakeSerial,
+  fakeWorkorderAssign,
+  fakeInspSignal,
+  fakeInspComplete,
+  fakeInspForce
+} from "./events.fake";
 
-it('creates initial state', () => {
+it("creates initial state", () => {
   // tslint:disable no-any
   let s = cs.reducer(undefined as any, undefined as any);
   // tslint:enable no-any
   expect(s).toBe(cs.initial);
 });
 
-const statusWithMat: cs.State = {...cs.initial,
-  current_status: {...cs.initial.current_status,
+const statusWithMat: cs.State = {
+  ...cs.initial,
+  current_status: {
+    ...cs.initial.current_status,
     material: [
       new api.InProcessMaterial({
         materialID: 10,
@@ -55,7 +62,7 @@ const statusWithMat: cs.State = {...cs.initial,
         path: 1,
         signaledInspections: [],
         location: new api.InProcessMaterialLocation(),
-        action: new api.InProcessMaterialAction(),
+        action: new api.InProcessMaterialAction()
       }),
       new api.InProcessMaterial({
         materialID: 20,
@@ -65,61 +72,69 @@ const statusWithMat: cs.State = {...cs.initial,
         path: 3,
         signaledInspections: ["aaa"],
         location: new api.InProcessMaterialLocation(),
-        action: new api.InProcessMaterialAction(),
-      }),
+        action: new api.InProcessMaterialAction()
+      })
     ]
   }
 };
 
 it("sets the serial", () => {
-  const mat = new api.LogMaterial({...fakeMaterial(), id: 10});
+  const mat = new api.LogMaterial({ ...fakeMaterial(), id: 10 });
   const st = cs.reducer(statusWithMat, {
     type: cs.ActionType.ReceiveNewLogEntry,
     entry: fakeSerial(mat, "serial12345")
   });
 
-  const actualInProcMat = st.current_status.material.filter(m => m.materialID === mat.id)[0];
+  const actualInProcMat = st.current_status.material.filter(
+    m => m.materialID === mat.id
+  )[0];
   expect(actualInProcMat.serial).toEqual("serial12345");
 });
 
 it("sets a workorder", () => {
-  const mat = new api.LogMaterial({...fakeMaterial(), id: 20});
+  const mat = new api.LogMaterial({ ...fakeMaterial(), id: 20 });
   const st = cs.reducer(statusWithMat, {
     type: cs.ActionType.ReceiveNewLogEntry,
     entry: fakeWorkorderAssign(mat, "work7777")
   });
 
-  const actualInProcMat = st.current_status.material.filter(m => m.materialID === mat.id)[0];
+  const actualInProcMat = st.current_status.material.filter(
+    m => m.materialID === mat.id
+  )[0];
   expect(actualInProcMat.workorderId).toEqual("work7777");
 });
 
 it("sets an inspection", () => {
-  const mat = new api.LogMaterial({...fakeMaterial(), id: 20});
+  const mat = new api.LogMaterial({ ...fakeMaterial(), id: 20 });
   const st = cs.reducer(statusWithMat, {
     type: cs.ActionType.ReceiveNewLogEntry,
     entry: fakeInspSignal(mat, "insp11")
   });
 
-  const actualInProcMat = st.current_status.material.filter(m => m.materialID === mat.id)[0];
+  const actualInProcMat = st.current_status.material.filter(
+    m => m.materialID === mat.id
+  )[0];
   expect(actualInProcMat.signaledInspections).toEqual(["aaa", "insp11"]);
 });
 
 it("sets a forced inspection", () => {
-  const mat = new api.LogMaterial({...fakeMaterial(), id: 20});
+  const mat = new api.LogMaterial({ ...fakeMaterial(), id: 20 });
   const st = cs.reducer(statusWithMat, {
     type: cs.ActionType.ReceiveNewLogEntry,
     entry: fakeInspForce(mat, "insp55")
   });
 
-  const actualInProcMat = st.current_status.material.filter(m => m.materialID === mat.id)[0];
+  const actualInProcMat = st.current_status.material.filter(
+    m => m.materialID === mat.id
+  )[0];
   expect(actualInProcMat.signaledInspections).toEqual(["aaa", "insp55"]);
 });
 
 it("ignores other cycles", () => {
-  const mat = new api.LogMaterial({...fakeMaterial(), id: 10});
+  const mat = new api.LogMaterial({ ...fakeMaterial(), id: 10 });
   const st = cs.reducer(statusWithMat, {
     type: cs.ActionType.ReceiveNewLogEntry,
-    entry: fakeInspComplete(mat),
+    entry: fakeInspComplete(mat)
   });
 
   expect(st).toBe(statusWithMat);

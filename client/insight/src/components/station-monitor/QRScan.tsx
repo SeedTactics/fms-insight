@@ -31,12 +31,18 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from 'react';
-import QrReader from 'react-qr-reader';
-import { Dialog, Button, DialogActions, DialogContent, DialogTitle } from '@material-ui/core';
-import { connect } from '../../store/store';
-import * as guiState from '../../data/gui-state';
-import { openMaterialBySerial } from '../../data/material-details';
+import * as React from "react";
+import QrReader from "react-qr-reader";
+import {
+  Dialog,
+  Button,
+  DialogActions,
+  DialogContent,
+  DialogTitle
+} from "@material-ui/core";
+import { connect } from "../../store/store";
+import * as guiState from "../../data/gui-state";
+import { openMaterialBySerial } from "../../data/material-details";
 
 interface QrScanProps {
   readonly dialogOpen: boolean;
@@ -46,27 +52,29 @@ interface QrScanProps {
 
 function SerialScanner(props: QrScanProps) {
   function onScan(serial: string | undefined | null): void {
-    if (serial === undefined || serial == null) { return; }
+    if (serial === undefined || serial == null) {
+      return;
+    }
     let commaIdx = serial.indexOf(",");
     if (commaIdx >= 0) {
       serial = serial.substring(0, commaIdx);
     }
     serial = serial.replace(/[^0-9a-zA-Z-_]/g, "");
-    if (serial === "") { return; }
+    if (serial === "") {
+      return;
+    }
     props.onScan(serial);
   }
   return (
-    <Dialog
-      open={props.dialogOpen}
-      onClose={props.onClose}
-      maxWidth="md"
-    >
-      <DialogTitle>
-        Scan a part's serial
-      </DialogTitle>
+    <Dialog open={props.dialogOpen} onClose={props.onClose} maxWidth="md">
+      <DialogTitle>Scan a part's serial</DialogTitle>
       <DialogContent>
-        <div style={{minWidth: "20em"}}>
-          {props.dialogOpen ? <QrReader onScan={onScan} onError={() => (0)}/> : undefined}
+        <div style={{ minWidth: "20em" }}>
+          {props.dialogOpen ? (
+            <QrReader onScan={onScan} onError={() => 0} />
+          ) : (
+            undefined
+          )}
         </div>
       </DialogContent>
       <DialogActions>
@@ -80,16 +88,19 @@ function SerialScanner(props: QrScanProps) {
 
 export default connect(
   s => ({
-    dialogOpen: s.Gui.scan_qr_dialog_open,
+    dialogOpen: s.Gui.scan_qr_dialog_open
   }),
   {
-    onClose: () => ({ type: guiState.ActionType.SetScanQrCodeDialog, open: false}),
+    onClose: () => ({
+      type: guiState.ActionType.SetScanQrCodeDialog,
+      open: false
+    }),
     onScan: (s: string) => [
       openMaterialBySerial(s, true),
       {
         type: guiState.ActionType.SetAddMatToQueueName,
-        queue: undefined,
+        queue: undefined
       }
     ]
-  },
+  }
 )(SerialScanner);

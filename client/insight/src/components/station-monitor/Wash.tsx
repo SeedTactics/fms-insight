@@ -31,24 +31,35 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from 'react';
-import * as im from 'immutable';
-import { addHours } from 'date-fns';
-import Grid from '@material-ui/core/Grid';
-import Button from '@material-ui/core/Button';
-import { createSelector } from 'reselect';
-import DocumentTitle from 'react-document-title';
+import * as React from "react";
+import * as im from "immutable";
+import { addHours } from "date-fns";
+import Grid from "@material-ui/core/Grid";
+import Button from "@material-ui/core/Button";
+import { createSelector } from "reselect";
+import DocumentTitle from "react-document-title";
 
-import { MaterialSummary } from '../../data/events';
-import { Store, connect, AppActionBeforeMiddleware, mkAC } from '../../store/store';
-import { MaterialDialog, WhiteboardRegion, MatSummary, MaterialDialogProps, InstructionButton } from './Material';
-import * as matDetails from '../../data/material-details';
-import * as guiState from '../../data/gui-state';
-import * as api from '../../data/api';
-import SelectWorkorderDialog from './SelectWorkorder';
-import { MaterialSummaryAndCompletedData } from '../../data/events.matsummary';
-import SerialScanner from './QRScan';
-import Tooltip from '@material-ui/core/Tooltip';
+import { MaterialSummary } from "../../data/events";
+import {
+  Store,
+  connect,
+  AppActionBeforeMiddleware,
+  mkAC
+} from "../../store/store";
+import {
+  MaterialDialog,
+  WhiteboardRegion,
+  MatSummary,
+  MaterialDialogProps,
+  InstructionButton
+} from "./Material";
+import * as matDetails from "../../data/material-details";
+import * as guiState from "../../data/gui-state";
+import * as api from "../../data/api";
+import SelectWorkorderDialog from "./SelectWorkorder";
+import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
+import SerialScanner from "./QRScan";
+import Tooltip from "@material-ui/core/Tooltip";
 
 interface WashDialogProps extends MaterialDialogProps {
   readonly operator?: string;
@@ -63,7 +74,10 @@ function WashDialog(props: WashDialogProps) {
       return;
     }
 
-    props.completeWash({mat: props.display_material, operator: props.operator});
+    props.completeWash({
+      mat: props.display_material,
+      operator: props.operator
+    });
   }
   function openAssignWorkorder() {
     if (!props.display_material) {
@@ -73,13 +87,22 @@ function WashDialog(props: WashDialogProps) {
   }
 
   const requireScan = props.fmsInfo ? props.fmsInfo.requireScanAtWash : false;
-  const requireWork = props.fmsInfo ? props.fmsInfo.requireWorkorderBeforeAllowWashComplete : false;
+  const requireWork = props.fmsInfo
+    ? props.fmsInfo.requireWorkorderBeforeAllowWashComplete
+    : false;
   let disallowCompleteReason: string | undefined;
 
-  if (requireScan && props.display_material && !props.display_material.openedViaBarcodeScanner) {
+  if (
+    requireScan &&
+    props.display_material &&
+    !props.display_material.openedViaBarcodeScanner
+  ) {
     disallowCompleteReason = "Scan required at wash";
   } else if (requireWork && props.display_material) {
-    if (props.display_material.workorderId === undefined || props.display_material.workorderId === "") {
+    if (
+      props.display_material.workorderId === undefined ||
+      props.display_material.workorderId === ""
+    ) {
       disallowCompleteReason = "No workorder assigned";
     }
   }
@@ -90,30 +113,31 @@ function WashDialog(props: WashDialogProps) {
       onClose={props.onClose}
       buttons={
         <>
-          {props.display_material && props.display_material.partName !== "" ?
-            <InstructionButton part={props.display_material.partName} type="wash"/>
-            : undefined
-          }
-          {
-            disallowCompleteReason ?
-              <Tooltip title={disallowCompleteReason} placement="top">
-                <div>
-                  <Button color="primary" disabled>
-                    Mark Wash Complete
-                  </Button>
-                </div>
-              </Tooltip>
-              :
-              <Button color="primary" onClick={markWashComplete}>
-                Mark Wash Complete
-              </Button>
-          }
+          {props.display_material && props.display_material.partName !== "" ? (
+            <InstructionButton
+              part={props.display_material.partName}
+              type="wash"
+            />
+          ) : (
+            undefined
+          )}
+          {disallowCompleteReason ? (
+            <Tooltip title={disallowCompleteReason} placement="top">
+              <div>
+                <Button color="primary" disabled>
+                  Mark Wash Complete
+                </Button>
+              </div>
+            </Tooltip>
+          ) : (
+            <Button color="primary" onClick={markWashComplete}>
+              Mark Wash Complete
+            </Button>
+          )}
           <Button color="primary" onClick={openAssignWorkorder}>
-            {
-              props.display_material && props.display_material.workorderId ?
-                "Change Workorder"
-                : "Assign Workorder"
-            }
+            {props.display_material && props.display_material.workorderId
+              ? "Change Workorder"
+              : "Assign Workorder"}
           </Button>
         </>
       }
@@ -131,15 +155,16 @@ const ConnectedWashDialog = connect(
     onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
     completeWash: (d: matDetails.CompleteWashData) => [
       matDetails.completeWash(d),
-      {type: matDetails.ActionType.CloseMaterialDialog},
+      { type: matDetails.ActionType.CloseMaterialDialog }
     ],
-    openSelectWorkorder: (mat: matDetails.MaterialDetail) => [
-      {
-        type: guiState.ActionType.SetWorkorderDialogOpen,
-        open: true
-      },
-      matDetails.loadWorkorders(mat),
-    ] as AppActionBeforeMiddleware,
+    openSelectWorkorder: (mat: matDetails.MaterialDetail) =>
+      [
+        {
+          type: guiState.ActionType.SetWorkorderDialogOpen,
+          open: true
+        },
+        matDetails.loadWorkorders(mat)
+      ] as AppActionBeforeMiddleware
   }
 )(WashDialog);
 
@@ -149,31 +174,43 @@ interface WashProps {
 }
 
 function Wash(props: WashProps) {
-  const unwashed = im.Seq(props.recent_completed).filter(m => m.wash_completed === undefined);
-  const washed = im.Seq(props.recent_completed).filter(m => m.wash_completed !== undefined);
+  const unwashed = im
+    .Seq(props.recent_completed)
+    .filter(m => m.wash_completed === undefined);
+  const washed = im
+    .Seq(props.recent_completed)
+    .filter(m => m.wash_completed !== undefined);
 
   return (
     <DocumentTitle title="Wash - FMS Insight">
-      <main style={{padding: '8px'}}>
+      <main style={{ padding: "8px" }}>
         <Grid container spacing={16}>
           <Grid item xs={12} md={6}>
-            <WhiteboardRegion label="Recently completed parts not yet washed" borderRight borderBottom>
-              { unwashed.map((m, idx) =>
-                <MatSummary key={idx} mat={m} onOpen={props.openMat}/>)
-              }
+            <WhiteboardRegion
+              label="Recently completed parts not yet washed"
+              borderRight
+              borderBottom
+            >
+              {unwashed.map((m, idx) => (
+                <MatSummary key={idx} mat={m} onOpen={props.openMat} />
+              ))}
             </WhiteboardRegion>
           </Grid>
           <Grid item xs={12} md={6}>
-            <WhiteboardRegion label="Recently Washed Parts" borderLeft borderBottom>
-              { washed.map((m, idx) =>
-                <MatSummary key={idx} mat={m} onOpen={props.openMat}/>)
-              }
+            <WhiteboardRegion
+              label="Recently Washed Parts"
+              borderLeft
+              borderBottom
+            >
+              {washed.map((m, idx) => (
+                <MatSummary key={idx} mat={m} onOpen={props.openMat} />
+              ))}
             </WhiteboardRegion>
           </Grid>
         </Grid>
-        <SelectWorkorderDialog/>
-        <ConnectedWashDialog/>
-        <SerialScanner/>
+        <SelectWorkorderDialog />
+        <ConnectedWashDialog />
+        <SerialScanner />
       </main>
     </DocumentTitle>
   );
@@ -181,7 +218,9 @@ function Wash(props: WashProps) {
 
 const extractRecentCompleted = createSelector(
   (st: Store) => st.Events.last30.mat_summary.matsById,
-  (mats: im.Map<number, MaterialSummaryAndCompletedData>): ReadonlyArray<MaterialSummaryAndCompletedData> => {
+  (
+    mats: im.Map<number, MaterialSummaryAndCompletedData>
+  ): ReadonlyArray<MaterialSummaryAndCompletedData> => {
     const cutoff = addHours(new Date(), -36);
     return mats
       .valueSeq()
@@ -194,9 +233,9 @@ const extractRecentCompleted = createSelector(
 
 export default connect(
   (st: Store) => ({
-    recent_completed: extractRecentCompleted(st),
+    recent_completed: extractRecentCompleted(st)
   }),
   {
-    openMat: matDetails.openMaterialDialog,
+    openMat: matDetails.openMaterialDialog
   }
 )(Wash);

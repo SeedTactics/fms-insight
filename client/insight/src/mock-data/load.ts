@@ -31,16 +31,19 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as api from '../data/api';
-import * as im from 'immutable';
-import { addSeconds } from 'date-fns';
+import * as api from "../data/api";
+import * as im from "immutable";
+import { addSeconds } from "date-fns";
 
 function offsetJob(j: api.JobPlan, offsetSeconds: number) {
   j.routeStartUTC = addSeconds(j.routeStartUTC, offsetSeconds);
   j.routeEndUTC = addSeconds(j.routeEndUTC, offsetSeconds);
   for (const proc of j.procsAndPaths) {
     for (const path of proc.paths) {
-      path.simulatedStartingUTC = addSeconds(path.simulatedStartingUTC, offsetSeconds);
+      path.simulatedStartingUTC = addSeconds(
+        path.simulatedStartingUTC,
+        offsetSeconds
+      );
       for (const prod of path.simulatedProduction || []) {
         prod.timeUTC = addSeconds(prod.timeUTC, offsetSeconds);
       }
@@ -48,10 +51,12 @@ function offsetJob(j: api.JobPlan, offsetSeconds: number) {
   }
 }
 
-async function loadEventsJson(offsetSeconds: number): Promise<Readonly<api.ILogEntry>[]> {
+async function loadEventsJson(
+  offsetSeconds: number
+): Promise<Readonly<api.ILogEntry>[]> {
   const evtJson: string = require("./events-json.txt");
   let evtsSeq: im.Seq.Indexed<object>;
-  if (evtJson.startsWith('[')) {
+  if (evtJson.startsWith("[")) {
     // jest loads the contents as a string
     evtsSeq = im.Seq.Indexed(JSON.parse(evtJson));
   } else {
@@ -63,9 +68,9 @@ async function loadEventsJson(offsetSeconds: number): Promise<Readonly<api.ILogE
 
   return evtsSeq
     .map((evt: object) => {
-        const e = api.LogEntry.fromJS(evt);
-        e.endUTC = addSeconds(e.endUTC, offsetSeconds);
-        return e;
+      const e = api.LogEntry.fromJS(evt);
+      e.endUTC = addSeconds(e.endUTC, offsetSeconds);
+      return e;
     })
     .sortBy(e => e.endUTC)
     .filter(e => {
@@ -98,7 +103,6 @@ export interface MockData {
 }
 
 export function loadMockData(offsetSeconds: number): MockData {
-
   const status = api.CurrentStatus.fromJS(require("./status-mock.json"));
   for (const j of Object.values(status.jobs)) {
     offsetJob(j, offsetSeconds);
@@ -116,7 +120,7 @@ export function loadMockData(offsetSeconds: number): MockData {
   }
 
   const allNewJobs = loadNewJobs();
-  const historicJobs: {[key: string]: api.JobPlan} = {};
+  const historicJobs: { [key: string]: api.JobPlan } = {};
   for (const newJ of allNewJobs) {
     for (const j of newJ.jobs) {
       offsetJob(j, offsetSeconds);
@@ -132,7 +136,10 @@ export function loadMockData(offsetSeconds: number): MockData {
   }
   const historic: api.IHistoricData = {
     jobs: historicJobs,
-    stationUse: im.Seq(allNewJobs).flatMap(j => j.stationUse || []).toArray()
+    stationUse: im
+      .Seq(allNewJobs)
+      .flatMap(j => j.stationUse || [])
+      .toArray()
   };
 
   return {

@@ -30,28 +30,31 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as api from './api';
-import * as im from 'immutable'; // consider collectable.js at some point?
+import * as api from "./api";
+import * as im from "immutable"; // consider collectable.js at some point?
 
 export enum InspectionLogResultType {
   Triggered,
   Forced,
-  Completed,
+  Completed
 }
 
 export type InspectionLogResult =
   | {
-      readonly type: InspectionLogResultType.Triggered,
-      readonly actualPath: ReadonlyArray<Readonly<api.IMaterialProcessActualPath>>,
+      readonly type: InspectionLogResultType.Triggered;
+      readonly actualPath: ReadonlyArray<
+        Readonly<api.IMaterialProcessActualPath>
+      >;
       readonly toInspect: boolean;
     }
-  | { readonly type: InspectionLogResultType.Forced,
+  | {
+      readonly type: InspectionLogResultType.Forced;
       readonly toInspect: boolean;
     }
-  | { readonly type: InspectionLogResultType.Completed,
+  | {
+      readonly type: InspectionLogResultType.Completed;
       readonly success: boolean;
-    }
-  ;
+    };
 
 export interface InspectionLogEntry {
   readonly time: Date;
@@ -59,15 +62,15 @@ export interface InspectionLogEntry {
   readonly result: InspectionLogResult;
 }
 
-export type PartAndInspType = im.Record<{part: string, inspType: string}>;
-export const mkPartAndInspType = im.Record({part: "", inspType: ""});
+export type PartAndInspType = im.Record<{ part: string; inspType: string }>;
+export const mkPartAndInspType = im.Record({ part: "", inspType: "" });
 
 export interface InspectionState {
   readonly by_part: im.Map<PartAndInspType, ReadonlyArray<InspectionLogEntry>>;
 }
 
 export const initial: InspectionState = {
-  by_part: im.Map(),
+  by_part: im.Map()
 };
 
 export enum ExpireOldDataType {
@@ -76,50 +79,58 @@ export enum ExpireOldDataType {
 }
 
 export type ExpireOldData =
-  | {type: ExpireOldDataType.ExpireEarlierThan, d: Date }
-  | {type: ExpireOldDataType.NoExpire }
-  ;
+  | { type: ExpireOldDataType.ExpireEarlierThan; d: Date }
+  | { type: ExpireOldDataType.NoExpire };
 
 export function process_events(
   expire: ExpireOldData,
   newEvts: Iterable<api.ILogEntry>,
-  st: InspectionState): InspectionState {
+  st: InspectionState
+): InspectionState {
+  let evtsSeq = im.Seq(newEvts);
+  let parts = st.by_part;
 
-    let evtsSeq = im.Seq(newEvts);
-    let parts = st.by_part;
+  switch (expire.type) {
+    case ExpireOldDataType.ExpireEarlierThan:
+      let eventsFiltered = false;
+      parts = parts.map(entries => {
+        // check if expire is needed
+        if (entries.length === 0 || entries[0].time >= expire.d) {
+          return entries;
+        } else {
+          eventsFiltered = true;
+          return im
+            .Seq(entries)
+            .skipWhile(e => e.time < expire.d)
+            .toArray();
+        }
+      });
+      if (!eventsFiltered && evtsSeq.isEmpty()) {
+        return st;
+      }
 
-    switch (expire.type) {
-      case ExpireOldDataType.ExpireEarlierThan:
+      break;
 
-        let eventsFiltered = false;
-        parts = parts
-          .map(entries => {
-            // check if expire is needed
-            if (entries.length === 0 || entries[0].time >= expire.d) {
-              return entries;
-            } else {
-              eventsFiltered = true;
-              return im.Seq(entries).skipWhile(e => e.time < expire.d).toArray();
-            }
-          });
-        if (!eventsFiltered && evtsSeq.isEmpty()) { return st; }
+    case ExpireOldDataType.NoExpire:
+      if (evtsSeq.isEmpty()) {
+        return st;
+      }
+      break;
+  }
 
-        break;
-
-      case ExpireOldDataType.NoExpire:
-        if (evtsSeq.isEmpty()) { return st; }
-        break;
-    }
-
-    var newPartCycles = evtsSeq
-      .filter(c =>
-             c.type === api.LogType.Inspection
-          || c.type === api.LogType.InspectionForce
-          || c.type === api.LogType.InspectionResult
-      )
-      .flatMap(c => c.material.map(m => {
+  var newPartCycles = evtsSeq
+    .filter(
+      c =>
+        c.type === api.LogType.Inspection ||
+        c.type === api.LogType.InspectionForce ||
+        c.type === api.LogType.InspectionResult
+    )
+    .flatMap(c =>
+      c.material.map(m => {
         if (c.type === api.LogType.Inspection) {
-          const pathsJson: ReadonlyArray<object> = JSON.parse((c.details || {}).ActualPath || "[]");
+          const pathsJson: ReadonlyArray<object> = JSON.parse(
+            (c.details || {}).ActualPath || "[]"
+          );
           const paths: Array<Readonly<api.IMaterialProcessActualPath>> = [];
           for (const pathJson of pathsJson) {
             paths.push(api.MaterialProcessActualPath.fromJS(pathJson));
@@ -133,11 +144,15 @@ export function process_events(
             toInspect = false;
           }
           return {
-            key: mkPartAndInspType({part: m.part, inspType: inspType}),
+            key: mkPartAndInspType({ part: m.part, inspType: inspType }),
             entry: {
               time: c.endUTC,
               materialID: m.id,
-              result: {type: InspectionLogResultType.Triggered, actualPath: paths, toInspect }
+              result: {
+                type: InspectionLogResultType.Triggered,
+                actualPath: paths,
+                toInspect
+              }
             } as InspectionLogEntry
           };
         } else if (c.type === api.LogType.InspectionForce) {
@@ -148,14 +163,18 @@ export function process_events(
             forceInspect = false;
           }
           return {
-            key: mkPartAndInspType({part: m.part, inspType: c.program}),
+            key: mkPartAndInspType({ part: m.part, inspType: c.program }),
             entry: {
               time: c.endUTC,
               materialID: m.id,
-              result: {type: InspectionLogResultType.Forced, toInspect: forceInspect}
+              result: {
+                type: InspectionLogResultType.Forced,
+                toInspect: forceInspect
+              }
             } as InspectionLogEntry
           };
-        } else { // api.LogType.InspectionResult
+        } else {
+          // api.LogType.InspectionResult
           let success: boolean;
           if (c.result.toLowerCase() === "true" || c.result === "1") {
             success = true;
@@ -163,30 +182,36 @@ export function process_events(
             success = false;
           }
           return {
-            key: mkPartAndInspType({part: m.part, inspType: c.program}),
+            key: mkPartAndInspType({ part: m.part, inspType: c.program }),
             entry: {
               time: c.endUTC,
               materialID: m.id,
-              result: {type: InspectionLogResultType.Completed, success}
+              result: { type: InspectionLogResultType.Completed, success }
             } as InspectionLogEntry
           };
         }
-      }))
-      .groupBy(e => e.key)
-      .map(es => es.map(e => e.entry).valueSeq().toArray())
-      ;
+      })
+    )
+    .groupBy(e => e.key)
+    .map(es =>
+      es
+        .map(e => e.entry)
+        .valueSeq()
+        .toArray()
+    );
 
-    parts = parts
-      .mergeWith(
-        (oldEntries, newEntries) =>
-          im.Seq(oldEntries)
-          .concat(newEntries)
-          .sortBy(e => e.time)
-          .toArray(),
-        newPartCycles
-      );
+  parts = parts.mergeWith(
+    (oldEntries, newEntries) =>
+      im
+        .Seq(oldEntries)
+        .concat(newEntries)
+        .sortBy(e => e.time)
+        .toArray(),
+    newPartCycles
+  );
 
-    return {...st,
-      by_part: parts,
-    };
+  return {
+    ...st,
+    by_part: parts
+  };
 }

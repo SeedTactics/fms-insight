@@ -31,8 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as ss from './server-settings';
-import { PledgeStatus } from '../store/middleware';
+import * as ss from "./server-settings";
+import { PledgeStatus } from "../store/middleware";
 
 it("creates the initial state", () => {
   // tslint:disable no-any
@@ -41,7 +41,7 @@ it("creates the initial state", () => {
   expect(s).toBe(ss.initial);
 });
 
-it('loads data', () => {
+it("loads data", () => {
   const now = new Date();
   let s = ss.reducer(ss.initial, {
     type: ss.ActionType.Load,
@@ -57,7 +57,7 @@ it('loads data', () => {
         },
         latestVersion: {
           version: "hello",
-          date: now,
+          date: now
         }
       }
     }
@@ -78,7 +78,7 @@ it('loads data', () => {
   });
 });
 
-it('responds to error', () => {
+it("responds to error", () => {
   let s = ss.reducer(ss.initial, {
     type: ss.ActionType.Load,
     pledge: {

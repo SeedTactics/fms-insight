@@ -31,137 +31,146 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { LogMaterial, ILogEntry, LogType, MaterialProcessActualPath, Stop } from './api';
-import * as faker from 'faker';
-import { duration } from 'moment';
-import { addSeconds, addMinutes } from 'date-fns';
+import {
+  LogMaterial,
+  ILogEntry,
+  LogType,
+  MaterialProcessActualPath,
+  Stop
+} from "./api";
+import * as faker from "faker";
+import { duration } from "moment";
+import { addSeconds, addMinutes } from "date-fns";
 
 faker.seed(0x6f79);
 
 export function fakeMaterial(part?: string, proc?: number): LogMaterial {
   return new LogMaterial({
     id: faker.random.number(),
-    uniq: 'uniq' + faker.random.alphaNumeric(),
-    part: part || 'part' + faker.random.alphaNumeric(),
-    proc: proc || faker.random.number({max: 4}),
-    numproc: faker.random.number({max: 4}),
-    face: 'face' + faker.random.alphaNumeric()
+    uniq: "uniq" + faker.random.alphaNumeric(),
+    part: part || "part" + faker.random.alphaNumeric(),
+    proc: proc || faker.random.number({ max: 4 }),
+    numproc: faker.random.number({ max: 4 }),
+    face: "face" + faker.random.alphaNumeric()
   });
 }
 
 function addStartAndEnd(es: ILogEntry[], e: ILogEntry): void {
   let elapsed = duration(e.elapsed);
   let startTime = addSeconds(e.endUTC, -elapsed.asSeconds());
-  let start = {...e,
+  let start = {
+    ...e,
     counter: e.counter - 1,
     startofcycle: true,
     endUTC: startTime,
-    result: '',
-    program: ''
+    result: "",
+    program: ""
   };
   es.push(start);
   es.push(e);
 }
 
 export function fakeCycle(
-    time: Date, machineTime: number, part?: string, proc?: number, pallet?: string, noInspections?: boolean,
-  ): ReadonlyArray<ILogEntry> {
-    const pal = pallet || 'pal' + faker.random.alphaNumeric();
-    const material = [fakeMaterial(part, proc)];
+  time: Date,
+  machineTime: number,
+  part?: string,
+  proc?: number,
+  pallet?: string,
+  noInspections?: boolean
+): ReadonlyArray<ILogEntry> {
+  const pal = pallet || "pal" + faker.random.alphaNumeric();
+  const material = [fakeMaterial(part, proc)];
 
-    let counter = 1;
+  let counter = 1;
+  time = addMinutes(time, 5);
+
+  let es: ILogEntry[] = [];
+
+  addStartAndEnd(es, {
+    counter,
+    material,
+    pal,
+    type: LogType.LoadUnloadCycle,
+    startofcycle: false,
+    endUTC: time,
+    loc: "L/U",
+    locnum: 1,
+    result: "LOAD",
+    program: "LOAD",
+    elapsed: "00:06:00",
+    active: "00:06:00"
+  });
+
+  counter += 2;
+  time = addMinutes(time, machineTime + 3);
+
+  const elapsed = "00:" + machineTime.toString() + ":00";
+  addStartAndEnd(es, {
+    counter,
+    material,
+    pal,
+    type: LogType.MachineCycle,
+    startofcycle: false,
+    endUTC: time,
+    loc: "MC",
+    locnum: 1,
+    result: "",
+    program: "prog" + faker.random.alphaNumeric(),
+    elapsed: elapsed,
+    active: elapsed
+  });
+
+  counter += 2;
+  time = addMinutes(time, 10);
+
+  addStartAndEnd(es, {
+    counter,
+    material,
+    pal,
+    type: LogType.LoadUnloadCycle,
+    startofcycle: false,
+    endUTC: time,
+    loc: "L/U",
+    locnum: 2,
+    result: "UNLOAD",
+    program: "UNLOAD",
+    elapsed: "00:03:00",
+    active: "00:03:00"
+  });
+
+  if (!noInspections) {
     time = addMinutes(time, 5);
-
-    let es: ILogEntry[] = [];
-
-    addStartAndEnd(
-      es,
-      {counter, material, pal,
-        type: LogType.LoadUnloadCycle,
-        startofcycle: false,
-        endUTC: time,
-        loc: 'L/U',
-        locnum: 1,
-        result: 'LOAD',
-        program: 'LOAD',
-        elapsed: '00:06:00',
-        active: '00:06:00'
-      }
-    );
-
-    counter += 2;
-    time = addMinutes(time, machineTime + 3);
-
-    const elapsed = '00:' + machineTime.toString() + ':00';
-    addStartAndEnd(
-      es,
-      {
-        counter, material, pal,
-        type: LogType.MachineCycle,
-        startofcycle: false,
-        endUTC: time,
-        loc: 'MC',
-        locnum: 1,
-        result: '',
-        program: 'prog' + faker.random.alphaNumeric(),
-        elapsed: elapsed,
-        active: elapsed
-      }
-    );
-
-    counter += 2;
-    time = addMinutes(time, 10);
-
-    addStartAndEnd(
-      es,
-      {counter, material, pal,
-        type: LogType.LoadUnloadCycle,
-        startofcycle: false,
-        endUTC: time,
-        loc: 'L/U',
-        locnum: 2,
-        result: 'UNLOAD',
-        program: 'UNLOAD',
-        elapsed: '00:03:00',
-        active: '00:03:00'
-      }
-    );
-
-    if (!noInspections) {
-      time = addMinutes(time, 5);
+    counter += 1;
+    if (faker.random.boolean() === true) {
+      es.push(fakeInspForce(material[0], "Insp1", time, counter));
+      time = addSeconds(time, 5);
       counter += 1;
-      if (faker.random.boolean() === true) {
-        es.push(fakeInspForce(material[0], "Insp1", time, counter));
-        time = addSeconds(time, 5);
-        counter += 1;
-      }
-      es.push(fakeInspSignal(material[0], "Insp1", time, counter));
     }
+    es.push(fakeInspSignal(material[0], "Insp1", time, counter));
+  }
 
-    es.push(
-      {
-        counter: counter + 1,
-        pal,
-        material: [],
-        type: LogType.PalletCycle,
-        startofcycle: false,
-        endUTC: time,
-        loc: 'L/U',
-        locnum: 2,
-        result: 'PalletCycle',
-        program: '',
-        elapsed: '00:44:00',
-        active: '-00:01:00',
-      }
-    );
+  es.push({
+    counter: counter + 1,
+    pal,
+    material: [],
+    type: LogType.PalletCycle,
+    startofcycle: false,
+    endUTC: time,
+    loc: "L/U",
+    locnum: 2,
+    result: "PalletCycle",
+    program: "",
+    elapsed: "00:44:00",
+    active: "-00:01:00"
+  });
 
-    if (!noInspections) {
-      time = addMinutes(time, 7);
-      counter += 1;
-      es.push(fakeInspComplete(material[0], "Insp1", time, true, counter));
-    }
+  if (!noInspections) {
+    time = addMinutes(time, 7);
+    counter += 1;
+    es.push(fakeInspComplete(material[0], "Insp1", time, true, counter));
+  }
 
-    return es;
+  return es;
 }
 
 export function fakeSerial(mat?: LogMaterial, serial?: string): ILogEntry {
@@ -174,31 +183,34 @@ export function fakeSerial(mat?: LogMaterial, serial?: string): ILogEntry {
     type: LogType.PartMark,
     startofcycle: false,
     endUTC: new Date(2017, 9, 5),
-    loc: 'Mark',
+    loc: "Mark",
     locnum: 1,
     result: serial,
-    program: '',
-    elapsed: '00:00:00',
-    active: '00:00:00'
+    program: "",
+    elapsed: "00:00:00",
+    active: "00:00:00"
   };
 }
 
-export function fakeInspSignal(mat?: LogMaterial, inspType?: string, now?: Date, counter?: number): ILogEntry {
+export function fakeInspSignal(
+  mat?: LogMaterial,
+  inspType?: string,
+  now?: Date,
+  counter?: number
+): ILogEntry {
   mat = mat || fakeMaterial();
   inspType = inspType || "MyInspType";
   now = now || new Date(2017, 9, 5);
   counter = counter || 100;
   const path = [
-    (new MaterialProcessActualPath({
+    new MaterialProcessActualPath({
       materialID: mat.id,
       process: 1,
       pallet: "6",
       loadStation: 1,
-      stops: [
-        new Stop({stationName: "MC", stationNum: 4})
-      ],
+      stops: [new Stop({ stationName: "MC", stationNum: 4 })],
       unloadStation: 2
-    })).toJSON()
+    }).toJSON()
   ];
   return {
     counter: counter,
@@ -207,20 +219,25 @@ export function fakeInspSignal(mat?: LogMaterial, inspType?: string, now?: Date,
     type: LogType.Inspection,
     startofcycle: false,
     endUTC: now,
-    loc: 'Inspection',
+    loc: "Inspection",
     locnum: 1,
-    result: 'True',
-    program: 'theprogramshouldbeignored',
-    elapsed: '00:00:00',
-    active: '00:00:00',
+    result: "True",
+    program: "theprogramshouldbeignored",
+    elapsed: "00:00:00",
+    active: "00:00:00",
     details: {
-      "InspectionType": inspType,
-      "ActualPath": JSON.stringify(path),
+      InspectionType: inspType,
+      ActualPath: JSON.stringify(path)
     }
   };
 }
 
-export function fakeInspForce(mat?: LogMaterial, inspType?: string, now?: Date, counter?: number): ILogEntry {
+export function fakeInspForce(
+  mat?: LogMaterial,
+  inspType?: string,
+  now?: Date,
+  counter?: number
+): ILogEntry {
   mat = mat || fakeMaterial();
   inspType = inspType || "MyInspType";
   now = now || new Date(2017, 9, 5);
@@ -232,17 +249,21 @@ export function fakeInspForce(mat?: LogMaterial, inspType?: string, now?: Date, 
     type: LogType.InspectionForce,
     startofcycle: false,
     endUTC: now,
-    loc: 'Inspection',
+    loc: "Inspection",
     locnum: 1,
-    result: 'True',
+    result: "True",
     program: inspType,
-    elapsed: '00:00:00',
-    active: '00:00:00',
+    elapsed: "00:00:00",
+    active: "00:00:00"
   };
 }
 
 export function fakeInspComplete(
-  mat?: LogMaterial, inspType?: string, now?: Date, success?: boolean, counter?: number
+  mat?: LogMaterial,
+  inspType?: string,
+  now?: Date,
+  success?: boolean,
+  counter?: number
 ): ILogEntry {
   mat = mat || fakeMaterial();
   inspType = inspType || "MyInspType";
@@ -256,12 +277,12 @@ export function fakeInspComplete(
     type: LogType.InspectionResult,
     startofcycle: false,
     endUTC: now,
-    loc: 'InspectionComplete',
+    loc: "InspectionComplete",
     locnum: 1,
     result: success.toString(),
     program: inspType,
-    elapsed: '00:00:00',
-    active: '00:00:00'
+    elapsed: "00:00:00",
+    active: "00:00:00"
   };
 }
 
@@ -274,16 +295,19 @@ export function fakeWashComplete(mat?: LogMaterial): ILogEntry {
     type: LogType.Wash,
     startofcycle: false,
     endUTC: new Date(2017, 9, 5),
-    loc: 'Wash',
+    loc: "Wash",
     locnum: 1,
-    result: '',
-    program: '',
-    elapsed: '00:00:00',
-    active: '00:00:00'
+    result: "",
+    program: "",
+    elapsed: "00:00:00",
+    active: "00:00:00"
   };
 }
 
-export function fakeWorkorderAssign(mat?: LogMaterial, workorder?: string): ILogEntry {
+export function fakeWorkorderAssign(
+  mat?: LogMaterial,
+  workorder?: string
+): ILogEntry {
   mat = mat || fakeMaterial();
   workorder = workorder || "work12345";
   return {
@@ -293,11 +317,11 @@ export function fakeWorkorderAssign(mat?: LogMaterial, workorder?: string): ILog
     type: LogType.OrderAssignment,
     startofcycle: false,
     endUTC: new Date(2017, 9, 5),
-    loc: 'OrderAssignment',
+    loc: "OrderAssignment",
     locnum: 1,
     result: workorder,
-    program: '',
-    elapsed: '00:00:00',
-    active: '00:00:00'
+    program: "",
+    elapsed: "00:00:00",
+    active: "00:00:00"
   };
 }

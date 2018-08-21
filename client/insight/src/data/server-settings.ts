@@ -31,12 +31,16 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as api from './api';
-import { ServerBackend, setOtherLogBackends } from './backend';
-import { Pledge, PledgeStatus, ActionBeforeMiddleware } from '../store/middleware';
+import * as api from "./api";
+import { ServerBackend, setOtherLogBackends } from "./backend";
+import {
+  Pledge,
+  PledgeStatus,
+  ActionBeforeMiddleware
+} from "../store/middleware";
 
 export enum ActionType {
-  Load = 'ServerSettings_Load'
+  Load = "ServerSettings_Load"
 }
 
 export interface LatestInstaller {
@@ -49,9 +53,7 @@ interface LoadReturn {
   readonly latestVersion?: LatestInstaller;
 }
 
-export type Action =
-  | {type: ActionType.Load, pledge: Pledge<LoadReturn>}
-  ;
+export type Action = { type: ActionType.Load; pledge: Pledge<LoadReturn> };
 
 export interface State {
   readonly fmsInfo?: Readonly<api.IFMSInfo>;
@@ -92,18 +94,20 @@ async function loadInfo(): Promise<LoadReturn> {
     }
   }
 
-  return {fmsInfo, latestVersion};
+  return { fmsInfo, latestVersion };
 }
 
 export function loadServerSettings(): ActionBeforeMiddleware<Action> {
   return {
     type: ActionType.Load,
-    pledge: loadInfo(),
+    pledge: loadInfo()
   };
 }
 
 export function reducer(s: State, a: Action): State {
-  if (s === undefined) { return initial; }
+  if (s === undefined) {
+    return initial;
+  }
   switch (a.type) {
     case ActionType.Load:
       switch (a.pledge.status) {
@@ -112,13 +116,15 @@ export function reducer(s: State, a: Action): State {
         case PledgeStatus.Completed:
           return {
             fmsInfo: a.pledge.result.fmsInfo,
-            latestInstaller: a.pledge.result.latestVersion,
+            latestInstaller: a.pledge.result.latestVersion
           };
         case PledgeStatus.Error:
-          return {...s, loadError: a.pledge.error};
-        default: return s;
+          return { ...s, loadError: a.pledge.error };
+        default:
+          return s;
       }
 
-    default: return s;
+    default:
+      return s;
   }
 }

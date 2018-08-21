@@ -31,57 +31,62 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import ReconnectingWebSocket from 'reconnecting-websocket';
-import * as events from '../data/events';
-import * as current from '../data/current-status';
-import { LogEntry, NewJobs, CurrentStatus } from '../data/api';
-import { BackendHost } from '../data/backend';
+import ReconnectingWebSocket from "reconnecting-websocket";
+import * as events from "../data/events";
+import * as current from "../data/current-status";
+import { LogEntry, NewJobs, CurrentStatus } from "../data/api";
+import { BackendHost } from "../data/backend";
 
 export interface State {
   websocket_reconnecting: boolean;
 }
 
 export const initial: State = {
-  websocket_reconnecting: false,
+  websocket_reconnecting: false
 };
 
 export enum ActionType {
-  WebsocketOpen = 'Websocket_Open',
-  WebsocketClose = 'Websocket_Close',
+  WebsocketOpen = "Websocket_Open",
+  WebsocketClose = "Websocket_Close"
 }
 
 export type Action =
-  | {type: ActionType.WebsocketOpen }
-  | {type: ActionType.WebsocketClose}
-  ;
+  | { type: ActionType.WebsocketOpen }
+  | { type: ActionType.WebsocketClose };
 
 export function reducer(s: State, a: Action): State {
-  if (s === undefined) { return initial; }
+  if (s === undefined) {
+    return initial;
+  }
   switch (a.type) {
     case ActionType.WebsocketOpen:
-      return {websocket_reconnecting: false};
+      return { websocket_reconnecting: false };
     case ActionType.WebsocketClose:
-      return {websocket_reconnecting: true};
+      return { websocket_reconnecting: true };
 
-    default: return s;
+    default:
+      return s;
   }
 }
 
 // tslint:disable-next-line:no-any
-export function openWebsocket(d: (a: any) => void, getEvtState: () => events.State) {
-  d({type: ActionType.WebsocketClose}); // set initial loading spinner
+export function openWebsocket(
+  d: (a: any) => void,
+  getEvtState: () => events.State
+) {
+  d({ type: ActionType.WebsocketClose }); // set initial loading spinner
   const loc = window.location;
   let uri: string;
   if (loc.protocol === "https:") {
-      uri = "wss:";
+    uri = "wss:";
   } else {
-      uri = "ws:";
+    uri = "ws:";
   }
   uri += "//" + (BackendHost || loc.host) + "/api/v1/events";
 
   const websocket = new ReconnectingWebSocket(uri);
   websocket.onopen = () => {
-    d({type: ActionType.WebsocketOpen});
+    d({ type: ActionType.WebsocketOpen });
 
     const st = getEvtState();
     if (st.last30.latest_log_counter !== undefined) {
@@ -93,9 +98,9 @@ export function openWebsocket(d: (a: any) => void, getEvtState: () => events.Sta
     d(current.loadCurrentStatus());
   };
   websocket.onclose = () => {
-    d({type: ActionType.WebsocketClose});
+    d({ type: ActionType.WebsocketClose });
   };
-  websocket.onmessage = (evt) => {
+  websocket.onmessage = evt => {
     var json = JSON.parse(evt.data);
     if (json.LogEntry) {
       const entry = LogEntry.fromJS(json.LogEntry);

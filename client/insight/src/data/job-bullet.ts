@@ -31,9 +31,9 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as api from './api';
-import * as im from 'immutable';
-import { duration } from 'moment';
+import * as api from "./api";
+import * as im from "immutable";
+import { duration } from "moment";
 
 export interface DataPoint {
   readonly part: string;
@@ -55,11 +55,11 @@ function displayJob(job: api.IInProcessJob, proc: number): DataPoint {
   }
   const cycleTimeHours = cycleTime.asHours();
   return {
-    part: job.partName + '-' + (proc + 1).toString(),
+    part: job.partName + "-" + (proc + 1).toString(),
     completed: cycleTimeHours * completed,
     completedCount: completed,
     totalPlan: cycleTimeHours * totalPlan,
-    totalCount: totalPlan,
+    totalCount: totalPlan
   };
 }
 
@@ -70,24 +70,23 @@ export interface CompletedDataPoint extends DataPoint {
 
 export interface DataPoints {
   readonly completedData: ReadonlyArray<CompletedDataPoint>;
-  readonly planData: ReadonlyArray<{x: number, y: number}>;
+  readonly planData: ReadonlyArray<{ x: number; y: number }>;
 }
 
-export function jobsToPoints(jobs: ReadonlyArray<Readonly<api.IInProcessJob>>): DataPoints {
-  const points = im.Seq(jobs)
+export function jobsToPoints(
+  jobs: ReadonlyArray<Readonly<api.IInProcessJob>>
+): DataPoints {
+  const points = im
+    .Seq(jobs)
     .flatMap(j =>
-      im.Range(0, j.procsAndPaths.length).map(proc =>
-        displayJob(j, proc)
-      )
+      im.Range(0, j.procsAndPaths.length).map(proc => displayJob(j, proc))
     )
     .sortBy(pt => pt.part)
     .reverse()
     .cacheResult();
-  const completedData =
-    points.map((pt, i) => ({...pt, x: pt.completed, y: i}))
-        .toArray();
-  const planData =
-    points.map((pt, i) => ({x: pt.totalPlan, y: i}))
-        .toArray();
-  return {completedData, planData};
+  const completedData = points
+    .map((pt, i) => ({ ...pt, x: pt.completed, y: i }))
+    .toArray();
+  const planData = points.map((pt, i) => ({ x: pt.totalPlan, y: i })).toArray();
+  return { completedData, planData };
 }

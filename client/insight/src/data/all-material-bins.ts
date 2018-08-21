@@ -31,53 +31,68 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as api from './api';
-import * as im from 'immutable';
+import * as api from "./api";
+import * as im from "immutable";
 
 export type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
 
 export type AllMaterialBins = im.Map<string, MaterialList>;
 
-export function selectAllMaterialIntoBins(curSt: Readonly<api.ICurrentStatus>): AllMaterialBins {
-
-  const palLoc = im.Map(curSt.pallets)
-    .map(st =>
-      " (" + st.currentPalletLocation.group + " #" + st.currentPalletLocation.num.toString() + ")"
+export function selectAllMaterialIntoBins(
+  curSt: Readonly<api.ICurrentStatus>
+): AllMaterialBins {
+  const palLoc = im
+    .Map(curSt.pallets)
+    .map(
+      st =>
+        " (" +
+        st.currentPalletLocation.group +
+        " #" +
+        st.currentPalletLocation.num.toString() +
+        ")"
     );
 
-  return im.Seq(curSt.material)
+  return im
+    .Seq(curSt.material)
     .map(mat => {
       switch (mat.location.type) {
         case api.LocType.InQueue:
-          return { region: mat.location.currentQueue || "Queue", mat};
+          return { region: mat.location.currentQueue || "Queue", mat };
         case api.LocType.OnPallet:
           let region = "Pallet";
           if (mat.location.pallet) {
-            region = "Pallet " + mat.location.pallet.toString() + palLoc.get(mat.location.pallet) || "";
+            region =
+              "Pallet " +
+                mat.location.pallet.toString() +
+                palLoc.get(mat.location.pallet) || "";
           }
-          return {region, mat};
+          return { region, mat };
         case api.LocType.Free:
         default:
           switch (mat.action.type) {
             case api.ActionType.Loading:
-              return { region: "Raw Material", mat};
+              return { region: "Raw Material", mat };
             default:
-              return { region: "Free Material", mat};
+              return { region: "Free Material", mat };
           }
       }
     })
     .groupBy(x => x.region)
     .map(group =>
-      group.map(x => x.mat).sortBy(mat => {
-        switch (mat.location.type) {
-          case api.LocType.OnPallet:
-            return mat.location.face;
-          case api.LocType.InQueue:
-          case api.LocType.Free:
-          default:
-            return mat.location.queuePosition;
-        }
-      }).valueSeq().toArray()
+      group
+        .map(x => x.mat)
+        .sortBy(mat => {
+          switch (mat.location.type) {
+            case api.LocType.OnPallet:
+              return mat.location.face;
+            case api.LocType.InQueue:
+            case api.LocType.Free:
+            default:
+              return mat.location.queuePosition;
+          }
+        })
+        .valueSeq()
+        .toArray()
     )
     .toMap();
 }

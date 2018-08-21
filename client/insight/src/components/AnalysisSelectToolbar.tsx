@@ -30,23 +30,23 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from 'react';
-import Radio from '@material-ui/core/Radio';
-import TextField from '@material-ui/core/TextField';
-import FormControlLabel from '@material-ui/core/FormControlLabel';
-import { startOfMonth, format, parse } from 'date-fns';
+import * as React from "react";
+import Radio from "@material-ui/core/Radio";
+import TextField from "@material-ui/core/TextField";
+import FormControlLabel from "@material-ui/core/FormControlLabel";
+import { startOfMonth, format, parse } from "date-fns";
 
-import * as events from '../data/events';
-import { Store, connect } from '../store/store';
+import * as events from "../data/events";
+import { Store, connect } from "../store/store";
 
 const toolbarStyle = {
-  'display': 'flex',
-  'backgroundColor': '#E0E0E0',
-  'paddingLeft': '24px',
-  'paddingRight': '24px',
-  'minHeight': '2.5em',
-  'alignItems': 'center' as 'center',
-  'justifyContent': 'space-evenly' as 'space-evenly'
+  display: "flex",
+  backgroundColor: "#E0E0E0",
+  paddingLeft: "24px",
+  paddingRight: "24px",
+  minHeight: "2.5em",
+  alignItems: "center" as "center",
+  justifyContent: "space-evenly" as "space-evenly"
 };
 
 interface AnalysisSelectToolbarProps {
@@ -57,18 +57,24 @@ interface AnalysisSelectToolbarProps {
   setMonth: (month: Date) => void;
 }
 
-class AnalysisSelectToolbar extends React.PureComponent<AnalysisSelectToolbarProps, {temp_month?: Date}> {
-
-  state = {temp_month: undefined} as {temp_month?: Date};
+class AnalysisSelectToolbar extends React.PureComponent<
+  AnalysisSelectToolbarProps,
+  { temp_month?: Date }
+> {
+  state = { temp_month: undefined } as { temp_month?: Date };
 
   setTempMonth = (m: Date) => {
-    this.setState({temp_month: startOfMonth(m)});
-  }
+    this.setState({ temp_month: startOfMonth(m) });
+  };
 
   blurMonth = () => {
     const m = this.state.temp_month;
-    if (m === undefined) { return; }
-    if (this.props.period_month === m) { return; }
+    if (m === undefined) {
+      return;
+    }
+    if (this.props.period_month === m) {
+      return;
+    }
 
     if (this.props.period === events.AnalysisPeriod.SpecificMonth) {
       // if month type is selected, reload data
@@ -78,8 +84,8 @@ class AnalysisSelectToolbar extends React.PureComponent<AnalysisSelectToolbarPro
       this.props.setMonth(m);
     }
 
-    this.setState({temp_month: undefined});
-  }
+    this.setState({ temp_month: undefined });
+  };
 
   render() {
     const curMonth: Date = this.state.temp_month || this.props.period_month;
@@ -90,7 +96,9 @@ class AnalysisSelectToolbar extends React.PureComponent<AnalysisSelectToolbarPro
           control={
             <Radio
               checked={this.props.period === events.AnalysisPeriod.Last30Days}
-              onChange={(e, checked) => checked ? this.props.analyzeLast30Days() : null}
+              onChange={(e, checked) =>
+                checked ? this.props.analyzeLast30Days() : null
+              }
             />
           }
           label="Last 30 days"
@@ -99,15 +107,20 @@ class AnalysisSelectToolbar extends React.PureComponent<AnalysisSelectToolbarPro
           <FormControlLabel
             control={
               <Radio
-                checked={this.props.period === events.AnalysisPeriod.SpecificMonth}
-                onChange={(e, checked) => checked ? this.props.analyzeMonth(curMonth) : null}
-              />}
+                checked={
+                  this.props.period === events.AnalysisPeriod.SpecificMonth
+                }
+                onChange={(e, checked) =>
+                  checked ? this.props.analyzeMonth(curMonth) : null
+                }
+              />
+            }
             label="Select Month"
           />
           <TextField
             type="month"
             placeholder="Choose Month"
-            value={format(curMonth, 'YYYY-MM')}
+            value={format(curMonth, "YYYY-MM")}
             onChange={m => this.setTempMonth(parse(m.target.value))}
             onBlur={() => this.blurMonth()}
           />
@@ -120,7 +133,7 @@ class AnalysisSelectToolbar extends React.PureComponent<AnalysisSelectToolbarPro
 export default connect(
   (s: Store) => ({
     period: s.Events.analysis_period,
-    period_month: s.Events.analysis_period_month,
+    period_month: s.Events.analysis_period_month
   }),
   {
     analyzeLast30Days: events.analyzeLast30Days,

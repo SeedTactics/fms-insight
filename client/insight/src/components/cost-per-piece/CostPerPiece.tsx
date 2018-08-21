@@ -30,27 +30,27 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from 'react';
-const DocumentTitle = require('react-document-title'); // https://github.com/gaearon/react-document-title/issues/58
-import * as im from 'immutable';
-import * as ccp from '../../data/cost-per-piece';
-import { DispatchAction, connect, mkAC, Store } from '../../store/store';
-import { AnalysisPeriod } from '../../data/events';
-import Card from '@material-ui/core/Card';
-import CardHeader from '@material-ui/core/CardHeader';
-import CardContent from '@material-ui/core/CardContent';
-import Table from '@material-ui/core/Table';
-import TableBody from '@material-ui/core/TableBody';
-import TableCell from '@material-ui/core/TableCell';
-import TableHead from '@material-ui/core/TableHead';
-import TableRow from '@material-ui/core/TableRow';
-import TextField from '@material-ui/core/TextField';
-import Divider from '@material-ui/core/Divider';
-import MoneyIcon from '@material-ui/icons/AttachMoney';
-import { PartCycleData } from '../../data/events.cycles';
-import { createSelector } from 'reselect';
-import BuildIcon from '@material-ui/icons/Build';
-import AnalysisSelectToolbar from '../AnalysisSelectToolbar';
+import * as React from "react";
+const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
+import * as im from "immutable";
+import * as ccp from "../../data/cost-per-piece";
+import { DispatchAction, connect, mkAC, Store } from "../../store/store";
+import { AnalysisPeriod } from "../../data/events";
+import Card from "@material-ui/core/Card";
+import CardHeader from "@material-ui/core/CardHeader";
+import CardContent from "@material-ui/core/CardContent";
+import Table from "@material-ui/core/Table";
+import TableBody from "@material-ui/core/TableBody";
+import TableCell from "@material-ui/core/TableCell";
+import TableHead from "@material-ui/core/TableHead";
+import TableRow from "@material-ui/core/TableRow";
+import TextField from "@material-ui/core/TextField";
+import Divider from "@material-ui/core/Divider";
+import MoneyIcon from "@material-ui/icons/AttachMoney";
+import { PartCycleData } from "../../data/events.cycles";
+import { createSelector } from "reselect";
+import BuildIcon from "@material-ui/icons/Build";
+import AnalysisSelectToolbar from "../AnalysisSelectToolbar";
 
 interface CostPerPieceInputProps {
   readonly statGroups: im.Set<string>;
@@ -59,42 +59,55 @@ interface CostPerPieceInputProps {
   readonly setMachineCost: DispatchAction<ccp.ActionType.SetMachineCostPerYear>;
   readonly setPartMatCost: DispatchAction<ccp.ActionType.SetPartMaterialCost>;
   readonly setNumOper: DispatchAction<ccp.ActionType.SetNumOperators>;
-  readonly setOperCostPerHour: DispatchAction<ccp.ActionType.SetOperatorCostPerHour>;
+  readonly setOperCostPerHour: DispatchAction<
+    ccp.ActionType.SetOperatorCostPerHour
+  >;
 }
 
 function CostPerPieceInput(props: CostPerPieceInputProps) {
   return (
-    <div style={{display: 'flex', justifyContent: 'center'}}>
-      <Card style={{maxWidth: '45em', width: '100%'}}>
+    <div style={{ display: "flex", justifyContent: "center" }}>
+      <Card style={{ maxWidth: "45em", width: "100%" }}>
         <CardHeader
           title={
-            <div style={{display: 'flex', flexWrap: 'wrap', alignItems: 'center'}}>
-              <MoneyIcon style={{color: "#6D4C41"}}/>
-              <div style={{marginLeft: '10px', marginRight: '3em'}}>
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center"
+              }}
+            >
+              <MoneyIcon style={{ color: "#6D4C41" }} />
+              <div style={{ marginLeft: "10px", marginRight: "3em" }}>
                 Cost Inputs
               </div>
-            </div>}
+            </div>
+          }
         />
         <CardContent>
-          <div style={{display: "flex", justifyContent: 'space-around'}}>
+          <div style={{ display: "flex", justifyContent: "space-around" }}>
             <TextField
               id="num-operators"
               type="number"
               label="Number of Operators"
-              inputProps={{min: 0}}
+              inputProps={{ min: 0 }}
               value={props.input.numOperators}
-              onChange={e => props.setNumOper({numOpers: parseFloat(e.target.value)})}
+              onChange={e =>
+                props.setNumOper({ numOpers: parseFloat(e.target.value) })
+              }
             />
             <TextField
               id="cost-per-oper-hour"
               type="number"
               label="Cost per operator per hour"
-              inputProps={{min: 0}}
+              inputProps={{ min: 0 }}
               value={props.input.operatorCostPerHour}
-              onChange={e => props.setOperCostPerHour({cost: parseFloat(e.target.value)})}
+              onChange={e =>
+                props.setOperCostPerHour({ cost: parseFloat(e.target.value) })
+              }
             />
           </div>
-          <Divider style={{margin: '15px'}}/>
+          <Divider style={{ margin: "15px" }} />
           <Table data-testid="station-cost-table">
             <TableHead>
               <TableRow>
@@ -103,22 +116,28 @@ function CostPerPieceInput(props: CostPerPieceInputProps) {
               </TableRow>
             </TableHead>
             <TableBody>
-              {
-                props.statGroups.toSeq().sort().map((s, idx) =>
+              {props.statGroups
+                .toSeq()
+                .sort()
+                .map((s, idx) => (
                   <TableRow key={idx}>
                     <TableCell>{s}</TableCell>
                     <TableCell>
                       <TextField
                         type="number"
-                        inputProps={{min: 0}}
+                        inputProps={{ min: 0 }}
                         fullWidth
                         value={props.input.machineCostPerYear[s] || 0}
-                        onChange={e => props.setMachineCost({group: s, cost: parseFloat(e.target.value)})}
+                        onChange={e =>
+                          props.setMachineCost({
+                            group: s,
+                            cost: parseFloat(e.target.value)
+                          })
+                        }
                       />
                     </TableCell>
                   </TableRow>
-                )
-              }
+                ))}
             </TableBody>
           </Table>
         </CardContent>
@@ -131,15 +150,15 @@ const ConnectedCostPerPieceInput = connect(
   s => ({
     statGroups:
       s.Events.analysis_period === AnalysisPeriod.Last30Days
-       ? s.Events.last30.cycles.station_groups
-       : s.Events.selected_month.cycles.station_groups,
-    input: s.CostPerPiece.input,
+        ? s.Events.last30.cycles.station_groups
+        : s.Events.selected_month.cycles.station_groups,
+    input: s.CostPerPiece.input
   }),
   {
     setMachineCost: mkAC(ccp.ActionType.SetMachineCostPerYear),
     setPartMatCost: mkAC(ccp.ActionType.SetPartMaterialCost),
     setNumOper: mkAC(ccp.ActionType.SetNumOperators),
-    setOperCostPerHour: mkAC(ccp.ActionType.SetOperatorCostPerHour),
+    setOperCostPerHour: mkAC(ccp.ActionType.SetOperatorCostPerHour)
   }
 )(CostPerPieceInput);
 
@@ -152,18 +171,21 @@ interface CostPerPieceOutputProps {
 
 function CostPerPieceOutput(props: CostPerPieceOutputProps) {
   const format = Intl.NumberFormat(undefined, {
-    maximumFractionDigits: 1,
+    maximumFractionDigits: 1
   });
   return (
-    <Card style={{marginTop: '2em'}}>
+    <Card style={{ marginTop: "2em" }}>
       <CardHeader
         title={
-          <div style={{display: 'flex', flexWrap: 'wrap', alignItems: 'center'}}>
-            <BuildIcon style={{color: "#6D4C41"}}/>
-            <div style={{marginLeft: '10px', marginRight: '3em'}}>
+          <div
+            style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}
+          >
+            <BuildIcon style={{ color: "#6D4C41" }} />
+            <div style={{ marginLeft: "10px", marginRight: "3em" }}>
               Part Cost/Piece
             </div>
-          </div>}
+          </div>
+        }
       />
       <CardContent>
         <Table data-testid="part-cost-table">
@@ -177,37 +199,48 @@ function CostPerPieceOutput(props: CostPerPieceOutputProps) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {
-              im.Seq(props.costs).sortBy(c => c.part).map((c, idx) =>
+            {im
+              .Seq(props.costs)
+              .sortBy(c => c.part)
+              .map((c, idx) => (
                 <TableRow key={idx}>
                   <TableCell>{c.part}</TableCell>
-                    <TableCell>
-                      <TextField
-                        type="number"
-                        inputProps={{min: 0}}
-                        value={props.input.partMaterialCost[c.part] || 0}
-                        onChange={e => props.setPartMatCost({part: c.part, cost: parseFloat(e.target.value)})}
-                      />
-                    </TableCell>
                   <TableCell>
-                    {c.parts_completed > 0 ? format.format(c.machine_cost / c.parts_completed) : 0}
+                    <TextField
+                      type="number"
+                      inputProps={{ min: 0 }}
+                      value={props.input.partMaterialCost[c.part] || 0}
+                      onChange={e =>
+                        props.setPartMatCost({
+                          part: c.part,
+                          cost: parseFloat(e.target.value)
+                        })
+                      }
+                    />
                   </TableCell>
                   <TableCell>
-                    {c.parts_completed > 0 ? format.format(c.labor_cost / c.parts_completed) : 0}
+                    {c.parts_completed > 0
+                      ? format.format(c.machine_cost / c.parts_completed)
+                      : 0}
+                  </TableCell>
+                  <TableCell>
+                    {c.parts_completed > 0
+                      ? format.format(c.labor_cost / c.parts_completed)
+                      : 0}
                   </TableCell>
                   <TableCell>
                     {c.parts_completed > 0
                       ? format.format(
-                        (props.input.partMaterialCost[c.part] || 0)
-                        +
-                        (c.machine_cost / c.parts_completed)
-                        +
-                        (c.labor_cost / c.parts_completed))
-                      : format.format(props.input.partMaterialCost[c.part] || 0)}
+                          (props.input.partMaterialCost[c.part] || 0) +
+                            c.machine_cost / c.parts_completed +
+                            c.labor_cost / c.parts_completed
+                        )
+                      : format.format(
+                          props.input.partMaterialCost[c.part] || 0
+                        )}
                   </TableCell>
                 </TableRow>
-              )
-            }
+              ))}
           </TableBody>
         </Table>
       </CardContent>
@@ -217,14 +250,18 @@ function CostPerPieceOutput(props: CostPerPieceOutputProps) {
 
 const calcCostPerPiece = createSelector(
   (s: Store) =>
-      s.Events.analysis_period === AnalysisPeriod.Last30Days
-       ? s.Events.last30.cycles.by_part_then_stat
-       : s.Events.selected_month.cycles.by_part_then_stat,
+    s.Events.analysis_period === AnalysisPeriod.Last30Days
+      ? s.Events.last30.cycles.by_part_then_stat
+      : s.Events.selected_month.cycles.by_part_then_stat,
   (s: Store) => s.CostPerPiece.input,
   (s: Store) =>
-      s.Events.analysis_period === AnalysisPeriod.Last30Days ? undefined : s.Events.analysis_period_month,
-  ( cycles: im.Map<string, im.Map<string, ReadonlyArray<PartCycleData>>>,
-    input: ccp.CostInput, month: Date | undefined
+    s.Events.analysis_period === AnalysisPeriod.Last30Days
+      ? undefined
+      : s.Events.analysis_period_month,
+  (
+    cycles: im.Map<string, im.Map<string, ReadonlyArray<PartCycleData>>>,
+    input: ccp.CostInput,
+    month: Date | undefined
   ) => {
     return ccp.compute_monthly_cost(input, cycles, month);
   }
@@ -236,7 +273,7 @@ const ConnectedCostPerPieceOutput = connect(
     costs: calcCostPerPiece(s)
   }),
   {
-    setPartMatCost: mkAC(ccp.ActionType.SetPartMaterialCost),
+    setPartMatCost: mkAC(ccp.ActionType.SetPartMaterialCost)
   }
 )(CostPerPieceOutput);
 
@@ -244,10 +281,10 @@ export default function CostPerPiece() {
   return (
     <DocumentTitle title="Cost/Piece - FMS Insight">
       <>
-        <AnalysisSelectToolbar/>
-        <main style={{'padding': '8px'}}>
-          <ConnectedCostPerPieceInput/>
-          <ConnectedCostPerPieceOutput/>
+        <AnalysisSelectToolbar />
+        <main style={{ padding: "8px" }}>
+          <ConnectedCostPerPieceInput />
+          <ConnectedCostPerPieceOutput />
         </main>
       </>
     </DocumentTitle>

@@ -31,8 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as im from 'immutable';
-import * as api from './api';
+import * as im from "immutable";
+import * as api from "./api";
 
 export type MoveMaterialIdentifier = Symbol;
 
@@ -45,12 +45,20 @@ export enum MoveMaterialNodeKindType {
 }
 
 export type MoveMaterialNodeKind =
-  | { readonly type: MoveMaterialNodeKindType.Material, readonly action: Readonly<api.IInProcessMaterialAction> | null }
+  | {
+      readonly type: MoveMaterialNodeKindType.Material;
+      readonly action: Readonly<api.IInProcessMaterialAction> | null;
+    }
   | { readonly type: MoveMaterialNodeKindType.FreeMaterialZone }
   | { readonly type: MoveMaterialNodeKindType.CompletedMaterialZone }
-  | { readonly type: MoveMaterialNodeKindType.PalletFaceZone, readonly face: number }
-  | { readonly type: MoveMaterialNodeKindType.QueueZone, readonly queue: string }
-  ;
+  | {
+      readonly type: MoveMaterialNodeKindType.PalletFaceZone;
+      readonly face: number;
+    }
+  | {
+      readonly type: MoveMaterialNodeKindType.QueueZone;
+      readonly queue: string;
+    };
 
 export interface MoveMaterialArrowData<T> {
   readonly container: T | null;
@@ -72,26 +80,32 @@ interface MoveMaterialByKind {
   readonly faces: im.Map<number, ClientRect>;
   readonly queues: im.Map<string, ClientRect>;
 
-  readonly material: im.List<[ClientRect, Readonly<api.IInProcessMaterialAction>]>;
+  readonly material: im.List<
+    [ClientRect, Readonly<api.IInProcessMaterialAction>]
+  >;
 }
 
-function buildMatByKind(data: MoveMaterialArrowData<ClientRect>): MoveMaterialByKind {
+function buildMatByKind(
+  data: MoveMaterialArrowData<ClientRect>
+): MoveMaterialByKind {
   return data.node_type.reduce(
     (acc, kind, key) => {
       var node = data.nodes.get(key);
-      if (!node) { return acc; }
+      if (!node) {
+        return acc;
+      }
       switch (kind.type) {
         case MoveMaterialNodeKindType.FreeMaterialZone:
-          return {...acc, freeMaterial: node};
+          return { ...acc, freeMaterial: node };
         case MoveMaterialNodeKindType.CompletedMaterialZone:
-          return {...acc, completedMaterial: node};
+          return { ...acc, completedMaterial: node };
         case MoveMaterialNodeKindType.PalletFaceZone:
-          return {...acc, faces: acc.faces.set(kind.face, node) };
+          return { ...acc, faces: acc.faces.set(kind.face, node) };
         case MoveMaterialNodeKindType.QueueZone:
-          return {...acc, queues: acc.queues.set(kind.queue, node) };
+          return { ...acc, queues: acc.queues.set(kind.queue, node) };
         case MoveMaterialNodeKindType.Material:
           if (kind.action) {
-            return {...acc, material: acc.material.push([node, kind.action])};
+            return { ...acc, material: acc.material.push([node, kind.action]) };
           } else {
             return acc;
           }
@@ -100,19 +114,26 @@ function buildMatByKind(data: MoveMaterialArrowData<ClientRect>): MoveMaterialBy
     {
       faces: im.Map<number, ClientRect>(),
       queues: im.Map<string, ClientRect>(),
-      material: im.List<[ClientRect, Readonly<api.IInProcessMaterialAction>]>(),
+      material: im.List<[ClientRect, Readonly<api.IInProcessMaterialAction>]>()
     } as MoveMaterialByKind
   );
 }
 
-export function computeArrows(data: MoveMaterialArrowData<ClientRect>): ReadonlyArray<MoveMaterialArrow> {
+export function computeArrows(
+  data: MoveMaterialArrowData<ClientRect>
+): ReadonlyArray<MoveMaterialArrow> {
   const container = data.container;
-  if (!container) { return []; }
+  if (!container) {
+    return [];
+  }
   const byKind = buildMatByKind(data);
-  if (!byKind.completedMaterial) { return []; }
+  if (!byKind.completedMaterial) {
+    return [];
+  }
 
-  return byKind.material.toSeq().map(
-    value => {
+  return byKind.material
+    .toSeq()
+    .map(value => {
       const rect = value[0];
       const action = value[1];
       switch (action.type) {
@@ -122,9 +143,10 @@ export function computeArrows(data: MoveMaterialArrowData<ClientRect>): Readonly
             fromY: rect.top + rect.height / 2,
             toX: rect.left,
             toY: byKind.completedMaterial
-              ? byKind.completedMaterial.top + byKind.completedMaterial.height / 2
+              ? byKind.completedMaterial.top +
+                byKind.completedMaterial.height / 2
               : container.bottom - 10,
-            curveDirection: 1,
+            curveDirection: 1
           } as MoveMaterialArrow;
         case api.ActionType.UnloadToInProcess:
           let dest: ClientRect | undefined;
@@ -138,7 +160,7 @@ export function computeArrows(data: MoveMaterialArrowData<ClientRect>): Readonly
             fromY: rect.top + rect.height / 2,
             toX: dest ? dest.left - 5 : container.right - 2,
             toY: dest ? dest.top + dest.height / 2 : rect.top + rect.height / 2,
-            curveDirection: 1,
+            curveDirection: 1
           } as MoveMaterialArrow;
         case api.ActionType.Loading:
           if (action.loadOntoFace) {
@@ -150,22 +172,21 @@ export function computeArrows(data: MoveMaterialArrowData<ClientRect>): Readonly
                 fromY: rect.top + rect.height / 2,
                 toX: fromQueue ? face.right - 10 : rect.left,
                 toY: face.top + 10,
-                curveDirection: 1,
+                curveDirection: 1
               } as MoveMaterialArrow;
             }
           }
           break;
       }
       return null;
-    }
-  )
-  .filter((e): e is MoveMaterialArrow => e !== null)
-  .map(arr => ({
-    fromX: arr.fromX - container.left,
-    fromY: arr.fromY - container.top,
-    toX: arr.toX - container.left,
-    toY: arr.toY - container.top,
-    curveDirection: arr.curveDirection,
-  }))
-  .toArray();
+    })
+    .filter((e): e is MoveMaterialArrow => e !== null)
+    .map(arr => ({
+      fromX: arr.fromX - container.left,
+      fromY: arr.fromY - container.top,
+      toX: arr.toX - container.left,
+      toY: arr.toY - container.top,
+      curveDirection: arr.curveDirection
+    }))
+    .toArray();
 }

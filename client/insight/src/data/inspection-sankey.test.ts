@@ -33,13 +33,22 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { loadMockData } from "../mock-data/load";
 import { inspectionDataToSankey } from "./inspection-sankey";
-import * as inspEvts from './events.inspection';
+import * as inspEvts from "./events.inspection";
 
-it('creates inspection sankey', async () => {
+it("creates inspection sankey", async () => {
   const data = loadMockData(30 * 24 * 60 * 60);
   const evts = await data.events;
-  const cycleState = inspEvts.process_events({type: inspEvts.ExpireOldDataType.NoExpire}, evts, inspEvts.initial);
+  const cycleState = inspEvts.process_events(
+    { type: inspEvts.ExpireOldDataType.NoExpire },
+    evts,
+    inspEvts.initial
+  );
   expect(
-    inspectionDataToSankey(cycleState.by_part.get(inspEvts.mkPartAndInspType({part: "aaa", inspType: "CMM"}), []))
+    inspectionDataToSankey(
+      cycleState.by_part.get(
+        inspEvts.mkPartAndInspType({ part: "aaa", inspType: "CMM" }),
+        []
+      )
+    )
   ).toMatchSnapshot("part aaa CMM sankey");
 });

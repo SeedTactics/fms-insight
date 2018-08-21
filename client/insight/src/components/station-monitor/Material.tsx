@@ -31,32 +31,35 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from 'react';
-import * as jdenticon from 'jdenticon';
-import Typography from '@material-ui/core/Typography';
-import ButtonBase from '@material-ui/core/ButtonBase';
-import Button from '@material-ui/core/Button';
-import Tooltip from '@material-ui/core/Tooltip';
-import WarningIcon from '@material-ui/icons/Warning';
-import SearchIcon from '@material-ui/icons/Search';
-import Avatar from '@material-ui/core/Avatar';
-import Paper from '@material-ui/core/Paper';
-import CircularProgress from '@material-ui/core/CircularProgress';
-import TimeAgo from 'react-timeago';
-import Dialog from '@material-ui/core/Dialog';
-import DialogActions from '@material-ui/core/DialogActions';
-import DialogContent from '@material-ui/core/DialogContent';
-import DialogTitle from '@material-ui/core/DialogTitle';
-import AddIcon from '@material-ui/icons/AddBox';
-import IconButton from '@material-ui/core/IconButton';
+import * as React from "react";
+import * as jdenticon from "jdenticon";
+import Typography from "@material-ui/core/Typography";
+import ButtonBase from "@material-ui/core/ButtonBase";
+import Button from "@material-ui/core/Button";
+import Tooltip from "@material-ui/core/Tooltip";
+import WarningIcon from "@material-ui/icons/Warning";
+import SearchIcon from "@material-ui/icons/Search";
+import Avatar from "@material-ui/core/Avatar";
+import Paper from "@material-ui/core/Paper";
+import CircularProgress from "@material-ui/core/CircularProgress";
+import TimeAgo from "react-timeago";
+import Dialog from "@material-ui/core/Dialog";
+import DialogActions from "@material-ui/core/DialogActions";
+import DialogContent from "@material-ui/core/DialogContent";
+import DialogTitle from "@material-ui/core/DialogTitle";
+import AddIcon from "@material-ui/icons/AddBox";
+import IconButton from "@material-ui/core/IconButton";
 
-import * as api from '../../data/api';
-import * as matDetails from '../../data/material-details';
-import { LogEntries } from '../LogEntry';
-import { MaterialSummary } from '../../data/events';
-import withStyles from '@material-ui/core/styles/withStyles';
-import { inproc_mat_to_summary, MaterialSummaryAndCompletedData } from '../../data/events.matsummary';
-import { DispatchAction }  from '../../store/store';
+import * as api from "../../data/api";
+import * as matDetails from "../../data/material-details";
+import { LogEntries } from "../LogEntry";
+import { MaterialSummary } from "../../data/events";
+import withStyles from "@material-ui/core/styles/withStyles";
+import {
+  inproc_mat_to_summary,
+  MaterialSummaryAndCompletedData
+} from "../../data/events.matsummary";
+import { DispatchAction } from "../../store/store";
 
 /*
 function getPosition(el: Element) {
@@ -73,7 +76,10 @@ function getPosition(el: Element) {
   };
 }*/
 
-export class PartIdenticon extends React.PureComponent<{part: string, size?: number}> {
+export class PartIdenticon extends React.PureComponent<{
+  part: string;
+  size?: number;
+}> {
   render() {
     const iconSize = this.props.size || 50;
     // tslint:disable-next-line:no-any
@@ -81,29 +87,43 @@ export class PartIdenticon extends React.PureComponent<{part: string, size?: num
 
     return (
       <div
-        style={{width: iconSize, height: iconSize}}
-        dangerouslySetInnerHTML={{__html: icon}}
+        style={{ width: iconSize, height: iconSize }}
+        dangerouslySetInnerHTML={{ __html: icon }}
       />
     );
   }
 }
 
-function materialAction(mat: Readonly<api.IInProcessMaterial>, displaySinglePallet?: string): string | undefined {
+function materialAction(
+  mat: Readonly<api.IInProcessMaterial>,
+  displaySinglePallet?: string
+): string | undefined {
   switch (mat.action.type) {
     case api.ActionType.Loading:
       switch (mat.location.type) {
         case api.LocType.OnPallet:
-          if (displaySinglePallet === undefined || displaySinglePallet === mat.location.pallet) {
-            return "Transfer to face " + (mat.action.loadOntoFace || 0).toString();
+          if (
+            displaySinglePallet === undefined ||
+            displaySinglePallet === mat.location.pallet
+          ) {
+            return (
+              "Transfer to face " + (mat.action.loadOntoFace || 0).toString()
+            );
           } else {
             return undefined;
           }
         default:
           if (displaySinglePallet === undefined) {
-            return "Load onto face " + (mat.action.loadOntoFace || 0).toString()
-              + " of pal " + mat.action.loadOntoPallet;
+            return (
+              "Load onto face " +
+              (mat.action.loadOntoFace || 0).toString() +
+              " of pal " +
+              mat.action.loadOntoPallet
+            );
           } else if (displaySinglePallet === mat.action.loadOntoPallet) {
-            return "Load onto face " + (mat.action.loadOntoFace || 0).toString();
+            return (
+              "Load onto face " + (mat.action.loadOntoFace || 0).toString()
+            );
           } else {
             return undefined;
           }
@@ -121,28 +141,28 @@ function materialAction(mat: Readonly<api.IInProcessMaterial>, displaySinglePall
 
 const matStyles = withStyles(theme => ({
   paper: {
-    minWidth: '10em',
-    padding: '8px',
-    margin: '8px'
+    minWidth: "10em",
+    padding: "8px",
+    margin: "8px"
   },
   container: {
-    display: 'flex' as 'flex',
-    textAlign: 'left' as 'left',
+    display: "flex" as "flex",
+    textAlign: "left" as "left"
   },
   mainContent: {
-    marginLeft: '8px',
-    flexGrow: 1,
+    marginLeft: "8px",
+    flexGrow: 1
   },
   rightContent: {
-    marginLeft: '4px',
-    display: 'flex',
-    'flex-direction': 'column',
-    'justify-content': 'space-between',
-    'align-items': 'flex-end',
+    marginLeft: "4px",
+    display: "flex",
+    "flex-direction": "column",
+    "justify-content": "space-between",
+    "align-items": "flex-end"
   },
   avatar: {
-    width: '30px',
-    height: '30px'
+    width: "30px",
+    height: "30px"
   }
 }));
 
@@ -163,21 +183,21 @@ const MatSummaryWithStyles = matStyles<MaterialSummaryProps>(props => {
     completedMsg = (
       <small>
         <span>Inspection completed </span>
-        <TimeAgo date={completed[props.focusInspectionType]}/>
+        <TimeAgo date={completed[props.focusInspectionType]} />
       </small>
     );
   } else if (props.mat.wash_completed) {
     completedMsg = (
       <small>
         <span>Wash completed </span>
-        <TimeAgo date={props.mat.wash_completed}/>
+        <TimeAgo date={props.mat.wash_completed} />
       </small>
     );
   } else if (props.mat.completed_time) {
     completedMsg = (
       <small>
         <span>Completed </span>
-        <TimeAgo date={props.mat.completed_time}/>
+        <TimeAgo date={props.mat.completed_time} />
       </small>
     );
   }
@@ -186,45 +206,51 @@ const MatSummaryWithStyles = matStyles<MaterialSummaryProps>(props => {
     <Paper elevation={4} className={props.classes.paper}>
       <ButtonBase focusRipple onClick={() => props.onOpen(props.mat)}>
         <div className={props.classes.container}>
-          <PartIdenticon part={props.mat.partName}/>
+          <PartIdenticon part={props.mat.partName} />
           <div className={props.classes.mainContent}>
-            <Typography variant="title">
-              {props.mat.partName}
-            </Typography>
+            <Typography variant="title">{props.mat.partName}</Typography>
             <div>
-              <small>Serial: {props.mat.serial ? props.mat.serial : "none"}</small>
+              <small>
+                Serial: {props.mat.serial ? props.mat.serial : "none"}
+              </small>
             </div>
-            {
-              props.mat.workorderId === undefined || props.mat.workorderId === "" ? undefined :
-                <div>
-                  <small>Workorder: {props.mat.workorderId}</small>
-                </div>
-            }
-            {
-              props.action === undefined ? undefined :
-                <div>
-                  <small>{props.action}</small>
-                </div>
-            }
+            {props.mat.workorderId === undefined ||
+            props.mat.workorderId === "" ? (
+              undefined
+            ) : (
+              <div>
+                <small>Workorder: {props.mat.workorderId}</small>
+              </div>
+            )}
+            {props.action === undefined ? (
+              undefined
+            ) : (
+              <div>
+                <small>{props.action}</small>
+              </div>
+            )}
             {completedMsg}
           </div>
           <div className={props.classes.rightContent}>
-            {props.mat.serial && props.mat.serial.length >= 1 ?
+            {props.mat.serial && props.mat.serial.length >= 1 ? (
               <div>
                 <Avatar className={props.classes.avatar}>
                   {props.mat.serial.substr(props.mat.serial.length - 1, 1)}
                 </Avatar>
               </div>
-              : undefined
-            }
-            {
-              props.hideInspectionIcon || props.mat.signaledInspections.length === 0 ? undefined :
-                <div>
-                  <Tooltip title={inspections}>
-                    <WarningIcon/>
-                  </Tooltip>
-                </div>
-            }
+            ) : (
+              undefined
+            )}
+            {props.hideInspectionIcon ||
+            props.mat.signaledInspections.length === 0 ? (
+              undefined
+            ) : (
+              <div>
+                <Tooltip title={inspections}>
+                  <WarningIcon />
+                </Tooltip>
+              </div>
+            )}
           </div>
         </div>
       </ButtonBase>
@@ -236,7 +262,7 @@ const MatSummaryWithStyles = matStyles<MaterialSummaryProps>(props => {
 // https://github.com/Microsoft/TypeScript/issues/4881
 export class MatSummary extends React.PureComponent<MaterialSummaryProps> {
   render() {
-    return <MatSummaryWithStyles {...this.props}/>;
+    return <MatSummaryWithStyles {...this.props} />;
   }
 }
 
@@ -258,10 +284,16 @@ export class InProcMaterial extends React.PureComponent<InProcMaterialProps> {
   }
 }
 
-export class MaterialDetailTitle extends React.PureComponent<{partName: string, serial?: string}> {
-  render () {
+export class MaterialDetailTitle extends React.PureComponent<{
+  partName: string;
+  serial?: string;
+}> {
+  render() {
     let title;
-    if (this.props.partName === "" && (this.props.serial === undefined || this.props.serial === "")) {
+    if (
+      this.props.partName === "" &&
+      (this.props.serial === undefined || this.props.serial === "")
+    ) {
       title = "Loading";
     } else if (this.props.partName === "") {
       title = "Loading " + this.props.serial;
@@ -272,15 +304,14 @@ export class MaterialDetailTitle extends React.PureComponent<{partName: string, 
     }
 
     return (
-      <div style={{display: 'flex', textAlign: 'left'}}>
-        {this.props.partName === ""
-          ? <SearchIcon/>
-          : <PartIdenticon part={this.props.partName}/>
-        }
-        <div style={{marginLeft: '8px', flexGrow: 1}}>
-          <Typography variant="title">
-            {title}
-          </Typography>
+      <div style={{ display: "flex", textAlign: "left" }}>
+        {this.props.partName === "" ? (
+          <SearchIcon />
+        ) : (
+          <PartIdenticon part={this.props.partName} />
+        )}
+        <div style={{ marginLeft: "8px", flexGrow: 1 }}>
+          <Typography variant="title">{title}</Typography>
         </div>
       </div>
     );
@@ -291,11 +322,16 @@ export interface MaterialDetailProps {
   readonly mat: matDetails.MaterialDetail;
 }
 
-export class MaterialDetailContent extends React.PureComponent<MaterialDetailProps> {
-  render () {
+export class MaterialDetailContent extends React.PureComponent<
+  MaterialDetailProps
+> {
+  render() {
     const mat = this.props.mat;
     function colorForInspType(type: string): string {
-      if (mat.completedInspections && mat.completedInspections.indexOf(type) >= 0) {
+      if (
+        mat.completedInspections &&
+        mat.completedInspections.indexOf(type) >= 0
+      ) {
         return "black";
       } else {
         return "red";
@@ -303,37 +339,51 @@ export class MaterialDetailContent extends React.PureComponent<MaterialDetailPro
     }
     return (
       <>
-        <div style={{marginLeft: '1em'}}>
+        <div style={{ marginLeft: "1em" }}>
           <div>
             <small>Workorder: {mat.workorderId || "none"}</small>
           </div>
           <div>
             <small>Inspections: </small>
-              {
-                mat.signaledInspections.length === 0
-                  ? <small>none</small>
-                  :
-                  mat.signaledInspections.map((type, i) => (
-                    <span key={i}>
-                      <small>{i === 0 ? "" : ", "}</small>
-                      <small style={{color: colorForInspType(type)}}>
-                        {type}
-                      </small>
-                    </span>
-                  ))
-              }
+            {mat.signaledInspections.length === 0 ? (
+              <small>none</small>
+            ) : (
+              mat.signaledInspections.map((type, i) => (
+                <span key={i}>
+                  <small>{i === 0 ? "" : ", "}</small>
+                  <small style={{ color: colorForInspType(type) }}>
+                    {type}
+                  </small>
+                </span>
+              ))
+            )}
           </div>
         </div>
-        {mat.loading_events ? <CircularProgress color="secondary"/> : <LogEntries entries={mat.events}/>}
+        {mat.loading_events ? (
+          <CircularProgress color="secondary" />
+        ) : (
+          <LogEntries entries={mat.events} />
+        )}
       </>
     );
   }
 }
 
-export function InstructionButton({part, type}: {readonly part: string, readonly type: string}) {
+export function InstructionButton({
+  part,
+  type
+}: {
+  readonly part: string;
+  readonly type: string;
+}) {
   return (
     <Button
-      href={"/api/v1/server/find-instructions/" + encodeURIComponent(part) + "?type=" + encodeURIComponent(type)}
+      href={
+        "/api/v1/server/find-instructions/" +
+        encodeURIComponent(part) +
+        "?type=" +
+        encodeURIComponent(type)
+      }
       target="bms-instructions"
       color="primary"
     >
@@ -358,10 +408,10 @@ export function MaterialDialog(props: MaterialDialogProps) {
     body = (
       <>
         <DialogTitle disableTypography>
-          <MaterialDetailTitle partName={mat.partName} serial={mat.serial}/>
+          <MaterialDetailTitle partName={mat.partName} serial={mat.serial} />
         </DialogTitle>
         <DialogContent>
-          <MaterialDetailContent mat={mat}/>
+          <MaterialDetailContent mat={mat} />
         </DialogContent>
         {props.extraDialogElements}
         <DialogActions>
@@ -381,42 +431,41 @@ export function MaterialDialog(props: MaterialDialogProps) {
     >
       {body}
     </Dialog>
-
   );
 }
 
 const whiteboardRegionStyle = withStyles(() => ({
   container: {
-    width: '100%',
-    minHeight: '70px',
+    width: "100%",
+    minHeight: "70px"
   },
   labelContainer: {
-    display: 'flex',
+    display: "flex"
   },
   label: {
-    color: 'rgba(0,0,0,0.5)',
-    fontSize: 'small',
-    flexGrow: 1,
+    color: "rgba(0,0,0,0.5)",
+    fontSize: "small",
+    flexGrow: 1
   },
   addButton: {
-    color: 'rgba(0,0,0,0.5)',
-    height: '0.7em',
-    width: '0.7em',
+    color: "rgba(0,0,0,0.5)",
+    height: "0.7em",
+    width: "0.7em"
   },
   contentContainer: {
-    width: '100%',
-    display: 'flex',
-    flexWrap: 'wrap' as 'wrap',
+    width: "100%",
+    display: "flex",
+    flexWrap: "wrap" as "wrap"
   },
   borderLeft: {
-    borderLeft: '1px solid rgba(0,0,0,0.12)'
+    borderLeft: "1px solid rgba(0,0,0,0.12)"
   },
   borderBottom: {
-    borderBottom: '1px solid rgba(0,0,0,0.12)'
+    borderBottom: "1px solid rgba(0,0,0,0.12)"
   },
   borderRight: {
-    borderRight: '1px solid rgba(0,0,0,0.12)'
-  },
+    borderRight: "1px solid rgba(0,0,0,0.12)"
+  }
 }));
 
 export interface WhiteboardRegionProps {
@@ -429,50 +478,60 @@ export interface WhiteboardRegionProps {
   readonly onAddMaterial?: () => void;
 }
 
-const WhiteboardRegionWithStyle = whiteboardRegionStyle<WhiteboardRegionProps>(props => {
-  let justifyContent = 'space-between';
-  if (props.spaceAround) {
-    justifyContent = 'space-around';
-  } else if (props.flexStart) {
-    justifyContent = 'flex-start';
-  }
-  let mainClasses = [props.classes.container];
-  if (props.borderLeft) {
-    mainClasses.push(props.classes.borderLeft);
-  }
-  if (props.borderBottom) {
-    mainClasses.push(props.classes.borderBottom);
-  }
-  if (props.borderRight) {
-    mainClasses.push(props.classes.borderRight);
-  }
-  return (
-    <div className={mainClasses.join(' ')}>
-      { props.label !== "" || props.onAddMaterial ?
-        <div className={props.classes.labelContainer}>
-          <span className={props.classes.label}>
-            {props.label}
-          </span>
-          { props.onAddMaterial ?
-            <IconButton onClick={props.onAddMaterial} className={props.classes.addButton}>
-              <AddIcon className={props.classes.addButton}/>
-            </IconButton>
-            : undefined
-          }
+const WhiteboardRegionWithStyle = whiteboardRegionStyle<WhiteboardRegionProps>(
+  props => {
+    let justifyContent = "space-between";
+    if (props.spaceAround) {
+      justifyContent = "space-around";
+    } else if (props.flexStart) {
+      justifyContent = "flex-start";
+    }
+    let mainClasses = [props.classes.container];
+    if (props.borderLeft) {
+      mainClasses.push(props.classes.borderLeft);
+    }
+    if (props.borderBottom) {
+      mainClasses.push(props.classes.borderBottom);
+    }
+    if (props.borderRight) {
+      mainClasses.push(props.classes.borderRight);
+    }
+    return (
+      <div className={mainClasses.join(" ")}>
+        {props.label !== "" || props.onAddMaterial ? (
+          <div className={props.classes.labelContainer}>
+            <span className={props.classes.label}>{props.label}</span>
+            {props.onAddMaterial ? (
+              <IconButton
+                onClick={props.onAddMaterial}
+                className={props.classes.addButton}
+              >
+                <AddIcon className={props.classes.addButton} />
+              </IconButton>
+            ) : (
+              undefined
+            )}
+          </div>
+        ) : (
+          undefined
+        )}
+        <div
+          className={props.classes.contentContainer}
+          style={{ justifyContent }}
+        >
+          {props.children}
         </div>
-        : undefined
-      }
-      <div className={props.classes.contentContainer} style={{justifyContent}}>
-        {props.children}
       </div>
-    </div>
-  );
-});
+    );
+  }
+);
 
 // decorate doesn't work well with classes yet.
 // https://github.com/Microsoft/TypeScript/issues/4881
-export class WhiteboardRegion extends React.PureComponent<WhiteboardRegionProps> {
+export class WhiteboardRegion extends React.PureComponent<
+  WhiteboardRegionProps
+> {
   render() {
-    return <WhiteboardRegionWithStyle {...this.props}/>;
+    return <WhiteboardRegionWithStyle {...this.props} />;
   }
 }

@@ -30,24 +30,25 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from 'react';
-import * as im from 'immutable';
-import { format, addDays } from 'date-fns';
-import { MarkSeries,
-         XAxis,
-         YAxis,
-         Hint,
-         FlexibleWidthXYPlot,
-         VerticalGridLines,
-         HorizontalGridLines,
-         DiscreteColorLegend
-       } from 'react-vis';
-import Card from '@material-ui/core/Card';
-import CardContent from '@material-ui/core/CardContent';
-import CardHeader from '@material-ui/core/CardHeader';
-import Select from '@material-ui/core/Select';
-import MenuItem from '@material-ui/core/MenuItem';
-import { PartIdenticon } from '../station-monitor/Material';
+import * as React from "react";
+import * as im from "immutable";
+import { format, addDays } from "date-fns";
+import {
+  MarkSeries,
+  XAxis,
+  YAxis,
+  Hint,
+  FlexibleWidthXYPlot,
+  VerticalGridLines,
+  HorizontalGridLines,
+  DiscreteColorLegend
+} from "react-vis";
+import Card from "@material-ui/core/Card";
+import CardContent from "@material-ui/core/CardContent";
+import CardHeader from "@material-ui/core/CardHeader";
+import Select from "@material-ui/core/Select";
+import MenuItem from "@material-ui/core/MenuItem";
+import { PartIdenticon } from "../station-monitor/Material";
 
 export interface CycleChartPoint {
   readonly x: Date;
@@ -94,37 +95,36 @@ class CycleChart extends React.PureComponent<CycleChartProps, CycleChartState> {
   // unchanged so PureComponent can avoid a re-render
   setTooltip = memoize((series: string) => (point: CycleChartPoint) => {
     if (this.state.tooltip === undefined) {
-      this.setState({tooltip: {...point, series: series}});
+      this.setState({ tooltip: { ...point, series: series } });
     } else {
-      this.setState({tooltip: undefined});
+      this.setState({ tooltip: undefined });
     }
   });
 
   clearTooltip = () => {
-    this.setState({tooltip: undefined});
-  }
+    this.setState({ tooltip: undefined });
+  };
 
-  toggleSeries = (series: {title: string}) => {
+  toggleSeries = (series: { title: string }) => {
     const newState = !!!this.state.disabled_series[series.title];
     this.setState({
-      disabled_series: {...this.state.disabled_series,
+      disabled_series: {
+        ...this.state.disabled_series,
         [series.title]: newState
       }
     });
-  }
+  };
 
   formatHint = (tip: CycleChartTooltip) => {
     return [
-      {title: 'Time', value: format(tip.x, 'MMM D, YYYY, H:mm a')},
-      {title: this.props.series_label, value: tip.series},
-      {title: 'Cycle Time', value: (tip.y).toFixed(1) + " minutes"},
+      { title: "Time", value: format(tip.x, "MMM D, YYYY, H:mm a") },
+      { title: this.props.series_label, value: tip.series },
+      { title: "Cycle Time", value: tip.y.toFixed(1) + " minutes" }
     ];
-  }
+  };
 
   render() {
-    const seriesNames =
-      this.props.points.toSeq()
-      .sortBy((points, s) => s);
+    const seriesNames = this.props.points.toSeq().sortBy((points, s) => s);
 
     let dateRange = this.props.default_date_range;
     if (dateRange === undefined) {
@@ -136,42 +136,48 @@ class CycleChart extends React.PureComponent<CycleChartProps, CycleChartState> {
     return (
       <div>
         <FlexibleWidthXYPlot
-            height={window.innerHeight - 200}
-            xType="time"
-            margin={{bottom: 50}}
-            onMouseLeave={this.clearTooltip}
-            dontCheckIfEmpty
-            xDomain={this.props.points.isEmpty() ? dateRange : undefined}
-            yDomain={this.props.points.isEmpty() ? [0, 60] : undefined}
+          height={window.innerHeight - 200}
+          xType="time"
+          margin={{ bottom: 50 }}
+          onMouseLeave={this.clearTooltip}
+          dontCheckIfEmpty
+          xDomain={this.props.points.isEmpty() ? dateRange : undefined}
+          yDomain={this.props.points.isEmpty() ? [0, 60] : undefined}
         >
-          <VerticalGridLines/>
-          <HorizontalGridLines/>
-          <XAxis tickLabelAngle={-45}/>
-          <YAxis/>
-          {
-            seriesNames.map((points, series) =>
+          <VerticalGridLines />
+          <HorizontalGridLines />
+          <XAxis tickLabelAngle={-45} />
+          <YAxis />
+          {seriesNames
+            .map((points, series) => (
               <MarkSeries
                 key={series}
                 data={points}
-                onValueClick={this.state.disabled_series[series] ? undefined : this.setTooltip(series)}
-                {...(this.state.disabled_series[series] ? {opacity: 0.2} : null)}
+                onValueClick={
+                  this.state.disabled_series[series]
+                    ? undefined
+                    : this.setTooltip(series)
+                }
+                {...(this.state.disabled_series[series]
+                  ? { opacity: 0.2 }
+                  : null)}
               />
-            ).toIndexedSeq()
-          }
-          {
-            this.state.tooltip === undefined ? undefined :
-              <Hint value={this.state.tooltip} format={this.formatHint}/>
-          }
+            ))
+            .toIndexedSeq()}
+          {this.state.tooltip === undefined ? (
+            undefined
+          ) : (
+            <Hint value={this.state.tooltip} format={this.formatHint} />
+          )}
         </FlexibleWidthXYPlot>
 
-        <div style={{textAlign: 'center'}}>
+        <div style={{ textAlign: "center" }}>
           <DiscreteColorLegend
             orientation="horizontal"
-            items={
-              seriesNames.keySeq().map(s =>
-                ({title: s, disabled: this.state.disabled_series[s]})
-              ).toArray()
-            }
+            items={seriesNames
+              .keySeq()
+              .map(s => ({ title: s, disabled: this.state.disabled_series[s] }))
+              .toArray()}
             onItemClick={this.toggleSeries}
           />
         </div>
@@ -181,7 +187,10 @@ class CycleChart extends React.PureComponent<CycleChartProps, CycleChartState> {
 }
 
 export interface SelectableCycleChartProps {
-  readonly points: im.Map<string, im.Map<string, ReadonlyArray<CycleChartPoint>>>;
+  readonly points: im.Map<
+    string,
+    im.Map<string, ReadonlyArray<CycleChartPoint>>
+  >;
   readonly select_label: string;
   readonly series_label: string;
   readonly card_label: string;
@@ -193,9 +202,10 @@ export interface SelectableCycleChartProps {
 }
 
 export function SelectableCycleChart(props: SelectableCycleChartProps) {
-  let validValue = props.selected !== undefined && props.points.has(props.selected);
+  let validValue =
+    props.selected !== undefined && props.points.has(props.selected);
   function stripAfterDash(s: string): string {
-    const idx = s.indexOf('-');
+    const idx = s.indexOf("-");
     if (idx >= 0) {
       return s.substring(0, idx);
     } else {
@@ -206,12 +216,14 @@ export function SelectableCycleChart(props: SelectableCycleChartProps) {
     <Card raised>
       <CardHeader
         title={
-          <div style={{display: 'flex', flexWrap: 'wrap', alignItems: 'center'}}>
+          <div
+            style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}
+          >
             {props.icon}
-            <div style={{marginLeft: '10px', marginRight: '3em'}}>
+            <div style={{ marginLeft: "10px", marginRight: "3em" }}>
               {props.card_label}
             </div>
-            <div style={{flexGrow: 1}}/>
+            <div style={{ flexGrow: 1 }} />
             <Select
               name={props.card_label.replace(" ", "-") + "-cycle-chart-select"}
               autoWidth
@@ -219,22 +231,31 @@ export function SelectableCycleChart(props: SelectableCycleChartProps) {
               value={validValue ? props.selected : ""}
               onChange={e => props.setSelected(e.target.value)}
             >
-              {
-                validValue ? undefined :
-                  <MenuItem key={0} value=""><em>Select {props.select_label}</em></MenuItem>
-              }
-              {
-                props.points.keySeq().sort().map(n =>
+              {validValue ? (
+                undefined
+              ) : (
+                <MenuItem key={0} value="">
+                  <em>Select {props.select_label}</em>
+                </MenuItem>
+              )}
+              {props.points
+                .keySeq()
+                .sort()
+                .map(n => (
                   <MenuItem key={n} value={n}>
-                    <div style={{display: "flex", alignItems: "center"}}>
-                      {props.useIdenticon ? <PartIdenticon part={stripAfterDash(n)} size={30}/> : undefined}
-                      <span style={{marginRight: '1em'}}>{n}</span>
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      {props.useIdenticon ? (
+                        <PartIdenticon part={stripAfterDash(n)} size={30} />
+                      ) : (
+                        undefined
+                      )}
+                      <span style={{ marginRight: "1em" }}>{n}</span>
                     </div>
                   </MenuItem>
-                )
-              }
+                ))}
             </Select>
-          </div>}
+          </div>
+        }
       />
       <CardContent>
         <CycleChart
@@ -245,4 +266,4 @@ export function SelectableCycleChart(props: SelectableCycleChartProps) {
       </CardContent>
     </Card>
   );
-  }
+}

@@ -30,19 +30,19 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from 'react';
-import Grid from '@material-ui/core/Grid';
-import * as im from 'immutable';
-import { createSelector } from 'reselect';
-import Tooltip from '@material-ui/core/Tooltip';
-import TimeAgo from 'react-timeago';
+import * as React from "react";
+import Grid from "@material-ui/core/Grid";
+import * as im from "immutable";
+import { createSelector } from "reselect";
+import Tooltip from "@material-ui/core/Tooltip";
+import TimeAgo from "react-timeago";
 
-import { connect, Store } from '../../store/store';
-import { stationMinutes } from '../../data/events';
-import * as api from '../../data/api';
-import { duration } from 'moment';
-import { addSeconds, addDays } from 'date-fns';
-import { PalletData, buildPallets } from '../../data/load-station';
+import { connect, Store } from "../../store/store";
+import { stationMinutes } from "../../data/events";
+import * as api from "../../data/api";
+import { duration } from "moment";
+import { addSeconds, addDays } from "date-fns";
+import { PalletData, buildPallets } from "../../data/load-station";
 
 interface StationOEEProps {
   readonly dateOfCurrentStatus: Date | undefined;
@@ -52,26 +52,45 @@ interface StationOEEProps {
   readonly queuedPallet?: PalletData;
 }
 
-function polarToCartesian(centerX: number, centerY: number, radius: number, angleInRadians: number) {
+function polarToCartesian(
+  centerX: number,
+  centerY: number,
+  radius: number,
+  angleInRadians: number
+) {
   return {
-    x: centerX + (radius * Math.cos(angleInRadians)),
-    y: centerY + (radius * Math.sin(angleInRadians))
+    x: centerX + radius * Math.cos(angleInRadians),
+    y: centerY + radius * Math.sin(angleInRadians)
   };
 }
 
-function describeArc(cx: number, cy: number, radius: number, startAngle: number, endAngle: number) {
+function describeArc(
+  cx: number,
+  cy: number,
+  radius: number,
+  startAngle: number,
+  endAngle: number
+) {
+  const start = polarToCartesian(cx, cy, radius, endAngle);
+  const end = polarToCartesian(cx, cy, radius, startAngle);
 
-    const start = polarToCartesian(cx, cy, radius, endAngle);
-    const end = polarToCartesian(cx, cy, radius, startAngle);
+  const largeArcFlag = endAngle - startAngle <= Math.PI ? "0" : "1";
 
-    const largeArcFlag = endAngle - startAngle <= Math.PI ? '0' : '1';
+  var d = [
+    "M",
+    start.x,
+    start.y,
+    "A",
+    radius,
+    radius,
+    Math.PI / 2,
+    largeArcFlag,
+    "0",
+    end.x,
+    end.y
+  ].join(" ");
 
-    var d = [
-        'M', start.x, start.y,
-        'A', radius, radius, Math.PI / 2, largeArcFlag, '0', end.x, end.y
-    ].join(' ');
-
-    return d;
+  return d;
 }
 
 function computeCircle(oee: number): JSX.Element {
@@ -108,15 +127,20 @@ function computeCircle(oee: number): JSX.Element {
 }
 
 function computeTooltip(p: StationOEEProps): JSX.Element {
+  let entries: { title: string; value: JSX.Element }[] = [];
 
-  let entries: {title: string, value: JSX.Element}[] = [];
-
-  entries.push({title: "OEE", value: <span>{(p.oee * 100).toFixed(1) + "%"}</span>});
+  entries.push({
+    title: "OEE",
+    value: <span>{(p.oee * 100).toFixed(1) + "%"}</span>
+  });
 
   if (p.pallet === undefined) {
-    entries.push({title: "Pallet", value: <span>none</span>});
+    entries.push({ title: "Pallet", value: <span>none</span> });
   } else {
-    entries.push({title: "Pallet", value: <span>{p.pallet.pallet.pallet}</span>});
+    entries.push({
+      title: "Pallet",
+      value: <span>{p.pallet.pallet.pallet}</span>
+    });
 
     for (let mat of p.pallet.material) {
       const name = mat.partName + "-" + mat.process.toString();
@@ -133,31 +157,41 @@ function computeTooltip(p: StationOEEProps): JSX.Element {
           break;
         case api.ActionType.Machining:
           matStatus = " (machining)";
-          if (mat.action.expectedRemainingMachiningTime && p.dateOfCurrentStatus) {
+          if (
+            mat.action.expectedRemainingMachiningTime &&
+            p.dateOfCurrentStatus
+          ) {
             matStatus += " completing ";
-            const seconds = duration(mat.action.expectedRemainingMachiningTime).asSeconds();
-            matTime = <TimeAgo date={addSeconds(p.dateOfCurrentStatus, seconds)}/>;
+            const seconds = duration(
+              mat.action.expectedRemainingMachiningTime
+            ).asSeconds();
+            matTime = (
+              <TimeAgo date={addSeconds(p.dateOfCurrentStatus, seconds)} />
+            );
           }
           break;
       }
 
       entries.push({
         title: "Part",
-        value: <><span>{name + matStatus}</span>{matTime}</>
+        value: (
+          <>
+            <span>{name + matStatus}</span>
+            {matTime}
+          </>
+        )
       });
     }
   }
 
   return (
     <>
-      {
-        entries.map((e, idx) =>
-          <div key={idx}>
-            <span>{e.title}: </span>
-            {e.value}
-          </div>
-        )
-      }
+      {entries.map((e, idx) => (
+        <div key={idx}>
+          <span>{e.title}: </span>
+          {e.value}
+        </div>
+      ))}
     </>
   );
 }
@@ -176,10 +210,10 @@ function StationOEEWithStyles(p: StationOEEProps) {
     <Tooltip title={computeTooltip(p)}>
       <svg viewBox="0 0 400 400">
         {computeCircle(p.oee)}
-        <text x={200} y={190} textAnchor="middle" style={{fontSize: 45}}>
+        <text x={200} y={190} textAnchor="middle" style={{ fontSize: 45 }}>
           {p.station}
         </text>
-        <text x={200} y={250} textAnchor="middle" style={{fontSize: 30}}>
+        <text x={200} y={250} textAnchor="middle" style={{ fontSize: 30 }}>
           {pallet}
         </text>
       </svg>
@@ -191,38 +225,38 @@ function StationOEEWithStyles(p: StationOEEProps) {
 // https://github.com/Microsoft/TypeScript/issues/4881
 class StationOEE extends React.PureComponent<StationOEEProps> {
   render() {
-    return <StationOEEWithStyles {...this.props}/>;
+    return <StationOEEWithStyles {...this.props} />;
   }
 }
 
 interface Props {
   dateOfCurrentStatus: Date | undefined;
   station_active_minutes_past_week: im.Map<string, number>;
-  pallets: im.Map<string, {pal?: PalletData, queued?: PalletData}>;
+  pallets: im.Map<string, { pal?: PalletData; queued?: PalletData }>;
 }
 
 function StationOEEs(p: Props) {
-  const stats =
-    im.Set(p.station_active_minutes_past_week.keySeq())
+  const stats = im
+    .Set(p.station_active_minutes_past_week.keySeq())
     .union(im.Set(p.pallets.keySeq()))
     .toSeq()
     .sortBy(s => [s.startsWith("L/U"), s]) // put machines first
     .cacheResult();
   return (
     <Grid data-testid="stationoee-container" container justify="space-around">
-      {
-        stats.map((stat, idx) => (
-          <Grid item xs={12} sm={6} md={4} lg={3} key={idx}>
-            <StationOEE
-              dateOfCurrentStatus={p.dateOfCurrentStatus}
-              station={stat}
-              oee={p.station_active_minutes_past_week.get(stat, 0) / (60 * 24 * 7)}
-              pallet={p.pallets.get(stat, {pal: undefined}).pal}
-              queuedPallet={p.pallets.get(stat, {queued: undefined}).queued}
-            />
-          </Grid>
-        ))
-      }
+      {stats.map((stat, idx) => (
+        <Grid item xs={12} sm={6} md={4} lg={3} key={idx}>
+          <StationOEE
+            dateOfCurrentStatus={p.dateOfCurrentStatus}
+            station={stat}
+            oee={
+              p.station_active_minutes_past_week.get(stat, 0) / (60 * 24 * 7)
+            }
+            pallet={p.pallets.get(stat, { pal: undefined }).pal}
+            queuedPallet={p.pallets.get(stat, { queued: undefined }).queued}
+          />
+        </Grid>
+      ))}
     </Grid>
   );
   // TODO: buffer and cart
@@ -232,7 +266,9 @@ const oeeSelector = createSelector(
   (s: Store) => s.Events.last30.cycles.by_part_then_stat,
   (s: Store) => s.Current.date_of_current_status,
   (byPartThenStat, lastStTime) =>
-    lastStTime ? stationMinutes(byPartThenStat, addDays(lastStTime, -7)) : im.Map<string, number>()
+    lastStTime
+      ? stationMinutes(byPartThenStat, addDays(lastStTime, -7))
+      : im.Map<string, number>()
 );
 
 const palSelector = createSelector(
@@ -240,10 +276,8 @@ const palSelector = createSelector(
   buildPallets
 );
 
-export default connect(
-  s => ({
-    dateOfCurrentStatus: s.Current.date_of_current_status,
-    station_active_minutes_past_week: oeeSelector(s),
-    pallets: palSelector(s),
-  })
-)(StationOEEs);
+export default connect(s => ({
+  dateOfCurrentStatus: s.Current.date_of_current_status,
+  station_active_minutes_past_week: oeeSelector(s),
+  pallets: palSelector(s)
+}))(StationOEEs);

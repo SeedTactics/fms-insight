@@ -31,27 +31,40 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from 'react';
-import * as im from 'immutable';
-import { addHours } from 'date-fns';
-import Grid from '@material-ui/core/Grid';
-import Button from '@material-ui/core/Button';
-import { DialogActions } from '@material-ui/core';
-import { createSelector } from 'reselect';
-import DocumentTitle from 'react-document-title';
+import * as React from "react";
+import * as im from "immutable";
+import { addHours } from "date-fns";
+import Grid from "@material-ui/core/Grid";
+import Button from "@material-ui/core/Button";
+import { DialogActions } from "@material-ui/core";
+import { createSelector } from "reselect";
+import DocumentTitle from "react-document-title";
 
-import { MaterialSummary } from '../../data/events';
-import { Store, connect, mkAC, AppActionBeforeMiddleware } from '../../store/store';
-import { MaterialDialogProps, MaterialDialog, MatSummary, WhiteboardRegion, InstructionButton } from './Material';
-import * as matDetails from '../../data/material-details';
-import { MaterialSummaryAndCompletedData } from '../../data/events.matsummary';
-import SerialScanner from './QRScan';
+import { MaterialSummary } from "../../data/events";
+import {
+  Store,
+  connect,
+  mkAC,
+  AppActionBeforeMiddleware
+} from "../../store/store";
+import {
+  MaterialDialogProps,
+  MaterialDialog,
+  MatSummary,
+  WhiteboardRegion,
+  InstructionButton
+} from "./Material";
+import * as matDetails from "../../data/material-details";
+import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
+import SerialScanner from "./QRScan";
 
 interface InspButtonsProps {
   readonly display_material: matDetails.MaterialDetail;
   readonly operator?: string;
   readonly inspection_type: string;
-  readonly completeInspection: (comp: matDetails.CompleteInspectionData) => void;
+  readonly completeInspection: (
+    comp: matDetails.CompleteInspectionData
+  ) => void;
 }
 
 function InspButtons(props: InspButtonsProps) {
@@ -64,16 +77,20 @@ function InspButtons(props: InspButtonsProps) {
       mat: props.display_material,
       inspType: props.inspection_type,
       success,
-      operator: props.operator,
+      operator: props.operator
     });
   }
 
   return (
     <>
-      {props.display_material && props.display_material.partName !== "" ?
-        <InstructionButton part={props.display_material.partName} type={props.inspection_type}/>
-        : undefined
-      }
+      {props.display_material && props.display_material.partName !== "" ? (
+        <InstructionButton
+          part={props.display_material.partName}
+          type={props.inspection_type}
+        />
+      ) : (
+        undefined
+      )}
       <Button color="primary" onClick={() => markInspComplete(true)}>
         Mark {props.inspection_type} Success
       </Button>
@@ -87,7 +104,9 @@ function InspButtons(props: InspButtonsProps) {
 interface InspDialogProps extends MaterialDialogProps {
   readonly operator?: string;
   readonly focusInspectionType: string;
-  readonly completeInspection: (comp: matDetails.CompleteInspectionData) => void;
+  readonly completeInspection: (
+    comp: matDetails.CompleteInspectionData
+  ) => void;
 }
 
 function InspDialog(props: InspDialogProps) {
@@ -108,7 +127,9 @@ function InspDialog(props: InspDialogProps) {
       display_material={props.display_material}
       onClose={props.onClose}
       extraDialogElements={
-        !displayMat || !multipleInspTypes ? undefined :
+        !displayMat || !multipleInspTypes ? (
+          undefined
+        ) : (
           <>
             {multipleInspTypes.map(i => (
               <DialogActions key={i}>
@@ -121,15 +142,19 @@ function InspDialog(props: InspDialogProps) {
               </DialogActions>
             ))}
           </>
+        )
       }
       buttons={
-        !singleInspectionType || !displayMat ? undefined :
-        <InspButtons
-          display_material={displayMat}
-          operator={props.operator}
-          inspection_type={singleInspectionType}
-          completeInspection={props.completeInspection}
-        />
+        !singleInspectionType || !displayMat ? (
+          undefined
+        ) : (
+          <InspButtons
+            display_material={displayMat}
+            operator={props.operator}
+            inspection_type={singleInspectionType}
+            completeInspection={props.completeInspection}
+          />
+        )
       }
     />
   );
@@ -139,14 +164,15 @@ const ConnectedInspDialog = connect(
   st => ({
     display_material: st.MaterialDetails.material,
     focusInspectionType: st.Route.selected_insp_type || "",
-    operator: st.Operators.current,
+    operator: st.Operators.current
   }),
   {
     onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
-    completeInspection: (data: matDetails.CompleteInspectionData) => [
-      matDetails.completeInspection(data),
-      {type: matDetails.ActionType.CloseMaterialDialog}
-    ] as AppActionBeforeMiddleware,
+    completeInspection: (data: matDetails.CompleteInspectionData) =>
+      [
+        matDetails.completeInspection(data),
+        { type: matDetails.ActionType.CloseMaterialDialog }
+      ] as AppActionBeforeMiddleware
   }
 )(InspDialog);
 
@@ -162,7 +188,6 @@ interface InspectionProps {
 }
 
 function Inspection(props: InspectionProps) {
-
   let title = "Inspection - FMS Insight";
   if (props.focusInspectionType !== "") {
     title = "Inspection " + props.focusInspectionType + " - FMS Insight";
@@ -170,31 +195,40 @@ function Inspection(props: InspectionProps) {
 
   return (
     <DocumentTitle title={title}>
-      <main style={{padding: '8px'}}>
+      <main style={{ padding: "8px" }}>
         <Grid container spacing={16}>
           <Grid item xs={12} md={6}>
             <WhiteboardRegion label="Parts to Inspect" borderRight borderBottom>
-              { props.recent_inspections.waiting_to_inspect.map((m, idx) =>
-                <MatSummary key={idx} mat={m} onOpen={props.openMat} hideInspectionIcon/>)
-              }
+              {props.recent_inspections.waiting_to_inspect.map((m, idx) => (
+                <MatSummary
+                  key={idx}
+                  mat={m}
+                  onOpen={props.openMat}
+                  hideInspectionIcon
+                />
+              ))}
             </WhiteboardRegion>
           </Grid>
           <Grid item xs={12} md={6}>
-            <WhiteboardRegion label="Recently Inspected" borderLeft borderBottom>
-              { props.recent_inspections.inspect_completed.map((m, idx) =>
+            <WhiteboardRegion
+              label="Recently Inspected"
+              borderLeft
+              borderBottom
+            >
+              {props.recent_inspections.inspect_completed.map((m, idx) => (
                 <MatSummary
                   key={idx}
                   mat={m}
                   onOpen={props.openMat}
                   focusInspectionType={props.focusInspectionType}
                   hideInspectionIcon
-                />)
-              }
+                />
+              ))}
             </WhiteboardRegion>
           </Grid>
         </Grid>
-        <ConnectedInspDialog/>
-        <SerialScanner/>
+        <ConnectedInspDialog />
+        <SerialScanner />
       </main>
     </DocumentTitle>
   );
@@ -203,31 +237,55 @@ function Inspection(props: InspectionProps) {
 const extractRecentInspections = createSelector(
   (st: Store) => st.Events.last30.mat_summary.matsById,
   (st: Store) => st.Route.selected_insp_type,
-  (mats: im.Map<number, MaterialSummaryAndCompletedData>, inspType: string | undefined): PartsForInspection => {
+  (
+    mats: im.Map<number, MaterialSummaryAndCompletedData>,
+    inspType: string | undefined
+  ): PartsForInspection => {
     const cutoff = addHours(new Date(), -36);
     const allDetails = mats
       .valueSeq()
-      .filter(e => e.completed_time !== undefined && e.completed_time >= cutoff);
+      .filter(
+        e => e.completed_time !== undefined && e.completed_time >= cutoff
+      );
 
     function checkAllCompleted(m: MaterialSummaryAndCompletedData): boolean {
-      return im.Set(m.signaledInspections).subtract(im.Seq(m.completedInspections || {}).keySeq()).isEmpty();
+      return im
+        .Set(m.signaledInspections)
+        .subtract(im.Seq(m.completedInspections || {}).keySeq())
+        .isEmpty();
     }
 
     const uninspected =
       inspType === undefined
-        ? allDetails.filter(m => m.signaledInspections.length > 0 && !checkAllCompleted(m))
-        : allDetails.filter(m => m.signaledInspections.indexOf(inspType) >= 0
-                              && (m.completedInspections || {})[inspType] === undefined);
+        ? allDetails.filter(
+            m => m.signaledInspections.length > 0 && !checkAllCompleted(m)
+          )
+        : allDetails.filter(
+            m =>
+              m.signaledInspections.indexOf(inspType) >= 0 &&
+              (m.completedInspections || {})[inspType] === undefined
+          );
 
     const inspected =
       inspType === undefined
-        ? allDetails.filter(m => m.signaledInspections.length > 0 && checkAllCompleted(m))
-        : allDetails.filter(m => m.signaledInspections.indexOf(inspType) >= 0
-                              && (m.completedInspections || {})[inspType] !== undefined);
+        ? allDetails.filter(
+            m => m.signaledInspections.length > 0 && checkAllCompleted(m)
+          )
+        : allDetails.filter(
+            m =>
+              m.signaledInspections.indexOf(inspType) >= 0 &&
+              (m.completedInspections || {})[inspType] !== undefined
+          );
 
     return {
-      waiting_to_inspect: uninspected.sortBy(e => e.completed_time).reverse().toArray(),
-      inspect_completed: inspected.sortBy(e => e.completed_time).reverse().toArray(),
+      waiting_to_inspect: uninspected
+        .sortBy(e => e.completed_time)
+        .reverse()
+        .toArray(),
+      inspect_completed: inspected
+        .sortBy(e => e.completed_time)
+        .reverse()
+        .toArray()
     };
   }
 );
@@ -235,9 +293,9 @@ const extractRecentInspections = createSelector(
 export default connect(
   (st: Store) => ({
     recent_inspections: extractRecentInspections(st),
-    focusInspectionType: st.Route.selected_insp_type || "",
+    focusInspectionType: st.Route.selected_insp_type || ""
   }),
   {
-    openMat: matDetails.openMaterialDialog,
+    openMat: matDetails.openMaterialDialog
   }
 )(Inspection);

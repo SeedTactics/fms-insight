@@ -31,17 +31,19 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from 'react';
-import * as im from 'immutable';
+import * as React from "react";
+import * as im from "immutable";
 import {
   MoveMaterialArrow,
   MoveMaterialArrowData,
   computeArrows,
   MoveMaterialIdentifier,
   MoveMaterialNodeKind
-} from '../../data/move-arrows';
+} from "../../data/move-arrows";
 
-class MoveMaterialArrows extends React.PureComponent<MoveMaterialArrowData<Element>> {
+class MoveMaterialArrows extends React.PureComponent<
+  MoveMaterialArrowData<Element>
+> {
   static elementToRect(e: Element): ClientRect {
     var r = e.getBoundingClientRect();
     return {
@@ -50,7 +52,7 @@ class MoveMaterialArrows extends React.PureComponent<MoveMaterialArrowData<Eleme
       width: r.width,
       height: r.height,
       bottom: r.bottom + window.scrollY,
-      right: r.right + window.scrollX,
+      right: r.right + window.scrollX
     };
   }
 
@@ -60,7 +62,9 @@ class MoveMaterialArrows extends React.PureComponent<MoveMaterialArrowData<Eleme
     const mpy = (arr.fromY + arr.toY) / 2;
 
     // angle of perpendicular to line
-    const theta = Math.atan2(arr.toY - arr.fromY, arr.toX - arr.fromX) + Math.PI * arr.curveDirection / 2;
+    const theta =
+      Math.atan2(arr.toY - arr.fromY, arr.toX - arr.fromX) +
+      (Math.PI * arr.curveDirection) / 2;
 
     // control points
     const cx = mpx + 50 * Math.cos(theta);
@@ -71,7 +75,10 @@ class MoveMaterialArrows extends React.PureComponent<MoveMaterialArrowData<Eleme
 
   render() {
     const data: MoveMaterialArrowData<ClientRect> = {
-      container: this.props.container !== null ? MoveMaterialArrows.elementToRect(this.props.container) : null,
+      container:
+        this.props.container !== null
+          ? MoveMaterialArrows.elementToRect(this.props.container)
+          : null,
       nodes: this.props.nodes.map(MoveMaterialArrows.elementToRect),
       node_type: this.props.node_type
     };
@@ -79,30 +86,40 @@ class MoveMaterialArrows extends React.PureComponent<MoveMaterialArrowData<Eleme
 
     return (
       <g>
-        {arrows.map((arr, idx) =>
+        {arrows.map((arr, idx) => (
           <path
             key={idx}
-            style={{fill: "none", stroke: "rgba(0,0,0,0.5)", strokeWidth: 2}}
+            style={{ fill: "none", stroke: "rgba(0,0,0,0.5)", strokeWidth: 2 }}
             d={MoveMaterialArrows.arrowToPath(arr)}
             markerEnd={`url(#arrow)`}
           />
-        )}
+        ))}
       </g>
     );
   }
 }
 
 interface MoveMaterialArrowContext {
-  readonly registerNode: (id: MoveMaterialIdentifier) => (ref: Element | null) => void;
-  readonly registerNodeKind: (id: MoveMaterialIdentifier, kind: MoveMaterialNodeKind | null) => void;
+  readonly registerNode: (
+    id: MoveMaterialIdentifier
+  ) => (ref: Element | null) => void;
+  readonly registerNodeKind: (
+    id: MoveMaterialIdentifier,
+    kind: MoveMaterialNodeKind | null
+  ) => void;
 }
-const MoveMaterialArrowCtx = React.createContext<MoveMaterialArrowContext | undefined>(undefined);
+const MoveMaterialArrowCtx = React.createContext<
+  MoveMaterialArrowContext | undefined
+>(undefined);
 
-export class MoveMaterialArrowContainer extends React.PureComponent<{}, MoveMaterialArrowData<Element>> {
+export class MoveMaterialArrowContainer extends React.PureComponent<
+  {},
+  MoveMaterialArrowData<Element>
+> {
   state = {
     container: null,
     nodes: im.Map<MoveMaterialIdentifier, Element>(),
-    node_type: im.Map<MoveMaterialIdentifier, MoveMaterialNodeKind>(),
+    node_type: im.Map<MoveMaterialIdentifier, MoveMaterialNodeKind>()
   } as MoveMaterialArrowData<Element>;
 
   readonly ctx: MoveMaterialArrowContext | undefined = undefined;
@@ -118,28 +135,39 @@ export class MoveMaterialArrowContainer extends React.PureComponent<{}, MoveMate
   registerNode(id: MoveMaterialIdentifier) {
     return (ref: Element | null) => {
       if (ref) {
-        this.setState(s => ({nodes: s.nodes.set(id, ref)}));
+        this.setState(s => ({ nodes: s.nodes.set(id, ref) }));
       } else {
         this.setState(s => ({
           nodes: s.nodes.remove(id),
-          node_type: s.node_type.remove(id),
+          node_type: s.node_type.remove(id)
         }));
       }
     };
   }
 
-  registerNodeKind(id: MoveMaterialIdentifier, kind: MoveMaterialNodeKind | null) {
+  registerNodeKind(
+    id: MoveMaterialIdentifier,
+    kind: MoveMaterialNodeKind | null
+  ) {
     if (kind) {
-      this.setState(s => ({node_type: s.node_type.set(id, kind)}));
+      this.setState(s => ({ node_type: s.node_type.set(id, kind) }));
     } else {
-      this.setState(s => ({node_type: s.node_type.remove(id)}));
+      this.setState(s => ({ node_type: s.node_type.remove(id) }));
     }
   }
 
   render() {
     return (
-      <div style={{position: "relative"}}>
-        <svg style={{position: 'absolute', width: '100%', height: '100%', top: 0, right: 0}}>
+      <div style={{ position: "relative" }}>
+        <svg
+          style={{
+            position: "absolute",
+            width: "100%",
+            height: "100%",
+            top: 0,
+            right: 0
+          }}
+        >
           <defs>
             <marker
               id="arrow"
@@ -150,12 +178,12 @@ export class MoveMaterialArrowContainer extends React.PureComponent<{}, MoveMate
               orient="auto"
               markerUnits="strokeWidth"
             >
-              <path d="M0,0 L0,6 L5,3 z" fill="rgba(0,0,0,0.5)"/>
+              <path d="M0,0 L0,6 L5,3 z" fill="rgba(0,0,0,0.5)" />
             </marker>
           </defs>
-          <MoveMaterialArrows {...this.state}/>
+          <MoveMaterialArrows {...this.state} />
         </svg>
-        <div ref={r => this.setState({container: r})}>
+        <div ref={r => this.setState({ container: r })}>
           <MoveMaterialArrowCtx.Provider value={this.ctx}>
             {this.props.children}
           </MoveMaterialArrowCtx.Provider>
@@ -170,7 +198,9 @@ interface MoveMaterialArrowNodeHelperProps {
   readonly ctx: MoveMaterialArrowContext;
 }
 
-class MoveMaterialArrowNodeHelper extends React.PureComponent<MoveMaterialArrowNodeHelperProps> {
+class MoveMaterialArrowNodeHelper extends React.PureComponent<
+  MoveMaterialArrowNodeHelperProps
+> {
   readonly ident = Symbol("MoveMaterialArrowNode");
 
   constructor(props: MoveMaterialArrowNodeHelperProps) {
@@ -193,15 +223,21 @@ class MoveMaterialArrowNodeHelper extends React.PureComponent<MoveMaterialArrowN
   }
 }
 
-export class MoveMaterialArrowNode extends React.PureComponent<MoveMaterialNodeKind> {
+export class MoveMaterialArrowNode extends React.PureComponent<
+  MoveMaterialNodeKind
+> {
   render() {
-    const {children, ...kind} = this.props;
+    const { children, ...kind } = this.props;
     return (
       <MoveMaterialArrowCtx.Consumer>
-        {ctx => ctx === undefined ? undefined :
-          <MoveMaterialArrowNodeHelper ctx={ctx} kind={kind}>
-            {children}
-          </MoveMaterialArrowNodeHelper>
+        {ctx =>
+          ctx === undefined ? (
+            undefined
+          ) : (
+            <MoveMaterialArrowNodeHelper ctx={ctx} kind={kind}>
+              {children}
+            </MoveMaterialArrowNodeHelper>
+          )
         }
       </MoveMaterialArrowCtx.Consumer>
     );

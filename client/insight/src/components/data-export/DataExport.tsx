@@ -30,24 +30,24 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from 'react';
-import * as df from 'date-fns';
-import DocumentTitle from 'react-document-title';
-import TextField from '@material-ui/core/TextField';
-import Button from '@material-ui/core/Button';
-import ExportIcon from '@material-ui/icons/ImportExport';
-import ViewIcon from '@material-ui/icons/ViewList';
-import Card from '@material-ui/core/Card';
-import CardContent from '@material-ui/core/CardContent';
-import CardHeader from '@material-ui/core/CardHeader';
-import CardActions from '@material-ui/core/CardActions';
-import Grid from '@material-ui/core/Grid';
-import BasketIcon from '@material-ui/icons/ShoppingBasket';
-import * as queryString from 'query-string';
+import * as React from "react";
+import * as df from "date-fns";
+import DocumentTitle from "react-document-title";
+import TextField from "@material-ui/core/TextField";
+import Button from "@material-ui/core/Button";
+import ExportIcon from "@material-ui/icons/ImportExport";
+import ViewIcon from "@material-ui/icons/ViewList";
+import Card from "@material-ui/core/Card";
+import CardContent from "@material-ui/core/CardContent";
+import CardHeader from "@material-ui/core/CardHeader";
+import CardActions from "@material-ui/core/CardActions";
+import Grid from "@material-ui/core/Grid";
+import BasketIcon from "@material-ui/icons/ShoppingBasket";
+import * as queryString from "query-string";
 
-import * as api from '../../data/api';
-import { Store, connect } from '../../store/store';
-import { LogEntries } from '../LogEntry';
+import * as api from "../../data/api";
+import { Store, connect } from "../../store/store";
+import { LogEntries } from "../LogEntry";
 
 interface CSVLogExportState {
   readonly exportDate: string;
@@ -55,7 +55,7 @@ interface CSVLogExportState {
 
 class CSVLogExport extends React.PureComponent<{}, CSVLogExportState> {
   state: CSVLogExportState = {
-    exportDate: df.format(df.addDays(new Date(), -1), "YYYY-MM-DD"),
+    exportDate: df.format(df.addDays(new Date(), -1), "YYYY-MM-DD")
   };
 
   render() {
@@ -63,22 +63,26 @@ class CSVLogExport extends React.PureComponent<{}, CSVLogExportState> {
     const endDate = df.addDays(startDate, 1);
     const startEndQuery = queryString.stringify({
       startUTC: startDate.toISOString(),
-      endUTC: endDate.toISOString(),
+      endUTC: endDate.toISOString()
     });
     const curlUrl =
-      window.location.protocol + "//" + window.location.host
-     + "/api/v1/log/events/all?" + startEndQuery;
+      window.location.protocol +
+      "//" +
+      window.location.host +
+      "/api/v1/log/events/all?" +
+      startEndQuery;
 
     return (
-      <Card style={{margin: '2em'}}>
+      <Card style={{ margin: "2em" }}>
         <CardHeader
           title={
-          <div style={{display: 'flex', alignItems: 'center'}}>
-            <ExportIcon/>
-            <div style={{marginLeft: '10px', marginRight: '3em'}}>
-              Log Data Export
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <ExportIcon />
+              <div style={{ marginLeft: "10px", marginRight: "3em" }}>
+                Log Data Export
+              </div>
             </div>
-          </div>}
+          }
         />
         <CardContent>
           <Grid container>
@@ -87,18 +91,16 @@ class CSVLogExport extends React.PureComponent<{}, CSVLogExportState> {
                 label="Export Date"
                 type="date"
                 value={this.state.exportDate}
-                onChange={e => this.setState({exportDate: e.target.value})}
+                onChange={e => this.setState({ exportDate: e.target.value })}
               />
             </Grid>
             <Grid item xs={12} sm={6} md={5}>
               <p>
-                Data is also available programatically over HTTP.
-                See the <a href="/swagger/">OpenAPI Specification</a> or
-                try the following command in the terminal or PowerShell.
+                Data is also available programatically over HTTP. See the{" "}
+                <a href="/swagger/">OpenAPI Specification</a> or try the
+                following command in the terminal or PowerShell.
               </p>
-              <code>
-                curl -o events.json {curlUrl}
-              </code>
+              <code>curl -o events.json {curlUrl}</code>
             </Grid>
           </Grid>
         </CardContent>
@@ -120,29 +122,36 @@ interface CSVWorkorderExportState {
   readonly exportWorkorder: string;
 }
 
-class CSVWorkorderExport extends React.PureComponent<{}, CSVWorkorderExportState> {
+class CSVWorkorderExport extends React.PureComponent<
+  {},
+  CSVWorkorderExportState
+> {
   state: CSVWorkorderExportState = {
-    exportWorkorder: "",
+    exportWorkorder: ""
   };
 
   render() {
     const startEndQuery = queryString.stringify({
-      ids: this.state.exportWorkorder,
+      ids: this.state.exportWorkorder
     });
     const curlUrl =
-      window.location.protocol + "//" + window.location.host
-     + "/api/v1/log/workorders?" + startEndQuery;
+      window.location.protocol +
+      "//" +
+      window.location.host +
+      "/api/v1/log/workorders?" +
+      startEndQuery;
 
     return (
-      <Card style={{margin: '2em'}}>
+      <Card style={{ margin: "2em" }}>
         <CardHeader
           title={
-          <div style={{display: 'flex', alignItems: 'center'}}>
-            <BasketIcon/>
-            <div style={{marginLeft: '10px', marginRight: '3em'}}>
-              Workorder Data Export
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <BasketIcon />
+              <div style={{ marginLeft: "10px", marginRight: "3em" }}>
+                Workorder Data Export
+              </div>
             </div>
-          </div>}
+          }
         />
         <CardContent>
           <Grid container>
@@ -150,18 +159,18 @@ class CSVWorkorderExport extends React.PureComponent<{}, CSVWorkorderExportState
               <TextField
                 label="Workorder"
                 value={this.state.exportWorkorder}
-                onChange={e => this.setState({exportWorkorder: e.target.value})}
+                onChange={e =>
+                  this.setState({ exportWorkorder: e.target.value })
+                }
               />
             </Grid>
             <Grid item xs={12} sm={6} md={5}>
               <p>
-                Data is also available programatically over HTTP.
-                See the <a href="/swagger/">OpenAPI Specification</a> or
-                try the following command in the terminal or PowerShell.
+                Data is also available programatically over HTTP. See the{" "}
+                <a href="/swagger/">OpenAPI Specification</a> or try the
+                following command in the terminal or PowerShell.
               </p>
-              <code>
-                curl -o workorders.json {curlUrl}
-              </code>
+              <code>curl -o workorders.json {curlUrl}</code>
             </Grid>
           </Grid>
         </CardContent>
@@ -169,7 +178,9 @@ class CSVWorkorderExport extends React.PureComponent<{}, CSVWorkorderExportState
           <Button
             variant="raised"
             color="primary"
-            disabled={!this.state.exportWorkorder || this.state.exportWorkorder === ""}
+            disabled={
+              !this.state.exportWorkorder || this.state.exportWorkorder === ""
+            }
             href={"/api/v1/log/workorders.csv?" + startEndQuery}
           >
             Export to CSV
@@ -186,36 +197,35 @@ interface RecentEventsProps {
 
 function RecentEvents(p: RecentEventsProps) {
   return (
-    <Card style={{margin: '2em'}}>
+    <Card style={{ margin: "2em" }}>
       <CardHeader
         title={
-        <div style={{display: 'flex', alignItems: 'center'}}>
-          <ViewIcon/>
-          <div style={{marginLeft: '10px', marginRight: '3em'}}>
-            Preview of Most Recent Events
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <ViewIcon />
+            <div style={{ marginLeft: "10px", marginRight: "3em" }}>
+              Preview of Most Recent Events
+            </div>
           </div>
-        </div>}
+        }
       />
       <CardContent>
-        <LogEntries entries={p.events}/>
+        <LogEntries entries={p.events} />
       </CardContent>
     </Card>
   );
 }
 
-const ConnectedRecentEvents = connect(
-  (s: Store) => ({
-    events: s.Events.last30.most_recent_10_events,
-  })
-)(RecentEvents);
+const ConnectedRecentEvents = connect((s: Store) => ({
+  events: s.Events.last30.most_recent_10_events
+}))(RecentEvents);
 
 export default function DataExport() {
   return (
     <DocumentTitle title="Data Export - FMS Insight">
-      <main style={{padding: '8px'}}>
-        <CSVLogExport/>
-        <CSVWorkorderExport/>
-        <ConnectedRecentEvents/>
+      <main style={{ padding: "8px" }}>
+        <CSVLogExport />
+        <CSVWorkorderExport />
+        <ConnectedRecentEvents />
       </main>
     </DocumentTitle>
   );

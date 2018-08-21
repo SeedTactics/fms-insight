@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as routes from './routes';
+import * as routes from "./routes";
 
 it("has the initial state", () => {
   // tslint:disable-next-line:no-any
@@ -41,7 +41,7 @@ it("has the initial state", () => {
 
 it("changes to the station page", () => {
   let st = routes.reducer(routes.initial, {
-    type: routes.RouteLocation.WashMonitor,
+    type: routes.RouteLocation.WashMonitor
   });
 
   expect(st).toEqual({
@@ -51,20 +51,20 @@ it("changes to the station page", () => {
     load_queues: [],
     load_free_material: false,
     standalone_queues: [],
-    standalone_free_material: false,
+    standalone_free_material: false
   });
 
   // now one with load queues
   st = routes.reducer(st, {
     type: routes.RouteLocation.LoadMonitor,
     payload: {
-      num: 4,
+      num: 4
     },
     meta: {
       query: {
         queue: ["z", "y", "x"]
       }
-    },
+    }
   });
 
   expect(st).toEqual({
@@ -74,21 +74,21 @@ it("changes to the station page", () => {
     load_queues: ["z", "y", "x"],
     load_free_material: false,
     standalone_queues: [],
-    standalone_free_material: false,
+    standalone_free_material: false
   });
 
   // now with free material
   st = routes.reducer(st, {
     type: routes.RouteLocation.LoadMonitor,
     payload: {
-      num: 6,
+      num: 6
     },
     meta: {
       query: {
         queue: ["w"],
         free: null
       }
-    },
+    }
   });
 
   expect(st).toEqual({
@@ -98,7 +98,7 @@ it("changes to the station page", () => {
     load_queues: ["w"],
     load_free_material: true,
     standalone_queues: [],
-    standalone_free_material: false,
+    standalone_free_material: false
   });
 
   // now with standalone queues
@@ -108,7 +108,7 @@ it("changes to the station page", () => {
       query: {
         queue: ["a", "b", "c"]
       }
-    },
+    }
   });
 
   expect(st).toEqual({
@@ -118,7 +118,7 @@ it("changes to the station page", () => {
     load_queues: ["w"],
     load_free_material: true,
     standalone_queues: ["a", "b", "c"],
-    standalone_free_material: false,
+    standalone_free_material: false
   });
 
   // now with free material
@@ -129,7 +129,7 @@ it("changes to the station page", () => {
         queue: ["d"],
         free: null
       }
-    },
+    }
   });
 
   expect(st).toEqual({
@@ -139,9 +139,8 @@ it("changes to the station page", () => {
     load_queues: ["w"],
     load_free_material: true,
     standalone_queues: ["d"],
-    standalone_free_material: true,
+    standalone_free_material: true
   });
-
 });
 
 it("transitions to the cost/piece, dashboard, and efficiency pages", () => {
@@ -157,11 +156,11 @@ it("transitions to the cost/piece, dashboard, and efficiency pages", () => {
     load_queues: ["a", "b"],
     load_free_material: false,
     standalone_queues: [],
-    standalone_free_material: false,
+    standalone_free_material: false
   };
   for (var page of pages) {
     // tslint:disable-next-line:no-any
     let st = routes.reducer(initialSt, { type: page as any });
-    expect(st).toEqual({...initialSt, current: page});
+    expect(st).toEqual({ ...initialSt, current: page });
   }
 });

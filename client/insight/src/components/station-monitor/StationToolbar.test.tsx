@@ -31,13 +31,13 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from 'react';
-import {render, cleanup} from 'react-testing-library';
+import * as React from "react";
+import { render, cleanup } from "react-testing-library";
 afterEach(cleanup);
-import { Set } from 'immutable';
+import { Set } from "immutable";
 
-import { StationToolbar } from './StationToolbar';
-import * as routes from '../../data/routes';
+import { StationToolbar } from "./StationToolbar";
+import * as routes from "../../data/routes";
 
 const basicState: routes.State = {
   current: routes.RouteLocation.LoadMonitor,
@@ -46,19 +46,19 @@ const basicState: routes.State = {
   load_queues: ["a"],
   load_free_material: false,
   standalone_queues: ["b"],
-  standalone_free_material: false,
+  standalone_free_material: false
 };
 
-it('displays the toolbar for load with one queue', () => {
+it("displays the toolbar for load with one queue", () => {
   const displayLoad = jest.fn();
   const displayInsp = jest.fn();
   const displayWash = jest.fn();
   const displayQueues = jest.fn();
 
-  let {container} = render(
+  let { container } = render(
     <StationToolbar
       current_route={basicState}
-      queues={{"a": {}, "b": {}}}
+      queues={{ a: {}, b: {} }}
       insp_types={Set(["i1", "i2"])}
       displayLoadStation={displayLoad}
       displayInspection={displayInsp}
@@ -70,20 +70,22 @@ it('displays the toolbar for load with one queue', () => {
       setOperator={jest.fn()}
       removeOperator={jest.fn()}
       openQrCodeScan={jest.fn()}
-    />);
-  expect(container).toMatchSnapshot('load with one queue');
+    />
+  );
+  expect(container).toMatchSnapshot("load with one queue");
 });
 
-it('displays the load with no queues', () => {
+it("displays the load with no queues", () => {
   const displayLoad = jest.fn();
   const displayInsp = jest.fn();
   const displayWash = jest.fn();
   const displayQueues = jest.fn();
-  const st = {...basicState,
-    load_queues: [],
+  const st = {
+    ...basicState,
+    load_queues: []
   };
 
-  let {container} = render(
+  let { container } = render(
     <StationToolbar
       current_route={st}
       queues={{}}
@@ -98,25 +100,27 @@ it('displays the load with no queues', () => {
       setOperator={jest.fn()}
       removeOperator={jest.fn()}
       openQrCodeScan={jest.fn()}
-    />);
-  expect(container).toMatchSnapshot('load with no queues');
+    />
+  );
+  expect(container).toMatchSnapshot("load with no queues");
 });
 
-it('displays the toolbar for load with three queues', () => {
+it("displays the toolbar for load with three queues", () => {
   const displayLoad = jest.fn();
   const displayInsp = jest.fn();
   const displayWash = jest.fn();
   const displayQueues = jest.fn();
-  const st = {...basicState,
+  const st = {
+    ...basicState,
     current_route: routes.RouteLocation.LoadMonitor,
     station_monitor: routes.StationMonitorType.LoadUnload,
-    load_queues: ["a", "b", "c"],
+    load_queues: ["a", "b", "c"]
   };
 
-  let {container} = render(
+  let { container } = render(
     <StationToolbar
       current_route={st}
-      queues={{"a": {}, "b": {}, "c": {}, "d": {}}}
+      queues={{ a: {}, b: {}, c: {}, d: {} }}
       insp_types={Set(["i1", "i2"])}
       displayLoadStation={displayLoad}
       displayInspection={displayInsp}
@@ -128,22 +132,24 @@ it('displays the toolbar for load with three queues', () => {
       setOperator={jest.fn()}
       removeOperator={jest.fn()}
       openQrCodeScan={jest.fn()}
-    />);
-  expect(container).toMatchSnapshot('load toolbar');
+    />
+  );
+  expect(container).toMatchSnapshot("load toolbar");
 });
 
-it('displays the toolbar for wash', () => {
+it("displays the toolbar for wash", () => {
   const displayLoad = jest.fn();
   const displayInsp = jest.fn();
   const displayWash = jest.fn();
   const displayQueues = jest.fn();
-  const st = {...basicState,
+  const st = {
+    ...basicState,
     current_route: routes.RouteLocation.WashMonitor,
     station_monitor: routes.StationMonitorType.Wash,
-    load_queues: [],
+    load_queues: []
   };
 
-  let {container} = render(
+  let { container } = render(
     <StationToolbar
       current_route={st}
       queues={{}}
@@ -158,18 +164,20 @@ it('displays the toolbar for wash', () => {
       setOperator={jest.fn()}
       removeOperator={jest.fn()}
       openQrCodeScan={jest.fn()}
-    />);
-  expect(container).toMatchSnapshot('wash toolbar');
+    />
+  );
+  expect(container).toMatchSnapshot("wash toolbar");
 });
 
-it('displays the toolbar for all material', () => {
-  const st = {...basicState,
+it("displays the toolbar for all material", () => {
+  const st = {
+    ...basicState,
     current_route: routes.RouteLocation.AllMaterial,
     station_monitor: routes.StationMonitorType.AllMaterial,
-    load_queues: [],
+    load_queues: []
   };
 
-  let {container} = render(
+  let { container } = render(
     <StationToolbar
       current_route={st}
       queues={{}}
@@ -184,22 +192,24 @@ it('displays the toolbar for all material', () => {
       setOperator={jest.fn()}
       removeOperator={jest.fn()}
       openQrCodeScan={jest.fn()}
-    />);
-  expect(container).toMatchSnapshot('all material toolbar');
+    />
+  );
+  expect(container).toMatchSnapshot("all material toolbar");
 });
 
-it('displays the toolbar for all inspection', () => {
+it("displays the toolbar for all inspection", () => {
   const displayLoad = jest.fn();
   const displayInsp = jest.fn();
   const displayWash = jest.fn();
   const displayQueues = jest.fn();
-  const st = {...basicState,
+  const st = {
+    ...basicState,
     current_route: routes.RouteLocation.InspectionMonitor,
     station_monitor: routes.StationMonitorType.Inspection,
-    load_queues: [],
+    load_queues: []
   };
 
-  let {container} = render(
+  let { container } = render(
     <StationToolbar
       current_route={st}
       queues={{}}
@@ -214,23 +224,25 @@ it('displays the toolbar for all inspection', () => {
       setOperator={jest.fn()}
       removeOperator={jest.fn()}
       openQrCodeScan={jest.fn()}
-    />);
-  expect(container).toMatchSnapshot('inspection all toolbar');
+    />
+  );
+  expect(container).toMatchSnapshot("inspection all toolbar");
 });
 
-it('displays the toolbar for single inspection type', () => {
+it("displays the toolbar for single inspection type", () => {
   const displayLoad = jest.fn();
   const displayInsp = jest.fn();
   const displayWash = jest.fn();
   const displayQueues = jest.fn();
-  const st = {...basicState,
+  const st = {
+    ...basicState,
     current_route: routes.RouteLocation.InspectionMonitor,
     station_monitor: routes.StationMonitorType.Inspection,
     selected_inspection_type: "i1",
-    load_queues: [],
+    load_queues: []
   };
 
-  let {container} = render(
+  let { container } = render(
     <StationToolbar
       current_route={st}
       queues={{}}
@@ -245,22 +257,24 @@ it('displays the toolbar for single inspection type', () => {
       setOperator={jest.fn()}
       removeOperator={jest.fn()}
       openQrCodeScan={jest.fn()}
-    />);
-  expect(container).toMatchSnapshot('inspection i1 selected toolbar');
+    />
+  );
+  expect(container).toMatchSnapshot("inspection i1 selected toolbar");
 });
 
-it('displays an empty queue page', () => {
+it("displays an empty queue page", () => {
   const displayLoad = jest.fn();
   const displayInsp = jest.fn();
   const displayWash = jest.fn();
   const displayQueues = jest.fn();
-  const st = {...basicState,
+  const st = {
+    ...basicState,
     current_route: routes.RouteLocation.Queues,
     station_monitor: routes.StationMonitorType.Queues,
-    standalone_queues: [],
+    standalone_queues: []
   };
 
-  let {container} = render(
+  let { container } = render(
     <StationToolbar
       current_route={st}
       queues={{}}
@@ -275,25 +289,27 @@ it('displays an empty queue page', () => {
       setOperator={jest.fn()}
       removeOperator={jest.fn()}
       openQrCodeScan={jest.fn()}
-    />);
-  expect(container).toMatchSnapshot('empty queues');
+    />
+  );
+  expect(container).toMatchSnapshot("empty queues");
 });
 
-it('displays the toolbar for queue page with three queues', () => {
+it("displays the toolbar for queue page with three queues", () => {
   const displayLoad = jest.fn();
   const displayInsp = jest.fn();
   const displayWash = jest.fn();
   const displayQueues = jest.fn();
-  const st = {...basicState,
+  const st = {
+    ...basicState,
     current_route: routes.RouteLocation.Queues,
     station_monitor: routes.StationMonitorType.Queues,
-    standalone_queues: ["a", "b", "c"],
+    standalone_queues: ["a", "b", "c"]
   };
 
-  let {container} = render(
+  let { container } = render(
     <StationToolbar
       current_route={st}
-      queues={{"a": {}, "b": {}, "c": {}, "d": {}}}
+      queues={{ a: {}, b: {}, c: {}, d: {} }}
       insp_types={Set(["i1", "i2"])}
       displayLoadStation={displayLoad}
       displayInspection={displayInsp}
@@ -305,6 +321,7 @@ it('displays the toolbar for queue page with three queues', () => {
       setOperator={jest.fn()}
       removeOperator={jest.fn()}
       openQrCodeScan={jest.fn()}
-    />);
-  expect(container).toMatchSnapshot('queue toolbar');
+    />
+  );
+  expect(container).toMatchSnapshot("queue toolbar");
 });

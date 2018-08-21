@@ -30,29 +30,38 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { createStore, combineReducers, compose, applyMiddleware } from 'redux';
+import { createStore, combineReducers, compose, applyMiddleware } from "redux";
 
-import * as currentStatus from '../data/current-status';
-import * as events from '../data/events';
-import * as gui from '../data/gui-state';
-import * as routes from '../data/routes';
-import * as mat from '../data/material-details';
-import * as operators from '../data/operators';
-import * as serverSettings from '../data/server-settings';
-import * as ccp from '../data/cost-per-piece';
-import * as websocket from './websocket';
+import * as currentStatus from "../data/current-status";
+import * as events from "../data/events";
+import * as gui from "../data/gui-state";
+import * as routes from "../data/routes";
+import * as mat from "../data/material-details";
+import * as operators from "../data/operators";
+import * as serverSettings from "../data/server-settings";
+import * as ccp from "../data/cost-per-piece";
+import * as websocket from "./websocket";
 
-import { pledgeMiddleware, arrayMiddleware, ActionBeforeMiddleware } from './middleware';
+import {
+  pledgeMiddleware,
+  arrayMiddleware,
+  ActionBeforeMiddleware
+} from "./middleware";
 
-import * as im from 'immutable';
-import { connectRoutes, LocationState } from 'redux-first-router';
-import createHistory from 'history/createBrowserHistory';
-import * as queryString from 'query-string';
-import * as reactRedux from 'react-redux';
-import * as redux from 'redux';
-import { initBarcodeListener } from './barcode';
-import { registerMockBackend } from '../data/backend';
-import { DispatchFn, ActionPayload, ActionCreatorToDispatch, GetActionTypes } from './action-types';
+import * as im from "immutable";
+import { connectRoutes, LocationState } from "redux-first-router";
+import createHistory from "history/createBrowserHistory";
+import * as queryString from "query-string";
+import * as reactRedux from "react-redux";
+import * as redux from "redux";
+import { initBarcodeListener } from "./barcode";
+import { registerMockBackend } from "../data/backend";
+import {
+  DispatchFn,
+  ActionPayload,
+  ActionCreatorToDispatch,
+  GetActionTypes
+} from "./action-types";
 
 export interface Store {
   readonly Current: currentStatus.State;
@@ -74,28 +83,34 @@ export type AppAction =
   | mat.Action
   | routes.Action
   | operators.Action
-  | ccp.Action
-  ;
+  | ccp.Action;
 
 export type AppActionBeforeMiddleware = ActionBeforeMiddleware<AppAction>;
 export type DispatchAction<T> = DispatchFn<ActionPayload<AppAction, T>>;
 
 export interface Connect {
-  <P, TOwnProps = {}>(getProps: (s: Store) => P):
-    reactRedux.InferableComponentEnhancerWithProps<P, TOwnProps>;
+  <P, TOwnProps = {}>(
+    getProps: (s: Store) => P
+  ): reactRedux.InferableComponentEnhancerWithProps<P, TOwnProps>;
 
-  <P, TOwnProps = {}>(getProps: (s: Store, ownProps: TOwnProps) => P):
-    reactRedux.InferableComponentEnhancerWithProps<P, TOwnProps>;
+  <P, TOwnProps = {}>(
+    getProps: (s: Store, ownProps: TOwnProps) => P
+  ): reactRedux.InferableComponentEnhancerWithProps<P, TOwnProps>;
 
-  <P, Creators, TOwnProps = {}>(getProps: (s: Store) => P, actionCreators: Creators):
-    reactRedux.InferableComponentEnhancerWithProps<P & ActionCreatorToDispatch<AppActionBeforeMiddleware, Creators>,
-                                                   TOwnProps>;
+  <P, Creators, TOwnProps = {}>(
+    getProps: (s: Store) => P,
+    actionCreators: Creators
+  ): reactRedux.InferableComponentEnhancerWithProps<
+    P & ActionCreatorToDispatch<AppActionBeforeMiddleware, Creators>,
+    TOwnProps
+  >;
 }
 export const connect: Connect = reactRedux.connect;
 
 export interface ActionCreatorFactory {
-  <T extends GetActionTypes<AppAction>>(ty: T):
-    (payload: ActionPayload<AppActionBeforeMiddleware, T>) => AppActionBeforeMiddleware;
+  <T extends GetActionTypes<AppAction>>(ty: T): (
+    payload: ActionPayload<AppActionBeforeMiddleware, T>
+  ) => AppActionBeforeMiddleware;
 }
 export const mkAC: ActionCreatorFactory =
   // any is needed for payload since typescript can't guarantee that ActionPayload<A, T> is
@@ -104,32 +119,30 @@ export const mkAC: ActionCreatorFactory =
   // tslint:disable-next-line:no-any
   ty => (payload: any) => {
     if (payload) {
-      return ({...payload, type: ty});
+      return { ...payload, type: ty };
     } else {
-      return {type: ty};
+      return { type: ty };
     }
   };
 
 export function initStore(demo: boolean) {
   const history = createHistory();
-  const router =
-    demo ? undefined :
-    connectRoutes(
-      history,
-      routes.routeMap,
-      {
+  const router = demo
+    ? undefined
+    : connectRoutes(history, routes.routeMap, {
         querySerializer: queryString
       });
 
   /* tslint:disable */
   const composeEnhancers =
-    typeof window === 'object' &&
-    (window as any)['__REDUX_DEVTOOLS_EXTENSION_COMPOSE__'] ?
-      (window as any)['__REDUX_DEVTOOLS_EXTENSION_COMPOSE__']({
-        serialize: {
-          immutable: im
-        }
-      }) : compose;
+    typeof window === "object" &&
+    (window as any)["__REDUX_DEVTOOLS_EXTENSION_COMPOSE__"]
+      ? (window as any)["__REDUX_DEVTOOLS_EXTENSION_COMPOSE__"]({
+          serialize: {
+            immutable: im
+          }
+        })
+      : compose;
   /* tslint:enable */
 
   const store = createStore<Store, AppAction, {}, {}>(
@@ -144,26 +157,16 @@ export function initStore(demo: boolean) {
         Operators: operators.reducer,
         ServerSettings: serverSettings.reducer,
         CostPerPiece: ccp.reducer,
-        location: router ? router.reducer : (s: object, a: object) => s || {},
-      // tslint:disable-next-line:no-any
+        location: router ? router.reducer : (s: object, a: object) => s || {}
+        // tslint:disable-next-line:no-any
       } as any // bug in typescript types for combineReducers
     ),
-    router ?
-      composeEnhancers(
-        router.enhancer,
-        applyMiddleware(
-            arrayMiddleware,
-            pledgeMiddleware,
-            router.middleware
+    router
+      ? composeEnhancers(
+          router.enhancer,
+          applyMiddleware(arrayMiddleware, pledgeMiddleware, router.middleware)
         )
-      )
-      :
-      composeEnhancers(
-        applyMiddleware(
-            arrayMiddleware,
-            pledgeMiddleware,
-        )
-      )
+      : composeEnhancers(applyMiddleware(arrayMiddleware, pledgeMiddleware))
   );
 
   if (demo) {
@@ -173,7 +176,10 @@ export function initStore(demo: boolean) {
     // tslint:disable-next-line:no-any
     store.dispatch(currentStatus.loadCurrentStatus() as any);
   } else {
-    websocket.openWebsocket(a => store.dispatch(a), () => store.getState().Events);
+    websocket.openWebsocket(
+      a => store.dispatch(a),
+      () => store.getState().Events
+    );
   }
   initBarcodeListener(a => store.dispatch(a as redux.Action));
 

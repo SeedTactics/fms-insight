@@ -38,6 +38,4 @@ const jan18 = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
 const offsetSeconds = differenceInSeconds(addDays(new Date(), -28), jan18);
 
 // tslint:disable-next-line:no-any
-(window as any).FMS_INSIGHT_RESOLVE_MOCK_DATA(
-  loadMockData(offsetSeconds)
-);
+(window as any).FMS_INSIGHT_RESOLVE_MOCK_DATA(loadMockData(offsetSeconds));

@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { AppActionBeforeMiddleware } from "./store";
 import { openMaterialBySerial } from "../data/material-details";
-import * as guiState from '../data/gui-state';
+import * as guiState from "../data/gui-state";
 
 export function initBarcodeListener(
   dispatch: (a: AppActionBeforeMiddleware | AppActionBeforeMiddleware[]) => void
@@ -70,17 +70,19 @@ export function initBarcodeListener(
       openMaterialBySerial(serial, true),
       {
         type: guiState.ActionType.SetAddMatToQueueName,
-        queue: undefined,
+        queue: undefined
       }
     ]);
   }
 
   function onKeyDown(k: KeyboardEvent) {
-    if (k.keyCode === 112) { // F1
+    if (k.keyCode === 112) {
+      // F1
       startDetection();
       k.stopPropagation();
       k.preventDefault();
-    } else if (scanActive && k.keyCode === 13) { // Enter
+    } else if (scanActive && k.keyCode === 13) {
+      // Enter
       success();
       k.stopPropagation();
       k.preventDefault();

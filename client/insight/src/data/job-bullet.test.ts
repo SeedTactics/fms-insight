@@ -31,17 +31,16 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { jobsToPoints } from './job-bullet';
-import * as api from './api';
+import { jobsToPoints } from "./job-bullet";
+import * as api from "./api";
 
-
-it('converts events to points', () => {
+it("converts events to points", () => {
   const dummyHold: api.IJobHoldPattern = {
     userHold: false,
-    reasonForUserHold: '',
+    reasonForUserHold: "",
     holdUnholdPattern: [],
     holdUnholdPatternStartUTC: new Date(),
-    holdUnholdPatternRepeats: false,
+    holdUnholdPatternRepeats: false
   };
   const jobs: api.IInProcessJob[] = [
     {
@@ -70,16 +69,16 @@ it('converts events to points', () => {
                   stations: { "1": "progabc" },
                   tools: {},
                   stationGroup: "MC",
-                  expectedCycleTime: "01:15:00",
+                  expectedCycleTime: "01:15:00"
                 })
               ],
-              expectedLoadTime: '00:05:00',
-              expectedUnloadTime: '00:04:00',
+              expectedLoadTime: "00:05:00",
+              expectedUnloadTime: "00:04:00",
               simulatedStartingUTC: new Date(),
               simulatedAverageFlowTime: "",
               holdMachining: new api.JobHoldPattern(dummyHold),
               holdLoadUnload: new api.JobHoldPattern(dummyHold),
-              partsPerPallet: 1,
+              partsPerPallet: 1
             }),
             new api.ProcPathInfo({
               pathGroup: 1,
@@ -91,16 +90,16 @@ it('converts events to points', () => {
                   stations: { "1": "progabc" },
                   tools: {},
                   stationGroup: "MC",
-                  expectedCycleTime: "01:15:00",
+                  expectedCycleTime: "01:15:00"
                 })
               ],
-              expectedLoadTime: '00:05:00',
-              expectedUnloadTime: '00:04:00',
+              expectedLoadTime: "00:05:00",
+              expectedUnloadTime: "00:04:00",
               simulatedStartingUTC: new Date(),
               simulatedAverageFlowTime: "",
               holdMachining: new api.JobHoldPattern(dummyHold),
               holdLoadUnload: new api.JobHoldPattern(dummyHold),
-              partsPerPallet: 1,
+              partsPerPallet: 1
             })
           ]
         }),
@@ -114,18 +113,18 @@ it('converts events to points', () => {
                   stations: { "1": "progabc" },
                   tools: {},
                   stationGroup: "MC",
-                  expectedCycleTime: "00:45:00",
+                  expectedCycleTime: "00:45:00"
                 })
               ],
-              expectedLoadTime: '00:05:00',
-              expectedUnloadTime: '00:04:00',
+              expectedLoadTime: "00:05:00",
+              expectedUnloadTime: "00:04:00",
               load: [1],
               unload: [2],
               simulatedStartingUTC: new Date(),
               simulatedAverageFlowTime: "",
               holdMachining: new api.JobHoldPattern(dummyHold),
               holdLoadUnload: new api.JobHoldPattern(dummyHold),
-              partsPerPallet: 1,
+              partsPerPallet: 1
             })
           ]
         })
@@ -133,5 +132,5 @@ it('converts events to points', () => {
     }
   ];
   const points = jobsToPoints(jobs);
-  expect(points).toMatchSnapshot('points for sample jobs');
+  expect(points).toMatchSnapshot("points for sample jobs");
 });

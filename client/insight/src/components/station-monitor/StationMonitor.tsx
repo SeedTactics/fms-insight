@@ -30,50 +30,46 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from 'react';
-import Hidden from '@material-ui/core/Hidden';
+import * as React from "react";
+import Hidden from "@material-ui/core/Hidden";
 
-import * as routes from '../../data/routes';
+import * as routes from "../../data/routes";
 
-import StationToolbar from './StationToolbar';
-import LoadStation from './LoadStation';
-import Inspection from './Inspection';
-import Wash from './Wash';
-import Queues from './Queues';
-import AllMaterial from './AllMaterial';
+import StationToolbar from "./StationToolbar";
+import LoadStation from "./LoadStation";
+import Inspection from "./Inspection";
+import Wash from "./Wash";
+import Queues from "./Queues";
+import AllMaterial from "./AllMaterial";
 
 export interface StationMonitorProps {
   readonly monitor_type: routes.StationMonitorType;
 }
 
 function monitorElement(
-    type: routes.StationMonitorType,
-    fillViewport: boolean,
-  ): JSX.Element {
+  type: routes.StationMonitorType,
+  fillViewport: boolean
+): JSX.Element {
   switch (type) {
     case routes.StationMonitorType.LoadUnload:
-      return <LoadStation fillViewPort={fillViewport}/>;
+      return <LoadStation fillViewPort={fillViewport} />;
     case routes.StationMonitorType.Inspection:
-      return <Inspection/>;
+      return <Inspection />;
     case routes.StationMonitorType.Wash:
-      return <Wash/>;
+      return <Wash />;
     case routes.StationMonitorType.Queues:
-      return <Queues/>;
+      return <Queues />;
     case routes.StationMonitorType.AllMaterial:
-      return <AllMaterial/>;
+      return <AllMaterial />;
   }
 }
 
 export default function StationMonitor(props: StationMonitorProps) {
   return (
     <div>
-      <StationToolbar/>
-      <Hidden mdDown>
-        {monitorElement(props.monitor_type, true)}
-      </Hidden>
-      <Hidden lgUp>
-        {monitorElement(props.monitor_type, false)}
-      </Hidden>
+      <StationToolbar />
+      <Hidden mdDown>{monitorElement(props.monitor_type, true)}</Hidden>
+      <Hidden lgUp>{monitorElement(props.monitor_type, false)}</Hidden>
     </div>
   );
 }

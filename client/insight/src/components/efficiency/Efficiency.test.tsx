@@ -31,15 +31,22 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from 'react';
-import { render, cleanup, fireEvent, wait, within } from 'react-testing-library'; afterEach(cleanup);
-import { Provider } from 'react-redux';
-import { Simulate } from 'react-dom/test-utils';
-import 'jest-dom/extend-expect';
+import * as React from "react";
+import {
+  render,
+  cleanup,
+  fireEvent,
+  wait,
+  within
+} from "react-testing-library";
+afterEach(cleanup);
+import { Provider } from "react-redux";
+import { Simulate } from "react-dom/test-utils";
+import "jest-dom/extend-expect";
 
-import Efficiency from './Efficiency';
-import { createTestStore } from '../../test-util';
-import LoadingIcon from '../LoadingIcon';
+import Efficiency from "./Efficiency";
+import { createTestStore } from "../../test-util";
+import LoadingIcon from "../LoadingIcon";
 
 it("renders the cost/piece page", async () => {
   const store = await createTestStore();
@@ -47,8 +54,8 @@ it("renders the cost/piece page", async () => {
   const result = render(
     <Provider store={store}>
       <div>
-        <LoadingIcon/>
-        <Efficiency/>
+        <LoadingIcon />
+        <Efficiency />
       </div>
     </Provider>
   );
@@ -58,7 +65,9 @@ it("renders the cost/piece page", async () => {
   ).toBeEmpty();
 
   // now go to July 2018 which has the test store data
-  const chooseMonth = result.getByPlaceholderText("Choose Month") as HTMLInputElement;
+  const chooseMonth = result.getByPlaceholderText(
+    "Choose Month"
+  ) as HTMLInputElement;
   chooseMonth.value = "2018-07";
   Simulate.change(chooseMonth);
   fireEvent.blur(chooseMonth);
@@ -68,61 +77,97 @@ it("renders the cost/piece page", async () => {
   );
 
   // part cycles
-  fireEvent.click(within(result.getByTestId("part-cycle-chart")).getByText("Select Part"));
   fireEvent.click(
-    within(document.getElementById("menu-Station-Cycles-cycle-chart-select") as HTMLElement)
-      .getByText("aaa-1")
+    within(result.getByTestId("part-cycle-chart")).getByText("Select Part")
+  );
+  fireEvent.click(
+    within(document.getElementById(
+      "menu-Station-Cycles-cycle-chart-select"
+    ) as HTMLElement).getByText("aaa-1")
   );
   expect(
-    result.getByTestId("part-cycle-chart").querySelectorAll("g.rv-xy-plot__series > circle").length
+    result
+      .getByTestId("part-cycle-chart")
+      .querySelectorAll("g.rv-xy-plot__series > circle").length
   ).toBeGreaterThan(0);
 
   // pallet cycles
-  fireEvent.click(within(result.getByTestId("pallet-cycle-chart")).getByText("Select Pallet"));
   fireEvent.click(
-    within(document.getElementById("menu-Pallet-Cycles-cycle-chart-select") as HTMLElement)
-      .getByText("3")
+    within(result.getByTestId("pallet-cycle-chart")).getByText("Select Pallet")
+  );
+  fireEvent.click(
+    within(document.getElementById(
+      "menu-Pallet-Cycles-cycle-chart-select"
+    ) as HTMLElement).getByText("3")
   );
   expect(
-    result.getByTestId("pallet-cycle-chart").querySelectorAll("g.rv-xy-plot__series > circle").length
+    result
+      .getByTestId("pallet-cycle-chart")
+      .querySelectorAll("g.rv-xy-plot__series > circle").length
   ).toBeGreaterThan(0);
 
   // station oee heatmap
   expect(
-    result.getByTestId("station-oee-heatmap").querySelectorAll("g.rv-xy-plot__series--heatmap > rect").length
+    result
+      .getByTestId("station-oee-heatmap")
+      .querySelectorAll("g.rv-xy-plot__series--heatmap > rect").length
   ).toBeGreaterThan(0);
-  fireEvent.click(within(result.getByTestId("station-oee-heatmap")).getByText("Actual"));
   fireEvent.click(
-    within(document.getElementById("menu-Station-OEE-heatchart-planned-or-actual") as HTMLElement)
-      .getByText("Planned")
+    within(result.getByTestId("station-oee-heatmap")).getByText("Actual")
+  );
+  fireEvent.click(
+    within(document.getElementById(
+      "menu-Station-OEE-heatchart-planned-or-actual"
+    ) as HTMLElement).getByText("Planned")
   );
   expect(
-    result.getByTestId("station-oee-heatmap").querySelectorAll("g.rv-xy-plot__series--heatmap > rect").length
+    result
+      .getByTestId("station-oee-heatmap")
+      .querySelectorAll("g.rv-xy-plot__series--heatmap > rect").length
   ).toBeGreaterThan(0);
 
   // completed counts
   expect(
-    result.getByTestId("completed-heatmap").querySelectorAll("g.rv-xy-plot__series--heatmap > rect").length
+    result
+      .getByTestId("completed-heatmap")
+      .querySelectorAll("g.rv-xy-plot__series--heatmap > rect").length
   ).toBeGreaterThan(0);
-  fireEvent.click(within(result.getByTestId("completed-heatmap")).getByText("Actual"));
   fireEvent.click(
-    within(document.getElementById("menu-Part-Production-heatchart-planned-or-actual") as HTMLElement)
-      .getByText("Planned")
+    within(result.getByTestId("completed-heatmap")).getByText("Actual")
+  );
+  fireEvent.click(
+    within(document.getElementById(
+      "menu-Part-Production-heatchart-planned-or-actual"
+    ) as HTMLElement).getByText("Planned")
   );
   expect(
-    result.getByTestId("completed-heatmap").querySelectorAll("g.rv-xy-plot__series--heatmap > rect").length
+    result
+      .getByTestId("completed-heatmap")
+      .querySelectorAll("g.rv-xy-plot__series--heatmap > rect").length
   ).toBeGreaterThan(0);
 
   // inspection sankey
-  fireEvent.click(within(result.getByTestId("inspection-sankey")).getByText("Select Inspection Type"));
   fireEvent.click(
-    within(document.getElementById("menu-inspection-sankey-select-type") as HTMLElement).getByText("CMM")
+    within(result.getByTestId("inspection-sankey")).getByText(
+      "Select Inspection Type"
+    )
   );
-  fireEvent.click(within(result.getByTestId("inspection-sankey")).getByText("Select Part"));
   fireEvent.click(
-    within(document.getElementById("menu-inspection-sankey-select-part") as HTMLElement).getByText("bbb")
+    within(document.getElementById(
+      "menu-inspection-sankey-select-type"
+    ) as HTMLElement).getByText("CMM")
+  );
+  fireEvent.click(
+    within(result.getByTestId("inspection-sankey")).getByText("Select Part")
+  );
+  fireEvent.click(
+    within(document.getElementById(
+      "menu-inspection-sankey-select-part"
+    ) as HTMLElement).getByText("bbb")
   );
   expect(
-    result.getByTestId("inspection-sankey").querySelectorAll("path.rv-sankey__link").length
+    result
+      .getByTestId("inspection-sankey")
+      .querySelectorAll("path.rv-sankey__link").length
   ).toBeGreaterThan(0);
 });

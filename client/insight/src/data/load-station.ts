@@ -31,53 +31,59 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as im from 'immutable';
-import * as api from './api';
+import * as im from "immutable";
+import * as api from "./api";
 
 export interface PalletData {
   pallet: api.IPalletStatus;
   material: api.IInProcessMaterial[];
 }
 
-export function buildPallets(st: Readonly<api.ICurrentStatus>): im.Map<string, {pal?: PalletData, queued?: PalletData}> {
-
+export function buildPallets(
+  st: Readonly<api.ICurrentStatus>
+): im.Map<string, { pal?: PalletData; queued?: PalletData }> {
   const matByPallet = new Map<string, api.IInProcessMaterial[]>();
   for (let mat of st.material) {
-    if (mat.location.type === api.LocType.OnPallet && mat.location.pallet !== undefined) {
+    if (
+      mat.location.type === api.LocType.OnPallet &&
+      mat.location.pallet !== undefined
+    ) {
       const mats = matByPallet.get(mat.location.pallet) || [];
       mats.push(mat);
       matByPallet.set(mat.location.pallet, mats);
     }
   }
 
-  const m = new Map<string, {pal?: PalletData, queued?: PalletData}>();
+  const m = new Map<string, { pal?: PalletData; queued?: PalletData }>();
   for (let pal of Object.values(st.pallets)) {
     switch (pal.currentPalletLocation.loc) {
       case api.PalletLocationEnum.LoadUnload:
       case api.PalletLocationEnum.Machine:
-        const stat = pal.currentPalletLocation.group + " #" + pal.currentPalletLocation.num.toString();
-        m.set(
-          stat,
-          {...(m.get(stat) ||  {}),
-            pal: {
-              pallet: pal,
-              material: matByPallet.get(pal.pallet) || []
-            }
+        const stat =
+          pal.currentPalletLocation.group +
+          " #" +
+          pal.currentPalletLocation.num.toString();
+        m.set(stat, {
+          ...(m.get(stat) || {}),
+          pal: {
+            pallet: pal,
+            material: matByPallet.get(pal.pallet) || []
           }
-        );
+        });
         break;
 
       case api.PalletLocationEnum.MachineQueue:
-        const stat2 = pal.currentPalletLocation.group + " #" + pal.currentPalletLocation.num.toString();
-        m.set(
-          stat2,
-          {...(m.get(stat2) ||  {}),
-            queued: {
-              pallet: pal,
-              material: matByPallet.get(pal.pallet) || []
-            }
+        const stat2 =
+          pal.currentPalletLocation.group +
+          " #" +
+          pal.currentPalletLocation.num.toString();
+        m.set(stat2, {
+          ...(m.get(stat2) || {}),
+          queued: {
+            pallet: pal,
+            material: matByPallet.get(pal.pallet) || []
           }
-        );
+        });
         break;
 
       // TODO: buffer and cart
@@ -93,24 +99,28 @@ export interface LoadStationAndQueueData {
   readonly loadNum: number;
   readonly pallet?: Readonly<api.IPalletStatus>;
   readonly face: im.Map<number, MaterialList>;
-  readonly stationStatus?: im.Map<string, {pal?: PalletData, queued?: PalletData}>;
+  readonly stationStatus?: im.Map<
+    string,
+    { pal?: PalletData; queued?: PalletData }
+  >;
   readonly castings: MaterialList;
   readonly free?: MaterialList;
   readonly queues: im.Map<string, MaterialList>;
 }
 
 export function selectLoadStationAndQueueProps(
-    loadNum: number,
-    queues: ReadonlyArray<string>,
-    displayFree: boolean,
-    curSt: Readonly<api.ICurrentStatus>
-  ): LoadStationAndQueueData {
-
+  loadNum: number,
+  queues: ReadonlyArray<string>,
+  displayFree: boolean,
+  curSt: Readonly<api.ICurrentStatus>
+): LoadStationAndQueueData {
   let pal: Readonly<api.IPalletStatus> | undefined;
   if (loadNum >= 0) {
     for (let p of Object.values(curSt.pallets)) {
-      if (p.currentPalletLocation.loc === api.PalletLocationEnum.LoadUnload
-          && p.currentPalletLocation.num === loadNum) {
+      if (
+        p.currentPalletLocation.loc === api.PalletLocationEnum.LoadUnload &&
+        p.currentPalletLocation.num === loadNum
+      ) {
         pal = p;
         break;
       }
@@ -120,15 +130,20 @@ export function selectLoadStationAndQueueProps(
   let byFace: im.Map<number, api.IInProcessMaterial[]> = im.Map();
   let palName: string | undefined;
   let castings: im.Seq.Indexed<api.IInProcessMaterial> = im.Seq.Indexed();
-  let stationStatus: im.Map<string, {pal?: PalletData, queued?: PalletData}> | undefined;
+  let stationStatus:
+    | im.Map<string, { pal?: PalletData; queued?: PalletData }>
+    | undefined;
 
   // load pallet material
   if (pal !== undefined) {
     palName = pal.pallet;
 
-    byFace = im.Seq(curSt.material)
-      .filter(m => m.location.type === api.LocType.OnPallet
-                && m.location.pallet === palName
+    byFace = im
+      .Seq(curSt.material)
+      .filter(
+        m =>
+          m.location.type === api.LocType.OnPallet &&
+          m.location.pallet === palName
       )
       .groupBy(m => m.location.face || 0)
       .map(ms => ms.valueSeq().toArray())
@@ -142,35 +157,51 @@ export function selectLoadStationAndQueueProps(
       }
     }
 
-    castings = im.Seq(curSt.material)
-      .filter(m => m.action.type === api.ActionType.Loading
-                && m.action.loadOntoPallet === palName
-                && m.action.processAfterLoad === 1
-                && m.location.type === api.LocType.Free);
+    castings = im
+      .Seq(curSt.material)
+      .filter(
+        m =>
+          m.action.type === api.ActionType.Loading &&
+          m.action.loadOntoPallet === palName &&
+          m.action.processAfterLoad === 1 &&
+          m.location.type === api.LocType.Free
+      );
   } else {
     stationStatus = buildPallets(curSt);
     if (displayFree) {
-      castings = im.Seq(curSt.material)
-        .filter(m => m.action.processAfterLoad === 1
-                  && m.location.type === api.LocType.Free);
+      castings = im
+        .Seq(curSt.material)
+        .filter(
+          m =>
+            m.action.processAfterLoad === 1 &&
+            m.location.type === api.LocType.Free
+        );
     }
   }
 
   // now free and queued material
   let free: MaterialList | undefined;
   if (displayFree) {
-    free = im.Seq(curSt.material)
-      .filter(m => m.action.processAfterLoad &&
-                   m.action.processAfterLoad > 1
-                && m.location.type === api.LocType.Free)
+    free = im
+      .Seq(curSt.material)
+      .filter(
+        m =>
+          m.action.processAfterLoad &&
+          m.action.processAfterLoad > 1 &&
+          m.location.type === api.LocType.Free
+      )
       .toArray();
   }
 
   const queueNames = im.Map<string, api.IInProcessMaterial[]>(
-    queues.map(q => [q, []] as [string, api.IInProcessMaterial[]]));
-  const queueMat = im.Seq(curSt.material)
-    .filter(m => m.location.type === api.LocType.InQueue
-              && queueNames.has(m.location.currentQueue || "")
+    queues.map(q => [q, []] as [string, api.IInProcessMaterial[]])
+  );
+  const queueMat = im
+    .Seq(curSt.material)
+    .filter(
+      m =>
+        m.location.type === api.LocType.InQueue &&
+        queueNames.has(m.location.currentQueue || "")
     )
     .groupBy(m => m.location.currentQueue || "")
     .map(ms => ms.valueSeq().toArray())
@@ -183,6 +214,6 @@ export function selectLoadStationAndQueueProps(
     stationStatus: stationStatus,
     castings: castings.toArray(),
     free: free,
-    queues: queueNames.merge(queueMat),
+    queues: queueNames.merge(queueMat)
   };
 }

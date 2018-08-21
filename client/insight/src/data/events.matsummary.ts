@@ -30,9 +30,9 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as api from './api';
-import { addDays } from 'date-fns';
-import * as im from 'immutable'; // consider collectable.js at some point?
+import * as api from "./api";
+import { addDays } from "date-fns";
+import * as im from "immutable"; // consider collectable.js at some point?
 
 export interface MaterialSummary {
   readonly materialID: number;
@@ -48,7 +48,7 @@ export interface MaterialSummary {
 export interface MaterialSummaryAndCompletedData extends MaterialSummary {
   readonly completed_time?: Date;
   readonly wash_completed?: Date;
-  readonly completedInspections?: {[key: string]: Date};
+  readonly completedInspections?: { [key: string]: Date };
 }
 
 interface MaterialSummaryFromEvents extends MaterialSummaryAndCompletedData {
@@ -62,10 +62,12 @@ export interface MatSummaryState {
 
 export const initial: MatSummaryState = {
   matsById: im.Map(),
-  inspTypes: im.Set(),
+  inspTypes: im.Set()
 };
 
-export function inproc_mat_to_summary(mat: Readonly<api.IInProcessMaterial>): MaterialSummary {
+export function inproc_mat_to_summary(
+  mat: Readonly<api.IInProcessMaterial>
+): MaterialSummary {
   return {
     materialID: mat.materialID,
     jobUnique: mat.jobUnique,
@@ -73,32 +75,37 @@ export function inproc_mat_to_summary(mat: Readonly<api.IInProcessMaterial>): Ma
     completed_procs: im.Range(1, mat.process, 1).toArray(),
     serial: mat.serial,
     workorderId: mat.workorderId,
-    signaledInspections: mat.signaledInspections,
+    signaledInspections: mat.signaledInspections
   };
 }
 
-export function process_events(now: Date, newEvts: Iterable<api.ILogEntry>, st: MatSummaryState): MatSummaryState {
+export function process_events(
+  now: Date,
+  newEvts: Iterable<api.ILogEntry>,
+  st: MatSummaryState
+): MatSummaryState {
   const oneWeekAgo = addDays(now, -7);
 
   const evtsSeq = im.Seq(newEvts);
 
   // check if no changes needed: no new events and nothing to filter out
   const minEntry = st.matsById.valueSeq().minBy(m => m.last_event);
-  if ((minEntry === undefined || minEntry.last_event >= oneWeekAgo) && evtsSeq.isEmpty()) {
-      return st;
+  if (
+    (minEntry === undefined || minEntry.last_event >= oneWeekAgo) &&
+    evtsSeq.isEmpty()
+  ) {
+    return st;
   }
 
   let mats = st.matsById.filter(e => e.last_event >= oneWeekAgo);
 
   let inspTypes = new Map<string, boolean>();
 
-  evtsSeq
-    .filter(e => !e.startofcycle && e.material.length > 0)
-    .forEach(e => {
+  evtsSeq.filter(e => !e.startofcycle && e.material.length > 0).forEach(e => {
     for (let logMat of e.material) {
       let mat = mats.get(logMat.id);
       if (mat) {
-        mat = {...mat, last_event: e.endUTC};
+        mat = { ...mat, last_event: e.endUTC };
       } else {
         mat = {
           materialID: logMat.id,
@@ -107,24 +114,27 @@ export function process_events(now: Date, newEvts: Iterable<api.ILogEntry>, st: 
           last_event: e.endUTC,
           completed_procs: [],
           signaledInspections: [],
-          completedInspections: {},
+          completedInspections: {}
         };
       }
 
       switch (e.type) {
         case api.LogType.PartMark:
-          mat = {...mat, serial: e.result};
+          mat = { ...mat, serial: e.result };
           break;
 
         case api.LogType.OrderAssignment:
-          mat = {...mat, workorderId: e.result};
+          mat = { ...mat, workorderId: e.result };
           break;
 
         case api.LogType.Inspection:
           if (e.result.toLowerCase() === "true" || e.result === "1") {
             const inspType = (e.details || {}).InspectionType;
             if (inspType) {
-              mat = {...mat, signaledInspections: [...mat.signaledInspections, inspType]};
+              mat = {
+                ...mat,
+                signaledInspections: [...mat.signaledInspections, inspType]
+              };
               inspTypes.set(inspType, true);
             }
           }
@@ -133,34 +143,44 @@ export function process_events(now: Date, newEvts: Iterable<api.ILogEntry>, st: 
         case api.LogType.InspectionForce:
           if (e.result.toLowerCase() === "true" || e.result === "1") {
             const inspType = e.program;
-            mat = {...mat, signaledInspections: [...mat.signaledInspections, inspType]};
+            mat = {
+              ...mat,
+              signaledInspections: [...mat.signaledInspections, inspType]
+            };
             inspTypes.set(inspType, true);
           }
           break;
 
         case api.LogType.InspectionResult:
-          mat = {...mat, completedInspections: {...mat.completedInspections,
-            [e.program]: e.endUTC}};
+          mat = {
+            ...mat,
+            completedInspections: {
+              ...mat.completedInspections,
+              [e.program]: e.endUTC
+            }
+          };
           inspTypes.set(e.program, true);
           break;
 
         case api.LogType.LoadUnloadCycle:
           if (e.result === "UNLOAD") {
             if (logMat.proc === logMat.numproc) {
-              mat = {...mat,
+              mat = {
+                ...mat,
                 completed_procs: [...mat.completed_procs, logMat.proc],
                 completed_time: e.endUTC
               };
             } else {
-              mat = {...mat,
-                completed_procs: [...mat.completed_procs, logMat.proc],
+              mat = {
+                ...mat,
+                completed_procs: [...mat.completed_procs, logMat.proc]
               };
             }
           }
           break;
 
         case api.LogType.Wash:
-          mat = {...mat, wash_completed: e.endUTC};
+          mat = { ...mat, wash_completed: e.endUTC };
           break;
       }
 
@@ -177,5 +197,5 @@ export function process_events(now: Date, newEvts: Iterable<api.ILogEntry>, st: 
     inspTypesSet = inspTypesSet.union(newInspTypes);
   }
 
-  return {...st, matsById: mats, inspTypes: inspTypesSet};
+  return { ...st, matsById: mats, inspTypes: inspTypesSet };
 }

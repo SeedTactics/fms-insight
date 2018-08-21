@@ -31,9 +31,9 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as ccp from './cost-per-piece';
-import * as cycles from './events.cycles';
-import { loadMockData } from '../mock-data/load';
+import * as ccp from "./cost-per-piece";
+import * as cycles from "./events.cycles";
+import { loadMockData } from "../mock-data/load";
 
 it("loads the initial state", () => {
   // tslint:disable no-any
@@ -48,39 +48,49 @@ it("sets machine costs", () => {
     group: "g1",
     cost: 12
   });
-  expect(s).toEqual({input: {...ccp.initial.input,
-    machineCostPerYear: {
-      "g1": 12
+  expect(s).toEqual({
+    input: {
+      ...ccp.initial.input,
+      machineCostPerYear: {
+        g1: 12
+      }
     }
-  }});
+  });
 
   s = ccp.reducer(s, {
     type: ccp.ActionType.SetMachineCostPerYear,
     group: "g2",
     cost: 44
   });
-  expect(s).toEqual({input: {...ccp.initial.input,
-    machineCostPerYear: {
-      "g1": 12,
-      "g2": 44
+  expect(s).toEqual({
+    input: {
+      ...ccp.initial.input,
+      machineCostPerYear: {
+        g1: 12,
+        g2: 44
+      }
     }
-  }});
+  });
 
   s = ccp.reducer(s, {
     type: ccp.ActionType.SetMachineCostPerYear,
     group: "g2",
     cost: 150
   });
-  expect(s).toEqual({input: {...ccp.initial.input,
-    machineCostPerYear: {
-      "g1": 12,
-      "g2": 150
+  expect(s).toEqual({
+    input: {
+      ...ccp.initial.input,
+      machineCostPerYear: {
+        g1: 12,
+        g2: 150
+      }
     }
-  }});
-  expect(JSON.parse(localStorage.getItem("cost-per-piece") || "")).toEqual({...ccp.initial.input,
+  });
+  expect(JSON.parse(localStorage.getItem("cost-per-piece") || "")).toEqual({
+    ...ccp.initial.input,
     machineCostPerYear: {
-      "g1": 12,
-      "g2": 150
+      g1: 12,
+      g2: 150
     }
   });
 });
@@ -91,39 +101,49 @@ it("sets part material cost", () => {
     part: "p1",
     cost: 52
   });
-  expect(s).toEqual({input: {...ccp.initial.input,
-    partMaterialCost: {
-      "p1": 52
+  expect(s).toEqual({
+    input: {
+      ...ccp.initial.input,
+      partMaterialCost: {
+        p1: 52
+      }
     }
-  }});
+  });
 
   s = ccp.reducer(s, {
     type: ccp.ActionType.SetPartMaterialCost,
     part: "p2",
     cost: 2
   });
-  expect(s).toEqual({input: {...ccp.initial.input,
-    partMaterialCost: {
-      "p1": 52,
-      "p2": 2,
+  expect(s).toEqual({
+    input: {
+      ...ccp.initial.input,
+      partMaterialCost: {
+        p1: 52,
+        p2: 2
+      }
     }
-  }});
+  });
 
   s = ccp.reducer(s, {
     type: ccp.ActionType.SetPartMaterialCost,
     part: "p2",
     cost: 63
   });
-  expect(s).toEqual({input: {...ccp.initial.input,
-    partMaterialCost: {
-      "p1": 52,
-      "p2": 63,
+  expect(s).toEqual({
+    input: {
+      ...ccp.initial.input,
+      partMaterialCost: {
+        p1: 52,
+        p2: 63
+      }
     }
-  }});
-  expect(JSON.parse(localStorage.getItem("cost-per-piece") || "")).toEqual({...ccp.initial.input,
+  });
+  expect(JSON.parse(localStorage.getItem("cost-per-piece") || "")).toEqual({
+    ...ccp.initial.input,
     partMaterialCost: {
-      "p1": 52,
-      "p2": 63,
+      p1: 52,
+      p2: 63
     }
   });
 });
@@ -133,11 +153,15 @@ it("sets the number of operators", () => {
     type: ccp.ActionType.SetNumOperators,
     numOpers: 12
   });
-  expect(s).toEqual({input: {...ccp.initial.input,
-    numOperators: 12,
-  }});
-  expect(JSON.parse(localStorage.getItem("cost-per-piece") || "")).toEqual({...ccp.initial.input,
-    numOperators: 12,
+  expect(s).toEqual({
+    input: {
+      ...ccp.initial.input,
+      numOperators: 12
+    }
+  });
+  expect(JSON.parse(localStorage.getItem("cost-per-piece") || "")).toEqual({
+    ...ccp.initial.input,
+    numOperators: 12
   });
 });
 
@@ -146,25 +170,34 @@ it("sets the operator cost per hour", () => {
     type: ccp.ActionType.SetOperatorCostPerHour,
     cost: 67
   });
-  expect(s).toEqual({input: {...ccp.initial.input,
-    operatorCostPerHour: 67,
-  }});
-  expect(JSON.parse(localStorage.getItem("cost-per-piece") || "")).toEqual({...ccp.initial.input,
-    operatorCostPerHour: 67,
+  expect(s).toEqual({
+    input: {
+      ...ccp.initial.input,
+      operatorCostPerHour: 67
+    }
+  });
+  expect(JSON.parse(localStorage.getItem("cost-per-piece") || "")).toEqual({
+    ...ccp.initial.input,
+    operatorCostPerHour: 67
   });
 });
 
 it("computes part costs", async () => {
   const data = loadMockData(30 * 24 * 60 * 60);
   const evts = await data.events;
-  const cycleState = cycles.process_events({type: cycles.ExpireOldDataType.NoExpire}, evts, true, cycles.initial);
+  const cycleState = cycles.process_events(
+    { type: cycles.ExpireOldDataType.NoExpire },
+    evts,
+    true,
+    cycles.initial
+  );
   const costInput: ccp.CostInput = {
     machineCostPerYear: {
-      "Machine": 1234,
+      Machine: 1234
     },
     partMaterialCost: {
-      "aaa": 15,
-      "bbb": 19
+      aaa: 15,
+      bbb: 19
     },
     numOperators: 2,
     operatorCostPerHour: 5432

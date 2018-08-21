@@ -31,14 +31,14 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from 'react';
-import { render, cleanup } from 'react-testing-library';
+import * as React from "react";
+import { render, cleanup } from "react-testing-library";
 afterEach(cleanup);
-import { Provider } from 'react-redux';
-import 'jest-dom/extend-expect';
+import { Provider } from "react-redux";
+import "jest-dom/extend-expect";
 
-import Dashboard from './Dashboard';
-import { createTestStore } from '../../test-util';
+import Dashboard from "./Dashboard";
+import { createTestStore } from "../../test-util";
 
 it("renders the dashboard", async () => {
   const store = await createTestStore();
@@ -49,6 +49,10 @@ it("renders the dashboard", async () => {
     </Provider>
   );
 
-  expect(result.container.querySelector("div.rv-xy-plot")).toMatchSnapshot("current jobs plot");
-  expect(result.getByTestId("stationoee-container")).toMatchSnapshot("station oee");
+  expect(result.container.querySelector("div.rv-xy-plot")).toMatchSnapshot(
+    "current jobs plot"
+  );
+  expect(result.getByTestId("stationoee-container")).toMatchSnapshot(
+    "station oee"
+  );
 });

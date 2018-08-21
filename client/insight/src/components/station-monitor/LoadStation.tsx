@@ -31,38 +31,59 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from 'react';
-import Divider from '@material-ui/core/Divider';
-import withStyles from '@material-ui/core/styles/withStyles';
-import * as im from 'immutable';
-import { createSelector } from 'reselect';
-import DocumentTitle from 'react-document-title';
-import Button from '@material-ui/core/Button';
-import TimeAgo from 'react-timeago';
-import { addSeconds } from 'date-fns';
-import { duration } from 'moment';
+import * as React from "react";
+import Divider from "@material-ui/core/Divider";
+import withStyles from "@material-ui/core/styles/withStyles";
+import * as im from "immutable";
+import { createSelector } from "reselect";
+import DocumentTitle from "react-document-title";
+import Button from "@material-ui/core/Button";
+import TimeAgo from "react-timeago";
+import { addSeconds } from "date-fns";
+import { duration } from "moment";
 
-import { LoadStationAndQueueData, selectLoadStationAndQueueProps, PalletData } from '../../data/load-station';
-import { MaterialDialog, InProcMaterial, WhiteboardRegion, MaterialDialogProps, InstructionButton } from './Material';
-import * as api from '../../data/api';
-import * as routes from '../../data/routes';
-import * as guiState from '../../data/gui-state';
-import { Store, connect, mkAC, AppActionBeforeMiddleware } from '../../store/store';
-import * as matDetails from '../../data/material-details';
-import { MaterialSummary } from '../../data/events';
-import SelectWorkorderDialog from './SelectWorkorder';
-import SetSerialDialog from './EnterSerial';
-import SelectInspTypeDialog from './SelectInspType';
-import SerialScanner from './QRScan';
-import { MoveMaterialArrowContainer, MoveMaterialArrowNode } from './MoveMaterialArrows';
-import { MoveMaterialNodeKindType } from '../../data/move-arrows';
+import {
+  LoadStationAndQueueData,
+  selectLoadStationAndQueueProps,
+  PalletData
+} from "../../data/load-station";
+import {
+  MaterialDialog,
+  InProcMaterial,
+  WhiteboardRegion,
+  MaterialDialogProps,
+  InstructionButton
+} from "./Material";
+import * as api from "../../data/api";
+import * as routes from "../../data/routes";
+import * as guiState from "../../data/gui-state";
+import {
+  Store,
+  connect,
+  mkAC,
+  AppActionBeforeMiddleware
+} from "../../store/store";
+import * as matDetails from "../../data/material-details";
+import { MaterialSummary } from "../../data/events";
+import SelectWorkorderDialog from "./SelectWorkorder";
+import SetSerialDialog from "./EnterSerial";
+import SelectInspTypeDialog from "./SelectInspType";
+import SerialScanner from "./QRScan";
+import {
+  MoveMaterialArrowContainer,
+  MoveMaterialArrowNode
+} from "./MoveMaterialArrows";
+import { MoveMaterialNodeKindType } from "../../data/move-arrows";
 
 interface StationStatusProps {
-  byStation: im.Map<string, {pal?: PalletData, queue?: PalletData}>;
+  byStation: im.Map<string, { pal?: PalletData; queue?: PalletData }>;
   dateOfCurrentStatus: Date;
 }
 
-function stationPalMaterialStatus(mat: Readonly<api.IInProcessMaterial>, dateOfCurrentStatus: Date): JSX.Element {
+function stationPalMaterialStatus(
+  mat: Readonly<api.IInProcessMaterial>,
+  dateOfCurrentStatus: Date
+): JSX.Element {
   const name = mat.partName + "-" + mat.process.toString();
 
   let matStatus = "";
@@ -79,8 +100,10 @@ function stationPalMaterialStatus(mat: Readonly<api.IInProcessMaterial>, dateOfC
       matStatus = " (machining)";
       if (mat.action.expectedRemainingMachiningTime && dateOfCurrentStatus) {
         matStatus += " completing ";
-        const seconds = duration(mat.action.expectedRemainingMachiningTime).asSeconds();
-        matTime = <TimeAgo date={addSeconds(dateOfCurrentStatus, seconds)}/>;
+        const seconds = duration(
+          mat.action.expectedRemainingMachiningTime
+        ).asSeconds();
+        matTime = <TimeAgo date={addSeconds(dateOfCurrentStatus, seconds)} />;
       }
       break;
   }
@@ -90,91 +113,101 @@ function stationPalMaterialStatus(mat: Readonly<api.IInProcessMaterial>, dateOfC
       <span>{name + matStatus}</span>
       {matTime}
     </>
-  )
+  );
 }
 
 const stationStatusStyles = withStyles(() => ({
   defList: {
-    color: "rgba(0,0,0,0.6)",
+    color: "rgba(0,0,0,0.6)"
   },
   defItem: {
-    marginTop: "1em",
+    marginTop: "1em"
   }
 }));
 
 const StationStatus = stationStatusStyles<StationStatusProps>(props => {
-  if (props.byStation.size === 0) return <div/>;
+  if (props.byStation.size === 0) return <div />;
   return (
     <dl className={props.classes.defList}>
-      {props.byStation.toSeq().sortBy((p, s) => s).map((pals, stat) =>
-        <React.Fragment key={stat}>
-          {pals.pal ?
-            <>
-              <dt className={props.classes.defItem}>
-                {stat} - Pallet {pals.pal.pallet.pallet} - worktable
-              </dt>
-              { pals.pal.material.map((mat, idx) =>
-                <dd key={idx}>{stationPalMaterialStatus(mat, props.dateOfCurrentStatus)}</dd>
-              )}
-            </>
-            : undefined
-          }
-          {pals.queue ?
-            <>
-              <dt className={props.classes.defList}>
-                {stat} - Pallet {pals.queue.pallet.pallet} - queue
-              </dt>
-              { pals.queue.material.map((mat, idx) =>
-                <dd key={idx}>{stationPalMaterialStatus(mat, props.dateOfCurrentStatus)}</dd>
-              )}
-            </>
-            : undefined
-          }
-        </React.Fragment>
-      ).valueSeq()}
+      {props.byStation
+        .toSeq()
+        .sortBy((p, s) => s)
+        .map((pals, stat) => (
+          <React.Fragment key={stat}>
+            {pals.pal ? (
+              <>
+                <dt className={props.classes.defItem}>
+                  {stat} - Pallet {pals.pal.pallet.pallet} - worktable
+                </dt>
+                {pals.pal.material.map((mat, idx) => (
+                  <dd key={idx}>
+                    {stationPalMaterialStatus(mat, props.dateOfCurrentStatus)}
+                  </dd>
+                ))}
+              </>
+            ) : (
+              undefined
+            )}
+            {pals.queue ? (
+              <>
+                <dt className={props.classes.defList}>
+                  {stat} - Pallet {pals.queue.pallet.pallet} - queue
+                </dt>
+                {pals.queue.material.map((mat, idx) => (
+                  <dd key={idx}>
+                    {stationPalMaterialStatus(mat, props.dateOfCurrentStatus)}
+                  </dd>
+                ))}
+              </>
+            ) : (
+              undefined
+            )}
+          </React.Fragment>
+        ))
+        .valueSeq()}
     </dl>
   );
 });
 
 const palletStyles = withStyles(() => ({
   palletContainerFill: {
-    width: '100%',
-    position: 'relative' as 'relative',
-    flexGrow: 1,
+    width: "100%",
+    position: "relative" as "relative",
+    flexGrow: 1
   },
   palletContainerScroll: {
-    width: '100%',
-    position: 'relative' as 'relative',
-    minHeight: '12em',
+    width: "100%",
+    position: "relative" as "relative",
+    minHeight: "12em"
   },
   statStatusFill: {
-    width: '100%',
+    width: "100%",
     flexGrow: 1,
     display: "flex",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "center"
   },
   statStatusScroll: {
     width: "100%",
-    minHeight: '12em'
+    minHeight: "12em"
   },
   labelContainer: {
-    position: 'absolute' as 'absolute',
-    top: '4px',
-    left: '4px',
+    position: "absolute" as "absolute",
+    top: "4px",
+    left: "4px"
   },
   label: {
-    color: 'rgba(0,0,0,0.5)',
-    fontSize: 'small',
+    color: "rgba(0,0,0,0.5)",
+    fontSize: "small"
   },
   labelPalletNum: {
-    color: 'rgba(0,0,0,0.5)',
-    fontSize: 'xx-large',
+    color: "rgba(0,0,0,0.5)",
+    fontSize: "xx-large"
   },
   faceContainer: {
-    marginLeft: '4em',
-    marginRight: '4em',
-  },
+    marginLeft: "4em",
+    marginRight: "4em"
+  }
 }));
 
 const PalletColumn = palletStyles<LoadStationProps>(props => {
@@ -195,17 +228,20 @@ const PalletColumn = palletStyles<LoadStationProps>(props => {
     const mat = props.data.face.first();
     palDetails = (
       <div className={props.classes.faceContainer}>
-        <MoveMaterialArrowNode type={MoveMaterialNodeKindType.PalletFaceZone} face={maxFace || 1}>
+        <MoveMaterialArrowNode
+          type={MoveMaterialNodeKindType.PalletFaceZone}
+          face={maxFace || 1}
+        >
           <WhiteboardRegion label={""} spaceAround>
-            { (mat || []).map((m, idx) =>
+            {(mat || []).map((m, idx) => (
               <MoveMaterialArrowNode
                 key={idx}
                 type={MoveMaterialNodeKindType.Material}
                 action={m.action}
               >
-                <InProcMaterial mat={m} onOpen={props.openMat}/>
-              </MoveMaterialArrowNode>)
-            }
+                <InProcMaterial mat={m} onOpen={props.openMat} />
+              </MoveMaterialArrowNode>
+            ))}
           </WhiteboardRegion>
         </MoveMaterialArrowNode>
       </div>
@@ -213,27 +249,31 @@ const PalletColumn = palletStyles<LoadStationProps>(props => {
   } else {
     palDetails = (
       <div className={props.classes.faceContainer}>
-        {
-          props.data.face.toSeq().sortBy((data, face) => face).map((data, face) =>
+        {props.data.face
+          .toSeq()
+          .sortBy((data, face) => face)
+          .map((data, face) => (
             <div key={face}>
-              <MoveMaterialArrowNode type={MoveMaterialNodeKindType.PalletFaceZone} face={face}>
+              <MoveMaterialArrowNode
+                type={MoveMaterialNodeKindType.PalletFaceZone}
+                face={face}
+              >
                 <WhiteboardRegion label={"Face " + face.toString()} spaceAround>
-                  { data.map((m, idx) =>
+                  {data.map((m, idx) => (
                     <MoveMaterialArrowNode
                       key={idx}
                       type={MoveMaterialNodeKindType.Material}
                       action={m.action}
                     >
-                      <InProcMaterial mat={m} onOpen={props.openMat}/>
+                      <InProcMaterial mat={m} onOpen={props.openMat} />
                     </MoveMaterialArrowNode>
-                    )
-                  }
+                  ))}
                 </WhiteboardRegion>
               </MoveMaterialArrowNode>
-              {face === maxFace ? undefined : <Divider key={1}/>}
+              {face === maxFace ? undefined : <Divider key={1} />}
             </div>
-          ).valueSeq()
-        }
+          ))
+          .valueSeq()}
       </div>
     );
   }
@@ -241,39 +281,44 @@ const PalletColumn = palletStyles<LoadStationProps>(props => {
   return (
     <>
       <WhiteboardRegion label="Raw Material" spaceAround>
-        { props.data.castings.map((m, idx) => (
+        {props.data.castings.map((m, idx) => (
           <MoveMaterialArrowNode
             key={idx}
             type={MoveMaterialNodeKindType.Material}
             action={m.action}
           >
-            <InProcMaterial mat={m} onOpen={props.openMat}/>
-          </MoveMaterialArrowNode>))
-        }
+            <InProcMaterial mat={m} onOpen={props.openMat} />
+          </MoveMaterialArrowNode>
+        ))}
       </WhiteboardRegion>
-      <Divider/>
-      {props.data.stationStatus && props.dateOfCurrentStatus ? // stationStatus is defined only when no pallet is present
+      <Divider />
+      {props.data.stationStatus && props.dateOfCurrentStatus ? ( // stationStatus is defined only when no pallet is present
         <div className={statStatusClass}>
           <StationStatus
             byStation={props.data.stationStatus}
             dateOfCurrentStatus={props.dateOfCurrentStatus}
           />
         </div>
-        :
+      ) : (
         <div className={palletClass}>
           <div className={props.classes.labelContainer}>
             <div className={props.classes.label}>Pallet</div>
-            {props.data.pallet ?
-              <div className={props.classes.labelPalletNum}>{props.data.pallet.pallet}</div>
-              : undefined
-            }
+            {props.data.pallet ? (
+              <div className={props.classes.labelPalletNum}>
+                {props.data.pallet.pallet}
+              </div>
+            ) : (
+              undefined
+            )}
           </div>
           {palDetails}
         </div>
-      }
-      <Divider/>
-      <MoveMaterialArrowNode type={MoveMaterialNodeKindType.CompletedMaterialZone}>
-        <WhiteboardRegion label="Completed Material"/>
+      )}
+      <Divider />
+      <MoveMaterialArrowNode
+        type={MoveMaterialNodeKindType.CompletedMaterialZone}
+      >
+        <WhiteboardRegion label="Completed Material" />
       </MoveMaterialArrowNode>
     </>
   );
@@ -298,26 +343,26 @@ function LoadMatDialog(props: LoadMatDialogProps) {
       onClose={props.onClose}
       buttons={
         <>
-          {props.display_material && props.display_material.partName !== "" ?
-            <InstructionButton part={props.display_material.partName} type="load"/>
-            : undefined
-          }
+          {props.display_material && props.display_material.partName !== "" ? (
+            <InstructionButton
+              part={props.display_material.partName}
+              type="load"
+            />
+          ) : (
+            undefined
+          )}
           <Button color="primary" onClick={props.openSetSerial}>
-            {
-              props.display_material && props.display_material.serial ?
-                "Change Serial"
-                : "Assign Serial"
-            }
+            {props.display_material && props.display_material.serial
+              ? "Change Serial"
+              : "Assign Serial"}
           </Button>
           <Button color="primary" onClick={props.openForceInspection}>
             Signal Inspection
           </Button>
           <Button color="primary" onClick={openAssignWorkorder}>
-            {
-              props.display_material && props.display_material.workorderId ?
-                "Change Workorder"
-                : "Assign Workorder"
-            }
+            {props.display_material && props.display_material.workorderId
+              ? "Change Workorder"
+              : "Assign Workorder"}
           </Button>
         </>
       }
@@ -327,54 +372,53 @@ function LoadMatDialog(props: LoadMatDialogProps) {
 
 const ConnectedMaterialDialog = connect(
   st => ({
-    display_material: st.MaterialDetails.material,
+    display_material: st.MaterialDetails.material
   }),
   {
     onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
-    openSelectWorkorder: (mat: matDetails.MaterialDetail) => [
-      {
-        type: guiState.ActionType.SetWorkorderDialogOpen,
-        open: true
-      },
-      matDetails.loadWorkorders(mat),
-    ] as AppActionBeforeMiddleware,
-    openSetSerial: () =>
-      ({
-        type: guiState.ActionType.SetSerialDialogOpen,
-        open: true
-      }),
-    openForceInspection: () =>
-      ({
-        type: guiState.ActionType.SetInspTypeDialogOpen,
-        open: true
-      })
+    openSelectWorkorder: (mat: matDetails.MaterialDetail) =>
+      [
+        {
+          type: guiState.ActionType.SetWorkorderDialogOpen,
+          open: true
+        },
+        matDetails.loadWorkorders(mat)
+      ] as AppActionBeforeMiddleware,
+    openSetSerial: () => ({
+      type: guiState.ActionType.SetSerialDialogOpen,
+      open: true
+    }),
+    openForceInspection: () => ({
+      type: guiState.ActionType.SetInspTypeDialogOpen,
+      open: true
+    })
   }
 )(LoadMatDialog);
 
 const loadStyles = withStyles(() => ({
   mainFillViewport: {
-    'height': 'calc(100vh - 64px - 2.5em)',
-    'display': 'flex',
-    'padding': '8px',
-    'width': '100%',
+    height: "calc(100vh - 64px - 2.5em)",
+    display: "flex",
+    padding: "8px",
+    width: "100%"
   },
   mainScrollable: {
-    'display': 'flex',
-    'padding': '8px',
-    'width': '100%',
+    display: "flex",
+    padding: "8px",
+    width: "100%"
   },
   palCol: {
-    'flexGrow': 1,
-    'display': 'flex',
-    'flexDirection': 'column' as 'column',
+    flexGrow: 1,
+    display: "flex",
+    flexDirection: "column" as "column"
   },
   queueCol: {
-    'width': '16em',
-    'padding': '8px',
-    'display': 'flex',
-    'flexDirection': 'column' as 'column',
-    'borderLeft': '1px solid rgba(0, 0, 0, 0.12)',
-  },
+    width: "16em",
+    padding: "8px",
+    display: "flex",
+    flexDirection: "column" as "column",
+    borderLeft: "1px solid rgba(0, 0, 0, 0.12)"
+  }
 }));
 
 interface LoadStationProps {
@@ -385,7 +429,7 @@ interface LoadStationProps {
 }
 
 const LoadStation = loadStyles<LoadStationProps>(props => {
-  const palProps = {...props, classes: undefined};
+  const palProps = { ...props, classes: undefined };
 
   let queues = props.data.queues
     .toSeq()
@@ -399,99 +443,121 @@ const LoadStation = loadStyles<LoadStationProps>(props => {
 
   let cells = queues;
   if (props.data.free) {
-    cells = im.Seq([{
-      label: "In Process Material",
-      material: props.data.free,
-      isFree: true
-    }]).concat(queues);
+    cells = im
+      .Seq([
+        {
+          label: "In Process Material",
+          material: props.data.free,
+          isFree: true
+        }
+      ])
+      .concat(queues);
   }
 
   const col1 = cells.take(2);
   const col2 = cells.skip(2).take(2);
 
   return (
-    <DocumentTitle title={"Load " + props.data.loadNum.toString() + " - FMS Insight"}>
+    <DocumentTitle
+      title={"Load " + props.data.loadNum.toString() + " - FMS Insight"}
+    >
       <MoveMaterialArrowContainer>
-        <main className={props.fillViewPort ? props.classes.mainFillViewport : props.classes.mainScrollable}>
+        <main
+          className={
+            props.fillViewPort
+              ? props.classes.mainFillViewport
+              : props.classes.mainScrollable
+          }
+        >
           <div className={props.classes.palCol}>
-            <PalletColumn {...palProps}/>
+            <PalletColumn {...palProps} />
           </div>
-          {
-            col1.size === 0 ? undefined :
+          {col1.size === 0 ? (
+            undefined
+          ) : (
             <div className={props.classes.queueCol}>
-              {
-                col1.map((mat, idx) => (
-                  <MoveMaterialArrowNode
-                    key={idx}
-                    {... mat.isFree
-                        ? {type: MoveMaterialNodeKindType.FreeMaterialZone}
-                        : {type: MoveMaterialNodeKindType.QueueZone, queue: mat.label}
-                    }
-                  >
-                    <WhiteboardRegion label={mat.label}>
-                      { mat.material.map((m, matIdx) =>
-                        <MoveMaterialArrowNode
+              {col1.map((mat, idx) => (
+                <MoveMaterialArrowNode
+                  key={idx}
+                  {...(mat.isFree
+                    ? { type: MoveMaterialNodeKindType.FreeMaterialZone }
+                    : {
+                        type: MoveMaterialNodeKindType.QueueZone,
+                        queue: mat.label
+                      })}
+                >
+                  <WhiteboardRegion label={mat.label}>
+                    {mat.material.map((m, matIdx) => (
+                      <MoveMaterialArrowNode
+                        key={matIdx}
+                        type={MoveMaterialNodeKindType.Material}
+                        action={
+                          props.data.pallet &&
+                          m.action.loadOntoPallet === props.data.pallet.pallet
+                            ? m.action
+                            : null
+                        }
+                      >
+                        <InProcMaterial
                           key={matIdx}
-                          type={MoveMaterialNodeKindType.Material}
-                          action={
-                            props.data.pallet && m.action.loadOntoPallet === props.data.pallet.pallet
-                              ? m.action : null
+                          mat={m}
+                          onOpen={props.openMat}
+                          displaySinglePallet={
+                            props.data.pallet ? props.data.pallet.pallet : ""
                           }
-                        >
-                          <InProcMaterial
-                            key={matIdx}
-                            mat={m}
-                            onOpen={props.openMat}
-                            displaySinglePallet={props.data.pallet ? props.data.pallet.pallet : ""}
-                          />
-                        </MoveMaterialArrowNode>)
-                      }
-                    </WhiteboardRegion>
-                  </MoveMaterialArrowNode>
-                ))
-              }
+                        />
+                      </MoveMaterialArrowNode>
+                    ))}
+                  </WhiteboardRegion>
+                </MoveMaterialArrowNode>
+              ))}
             </div>
-          }
-          {
-            col2.size === 0 ? undefined :
+          )}
+          {col2.size === 0 ? (
+            undefined
+          ) : (
             <div className={props.classes.queueCol}>
-              {
-                col2.map((mat, idx) => (
-                  <MoveMaterialArrowNode
-                    key={idx}
-                    {... mat.isFree
-                        ? {type: MoveMaterialNodeKindType.FreeMaterialZone}
-                        : {type: MoveMaterialNodeKindType.QueueZone, queue: mat.label}
-                    }
-                  >
-                    <WhiteboardRegion label={mat.label}>
-                      { mat.material.map((m, matIdx) =>
-                        <MoveMaterialArrowNode
-                          key={matIdx}
-                          type={MoveMaterialNodeKindType.Material}
-                          action={
-                            props.data.pallet && m.action.loadOntoPallet === props.data.pallet.pallet
-                              ? m.action : null
+              {col2.map((mat, idx) => (
+                <MoveMaterialArrowNode
+                  key={idx}
+                  {...(mat.isFree
+                    ? { type: MoveMaterialNodeKindType.FreeMaterialZone }
+                    : {
+                        type: MoveMaterialNodeKindType.QueueZone,
+                        queue: mat.label
+                      })}
+                >
+                  <WhiteboardRegion label={mat.label}>
+                    {mat.material.map((m, matIdx) => (
+                      <MoveMaterialArrowNode
+                        key={matIdx}
+                        type={MoveMaterialNodeKindType.Material}
+                        action={
+                          props.data.pallet &&
+                          m.action.loadOntoPallet === props.data.pallet.pallet
+                            ? m.action
+                            : null
+                        }
+                      >
+                        <InProcMaterial
+                          mat={m}
+                          onOpen={props.openMat}
+                          displaySinglePallet={
+                            props.data.pallet ? props.data.pallet.pallet : ""
                           }
-                        >
-                          <InProcMaterial
-                            mat={m}
-                            onOpen={props.openMat}
-                            displaySinglePallet={props.data.pallet ? props.data.pallet.pallet : ""}
-                          />
-                        </MoveMaterialArrowNode>)
-                      }
-                    </WhiteboardRegion>
-                  </MoveMaterialArrowNode>
-                ))
-              }
+                        />
+                      </MoveMaterialArrowNode>
+                    ))}
+                  </WhiteboardRegion>
+                </MoveMaterialArrowNode>
+              ))}
             </div>
-          }
-          <SelectWorkorderDialog/>
-          <SetSerialDialog/>
-          <SelectInspTypeDialog/>
-          <ConnectedMaterialDialog/>
-          <SerialScanner/>
+          )}
+          <SelectWorkorderDialog />
+          <SetSerialDialog />
+          <SelectInspTypeDialog />
+          <ConnectedMaterialDialog />
+          <SerialScanner />
         </main>
       </MoveMaterialArrowContainer>
     </DocumentTitle>
@@ -501,21 +567,25 @@ const LoadStation = loadStyles<LoadStationProps>(props => {
 const buildLoadData = createSelector(
   (st: Store) => st.Current.current_status,
   (st: Store) => st.Route,
-  (curStatus: Readonly<api.ICurrentStatus>, route: routes.State): LoadStationAndQueueData => {
+  (
+    curStatus: Readonly<api.ICurrentStatus>,
+    route: routes.State
+  ): LoadStationAndQueueData => {
     return selectLoadStationAndQueueProps(
-        route.selected_load_id,
-        route.load_queues,
-        route.load_free_material,
-        curStatus);
+      route.selected_load_id,
+      route.load_queues,
+      route.load_free_material,
+      curStatus
+    );
   }
 );
 
 export default connect(
   (st: Store) => ({
     data: buildLoadData(st),
-    dateOfCurrentStatus: st.Current.date_of_current_status || null,
+    dateOfCurrentStatus: st.Current.date_of_current_status || null
   }),
   {
-    openMat: matDetails.openMaterialDialog,
+    openMat: matDetails.openMaterialDialog
   }
 )(LoadStation);

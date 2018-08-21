@@ -30,22 +30,22 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from 'react';
-import * as ReactDOM from 'react-dom';
-import { Provider } from 'react-redux';
+import * as React from "react";
+import * as ReactDOM from "react-dom";
+import { Provider } from "react-redux";
 
-import 'typeface-roboto';
-import CssBaseline from '@material-ui/core/CssBaseline';
-import green from '@material-ui/core/colors/green';
-import brown from '@material-ui/core/colors/brown';
-import MuiThemeProvider from '@material-ui/core/styles/MuiThemeProvider';
-import createMuiTheme from '@material-ui/core/styles/createMuiTheme';
-import 'react-vis/dist/style.css';
+import "typeface-roboto";
+import CssBaseline from "@material-ui/core/CssBaseline";
+import green from "@material-ui/core/colors/green";
+import brown from "@material-ui/core/colors/brown";
+import MuiThemeProvider from "@material-ui/core/styles/MuiThemeProvider";
+import createMuiTheme from "@material-ui/core/styles/createMuiTheme";
+import "react-vis/dist/style.css";
 
-import App from './components/App';
-import { register } from './store/registerServiceWorker';
-import { initStore } from './store/store';
-import { DemoMode } from './data/backend';
+import App from "./components/App";
+import { register } from "./store/registerServiceWorker";
+import { initStore } from "./store/store";
+import { DemoMode } from "./data/backend";
 
 const theme = createMuiTheme({
   palette: {
@@ -58,14 +58,14 @@ const store = initStore(DemoMode);
 
 ReactDOM.render(
   <MuiThemeProvider theme={theme}>
-    <CssBaseline/>
+    <CssBaseline />
     <Provider store={store}>
       {/* <React.StrictMode> */}
-        <App />
+      <App />
       {/* </React.StrictMode> */}
     </Provider>
   </MuiThemeProvider>,
-  document.getElementById('root') as HTMLElement
+  document.getElementById("root") as HTMLElement
 );
 
 register();

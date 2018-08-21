@@ -31,18 +31,27 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as api from './api';
-import * as im from 'immutable';
+import * as api from "./api";
+import * as im from "immutable";
 
 export interface JobAPI {
   history(startUTC: Date, endUTC: Date): Promise<Readonly<api.IHistoricData>>;
   currentStatus(): Promise<Readonly<api.ICurrentStatus>>;
-  mostRecentUnfilledWorkordersForPart(part: string): Promise<ReadonlyArray<Readonly<api.IPartWorkorder>>>;
+  mostRecentUnfilledWorkordersForPart(
+    part: string
+  ): Promise<ReadonlyArray<Readonly<api.IPartWorkorder>>>;
 
   removeMaterialFromAllQueues(materialId: number): Promise<void>;
-  setMaterialInQueue(materialId: number, queue: api.QueuePosition): Promise<void>;
+  setMaterialInQueue(
+    materialId: number,
+    queue: api.QueuePosition
+  ): Promise<void>;
   addUnprocessedMaterialToQueue(
-    jobUnique: string, lastCompletedProcess: number, queue: string, pos: number, serial: string
+    jobUnique: string,
+    lastCompletedProcess: number,
+    queue: string,
+    pos: number,
+    serial: string
   ): Promise<void>;
 }
 
@@ -51,20 +60,42 @@ export interface ServerAPI {
 }
 
 export interface LogAPI {
-  get(startUTC: Date, endUTC: Date): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
-  recent(lastSeenCounter: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
-  logForMaterial(materialID: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
+  get(
+    startUTC: Date,
+    endUTC: Date
+  ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
+  recent(
+    lastSeenCounter: number
+  ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
+  logForMaterial(
+    materialID: number
+  ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   logForSerial(serial: string): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
-  getWorkorders(ids: string[]): Promise<ReadonlyArray<Readonly<api.IWorkorderSummary>>>;
+  getWorkorders(
+    ids: string[]
+  ): Promise<ReadonlyArray<Readonly<api.IWorkorderSummary>>>;
 
-  setInspectionDecision(inspType: string, mat: api.LogMaterial, inspect: boolean): Promise<Readonly<api.ILogEntry>>;
-  recordInspectionCompleted(insp: api.NewInspectionCompleted): Promise<Readonly<api.ILogEntry>>;
+  setInspectionDecision(
+    inspType: string,
+    mat: api.LogMaterial,
+    inspect: boolean
+  ): Promise<Readonly<api.ILogEntry>>;
+  recordInspectionCompleted(
+    insp: api.NewInspectionCompleted
+  ): Promise<Readonly<api.ILogEntry>>;
   recordWashCompleted(insp: api.NewWash): Promise<Readonly<api.ILogEntry>>;
-  setWorkorder(workorder: string, mat: api.LogMaterial): Promise<Readonly<api.ILogEntry>>;
-  setSerial(serial: string, mat: api.LogMaterial): Promise<Readonly<api.ILogEntry>>;
+  setWorkorder(
+    workorder: string,
+    mat: api.LogMaterial
+  ): Promise<Readonly<api.ILogEntry>>;
+  setSerial(
+    serial: string,
+    mat: api.LogMaterial
+  ): Promise<Readonly<api.ILogEntry>>;
 }
 
-export const BackendHost = process.env.NODE_ENV === "production" ? undefined : "localhost:5000";
+export const BackendHost =
+  process.env.NODE_ENV === "production" ? undefined : "localhost:5000";
 const BackendUrl = BackendHost ? "http://" + BackendHost : undefined;
 // tslint:disable-next-line:no-any
 export const DemoMode = (window as any).FMS_INSIGHT_DEMO_MODE || false;
@@ -99,13 +130,18 @@ function initMockBackend(data: Promise<MockData>) {
   };
 
   JobsBackend = {
-    history(startUTC: Date, endUTC: Date): Promise<Readonly<api.IHistoricData>> {
+    history(
+      startUTC: Date,
+      endUTC: Date
+    ): Promise<Readonly<api.IHistoricData>> {
       return data.then(d => d.jobs);
     },
     currentStatus(): Promise<Readonly<api.ICurrentStatus>> {
       return data.then(d => d.curSt);
     },
-    mostRecentUnfilledWorkordersForPart(part: string): Promise<ReadonlyArray<Readonly<api.IPartWorkorder>>> {
+    mostRecentUnfilledWorkordersForPart(
+      part: string
+    ): Promise<ReadonlyArray<Readonly<api.IPartWorkorder>>> {
       return data.then(d => d.workorders.get(part) || []);
     },
 
@@ -113,47 +149,73 @@ function initMockBackend(data: Promise<MockData>) {
       // do nothing
       return Promise.resolve();
     },
-    setMaterialInQueue(materialId: number, queue: api.QueuePosition): Promise<void> {
+    setMaterialInQueue(
+      materialId: number,
+      queue: api.QueuePosition
+    ): Promise<void> {
       // do nothing
       return Promise.resolve();
     },
     addUnprocessedMaterialToQueue(
-      jobUnique: string, lastCompletedProcess: number, queue: string, pos: number, serial: string
+      jobUnique: string,
+      lastCompletedProcess: number,
+      queue: string,
+      pos: number,
+      serial: string
     ): Promise<void> {
       // do nothing
       return Promise.resolve();
     }
   };
 
-  const serialsToMatId =
-    data.then(d => d.events.then(evts =>
+  const serialsToMatId = data.then(d =>
+    d.events.then(evts =>
       im.Map(
-        im.Seq(evts)
-        .filter(e => e.type === api.LogType.PartMark)
-        .flatMap(e => e.material.map(m => [e.result, m.id] as [string, number]))
+        im
+          .Seq(evts)
+          .filter(e => e.type === api.LogType.PartMark)
+          .flatMap(e =>
+            e.material.map(m => [e.result, m.id] as [string, number])
+          )
       )
-    ));
+    )
+  );
 
   LogBackend = {
-    get(startUTC: Date, endUTC: Date): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
-      return data.then(d => d.events.then(evts =>
-        im.Seq(evts)
-        .filter(e => e.endUTC >= startUTC && e.endUTC <= endUTC)
-        .toArray()
-      ));
+    get(
+      startUTC: Date,
+      endUTC: Date
+    ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
+      return data.then(d =>
+        d.events.then(evts =>
+          im
+            .Seq(evts)
+            .filter(e => e.endUTC >= startUTC && e.endUTC <= endUTC)
+            .toArray()
+        )
+      );
     },
-    recent(lastSeenCounter: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
+    recent(
+      lastSeenCounter: number
+    ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
       // no recent events, everything is static
       return Promise.resolve([]);
     },
-    logForMaterial(materialID: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
-      return data.then(d => d.events.then(evts =>
-        im.Seq(evts)
-        .filter(e => im.Seq(e.material).some(m => m.id === materialID))
-        .toArray()
-      ));
+    logForMaterial(
+      materialID: number
+    ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
+      return data.then(d =>
+        d.events.then(evts =>
+          im
+            .Seq(evts)
+            .filter(e => im.Seq(e.material).some(m => m.id === materialID))
+            .toArray()
+        )
+      );
     },
-    logForSerial(serial: string): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
+    logForSerial(
+      serial: string
+    ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
       return serialsToMatId.then(s => {
         var mId = s.get(serial);
         if (mId) {
@@ -163,12 +225,18 @@ function initMockBackend(data: Promise<MockData>) {
         }
       });
     },
-    getWorkorders(ids: string[]): Promise<ReadonlyArray<Readonly<api.IWorkorderSummary>>> {
+    getWorkorders(
+      ids: string[]
+    ): Promise<ReadonlyArray<Readonly<api.IWorkorderSummary>>> {
       // no workorder summaries
       return Promise.resolve([]);
     },
 
-    setInspectionDecision(inspType: string, mat: api.LogMaterial, inspect: boolean): Promise<Readonly<api.ILogEntry>> {
+    setInspectionDecision(
+      inspType: string,
+      mat: api.LogMaterial,
+      inspect: boolean
+    ): Promise<Readonly<api.ILogEntry>> {
       const evt = {
         counter: 0,
         material: [mat],
@@ -176,22 +244,26 @@ function initMockBackend(data: Promise<MockData>) {
         type: api.LogType.Inspection,
         startofcycle: false,
         endUTC: new Date(),
-        loc: 'Inspection',
+        loc: "Inspection",
         locnum: 1,
         result: inspect.toString(),
-        program: '',
-        elapsed: '00:00:00',
-        active: '00:00:00',
+        program: "",
+        elapsed: "00:00:00",
+        active: "00:00:00",
         details: {
-          "InspectionType": inspType,
+          InspectionType: inspType
         }
       };
-      return data.then(d => d.events.then(evts => {
-        evts.push(evt);
-        return evt;
-      }));
+      return data.then(d =>
+        d.events.then(evts => {
+          evts.push(evt);
+          return evt;
+        })
+      );
     },
-    recordInspectionCompleted(insp: api.NewInspectionCompleted): Promise<Readonly<api.ILogEntry>> {
+    recordInspectionCompleted(
+      insp: api.NewInspectionCompleted
+    ): Promise<Readonly<api.ILogEntry>> {
       const evt: api.ILogEntry = {
         counter: 0,
         material: [insp.material],
@@ -199,7 +271,7 @@ function initMockBackend(data: Promise<MockData>) {
         type: api.LogType.InspectionResult,
         startofcycle: false,
         endUTC: new Date(),
-        loc: 'InspectionComplete',
+        loc: "InspectionComplete",
         locnum: insp.inspectionLocationNum,
         result: insp.success.toString(),
         program: insp.inspectionType,
@@ -207,10 +279,12 @@ function initMockBackend(data: Promise<MockData>) {
         active: insp.active,
         details: insp.extraData
       };
-      return data.then(d => d.events.then(evts => {
-        evts.push(evt);
-        return evt;
-      }));
+      return data.then(d =>
+        d.events.then(evts => {
+          evts.push(evt);
+          return evt;
+        })
+      );
     },
     recordWashCompleted(wash: api.NewWash): Promise<Readonly<api.ILogEntry>> {
       const evt: api.ILogEntry = {
@@ -220,40 +294,50 @@ function initMockBackend(data: Promise<MockData>) {
         type: api.LogType.Wash,
         startofcycle: false,
         endUTC: new Date(),
-        loc: 'Wash',
+        loc: "Wash",
         locnum: wash.washLocationNum,
-        result: '',
-        program: '',
+        result: "",
+        program: "",
         elapsed: wash.elapsed,
         active: wash.active,
         details: wash.extraData
       };
-      return data.then(d => d.events.then(evts => {
-        evts.push(evt);
-        return evt;
-      }));
+      return data.then(d =>
+        d.events.then(evts => {
+          evts.push(evt);
+          return evt;
+        })
+      );
     },
-    setWorkorder(workorder: string, mat: api.LogMaterial): Promise<Readonly<api.ILogEntry>> {
-      const evt: api.ILogEntry =  {
+    setWorkorder(
+      workorder: string,
+      mat: api.LogMaterial
+    ): Promise<Readonly<api.ILogEntry>> {
+      const evt: api.ILogEntry = {
         counter: 0,
         material: [mat],
         pal: "",
         type: api.LogType.OrderAssignment,
         startofcycle: false,
         endUTC: new Date(),
-        loc: 'OrderAssignment',
+        loc: "OrderAssignment",
         locnum: 1,
         result: workorder,
-        program: '',
-        elapsed: '00:00:00',
-        active: '00:00:00'
+        program: "",
+        elapsed: "00:00:00",
+        active: "00:00:00"
       };
-      return data.then(d => d.events.then(evts => {
-        evts.push(evt);
-        return evt;
-      }));
+      return data.then(d =>
+        d.events.then(evts => {
+          evts.push(evt);
+          return evt;
+        })
+      );
     },
-    setSerial(serial: string, mat: api.LogMaterial): Promise<Readonly<api.ILogEntry>> {
+    setSerial(
+      serial: string,
+      mat: api.LogMaterial
+    ): Promise<Readonly<api.ILogEntry>> {
       const evt: api.ILogEntry = {
         counter: 0,
         material: [mat],
@@ -261,23 +345,27 @@ function initMockBackend(data: Promise<MockData>) {
         type: api.LogType.PartMark,
         startofcycle: false,
         endUTC: new Date(),
-        loc: 'Mark',
+        loc: "Mark",
         locnum: 1,
         result: serial,
-        program: '',
-        elapsed: '00:00:00',
-        active: '00:00:00'
+        program: "",
+        elapsed: "00:00:00",
+        active: "00:00:00"
       };
-      return data.then(d => d.events.then(evts => {
-        evts.push(evt);
-        return evt;
-      }));
-    },
+      return data.then(d =>
+        d.events.then(evts => {
+          evts.push(evt);
+          return evt;
+        })
+      );
+    }
   };
 }
 
 export function registerMockBackend() {
-  const mockDataPromise = new Promise<MockData>(function(resolve: (d: MockData) => void) {
+  const mockDataPromise = new Promise<MockData>(function(
+    resolve: (d: MockData) => void
+  ) {
     // tslint:disable-next-line:no-any
     (window as any).FMS_INSIGHT_RESOLVE_MOCK_DATA = resolve;
   });

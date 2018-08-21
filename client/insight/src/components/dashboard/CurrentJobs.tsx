@@ -30,10 +30,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from 'react';
-import { createSelector } from 'reselect';
+import * as React from "react";
+import { createSelector } from "reselect";
 
-import { connect, Store } from '../../store/store';
+import { connect, Store } from "../../store/store";
 import {
   FlexibleWidthXYPlot,
   FlexibleXYPlot,
@@ -44,9 +44,13 @@ import {
   VerticalGridLines,
   HorizontalGridLines,
   Hint
-} from 'react-vis';
+} from "react-vis";
 
-import { CompletedDataPoint, jobsToPoints, DataPoints } from '../../data/job-bullet';
+import {
+  CompletedDataPoint,
+  jobsToPoints,
+  DataPoints
+} from "../../data/job-bullet";
 
 // --------------------------------------------------------------------------------
 // Data
@@ -61,41 +65,47 @@ interface PlotProps {
   readonly children: (JSX.Element | undefined)[];
 }
 
-function FillViewportPlot({children}: PlotProps) {
+function FillViewportPlot({ children }: PlotProps) {
   return (
-    <div style={{'flexGrow': 1, 'display': 'flex', 'flexDirection': 'column'}}>
-      <div style={{'flexGrow': 1, 'position': 'relative'}}>
-        <div style={{'position': 'absolute', 'top': 0, 'left': 0, 'bottom': 0, 'right': 0}}>
+    <div style={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
+      <div style={{ flexGrow: 1, position: "relative" }}>
+        <div
+          style={{ position: "absolute", top: 0, left: 0, bottom: 0, right: 0 }}
+        >
           <FlexibleXYPlot
-              margin={{left: 70, right: 10, top: 10, bottom: 40}}
-              yType="ordinal"
+            margin={{ left: 70, right: 10, top: 10, bottom: 40 }}
+            yType="ordinal"
           >
             {children}
           </FlexibleXYPlot>
         </div>
       </div>
-      <div style={{'textAlign': 'center', 'marginBottom': '8px', 'color': '#6b6b76'}}>Machine Hours</div>
+      <div
+        style={{ textAlign: "center", marginBottom: "8px", color: "#6b6b76" }}
+      >
+        Machine Hours
+      </div>
     </div>
   );
 }
 
-function ScrollablePlot({children, cnt}: PlotProps) {
+function ScrollablePlot({ children, cnt }: PlotProps) {
   return (
     <div>
       <FlexibleWidthXYPlot
-          height={cnt * 40}
-          margin={{left: 70, right: 10, top: 10, bottom: 40}}
-          yType="ordinal"
+        height={cnt * 40}
+        margin={{ left: 70, right: 10, top: 10, bottom: 40 }}
+        yType="ordinal"
       >
         {children}
       </FlexibleWidthXYPlot>
-      <div style={{'textAlign': 'center'}}>Machine Hours</div>
+      <div style={{ textAlign: "center" }}>Machine Hours</div>
     </div>
   );
 }
 
 const targetMark = () => (
-  <rect x="-2" y="-5" width="4" height="10" fill="black"/>
+  <rect x="-2" y="-5" width="4" height="10" fill="black" />
 );
 
 interface CurrentJobsProps extends DataPoints {
@@ -108,10 +118,13 @@ interface JobState {
 
 function format_hint(j: CompletedDataPoint) {
   return [
-    {title: "Part", value: j.part},
-    {title: "Completed", value: j.completedCount},
-    {title: "Planned", value: j.totalCount},
-    {title: "Remaining Time", value: (j.totalPlan - j.completed).toFixed(1) + " hours"}
+    { title: "Part", value: j.part },
+    { title: "Completed", value: j.completedCount },
+    { title: "Planned", value: j.totalCount },
+    {
+      title: "Remaining Time",
+      value: (j.totalPlan - j.completed).toFixed(1) + " hours"
+    }
   ];
 }
 
@@ -119,21 +132,25 @@ class CurrentJobs extends React.PureComponent<CurrentJobsProps, JobState> {
   state: JobState = {};
 
   setHint = (j: CompletedDataPoint) => {
-    this.setState({hoveredJob: j});
-  }
+    this.setState({ hoveredJob: j });
+  };
 
   clearHint = () => {
-    this.setState({hoveredJob: undefined});
-  }
+    this.setState({ hoveredJob: undefined });
+  };
 
   render() {
     const Plot = this.props.fillViewport ? FillViewportPlot : ScrollablePlot;
     return (
       <Plot cnt={this.props.completedData.length}>
-        <XAxis/>
-        <YAxis tickFormat={(y: number, i: number) => this.props.completedData[i].part}/>
-        <HorizontalGridLines/>
-        <VerticalGridLines/>
+        <XAxis />
+        <YAxis
+          tickFormat={(y: number, i: number) =>
+            this.props.completedData[i].part
+          }
+        />
+        <HorizontalGridLines />
+        <VerticalGridLines />
         <HorizontalBarSeries
           data={this.props.completedData}
           color="#795548"
@@ -144,10 +161,11 @@ class CurrentJobs extends React.PureComponent<CurrentJobsProps, JobState> {
           data={this.props.planData}
           customComponent={targetMark}
         />
-        {
-          this.state.hoveredJob === undefined ? undefined :
-            <Hint value={this.state.hoveredJob} format={format_hint}/>
-        }
+        {this.state.hoveredJob === undefined ? (
+          undefined
+        ) : (
+          <Hint value={this.state.hoveredJob} format={format_hint} />
+        )}
       </Plot>
     );
   }
@@ -158,8 +176,6 @@ const jobsToPointsSelector = createSelector(
   js => jobsToPoints(Object.values(js))
 );
 
-export default connect(
-  s => {
-    return jobsToPointsSelector(s);
-  }
-)(CurrentJobs);
+export default connect(s => {
+  return jobsToPointsSelector(s);
+})(CurrentJobs);

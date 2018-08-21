@@ -30,10 +30,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as api from './api';
-import * as im from 'immutable'; // consider collectable.js at some point?
-import { duration } from 'moment';
-import { startOfDay, addMinutes, differenceInMinutes } from 'date-fns';
+import * as api from "./api";
+import * as im from "immutable"; // consider collectable.js at some point?
+import { duration } from "moment";
+import { startOfDay, addMinutes, differenceInMinutes } from "date-fns";
 
 export interface CycleData {
   readonly x: Date;
@@ -52,23 +52,29 @@ export interface PartCycleData extends CycleData {
 
 export interface StatisticalCycleTime {
   readonly medianMinutes: number;
-  readonly MAD_belowMinutes: number // MAD of points below the median
-  readonly MAD_aboveMinutes: number // MAD of points below the median
+  readonly MAD_belowMinutes: number; // MAD of points below the median
+  readonly MAD_aboveMinutes: number; // MAD of points below the median
   readonly expectedCycleMinutes: number;
 }
 
 export interface CycleState {
-  readonly by_part_then_stat: im.Map<string, im.Map<string, ReadonlyArray<PartCycleData>>>;
+  readonly by_part_then_stat: im.Map<
+    string,
+    im.Map<string, ReadonlyArray<PartCycleData>>
+  >;
   readonly by_pallet: im.Map<string, ReadonlyArray<CycleData>>;
   readonly station_groups: im.Set<string>;
-  readonly estimatedCycleTimes: im.Map<string, im.Map<string, StatisticalCycleTime>>;
+  readonly estimatedCycleTimes: im.Map<
+    string,
+    im.Map<string, StatisticalCycleTime>
+  >;
 }
 
 export const initial: CycleState = {
   by_part_then_stat: im.Map(),
   by_pallet: im.Map(),
   station_groups: im.Set(),
-  estimatedCycleTimes: im.Map(),
+  estimatedCycleTimes: im.Map()
 };
 
 export enum ExpireOldDataType {
@@ -77,9 +83,8 @@ export enum ExpireOldDataType {
 }
 
 export type ExpireOldData =
-  | {type: ExpireOldDataType.ExpireEarlierThan, d: Date }
-  | {type: ExpireOldDataType.NoExpire }
-  ;
+  | { type: ExpireOldDataType.ExpireEarlierThan; d: Date }
+  | { type: ExpireOldDataType.NoExpire };
 
 function part_and_proc(m: api.ILogMaterial): string {
   return m.part + "-" + m.proc.toString();
@@ -92,7 +97,7 @@ function stat_group(e: Readonly<api.ILogEntry>): string {
     case api.LogType.Wash:
       return e.loc;
     case api.LogType.InspectionResult:
-      return 'Inspect ' + e.program;
+      return "Inspect " + e.program;
     default:
       return "";
   }
@@ -137,20 +142,19 @@ function median(vals: im.Seq.Indexed<number>): number {
   const sorted = vals.sort().toArray();
   const cnt = sorted.length;
   if (cnt == 0) return 0;
-  const half = Math.floor(sorted.length/2);
-  if (sorted.length % 2 == 0)
-  {
-      //average two middle
-      return (sorted[half - 1] + sorted[half]) / 2;
-  }
-  else
-  {
-      //return middle
-      return sorted[half];
+  const half = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 == 0) {
+    //average two middle
+    return (sorted[half - 1] + sorted[half]) / 2;
+  } else {
+    //return middle
+    return sorted[half];
   }
 }
 
-function estimateCycleTimes(cycles: im.Seq.Indexed<number>): StatisticalCycleTime {
+function estimateCycleTimes(
+  cycles: im.Seq.Indexed<number>
+): StatisticalCycleTime {
   //compute median
   const medianMinutes = median(cycles);
 
@@ -158,18 +162,14 @@ function estimateCycleTimes(cycles: im.Seq.Indexed<number>): StatisticalCycleTim
   //median.  Below is assumed to be from fake cycles and above is from interrupted programs.
   //since we assume gaussian, use consistantcy constant of 1.4826
 
-  let MAD_belowMinutes = 1.4826 * median(
-      cycles
-      .filter(x => x <= medianMinutes)
-      .map(x => medianMinutes - x)
-  );
+  let MAD_belowMinutes =
+    1.4826 *
+    median(cycles.filter(x => x <= medianMinutes).map(x => medianMinutes - x));
   if (MAD_belowMinutes < 0.01) MAD_belowMinutes = 0.01;
 
-  let MAD_aboveMinutes = 1.4826 * median(
-      cycles
-      .filter(x => x >= medianMinutes)
-      .map(x => x - medianMinutes)
-  );
+  let MAD_aboveMinutes =
+    1.4826 *
+    median(cycles.filter(x => x >= medianMinutes).map(x => x - medianMinutes));
   if (MAD_aboveMinutes < 0.01) MAD_aboveMinutes = 0.01;
 
   const statCycleTime = {
@@ -183,33 +183,33 @@ function estimateCycleTimes(cycles: im.Seq.Indexed<number>): StatisticalCycleTim
   var inliers = cycles.filter(x => !isOutlier(statCycleTime, x)).toArray();
   //compute average of inliers
   const expectedCycleMinutes =
-    inliers.reduce((sum, x) => sum + x, 0)
-    /
-    inliers.length;
+    inliers.reduce((sum, x) => sum + x, 0) / inliers.length;
 
-  return {...statCycleTime, expectedCycleMinutes};
+  return { ...statCycleTime, expectedCycleMinutes };
 }
 
 function estimateCycleTimesOfParts(
-  cycles: Iterable<api.ILogEntry>,
+  cycles: Iterable<api.ILogEntry>
 ): im.Map<string, im.Map<string, StatisticalCycleTime>> {
-  const ret =
-    im.Seq(cycles)
+  const ret = im
+    .Seq(cycles)
     .filter(c => c.type === api.LogType.MachineCycle && !c.startofcycle)
-    .flatMap(c => c.material.map(m => ({cycle: c, mat: m})))
+    .flatMap(c => c.material.map(m => ({ cycle: c, mat: m })))
     .groupBy(e => part_and_proc(e.mat))
     .map(cyclesForPart =>
       cyclesForPart
-      .groupBy(c => c.cycle.loc)
-      .map(cyclesForPartAndStat =>
-        estimateCycleTimes(
-          cyclesForPartAndStat
-          .map(p => duration(p.cycle.elapsed).asMinutes())
-          .toIndexedSeq()
-          .cacheResult()
+        .groupBy(c => c.cycle.loc)
+        .map(cyclesForPartAndStat =>
+          estimateCycleTimes(
+            cyclesForPartAndStat
+              .map(p => duration(p.cycle.elapsed).asMinutes())
+              .toIndexedSeq()
+              .cacheResult()
+          )
         )
-      ).toMap()
-    ).toMap();
+        .toMap()
+    )
+    .toMap();
   return ret;
 }
 
@@ -219,7 +219,10 @@ function activeMinutes(
   estimated: im.Map<string, im.Map<string, StatisticalCycleTime>>
 ) {
   const cMins = duration(cycle.active).asMinutes();
-  if (cycle.type === api.LogType.MachineCycle && (cycle.active === "" || cMins <= 0)) {
+  if (
+    cycle.type === api.LogType.MachineCycle &&
+    (cycle.active === "" || cMins <= 0)
+  ) {
     const byStat = estimated.get(partAndProc);
     if (byStat) {
       const e = byStat.get(cycle.loc);
@@ -240,153 +243,156 @@ export function process_events(
   expire: ExpireOldData,
   newEvts: Iterable<api.ILogEntry>,
   initialLoad: boolean,
-  st: CycleState): CycleState {
+  st: CycleState
+): CycleState {
+  let evtsSeq = im.Seq(newEvts);
+  let parts = st.by_part_then_stat;
+  let pals = st.by_pallet;
+  let statGroups = st.station_groups;
 
-    let evtsSeq = im.Seq(newEvts);
-    let parts = st.by_part_then_stat;
-    let pals = st.by_pallet;
-    let statGroups = st.station_groups;
+  let estimatedCycleTimes: im.Map<string, im.Map<string, StatisticalCycleTime>>;
+  if (initialLoad) {
+    estimatedCycleTimes = estimateCycleTimesOfParts(newEvts);
+  } else {
+    estimatedCycleTimes = st.estimatedCycleTimes;
+  }
 
-    let estimatedCycleTimes: im.Map<string, im.Map<string, StatisticalCycleTime>>;
-    if (initialLoad) {
-      estimatedCycleTimes = estimateCycleTimesOfParts(newEvts)
-    } else {
-      estimatedCycleTimes = st.estimatedCycleTimes;
-    }
+  switch (expire.type) {
+    case ExpireOldDataType.ExpireEarlierThan:
+      // check if nothing to expire and no new data
+      const partEntries = parts
+        .valueSeq()
+        .flatMap(statMap => statMap.valueSeq())
+        .flatMap(cs => cs);
+      const palEntries = pals.valueSeq().flatMap(cs => cs);
+      const minEntry = palEntries.concat(partEntries).minBy(e => e.x);
 
-    switch (expire.type) {
-      case ExpireOldDataType.ExpireEarlierThan:
+      if (
+        (minEntry === undefined || minEntry.x >= expire.d) &&
+        evtsSeq.isEmpty()
+      ) {
+        return st;
+      }
 
-        // check if nothing to expire and no new data
-        const partEntries = parts
-          .valueSeq()
-          .flatMap(statMap => statMap.valueSeq())
-          .flatMap(cs => cs);
-        const palEntries = pals
-          .valueSeq()
-          .flatMap(cs => cs);
-        const minEntry =
-          palEntries.concat(partEntries)
-          .minBy(e => e.x);
-
-        if ((minEntry === undefined || minEntry.x >= expire.d) && evtsSeq.isEmpty()) {
-            return st;
-        }
-
-        // filter old events
-        parts = parts
-          .map(statMap =>
-            statMap.map(es => es.filter(e => e.x >= expire.d))
-                   .filter(es => es.length > 0)
-          )
-          .filter(statMap => !statMap.isEmpty());
-
-        pals = pals
-          .map(es => es.filter(e => e.x >= expire.d))
-          .filter(es => es.length > 0);
-
-        break;
-
-      case ExpireOldDataType.NoExpire:
-        if (evtsSeq.isEmpty()) { return st; }
-        break;
-    }
-
-    var newPartCycles: im.Seq.Keyed<string, im.Map<string, ReadonlyArray<PartCycleData>>> = evtsSeq
-      .filter(
-        c => !c.startofcycle
-        && (
-             c.type === api.LogType.LoadUnloadCycle
-          || c.type === api.LogType.MachineCycle
+      // filter old events
+      parts = parts
+        .map(statMap =>
+          statMap
+            .map(es => es.filter(e => e.x >= expire.d))
+            .filter(es => es.length > 0)
         )
-      )
-      .flatMap(c => c.material.map(m => ({cycle: c, mat: m})))
-      .groupBy(e => part_and_proc(e.mat))
-      .map((cyclesForPart, partAndProc) =>
-        cyclesForPart.toSeq()
-          .map(e => ({
-            x: e.cycle.endUTC,
-            y: duration(e.cycle.elapsed).asMinutes(),
-            active: activeMinutes(partAndProc, e.cycle, estimatedCycleTimes),
-            completed: e.cycle.type === api.LogType.LoadUnloadCycle && e.cycle.result === "UNLOAD",
-            part: e.mat.part,
-            process: e.mat.proc,
-            isLabor: e.cycle.type === api.LogType.LoadUnloadCycle,
-            stationGroup: stat_group(e.cycle),
-            stationNumber: e.cycle.locnum,
-          }))
-          .filter(c => c.stationGroup !== "")
-          .groupBy(e => stat_name_and_num(e))
-          .map(cycles =>
-            cycles
-            .valueSeq()
-            .toArray()
-          )
-          .toMap()
-      );
+        .filter(statMap => !statMap.isEmpty());
 
-    parts = parts
-      .mergeWith(
-        (oldStatMap, newStatMap) =>
-          oldStatMap.mergeWith(
-            (oldCs, newCs) => oldCs.concat(newCs),
-            newStatMap
-          ),
-        newPartCycles
-      );
+      pals = pals
+        .map(es => es.filter(e => e.x >= expire.d))
+        .filter(es => es.length > 0);
 
-    var newPalCycles = evtsSeq
-      .filter(c => !c.startofcycle && c.type === api.LogType.PalletCycle && c.pal !== "")
-      .groupBy(c => c.pal)
-      .map(cyclesForPal =>
-        cyclesForPal.map(c => ({
+      break;
+
+    case ExpireOldDataType.NoExpire:
+      if (evtsSeq.isEmpty()) {
+        return st;
+      }
+      break;
+  }
+
+  var newPartCycles: im.Seq.Keyed<
+    string,
+    im.Map<string, ReadonlyArray<PartCycleData>>
+  > = evtsSeq
+    .filter(
+      c =>
+        !c.startofcycle &&
+        (c.type === api.LogType.LoadUnloadCycle ||
+          c.type === api.LogType.MachineCycle)
+    )
+    .flatMap(c => c.material.map(m => ({ cycle: c, mat: m })))
+    .groupBy(e => part_and_proc(e.mat))
+    .map((cyclesForPart, partAndProc) =>
+      cyclesForPart
+        .toSeq()
+        .map(e => ({
+          x: e.cycle.endUTC,
+          y: duration(e.cycle.elapsed).asMinutes(),
+          active: activeMinutes(partAndProc, e.cycle, estimatedCycleTimes),
+          completed:
+            e.cycle.type === api.LogType.LoadUnloadCycle &&
+            e.cycle.result === "UNLOAD",
+          part: e.mat.part,
+          process: e.mat.proc,
+          isLabor: e.cycle.type === api.LogType.LoadUnloadCycle,
+          stationGroup: stat_group(e.cycle),
+          stationNumber: e.cycle.locnum
+        }))
+        .filter(c => c.stationGroup !== "")
+        .groupBy(e => stat_name_and_num(e))
+        .map(cycles => cycles.valueSeq().toArray())
+        .toMap()
+    );
+
+  parts = parts.mergeWith(
+    (oldStatMap, newStatMap) =>
+      oldStatMap.mergeWith((oldCs, newCs) => oldCs.concat(newCs), newStatMap),
+    newPartCycles
+  );
+
+  var newPalCycles = evtsSeq
+    .filter(
+      c => !c.startofcycle && c.type === api.LogType.PalletCycle && c.pal !== ""
+    )
+    .groupBy(c => c.pal)
+    .map(cyclesForPal =>
+      cyclesForPal
+        .map(c => ({
           x: c.endUTC,
           y: duration(c.elapsed).asMinutes(),
           active: duration(c.active).asMinutes(),
-          completed: false,
+          completed: false
         }))
         .valueSeq()
         .toArray()
-      );
-    pals = pals
-      .mergeWith(
-        (oldCs, newCs) => oldCs.concat(newCs),
-        newPalCycles
-      );
+    );
+  pals = pals.mergeWith((oldCs, newCs) => oldCs.concat(newCs), newPalCycles);
 
-    var newStatGroups = evtsSeq
-      .map(stat_group_load_machine_only)
-      .filter(s => s !== "" && !statGroups.has(s))
-      .toSet();
-    if (newStatGroups.size > 0) {
-      statGroups = statGroups.union(newStatGroups);
-    }
+  var newStatGroups = evtsSeq
+    .map(stat_group_load_machine_only)
+    .filter(s => s !== "" && !statGroups.has(s))
+    .toSet();
+  if (newStatGroups.size > 0) {
+    statGroups = statGroups.union(newStatGroups);
+  }
 
-    const newSt = {...st,
-      by_part_then_stat: parts,
-      by_pallet: pals,
-      station_groups: statGroups,
+  const newSt = {
+    ...st,
+    by_part_then_stat: parts,
+    by_pallet: pals,
+    station_groups: statGroups
+  };
+
+  if (initialLoad) {
+    return {
+      ...newSt,
+      estimatedCycleTimes: estimatedCycleTimes
     };
-
-    if (initialLoad) {
-      return {...newSt,
-        estimatedCycleTimes: estimatedCycleTimes
-      };
-    } else {
-      return newSt;
-    }
+  } else {
+    return newSt;
+  }
 }
 
-function splitPartCycleToDays(cycle: CycleData, totalVal: number):
-    Array<{day: Date, value: number}> {
+function splitPartCycleToDays(
+  cycle: CycleData,
+  totalVal: number
+): Array<{ day: Date; value: number }> {
   const startDay = startOfDay(cycle.x);
   const endTime = addMinutes(cycle.x, totalVal);
   const endDay = startOfDay(endTime);
   if (startDay.getTime() === endDay.getTime()) {
-    return [{
-      day: startDay,
-      value: totalVal,
-    }];
+    return [
+      {
+        day: startDay,
+        value: totalVal
+      }
+    ];
   } else {
     const startDayPct = differenceInMinutes(endDay, cycle.x) / totalVal;
     return [
@@ -402,43 +408,47 @@ function splitPartCycleToDays(cycle: CycleData, totalVal: number):
   }
 }
 
-type DayAndStation = im.Record<{day: Date, station: string}>;
-const mkDayAndStation = im.Record({day: new Date(), station: ""});
+type DayAndStation = im.Record<{ day: Date; station: string }>;
+const mkDayAndStation = im.Record({ day: new Date(), station: "" });
 
 export function binCyclesByDayAndStat(
-    byPartThenStat: im.Map<string, im.Map<string, ReadonlyArray<CycleData>>>,
-    extractValue: (c: CycleData) => number
-  ): im.Map<DayAndStation, number> {
-
-  return byPartThenStat.valueSeq()
-    .flatMap(byStation => (
-      byStation.toSeq()
-      .map((points, station) =>
-        im.Seq(points).flatMap(point =>
-          splitPartCycleToDays(point, extractValue(point)).map(x => ({...x, station}))
+  byPartThenStat: im.Map<string, im.Map<string, ReadonlyArray<CycleData>>>,
+  extractValue: (c: CycleData) => number
+): im.Map<DayAndStation, number> {
+  return byPartThenStat
+    .valueSeq()
+    .flatMap(byStation =>
+      byStation
+        .toSeq()
+        .map((points, station) =>
+          im
+            .Seq(points)
+            .flatMap(point =>
+              splitPartCycleToDays(point, extractValue(point)).map(x => ({
+                ...x,
+                station
+              }))
+            )
         )
-      )
-      .valueSeq()
-      .flatMap(x => x)
-    ))
-    .groupBy(p => new mkDayAndStation({day: p.day, station: p.station}))
-    .map((points, group) =>
-      points.reduce((sum, p) => sum + p.value, 0)
+        .valueSeq()
+        .flatMap(x => x)
     )
+    .groupBy(p => new mkDayAndStation({ day: p.day, station: p.station }))
+    .map((points, group) => points.reduce((sum, p) => sum + p.value, 0))
     .toMap();
 }
 
-type DayAndPart = im.Record<{day: Date, part: string}>;
-const mkDayAndPart = im.Record({day: new Date(), part: ""});
+type DayAndPart = im.Record<{ day: Date; part: string }>;
+const mkDayAndPart = im.Record({ day: new Date(), part: "" });
 
 export function binCyclesByDayAndPart(
-    byPartThenStat: im.Map<string, im.Map<string, ReadonlyArray<PartCycleData>>>,
-    extractValue: (c: PartCycleData) => number
-  ): im.Map<DayAndPart, number> {
-  return byPartThenStat.toSeq()
+  byPartThenStat: im.Map<string, im.Map<string, ReadonlyArray<PartCycleData>>>,
+  extractValue: (c: PartCycleData) => number
+): im.Map<DayAndPart, number> {
+  return byPartThenStat
+    .toSeq()
     .map((byStation, part) =>
-      byStation.valueSeq()
-      .flatMap(points =>
+      byStation.valueSeq().flatMap(points =>
         im.Seq(points).map(point => ({
           day: startOfDay(point.x),
           part: part,
@@ -448,35 +458,33 @@ export function binCyclesByDayAndPart(
     )
     .valueSeq()
     .flatMap(x => x)
-    .groupBy(p => new mkDayAndPart({day: p.day, part: p.part}))
-    .map((points, group) =>
-      points.reduce((sum, p) => sum + p.value, 0)
-    )
+    .groupBy(p => new mkDayAndPart({ day: p.day, part: p.part }))
+    .map((points, group) => points.reduce((sum, p) => sum + p.value, 0))
     .toMap();
 }
 
 export function stationMinutes(
-    byPartThenStat: im.Map<string, im.Map<string, ReadonlyArray<PartCycleData>>>,
-    cutoff: Date
-  ): im.Map<string, number> {
-
-  return byPartThenStat.valueSeq()
+  byPartThenStat: im.Map<string, im.Map<string, ReadonlyArray<PartCycleData>>>,
+  cutoff: Date
+): im.Map<string, number> {
+  return byPartThenStat
+    .valueSeq()
     .flatMap((byStation, part) =>
-      byStation.toSeq()
-      .map((points, station) =>
-        im.Seq(points)
-        .filter(p => p.x >= cutoff)
-        .map(p => ({
-          station,
-          active: p.active
-        }))
-      )
-      .valueSeq()
-      .flatMap(x => x)
+      byStation
+        .toSeq()
+        .map((points, station) =>
+          im
+            .Seq(points)
+            .filter(p => p.x >= cutoff)
+            .map(p => ({
+              station,
+              active: p.active
+            }))
+        )
+        .valueSeq()
+        .flatMap(x => x)
     )
     .groupBy(x => x.station)
-    .map(points =>
-      points.reduce((sum, p) => sum + p.active, 0)
-    )
+    .map(points => points.reduce((sum, p) => sum + p.active, 0))
     .toMap();
 }

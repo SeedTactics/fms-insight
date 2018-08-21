@@ -30,17 +30,17 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from 'react';
-import CircularProgress from '@material-ui/core/CircularProgress';
+import * as React from "react";
+import CircularProgress from "@material-ui/core/CircularProgress";
 
-import { connect, Store } from '../store/store';
-import Tooltip from '@material-ui/core/Tooltip';
+import { connect, Store } from "../store/store";
+import Tooltip from "@material-ui/core/Tooltip";
 
-function LoadingIcon({loading}: {loading: boolean}) {
+function LoadingIcon({ loading }: { loading: boolean }) {
   if (loading) {
     return (
       <Tooltip title="Loading">
-        <CircularProgress data-testid="loading-icon" color="secondary"/>
+        <CircularProgress data-testid="loading-icon" color="secondary" />
       </Tooltip>
     );
   } else {
@@ -48,22 +48,18 @@ function LoadingIcon({loading}: {loading: boolean}) {
   }
 }
 
-export default connect(
-  (st: Store) => ({
-    loading: st.Events.loading_log_entries
-          || st.Events.loading_job_history
-          || st.Current.loading
-          || st.Events.loading_analysis_month_log
-          || st.Events.loading_analysis_month_jobs
-          || st.Websocket.websocket_reconnecting
-          || st.MaterialDetails.add_mat_in_progress
-          || (st.MaterialDetails.material
-              ?
-               (   st.MaterialDetails.material.loading_events
-                || st.MaterialDetails.material.loading_workorders
-                || st.MaterialDetails.material.updating_material
-               )
-              : false
-             )
-  })
-)(LoadingIcon);
+export default connect((st: Store) => ({
+  loading:
+    st.Events.loading_log_entries ||
+    st.Events.loading_job_history ||
+    st.Current.loading ||
+    st.Events.loading_analysis_month_log ||
+    st.Events.loading_analysis_month_jobs ||
+    st.Websocket.websocket_reconnecting ||
+    st.MaterialDetails.add_mat_in_progress ||
+    (st.MaterialDetails.material
+      ? st.MaterialDetails.material.loading_events ||
+        st.MaterialDetails.material.loading_workorders ||
+        st.MaterialDetails.material.updating_material
+      : false)
+}))(LoadingIcon);

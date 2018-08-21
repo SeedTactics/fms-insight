@@ -32,36 +32,35 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 export enum PlannedOrActual {
-  Planned = 'Planned',
-  Actual = 'Actual',
-  PlannedMinusActual = 'PlannedOrActual',
+  Planned = "Planned",
+  Actual = "Actual",
+  PlannedMinusActual = "PlannedOrActual"
 }
 
 export enum ActionType {
-  SetSelectedStationCyclePart = 'Gui_SetSelectedStationCyclePart',
-  SetSelectedPalletCycle = 'Gui_SetSelectedPalletCycle',
-  SetStationOeeHeatmapType = 'Gui_SetStationOeeHeatmapType',
-  SetCompletedCountHeatmapType = 'Gui_SetCompletedCountHeatmapType',
-  SetWorkorderDialogOpen = 'Gui_SetWorkorderDialog',
-  SetInspTypeDialogOpen = 'Gui_SetInspTypeDialog',
-  SetSerialDialogOpen = 'Gui_SetSerialDialogOpen',
-  SetAddMatToQueueModeDialogOpen = 'Gui_SetAddMatToQueueModeDialogOpen',
-  SetAddMatToQueueName = 'Gui_SetAddMatToQueueName',
-  SetScanQrCodeDialog = 'Gui_ScanQrCodeDialog',
+  SetSelectedStationCyclePart = "Gui_SetSelectedStationCyclePart",
+  SetSelectedPalletCycle = "Gui_SetSelectedPalletCycle",
+  SetStationOeeHeatmapType = "Gui_SetStationOeeHeatmapType",
+  SetCompletedCountHeatmapType = "Gui_SetCompletedCountHeatmapType",
+  SetWorkorderDialogOpen = "Gui_SetWorkorderDialog",
+  SetInspTypeDialogOpen = "Gui_SetInspTypeDialog",
+  SetSerialDialogOpen = "Gui_SetSerialDialogOpen",
+  SetAddMatToQueueModeDialogOpen = "Gui_SetAddMatToQueueModeDialogOpen",
+  SetAddMatToQueueName = "Gui_SetAddMatToQueueName",
+  SetScanQrCodeDialog = "Gui_ScanQrCodeDialog"
 }
 
 export type Action =
-  | { type: ActionType.SetSelectedStationCyclePart, part: string }
-  | { type: ActionType.SetSelectedPalletCycle, pallet: string }
-  | { type: ActionType.SetStationOeeHeatmapType, ty: PlannedOrActual }
-  | { type: ActionType.SetCompletedCountHeatmapType, ty: PlannedOrActual }
-  | { type: ActionType.SetWorkorderDialogOpen, open: boolean }
-  | { type: ActionType.SetInspTypeDialogOpen, open: boolean }
-  | { type: ActionType.SetSerialDialogOpen, open: boolean }
-  | { type: ActionType.SetAddMatToQueueModeDialogOpen, open: boolean }
-  | { type: ActionType.SetAddMatToQueueName, queue: string | undefined}
-  | { type: ActionType.SetScanQrCodeDialog, open: boolean }
-  ;
+  | { type: ActionType.SetSelectedStationCyclePart; part: string }
+  | { type: ActionType.SetSelectedPalletCycle; pallet: string }
+  | { type: ActionType.SetStationOeeHeatmapType; ty: PlannedOrActual }
+  | { type: ActionType.SetCompletedCountHeatmapType; ty: PlannedOrActual }
+  | { type: ActionType.SetWorkorderDialogOpen; open: boolean }
+  | { type: ActionType.SetInspTypeDialogOpen; open: boolean }
+  | { type: ActionType.SetSerialDialogOpen; open: boolean }
+  | { type: ActionType.SetAddMatToQueueModeDialogOpen; open: boolean }
+  | { type: ActionType.SetAddMatToQueueName; queue: string | undefined }
+  | { type: ActionType.SetScanQrCodeDialog; open: boolean };
 
 export interface State {
   readonly station_cycle_selected_part?: string;
@@ -83,32 +82,34 @@ export const initial: State = {
   insptype_dialog_open: false,
   serial_dialog_open: false,
   scan_qr_dialog_open: false,
-  queue_dialog_mode_open: false,
+  queue_dialog_mode_open: false
 };
 
 export function reducer(s: State, a: Action): State {
-  if (s === undefined) { return initial; }
+  if (s === undefined) {
+    return initial;
+  }
   switch (a.type) {
     case ActionType.SetSelectedStationCyclePart:
-      return {...s, station_cycle_selected_part: a.part };
+      return { ...s, station_cycle_selected_part: a.part };
     case ActionType.SetSelectedPalletCycle:
-      return {...s, pallet_cycle_selected: a.pallet };
+      return { ...s, pallet_cycle_selected: a.pallet };
     case ActionType.SetStationOeeHeatmapType:
-      return {...s, station_oee_heatmap_type: a.ty };
+      return { ...s, station_oee_heatmap_type: a.ty };
     case ActionType.SetCompletedCountHeatmapType:
-      return {...s, completed_count_heatmap_type: a.ty };
+      return { ...s, completed_count_heatmap_type: a.ty };
     case ActionType.SetWorkorderDialogOpen:
-      return {...s, workorder_dialog_open: a.open };
+      return { ...s, workorder_dialog_open: a.open };
     case ActionType.SetInspTypeDialogOpen:
-      return {...s, insptype_dialog_open: a.open };
+      return { ...s, insptype_dialog_open: a.open };
     case ActionType.SetSerialDialogOpen:
-      return {...s, serial_dialog_open: a.open };
+      return { ...s, serial_dialog_open: a.open };
     case ActionType.SetScanQrCodeDialog:
-      return {...s, scan_qr_dialog_open: a.open };
+      return { ...s, scan_qr_dialog_open: a.open };
     case ActionType.SetAddMatToQueueModeDialogOpen:
-      return {...s, queue_dialog_mode_open: a.open };
+      return { ...s, queue_dialog_mode_open: a.open };
     case ActionType.SetAddMatToQueueName:
-      return {...s, add_mat_to_queue: a.queue };
+      return { ...s, add_mat_to_queue: a.queue };
     default:
       return s;
   }

@@ -31,16 +31,16 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as gui from './gui-state';
+import * as gui from "./gui-state";
 
-it('creates initial state', () => {
+it("creates initial state", () => {
   // tslint:disable no-any
   let s = gui.reducer(undefined as any, undefined as any);
   // tslint:enable no-any
   expect(s).toBe(gui.initial);
 });
 
-it('selects a part for the station cycle', () => {
+it("selects a part for the station cycle", () => {
   let s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetSelectedStationCyclePart,
     part: "abcdef"
@@ -48,7 +48,7 @@ it('selects a part for the station cycle', () => {
   expect(s.station_cycle_selected_part).toEqual("abcdef");
 });
 
-it('selects a pallet for the pallet cycle chart', () => {
+it("selects a pallet for the pallet cycle chart", () => {
   let s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetSelectedPalletCycle,
     pallet: "pal555"
@@ -61,7 +61,9 @@ it("sets the station oee heatmap type", () => {
     type: gui.ActionType.SetStationOeeHeatmapType,
     ty: gui.PlannedOrActual.PlannedMinusActual
   });
-  expect(s.station_oee_heatmap_type).toEqual(gui.PlannedOrActual.PlannedMinusActual);
+  expect(s.station_oee_heatmap_type).toEqual(
+    gui.PlannedOrActual.PlannedMinusActual
+  );
 });
 
 it("sets the completed count heatmap type", () => {
@@ -139,7 +141,7 @@ it("closes the qr code scan dialog", () => {
 it("sets the add mat dialog state", () => {
   let s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetAddMatToQueueModeDialogOpen,
-    open: true,
+    open: true
   });
   expect(s.queue_dialog_mode_open).toBe(true);
 });
@@ -147,7 +149,7 @@ it("sets the add mat dialog state", () => {
 it("sets the add mat queue name", () => {
   let s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetAddMatToQueueName,
-    queue: "aaaa",
+    queue: "aaaa"
   });
   expect(s.add_mat_to_queue).toEqual("aaaa");
 });

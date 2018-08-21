@@ -31,23 +31,26 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from 'react';
-import DocumentTitle from 'react-document-title';
+import * as React from "react";
+import DocumentTitle from "react-document-title";
 
-import { MaterialSummary } from '../../data/events';
-import { Store, connect, mkAC } from '../../store/store';
-import { MaterialDialog, WhiteboardRegion, InProcMaterial } from './Material';
-import * as matDetails from '../../data/material-details';
-import { AllMaterialBins, selectAllMaterialIntoBins } from '../../data/all-material-bins';
-import { createSelector } from 'reselect';
-import SerialScanner from './QRScan';
+import { MaterialSummary } from "../../data/events";
+import { Store, connect, mkAC } from "../../store/store";
+import { MaterialDialog, WhiteboardRegion, InProcMaterial } from "./Material";
+import * as matDetails from "../../data/material-details";
+import {
+  AllMaterialBins,
+  selectAllMaterialIntoBins
+} from "../../data/all-material-bins";
+import { createSelector } from "reselect";
+import SerialScanner from "./QRScan";
 
 const ConnectedAllMatDialog = connect(
   st => ({
-    display_material: st.MaterialDetails.material,
+    display_material: st.MaterialDetails.material
   }),
   {
-    onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
+    onClose: mkAC(matDetails.ActionType.CloseMaterialDialog)
   }
 )(MaterialDialog);
 
@@ -61,19 +64,25 @@ function Wash(props: AllMatProps) {
 
   return (
     <DocumentTitle title="All Material - FMS Insight">
-      <main style={{padding: '8px'}}>
+      <main style={{ padding: "8px" }}>
         <div>
-          {regions.map((mats, region) =>
-            <WhiteboardRegion key={region} label={region} borderBottom flexStart>
-              {mats.map((m, idx) =>
-                <InProcMaterial key={idx} mat={m} onOpen={props.openMat}/>
-              )}
-            </WhiteboardRegion>
-          ).valueSeq()
-          }
+          {regions
+            .map((mats, region) => (
+              <WhiteboardRegion
+                key={region}
+                label={region}
+                borderBottom
+                flexStart
+              >
+                {mats.map((m, idx) => (
+                  <InProcMaterial key={idx} mat={m} onOpen={props.openMat} />
+                ))}
+              </WhiteboardRegion>
+            ))
+            .valueSeq()}
         </div>
-        <ConnectedAllMatDialog/>
-        <SerialScanner/>
+        <ConnectedAllMatDialog />
+        <SerialScanner />
       </main>
     </DocumentTitle>
   );
@@ -89,6 +98,6 @@ export default connect(
     allMat: extractMaterialRegions(st)
   }),
   {
-    openMat: matDetails.openMaterialDialog,
+    openMat: matDetails.openMaterialDialog
   }
 )(Wash);

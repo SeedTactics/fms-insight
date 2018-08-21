@@ -31,24 +31,30 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from 'react';
-import Button from '@material-ui/core/Button';
-import List from '@material-ui/core/List';
-import ListItem from '@material-ui/core/ListItem';
-import ListItemText from '@material-ui/core/ListItemText';
-import ListItemIcon from '@material-ui/core/ListItemIcon';
-import Dialog from '@material-ui/core/Dialog';
-import DialogActions from '@material-ui/core/DialogActions';
-import DialogContent from '@material-ui/core/DialogContent';
-import DialogTitle from '@material-ui/core/DialogTitle';
-import SearchIcon from '@material-ui/icons/Search';
-import TextField from '@material-ui/core/TextField';
-import * as im from 'immutable';
+import * as React from "react";
+import Button from "@material-ui/core/Button";
+import List from "@material-ui/core/List";
+import ListItem from "@material-ui/core/ListItem";
+import ListItemText from "@material-ui/core/ListItemText";
+import ListItemIcon from "@material-ui/core/ListItemIcon";
+import Dialog from "@material-ui/core/Dialog";
+import DialogActions from "@material-ui/core/DialogActions";
+import DialogContent from "@material-ui/core/DialogContent";
+import DialogTitle from "@material-ui/core/DialogTitle";
+import SearchIcon from "@material-ui/icons/Search";
+import TextField from "@material-ui/core/TextField";
+import * as im from "immutable";
 
-import { MaterialDetailTitle } from './Material';
-import { Store, connect, mkAC, AppActionBeforeMiddleware, DispatchAction } from '../../store/store';
-import * as matDetails from '../../data/material-details';
-import * as guiState from '../../data/gui-state';
+import { MaterialDetailTitle } from "./Material";
+import {
+  Store,
+  connect,
+  mkAC,
+  AppActionBeforeMiddleware,
+  DispatchAction
+} from "../../store/store";
+import * as matDetails from "../../data/material-details";
+import * as guiState from "../../data/gui-state";
 
 interface ManualInspTypeEntryProps {
   readonly mat: matDetails.MaterialDetail;
@@ -59,17 +65,28 @@ interface ManualInspTypeEntryState {
   readonly inspType: string;
 }
 
-class ManualInspTypeEntry extends React.PureComponent<ManualInspTypeEntryProps, ManualInspTypeEntryState> {
-  state = {inspType: ""};
+class ManualInspTypeEntry extends React.PureComponent<
+  ManualInspTypeEntryProps,
+  ManualInspTypeEntryState
+> {
+  state = { inspType: "" };
 
   render() {
     return (
       <TextField
-        label={this.state.inspType === "" ? "Inspection Type" : "Inspection Type (press enter)"}
+        label={
+          this.state.inspType === ""
+            ? "Inspection Type"
+            : "Inspection Type (press enter)"
+        }
         value={this.state.inspType}
-        onChange={e => this.setState({inspType: e.target.value})}
+        onChange={e => this.setState({ inspType: e.target.value })}
         onKeyPress={e => {
-          if (e.key === "Enter" && this.state.inspType && this.state.inspType !== "") {
+          if (
+            e.key === "Enter" &&
+            this.state.inspType &&
+            this.state.inspType !== ""
+          ) {
             e.preventDefault();
             this.props.forceInspection({
               mat: this.props.mat,
@@ -102,32 +119,43 @@ function SelectInspTypeDialog(props: SelectInspTypeProps) {
     } else {
       const inspList = (
         <List>
-          {props.inspTypes.toSeq().sort().map(iType => (
-            <ListItem
-              key={iType}
-              button
-              onClick={() => props.forceInspection({mat, inspType: iType, inspect: true})}
-            >
-              <ListItemIcon>
-                <SearchIcon/>
-              </ListItemIcon>
-              <ListItemText primary={iType}/>
-            </ListItem>
-          ))}
+          {props.inspTypes
+            .toSeq()
+            .sort()
+            .map(iType => (
+              <ListItem
+                key={iType}
+                button
+                onClick={() =>
+                  props.forceInspection({ mat, inspType: iType, inspect: true })
+                }
+              >
+                <ListItemIcon>
+                  <SearchIcon />
+                </ListItemIcon>
+                <ListItemText primary={iType} />
+              </ListItem>
+            ))}
         </List>
       );
 
       body = (
         <>
           <DialogTitle disableTypography>
-            <MaterialDetailTitle partName={mat.partName} serial={mat.serial}/>
+            <MaterialDetailTitle partName={mat.partName} serial={mat.serial} />
           </DialogTitle>
           <DialogContent>
-            <ManualInspTypeEntry mat={mat} forceInspection={props.forceInspection}/>
+            <ManualInspTypeEntry
+              mat={mat}
+              forceInspection={props.forceInspection}
+            />
             {inspList}
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => props.onClose({open: false})} color="primary">
+            <Button
+              onClick={() => props.onClose({ open: false })}
+              color="primary"
+            >
               Cancel
             </Button>
           </DialogActions>
@@ -138,7 +166,7 @@ function SelectInspTypeDialog(props: SelectInspTypeProps) {
   return (
     <Dialog
       open={props.mats !== null}
-      onClose={() => props.onClose({open: false})}
+      onClose={() => props.onClose({ open: false })}
       maxWidth="md"
     >
       {body}
@@ -149,13 +177,14 @@ function SelectInspTypeDialog(props: SelectInspTypeProps) {
 export default connect(
   (st: Store) => ({
     inspTypes: st.Events.last30.mat_summary.inspTypes,
-    mats: st.Gui.insptype_dialog_open ? st.MaterialDetails.material : null,
+    mats: st.Gui.insptype_dialog_open ? st.MaterialDetails.material : null
   }),
   {
     onClose: mkAC(guiState.ActionType.SetInspTypeDialogOpen),
-    forceInspection: (data: matDetails.ForceInspectionData) => [
-      matDetails.forceInspection(data),
-      { type: guiState.ActionType.SetInspTypeDialogOpen, open: false, }
-    ] as AppActionBeforeMiddleware,
+    forceInspection: (data: matDetails.ForceInspectionData) =>
+      [
+        matDetails.forceInspection(data),
+        { type: guiState.ActionType.SetInspTypeDialogOpen, open: false }
+      ] as AppActionBeforeMiddleware
   }
 )(SelectInspTypeDialog);

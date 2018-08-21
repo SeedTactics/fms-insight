@@ -31,17 +31,16 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as im from 'immutable';
+import * as im from "immutable";
 
 export enum ActionType {
-  SetOperator = 'Operators_SetOperator',
-  RemoveOperator = 'Operators_Remove'
+  SetOperator = "Operators_SetOperator",
+  RemoveOperator = "Operators_Remove"
 }
 
 export type Action =
-  | { type: ActionType.SetOperator, operator: string }
-  | { type: ActionType.RemoveOperator, operator: string }
-  ;
+  | { type: ActionType.SetOperator; operator: string }
+  | { type: ActionType.RemoveOperator; operator: string };
 
 export interface State {
   readonly operators: im.Set<string>;
@@ -49,8 +48,10 @@ export interface State {
 }
 
 export const initial = {
-  operators: im.Set(JSON.parse(localStorage.getItem("operators") || "[]")) as im.Set<string>,
-  current: localStorage.getItem("current-operator") || undefined,
+  operators: im.Set(
+    JSON.parse(localStorage.getItem("operators") || "[]")
+  ) as im.Set<string>,
+  current: localStorage.getItem("current-operator") || undefined
 };
 
 export function createOnStateChange(): (s: State) => void {
@@ -73,13 +74,17 @@ export function createOnStateChange(): (s: State) => void {
 }
 
 export function reducer(s: State, a: Action): State {
-  if (s === undefined) { return initial; }
+  if (s === undefined) {
+    return initial;
+  }
 
   switch (a.type) {
     case ActionType.SetOperator:
       return {
-        operators: s.operators.has(a.operator) ? s.operators : s.operators.add(a.operator),
-        current: a.operator,
+        operators: s.operators.has(a.operator)
+          ? s.operators
+          : s.operators.add(a.operator),
+        current: a.operator
       };
     case ActionType.RemoveOperator:
       if (s.operators.has(a.operator)) {

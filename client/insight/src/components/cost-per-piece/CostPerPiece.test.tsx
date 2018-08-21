@@ -31,15 +31,22 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from 'react';
-import { render, cleanup, fireEvent, wait, within } from 'react-testing-library'; afterEach(cleanup);
-import { Provider } from 'react-redux';
-import { Simulate } from 'react-dom/test-utils';
-import 'jest-dom/extend-expect';
+import * as React from "react";
+import {
+  render,
+  cleanup,
+  fireEvent,
+  wait,
+  within
+} from "react-testing-library";
+afterEach(cleanup);
+import { Provider } from "react-redux";
+import { Simulate } from "react-dom/test-utils";
+import "jest-dom/extend-expect";
 
-import CostPerPiece from './CostPerPiece';
-import { createTestStore } from '../../test-util';
-import LoadingIcon from '../LoadingIcon';
+import CostPerPiece from "./CostPerPiece";
+import { createTestStore } from "../../test-util";
+import LoadingIcon from "../LoadingIcon";
 
 it("renders the cost/piece page", async () => {
   const store = await createTestStore();
@@ -47,8 +54,8 @@ it("renders the cost/piece page", async () => {
   const result = render(
     <Provider store={store}>
       <div>
-        <LoadingIcon/>
-        <CostPerPiece/>
+        <LoadingIcon />
+        <CostPerPiece />
       </div>
     </Provider>
   );
@@ -58,7 +65,9 @@ it("renders the cost/piece page", async () => {
   ).toBeEmpty();
 
   // now go to July 2018 which has the test store data
-  const chooseMonth = result.getByPlaceholderText("Choose Month") as HTMLInputElement;
+  const chooseMonth = result.getByPlaceholderText(
+    "Choose Month"
+  ) as HTMLInputElement;
   chooseMonth.value = "2018-07";
   Simulate.change(chooseMonth);
   fireEvent.blur(chooseMonth);
@@ -68,26 +77,32 @@ it("renders the cost/piece page", async () => {
   );
 
   // add cost inputs
-  const numOper = result.getByLabelText("Number of Operators") as HTMLInputElement;
+  const numOper = result.getByLabelText(
+    "Number of Operators"
+  ) as HTMLInputElement;
   numOper.value = "3";
   Simulate.change(numOper);
-  const costPerOper = result.getByLabelText("Cost per operator per hour") as HTMLInputElement;
+  const costPerOper = result.getByLabelText(
+    "Cost per operator per hour"
+  ) as HTMLInputElement;
   costPerOper.value = "50";
   Simulate.change(costPerOper);
 
-  const machRow =
-    within(result.getByTestId("station-cost-table"))
-      .getByText("Machine").closest("tr") as HTMLTableRowElement;
+  const machRow = within(result.getByTestId("station-cost-table"))
+    .getByText("Machine")
+    .closest("tr") as HTMLTableRowElement;
   const machCost = machRow.cells[1].querySelector("input") as HTMLInputElement;
   machCost.value = "50000";
   Simulate.change(machCost);
 
-  const aaaRow =
-    within(result.getByTestId("part-cost-table"))
-      .getByText("aaa").closest("tr") as HTMLTableRowElement;
+  const aaaRow = within(result.getByTestId("part-cost-table"))
+    .getByText("aaa")
+    .closest("tr") as HTMLTableRowElement;
   const aaaMatCost = aaaRow.cells[1].querySelector("input") as HTMLInputElement;
   aaaMatCost.value = "40";
   Simulate.change(aaaMatCost);
 
-  expect(result.getByTestId("part-cost-table")).toMatchSnapshot("calculated costs");
+  expect(result.getByTestId("part-cost-table")).toMatchSnapshot(
+    "calculated costs"
+  );
 });

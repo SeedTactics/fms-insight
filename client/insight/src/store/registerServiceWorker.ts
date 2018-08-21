@@ -34,17 +34,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 let windowRefreshing: boolean = false;
 
 export function register() {
-  if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
+  if (process.env.NODE_ENV === "production" && "serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
       const swUrl = `/service-worker.js`;
-      navigator.serviceWorker
-        .register(swUrl)
-        .catch(error => {
-          // tslint:disable-next-line:no-console
-          console.error('Error during service worker registration:', error);
-        });
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (windowRefreshing) { return; }
+      navigator.serviceWorker.register(swUrl).catch(error => {
+        // tslint:disable-next-line:no-console
+        console.error("Error during service worker registration:", error);
+      });
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (windowRefreshing) {
+          return;
+        }
         windowRefreshing = true;
         window.location.reload();
       });
@@ -53,7 +53,7 @@ export function register() {
 }
 
 export function unregister() {
-  if ('serviceWorker' in navigator) {
+  if ("serviceWorker" in navigator) {
     navigator.serviceWorker.ready.then(registration => {
       registration.unregister();
     });

@@ -33,21 +33,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 localStorage.setItem("operators", '["initial1"]');
 localStorage.setItem("current-operator", "initialoper");
-import * as operators from './operators';
-import * as im from 'immutable';
+import * as operators from "./operators";
+import * as im from "immutable";
 
 it("creates the initial state", () => {
   // tslint:disable no-any
   let s = operators.reducer(undefined as any, undefined as any);
   // tslint:enable no-any
   expect(s).toBe(operators.initial);
-  expect(operators.initial.operators.toArray()).toEqual(
-    ["initial1"]
-  );
+  expect(operators.initial.operators.toArray()).toEqual(["initial1"]);
   expect(operators.initial.current).toEqual("initialoper");
 });
 
-it('adds an operator', () => {
+it("adds an operator", () => {
   let s = operators.reducer(operators.initial, {
     type: operators.ActionType.SetOperator,
     operator: "op1"
@@ -55,7 +53,7 @@ it('adds an operator', () => {
 
   expect(s).toEqual({
     operators: im.Set(["initial1", "op1"]),
-    current: "op1",
+    current: "op1"
   });
 
   s = operators.reducer(s, {
@@ -65,11 +63,11 @@ it('adds an operator', () => {
 
   expect(s).toEqual({
     operators: im.Set(["initial1", "op1", "op2"]),
-    current: "op2",
+    current: "op2"
   });
 });
 
-it('removes an operator', () => {
+it("removes an operator", () => {
   let s: operators.State = {
     operators: im.Set(["op1", "op2", "aaaa"]),
     current: "aaaa"
@@ -81,7 +79,7 @@ it('removes an operator', () => {
 
   expect(s).toEqual({
     operators: im.Set(["op2", "aaaa"]),
-    current: "aaaa",
+    current: "aaaa"
   });
 
   s = operators.reducer(s, {
@@ -91,7 +89,7 @@ it('removes an operator', () => {
 
   expect(s).toEqual({
     operators: im.Set(["op2"]),
-    current: undefined,
+    current: undefined
   });
 });
 

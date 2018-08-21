@@ -31,16 +31,16 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from 'react';
-import { wait, render, cleanup, fireEvent } from 'react-testing-library';
+import * as React from "react";
+import { wait, render, cleanup, fireEvent } from "react-testing-library";
 afterEach(cleanup);
-import { Provider } from 'react-redux';
-import 'jest-dom/extend-expect';
-import { differenceInSeconds, addDays } from 'date-fns';
+import { Provider } from "react-redux";
+import "jest-dom/extend-expect";
+import { differenceInSeconds, addDays } from "date-fns";
 
-import { mockComponent } from '../test-util';
-import { initStore } from '../store/store';
-import { loadMockData } from '../mock-data/load';
+import { mockComponent } from "../test-util";
+import { initStore } from "../store/store";
+import { loadMockData } from "../mock-data/load";
 
 jest.mock("./cost-per-piece/CostPerPiece", () => ({
   default: mockComponent("CostPerPiece")
@@ -58,7 +58,7 @@ jest.mock("./data-export/DataExport", () => ({
   default: mockComponent("DataExport")
 }));
 
-import App from './App';
+import App from "./App";
 
 it("renders the app shell", async () => {
   const store = initStore(true);
@@ -72,20 +72,19 @@ it("renders the app shell", async () => {
   expect(result.getByTestId("loading-icon")).toBeInTheDocument();
 
   const jan18 = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
-  const offsetSeconds = differenceInSeconds(addDays(new Date(2018, 7, 5, 15, 33, 0), -28), jan18);
+  const offsetSeconds = differenceInSeconds(
+    addDays(new Date(2018, 7, 5, 15, 33, 0), -28),
+    jan18
+  );
 
   // tslint:disable-next-line:no-any
-  (window as any).FMS_INSIGHT_RESOLVE_MOCK_DATA(
-    loadMockData(offsetSeconds)
-  );
+  (window as any).FMS_INSIGHT_RESOLVE_MOCK_DATA(loadMockData(offsetSeconds));
 
   await wait(() =>
     expect(result.queryByTestId("loading-icon")).not.toBeInTheDocument()
   );
 
-  expect(
-    result.getByTestId("mock-component-Dashboard")
-  ).toBeDefined();
+  expect(result.getByTestId("mock-component-Dashboard")).toBeDefined();
   expect(
     result.queryByTestId("mock-component-StationMonitor")
   ).not.toBeInTheDocument();
@@ -102,9 +101,7 @@ it("renders the app shell", async () => {
   ).toBeInTheDocument();
 
   fireEvent.click(result.getByText("Efficiency"));
-  expect(
-    result.queryByTestId("mock-component-Efficiency")
-  ).toBeInTheDocument();
+  expect(result.queryByTestId("mock-component-Efficiency")).toBeInTheDocument();
 
   fireEvent.click(result.getByText("Cost/Piece"));
   expect(
@@ -112,7 +109,5 @@ it("renders the app shell", async () => {
   ).toBeInTheDocument();
 
   fireEvent.click(result.getByText("Dashboard"));
-  expect(
-    result.queryByTestId("mock-component-Dashboard")
-  ).toBeInTheDocument();
+  expect(result.queryByTestId("mock-component-Dashboard")).toBeInTheDocument();
 });

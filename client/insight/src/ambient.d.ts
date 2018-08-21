@@ -3,16 +3,15 @@ declare module "*.svg" {
   export default empty;
 }
 
-declare module 'react-qr-reader' {
-  import * as React from 'react';
+declare module "react-qr-reader" {
+  import * as React from "react";
 
   // tslint:disable-next-line:no-any
   export default class QrReader extends React.Component<any> {}
-
 }
 
-declare module 'react-timeago' {
-  import * as React from 'react';
+declare module "react-timeago" {
+  import * as React from "react";
 
   export interface TimeAgoProps {
     readonly date: Date | string;
@@ -21,9 +20,8 @@ declare module 'react-timeago' {
   export default class TimeAgo extends React.Component<TimeAgoProps> {}
 }
 
-declare module 'react-vis' {
-
-  import * as React from 'react';
+declare module "react-vis" {
+  import * as React from "react";
 
   export class XYPlot extends React.Component<any> {}
   export class FlexibleWidthXYPlot extends React.Component<any> {}
@@ -46,5 +44,4 @@ declare module 'react-vis' {
   export class Hint extends React.Component<any> {}
 
   export class Sankey extends React.Component<any> {}
-
 }

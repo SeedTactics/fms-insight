@@ -30,31 +30,31 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from 'react';
-import Select from '@material-ui/core/Select';
-import MenuItem from '@material-ui/core/MenuItem';
-import TextField from '@material-ui/core/TextField';
-import Input from '@material-ui/core/Input';
-import FormControl from '@material-ui/core/FormControl';
-import { Seq, Set } from 'immutable';
-import Downshift from 'downshift';
-import Paper from '@material-ui/core/Paper';
-import ArrowDropDownIcon from '@material-ui/icons/ArrowDropDown';
-import List from '@material-ui/core/List';
-import ListItem from '@material-ui/core/ListItem';
-import ListItemText from '@material-ui/core/ListItemText';
-import ListItemSecondaryAction from '@material-ui/core/ListItemSecondaryAction';
-import IconButton from '@material-ui/core/IconButton';
-import DeleteIcon from '@material-ui/icons/Delete';
-import Typography from '@material-ui/core/Typography';
-import CameraAlt from '@material-ui/icons/CameraAlt';
-import { Tooltip } from '@material-ui/core';
+import * as React from "react";
+import Select from "@material-ui/core/Select";
+import MenuItem from "@material-ui/core/MenuItem";
+import TextField from "@material-ui/core/TextField";
+import Input from "@material-ui/core/Input";
+import FormControl from "@material-ui/core/FormControl";
+import { Seq, Set } from "immutable";
+import Downshift from "downshift";
+import Paper from "@material-ui/core/Paper";
+import ArrowDropDownIcon from "@material-ui/icons/ArrowDropDown";
+import List from "@material-ui/core/List";
+import ListItem from "@material-ui/core/ListItem";
+import ListItemText from "@material-ui/core/ListItemText";
+import ListItemSecondaryAction from "@material-ui/core/ListItemSecondaryAction";
+import IconButton from "@material-ui/core/IconButton";
+import DeleteIcon from "@material-ui/icons/Delete";
+import Typography from "@material-ui/core/Typography";
+import CameraAlt from "@material-ui/icons/CameraAlt";
+import { Tooltip } from "@material-ui/core";
 
-import * as routes from '../../data/routes';
-import { Store, connect, DispatchAction, mkAC } from '../../store/store';
-import * as api from '../../data/api';
-import * as operators from '../../data/operators';
-import * as guiState from '../../data/gui-state';
+import * as routes from "../../data/routes";
+import { Store, connect, DispatchAction, mkAC } from "../../store/store";
+import * as api from "../../data/api";
+import * as operators from "../../data/operators";
+import * as guiState from "../../data/gui-state";
 
 export interface OperatorSelectProps {
   readonly operators: Set<string>;
@@ -67,83 +67,89 @@ export class OperatorSelect extends React.PureComponent<OperatorSelectProps> {
   render() {
     const opers = this.props.operators.toSeq().sort();
     return (
-        <Downshift
-          selectedItem={this.props.currentOperator}
-          onChange={(o) => {
-            this.props.setOperator({operator: o});
-          }}
-        >
-          {(ds) => (
-            <div style={{position: 'relative'}}>
-              <TextField
-                InputProps={{...
-                  ds.getInputProps({placeholder: "Operator"}),
-                  onKeyUp: (k) => {
-                    if (k.keyCode === 13 && ds.inputValue && ds.inputValue.length > 0) {
-                      this.props.setOperator({operator: ds.inputValue});
-                      ds.closeMenu();
-                    }
-                  },
-                  endAdornment: (
-                    <ArrowDropDownIcon
-                      onClick={() => ds.openMenu()}
-                    />
-                  )
+      <Downshift
+        selectedItem={this.props.currentOperator}
+        onChange={o => {
+          this.props.setOperator({ operator: o });
+        }}
+      >
+        {ds => (
+          <div style={{ position: "relative" }}>
+            <TextField
+              InputProps={{
+                ...ds.getInputProps({ placeholder: "Operator" }),
+                onKeyUp: k => {
+                  if (
+                    k.keyCode === 13 &&
+                    ds.inputValue &&
+                    ds.inputValue.length > 0
+                  ) {
+                    this.props.setOperator({ operator: ds.inputValue });
+                    ds.closeMenu();
+                  }
+                },
+                endAdornment: (
+                  <ArrowDropDownIcon onClick={() => ds.openMenu()} />
+                )
+              }}
+            />
+            {ds.isOpen ? (
+              <Paper
+                style={{
+                  position: "absolute",
+                  zIndex: 1,
+                  left: 0,
+                  right: 0
                 }}
-              />
-              {
-                ds.isOpen ?
-                  <Paper
-                    style={{
-                      position: 'absolute',
-                      zIndex: 1,
-                      left: 0,
-                      right: 0
-                    }}
-                  >
-                    { ds.inputValue && ds.inputValue.length > 0 && !this.props.operators.has(ds.inputValue) ?
-                      <Typography variant="caption" align="center">
-                        Press enter to add new
-                      </Typography>
-                      : undefined
-                    }
-                    <List>
-                      {
-                        opers.map((o, idx) =>
-                          <ListItem
-                            key={idx}
-                            button
-                            {... ds.getItemProps({item: o})}
-                          >
-                            <ListItemText primary={o}/>
-                            <ListItemSecondaryAction>
-                              <IconButton onClick={() => this.props.removeOperator({operator: o})}>
-                                <DeleteIcon/>
-                              </IconButton>
-                            </ListItemSecondaryAction>
-                          </ListItem>
-                        )
-                      }
-                    </List>
-
-                  </Paper>
-                : undefined
-              }
-            </div>
-          )}
-        </Downshift>
+              >
+                {ds.inputValue &&
+                ds.inputValue.length > 0 &&
+                !this.props.operators.has(ds.inputValue) ? (
+                  <Typography variant="caption" align="center">
+                    Press enter to add new
+                  </Typography>
+                ) : (
+                  undefined
+                )}
+                <List>
+                  {opers.map((o, idx) => (
+                    <ListItem
+                      key={idx}
+                      button
+                      {...ds.getItemProps({ item: o })}
+                    >
+                      <ListItemText primary={o} />
+                      <ListItemSecondaryAction>
+                        <IconButton
+                          onClick={() =>
+                            this.props.removeOperator({ operator: o })
+                          }
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </ListItemSecondaryAction>
+                    </ListItem>
+                  ))}
+                </List>
+              </Paper>
+            ) : (
+              undefined
+            )}
+          </div>
+        )}
+      </Downshift>
     );
   }
 }
 
 const toolbarStyle = {
-  'display': 'flex',
-  'backgroundColor': '#E0E0E0',
-  'paddingLeft': '24px',
-  'paddingRight': '24px',
-  'paddingBottom': '4px',
-  'height': '2.5em',
-  'alignItems': 'flex-end' as 'flex-end',
+  display: "flex",
+  backgroundColor: "#E0E0E0",
+  paddingLeft: "24px",
+  paddingRight: "24px",
+  paddingBottom: "4px",
+  height: "2.5em",
+  alignItems: "flex-end" as "flex-end"
 };
 
 export interface StationToolbarProps {
@@ -153,11 +159,17 @@ export interface StationToolbarProps {
   readonly operators: Set<string>;
   readonly currentOperator: string | null;
 
-  readonly displayLoadStation:
-    (num: number, queues: ReadonlyArray<string>, freeMaterial: boolean) => void;
+  readonly displayLoadStation: (
+    num: number,
+    queues: ReadonlyArray<string>,
+    freeMaterial: boolean
+  ) => void;
   readonly displayInspection: (type: string | undefined) => void;
   readonly displayWash: () => void;
-  readonly displayQueues: (queues: ReadonlyArray<string>, freeMaterial: boolean) => void;
+  readonly displayQueues: (
+    queues: ReadonlyArray<string>,
+    freeMaterial: boolean
+  ) => void;
   readonly displayAllMaterial: () => void;
   readonly setOperator: DispatchAction<operators.ActionType.SetOperator>;
   readonly removeOperator: DispatchAction<operators.ActionType.RemoveOperator>;
@@ -235,7 +247,10 @@ export function StationToolbar(props: StationToolbarProps) {
     const free = newQueues.includes(freeMaterialSym);
     props.displayLoadStation(
       props.current_route.selected_load_id,
-      Seq(newQueues).take(3).filter(q => q !== freeMaterialSym).toArray(),
+      Seq(newQueues)
+        .take(3)
+        .filter(q => q !== freeMaterialSym)
+        .toArray(),
       free
     );
   }
@@ -250,7 +265,10 @@ export function StationToolbar(props: StationToolbarProps) {
     const newQueues = newQueuesAny as ReadonlyArray<string>;
     const free = newQueues.includes(freeMaterialSym);
     props.displayQueues(
-      Seq(newQueues).take(3).filter(q => q !== freeMaterialSym).toArray(),
+      Seq(newQueues)
+        .take(3)
+        .filter(q => q !== freeMaterialSym)
+        .toArray(),
       free
     );
   }
@@ -262,7 +280,7 @@ export function StationToolbar(props: StationToolbarProps) {
 
   return (
     <nav style={toolbarStyle}>
-      <div style={{display: "flex", alignItems: "flex-end", flexGrow: 1}}>
+      <div style={{ display: "flex", alignItems: "flex-end", flexGrow: 1 }}>
         <Select
           value={props.current_route.station_monitor}
           onChange={e => setStation(e.target.value)}
@@ -274,108 +292,123 @@ export function StationToolbar(props: StationToolbarProps) {
           <MenuItem value={routes.StationMonitorType.Inspection}>
             Inspection
           </MenuItem>
-          <MenuItem value={routes.StationMonitorType.Wash}>
-            Wash
-          </MenuItem>
-          <MenuItem value={routes.StationMonitorType.Queues}>
-            Queues
-          </MenuItem>
+          <MenuItem value={routes.StationMonitorType.Wash}>Wash</MenuItem>
+          <MenuItem value={routes.StationMonitorType.Queues}>Queues</MenuItem>
           <MenuItem value={routes.StationMonitorType.AllMaterial}>
             All Material
           </MenuItem>
         </Select>
-        {
-          props.current_route.station_monitor === routes.StationMonitorType.LoadUnload ?
-            <Input
-              type="number"
-              key="loadnumselect"
-              value={props.current_route.selected_load_id}
-              onChange={e => setLoadNumber(e.target.value)}
-              style={{width: '3em', marginLeft: '1em'}}
-            />
-            : undefined
-        }
-        {
-          props.current_route.station_monitor === routes.StationMonitorType.Inspection ?
-            <Select
-              key="inspselect"
-              value={props.current_route.selected_insp_type || allInspSym}
-              onChange={e => setInspType(e.target.value)}
-              style={{marginLeft: '1em'}}
-            >
-              <MenuItem key={allInspSym} value={allInspSym}><em>All</em></MenuItem>
-              {
-                props.insp_types.toSeq().sort().map(ty =>
-                  <MenuItem key={ty} value={ty}>{ty}</MenuItem>
-                )
-              }
-            </Select>
-            : undefined
-        }
-        {
-          props.current_route.station_monitor === routes.StationMonitorType.LoadUnload ?
-            <FormControl style={{marginLeft: '1em'}}>
-              {
-                loadqueues.length === 0 ?
-                  <label
-                    style={{
-                      position: 'absolute',
-                      top: '24px',
-                      left: 0,
-                      color: 'rgba(0,0,0,0.54)',
-                      fontSize: '0.9rem'}}
-                  >
-                    Display queue(s)
-                  </label>
-                  : undefined
-              }
-              <Select
-                multiple
-                key="queueselect"
-                displayEmpty
-                value={loadqueues}
-                inputProps={{id: "queueselect"}}
-                style={{minWidth: '10em'}}
-                onChange={e => setLoadQueues(e.target.value)}
+        {props.current_route.station_monitor ===
+        routes.StationMonitorType.LoadUnload ? (
+          <Input
+            type="number"
+            key="loadnumselect"
+            value={props.current_route.selected_load_id}
+            onChange={e => setLoadNumber(e.target.value)}
+            style={{ width: "3em", marginLeft: "1em" }}
+          />
+        ) : (
+          undefined
+        )}
+        {props.current_route.station_monitor ===
+        routes.StationMonitorType.Inspection ? (
+          <Select
+            key="inspselect"
+            value={props.current_route.selected_insp_type || allInspSym}
+            onChange={e => setInspType(e.target.value)}
+            style={{ marginLeft: "1em" }}
+          >
+            <MenuItem key={allInspSym} value={allInspSym}>
+              <em>All</em>
+            </MenuItem>
+            {props.insp_types
+              .toSeq()
+              .sort()
+              .map(ty => (
+                <MenuItem key={ty} value={ty}>
+                  {ty}
+                </MenuItem>
+              ))}
+          </Select>
+        ) : (
+          undefined
+        )}
+        {props.current_route.station_monitor ===
+        routes.StationMonitorType.LoadUnload ? (
+          <FormControl style={{ marginLeft: "1em" }}>
+            {loadqueues.length === 0 ? (
+              <label
+                style={{
+                  position: "absolute",
+                  top: "24px",
+                  left: 0,
+                  color: "rgba(0,0,0,0.54)",
+                  fontSize: "0.9rem"
+                }}
               >
-                <MenuItem key={freeMaterialSym} value={freeMaterialSym}>Free Material</MenuItem>
-                {
-                  queueNames.map((q, idx) =>
-                    <MenuItem key={idx} value={q}>{q}</MenuItem>
-                  )
-                }
-              </Select>
-            </FormControl>
-            : undefined
-        }
-        {
-          props.current_route.station_monitor === routes.StationMonitorType.Queues ?
+                Display queue(s)
+              </label>
+            ) : (
+              undefined
+            )}
             <Select
               multiple
               key="queueselect"
               displayEmpty
-              value={standalonequeues}
-              inputProps={{id: "queueselect"}}
-              style={{marginLeft: '1em', minWidth: '10em'}}
-              onChange={e => setStandaloneQueues(e.target.value)}
+              value={loadqueues}
+              inputProps={{ id: "queueselect" }}
+              style={{ minWidth: "10em" }}
+              onChange={e => setLoadQueues(e.target.value)}
             >
-              <MenuItem key={freeMaterialSym} value={freeMaterialSym}>Free Material</MenuItem>
-              {
-                queueNames.map((q, idx) =>
-                  <MenuItem key={idx} value={q}>{q}</MenuItem>
-                )
-              }
+              <MenuItem key={freeMaterialSym} value={freeMaterialSym}>
+                Free Material
+              </MenuItem>
+              {queueNames.map((q, idx) => (
+                <MenuItem key={idx} value={q}>
+                  {q}
+                </MenuItem>
+              ))}
             </Select>
-            : undefined
-        }
-        { window.location.protocol === "https:" || window.location.hostname === "localhost" ?
-        <Tooltip title="Scan QR Code">
-          <IconButton onClick={props.openQrCodeScan} style={{height: "25px"}}>
-            <CameraAlt/>
-          </IconButton>
-        </Tooltip>
-        : undefined
-        }
+          </FormControl>
+        ) : (
+          undefined
+        )}
+        {props.current_route.station_monitor ===
+        routes.StationMonitorType.Queues ? (
+          <Select
+            multiple
+            key="queueselect"
+            displayEmpty
+            value={standalonequeues}
+            inputProps={{ id: "queueselect" }}
+            style={{ marginLeft: "1em", minWidth: "10em" }}
+            onChange={e => setStandaloneQueues(e.target.value)}
+          >
+            <MenuItem key={freeMaterialSym} value={freeMaterialSym}>
+              Free Material
+            </MenuItem>
+            {queueNames.map((q, idx) => (
+              <MenuItem key={idx} value={q}>
+                {q}
+              </MenuItem>
+            ))}
+          </Select>
+        ) : (
+          undefined
+        )}
+        {window.location.protocol === "https:" ||
+        window.location.hostname === "localhost" ? (
+          <Tooltip title="Scan QR Code">
+            <IconButton
+              onClick={props.openQrCodeScan}
+              style={{ height: "25px" }}
+            >
+              <CameraAlt />
+            </IconButton>
+          </Tooltip>
+        ) : (
+          undefined
+        )}
       </div>
       <div>
         <OperatorSelect
@@ -395,7 +428,7 @@ export default connect(
     queues: st.Current.current_status.queues,
     insp_types: st.Events.last30.mat_summary.inspTypes,
     operators: st.Operators.operators,
-    currentOperator: st.Operators.current || null,
+    currentOperator: st.Operators.current || null
   }),
   {
     displayLoadStation: routes.displayLoadStation,
@@ -405,6 +438,9 @@ export default connect(
     displayAllMaterial: routes.displayAllMaterial,
     setOperator: mkAC(operators.ActionType.SetOperator),
     removeOperator: mkAC(operators.ActionType.RemoveOperator),
-    openQrCodeScan: () => ({type: guiState.ActionType.SetScanQrCodeDialog, open: true}),
+    openQrCodeScan: () => ({
+      type: guiState.ActionType.SetScanQrCodeDialog,
+      open: true
+    })
   }
 )(StationToolbar);

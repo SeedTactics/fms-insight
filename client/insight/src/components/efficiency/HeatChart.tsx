@@ -30,22 +30,23 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from 'react';
-import * as im from 'immutable';
-import { format } from 'date-fns';
-import { HeatmapSeries,
-         XAxis,
-         YAxis,
-         Hint,
-         FlexibleWidthXYPlot,
-       } from 'react-vis';
-import Card from '@material-ui/core/Card';
-import CardContent from '@material-ui/core/CardContent';
-import CardHeader from '@material-ui/core/CardHeader';
-import Select from '@material-ui/core/Select';
-import MenuItem from '@material-ui/core/MenuItem';
+import * as React from "react";
+import * as im from "immutable";
+import { format } from "date-fns";
+import {
+  HeatmapSeries,
+  XAxis,
+  YAxis,
+  Hint,
+  FlexibleWidthXYPlot
+} from "react-vis";
+import Card from "@material-ui/core/Card";
+import CardContent from "@material-ui/core/CardContent";
+import CardHeader from "@material-ui/core/CardHeader";
+import Select from "@material-ui/core/Select";
+import MenuItem from "@material-ui/core/MenuItem";
 
-import * as gui from '../../data/gui-state';
+import * as gui from "../../data/gui-state";
 
 export interface HeatChartPoint {
   readonly x: Date;
@@ -86,19 +87,25 @@ class HeatChart extends React.PureComponent<HeatChartProps, HeatChartState> {
         xType="ordinal"
         yType="ordinal"
         colorRange={["#E8F5E9", "#1B5E20"]}
-        margin={{bottom: 60, left: 100}}
+        margin={{ bottom: 60, left: 100 }}
       >
-        <XAxis tickFormat={tick_format} tickLabelAngle={-45}/>
-        <YAxis/>
+        <XAxis tickFormat={tick_format} tickLabelAngle={-45} />
+        <YAxis />
         <HeatmapSeries
           data={this.props.points}
-          onValueMouseOver={(pt: HeatChartPoint) => this.setState({selected_point: pt})}
-          onValueMouseOut={() => this.setState({selected_point: undefined})}
+          onValueMouseOver={(pt: HeatChartPoint) =>
+            this.setState({ selected_point: pt })
+          }
+          onValueMouseOut={() => this.setState({ selected_point: undefined })}
         />
-        {
-          this.state.selected_point === undefined ? undefined :
-            <Hint value={this.state.selected_point} format={formatHint(this.props.label_title)}/>
-        }
+        {this.state.selected_point === undefined ? (
+          undefined
+        ) : (
+          <Hint
+            value={this.state.selected_point}
+            format={formatHint(this.props.label_title)}
+          />
+        )}
       </FlexibleWidthXYPlot>
     );
   }
@@ -119,18 +126,25 @@ export function SelectableHeatChart(props: SelectableHeatChartProps) {
     <Card raised>
       <CardHeader
         title={
-          <div style={{display: 'flex', flexWrap: 'wrap', alignItems: 'center'}}>
+          <div
+            style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}
+          >
             {props.icon}
-            <div style={{marginLeft: '10px', marginRight: '3em'}}>
+            <div style={{ marginLeft: "10px", marginRight: "3em" }}>
               {props.card_label}
             </div>
-            <div style={{flexGrow: 1}}/>
+            <div style={{ flexGrow: 1 }} />
             <Select
-              name={props.card_label.replace(" ", "-") + "-heatchart-planned-or-actual"}
+              name={
+                props.card_label.replace(" ", "-") +
+                "-heatchart-planned-or-actual"
+              }
               autoWidth
               displayEmpty
               value={props.planned_or_actual}
-              onChange={e => props.setType(e.target.value as gui.PlannedOrActual)}
+              onChange={e =>
+                props.setType(e.target.value as gui.PlannedOrActual)
+              }
             >
               <MenuItem
                 key={gui.PlannedOrActual.Actual}
@@ -145,13 +159,19 @@ export function SelectableHeatChart(props: SelectableHeatChartProps) {
                 Planned
               </MenuItem>
             </Select>
-          </div>}
+          </div>
+        }
       />
       <CardContent>
         <HeatChart
           points={props.points}
           label_title={props.label_title}
-          row_count={im.Seq(props.points).map(p => p.y).toSet().size}
+          row_count={
+            im
+              .Seq(props.points)
+              .map(p => p.y)
+              .toSet().size
+          }
         />
       </CardContent>
     </Card>

@@ -30,28 +30,42 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from 'react';
-import Grid from '@material-ui/core/Grid';
-import Card from '@material-ui/core/Card';
-import CardContent from '@material-ui/core/CardContent';
-import Hidden from '@material-ui/core/Hidden';
-const DocumentTitle = require('react-document-title'); // https://github.com/gaearon/react-document-title/issues/58
+import * as React from "react";
+import Grid from "@material-ui/core/Grid";
+import Card from "@material-ui/core/Card";
+import CardContent from "@material-ui/core/CardContent";
+import Hidden from "@material-ui/core/Hidden";
+const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
-import StationOEEs from './StationOEE';
-import CurrentJobs from './CurrentJobs';
+import StationOEEs from "./StationOEE";
+import CurrentJobs from "./CurrentJobs";
 
 function FillViewportDashboard() {
   return (
-    <main style={{'height': 'calc(100vh - 64px)', 'display': 'flex'}}>
-      <div style={{'flexBasis': '50%', 'padding': '8px', 'display': 'flex', 'flexDirection': 'column'}}>
-        <Card style={{'flexGrow': 1, 'display': 'flex', 'flexDirection': 'column'}}>
-          <CurrentJobs fillViewport={true}/>
+    <main style={{ height: "calc(100vh - 64px)", display: "flex" }}>
+      <div
+        style={{
+          flexBasis: "50%",
+          padding: "8px",
+          display: "flex",
+          flexDirection: "column"
+        }}
+      >
+        <Card style={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
+          <CurrentJobs fillViewport={true} />
         </Card>
       </div>
-      <div style={{'flexBasis': '50%', 'padding': '8px', 'display': 'flex', 'flexDirection': 'column'}}>
-        <Card style={{'flexGrow': 1}}>
-          <CardContent style={{'overflow': 'auto'}}>
-            <StationOEEs/>
+      <div
+        style={{
+          flexBasis: "50%",
+          padding: "8px",
+          display: "flex",
+          flexDirection: "column"
+        }}
+      >
+        <Card style={{ flexGrow: 1 }}>
+          <CardContent style={{ overflow: "auto" }}>
+            <StationOEEs />
           </CardContent>
         </Card>
       </div>
@@ -61,19 +75,19 @@ function FillViewportDashboard() {
 
 function ScrollableDashboard() {
   return (
-    <main style={{'padding': '8px'}}>
+    <main style={{ padding: "8px" }}>
       <Grid container spacing={16}>
         <Grid item xs={12} sm={6}>
           <Card>
             <CardContent>
-              <CurrentJobs fillViewport={false}/>
+              <CurrentJobs fillViewport={false} />
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6}>
           <Card>
             <CardContent>
-              <StationOEEs/>
+              <StationOEEs />
             </CardContent>
           </Card>
         </Grid>
@@ -87,10 +101,10 @@ export default function Dashboard() {
     <DocumentTitle title="Dashboard - FMS Insight">
       <div>
         <Hidden mdDown>
-          <FillViewportDashboard/>
+          <FillViewportDashboard />
         </Hidden>
         <Hidden lgUp>
-          <ScrollableDashboard/>
+          <ScrollableDashboard />
         </Hidden>
       </div>
     </DocumentTitle>
