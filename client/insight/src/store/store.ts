@@ -42,11 +42,7 @@ import * as serverSettings from "../data/server-settings";
 import * as ccp from "../data/cost-per-piece";
 import * as websocket from "./websocket";
 
-import {
-  pledgeMiddleware,
-  arrayMiddleware,
-  ActionBeforeMiddleware
-} from "./middleware";
+import { pledgeMiddleware, arrayMiddleware, ActionBeforeMiddleware } from "./middleware";
 
 import * as im from "immutable";
 import { connectRoutes, LocationState } from "redux-first-router";
@@ -56,12 +52,7 @@ import * as reactRedux from "react-redux";
 import * as redux from "redux";
 import { initBarcodeListener } from "./barcode";
 import { registerMockBackend } from "../data/backend";
-import {
-  DispatchFn,
-  ActionPayload,
-  ActionCreatorToDispatch,
-  GetActionTypes
-} from "./action-types";
+import { DispatchFn, ActionPayload, ActionCreatorToDispatch, GetActionTypes } from "./action-types";
 
 export interface Store {
   readonly Current: currentStatus.State;
@@ -89,13 +80,12 @@ export type AppActionBeforeMiddleware = ActionBeforeMiddleware<AppAction>;
 export type DispatchAction<T> = DispatchFn<ActionPayload<AppAction, T>>;
 
 export interface Connect {
-  <P, TOwnProps = {}>(
-    getProps: (s: Store) => P
-  ): reactRedux.InferableComponentEnhancerWithProps<P, TOwnProps>;
+  <P, TOwnProps = {}>(getProps: (s: Store) => P): reactRedux.InferableComponentEnhancerWithProps<P, TOwnProps>;
 
-  <P, TOwnProps = {}>(
-    getProps: (s: Store, ownProps: TOwnProps) => P
-  ): reactRedux.InferableComponentEnhancerWithProps<P, TOwnProps>;
+  <P, TOwnProps = {}>(getProps: (s: Store, ownProps: TOwnProps) => P): reactRedux.InferableComponentEnhancerWithProps<
+    P,
+    TOwnProps
+  >;
 
   <P, Creators, TOwnProps = {}>(
     getProps: (s: Store) => P,
@@ -135,8 +125,7 @@ export function initStore(demo: boolean) {
 
   /* tslint:disable */
   const composeEnhancers =
-    typeof window === "object" &&
-    (window as any)["__REDUX_DEVTOOLS_EXTENSION_COMPOSE__"]
+    typeof window === "object" && (window as any)["__REDUX_DEVTOOLS_EXTENSION_COMPOSE__"]
       ? (window as any)["__REDUX_DEVTOOLS_EXTENSION_COMPOSE__"]({
           serialize: {
             immutable: im
@@ -162,10 +151,7 @@ export function initStore(demo: boolean) {
       } as any // bug in typescript types for combineReducers
     ),
     router
-      ? composeEnhancers(
-          router.enhancer,
-          applyMiddleware(arrayMiddleware, pledgeMiddleware, router.middleware)
-        )
+      ? composeEnhancers(router.enhancer, applyMiddleware(arrayMiddleware, pledgeMiddleware, router.middleware))
       : composeEnhancers(applyMiddleware(arrayMiddleware, pledgeMiddleware))
   );
 
@@ -176,10 +162,7 @@ export function initStore(demo: boolean) {
     // tslint:disable-next-line:no-any
     store.dispatch(currentStatus.loadCurrentStatus() as any);
   } else {
-    websocket.openWebsocket(
-      a => store.dispatch(a),
-      () => store.getState().Events
-    );
+    websocket.openWebsocket(a => store.dispatch(a), () => store.getState().Events);
   }
   initBarcodeListener(a => store.dispatch(a as redux.Action));
 

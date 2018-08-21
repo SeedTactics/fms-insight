@@ -73,20 +73,14 @@ export interface DataPoints {
   readonly planData: ReadonlyArray<{ x: number; y: number }>;
 }
 
-export function jobsToPoints(
-  jobs: ReadonlyArray<Readonly<api.IInProcessJob>>
-): DataPoints {
+export function jobsToPoints(jobs: ReadonlyArray<Readonly<api.IInProcessJob>>): DataPoints {
   const points = im
     .Seq(jobs)
-    .flatMap(j =>
-      im.Range(0, j.procsAndPaths.length).map(proc => displayJob(j, proc))
-    )
+    .flatMap(j => im.Range(0, j.procsAndPaths.length).map(proc => displayJob(j, proc)))
     .sortBy(pt => pt.part)
     .reverse()
     .cacheResult();
-  const completedData = points
-    .map((pt, i) => ({ ...pt, x: pt.completed, y: i }))
-    .toArray();
+  const completedData = points.map((pt, i) => ({ ...pt, x: pt.completed, y: i })).toArray();
   const planData = points.map((pt, i) => ({ x: pt.totalPlan, y: i })).toArray();
   return { completedData, planData };
 }

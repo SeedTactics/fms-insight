@@ -38,10 +38,7 @@ import { MaterialSummary } from "../../data/events";
 import { Store, connect, mkAC } from "../../store/store";
 import { MaterialDialog, WhiteboardRegion, InProcMaterial } from "./Material";
 import * as matDetails from "../../data/material-details";
-import {
-  AllMaterialBins,
-  selectAllMaterialIntoBins
-} from "../../data/all-material-bins";
+import { AllMaterialBins, selectAllMaterialIntoBins } from "../../data/all-material-bins";
 import { createSelector } from "reselect";
 import SerialScanner from "./QRScan";
 
@@ -68,12 +65,7 @@ function Wash(props: AllMatProps) {
         <div>
           {regions
             .map((mats, region) => (
-              <WhiteboardRegion
-                key={region}
-                label={region}
-                borderBottom
-                flexStart
-              >
+              <WhiteboardRegion key={region} label={region} borderBottom flexStart>
                 {mats.map((m, idx) => (
                   <InProcMaterial key={idx} mat={m} onOpen={props.openMat} />
                 ))}
@@ -88,10 +80,7 @@ function Wash(props: AllMatProps) {
   );
 }
 
-const extractMaterialRegions = createSelector(
-  (st: Store) => st.Current.current_status,
-  selectAllMaterialIntoBins
-);
+const extractMaterialRegions = createSelector((st: Store) => st.Current.current_status, selectAllMaterialIntoBins);
 
 export default connect(
   (st: Store) => ({

@@ -40,13 +40,7 @@ import DialogTitle from "@material-ui/core/DialogTitle";
 import TextField from "@material-ui/core/TextField";
 
 import { MaterialDetailTitle } from "./Material";
-import {
-  Store,
-  connect,
-  mkAC,
-  AppActionBeforeMiddleware,
-  DispatchAction
-} from "../../store/store";
+import { Store, connect, mkAC, AppActionBeforeMiddleware, DispatchAction } from "../../store/store";
 import * as matDetails from "../../data/material-details";
 import * as guiState from "../../data/gui-state";
 
@@ -59,10 +53,7 @@ interface ManualSerialEntryState {
   readonly serial: string;
 }
 
-class ManualSerialEntry extends React.PureComponent<
-  ManualSerialEntryProps,
-  ManualSerialEntryState
-> {
+class ManualSerialEntry extends React.PureComponent<ManualSerialEntryProps, ManualSerialEntryState> {
   state = { serial: "" };
 
   render() {
@@ -72,11 +63,7 @@ class ManualSerialEntry extends React.PureComponent<
         value={this.state.serial}
         onChange={e => this.setState({ serial: e.target.value })}
         onKeyPress={e => {
-          if (
-            e.key === "Enter" &&
-            this.state.serial &&
-            this.state.serial !== ""
-          ) {
+          if (e.key === "Enter" && this.state.serial && this.state.serial !== "") {
             e.preventDefault();
             this.props.assignSerial({
               mat: this.props.mat,
@@ -114,10 +101,7 @@ function EnterSerialDialog(props: EnterSerialProps) {
             <ManualSerialEntry mat={mat} assignSerial={props.assignSerial} />
           </DialogContent>
           <DialogActions>
-            <Button
-              onClick={() => props.onClose({ open: false })}
-              color="primary"
-            >
+            <Button onClick={() => props.onClose({ open: false })} color="primary">
               Cancel
             </Button>
           </DialogActions>
@@ -126,11 +110,7 @@ function EnterSerialDialog(props: EnterSerialProps) {
     }
   }
   return (
-    <Dialog
-      open={props.mats !== null}
-      onClose={() => props.onClose({ open: false })}
-      maxWidth="md"
-    >
+    <Dialog open={props.mats !== null} onClose={() => props.onClose({ open: false })} maxWidth="md">
       {body}
     </Dialog>
   );

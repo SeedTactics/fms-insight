@@ -53,10 +53,7 @@ import InspectionSankey from "./InspectionSankey";
 // --------------------------------------------------------------------------------
 
 interface PartStationCycleChartProps {
-  readonly points: im.Map<
-    string,
-    im.Map<string, ReadonlyArray<events.CycleData>>
-  >;
+  readonly points: im.Map<string, im.Map<string, ReadonlyArray<events.CycleData>>>;
   readonly default_date_range?: Date[];
   readonly selected?: string;
   readonly setSelected: (s: string) => void;
@@ -88,10 +85,7 @@ function stationCycleSelector(st: Store) {
     return {
       points: st.Events.selected_month.cycles.by_part_then_stat,
       selected: st.Gui.station_cycle_selected_part,
-      default_date_range: [
-        st.Events.analysis_period_month,
-        addMonths(st.Events.analysis_period_month, 1)
-      ]
+      default_date_range: [st.Events.analysis_period_month, addMonths(st.Events.analysis_period_month, 1)]
     };
   }
 }
@@ -145,10 +139,7 @@ function palletCycleSelector(st: Store) {
     return {
       points: st.Events.selected_month.cycles.by_pallet,
       selected: st.Gui.pallet_cycle_selected,
-      default_date_range: [
-        st.Events.analysis_period_month,
-        addMonths(st.Events.analysis_period_month, 1)
-      ]
+      default_date_range: [st.Events.analysis_period_month, addMonths(st.Events.analysis_period_month, 1)]
     };
   }
 }
@@ -209,10 +200,7 @@ const stationOeeActualPointsSelector = createSelector(
 const stationOeePlannedPointsSelector = createSelector(
   (sim: events.SimUseState) => sim.station_use,
   statUse => {
-    let pts = events.binSimStationUseByDayAndStat(
-      statUse.toSeq(),
-      c => c.utilizationTime - c.plannedDownTime
-    );
+    let pts = events.binSimStationUseByDayAndStat(statUse.toSeq(), c => c.utilizationTime - c.plannedDownTime);
     return pts
       .toSeq()
       .map((val, dayAndStat) => {
@@ -275,11 +263,7 @@ function CompletedCountHeatmap(props: HeatmapProps) {
   return (
     <SelectableHeatChart
       card_label="Part Production"
-      label_title={
-        props.planned_or_actual === guiState.PlannedOrActual.Actual
-          ? "Completed"
-          : "Planned"
-      }
+      label_title={props.planned_or_actual === guiState.PlannedOrActual.Actual ? "Completed" : "Planned"}
       icon={<ExtensionIcon style={{ color: "#6D4C41" }} />}
       {...props}
     />
@@ -289,10 +273,7 @@ function CompletedCountHeatmap(props: HeatmapProps) {
 const completedActualPointsSelector = createSelector(
   (cycles: events.CycleState) => cycles.by_part_then_stat,
   byPartThenStat => {
-    let pts = events.binCyclesByDayAndPart(
-      byPartThenStat,
-      c => (c.completed ? 1 : 0)
-    );
+    let pts = events.binCyclesByDayAndPart(byPartThenStat, c => (c.completed ? 1 : 0));
     return pts
       .toSeq()
       .map((val, dayAndStat) => {

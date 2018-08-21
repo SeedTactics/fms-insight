@@ -33,13 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from "react";
 import QrReader from "react-qr-reader";
-import {
-  Dialog,
-  Button,
-  DialogActions,
-  DialogContent,
-  DialogTitle
-} from "@material-ui/core";
+import { Dialog, Button, DialogActions, DialogContent, DialogTitle } from "@material-ui/core";
 import { connect } from "../../store/store";
 import * as guiState from "../../data/gui-state";
 import { openMaterialBySerial } from "../../data/material-details";
@@ -70,11 +64,7 @@ function SerialScanner(props: QrScanProps) {
       <DialogTitle>Scan a part's serial</DialogTitle>
       <DialogContent>
         <div style={{ minWidth: "20em" }}>
-          {props.dialogOpen ? (
-            <QrReader onScan={onScan} onError={() => 0} />
-          ) : (
-            undefined
-          )}
+          {props.dialogOpen ? <QrReader onScan={onScan} onError={() => 0} /> : undefined}
         </div>
       </DialogContent>
       <DialogActions>

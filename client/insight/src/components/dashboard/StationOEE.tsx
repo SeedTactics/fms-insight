@@ -52,59 +52,27 @@ interface StationOEEProps {
   readonly queuedPallet?: PalletData;
 }
 
-function polarToCartesian(
-  centerX: number,
-  centerY: number,
-  radius: number,
-  angleInRadians: number
-) {
+function polarToCartesian(centerX: number, centerY: number, radius: number, angleInRadians: number) {
   return {
     x: centerX + radius * Math.cos(angleInRadians),
     y: centerY + radius * Math.sin(angleInRadians)
   };
 }
 
-function describeArc(
-  cx: number,
-  cy: number,
-  radius: number,
-  startAngle: number,
-  endAngle: number
-) {
+function describeArc(cx: number, cy: number, radius: number, startAngle: number, endAngle: number) {
   const start = polarToCartesian(cx, cy, radius, endAngle);
   const end = polarToCartesian(cx, cy, radius, startAngle);
 
   const largeArcFlag = endAngle - startAngle <= Math.PI ? "0" : "1";
 
-  var d = [
-    "M",
-    start.x,
-    start.y,
-    "A",
-    radius,
-    radius,
-    Math.PI / 2,
-    largeArcFlag,
-    "0",
-    end.x,
-    end.y
-  ].join(" ");
+  var d = ["M", start.x, start.y, "A", radius, radius, Math.PI / 2, largeArcFlag, "0", end.x, end.y].join(" ");
 
   return d;
 }
 
 function computeCircle(oee: number): JSX.Element {
   if (oee < 0.02) {
-    return (
-      <circle
-        cx={200}
-        cy={200}
-        r={150}
-        stroke="#E0E0E0"
-        strokeWidth={10}
-        fill="transparent"
-      />
-    );
+    return <circle cx={200} cy={200} r={150} stroke="#E0E0E0" strokeWidth={10} fill="transparent" />;
   } else {
     const arcPoint = -Math.PI / 2 + 2 * Math.PI * oee;
     return (
@@ -157,17 +125,10 @@ function computeTooltip(p: StationOEEProps): JSX.Element {
           break;
         case api.ActionType.Machining:
           matStatus = " (machining)";
-          if (
-            mat.action.expectedRemainingMachiningTime &&
-            p.dateOfCurrentStatus
-          ) {
+          if (mat.action.expectedRemainingMachiningTime && p.dateOfCurrentStatus) {
             matStatus += " completing ";
-            const seconds = duration(
-              mat.action.expectedRemainingMachiningTime
-            ).asSeconds();
-            matTime = (
-              <TimeAgo date={addSeconds(p.dateOfCurrentStatus, seconds)} />
-            );
+            const seconds = duration(mat.action.expectedRemainingMachiningTime).asSeconds();
+            matTime = <TimeAgo date={addSeconds(p.dateOfCurrentStatus, seconds)} />;
           }
           break;
       }
@@ -249,9 +210,7 @@ function StationOEEs(p: Props) {
           <StationOEE
             dateOfCurrentStatus={p.dateOfCurrentStatus}
             station={stat}
-            oee={
-              p.station_active_minutes_past_week.get(stat, 0) / (60 * 24 * 7)
-            }
+            oee={p.station_active_minutes_past_week.get(stat, 0) / (60 * 24 * 7)}
             pallet={p.pallets.get(stat, { pal: undefined }).pal}
             queuedPallet={p.pallets.get(stat, { queued: undefined }).queued}
           />
@@ -266,15 +225,10 @@ const oeeSelector = createSelector(
   (s: Store) => s.Events.last30.cycles.by_part_then_stat,
   (s: Store) => s.Current.date_of_current_status,
   (byPartThenStat, lastStTime) =>
-    lastStTime
-      ? stationMinutes(byPartThenStat, addDays(lastStTime, -7))
-      : im.Map<string, number>()
+    lastStTime ? stationMinutes(byPartThenStat, addDays(lastStTime, -7)) : im.Map<string, number>()
 );
 
-const palSelector = createSelector(
-  (s: Store) => s.Current.current_status,
-  buildPallets
-);
+const palSelector = createSelector((s: Store) => s.Current.current_status, buildPallets);
 
 export default connect(s => ({
   dateOfCurrentStatus: s.Current.date_of_current_status,

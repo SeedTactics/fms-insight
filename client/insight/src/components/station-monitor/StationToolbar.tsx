@@ -79,18 +79,12 @@ export class OperatorSelect extends React.PureComponent<OperatorSelectProps> {
               InputProps={{
                 ...ds.getInputProps({ placeholder: "Operator" }),
                 onKeyUp: k => {
-                  if (
-                    k.keyCode === 13 &&
-                    ds.inputValue &&
-                    ds.inputValue.length > 0
-                  ) {
+                  if (k.keyCode === 13 && ds.inputValue && ds.inputValue.length > 0) {
                     this.props.setOperator({ operator: ds.inputValue });
                     ds.closeMenu();
                   }
                 },
-                endAdornment: (
-                  <ArrowDropDownIcon onClick={() => ds.openMenu()} />
-                )
+                endAdornment: <ArrowDropDownIcon onClick={() => ds.openMenu()} />
               }}
             />
             {ds.isOpen ? (
@@ -102,9 +96,7 @@ export class OperatorSelect extends React.PureComponent<OperatorSelectProps> {
                   right: 0
                 }}
               >
-                {ds.inputValue &&
-                ds.inputValue.length > 0 &&
-                !this.props.operators.has(ds.inputValue) ? (
+                {ds.inputValue && ds.inputValue.length > 0 && !this.props.operators.has(ds.inputValue) ? (
                   <Typography variant="caption" align="center">
                     Press enter to add new
                   </Typography>
@@ -113,18 +105,10 @@ export class OperatorSelect extends React.PureComponent<OperatorSelectProps> {
                 )}
                 <List>
                   {opers.map((o, idx) => (
-                    <ListItem
-                      key={idx}
-                      button
-                      {...ds.getItemProps({ item: o })}
-                    >
+                    <ListItem key={idx} button {...ds.getItemProps({ item: o })}>
                       <ListItemText primary={o} />
                       <ListItemSecondaryAction>
-                        <IconButton
-                          onClick={() =>
-                            this.props.removeOperator({ operator: o })
-                          }
-                        >
+                        <IconButton onClick={() => this.props.removeOperator({ operator: o })}>
                           <DeleteIcon />
                         </IconButton>
                       </ListItemSecondaryAction>
@@ -159,17 +143,10 @@ export interface StationToolbarProps {
   readonly operators: Set<string>;
   readonly currentOperator: string | null;
 
-  readonly displayLoadStation: (
-    num: number,
-    queues: ReadonlyArray<string>,
-    freeMaterial: boolean
-  ) => void;
+  readonly displayLoadStation: (num: number, queues: ReadonlyArray<string>, freeMaterial: boolean) => void;
   readonly displayInspection: (type: string | undefined) => void;
   readonly displayWash: () => void;
-  readonly displayQueues: (
-    queues: ReadonlyArray<string>,
-    freeMaterial: boolean
-  ) => void;
+  readonly displayQueues: (queues: ReadonlyArray<string>, freeMaterial: boolean) => void;
   readonly displayAllMaterial: () => void;
   readonly setOperator: DispatchAction<operators.ActionType.SetOperator>;
   readonly removeOperator: DispatchAction<operators.ActionType.RemoveOperator>;
@@ -202,10 +179,7 @@ export function StationToolbar(props: StationToolbarProps) {
         break;
 
       case routes.StationMonitorType.Queues:
-        props.displayQueues(
-          props.current_route.standalone_queues,
-          props.current_route.standalone_free_material
-        );
+        props.displayQueues(props.current_route.standalone_queues, props.current_route.standalone_free_material);
         break;
 
       case routes.StationMonitorType.AllMaterial:
@@ -217,11 +191,7 @@ export function StationToolbar(props: StationToolbarProps) {
   function setLoadNumber(valStr: string) {
     const val = parseFloat(valStr);
     if (!isNaN(val) && isFinite(val)) {
-      props.displayLoadStation(
-        val,
-        props.current_route.load_queues,
-        props.current_route.load_free_material
-      );
+      props.displayLoadStation(val, props.current_route.load_queues, props.current_route.load_free_material);
     }
   }
 
@@ -281,25 +251,14 @@ export function StationToolbar(props: StationToolbarProps) {
   return (
     <nav style={toolbarStyle}>
       <div style={{ display: "flex", alignItems: "flex-end", flexGrow: 1 }}>
-        <Select
-          value={props.current_route.station_monitor}
-          onChange={e => setStation(e.target.value)}
-          autoWidth
-        >
-          <MenuItem value={routes.StationMonitorType.LoadUnload}>
-            Load Station
-          </MenuItem>
-          <MenuItem value={routes.StationMonitorType.Inspection}>
-            Inspection
-          </MenuItem>
+        <Select value={props.current_route.station_monitor} onChange={e => setStation(e.target.value)} autoWidth>
+          <MenuItem value={routes.StationMonitorType.LoadUnload}>Load Station</MenuItem>
+          <MenuItem value={routes.StationMonitorType.Inspection}>Inspection</MenuItem>
           <MenuItem value={routes.StationMonitorType.Wash}>Wash</MenuItem>
           <MenuItem value={routes.StationMonitorType.Queues}>Queues</MenuItem>
-          <MenuItem value={routes.StationMonitorType.AllMaterial}>
-            All Material
-          </MenuItem>
+          <MenuItem value={routes.StationMonitorType.AllMaterial}>All Material</MenuItem>
         </Select>
-        {props.current_route.station_monitor ===
-        routes.StationMonitorType.LoadUnload ? (
+        {props.current_route.station_monitor === routes.StationMonitorType.LoadUnload ? (
           <Input
             type="number"
             key="loadnumselect"
@@ -310,8 +269,7 @@ export function StationToolbar(props: StationToolbarProps) {
         ) : (
           undefined
         )}
-        {props.current_route.station_monitor ===
-        routes.StationMonitorType.Inspection ? (
+        {props.current_route.station_monitor === routes.StationMonitorType.Inspection ? (
           <Select
             key="inspselect"
             value={props.current_route.selected_insp_type || allInspSym}
@@ -333,8 +291,7 @@ export function StationToolbar(props: StationToolbarProps) {
         ) : (
           undefined
         )}
-        {props.current_route.station_monitor ===
-        routes.StationMonitorType.LoadUnload ? (
+        {props.current_route.station_monitor === routes.StationMonitorType.LoadUnload ? (
           <FormControl style={{ marginLeft: "1em" }}>
             {loadqueues.length === 0 ? (
               <label
@@ -373,8 +330,7 @@ export function StationToolbar(props: StationToolbarProps) {
         ) : (
           undefined
         )}
-        {props.current_route.station_monitor ===
-        routes.StationMonitorType.Queues ? (
+        {props.current_route.station_monitor === routes.StationMonitorType.Queues ? (
           <Select
             multiple
             key="queueselect"
@@ -396,13 +352,9 @@ export function StationToolbar(props: StationToolbarProps) {
         ) : (
           undefined
         )}
-        {window.location.protocol === "https:" ||
-        window.location.hostname === "localhost" ? (
+        {window.location.protocol === "https:" || window.location.hostname === "localhost" ? (
           <Tooltip title="Scan QR Code">
-            <IconButton
-              onClick={props.openQrCodeScan}
-              style={{ height: "25px" }}
-            >
+            <IconButton onClick={props.openQrCodeScan} style={{ height: "25px" }}>
               <CameraAlt />
             </IconButton>
           </Tooltip>

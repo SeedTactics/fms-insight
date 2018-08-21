@@ -46,13 +46,7 @@ import ShoppingBasketIcon from "@material-ui/icons/ShoppingBasket";
 import TextField from "@material-ui/core/TextField";
 
 import { MaterialDetailTitle } from "./Material";
-import {
-  Store,
-  connect,
-  mkAC,
-  AppActionBeforeMiddleware,
-  DispatchAction
-} from "../../store/store";
+import { Store, connect, mkAC, AppActionBeforeMiddleware, DispatchAction } from "../../store/store";
 import * as matDetails from "../../data/material-details";
 import * as guiState from "../../data/gui-state";
 import CircularProgress from "@material-ui/core/CircularProgress";
@@ -63,12 +57,7 @@ function workorderComplete(w: matDetails.WorkorderPlanAndSummary): string {
     completed = w.summary.completedQty;
   }
   return (
-    "Due " +
-    w.plan.dueDate.toDateString() +
-    "; Completed " +
-    completed.toString() +
-    " of " +
-    w.plan.quantity.toString()
+    "Due " + w.plan.dueDate.toDateString() + "; Completed " + completed.toString() + " of " + w.plan.quantity.toString()
   );
 }
 
@@ -93,26 +82,17 @@ interface ManualWorkorderEntryState {
   readonly workorder: string;
 }
 
-class ManualWorkorderEntry extends React.PureComponent<
-  ManualWorkorderEntryProps,
-  ManualWorkorderEntryState
-> {
+class ManualWorkorderEntry extends React.PureComponent<ManualWorkorderEntryProps, ManualWorkorderEntryState> {
   state = { workorder: "" };
 
   render() {
     return (
       <TextField
-        label={
-          this.state.workorder === "" ? "Workorder" : "Workorder (press enter)"
-        }
+        label={this.state.workorder === "" ? "Workorder" : "Workorder (press enter)"}
         value={this.state.workorder}
         onChange={e => this.setState({ workorder: e.target.value })}
         onKeyPress={e => {
-          if (
-            e.key === "Enter" &&
-            this.state.workorder &&
-            this.state.workorder !== ""
-          ) {
+          if (e.key === "Enter" && this.state.workorder && this.state.workorder !== "") {
             e.preventDefault();
             this.props.assignWorkorder({
               mat: this.props.mat,
@@ -147,17 +127,12 @@ function SelectWorkorderDialog(props: SelectWorkorderProps) {
             <ListItem
               key={w.plan.workorderId}
               button
-              onClick={() =>
-                props.assignWorkorder({ mat, workorder: w.plan.workorderId })
-              }
+              onClick={() => props.assignWorkorder({ mat, workorder: w.plan.workorderId })}
             >
               <ListItemIcon>
                 <WorkorderIcon work={w} />
               </ListItemIcon>
-              <ListItemText
-                primary={w.plan.workorderId}
-                secondary={workorderComplete(w)}
-              />
+              <ListItemText primary={w.plan.workorderId} secondary={workorderComplete(w)} />
             </ListItem>
           ))}
         </List>
@@ -169,17 +144,11 @@ function SelectWorkorderDialog(props: SelectWorkorderProps) {
             <MaterialDetailTitle partName={mat.partName} serial={mat.serial} />
           </DialogTitle>
           <DialogContent>
-            <ManualWorkorderEntry
-              mat={mat}
-              assignWorkorder={props.assignWorkorder}
-            />
+            <ManualWorkorderEntry mat={mat} assignWorkorder={props.assignWorkorder} />
             {mat.loading_workorders ? <CircularProgress /> : workList}
           </DialogContent>
           <DialogActions>
-            <Button
-              onClick={() => props.onClose({ open: false })}
-              color="primary"
-            >
+            <Button onClick={() => props.onClose({ open: false })} color="primary">
               Cancel
             </Button>
           </DialogActions>
@@ -188,11 +157,7 @@ function SelectWorkorderDialog(props: SelectWorkorderProps) {
     }
   }
   return (
-    <Dialog
-      open={props.mats !== null}
-      onClose={() => props.onClose({ open: false })}
-      maxWidth="md"
-    >
+    <Dialog open={props.mats !== null} onClose={() => props.onClose({ open: false })} maxWidth="md">
       {body}
     </Dialog>
   );

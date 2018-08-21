@@ -41,9 +41,7 @@ import {
   MoveMaterialNodeKind
 } from "../../data/move-arrows";
 
-class MoveMaterialArrows extends React.PureComponent<
-  MoveMaterialArrowData<Element>
-> {
+class MoveMaterialArrows extends React.PureComponent<MoveMaterialArrowData<Element>> {
   static elementToRect(e: Element): ClientRect {
     var r = e.getBoundingClientRect();
     return {
@@ -62,9 +60,7 @@ class MoveMaterialArrows extends React.PureComponent<
     const mpy = (arr.fromY + arr.toY) / 2;
 
     // angle of perpendicular to line
-    const theta =
-      Math.atan2(arr.toY - arr.fromY, arr.toX - arr.fromX) +
-      (Math.PI * arr.curveDirection) / 2;
+    const theta = Math.atan2(arr.toY - arr.fromY, arr.toX - arr.fromX) + (Math.PI * arr.curveDirection) / 2;
 
     // control points
     const cx = mpx + 50 * Math.cos(theta);
@@ -75,10 +71,7 @@ class MoveMaterialArrows extends React.PureComponent<
 
   render() {
     const data: MoveMaterialArrowData<ClientRect> = {
-      container:
-        this.props.container !== null
-          ? MoveMaterialArrows.elementToRect(this.props.container)
-          : null,
+      container: this.props.container !== null ? MoveMaterialArrows.elementToRect(this.props.container) : null,
       nodes: this.props.nodes.map(MoveMaterialArrows.elementToRect),
       node_type: this.props.node_type
     };
@@ -100,22 +93,12 @@ class MoveMaterialArrows extends React.PureComponent<
 }
 
 interface MoveMaterialArrowContext {
-  readonly registerNode: (
-    id: MoveMaterialIdentifier
-  ) => (ref: Element | null) => void;
-  readonly registerNodeKind: (
-    id: MoveMaterialIdentifier,
-    kind: MoveMaterialNodeKind | null
-  ) => void;
+  readonly registerNode: (id: MoveMaterialIdentifier) => (ref: Element | null) => void;
+  readonly registerNodeKind: (id: MoveMaterialIdentifier, kind: MoveMaterialNodeKind | null) => void;
 }
-const MoveMaterialArrowCtx = React.createContext<
-  MoveMaterialArrowContext | undefined
->(undefined);
+const MoveMaterialArrowCtx = React.createContext<MoveMaterialArrowContext | undefined>(undefined);
 
-export class MoveMaterialArrowContainer extends React.PureComponent<
-  {},
-  MoveMaterialArrowData<Element>
-> {
+export class MoveMaterialArrowContainer extends React.PureComponent<{}, MoveMaterialArrowData<Element>> {
   state = {
     container: null,
     nodes: im.Map<MoveMaterialIdentifier, Element>(),
@@ -145,10 +128,7 @@ export class MoveMaterialArrowContainer extends React.PureComponent<
     };
   }
 
-  registerNodeKind(
-    id: MoveMaterialIdentifier,
-    kind: MoveMaterialNodeKind | null
-  ) {
+  registerNodeKind(id: MoveMaterialIdentifier, kind: MoveMaterialNodeKind | null) {
     if (kind) {
       this.setState(s => ({ node_type: s.node_type.set(id, kind) }));
     } else {
@@ -184,9 +164,7 @@ export class MoveMaterialArrowContainer extends React.PureComponent<
           <MoveMaterialArrows {...this.state} />
         </svg>
         <div ref={r => this.setState({ container: r })}>
-          <MoveMaterialArrowCtx.Provider value={this.ctx}>
-            {this.props.children}
-          </MoveMaterialArrowCtx.Provider>
+          <MoveMaterialArrowCtx.Provider value={this.ctx}>{this.props.children}</MoveMaterialArrowCtx.Provider>
         </div>
       </div>
     );
@@ -198,9 +176,7 @@ interface MoveMaterialArrowNodeHelperProps {
   readonly ctx: MoveMaterialArrowContext;
 }
 
-class MoveMaterialArrowNodeHelper extends React.PureComponent<
-  MoveMaterialArrowNodeHelperProps
-> {
+class MoveMaterialArrowNodeHelper extends React.PureComponent<MoveMaterialArrowNodeHelperProps> {
   readonly ident = Symbol("MoveMaterialArrowNode");
 
   constructor(props: MoveMaterialArrowNodeHelperProps) {
@@ -215,17 +191,11 @@ class MoveMaterialArrowNodeHelper extends React.PureComponent<
   }
 
   render() {
-    return (
-      <div ref={this.props.ctx.registerNode(this.ident)}>
-        {this.props.children}
-      </div>
-    );
+    return <div ref={this.props.ctx.registerNode(this.ident)}>{this.props.children}</div>;
   }
 }
 
-export class MoveMaterialArrowNode extends React.PureComponent<
-  MoveMaterialNodeKind
-> {
+export class MoveMaterialArrowNode extends React.PureComponent<MoveMaterialNodeKind> {
   render() {
     const { children, ...kind } = this.props;
     return (

@@ -169,8 +169,7 @@ function machine_cost(
     .map(forPartStat => forPartStat.reduce((x, c) => x + c.active, 0))
     .reduce((x: number, minutes: number, statGroup: string) => {
       const totalUse = totalStatUseMinutes.get(statGroup) || 1;
-      const totalMachineCost =
-        ((machineCostPerYear[statGroup] || 0) * days) / 365;
+      const totalMachineCost = ((machineCostPerYear[statGroup] || 0) * days) / 365;
       return x + (minutes / totalUse) * totalMachineCost;
     }, 0);
 }
@@ -222,11 +221,7 @@ export function compute_monthly_cost(
         i.machineCostPerYear,
         days
       ),
-      labor_cost: labor_cost(
-        forPart.toSeq().filter(c => c.isLabor),
-        totalStatUseMinutes,
-        totalLaborCost
-      ),
+      labor_cost: labor_cost(forPart.toSeq().filter(c => c.isLabor), totalStatUseMinutes, totalLaborCost),
       material_cost: i.partMaterialCost[partName] || 0
     }))
     .valueSeq()

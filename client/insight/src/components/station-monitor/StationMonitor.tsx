@@ -46,10 +46,7 @@ export interface StationMonitorProps {
   readonly monitor_type: routes.StationMonitorType;
 }
 
-function monitorElement(
-  type: routes.StationMonitorType,
-  fillViewport: boolean
-): JSX.Element {
+function monitorElement(type: routes.StationMonitorType, fillViewport: boolean): JSX.Element {
   switch (type) {
     case routes.StationMonitorType.LoadUnload:
       return <LoadStation fillViewPort={fillViewport} />;

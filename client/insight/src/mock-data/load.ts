@@ -40,10 +40,7 @@ function offsetJob(j: api.JobPlan, offsetSeconds: number) {
   j.routeEndUTC = addSeconds(j.routeEndUTC, offsetSeconds);
   for (const proc of j.procsAndPaths) {
     for (const path of proc.paths) {
-      path.simulatedStartingUTC = addSeconds(
-        path.simulatedStartingUTC,
-        offsetSeconds
-      );
+      path.simulatedStartingUTC = addSeconds(path.simulatedStartingUTC, offsetSeconds);
       for (const prod of path.simulatedProduction || []) {
         prod.timeUTC = addSeconds(prod.timeUTC, offsetSeconds);
       }
@@ -51,9 +48,7 @@ function offsetJob(j: api.JobPlan, offsetSeconds: number) {
   }
 }
 
-async function loadEventsJson(
-  offsetSeconds: number
-): Promise<Readonly<api.ILogEntry>[]> {
+async function loadEventsJson(offsetSeconds: number): Promise<Readonly<api.ILogEntry>[]> {
   const evtJson: string = require("./events-json.txt");
   let evtsSeq: im.Seq.Indexed<object>;
   if (evtJson.startsWith("[")) {

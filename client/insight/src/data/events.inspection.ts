@@ -42,9 +42,7 @@ export enum InspectionLogResultType {
 export type InspectionLogResult =
   | {
       readonly type: InspectionLogResultType.Triggered;
-      readonly actualPath: ReadonlyArray<
-        Readonly<api.IMaterialProcessActualPath>
-      >;
+      readonly actualPath: ReadonlyArray<Readonly<api.IMaterialProcessActualPath>>;
       readonly toInspect: boolean;
     }
   | {
@@ -128,9 +126,7 @@ export function process_events(
     .flatMap(c =>
       c.material.map(m => {
         if (c.type === api.LogType.Inspection) {
-          const pathsJson: ReadonlyArray<object> = JSON.parse(
-            (c.details || {}).ActualPath || "[]"
-          );
+          const pathsJson: ReadonlyArray<object> = JSON.parse((c.details || {}).ActualPath || "[]");
           const paths: Array<Readonly<api.IMaterialProcessActualPath>> = [];
           for (const pathJson of pathsJson) {
             paths.push(api.MaterialProcessActualPath.fromJS(pathJson));

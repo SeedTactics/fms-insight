@@ -37,9 +37,7 @@ import { loadMockData } from "./mock-data/load";
 import { Store, AppAction, initStore } from "./store/store";
 import { differenceInSeconds, addDays } from "date-fns";
 
-export function mockComponent(
-  name: string
-): (props: { [key: string]: object }) => JSX.Element {
+export function mockComponent(name: string): (props: { [key: string]: object }) => JSX.Element {
   return props => (
     <div data-testid={"mock-component-" + name}>
       {Object.getOwnPropertyNames(props)
@@ -53,16 +51,11 @@ export function mockComponent(
   );
 }
 
-export async function createTestStore(): Promise<
-  redux.Store<Store, AppAction>
-> {
+export async function createTestStore(): Promise<redux.Store<Store, AppAction>> {
   const store = initStore(true);
 
   const jan18 = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
-  const offsetSeconds = differenceInSeconds(
-    addDays(new Date(2018, 7, 5, 15, 33, 0), -28),
-    jan18
-  );
+  const offsetSeconds = differenceInSeconds(addDays(new Date(2018, 7, 5, 15, 33, 0), -28), jan18);
 
   const mockD = loadMockData(offsetSeconds);
 

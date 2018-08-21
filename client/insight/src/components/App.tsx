@@ -76,8 +76,7 @@ interface HeaderProps {
 
 function Header(p: HeaderProps) {
   let tabType: TabType = TabType.Dashboard;
-  let helpUrl =
-    "https://fms-insight.seedtactics.com/docs/client-dashboard.html";
+  let helpUrl = "https://fms-insight.seedtactics.com/docs/client-dashboard.html";
   switch (p.routeState.current) {
     case routes.RouteLocation.Dashboard:
       tabType = TabType.Dashboard;
@@ -88,18 +87,15 @@ function Header(p: HeaderProps) {
     case routes.RouteLocation.Queues:
     case routes.RouteLocation.AllMaterial:
       tabType = TabType.StationMonitor;
-      helpUrl =
-        "https://fms-insight.seedtactics.com/docs/client-station-monitor.html";
+      helpUrl = "https://fms-insight.seedtactics.com/docs/client-station-monitor.html";
       break;
     case routes.RouteLocation.Efficiency:
       tabType = TabType.Efficiency;
-      helpUrl =
-        "https://fms-insight.seedtactics.com/docs/client-efficiency.html";
+      helpUrl = "https://fms-insight.seedtactics.com/docs/client-efficiency.html";
       break;
     case routes.RouteLocation.CostPerPiece:
       tabType = TabType.CostPerPiece;
-      helpUrl =
-        "https://fms-insight.seedtactics.com/docs/client-cost-per-piece.html";
+      helpUrl = "https://fms-insight.seedtactics.com/docs/client-cost-per-piece.html";
       break;
     case routes.RouteLocation.DataExport:
       tabType = TabType.DataExport;
@@ -115,11 +111,7 @@ function Header(p: HeaderProps) {
       <Tab label="Station Monitor" value={TabType.StationMonitor} />
       <Tab label="Efficiency" value={TabType.Efficiency} />
       <Tab label="Cost/Piece" value={TabType.CostPerPiece} />
-      {DemoMode ? (
-        undefined
-      ) : (
-        <Tab label="Data Export" value={TabType.DataExport} />
-      )}
+      {DemoMode ? undefined : <Tab label="Data Export" value={TabType.DataExport} />}
     </Tabs>
   );
 
@@ -137,8 +129,7 @@ function Header(p: HeaderProps) {
       <div>
         {(p.fmsInfo.name || "") + " " + (p.fmsInfo.version || "")}
         <br />
-        Latest version {p.latestVersion.version} (
-        {p.latestVersion.date.toDateString()})
+        Latest version {p.latestVersion.version} ({p.latestVersion.date.toDateString()})
       </div>
     );
   } else if (p.fmsInfo) {
@@ -150,19 +141,11 @@ function Header(p: HeaderProps) {
       <Toolbar>
         {DemoMode ? (
           <a href="/">
-            <img
-              src={logo}
-              alt="Logo"
-              style={{ height: "30px", marginRight: "1em" }}
-            />
+            <img src={logo} alt="Logo" style={{ height: "30px", marginRight: "1em" }} />
           </a>
         ) : (
           <Tooltip title={tooltip}>
-            <img
-              src={logo}
-              alt="Logo"
-              style={{ height: "30px", marginRight: "1em" }}
-            />
+            <img src={logo} alt="Logo" style={{ height: "30px", marginRight: "1em" }} />
           </Tooltip>
         )}
         <Typography variant="title" style={{ marginRight: "2em" }}>
@@ -179,11 +162,7 @@ function Header(p: HeaderProps) {
     <AppBar position="static">
       <Toolbar>
         <Tooltip title={tooltip}>
-          <img
-            src="/seedtactics-logo.svg"
-            alt="Logo"
-            style={{ height: "25px", marginRight: "4px" }}
-          />
+          <img src="/seedtactics-logo.svg" alt="Logo" style={{ height: "25px", marginRight: "4px" }} />
         </Tooltip>
         <Typography variant="title">Insight</Typography>
         <div style={{ flexGrow: 1 }} />
@@ -220,29 +199,19 @@ class App extends React.PureComponent<AppProps> {
         page = <Efficiency />;
         break;
       case routes.RouteLocation.LoadMonitor:
-        page = (
-          <StationMonitor monitor_type={routes.StationMonitorType.LoadUnload} />
-        );
+        page = <StationMonitor monitor_type={routes.StationMonitorType.LoadUnload} />;
         break;
       case routes.RouteLocation.InspectionMonitor:
-        page = (
-          <StationMonitor monitor_type={routes.StationMonitorType.Inspection} />
-        );
+        page = <StationMonitor monitor_type={routes.StationMonitorType.Inspection} />;
         break;
       case routes.RouteLocation.WashMonitor:
         page = <StationMonitor monitor_type={routes.StationMonitorType.Wash} />;
         break;
       case routes.RouteLocation.Queues:
-        page = (
-          <StationMonitor monitor_type={routes.StationMonitorType.Queues} />
-        );
+        page = <StationMonitor monitor_type={routes.StationMonitorType.Queues} />;
         break;
       case routes.RouteLocation.AllMaterial:
-        page = (
-          <StationMonitor
-            monitor_type={routes.StationMonitorType.AllMaterial}
-          />
-        );
+        page = <StationMonitor monitor_type={routes.StationMonitorType.AllMaterial} />;
         break;
       case routes.RouteLocation.DataExport:
         page = <DataExport />;
@@ -273,13 +242,7 @@ export default connect(
     latestVersion: s.ServerSettings.latestInstaller || null
   }),
   {
-    setRoute: ({
-      ty,
-      curSt
-    }: {
-      ty: TabType;
-      curSt: routes.State;
-    }): routes.Action => {
+    setRoute: ({ ty, curSt }: { ty: TabType; curSt: routes.State }): routes.Action => {
       switch (ty) {
         case TabType.Dashboard:
           return { type: routes.RouteLocation.Dashboard };

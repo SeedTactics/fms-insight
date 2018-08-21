@@ -44,18 +44,12 @@ export type Pledge<T> =
   | { status: PledgeStatus.Error; error: Error };
 
 export type PledgeToPromise<AP> = {
-  [P in keyof AP]: "pledge" extends P
-    ? AP[P] extends Pledge<infer R> ? Promise<R> : AP[P]
-    : AP[P]
+  [P in keyof AP]: "pledge" extends P ? (AP[P] extends Pledge<infer R> ? Promise<R> : AP[P]) : AP[P]
 };
 
-export type ActionBeforeMiddleware<A> =
-  | PledgeToPromise<A>
-  | PledgeToPromise<A>[];
+export type ActionBeforeMiddleware<A> = PledgeToPromise<A> | PledgeToPromise<A>[];
 
-export const pledgeMiddleware: Middleware = ({ dispatch }) => next => (
-  action: any
-) => {
+export const pledgeMiddleware: Middleware = ({ dispatch }) => next => (action: any) => {
   if (action.pledge && action.pledge instanceof Promise) {
     dispatch({ ...action, pledge: { status: PledgeStatus.Starting } });
     action.pledge
@@ -76,9 +70,7 @@ export const pledgeMiddleware: Middleware = ({ dispatch }) => next => (
   }
 };
 
-export const arrayMiddleware: Middleware = ({ dispatch }) => next => (
-  action: any
-) => {
+export const arrayMiddleware: Middleware = ({ dispatch }) => next => (action: any) => {
   if (action instanceof Array) {
     action.map(dispatch);
   } else {

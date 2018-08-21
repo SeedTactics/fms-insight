@@ -37,22 +37,18 @@ import { selectLoadStationAndQueueProps } from "./load-station";
 describe("load station status", () => {
   it("load 1 with no queues", () => {
     const data = loadMockData(30 * 24 * 60 * 60);
-    expect(
-      selectLoadStationAndQueueProps(1, [], false, data.curSt)
-    ).toMatchSnapshot("load 1 with no queues");
+    expect(selectLoadStationAndQueueProps(1, [], false, data.curSt)).toMatchSnapshot("load 1 with no queues");
   });
 
   it("load 2 with queue", () => {
     const data = loadMockData(30 * 24 * 60 * 60);
-    expect(
-      selectLoadStationAndQueueProps(2, ["Queue1"], false, data.curSt)
-    ).toMatchSnapshot("load 2 with queue");
+    expect(selectLoadStationAndQueueProps(2, ["Queue1"], false, data.curSt)).toMatchSnapshot("load 2 with queue");
   });
 
   it("load 3 with empty pallet", () => {
     const data = loadMockData(30 * 24 * 60 * 60);
-    expect(
-      selectLoadStationAndQueueProps(3, ["Queue2"], false, data.curSt)
-    ).toMatchSnapshot("load 3 with empty pallet");
+    expect(selectLoadStationAndQueueProps(3, ["Queue2"], false, data.curSt)).toMatchSnapshot(
+      "load 3 with empty pallet"
+    );
   });
 });

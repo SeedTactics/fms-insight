@@ -32,13 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import {
-  render,
-  cleanup,
-  fireEvent,
-  wait,
-  within
-} from "react-testing-library";
+import { render, cleanup, fireEvent, wait, within } from "react-testing-library";
 afterEach(cleanup);
 import { Provider } from "react-redux";
 import { Simulate } from "react-dom/test-utils";
@@ -60,31 +54,21 @@ it("renders the cost/piece page", async () => {
     </Provider>
   );
 
-  expect(
-    result.getByTestId("part-cost-table").querySelector("tbody")
-  ).toBeEmpty();
+  expect(result.getByTestId("part-cost-table").querySelector("tbody")).toBeEmpty();
 
   // now go to July 2018 which has the test store data
-  const chooseMonth = result.getByPlaceholderText(
-    "Choose Month"
-  ) as HTMLInputElement;
+  const chooseMonth = result.getByPlaceholderText("Choose Month") as HTMLInputElement;
   chooseMonth.value = "2018-07";
   Simulate.change(chooseMonth);
   fireEvent.blur(chooseMonth);
   fireEvent.click(result.getByLabelText("Select Month"));
-  await wait(() =>
-    expect(result.queryByTestId("loading-icon")).not.toBeInTheDocument()
-  );
+  await wait(() => expect(result.queryByTestId("loading-icon")).not.toBeInTheDocument());
 
   // add cost inputs
-  const numOper = result.getByLabelText(
-    "Number of Operators"
-  ) as HTMLInputElement;
+  const numOper = result.getByLabelText("Number of Operators") as HTMLInputElement;
   numOper.value = "3";
   Simulate.change(numOper);
-  const costPerOper = result.getByLabelText(
-    "Cost per operator per hour"
-  ) as HTMLInputElement;
+  const costPerOper = result.getByLabelText("Cost per operator per hour") as HTMLInputElement;
   costPerOper.value = "50";
   Simulate.change(costPerOper);
 
@@ -102,7 +86,5 @@ it("renders the cost/piece page", async () => {
   aaaMatCost.value = "40";
   Simulate.change(aaaMatCost);
 
-  expect(result.getByTestId("part-cost-table")).toMatchSnapshot(
-    "calculated costs"
-  );
+  expect(result.getByTestId("part-cost-table")).toMatchSnapshot("calculated costs");
 });

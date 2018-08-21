@@ -33,10 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as im from "immutable";
 import * as api from "./api";
-import {
-  InspectionLogResultType,
-  InspectionLogEntry
-} from "./events.inspection";
+import { InspectionLogResultType, InspectionLogEntry } from "./events.inspection";
 
 export interface SankeyNode {
   readonly unique: string; // full unique of node
@@ -107,31 +104,20 @@ function edgesForPath(
   return edges;
 }
 
-export function inspectionDataToSankey(
-  d: ReadonlyArray<InspectionLogEntry>
-): SankeyDiagram {
+export function inspectionDataToSankey(d: ReadonlyArray<InspectionLogEntry>): SankeyDiagram {
   const entrySeq = im.Seq(d);
 
   const matIdToInspResult = entrySeq
     .filter(e => e.result.type === InspectionLogResultType.Completed)
     .toKeyedSeq()
     .mapKeys((idx, e) => e.materialID)
-    .map(
-      e =>
-        e.result.type === InspectionLogResultType.Completed
-          ? e.result.success
-          : false
-    )
+    .map(e => (e.result.type === InspectionLogResultType.Completed ? e.result.success : false))
     .toMap();
 
   // create all the edges, likely with duplicate edges between nodes
   const edges = entrySeq.flatMap(c => {
     if (c.result.type === InspectionLogResultType.Triggered) {
-      return edgesForPath(
-        c.result.actualPath,
-        c.result.toInspect,
-        matIdToInspResult.get(c.materialID)
-      );
+      return edgesForPath(c.result.actualPath, c.result.toInspect, matIdToInspResult.get(c.materialID));
     } else {
       return [];
     }

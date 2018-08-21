@@ -49,10 +49,6 @@ it("renders the dashboard", async () => {
     </Provider>
   );
 
-  expect(result.container.querySelector("div.rv-xy-plot")).toMatchSnapshot(
-    "current jobs plot"
-  );
-  expect(result.getByTestId("stationoee-container")).toMatchSnapshot(
-    "station oee"
-  );
+  expect(result.container.querySelector("div.rv-xy-plot")).toMatchSnapshot("current jobs plot");
+  expect(result.getByTestId("stationoee-container")).toMatchSnapshot("station oee");
 });

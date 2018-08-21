@@ -85,9 +85,7 @@ it("sets the serial", () => {
     entry: fakeSerial(mat, "serial12345")
   });
 
-  const actualInProcMat = st.current_status.material.filter(
-    m => m.materialID === mat.id
-  )[0];
+  const actualInProcMat = st.current_status.material.filter(m => m.materialID === mat.id)[0];
   expect(actualInProcMat.serial).toEqual("serial12345");
 });
 
@@ -98,9 +96,7 @@ it("sets a workorder", () => {
     entry: fakeWorkorderAssign(mat, "work7777")
   });
 
-  const actualInProcMat = st.current_status.material.filter(
-    m => m.materialID === mat.id
-  )[0];
+  const actualInProcMat = st.current_status.material.filter(m => m.materialID === mat.id)[0];
   expect(actualInProcMat.workorderId).toEqual("work7777");
 });
 
@@ -111,9 +107,7 @@ it("sets an inspection", () => {
     entry: fakeInspSignal(mat, "insp11")
   });
 
-  const actualInProcMat = st.current_status.material.filter(
-    m => m.materialID === mat.id
-  )[0];
+  const actualInProcMat = st.current_status.material.filter(m => m.materialID === mat.id)[0];
   expect(actualInProcMat.signaledInspections).toEqual(["aaa", "insp11"]);
 });
 
@@ -124,9 +118,7 @@ it("sets a forced inspection", () => {
     entry: fakeInspForce(mat, "insp55")
   });
 
-  const actualInProcMat = st.current_status.material.filter(
-    m => m.materialID === mat.id
-  )[0];
+  const actualInProcMat = st.current_status.material.filter(m => m.materialID === mat.id)[0];
   expect(actualInProcMat.signaledInspections).toEqual(["aaa", "insp55"]);
 });
 

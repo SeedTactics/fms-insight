@@ -169,11 +169,7 @@ export function switchToStationMonitorPage(curSt: State): Action {
   }
 }
 
-export function displayLoadStation(
-  num: number,
-  queues: ReadonlyArray<string>,
-  freeMaterial: boolean
-): Action {
+export function displayLoadStation(num: number, queues: ReadonlyArray<string>, freeMaterial: boolean): Action {
   return {
     type: RouteLocation.LoadMonitor,
     payload: { num },
@@ -199,10 +195,7 @@ export function displayWash(): Action {
   };
 }
 
-export function displayQueues(
-  queues: ReadonlyArray<string>,
-  freeMaterial: boolean
-): Action {
+export function displayQueues(queues: ReadonlyArray<string>, freeMaterial: boolean): Action {
   return {
     type: RouteLocation.Queues,
     meta: {

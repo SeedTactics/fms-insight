@@ -33,11 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as api from "./api";
 import { ServerBackend, setOtherLogBackends } from "./backend";
-import {
-  Pledge,
-  PledgeStatus,
-  ActionBeforeMiddleware
-} from "../store/middleware";
+import { Pledge, PledgeStatus, ActionBeforeMiddleware } from "../store/middleware";
 
 export enum ActionType {
   Load = "ServerSettings_Load"

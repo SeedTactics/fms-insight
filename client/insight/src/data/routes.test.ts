@@ -144,11 +144,7 @@ it("changes to the station page", () => {
 });
 
 it("transitions to the cost/piece, dashboard, and efficiency pages", () => {
-  const pages = [
-    routes.RouteLocation.CostPerPiece,
-    routes.RouteLocation.Dashboard,
-    routes.RouteLocation.Efficiency
-  ];
+  const pages = [routes.RouteLocation.CostPerPiece, routes.RouteLocation.Dashboard, routes.RouteLocation.Efficiency];
   const initialSt = {
     current: routes.RouteLocation.LoadMonitor,
     station_monitor: routes.StationMonitorType.LoadUnload,

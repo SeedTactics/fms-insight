@@ -34,12 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as im from "immutable";
 
 import * as api from "./api";
-import {
-  Pledge,
-  PledgeStatus,
-  ActionBeforeMiddleware,
-  PledgeToPromise
-} from "../store/middleware";
+import { Pledge, PledgeStatus, ActionBeforeMiddleware, PledgeToPromise } from "../store/middleware";
 import { MaterialSummary } from "./events";
 import { JobsBackend, LogBackend, OtherLogBackends } from "./backend";
 
@@ -171,10 +166,7 @@ export function openMaterialDialogWithEmptyMat(): ABF {
   };
 }
 
-export function openMaterialBySerial(
-  serial: string,
-  openedByBarcode: boolean
-): ABF {
+export function openMaterialBySerial(serial: string, openedByBarcode: boolean): ABF {
   const mainLoad = {
     type: ActionType.OpenMaterialDialog,
     initial: {
@@ -214,11 +206,7 @@ export interface ForceInspectionData {
   readonly inspect: boolean;
 }
 
-export function forceInspection({
-  mat,
-  inspType,
-  inspect
-}: ForceInspectionData): ABF {
+export function forceInspection({ mat, inspType, inspect }: ForceInspectionData): ABF {
   const logMat = new api.LogMaterial({
     id: mat.materialID,
     uniq: mat.jobUnique,
@@ -241,12 +229,7 @@ export interface CompleteInspectionData {
   readonly operator?: string;
 }
 
-export function completeInspection({
-  mat,
-  inspType,
-  success,
-  operator
-}: CompleteInspectionData): ABF {
+export function completeInspection({ mat, inspType, success, operator }: CompleteInspectionData): ABF {
   return {
     type: ActionType.UpdateMaterial,
     newCompletedInspection: inspType,
@@ -301,9 +284,7 @@ export function completeWash(d: CompleteWashData): ABF {
 export function removeFromQueue(mat: MaterialDetail): ABF {
   return {
     type: ActionType.UpdateMaterial,
-    pledge: JobsBackend.removeMaterialFromAllQueues(mat.materialID).then(
-      () => undefined
-    )
+    pledge: JobsBackend.removeMaterialFromAllQueues(mat.materialID).then(() => undefined)
   };
 }
 
@@ -381,15 +362,11 @@ export function computeWorkorders(
 export function loadWorkorders(mat: MaterialDetail): ABF {
   return {
     type: ActionType.LoadWorkorders,
-    pledge: JobsBackend.mostRecentUnfilledWorkordersForPart(mat.partName).then(
-      workorders => {
-        return LogBackend.getWorkorders(
-          workorders.map(w => w.workorderId)
-        ).then(summaries => {
-          return computeWorkorders(mat.partName, workorders, summaries);
-        });
-      }
-    )
+    pledge: JobsBackend.mostRecentUnfilledWorkordersForPart(mat.partName).then(workorders => {
+      return LogBackend.getWorkorders(workorders.map(w => w.workorderId)).then(summaries => {
+        return computeWorkorders(mat.partName, workorders, summaries);
+      });
+    })
   };
 }
 
@@ -399,9 +376,7 @@ export interface AddExistingMaterialToQueueData {
   readonly queuePosition: number;
 }
 
-export function addExistingMaterialToQueue(
-  d: AddExistingMaterialToQueueData
-): ABF {
+export function addExistingMaterialToQueue(d: AddExistingMaterialToQueueData): ABF {
   return {
     type: ActionType.AddNewMaterialToQueue,
     pledge: JobsBackend.setMaterialInQueue(
@@ -449,10 +424,7 @@ export const initial: State = {
   add_mat_in_progress: false
 };
 
-function processEvents(
-  evts: ReadonlyArray<Readonly<api.ILogEntry>>,
-  mat: MaterialDetail
-): MaterialDetail {
+function processEvents(evts: ReadonlyArray<Readonly<api.ILogEntry>>, mat: MaterialDetail): MaterialDetail {
   let inspTypes = im.Set(mat.signaledInspections);
   let completedTypes = im.Set(mat.completedInspections);
 
@@ -606,9 +578,7 @@ export function reducer(s: State, a: Action): State {
                 : oldMatEnd.signaledInspections,
               workorderId: a.newWorkorder || oldMatEnd.workorderId,
               serial: a.newSerial || oldMatEnd.serial,
-              events: a.pledge.result
-                ? [...oldMatEnd.events, a.pledge.result]
-                : oldMatEnd.events,
+              events: a.pledge.result ? [...oldMatEnd.events, a.pledge.result] : oldMatEnd.events,
               updating_material: false
             }
           };

@@ -31,13 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import {
-  LogMaterial,
-  ILogEntry,
-  LogType,
-  MaterialProcessActualPath,
-  Stop
-} from "./api";
+import { LogMaterial, ILogEntry, LogType, MaterialProcessActualPath, Stop } from "./api";
 import * as faker from "faker";
 import { duration } from "moment";
 import { addSeconds, addMinutes } from "date-fns";
@@ -192,12 +186,7 @@ export function fakeSerial(mat?: LogMaterial, serial?: string): ILogEntry {
   };
 }
 
-export function fakeInspSignal(
-  mat?: LogMaterial,
-  inspType?: string,
-  now?: Date,
-  counter?: number
-): ILogEntry {
+export function fakeInspSignal(mat?: LogMaterial, inspType?: string, now?: Date, counter?: number): ILogEntry {
   mat = mat || fakeMaterial();
   inspType = inspType || "MyInspType";
   now = now || new Date(2017, 9, 5);
@@ -232,12 +221,7 @@ export function fakeInspSignal(
   };
 }
 
-export function fakeInspForce(
-  mat?: LogMaterial,
-  inspType?: string,
-  now?: Date,
-  counter?: number
-): ILogEntry {
+export function fakeInspForce(mat?: LogMaterial, inspType?: string, now?: Date, counter?: number): ILogEntry {
   mat = mat || fakeMaterial();
   inspType = inspType || "MyInspType";
   now = now || new Date(2017, 9, 5);
@@ -304,10 +288,7 @@ export function fakeWashComplete(mat?: LogMaterial): ILogEntry {
   };
 }
 
-export function fakeWorkorderAssign(
-  mat?: LogMaterial,
-  workorder?: string
-): ILogEntry {
+export function fakeWorkorderAssign(mat?: LogMaterial, workorder?: string): ILogEntry {
   mat = mat || fakeMaterial();
   workorder = workorder || "work12345";
   return {

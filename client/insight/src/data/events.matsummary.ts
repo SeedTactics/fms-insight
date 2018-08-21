@@ -65,9 +65,7 @@ export const initial: MatSummaryState = {
   inspTypes: im.Set()
 };
 
-export function inproc_mat_to_summary(
-  mat: Readonly<api.IInProcessMaterial>
-): MaterialSummary {
+export function inproc_mat_to_summary(mat: Readonly<api.IInProcessMaterial>): MaterialSummary {
   return {
     materialID: mat.materialID,
     jobUnique: mat.jobUnique,
@@ -79,21 +77,14 @@ export function inproc_mat_to_summary(
   };
 }
 
-export function process_events(
-  now: Date,
-  newEvts: Iterable<api.ILogEntry>,
-  st: MatSummaryState
-): MatSummaryState {
+export function process_events(now: Date, newEvts: Iterable<api.ILogEntry>, st: MatSummaryState): MatSummaryState {
   const oneWeekAgo = addDays(now, -7);
 
   const evtsSeq = im.Seq(newEvts);
 
   // check if no changes needed: no new events and nothing to filter out
   const minEntry = st.matsById.valueSeq().minBy(m => m.last_event);
-  if (
-    (minEntry === undefined || minEntry.last_event >= oneWeekAgo) &&
-    evtsSeq.isEmpty()
-  ) {
+  if ((minEntry === undefined || minEntry.last_event >= oneWeekAgo) && evtsSeq.isEmpty()) {
     return st;
   }
 

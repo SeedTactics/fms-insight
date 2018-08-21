@@ -59,9 +59,7 @@ interface CostPerPieceInputProps {
   readonly setMachineCost: DispatchAction<ccp.ActionType.SetMachineCostPerYear>;
   readonly setPartMatCost: DispatchAction<ccp.ActionType.SetPartMaterialCost>;
   readonly setNumOper: DispatchAction<ccp.ActionType.SetNumOperators>;
-  readonly setOperCostPerHour: DispatchAction<
-    ccp.ActionType.SetOperatorCostPerHour
-  >;
+  readonly setOperCostPerHour: DispatchAction<ccp.ActionType.SetOperatorCostPerHour>;
 }
 
 function CostPerPieceInput(props: CostPerPieceInputProps) {
@@ -78,9 +76,7 @@ function CostPerPieceInput(props: CostPerPieceInputProps) {
               }}
             >
               <MoneyIcon style={{ color: "#6D4C41" }} />
-              <div style={{ marginLeft: "10px", marginRight: "3em" }}>
-                Cost Inputs
-              </div>
+              <div style={{ marginLeft: "10px", marginRight: "3em" }}>Cost Inputs</div>
             </div>
           }
         />
@@ -92,9 +88,7 @@ function CostPerPieceInput(props: CostPerPieceInputProps) {
               label="Number of Operators"
               inputProps={{ min: 0 }}
               value={props.input.numOperators}
-              onChange={e =>
-                props.setNumOper({ numOpers: parseFloat(e.target.value) })
-              }
+              onChange={e => props.setNumOper({ numOpers: parseFloat(e.target.value) })}
             />
             <TextField
               id="cost-per-oper-hour"
@@ -102,9 +96,7 @@ function CostPerPieceInput(props: CostPerPieceInputProps) {
               label="Cost per operator per hour"
               inputProps={{ min: 0 }}
               value={props.input.operatorCostPerHour}
-              onChange={e =>
-                props.setOperCostPerHour({ cost: parseFloat(e.target.value) })
-              }
+              onChange={e => props.setOperCostPerHour({ cost: parseFloat(e.target.value) })}
             />
           </div>
           <Divider style={{ margin: "15px" }} />
@@ -177,13 +169,9 @@ function CostPerPieceOutput(props: CostPerPieceOutputProps) {
     <Card style={{ marginTop: "2em" }}>
       <CardHeader
         title={
-          <div
-            style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}
-          >
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
             <BuildIcon style={{ color: "#6D4C41" }} />
-            <div style={{ marginLeft: "10px", marginRight: "3em" }}>
-              Part Cost/Piece
-            </div>
+            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Part Cost/Piece</div>
           </div>
         }
       />
@@ -218,16 +206,8 @@ function CostPerPieceOutput(props: CostPerPieceOutputProps) {
                       }
                     />
                   </TableCell>
-                  <TableCell>
-                    {c.parts_completed > 0
-                      ? format.format(c.machine_cost / c.parts_completed)
-                      : 0}
-                  </TableCell>
-                  <TableCell>
-                    {c.parts_completed > 0
-                      ? format.format(c.labor_cost / c.parts_completed)
-                      : 0}
-                  </TableCell>
+                  <TableCell>{c.parts_completed > 0 ? format.format(c.machine_cost / c.parts_completed) : 0}</TableCell>
+                  <TableCell>{c.parts_completed > 0 ? format.format(c.labor_cost / c.parts_completed) : 0}</TableCell>
                   <TableCell>
                     {c.parts_completed > 0
                       ? format.format(
@@ -235,9 +215,7 @@ function CostPerPieceOutput(props: CostPerPieceOutputProps) {
                             c.machine_cost / c.parts_completed +
                             c.labor_cost / c.parts_completed
                         )
-                      : format.format(
-                          props.input.partMaterialCost[c.part] || 0
-                        )}
+                      : format.format(props.input.partMaterialCost[c.part] || 0)}
                   </TableCell>
                 </TableRow>
               ))}
@@ -254,10 +232,7 @@ const calcCostPerPiece = createSelector(
       ? s.Events.last30.cycles.by_part_then_stat
       : s.Events.selected_month.cycles.by_part_then_stat,
   (s: Store) => s.CostPerPiece.input,
-  (s: Store) =>
-    s.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? undefined
-      : s.Events.analysis_period_month,
+  (s: Store) => (s.Events.analysis_period === AnalysisPeriod.Last30Days ? undefined : s.Events.analysis_period_month),
   (
     cycles: im.Map<string, im.Map<string, ReadonlyArray<PartCycleData>>>,
     input: ccp.CostInput,

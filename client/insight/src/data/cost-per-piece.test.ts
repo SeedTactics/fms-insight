@@ -185,12 +185,7 @@ it("sets the operator cost per hour", () => {
 it("computes part costs", async () => {
   const data = loadMockData(30 * 24 * 60 * 60);
   const evts = await data.events;
-  const cycleState = cycles.process_events(
-    { type: cycles.ExpireOldDataType.NoExpire },
-    evts,
-    true,
-    cycles.initial
-  );
+  const cycleState = cycles.process_events({ type: cycles.ExpireOldDataType.NoExpire }, evts, true, cycles.initial);
   const costInput: ccp.CostInput = {
     machineCostPerYear: {
       Machine: 1234
@@ -203,7 +198,5 @@ it("computes part costs", async () => {
     operatorCostPerHour: 5432
   };
 
-  expect(
-    ccp.compute_monthly_cost(costInput, cycleState.by_part_then_stat)
-  ).toMatchSnapshot("cost calcs");
+  expect(ccp.compute_monthly_cost(costInput, cycleState.by_part_then_stat)).toMatchSnapshot("cost calcs");
 });

@@ -38,19 +38,10 @@ export type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
 
 export type AllMaterialBins = im.Map<string, MaterialList>;
 
-export function selectAllMaterialIntoBins(
-  curSt: Readonly<api.ICurrentStatus>
-): AllMaterialBins {
+export function selectAllMaterialIntoBins(curSt: Readonly<api.ICurrentStatus>): AllMaterialBins {
   const palLoc = im
     .Map(curSt.pallets)
-    .map(
-      st =>
-        " (" +
-        st.currentPalletLocation.group +
-        " #" +
-        st.currentPalletLocation.num.toString() +
-        ")"
-    );
+    .map(st => " (" + st.currentPalletLocation.group + " #" + st.currentPalletLocation.num.toString() + ")");
 
   return im
     .Seq(curSt.material)
@@ -61,10 +52,7 @@ export function selectAllMaterialIntoBins(
         case api.LocType.OnPallet:
           let region = "Pallet";
           if (mat.location.pallet) {
-            region =
-              "Pallet " +
-                mat.location.pallet.toString() +
-                palLoc.get(mat.location.pallet) || "";
+            region = "Pallet " + mat.location.pallet.toString() + palLoc.get(mat.location.pallet) || "";
           }
           return { region, mat };
         case api.LocType.Free:

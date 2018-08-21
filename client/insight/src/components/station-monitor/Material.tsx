@@ -55,10 +55,7 @@ import * as matDetails from "../../data/material-details";
 import { LogEntries } from "../LogEntry";
 import { MaterialSummary } from "../../data/events";
 import withStyles from "@material-ui/core/styles/withStyles";
-import {
-  inproc_mat_to_summary,
-  MaterialSummaryAndCompletedData
-} from "../../data/events.matsummary";
+import { inproc_mat_to_summary, MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 import { DispatchAction } from "../../store/store";
 
 /*
@@ -85,45 +82,27 @@ export class PartIdenticon extends React.PureComponent<{
     // tslint:disable-next-line:no-any
     const icon = (jdenticon as any).toSvg(this.props.part, iconSize);
 
-    return (
-      <div
-        style={{ width: iconSize, height: iconSize }}
-        dangerouslySetInnerHTML={{ __html: icon }}
-      />
-    );
+    return <div style={{ width: iconSize, height: iconSize }} dangerouslySetInnerHTML={{ __html: icon }} />;
   }
 }
 
-function materialAction(
-  mat: Readonly<api.IInProcessMaterial>,
-  displaySinglePallet?: string
-): string | undefined {
+function materialAction(mat: Readonly<api.IInProcessMaterial>, displaySinglePallet?: string): string | undefined {
   switch (mat.action.type) {
     case api.ActionType.Loading:
       switch (mat.location.type) {
         case api.LocType.OnPallet:
-          if (
-            displaySinglePallet === undefined ||
-            displaySinglePallet === mat.location.pallet
-          ) {
-            return (
-              "Transfer to face " + (mat.action.loadOntoFace || 0).toString()
-            );
+          if (displaySinglePallet === undefined || displaySinglePallet === mat.location.pallet) {
+            return "Transfer to face " + (mat.action.loadOntoFace || 0).toString();
           } else {
             return undefined;
           }
         default:
           if (displaySinglePallet === undefined) {
             return (
-              "Load onto face " +
-              (mat.action.loadOntoFace || 0).toString() +
-              " of pal " +
-              mat.action.loadOntoPallet
+              "Load onto face " + (mat.action.loadOntoFace || 0).toString() + " of pal " + mat.action.loadOntoPallet
             );
           } else if (displaySinglePallet === mat.action.loadOntoPallet) {
-            return (
-              "Load onto face " + (mat.action.loadOntoFace || 0).toString()
-            );
+            return "Load onto face " + (mat.action.loadOntoFace || 0).toString();
           } else {
             return undefined;
           }
@@ -210,12 +189,9 @@ const MatSummaryWithStyles = matStyles<MaterialSummaryProps>(props => {
           <div className={props.classes.mainContent}>
             <Typography variant="title">{props.mat.partName}</Typography>
             <div>
-              <small>
-                Serial: {props.mat.serial ? props.mat.serial : "none"}
-              </small>
+              <small>Serial: {props.mat.serial ? props.mat.serial : "none"}</small>
             </div>
-            {props.mat.workorderId === undefined ||
-            props.mat.workorderId === "" ? (
+            {props.mat.workorderId === undefined || props.mat.workorderId === "" ? (
               undefined
             ) : (
               <div>
@@ -241,8 +217,7 @@ const MatSummaryWithStyles = matStyles<MaterialSummaryProps>(props => {
             ) : (
               undefined
             )}
-            {props.hideInspectionIcon ||
-            props.mat.signaledInspections.length === 0 ? (
+            {props.hideInspectionIcon || props.mat.signaledInspections.length === 0 ? (
               undefined
             ) : (
               <div>
@@ -290,10 +265,7 @@ export class MaterialDetailTitle extends React.PureComponent<{
 }> {
   render() {
     let title;
-    if (
-      this.props.partName === "" &&
-      (this.props.serial === undefined || this.props.serial === "")
-    ) {
+    if (this.props.partName === "" && (this.props.serial === undefined || this.props.serial === "")) {
       title = "Loading";
     } else if (this.props.partName === "") {
       title = "Loading " + this.props.serial;
@@ -305,11 +277,7 @@ export class MaterialDetailTitle extends React.PureComponent<{
 
     return (
       <div style={{ display: "flex", textAlign: "left" }}>
-        {this.props.partName === "" ? (
-          <SearchIcon />
-        ) : (
-          <PartIdenticon part={this.props.partName} />
-        )}
+        {this.props.partName === "" ? <SearchIcon /> : <PartIdenticon part={this.props.partName} />}
         <div style={{ marginLeft: "8px", flexGrow: 1 }}>
           <Typography variant="title">{title}</Typography>
         </div>
@@ -322,16 +290,11 @@ export interface MaterialDetailProps {
   readonly mat: matDetails.MaterialDetail;
 }
 
-export class MaterialDetailContent extends React.PureComponent<
-  MaterialDetailProps
-> {
+export class MaterialDetailContent extends React.PureComponent<MaterialDetailProps> {
   render() {
     const mat = this.props.mat;
     function colorForInspType(type: string): string {
-      if (
-        mat.completedInspections &&
-        mat.completedInspections.indexOf(type) >= 0
-      ) {
+      if (mat.completedInspections && mat.completedInspections.indexOf(type) >= 0) {
         return "black";
       } else {
         return "red";
@@ -351,39 +314,22 @@ export class MaterialDetailContent extends React.PureComponent<
               mat.signaledInspections.map((type, i) => (
                 <span key={i}>
                   <small>{i === 0 ? "" : ", "}</small>
-                  <small style={{ color: colorForInspType(type) }}>
-                    {type}
-                  </small>
+                  <small style={{ color: colorForInspType(type) }}>{type}</small>
                 </span>
               ))
             )}
           </div>
         </div>
-        {mat.loading_events ? (
-          <CircularProgress color="secondary" />
-        ) : (
-          <LogEntries entries={mat.events} />
-        )}
+        {mat.loading_events ? <CircularProgress color="secondary" /> : <LogEntries entries={mat.events} />}
       </>
     );
   }
 }
 
-export function InstructionButton({
-  part,
-  type
-}: {
-  readonly part: string;
-  readonly type: string;
-}) {
+export function InstructionButton({ part, type }: { readonly part: string; readonly type: string }) {
   return (
     <Button
-      href={
-        "/api/v1/server/find-instructions/" +
-        encodeURIComponent(part) +
-        "?type=" +
-        encodeURIComponent(type)
-      }
+      href={"/api/v1/server/find-instructions/" + encodeURIComponent(part) + "?type=" + encodeURIComponent(type)}
       target="bms-instructions"
       color="primary"
     >
@@ -424,11 +370,7 @@ export function MaterialDialog(props: MaterialDialogProps) {
     );
   }
   return (
-    <Dialog
-      open={props.display_material !== null}
-      onClose={props.onClose}
-      maxWidth="md"
-    >
+    <Dialog open={props.display_material !== null} onClose={props.onClose} maxWidth="md">
       {body}
     </Dialog>
   );
@@ -478,59 +420,49 @@ export interface WhiteboardRegionProps {
   readonly onAddMaterial?: () => void;
 }
 
-const WhiteboardRegionWithStyle = whiteboardRegionStyle<WhiteboardRegionProps>(
-  props => {
-    let justifyContent = "space-between";
-    if (props.spaceAround) {
-      justifyContent = "space-around";
-    } else if (props.flexStart) {
-      justifyContent = "flex-start";
-    }
-    let mainClasses = [props.classes.container];
-    if (props.borderLeft) {
-      mainClasses.push(props.classes.borderLeft);
-    }
-    if (props.borderBottom) {
-      mainClasses.push(props.classes.borderBottom);
-    }
-    if (props.borderRight) {
-      mainClasses.push(props.classes.borderRight);
-    }
-    return (
-      <div className={mainClasses.join(" ")}>
-        {props.label !== "" || props.onAddMaterial ? (
-          <div className={props.classes.labelContainer}>
-            <span className={props.classes.label}>{props.label}</span>
-            {props.onAddMaterial ? (
-              <IconButton
-                onClick={props.onAddMaterial}
-                className={props.classes.addButton}
-              >
-                <AddIcon className={props.classes.addButton} />
-              </IconButton>
-            ) : (
-              undefined
-            )}
-          </div>
-        ) : (
-          undefined
-        )}
-        <div
-          className={props.classes.contentContainer}
-          style={{ justifyContent }}
-        >
-          {props.children}
-        </div>
-      </div>
-    );
+const WhiteboardRegionWithStyle = whiteboardRegionStyle<WhiteboardRegionProps>(props => {
+  let justifyContent = "space-between";
+  if (props.spaceAround) {
+    justifyContent = "space-around";
+  } else if (props.flexStart) {
+    justifyContent = "flex-start";
   }
-);
+  let mainClasses = [props.classes.container];
+  if (props.borderLeft) {
+    mainClasses.push(props.classes.borderLeft);
+  }
+  if (props.borderBottom) {
+    mainClasses.push(props.classes.borderBottom);
+  }
+  if (props.borderRight) {
+    mainClasses.push(props.classes.borderRight);
+  }
+  return (
+    <div className={mainClasses.join(" ")}>
+      {props.label !== "" || props.onAddMaterial ? (
+        <div className={props.classes.labelContainer}>
+          <span className={props.classes.label}>{props.label}</span>
+          {props.onAddMaterial ? (
+            <IconButton onClick={props.onAddMaterial} className={props.classes.addButton}>
+              <AddIcon className={props.classes.addButton} />
+            </IconButton>
+          ) : (
+            undefined
+          )}
+        </div>
+      ) : (
+        undefined
+      )}
+      <div className={props.classes.contentContainer} style={{ justifyContent }}>
+        {props.children}
+      </div>
+    </div>
+  );
+});
 
 // decorate doesn't work well with classes yet.
 // https://github.com/Microsoft/TypeScript/issues/4881
-export class WhiteboardRegion extends React.PureComponent<
-  WhiteboardRegionProps
-> {
+export class WhiteboardRegion extends React.PureComponent<WhiteboardRegionProps> {
   render() {
     return <WhiteboardRegionWithStyle {...this.props} />;
   }

@@ -123,9 +123,7 @@ it("responds to error for jobs", () => {
   expect(st.selected_month).toBe(events.initial.selected_month);
 });
 
-function procNewEvents(
-  evtsToAction: (now: Date, newEvts: ReadonlyArray<ILogEntry>) => events.Action
-) {
+function procNewEvents(evtsToAction: (now: Date, newEvts: ReadonlyArray<ILogEntry>) => events.Action) {
   var now = new Date(Date.UTC(2018, 1, 2, 9, 4, 5));
 
   // start with cycles from 27 days ago, 2 days ago, and today
@@ -133,13 +131,7 @@ function procNewEvents(
   var twoDaysAgo = addDays(now, -2);
   const twoDaysAgoCycle = fakeCycle(twoDaysAgo, 24, "part222", 1, "palbb");
   var twentySevenDaysAgo = addDays(now, -27);
-  const twentySevenCycle = fakeCycle(
-    twentySevenDaysAgo,
-    18,
-    "part222",
-    2,
-    "palaa"
-  );
+  const twentySevenCycle = fakeCycle(twentySevenDaysAgo, 18, "part222", 2, "palaa");
   let st = events.reducer(events.initial, {
     type: events.ActionType.LoadRecentLogEntries,
     now: now,
@@ -148,9 +140,7 @@ function procNewEvents(
       result: twentySevenCycle.concat(twoDaysAgoCycle, todayCycle)
     }
   });
-  expect(st.last30).toMatchSnapshot(
-    "last30 with 27 days ago, 2 days ago, and today"
-  );
+  expect(st.last30).toMatchSnapshot("last30 with 27 days ago, 2 days ago, and today");
 
   // Now add again 6 days from now, so that the twoDaysAgo cycle is removed from hours (which processes only 7 days)
   // and twenty seven is removed from processing 30 days
@@ -160,9 +150,7 @@ function procNewEvents(
 
   // twentySevenDaysAgo should have been filtered out
 
-  expect(st.last30).toMatchSnapshot(
-    "last30 with 2 days ago, today, and 6 days from now"
-  );
+  expect(st.last30).toMatchSnapshot("last30 with 2 days ago, today, and 6 days from now");
 
   // empty list should keep lists unchanged and the same object
   let newSt = events.reducer(st, {
@@ -262,13 +250,7 @@ it("loads a specific month for analysis", () => {
   var twoDaysAgo = addDays(now, -2);
   const twoDaysAgoCycle = fakeCycle(twoDaysAgo, 24, "partBBB", 2, "paltt");
   var twentySevenDaysAgo = addDays(now, -27);
-  const twentySevenCycle = fakeCycle(
-    twentySevenDaysAgo,
-    18,
-    "partCCC",
-    3,
-    "paltt"
-  );
+  const twentySevenCycle = fakeCycle(twentySevenDaysAgo, 18, "partCCC", 3, "paltt");
 
   let st = events.reducer(
     {
@@ -289,9 +271,7 @@ it("loads a specific month for analysis", () => {
   expect(st.analysis_period).toBe(events.AnalysisPeriod.SpecificMonth);
   expect(st.loading_analysis_month_log).toBe(false);
   expect(st.analysis_period_month).toEqual(new Date(2018, 1, 1));
-  expect(st.selected_month).toMatchSnapshot(
-    "selected month with 27 days ago, 2 days ago, and today"
-  );
+  expect(st.selected_month).toMatchSnapshot("selected month with 27 days ago, 2 days ago, and today");
 });
 
 it("bins actual cycles by day", () => {
@@ -313,9 +293,8 @@ it("bins actual cycles by day", () => {
     }
   });
 
-  let byDayAndStat = events.binCyclesByDayAndStat(
-    st.last30.cycles.by_part_then_stat,
-    c => duration(c.active).asMinutes()
+  let byDayAndStat = events.binCyclesByDayAndStat(st.last30.cycles.by_part_then_stat, c =>
+    duration(c.active).asMinutes()
   );
 
   // update day to be in Chicago timezone
@@ -323,20 +302,13 @@ it("bins actual cycles by day", () => {
   // Note this is after cycles are binned, which is correct since cycles are generated using
   // now in local time and then binned in local time.  Just need to update the date before
   // comparing with the snapshot
-  byDayAndStat = byDayAndStat.mapKeys(dayAndStat =>
-    dayAndStat.update("day", d => addMinutes(d, minOffset))
-  );
+  byDayAndStat = byDayAndStat.mapKeys(dayAndStat => dayAndStat.update("day", d => addMinutes(d, minOffset)));
 
   expect(byDayAndStat).toMatchSnapshot("cycles binned by day and station");
 
-  let byDayAndPart = events.binCyclesByDayAndPart(
-    st.last30.cycles.by_part_then_stat,
-    c => (c.completed ? 1 : 0)
-  );
+  let byDayAndPart = events.binCyclesByDayAndPart(st.last30.cycles.by_part_then_stat, c => (c.completed ? 1 : 0));
 
-  byDayAndPart = byDayAndPart.mapKeys(dayAndPart =>
-    dayAndPart.update("day", d => addMinutes(d, minOffset))
-  );
+  byDayAndPart = byDayAndPart.mapKeys(dayAndPart => dayAndPart.update("day", d => addMinutes(d, minOffset)));
 
   expect(byDayAndPart).toMatchSnapshot("cycles binned by day and part");
 });
@@ -358,10 +330,7 @@ it("computes station oee", () => {
     }
   });
 
-  let statMins = events.stationMinutes(
-    st.last30.cycles.by_part_then_stat,
-    addDays(now, -7)
-  );
+  let statMins = events.stationMinutes(st.last30.cycles.by_part_then_stat, addDays(now, -7));
 
   expect(statMins).toMatchSnapshot("station minutes for last week");
 });

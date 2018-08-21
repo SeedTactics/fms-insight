@@ -57,10 +57,7 @@ interface AnalysisSelectToolbarProps {
   setMonth: (month: Date) => void;
 }
 
-class AnalysisSelectToolbar extends React.PureComponent<
-  AnalysisSelectToolbarProps,
-  { temp_month?: Date }
-> {
+class AnalysisSelectToolbar extends React.PureComponent<AnalysisSelectToolbarProps, { temp_month?: Date }> {
   state = { temp_month: undefined } as { temp_month?: Date };
 
   setTempMonth = (m: Date) => {
@@ -96,9 +93,7 @@ class AnalysisSelectToolbar extends React.PureComponent<
           control={
             <Radio
               checked={this.props.period === events.AnalysisPeriod.Last30Days}
-              onChange={(e, checked) =>
-                checked ? this.props.analyzeLast30Days() : null
-              }
+              onChange={(e, checked) => (checked ? this.props.analyzeLast30Days() : null)}
             />
           }
           label="Last 30 days"
@@ -107,12 +102,8 @@ class AnalysisSelectToolbar extends React.PureComponent<
           <FormControlLabel
             control={
               <Radio
-                checked={
-                  this.props.period === events.AnalysisPeriod.SpecificMonth
-                }
-                onChange={(e, checked) =>
-                  checked ? this.props.analyzeMonth(curMonth) : null
-                }
+                checked={this.props.period === events.AnalysisPeriod.SpecificMonth}
+                onChange={(e, checked) => (checked ? this.props.analyzeMonth(curMonth) : null)}
               />
             }
             label="Select Month"

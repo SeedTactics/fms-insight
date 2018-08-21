@@ -31,11 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { addDays, addMonths, startOfMonth } from "date-fns";
-import {
-  PledgeStatus,
-  Pledge,
-  ActionBeforeMiddleware
-} from "../store/middleware";
+import { PledgeStatus, Pledge, ActionBeforeMiddleware } from "../store/middleware";
 import * as im from "immutable";
 
 import * as api from "./api";
@@ -45,25 +41,10 @@ import * as simuse from "./events.simuse";
 import * as inspection from "./events.inspection";
 import { JobsBackend, LogBackend } from "./backend";
 
-export {
-  CycleState,
-  CycleData,
-  binCyclesByDayAndStat,
-  binCyclesByDayAndPart,
-  stationMinutes
-} from "./events.cycles";
+export { CycleState, CycleData, binCyclesByDayAndStat, binCyclesByDayAndPart, stationMinutes } from "./events.cycles";
 export { MaterialSummary } from "./events.matsummary";
-export {
-  SimUseState,
-  binSimStationUseByDayAndStat,
-  binSimProductionByDayAndPart
-} from "./events.simuse";
-export {
-  InspectionLogResultType,
-  InspectionLogResult,
-  InspectionLogEntry,
-  InspectionState
-} from "./events.inspection";
+export { SimUseState, binSimStationUseByDayAndStat, binSimProductionByDayAndPart } from "./events.simuse";
+export { InspectionLogResultType, InspectionLogResult, InspectionLogEntry, InspectionState } from "./events.inspection";
 
 export enum AnalysisPeriod {
   Last30Days = "Last_30_Days",
@@ -203,9 +184,7 @@ export function refreshLogEntries(lastCounter: number): ABF {
   };
 }
 
-export function receiveNewEvents(
-  events: ReadonlyArray<Readonly<api.ILogEntry>>
-): ABF {
+export function receiveNewEvents(events: ReadonlyArray<Readonly<api.ILogEntry>>): ABF {
   return {
     type: ActionType.ReceiveNewLogEntries,
     now: new Date(),
@@ -271,11 +250,7 @@ function safeAssign<T extends R, R>(o: T, n: R): T {
   }
 }
 
-function processRecentLogEntries(
-  now: Date,
-  evts: Iterable<api.ILogEntry>,
-  s: Last30Days
-): Last30Days {
+function processRecentLogEntries(now: Date, evts: Iterable<api.ILogEntry>, s: Last30Days): Last30Days {
   const thirtyDaysAgo = addDays(now, -30);
   const initialLoad = s.latest_log_counter === undefined;
   let lastCounter = s.latest_log_counter;
@@ -310,10 +285,7 @@ function processRecentLogEntries(
   });
 }
 
-function processSpecificMonthLogEntries(
-  evts: Iterable<api.ILogEntry>,
-  s: AnalysisMonth
-): AnalysisMonth {
+function processSpecificMonthLogEntries(evts: Iterable<api.ILogEntry>, s: AnalysisMonth): AnalysisMonth {
   return safeAssign(s, {
     cycles: cycles.process_events(
       { type: cycles.ExpireOldDataType.NoExpire },
@@ -321,28 +293,16 @@ function processSpecificMonthLogEntries(
       true, // initial load is true
       s.cycles
     ),
-    inspection: inspection.process_events(
-      { type: cycles.ExpireOldDataType.NoExpire },
-      evts,
-      s.inspection
-    )
+    inspection: inspection.process_events({ type: cycles.ExpireOldDataType.NoExpire }, evts, s.inspection)
   });
 }
 
-function processRecentJobs(
-  now: Date,
-  jobs: Readonly<api.IHistoricData>,
-  s: Last30Days
-): Last30Days {
+function processRecentJobs(now: Date, jobs: Readonly<api.IHistoricData>, s: Last30Days): Last30Days {
   const thirtyDaysAgo = addDays(now, -30);
   let latestSchId = s.latest_scheduleId;
   const largestJob = im.Seq(jobs.jobs).maxBy(j => j.scheduleId);
   if (largestJob !== undefined) {
-    if (
-      latestSchId === undefined ||
-      (largestJob.scheduleId !== undefined &&
-        latestSchId < largestJob.scheduleId)
-    ) {
+    if (latestSchId === undefined || (largestJob.scheduleId !== undefined && latestSchId < largestJob.scheduleId)) {
       latestSchId = largestJob.scheduleId;
     }
   }
@@ -357,16 +317,9 @@ function processRecentJobs(
   });
 }
 
-function processSpecificMonthJobs(
-  jobs: Readonly<api.IHistoricData>,
-  s: AnalysisMonth
-): AnalysisMonth {
+function processSpecificMonthJobs(jobs: Readonly<api.IHistoricData>, s: AnalysisMonth): AnalysisMonth {
   return safeAssign(s, {
-    sim_use: simuse.process_sim_use(
-      { type: cycles.ExpireOldDataType.NoExpire },
-      jobs,
-      s.sim_use
-    )
+    sim_use: simuse.process_sim_use({ type: cycles.ExpireOldDataType.NoExpire }, jobs, s.sim_use)
   });
 }
 
@@ -450,10 +403,7 @@ export function reducer(s: State, a: Action): State {
           return {
             ...s,
             loading_analysis_month_log: false,
-            selected_month: processSpecificMonthLogEntries(
-              a.pledge.result,
-              s.selected_month
-            )
+            selected_month: processSpecificMonthLogEntries(a.pledge.result, s.selected_month)
           };
 
         case PledgeStatus.Error:
@@ -479,10 +429,7 @@ export function reducer(s: State, a: Action): State {
           return {
             ...s,
             loading_analysis_month_jobs: false,
-            selected_month: processSpecificMonthJobs(
-              a.pledge.result,
-              s.selected_month
-            )
+            selected_month: processSpecificMonthJobs(a.pledge.result, s.selected_month)
           };
 
         case PledgeStatus.Error:

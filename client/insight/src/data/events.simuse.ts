@@ -142,10 +142,7 @@ interface DayStatAndVal {
   value: number;
 }
 
-function splitElapsedToDays(
-  simUse: SimStationUse,
-  extractValue: (c: SimStationUse) => number
-): DayStatAndVal[] {
+function splitElapsedToDays(simUse: SimStationUse, extractValue: (c: SimStationUse) => number): DayStatAndVal[] {
   const startDay = startOfDay(simUse.start);
   const endDay = startOfDay(simUse.end);
 
@@ -160,8 +157,7 @@ function splitElapsedToDays(
   } else {
     const totalVal = extractValue(simUse);
     const endDayPercentage =
-      (simUse.end.getTime() - endDay.getTime()) /
-      (simUse.end.getTime() - simUse.start.getTime());
+      (simUse.end.getTime() - endDay.getTime()) / (simUse.end.getTime() - simUse.start.getTime());
     return [
       {
         day: startDay,
@@ -191,15 +187,11 @@ export function binSimStationUseByDayAndStat(
 type DayAndPart = im.Record<{ day: Date; part: string }>;
 const mkDayAndPart = im.Record({ day: new Date(), part: "" });
 
-export function binSimProductionByDayAndPart(
-  prod: im.Seq.Indexed<SimProduction>
-): im.Map<DayAndPart, number> {
+export function binSimProductionByDayAndPart(prod: im.Seq.Indexed<SimProduction>): im.Map<DayAndPart, number> {
   return (
     prod
       // TODO: split across day boundary?
-      .groupBy(
-        p => new mkDayAndPart({ day: startOfDay(p.start), part: p.part })
-      )
+      .groupBy(p => new mkDayAndPart({ day: startOfDay(p.start), part: p.part }))
       .map((points, group) => points.reduce((sum, p) => sum + p.quantity, 0))
       .toMap()
   );

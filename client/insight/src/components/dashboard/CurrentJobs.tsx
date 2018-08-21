@@ -46,11 +46,7 @@ import {
   Hint
 } from "react-vis";
 
-import {
-  CompletedDataPoint,
-  jobsToPoints,
-  DataPoints
-} from "../../data/job-bullet";
+import { CompletedDataPoint, jobsToPoints, DataPoints } from "../../data/job-bullet";
 
 // --------------------------------------------------------------------------------
 // Data
@@ -69,22 +65,13 @@ function FillViewportPlot({ children }: PlotProps) {
   return (
     <div style={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
       <div style={{ flexGrow: 1, position: "relative" }}>
-        <div
-          style={{ position: "absolute", top: 0, left: 0, bottom: 0, right: 0 }}
-        >
-          <FlexibleXYPlot
-            margin={{ left: 70, right: 10, top: 10, bottom: 40 }}
-            yType="ordinal"
-          >
+        <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, right: 0 }}>
+          <FlexibleXYPlot margin={{ left: 70, right: 10, top: 10, bottom: 40 }} yType="ordinal">
             {children}
           </FlexibleXYPlot>
         </div>
       </div>
-      <div
-        style={{ textAlign: "center", marginBottom: "8px", color: "#6b6b76" }}
-      >
-        Machine Hours
-      </div>
+      <div style={{ textAlign: "center", marginBottom: "8px", color: "#6b6b76" }}>Machine Hours</div>
     </div>
   );
 }
@@ -92,11 +79,7 @@ function FillViewportPlot({ children }: PlotProps) {
 function ScrollablePlot({ children, cnt }: PlotProps) {
   return (
     <div>
-      <FlexibleWidthXYPlot
-        height={cnt * 40}
-        margin={{ left: 70, right: 10, top: 10, bottom: 40 }}
-        yType="ordinal"
-      >
+      <FlexibleWidthXYPlot height={cnt * 40} margin={{ left: 70, right: 10, top: 10, bottom: 40 }} yType="ordinal">
         {children}
       </FlexibleWidthXYPlot>
       <div style={{ textAlign: "center" }}>Machine Hours</div>
@@ -104,9 +87,7 @@ function ScrollablePlot({ children, cnt }: PlotProps) {
   );
 }
 
-const targetMark = () => (
-  <rect x="-2" y="-5" width="4" height="10" fill="black" />
-);
+const targetMark = () => <rect x="-2" y="-5" width="4" height="10" fill="black" />;
 
 interface CurrentJobsProps extends DataPoints {
   readonly fillViewport: boolean;
@@ -144,11 +125,7 @@ class CurrentJobs extends React.PureComponent<CurrentJobsProps, JobState> {
     return (
       <Plot cnt={this.props.completedData.length}>
         <XAxis />
-        <YAxis
-          tickFormat={(y: number, i: number) =>
-            this.props.completedData[i].part
-          }
-        />
+        <YAxis tickFormat={(y: number, i: number) => this.props.completedData[i].part} />
         <HorizontalGridLines />
         <VerticalGridLines />
         <HorizontalBarSeries
@@ -157,15 +134,8 @@ class CurrentJobs extends React.PureComponent<CurrentJobsProps, JobState> {
           onValueMouseOver={this.setHint}
           onValueMouseOut={this.clearHint}
         />
-        <CustomSVGSeries
-          data={this.props.planData}
-          customComponent={targetMark}
-        />
-        {this.state.hoveredJob === undefined ? (
-          undefined
-        ) : (
-          <Hint value={this.state.hoveredJob} format={format_hint} />
-        )}
+        <CustomSVGSeries data={this.props.planData} customComponent={targetMark} />
+        {this.state.hoveredJob === undefined ? undefined : <Hint value={this.state.hoveredJob} format={format_hint} />}
       </Plot>
     );
   }

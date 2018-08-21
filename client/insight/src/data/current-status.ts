@@ -32,11 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as api from "./api";
 import * as im from "immutable";
-import {
-  Pledge,
-  PledgeStatus,
-  ActionBeforeMiddleware
-} from "../store/middleware";
+import { Pledge, PledgeStatus, ActionBeforeMiddleware } from "../store/middleware";
 import { JobsBackend } from "./backend";
 
 export interface State {
@@ -104,12 +100,7 @@ export function receiveNewLogEntry(entry: Readonly<api.ILogEntry>): ABF {
 
 function process_new_events(entry: Readonly<api.ILogEntry>, s: State): State {
   let mats: im.Map<number, Readonly<api.InProcessMaterial>> | undefined;
-  function adjustMat(
-    id: number,
-    f: (
-      mat: Readonly<api.IInProcessMaterial>
-    ) => Readonly<api.IInProcessMaterial>
-  ) {
+  function adjustMat(id: number, f: (mat: Readonly<api.IInProcessMaterial>) => Readonly<api.IInProcessMaterial>) {
     if (mats === undefined) {
       mats = s.current_status.material.reduce(
         (map, mat) => map.set(mat.materialID, mat),

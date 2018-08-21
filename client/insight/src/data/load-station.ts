@@ -44,10 +44,7 @@ export function buildPallets(
 ): im.Map<string, { pal?: PalletData; queued?: PalletData }> {
   const matByPallet = new Map<string, api.IInProcessMaterial[]>();
   for (let mat of st.material) {
-    if (
-      mat.location.type === api.LocType.OnPallet &&
-      mat.location.pallet !== undefined
-    ) {
+    if (mat.location.type === api.LocType.OnPallet && mat.location.pallet !== undefined) {
       const mats = matByPallet.get(mat.location.pallet) || [];
       mats.push(mat);
       matByPallet.set(mat.location.pallet, mats);
@@ -59,10 +56,7 @@ export function buildPallets(
     switch (pal.currentPalletLocation.loc) {
       case api.PalletLocationEnum.LoadUnload:
       case api.PalletLocationEnum.Machine:
-        const stat =
-          pal.currentPalletLocation.group +
-          " #" +
-          pal.currentPalletLocation.num.toString();
+        const stat = pal.currentPalletLocation.group + " #" + pal.currentPalletLocation.num.toString();
         m.set(stat, {
           ...(m.get(stat) || {}),
           pal: {
@@ -73,10 +67,7 @@ export function buildPallets(
         break;
 
       case api.PalletLocationEnum.MachineQueue:
-        const stat2 =
-          pal.currentPalletLocation.group +
-          " #" +
-          pal.currentPalletLocation.num.toString();
+        const stat2 = pal.currentPalletLocation.group + " #" + pal.currentPalletLocation.num.toString();
         m.set(stat2, {
           ...(m.get(stat2) || {}),
           queued: {
@@ -99,10 +90,7 @@ export interface LoadStationAndQueueData {
   readonly loadNum: number;
   readonly pallet?: Readonly<api.IPalletStatus>;
   readonly face: im.Map<number, MaterialList>;
-  readonly stationStatus?: im.Map<
-    string,
-    { pal?: PalletData; queued?: PalletData }
-  >;
+  readonly stationStatus?: im.Map<string, { pal?: PalletData; queued?: PalletData }>;
   readonly castings: MaterialList;
   readonly free?: MaterialList;
   readonly queues: im.Map<string, MaterialList>;
@@ -130,9 +118,7 @@ export function selectLoadStationAndQueueProps(
   let byFace: im.Map<number, api.IInProcessMaterial[]> = im.Map();
   let palName: string | undefined;
   let castings: im.Seq.Indexed<api.IInProcessMaterial> = im.Seq.Indexed();
-  let stationStatus:
-    | im.Map<string, { pal?: PalletData; queued?: PalletData }>
-    | undefined;
+  let stationStatus: im.Map<string, { pal?: PalletData; queued?: PalletData }> | undefined;
 
   // load pallet material
   if (pal !== undefined) {
@@ -140,11 +126,7 @@ export function selectLoadStationAndQueueProps(
 
     byFace = im
       .Seq(curSt.material)
-      .filter(
-        m =>
-          m.location.type === api.LocType.OnPallet &&
-          m.location.pallet === palName
-      )
+      .filter(m => m.location.type === api.LocType.OnPallet && m.location.pallet === palName)
       .groupBy(m => m.location.face || 0)
       .map(ms => ms.valueSeq().toArray())
       .toMap();
@@ -171,11 +153,7 @@ export function selectLoadStationAndQueueProps(
     if (displayFree) {
       castings = im
         .Seq(curSt.material)
-        .filter(
-          m =>
-            m.action.processAfterLoad === 1 &&
-            m.location.type === api.LocType.Free
-        );
+        .filter(m => m.action.processAfterLoad === 1 && m.location.type === api.LocType.Free);
     }
   }
 
@@ -184,12 +162,7 @@ export function selectLoadStationAndQueueProps(
   if (displayFree) {
     free = im
       .Seq(curSt.material)
-      .filter(
-        m =>
-          m.action.processAfterLoad &&
-          m.action.processAfterLoad > 1 &&
-          m.location.type === api.LocType.Free
-      )
+      .filter(m => m.action.processAfterLoad && m.action.processAfterLoad > 1 && m.location.type === api.LocType.Free)
       .toArray();
   }
 
@@ -198,11 +171,7 @@ export function selectLoadStationAndQueueProps(
   );
   const queueMat = im
     .Seq(curSt.material)
-    .filter(
-      m =>
-        m.location.type === api.LocType.InQueue &&
-        queueNames.has(m.location.currentQueue || "")
-    )
+    .filter(m => m.location.type === api.LocType.InQueue && queueNames.has(m.location.currentQueue || ""))
     .groupBy(m => m.location.currentQueue || "")
     .map(ms => ms.valueSeq().toArray())
     .toMap();

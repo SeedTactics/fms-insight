@@ -143,10 +143,7 @@ it("starts to update", () => {
       status: PledgeStatus.Starting
     }
   };
-  const st = mat.reducer(
-    { material: m, add_mat_in_progress: false, update_error: new Error("a") },
-    action
-  );
+  const st = mat.reducer({ material: m, add_mat_in_progress: false, update_error: new Error("a") }, action);
   expect(st.material).toEqual({ ...m, updating_material: true });
   expect(st.update_error).toBeUndefined();
 });
@@ -159,10 +156,7 @@ it("errors during update", () => {
       error: new Error("the error")
     }
   };
-  const st = mat.reducer(
-    { material: { ...m, updating_material: true }, add_mat_in_progress: false },
-    action
-  );
+  const st = mat.reducer({ material: { ...m, updating_material: true }, add_mat_in_progress: false }, action);
   expect(st.material).toEqual(m);
   expect(st.update_error).toEqual(new Error("the error"));
 });
@@ -341,14 +335,7 @@ it("succeeds for a serial set", () => {
 });
 
 it("successfully processes events", () => {
-  const cycle = fakeCycle(
-    new Date(),
-    55,
-    undefined,
-    undefined,
-    undefined,
-    true
-  );
+  const cycle = fakeCycle(new Date(), 55, undefined, undefined, undefined, true);
   const logmat = cycle[0].material[0];
   const evts = [
     ...cycle,
@@ -411,10 +398,7 @@ it("starts to add new material", () => {
       status: PledgeStatus.Starting
     }
   };
-  const st = mat.reducer(
-    { material: m, add_mat_in_progress: false, add_mat_error: new Error("a") },
-    action
-  );
+  const st = mat.reducer({ material: m, add_mat_in_progress: false, add_mat_error: new Error("a") }, action);
   expect(st.material).toEqual(m);
   expect(st.add_mat_in_progress).toBe(true);
   expect(st.add_mat_error).toBeUndefined();

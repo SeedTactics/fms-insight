@@ -11,15 +11,9 @@ export class JobsClient {
     fetch(url: RequestInfo, init?: RequestInit): Promise<Response>;
   };
   private baseUrl: string;
-  protected jsonParseReviver: (
-    key: string,
-    value: any
-  ) => any = undefined as any;
+  protected jsonParseReviver: (key: string, value: any) => any = undefined as any;
 
-  constructor(
-    baseUrl?: string,
-    http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }
-  ) {
+  constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
     this.http = http ? http : <any>window;
     this.baseUrl = baseUrl ? baseUrl : "";
   }
@@ -27,23 +21,11 @@ export class JobsClient {
   history(startUTC: Date, endUTC: Date): Promise<HistoricData> {
     let url_ = this.baseUrl + "/api/v1/jobs/history?";
     if (startUTC === undefined || startUTC === null)
-      throw new Error(
-        "The parameter 'startUTC' must be defined and cannot be null."
-      );
-    else
-      url_ +=
-        "startUTC=" +
-        encodeURIComponent(startUTC ? "" + startUTC.toJSON() : "") +
-        "&";
+      throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
+    else url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toJSON() : "") + "&";
     if (endUTC === undefined || endUTC === null)
-      throw new Error(
-        "The parameter 'endUTC' must be defined and cannot be null."
-      );
-    else
-      url_ +=
-        "endUTC=" +
-        encodeURIComponent(endUTC ? "" + endUTC.toJSON() : "") +
-        "&";
+      throw new Error("The parameter 'endUTC' must be defined and cannot be null.");
+    else url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toJSON() : "") + "&";
     url_ = url_.replace(/[?&]$/, "");
 
     let options_ = <RequestInit>{
@@ -68,23 +50,13 @@ export class JobsClient {
     if (status === 200) {
       return response.text().then(_responseText => {
         let result200: any = null;
-        let resultData200 =
-          _responseText === ""
-            ? null
-            : JSON.parse(_responseText, this.jsonParseReviver);
-        result200 = resultData200
-          ? HistoricData.fromJS(resultData200)
-          : new HistoricData();
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        result200 = resultData200 ? HistoricData.fromJS(resultData200) : new HistoricData();
         return result200;
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<HistoricData>(<any>null);
@@ -92,11 +64,8 @@ export class JobsClient {
 
   recent(afterScheduleId: string): Promise<HistoricData> {
     let url_ = this.baseUrl + "/api/v1/jobs/recent?";
-    if (afterScheduleId === undefined)
-      throw new Error("The parameter 'afterScheduleId' must be defined.");
-    else
-      url_ +=
-        "afterScheduleId=" + encodeURIComponent("" + afterScheduleId) + "&";
+    if (afterScheduleId === undefined) throw new Error("The parameter 'afterScheduleId' must be defined.");
+    else url_ += "afterScheduleId=" + encodeURIComponent("" + afterScheduleId) + "&";
     url_ = url_.replace(/[?&]$/, "");
 
     let options_ = <RequestInit>{
@@ -121,23 +90,13 @@ export class JobsClient {
     if (status === 200) {
       return response.text().then(_responseText => {
         let result200: any = null;
-        let resultData200 =
-          _responseText === ""
-            ? null
-            : JSON.parse(_responseText, this.jsonParseReviver);
-        result200 = resultData200
-          ? HistoricData.fromJS(resultData200)
-          : new HistoricData();
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        result200 = resultData200 ? HistoricData.fromJS(resultData200) : new HistoricData();
         return result200;
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<HistoricData>(<any>null);
@@ -160,9 +119,7 @@ export class JobsClient {
     });
   }
 
-  protected processLatestSchedule(
-    response: Response
-  ): Promise<PlannedSchedule> {
+  protected processLatestSchedule(response: Response): Promise<PlannedSchedule> {
     const status = response.status;
     let _headers: any = {};
     if (response.headers && response.headers.forEach) {
@@ -171,23 +128,13 @@ export class JobsClient {
     if (status === 200) {
       return response.text().then(_responseText => {
         let result200: any = null;
-        let resultData200 =
-          _responseText === ""
-            ? null
-            : JSON.parse(_responseText, this.jsonParseReviver);
-        result200 = resultData200
-          ? PlannedSchedule.fromJS(resultData200)
-          : new PlannedSchedule();
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        result200 = resultData200 ? PlannedSchedule.fromJS(resultData200) : new PlannedSchedule();
         return result200;
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<PlannedSchedule>(<any>null);
@@ -195,8 +142,7 @@ export class JobsClient {
 
   mostRecentUnfilledWorkordersForPart(part: string): Promise<PartWorkorder[]> {
     let url_ = this.baseUrl + "/api/v1/jobs/unfilled-workorders/by-part/{part}";
-    if (part === undefined || part === null)
-      throw new Error("The parameter 'part' must be defined.");
+    if (part === undefined || part === null) throw new Error("The parameter 'part' must be defined.");
     url_ = url_.replace("{part}", encodeURIComponent("" + part));
     url_ = url_.replace(/[?&]$/, "");
 
@@ -213,9 +159,7 @@ export class JobsClient {
     });
   }
 
-  protected processMostRecentUnfilledWorkordersForPart(
-    response: Response
-  ): Promise<PartWorkorder[]> {
+  protected processMostRecentUnfilledWorkordersForPart(response: Response): Promise<PartWorkorder[]> {
     const status = response.status;
     let _headers: any = {};
     if (response.headers && response.headers.forEach) {
@@ -224,25 +168,16 @@ export class JobsClient {
     if (status === 200) {
       return response.text().then(_responseText => {
         let result200: any = null;
-        let resultData200 =
-          _responseText === ""
-            ? null
-            : JSON.parse(_responseText, this.jsonParseReviver);
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
         if (resultData200 && resultData200.constructor === Array) {
           result200 = [];
-          for (let item of resultData200)
-            result200.push(PartWorkorder.fromJS(item));
+          for (let item of resultData200) result200.push(PartWorkorder.fromJS(item));
         }
         return result200;
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<PartWorkorder[]>(<any>null);
@@ -274,23 +209,13 @@ export class JobsClient {
     if (status === 200) {
       return response.text().then(_responseText => {
         let result200: any = null;
-        let resultData200 =
-          _responseText === ""
-            ? null
-            : JSON.parse(_responseText, this.jsonParseReviver);
-        result200 = resultData200
-          ? CurrentStatus.fromJS(resultData200)
-          : <any>null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        result200 = resultData200 ? CurrentStatus.fromJS(resultData200) : <any>null;
         return result200;
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<CurrentStatus>(<any>null);
@@ -325,10 +250,7 @@ export class JobsClient {
     if (status === 200) {
       return response.text().then(_responseText => {
         let result200: any = null;
-        let resultData200 =
-          _responseText === ""
-            ? null
-            : JSON.parse(_responseText, this.jsonParseReviver);
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
         if (resultData200 && resultData200.constructor === Array) {
           result200 = [];
           for (let item of resultData200) result200.push(item);
@@ -337,12 +259,7 @@ export class JobsClient {
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<string[]>(<any>null);
@@ -351,14 +268,8 @@ export class JobsClient {
   add(newJobs: NewJobs, expectedPreviousScheduleId: string): Promise<void> {
     let url_ = this.baseUrl + "/api/v1/jobs/add?";
     if (expectedPreviousScheduleId === undefined)
-      throw new Error(
-        "The parameter 'expectedPreviousScheduleId' must be defined."
-      );
-    else
-      url_ +=
-        "expectedPreviousScheduleId=" +
-        encodeURIComponent("" + expectedPreviousScheduleId) +
-        "&";
+      throw new Error("The parameter 'expectedPreviousScheduleId' must be defined.");
+    else url_ += "expectedPreviousScheduleId=" + encodeURIComponent("" + expectedPreviousScheduleId) + "&";
     url_ = url_.replace(/[?&]$/, "");
 
     const content_ = JSON.stringify(newJobs);
@@ -388,34 +299,19 @@ export class JobsClient {
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<void>(<any>null);
   }
 
-  addUnallocatedCastingToQueue(
-    partName: string,
-    queue: string,
-    pos: number,
-    serial: string
-  ): Promise<void> {
+  addUnallocatedCastingToQueue(partName: string, queue: string, pos: number, serial: string): Promise<void> {
     let url_ = this.baseUrl + "/api/v1/jobs/part/{partName}/casting?";
-    if (partName === undefined || partName === null)
-      throw new Error("The parameter 'partName' must be defined.");
+    if (partName === undefined || partName === null) throw new Error("The parameter 'partName' must be defined.");
     url_ = url_.replace("{partName}", encodeURIComponent("" + partName));
-    if (queue === undefined)
-      throw new Error("The parameter 'queue' must be defined.");
+    if (queue === undefined) throw new Error("The parameter 'queue' must be defined.");
     else url_ += "queue=" + encodeURIComponent("" + queue) + "&";
-    if (pos === undefined || pos === null)
-      throw new Error(
-        "The parameter 'pos' must be defined and cannot be null."
-      );
+    if (pos === undefined || pos === null) throw new Error("The parameter 'pos' must be defined and cannot be null.");
     else url_ += "pos=" + encodeURIComponent("" + pos) + "&";
     url_ = url_.replace(/[?&]$/, "");
 
@@ -434,9 +330,7 @@ export class JobsClient {
     });
   }
 
-  protected processAddUnallocatedCastingToQueue(
-    response: Response
-  ): Promise<void> {
+  protected processAddUnallocatedCastingToQueue(response: Response): Promise<void> {
     const status = response.status;
     let _headers: any = {};
     if (response.headers && response.headers.forEach) {
@@ -448,12 +342,7 @@ export class JobsClient {
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<void>(<any>null);
@@ -466,27 +355,15 @@ export class JobsClient {
     pos: number,
     serial: string
   ): Promise<void> {
-    let url_ =
-      this.baseUrl + "/api/v1/jobs/job/{jobUnique}/unprocessed-material?";
-    if (jobUnique === undefined || jobUnique === null)
-      throw new Error("The parameter 'jobUnique' must be defined.");
+    let url_ = this.baseUrl + "/api/v1/jobs/job/{jobUnique}/unprocessed-material?";
+    if (jobUnique === undefined || jobUnique === null) throw new Error("The parameter 'jobUnique' must be defined.");
     url_ = url_.replace("{jobUnique}", encodeURIComponent("" + jobUnique));
     if (lastCompletedProcess === undefined || lastCompletedProcess === null)
-      throw new Error(
-        "The parameter 'lastCompletedProcess' must be defined and cannot be null."
-      );
-    else
-      url_ +=
-        "lastCompletedProcess=" +
-        encodeURIComponent("" + lastCompletedProcess) +
-        "&";
-    if (queue === undefined)
-      throw new Error("The parameter 'queue' must be defined.");
+      throw new Error("The parameter 'lastCompletedProcess' must be defined and cannot be null.");
+    else url_ += "lastCompletedProcess=" + encodeURIComponent("" + lastCompletedProcess) + "&";
+    if (queue === undefined) throw new Error("The parameter 'queue' must be defined.");
     else url_ += "queue=" + encodeURIComponent("" + queue) + "&";
-    if (pos === undefined || pos === null)
-      throw new Error(
-        "The parameter 'pos' must be defined and cannot be null."
-      );
+    if (pos === undefined || pos === null) throw new Error("The parameter 'pos' must be defined and cannot be null.");
     else url_ += "pos=" + encodeURIComponent("" + pos) + "&";
     url_ = url_.replace(/[?&]$/, "");
 
@@ -505,9 +382,7 @@ export class JobsClient {
     });
   }
 
-  protected processAddUnprocessedMaterialToQueue(
-    response: Response
-  ): Promise<void> {
+  protected processAddUnprocessedMaterialToQueue(response: Response): Promise<void> {
     const status = response.status;
     let _headers: any = {};
     if (response.headers && response.headers.forEach) {
@@ -519,12 +394,7 @@ export class JobsClient {
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<void>(<any>null);
@@ -532,8 +402,7 @@ export class JobsClient {
 
   setMaterialInQueue(materialId: number, queue: QueuePosition): Promise<void> {
     let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/queue";
-    if (materialId === undefined || materialId === null)
-      throw new Error("The parameter 'materialId' must be defined.");
+    if (materialId === undefined || materialId === null) throw new Error("The parameter 'materialId' must be defined.");
     url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId));
     url_ = url_.replace(/[?&]$/, "");
 
@@ -564,12 +433,7 @@ export class JobsClient {
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<void>(<any>null);
@@ -577,8 +441,7 @@ export class JobsClient {
 
   removeMaterialFromAllQueues(materialId: number): Promise<void> {
     let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/queue";
-    if (materialId === undefined || materialId === null)
-      throw new Error("The parameter 'materialId' must be defined.");
+    if (materialId === undefined || materialId === null) throw new Error("The parameter 'materialId' must be defined.");
     url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId));
     url_ = url_.replace(/[?&]$/, "");
 
@@ -594,9 +457,7 @@ export class JobsClient {
     });
   }
 
-  protected processRemoveMaterialFromAllQueues(
-    response: Response
-  ): Promise<void> {
+  protected processRemoveMaterialFromAllQueues(response: Response): Promise<void> {
     const status = response.status;
     let _headers: any = {};
     if (response.headers && response.headers.forEach) {
@@ -608,12 +469,7 @@ export class JobsClient {
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<void>(<any>null);
@@ -632,11 +488,7 @@ export class JobsClient {
     if (loadDecrementsAfterTimeUTC !== undefined)
       url_ +=
         "loadDecrementsAfterTimeUTC=" +
-        encodeURIComponent(
-          loadDecrementsAfterTimeUTC
-            ? "" + loadDecrementsAfterTimeUTC.toJSON()
-            : ""
-        ) +
+        encodeURIComponent(loadDecrementsAfterTimeUTC ? "" + loadDecrementsAfterTimeUTC.toJSON() : "") +
         "&";
     url_ = url_.replace(/[?&]$/, "");
 
@@ -653,9 +505,7 @@ export class JobsClient {
     });
   }
 
-  protected processDecrementQuantities(
-    response: Response
-  ): Promise<JobAndDecrementQuantity[]> {
+  protected processDecrementQuantities(response: Response): Promise<JobAndDecrementQuantity[]> {
     const status = response.status;
     let _headers: any = {};
     if (response.headers && response.headers.forEach) {
@@ -664,25 +514,16 @@ export class JobsClient {
     if (status === 200) {
       return response.text().then(_responseText => {
         let result200: any = null;
-        let resultData200 =
-          _responseText === ""
-            ? null
-            : JSON.parse(_responseText, this.jsonParseReviver);
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
         if (resultData200 && resultData200.constructor === Array) {
           result200 = [];
-          for (let item of resultData200)
-            result200.push(JobAndDecrementQuantity.fromJS(item));
+          for (let item of resultData200) result200.push(JobAndDecrementQuantity.fromJS(item));
         }
         return result200;
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<JobAndDecrementQuantity[]>(<any>null);
@@ -694,15 +535,9 @@ export class LogClient {
     fetch(url: RequestInfo, init?: RequestInit): Promise<Response>;
   };
   private baseUrl: string;
-  protected jsonParseReviver: (
-    key: string,
-    value: any
-  ) => any = undefined as any;
+  protected jsonParseReviver: (key: string, value: any) => any = undefined as any;
 
-  constructor(
-    baseUrl?: string,
-    http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }
-  ) {
+  constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
     this.http = http ? http : <any>window;
     this.baseUrl = baseUrl ? baseUrl : "";
   }
@@ -710,23 +545,11 @@ export class LogClient {
   get(startUTC: Date, endUTC: Date): Promise<LogEntry[]> {
     let url_ = this.baseUrl + "/api/v1/log/events/all?";
     if (startUTC === undefined || startUTC === null)
-      throw new Error(
-        "The parameter 'startUTC' must be defined and cannot be null."
-      );
-    else
-      url_ +=
-        "startUTC=" +
-        encodeURIComponent(startUTC ? "" + startUTC.toJSON() : "") +
-        "&";
+      throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
+    else url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toJSON() : "") + "&";
     if (endUTC === undefined || endUTC === null)
-      throw new Error(
-        "The parameter 'endUTC' must be defined and cannot be null."
-      );
-    else
-      url_ +=
-        "endUTC=" +
-        encodeURIComponent(endUTC ? "" + endUTC.toJSON() : "") +
-        "&";
+      throw new Error("The parameter 'endUTC' must be defined and cannot be null.");
+    else url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toJSON() : "") + "&";
     url_ = url_.replace(/[?&]$/, "");
 
     let options_ = <RequestInit>{
@@ -751,10 +574,7 @@ export class LogClient {
     if (status === 200) {
       return response.text().then(_responseText => {
         let result200: any = null;
-        let resultData200 =
-          _responseText === ""
-            ? null
-            : JSON.parse(_responseText, this.jsonParseReviver);
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
         if (resultData200 && resultData200.constructor === Array) {
           result200 = [];
           for (let item of resultData200) result200.push(LogEntry.fromJS(item));
@@ -763,12 +583,7 @@ export class LogClient {
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<LogEntry[]>(<any>null);
@@ -777,23 +592,11 @@ export class LogClient {
   getEventCSV(startUTC: Date, endUTC: Date): Promise<FileResponse> {
     let url_ = this.baseUrl + "/api/v1/log/events.csv?";
     if (startUTC === undefined || startUTC === null)
-      throw new Error(
-        "The parameter 'startUTC' must be defined and cannot be null."
-      );
-    else
-      url_ +=
-        "startUTC=" +
-        encodeURIComponent(startUTC ? "" + startUTC.toJSON() : "") +
-        "&";
+      throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
+    else url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toJSON() : "") + "&";
     if (endUTC === undefined || endUTC === null)
-      throw new Error(
-        "The parameter 'endUTC' must be defined and cannot be null."
-      );
-    else
-      url_ +=
-        "endUTC=" +
-        encodeURIComponent(endUTC ? "" + endUTC.toJSON() : "") +
-        "&";
+      throw new Error("The parameter 'endUTC' must be defined and cannot be null.");
+    else url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toJSON() : "") + "&";
     url_ = url_.replace(/[?&]$/, "");
 
     let options_ = <RequestInit>{
@@ -816,16 +619,9 @@ export class LogClient {
       response.headers.forEach((v: any, k: any) => (_headers[k] = v));
     }
     if (status === 200 || status === 206) {
-      const contentDisposition = response.headers
-        ? response.headers.get("content-disposition")
-        : undefined;
-      const fileNameMatch = contentDisposition
-        ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition)
-        : undefined;
-      const fileName =
-        fileNameMatch && fileNameMatch.length > 1
-          ? fileNameMatch[1]
-          : undefined;
+      const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
+      const fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
+      const fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
       return response.blob().then(blob => {
         return {
           fileName: fileName,
@@ -836,12 +632,7 @@ export class LogClient {
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<FileResponse>(<any>null);
@@ -850,23 +641,11 @@ export class LogClient {
   getCompletedParts(startUTC: Date, endUTC: Date): Promise<LogEntry[]> {
     let url_ = this.baseUrl + "/api/v1/log/events/all-completed-parts?";
     if (startUTC === undefined || startUTC === null)
-      throw new Error(
-        "The parameter 'startUTC' must be defined and cannot be null."
-      );
-    else
-      url_ +=
-        "startUTC=" +
-        encodeURIComponent(startUTC ? "" + startUTC.toJSON() : "") +
-        "&";
+      throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
+    else url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toJSON() : "") + "&";
     if (endUTC === undefined || endUTC === null)
-      throw new Error(
-        "The parameter 'endUTC' must be defined and cannot be null."
-      );
-    else
-      url_ +=
-        "endUTC=" +
-        encodeURIComponent(endUTC ? "" + endUTC.toJSON() : "") +
-        "&";
+      throw new Error("The parameter 'endUTC' must be defined and cannot be null.");
+    else url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toJSON() : "") + "&";
     url_ = url_.replace(/[?&]$/, "");
 
     let options_ = <RequestInit>{
@@ -891,10 +670,7 @@ export class LogClient {
     if (status === 200) {
       return response.text().then(_responseText => {
         let result200: any = null;
-        let resultData200 =
-          _responseText === ""
-            ? null
-            : JSON.parse(_responseText, this.jsonParseReviver);
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
         if (resultData200 && resultData200.constructor === Array) {
           result200 = [];
           for (let item of resultData200) result200.push(LogEntry.fromJS(item));
@@ -903,12 +679,7 @@ export class LogClient {
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<LogEntry[]>(<any>null);
@@ -917,12 +688,8 @@ export class LogClient {
   recent(lastSeenCounter: number): Promise<LogEntry[]> {
     let url_ = this.baseUrl + "/api/v1/log/events/recent?";
     if (lastSeenCounter === undefined || lastSeenCounter === null)
-      throw new Error(
-        "The parameter 'lastSeenCounter' must be defined and cannot be null."
-      );
-    else
-      url_ +=
-        "lastSeenCounter=" + encodeURIComponent("" + lastSeenCounter) + "&";
+      throw new Error("The parameter 'lastSeenCounter' must be defined and cannot be null.");
+    else url_ += "lastSeenCounter=" + encodeURIComponent("" + lastSeenCounter) + "&";
     url_ = url_.replace(/[?&]$/, "");
 
     let options_ = <RequestInit>{
@@ -947,10 +714,7 @@ export class LogClient {
     if (status === 200) {
       return response.text().then(_responseText => {
         let result200: any = null;
-        let resultData200 =
-          _responseText === ""
-            ? null
-            : JSON.parse(_responseText, this.jsonParseReviver);
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
         if (resultData200 && resultData200.constructor === Array) {
           result200 = [];
           for (let item of resultData200) result200.push(LogEntry.fromJS(item));
@@ -959,12 +723,7 @@ export class LogClient {
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<LogEntry[]>(<any>null);
@@ -972,8 +731,7 @@ export class LogClient {
 
   logForMaterial(materialID: number): Promise<LogEntry[]> {
     let url_ = this.baseUrl + "/api/v1/log/events/for-material/{materialID}";
-    if (materialID === undefined || materialID === null)
-      throw new Error("The parameter 'materialID' must be defined.");
+    if (materialID === undefined || materialID === null) throw new Error("The parameter 'materialID' must be defined.");
     url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID));
     url_ = url_.replace(/[?&]$/, "");
 
@@ -999,10 +757,7 @@ export class LogClient {
     if (status === 200) {
       return response.text().then(_responseText => {
         let result200: any = null;
-        let resultData200 =
-          _responseText === ""
-            ? null
-            : JSON.parse(_responseText, this.jsonParseReviver);
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
         if (resultData200 && resultData200.constructor === Array) {
           result200 = [];
           for (let item of resultData200) result200.push(LogEntry.fromJS(item));
@@ -1011,12 +766,7 @@ export class LogClient {
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<LogEntry[]>(<any>null);
@@ -1024,8 +774,7 @@ export class LogClient {
 
   logForSerial(serial: string): Promise<LogEntry[]> {
     let url_ = this.baseUrl + "/api/v1/log/events/for-serial/{serial}";
-    if (serial === undefined || serial === null)
-      throw new Error("The parameter 'serial' must be defined.");
+    if (serial === undefined || serial === null) throw new Error("The parameter 'serial' must be defined.");
     url_ = url_.replace("{serial}", encodeURIComponent("" + serial));
     url_ = url_.replace(/[?&]$/, "");
 
@@ -1051,10 +800,7 @@ export class LogClient {
     if (status === 200) {
       return response.text().then(_responseText => {
         let result200: any = null;
-        let resultData200 =
-          _responseText === ""
-            ? null
-            : JSON.parse(_responseText, this.jsonParseReviver);
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
         if (resultData200 && resultData200.constructor === Array) {
           result200 = [];
           for (let item of resultData200) result200.push(LogEntry.fromJS(item));
@@ -1063,12 +809,7 @@ export class LogClient {
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<LogEntry[]>(<any>null);
@@ -1076,8 +817,7 @@ export class LogClient {
 
   logForWorkorder(workorder: string): Promise<LogEntry[]> {
     let url_ = this.baseUrl + "/api/v1/log/events/for-workorder/{workorder}";
-    if (workorder === undefined || workorder === null)
-      throw new Error("The parameter 'workorder' must be defined.");
+    if (workorder === undefined || workorder === null) throw new Error("The parameter 'workorder' must be defined.");
     url_ = url_.replace("{workorder}", encodeURIComponent("" + workorder));
     url_ = url_.replace(/[?&]$/, "");
 
@@ -1103,10 +843,7 @@ export class LogClient {
     if (status === 200) {
       return response.text().then(_responseText => {
         let result200: any = null;
-        let resultData200 =
-          _responseText === ""
-            ? null
-            : JSON.parse(_responseText, this.jsonParseReviver);
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
         if (resultData200 && resultData200.constructor === Array) {
           result200 = [];
           for (let item of resultData200) result200.push(LogEntry.fromJS(item));
@@ -1115,12 +852,7 @@ export class LogClient {
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<LogEntry[]>(<any>null);
@@ -1128,8 +860,7 @@ export class LogClient {
 
   materialDetails(materialID: number): Promise<MaterialDetails> {
     let url_ = this.baseUrl + "/api/v1/log/material-details/{materialID}";
-    if (materialID === undefined || materialID === null)
-      throw new Error("The parameter 'materialID' must be defined.");
+    if (materialID === undefined || materialID === null) throw new Error("The parameter 'materialID' must be defined.");
     url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID));
     url_ = url_.replace(/[?&]$/, "");
 
@@ -1146,9 +877,7 @@ export class LogClient {
     });
   }
 
-  protected processMaterialDetails(
-    response: Response
-  ): Promise<MaterialDetails> {
+  protected processMaterialDetails(response: Response): Promise<MaterialDetails> {
     const status = response.status;
     let _headers: any = {};
     if (response.headers && response.headers.forEach) {
@@ -1157,23 +886,13 @@ export class LogClient {
     if (status === 200) {
       return response.text().then(_responseText => {
         let result200: any = null;
-        let resultData200 =
-          _responseText === ""
-            ? null
-            : JSON.parse(_responseText, this.jsonParseReviver);
-        result200 = resultData200
-          ? MaterialDetails.fromJS(resultData200)
-          : <any>null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        result200 = resultData200 ? MaterialDetails.fromJS(resultData200) : <any>null;
         return result200;
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<MaterialDetails>(<any>null);
@@ -1201,9 +920,7 @@ export class LogClient {
     });
   }
 
-  protected processGetWorkorders(
-    response: Response
-  ): Promise<WorkorderSummary[]> {
+  protected processGetWorkorders(response: Response): Promise<WorkorderSummary[]> {
     const status = response.status;
     let _headers: any = {};
     if (response.headers && response.headers.forEach) {
@@ -1212,25 +929,16 @@ export class LogClient {
     if (status === 200) {
       return response.text().then(_responseText => {
         let result200: any = null;
-        let resultData200 =
-          _responseText === ""
-            ? null
-            : JSON.parse(_responseText, this.jsonParseReviver);
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
         if (resultData200 && resultData200.constructor === Array) {
           result200 = [];
-          for (let item of resultData200)
-            result200.push(WorkorderSummary.fromJS(item));
+          for (let item of resultData200) result200.push(WorkorderSummary.fromJS(item));
         }
         return result200;
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<WorkorderSummary[]>(<any>null);
@@ -1265,16 +973,9 @@ export class LogClient {
       response.headers.forEach((v: any, k: any) => (_headers[k] = v));
     }
     if (status === 200 || status === 206) {
-      const contentDisposition = response.headers
-        ? response.headers.get("content-disposition")
-        : undefined;
-      const fileNameMatch = contentDisposition
-        ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition)
-        : undefined;
-      const fileName =
-        fileNameMatch && fileNameMatch.length > 1
-          ? fileNameMatch[1]
-          : undefined;
+      const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
+      const fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
+      const fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
       return response.blob().then(blob => {
         return {
           fileName: fileName,
@@ -1285,12 +986,7 @@ export class LogClient {
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<FileResponse>(<any>null);
@@ -1298,8 +994,7 @@ export class LogClient {
 
   setSerial(serial: string, mat: LogMaterial): Promise<LogEntry> {
     let url_ = this.baseUrl + "/api/v1/log/serial/{serial}/material";
-    if (serial === undefined || serial === null)
-      throw new Error("The parameter 'serial' must be defined.");
+    if (serial === undefined || serial === null) throw new Error("The parameter 'serial' must be defined.");
     url_ = url_.replace("{serial}", encodeURIComponent("" + serial));
     url_ = url_.replace(/[?&]$/, "");
 
@@ -1328,21 +1023,13 @@ export class LogClient {
     if (status === 200) {
       return response.text().then(_responseText => {
         let result200: any = null;
-        let resultData200 =
-          _responseText === ""
-            ? null
-            : JSON.parse(_responseText, this.jsonParseReviver);
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
         result200 = resultData200 ? LogEntry.fromJS(resultData200) : <any>null;
         return result200;
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<LogEntry>(<any>null);
@@ -1350,8 +1037,7 @@ export class LogClient {
 
   setWorkorder(workorder: string, mat: LogMaterial): Promise<LogEntry> {
     let url_ = this.baseUrl + "/api/v1/log/workorder/{workorder}/material";
-    if (workorder === undefined || workorder === null)
-      throw new Error("The parameter 'workorder' must be defined.");
+    if (workorder === undefined || workorder === null) throw new Error("The parameter 'workorder' must be defined.");
     url_ = url_.replace("{workorder}", encodeURIComponent("" + workorder));
     url_ = url_.replace(/[?&]$/, "");
 
@@ -1380,39 +1066,24 @@ export class LogClient {
     if (status === 200) {
       return response.text().then(_responseText => {
         let result200: any = null;
-        let resultData200 =
-          _responseText === ""
-            ? null
-            : JSON.parse(_responseText, this.jsonParseReviver);
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
         result200 = resultData200 ? LogEntry.fromJS(resultData200) : <any>null;
         return result200;
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<LogEntry>(<any>null);
   }
 
-  setInspectionDecision(
-    inspType: string,
-    mat: LogMaterial,
-    inspect: boolean
-  ): Promise<LogEntry> {
+  setInspectionDecision(inspType: string, mat: LogMaterial, inspect: boolean): Promise<LogEntry> {
     let url_ = this.baseUrl + "/api/v1/log/inspections/{inspType}/material?";
-    if (inspType === undefined || inspType === null)
-      throw new Error("The parameter 'inspType' must be defined.");
+    if (inspType === undefined || inspType === null) throw new Error("The parameter 'inspType' must be defined.");
     url_ = url_.replace("{inspType}", encodeURIComponent("" + inspType));
-    if (inspect === null)
-      throw new Error("The parameter 'inspect' cannot be null.");
-    else if (inspect !== undefined)
-      url_ += "inspect=" + encodeURIComponent("" + inspect) + "&";
+    if (inspect === null) throw new Error("The parameter 'inspect' cannot be null.");
+    else if (inspect !== undefined) url_ += "inspect=" + encodeURIComponent("" + inspect) + "&";
     url_ = url_.replace(/[?&]$/, "");
 
     const content_ = JSON.stringify(mat);
@@ -1431,9 +1102,7 @@ export class LogClient {
     });
   }
 
-  protected processSetInspectionDecision(
-    response: Response
-  ): Promise<LogEntry> {
+  protected processSetInspectionDecision(response: Response): Promise<LogEntry> {
     const status = response.status;
     let _headers: any = {};
     if (response.headers && response.headers.forEach) {
@@ -1442,21 +1111,13 @@ export class LogClient {
     if (status === 200) {
       return response.text().then(_responseText => {
         let result200: any = null;
-        let resultData200 =
-          _responseText === ""
-            ? null
-            : JSON.parse(_responseText, this.jsonParseReviver);
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
         result200 = resultData200 ? LogEntry.fromJS(resultData200) : <any>null;
         return result200;
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<LogEntry>(<any>null);
@@ -1482,9 +1143,7 @@ export class LogClient {
     });
   }
 
-  protected processRecordInspectionCompleted(
-    response: Response
-  ): Promise<LogEntry> {
+  protected processRecordInspectionCompleted(response: Response): Promise<LogEntry> {
     const status = response.status;
     let _headers: any = {};
     if (response.headers && response.headers.forEach) {
@@ -1493,21 +1152,13 @@ export class LogClient {
     if (status === 200) {
       return response.text().then(_responseText => {
         let result200: any = null;
-        let resultData200 =
-          _responseText === ""
-            ? null
-            : JSON.parse(_responseText, this.jsonParseReviver);
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
         result200 = resultData200 ? LogEntry.fromJS(resultData200) : <any>null;
         return result200;
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<LogEntry>(<any>null);
@@ -1542,21 +1193,13 @@ export class LogClient {
     if (status === 200) {
       return response.text().then(_responseText => {
         let result200: any = null;
-        let resultData200 =
-          _responseText === ""
-            ? null
-            : JSON.parse(_responseText, this.jsonParseReviver);
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
         result200 = resultData200 ? LogEntry.fromJS(resultData200) : <any>null;
         return result200;
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<LogEntry>(<any>null);
@@ -1564,8 +1207,7 @@ export class LogClient {
 
   finalizeWorkorder(workorder: string): Promise<LogEntry> {
     let url_ = this.baseUrl + "/api/v1/log/workorder/{workorder}/finalize";
-    if (workorder === undefined || workorder === null)
-      throw new Error("The parameter 'workorder' must be defined.");
+    if (workorder === undefined || workorder === null) throw new Error("The parameter 'workorder' must be defined.");
     url_ = url_.replace("{workorder}", encodeURIComponent("" + workorder));
     url_ = url_.replace(/[?&]$/, "");
 
@@ -1591,21 +1233,13 @@ export class LogClient {
     if (status === 200) {
       return response.text().then(_responseText => {
         let result200: any = null;
-        let resultData200 =
-          _responseText === ""
-            ? null
-            : JSON.parse(_responseText, this.jsonParseReviver);
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
         result200 = resultData200 ? LogEntry.fromJS(resultData200) : <any>null;
         return result200;
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<LogEntry>(<any>null);
@@ -1617,15 +1251,9 @@ export class ServerClient {
     fetch(url: RequestInfo, init?: RequestInit): Promise<Response>;
   };
   private baseUrl: string;
-  protected jsonParseReviver: (
-    key: string,
-    value: any
-  ) => any = undefined as any;
+  protected jsonParseReviver: (key: string, value: any) => any = undefined as any;
 
-  constructor(
-    baseUrl?: string,
-    http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }
-  ) {
+  constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
     this.http = http ? http : <any>window;
     this.baseUrl = baseUrl ? baseUrl : "";
   }
@@ -1656,21 +1284,13 @@ export class ServerClient {
     if (status === 200) {
       return response.text().then(_responseText => {
         let result200: any = null;
-        let resultData200 =
-          _responseText === ""
-            ? null
-            : JSON.parse(_responseText, this.jsonParseReviver);
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
         result200 = resultData200 ? FMSInfo.fromJS(resultData200) : <any>null;
         return result200;
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<FMSInfo>(<any>null);
@@ -1678,8 +1298,7 @@ export class ServerClient {
 
   getSettings(id: string): Promise<string> {
     let url_ = this.baseUrl + "/api/v1/server/settings/{id}";
-    if (id === undefined || id === null)
-      throw new Error("The parameter 'id' must be defined.");
+    if (id === undefined || id === null) throw new Error("The parameter 'id' must be defined.");
     url_ = url_.replace("{id}", encodeURIComponent("" + id));
     url_ = url_.replace(/[?&]$/, "");
 
@@ -1705,21 +1324,13 @@ export class ServerClient {
     if (status === 200) {
       return response.text().then(_responseText => {
         let result200: any = null;
-        let resultData200 =
-          _responseText === ""
-            ? null
-            : JSON.parse(_responseText, this.jsonParseReviver);
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
         result200 = resultData200 !== undefined ? resultData200 : <any>null;
         return result200;
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<string>(<any>null);
@@ -1727,8 +1338,7 @@ export class ServerClient {
 
   setSetting(id: string, setting: string): Promise<void> {
     let url_ = this.baseUrl + "/api/v1/server/settings/{id}";
-    if (id === undefined || id === null)
-      throw new Error("The parameter 'id' must be defined.");
+    if (id === undefined || id === null) throw new Error("The parameter 'id' must be defined.");
     url_ = url_.replace("{id}", encodeURIComponent("" + id));
     url_ = url_.replace(/[?&]$/, "");
 
@@ -1759,12 +1369,7 @@ export class ServerClient {
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<void>(<any>null);
@@ -1772,11 +1377,9 @@ export class ServerClient {
 
   findInstructions(part: string, type: string): Promise<void> {
     let url_ = this.baseUrl + "/api/v1/server/find-instructions/{part}?";
-    if (part === undefined || part === null)
-      throw new Error("The parameter 'part' must be defined.");
+    if (part === undefined || part === null) throw new Error("The parameter 'part' must be defined.");
     url_ = url_.replace("{part}", encodeURIComponent("" + part));
-    if (type === undefined)
-      throw new Error("The parameter 'type' must be defined.");
+    if (type === undefined) throw new Error("The parameter 'type' must be defined.");
     else url_ += "type=" + encodeURIComponent("" + type) + "&";
     url_ = url_.replace(/[?&]$/, "");
 
@@ -1800,30 +1403,15 @@ export class ServerClient {
     }
     if (status === 302) {
       return response.text().then(_responseText => {
-        return throwException(
-          "A server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("A server error occurred.", status, _responseText, _headers);
       });
     } else if (status === 404) {
       return response.text().then(_responseText => {
-        return throwException(
-          "A server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("A server error occurred.", status, _responseText, _headers);
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then(_responseText => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers
-        );
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
       });
     }
     return Promise.resolve<void>(<any>null);
@@ -1837,8 +1425,7 @@ export class HistoricData implements IHistoricData {
   constructor(data?: IHistoricData) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
     if (!data) {
@@ -1853,15 +1440,12 @@ export class HistoricData implements IHistoricData {
         this.jobs = {};
         for (let key in data["Jobs"]) {
           if (data["Jobs"].hasOwnProperty(key))
-            this.jobs[key] = data["Jobs"][key]
-              ? JobPlan.fromJS(data["Jobs"][key])
-              : new JobPlan();
+            this.jobs[key] = data["Jobs"][key] ? JobPlan.fromJS(data["Jobs"][key]) : new JobPlan();
         }
       }
       if (data["StationUse"] && data["StationUse"].constructor === Array) {
         this.stationUse = [];
-        for (let item of data["StationUse"])
-          this.stationUse.push(SimulatedStationUtilization.fromJS(item));
+        for (let item of data["StationUse"]) this.stationUse.push(SimulatedStationUtilization.fromJS(item));
       }
     }
   }
@@ -1915,8 +1499,7 @@ export class JobPlan implements IJobPlan {
   constructor(data?: IJobPlan) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
     if (!data) {
@@ -1927,12 +1510,8 @@ export class JobPlan implements IJobPlan {
 
   init(data?: any) {
     if (data) {
-      this.routeStartUTC = data["RouteStartUTC"]
-        ? new Date(data["RouteStartUTC"].toString())
-        : <any>undefined;
-      this.routeEndUTC = data["RouteEndUTC"]
-        ? new Date(data["RouteEndUTC"].toString())
-        : <any>undefined;
+      this.routeStartUTC = data["RouteStartUTC"] ? new Date(data["RouteStartUTC"].toString()) : <any>undefined;
+      this.routeEndUTC = data["RouteEndUTC"] ? new Date(data["RouteEndUTC"].toString()) : <any>undefined;
       this.archived = data["Archived"];
       this.copiedToSystem = data["CopiedToSystem"];
       this.partName = data["PartName"];
@@ -1948,27 +1527,16 @@ export class JobPlan implements IJobPlan {
       this.createMarkingData = data["CreateMarkingData"];
       if (data["Inspections"] && data["Inspections"].constructor === Array) {
         this.inspections = [];
-        for (let item of data["Inspections"])
-          this.inspections.push(JobInspectionData.fromJS(item));
+        for (let item of data["Inspections"]) this.inspections.push(JobInspectionData.fromJS(item));
       }
-      this.holdEntireJob = data["HoldEntireJob"]
-        ? JobHoldPattern.fromJS(data["HoldEntireJob"])
-        : <any>undefined;
-      if (
-        data["CyclesOnFirstProcess"] &&
-        data["CyclesOnFirstProcess"].constructor === Array
-      ) {
+      this.holdEntireJob = data["HoldEntireJob"] ? JobHoldPattern.fromJS(data["HoldEntireJob"]) : <any>undefined;
+      if (data["CyclesOnFirstProcess"] && data["CyclesOnFirstProcess"].constructor === Array) {
         this.cyclesOnFirstProcess = [];
-        for (let item of data["CyclesOnFirstProcess"])
-          this.cyclesOnFirstProcess.push(item);
+        for (let item of data["CyclesOnFirstProcess"]) this.cyclesOnFirstProcess.push(item);
       }
-      if (
-        data["ProcsAndPaths"] &&
-        data["ProcsAndPaths"].constructor === Array
-      ) {
+      if (data["ProcsAndPaths"] && data["ProcsAndPaths"].constructor === Array) {
         this.procsAndPaths = [];
-        for (let item of data["ProcsAndPaths"])
-          this.procsAndPaths.push(ProcessInfo.fromJS(item));
+        for (let item of data["ProcsAndPaths"]) this.procsAndPaths.push(ProcessInfo.fromJS(item));
       }
     }
   }
@@ -1982,12 +1550,8 @@ export class JobPlan implements IJobPlan {
 
   toJSON(data?: any) {
     data = typeof data === "object" ? data : {};
-    data["RouteStartUTC"] = this.routeStartUTC
-      ? this.routeStartUTC.toISOString()
-      : <any>undefined;
-    data["RouteEndUTC"] = this.routeEndUTC
-      ? this.routeEndUTC.toISOString()
-      : <any>undefined;
+    data["RouteStartUTC"] = this.routeStartUTC ? this.routeStartUTC.toISOString() : <any>undefined;
+    data["RouteEndUTC"] = this.routeEndUTC ? this.routeEndUTC.toISOString() : <any>undefined;
     data["Archived"] = this.archived;
     data["CopiedToSystem"] = this.copiedToSystem;
     data["PartName"] = this.partName;
@@ -2003,24 +1567,16 @@ export class JobPlan implements IJobPlan {
     data["CreateMarkingData"] = this.createMarkingData;
     if (this.inspections && this.inspections.constructor === Array) {
       data["Inspections"] = [];
-      for (let item of this.inspections)
-        data["Inspections"].push(item.toJSON());
+      for (let item of this.inspections) data["Inspections"].push(item.toJSON());
     }
-    data["HoldEntireJob"] = this.holdEntireJob
-      ? this.holdEntireJob.toJSON()
-      : <any>undefined;
-    if (
-      this.cyclesOnFirstProcess &&
-      this.cyclesOnFirstProcess.constructor === Array
-    ) {
+    data["HoldEntireJob"] = this.holdEntireJob ? this.holdEntireJob.toJSON() : <any>undefined;
+    if (this.cyclesOnFirstProcess && this.cyclesOnFirstProcess.constructor === Array) {
       data["CyclesOnFirstProcess"] = [];
-      for (let item of this.cyclesOnFirstProcess)
-        data["CyclesOnFirstProcess"].push(item);
+      for (let item of this.cyclesOnFirstProcess) data["CyclesOnFirstProcess"].push(item);
     }
     if (this.procsAndPaths && this.procsAndPaths.constructor === Array) {
       data["ProcsAndPaths"] = [];
-      for (let item of this.procsAndPaths)
-        data["ProcsAndPaths"].push(item.toJSON());
+      for (let item of this.procsAndPaths) data["ProcsAndPaths"].push(item.toJSON());
     }
     return data;
   }
@@ -2056,8 +1612,7 @@ export class JobInspectionData implements IJobInspectionData {
   constructor(data?: IJobInspectionData) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
   }
@@ -2111,8 +1666,7 @@ export class JobHoldPattern implements IJobHoldPattern {
   constructor(data?: IJobHoldPattern) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
     if (!data) {
@@ -2124,13 +1678,9 @@ export class JobHoldPattern implements IJobHoldPattern {
     if (data) {
       this.userHold = data["UserHold"];
       this.reasonForUserHold = data["ReasonForUserHold"];
-      if (
-        data["HoldUnholdPattern"] &&
-        data["HoldUnholdPattern"].constructor === Array
-      ) {
+      if (data["HoldUnholdPattern"] && data["HoldUnholdPattern"].constructor === Array) {
         this.holdUnholdPattern = [];
-        for (let item of data["HoldUnholdPattern"])
-          this.holdUnholdPattern.push(item);
+        for (let item of data["HoldUnholdPattern"]) this.holdUnholdPattern.push(item);
       }
       this.holdUnholdPatternStartUTC = data["HoldUnholdPatternStartUTC"]
         ? new Date(data["HoldUnholdPatternStartUTC"].toString())
@@ -2150,13 +1700,9 @@ export class JobHoldPattern implements IJobHoldPattern {
     data = typeof data === "object" ? data : {};
     data["UserHold"] = this.userHold;
     data["ReasonForUserHold"] = this.reasonForUserHold;
-    if (
-      this.holdUnholdPattern &&
-      this.holdUnholdPattern.constructor === Array
-    ) {
+    if (this.holdUnholdPattern && this.holdUnholdPattern.constructor === Array) {
       data["HoldUnholdPattern"] = [];
-      for (let item of this.holdUnholdPattern)
-        data["HoldUnholdPattern"].push(item);
+      for (let item of this.holdUnholdPattern) data["HoldUnholdPattern"].push(item);
     }
     data["HoldUnholdPatternStartUTC"] = this.holdUnholdPatternStartUTC
       ? this.holdUnholdPatternStartUTC.toISOString()
@@ -2180,8 +1726,7 @@ export class ProcessInfo implements IProcessInfo {
   constructor(data?: IProcessInfo) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
     if (!data) {
@@ -2193,8 +1738,7 @@ export class ProcessInfo implements IProcessInfo {
     if (data) {
       if (data["paths"] && data["paths"].constructor === Array) {
         this.paths = [];
-        for (let item of data["paths"])
-          this.paths.push(ProcPathInfo.fromJS(item));
+        for (let item of data["paths"]) this.paths.push(ProcPathInfo.fromJS(item));
       }
     }
   }
@@ -2241,8 +1785,7 @@ export class ProcPathInfo implements IProcPathInfo {
   constructor(data?: IProcPathInfo) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
     if (!data) {
@@ -2262,8 +1805,7 @@ export class ProcPathInfo implements IProcPathInfo {
       }
       if (data["Fixtures"] && data["Fixtures"].constructor === Array) {
         this.fixtures = [];
-        for (let item of data["Fixtures"])
-          this.fixtures.push(FixtureFace.fromJS(item));
+        for (let item of data["Fixtures"]) this.fixtures.push(FixtureFace.fromJS(item));
       }
       if (data["Load"] && data["Load"].constructor === Array) {
         this.load = [];
@@ -2277,27 +1819,18 @@ export class ProcPathInfo implements IProcPathInfo {
       this.expectedUnloadTime = data["ExpectedUnloadTime"];
       if (data["Stops"] && data["Stops"].constructor === Array) {
         this.stops = [];
-        for (let item of data["Stops"])
-          this.stops.push(JobMachiningStop.fromJS(item));
+        for (let item of data["Stops"]) this.stops.push(JobMachiningStop.fromJS(item));
       }
-      if (
-        data["SimulatedProduction"] &&
-        data["SimulatedProduction"].constructor === Array
-      ) {
+      if (data["SimulatedProduction"] && data["SimulatedProduction"].constructor === Array) {
         this.simulatedProduction = [];
-        for (let item of data["SimulatedProduction"])
-          this.simulatedProduction.push(SimulatedProduction.fromJS(item));
+        for (let item of data["SimulatedProduction"]) this.simulatedProduction.push(SimulatedProduction.fromJS(item));
       }
       this.simulatedStartingUTC = data["SimulatedStartingUTC"]
         ? new Date(data["SimulatedStartingUTC"].toString())
         : <any>undefined;
       this.simulatedAverageFlowTime = data["SimulatedAverageFlowTime"];
-      this.holdMachining = data["HoldMachining"]
-        ? JobHoldPattern.fromJS(data["HoldMachining"])
-        : <any>undefined;
-      this.holdLoadUnload = data["HoldLoadUnload"]
-        ? JobHoldPattern.fromJS(data["HoldLoadUnload"])
-        : <any>undefined;
+      this.holdMachining = data["HoldMachining"] ? JobHoldPattern.fromJS(data["HoldMachining"]) : <any>undefined;
+      this.holdLoadUnload = data["HoldLoadUnload"] ? JobHoldPattern.fromJS(data["HoldLoadUnload"]) : <any>undefined;
       this.partsPerPallet = data["PartsPerPallet"];
       this.inputQueue = data["InputQueue"];
       this.outputQueue = data["OutputQueue"];
@@ -2336,24 +1869,14 @@ export class ProcPathInfo implements IProcPathInfo {
       data["Stops"] = [];
       for (let item of this.stops) data["Stops"].push(item.toJSON());
     }
-    if (
-      this.simulatedProduction &&
-      this.simulatedProduction.constructor === Array
-    ) {
+    if (this.simulatedProduction && this.simulatedProduction.constructor === Array) {
       data["SimulatedProduction"] = [];
-      for (let item of this.simulatedProduction)
-        data["SimulatedProduction"].push(item.toJSON());
+      for (let item of this.simulatedProduction) data["SimulatedProduction"].push(item.toJSON());
     }
-    data["SimulatedStartingUTC"] = this.simulatedStartingUTC
-      ? this.simulatedStartingUTC.toISOString()
-      : <any>undefined;
+    data["SimulatedStartingUTC"] = this.simulatedStartingUTC ? this.simulatedStartingUTC.toISOString() : <any>undefined;
     data["SimulatedAverageFlowTime"] = this.simulatedAverageFlowTime;
-    data["HoldMachining"] = this.holdMachining
-      ? this.holdMachining.toJSON()
-      : <any>undefined;
-    data["HoldLoadUnload"] = this.holdLoadUnload
-      ? this.holdLoadUnload.toJSON()
-      : <any>undefined;
+    data["HoldMachining"] = this.holdMachining ? this.holdMachining.toJSON() : <any>undefined;
+    data["HoldLoadUnload"] = this.holdLoadUnload ? this.holdLoadUnload.toJSON() : <any>undefined;
     data["PartsPerPallet"] = this.partsPerPallet;
     data["InputQueue"] = this.inputQueue;
     data["OutputQueue"] = this.outputQueue;
@@ -2387,8 +1910,7 @@ export class FixtureFace implements IFixtureFace {
   constructor(data?: IFixtureFace) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
   }
@@ -2429,8 +1951,7 @@ export class JobMachiningStop implements IJobMachiningStop {
   constructor(data?: IJobMachiningStop) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
     if (!data) {
@@ -2444,15 +1965,13 @@ export class JobMachiningStop implements IJobMachiningStop {
       if (data["Stations"]) {
         this.stations = {};
         for (let key in data["Stations"]) {
-          if (data["Stations"].hasOwnProperty(key))
-            this.stations[key] = data["Stations"][key];
+          if (data["Stations"].hasOwnProperty(key)) this.stations[key] = data["Stations"][key];
         }
       }
       if (data["Tools"]) {
         this.tools = {};
         for (let key in data["Tools"]) {
-          if (data["Tools"].hasOwnProperty(key))
-            this.tools[key] = data["Tools"][key];
+          if (data["Tools"].hasOwnProperty(key)) this.tools[key] = data["Tools"][key];
         }
       }
       this.stationGroup = data["StationGroup"];
@@ -2472,15 +1991,13 @@ export class JobMachiningStop implements IJobMachiningStop {
     if (this.stations) {
       data["Stations"] = {};
       for (let key in this.stations) {
-        if (this.stations.hasOwnProperty(key))
-          data["Stations"][key] = this.stations[key];
+        if (this.stations.hasOwnProperty(key)) data["Stations"][key] = this.stations[key];
       }
     }
     if (this.tools) {
       data["Tools"] = {};
       for (let key in this.tools) {
-        if (this.tools.hasOwnProperty(key))
-          data["Tools"][key] = this.tools[key];
+        if (this.tools.hasOwnProperty(key)) data["Tools"][key] = this.tools[key];
       }
     }
     data["StationGroup"] = this.stationGroup;
@@ -2503,17 +2020,14 @@ export class SimulatedProduction implements ISimulatedProduction {
   constructor(data?: ISimulatedProduction) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
   }
 
   init(data?: any) {
     if (data) {
-      this.timeUTC = data["TimeUTC"]
-        ? new Date(data["TimeUTC"].toString())
-        : <any>undefined;
+      this.timeUTC = data["TimeUTC"] ? new Date(data["TimeUTC"].toString()) : <any>undefined;
       this.quantity = data["Quantity"];
     }
   }
@@ -2527,9 +2041,7 @@ export class SimulatedProduction implements ISimulatedProduction {
 
   toJSON(data?: any) {
     data = typeof data === "object" ? data : {};
-    data["TimeUTC"] = this.timeUTC
-      ? this.timeUTC.toISOString()
-      : <any>undefined;
+    data["TimeUTC"] = this.timeUTC ? this.timeUTC.toISOString() : <any>undefined;
     data["Quantity"] = this.quantity;
     return data;
   }
@@ -2540,8 +2052,7 @@ export interface ISimulatedProduction {
   quantity: number;
 }
 
-export class SimulatedStationUtilization
-  implements ISimulatedStationUtilization {
+export class SimulatedStationUtilization implements ISimulatedStationUtilization {
   scheduleId: string;
   stationGroup: string;
   stationNum: number;
@@ -2553,8 +2064,7 @@ export class SimulatedStationUtilization
   constructor(data?: ISimulatedStationUtilization) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
   }
@@ -2564,12 +2074,8 @@ export class SimulatedStationUtilization
       this.scheduleId = data["ScheduleId"];
       this.stationGroup = data["StationGroup"];
       this.stationNum = data["StationNum"];
-      this.startUTC = data["StartUTC"]
-        ? new Date(data["StartUTC"].toString())
-        : <any>undefined;
-      this.endUTC = data["EndUTC"]
-        ? new Date(data["EndUTC"].toString())
-        : <any>undefined;
+      this.startUTC = data["StartUTC"] ? new Date(data["StartUTC"].toString()) : <any>undefined;
+      this.endUTC = data["EndUTC"] ? new Date(data["EndUTC"].toString()) : <any>undefined;
       this.utilizationTime = data["UtilizationTime"];
       this.plannedDownTime = data["PlannedDownTime"];
     }
@@ -2587,9 +2093,7 @@ export class SimulatedStationUtilization
     data["ScheduleId"] = this.scheduleId;
     data["StationGroup"] = this.stationGroup;
     data["StationNum"] = this.stationNum;
-    data["StartUTC"] = this.startUTC
-      ? this.startUTC.toISOString()
-      : <any>undefined;
+    data["StartUTC"] = this.startUTC ? this.startUTC.toISOString() : <any>undefined;
     data["EndUTC"] = this.endUTC ? this.endUTC.toISOString() : <any>undefined;
     data["UtilizationTime"] = this.utilizationTime;
     data["PlannedDownTime"] = this.plannedDownTime;
@@ -2616,8 +2120,7 @@ export class PlannedSchedule implements IPlannedSchedule {
   constructor(data?: IPlannedSchedule) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
     if (!data) {
@@ -2636,14 +2139,10 @@ export class PlannedSchedule implements IPlannedSchedule {
       if (data["ExtraParts"]) {
         this.extraParts = {};
         for (let key in data["ExtraParts"]) {
-          if (data["ExtraParts"].hasOwnProperty(key))
-            this.extraParts[key] = data["ExtraParts"][key];
+          if (data["ExtraParts"].hasOwnProperty(key)) this.extraParts[key] = data["ExtraParts"][key];
         }
       }
-      if (
-        data["CurrentUnfilledWorkorders"] &&
-        data["CurrentUnfilledWorkorders"].constructor === Array
-      ) {
+      if (data["CurrentUnfilledWorkorders"] && data["CurrentUnfilledWorkorders"].constructor === Array) {
         this.currentUnfilledWorkorders = [];
         for (let item of data["CurrentUnfilledWorkorders"])
           this.currentUnfilledWorkorders.push(PartWorkorder.fromJS(item));
@@ -2668,17 +2167,12 @@ export class PlannedSchedule implements IPlannedSchedule {
     if (this.extraParts) {
       data["ExtraParts"] = {};
       for (let key in this.extraParts) {
-        if (this.extraParts.hasOwnProperty(key))
-          data["ExtraParts"][key] = this.extraParts[key];
+        if (this.extraParts.hasOwnProperty(key)) data["ExtraParts"][key] = this.extraParts[key];
       }
     }
-    if (
-      this.currentUnfilledWorkorders &&
-      this.currentUnfilledWorkorders.constructor === Array
-    ) {
+    if (this.currentUnfilledWorkorders && this.currentUnfilledWorkorders.constructor === Array) {
       data["CurrentUnfilledWorkorders"] = [];
-      for (let item of this.currentUnfilledWorkorders)
-        data["CurrentUnfilledWorkorders"].push(item.toJSON());
+      for (let item of this.currentUnfilledWorkorders) data["CurrentUnfilledWorkorders"].push(item.toJSON());
     }
     return data;
   }
@@ -2701,8 +2195,7 @@ export class PartWorkorder implements IPartWorkorder {
   constructor(data?: IPartWorkorder) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
   }
@@ -2712,9 +2205,7 @@ export class PartWorkorder implements IPartWorkorder {
       this.workorderId = data["WorkorderId"];
       this.part = data["Part"];
       this.quantity = data["Quantity"];
-      this.dueDate = data["DueDate"]
-        ? new Date(data["DueDate"].toString())
-        : <any>undefined;
+      this.dueDate = data["DueDate"] ? new Date(data["DueDate"].toString()) : <any>undefined;
       this.priority = data["Priority"];
     }
   }
@@ -2731,9 +2222,7 @@ export class PartWorkorder implements IPartWorkorder {
     data["WorkorderId"] = this.workorderId;
     data["Part"] = this.part;
     data["Quantity"] = this.quantity;
-    data["DueDate"] = this.dueDate
-      ? this.dueDate.toISOString()
-      : <any>undefined;
+    data["DueDate"] = this.dueDate ? this.dueDate.toISOString() : <any>undefined;
     data["Priority"] = this.priority;
     return data;
   }
@@ -2757,8 +2246,7 @@ export class CurrentStatus implements ICurrentStatus {
   constructor(data?: ICurrentStatus) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
     if (!data) {
@@ -2776,24 +2264,19 @@ export class CurrentStatus implements ICurrentStatus {
         this.jobs = {};
         for (let key in data["Jobs"]) {
           if (data["Jobs"].hasOwnProperty(key))
-            this.jobs[key] = data["Jobs"][key]
-              ? InProcessJob.fromJS(data["Jobs"][key])
-              : new InProcessJob();
+            this.jobs[key] = data["Jobs"][key] ? InProcessJob.fromJS(data["Jobs"][key]) : new InProcessJob();
         }
       }
       if (data["Pallets"]) {
         this.pallets = {};
         for (let key in data["Pallets"]) {
           if (data["Pallets"].hasOwnProperty(key))
-            this.pallets[key] = data["Pallets"][key]
-              ? PalletStatus.fromJS(data["Pallets"][key])
-              : new PalletStatus();
+            this.pallets[key] = data["Pallets"][key] ? PalletStatus.fromJS(data["Pallets"][key]) : new PalletStatus();
         }
       }
       if (data["Material"] && data["Material"].constructor === Array) {
         this.material = [];
-        for (let item of data["Material"])
-          this.material.push(InProcessMaterial.fromJS(item));
+        for (let item of data["Material"]) this.material.push(InProcessMaterial.fromJS(item));
       }
       if (data["Alarms"] && data["Alarms"].constructor === Array) {
         this.alarms = [];
@@ -2803,9 +2286,7 @@ export class CurrentStatus implements ICurrentStatus {
         this.queues = {};
         for (let key in data["Queues"]) {
           if (data["Queues"].hasOwnProperty(key))
-            this.queues[key] = data["Queues"][key]
-              ? QueueSize.fromJS(data["Queues"][key])
-              : new QueueSize();
+            this.queues[key] = data["Queues"][key] ? QueueSize.fromJS(data["Queues"][key]) : new QueueSize();
         }
       }
     }
@@ -2829,8 +2310,7 @@ export class CurrentStatus implements ICurrentStatus {
     if (this.pallets) {
       data["Pallets"] = {};
       for (let key in this.pallets) {
-        if (this.pallets.hasOwnProperty(key))
-          data["Pallets"][key] = this.pallets[key];
+        if (this.pallets.hasOwnProperty(key)) data["Pallets"][key] = this.pallets[key];
       }
     }
     if (this.material && this.material.constructor === Array) {
@@ -2844,8 +2324,7 @@ export class CurrentStatus implements ICurrentStatus {
     if (this.queues) {
       data["Queues"] = {};
       for (let key in this.queues) {
-        if (this.queues.hasOwnProperty(key))
-          data["Queues"][key] = this.queues[key];
+        if (this.queues.hasOwnProperty(key)) data["Queues"][key] = this.queues[key];
       }
     }
     return data;
@@ -2915,8 +2394,7 @@ export class PalletStatus implements IPalletStatus {
   constructor(data?: IPalletStatus) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
     if (!data) {
@@ -2934,9 +2412,7 @@ export class PalletStatus implements IPalletStatus {
         : new PalletLocation();
       this.newFixture = data["NewFixture"];
       this.numFaces = data["NumFaces"];
-      this.targetLocation = data["TargetLocation"]
-        ? PalletLocation.fromJS(data["TargetLocation"])
-        : <any>undefined;
+      this.targetLocation = data["TargetLocation"] ? PalletLocation.fromJS(data["TargetLocation"]) : <any>undefined;
       this.percentMoveCompleted = data["PercentMoveCompleted"];
     }
   }
@@ -2953,14 +2429,10 @@ export class PalletStatus implements IPalletStatus {
     data["Pallet"] = this.pallet;
     data["FixtureOnPallet"] = this.fixtureOnPallet;
     data["OnHold"] = this.onHold;
-    data["CurrentPalletLocation"] = this.currentPalletLocation
-      ? this.currentPalletLocation.toJSON()
-      : <any>undefined;
+    data["CurrentPalletLocation"] = this.currentPalletLocation ? this.currentPalletLocation.toJSON() : <any>undefined;
     data["NewFixture"] = this.newFixture;
     data["NumFaces"] = this.numFaces;
-    data["TargetLocation"] = this.targetLocation
-      ? this.targetLocation.toJSON()
-      : <any>undefined;
+    data["TargetLocation"] = this.targetLocation ? this.targetLocation.toJSON() : <any>undefined;
     data["PercentMoveCompleted"] = this.percentMoveCompleted;
     return data;
   }
@@ -2985,8 +2457,7 @@ export class PalletLocation implements IPalletLocation {
   constructor(data?: IPalletLocation) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
   }
@@ -3044,8 +2515,7 @@ export class InProcessMaterial implements IInProcessMaterial {
   constructor(data?: IInProcessMaterial) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
     if (!data) {
@@ -3064,20 +2534,14 @@ export class InProcessMaterial implements IInProcessMaterial {
       this.path = data["Path"];
       this.serial = data["Serial"];
       this.workorderId = data["WorkorderId"];
-      if (
-        data["SignaledInspections"] &&
-        data["SignaledInspections"].constructor === Array
-      ) {
+      if (data["SignaledInspections"] && data["SignaledInspections"].constructor === Array) {
         this.signaledInspections = [];
-        for (let item of data["SignaledInspections"])
-          this.signaledInspections.push(item);
+        for (let item of data["SignaledInspections"]) this.signaledInspections.push(item);
       }
       this.location = data["Location"]
         ? InProcessMaterialLocation.fromJS(data["Location"])
         : new InProcessMaterialLocation();
-      this.action = data["Action"]
-        ? InProcessMaterialAction.fromJS(data["Action"])
-        : new InProcessMaterialAction();
+      this.action = data["Action"] ? InProcessMaterialAction.fromJS(data["Action"]) : new InProcessMaterialAction();
     }
   }
 
@@ -3097,13 +2561,9 @@ export class InProcessMaterial implements IInProcessMaterial {
     data["Path"] = this.path;
     data["Serial"] = this.serial;
     data["WorkorderId"] = this.workorderId;
-    if (
-      this.signaledInspections &&
-      this.signaledInspections.constructor === Array
-    ) {
+    if (this.signaledInspections && this.signaledInspections.constructor === Array) {
       data["SignaledInspections"] = [];
-      for (let item of this.signaledInspections)
-        data["SignaledInspections"].push(item);
+      for (let item of this.signaledInspections) data["SignaledInspections"].push(item);
     }
     data["Location"] = this.location ? this.location.toJSON() : <any>undefined;
     data["Action"] = this.action ? this.action.toJSON() : <any>undefined;
@@ -3134,8 +2594,7 @@ export class InProcessMaterialLocation implements IInProcessMaterialLocation {
   constructor(data?: IInProcessMaterialLocation) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
   }
@@ -3196,8 +2655,7 @@ export class InProcessMaterialAction implements IInProcessMaterialAction {
   constructor(data?: IInProcessMaterialAction) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
   }
@@ -3212,8 +2670,7 @@ export class InProcessMaterialAction implements IInProcessMaterialAction {
       this.unloadIntoQueue = data["UnloadIntoQueue"];
       this.program = data["Program"];
       this.elapsedMachiningTime = data["ElapsedMachiningTime"];
-      this.expectedRemainingMachiningTime =
-        data["ExpectedRemainingMachiningTime"];
+      this.expectedRemainingMachiningTime = data["ExpectedRemainingMachiningTime"];
     }
   }
 
@@ -3234,9 +2691,7 @@ export class InProcessMaterialAction implements IInProcessMaterialAction {
     data["UnloadIntoQueue"] = this.unloadIntoQueue;
     data["Program"] = this.program;
     data["ElapsedMachiningTime"] = this.elapsedMachiningTime;
-    data[
-      "ExpectedRemainingMachiningTime"
-    ] = this.expectedRemainingMachiningTime;
+    data["ExpectedRemainingMachiningTime"] = this.expectedRemainingMachiningTime;
     return data;
   }
 }
@@ -3267,8 +2722,7 @@ export class QueueSize implements IQueueSize {
   constructor(data?: IQueueSize) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
   }
@@ -3310,8 +2764,7 @@ export class NewJobs implements INewJobs {
   constructor(data?: INewJobs) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
     if (!data) {
@@ -3329,21 +2782,16 @@ export class NewJobs implements INewJobs {
       }
       if (data["StationUse"] && data["StationUse"].constructor === Array) {
         this.stationUse = [];
-        for (let item of data["StationUse"])
-          this.stationUse.push(SimulatedStationUtilization.fromJS(item));
+        for (let item of data["StationUse"]) this.stationUse.push(SimulatedStationUtilization.fromJS(item));
       }
       if (data["ExtraParts"]) {
         this.extraParts = {};
         for (let key in data["ExtraParts"]) {
-          if (data["ExtraParts"].hasOwnProperty(key))
-            this.extraParts[key] = data["ExtraParts"][key];
+          if (data["ExtraParts"].hasOwnProperty(key)) this.extraParts[key] = data["ExtraParts"][key];
         }
       }
       this.debugMessage = data["DebugMessage"];
-      if (
-        data["CurrentUnfilledWorkorders"] &&
-        data["CurrentUnfilledWorkorders"].constructor === Array
-      ) {
+      if (data["CurrentUnfilledWorkorders"] && data["CurrentUnfilledWorkorders"].constructor === Array) {
         this.currentUnfilledWorkorders = [];
         for (let item of data["CurrentUnfilledWorkorders"])
           this.currentUnfilledWorkorders.push(PartWorkorder.fromJS(item));
@@ -3382,24 +2830,18 @@ export class NewJobs implements INewJobs {
     if (this.extraParts) {
       data["ExtraParts"] = {};
       for (let key in this.extraParts) {
-        if (this.extraParts.hasOwnProperty(key))
-          data["ExtraParts"][key] = this.extraParts[key];
+        if (this.extraParts.hasOwnProperty(key)) data["ExtraParts"][key] = this.extraParts[key];
       }
     }
     data["DebugMessage"] = this.debugMessage;
-    if (
-      this.currentUnfilledWorkorders &&
-      this.currentUnfilledWorkorders.constructor === Array
-    ) {
+    if (this.currentUnfilledWorkorders && this.currentUnfilledWorkorders.constructor === Array) {
       data["CurrentUnfilledWorkorders"] = [];
-      for (let item of this.currentUnfilledWorkorders)
-        data["CurrentUnfilledWorkorders"].push(item.toJSON());
+      for (let item of this.currentUnfilledWorkorders) data["CurrentUnfilledWorkorders"].push(item.toJSON());
     }
     if (this.queueSizes) {
       data["QueueSizes"] = {};
       for (let key in this.queueSizes) {
-        if (this.queueSizes.hasOwnProperty(key))
-          data["QueueSizes"][key] = this.queueSizes[key];
+        if (this.queueSizes.hasOwnProperty(key)) data["QueueSizes"][key] = this.queueSizes[key];
       }
     }
     return data;
@@ -3424,8 +2866,7 @@ export class QueuePosition implements IQueuePosition {
   constructor(data?: IQueuePosition) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
   }
@@ -3467,8 +2908,7 @@ export class JobAndDecrementQuantity implements IJobAndDecrementQuantity {
   constructor(data?: IJobAndDecrementQuantity) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
   }
@@ -3477,9 +2917,7 @@ export class JobAndDecrementQuantity implements IJobAndDecrementQuantity {
     if (data) {
       this.decrementId = data["DecrementId"];
       this.jobUnique = data["JobUnique"];
-      this.timeUTC = data["TimeUTC"]
-        ? new Date(data["TimeUTC"].toString())
-        : <any>undefined;
+      this.timeUTC = data["TimeUTC"] ? new Date(data["TimeUTC"].toString()) : <any>undefined;
       this.part = data["Part"];
       this.quantity = data["Quantity"];
     }
@@ -3496,9 +2934,7 @@ export class JobAndDecrementQuantity implements IJobAndDecrementQuantity {
     data = typeof data === "object" ? data : {};
     data["DecrementId"] = this.decrementId;
     data["JobUnique"] = this.jobUnique;
-    data["TimeUTC"] = this.timeUTC
-      ? this.timeUTC.toISOString()
-      : <any>undefined;
+    data["TimeUTC"] = this.timeUTC ? this.timeUTC.toISOString() : <any>undefined;
     data["Part"] = this.part;
     data["Quantity"] = this.quantity;
     return data;
@@ -3531,8 +2967,7 @@ export class LogEntry implements ILogEntry {
   constructor(data?: ILogEntry) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
     if (!data) {
@@ -3545,21 +2980,17 @@ export class LogEntry implements ILogEntry {
       if (data["details"]) {
         this.details = {};
         for (let key in data["details"]) {
-          if (data["details"].hasOwnProperty(key))
-            this.details[key] = data["details"][key];
+          if (data["details"].hasOwnProperty(key)) this.details[key] = data["details"][key];
         }
       }
       this.counter = data["counter"];
       if (data["material"] && data["material"].constructor === Array) {
         this.material = [];
-        for (let item of data["material"])
-          this.material.push(LogMaterial.fromJS(item));
+        for (let item of data["material"]) this.material.push(LogMaterial.fromJS(item));
       }
       this.type = data["type"];
       this.startofcycle = data["startofcycle"];
-      this.endUTC = data["endUTC"]
-        ? new Date(data["endUTC"].toString())
-        : <any>undefined;
+      this.endUTC = data["endUTC"] ? new Date(data["endUTC"].toString()) : <any>undefined;
       this.loc = data["loc"];
       this.locnum = data["locnum"];
       this.pal = data["pal"];
@@ -3582,8 +3013,7 @@ export class LogEntry implements ILogEntry {
     if (this.details) {
       data["details"] = {};
       for (let key in this.details) {
-        if (this.details.hasOwnProperty(key))
-          data["details"][key] = this.details[key];
+        if (this.details.hasOwnProperty(key)) data["details"][key] = this.details[key];
       }
     }
     data["counter"] = this.counter;
@@ -3632,8 +3062,7 @@ export class LogMaterial implements ILogMaterial {
   constructor(data?: ILogMaterial) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
   }
@@ -3704,8 +3133,7 @@ export class MaterialProcessActualPath implements IMaterialProcessActualPath {
   constructor(data?: IMaterialProcessActualPath) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
     if (!data) {
@@ -3765,8 +3193,7 @@ export class Stop implements IStop {
   constructor(data?: IStop) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
   }
@@ -3809,8 +3236,7 @@ export class MaterialDetails implements IMaterialDetails {
   constructor(data?: IMaterialDetails) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
   }
@@ -3863,8 +3289,7 @@ export class WorkorderSummary implements IWorkorderSummary {
   constructor(data?: IWorkorderSummary) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
     if (!data) {
@@ -3877,17 +3302,14 @@ export class WorkorderSummary implements IWorkorderSummary {
     if (data) {
       if (data["parts"] && data["parts"].constructor === Array) {
         this.parts = [];
-        for (let item of data["parts"])
-          this.parts.push(WorkorderPartSummary.fromJS(item));
+        for (let item of data["parts"]) this.parts.push(WorkorderPartSummary.fromJS(item));
       }
       if (data["serials"] && data["serials"].constructor === Array) {
         this.serials = [];
         for (let item of data["serials"]) this.serials.push(item);
       }
       this.id = data["id"];
-      this.finalized = data["finalized"]
-        ? new Date(data["finalized"].toString())
-        : <any>undefined;
+      this.finalized = data["finalized"] ? new Date(data["finalized"].toString()) : <any>undefined;
     }
   }
 
@@ -3909,9 +3331,7 @@ export class WorkorderSummary implements IWorkorderSummary {
       for (let item of this.serials) data["serials"].push(item);
     }
     data["id"] = this.id;
-    data["finalized"] = this.finalized
-      ? this.finalized.toISOString()
-      : <any>undefined;
+    data["finalized"] = this.finalized ? this.finalized.toISOString() : <any>undefined;
     return data;
   }
 }
@@ -3932,8 +3352,7 @@ export class WorkorderPartSummary implements IWorkorderPartSummary {
   constructor(data?: IWorkorderPartSummary) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
     if (!data) {
@@ -3954,8 +3373,7 @@ export class WorkorderPartSummary implements IWorkorderPartSummary {
       if (data["active-stat-time"]) {
         this.activeStatTime = {};
         for (let key in data["active-stat-time"]) {
-          if (data["active-stat-time"].hasOwnProperty(key))
-            this.activeStatTime[key] = data["active-stat-time"][key];
+          if (data["active-stat-time"].hasOwnProperty(key)) this.activeStatTime[key] = data["active-stat-time"][key];
         }
       }
       this.name = data["name"];
@@ -3982,8 +3400,7 @@ export class WorkorderPartSummary implements IWorkorderPartSummary {
     if (this.activeStatTime) {
       data["active-stat-time"] = {};
       for (let key in this.activeStatTime) {
-        if (this.activeStatTime.hasOwnProperty(key))
-          data["active-stat-time"][key] = this.activeStatTime[key];
+        if (this.activeStatTime.hasOwnProperty(key)) data["active-stat-time"][key] = this.activeStatTime[key];
       }
     }
     data["name"] = this.name;
@@ -4011,8 +3428,7 @@ export class NewInspectionCompleted implements INewInspectionCompleted {
   constructor(data?: INewInspectionCompleted) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
     if (!data) {
@@ -4022,17 +3438,14 @@ export class NewInspectionCompleted implements INewInspectionCompleted {
 
   init(data?: any) {
     if (data) {
-      this.material = data["Material"]
-        ? LogMaterial.fromJS(data["Material"])
-        : new LogMaterial();
+      this.material = data["Material"] ? LogMaterial.fromJS(data["Material"]) : new LogMaterial();
       this.inspectionLocationNum = data["InspectionLocationNum"];
       this.inspectionType = data["InspectionType"];
       this.success = data["Success"];
       if (data["ExtraData"]) {
         this.extraData = {};
         for (let key in data["ExtraData"]) {
-          if (data["ExtraData"].hasOwnProperty(key))
-            this.extraData[key] = data["ExtraData"][key];
+          if (data["ExtraData"].hasOwnProperty(key)) this.extraData[key] = data["ExtraData"][key];
         }
       }
       this.elapsed = data["Elapsed"];
@@ -4056,8 +3469,7 @@ export class NewInspectionCompleted implements INewInspectionCompleted {
     if (this.extraData) {
       data["ExtraData"] = {};
       for (let key in this.extraData) {
-        if (this.extraData.hasOwnProperty(key))
-          data["ExtraData"][key] = this.extraData[key];
+        if (this.extraData.hasOwnProperty(key)) data["ExtraData"][key] = this.extraData[key];
       }
     }
     data["Elapsed"] = this.elapsed;
@@ -4086,8 +3498,7 @@ export class NewWash implements INewWash {
   constructor(data?: INewWash) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
     if (!data) {
@@ -4097,15 +3508,12 @@ export class NewWash implements INewWash {
 
   init(data?: any) {
     if (data) {
-      this.material = data["Material"]
-        ? LogMaterial.fromJS(data["Material"])
-        : new LogMaterial();
+      this.material = data["Material"] ? LogMaterial.fromJS(data["Material"]) : new LogMaterial();
       this.washLocationNum = data["WashLocationNum"];
       if (data["ExtraData"]) {
         this.extraData = {};
         for (let key in data["ExtraData"]) {
-          if (data["ExtraData"].hasOwnProperty(key))
-            this.extraData[key] = data["ExtraData"][key];
+          if (data["ExtraData"].hasOwnProperty(key)) this.extraData[key] = data["ExtraData"][key];
         }
       }
       this.elapsed = data["Elapsed"];
@@ -4127,8 +3535,7 @@ export class NewWash implements INewWash {
     if (this.extraData) {
       data["ExtraData"] = {};
       for (let key in this.extraData) {
-        if (this.extraData.hasOwnProperty(key))
-          data["ExtraData"][key] = this.extraData[key];
+        if (this.extraData.hasOwnProperty(key)) data["ExtraData"][key] = this.extraData[key];
       }
     }
     data["Elapsed"] = this.elapsed;
@@ -4155,8 +3562,7 @@ export class FMSInfo implements IFMSInfo {
   constructor(data?: IFMSInfo) {
     if (data) {
       for (var property in data) {
-        if (data.hasOwnProperty(property))
-          (<any>this)[property] = (<any>data)[property];
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
       }
     }
   }
@@ -4166,15 +3572,10 @@ export class FMSInfo implements IFMSInfo {
       this.name = data["Name"];
       this.version = data["Version"];
       this.requireScanAtWash = data["RequireScanAtWash"];
-      this.requireWorkorderBeforeAllowWashComplete =
-        data["RequireWorkorderBeforeAllowWashComplete"];
-      if (
-        data["AdditionalLogServers"] &&
-        data["AdditionalLogServers"].constructor === Array
-      ) {
+      this.requireWorkorderBeforeAllowWashComplete = data["RequireWorkorderBeforeAllowWashComplete"];
+      if (data["AdditionalLogServers"] && data["AdditionalLogServers"].constructor === Array) {
         this.additionalLogServers = [];
-        for (let item of data["AdditionalLogServers"])
-          this.additionalLogServers.push(item);
+        for (let item of data["AdditionalLogServers"]) this.additionalLogServers.push(item);
       }
     }
   }
@@ -4191,16 +3592,10 @@ export class FMSInfo implements IFMSInfo {
     data["Name"] = this.name;
     data["Version"] = this.version;
     data["RequireScanAtWash"] = this.requireScanAtWash;
-    data[
-      "RequireWorkorderBeforeAllowWashComplete"
-    ] = this.requireWorkorderBeforeAllowWashComplete;
-    if (
-      this.additionalLogServers &&
-      this.additionalLogServers.constructor === Array
-    ) {
+    data["RequireWorkorderBeforeAllowWashComplete"] = this.requireWorkorderBeforeAllowWashComplete;
+    if (this.additionalLogServers && this.additionalLogServers.constructor === Array) {
       data["AdditionalLogServers"] = [];
-      for (let item of this.additionalLogServers)
-        data["AdditionalLogServers"].push(item);
+      for (let item of this.additionalLogServers) data["AdditionalLogServers"].push(item);
     }
     return data;
   }
@@ -4228,13 +3623,7 @@ export class SwaggerException extends Error {
   headers: { [key: string]: any };
   result: any;
 
-  constructor(
-    message: string,
-    status: number,
-    response: string,
-    headers: { [key: string]: any },
-    result: any
-  ) {
+  constructor(message: string, status: number, response: string, headers: { [key: string]: any }, result: any) {
     super();
 
     this.message = message;

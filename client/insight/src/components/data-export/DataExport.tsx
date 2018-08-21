@@ -65,12 +65,7 @@ class CSVLogExport extends React.PureComponent<{}, CSVLogExportState> {
       startUTC: startDate.toISOString(),
       endUTC: endDate.toISOString()
     });
-    const curlUrl =
-      window.location.protocol +
-      "//" +
-      window.location.host +
-      "/api/v1/log/events/all?" +
-      startEndQuery;
+    const curlUrl = window.location.protocol + "//" + window.location.host + "/api/v1/log/events/all?" + startEndQuery;
 
     return (
       <Card style={{ margin: "2em" }}>
@@ -78,9 +73,7 @@ class CSVLogExport extends React.PureComponent<{}, CSVLogExportState> {
           title={
             <div style={{ display: "flex", alignItems: "center" }}>
               <ExportIcon />
-              <div style={{ marginLeft: "10px", marginRight: "3em" }}>
-                Log Data Export
-              </div>
+              <div style={{ marginLeft: "10px", marginRight: "3em" }}>Log Data Export</div>
             </div>
           }
         />
@@ -96,20 +89,15 @@ class CSVLogExport extends React.PureComponent<{}, CSVLogExportState> {
             </Grid>
             <Grid item xs={12} sm={6} md={5}>
               <p>
-                Data is also available programatically over HTTP. See the{" "}
-                <a href="/swagger/">OpenAPI Specification</a> or try the
-                following command in the terminal or PowerShell.
+                Data is also available programatically over HTTP. See the <a href="/swagger/">OpenAPI Specification</a>{" "}
+                or try the following command in the terminal or PowerShell.
               </p>
               <code>curl -o events.json {curlUrl}</code>
             </Grid>
           </Grid>
         </CardContent>
         <CardActions>
-          <Button
-            variant="raised"
-            color="primary"
-            href={"/api/v1/log/events.csv?" + startEndQuery}
-          >
+          <Button variant="raised" color="primary" href={"/api/v1/log/events.csv?" + startEndQuery}>
             Export to CSV
           </Button>
         </CardActions>
@@ -122,10 +110,7 @@ interface CSVWorkorderExportState {
   readonly exportWorkorder: string;
 }
 
-class CSVWorkorderExport extends React.PureComponent<
-  {},
-  CSVWorkorderExportState
-> {
+class CSVWorkorderExport extends React.PureComponent<{}, CSVWorkorderExportState> {
   state: CSVWorkorderExportState = {
     exportWorkorder: ""
   };
@@ -134,12 +119,7 @@ class CSVWorkorderExport extends React.PureComponent<
     const startEndQuery = queryString.stringify({
       ids: this.state.exportWorkorder
     });
-    const curlUrl =
-      window.location.protocol +
-      "//" +
-      window.location.host +
-      "/api/v1/log/workorders?" +
-      startEndQuery;
+    const curlUrl = window.location.protocol + "//" + window.location.host + "/api/v1/log/workorders?" + startEndQuery;
 
     return (
       <Card style={{ margin: "2em" }}>
@@ -147,9 +127,7 @@ class CSVWorkorderExport extends React.PureComponent<
           title={
             <div style={{ display: "flex", alignItems: "center" }}>
               <BasketIcon />
-              <div style={{ marginLeft: "10px", marginRight: "3em" }}>
-                Workorder Data Export
-              </div>
+              <div style={{ marginLeft: "10px", marginRight: "3em" }}>Workorder Data Export</div>
             </div>
           }
         />
@@ -159,16 +137,13 @@ class CSVWorkorderExport extends React.PureComponent<
               <TextField
                 label="Workorder"
                 value={this.state.exportWorkorder}
-                onChange={e =>
-                  this.setState({ exportWorkorder: e.target.value })
-                }
+                onChange={e => this.setState({ exportWorkorder: e.target.value })}
               />
             </Grid>
             <Grid item xs={12} sm={6} md={5}>
               <p>
-                Data is also available programatically over HTTP. See the{" "}
-                <a href="/swagger/">OpenAPI Specification</a> or try the
-                following command in the terminal or PowerShell.
+                Data is also available programatically over HTTP. See the <a href="/swagger/">OpenAPI Specification</a>{" "}
+                or try the following command in the terminal or PowerShell.
               </p>
               <code>curl -o workorders.json {curlUrl}</code>
             </Grid>
@@ -178,9 +153,7 @@ class CSVWorkorderExport extends React.PureComponent<
           <Button
             variant="raised"
             color="primary"
-            disabled={
-              !this.state.exportWorkorder || this.state.exportWorkorder === ""
-            }
+            disabled={!this.state.exportWorkorder || this.state.exportWorkorder === ""}
             href={"/api/v1/log/workorders.csv?" + startEndQuery}
           >
             Export to CSV
@@ -202,9 +175,7 @@ function RecentEvents(p: RecentEventsProps) {
         title={
           <div style={{ display: "flex", alignItems: "center" }}>
             <ViewIcon />
-            <div style={{ marginLeft: "10px", marginRight: "3em" }}>
-              Preview of Most Recent Events
-            </div>
+            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Preview of Most Recent Events</div>
           </div>
         }
       />

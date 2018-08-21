@@ -153,22 +153,12 @@ class CycleChart extends React.PureComponent<CycleChartProps, CycleChartState> {
               <MarkSeries
                 key={series}
                 data={points}
-                onValueClick={
-                  this.state.disabled_series[series]
-                    ? undefined
-                    : this.setTooltip(series)
-                }
-                {...(this.state.disabled_series[series]
-                  ? { opacity: 0.2 }
-                  : null)}
+                onValueClick={this.state.disabled_series[series] ? undefined : this.setTooltip(series)}
+                {...(this.state.disabled_series[series] ? { opacity: 0.2 } : null)}
               />
             ))
             .toIndexedSeq()}
-          {this.state.tooltip === undefined ? (
-            undefined
-          ) : (
-            <Hint value={this.state.tooltip} format={this.formatHint} />
-          )}
+          {this.state.tooltip === undefined ? undefined : <Hint value={this.state.tooltip} format={this.formatHint} />}
         </FlexibleWidthXYPlot>
 
         <div style={{ textAlign: "center" }}>
@@ -187,10 +177,7 @@ class CycleChart extends React.PureComponent<CycleChartProps, CycleChartState> {
 }
 
 export interface SelectableCycleChartProps {
-  readonly points: im.Map<
-    string,
-    im.Map<string, ReadonlyArray<CycleChartPoint>>
-  >;
+  readonly points: im.Map<string, im.Map<string, ReadonlyArray<CycleChartPoint>>>;
   readonly select_label: string;
   readonly series_label: string;
   readonly card_label: string;
@@ -202,8 +189,7 @@ export interface SelectableCycleChartProps {
 }
 
 export function SelectableCycleChart(props: SelectableCycleChartProps) {
-  let validValue =
-    props.selected !== undefined && props.points.has(props.selected);
+  let validValue = props.selected !== undefined && props.points.has(props.selected);
   function stripAfterDash(s: string): string {
     const idx = s.indexOf("-");
     if (idx >= 0) {
@@ -216,13 +202,9 @@ export function SelectableCycleChart(props: SelectableCycleChartProps) {
     <Card raised>
       <CardHeader
         title={
-          <div
-            style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}
-          >
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
             {props.icon}
-            <div style={{ marginLeft: "10px", marginRight: "3em" }}>
-              {props.card_label}
-            </div>
+            <div style={{ marginLeft: "10px", marginRight: "3em" }}>{props.card_label}</div>
             <div style={{ flexGrow: 1 }} />
             <Select
               name={props.card_label.replace(" ", "-") + "-cycle-chart-select"}
@@ -244,11 +226,7 @@ export function SelectableCycleChart(props: SelectableCycleChartProps) {
                 .map(n => (
                   <MenuItem key={n} value={n}>
                     <div style={{ display: "flex", alignItems: "center" }}>
-                      {props.useIdenticon ? (
-                        <PartIdenticon part={stripAfterDash(n)} size={30} />
-                      ) : (
-                        undefined
-                      )}
+                      {props.useIdenticon ? <PartIdenticon part={stripAfterDash(n)} size={30} /> : undefined}
                       <span style={{ marginRight: "1em" }}>{n}</span>
                     </div>
                   </MenuItem>

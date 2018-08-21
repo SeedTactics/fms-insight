@@ -47,10 +47,7 @@ import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
 import TextField from "@material-ui/core/TextField";
 
-import {
-  LoadStationAndQueueData,
-  selectLoadStationAndQueueProps
-} from "../../data/load-station";
+import { LoadStationAndQueueData, selectLoadStationAndQueueProps } from "../../data/load-station";
 import {
   InProcMaterial,
   WhiteboardRegion,
@@ -61,12 +58,7 @@ import {
 import * as api from "../../data/api";
 import * as routes from "../../data/routes";
 import * as guiState from "../../data/gui-state";
-import {
-  Store,
-  connect,
-  AppActionBeforeMiddleware,
-  DispatchAction
-} from "../../store/store";
+import { Store, connect, AppActionBeforeMiddleware, DispatchAction } from "../../store/store";
 import * as matDetails from "../../data/material-details";
 import { MaterialSummary } from "../../data/events";
 import SerialScanner from "./QRScan";
@@ -77,25 +69,17 @@ interface ExistingMatInQueueDialogBodyProps {
   readonly removeFromQueue: (mat: matDetails.MaterialDetail) => void;
 }
 
-function ExistingMatInQueueDialogBody(
-  props: ExistingMatInQueueDialogBodyProps
-) {
+function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) {
   return (
     <>
       <DialogTitle disableTypography>
-        <MaterialDetailTitle
-          partName={props.display_material.partName}
-          serial={props.display_material.serial}
-        />
+        <MaterialDetailTitle partName={props.display_material.partName} serial={props.display_material.serial} />
       </DialogTitle>
       <DialogContent>
         <MaterialDetailContent mat={props.display_material} />
       </DialogContent>
       <DialogActions>
-        <Button
-          color="primary"
-          onClick={() => props.removeFromQueue(props.display_material)}
-        >
+        <Button color="primary" onClick={() => props.removeFromQueue(props.display_material)}>
           Remove From Queue
         </Button>
         <Button onClick={props.onClose} color="primary">
@@ -118,10 +102,7 @@ interface AddSerialFoundState {
   readonly selected_queue?: string;
 }
 
-class AddSerialFound extends React.PureComponent<
-  AddSerialFoundProps,
-  AddSerialFoundState
-> {
+class AddSerialFound extends React.PureComponent<AddSerialFoundProps, AddSerialFoundState> {
   state: AddSerialFoundState = {};
 
   render() {
@@ -138,8 +119,7 @@ class AddSerialFound extends React.PureComponent<
           />
         </DialogTitle>
         <DialogContent>
-          {this.props.queue_name === undefined &&
-          this.props.queues.length > 1 ? (
+          {this.props.queue_name === undefined && this.props.queues.length > 1 ? (
             <div style={{ marginBottom: "1em" }}>
               <p>Select a queue.</p>
               <List>
@@ -162,9 +142,7 @@ class AddSerialFound extends React.PureComponent<
         <DialogActions>
           <Button
             color="primary"
-            disabled={
-              this.props.display_material.loading_events || queue === undefined
-            }
+            disabled={this.props.display_material.loading_events || queue === undefined}
             onClick={() =>
               this.props.addMat({
                 materialId: this.props.display_material.materialID,
@@ -206,10 +184,7 @@ class SelectJob extends React.PureComponent<SelectJobProps> {
             {jobs.map((j, idx) => (
               <MenuItem
                 key={idx}
-                selected={
-                  this.props.selected_job &&
-                  j.unique === this.props.selected_job.unique
-                }
+                selected={this.props.selected_job && j.unique === this.props.selected_job.unique}
                 onClick={() => this.props.onSelectJob(j)}
               >
                 <ListItemIcon>
@@ -221,14 +196,12 @@ class SelectJob extends React.PureComponent<SelectJobProps> {
           </List>
         </div>
         <div>
-          {this.props.selected_job === undefined ||
-          this.props.selected_job.procsAndPaths.length === 1 ? (
+          {this.props.selected_job === undefined || this.props.selected_job.procsAndPaths.length === 1 ? (
             undefined
           ) : (
             <div style={{ marginLeft: "1em" }}>
               <p style={{ margin: "1em", maxWidth: "15em" }}>
-                Select the last completed process, or "Raw Material" if this
-                part has not yet completed any process.
+                Select the last completed process, or "Raw Material" if this part has not yet completed any process.
               </p>
               <List>
                 <MenuItem
@@ -238,17 +211,15 @@ class SelectJob extends React.PureComponent<SelectJobProps> {
                 >
                   Raw Material
                 </MenuItem>
-                {im
-                  .Range(1, this.props.selected_job.procsAndPaths.length)
-                  .map(p => (
-                    <MenuItem
-                      key={p}
-                      selected={this.props.selected_last_process === p}
-                      onClick={() => this.props.onSelectProcess(p)}
-                    >
-                      Last completed process {p}
-                    </MenuItem>
-                  ))}
+                {im.Range(1, this.props.selected_job.procsAndPaths.length).map(p => (
+                  <MenuItem
+                    key={p}
+                    selected={this.props.selected_last_process === p}
+                    onClick={() => this.props.onSelectProcess(p)}
+                  >
+                    Last completed process {p}
+                  </MenuItem>
+                ))}
               </List>
             </div>
           )}
@@ -278,10 +249,7 @@ interface AddNewMaterialState {
   readonly selected_queue?: string;
 }
 
-class AddNewMaterialBody extends React.PureComponent<
-  AddNewMaterialProps,
-  AddNewMaterialState
-> {
+class AddNewMaterialBody extends React.PureComponent<AddNewMaterialProps, AddNewMaterialState> {
   state: AddNewMaterialState = {};
 
   onSelectJob = (j: Readonly<api.IInProcessJob>) => {
@@ -322,23 +290,17 @@ class AddNewMaterialBody extends React.PureComponent<
     }
     return (
       <>
-        <DialogTitle>
-          {this.props.not_found_serial
-            ? this.props.not_found_serial
-            : "Add New Material"}
-        </DialogTitle>
+        <DialogTitle>{this.props.not_found_serial ? this.props.not_found_serial : "Add New Material"}</DialogTitle>
         <DialogContent>
           {this.props.not_found_serial ? (
             <p>
-              The serial {this.props.not_found_serial} was not found. Specify
-              the job and process to add to the queue.
+              The serial {this.props.not_found_serial} was not found. Specify the job and process to add to the queue.
             </p>
           ) : (
             undefined
           )}
           <div style={{ display: "flex" }}>
-            {this.props.queue_name === undefined &&
-            this.props.queues.length > 1 ? (
+            {this.props.queue_name === undefined && this.props.queues.length > 1 ? (
               <div style={{ marginRight: "1em" }}>
                 <p>Select a queue.</p>
                 <List>
@@ -368,9 +330,7 @@ class AddNewMaterialBody extends React.PureComponent<
           <Button
             color="primary"
             onClick={() => this.addMaterial(queue)}
-            disabled={
-              this.state.selected_job === undefined || queue === undefined
-            }
+            disabled={this.state.selected_job === undefined || queue === undefined}
           >
             Add To {queue}
           </Button>
@@ -392,9 +352,7 @@ interface QueueMatDialogProps {
   readonly onClose: DispatchAction<matDetails.ActionType.CloseMaterialDialog>;
   readonly removeFromQueue: (mat: matDetails.MaterialDetail) => void;
   readonly addNewMat: (d: matDetails.AddNewMaterialToQueueData) => void;
-  readonly addExistingMat: (
-    d: matDetails.AddExistingMaterialToQueueData
-  ) => void;
+  readonly addExistingMat: (d: matDetails.AddExistingMaterialToQueueData) => void;
 }
 
 function QueueMatDialog(props: QueueMatDialogProps) {
@@ -411,10 +369,7 @@ function QueueMatDialog(props: QueueMatDialogProps) {
           removeFromQueue={props.removeFromQueue}
         />
       );
-    } else if (
-      props.display_material.materialID >= 0 ||
-      props.display_material.loading_events
-    ) {
+    } else if (props.display_material.materialID >= 0 || props.display_material.loading_events) {
       body = (
         <AddSerialFound
           queues={props.queueNames}
@@ -438,11 +393,7 @@ function QueueMatDialog(props: QueueMatDialogProps) {
   }
 
   return (
-    <Dialog
-      open={props.display_material !== null}
-      onClose={props.onClose}
-      maxWidth="md"
-    >
+    <Dialog open={props.display_material !== null} onClose={props.onClose} maxWidth="md">
       {body}
     </Dialog>
   );
@@ -451,10 +402,7 @@ function QueueMatDialog(props: QueueMatDialogProps) {
 const selectMatCurrentlyInQueue = createSelector(
   (st: Store) => st.MaterialDetails.material,
   (st: Store) => st.Current.current_status.material,
-  function(
-    mat: matDetails.MaterialDetail | null,
-    allMats: ReadonlyArray<api.IInProcessMaterial>
-  ) {
+  function(mat: matDetails.MaterialDetail | null, allMats: ReadonlyArray<api.IInProcessMaterial>) {
     if (mat === null) {
       return false;
     }
@@ -512,25 +460,18 @@ interface ChooseSerialOrDirectJobState {
   readonly serial?: string;
 }
 
-class ChooseSerialOrDirectJob extends React.PureComponent<
-  ChooseSerialOrDirectJobProps,
-  ChooseSerialOrDirectJobState
-> {
+class ChooseSerialOrDirectJob extends React.PureComponent<ChooseSerialOrDirectJobProps, ChooseSerialOrDirectJobState> {
   state = { serial: undefined };
 
   render() {
     return (
-      <Dialog
-        open={this.props.dialog_open}
-        onClose={this.props.onClose}
-        maxWidth="md"
-      >
+      <Dialog open={this.props.dialog_open} onClose={this.props.onClose} maxWidth="md">
         <DialogTitle>Lookup Material</DialogTitle>
         <DialogContent>
           <div style={{ maxWidth: "25em" }}>
             <p>
-              To find the details of the material to add, you can either scan a
-              part's serial, lookup a serial, or manually select a job.
+              To find the details of the material to add, you can either scan a part's serial, lookup a serial, or
+              manually select a job.
             </p>
           </div>
           <div style={{ display: "flex", alignItems: "center" }}>
@@ -554,22 +495,14 @@ class ChooseSerialOrDirectJob extends React.PureComponent<
                 <Button
                   variant="raised"
                   color="secondary"
-                  onClick={() =>
-                    this.state.serial
-                      ? this.props.lookupSerial(this.state.serial || "")
-                      : undefined
-                  }
+                  onClick={() => (this.state.serial ? this.props.lookupSerial(this.state.serial || "") : undefined)}
                 >
                   Lookup Serial
                 </Button>
               </div>
             </div>
             <div style={{ paddingLeft: "8px" }}>
-              <Button
-                variant="raised"
-                color="secondary"
-                onClick={this.props.selectJobWithoutSerial}
-              >
+              <Button variant="raised" color="secondary" onClick={this.props.selectJobWithoutSerial}>
                 Manually Select Job
               </Button>
             </div>
@@ -668,9 +601,7 @@ const Queues = queueStyles<QueueProps>(props => {
             label={region.label}
             borderBottom
             flexStart
-            onAddMaterial={
-              region.free ? undefined : () => props.openAddToQueue(region.label)
-            }
+            onAddMaterial={region.free ? undefined : () => props.openAddToQueue(region.label)}
           >
             {region.material.map((m, matIdx) => (
               <InProcMaterial key={matIdx} mat={m} onOpen={props.openMat} />
@@ -688,16 +619,8 @@ const Queues = queueStyles<QueueProps>(props => {
 const buildQueueData = createSelector(
   (st: Store) => st.Current.current_status,
   (st: Store) => st.Route,
-  (
-    curStatus: Readonly<api.ICurrentStatus>,
-    route: routes.State
-  ): LoadStationAndQueueData => {
-    return selectLoadStationAndQueueProps(
-      -1,
-      route.standalone_queues,
-      route.standalone_free_material,
-      curStatus
-    );
+  (curStatus: Readonly<api.ICurrentStatus>, route: routes.State): LoadStationAndQueueData => {
+    return selectLoadStationAndQueueProps(-1, route.standalone_queues, route.standalone_free_material, curStatus);
   }
 );
 

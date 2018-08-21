@@ -118,22 +118,11 @@ function displayMat(mats: ReadonlyArray<api.ILogMaterial>) {
 function display(entry: api.ILogEntry): string {
   switch (entry.type) {
     case api.LogType.LoadUnloadCycle:
-      return (
-        displayMat(entry.material) +
-        " on pallet " +
-        entry.pal +
-        " at station " +
-        entry.locnum.toString()
-      );
+      return displayMat(entry.material) + " on pallet " + entry.pal + " at station " + entry.locnum.toString();
 
     case api.LogType.MachineCycle:
       let msg;
-      msg =
-        displayMat(entry.material) +
-        " on pallet " +
-        entry.pal +
-        " at machine " +
-        entry.locnum.toString();
+      msg = displayMat(entry.material) + " on pallet " + entry.pal + " at machine " + entry.locnum.toString();
       if (entry.program && entry.program !== "") {
         msg += " with program " + entry.program;
       }
@@ -143,41 +132,27 @@ function display(entry: api.ILogEntry): string {
       return displayMat(entry.material) + " marked with " + entry.result;
 
     case api.LogType.OrderAssignment:
-      return (
-        displayMat(entry.material) + " assigned to workorder " + entry.result
-      );
+      return displayMat(entry.material) + " assigned to workorder " + entry.result;
 
     case api.LogType.PalletCycle:
       return "Pallet " + entry.pal + " completed route";
 
     case api.LogType.Inspection:
       const inspName = (entry.details || {}).InspectionType || "";
-      let inspected =
-        entry.result.toLowerCase() === "true" || entry.result === "1";
+      let inspected = entry.result.toLowerCase() === "true" || entry.result === "1";
       if (inspected) {
-        return (
-          displayMat(entry.material) + " signaled for inspection " + inspName
-        );
+        return displayMat(entry.material) + " signaled for inspection " + inspName;
       } else {
         return displayMat(entry.material) + " skipped inspection " + inspName;
       }
 
     case api.LogType.InspectionForce:
       const forceInspName = entry.program;
-      let forced =
-        entry.result.toLowerCase() === "true" || entry.result === "1";
+      let forced = entry.result.toLowerCase() === "true" || entry.result === "1";
       if (forced) {
-        return (
-          displayMat(entry.material) +
-          " declared for inspection " +
-          forceInspName
-        );
+        return displayMat(entry.material) + " declared for inspection " + forceInspName;
       } else {
-        return (
-          displayMat(entry.material) +
-          " passed over for inspection " +
-          forceInspName
-        );
+        return displayMat(entry.material) + " passed over for inspection " + forceInspName;
       }
 
     case api.LogType.FinalizeWorkorder:
@@ -208,12 +183,8 @@ export class LogEntry extends React.PureComponent<LogEntryProps> {
   render() {
     return (
       <TableRow>
-        <TableCell padding="dense">
-          {format(this.props.entry.endUTC, "MMM D, YY")}
-        </TableCell>
-        <TableCell padding="dense">
-          {format(this.props.entry.endUTC, "hh:mm A")}
-        </TableCell>
+        <TableCell padding="dense">{format(this.props.entry.endUTC, "MMM D, YY")}</TableCell>
+        <TableCell padding="dense">{format(this.props.entry.endUTC, "hh:mm A")}</TableCell>
         <TableCell padding="dense">{logType(this.props.entry)}</TableCell>
         <TableCell padding="dense">{display(this.props.entry)}</TableCell>
       </TableRow>

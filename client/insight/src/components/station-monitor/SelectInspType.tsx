@@ -46,13 +46,7 @@ import TextField from "@material-ui/core/TextField";
 import * as im from "immutable";
 
 import { MaterialDetailTitle } from "./Material";
-import {
-  Store,
-  connect,
-  mkAC,
-  AppActionBeforeMiddleware,
-  DispatchAction
-} from "../../store/store";
+import { Store, connect, mkAC, AppActionBeforeMiddleware, DispatchAction } from "../../store/store";
 import * as matDetails from "../../data/material-details";
 import * as guiState from "../../data/gui-state";
 
@@ -65,28 +59,17 @@ interface ManualInspTypeEntryState {
   readonly inspType: string;
 }
 
-class ManualInspTypeEntry extends React.PureComponent<
-  ManualInspTypeEntryProps,
-  ManualInspTypeEntryState
-> {
+class ManualInspTypeEntry extends React.PureComponent<ManualInspTypeEntryProps, ManualInspTypeEntryState> {
   state = { inspType: "" };
 
   render() {
     return (
       <TextField
-        label={
-          this.state.inspType === ""
-            ? "Inspection Type"
-            : "Inspection Type (press enter)"
-        }
+        label={this.state.inspType === "" ? "Inspection Type" : "Inspection Type (press enter)"}
         value={this.state.inspType}
         onChange={e => this.setState({ inspType: e.target.value })}
         onKeyPress={e => {
-          if (
-            e.key === "Enter" &&
-            this.state.inspType &&
-            this.state.inspType !== ""
-          ) {
+          if (e.key === "Enter" && this.state.inspType && this.state.inspType !== "") {
             e.preventDefault();
             this.props.forceInspection({
               mat: this.props.mat,
@@ -126,9 +109,7 @@ function SelectInspTypeDialog(props: SelectInspTypeProps) {
               <ListItem
                 key={iType}
                 button
-                onClick={() =>
-                  props.forceInspection({ mat, inspType: iType, inspect: true })
-                }
+                onClick={() => props.forceInspection({ mat, inspType: iType, inspect: true })}
               >
                 <ListItemIcon>
                   <SearchIcon />
@@ -145,17 +126,11 @@ function SelectInspTypeDialog(props: SelectInspTypeProps) {
             <MaterialDetailTitle partName={mat.partName} serial={mat.serial} />
           </DialogTitle>
           <DialogContent>
-            <ManualInspTypeEntry
-              mat={mat}
-              forceInspection={props.forceInspection}
-            />
+            <ManualInspTypeEntry mat={mat} forceInspection={props.forceInspection} />
             {inspList}
           </DialogContent>
           <DialogActions>
-            <Button
-              onClick={() => props.onClose({ open: false })}
-              color="primary"
-            >
+            <Button onClick={() => props.onClose({ open: false })} color="primary">
               Cancel
             </Button>
           </DialogActions>
@@ -164,11 +139,7 @@ function SelectInspTypeDialog(props: SelectInspTypeProps) {
     }
   }
   return (
-    <Dialog
-      open={props.mats !== null}
-      onClose={() => props.onClose({ open: false })}
-      maxWidth="md"
-    >
+    <Dialog open={props.mats !== null} onClose={() => props.onClose({ open: false })} maxWidth="md">
       {body}
     </Dialog>
   );

@@ -48,9 +48,7 @@ export interface State {
 }
 
 export const initial = {
-  operators: im.Set(
-    JSON.parse(localStorage.getItem("operators") || "[]")
-  ) as im.Set<string>,
+  operators: im.Set(JSON.parse(localStorage.getItem("operators") || "[]")) as im.Set<string>,
   current: localStorage.getItem("current-operator") || undefined
 };
 
@@ -81,9 +79,7 @@ export function reducer(s: State, a: Action): State {
   switch (a.type) {
     case ActionType.SetOperator:
       return {
-        operators: s.operators.has(a.operator)
-          ? s.operators
-          : s.operators.add(a.operator),
+        operators: s.operators.has(a.operator) ? s.operators : s.operators.add(a.operator),
         current: a.operator
       };
     case ActionType.RemoveOperator:

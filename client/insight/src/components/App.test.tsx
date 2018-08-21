@@ -72,41 +72,26 @@ it("renders the app shell", async () => {
   expect(result.getByTestId("loading-icon")).toBeInTheDocument();
 
   const jan18 = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
-  const offsetSeconds = differenceInSeconds(
-    addDays(new Date(2018, 7, 5, 15, 33, 0), -28),
-    jan18
-  );
+  const offsetSeconds = differenceInSeconds(addDays(new Date(2018, 7, 5, 15, 33, 0), -28), jan18);
 
   // tslint:disable-next-line:no-any
   (window as any).FMS_INSIGHT_RESOLVE_MOCK_DATA(loadMockData(offsetSeconds));
 
-  await wait(() =>
-    expect(result.queryByTestId("loading-icon")).not.toBeInTheDocument()
-  );
+  await wait(() => expect(result.queryByTestId("loading-icon")).not.toBeInTheDocument());
 
   expect(result.getByTestId("mock-component-Dashboard")).toBeDefined();
-  expect(
-    result.queryByTestId("mock-component-StationMonitor")
-  ).not.toBeInTheDocument();
-  expect(
-    result.queryByTestId("mock-component-Efficiency")
-  ).not.toBeInTheDocument();
-  expect(
-    result.queryByTestId("mock-component-CostPerPiece")
-  ).not.toBeInTheDocument();
+  expect(result.queryByTestId("mock-component-StationMonitor")).not.toBeInTheDocument();
+  expect(result.queryByTestId("mock-component-Efficiency")).not.toBeInTheDocument();
+  expect(result.queryByTestId("mock-component-CostPerPiece")).not.toBeInTheDocument();
 
   fireEvent.click(result.getByText("Station Monitor"));
-  expect(
-    result.queryByTestId("mock-component-StationMonitor")
-  ).toBeInTheDocument();
+  expect(result.queryByTestId("mock-component-StationMonitor")).toBeInTheDocument();
 
   fireEvent.click(result.getByText("Efficiency"));
   expect(result.queryByTestId("mock-component-Efficiency")).toBeInTheDocument();
 
   fireEvent.click(result.getByText("Cost/Piece"));
-  expect(
-    result.queryByTestId("mock-component-CostPerPiece")
-  ).toBeInTheDocument();
+  expect(result.queryByTestId("mock-component-CostPerPiece")).toBeInTheDocument();
 
   fireEvent.click(result.getByText("Dashboard"));
   expect(result.queryByTestId("mock-component-Dashboard")).toBeInTheDocument();

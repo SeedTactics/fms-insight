@@ -50,9 +50,7 @@ export enum ActionType {
   WebsocketClose = "Websocket_Close"
 }
 
-export type Action =
-  | { type: ActionType.WebsocketOpen }
-  | { type: ActionType.WebsocketClose };
+export type Action = { type: ActionType.WebsocketOpen } | { type: ActionType.WebsocketClose };
 
 export function reducer(s: State, a: Action): State {
   if (s === undefined) {
@@ -70,10 +68,7 @@ export function reducer(s: State, a: Action): State {
 }
 
 // tslint:disable-next-line:no-any
-export function openWebsocket(
-  d: (a: any) => void,
-  getEvtState: () => events.State
-) {
+export function openWebsocket(d: (a: any) => void, getEvtState: () => events.State) {
   d({ type: ActionType.WebsocketClose }); // set initial loading spinner
   const loc = window.location;
   let uri: string;

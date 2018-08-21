@@ -80,14 +80,10 @@ interface MoveMaterialByKind {
   readonly faces: im.Map<number, ClientRect>;
   readonly queues: im.Map<string, ClientRect>;
 
-  readonly material: im.List<
-    [ClientRect, Readonly<api.IInProcessMaterialAction>]
-  >;
+  readonly material: im.List<[ClientRect, Readonly<api.IInProcessMaterialAction>]>;
 }
 
-function buildMatByKind(
-  data: MoveMaterialArrowData<ClientRect>
-): MoveMaterialByKind {
+function buildMatByKind(data: MoveMaterialArrowData<ClientRect>): MoveMaterialByKind {
   return data.node_type.reduce(
     (acc, kind, key) => {
       var node = data.nodes.get(key);
@@ -119,9 +115,7 @@ function buildMatByKind(
   );
 }
 
-export function computeArrows(
-  data: MoveMaterialArrowData<ClientRect>
-): ReadonlyArray<MoveMaterialArrow> {
+export function computeArrows(data: MoveMaterialArrowData<ClientRect>): ReadonlyArray<MoveMaterialArrow> {
   const container = data.container;
   if (!container) {
     return [];
@@ -143,8 +137,7 @@ export function computeArrows(
             fromY: rect.top + rect.height / 2,
             toX: rect.left,
             toY: byKind.completedMaterial
-              ? byKind.completedMaterial.top +
-                byKind.completedMaterial.height / 2
+              ? byKind.completedMaterial.top + byKind.completedMaterial.height / 2
               : container.bottom - 10,
             curveDirection: 1
           } as MoveMaterialArrow;

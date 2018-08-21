@@ -41,19 +41,8 @@ import { createSelector } from "reselect";
 import DocumentTitle from "react-document-title";
 
 import { MaterialSummary } from "../../data/events";
-import {
-  Store,
-  connect,
-  mkAC,
-  AppActionBeforeMiddleware
-} from "../../store/store";
-import {
-  MaterialDialogProps,
-  MaterialDialog,
-  MatSummary,
-  WhiteboardRegion,
-  InstructionButton
-} from "./Material";
+import { Store, connect, mkAC, AppActionBeforeMiddleware } from "../../store/store";
+import { MaterialDialogProps, MaterialDialog, MatSummary, WhiteboardRegion, InstructionButton } from "./Material";
 import * as matDetails from "../../data/material-details";
 import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 import SerialScanner from "./QRScan";
@@ -62,9 +51,7 @@ interface InspButtonsProps {
   readonly display_material: matDetails.MaterialDetail;
   readonly operator?: string;
   readonly inspection_type: string;
-  readonly completeInspection: (
-    comp: matDetails.CompleteInspectionData
-  ) => void;
+  readonly completeInspection: (comp: matDetails.CompleteInspectionData) => void;
 }
 
 function InspButtons(props: InspButtonsProps) {
@@ -84,10 +71,7 @@ function InspButtons(props: InspButtonsProps) {
   return (
     <>
       {props.display_material && props.display_material.partName !== "" ? (
-        <InstructionButton
-          part={props.display_material.partName}
-          type={props.inspection_type}
-        />
+        <InstructionButton part={props.display_material.partName} type={props.inspection_type} />
       ) : (
         undefined
       )}
@@ -104,9 +88,7 @@ function InspButtons(props: InspButtonsProps) {
 interface InspDialogProps extends MaterialDialogProps {
   readonly operator?: string;
   readonly focusInspectionType: string;
-  readonly completeInspection: (
-    comp: matDetails.CompleteInspectionData
-  ) => void;
+  readonly completeInspection: (comp: matDetails.CompleteInspectionData) => void;
 }
 
 function InspDialog(props: InspDialogProps) {
@@ -200,21 +182,12 @@ function Inspection(props: InspectionProps) {
           <Grid item xs={12} md={6}>
             <WhiteboardRegion label="Parts to Inspect" borderRight borderBottom>
               {props.recent_inspections.waiting_to_inspect.map((m, idx) => (
-                <MatSummary
-                  key={idx}
-                  mat={m}
-                  onOpen={props.openMat}
-                  hideInspectionIcon
-                />
+                <MatSummary key={idx} mat={m} onOpen={props.openMat} hideInspectionIcon />
               ))}
             </WhiteboardRegion>
           </Grid>
           <Grid item xs={12} md={6}>
-            <WhiteboardRegion
-              label="Recently Inspected"
-              borderLeft
-              borderBottom
-            >
+            <WhiteboardRegion label="Recently Inspected" borderLeft borderBottom>
               {props.recent_inspections.inspect_completed.map((m, idx) => (
                 <MatSummary
                   key={idx}
@@ -237,16 +210,9 @@ function Inspection(props: InspectionProps) {
 const extractRecentInspections = createSelector(
   (st: Store) => st.Events.last30.mat_summary.matsById,
   (st: Store) => st.Route.selected_insp_type,
-  (
-    mats: im.Map<number, MaterialSummaryAndCompletedData>,
-    inspType: string | undefined
-  ): PartsForInspection => {
+  (mats: im.Map<number, MaterialSummaryAndCompletedData>, inspType: string | undefined): PartsForInspection => {
     const cutoff = addHours(new Date(), -36);
-    const allDetails = mats
-      .valueSeq()
-      .filter(
-        e => e.completed_time !== undefined && e.completed_time >= cutoff
-      );
+    const allDetails = mats.valueSeq().filter(e => e.completed_time !== undefined && e.completed_time >= cutoff);
 
     function checkAllCompleted(m: MaterialSummaryAndCompletedData): boolean {
       return im
@@ -257,24 +223,16 @@ const extractRecentInspections = createSelector(
 
     const uninspected =
       inspType === undefined
-        ? allDetails.filter(
-            m => m.signaledInspections.length > 0 && !checkAllCompleted(m)
-          )
+        ? allDetails.filter(m => m.signaledInspections.length > 0 && !checkAllCompleted(m))
         : allDetails.filter(
-            m =>
-              m.signaledInspections.indexOf(inspType) >= 0 &&
-              (m.completedInspections || {})[inspType] === undefined
+            m => m.signaledInspections.indexOf(inspType) >= 0 && (m.completedInspections || {})[inspType] === undefined
           );
 
     const inspected =
       inspType === undefined
-        ? allDetails.filter(
-            m => m.signaledInspections.length > 0 && checkAllCompleted(m)
-          )
+        ? allDetails.filter(m => m.signaledInspections.length > 0 && checkAllCompleted(m))
         : allDetails.filter(
-            m =>
-              m.signaledInspections.indexOf(inspType) >= 0 &&
-              (m.completedInspections || {})[inspType] !== undefined
+            m => m.signaledInspections.indexOf(inspType) >= 0 && (m.completedInspections || {})[inspType] !== undefined
           );
 
     return {

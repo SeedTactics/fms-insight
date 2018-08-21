@@ -42,18 +42,10 @@ import { Sankey, Hint } from "react-vis";
 
 import { PartIdenticon } from "../station-monitor/Material";
 import { connect } from "../../store/store";
-import {
-  SankeyNode,
-  SankeyDiagram,
-  inspectionDataToSankey
-} from "../../data/inspection-sankey";
+import { SankeyNode, SankeyDiagram, inspectionDataToSankey } from "../../data/inspection-sankey";
 
 import * as events from "../../data/events";
-import {
-  PartAndInspType,
-  mkPartAndInspType,
-  InspectionLogEntry
-} from "../../data/events.inspection";
+import { PartAndInspType, mkPartAndInspType, InspectionLogEntry } from "../../data/events.inspection";
 
 interface InspectionSankeyDiagramProps {
   readonly sankey: SankeyDiagram;
@@ -84,10 +76,7 @@ interface InspectionSankeyDiagramState {
   readonly activeLink?: D3Link;
 }
 
-class InspectionSankeyDiagram extends React.PureComponent<
-  InspectionSankeyDiagramProps,
-  InspectionSankeyDiagramState
-> {
+class InspectionSankeyDiagram extends React.PureComponent<InspectionSankeyDiagramProps, InspectionSankeyDiagramState> {
   state: InspectionSankeyDiagramState = {};
 
   renderHint() {
@@ -97,13 +86,11 @@ class InspectionSankeyDiagram extends React.PureComponent<
     }
 
     // calculate center x,y position of link for positioning of hint
-    const x =
-      activeLink.source.x1 + (activeLink.target.x0 - activeLink.source.x1) / 2;
+    const x = activeLink.source.x1 + (activeLink.target.x0 - activeLink.source.x1) / 2;
     const y = activeLink.y0 - (activeLink.y0 - activeLink.y1) / 2;
 
     const hintValue = {
-      [`${activeLink.source.name} ➞ ${activeLink.target.name}`]:
-        activeLink.value.toString() + " parts"
+      [`${activeLink.source.name} ➞ ${activeLink.target.name}`]: activeLink.value.toString() + " parts"
     };
 
     return <Hint x={x} y={y} value={hintValue} />;
@@ -116,10 +103,7 @@ class InspectionSankeyDiagram extends React.PureComponent<
         nodes={this.props.sankey.nodes.map(d => ({ ...d }))}
         links={this.props.sankey.links.map((l, idx) => ({
           ...l,
-          opacity:
-            this.state.activeLink && this.state.activeLink.index === idx
-              ? 0.6
-              : 0.3
+          opacity: this.state.activeLink && this.state.activeLink.index === idx ? 0.6 : 0.3
         }))}
         width={window.innerWidth - 300}
         height={window.innerHeight - 200}
@@ -137,19 +121,12 @@ class ConvertInspectionDataToSankey extends React.PureComponent<{
   data: ReadonlyArray<InspectionLogEntry>;
 }> {
   render() {
-    return (
-      <InspectionSankeyDiagram
-        sankey={inspectionDataToSankey(this.props.data)}
-      />
-    );
+    return <InspectionSankeyDiagram sankey={inspectionDataToSankey(this.props.data)} />;
   }
 }
 
 interface InspectionSankeyProps {
-  readonly inspectionlogs: im.Map<
-    PartAndInspType,
-    ReadonlyArray<InspectionLogEntry>
-  >;
+  readonly inspectionlogs: im.Map<PartAndInspType, ReadonlyArray<InspectionLogEntry>>;
 }
 
 interface InspectionSankeyState {
@@ -157,10 +134,7 @@ interface InspectionSankeyState {
   readonly selectedInspectType?: string;
 }
 
-class InspectionSankey extends React.Component<
-  InspectionSankeyProps,
-  InspectionSankeyState
-> {
+class InspectionSankey extends React.Component<InspectionSankeyProps, InspectionSankeyState> {
   state: InspectionSankeyState = {};
 
   render() {
@@ -197,9 +171,7 @@ class InspectionSankey extends React.Component<
               }}
             >
               <SearchIcon />
-              <div style={{ marginLeft: "10px", marginRight: "3em" }}>
-                Inspections
-              </div>
+              <div style={{ marginLeft: "10px", marginRight: "3em" }}>Inspections</div>
               <div style={{ flexGrow: 1 }} />
               <Select
                 name="inspection-sankey-select-type"
@@ -207,9 +179,7 @@ class InspectionSankey extends React.Component<
                 displayEmpty
                 style={{ marginRight: "1em" }}
                 value={this.state.selectedInspectType || ""}
-                onChange={e =>
-                  this.setState({ selectedInspectType: e.target.value })
-                }
+                onChange={e => this.setState({ selectedInspectType: e.target.value })}
               >
                 {this.state.selectedInspectType ? (
                   undefined
@@ -252,11 +222,7 @@ class InspectionSankey extends React.Component<
         />
         <CardContent>
           <div style={{ display: "flex", justifyContent: "center" }}>
-            {curData ? (
-              <ConvertInspectionDataToSankey data={curData} />
-            ) : (
-              undefined
-            )}
+            {curData ? <ConvertInspectionDataToSankey data={curData} /> : undefined}
           </div>
         </CardContent>
       </Card>

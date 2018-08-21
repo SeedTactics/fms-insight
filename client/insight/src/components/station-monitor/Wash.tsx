@@ -40,19 +40,8 @@ import { createSelector } from "reselect";
 import DocumentTitle from "react-document-title";
 
 import { MaterialSummary } from "../../data/events";
-import {
-  Store,
-  connect,
-  AppActionBeforeMiddleware,
-  mkAC
-} from "../../store/store";
-import {
-  MaterialDialog,
-  WhiteboardRegion,
-  MatSummary,
-  MaterialDialogProps,
-  InstructionButton
-} from "./Material";
+import { Store, connect, AppActionBeforeMiddleware, mkAC } from "../../store/store";
+import { MaterialDialog, WhiteboardRegion, MatSummary, MaterialDialogProps, InstructionButton } from "./Material";
 import * as matDetails from "../../data/material-details";
 import * as guiState from "../../data/gui-state";
 import * as api from "../../data/api";
@@ -87,22 +76,13 @@ function WashDialog(props: WashDialogProps) {
   }
 
   const requireScan = props.fmsInfo ? props.fmsInfo.requireScanAtWash : false;
-  const requireWork = props.fmsInfo
-    ? props.fmsInfo.requireWorkorderBeforeAllowWashComplete
-    : false;
+  const requireWork = props.fmsInfo ? props.fmsInfo.requireWorkorderBeforeAllowWashComplete : false;
   let disallowCompleteReason: string | undefined;
 
-  if (
-    requireScan &&
-    props.display_material &&
-    !props.display_material.openedViaBarcodeScanner
-  ) {
+  if (requireScan && props.display_material && !props.display_material.openedViaBarcodeScanner) {
     disallowCompleteReason = "Scan required at wash";
   } else if (requireWork && props.display_material) {
-    if (
-      props.display_material.workorderId === undefined ||
-      props.display_material.workorderId === ""
-    ) {
+    if (props.display_material.workorderId === undefined || props.display_material.workorderId === "") {
       disallowCompleteReason = "No workorder assigned";
     }
   }
@@ -114,10 +94,7 @@ function WashDialog(props: WashDialogProps) {
       buttons={
         <>
           {props.display_material && props.display_material.partName !== "" ? (
-            <InstructionButton
-              part={props.display_material.partName}
-              type="wash"
-            />
+            <InstructionButton part={props.display_material.partName} type="wash" />
           ) : (
             undefined
           )}
@@ -135,9 +112,7 @@ function WashDialog(props: WashDialogProps) {
             </Button>
           )}
           <Button color="primary" onClick={openAssignWorkorder}>
-            {props.display_material && props.display_material.workorderId
-              ? "Change Workorder"
-              : "Assign Workorder"}
+            {props.display_material && props.display_material.workorderId ? "Change Workorder" : "Assign Workorder"}
           </Button>
         </>
       }
@@ -174,34 +149,22 @@ interface WashProps {
 }
 
 function Wash(props: WashProps) {
-  const unwashed = im
-    .Seq(props.recent_completed)
-    .filter(m => m.wash_completed === undefined);
-  const washed = im
-    .Seq(props.recent_completed)
-    .filter(m => m.wash_completed !== undefined);
+  const unwashed = im.Seq(props.recent_completed).filter(m => m.wash_completed === undefined);
+  const washed = im.Seq(props.recent_completed).filter(m => m.wash_completed !== undefined);
 
   return (
     <DocumentTitle title="Wash - FMS Insight">
       <main style={{ padding: "8px" }}>
         <Grid container spacing={16}>
           <Grid item xs={12} md={6}>
-            <WhiteboardRegion
-              label="Recently completed parts not yet washed"
-              borderRight
-              borderBottom
-            >
+            <WhiteboardRegion label="Recently completed parts not yet washed" borderRight borderBottom>
               {unwashed.map((m, idx) => (
                 <MatSummary key={idx} mat={m} onOpen={props.openMat} />
               ))}
             </WhiteboardRegion>
           </Grid>
           <Grid item xs={12} md={6}>
-            <WhiteboardRegion
-              label="Recently Washed Parts"
-              borderLeft
-              borderBottom
-            >
+            <WhiteboardRegion label="Recently Washed Parts" borderLeft borderBottom>
               {washed.map((m, idx) => (
                 <MatSummary key={idx} mat={m} onOpen={props.openMat} />
               ))}
@@ -218,9 +181,7 @@ function Wash(props: WashProps) {
 
 const extractRecentCompleted = createSelector(
   (st: Store) => st.Events.last30.mat_summary.matsById,
-  (
-    mats: im.Map<number, MaterialSummaryAndCompletedData>
-  ): ReadonlyArray<MaterialSummaryAndCompletedData> => {
+  (mats: im.Map<number, MaterialSummaryAndCompletedData>): ReadonlyArray<MaterialSummaryAndCompletedData> => {
     const cutoff = addHours(new Date(), -36);
     return mats
       .valueSeq()

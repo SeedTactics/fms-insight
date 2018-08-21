@@ -33,13 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import * as im from "immutable";
 import { format } from "date-fns";
-import {
-  HeatmapSeries,
-  XAxis,
-  YAxis,
-  Hint,
-  FlexibleWidthXYPlot
-} from "react-vis";
+import { HeatmapSeries, XAxis, YAxis, Hint, FlexibleWidthXYPlot } from "react-vis";
 import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
 import CardHeader from "@material-ui/core/CardHeader";
@@ -93,18 +87,13 @@ class HeatChart extends React.PureComponent<HeatChartProps, HeatChartState> {
         <YAxis />
         <HeatmapSeries
           data={this.props.points}
-          onValueMouseOver={(pt: HeatChartPoint) =>
-            this.setState({ selected_point: pt })
-          }
+          onValueMouseOver={(pt: HeatChartPoint) => this.setState({ selected_point: pt })}
           onValueMouseOut={() => this.setState({ selected_point: undefined })}
         />
         {this.state.selected_point === undefined ? (
           undefined
         ) : (
-          <Hint
-            value={this.state.selected_point}
-            format={formatHint(this.props.label_title)}
-          />
+          <Hint value={this.state.selected_point} format={formatHint(this.props.label_title)} />
         )}
       </FlexibleWidthXYPlot>
     );
@@ -126,36 +115,21 @@ export function SelectableHeatChart(props: SelectableHeatChartProps) {
     <Card raised>
       <CardHeader
         title={
-          <div
-            style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}
-          >
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
             {props.icon}
-            <div style={{ marginLeft: "10px", marginRight: "3em" }}>
-              {props.card_label}
-            </div>
+            <div style={{ marginLeft: "10px", marginRight: "3em" }}>{props.card_label}</div>
             <div style={{ flexGrow: 1 }} />
             <Select
-              name={
-                props.card_label.replace(" ", "-") +
-                "-heatchart-planned-or-actual"
-              }
+              name={props.card_label.replace(" ", "-") + "-heatchart-planned-or-actual"}
               autoWidth
               displayEmpty
               value={props.planned_or_actual}
-              onChange={e =>
-                props.setType(e.target.value as gui.PlannedOrActual)
-              }
+              onChange={e => props.setType(e.target.value as gui.PlannedOrActual)}
             >
-              <MenuItem
-                key={gui.PlannedOrActual.Actual}
-                value={gui.PlannedOrActual.Actual}
-              >
+              <MenuItem key={gui.PlannedOrActual.Actual} value={gui.PlannedOrActual.Actual}>
                 Actual
               </MenuItem>
-              <MenuItem
-                key={gui.PlannedOrActual.Planned}
-                value={gui.PlannedOrActual.Planned}
-              >
+              <MenuItem key={gui.PlannedOrActual.Planned} value={gui.PlannedOrActual.Planned}>
                 Planned
               </MenuItem>
             </Select>

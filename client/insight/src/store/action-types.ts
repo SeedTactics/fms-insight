@@ -36,12 +36,8 @@ type RemoveType<A> = { [P in RemoveTypeProp<keyof A>]: A[P] };
 export type GetActionTypes<A> = A extends { type: infer T } ? T : never;
 export type ActionPayload<A, T> = A extends { type: T } ? RemoveType<A> : never;
 export type ActionCreator<A, Args> = (args: Args) => A;
-export type DispatchFn<Args> = {} extends Args
-  ? () => void
-  : (payload: Args) => void;
+export type DispatchFn<Args> = {} extends Args ? () => void : (payload: Args) => void;
 export type ActionCreatorToDispatch<A, Creators> = {
-  [P in keyof Creators]: Creators[P] extends ActionCreator<A, infer Args>
-    ? DispatchFn<Args>
-    : never
+  [P in keyof Creators]: Creators[P] extends ActionCreator<A, infer Args> ? DispatchFn<Args> : never
 };
 export type DispatchAction<A, T> = DispatchFn<ActionPayload<A, T>>;

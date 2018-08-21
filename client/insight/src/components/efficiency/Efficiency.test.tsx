@@ -32,13 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import {
-  render,
-  cleanup,
-  fireEvent,
-  wait,
-  within
-} from "react-testing-library";
+import { render, cleanup, fireEvent, wait, within } from "react-testing-library";
 afterEach(cleanup);
 import { Provider } from "react-redux";
 import { Simulate } from "react-dom/test-utils";
@@ -60,114 +54,68 @@ it("renders the cost/piece page", async () => {
     </Provider>
   );
 
-  expect(
-    result.getByTestId("completed-heatmap").querySelector("div.rv-xy-plot")
-  ).toBeEmpty();
+  expect(result.getByTestId("completed-heatmap").querySelector("div.rv-xy-plot")).toBeEmpty();
 
   // now go to July 2018 which has the test store data
-  const chooseMonth = result.getByPlaceholderText(
-    "Choose Month"
-  ) as HTMLInputElement;
+  const chooseMonth = result.getByPlaceholderText("Choose Month") as HTMLInputElement;
   chooseMonth.value = "2018-07";
   Simulate.change(chooseMonth);
   fireEvent.blur(chooseMonth);
   fireEvent.click(result.getByLabelText("Select Month"));
-  await wait(() =>
-    expect(result.queryByTestId("loading-icon")).not.toBeInTheDocument()
-  );
+  await wait(() => expect(result.queryByTestId("loading-icon")).not.toBeInTheDocument());
 
   // part cycles
+  fireEvent.click(within(result.getByTestId("part-cycle-chart")).getByText("Select Part"));
   fireEvent.click(
-    within(result.getByTestId("part-cycle-chart")).getByText("Select Part")
-  );
-  fireEvent.click(
-    within(document.getElementById(
-      "menu-Station-Cycles-cycle-chart-select"
-    ) as HTMLElement).getByText("aaa-1")
+    within(document.getElementById("menu-Station-Cycles-cycle-chart-select") as HTMLElement).getByText("aaa-1")
   );
   expect(
-    result
-      .getByTestId("part-cycle-chart")
-      .querySelectorAll("g.rv-xy-plot__series > circle").length
+    result.getByTestId("part-cycle-chart").querySelectorAll("g.rv-xy-plot__series > circle").length
   ).toBeGreaterThan(0);
 
   // pallet cycles
+  fireEvent.click(within(result.getByTestId("pallet-cycle-chart")).getByText("Select Pallet"));
   fireEvent.click(
-    within(result.getByTestId("pallet-cycle-chart")).getByText("Select Pallet")
-  );
-  fireEvent.click(
-    within(document.getElementById(
-      "menu-Pallet-Cycles-cycle-chart-select"
-    ) as HTMLElement).getByText("3")
+    within(document.getElementById("menu-Pallet-Cycles-cycle-chart-select") as HTMLElement).getByText("3")
   );
   expect(
-    result
-      .getByTestId("pallet-cycle-chart")
-      .querySelectorAll("g.rv-xy-plot__series > circle").length
+    result.getByTestId("pallet-cycle-chart").querySelectorAll("g.rv-xy-plot__series > circle").length
   ).toBeGreaterThan(0);
 
   // station oee heatmap
   expect(
-    result
-      .getByTestId("station-oee-heatmap")
-      .querySelectorAll("g.rv-xy-plot__series--heatmap > rect").length
+    result.getByTestId("station-oee-heatmap").querySelectorAll("g.rv-xy-plot__series--heatmap > rect").length
   ).toBeGreaterThan(0);
+  fireEvent.click(within(result.getByTestId("station-oee-heatmap")).getByText("Actual"));
   fireEvent.click(
-    within(result.getByTestId("station-oee-heatmap")).getByText("Actual")
-  );
-  fireEvent.click(
-    within(document.getElementById(
-      "menu-Station-OEE-heatchart-planned-or-actual"
-    ) as HTMLElement).getByText("Planned")
+    within(document.getElementById("menu-Station-OEE-heatchart-planned-or-actual") as HTMLElement).getByText("Planned")
   );
   expect(
-    result
-      .getByTestId("station-oee-heatmap")
-      .querySelectorAll("g.rv-xy-plot__series--heatmap > rect").length
+    result.getByTestId("station-oee-heatmap").querySelectorAll("g.rv-xy-plot__series--heatmap > rect").length
   ).toBeGreaterThan(0);
 
   // completed counts
   expect(
-    result
-      .getByTestId("completed-heatmap")
-      .querySelectorAll("g.rv-xy-plot__series--heatmap > rect").length
+    result.getByTestId("completed-heatmap").querySelectorAll("g.rv-xy-plot__series--heatmap > rect").length
   ).toBeGreaterThan(0);
+  fireEvent.click(within(result.getByTestId("completed-heatmap")).getByText("Actual"));
   fireEvent.click(
-    within(result.getByTestId("completed-heatmap")).getByText("Actual")
-  );
-  fireEvent.click(
-    within(document.getElementById(
-      "menu-Part-Production-heatchart-planned-or-actual"
-    ) as HTMLElement).getByText("Planned")
+    within(document.getElementById("menu-Part-Production-heatchart-planned-or-actual") as HTMLElement).getByText(
+      "Planned"
+    )
   );
   expect(
-    result
-      .getByTestId("completed-heatmap")
-      .querySelectorAll("g.rv-xy-plot__series--heatmap > rect").length
+    result.getByTestId("completed-heatmap").querySelectorAll("g.rv-xy-plot__series--heatmap > rect").length
   ).toBeGreaterThan(0);
 
   // inspection sankey
+  fireEvent.click(within(result.getByTestId("inspection-sankey")).getByText("Select Inspection Type"));
   fireEvent.click(
-    within(result.getByTestId("inspection-sankey")).getByText(
-      "Select Inspection Type"
-    )
+    within(document.getElementById("menu-inspection-sankey-select-type") as HTMLElement).getByText("CMM")
   );
+  fireEvent.click(within(result.getByTestId("inspection-sankey")).getByText("Select Part"));
   fireEvent.click(
-    within(document.getElementById(
-      "menu-inspection-sankey-select-type"
-    ) as HTMLElement).getByText("CMM")
+    within(document.getElementById("menu-inspection-sankey-select-part") as HTMLElement).getByText("bbb")
   );
-  fireEvent.click(
-    within(result.getByTestId("inspection-sankey")).getByText("Select Part")
-  );
-  fireEvent.click(
-    within(document.getElementById(
-      "menu-inspection-sankey-select-part"
-    ) as HTMLElement).getByText("bbb")
-  );
-  expect(
-    result
-      .getByTestId("inspection-sankey")
-      .querySelectorAll("path.rv-sankey__link").length
-  ).toBeGreaterThan(0);
+  expect(result.getByTestId("inspection-sankey").querySelectorAll("path.rv-sankey__link").length).toBeGreaterThan(0);
 });
