@@ -56,14 +56,14 @@ import * as api from "../../data/api";
 import * as operators from "../../data/operators";
 import * as guiState from "../../data/gui-state";
 
-export interface OperatorSelectProps {
+interface OperatorSelectProps {
   readonly operators: Set<string>;
   readonly currentOperator: string | null;
   readonly setOperator: DispatchAction<operators.ActionType.SetOperator>;
   readonly removeOperator: DispatchAction<operators.ActionType.RemoveOperator>;
 }
 
-export class OperatorSelect extends React.PureComponent<OperatorSelectProps> {
+class OperatorSelect extends React.PureComponent<OperatorSelectProps> {
   render() {
     const opers = this.props.operators.toSeq().sort();
     return (
@@ -136,7 +136,7 @@ const toolbarStyle = {
   alignItems: "flex-end" as "flex-end"
 };
 
-export interface StationToolbarProps {
+interface StationToolbarProps {
   readonly current_route: routes.State;
   readonly queues: { [key: string]: api.IQueueSize };
   readonly insp_types: Set<string>;
@@ -156,7 +156,7 @@ export interface StationToolbarProps {
 const freeMaterialSym = "@@insight_free_material@@";
 const allInspSym = "@@all_inspection_display@@";
 
-export function StationToolbar(props: StationToolbarProps) {
+function StationToolbar(props: StationToolbarProps) {
   const queueNames = Object.keys(props.queues).sort();
 
   function setStation(s: string) {
