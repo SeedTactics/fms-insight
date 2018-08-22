@@ -1,0 +1,1028 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`renders the load station page: NBTGI dialog 1`] = `
+<div
+  class="MuiModal-root-28 MuiDialog-root-141 MuiDialog-scrollPaper-142"
+  role="dialog"
+>
+  <div
+    aria-hidden="true"
+    class="MuiBackdrop-root-214"
+    style="opacity: 1; -webkit-transition: opacity 225ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;"
+  />
+  <div
+    class="MuiPaper-root-159 MuiPaper-elevation24-185 MuiPaper-rounded-160 MuiDialog-paper-144 MuiDialog-paperScrollPaper-145 MuiDialog-paperWidthMd-149"
+    role="document"
+    style="opacity: 1; -webkit-transition: opacity 225ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;"
+    tabindex="-1"
+  >
+    <div
+      class="MuiDialogTitle-root-216"
+    >
+      <div
+        style="display: flex; text-align: left;"
+      >
+        <div
+          style="width: 50px; height: 50px;"
+        >
+          <svg
+            height="50"
+            preserveAspectRatio="xMidYMid meet"
+            viewBox="0 0 50 50"
+            width="50"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M20 5L25 10L20 15L15 10ZM35 10L30 15L25 10L30 5ZM30 45L25 40L30 35L35 40ZM15 40L20 35L25 40L20 45ZM10 15L15 20L10 25L5 20ZM45 20L40 25L35 20L40 15ZM40 35L35 30L40 25L45 30ZM5 30L10 25L15 30L10 35Z"
+              fill="#579932"
+            />
+            <path
+              d="M5 15L5 5L15 5ZM35 5L45 5L45 15ZM45 35L45 45L35 45ZM15 45L5 45L5 35ZM15 15L25 15L25 16.6L20.8 25L15 25ZM35 15L35 25L33.4 25L25 20.8L25 15ZM35 35L25 35L25 33.4L29.2 25L35 25ZM15 35L15 25L16.6 25L25 29.2L25 35Z"
+              fill="#8acc66"
+            />
+          </svg>
+        </div>
+        <div
+          style="margin-left: 8px;"
+        >
+          <h2
+            class="MuiTypography-root-186 MuiTypography-title-192"
+          >
+            aaa - NBTGI
+          </h2>
+        </div>
+      </div>
+    </div>
+    <div
+      class="MuiDialogContent-root-217"
+    >
+      <div
+        style="margin-left: 1em;"
+      >
+        <div>
+          <small>
+            Workorder: 
+            none
+          </small>
+        </div>
+        <div>
+          <small>
+            Inspections: 
+          </small>
+          <small>
+            none
+          </small>
+        </div>
+      </div>
+      <table
+        class="MuiTable-root-255"
+        padding="default"
+      >
+        <thead
+          class="MuiTableHead-root-256"
+        >
+          <tr
+            class="MuiTableRow-root-257 MuiTableRow-head-260"
+          >
+            <th
+              class="MuiTableCell-root-262 MuiTableCell-head-263"
+              scope="col"
+            >
+              Date
+            </th>
+            <th
+              class="MuiTableCell-root-262 MuiTableCell-head-263"
+              scope="col"
+            >
+              Time
+            </th>
+            <th
+              class="MuiTableCell-root-262 MuiTableCell-head-263"
+              scope="col"
+            >
+              Type
+            </th>
+            <th
+              class="MuiTableCell-root-262 MuiTableCell-head-263"
+              scope="col"
+            >
+              Details
+            </th>
+          </tr>
+        </thead>
+        <tbody
+          class="MuiTableBody-root-270"
+        >
+          <tr
+            class="MuiTableRow-root-257"
+          >
+            <td
+              class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
+            >
+              Jul 9, 18
+            </td>
+            <td
+              class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
+            >
+              05:33 PM
+            </td>
+            <td
+              class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
+            >
+              Start Load
+            </td>
+            <td
+              class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
+            >
+              aaa[1] on pallet 1 at station 1
+            </td>
+          </tr>
+          <tr
+            class="MuiTableRow-root-257"
+          >
+            <td
+              class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
+            >
+              Jul 9, 18
+            </td>
+            <td
+              class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
+            >
+              05:40 PM
+            </td>
+            <td
+              class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
+            >
+              End Load
+            </td>
+            <td
+              class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
+            >
+              aaa[1] on pallet 1 at station 1
+            </td>
+          </tr>
+          <tr
+            class="MuiTableRow-root-257"
+          >
+            <td
+              class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
+            >
+              Jul 9, 18
+            </td>
+            <td
+              class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
+            >
+              05:41 PM
+            </td>
+            <td
+              class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
+            >
+              Serial
+            </td>
+            <td
+              class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
+            >
+              aaa[1] marked with NBTGI
+            </td>
+          </tr>
+          <tr
+            class="MuiTableRow-root-257"
+          >
+            <td
+              class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
+            >
+              Jul 9, 18
+            </td>
+            <td
+              class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
+            >
+              06:16 PM
+            </td>
+            <td
+              class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
+            >
+              Cycle Start
+            </td>
+            <td
+              class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
+            >
+              aaa[1] on pallet 1 at machine 4
+            </td>
+          </tr>
+          <tr
+            class="MuiTableRow-root-257"
+          >
+            <td
+              class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
+            >
+              Jul 9, 18
+            </td>
+            <td
+              class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
+            >
+              06:31 PM
+            </td>
+            <td
+              class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
+            >
+              Cycle End
+            </td>
+            <td
+              class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
+            >
+              aaa[1] on pallet 1 at machine 4 with program prog-aaa-2
+            </td>
+          </tr>
+          <tr
+            class="MuiTableRow-root-257"
+          >
+            <td
+              class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
+            >
+              Jul 9, 18
+            </td>
+            <td
+              class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
+            >
+              06:43 PM
+            </td>
+            <td
+              class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
+            >
+              Start Unload
+            </td>
+            <td
+              class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
+            >
+              aaa[1] on pallet 1 at station 1
+            </td>
+          </tr>
+          <tr
+            class="MuiTableRow-root-257"
+          >
+            <td
+              class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
+            >
+              Jul 9, 18
+            </td>
+            <td
+              class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
+            >
+              06:43 PM
+            </td>
+            <td
+              class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
+            >
+              Start Load
+            </td>
+            <td
+              class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
+            >
+              aaa[2] on pallet 1 at station 1
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div
+      class="MuiDialogActions-root-227"
+    >
+      <a
+        class="MuiButtonBase-root-47 MuiButton-root-229 MuiButton-text-231 MuiButton-textPrimary-232 MuiButton-flat-234 MuiButton-flatPrimary-235"
+        href="/api/v1/server/find-instructions/aaa?type=load"
+        role="button"
+        tabindex="0"
+        target="bms-instructions"
+      >
+        <span
+          class="MuiButton-label-230"
+        >
+          Instructions
+        </span>
+        <span
+          class="MuiTouchRipple-root-50"
+        />
+      </a>
+      <button
+        class="MuiButtonBase-root-47 MuiButton-root-229 MuiButton-text-231 MuiButton-textPrimary-232 MuiButton-flat-234 MuiButton-flatPrimary-235"
+        tabindex="0"
+        type="button"
+      >
+        <span
+          class="MuiButton-label-230"
+        >
+          Change Serial
+        </span>
+        <span
+          class="MuiTouchRipple-root-50"
+        />
+      </button>
+      <button
+        class="MuiButtonBase-root-47 MuiButton-root-229 MuiButton-text-231 MuiButton-textPrimary-232 MuiButton-flat-234 MuiButton-flatPrimary-235"
+        tabindex="0"
+        type="button"
+      >
+        <span
+          class="MuiButton-label-230"
+        >
+          Signal Inspection
+        </span>
+        <span
+          class="MuiTouchRipple-root-50"
+        />
+      </button>
+      <button
+        class="MuiButtonBase-root-47 MuiButton-root-229 MuiButton-text-231 MuiButton-textPrimary-232 MuiButton-flat-234 MuiButton-flatPrimary-235"
+        tabindex="0"
+        type="button"
+      >
+        <span
+          class="MuiButton-label-230"
+        >
+          Assign Workorder
+        </span>
+        <span
+          class="MuiTouchRipple-root-50"
+        />
+      </button>
+      <button
+        class="MuiButtonBase-root-47 MuiButton-root-229 MuiButton-text-231 MuiButton-textSecondary-233 MuiButton-flat-234 MuiButton-flatSecondary-236 MuiDialogActions-action-228"
+        tabindex="0"
+        type="button"
+      >
+        <span
+          class="MuiButton-label-230"
+        >
+          Close
+        </span>
+        <span
+          class="MuiTouchRipple-root-50"
+        />
+      </button>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`renders the load station page: load 1 1`] = `
+<main
+  class="Component-mainScrollable-58"
+  data-testid="stationmonitor-load"
+>
+  <div
+    class="Component-palCol-59"
+  >
+    <div
+      class="Component-container-69"
+    >
+      <div
+        class="Component-labelContainer-70"
+      >
+        <span
+          class="Component-label-71"
+        >
+          Raw Material
+        </span>
+      </div>
+      <div
+        class="Component-contentContainer-73"
+        style="justify-content: space-around;"
+      >
+        <div>
+          <div
+            class="MuiPaper-root-82 MuiPaper-elevation4-88 MuiPaper-rounded-83 Component-paper-77"
+          >
+            <button
+              class="MuiButtonBase-root-47"
+              tabindex="0"
+              type="button"
+            >
+              <div
+                class="Component-container-78"
+              >
+                <div
+                  style="width: 50px; height: 50px;"
+                >
+                  <svg
+                    height="50"
+                    preserveAspectRatio="xMidYMid meet"
+                    viewBox="0 0 50 50"
+                    width="50"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M16.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M26.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M26.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M16.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M6.7 20a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 20a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 30a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M6.7 30a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0"
+                      fill="#a83843"
+                    />
+                    <path
+                      d="M6.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M6.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0"
+                      fill="#e8babe"
+                    />
+                    <path
+                      d="M15 15L25 15L25 25L15 25ZM17.5 21.3L21.3 25L25 21.3L21.3 17.5ZM35 15L35 25L25 25L25 15ZM28.8 17.5L25 21.3L28.8 25L32.5 21.3ZM35 35L25 35L25 25L35 25ZM32.5 28.8L28.8 25L25 28.8L28.8 32.5ZM15 35L15 25L25 25L25 35ZM21.3 32.5L25 28.8L21.3 25L17.5 28.8Z"
+                      fill="#d1757e"
+                    />
+                  </svg>
+                </div>
+                <div
+                  class="Component-mainContent-79"
+                >
+                  <h2
+                    class="MuiTypography-root-109 MuiTypography-title-115"
+                  >
+                    bbb
+                  </h2>
+                  <div>
+                    <small>
+                      Serial: 
+                      NRWGM
+                    </small>
+                  </div>
+                  <div>
+                    <small>
+                      Load onto face 1 of pal 1
+                    </small>
+                  </div>
+                </div>
+                <div
+                  class="Component-rightContent-80"
+                >
+                  <div>
+                    <div
+                      class="MuiAvatar-root-134 MuiAvatar-colorDefault-135 Component-avatar-81"
+                    >
+                      M
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <span
+                class="MuiTouchRipple-root-50"
+              />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <hr
+      class="MuiDivider-root-137"
+    />
+    <div
+      class="Component-palletContainerScroll-62"
+    >
+      <div
+        class="Component-labelContainer-65"
+      >
+        <div
+          class="Component-label-66"
+        >
+          Pallet
+        </div>
+        <div
+          class="Component-labelPalletNum-67"
+        >
+          1
+        </div>
+      </div>
+      <div
+        class="Component-faceContainer-68"
+      >
+        <div>
+          <div>
+            <div
+              class="Component-container-69"
+            >
+              <div
+                class="Component-labelContainer-70"
+              >
+                <span
+                  class="Component-label-71"
+                >
+                  Face 1
+                </span>
+              </div>
+              <div
+                class="Component-contentContainer-73"
+                style="justify-content: space-around;"
+              >
+                <div>
+                  <div
+                    class="MuiPaper-root-82 MuiPaper-elevation4-88 MuiPaper-rounded-83 Component-paper-77"
+                  >
+                    <button
+                      class="MuiButtonBase-root-47"
+                      tabindex="0"
+                      type="button"
+                    >
+                      <div
+                        class="Component-container-78"
+                      >
+                        <div
+                          style="width: 50px; height: 50px;"
+                        >
+                          <svg
+                            height="50"
+                            preserveAspectRatio="xMidYMid meet"
+                            viewBox="0 0 50 50"
+                            width="50"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M20 5L25 10L20 15L15 10ZM35 10L30 15L25 10L30 5ZM30 45L25 40L30 35L35 40ZM15 40L20 35L25 40L20 45ZM10 15L15 20L10 25L5 20ZM45 20L40 25L35 20L40 15ZM40 35L35 30L40 25L45 30ZM5 30L10 25L15 30L10 35Z"
+                              fill="#579932"
+                            />
+                            <path
+                              d="M5 15L5 5L15 5ZM35 5L45 5L45 15ZM45 35L45 45L35 45ZM15 45L5 45L5 35ZM15 15L25 15L25 16.6L20.8 25L15 25ZM35 15L35 25L33.4 25L25 20.8L25 15ZM35 35L25 35L25 33.4L29.2 25L35 25ZM15 35L15 25L16.6 25L25 29.2L25 35Z"
+                              fill="#8acc66"
+                            />
+                          </svg>
+                        </div>
+                        <div
+                          class="Component-mainContent-79"
+                        >
+                          <h2
+                            class="MuiTypography-root-109 MuiTypography-title-115"
+                          >
+                            aaa
+                          </h2>
+                          <div>
+                            <small>
+                              Serial: 
+                              NBTGI
+                            </small>
+                          </div>
+                          <div>
+                            <small>
+                              Transfer to face 2
+                            </small>
+                          </div>
+                        </div>
+                        <div
+                          class="Component-rightContent-80"
+                        >
+                          <div>
+                            <div
+                              class="MuiAvatar-root-134 MuiAvatar-colorDefault-135 Component-avatar-81"
+                            >
+                              I
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <span
+                        class="MuiTouchRipple-root-50"
+                      />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <hr
+            class="MuiDivider-root-137"
+          />
+        </div>
+        <div>
+          <div>
+            <div
+              class="Component-container-69"
+            >
+              <div
+                class="Component-labelContainer-70"
+              >
+                <span
+                  class="Component-label-71"
+                >
+                  Face 2
+                </span>
+              </div>
+              <div
+                class="Component-contentContainer-73"
+                style="justify-content: space-around;"
+              >
+                <div>
+                  <div
+                    class="MuiPaper-root-82 MuiPaper-elevation4-88 MuiPaper-rounded-83 Component-paper-77"
+                  >
+                    <button
+                      class="MuiButtonBase-root-47"
+                      tabindex="0"
+                      type="button"
+                    >
+                      <div
+                        class="Component-container-78"
+                      >
+                        <div
+                          style="width: 50px; height: 50px;"
+                        >
+                          <svg
+                            height="50"
+                            preserveAspectRatio="xMidYMid meet"
+                            viewBox="0 0 50 50"
+                            width="50"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M20 5L25 10L20 15L15 10ZM35 10L30 15L25 10L30 5ZM30 45L25 40L30 35L35 40ZM15 40L20 35L25 40L20 45ZM10 15L15 20L10 25L5 20ZM45 20L40 25L35 20L40 15ZM40 35L35 30L40 25L45 30ZM5 30L10 25L15 30L10 35Z"
+                              fill="#579932"
+                            />
+                            <path
+                              d="M5 15L5 5L15 5ZM35 5L45 5L45 15ZM45 35L45 45L35 45ZM15 45L5 45L5 35ZM15 15L25 15L25 16.6L20.8 25L15 25ZM35 15L35 25L33.4 25L25 20.8L25 15ZM35 35L25 35L25 33.4L29.2 25L35 25ZM15 35L15 25L16.6 25L25 29.2L25 35Z"
+                              fill="#8acc66"
+                            />
+                          </svg>
+                        </div>
+                        <div
+                          class="Component-mainContent-79"
+                        >
+                          <h2
+                            class="MuiTypography-root-109 MuiTypography-title-115"
+                          >
+                            aaa
+                          </h2>
+                          <div>
+                            <small>
+                              Serial: 
+                              MZRGY
+                            </small>
+                          </div>
+                          <div>
+                            <small>
+                              Unload from pallet
+                            </small>
+                          </div>
+                        </div>
+                        <div
+                          class="Component-rightContent-80"
+                        >
+                          <div>
+                            <div
+                              class="MuiAvatar-root-134 MuiAvatar-colorDefault-135 Component-avatar-81"
+                            >
+                              Y
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <span
+                        class="MuiTouchRipple-root-50"
+                      />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <hr
+      class="MuiDivider-root-137"
+    />
+    <div>
+      <div
+        class="Component-container-69"
+      >
+        <div
+          class="Component-labelContainer-70"
+        >
+          <span
+            class="Component-label-71"
+          >
+            Completed Material
+          </span>
+        </div>
+        <div
+          class="Component-contentContainer-73"
+          style="justify-content: space-between;"
+        />
+      </div>
+    </div>
+  </div>
+</main>
+`;
+
+exports[`renders the load station page: load 2 1`] = `
+<main
+  class="Component-mainScrollable-58"
+  data-testid="stationmonitor-load"
+>
+  <div
+    class="Component-palCol-59"
+  >
+    <div
+      class="Component-container-69"
+    >
+      <div
+        class="Component-labelContainer-70"
+      >
+        <span
+          class="Component-label-71"
+        >
+          Raw Material
+        </span>
+      </div>
+      <div
+        class="Component-contentContainer-73"
+        style="justify-content: space-around;"
+      />
+    </div>
+    <hr
+      class="MuiDivider-root-137"
+    />
+    <div
+      class="Component-palletContainerScroll-62"
+    >
+      <div
+        class="Component-labelContainer-65"
+      >
+        <div
+          class="Component-label-66"
+        >
+          Pallet
+        </div>
+        <div
+          class="Component-labelPalletNum-67"
+        >
+          5
+        </div>
+      </div>
+      <div
+        class="Component-faceContainer-68"
+      >
+        <div>
+          <div
+            class="Component-container-69"
+          >
+            <div
+              class="Component-contentContainer-73"
+              style="justify-content: space-around;"
+            >
+              <div>
+                <div
+                  class="MuiPaper-root-82 MuiPaper-elevation4-88 MuiPaper-rounded-83 Component-paper-77"
+                >
+                  <button
+                    class="MuiButtonBase-root-47"
+                    tabindex="0"
+                    type="button"
+                  >
+                    <div
+                      class="Component-container-78"
+                    >
+                      <div
+                        style="width: 50px; height: 50px;"
+                      >
+                        <svg
+                          height="50"
+                          preserveAspectRatio="xMidYMid meet"
+                          viewBox="0 0 50 50"
+                          width="50"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M15 15L15 5L25 5ZM25 5L35 5L35 15ZM35 35L35 45L25 45ZM25 45L15 45L15 35ZM5 25L5 15L15 15ZM35 15L45 15L45 25ZM45 25L45 35L35 35ZM15 35L5 35L5 25Z"
+                            fill="#2e868c"
+                          />
+                          <path
+                            d="M5 5L15 5L15 10ZM45 5L45 15L40 15ZM45 45L35 45L35 40ZM5 45L5 35L10 35Z"
+                            fill="#acdfe3"
+                          />
+                          <path
+                            d="M15 15L25 15L25 22L19 19L22 25L15 25ZM35 15L35 25L28 25L31 19L25 22L25 15ZM35 35L25 35L25 28L31 31L28 25L35 25ZM15 35L15 25L22 25L19 31L25 28L25 35Z"
+                            fill="#59c0c7"
+                          />
+                        </svg>
+                      </div>
+                      <div
+                        class="Component-mainContent-79"
+                      >
+                        <h2
+                          class="MuiTypography-root-109 MuiTypography-title-115"
+                        >
+                          xxx
+                        </h2>
+                        <div>
+                          <small>
+                            Serial: 
+                            MBZG4
+                          </small>
+                        </div>
+                        <div>
+                          <small>
+                            Unload from pallet
+                          </small>
+                        </div>
+                      </div>
+                      <div
+                        class="Component-rightContent-80"
+                      >
+                        <div>
+                          <div
+                            class="MuiAvatar-root-134 MuiAvatar-colorDefault-135 Component-avatar-81"
+                          >
+                            4
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <span
+                      class="MuiTouchRipple-root-50"
+                    />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <hr
+      class="MuiDivider-root-137"
+    />
+    <div>
+      <div
+        class="Component-container-69"
+      >
+        <div
+          class="Component-labelContainer-70"
+        >
+          <span
+            class="Component-label-71"
+          >
+            Completed Material
+          </span>
+        </div>
+        <div
+          class="Component-contentContainer-73"
+          style="justify-content: space-between;"
+        />
+      </div>
+    </div>
+  </div>
+</main>
+`;
+
+exports[`renders the load station page: load 3 1`] = `
+<main
+  class="Component-mainScrollable-58"
+  data-testid="stationmonitor-load"
+>
+  <div
+    class="Component-palCol-59"
+  >
+    <div
+      class="Component-container-69"
+    >
+      <div
+        class="Component-labelContainer-70"
+      >
+        <span
+          class="Component-label-71"
+        >
+          Raw Material
+        </span>
+      </div>
+      <div
+        class="Component-contentContainer-73"
+        style="justify-content: space-around;"
+      />
+    </div>
+    <hr
+      class="MuiDivider-root-137"
+    />
+    <div
+      class="Component-statStatusScroll-64"
+    >
+      <dl
+        class="Component-defList-152"
+      >
+        <dt
+          class="Component-defItem-153"
+        >
+          L/U #1
+           - Pallet 
+          1
+           - worktable
+        </dt>
+        <dd>
+          <span>
+            aaa-2 (unloading)
+          </span>
+        </dd>
+        <dd>
+          <span>
+            aaa-1 (loading)
+          </span>
+        </dd>
+        <dt
+          class="Component-defItem-153"
+        >
+          L/U #2
+           - Pallet 
+          5
+           - worktable
+        </dt>
+        <dd>
+          <span>
+            xxx-1 (unloading)
+          </span>
+        </dd>
+        <dt
+          class="Component-defItem-153"
+        >
+          Machine #1
+           - Pallet 
+          4
+           - worktable
+        </dt>
+        <dd>
+          <span>
+            ccc-2 (machining) completing 
+          </span>
+          <div
+            data-testid="mock-component-timeago"
+          >
+            <span
+              data-prop="date"
+            >
+              "2018-08-05T20:53:00.000Z"
+            </span>
+          </div>
+        </dd>
+        <dd>
+          <span>
+            ccc-1
+          </span>
+        </dd>
+        <dt
+          class="Component-defItem-153"
+        >
+          Machine #2
+           - Pallet 
+          6
+           - worktable
+        </dt>
+        <dd>
+          <span>
+            zzz-1 (machining) completing 
+          </span>
+          <div
+            data-testid="mock-component-timeago"
+          >
+            <span
+              data-prop="date"
+            >
+              "2018-08-05T21:23:00.000Z"
+            </span>
+          </div>
+        </dd>
+        <dt
+          class="Component-defItem-153"
+        >
+          Machine #3
+           - Pallet 
+          8
+           - worktable
+        </dt>
+        <dd>
+          <span>
+            xxx-1 (machining) completing 
+          </span>
+          <div
+            data-testid="mock-component-timeago"
+          >
+            <span
+              data-prop="date"
+            >
+              "2018-08-05T21:18:00.000Z"
+            </span>
+          </div>
+        </dd>
+      </dl>
+    </div>
+    <hr
+      class="MuiDivider-root-137"
+    />
+    <div>
+      <div
+        class="Component-container-69"
+      >
+        <div
+          class="Component-labelContainer-70"
+        >
+          <span
+            class="Component-label-71"
+          >
+            Completed Material
+          </span>
+        </div>
+        <div
+          class="Component-contentContainer-73"
+          style="justify-content: space-between;"
+        />
+      </div>
+    </div>
+  </div>
+</main>
+`;

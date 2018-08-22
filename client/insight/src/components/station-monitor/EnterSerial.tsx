@@ -59,6 +59,7 @@ class ManualSerialEntry extends React.PureComponent<ManualSerialEntryProps, Manu
   render() {
     return (
       <TextField
+        id="enter-serial"
         label={this.state.serial === "" ? "Serial" : "Serial (press enter)"}
         value={this.state.serial}
         onChange={e => this.setState({ serial: e.target.value })}
