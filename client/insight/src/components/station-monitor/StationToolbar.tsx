@@ -261,6 +261,7 @@ export function StationToolbar(props: StationToolbarProps) {
         {props.current_route.station_monitor === routes.StationMonitorType.LoadUnload ? (
           <Input
             type="number"
+            placeholder="Load Station Number"
             key="loadnumselect"
             value={props.current_route.selected_load_id}
             onChange={e => setLoadNumber(e.target.value)}

@@ -36,7 +36,7 @@ import Divider from "@material-ui/core/Divider";
 import withStyles from "@material-ui/core/styles/withStyles";
 import * as im from "immutable";
 import { createSelector } from "reselect";
-import DocumentTitle from "react-document-title";
+const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 import Button from "@material-ui/core/Button";
 import TimeAgo from "react-timeago";
 import { addSeconds } from "date-fns";
@@ -103,7 +103,9 @@ const stationStatusStyles = withStyles(() => ({
 }));
 
 const StationStatus = stationStatusStyles<StationStatusProps>(props => {
-  if (props.byStation.size === 0) return <div />;
+  if (props.byStation.size === 0) {
+    return <div />;
+  }
   return (
     <dl className={props.classes.defList}>
       {props.byStation
@@ -247,7 +249,7 @@ const PalletColumn = palletStyles<LoadStationProps>(props => {
         ))}
       </WhiteboardRegion>
       <Divider />
-      {props.data.stationStatus && props.dateOfCurrentStatus ? ( // stationStatus is defined only when no pallet is present
+      {props.data.stationStatus && props.dateOfCurrentStatus ? ( // stationStatus is defined only when no pallet
         <div className={statStatusClass}>
           <StationStatus byStation={props.data.stationStatus} dateOfCurrentStatus={props.dateOfCurrentStatus} />
         </div>
@@ -401,7 +403,10 @@ const LoadStation = loadStyles<LoadStationProps>(props => {
   return (
     <DocumentTitle title={"Load " + props.data.loadNum.toString() + " - FMS Insight"}>
       <MoveMaterialArrowContainer>
-        <main className={props.fillViewPort ? props.classes.mainFillViewport : props.classes.mainScrollable}>
+        <main
+          data-testid="stationmonitor-load"
+          className={props.fillViewPort ? props.classes.mainFillViewport : props.classes.mainScrollable}
+        >
           <div className={props.classes.palCol}>
             <PalletColumn {...palProps} />
           </div>

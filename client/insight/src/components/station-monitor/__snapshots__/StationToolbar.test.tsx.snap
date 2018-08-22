@@ -201,6 +201,7 @@ exports[`displays the load with no queues: load with no queues 1`] = `
       >
         <input
           class="MuiInput-input-70 MuiInput-inputType-73"
+          placeholder="Load Station Number"
           type="number"
           value="4"
         />
@@ -653,6 +654,7 @@ exports[`displays the toolbar for load with one queue: load with one queue 1`] =
       >
         <input
           class="MuiInput-input-14 MuiInput-inputType-17"
+          placeholder="Load Station Number"
           type="number"
           value="4"
         />
@@ -822,6 +824,7 @@ exports[`displays the toolbar for load with three queues: load toolbar 1`] = `
       >
         <input
           class="MuiInput-input-126 MuiInput-inputType-129"
+          placeholder="Load Station Number"
           type="number"
           value="4"
         />
