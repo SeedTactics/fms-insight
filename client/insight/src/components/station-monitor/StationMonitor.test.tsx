@@ -78,8 +78,17 @@ it("renders the load station page", async () => {
 
   expect(result.getByTestId("stationmonitor-load")).toMatchSnapshot("load 3");
 
+  // go back to load 1 and open a queue
   loadNum.value = "1";
   Simulate.change(loadNum);
+  fireEvent.click(result
+    .getByTestId("station-monitor-queue-select")
+    .querySelector("div[role='button']") as HTMLElement);
+  fireEvent.click(
+    within(document.getElementById("menu-station-monitor-queue-select") as HTMLElement).getByText("Queue1")
+  );
+
+  expect(result.getByTestId("stationmonitor-load")).toMatchSnapshot("load 1 and queue");
 
   fireEvent.click(result.getByText("NBTGI", { exact: false }));
 
@@ -169,4 +178,31 @@ it("renders the queues page", async () => {
   );
 
   expect(result.getByTestId("stationmonitor-queues")).toMatchSnapshot("with Queue1");
+
+  // open the dialog
+  fireEvent.click(result.getByText("MZQGQ", { exact: false }));
+
+  await wait(() => expect(result.queryByTestId("material-events-loading")).not.toBeInTheDocument());
+
+  expect(result.baseElement.querySelector("div[role='dialog']")).toMatchSnapshot("MZQGQ dialog");
+});
+
+it("renders the all material page", async () => {
+  const store = await createTestStore();
+
+  const result = render(
+    <Provider store={store}>
+      <div>
+        <ConnStatMonitor />
+      </div>
+    </Provider>
+  );
+
+  fireEvent.click(result.getByText("Load Station"));
+
+  fireEvent.click(
+    within(document.getElementById("menu-choose-station-type-select") as HTMLElement).getByText("All Material")
+  );
+
+  expect(result.getByTestId("stationmonitor-allmaterial")).toMatchSnapshot("all material");
 });

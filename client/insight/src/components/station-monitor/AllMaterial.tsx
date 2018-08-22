@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import DocumentTitle from "react-document-title";
+const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
 import { MaterialSummary } from "../../data/events";
 import { Store, connect, mkAC } from "../../store/store";
@@ -61,7 +61,7 @@ function Wash(props: AllMatProps) {
 
   return (
     <DocumentTitle title="All Material - FMS Insight">
-      <main style={{ padding: "8px" }}>
+      <main data-testid="stationmonitor-allmaterial" style={{ padding: "8px" }}>
         <div>
           {regions
             .map((mats, region) => (
