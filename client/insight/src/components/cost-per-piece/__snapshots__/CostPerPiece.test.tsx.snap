@@ -77,17 +77,17 @@ exports[`renders the cost/piece page: calculated costs 1`] = `
       <td
         class="MuiTableCell-root-153 MuiTableCell-body-155"
       >
-        0.5
+        0.3
       </td>
       <td
         class="MuiTableCell-root-153 MuiTableCell-body-155"
       >
-        34.4
+        26.6
       </td>
       <td
         class="MuiTableCell-root-153 MuiTableCell-body-155"
       >
-        74.8
+        66.9
       </td>
     </tr>
     <tr
@@ -120,17 +120,17 @@ exports[`renders the cost/piece page: calculated costs 1`] = `
       <td
         class="MuiTableCell-root-153 MuiTableCell-body-155"
       >
-        0.5
+        0.4
       </td>
       <td
         class="MuiTableCell-root-153 MuiTableCell-body-155"
       >
-        34.2
+        26.6
       </td>
       <td
         class="MuiTableCell-root-153 MuiTableCell-body-155"
       >
-        34.7
+        27
       </td>
     </tr>
     <tr
@@ -163,17 +163,17 @@ exports[`renders the cost/piece page: calculated costs 1`] = `
       <td
         class="MuiTableCell-root-153 MuiTableCell-body-155"
       >
-        1.2
+        0.9
       </td>
       <td
         class="MuiTableCell-root-153 MuiTableCell-body-155"
       >
-        34.1
+        26.4
       </td>
       <td
         class="MuiTableCell-root-153 MuiTableCell-body-155"
       >
-        35.3
+        27.3
       </td>
     </tr>
     <tr
@@ -206,17 +206,17 @@ exports[`renders the cost/piece page: calculated costs 1`] = `
       <td
         class="MuiTableCell-root-153 MuiTableCell-body-155"
       >
-        0.7
+        0.6
       </td>
       <td
         class="MuiTableCell-root-153 MuiTableCell-body-155"
       >
-        17.9
+        13.8
       </td>
       <td
         class="MuiTableCell-root-153 MuiTableCell-body-155"
       >
-        18.6
+        14.4
       </td>
     </tr>
     <tr
@@ -249,17 +249,17 @@ exports[`renders the cost/piece page: calculated costs 1`] = `
       <td
         class="MuiTableCell-root-153 MuiTableCell-body-155"
       >
-        2.1
+        1.6
       </td>
       <td
         class="MuiTableCell-root-153 MuiTableCell-body-155"
       >
-        35.5
+        27.6
       </td>
       <td
         class="MuiTableCell-root-153 MuiTableCell-body-155"
       >
-        37.7
+        29.1
       </td>
     </tr>
     <tr
@@ -292,17 +292,17 @@ exports[`renders the cost/piece page: calculated costs 1`] = `
       <td
         class="MuiTableCell-root-153 MuiTableCell-body-155"
       >
-        3.2
+        2.5
       </td>
       <td
         class="MuiTableCell-root-153 MuiTableCell-body-155"
       >
-        17.8
+        13.8
       </td>
       <td
         class="MuiTableCell-root-153 MuiTableCell-body-155"
       >
-        21
+        16.3
       </td>
     </tr>
   </tbody>

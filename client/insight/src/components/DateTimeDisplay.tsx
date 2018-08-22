@@ -1,3 +1,4 @@
+
 /* Copyright (c) 2018, John Lenz
 
 All rights reserved.
@@ -31,40 +32,16 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from "react";
-import * as redux from "redux";
-import { loadMockData } from "./mock-data/load";
-import { Store, AppAction, initStore } from "./store/store";
-import { differenceInSeconds } from "date-fns";
+import * as React from 'react';
+import { format } from 'date-fns';
 
-export function mockComponent(name: string): (props: { [key: string]: object }) => JSX.Element {
-  return props => (
-    <div data-testid={"mock-component-" + name}>
-      {Object.getOwnPropertyNames(props)
-        .sort()
-        .map((p, idx) => (
-          <span key={idx} data-prop={p}>
-            {JSON.stringify(props[p], null, 2)}
-          </span>
-        ))}
-    </div>
-  );
+export interface DateTimeDisplayProps {
+  date: Date;
+  formatStr: string;
 }
 
-export async function createTestStore(): Promise<redux.Store<Store, AppAction>> {
-  const store = initStore(true);
-
-  // offset is such that all events fall within July no matter the timezone, so
-  // selecting July 2018 as the month loads the same set of data
-  const jan18 = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
-  const offsetSeconds = differenceInSeconds(new Date(Date.UTC(2018, 6, 2, 4, 10, 0)), jan18);
-
-  const mockD = loadMockData(offsetSeconds);
-
-  await mockD.events;
-
-  // tslint:disable-next-line:no-any
-  (window as any).FMS_INSIGHT_RESOLVE_MOCK_DATA(mockD);
-
-  return store;
+export default function DateTimeDisplay(props: DateTimeDisplayProps) {
+  return (
+    <span>{format(props.date, props.formatStr)}</span>
+  );
 }

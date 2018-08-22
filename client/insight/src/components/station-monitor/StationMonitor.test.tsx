@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { render, cleanup, prettyDOM, fireEvent, wait, within } from "react-testing-library";
+import { render, cleanup, fireEvent, wait } from "react-testing-library";
 afterEach(cleanup);
 import { Provider } from "react-redux";
 import { Simulate } from "react-dom/test-utils";
@@ -41,6 +41,9 @@ import { mockComponent } from "../../test-util";
 
 jest.mock("react-timeago", () => ({
   default: mockComponent("timeago")
+}));
+jest.mock("../DateTimeDisplay", () => ({
+  default: mockComponent("DateTimeDisplay")
 }));
 
 import StationMonitor from "./StationMonitor";

@@ -72,7 +72,7 @@ it("renders the app shell", async () => {
   expect(result.getByTestId("loading-icon")).toBeInTheDocument();
 
   const jan18 = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
-  const offsetSeconds = differenceInSeconds(addDays(new Date(2018, 7, 5, 15, 33, 0), -28), jan18);
+  const offsetSeconds = differenceInSeconds(addDays(new Date(Date.UTC(2018, 7, 6, 15, 39, 0)), -28), jan18);
 
   // tslint:disable-next-line:no-any
   (window as any).FMS_INSIGHT_RESOLVE_MOCK_DATA(loadMockData(offsetSeconds));
