@@ -12,7 +12,7 @@
     "build-demo": "parcel build --out-dir demo --public-url /demo/ src/demo.html",
     "test": "jest --ci --runInBand",
     "test:watch": "jest --watch",
-    "nswag": "./node_modules/nswag/bin/nswag.js swagger2tsclient /runtime:NetCore20 /input:../../server/fms-insight-api-1.4.0.json /output:src/data/api.ts"
+    "nswag": "./node_modules/nswag/bin/nswag.js swagger2tsclient /runtime:NetCore20 /input:../../server/fms-insight-api-1.5.0.json /output:src/data/api.ts"
   },
   "dependencies": {
     "@material-ui/core": "^1.2.0",

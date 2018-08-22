@@ -50,42 +50,42 @@ using Serilog;
 
 namespace BlackMaple.MachineFramework
 {
-    public class Startup
+  public class Startup
+  {
+    private class ConfigWrapper : BlackMaple.MachineFramework.IConfig
     {
-        private class ConfigWrapper : BlackMaple.MachineFramework.IConfig
-        {
-            public T GetValue<T>(string section, string key)
-            {
-                return Program.Configuration.GetSection(section).GetValue<T>(key);
-            }
-        }
+      public T GetValue<T>(string section, string key)
+      {
+        return Program.Configuration.GetSection(section).GetValue<T>(key);
+      }
+    }
 
-        private IFMSImplementation _fmsImpl;
+    private IFMSImplementation _fmsImpl;
 
-        public Startup(IFMSImplementation fmsImpl)
-        {
-            _fmsImpl = fmsImpl;
-        }
+    public Startup(IFMSImplementation fmsImpl)
+    {
+      _fmsImpl = fmsImpl;
+    }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
-        public void ConfigureServices(IServiceCollection services)
-        {
-            var cfgWrapper = new ConfigWrapper();
-            _fmsImpl.Backend.Init(
-                Program.ServerSettings.DataDirectory,
-                cfgWrapper,
-                Program.FMSSettings);
-            foreach (var w in _fmsImpl.Workers)
-                w.Init(
-                    _fmsImpl.Backend,
-                    Program.ServerSettings.DataDirectory,
-                    cfgWrapper,
-                    Program.FMSSettings
-                );
+    // This method gets called by the runtime. Use this method to add services to the container.
+    public void ConfigureServices(IServiceCollection services)
+    {
+      var cfgWrapper = new ConfigWrapper();
+      _fmsImpl.Backend.Init(
+          Program.ServerSettings.DataDirectory,
+          cfgWrapper,
+          Program.FMSSettings);
+      foreach (var w in _fmsImpl.Workers)
+        w.Init(
+            _fmsImpl.Backend,
+            Program.ServerSettings.DataDirectory,
+            cfgWrapper,
+            Program.FMSSettings
+        );
 
-            var settings = new BlackMaple.MachineFramework.SettingStore(Program.ServerSettings.DataDirectory);
+      var settings = new BlackMaple.MachineFramework.SettingStore(Program.ServerSettings.DataDirectory);
 
-            #if SERVE_REMOTING
+#if SERVE_REMOTING
             if (Program.ServerSettings.EnableSailAPI) {
                 var machServer =
                     new BlackMaple.MachineWatch.RemotingServer(
@@ -95,140 +95,156 @@ namespace BlackMaple.MachineFramework
                     );
                 services.AddSingleton<BlackMaple.MachineWatch.RemotingServer>(machServer);
             }
-            #endif
+#endif
 
-            services
-                .AddSingleton<IFMSImplementation>(_fmsImpl)
-                .AddSingleton<BlackMaple.MachineFramework.IFMSBackend>(_fmsImpl.Backend)
-                .AddSingleton<IStoreSettings>(settings)
-                .AddSingleton<Controllers.WebsocketManager>(
-                    new Controllers.WebsocketManager(
-                        _fmsImpl.Backend.LogDatabase(),
-                        _fmsImpl.Backend.JobDatabase(),
-                        _fmsImpl.Backend.JobControl())
-                );
+      services
+          .AddSingleton<IFMSImplementation>(_fmsImpl)
+          .AddSingleton<BlackMaple.MachineFramework.IFMSBackend>(_fmsImpl.Backend)
+          .AddSingleton<IStoreSettings>(settings)
+          .AddSingleton<Controllers.WebsocketManager>(
+              new Controllers.WebsocketManager(
+                  _fmsImpl.Backend.LogDatabase(),
+                  _fmsImpl.Backend.JobDatabase(),
+                  _fmsImpl.Backend.JobControl())
+          );
 
-            services
-                .AddResponseCompression()
-                .AddCors(options =>
-                    options.AddPolicy("AllowOtherLogServers", builder =>
-                        builder
-                        .WithOrigins(
-                            Program.FMSSettings.AdditionalLogServers
-                            #if DEBUG
-                            .Concat(new[] {"http://localhost:1234"}) // parcel bundler url
-                            #endif
+      services
+          .AddResponseCompression()
+          .AddCors(options =>
+              options.AddPolicy("AllowOtherLogServers", builder =>
+                  builder
+                  .WithOrigins(
+                      Program.FMSSettings.AdditionalLogServers
+#if DEBUG
+                            .Concat(new[] { "http://localhost:1234" }) // parcel bundler url
+#endif
                             .ToArray()
-                        )
-                        .WithMethods("GET")
-                        .WithHeaders("content-type")
-                    )
-                )
-                .AddMvcCore(options => {
-                    options.ModelBinderProviders.Insert(0, new DateTimeBinderProvider());
-                })
-                .SetCompatibilityVersion(CompatibilityVersion.Version_2_1)
-                .AddApiExplorer()
-                .AddFormatterMappings()
-                .AddJsonFormatters()
-                .AddJsonOptions(options => {
-                    options.SerializerSettings.Converters.Add(new StringEnumConverter());
-                    options.SerializerSettings.Converters.Add(new TimespanConverter());
-                    options.SerializerSettings.ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver();
-                    options.SerializerSettings.ConstructorHandling = Newtonsoft.Json.ConstructorHandling.AllowNonPublicDefaultConstructor;
-                });
+                  )
+                  .WithMethods("GET")
+                  .WithHeaders("content-type")
+              )
+          )
+          .AddMvcCore(options =>
+          {
+            options.ModelBinderProviders.Insert(0, new DateTimeBinderProvider());
+          })
+          .SetCompatibilityVersion(CompatibilityVersion.Version_2_1)
+          .AddApiExplorer()
+          .AddFormatterMappings()
+          .AddJsonFormatters()
+          .AddJsonOptions(options =>
+          {
+            options.SerializerSettings.Converters.Add(new StringEnumConverter());
+            options.SerializerSettings.Converters.Add(new TimespanConverter());
+            options.SerializerSettings.ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver();
+            options.SerializerSettings.ConstructorHandling = Newtonsoft.Json.ConstructorHandling.AllowNonPublicDefaultConstructor;
+          });
 
-        }
+    }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(
-            IApplicationBuilder app,
-            IApplicationLifetime lifetime,
-            IHostingEnvironment env,
-            IServiceProvider services,
-            Controllers.WebsocketManager wsManager)
+    // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+    public void Configure(
+        IApplicationBuilder app,
+        IApplicationLifetime lifetime,
+        IHostingEnvironment env,
+        IServiceProvider services,
+        Controllers.WebsocketManager wsManager)
+    {
+      app.UseResponseCompression();
+      app.UseCors("AllowOtherLogServers");
+      app.UseMiddleware(typeof(ErrorHandlingMiddleware));
+      app.UseMvc();
+
+      // https://github.com/aspnet/Home/issues/2442
+      var fileExt = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
+      fileExt.Mappings[".webmanifest"] = "application/manifest+json";
+      app.UseStaticFiles(new StaticFileOptions
+      {
+        ContentTypeProvider = fileExt
+      });
+
+      if (!string.IsNullOrEmpty(Program.FMSSettings.InstructionFilePath))
+      {
+        if (System.IO.Directory.Exists(Program.FMSSettings.InstructionFilePath))
         {
-            app.UseResponseCompression();
-            app.UseCors("AllowOtherLogServers");
-            app.UseMiddleware(typeof(ErrorHandlingMiddleware));
-            app.UseMvc();
+          app.UseStaticFiles(new StaticFileOptions()
+          {
+            FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(Program.FMSSettings.InstructionFilePath),
+            RequestPath = "/instructions"
+          });
+        }
+        else
+        {
+          Log.Error("Instruction directory {path} does not exist or is not a directory", Program.FMSSettings.InstructionFilePath);
+        }
+      }
 
-            // https://github.com/aspnet/Home/issues/2442
-            var fileExt = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
-            fileExt.Mappings[".webmanifest"] = "application/manifest+json";
-            app.UseStaticFiles(new StaticFileOptions
-            {
-                ContentTypeProvider = fileExt
-            });
+      if (!string.IsNullOrEmpty(Program.ServerSettings.TLSCertFile))
+      {
+        if (!env.IsDevelopment())
+          app.UseHsts();
+        app.UseHttpsRedirection();
+      }
 
-            if (!string.IsNullOrEmpty(Program.FMSSettings.InstructionFilePath))
-            {
-                if (System.IO.Directory.Exists(Program.FMSSettings.InstructionFilePath)) {
-                    app.UseStaticFiles(new StaticFileOptions() {
-                        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(Program.FMSSettings.InstructionFilePath),
-                        RequestPath = "/instructions"
-                    });
-                } else {
-                    Log.Error("Instruction directory {path} does not exist or is not a directory", Program.FMSSettings.InstructionFilePath);
-                }
-            }
+      app.UseWebSockets();
+      app.Use(async (context, next) =>
+      {
+        if (context.Request.Path == "/api/v1/events")
+        {
+          if (context.WebSockets.IsWebSocketRequest)
+          {
+            var ws = await context.WebSockets.AcceptWebSocketAsync();
+            await wsManager.HandleWebsocket(ws);
+          }
+          else
+          {
+            context.Response.StatusCode = 400;
+          }
+        }
+        else
+        {
+          await next();
+        }
+      });
 
-            if (!string.IsNullOrEmpty(Program.ServerSettings.TLSCertFile)) {
-                if (!env.IsDevelopment())
-                    app.UseHsts();
-                app.UseHttpsRedirection();
-            }
+      app.UseSwaggerUi3(typeof(Startup).Assembly, settings =>
+      {
+        settings.GeneratorSettings.Title = "SeedTactic FMS Insight";
+        settings.GeneratorSettings.Description = "API for access to FMS Insight for flexible manufacturing system control";
+        settings.GeneratorSettings.Version = "1.5";
+        settings.GeneratorSettings.DefaultEnumHandling = NJsonSchema.EnumHandling.String;
+        settings.GeneratorSettings.DefaultPropertyNameHandling = NJsonSchema.PropertyNameHandling.Default;
+        settings.PostProcess = document =>
+        {
+          document.Host = null;
+          document.BasePath = null;
+          document.Schemes = null;
+        };
+      });
 
-            app.UseWebSockets();
-            app.Use(async (context, next) => {
-                if (context.Request.Path == "/api/v1/events")
-                {
-                    if (context.WebSockets.IsWebSocketRequest)
-                    {
-                        var ws = await context.WebSockets.AcceptWebSocketAsync();
-                        await wsManager.HandleWebsocket(ws);
-                    } else {
-                        context.Response.StatusCode = 400;
-                    }
-                } else {
-                    await next();
-                }
-            });
+      app.Run(async context =>
+      {
+        context.Response.ContentType = "text/html";
+        await context.Response.SendFileAsync(System.IO.Path.Combine(env.WebRootPath, "index.html"));
+      });
 
-            app.UseSwaggerUi3(typeof(Startup).Assembly, settings => {
-                settings.GeneratorSettings.Title = "SeedTactic FMS Insight";
-                settings.GeneratorSettings.Description = "API for access to FMS Insight for flexible manufacturing system control";
-                settings.GeneratorSettings.Version = "1.4";
-                settings.GeneratorSettings.DefaultEnumHandling = NJsonSchema.EnumHandling.String;
-                settings.GeneratorSettings.DefaultPropertyNameHandling = NJsonSchema.PropertyNameHandling.Default;
-                settings.PostProcess = document => {
-                    document.Host = null;
-                    document.BasePath = null;
-                    document.Schemes = null;
-                };
-            });
+      lifetime.ApplicationStopping.Register(async () =>
+      {
+        if (_fmsImpl == null) return;
+        await wsManager.CloseAll();
+        _fmsImpl.Backend?.Halt();
+        foreach (var w in _fmsImpl.Workers)
+          w.Halt();
+      });
 
-            app.Run(async context => {
-                context.Response.ContentType = "text/html";
-                await context.Response.SendFileAsync(System.IO.Path.Combine(env.WebRootPath,"index.html"));
-            });
-
-            lifetime.ApplicationStopping.Register(async () => {
-                if (_fmsImpl == null) return;
-                await wsManager.CloseAll();
-                _fmsImpl.Backend?.Halt();
-                foreach (var w in _fmsImpl.Workers)
-                    w.Halt();
-            });
-
-            #if SERVE_REMOTING
+#if SERVE_REMOTING
             if (Program.ServerSettings.EnableSailAPI) {
                 lifetime.ApplicationStopping.Register(() => {
                     var machServer = services.GetService<BlackMaple.MachineWatch.RemotingServer>();
                     machServer.Dispose();
                 });
             }
-            #endif
-        }
+#endif
     }
+  }
 }

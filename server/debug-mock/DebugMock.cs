@@ -84,8 +84,8 @@ namespace DebugMachineWatchApiServer
     public JobLogDB LogDB { get; private set; }
     public JobDB JobDB { get; private set; }
 
-    private Dictionary<string, CurrentStatus> Statuses {get;} = new Dictionary<string, CurrentStatus>();
-    private CurrentStatus CurrentStatus {get;set;}
+    private Dictionary<string, CurrentStatus> Statuses { get; } = new Dictionary<string, CurrentStatus>();
+    private CurrentStatus CurrentStatus { get; set; }
 
     private JsonSerializerSettings _jsonSettings;
 
@@ -132,11 +132,8 @@ namespace DebugMachineWatchApiServer
       );
 
       // sample data starts at Jan 1, 2018.  Need to offset to current month
-      var today = DateTime.Today;
-      var curMonth = new DateTime(today.Year, today.Month, 1, 0, 0, 0, DateTimeKind.Local);
-      curMonth = curMonth.ToUniversalTime();
       var jan1_18 = new DateTime(2018, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-      var offset = curMonth.Subtract(jan1_18);
+      var offset = DateTime.UtcNow.AddDays(-28).Subtract(jan1_18);
 
       LoadEvents(sampleDataPath, offset);
       LoadJobs(sampleDataPath, offset);
@@ -252,21 +249,30 @@ namespace DebugMachineWatchApiServer
 
       foreach (var e in evts.OrderBy(e => e.EndTimeUTC))
       {
-        foreach (var m in e.Material) {
+        foreach (var m in e.Material)
+        {
           var matDetails = LogDB.GetMaterialDetails(m.MaterialID);
-          if (matDetails == null && !string.IsNullOrEmpty(m.JobUniqueStr)) {
+          if (matDetails == null && !string.IsNullOrEmpty(m.JobUniqueStr))
+          {
             LogDB.CreateMaterialID(m.MaterialID, m.JobUniqueStr, m.PartName, m.NumProcesses);
           }
         }
-        if (e.LogType == LogType.PartMark) {
+        if (e.LogType == LogType.PartMark)
+        {
           foreach (var m in e.Material)
             LogDB.RecordSerialForMaterialID(m, e.Result, e.EndTimeUTC.Add(offset));
-        } else if (e.LogType == LogType.OrderAssignment) {
+        }
+        else if (e.LogType == LogType.OrderAssignment)
+        {
           foreach (var m in e.Material)
             LogDB.RecordWorkorderForMaterialID(m, e.Result, e.EndTimeUTC.Add(offset));
-        } else if (e.LogType == LogType.FinalizeWorkorder) {
+        }
+        else if (e.LogType == LogType.FinalizeWorkorder)
+        {
           LogDB.RecordFinalizedWorkorder(e.Result, e.EndTimeUTC.Add(offset));
-        } else {
+        }
+        else
+        {
           var e2 = new BlackMaple.MachineWatchInterface.LogEntry(
               cntr: e.Counter,
               mat: e.Material,
@@ -282,7 +288,8 @@ namespace DebugMachineWatchApiServer
               elapsed: e.ElapsedTime,
               active: e.ActiveOperationTime
           );
-          if (e.ProgramDetails != null) {
+          if (e.ProgramDetails != null)
+          {
             foreach (var x in e.ProgramDetails)
               e2.ProgramDetails.Add(x.Key, x.Value);
           }
@@ -334,8 +341,10 @@ namespace DebugMachineWatchApiServer
           typeof(BlackMaple.MachineWatchInterface.CurrentStatus),
           _jsonSettings
         );
+        curSt.TimeOfCurrentStatusUTC = curSt.TimeOfCurrentStatusUTC.Add(offset);
 
-        foreach (var uniq in curSt.Jobs.Keys) {
+        foreach (var uniq in curSt.Jobs.Keys)
+        {
           MockServerBackend.OffsetJob(curSt.Jobs[uniq], offset);
         }
         Statuses.Add(name, curSt);
@@ -345,7 +354,9 @@ namespace DebugMachineWatchApiServer
       if (string.IsNullOrEmpty(statusFromEnv) || !Statuses.ContainsKey(statusFromEnv))
       {
         CurrentStatus = Statuses.OrderBy(st => st.Key).First().Value;
-      } else {
+      }
+      else
+      {
         CurrentStatus = Statuses[statusFromEnv];
       }
     }

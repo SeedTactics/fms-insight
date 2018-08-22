@@ -190,7 +190,9 @@ namespace MachineWatchTest
           jsonSettings
       );
 
-      status.Should().BeEquivalentTo(expectedStatus);
+      status.Should().BeEquivalentTo(expectedStatus, options =>
+        options.Excluding(c => c.TimeOfCurrentStatusUTC)
+      );
     }
   }
 }

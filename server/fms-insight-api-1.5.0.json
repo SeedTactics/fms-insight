@@ -4,7 +4,7 @@
   "info": {
     "title": "SeedTactic FMS Insight",
     "description": "API for access to FMS Insight for flexible manufacturing system control",
-    "version": "1.4"
+    "version": "1.5"
   },
   "consumes": [
     "application/json"
@@ -1467,7 +1467,8 @@
         "Pallets",
         "Material",
         "Alarms",
-        "Queues"
+        "Queues",
+        "TimeOfCurrentStatusUTC"
       ],
       "properties": {
         "Jobs": {
@@ -1499,6 +1500,10 @@
           "additionalProperties": {
             "$ref": "#/definitions/QueueSize"
           }
+        },
+        "TimeOfCurrentStatusUTC": {
+          "type": "string",
+          "format": "date-time"
         }
       }
     },
