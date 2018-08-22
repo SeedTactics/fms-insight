@@ -119,12 +119,12 @@ exports[`renders the load station page: NBTGI dialog 1`] = `
             <td
               class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
             >
-              Jul 9, 18
+              Jul 10, 18
             </td>
             <td
               class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
             >
-              05:33 PM
+              12:39 PM
             </td>
             <td
               class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
@@ -143,12 +143,12 @@ exports[`renders the load station page: NBTGI dialog 1`] = `
             <td
               class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
             >
-              Jul 9, 18
+              Jul 10, 18
             </td>
             <td
               class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
             >
-              05:40 PM
+              12:46 PM
             </td>
             <td
               class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
@@ -167,12 +167,12 @@ exports[`renders the load station page: NBTGI dialog 1`] = `
             <td
               class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
             >
-              Jul 9, 18
+              Jul 10, 18
             </td>
             <td
               class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
             >
-              05:41 PM
+              12:47 PM
             </td>
             <td
               class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
@@ -191,12 +191,12 @@ exports[`renders the load station page: NBTGI dialog 1`] = `
             <td
               class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
             >
-              Jul 9, 18
+              Jul 10, 18
             </td>
             <td
               class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
             >
-              06:16 PM
+              01:22 PM
             </td>
             <td
               class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
@@ -215,12 +215,12 @@ exports[`renders the load station page: NBTGI dialog 1`] = `
             <td
               class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
             >
-              Jul 9, 18
+              Jul 10, 18
             </td>
             <td
               class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
             >
-              06:31 PM
+              01:37 PM
             </td>
             <td
               class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
@@ -239,12 +239,12 @@ exports[`renders the load station page: NBTGI dialog 1`] = `
             <td
               class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
             >
-              Jul 9, 18
+              Jul 10, 18
             </td>
             <td
               class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
             >
-              06:43 PM
+              01:49 PM
             </td>
             <td
               class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
@@ -263,12 +263,12 @@ exports[`renders the load station page: NBTGI dialog 1`] = `
             <td
               class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
             >
-              Jul 9, 18
+              Jul 10, 18
             </td>
             <td
               class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
             >
-              06:43 PM
+              01:49 PM
             </td>
             <td
               class="MuiTableCell-root-262 MuiTableCell-body-264 MuiTableCell-paddingDense-267"
@@ -946,7 +946,7 @@ exports[`renders the load station page: load 3 1`] = `
             <span
               data-prop="date"
             >
-              "2018-08-05T20:53:00.000Z"
+              "2018-08-06T15:59:00.000Z"
             </span>
           </div>
         </dd>
@@ -973,7 +973,7 @@ exports[`renders the load station page: load 3 1`] = `
             <span
               data-prop="date"
             >
-              "2018-08-05T21:23:00.000Z"
+              "2018-08-06T16:29:00.000Z"
             </span>
           </div>
         </dd>
@@ -995,7 +995,7 @@ exports[`renders the load station page: load 3 1`] = `
             <span
               data-prop="date"
             >
-              "2018-08-05T21:18:00.000Z"
+              "2018-08-06T16:24:00.000Z"
             </span>
           </div>
         </dd>

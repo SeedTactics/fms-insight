@@ -55,7 +55,7 @@ export async function createTestStore(): Promise<redux.Store<Store, AppAction>> 
   const store = initStore(true);
 
   const jan18 = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
-  const offsetSeconds = differenceInSeconds(addDays(new Date(2018, 7, 5, 15, 33, 0), -28), jan18);
+  const offsetSeconds = differenceInSeconds(addDays(new Date(Date.UTC(2018, 7, 6, 15, 39, 0)), -28), jan18);
 
   const mockD = loadMockData(offsetSeconds);
 
