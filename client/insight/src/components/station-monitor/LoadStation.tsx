@@ -77,7 +77,7 @@ function stationPalMaterialStatus(mat: Readonly<api.IInProcessMaterial>, dateOfC
       break;
     case api.ActionType.Machining:
       matStatus = " (machining)";
-      if (mat.action.expectedRemainingMachiningTime && dateOfCurrentStatus) {
+      if (mat.action.expectedRemainingMachiningTime) {
         matStatus += " completing ";
         const seconds = duration(mat.action.expectedRemainingMachiningTime).asSeconds();
         matTime = <TimeAgo date={addSeconds(dateOfCurrentStatus, seconds)} />;
@@ -249,7 +249,7 @@ const PalletColumn = palletStyles<LoadStationProps>(props => {
         ))}
       </WhiteboardRegion>
       <Divider />
-      {props.data.stationStatus && props.dateOfCurrentStatus ? ( // stationStatus is defined only when no pallet
+      {props.data.stationStatus ? ( // stationStatus is defined only when no pallet
         <div className={statStatusClass}>
           <StationStatus byStation={props.data.stationStatus} dateOfCurrentStatus={props.dateOfCurrentStatus} />
         </div>
@@ -367,7 +367,7 @@ const loadStyles = withStyles(() => ({
 interface LoadStationProps {
   readonly fillViewPort: boolean;
   readonly data: LoadStationAndQueueData;
-  readonly dateOfCurrentStatus: Date | null;
+  readonly dateOfCurrentStatus: Date;
   openMat: (m: Readonly<MaterialSummary>) => void;
 }
 
@@ -508,7 +508,7 @@ const buildLoadData = createSelector(
 export default connect(
   (st: Store) => ({
     data: buildLoadData(st),
-    dateOfCurrentStatus: st.Current.date_of_current_status || null
+    dateOfCurrentStatus: st.Current.current_status.timeOfCurrentStatusUTC
   }),
   {
     openMat: matDetails.openMaterialDialog

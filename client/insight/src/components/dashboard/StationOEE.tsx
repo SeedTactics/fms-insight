@@ -223,15 +223,14 @@ function StationOEEs(p: Props) {
 
 const oeeSelector = createSelector(
   (s: Store) => s.Events.last30.cycles.by_part_then_stat,
-  (s: Store) => s.Current.date_of_current_status,
-  (byPartThenStat, lastStTime) =>
-    lastStTime ? stationMinutes(byPartThenStat, addDays(lastStTime, -7)) : im.Map<string, number>()
+  (s: Store) => s.Current.current_status.timeOfCurrentStatusUTC,
+  (byPartThenStat, lastStTime) => stationMinutes(byPartThenStat, addDays(lastStTime, -7))
 );
 
 const palSelector = createSelector((s: Store) => s.Current.current_status, buildPallets);
 
 export default connect(s => ({
-  dateOfCurrentStatus: s.Current.date_of_current_status,
+  dateOfCurrentStatus: s.Current.current_status.timeOfCurrentStatusUTC,
   station_active_minutes_past_week: oeeSelector(s),
   pallets: palSelector(s)
 }))(StationOEEs);

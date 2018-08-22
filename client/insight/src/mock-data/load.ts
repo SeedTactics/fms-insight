@@ -99,6 +99,7 @@ export interface MockData {
 
 export function loadMockData(offsetSeconds: number): MockData {
   const status = api.CurrentStatus.fromJS(require("./status-mock.json"));
+  status.timeOfCurrentStatusUTC = addSeconds(status.timeOfCurrentStatusUTC, offsetSeconds);
   for (const j of Object.values(status.jobs)) {
     offsetJob(j, offsetSeconds);
   }
