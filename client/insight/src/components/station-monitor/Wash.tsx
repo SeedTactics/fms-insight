@@ -37,7 +37,7 @@ import { addHours } from "date-fns";
 import Grid from "@material-ui/core/Grid";
 import Button from "@material-ui/core/Button";
 import { createSelector } from "reselect";
-import DocumentTitle from "react-document-title";
+const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
 import { MaterialSummary } from "../../data/events";
 import { Store, connect, AppActionBeforeMiddleware, mkAC } from "../../store/store";
@@ -154,7 +154,7 @@ function Wash(props: WashProps) {
 
   return (
     <DocumentTitle title="Wash - FMS Insight">
-      <main style={{ padding: "8px" }}>
+      <main data-testid="stationmonitor-wash" style={{ padding: "8px" }}>
         <Grid container spacing={16}>
           <Grid item xs={12} md={6}>
             <WhiteboardRegion label="Recently completed parts not yet washed" borderRight borderBottom>

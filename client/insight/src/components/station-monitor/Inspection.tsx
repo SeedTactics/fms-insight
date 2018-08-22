@@ -38,7 +38,7 @@ import Grid from "@material-ui/core/Grid";
 import Button from "@material-ui/core/Button";
 import { DialogActions } from "@material-ui/core";
 import { createSelector } from "reselect";
-import DocumentTitle from "react-document-title";
+const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
 import { MaterialSummary } from "../../data/events";
 import { Store, connect, mkAC, AppActionBeforeMiddleware } from "../../store/store";
@@ -177,7 +177,7 @@ function Inspection(props: InspectionProps) {
 
   return (
     <DocumentTitle title={title}>
-      <main style={{ padding: "8px" }}>
+      <main data-testid="stationmonitor-inspection" style={{ padding: "8px" }}>
         <Grid container spacing={16}>
           <Grid item xs={12} md={6}>
             <WhiteboardRegion label="Parts to Inspect" borderRight borderBottom>

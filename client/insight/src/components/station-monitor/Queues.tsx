@@ -35,7 +35,6 @@ import * as React from "react";
 import withStyles from "@material-ui/core/styles/withStyles";
 import * as im from "immutable";
 import { createSelector } from "reselect";
-import DocumentTitle from "react-document-title";
 import Button from "@material-ui/core/Button";
 import List from "@material-ui/core/List";
 import ListItemText from "@material-ui/core/ListItemText";
@@ -46,6 +45,7 @@ import DialogActions from "@material-ui/core/DialogActions";
 import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
 import TextField from "@material-ui/core/TextField";
+const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
 import { LoadStationAndQueueData, selectLoadStationAndQueueProps } from "../../data/load-station";
 import {
@@ -594,7 +594,7 @@ const Queues = queueStyles<QueueProps>(props => {
 
   return (
     <DocumentTitle title="Material Queues - FMS Insight">
-      <main className={props.classes.mainScrollable}>
+      <main data-testid="stationmonitor-queues" className={props.classes.mainScrollable}>
         {cells.map((region, idx) => (
           <WhiteboardRegion
             key={idx}

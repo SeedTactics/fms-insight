@@ -24,6 +24,7 @@ exports[`displays an empty queue page: empty queues 1`] = `
             Queues
           </div>
           <input
+            name="choose-station-type-select"
             type="hidden"
             value="StationType_Queues"
           />
@@ -40,49 +41,60 @@ exports[`displays an empty queue page: empty queues 1`] = `
         </div>
       </div>
       <div
-        class="MuiInput-root-398 MuiInput-underline-402"
+        class="MuiFormControl-root-422"
         style="margin-left: 1em; min-width: 10em;"
       >
+        <label
+          style="position: absolute; top: 24px; left: 0px; color: rgba(0, 0, 0, 0.54); font-size: 0.9rem;"
+        >
+          Select queue(s)
+        </label>
         <div
-          class="MuiSelect-root-393"
+          class="MuiInput-root-398 MuiInput-formControl-399 MuiInput-underline-402"
+          data-testid="station-monitor-queue-select"
         >
           <div
-            aria-haspopup="true"
-            aria-pressed="false"
-            class="MuiSelect-select-394 MuiSelect-selectMenu-395 MuiInput-input-406"
-            role="button"
-            tabindex="0"
+            class="MuiSelect-root-393"
           >
-            <span>
-              ​
-            </span>
-          </div>
-          <input
-            id="queueselect"
-            type="hidden"
-            value=""
-          />
-          <svg
-            aria-hidden="true"
-            class="MuiSvgIcon-root-411 MuiSelect-icon-397"
-            focusable="false"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M7 10l5 5 5-5z"
+            <div
+              aria-haspopup="true"
+              aria-pressed="false"
+              class="MuiSelect-select-394 MuiSelect-selectMenu-395 MuiInput-input-406"
+              role="button"
+              tabindex="0"
+            >
+              <span>
+                ​
+              </span>
+            </div>
+            <input
+              id="queueselect"
+              name="station-monitor-queue-select"
+              type="hidden"
+              value=""
             />
-          </svg>
+            <svg
+              aria-hidden="true"
+              class="MuiSvgIcon-root-411 MuiSelect-icon-397"
+              focusable="false"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M7 10l5 5 5-5z"
+              />
+            </svg>
+          </div>
         </div>
       </div>
       <button
-        class="MuiButtonBase-root-435 MuiIconButton-root-429"
+        class="MuiButtonBase-root-439 MuiIconButton-root-433"
         style="height: 25px;"
         tabindex="0"
         title="Scan QR Code"
         type="button"
       >
         <span
-          class="MuiIconButton-label-434"
+          class="MuiIconButton-label-438"
         >
           <svg
             aria-hidden="true"
@@ -105,7 +117,7 @@ exports[`displays an empty queue page: empty queues 1`] = `
           </svg>
         </span>
         <span
-          class="MuiTouchRipple-root-438"
+          class="MuiTouchRipple-root-442"
         />
       </button>
     </div>
@@ -118,7 +130,7 @@ exports[`displays an empty queue page: empty queues 1`] = `
         style="position: relative;"
       >
         <div
-          class="MuiFormControl-root-445"
+          class="MuiFormControl-root-422"
         >
           <div
             aria-autocomplete="list"
@@ -180,6 +192,7 @@ exports[`displays the load with no queues: load with no queues 1`] = `
             Load Station
           </div>
           <input
+            name="choose-station-type-select"
             type="hidden"
             value="StationType_LoadUnload"
           />
@@ -217,6 +230,7 @@ exports[`displays the load with no queues: load with no queues 1`] = `
         </label>
         <div
           class="MuiInput-root-62 MuiInput-formControl-63 MuiInput-underline-66"
+          data-testid="station-monitor-queue-select"
           style="min-width: 10em;"
         >
           <div
@@ -235,6 +249,7 @@ exports[`displays the load with no queues: load with no queues 1`] = `
             </div>
             <input
               id="queueselect"
+              name="station-monitor-queue-select"
               type="hidden"
               value=""
             />
@@ -357,6 +372,7 @@ exports[`displays the toolbar for all inspection: inspection all toolbar 1`] = `
             Inspection
           </div>
           <input
+            name="choose-station-type-select"
             type="hidden"
             value="StationType_Insp"
           />
@@ -512,6 +528,7 @@ exports[`displays the toolbar for all material: all material toolbar 1`] = `
             All Material
           </div>
           <input
+            name="choose-station-type-select"
             type="hidden"
             value="StationType_AllMaterial"
           />
@@ -633,6 +650,7 @@ exports[`displays the toolbar for load with one queue: load with one queue 1`] =
             Load Station
           </div>
           <input
+            name="choose-station-type-select"
             type="hidden"
             value="StationType_LoadUnload"
           />
@@ -665,6 +683,7 @@ exports[`displays the toolbar for load with one queue: load with one queue 1`] =
       >
         <div
           class="MuiInput-root-6 MuiInput-formControl-7 MuiInput-underline-10"
+          data-testid="station-monitor-queue-select"
           style="min-width: 10em;"
         >
           <div
@@ -681,6 +700,7 @@ exports[`displays the toolbar for load with one queue: load with one queue 1`] =
             </div>
             <input
               id="queueselect"
+              name="station-monitor-queue-select"
               type="hidden"
               value="a"
             />
@@ -803,6 +823,7 @@ exports[`displays the toolbar for load with three queues: load toolbar 1`] = `
             Load Station
           </div>
           <input
+            name="choose-station-type-select"
             type="hidden"
             value="StationType_LoadUnload"
           />
@@ -835,6 +856,7 @@ exports[`displays the toolbar for load with three queues: load toolbar 1`] = `
       >
         <div
           class="MuiInput-root-118 MuiInput-formControl-119 MuiInput-underline-122"
+          data-testid="station-monitor-queue-select"
           style="min-width: 10em;"
         >
           <div
@@ -851,6 +873,7 @@ exports[`displays the toolbar for load with three queues: load toolbar 1`] = `
             </div>
             <input
               id="queueselect"
+              name="station-monitor-queue-select"
               type="hidden"
               value="a,b,c"
             />
@@ -973,6 +996,7 @@ exports[`displays the toolbar for queue page with three queues: queue toolbar 1`
             Queues
           </div>
           <input
+            name="choose-station-type-select"
             type="hidden"
             value="StationType_Queues"
           />
@@ -989,47 +1013,53 @@ exports[`displays the toolbar for queue page with three queues: queue toolbar 1`
         </div>
       </div>
       <div
-        class="MuiInput-root-454 MuiInput-underline-458"
+        class="MuiFormControl-root-478"
         style="margin-left: 1em; min-width: 10em;"
       >
         <div
-          class="MuiSelect-root-449"
+          class="MuiInput-root-454 MuiInput-formControl-455 MuiInput-underline-458"
+          data-testid="station-monitor-queue-select"
         >
           <div
-            aria-haspopup="true"
-            aria-pressed="false"
-            class="MuiSelect-select-450 MuiSelect-selectMenu-451 MuiInput-input-462"
-            role="button"
-            tabindex="0"
+            class="MuiSelect-root-449"
           >
-            a, b, c
-          </div>
-          <input
-            id="queueselect"
-            type="hidden"
-            value="a,b,c"
-          />
-          <svg
-            aria-hidden="true"
-            class="MuiSvgIcon-root-467 MuiSelect-icon-453"
-            focusable="false"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M7 10l5 5 5-5z"
+            <div
+              aria-haspopup="true"
+              aria-pressed="false"
+              class="MuiSelect-select-450 MuiSelect-selectMenu-451 MuiInput-input-462"
+              role="button"
+              tabindex="0"
+            >
+              a, b, c
+            </div>
+            <input
+              id="queueselect"
+              name="station-monitor-queue-select"
+              type="hidden"
+              value="a,b,c"
             />
-          </svg>
+            <svg
+              aria-hidden="true"
+              class="MuiSvgIcon-root-467 MuiSelect-icon-453"
+              focusable="false"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M7 10l5 5 5-5z"
+              />
+            </svg>
+          </div>
         </div>
       </div>
       <button
-        class="MuiButtonBase-root-491 MuiIconButton-root-485"
+        class="MuiButtonBase-root-495 MuiIconButton-root-489"
         style="height: 25px;"
         tabindex="0"
         title="Scan QR Code"
         type="button"
       >
         <span
-          class="MuiIconButton-label-490"
+          class="MuiIconButton-label-494"
         >
           <svg
             aria-hidden="true"
@@ -1052,7 +1082,7 @@ exports[`displays the toolbar for queue page with three queues: queue toolbar 1`
           </svg>
         </span>
         <span
-          class="MuiTouchRipple-root-494"
+          class="MuiTouchRipple-root-498"
         />
       </button>
     </div>
@@ -1065,7 +1095,7 @@ exports[`displays the toolbar for queue page with three queues: queue toolbar 1`
         style="position: relative;"
       >
         <div
-          class="MuiFormControl-root-501"
+          class="MuiFormControl-root-478"
         >
           <div
             aria-autocomplete="list"
@@ -1127,6 +1157,7 @@ exports[`displays the toolbar for single inspection type: inspection i1 selected
             Inspection
           </div>
           <input
+            name="choose-station-type-select"
             type="hidden"
             value="StationType_Insp"
           />
@@ -1282,6 +1313,7 @@ exports[`displays the toolbar for wash: wash toolbar 1`] = `
             Wash
           </div>
           <input
+            name="choose-station-type-select"
             type="hidden"
             value="StationType_Wash"
           />

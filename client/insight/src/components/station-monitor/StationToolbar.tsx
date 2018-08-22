@@ -251,7 +251,12 @@ export function StationToolbar(props: StationToolbarProps) {
   return (
     <nav style={toolbarStyle}>
       <div style={{ display: "flex", alignItems: "flex-end", flexGrow: 1 }}>
-        <Select value={props.current_route.station_monitor} onChange={e => setStation(e.target.value)} autoWidth>
+        <Select
+          name="choose-station-type-select"
+          value={props.current_route.station_monitor}
+          onChange={e => setStation(e.target.value)}
+          autoWidth
+        >
           <MenuItem value={routes.StationMonitorType.LoadUnload}>Load Station</MenuItem>
           <MenuItem value={routes.StationMonitorType.Inspection}>Inspection</MenuItem>
           <MenuItem value={routes.StationMonitorType.Wash}>Wash</MenuItem>
@@ -311,6 +316,8 @@ export function StationToolbar(props: StationToolbarProps) {
             )}
             <Select
               multiple
+              name="station-monitor-queue-select"
+              data-testid="station-monitor-queue-select"
               key="queueselect"
               displayEmpty
               value={loadqueues}
@@ -332,24 +339,42 @@ export function StationToolbar(props: StationToolbarProps) {
           undefined
         )}
         {props.current_route.station_monitor === routes.StationMonitorType.Queues ? (
-          <Select
-            multiple
-            key="queueselect"
-            displayEmpty
-            value={standalonequeues}
-            inputProps={{ id: "queueselect" }}
-            style={{ marginLeft: "1em", minWidth: "10em" }}
-            onChange={e => setStandaloneQueues(e.target.value)}
-          >
-            <MenuItem key={freeMaterialSym} value={freeMaterialSym}>
-              Free Material
-            </MenuItem>
-            {queueNames.map((q, idx) => (
-              <MenuItem key={idx} value={q}>
-                {q}
+          <FormControl style={{ marginLeft: "1em", minWidth: "10em" }}>
+            {standalonequeues.length === 0 ? (
+              <label
+                style={{
+                  position: "absolute",
+                  top: "24px",
+                  left: 0,
+                  color: "rgba(0,0,0,0.54)",
+                  fontSize: "0.9rem"
+                }}
+              >
+                Select queue(s)
+              </label>
+            ) : (
+              undefined
+            )}
+            <Select
+              multiple
+              name="station-monitor-queue-select"
+              data-testid="station-monitor-queue-select"
+              key="queueselect"
+              displayEmpty
+              value={standalonequeues}
+              inputProps={{ id: "queueselect" }}
+              onChange={e => setStandaloneQueues(e.target.value)}
+            >
+              <MenuItem key={freeMaterialSym} value={freeMaterialSym}>
+                Free Material
               </MenuItem>
-            ))}
-          </Select>
+              {queueNames.map((q, idx) => (
+                <MenuItem key={idx} value={q}>
+                  {q}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         ) : (
           undefined
         )}

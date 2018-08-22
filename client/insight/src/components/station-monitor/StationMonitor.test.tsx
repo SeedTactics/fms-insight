@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { render, cleanup, fireEvent, wait } from "react-testing-library";
+import { render, cleanup, fireEvent, wait, within } from "react-testing-library";
 afterEach(cleanup);
 import { Provider } from "react-redux";
 import { Simulate } from "react-dom/test-utils";
@@ -81,11 +81,9 @@ it("renders the load station page", async () => {
   loadNum.value = "1";
   Simulate.change(loadNum);
 
-  fireEvent.click(result.getByText("NBTGI", {exact: false}));
+  fireEvent.click(result.getByText("NBTGI", { exact: false }));
 
-  await wait(() =>
-    expect(result.queryByTestId("material-events-loading")).not.toBeInTheDocument()
-  );
+  await wait(() => expect(result.queryByTestId("material-events-loading")).not.toBeInTheDocument());
 
   expect(result.baseElement.querySelector("div[role='dialog']")).toMatchSnapshot("NBTGI dialog");
 
@@ -97,4 +95,78 @@ it("renders the load station page", async () => {
   Simulate.change(enterSerial);
   Simulate.keyPress(enterSerial, {key: "Enter"});
   */
+});
+
+it("renders the inspection page", async () => {
+  const store = await createTestStore();
+
+  const result = render(
+    <Provider store={store}>
+      <div>
+        <ConnStatMonitor />
+      </div>
+    </Provider>
+  );
+
+  fireEvent.click(result.getByText("Load Station"));
+
+  fireEvent.click(
+    within(document.getElementById("menu-choose-station-type-select") as HTMLElement).getByText("Inspection")
+  );
+
+  // inspection page only looks last 36 hours, but all events are in July 2018 so it will be empty
+  // TODO: actually test inspection page
+
+  expect(result.getByTestId("stationmonitor-inspection")).toMatchSnapshot("empty inspection");
+});
+
+it("renders the wash page", async () => {
+  const store = await createTestStore();
+
+  const result = render(
+    <Provider store={store}>
+      <div>
+        <ConnStatMonitor />
+      </div>
+    </Provider>
+  );
+
+  fireEvent.click(result.getByText("Load Station"));
+
+  fireEvent.click(within(document.getElementById("menu-choose-station-type-select") as HTMLElement).getByText("Wash"));
+
+  // wash page only looks last 36 hours, but all events are in July 2018 so it will be empty
+  // TODO: actually test inspection page
+
+  expect(result.getByTestId("stationmonitor-wash")).toMatchSnapshot("empty wash");
+});
+
+it("renders the queues page", async () => {
+  const store = await createTestStore();
+
+  const result = render(
+    <Provider store={store}>
+      <div>
+        <ConnStatMonitor />
+      </div>
+    </Provider>
+  );
+
+  fireEvent.click(result.getByText("Load Station"));
+
+  fireEvent.click(
+    within(document.getElementById("menu-choose-station-type-select") as HTMLElement).getByText("Queues")
+  );
+
+  expect(result.getByTestId("stationmonitor-queues")).toMatchSnapshot("empty queues");
+
+  fireEvent.click(result
+    .getByTestId("station-monitor-queue-select")
+    .querySelector("div[role='button']") as HTMLElement);
+
+  fireEvent.click(
+    within(document.getElementById("menu-station-monitor-queue-select") as HTMLElement).getByText("Queue1")
+  );
+
+  expect(result.getByTestId("stationmonitor-queues")).toMatchSnapshot("with Queue1");
 });
