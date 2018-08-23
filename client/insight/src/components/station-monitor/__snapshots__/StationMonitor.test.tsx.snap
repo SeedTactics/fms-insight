@@ -1859,7 +1859,7 @@ exports[`renders the load station page: NBTGI dialog 1`] = `
     >
       <a
         class="MuiButtonBase-root-47 MuiButton-root-245 MuiButton-text-247 MuiButton-textPrimary-248 MuiButton-flat-250 MuiButton-flatPrimary-251"
-        href="/api/v1/server/find-instructions/aaa?type=load"
+        href="/api/v1/server/find-instructions/aaa?type=unload"
         role="button"
         tabindex="0"
         target="bms-instructions"
