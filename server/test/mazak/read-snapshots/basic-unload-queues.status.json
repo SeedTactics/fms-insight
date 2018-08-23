@@ -1,5 +1,4 @@
 {
-  "TimeOfCurrentStatusUTC": "2018-07-18T22:00:00Z",
   "Jobs": {
     "aaa-schId1234": {
       "Completed": [
@@ -983,7 +982,9 @@
         "Face": 2
       },
       "Action": {
-        "Type": "Waiting"
+        "Type": "Machining",
+        "ElapsedMachiningTime": "PT2M37S",
+        "ExpectedRemainingMachiningTime": "PT42M53S"
       }
     },
     {
@@ -1000,7 +1001,9 @@
         "Face": 2
       },
       "Action": {
-        "Type": "Waiting"
+        "Type": "Machining",
+        "ElapsedMachiningTime": "PT2M37S",
+        "ExpectedRemainingMachiningTime": "PT42M53S"
       }
     }
   ],
@@ -1010,5 +1013,6 @@
     "queueAAA": {},
     "queueBBB": {},
     "queueCCC": {}
-  }
+  },
+  "TimeOfCurrentStatusUTC": "2018-08-23T14:10:37.9389505Z"
 }

@@ -43,7 +43,7 @@ namespace MazakMachineInterface
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<BuildCurrentStatus>();
 
-    public static CurrentStatus Build(JobDB jobDB, JobLogDB log, FMSSettings fmsSettings, MazakDbType dbType, MazakSchedulesPartsPallets mazakData)
+    public static CurrentStatus Build(JobDB jobDB, JobLogDB log, FMSSettings fmsSettings, MazakDbType dbType, MazakSchedulesPartsPallets mazakData, DateTime utcNow)
     {
       //Load process and path numbers
       Dictionary<string, int> uniqueToMaxPath;
@@ -230,6 +230,23 @@ namespace MazakMachineInterface
                     path: procToPath.PathForProc(palSub.PartProcessNumber)),
                 };
               }
+              else
+              {
+                // detect if machining
+                var start = FindMachineStartFromOldCycles(oldCycles, matID);
+                if (start != null)
+                {
+                  var machStop = job.GetMachiningStop(inProcMat.Process, inProcMat.Path).FirstOrDefault();
+                  var elapsedTime = utcNow.Subtract(start.EndTimeUTC);
+                  inProcMat.Action = new InProcessMaterialAction()
+                  {
+                    Type = InProcessMaterialAction.ActionType.Machining,
+                    ElapsedMachiningTime = elapsedTime,
+                    ExpectedRemainingMachiningTime =
+                      machStop != null ? machStop.ExpectedCycleTime.Subtract(elapsedTime) : TimeSpan.Zero
+                  };
+                }
+              }
             }
           }
 
@@ -243,20 +260,25 @@ namespace MazakMachineInterface
 
       //now queued
       var seenMatIds = new HashSet<long>(curStatus.Material.Select(m => m.MaterialID));
-      foreach (var mat in log.GetMaterialInAllQueues()) {
+      foreach (var mat in log.GetMaterialInAllQueues())
+      {
         // material could be in the process of being loaded
         if (seenMatIds.Contains(mat.MaterialID)) continue;
         var matLogs = log.GetLogForMaterial(mat.MaterialID);
         int lastProc = 0;
-        foreach (var entry in log.GetLogForMaterial(mat.MaterialID)) {
-          foreach (var entryMat in entry.Material) {
-            if (entryMat.MaterialID == mat.MaterialID) {
+        foreach (var entry in log.GetLogForMaterial(mat.MaterialID))
+        {
+          foreach (var entryMat in entry.Material)
+          {
+            if (entryMat.MaterialID == mat.MaterialID)
+            {
               lastProc = Math.Max(lastProc, entryMat.Process);
             }
           }
         }
         var matDetails = log.GetMaterialDetails(mat.MaterialID);
-        curStatus.Material.Add(new InProcessMaterial() {
+        curStatus.Material.Add(new InProcessMaterial()
+        {
           MaterialID = mat.MaterialID,
           JobUnique = mat.Unique,
           PartName = mat.PartName,
@@ -402,23 +424,25 @@ namespace MazakMachineInterface
 
     private static void AddCompletedToJob(MazakScheduleRow schRow, InProcessJob job, MazakPart.IProcToPath procToPath)
     {
-        job.SetCompleted(job.NumProcesses, procToPath.PathForProc(job.NumProcesses), schRow.CompleteQuantity);
+      job.SetCompleted(job.NumProcesses, procToPath.PathForProc(job.NumProcesses), schRow.CompleteQuantity);
 
-        //in-proc and material for each process
-        var counts = new Dictionary<int, int>(); //key is process, value is in-proc + mat
-        foreach (var schProcRow in schRow.Processes) {
-          counts[schProcRow.ProcessNumber] =
-            schProcRow.ProcessBadQuantity + schProcRow.ProcessExecuteQuantity + schProcRow.ProcessMaterialQuantity;
-        }
+      //in-proc and material for each process
+      var counts = new Dictionary<int, int>(); //key is process, value is in-proc + mat
+      foreach (var schProcRow in schRow.Processes)
+      {
+        counts[schProcRow.ProcessNumber] =
+          schProcRow.ProcessBadQuantity + schProcRow.ProcessExecuteQuantity + schProcRow.ProcessMaterialQuantity;
+      }
 
-        for (int proc = 1; proc < job.NumProcesses; proc++) {
-          var cnt =
-            counts
-            .Where(x => x.Key > proc)
-            .Select(x => x.Value)
-            .Sum();
-          job.SetCompleted(proc, procToPath.PathForProc(proc), cnt + schRow.CompleteQuantity);
-        }
+      for (int proc = 1; proc < job.NumProcesses; proc++)
+      {
+        var cnt =
+          counts
+          .Where(x => x.Key > proc)
+          .Select(x => x.Value)
+          .Sum();
+        job.SetCompleted(proc, procToPath.PathForProc(proc), cnt + schRow.CompleteQuantity);
+      }
     }
 
     private static void AddDataFromJobDB(JobDB jobDB, JobPlan jobFromMazak)
@@ -433,8 +457,10 @@ namespace MazakMachineInterface
       jobFromMazak.HoldEntireJob = jobFromDb.HoldEntireJob;
       foreach (var b in jobFromDb.ScheduledBookingIds)
         jobFromMazak.ScheduledBookingIds.Add(b);
-      for (int proc = 1; proc <= jobFromMazak.NumProcesses; proc++) {
-        for (int path = 1; path <= jobFromMazak.GetNumPaths(proc); path++) {
+      for (int proc = 1; proc <= jobFromMazak.NumProcesses; proc++)
+      {
+        for (int path = 1; path <= jobFromMazak.GetNumPaths(proc); path++)
+        {
           if (proc > jobFromDb.NumProcesses || path > jobFromDb.GetNumPaths(proc))
             continue;
 
@@ -455,7 +481,8 @@ namespace MazakMachineInterface
 
           var mazakStops = jobFromMazak.GetMachiningStop(proc, path).ToList();
           var dbStops = jobFromDb.GetMachiningStop(proc, path).ToList();
-          for (int i = 0; i < Math.Min(mazakStops.Count, dbStops.Count); i++) {
+          for (int i = 0; i < Math.Min(mazakStops.Count, dbStops.Count); i++)
+          {
             mazakStops[i].StationGroup = dbStops[i].StationGroup;
             mazakStops[i].ExpectedCycleTime = dbStops[i].ExpectedCycleTime;
           }
@@ -476,9 +503,12 @@ namespace MazakMachineInterface
             && process + 1 == act.Process
             && act.Qty >= 1)
         {
-          if (act.Qty == 1)  {
+          if (act.Qty == 1)
+          {
             currentLoads.Remove(act);
-          } else {
+          }
+          else
+          {
             act.Qty -= 1;
           }
           return act;
@@ -499,9 +529,12 @@ namespace MazakMachineInterface
             && process == act.Process
             && act.Qty >= 1)
         {
-          if (act.Qty == 1) {
+          if (act.Qty == 1)
+          {
             currentLoads.Remove(act);
-          } else {
+          }
+          else
+          {
             act.Qty -= 1;
           }
           return act;
@@ -520,13 +553,16 @@ namespace MazakMachineInterface
         for (int i = 0; i < operation.Qty; i++)
         {
           List<BlackMaple.MachineFramework.JobLogDB.QueuedMaterial> queuedMat = null;
-          if (curStatus.Jobs.ContainsKey(operation.Unique)) {
+          if (curStatus.Jobs.ContainsKey(operation.Unique))
+          {
             var queue = curStatus.Jobs[operation.Unique].GetInputQueue(process: operation.Process, path: operation.Path);
-            if (!string.IsNullOrEmpty(queue)) {
+            if (!string.IsNullOrEmpty(queue))
+            {
               //only lookup each queue once
               if (queuedMats.ContainsKey(queue))
                 queuedMat = queuedMats[queue];
-              else {
+              else
+              {
                 queuedMat = log.GetMaterialInQueue(queue).ToList();
                 queuedMats.Add(queue, queuedMat);
               }
@@ -534,23 +570,25 @@ namespace MazakMachineInterface
           }
           long matId = -1;
           var loc = new InProcessMaterialLocation()
-            {
-              Type = InProcessMaterialLocation.LocType.Free
-            };
-          if (queuedMat != null) {
+          {
+            Type = InProcessMaterialLocation.LocType.Free
+          };
+          if (queuedMat != null)
+          {
             var mat = queuedMat
               .Where(m => m.Unique == operation.Unique)
               .Select(m => (JobLogDB.QueuedMaterial?)m)
               .DefaultIfEmpty(null)
               .First();
-            if (mat.HasValue) {
+            if (mat.HasValue)
+            {
               matId = mat.Value.MaterialID;
               loc = new InProcessMaterialLocation()
-                {
-                  Type = InProcessMaterialLocation.LocType.InQueue,
-                  CurrentQueue = mat.Value.Queue,
-                  QueuePosition = mat.Value.Position,
-                };
+              {
+                Type = InProcessMaterialLocation.LocType.InQueue,
+                CurrentQueue = mat.Value.Queue,
+                QueuePosition = mat.Value.Position,
+              };
               queuedMat.RemoveAll(m => m.MaterialID == mat.Value.MaterialID);
             }
           }
@@ -624,11 +662,13 @@ namespace MazakMachineInterface
               Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
             }
           };
-          if (job != null) {
+          if (job != null)
+          {
             if (unload.Process == job.NumProcesses)
               inProcMat.Action.Type = InProcessMaterialAction.ActionType.UnloadToInProcess;
             var queue = job.GetOutputQueue(process: unload.Process, path: unload.Path);
-            if (!string.IsNullOrEmpty(queue)) {
+            if (!string.IsNullOrEmpty(queue))
+            {
               inProcMat.Action.UnloadIntoQueue = queue;
             }
           }
@@ -653,6 +693,28 @@ namespace MazakMachineInterface
       }
 
       return ret.Keys;
+    }
+
+    private static BlackMaple.MachineWatchInterface.LogEntry FindMachineStartFromOldCycles(IEnumerable<BlackMaple.MachineWatchInterface.LogEntry> oldCycles, long matId)
+    {
+      BlackMaple.MachineWatchInterface.LogEntry start = null;
+
+      foreach (var s in oldCycles.Where(e => e.Material.Any(m => m.MaterialID == matId)))
+      {
+        if (s.LogType == LogType.MachineCycle)
+        {
+          if (s.StartOfCycle)
+          {
+            start = s;
+          }
+          else
+          {
+            start = null; // clear when completed
+          }
+        }
+      }
+
+      return start;
     }
 
     private static PalletLocation FindPalletLocation(MazakSchedulesPartsPallets mazakData, MazakDbType dbType, int palletNum)

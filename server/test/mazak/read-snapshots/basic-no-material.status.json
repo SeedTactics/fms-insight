@@ -1,5 +1,4 @@
 {
-  "TimeOfCurrentStatusUTC": "2018-07-18T22:00:00Z",
   "Jobs": {
     "aaa-schId1234": {
       "Completed": [
@@ -127,7 +126,9 @@
                 "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
                 "HoldUnholdPatternRepeats": false
               },
-              "PartsPerPallet": 1
+              "PartsPerPallet": 1,
+              "InputQueue": "castings",
+              "OutputQueue": "queueAAA"
             }
           ]
         },
@@ -224,7 +225,8 @@
                 "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
                 "HoldUnholdPatternRepeats": false
               },
-              "PartsPerPallet": 1
+              "PartsPerPallet": 1,
+              "InputQueue": "queueAAA"
             }
           ]
         }
@@ -392,7 +394,9 @@
                 "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
                 "HoldUnholdPatternRepeats": false
               },
-              "PartsPerPallet": 1
+              "PartsPerPallet": 1,
+              "InputQueue": "castings",
+              "OutputQueue": "queueBBB"
             }
           ]
         },
@@ -525,7 +529,8 @@
                 "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
                 "HoldUnholdPatternRepeats": false
               },
-              "PartsPerPallet": 1
+              "PartsPerPallet": 1,
+              "InputQueue": "queueBBB"
             }
           ]
         }
@@ -689,7 +694,8 @@
                 "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
                 "HoldUnholdPatternRepeats": false
               },
-              "PartsPerPallet": 2
+              "PartsPerPallet": 2,
+              "OutputQueue": "queueCCC"
             }
           ]
         },
@@ -818,7 +824,8 @@
                 "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
                 "HoldUnholdPatternRepeats": false
               },
-              "PartsPerPallet": 2
+              "PartsPerPallet": 2,
+              "InputQueue": "queueCCC"
             }
           ]
         }
@@ -878,5 +885,6 @@
     "queueAAA": {},
     "queueBBB": {},
     "queueCCC": {}
-  }
+  },
+  "TimeOfCurrentStatusUTC": "2018-08-23T14:10:37.9928631Z"
 }

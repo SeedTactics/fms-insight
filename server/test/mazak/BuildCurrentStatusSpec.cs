@@ -47,18 +47,18 @@ namespace MachineWatchTest
   public class BuildCurrentStatusSpec : IDisposable
   {
     private JobLogDB _emptyLog;
-		private JobDB _jobDB;
+    private JobDB _jobDB;
     private JsonSerializerSettings jsonSettings;
     private FMSSettings _settings;
 
     public BuildCurrentStatusSpec()
     {
-			var logConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
+      var logConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
       logConn.Open();
       _emptyLog = new JobLogDB(logConn);
       _emptyLog.CreateTables(firstSerialOnEmpty: null);
 
-			var jobConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
+      var jobConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
       jobConn.Open();
       _jobDB = new JobDB(jobConn);
       _jobDB.CreateTables();
@@ -78,11 +78,11 @@ namespace MachineWatchTest
 
     }
 
-		public void Dispose()
-		{
-			_emptyLog.Close();
-			_jobDB.Close();
-		}
+    public void Dispose()
+    {
+      _emptyLog.Close();
+      _jobDB.Close();
+    }
 
     /*
     [Fact]
@@ -146,13 +146,16 @@ namespace MachineWatchTest
       );
       */
       NewJobs newJobs = null;
-      if (scenario.Contains("basic")) {
+      if (scenario.Contains("basic"))
+      {
         newJobs = JsonConvert.DeserializeObject<NewJobs>(
           File.ReadAllText(
             Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
             jsonSettings
         );
-      } else if (scenario.Contains("multiface")) {
+      }
+      else if (scenario.Contains("multiface"))
+      {
         newJobs = JsonConvert.DeserializeObject<NewJobs>(
           File.ReadAllText(
             Path.Combine("..", "..", "..", "sample-newjobs", "multi-face.json")),
@@ -171,16 +174,21 @@ namespace MachineWatchTest
       bool close = false;
       var existingLogPath =
         Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".log.db");
-      if (File.Exists(existingLogPath)) {
+      if (File.Exists(existingLogPath))
+      {
         logDb = new JobLogDB();
         logDb.Open(existingLogPath);
         close = true;
       }
 
       CurrentStatus status;
-      try {
-        status = BuildCurrentStatus.Build(_jobDB, logDb, _settings, MazakDbType.MazakSmooth, allData);
-      } finally {
+      try
+      {
+        status = BuildCurrentStatus.Build(_jobDB, logDb, _settings, MazakDbType.MazakSmooth, allData,
+          new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc));
+      }
+      finally
+      {
         if (close) logDb.Close();
       }
 

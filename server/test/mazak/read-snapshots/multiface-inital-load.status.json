@@ -1,5 +1,4 @@
 {
-  "TimeOfCurrentStatusUTC": "2018-07-18T22:00:00Z",
   "Jobs": {
     "aaa-schId1234": {
       "Completed": [
@@ -1308,5 +1307,6 @@
     "queueAAA": {},
     "queueBBB": {},
     "queueCCC": {}
-  }
+  },
+  "TimeOfCurrentStatusUTC": "2018-08-23T14:10:37.9224276Z"
 }

@@ -103,7 +103,7 @@ namespace MazakMachineInterface
         OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
       }
 
-      return BuildCurrentStatus.Build(jobDB, log, fmsSettings, readDatabase.MazakType, mazakData);
+      return BuildCurrentStatus.Build(jobDB, log, fmsSettings, readDatabase.MazakType, mazakData, DateTime.UtcNow);
     }
 
     #endregion
@@ -136,15 +136,15 @@ namespace MazakMachineInterface
         //The reason we create the clsPalletPartMapping is to see if it throws any exceptions.  We therefore
         //need to ignore the warning that palletPartMap is not used.
 #pragma warning disable 168, 219
-      var mazakJobs = ConvertJobsToMazakParts.JobsToMazak(
-        jobs,
-        1,
-        mazakData,
-        new HashSet<string>(),
-        writeDb.MazakType,
-        CheckPalletsUsedOnce,
-        fmsSettings,
-        logMessages);
+        var mazakJobs = ConvertJobsToMazakParts.JobsToMazak(
+          jobs,
+          1,
+          mazakData,
+          new HashSet<string>(),
+          writeDb.MazakType,
+          CheckPalletsUsedOnce,
+          fmsSettings,
+          logMessages);
 #pragma warning restore 168, 219
 
       }
@@ -181,7 +181,8 @@ namespace MazakMachineInterface
 
     public void RecopyJobsToSystem()
     {
-      try {
+      try
+      {
         if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
         {
           throw new Exception("Unable to obtain mazak database lock");
@@ -194,7 +195,9 @@ namespace MazakMachineInterface
         {
           OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
         }
-      } catch (Exception ex) {
+      }
+      catch (Exception ex)
+      {
         Log.Error(ex, "Error recopying job schedules to mazak");
       }
     }
@@ -248,12 +251,14 @@ namespace MazakMachineInterface
     #region Queues
     public void AddUnallocatedCastingToQueue(string part, string queue, int position, string serial)
     {
-      if (!fmsSettings.Queues.ContainsKey(queue)) {
+      if (!fmsSettings.Queues.ContainsKey(queue))
+      {
         throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
       }
       // num proc will be set later once it is allocated inside the MazakQueues thread
       var matId = log.AllocateMaterialIDForCasting(part, 1);
-      if (!string.IsNullOrEmpty(serial)) {
+      if (!string.IsNullOrEmpty(serial))
+      {
         log.RecordSerialForMaterialID(
           new LogMaterial(
             matID: matId,
@@ -272,13 +277,15 @@ namespace MazakMachineInterface
 
     public void AddUnprocessedMaterialToQueue(string jobUnique, int process, string queue, int position, string serial)
     {
-      if (!fmsSettings.Queues.ContainsKey(queue)) {
+      if (!fmsSettings.Queues.ContainsKey(queue))
+      {
         throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
       }
       var job = jobDB.LoadJob(jobUnique);
       if (job == null) throw new BlackMaple.MachineFramework.BadRequestException("Unable to find job " + jobUnique);
       var matId = log.AllocateMaterialID(jobUnique, job.PartName, job.NumProcesses);
-      if (!string.IsNullOrEmpty(serial)) {
+      if (!string.IsNullOrEmpty(serial))
+      {
         log.RecordSerialForMaterialID(
           new LogMaterial(
             matID: matId,
@@ -297,7 +304,8 @@ namespace MazakMachineInterface
 
     public void SetMaterialInQueue(long materialId, string queue, int position)
     {
-      if (!fmsSettings.Queues.ContainsKey(queue)) {
+      if (!fmsSettings.Queues.ContainsKey(queue))
+      {
         throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
       }
       var proc =
