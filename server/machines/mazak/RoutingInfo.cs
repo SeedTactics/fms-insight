@@ -257,6 +257,12 @@ namespace MazakMachineInterface
       }
       // num proc will be set later once it is allocated inside the MazakQueues thread
       var matId = log.AllocateMaterialIDForCasting(part, 1);
+
+      Log.Debug("Adding unprocessed casting for part {part} to queue {queue} in position {pos} with serial {serial}. " +
+                "Assigned matId {matId}",
+        part, queue, position, serial, matId
+      );
+
       if (!string.IsNullOrEmpty(serial))
       {
         log.RecordSerialForMaterialID(
@@ -281,6 +287,11 @@ namespace MazakMachineInterface
       {
         throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
       }
+
+      Log.Debug("Adding unprocessed material for job {job} proc {proc} to queue {queue} in position {pos} with serial {serial}",
+        jobUnique, process, queue, position, serial
+      );
+
       var job = jobDB.LoadJob(jobUnique);
       if (job == null) throw new BlackMaple.MachineFramework.BadRequestException("Unable to find job " + jobUnique);
       var matId = log.AllocateMaterialID(jobUnique, job.PartName, job.NumProcesses);
@@ -308,6 +319,9 @@ namespace MazakMachineInterface
       {
         throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
       }
+      Log.Debug("Adding material {matId} to queue {queue} in position {pos}",
+        materialId, queue, position
+      );
       var proc =
         log.GetLogForMaterial(materialId)
         .SelectMany(e => e.Material)
@@ -322,6 +336,7 @@ namespace MazakMachineInterface
 
     public void RemoveMaterialFromAllQueues(long materialId)
     {
+      Log.Debug("Removing {matId} from all queues", materialId);
       log.RecordRemoveMaterialFromAllQueues(materialId);
       logReader.RecheckQueues();
       RaiseNewCurrentStatus(GetCurrentStatus());
