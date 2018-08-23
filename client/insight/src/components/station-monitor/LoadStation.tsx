@@ -280,6 +280,20 @@ interface LoadMatDialogProps extends MaterialDialogProps {
   readonly openForceInspection: () => void;
 }
 
+function instructionType(mat: matDetails.MaterialDetail): string {
+  let openUnload = false;
+  for (var e of mat.events) {
+    if (e.result === "UNLOAD") {
+      openUnload = e.startofcycle;
+    }
+  }
+  if (openUnload) {
+    return "unload";
+  } else {
+    return "load";
+  }
+}
+
 function LoadMatDialog(props: LoadMatDialogProps) {
   function openAssignWorkorder() {
     if (!props.display_material) {
@@ -294,7 +308,7 @@ function LoadMatDialog(props: LoadMatDialogProps) {
       buttons={
         <>
           {props.display_material && props.display_material.partName !== "" ? (
-            <InstructionButton part={props.display_material.partName} type="load" />
+            <InstructionButton part={props.display_material.partName} type={instructionType(props.display_material)} />
           ) : (
             undefined
           )}

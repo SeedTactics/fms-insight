@@ -40,81 +40,107 @@ using System.Runtime.Serialization;
 
 namespace BlackMaple.MachineFramework.Controllers
 {
-    [DataContract]
-    public class FMSInfo
+  [DataContract]
+  public class FMSInfo
+  {
+    [DataMember] public string Name { get; set; }
+    [DataMember] public string Version { get; set; }
+    [DataMember] public bool RequireScanAtWash { get; set; }
+    [DataMember] public bool RequireWorkorderBeforeAllowWashComplete { get; set; }
+    [DataMember] public IReadOnlyList<string> AdditionalLogServers { get; set; }
+  }
+
+  [Route("api/v1/[controller]")]
+  public class serverController : ControllerBase
+  {
+    private IStoreSettings _settings;
+    private IFMSImplementation _fmsImpl;
+
+    public serverController(IFMSImplementation impl, IStoreSettings s)
     {
-        [DataMember] public string Name {get;set;}
-        [DataMember] public string Version {get;set;}
-        [DataMember] public bool RequireScanAtWash {get;set;}
-        [DataMember] public bool RequireWorkorderBeforeAllowWashComplete {get;set;}
-        [DataMember] public IReadOnlyList<string> AdditionalLogServers {get;set;}
+      _settings = s;
+      _fmsImpl = impl;
     }
 
-    [Route("api/v1/[controller]")]
-    public class serverController : ControllerBase
+    [HttpGet("fms-information")]
+    public FMSInfo FMSInformation()
     {
-        private IStoreSettings _settings;
-        private IFMSImplementation _fmsImpl;
-
-        public serverController(IFMSImplementation impl, IStoreSettings s)
-        {
-            _settings = s;
-            _fmsImpl = impl;
-        }
-
-        [HttpGet("fms-information")]
-        public FMSInfo FMSInformation()
-        {
-            var info = _fmsImpl.NameAndVersion;
-            return new FMSInfo() {
-                Name = info.Name,
-                Version = info.Version,
-                RequireScanAtWash = Program.FMSSettings.RequireScanAtWash,
-                RequireWorkorderBeforeAllowWashComplete = Program.FMSSettings.RequireWorkorderBeforeAllowWashComplete,
-                AdditionalLogServers = Program.FMSSettings.AdditionalLogServers
-            };
-        }
-
-        [HttpGet("settings/{id}")]
-        public string GetSettings(string id)
-        {
-            return _settings.GetSettings(id);
-        }
-
-        [HttpPut("settings/{id}")]
-        public void SetSetting(string id, [FromBody] string setting)
-        {
-            _settings.SetSettings(id, setting);
-        }
-
-        [HttpGet("find-instructions/{part}")]
-        [ProducesResponseType(302)]
-        [ProducesResponseType(404)]
-        public IActionResult FindInstructions(string part, [FromQuery] string type)
-        {
-            try {
-                var file = _fmsImpl.CustomizeInstructionPath(part, type);
-                return Redirect("/instructions/" + file);
-            } catch (NotImplementedException) {
-                // do nothing, continue with default impl
-            }
-            if (string.IsNullOrEmpty(Program.FMSSettings.InstructionFilePath)) {
-                return NotFound("Error: instruction directory must be configured in FMS Insight config file.");
-            }
-            if (!Directory.Exists(Program.FMSSettings.InstructionFilePath)) {
-                return NotFound("Error: configured instruction directory does not exist");
-            }
-            foreach (var f in Directory.GetFiles(Program.FMSSettings.InstructionFilePath)) {
-                if (!Path.GetFileName(f).Contains(part)) continue;
-                if (!string.IsNullOrEmpty(type) && !Path.GetFileName(f).ToLower().Contains(type.ToLower())) continue;
-                return Redirect("/instructions/" + System.Uri.EscapeDataString(Path.GetFileName(f)));
-            }
-            return NotFound(
-                "Error: could not find a file with " +
-                (string.IsNullOrEmpty(type) ?  part : part + " and " + type)  +
-                " in the filename inside " +
-                Program.FMSSettings.InstructionFilePath
-            );
-        }
+      var info = _fmsImpl.NameAndVersion;
+      return new FMSInfo()
+      {
+        Name = info.Name,
+        Version = info.Version,
+        RequireScanAtWash = Program.FMSSettings.RequireScanAtWash,
+        RequireWorkorderBeforeAllowWashComplete = Program.FMSSettings.RequireWorkorderBeforeAllowWashComplete,
+        AdditionalLogServers = Program.FMSSettings.AdditionalLogServers
+      };
     }
+
+    [HttpGet("settings/{id}")]
+    public string GetSettings(string id)
+    {
+      return _settings.GetSettings(id);
+    }
+
+    [HttpPut("settings/{id}")]
+    public void SetSetting(string id, [FromBody] string setting)
+    {
+      _settings.SetSettings(id, setting);
+    }
+
+    public static string SearchFiles(string part, string type)
+    {
+      foreach (var f in Directory.GetFiles(Program.FMSSettings.InstructionFilePath))
+      {
+        if (!Path.GetFileName(f).Contains(part)) continue;
+        if (!string.IsNullOrEmpty(type) && !Path.GetFileName(f).ToLower().Contains(type.ToLower())) continue;
+        return Path.GetFileName(f);
+      }
+      return null;
+    }
+
+    [HttpGet("find-instructions/{part}")]
+    [ProducesResponseType(302)]
+    [ProducesResponseType(404)]
+    public IActionResult FindInstructions(string part, [FromQuery] string type)
+    {
+      try
+      {
+        var file = _fmsImpl.CustomizeInstructionPath(part, type);
+        return Redirect("/instructions/" + System.Uri.EscapeDataString(file));
+      }
+      catch (NotImplementedException)
+      {
+        // do nothing, continue with default impl
+      }
+
+      if (string.IsNullOrEmpty(Program.FMSSettings.InstructionFilePath))
+      {
+        return NotFound("Error: instruction directory must be configured in FMS Insight config file.");
+      }
+      if (!Directory.Exists(Program.FMSSettings.InstructionFilePath))
+      {
+        return NotFound("Error: configured instruction directory does not exist");
+      }
+
+      var instrFile = SearchFiles(part, type);
+      if (string.IsNullOrEmpty(instrFile) && type == "unload")
+      {
+        instrFile = SearchFiles(part, "load");
+      }
+      if (string.IsNullOrEmpty(instrFile))
+      {
+        return NotFound(
+            "Error: could not find a file with " +
+            (string.IsNullOrEmpty(type) ? part : part + " and " + type) +
+            " in the filename inside " +
+            Program.FMSSettings.InstructionFilePath
+        );
+      }
+      else
+      {
+        return Redirect("/instructions/" + System.Uri.EscapeDataString(instrFile));
+      }
+    }
+  }
 }
