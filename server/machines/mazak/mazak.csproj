@@ -11,8 +11,6 @@
     <Copyright>Black Maple Software, LLC</Copyright>
     <Authors>John Lenz</Authors>
     <PackageProjectUrl>https://www.seedtactics.com</PackageProjectUrl>
-
-    <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
   </PropertyGroup>
 
   <Choose>
