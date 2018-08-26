@@ -106,8 +106,8 @@ namespace BlackMaple.MachineFramework.Controllers
     {
       try
       {
-        var file = _fmsImpl.CustomizeInstructionPath(part, type, materialID);
-        return Redirect("/instructions/" + System.Uri.EscapeDataString(file));
+        var path = _fmsImpl.CustomizeInstructionPath(part, type, materialID);
+        return Redirect(path);
       }
       catch (NotImplementedException)
       {
