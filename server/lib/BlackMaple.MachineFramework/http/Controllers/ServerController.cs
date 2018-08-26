@@ -132,8 +132,13 @@ namespace BlackMaple.MachineFramework.Controllers
         return NotFound("Error: configured instruction directory does not exist");
       }
 
+      string instrFile = null;
+
       // try part with process
-      var instrFile = SearchFiles(part + "-" + process.ToString(), type);
+      if (process.HasValue)
+      {
+        instrFile = SearchFiles(part + "-" + process.Value.ToString(), type);
+      }
 
       // try without process
       if (string.IsNullOrEmpty(instrFile))
@@ -142,9 +147,9 @@ namespace BlackMaple.MachineFramework.Controllers
       }
 
       // try unload with process fallback to load
-      if (string.IsNullOrEmpty(instrFile) && type == "unload")
+      if (process.HasValue && string.IsNullOrEmpty(instrFile) && type == "unload")
       {
-        instrFile = SearchFiles(part + "-" + process.ToString(), "load");
+        instrFile = SearchFiles(part + "-" + process.Value.ToString(), "load");
       }
 
       // try unload without process fallback to load

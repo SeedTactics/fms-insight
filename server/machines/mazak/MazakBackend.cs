@@ -333,7 +333,7 @@ namespace MazakMachineInterface
 
     public IList<IBackgroundWorker> Workers { get; } = new List<IBackgroundWorker>();
 
-    public string CustomizeInstructionPath(string part, string type, long? materialID)
+    public string CustomizeInstructionPath(string part, int? process, string type, long? materialID)
     {
       throw new NotImplementedException();
     }
