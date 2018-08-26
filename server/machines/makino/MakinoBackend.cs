@@ -37,153 +37,156 @@ using BlackMaple.MachineWatchInterface;
 
 namespace Makino
 {
-	public class MakinoBackend : IFMSBackend
-	{
-        private static Serilog.ILogger Log = Serilog.Log.ForContext<MakinoBackend>();
+  public class MakinoBackend : IFMSBackend
+  {
+    private static Serilog.ILogger Log = Serilog.Log.ForContext<MakinoBackend>();
 
-		// Common databases from machine framework
-		private JobDB _jobDB;
-		private JobLogDB _log;
+    // Common databases from machine framework
+    private JobDB _jobDB;
+    private JobLogDB _log;
 
-		// Makino databases
-		private MakinoDB _makinoDB;
-		private StatusDB _status;
+    // Makino databases
+    private MakinoDB _makinoDB;
+    private StatusDB _status;
 
-		private Jobs _jobs;
+    private Jobs _jobs;
 #pragma warning disable 649
-		private LogTimer _logTimer;
+    private LogTimer _logTimer;
 #pragma warning restore 649
-        private string _dataDirectory;
+    private string _dataDirectory;
 
-		public void Init(string dataDir, IConfig cfg, FMSSettings settings)
-		{
-			try {
+    public void Init(string dataDir, IConfig cfg, FMSSettings settings)
+    {
+      try
+      {
 
-				string adePath = cfg.GetValue<string>("Makino", "ADE Path");
-                if (string.IsNullOrEmpty(adePath))
-                {
-                    adePath = @"c:\Makino\ADE";
-                }
+        string adePath = cfg.GetValue<string>("Makino", "ADE Path");
+        if (string.IsNullOrEmpty(adePath))
+        {
+          adePath = @"c:\Makino\ADE";
+        }
 
-                string dbConnStr = cfg.GetValue<string>("Makino", "SQL Server Connection String");
-                if (string.IsNullOrEmpty(dbConnStr))
-                {
-                    dbConnStr = DetectSqlConnectionStr();
-                }
+        string dbConnStr = cfg.GetValue<string>("Makino", "SQL Server Connection String");
+        if (string.IsNullOrEmpty(dbConnStr))
+        {
+          dbConnStr = DetectSqlConnectionStr();
+        }
 
-                bool downloadOnlyOrders = cfg.GetValue<bool>("Makino", "Download Only Orders");
+        bool downloadOnlyOrders = cfg.GetValue<bool>("Makino", "Download Only Orders");
 
-				Log.Information(
+        Log.Information(
                     "Starting makino backend. Connection Str: {connStr}, ADE Path: {path}, DownloadOnlyOrders: {downOnlyOrders}",
                      dbConnStr, adePath, downloadOnlyOrders);
 
-				_dataDirectory = dataDir;
+        _dataDirectory = dataDir;
 
-                _log = new JobLogDB();
-                _log.Open(
-                    System.IO.Path.Combine(_dataDirectory, "log.db"),
-                    System.IO.Path.Combine(_dataDirectory, "inspections.db"),
-                    firstSerialOnEmpty: settings.StartingSerial
-                );
+        _log = new JobLogDB();
+        _log.Open(
+            System.IO.Path.Combine(_dataDirectory, "log.db"),
+            System.IO.Path.Combine(_dataDirectory, "inspections.db"),
+            firstSerialOnEmpty: settings.StartingSerial
+        );
 
-                _jobDB = new BlackMaple.MachineFramework.JobDB();
-                _jobDB.Open(System.IO.Path.Combine(_dataDirectory, "jobs.db"));
+        _jobDB = new BlackMaple.MachineFramework.JobDB();
+        _jobDB.Open(System.IO.Path.Combine(_dataDirectory, "jobs.db"));
 
-                _status = new StatusDB(System.IO.Path.Combine(_dataDirectory, "makino.db"));
+        _status = new StatusDB(System.IO.Path.Combine(_dataDirectory, "makino.db"));
 
 #if DEBUG
-                _makinoDB = new MakinoDB(MakinoDB.DBTypeEnum.SqlLocal, "", _status, _log);
+        _makinoDB = new MakinoDB(MakinoDB.DBTypeEnum.SqlLocal, "", _status, _log);
 #else
                 _makinoDB = new MakinoDB(MakinoDB.DBTypeEnum.SqlConnStr, dbConnStr, _status, _log);
 #endif
 
-                _logTimer = new LogTimer(_log, _jobDB, _makinoDB, _status, settings);
+        _logTimer = new LogTimer(_log, _jobDB, _makinoDB, _status, settings);
 
-                _jobs = new Jobs(_makinoDB, _jobDB, adePath, downloadOnlyOrders);
+        _jobs = new Jobs(_makinoDB, _jobDB, adePath, downloadOnlyOrders);
 
-                _logTimer.LogsProcessed += OnLogsProcessed;
+        _logTimer.LogsProcessed += OnLogsProcessed;
 
-			} catch (Exception ex) {
-                Log.Error(ex, "Error when initializing makino backend");
-			}
-		}
-
-		public void Halt()
-		{
-            _logTimer.LogsProcessed -= OnLogsProcessed;
-			if (_logTimer != null) _logTimer.Halt();
-			if (_jobDB != null) _jobDB.Close();
-			if (_log != null) _log.Close();
-			if (_status != null) _status.Close();
-            if (_makinoDB != null) _makinoDB.Close();
-		}
-
-        private void OnLogsProcessed()
-        {
-            _jobs.RaiseNewCurrentStatus(_jobs.GetCurrentStatus());
-        }
-
-        private string DetectSqlConnectionStr()
-        {
-            var b = new System.Data.SqlClient.SqlConnectionStringBuilder();
-            b.UserID = "sa";
-            b.Password = "M@k1n0Admin";
-            b.InitialCatalog = "Makino";
-            b.DataSource = "(local)";
-            return b.ConnectionString;
-        }
-
-		public IJobDatabase JobDatabase()
-		{
-			return _jobDB;
-		}
-
-		public IJobControl JobControl()
-		{
-			return _jobs;
-		}
-
-		public IOldJobDecrement OldJobDecrement()
-		{
-			return _jobs;
-		}
-
-		public IInspectionControl InspectionControl()
-		{
-			return _log;
-		}
-
-		public ILogDatabase LogDatabase()
-		{
-			return _log;
-		}
-
-        public LogTimer LogTimer
-        {
-            get { return _logTimer; }
-        }
-
-        public string DataDir
-        {
-            get { return _dataDirectory; }
-        }
+      }
+      catch (Exception ex)
+      {
+        Log.Error(ex, "Error when initializing makino backend");
+      }
     }
 
-    public class MakinoImplementation : IFMSImplementation
+    public void Halt()
     {
-        public FMSNameAndVersion NameAndVersion => new FMSNameAndVersion()
-		{
-			Name = "Makino",
-			Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
-		};
-        public IFMSBackend Backend {get;} = new MakinoBackend();
-        public IList<IBackgroundWorker> Workers {get;} = new List<IBackgroundWorker>();
-
-        public string CustomizeInstructionPath(string part, string type)
-        {
-            throw new NotImplementedException();
-        }
+      _logTimer.LogsProcessed -= OnLogsProcessed;
+      if (_logTimer != null) _logTimer.Halt();
+      if (_jobDB != null) _jobDB.Close();
+      if (_log != null) _log.Close();
+      if (_status != null) _status.Close();
+      if (_makinoDB != null) _makinoDB.Close();
     }
+
+    private void OnLogsProcessed()
+    {
+      _jobs.RaiseNewCurrentStatus(_jobs.GetCurrentStatus());
+    }
+
+    private string DetectSqlConnectionStr()
+    {
+      var b = new System.Data.SqlClient.SqlConnectionStringBuilder();
+      b.UserID = "sa";
+      b.Password = "M@k1n0Admin";
+      b.InitialCatalog = "Makino";
+      b.DataSource = "(local)";
+      return b.ConnectionString;
+    }
+
+    public IJobDatabase JobDatabase()
+    {
+      return _jobDB;
+    }
+
+    public IJobControl JobControl()
+    {
+      return _jobs;
+    }
+
+    public IOldJobDecrement OldJobDecrement()
+    {
+      return _jobs;
+    }
+
+    public IInspectionControl InspectionControl()
+    {
+      return _log;
+    }
+
+    public ILogDatabase LogDatabase()
+    {
+      return _log;
+    }
+
+    public LogTimer LogTimer
+    {
+      get { return _logTimer; }
+    }
+
+    public string DataDir
+    {
+      get { return _dataDirectory; }
+    }
+  }
+
+  public class MakinoImplementation : IFMSImplementation
+  {
+    public FMSNameAndVersion NameAndVersion => new FMSNameAndVersion()
+    {
+      Name = "Makino",
+      Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
+    };
+    public IFMSBackend Backend { get; } = new MakinoBackend();
+    public IList<IBackgroundWorker> Workers { get; } = new List<IBackgroundWorker>();
+
+    public string CustomizeInstructionPath(string part, string type, long? materialID)
+    {
+      throw new NotImplementedException();
+    }
+  }
 
   public static class MakinoProgram
   {

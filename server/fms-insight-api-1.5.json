@@ -993,6 +993,13 @@
             "in": "query",
             "required": true,
             "x-nullable": true
+          },
+          {
+            "type": "integer",
+            "name": "materialID",
+            "in": "query",
+            "format": "int64",
+            "x-nullable": true
           }
         ],
         "responses": {

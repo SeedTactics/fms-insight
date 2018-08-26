@@ -102,11 +102,11 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpGet("find-instructions/{part}")]
     [ProducesResponseType(302)]
     [ProducesResponseType(404)]
-    public IActionResult FindInstructions(string part, [FromQuery] string type)
+    public IActionResult FindInstructions(string part, [FromQuery] string type, [FromQuery] long? materialID = null)
     {
       try
       {
-        var file = _fmsImpl.CustomizeInstructionPath(part, type);
+        var file = _fmsImpl.CustomizeInstructionPath(part, type, materialID);
         return Redirect("/instructions/" + System.Uri.EscapeDataString(file));
       }
       catch (NotImplementedException)

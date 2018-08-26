@@ -37,49 +37,49 @@ using BlackMaple.MachineWatchInterface;
 
 namespace BlackMaple.MachineFramework
 {
-    public interface IConfig
-    {
-        T GetValue<T>(string section, string key);
-    }
+  public interface IConfig
+  {
+    T GetValue<T>(string section, string key);
+  }
 
-    public interface IFMSBackend
-    {
-        void Init(string dataDirectory, IConfig config, FMSSettings settings);
-        void Halt();
+  public interface IFMSBackend
+  {
+    void Init(string dataDirectory, IConfig config, FMSSettings settings);
+    void Halt();
 
-        ILogDatabase LogDatabase();
-        IJobDatabase JobDatabase();
-        IJobControl JobControl();
-        IInspectionControl InspectionControl();
+    ILogDatabase LogDatabase();
+    IJobDatabase JobDatabase();
+    IJobControl JobControl();
+    IInspectionControl InspectionControl();
 
-        IOldJobDecrement OldJobDecrement();
-    }
+    IOldJobDecrement OldJobDecrement();
+  }
 
-    public interface IBackgroundWorker
-    {
-        void Init(IFMSBackend backend, string dataDirectory, IConfig config, FMSSettings settings);
-        void Halt();
-    }
+  public interface IBackgroundWorker
+  {
+    void Init(IFMSBackend backend, string dataDirectory, IConfig config, FMSSettings settings);
+    void Halt();
+  }
 
-    [DataContract]
-    public class FMSNameAndVersion
-    {
-        [DataMember] public string Name {get;set;}
-        [DataMember] public string Version {get;set;}
-    }
+  [DataContract]
+  public class FMSNameAndVersion
+  {
+    [DataMember] public string Name { get; set; }
+    [DataMember] public string Version { get; set; }
+  }
 
 
-    public interface IFMSImplementation
-    {
-        FMSNameAndVersion NameAndVersion {get;}
-        IFMSBackend Backend {get;}
-        IList<IBackgroundWorker> Workers {get;}
+  public interface IFMSImplementation
+  {
+    FMSNameAndVersion NameAndVersion { get; }
+    IFMSBackend Backend { get; }
+    IList<IBackgroundWorker> Workers { get; }
 
-        // allows an implementation to override the algorithm which
-        // finds an instruction file on disk given a part and type.
-        // If this throws NotImplementedException(), the default
-        // of searching for a file containing the part and type is used.
-        string CustomizeInstructionPath(string part, string type);
-    }
+    // allows an implementation to override the algorithm which
+    // finds an instruction file on disk given a part and type.
+    // If this throws NotImplementedException(), the default
+    // of searching for a file containing the part and type is used.
+    string CustomizeInstructionPath(string part, string type, long? materialID);
+  }
 
 }

@@ -122,7 +122,8 @@ namespace MazakMachineInterface
       if (logPath == null || logPath == "")
         logPath = "c:\\Mazak\\FMS\\Log";
 
-      if (MazakType != MazakDbType.MazakVersionE && !System.IO.Directory.Exists(logPath)) {
+      if (MazakType != MazakDbType.MazakVersionE && !System.IO.Directory.Exists(logPath))
+      {
         Log.Error("Log CSV Directory {path} does not exist.  Set the directory in the config.ini file.", logPath);
         throw new Exception("Log CSV Directory " + logPath + " does not exist");
       }
@@ -316,7 +317,7 @@ namespace MazakMachineInterface
 
     public string CustomizeInstructionPath(string part, string type)
     {
-        throw new NotImplementedException();
+      throw new NotImplementedException();
     }
   }
 
@@ -328,11 +329,11 @@ namespace MazakMachineInterface
       Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
     };
 
-    public IFMSBackend Backend {get;} = new MazakBackend();
+    public IFMSBackend Backend { get; } = new MazakBackend();
 
-    public IList<IBackgroundWorker> Workers {get;} = new List<IBackgroundWorker>();
+    public IList<IBackgroundWorker> Workers { get; } = new List<IBackgroundWorker>();
 
-    public string CustomizeInstructionPath(string part, string type)
+    public string CustomizeInstructionPath(string part, string type, long? materialID)
     {
       throw new NotImplementedException();
     }

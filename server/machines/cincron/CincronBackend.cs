@@ -37,104 +37,108 @@ using BlackMaple.MachineWatchInterface;
 
 namespace Cincron
 {
-    public class CincronBackend : IFMSBackend
+  public class CincronBackend : IFMSBackend
+  {
+    private static Serilog.ILogger Log = Serilog.Log.ForContext<CincronBackend>();
+
+    private JobLogDB _log;
+    private MessageWatcher _msgWatcher;
+
+    public void Init(string dataDirectory, IConfig cfg, FMSSettings settings)
     {
-        private static Serilog.ILogger Log = Serilog.Log.ForContext<CincronBackend>();
+      try
+      {
 
-        private JobLogDB _log;
-        private MessageWatcher _msgWatcher;
-
-        public void Init(string dataDirectory, IConfig cfg, FMSSettings settings)
-        {
-            try {
-
-                string msgFile;
+        string msgFile;
 #if DEBUG
-                var path = System.Reflection.Assembly.GetExecutingAssembly().Location;
-                msgFile = System.IO.Path.Combine(
-                    System.IO.Path.GetDirectoryName(path), "..\\..\\..\\test\\Cincron\\parker-example-messages");
+        var path = System.Reflection.Assembly.GetExecutingAssembly().Location;
+        msgFile = System.IO.Path.Combine(
+            System.IO.Path.GetDirectoryName(path), "..\\..\\..\\test\\Cincron\\parker-example-messages");
 #else
                 msgFile = cfg.GetValue<string>("Cincron", "Message File");
 #endif
 
-                Log.Information("Starting cincron backend with message file {file}", msgFile);
+        Log.Information("Starting cincron backend with message file {file}", msgFile);
 
-                if (!System.IO.File.Exists(msgFile)) {
-                    Log.Error("Message file {file} does not exist", msgFile);
-                }
-
-                _log = new JobLogDB();
-
-                _log.Open(
-                    System.IO.Path.Combine(dataDirectory, "log.db"),
-                    firstSerialOnEmpty: settings.StartingSerial
-                );
-                _msgWatcher = new MessageWatcher(msgFile, _log);
-                _msgWatcher.Start();
-
-            } catch (Exception ex) {
-                Log.Error(ex, "Unhandled exception when initializing cincron backend");
-            }
-        }
-
-        public void Halt()
+        if (!System.IO.File.Exists(msgFile))
         {
-            if (_msgWatcher != null) _msgWatcher.Halt();
-            if (_log != null) _log.Close();
+          Log.Error("Message file {file} does not exist", msgFile);
         }
 
-        public IInspectionControl InspectionControl()
-        {
-            return _log;
-        }
+        _log = new JobLogDB();
 
-        public IJobDatabase JobDatabase()
-        {
-            return null;
-        }
+        _log.Open(
+            System.IO.Path.Combine(dataDirectory, "log.db"),
+            firstSerialOnEmpty: settings.StartingSerial
+        );
+        _msgWatcher = new MessageWatcher(msgFile, _log);
+        _msgWatcher.Start();
 
-        public IOldJobDecrement OldJobDecrement()
-        {
-            return null;
-        }
-
-        public IJobControl JobControl()
-        {
-            return null;
-        }
-
-        public ILogDatabase LogDatabase()
-        {
-            return _log;
-        }
+      }
+      catch (Exception ex)
+      {
+        Log.Error(ex, "Unhandled exception when initializing cincron backend");
+      }
     }
 
-    public class CincronImplementation : IFMSImplementation
+    public void Halt()
     {
-        public FMSNameAndVersion NameAndVersion => new FMSNameAndVersion()
-            {
-                Name = "Cincron",
-                Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
-            };
-        public IFMSBackend Backend {get;} = new CincronBackend();
-        public IList<IBackgroundWorker> Workers {get;} = new List<IBackgroundWorker>();
-
-        public string CustomizeInstructionPath(string part, string type)
-        {
-            throw new NotImplementedException();
-        }
+      if (_msgWatcher != null) _msgWatcher.Halt();
+      if (_log != null) _log.Close();
     }
 
-    public static class CincronProgram
+    public IInspectionControl InspectionControl()
     {
-        public static void Main()
-        {
-            #if DEBUG
-            var useService = false;
-            #else
+      return _log;
+    }
+
+    public IJobDatabase JobDatabase()
+    {
+      return null;
+    }
+
+    public IOldJobDecrement OldJobDecrement()
+    {
+      return null;
+    }
+
+    public IJobControl JobControl()
+    {
+      return null;
+    }
+
+    public ILogDatabase LogDatabase()
+    {
+      return _log;
+    }
+  }
+
+  public class CincronImplementation : IFMSImplementation
+  {
+    public FMSNameAndVersion NameAndVersion => new FMSNameAndVersion()
+    {
+      Name = "Cincron",
+      Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
+    };
+    public IFMSBackend Backend { get; } = new CincronBackend();
+    public IList<IBackgroundWorker> Workers { get; } = new List<IBackgroundWorker>();
+
+    public string CustomizeInstructionPath(string part, string type, long? materialID)
+    {
+      throw new NotImplementedException();
+    }
+  }
+
+  public static class CincronProgram
+  {
+    public static void Main()
+    {
+#if DEBUG
+      var useService = false;
+#else
             var useService = true;
-            #endif
-            Program.Run(useService, new CincronImplementation());
-        }
+#endif
+      Program.Run(useService, new CincronImplementation());
     }
+  }
 }
