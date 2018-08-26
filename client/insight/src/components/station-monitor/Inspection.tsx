@@ -71,11 +71,7 @@ function InspButtons(props: InspButtonsProps) {
   return (
     <>
       {props.display_material && props.display_material.partName !== "" ? (
-        <InstructionButton
-          part={props.display_material.partName}
-          type={props.inspection_type}
-          matId={props.display_material.materialID}
-        />
+        <InstructionButton material={props.display_material} type={props.inspection_type} />
       ) : (
         undefined
       )}

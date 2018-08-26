@@ -49,6 +49,7 @@ import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
 import AddIcon from "@material-ui/icons/AddBox";
 import IconButton from "@material-ui/core/IconButton";
+import * as im from "immutable";
 
 import * as api from "../../data/api";
 import * as matDetails from "../../data/material-details";
@@ -331,18 +332,25 @@ export class MaterialDetailContent extends React.PureComponent<MaterialDetailPro
 }
 
 export function InstructionButton({
-  part,
-  type,
-  matId
+  material,
+  type
 }: {
-  readonly part: string;
+  readonly material: matDetails.MaterialDetail;
   readonly type: string;
-  readonly matId: number;
 }) {
-  const query = "?type=" + encodeURIComponent(type) + "&materialID=" + matId.toString();
+  const maxProc = im
+    .Seq(material.events)
+    .flatMap(e => e.material)
+    .filter(e => e.id === material.materialID)
+    .maxBy(e => e.proc);
+  const query =
+    "?type=" +
+    encodeURIComponent(type) +
+    ("&materialID=" + material.materialID.toString()) +
+    (maxProc !== undefined ? "&process=" + maxProc.proc.toString() : "");
   return (
     <Button
-      href={"/api/v1/server/find-instructions/" + encodeURIComponent(part) + query}
+      href={"/api/v1/server/find-instructions/" + encodeURIComponent(material.partName) + query}
       target="bms-instructions"
       color="primary"
     >

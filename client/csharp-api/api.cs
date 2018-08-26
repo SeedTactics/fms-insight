@@ -2608,14 +2608,14 @@ namespace BlackMaple.FMSInsight.API
         }
     
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task FindInstructionsAsync(string part, string type, long? materialID)
+        public System.Threading.Tasks.Task FindInstructionsAsync(string part, string type, int? process, long? materialID)
         {
-            return FindInstructionsAsync(part, type, materialID, System.Threading.CancellationToken.None);
+            return FindInstructionsAsync(part, type, process, materialID, System.Threading.CancellationToken.None);
         }
     
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        public async System.Threading.Tasks.Task FindInstructionsAsync(string part, string type, long? materialID, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task FindInstructionsAsync(string part, string type, int? process, long? materialID, System.Threading.CancellationToken cancellationToken)
         {
             if (part == null)
                 throw new System.ArgumentNullException("part");
@@ -2624,6 +2624,10 @@ namespace BlackMaple.FMSInsight.API
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/server/find-instructions/{part}?");
             urlBuilder_.Replace("{part}", System.Uri.EscapeDataString(ConvertToString(part, System.Globalization.CultureInfo.InvariantCulture)));
             urlBuilder_.Append("type=").Append(System.Uri.EscapeDataString(type != null ? ConvertToString(type, System.Globalization.CultureInfo.InvariantCulture) : "")).Append("&");
+            if (process != null) 
+            {
+                urlBuilder_.Append("process=").Append(System.Uri.EscapeDataString(ConvertToString(process, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
+            }
             if (materialID != null) 
             {
                 urlBuilder_.Append("materialID=").Append(System.Uri.EscapeDataString(ConvertToString(materialID, System.Globalization.CultureInfo.InvariantCulture))).Append("&");

@@ -1289,7 +1289,7 @@ export class ServerClient {
         return Promise.resolve<void>(<any>null);
     }
 
-    findInstructions(part: string, type: string, materialID: number): Promise<void> {
+    findInstructions(part: string, type: string, process: number, materialID: number): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/server/find-instructions/{part}?";
         if (part === undefined || part === null)
             throw new Error("The parameter 'part' must be defined.");
@@ -1298,6 +1298,8 @@ export class ServerClient {
             throw new Error("The parameter 'type' must be defined.");
         else
             url_ += "type=" + encodeURIComponent("" + type) + "&"; 
+        if (process !== undefined)
+            url_ += "process=" + encodeURIComponent("" + process) + "&"; 
         if (materialID !== undefined)
             url_ += "materialID=" + encodeURIComponent("" + materialID) + "&"; 
         url_ = url_.replace(/[?&]$/, "");

@@ -996,6 +996,13 @@
           },
           {
             "type": "integer",
+            "name": "process",
+            "in": "query",
+            "format": "int32",
+            "x-nullable": true
+          },
+          {
+            "type": "integer",
             "name": "materialID",
             "in": "query",
             "format": "int64",
