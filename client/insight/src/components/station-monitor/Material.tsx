@@ -330,10 +330,19 @@ export class MaterialDetailContent extends React.PureComponent<MaterialDetailPro
   }
 }
 
-export function InstructionButton({ part, type }: { readonly part: string; readonly type: string }) {
+export function InstructionButton({
+  part,
+  type,
+  matId
+}: {
+  readonly part: string;
+  readonly type: string;
+  readonly matId: number;
+}) {
+  const query = "?type=" + encodeURIComponent(type) + "&materialID=" + matId.toString();
   return (
     <Button
-      href={"/api/v1/server/find-instructions/" + encodeURIComponent(part) + "?type=" + encodeURIComponent(type)}
+      href={"/api/v1/server/find-instructions/" + encodeURIComponent(part) + query}
       target="bms-instructions"
       color="primary"
     >

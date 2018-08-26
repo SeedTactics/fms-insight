@@ -94,7 +94,11 @@ function WashDialog(props: WashDialogProps) {
       buttons={
         <>
           {props.display_material && props.display_material.partName !== "" ? (
-            <InstructionButton part={props.display_material.partName} type="wash" />
+            <InstructionButton
+              part={props.display_material.partName}
+              type="wash"
+              matId={props.display_material.materialID}
+            />
           ) : (
             undefined
           )}

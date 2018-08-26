@@ -308,7 +308,11 @@ function LoadMatDialog(props: LoadMatDialogProps) {
       buttons={
         <>
           {props.display_material && props.display_material.partName !== "" ? (
-            <InstructionButton part={props.display_material.partName} type={instructionType(props.display_material)} />
+            <InstructionButton
+              part={props.display_material.partName}
+              type={instructionType(props.display_material)}
+              matId={props.display_material.materialID}
+            />
           ) : (
             undefined
           )}
