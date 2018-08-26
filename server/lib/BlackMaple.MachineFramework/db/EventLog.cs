@@ -1671,6 +1671,24 @@ namespace BlackMaple.MachineFramework
                 RemoveFromAllQueues(trans, matID, timeUTC ?? DateTime.UtcNow)
             );
         }
+
+        public MachineWatchInterface.LogEntry RecordGeneralMessage(
+            MachineWatchInterface.LogMaterial mat, string program, string result, DateTime? timeUTC = null)
+        {
+            var log = new MachineWatchInterface.LogEntry(
+                cntr: -1,
+                mat: new MachineWatchInterface.LogMaterial[] {mat},
+                pal: "",
+                ty: MachineWatchInterface.LogType.GeneralMessage,
+                locName: "Message",
+                locNum: 1,
+                prog: program,
+                start: false,
+                endTime: timeUTC ?? DateTime.UtcNow,
+                result: result,
+                endOfRoute: false);
+            return AddEntryInTransaction(trans => AddLogEntry(trans, log, null, null));
+        }
         #endregion
 
         #region Material IDs
