@@ -68,7 +68,6 @@ namespace BlackMaple.MachineFramework
     [DataMember] public string Version { get; set; }
   }
 
-
   public interface IFMSImplementation
   {
     FMSNameAndVersion NameAndVersion { get; }
@@ -79,7 +78,9 @@ namespace BlackMaple.MachineFramework
     // finds an instruction file on disk given a part and type.
     // If this throws NotImplementedException(), the default
     // of searching for a file containing the part and type is used.
-    string CustomizeInstructionPath(string part, string type, long? materialID);
+    // If this returns null or empty, a 404 error is returned to the client.
+    // Otherwise, the returned string will be the target of a redirect.
+    string CustomizeInstructionPath(string part, int? process, string type, long? materialID);
   }
 
 }

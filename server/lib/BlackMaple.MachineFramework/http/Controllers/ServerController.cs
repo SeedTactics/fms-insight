@@ -102,11 +102,20 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpGet("find-instructions/{part}")]
     [ProducesResponseType(302)]
     [ProducesResponseType(404)]
-    public IActionResult FindInstructions(string part, [FromQuery] string type, [FromQuery] long? materialID = null)
+    public IActionResult FindInstructions(string part, [FromQuery] string type, [FromQuery] int? process = null, [FromQuery] long? materialID = null)
     {
       try
       {
-        var path = _fmsImpl.CustomizeInstructionPath(part, type, materialID);
+        var path = _fmsImpl.CustomizeInstructionPath(part, process, type, materialID);
+        if (string.IsNullOrEmpty(path))
+        {
+          return NotFound(
+              "Error: could not find an instruction for " +
+              (string.IsNullOrEmpty(type) ? part : part + " and " + type) +
+              " in the directory " +
+              Program.FMSSettings.InstructionFilePath
+          );
+        }
         return Redirect(path);
       }
       catch (NotImplementedException)
@@ -123,11 +132,27 @@ namespace BlackMaple.MachineFramework.Controllers
         return NotFound("Error: configured instruction directory does not exist");
       }
 
-      var instrFile = SearchFiles(part, type);
+      // try part with process
+      var instrFile = SearchFiles(part + "-" + process.ToString(), type);
+
+      // try without process
+      if (string.IsNullOrEmpty(instrFile))
+      {
+        instrFile = SearchFiles(part, type);
+      }
+
+      // try unload with process fallback to load
+      if (string.IsNullOrEmpty(instrFile) && type == "unload")
+      {
+        instrFile = SearchFiles(part + "-" + process.ToString(), "load");
+      }
+
+      // try unload without process fallback to load
       if (string.IsNullOrEmpty(instrFile) && type == "unload")
       {
         instrFile = SearchFiles(part, "load");
       }
+
       if (string.IsNullOrEmpty(instrFile))
       {
         return NotFound(
