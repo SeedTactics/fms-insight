@@ -88,7 +88,7 @@ namespace BlackMaple.MachineFramework.Controllers
       _settings.SetSettings(id, setting);
     }
 
-    public static string SearchFiles(string part, string type)
+    private static string SearchFiles(string part, string type)
     {
       foreach (var f in Directory.GetFiles(Program.FMSSettings.InstructionFilePath))
       {
