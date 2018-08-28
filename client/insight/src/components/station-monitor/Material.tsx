@@ -57,7 +57,6 @@ import { LogEntries } from "../LogEntry";
 import { MaterialSummary } from "../../data/events";
 import withStyles from "@material-ui/core/styles/withStyles";
 import { inproc_mat_to_summary, MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
-import { DispatchAction } from "../../store/store";
 
 /*
 function getPosition(el: Element) {
@@ -362,7 +361,7 @@ export function InstructionButton({
 export interface MaterialDialogProps {
   display_material: matDetails.MaterialDetail | null;
   buttons?: JSX.Element;
-  onClose: DispatchAction<matDetails.ActionType.CloseMaterialDialog>;
+  onClose: () => void;
   extraDialogElements?: JSX.Element;
 }
 

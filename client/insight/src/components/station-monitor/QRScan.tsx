@@ -86,7 +86,7 @@ export default connect(
       open: false
     }),
     onScan: (s: string) => [
-      openMaterialBySerial(s, true),
+      ...openMaterialBySerial(s, true),
       {
         type: guiState.ActionType.SetAddMatToQueueName,
         queue: undefined

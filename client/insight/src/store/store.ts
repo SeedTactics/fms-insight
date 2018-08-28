@@ -30,8 +30,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { createStore, combineReducers, compose, applyMiddleware } from "redux";
-
 import * as currentStatus from "../data/current-status";
 import * as events from "../data/events";
 import * as gui from "../data/gui-state";
@@ -39,81 +37,28 @@ import * as routes from "../data/routes";
 import * as mat from "../data/material-details";
 import * as operators from "../data/operators";
 import * as serverSettings from "../data/server-settings";
+import { registerMockBackend } from "../data/backend";
 import * as ccp from "../data/cost-per-piece";
 import * as websocket from "./websocket";
+import { initBarcodeListener } from "./barcode";
 
-import { pledgeMiddleware, arrayMiddleware, ActionBeforeMiddleware } from "./middleware";
+import { createStore, StoreState, StoreActions, ACPayload, mkACF } from "./typed-redux";
+import { applyMiddleware, compose } from "redux";
+import * as reactRedux from "react-redux";
+import { middleware } from "./middleware";
 
 import * as im from "immutable";
 import { connectRoutes, LocationState } from "redux-first-router";
 import createHistory from "history/createBrowserHistory";
 import * as queryString from "query-string";
-import * as reactRedux from "react-redux";
-import * as redux from "redux";
-import { initBarcodeListener } from "./barcode";
-import { registerMockBackend } from "../data/backend";
-import { DispatchFn, ActionPayload, ActionCreatorToDispatch, GetActionTypes } from "./action-types";
 
-export interface Store {
-  readonly Current: currentStatus.State;
-  readonly Events: events.State;
-  readonly Gui: gui.State;
-  readonly MaterialDetails: mat.State;
-  readonly Route: routes.State;
-  readonly Websocket: websocket.State;
-  readonly Operators: operators.State;
-  readonly ServerSettings: serverSettings.State;
-  readonly CostPerPiece: ccp.State;
-  readonly location: LocationState;
-}
-
-export type AppAction =
-  | currentStatus.Action
-  | events.Action
-  | gui.Action
-  | mat.Action
-  | routes.Action
-  | operators.Action
-  | ccp.Action;
-
-export type AppActionBeforeMiddleware = ActionBeforeMiddleware<AppAction>;
-export type DispatchAction<T> = DispatchFn<ActionPayload<AppAction, T>>;
-
-export interface Connect {
-  <P, TOwnProps = {}>(getProps: (s: Store) => P): reactRedux.InferableComponentEnhancerWithProps<P, TOwnProps>;
-
-  <P, TOwnProps = {}>(getProps: (s: Store, ownProps: TOwnProps) => P): reactRedux.InferableComponentEnhancerWithProps<
-    P,
-    TOwnProps
-  >;
-
-  <P, Creators, TOwnProps = {}>(
-    getProps: (s: Store) => P,
-    actionCreators: Creators
-  ): reactRedux.InferableComponentEnhancerWithProps<
-    P & ActionCreatorToDispatch<AppActionBeforeMiddleware, Creators>,
-    TOwnProps
-  >;
-}
-export const connect: Connect = reactRedux.connect;
-
-export interface ActionCreatorFactory {
-  <T extends GetActionTypes<AppAction>>(ty: T): (
-    payload: ActionPayload<AppActionBeforeMiddleware, T>
-  ) => AppActionBeforeMiddleware;
-}
-export const mkAC: ActionCreatorFactory =
-  // any is needed for payload since typescript can't guarantee that ActionPayload<A, T> is
-  // an object.  ActionPayload<A, T> will be an object exactly when the action type T appears
-  // exactly once in the action sum type, which should always be the case.
-  // tslint:disable-next-line:no-any
-  ty => (payload: any) => {
-    if (payload) {
-      return { ...payload, type: ty };
-    } else {
-      return { type: ty };
-    }
-  };
+type InitToStore<I> = I extends (demo: boolean) => infer S ? S : never;
+export type Store = StoreState<InitToStore<typeof initStore>>;
+export type AppActionBeforeMiddleware = StoreActions<InitToStore<typeof initStore>>;
+export type Payload<T> = ACPayload<InitToStore<typeof initStore>, T>;
+export type DispatchAction<T> = (payload: Payload<T>) => void;
+export const connect: InitToStore<typeof initStore>["connect"] = reactRedux.connect;
+export const mkAC: InitToStore<typeof initStore>["mkAC"] = mkACF();
 
 export function initStore(demo: boolean) {
   const history = createHistory();
@@ -134,25 +79,23 @@ export function initStore(demo: boolean) {
       : compose;
   /* tslint:enable */
 
-  const store = createStore<Store, AppAction, {}, {}>(
-    combineReducers(
-      {
-        Current: currentStatus.reducer,
-        Events: events.reducer,
-        Gui: gui.reducer,
-        MaterialDetails: mat.reducer,
-        Route: routes.reducer,
-        Websocket: websocket.reducer,
-        Operators: operators.reducer,
-        ServerSettings: serverSettings.reducer,
-        CostPerPiece: ccp.reducer,
-        location: router ? router.reducer : (s: object, a: object) => s || {}
-        // tslint:disable-next-line:no-any
-      } as any // bug in typescript types for combineReducers
-    ),
+  const store = createStore(
+    {
+      Current: currentStatus.reducer,
+      Events: events.reducer,
+      Gui: gui.reducer,
+      MaterialDetails: mat.reducer,
+      Route: routes.reducer,
+      Websocket: websocket.reducer,
+      Operators: operators.reducer,
+      ServerSettings: serverSettings.reducer,
+      CostPerPiece: ccp.reducer,
+      location: router ? router.reducer : (s: LocationState<string>, a: object) => s || {}
+    },
+    middleware,
     router
-      ? composeEnhancers(router.enhancer, applyMiddleware(arrayMiddleware, pledgeMiddleware, router.middleware))
-      : composeEnhancers(applyMiddleware(arrayMiddleware, pledgeMiddleware))
+      ? m => composeEnhancers(router.enhancer, applyMiddleware(m, router.middleware))
+      : m => composeEnhancers(applyMiddleware(m))
   );
 
   if (demo) {
@@ -164,11 +107,11 @@ export function initStore(demo: boolean) {
   } else {
     websocket.openWebsocket(a => store.dispatch(a), () => store.getState().Events);
   }
-  initBarcodeListener(a => store.dispatch(a as redux.Action));
+  initBarcodeListener(store.dispatch);
 
   const operatorOnStateChange = operators.createOnStateChange();
   store.subscribe(() => operatorOnStateChange(store.getState().Operators));
-  store.dispatch(serverSettings.loadServerSettings() as redux.Action);
+  store.dispatch(serverSettings.loadServerSettings());
 
   return store;
 }

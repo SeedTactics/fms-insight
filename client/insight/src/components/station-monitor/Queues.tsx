@@ -58,7 +58,7 @@ import {
 import * as api from "../../data/api";
 import * as routes from "../../data/routes";
 import * as guiState from "../../data/gui-state";
-import { Store, connect, AppActionBeforeMiddleware, DispatchAction } from "../../store/store";
+import { Store, connect, AppActionBeforeMiddleware } from "../../store/store";
 import * as matDetails from "../../data/material-details";
 import { MaterialSummary } from "../../data/events";
 import SerialScanner from "./QRScan";
@@ -349,7 +349,7 @@ interface QueueMatDialogProps {
   readonly addMatQueue?: string;
   readonly queueNames: ReadonlyArray<string>;
 
-  readonly onClose: DispatchAction<matDetails.ActionType.CloseMaterialDialog>;
+  readonly onClose: () => void;
   readonly removeFromQueue: (mat: matDetails.MaterialDetail) => void;
   readonly addNewMat: (d: matDetails.AddNewMaterialToQueueData) => void;
   readonly addExistingMat: (d: matDetails.AddExistingMaterialToQueueData) => void;

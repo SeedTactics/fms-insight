@@ -35,9 +35,7 @@ import { AppActionBeforeMiddleware } from "./store";
 import { openMaterialBySerial } from "../data/material-details";
 import * as guiState from "../data/gui-state";
 
-export function initBarcodeListener(
-  dispatch: (a: AppActionBeforeMiddleware | AppActionBeforeMiddleware[]) => void
-): void {
+export function initBarcodeListener(dispatch: (a: AppActionBeforeMiddleware) => void): void {
   let timeout: number | undefined;
   let scanActive: boolean = false;
   let scannedTxt: string = "";
@@ -67,7 +65,7 @@ export function initBarcodeListener(
     }
 
     dispatch([
-      openMaterialBySerial(serial, true),
+      ...openMaterialBySerial(serial, true),
       {
         type: guiState.ActionType.SetAddMatToQueueName,
         queue: undefined

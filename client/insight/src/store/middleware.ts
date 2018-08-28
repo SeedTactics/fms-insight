@@ -30,8 +30,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { Middleware } from "redux";
-
 export enum PledgeStatus {
   Starting = "Pledge_Starting",
   Completed = "Pledge_Completed",
@@ -47,33 +45,52 @@ export type PledgeToPromise<AP> = {
   [P in keyof AP]: "pledge" extends P ? (AP[P] extends Pledge<infer R> ? Promise<R> : AP[P]) : AP[P]
 };
 
-export type ActionBeforeMiddleware<A> = PledgeToPromise<A> | PledgeToPromise<A>[];
+interface WithPromise<R> {
+  pledge: Promise<R>;
+}
+// tslint:disable-next-line:no-any
+function hasPledge<R>(obj: any): obj is WithPromise<R> {
+  return "pledge" in obj && obj.pledge && obj.pledge instanceof Promise;
+}
 
-export const pledgeMiddleware: Middleware = ({ dispatch }) => next => (action: any) => {
-  if (action.pledge && action.pledge instanceof Promise) {
-    dispatch({ ...action, pledge: { status: PledgeStatus.Starting } });
-    action.pledge
-      .then((r: any) => {
-        dispatch({
-          ...action,
-          pledge: { status: PledgeStatus.Completed, result: r }
+function pledgeMiddleware<A>(dispatch: (a: A) => void): (action: PledgeToPromise<A>) => void {
+  return action => {
+    if (hasPledge(action)) {
+      // tslint:disable-next-line:no-any
+      const anyAction: any = action;
+      dispatch({ ...anyAction, pledge: { status: PledgeStatus.Starting } });
+      action.pledge
+        .then(r => {
+          dispatch({
+            ...anyAction,
+            pledge: { status: PledgeStatus.Completed, result: r }
+          });
+        })
+        .catch((e: Error) => {
+          dispatch({
+            ...anyAction,
+            pledge: { status: PledgeStatus.Error, error: e }
+          });
         });
-      })
-      .catch((e: Error) => {
-        dispatch({
-          ...action,
-          pledge: { status: PledgeStatus.Error, error: e }
-        });
-      });
-  } else {
-    return next(action);
-  }
-};
+    } else {
+      // tslint:disable-next-line:no-any
+      return dispatch(action as any);
+    }
+  };
+}
 
-export const arrayMiddleware: Middleware = ({ dispatch }) => next => (action: any) => {
-  if (action instanceof Array) {
-    action.map(dispatch);
-  } else {
-    return next(action);
-  }
-};
+function arrayMiddleware<A>(dispatch: (a: A) => void): (action: A | ReadonlyArray<A>) => void {
+  return action => {
+    if (action instanceof Array) {
+      action.map(dispatch);
+    } else {
+      return dispatch(action as A);
+    }
+  };
+}
+
+export type ActionBeforeMiddleware<A> = PledgeToPromise<A> | ReadonlyArray<PledgeToPromise<A>>;
+
+export function middleware<A>(dispatch: (a: A) => void): (action: ActionBeforeMiddleware<A>) => void {
+  return arrayMiddleware(pledgeMiddleware(dispatch));
+}

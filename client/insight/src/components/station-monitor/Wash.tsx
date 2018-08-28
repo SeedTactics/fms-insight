@@ -40,7 +40,7 @@ import { createSelector } from "reselect";
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
 import { MaterialSummary } from "../../data/events";
-import { Store, connect, AppActionBeforeMiddleware, mkAC } from "../../store/store";
+import { Store, connect, mkAC } from "../../store/store";
 import { MaterialDialog, WhiteboardRegion, MatSummary, MaterialDialogProps, InstructionButton } from "./Material";
 import * as matDetails from "../../data/material-details";
 import * as guiState from "../../data/gui-state";
@@ -127,19 +127,18 @@ const ConnectedWashDialog = connect(
     fmsInfo: st.ServerSettings.fmsInfo
   }),
   {
-    onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
     completeWash: (d: matDetails.CompleteWashData) => [
       matDetails.completeWash(d),
       { type: matDetails.ActionType.CloseMaterialDialog }
     ],
-    openSelectWorkorder: (mat: matDetails.MaterialDetail) =>
-      [
-        {
-          type: guiState.ActionType.SetWorkorderDialogOpen,
-          open: true
-        },
-        matDetails.loadWorkorders(mat)
-      ] as AppActionBeforeMiddleware
+    openSelectWorkorder: (mat: matDetails.MaterialDetail) => [
+      {
+        type: guiState.ActionType.SetWorkorderDialogOpen,
+        open: true
+      },
+      matDetails.loadWorkorders(mat)
+    ],
+    onClose: mkAC(matDetails.ActionType.CloseMaterialDialog)
   }
 )(WashDialog);
 

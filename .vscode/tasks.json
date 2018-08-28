@@ -1,93 +1,95 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "server:test",
-            "command": "dotnet test",
-            "options": {
-                "cwd": "${workspaceFolder}/server/test"
-            },
-            "group": "test",
-            "type": "shell",
-            "presentation": {
-                "reveal": "always"
-            },
-            "problemMatcher": "$msCompile"
-        },
-        {
-            "label": "debug-mock:build",
-            "command": "dotnet build server/debug-mock/debugmock.csproj",
-            "group": "build",
-            "type": "shell",
-            "presentation": {
-                "reveal": "silent",
-            },
-            "problemMatcher": "$msCompile"
-        },
-        {
-            "label": "debug-mock:run",
-            "command": "dotnet run -p server/debug-mock",
-            "type": "shell",
-            "presentation": {
-                "reveal": "always",
-            },
-            "problemMatcher": []
-        },
-        {
-            "label": "mazak:build",
-            "command": "dotnet build server/machines/mazak/mazak.csproj",
-            "group": "build",
-            "type": "shell",
-            "presentation": {
-                "reveal": "silent",
-            },
-            "problemMatcher": "$msCompile"
-        },
-        {
-            "label": "insight:check",
-            "type": "shell",
-            "command": "./node_modules/.bin/tsc",
-            "args": ["--watch", "--noEmit"],
-            "isBackground": true,
-            "options": {
-                "cwd": "${workspaceFolder}/client/insight"
-            },
-            "presentation": {
-                "reveal": "never",
-                "echo": false,
-                "focus": false,
-                "panel": "dedicated"
-            },
-            "problemMatcher": "$tsc-watch"
-        },
-        {
-            "label": "insight:dev",
-            "command": "yarn start",
-            "options": {
-                "cwd": "${workspaceFolder}/client/insight",
-                "env": {
-                    "BROWSER": "no"
-                }
-            },
-            "type": "shell",
-            "presentation": {
-                "reveal": "silent",
-                "panel": "dedicated"
-            },
-            "problemMatcher": []
-        },
-        {
-            "label": "docs:dev",
-            "command": "yarn start",
-            "options": {
-                "cwd": "${workspaceFolder}/website"
-            },
-            "type": "shell",
-            "presentation": {
-                "reveal": "silent",
-                "panel": "dedicated"
-            },
-            "problemMatcher": []
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "server:test",
+      "command": "dotnet test",
+      "options": {
+        "cwd": "${workspaceFolder}/server/test"
+      },
+      "group": "test",
+      "type": "shell",
+      "presentation": {
+        "reveal": "always"
+      },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "debug-mock:build",
+      "command": "dotnet build server/debug-mock/debugmock.csproj",
+      "group": "build",
+      "type": "shell",
+      "presentation": {
+        "reveal": "silent"
+      },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "debug-mock:run",
+      "command": "dotnet run -p server/debug-mock",
+      "type": "shell",
+      "presentation": {
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "mazak:build",
+      "command": "dotnet build server/machines/mazak/mazak.csproj",
+      "group": "build",
+      "type": "shell",
+      "presentation": {
+        "reveal": "silent"
+      },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "insight:check",
+      "type": "shell",
+      "command": "${workspaceFolder}/client/insight/node_modules/.bin/tsc",
+      "args": [
+        "--watch",
+        "--noEmit",
+        "-p",
+        "${workspaceFolder}/client/insight"
+      ],
+      "isBackground": true,
+      "presentation": {
+        "reveal": "never",
+        "echo": false,
+        "focus": false,
+        "panel": "dedicated"
+      },
+      "problemMatcher": "$tsc-watch"
+    },
+    {
+      "label": "insight:dev",
+      "command": "yarn start",
+      "options": {
+        "cwd": "${workspaceFolder}/client/insight",
+        "env": {
+          "BROWSER": "no"
         }
-    ]
+      },
+      "type": "shell",
+      "presentation": {
+        "reveal": "silent",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "docs:dev",
+      "command": "yarn start",
+      "options": {
+        "cwd": "${workspaceFolder}/website"
+      },
+      "type": "shell",
+      "presentation": {
+        "reveal": "silent",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    }
+  ]
 }

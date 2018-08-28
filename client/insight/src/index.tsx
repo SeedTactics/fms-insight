@@ -59,7 +59,8 @@ const store = initStore(DemoMode);
 ReactDOM.render(
   <MuiThemeProvider theme={theme}>
     <CssBaseline />
-    <Provider store={store}>
+    {/* tslint:disable-next-line:no-any */}
+    <Provider store={store as any}>
       {/* <React.StrictMode> */}
       <App />
       {/* </React.StrictMode> */}

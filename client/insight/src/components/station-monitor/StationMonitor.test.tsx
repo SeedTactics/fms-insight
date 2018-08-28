@@ -58,7 +58,8 @@ it("renders the load station page", async () => {
   const store = await createTestStore();
 
   const result = render(
-    <Provider store={store}>
+    // tslint:disable-next-line:no-any
+    <Provider store={store as any}>
       <div>
         <ConnStatMonitor />
       </div>
@@ -110,7 +111,8 @@ it("renders the inspection page", async () => {
   const store = await createTestStore();
 
   const result = render(
-    <Provider store={store}>
+    // tslint:disable-next-line:no-any
+    <Provider store={store as any}>
       <div>
         <ConnStatMonitor />
       </div>
@@ -133,7 +135,8 @@ it("renders the wash page", async () => {
   const store = await createTestStore();
 
   const result = render(
-    <Provider store={store}>
+    // tslint:disable-next-line:no-any
+    <Provider store={store as any}>
       <div>
         <ConnStatMonitor />
       </div>
@@ -154,7 +157,8 @@ it("renders the queues page", async () => {
   const store = await createTestStore();
 
   const result = render(
-    <Provider store={store}>
+    // tslint:disable-next-line:no-any
+    <Provider store={store as any}>
       <div>
         <ConnStatMonitor />
       </div>
@@ -191,7 +195,8 @@ it("renders the all material page", async () => {
   const store = await createTestStore();
 
   const result = render(
-    <Provider store={store}>
+    // tslint:disable-next-line:no-any
+    <Provider store={store as any}>
       <div>
         <ConnStatMonitor />
       </div>

@@ -44,7 +44,8 @@ it("renders the dashboard", async () => {
   const store = await createTestStore();
 
   const result = render(
-    <Provider store={store}>
+    // tslint:disable-next-line:no-any
+    <Provider store={store as any}>
       <Dashboard />
     </Provider>
   );

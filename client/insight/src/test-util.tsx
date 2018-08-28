@@ -32,9 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import * as redux from "redux";
 import { loadMockData } from "./mock-data/load";
-import { Store, AppAction, initStore } from "./store/store";
+import { initStore } from "./store/store";
 import { differenceInSeconds } from "date-fns";
 
 export function mockComponent(name: string): (props: { [key: string]: object }) => JSX.Element {
@@ -51,7 +50,7 @@ export function mockComponent(name: string): (props: { [key: string]: object }) 
   );
 }
 
-export async function createTestStore(): Promise<redux.Store<Store, AppAction>> {
+export async function createTestStore() {
   const store = initStore(true);
 
   // offset is such that all events fall within July no matter the timezone, so

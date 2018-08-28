@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as im from "immutable";
 
 import * as api from "./api";
-import { Pledge, PledgeStatus, ActionBeforeMiddleware, PledgeToPromise } from "../store/middleware";
+import { Pledge, PledgeStatus, PledgeToPromise } from "../store/middleware";
 import { MaterialSummary } from "./events";
 import { JobsBackend, LogBackend, OtherLogBackends } from "./backend";
 
@@ -106,9 +106,7 @@ export type Action =
       pledge: Pledge<void>;
     };
 
-type ABF = ActionBeforeMiddleware<Action>;
-
-export function openMaterialDialog(mat: Readonly<MaterialSummary>): ABF {
+export function openMaterialDialog(mat: Readonly<MaterialSummary>): ReadonlyArray<PledgeToPromise<Action>> {
   const mainLoad = {
     type: ActionType.OpenMaterialDialog,
     initial: {
@@ -144,7 +142,7 @@ export function openMaterialDialog(mat: Readonly<MaterialSummary>): ABF {
   return [mainLoad].concat(extra);
 }
 
-export function openMaterialDialogWithEmptyMat(): ABF {
+export function openMaterialDialogWithEmptyMat(): PledgeToPromise<Action> {
   return {
     type: ActionType.OpenMaterialDialogWithoutLoad,
     mat: {
@@ -166,7 +164,7 @@ export function openMaterialDialogWithEmptyMat(): ABF {
   };
 }
 
-export function openMaterialBySerial(serial: string, openedByBarcode: boolean): ABF {
+export function openMaterialBySerial(serial: string, openedByBarcode: boolean): ReadonlyArray<PledgeToPromise<Action>> {
   const mainLoad = {
     type: ActionType.OpenMaterialDialog,
     initial: {
@@ -206,7 +204,7 @@ export interface ForceInspectionData {
   readonly inspect: boolean;
 }
 
-export function forceInspection({ mat, inspType, inspect }: ForceInspectionData): ABF {
+export function forceInspection({ mat, inspType, inspect }: ForceInspectionData): PledgeToPromise<Action> {
   const logMat = new api.LogMaterial({
     id: mat.materialID,
     uniq: mat.jobUnique,
@@ -229,7 +227,12 @@ export interface CompleteInspectionData {
   readonly operator?: string;
 }
 
-export function completeInspection({ mat, inspType, success, operator }: CompleteInspectionData): ABF {
+export function completeInspection({
+  mat,
+  inspType,
+  success,
+  operator
+}: CompleteInspectionData): PledgeToPromise<Action> {
   return {
     type: ActionType.UpdateMaterial,
     newCompletedInspection: inspType,
@@ -259,7 +262,7 @@ export interface CompleteWashData {
   readonly operator?: string;
 }
 
-export function completeWash(d: CompleteWashData): ABF {
+export function completeWash(d: CompleteWashData): PledgeToPromise<Action> {
   return {
     type: ActionType.UpdateMaterial,
     pledge: LogBackend.recordWashCompleted(
@@ -281,7 +284,7 @@ export function completeWash(d: CompleteWashData): ABF {
   };
 }
 
-export function removeFromQueue(mat: MaterialDetail): ABF {
+export function removeFromQueue(mat: MaterialDetail): PledgeToPromise<Action> {
   return {
     type: ActionType.UpdateMaterial,
     pledge: JobsBackend.removeMaterialFromAllQueues(mat.materialID).then(() => undefined)
@@ -293,7 +296,7 @@ export interface AssignWorkorderData {
   readonly workorder: string;
 }
 
-export function assignWorkorder({ mat, workorder }: AssignWorkorderData): ABF {
+export function assignWorkorder({ mat, workorder }: AssignWorkorderData): PledgeToPromise<Action> {
   return {
     type: ActionType.UpdateMaterial,
     newWorkorder: workorder,
@@ -316,7 +319,7 @@ export interface AssignSerialData {
   readonly serial: string;
 }
 
-export function assignSerial({ mat, serial }: AssignSerialData): ABF {
+export function assignSerial({ mat, serial }: AssignSerialData): PledgeToPromise<Action> {
   return {
     type: ActionType.UpdateMaterial,
     newSerial: serial,
@@ -359,7 +362,7 @@ export function computeWorkorders(
     .toArray();
 }
 
-export function loadWorkorders(mat: MaterialDetail): ABF {
+export function loadWorkorders(mat: MaterialDetail): PledgeToPromise<Action> {
   return {
     type: ActionType.LoadWorkorders,
     pledge: JobsBackend.mostRecentUnfilledWorkordersForPart(mat.partName).then(workorders => {
@@ -376,7 +379,7 @@ export interface AddExistingMaterialToQueueData {
   readonly queuePosition: number;
 }
 
-export function addExistingMaterialToQueue(d: AddExistingMaterialToQueueData): ABF {
+export function addExistingMaterialToQueue(d: AddExistingMaterialToQueueData): PledgeToPromise<Action> {
   return {
     type: ActionType.AddNewMaterialToQueue,
     pledge: JobsBackend.setMaterialInQueue(

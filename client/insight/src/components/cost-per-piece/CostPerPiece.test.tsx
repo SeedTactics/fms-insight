@@ -46,7 +46,8 @@ it("renders the cost/piece page", async () => {
   const store = await createTestStore();
 
   const result = render(
-    <Provider store={store}>
+    // tslint:disable-next-line:no-any
+    <Provider store={store as any}>
       <div>
         <LoadingIcon />
         <CostPerPiece />

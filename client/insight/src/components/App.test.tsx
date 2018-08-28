@@ -64,7 +64,8 @@ it("renders the app shell", async () => {
   const store = initStore(true);
 
   const result = render(
-    <Provider store={store}>
+    // tslint:disable-next-line:no-any
+    <Provider store={store as any}>
       <App />
     </Provider>
   );

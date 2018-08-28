@@ -323,7 +323,7 @@ function processSpecificMonthJobs(jobs: Readonly<api.IHistoricData>, s: Analysis
   });
 }
 
-export function reducer(s: State, a: Action): State {
+export function reducer(s: State | undefined, a: Action): State {
   if (s === undefined) {
     return initial;
   }
