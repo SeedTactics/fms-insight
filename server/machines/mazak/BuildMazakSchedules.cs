@@ -67,6 +67,7 @@ namespace MazakMachineInterface
           {
             newSchRow.Command = MazakWriteCommand.ScheduleSafeEdit;
             newSchRow.Priority = Math.Max(newSchRow.Priority - 1, 1);
+            newSchRow.Processes.Clear();  // no edit to processes, just priority
             transSet.Schedules.Add(newSchRow);
           }
         }
@@ -103,9 +104,11 @@ namespace MazakMachineInterface
           string mazakComment = "";
           foreach (var partRow in mazakData.Parts)
           {
-            if (MazakPart.IsSailPart(partRow.PartName)) {
+            if (MazakPart.IsSailPart(partRow.PartName))
+            {
               MazakPart.ParseComment(partRow.Comment, out string u, out var ps, out bool m);
-              if (u == part.UniqueStr && ps.PathForProc(proc: 1) == proc1path) {
+              if (u == part.UniqueStr && ps.PathForProc(proc: 1) == proc1path)
+              {
                 downloadUid = MazakPart.ParseUID(partRow.PartName);
                 mazakPartName = partRow.PartName;
                 mazakComment = partRow.Comment;
@@ -113,7 +116,8 @@ namespace MazakMachineInterface
               }
             }
           }
-          if (downloadUid < 0) {
+          if (downloadUid < 0)
+          {
             throw new BlackMaple.MachineFramework.BadRequestException(
               "Attempting to create schedule for " + part.UniqueStr + " but a part does not exist");
           }
@@ -174,7 +178,8 @@ namespace MazakMachineInterface
 
       int matQty = newSchRow.PlanQuantity;
 
-      if (!string.IsNullOrEmpty(part.GetInputQueue(process: 1, path: proc1path))) {
+      if (!string.IsNullOrEmpty(part.GetInputQueue(process: 1, path: proc1path)))
+      {
         matQty = 0;
       }
 
