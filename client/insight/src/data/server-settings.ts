@@ -68,16 +68,10 @@ async function loadInfo(): Promise<LoadReturn> {
 
   let url: string | undefined;
   let latestVersion: LatestInstaller | undefined;
-  switch (fmsInfo.name) {
-    case "Mazak":
-      url = "https://fms-insight.seedtactics.com/installers/Mazak-latest.json";
-      break;
-    case "Makino":
-      url = "https://fms-insight.seedtactics.com/installers/Makino-latest.json";
-      break;
-    case "mock":
-      url = "https://fms-insight.seedtactics.com/installers/Mazak-latest.json";
-      break;
+  if (fmsInfo.name === "mock") {
+    url = "https://fms-insight.seedtactics.com/installers/Mazak-latest.json";
+  } else if (fmsInfo.name) {
+    url = "https://fms-insight.seedtactics.com/installers/" + fmsInfo.name + ".json";
   }
   if (url) {
     const res = await fetch(url);
