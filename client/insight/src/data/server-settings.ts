@@ -70,8 +70,10 @@ async function loadInfo(): Promise<LoadReturn> {
   let latestVersion: LatestInstaller | undefined;
   if (fmsInfo.name === "mock") {
     url = "https://fms-insight.seedtactics.com/installers/Mazak-latest.json";
+  } else if (fmsInfo.name === "SimulationLab") {
+    url = undefined;
   } else if (fmsInfo.name) {
-    url = "https://fms-insight.seedtactics.com/installers/" + fmsInfo.name + ".json";
+    url = "https://fms-insight.seedtactics.com/installers/" + fmsInfo.name + "-latest.json";
   }
   if (url) {
     const res = await fetch(url);
