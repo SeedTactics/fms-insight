@@ -100,10 +100,8 @@ export function initStore(demo: boolean) {
 
   if (demo) {
     registerMockBackend();
-    // tslint:disable-next-line:no-any
-    store.dispatch(events.loadLast30Days() as any);
-    // tslint:disable-next-line:no-any
-    store.dispatch(currentStatus.loadCurrentStatus() as any);
+    store.dispatch(events.loadLast30Days());
+    store.dispatch(currentStatus.loadCurrentStatus());
   } else {
     websocket.openWebsocket(a => store.dispatch(a), () => store.getState().Events);
   }
