@@ -4,7 +4,6 @@ exports[`renders the cost/piece page: calculated costs 1`] = `
 <table
   class="MuiTable-root-146"
   data-testid="part-cost-table"
-  padding="default"
 >
   <thead
     class="MuiTableHead-root-147"
