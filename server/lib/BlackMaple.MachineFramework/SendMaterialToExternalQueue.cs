@@ -43,10 +43,10 @@ namespace BlackMaple.MachineFramework
 {
   public class MaterialToSendToExternalQueue
   {
-    public string Server {get;set;}
-    public string PartName {get;set;}
-    public string Queue {get;set;}
-    public string Serial {get;set;}
+    public string Server { get; set; }
+    public string PartName { get; set; }
+    public string Queue { get; set; }
+    public string Serial { get; set; }
   }
 
   public interface ISendMaterialToExternalQueue
@@ -60,37 +60,44 @@ namespace BlackMaple.MachineFramework
 
     public async Task Post(IEnumerable<MaterialToSendToExternalQueue> mats)
     {
-      foreach (var g in mats.GroupBy(m => m.Server)) {
+      foreach (var g in mats.GroupBy(m => m.Server))
+      {
         await SendToServer(g);
       }
     }
 
     private async Task SendToServer(IGrouping<string, MaterialToSendToExternalQueue> mats)
     {
-      try {
+      try
+      {
         var builder = new UriBuilder(mats.Key);
         if (builder.Scheme == "") builder.Scheme = "http";
         if (builder.Port == 80 && !mats.Key.Contains(':')) builder.Port = 5000;
 
-        using (var client = new HttpClient()) {
+        using (var client = new HttpClient())
+        {
           client.BaseAddress = builder.Uri;
 
-          foreach (var mat in mats) {
-            var q = "?queue=" + WebUtility.UrlEncode(mat.Queue) + "&position=-1";
+          foreach (var mat in mats)
+          {
+            var q = "?queue=" + WebUtility.UrlEncode(mat.Queue) + "&pos=-1";
 
             Log.Debug("Sending {@mat} to external queue at {server}", mat, builder.Uri);
 
             var resp = await client.PostAsync("/api/v1/jobs/part/" + WebUtility.UrlEncode(mat.PartName) + "/casting" + q,
                 new StringContent(Newtonsoft.Json.JsonConvert.SerializeObject(mat.Serial), System.Text.Encoding.UTF8, "application/json"));
 
-            if (!resp.IsSuccessStatusCode) {
+            if (!resp.IsSuccessStatusCode)
+            {
               var body = await resp.Content.ReadAsStringAsync();
               Log.Error("Received error {code} when trying to add material {@mat} to external queue at {server}: {err}",
                 resp.StatusCode, mat, builder.Uri, body);
             }
           }
         }
-      } catch (Exception ex) {
+      }
+      catch (Exception ex)
+      {
         Log.Error(ex, "Error sending material to external queue");
       }
     }
