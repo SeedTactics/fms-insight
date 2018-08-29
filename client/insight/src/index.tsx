@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
 import * as ReactDOM from "react-dom";
-import { Provider } from "react-redux";
 
 import "typeface-roboto";
 import CssBaseline from "@material-ui/core/CssBaseline";
@@ -59,12 +58,11 @@ const store = initStore(DemoMode);
 ReactDOM.render(
   <MuiThemeProvider theme={theme}>
     <CssBaseline />
-    {/* tslint:disable-next-line:no-any */}
-    <Provider store={store as any}>
+    <store.Provider>
       {/* <React.StrictMode> */}
       <App />
       {/* </React.StrictMode> */}
-    </Provider>
+    </store.Provider>
   </MuiThemeProvider>,
   document.getElementById("root") as HTMLElement
 );

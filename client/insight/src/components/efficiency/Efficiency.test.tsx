@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import { render, cleanup, fireEvent, wait, within } from "react-testing-library";
 afterEach(cleanup);
-import { Provider } from "react-redux";
 import { Simulate } from "react-dom/test-utils";
 import "jest-dom/extend-expect";
 
@@ -46,13 +45,12 @@ it("renders the cost/piece page", async () => {
   const store = await createTestStore();
 
   const result = render(
-    // tslint:disable-next-line:no-any
-    <Provider store={store as any}>
+    <store.Provider>
       <div>
         <LoadingIcon />
         <Efficiency />
       </div>
-    </Provider>
+    </store.Provider>
   );
 
   expect(result.getByTestId("completed-heatmap").querySelector("div.rv-xy-plot")).toBeEmpty();

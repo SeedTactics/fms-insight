@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import { render, cleanup } from "react-testing-library";
 afterEach(cleanup);
-import { Provider } from "react-redux";
 import "jest-dom/extend-expect";
 
 import Dashboard from "./Dashboard";
@@ -44,10 +43,9 @@ it("renders the dashboard", async () => {
   const store = await createTestStore();
 
   const result = render(
-    // tslint:disable-next-line:no-any
-    <Provider store={store as any}>
+    <store.Provider>
       <Dashboard />
-    </Provider>
+    </store.Provider>
   );
 
   expect(result.container.querySelector("div.rv-xy-plot")).toMatchSnapshot("current jobs plot");

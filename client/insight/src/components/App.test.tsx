@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import { wait, render, cleanup, fireEvent } from "react-testing-library";
 afterEach(cleanup);
-import { Provider } from "react-redux";
 import "jest-dom/extend-expect";
 import { differenceInSeconds, addDays } from "date-fns";
 
@@ -64,10 +63,9 @@ it("renders the app shell", async () => {
   const store = initStore(true);
 
   const result = render(
-    // tslint:disable-next-line:no-any
-    <Provider store={store as any}>
+    <store.Provider>
       <App />
-    </Provider>
+    </store.Provider>
   );
 
   expect(result.getByTestId("loading-icon")).toBeInTheDocument();

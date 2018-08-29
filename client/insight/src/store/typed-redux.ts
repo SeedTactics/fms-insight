@@ -1,3 +1,4 @@
+import * as React from "react";
 import * as redux from "redux";
 import * as reactRedux from "react-redux";
 
@@ -88,6 +89,7 @@ export type ACPayload<S, T> = S extends Store<infer Act, infer State> ? Payload<
 
 // The react-redux store with the state and action types (which will be infered from the reducers).
 export interface Store<ActionBeforeMiddleware, State> {
+  readonly Provider: React.ComponentType<{ children: React.ReactNode }>;
   readonly connect: Connect<ActionBeforeMiddleware, State>;
   readonly mkAC: ActionCreatorFactory<ActionBeforeMiddleware>;
   dispatch(a: ActionBeforeMiddleware): void;
@@ -115,6 +117,8 @@ export function createStore<Reducers, ActionBeforeMiddleware>(
     dispatch: st.dispatch as any,
     // tslint:disable-next-line:no-any
     getState: st.getState as any,
-    subscribe: st.subscribe
+    subscribe: st.subscribe,
+    Provider: ({ children }: { children: React.ReactNode }) =>
+      React.createElement(reactRedux.Provider, { store: st }, children)
   };
 }

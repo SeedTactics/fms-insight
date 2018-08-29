@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import { render, cleanup, fireEvent, wait, within } from "react-testing-library";
 afterEach(cleanup);
-import { Provider } from "react-redux";
 import { Simulate } from "react-dom/test-utils";
 import "jest-dom/extend-expect";
 import { mockComponent } from "../../test-util";
@@ -58,12 +57,11 @@ it("renders the load station page", async () => {
   const store = await createTestStore();
 
   const result = render(
-    // tslint:disable-next-line:no-any
-    <Provider store={store as any}>
+    <store.Provider>
       <div>
         <ConnStatMonitor />
       </div>
-    </Provider>
+    </store.Provider>
   );
 
   expect(result.getByTestId("stationmonitor-load")).toMatchSnapshot("load 1");
@@ -111,12 +109,11 @@ it("renders the inspection page", async () => {
   const store = await createTestStore();
 
   const result = render(
-    // tslint:disable-next-line:no-any
-    <Provider store={store as any}>
+    <store.Provider>
       <div>
         <ConnStatMonitor />
       </div>
-    </Provider>
+    </store.Provider>
   );
 
   fireEvent.click(result.getByText("Load Station"));
@@ -135,12 +132,11 @@ it("renders the wash page", async () => {
   const store = await createTestStore();
 
   const result = render(
-    // tslint:disable-next-line:no-any
-    <Provider store={store as any}>
+    <store.Provider>
       <div>
         <ConnStatMonitor />
       </div>
-    </Provider>
+    </store.Provider>
   );
 
   fireEvent.click(result.getByText("Load Station"));
@@ -157,12 +153,11 @@ it("renders the queues page", async () => {
   const store = await createTestStore();
 
   const result = render(
-    // tslint:disable-next-line:no-any
-    <Provider store={store as any}>
+    <store.Provider>
       <div>
         <ConnStatMonitor />
       </div>
-    </Provider>
+    </store.Provider>
   );
 
   fireEvent.click(result.getByText("Load Station"));
@@ -195,12 +190,11 @@ it("renders the all material page", async () => {
   const store = await createTestStore();
 
   const result = render(
-    // tslint:disable-next-line:no-any
-    <Provider store={store as any}>
+    <store.Provider>
       <div>
         <ConnStatMonitor />
       </div>
-    </Provider>
+    </store.Provider>
   );
 
   fireEvent.click(result.getByText("Load Station"));
