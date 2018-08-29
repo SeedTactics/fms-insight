@@ -70,24 +70,7 @@
       "SetNumber": 0,
       "SetQuantity": 0,
       "SetNumberSets": 0,
-      "Processes": [
-        {
-          "MazakScheduleRowId": 1,
-          "FixQuantity": 0,
-          "ProcessNumber": 1,
-          "ProcessMaterialQuantity": 3,
-          "ProcessExecuteQuantity": 2,
-          "ProcessBadQuantity": 0,
-          "ProcessMachine": 0,
-          "FixedMachineFlag": 1,
-          "FixedMachineNumber": 0,
-          "ScheduleProcess_1": 0,
-          "ScheduleProcess_2": 0,
-          "ScheduleProcess_3": 0,
-          "ScheduleProcess_4": 0,
-          "ScheduleProcess_5": 0
-        }
-      ],
+      "Processes": [],
       "Command": "ScheduleSafeEdit"
     }
   ],
