@@ -37,6 +37,7 @@ import * as api from "./api";
 import { Pledge, PledgeStatus, PledgeToPromise } from "../store/middleware";
 import { MaterialSummary } from "./events";
 import { JobsBackend, LogBackend, OtherLogBackends } from "./backend";
+import { chunk } from "lodash";
 
 export enum ActionType {
   OpenMaterialDialog = "MaterialDetails_Open",
@@ -362,14 +363,19 @@ export function computeWorkorders(
     .toArray();
 }
 
+async function loadWorkordersForPart(part: string): Promise<ReadonlyArray<WorkorderPlanAndSummary>> {
+  const works = await JobsBackend.mostRecentUnfilledWorkordersForPart(part);
+  const summaries: api.IWorkorderSummary[] = [];
+  for (let ws of chunk(works, 16)) {
+    summaries.push(...(await LogBackend.getWorkorders(ws.map(w => w.workorderId))));
+  }
+  return computeWorkorders(part, works, summaries);
+}
+
 export function loadWorkorders(mat: MaterialDetail): PledgeToPromise<Action> {
   return {
     type: ActionType.LoadWorkorders,
-    pledge: JobsBackend.mostRecentUnfilledWorkordersForPart(mat.partName).then(workorders => {
-      return LogBackend.getWorkorders(workorders.map(w => w.workorderId)).then(summaries => {
-        return computeWorkorders(mat.partName, workorders, summaries);
-      });
-    })
+    pledge: loadWorkordersForPart(mat.partName)
   };
 }
 
