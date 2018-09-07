@@ -789,9 +789,9 @@ namespace MachineWatchTest
       job3.AddProcessOnPallet(1, 2, "30");
       job3.AddProcessOnPallet(1, 2, "31");
 
-      //job3 uses separate fixture than job 4
+      //job3 uses separate fixture than job 4, but same fixture and face for both procs
       job3.AddProcessOnFixture(1, 1, "fix3", "face1");
-      job3.AddProcessOnFixture(1, 2, "fix3e", "face1");
+      job3.AddProcessOnFixture(1, 2, "fix3", "face1");
 
       AddBasicStopsWithProg(job3);
 
@@ -804,7 +804,7 @@ namespace MachineWatchTest
 
       //job3 uses separate fixture than job 4
       job4.AddProcessOnFixture(1, 1, "fix4", "face1");
-      job4.AddProcessOnFixture(1, 2, "fix4e", "face1");
+      job4.AddProcessOnFixture(1, 2, "fix4", "face1");
 
       AddBasicStopsWithProg(job4);
 
@@ -826,52 +826,52 @@ namespace MachineWatchTest
       if (log.Count > 0) Assert.True(false, log[0]);
 
       CheckNewFixtures(pMap, new string[] {
-        "Fixt:3:fixAA:face1",
-        "Fixt:3:fixAA:face2",
-        "Fixt:3:fixBB:face1",
-        "Fixt:3:fixBB:face2",
-        "Fixt:3:fix3:face1",
-        "Fixt:3:fix3e:face1",
-        "Fixt:3:fix4:face1",
-        "Fixt:3:fix4e:face1",
+        "Fixt:3:fixAA:4:face1",
+        "Fixt:3:fixAA:4:face2",
+        "Fixt:3:fixBB:10:face1",
+        "Fixt:3:fixBB:10:face2",
+        "Fixt:3:fix3:20:face1",
+        "Fixt:3:fix3:30:face1",
+        "Fixt:3:fix4:20:face1",
+        "Fixt:3:fix4:30:face1",
       }, new[] { "Test" });
 
       var trans = pMap.CreatePartPalletDatabaseRows();
 
-      CheckPartProcessFromJob(trans, "Part1:3:1", 1, "Fixt:3:fixAA:face1");
-      CheckPartProcessFromJob(trans, "Part1:3:1", 2, "Fixt:3:fixAA:face2");
+      CheckPartProcessFromJob(trans, "Part1:3:1", 1, "Fixt:3:fixAA:4:face1");
+      CheckPartProcessFromJob(trans, "Part1:3:1", 2, "Fixt:3:fixAA:4:face2");
       CheckPart(trans, "Part1:3:1", "Job1-Path1-1-0");
 
-      CheckPartProcessFromJob(trans, "Part1:3:2", 1, "Fixt:3:fixBB:face1");
-      CheckPartProcessFromJob(trans, "Part1:3:2", 2, "Fixt:3:fixBB:face2");
+      CheckPartProcessFromJob(trans, "Part1:3:2", 1, "Fixt:3:fixBB:10:face1");
+      CheckPartProcessFromJob(trans, "Part1:3:2", 2, "Fixt:3:fixBB:10:face2");
       CheckPart(trans, "Part1:3:2", "Job1-Path2-2-0");
 
-      CheckPartProcessFromJob(trans, "Part2:3:1", 1, "Fixt:3:fixAA:face1");
-      CheckPartProcessFromJob(trans, "Part2:3:1", 2, "Fixt:3:fixAA:face2");
+      CheckPartProcessFromJob(trans, "Part2:3:1", 1, "Fixt:3:fixAA:4:face1");
+      CheckPartProcessFromJob(trans, "Part2:3:1", 2, "Fixt:3:fixAA:4:face2");
       CheckPart(trans, "Part2:3:1", "Job2-Path1-2-0");
 
-      CheckPartProcessFromJob(trans, "Part2:3:2", 1, "Fixt:3:fixBB:face1");
-      CheckPartProcessFromJob(trans, "Part2:3:2", 2, "Fixt:3:fixBB:face2");
+      CheckPartProcessFromJob(trans, "Part2:3:2", 1, "Fixt:3:fixBB:10:face1");
+      CheckPartProcessFromJob(trans, "Part2:3:2", 2, "Fixt:3:fixBB:10:face2");
       CheckPart(trans, "Part2:3:2", "Job2-Path2-1-0");
 
-      CheckPartProcessFromJob(trans, "Part3:3:1", 1, "Fixt:3:fix3:face1");
+      CheckPartProcessFromJob(trans, "Part3:3:1", 1, "Fixt:3:fix3:20:face1");
       CheckPart(trans, "Part3:3:1", "Job3-Path1-0");
 
-      CheckPartProcessFromJob(trans, "Part3:3:2", 1, "Fixt:3:fix3e:face1");
+      CheckPartProcessFromJob(trans, "Part3:3:2", 1, "Fixt:3:fix3:30:face1");
       CheckPart(trans, "Part3:3:2", "Job3-Path2-0");
 
-      CheckPartProcessFromJob(trans, "Part4:3:1", 1, "Fixt:3:fix4:face1");
+      CheckPartProcessFromJob(trans, "Part4:3:1", 1, "Fixt:3:fix4:20:face1");
       CheckPart(trans, "Part4:3:1", "Job4-Path1-0");
 
-      CheckPartProcessFromJob(trans, "Part4:3:2", 1, "Fixt:3:fix4e:face1");
+      CheckPartProcessFromJob(trans, "Part4:3:2", 1, "Fixt:3:fix4:30:face1");
       CheckPart(trans, "Part4:3:2", "Job4-Path2-0");
 
-      CheckPalletGroup(trans, 31, new[] { "Fixt:3:fixAA:face1", "Fixt:3:fixAA:face2" }, new int[] { 4, 5 });
-      CheckPalletGroup(trans, 32, new[] { "Fixt:3:fixBB:face1", "Fixt:3:fixBB:face2" }, new int[] { 10, 11, 12 });
-      CheckPalletGroup(trans, 33, new[] { "Fixt:3:fix3:face1" }, new int[] { 20, 21 });
-      CheckPalletGroup(trans, 34, new[] { "Fixt:3:fix3e:face1" }, new int[] { 30, 31 });
-      CheckPalletGroup(trans, 35, new[] { "Fixt:3:fix4:face1" }, new int[] { 20, 21 });
-      CheckPalletGroup(trans, 36, new[] { "Fixt:3:fix4e:face1" }, new int[] { 30, 31 });
+      CheckPalletGroup(trans, 31, new[] { "Fixt:3:fixAA:4:face1", "Fixt:3:fixAA:4:face2" }, new int[] { 4, 5 });
+      CheckPalletGroup(trans, 32, new[] { "Fixt:3:fixBB:10:face1", "Fixt:3:fixBB:10:face2" }, new int[] { 10, 11, 12 });
+      CheckPalletGroup(trans, 33, new[] { "Fixt:3:fix3:20:face1" }, new int[] { 20, 21 });
+      CheckPalletGroup(trans, 34, new[] { "Fixt:3:fix3:30:face1" }, new int[] { 30, 31 });
+      CheckPalletGroup(trans, 35, new[] { "Fixt:3:fix4:20:face1" }, new int[] { 20, 21 });
+      CheckPalletGroup(trans, 36, new[] { "Fixt:3:fix4:30:face1" }, new int[] { 30, 31 });
 
       AssertPartsPalletsDeleted(trans);
     }

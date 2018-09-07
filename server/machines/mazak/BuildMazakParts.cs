@@ -839,7 +839,7 @@ namespace MazakMachineInterface
       {
         return "pals:" + string.Join(",", pals.OrderBy(p => p));
       }
-      string jobFixtureToFixGroup(MazakProcess proc, IEnumerable<JobPlan.FixtureFace> fixs)
+      string jobFixtureToFixGroup(MazakProcess proc, IEnumerable<JobPlan.FixtureFace> fixs, IEnumerable<string> pals)
       {
         if (fixs.Count() > 1)
         {
@@ -847,7 +847,7 @@ namespace MazakMachineInterface
             "Invalid fixtures for " + proc.Job.PartName + "-" + proc.ProcessNumber.ToString() +
             ".  There can be at most one fixture and face for the part.");
         }
-        return "fix:" + fixs.First().Fixture;
+        return "fix:" + string.Join(",", pals.OrderBy(p => p)) + ":" + fixs.First().Fixture;
       }
 
       // compute all fixture groups
@@ -862,7 +862,7 @@ namespace MazakMachineInterface
           var plannedFixs = proc.Fixtures();
           if (plannedFixs.Any())
           {
-            fixGroup = jobFixtureToFixGroup(proc, plannedFixs);
+            fixGroup = jobFixtureToFixGroup(proc, plannedFixs, proc.Pallets());
           }
           else
           {
@@ -914,10 +914,10 @@ namespace MazakMachineInterface
           if (plannedFixes.Any())
           {
             //check if correct fixture group
-            if (fixGroup != jobFixtureToFixGroup(proc, plannedFixes))
+            if (fixGroup != jobFixtureToFixGroup(proc, plannedFixes, proc.Pallets()))
               continue;
             face = plannedFixes.First().Face;
-            baseFixtureName = plannedFixes.First().Fixture;
+            baseFixtureName = plannedFixes.First().Fixture + ":" + proc.Pallets().First();
           }
           else
           {
