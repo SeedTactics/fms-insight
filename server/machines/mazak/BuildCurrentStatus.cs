@@ -123,8 +123,13 @@ namespace MazakMachineInterface
         AddRoutingToJob(mazakData, partRow, job, procToPath, dbType);
       }
 
+      var loadedJobs = new HashSet<string>();
       foreach (var j in jobsBySchID.Values)
+      {
+        if (loadedJobs.Contains(j.UniqueStr)) continue;
+        loadedJobs.Add(j.UniqueStr);
         AddDataFromJobDB(jobDB, j);
+      }
 
       //Now add pallets
 
