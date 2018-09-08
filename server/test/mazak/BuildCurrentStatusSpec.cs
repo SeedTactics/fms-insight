@@ -88,8 +88,8 @@ namespace MachineWatchTest
     [Fact]
     public void CreateSnapshot()
     {
-      var scenario = "multiface-transfer-faces-and-unload";
-      var jobsFile = "multi-face.json";
+      var scenario = "pathsgroups-load";
+      var jobsFile = "path-groups.json";
 
       var newJobs = JsonConvert.DeserializeObject<NewJobs>(
         File.ReadAllText(
@@ -112,12 +112,14 @@ namespace MachineWatchTest
       var logDb = _emptyLog;
       var existingLogPath =
         Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".log.db");
-      if (File.Exists(existingLogPath)) {
+      if (File.Exists(existingLogPath))
+      {
         logDb = new JobLogDB();
         logDb.Open(existingLogPath);
       }
 
-      var status = BuildCurrentStatus.Build(_jobDB, logDb, _settings, MazakDbType.MazakSmooth, all);
+      var status = BuildCurrentStatus.Build(_jobDB, logDb, _settings, MazakDbType.MazakSmooth, all,
+          new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc));
 
       File.WriteAllText(
         Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".status.json"),
@@ -135,6 +137,7 @@ namespace MachineWatchTest
     [InlineData("multiface-inital-load")]
     [InlineData("multiface-transfer-faces")]
     [InlineData("multiface-transfer-faces-and-unload")]
+    [InlineData("pathgroups-load")]
     public void StatusSnapshot(string scenario)
     {
       /*
@@ -151,7 +154,7 @@ namespace MachineWatchTest
         newJobs = JsonConvert.DeserializeObject<NewJobs>(
           File.ReadAllText(
             Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
-            jsonSettings
+          jsonSettings
         );
       }
       else if (scenario.Contains("multiface"))
@@ -159,8 +162,17 @@ namespace MachineWatchTest
         newJobs = JsonConvert.DeserializeObject<NewJobs>(
           File.ReadAllText(
             Path.Combine("..", "..", "..", "sample-newjobs", "multi-face.json")),
-            jsonSettings
+          jsonSettings
         );
+      }
+      else if (scenario.Contains("pathgroups"))
+      {
+        newJobs = JsonConvert.DeserializeObject<NewJobs>(
+          File.ReadAllText(
+            Path.Combine("..", "..", "..", "sample-newjobs", "path-groups.json")),
+          jsonSettings
+        );
+
       }
       _jobDB.AddJobs(newJobs, null);
 
