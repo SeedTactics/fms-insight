@@ -50,36 +50,48 @@ namespace MachineWatchTest
     private class WriteMock : IWriteData
     {
       public MazakDbType MazakType => MazakDbType.MazakSmooth;
-      public MazakWriteData DeletePartsPals {get;set;}
-      public MazakWriteData Fixtures {get;set;}
-      public MazakWriteData AddParts {get;set;}
-      public MazakWriteData AddSchedules {get;set;}
-      public MazakWriteData UpdateSchedules {get;set;}
+      public MazakWriteData DeletePartsPals { get; set; }
+      public MazakWriteData Fixtures { get; set; }
+      public MazakWriteData AddParts { get; set; }
+      public MazakWriteData AddSchedules { get; set; }
+      public MazakWriteData UpdateSchedules { get; set; }
       public string errorForPrefix;
 
       public void Save(MazakWriteData data, string prefix)
       {
-        if (prefix == "Delete Parts Pallets") {
+        if (prefix == "Delete Parts Pallets")
+        {
           DeletePartsPals = data;
-        } else if (prefix == "Fixtures") {
+        }
+        else if (prefix == "Fixtures")
+        {
           Fixtures = data;
-        } else if (prefix == "Add Parts") {
+        }
+        else if (prefix == "Add Parts")
+        {
           AddParts = data;
-        } else if (prefix == "Add Schedules") {
+        }
+        else if (prefix == "Add Schedules")
+        {
           AddSchedules = data;
-        } else if (prefix == "Update schedules") {
+        }
+        else if (prefix == "Update schedules")
+        {
           UpdateSchedules = data;
-        } else {
+        }
+        else
+        {
           Assert.True(false, "Unexpected prefix " + prefix);
         }
-        if (errorForPrefix == prefix) {
+        if (errorForPrefix == prefix)
+        {
           throw new Exception("Sample error");
         }
       }
     }
 
     private JobLogDB _logDB;
-		private JobDB _jobDB;
+    private JobDB _jobDB;
     private IWriteJobs _writeJobs;
     private WriteMock _writeMock;
     private IReadDataAccess _readMock;
@@ -88,12 +100,12 @@ namespace MachineWatchTest
 
     public WriteJobsSpec()
     {
-			var logConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
+      var logConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
       logConn.Open();
       _logDB = new JobLogDB(logConn);
       _logDB.CreateTables(firstSerialOnEmpty: null);
 
-			var jobConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
+      var jobConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
       jobConn.Open();
       _jobDB = new JobDB(jobConn);
       _jobDB.CreateTables();
@@ -102,50 +114,51 @@ namespace MachineWatchTest
 
       _readMock = Substitute.For<IReadDataAccess>();
       _readMock.MazakType.Returns(MazakDbType.MazakSmooth);
-      _readMock.LoadAllData().Returns(new MazakAllData() {
-        Schedules = new [] {
+      _readMock.LoadAllData().Returns(new MazakAllData()
+      {
+        Schedules = new[] {
           // a completed schedule, should be deleted
 					new MazakScheduleRow()
-					{
-						Id = 1,
-						PartName = "part1:1:1",
-						Comment = MazakPart.CreateComment("uniq1", new [] {1}, false),
-						PlanQuantity = 15,
-						CompleteQuantity = 15,
-						Priority = 50,
-						Processes = {
-							new MazakScheduleProcessRow() {
-								MazakScheduleRowId = 1,
-								FixedMachineFlag = 1,
-								ProcessNumber = 1
-							}
-						}
-					},
+          {
+            Id = 1,
+            PartName = "part1:1:1",
+            Comment = MazakPart.CreateComment("uniq1", new [] {1}, false),
+            PlanQuantity = 15,
+            CompleteQuantity = 15,
+            Priority = 50,
+            Processes = {
+              new MazakScheduleProcessRow() {
+                MazakScheduleRowId = 1,
+                FixedMachineFlag = 1,
+                ProcessNumber = 1
+              }
+            }
+          },
           // a non-completed schedule, should be decremented
 					new MazakScheduleRow()
-					{
-						Id = 2,
-						PartName = "part2:1:1",
-						Comment = MazakPart.CreateComment("uniq2", new [] {1}, false),
-						PlanQuantity = 15,
-						CompleteQuantity = 10,
-						Priority = 50,
-						Processes = {
-							new MazakScheduleProcessRow() {
-								MazakScheduleRowId = 1,
-								FixedMachineFlag = 1,
-								ProcessNumber = 1,
-								ProcessMaterialQuantity = 3,
-								ProcessExecuteQuantity = 2
-							}
-						}
-					},
+          {
+            Id = 2,
+            PartName = "part2:1:1",
+            Comment = MazakPart.CreateComment("uniq2", new [] {1}, false),
+            PlanQuantity = 15,
+            CompleteQuantity = 10,
+            Priority = 50,
+            Processes = {
+              new MazakScheduleProcessRow() {
+                MazakScheduleRowId = 1,
+                FixedMachineFlag = 1,
+                ProcessNumber = 1,
+                ProcessMaterialQuantity = 3,
+                ProcessExecuteQuantity = 2
+              }
+            }
+          },
         },
-        Parts = new [] {
+        Parts = new[] {
           // should be deleted, since corresponding schedule is deleted
 					new MazakPartRow() {
-						PartName = "part1:1:1",
-						Comment = MazakPart.CreateComment("uniq1", new[] {1}, false),
+            PartName = "part1:1:1",
+            Comment = MazakPart.CreateComment("uniq1", new[] {1}, false),
             Processes = {
               new MazakPartProcessRow() {
                 PartName = "part1:1:1",
@@ -154,11 +167,11 @@ namespace MachineWatchTest
                 Fixture = "fixtoremove"
               }
             }
-					},
+          },
           //should be kept, since schedule is kept
 					new MazakPartRow() {
-						PartName = "part2:1:1",
-						Comment = MazakPart.CreateComment("uniq2", new[] {1}, false),
+            PartName = "part2:1:1",
+            Comment = MazakPart.CreateComment("uniq2", new[] {1}, false),
             Processes = {
               new MazakPartProcessRow() {
                 PartName = "part2:1:1",
@@ -167,7 +180,7 @@ namespace MachineWatchTest
                 Fixture = "fixtokeep"
               }
             }
-					},
+          },
         },
         Fixtures = new[] {
           new MazakFixtureRow() { FixtureName = "fixtoremove", Comment = "Insight" },
@@ -180,19 +193,20 @@ namespace MachineWatchTest
         PalletSubStatuses = Enumerable.Empty<MazakPalletSubStatusRow>(),
         PalletPositions = Enumerable.Empty<MazakPalletPositionRow>(),
         LoadActions = Enumerable.Empty<LoadAction>(),
-        MainPrograms = new HashSet<string>(new [] {
-          "1001", "1002", "1003", "1004"
+        MainPrograms = new HashSet<string>(new[] {
+          "1001", "1002", "1003", "1004", "1005"
         }),
       });
-      _readMock.LoadSchedulesPartsPallets().Returns(x => new MazakSchedulesPartsPallets() {
+      _readMock.LoadSchedulesPartsPallets().Returns(x => new MazakSchedulesPartsPallets()
+      {
         Schedules = Enumerable.Empty<MazakScheduleRow>(),
         Parts = _writeMock.AddParts.Parts,
         Pallets = _writeMock.AddParts.Pallets,
         PalletSubStatuses = Enumerable.Empty<MazakPalletSubStatusRow>(),
         PalletPositions = Enumerable.Empty<MazakPalletPositionRow>(),
         LoadActions = Enumerable.Empty<LoadAction>(),
-        MainPrograms = new HashSet<string>(new [] {
-          "1001", "1002", "1003", "1004"
+        MainPrograms = new HashSet<string>(new[] {
+          "1001", "1002", "1003", "1004", "1005"
         }),
       });
 
@@ -213,18 +227,18 @@ namespace MachineWatchTest
         useStarting: true,
         decrPriority: true);
 
-        jsonSettings = new JsonSerializerSettings();
-        jsonSettings.Converters.Add(new BlackMaple.MachineFramework.TimespanConverter());
-        jsonSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
-        jsonSettings.DateTimeZoneHandling = DateTimeZoneHandling.Utc;
-        jsonSettings.Formatting = Formatting.Indented;
+      jsonSettings = new JsonSerializerSettings();
+      jsonSettings.Converters.Add(new BlackMaple.MachineFramework.TimespanConverter());
+      jsonSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
+      jsonSettings.DateTimeZoneHandling = DateTimeZoneHandling.Utc;
+      jsonSettings.Formatting = Formatting.Indented;
     }
 
-		public void Dispose()
-		{
-			_logDB.Close();
-			_jobDB.Close();
-		}
+    public void Dispose()
+    {
+      _logDB.Close();
+      _jobDB.Close();
+    }
 
     public void ShouldMatchSnapshot<T>(T val, string snapshot)
     {
@@ -256,7 +270,7 @@ namespace MachineWatchTest
       var newJobsMultiFace = JsonConvert.DeserializeObject<NewJobs>(
         File.ReadAllText(
           Path.Combine("..", "..", "..", "sample-newjobs", "multi-face.json")),
-          jsonSettings
+        jsonSettings
       );
 
       _writeJobs.Invoking(x => x.AddJobs(newJobsMultiFace, "xxxx"))
@@ -273,7 +287,7 @@ namespace MachineWatchTest
       var newJobs = JsonConvert.DeserializeObject<NewJobs>(
         File.ReadAllText(
           Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
-          jsonSettings
+        jsonSettings
       );
       _writeJobs.AddJobs(newJobs, null);
 
@@ -285,6 +299,24 @@ namespace MachineWatchTest
 
       var start = newJobs.Jobs.First().RouteStartingTimeUTC;
       _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).Jobs.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void MultiPathGroups()
+    {
+      var newJobs = JsonConvert.DeserializeObject<NewJobs>(
+        File.ReadAllText(
+          Path.Combine("..", "..", "..", "sample-newjobs", "path-groups.json")),
+        jsonSettings
+      );
+
+      _writeJobs.AddJobs(newJobs, null);
+
+      ShouldMatchSnapshot(_writeMock.UpdateSchedules, "path-groups-updatesch.json");
+      ShouldMatchSnapshot(_writeMock.DeletePartsPals, "path-groups-delparts.json");
+      ShouldMatchSnapshot(_writeMock.Fixtures, "path-groups-fixtures.json");
+      ShouldMatchSnapshot(_writeMock.AddParts, "path-groups-parts.json");
+      ShouldMatchSnapshot(_writeMock.AddSchedules, "path-groups-schedules.json");
     }
 
     [Fact]

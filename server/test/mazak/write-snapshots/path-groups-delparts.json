@@ -1,0 +1,23 @@
+{
+  "Schedules": [],
+  "Parts": [
+    {
+      "PartName": "part1:1:1",
+      "Comment": "uniq1-Path1-0",
+      "Price": 0.0,
+      "TotalProcess": 1,
+      "MaterialName": "",
+      "Part_1": 0,
+      "Part_2": 0,
+      "Part_3": "",
+      "Part_4": 0,
+      "Part_5": 0,
+      "CheckCount": 0,
+      "ProductCount": 0,
+      "Processes": [],
+      "Command": "Delete"
+    }
+  ],
+  "Pallets": [],
+  "Fixtures": []
+}

@@ -1,0 +1,52 @@
+{
+  "Schedules": [],
+  "Parts": [],
+  "Pallets": [],
+  "Fixtures": [
+    {
+      "FixtureName": "fixtoremove",
+      "Comment": "Insight",
+      "Command": "Delete"
+    },
+    {
+      "FixtureName": "Fixt:0:fixAA:1:1",
+      "Comment": "Insight",
+      "Command": "Add"
+    },
+    {
+      "FixtureName": "Fixt:0:fixAA:3:1",
+      "Comment": "Insight",
+      "Command": "Add"
+    },
+    {
+      "FixtureName": "Fixt:0:fixBB:1:1",
+      "Comment": "Insight",
+      "Command": "Add"
+    },
+    {
+      "FixtureName": "Fixt:0:fixBB:1:2",
+      "Comment": "Insight",
+      "Command": "Add"
+    },
+    {
+      "FixtureName": "Fixt:0:fixBB:3:1",
+      "Comment": "Insight",
+      "Command": "Add"
+    },
+    {
+      "FixtureName": "Fixt:0:fixBB:3:2",
+      "Comment": "Insight",
+      "Command": "Add"
+    },
+    {
+      "FixtureName": "Fixt:0:fixCC:5:1",
+      "Comment": "Insight",
+      "Command": "Add"
+    },
+    {
+      "FixtureName": "Fixt:0:fixCC:6:1",
+      "Comment": "Insight",
+      "Command": "Add"
+    }
+  ]
+}
