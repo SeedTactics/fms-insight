@@ -40,172 +40,185 @@ using Microsoft.AspNetCore.Cors;
 
 namespace BlackMaple.MachineFramework.Controllers
 {
-    [DataContract] public struct NewInspectionCompleted
+  [DataContract]
+  public struct NewInspectionCompleted
+  {
+    [DataMember(IsRequired = true)] public LogMaterial Material { get; set; }
+    [DataMember(IsRequired = true)] public int InspectionLocationNum { get; set; }
+    [DataMember(IsRequired = true)] public string InspectionType { get; set; }
+    [DataMember(IsRequired = true)] public bool Success { get; set; }
+    [DataMember(IsRequired = false)] public Dictionary<string, string> ExtraData { get; set; }
+    [DataMember(IsRequired = true)] public TimeSpan Elapsed { get; set; }
+    [DataMember(IsRequired = true)] public TimeSpan Active { get; set; }
+  }
+
+  [DataContract]
+  public struct NewWash
+  {
+    [DataMember(IsRequired = true)] public LogMaterial Material { get; set; }
+    [DataMember(IsRequired = true)] public int WashLocationNum { get; set; }
+    [DataMember(IsRequired = false)] public Dictionary<string, string> ExtraData { get; set; }
+    [DataMember(IsRequired = true)] public TimeSpan Elapsed { get; set; }
+    [DataMember(IsRequired = true)] public TimeSpan Active { get; set; }
+  }
+
+  [Route("api/v1/[controller]")]
+  public class logController : ControllerBase
+  {
+    private ILogDatabase _server;
+
+    public logController(IFMSBackend backend)
     {
-        [DataMember(IsRequired=true)] public LogMaterial Material {get;set;}
-        [DataMember(IsRequired=true)] public int InspectionLocationNum {get;set;}
-        [DataMember(IsRequired=true)] public string InspectionType {get;set;}
-        [DataMember(IsRequired=true)] public bool Success {get;set;}
-        [DataMember(IsRequired=false)] public Dictionary<string, string> ExtraData {get;set;}
-        [DataMember(IsRequired=true)] public TimeSpan Elapsed {get;set;}
-        [DataMember(IsRequired=true)] public TimeSpan Active {get;set;}
+      _server = backend.LogDatabase();
     }
 
-    [DataContract] public struct NewWash
+    [HttpGet("events/all")]
+    public List<LogEntry> Get([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
     {
-        [DataMember(IsRequired=true)] public LogMaterial Material {get;set;}
-        [DataMember(IsRequired=true)] public int WashLocationNum {get;set;}
-        [DataMember(IsRequired=false)] public Dictionary<string, string> ExtraData {get;set;}
-        [DataMember(IsRequired=true)] public TimeSpan Elapsed {get;set;}
-        [DataMember(IsRequired=true)] public TimeSpan Active {get;set;}
+      return _server.GetLogEntries(startUTC, endUTC);
     }
 
-    [Route("api/v1/[controller]")]
-    public class logController : ControllerBase
+    [HttpGet("events.csv")]
+    [Produces("text/csv")]
+    public IActionResult GetEventCSV([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
     {
-        private ILogDatabase _server;
-
-        public logController(IFMSBackend backend)
-        {
-            _server = backend.LogDatabase();
-        }
-
-        [HttpGet("events/all")]
-        public List<LogEntry> Get([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
-        {
-            return _server.GetLogEntries(startUTC, endUTC);
-        }
-
-        [HttpGet("events.csv")]
-        [Produces("text/csv")]
-        public IActionResult GetEventCSV([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC) {
-            var ms = new System.IO.MemoryStream();
-            try {
-                var tx = new System.IO.StreamWriter(ms);
-                CSVLogConverter.WriteCSV(tx, _server.GetLogEntries(startUTC, endUTC));
-            } catch {
-                ms.Close();
-                throw;
-            }
-            ms.Position = 0;
-            // filestreamresult will close the memorystream
-            return new FileStreamResult(ms, "text/csv") {
-                FileDownloadName = "events.csv"
-            };
-        }
-
-        [HttpGet("events/all-completed-parts")]
-        public List<LogEntry> GetCompletedParts([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
-        {
-            return _server.GetCompletedPartLogs(startUTC, endUTC);
-        }
-
-        [HttpGet("events/recent")]
-        public List<LogEntry> Recent([FromQuery] long lastSeenCounter)
-        {
-            return _server.GetLog(lastSeenCounter);
-        }
-
-        [HttpGet("events/for-material/{materialID}")]
-        public List<LogEntry> LogForMaterial(long materialID)
-        {
-            return _server.GetLogForMaterial(materialID);
-        }
-
-        [HttpGet("events/for-serial/{serial}")]
-        [EnableCors("AllowOtherLogServers")]
-        public List<LogEntry> LogForSerial(string serial)
-        {
-            return _server.GetLogForSerial(serial);
-        }
-
-        [HttpGet("events/for-workorder/{workorder}")]
-        public List<LogEntry> LogForWorkorder(string workorder)
-        {
-            return _server.GetLogForWorkorder(workorder);
-        }
-
-        [HttpGet("material-details/{materialID}")]
-        public MaterialDetails MaterialDetails(long materialID)
-        {
-            return _server.GetMaterialDetails(materialID);
-        }
-
-        [HttpGet("workorders")]
-        public List<WorkorderSummary> GetWorkorders([FromQuery] IEnumerable<string> ids)
-        {
-            return _server.GetWorkorderSummaries(ids);
-        }
-
-        [HttpGet("workorders.csv")]
-        [Produces("text/csv")]
-        public IActionResult GetWorkordersCSV([FromQuery] IEnumerable<string> ids)
-        {
-            var ms = new System.IO.MemoryStream();
-            try {
-                var tx = new System.IO.StreamWriter(ms);
-                CSVWorkorderConverter.WriteCSV(tx, _server.GetWorkorderSummaries(ids));
-            } catch {
-                ms.Close();
-                throw;
-            }
-            ms.Position = 0;
-            // filestreamresult will close the memorystream
-            return new FileStreamResult(ms, "text/csv") {
-                FileDownloadName = "workorders.csv"
-            };
-        }
-
-        [HttpPost("serial/{serial}/material")]
-        public LogEntry SetSerial(string serial, [FromBody] LogMaterial mat)
-        {
-            return _server.RecordSerialForMaterialID(mat, serial);
-        }
-
-        [HttpPost("workorder/{workorder}/material")]
-        public LogEntry SetWorkorder(string workorder, [FromBody] LogMaterial mat)
-        {
-            return _server.RecordWorkorderForMaterialID(mat, workorder);
-        }
-
-        [HttpPost("inspections/{inspType}/material")]
-        public LogEntry SetInspectionDecision(string inspType, [FromBody] LogMaterial mat, [FromQuery] bool inspect = true)
-        {
-            return _server.ForceInspection(mat, inspType, inspect);
-        }
-
-        [HttpPost("events/inspection-result")]
-        public LogEntry RecordInspectionCompleted([FromBody] NewInspectionCompleted insp)
-        {
-            if (string.IsNullOrEmpty(insp.InspectionType)) throw new BadRequestException("Must give inspection type");
-            if (insp.Material == null) throw new BadRequestException("Must give material type");
-            return _server.RecordInspectionCompleted(
-                insp.Material,
-                insp.InspectionLocationNum,
-                insp.InspectionType,
-                insp.Success,
-                insp.ExtraData == null ? new Dictionary<string, string>() : insp.ExtraData,
-                insp.Elapsed,
-                insp.Active
-            );
-        }
-
-        [HttpPost("events/wash")]
-        public LogEntry RecordWashCompleted([FromBody] NewWash insp)
-        {
-            return _server.RecordWashCompleted(
-                insp.Material,
-                insp.WashLocationNum,
-                insp.ExtraData == null ? new Dictionary<string, string>() : insp.ExtraData,
-                insp.Elapsed,
-                insp.Active
-            );
-        }
-
-        [HttpPost("workorder/{workorder}/finalize")]
-        public LogEntry FinalizeWorkorder(string workorder)
-        {
-            return _server.RecordFinalizedWorkorder(workorder);
-        }
+      var ms = new System.IO.MemoryStream();
+      try
+      {
+        var tx = new System.IO.StreamWriter(ms);
+        CSVLogConverter.WriteCSV(tx, _server.GetLogEntries(startUTC, endUTC));
+        tx.Flush();
+      }
+      catch
+      {
+        ms.Close();
+        throw;
+      }
+      ms.Position = 0;
+      // filestreamresult will close the memorystream
+      return new FileStreamResult(ms, "text/csv")
+      {
+        FileDownloadName = "events.csv"
+      };
     }
+
+    [HttpGet("events/all-completed-parts")]
+    public List<LogEntry> GetCompletedParts([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
+    {
+      return _server.GetCompletedPartLogs(startUTC, endUTC);
+    }
+
+    [HttpGet("events/recent")]
+    public List<LogEntry> Recent([FromQuery] long lastSeenCounter)
+    {
+      return _server.GetLog(lastSeenCounter);
+    }
+
+    [HttpGet("events/for-material/{materialID}")]
+    public List<LogEntry> LogForMaterial(long materialID)
+    {
+      return _server.GetLogForMaterial(materialID);
+    }
+
+    [HttpGet("events/for-serial/{serial}")]
+    [EnableCors("AllowOtherLogServers")]
+    public List<LogEntry> LogForSerial(string serial)
+    {
+      return _server.GetLogForSerial(serial);
+    }
+
+    [HttpGet("events/for-workorder/{workorder}")]
+    public List<LogEntry> LogForWorkorder(string workorder)
+    {
+      return _server.GetLogForWorkorder(workorder);
+    }
+
+    [HttpGet("material-details/{materialID}")]
+    public MaterialDetails MaterialDetails(long materialID)
+    {
+      return _server.GetMaterialDetails(materialID);
+    }
+
+    [HttpGet("workorders")]
+    public List<WorkorderSummary> GetWorkorders([FromQuery] IEnumerable<string> ids)
+    {
+      return _server.GetWorkorderSummaries(ids);
+    }
+
+    [HttpGet("workorders.csv")]
+    [Produces("text/csv")]
+    public IActionResult GetWorkordersCSV([FromQuery] IEnumerable<string> ids)
+    {
+      var ms = new System.IO.MemoryStream();
+      try
+      {
+        var tx = new System.IO.StreamWriter(ms);
+        CSVWorkorderConverter.WriteCSV(tx, _server.GetWorkorderSummaries(ids));
+        tx.Flush();
+      }
+      catch
+      {
+        ms.Close();
+        throw;
+      }
+      ms.Position = 0;
+      // filestreamresult will close the memorystream
+      return new FileStreamResult(ms, "text/csv")
+      {
+        FileDownloadName = "workorders.csv"
+      };
+    }
+
+    [HttpPost("serial/{serial}/material")]
+    public LogEntry SetSerial(string serial, [FromBody] LogMaterial mat)
+    {
+      return _server.RecordSerialForMaterialID(mat, serial);
+    }
+
+    [HttpPost("workorder/{workorder}/material")]
+    public LogEntry SetWorkorder(string workorder, [FromBody] LogMaterial mat)
+    {
+      return _server.RecordWorkorderForMaterialID(mat, workorder);
+    }
+
+    [HttpPost("inspections/{inspType}/material")]
+    public LogEntry SetInspectionDecision(string inspType, [FromBody] LogMaterial mat, [FromQuery] bool inspect = true)
+    {
+      return _server.ForceInspection(mat, inspType, inspect);
+    }
+
+    [HttpPost("events/inspection-result")]
+    public LogEntry RecordInspectionCompleted([FromBody] NewInspectionCompleted insp)
+    {
+      if (string.IsNullOrEmpty(insp.InspectionType)) throw new BadRequestException("Must give inspection type");
+      if (insp.Material == null) throw new BadRequestException("Must give material type");
+      return _server.RecordInspectionCompleted(
+          insp.Material,
+          insp.InspectionLocationNum,
+          insp.InspectionType,
+          insp.Success,
+          insp.ExtraData == null ? new Dictionary<string, string>() : insp.ExtraData,
+          insp.Elapsed,
+          insp.Active
+      );
+    }
+
+    [HttpPost("events/wash")]
+    public LogEntry RecordWashCompleted([FromBody] NewWash insp)
+    {
+      return _server.RecordWashCompleted(
+          insp.Material,
+          insp.WashLocationNum,
+          insp.ExtraData == null ? new Dictionary<string, string>() : insp.ExtraData,
+          insp.Elapsed,
+          insp.Active
+      );
+    }
+
+    [HttpPost("workorder/{workorder}/finalize")]
+    public LogEntry FinalizeWorkorder(string workorder)
+    {
+      return _server.RecordFinalizedWorkorder(workorder);
+    }
+  }
 }
