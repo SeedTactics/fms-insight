@@ -98,7 +98,7 @@ class AnalysisSelectToolbar extends React.PureComponent<AnalysisSelectToolbarPro
           }
           label="Last 30 days"
         />
-        <div>
+        <div style={{ display: "flex", alignItems: "center" }}>
           <FormControlLabel
             control={
               <Radio

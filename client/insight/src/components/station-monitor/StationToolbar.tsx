@@ -380,7 +380,7 @@ function StationToolbar(props: StationToolbarProps) {
         )}
         {window.location.protocol === "https:" || window.location.hostname === "localhost" ? (
           <Tooltip title="Scan QR Code">
-            <IconButton onClick={props.openQrCodeScan} style={{ height: "25px" }}>
+            <IconButton onClick={props.openQrCodeScan} style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}>
               <CameraAlt />
             </IconButton>
           </Tooltip>
