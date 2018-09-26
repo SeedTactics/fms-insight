@@ -120,7 +120,11 @@ namespace BlackMaple.MachineFramework
 #endif
                             .ToArray()
                   )
+#if DEBUG
+                  .WithMethods(new[] { "GET", "PUT", "POST", "DELETE" })
+#else
                   .WithMethods("GET")
+#endif
                   .WithHeaders("content-type")
               )
           )
