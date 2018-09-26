@@ -82,11 +82,8 @@
       ".*\\.svg$": "<rootDir>/file-mock.js",
       ".*events-json.txt$": "<rootDir>/file-mock.js"
     },
-    "globals": {
-      "ts-jest": {
-        "skipBabel": true
-      }
-    }
+    "preset": "ts-jest",
+    "testMatch": null
   },
   "sw-precache": {
     "navigateFallback": "index.html",

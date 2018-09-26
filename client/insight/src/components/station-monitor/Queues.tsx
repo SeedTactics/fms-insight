@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import withStyles from "@material-ui/core/styles/withStyles";
+import { WithStyles, createStyles, withStyles } from "@material-ui/core/styles";
 import * as im from "immutable";
 import { createSelector } from "reselect";
 import Button from "@material-ui/core/Button";
@@ -550,12 +550,12 @@ const ConnectedChooseSerialOrDirectJobDialog = connect(
   }
 )(ChooseSerialOrDirectJob);
 
-const queueStyles = withStyles(() => ({
+const queueStyles = createStyles({
   mainScrollable: {
     padding: "8px",
     width: "100%"
   }
-}));
+});
 
 interface QueueProps {
   readonly data: LoadStationAndQueueData;
@@ -563,7 +563,7 @@ interface QueueProps {
   openAddToQueue: (queueName: string) => void;
 }
 
-const Queues = queueStyles<QueueProps>(props => {
+const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof queueStyles>) => {
   let queues = props.data.queues
     .toSeq()
     .sortBy((mats, q) => q)

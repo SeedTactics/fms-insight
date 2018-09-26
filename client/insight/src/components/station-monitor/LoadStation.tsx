@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from "react";
 import Divider from "@material-ui/core/Divider";
-import withStyles from "@material-ui/core/styles/withStyles";
+import { WithStyles, createStyles, withStyles } from "@material-ui/core/styles";
 import * as im from "immutable";
 import { createSelector } from "reselect";
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
@@ -56,11 +56,6 @@ import SelectInspTypeDialog from "./SelectInspType";
 import SerialScanner from "./QRScan";
 import { MoveMaterialArrowContainer, MoveMaterialArrowNode } from "./MoveMaterialArrows";
 import { MoveMaterialNodeKindType } from "../../data/move-arrows";
-
-interface StationStatusProps {
-  byStation: im.Map<string, { pal?: PalletData; queue?: PalletData }>;
-  dateOfCurrentStatus: Date;
-}
 
 function stationPalMaterialStatus(mat: Readonly<api.IInProcessMaterial>, dateOfCurrentStatus: Date): JSX.Element {
   const name = mat.partName + "-" + mat.process.toString();
@@ -93,16 +88,21 @@ function stationPalMaterialStatus(mat: Readonly<api.IInProcessMaterial>, dateOfC
   );
 }
 
-const stationStatusStyles = withStyles(() => ({
+const stationStatusStyles = createStyles({
   defList: {
     color: "rgba(0,0,0,0.6)"
   },
   defItem: {
     marginTop: "1em"
   }
-}));
+});
 
-const StationStatus = stationStatusStyles<StationStatusProps>(props => {
+interface StationStatusProps extends WithStyles<typeof stationStatusStyles> {
+  byStation: im.Map<string, { pal?: PalletData; queue?: PalletData }>;
+  dateOfCurrentStatus: Date;
+}
+
+const StationStatus = withStyles(stationStatusStyles)((props: StationStatusProps) => {
   if (props.byStation.size === 0) {
     return <div />;
   }
@@ -144,7 +144,7 @@ const StationStatus = stationStatusStyles<StationStatusProps>(props => {
   );
 });
 
-const palletStyles = withStyles(() => ({
+const palletStyles = createStyles({
   palletContainerFill: {
     width: "100%",
     position: "relative" as "relative",
@@ -183,9 +183,9 @@ const palletStyles = withStyles(() => ({
     marginLeft: "4em",
     marginRight: "4em"
   }
-}));
+});
 
-const PalletColumn = palletStyles<LoadStationProps>(props => {
+const PalletColumn = withStyles(palletStyles)((props: LoadStationProps & WithStyles<typeof palletStyles>) => {
   let palletClass: string;
   let statStatusClass: string;
   if (props.fillViewPort) {
@@ -200,7 +200,7 @@ const PalletColumn = palletStyles<LoadStationProps>(props => {
 
   let palDetails: JSX.Element;
   if (props.data.face.size === 1) {
-    const mat = props.data.face.first();
+    const mat = props.data.face.first(undefined);
     palDetails = (
       <div className={props.classes.faceContainer}>
         <MoveMaterialArrowNode type={MoveMaterialNodeKindType.PalletFaceZone} face={maxFace || 1}>
@@ -352,7 +352,7 @@ const ConnectedMaterialDialog = connect(
   }
 )(LoadMatDialog);
 
-const loadStyles = withStyles(() => ({
+const loadStyles = createStyles({
   mainFillViewport: {
     height: "calc(100vh - 64px - 2.5em)",
     display: "flex",
@@ -376,7 +376,7 @@ const loadStyles = withStyles(() => ({
     flexDirection: "column" as "column",
     borderLeft: "1px solid rgba(0, 0, 0, 0.12)"
   }
-}));
+});
 
 interface LoadStationProps {
   readonly fillViewPort: boolean;
@@ -385,7 +385,7 @@ interface LoadStationProps {
   openMat: (m: Readonly<MaterialSummary>) => void;
 }
 
-const LoadStation = loadStyles<LoadStationProps>(props => {
+const LoadStation = withStyles(loadStyles)((props: LoadStationProps & WithStyles<typeof loadStyles>) => {
   const palProps = { ...props, classes: undefined };
 
   let queues = props.data.queues

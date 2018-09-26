@@ -49,13 +49,13 @@ import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
 import AddIcon from "@material-ui/icons/AddBox";
 import IconButton from "@material-ui/core/IconButton";
+import { WithStyles, createStyles, withStyles } from "@material-ui/core/styles";
 import * as im from "immutable";
 
 import * as api from "../../data/api";
 import * as matDetails from "../../data/material-details";
 import { LogEntries } from "../LogEntry";
 import { MaterialSummary } from "../../data/events";
-import withStyles from "@material-ui/core/styles/withStyles";
 import { inproc_mat_to_summary, MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 
 /*
@@ -118,7 +118,7 @@ function materialAction(mat: Readonly<api.IInProcessMaterial>, displaySinglePall
   return undefined;
 }
 
-const matStyles = withStyles(theme => ({
+const matStyles = createStyles({
   paper: {
     minWidth: "10em",
     padding: "8px",
@@ -143,7 +143,7 @@ const matStyles = withStyles(theme => ({
     width: "30px",
     height: "30px"
   }
-}));
+});
 
 export interface MaterialSummaryProps {
   readonly mat: Readonly<MaterialSummaryAndCompletedData>; // TODO: deep readonly
@@ -153,7 +153,7 @@ export interface MaterialSummaryProps {
   onOpen: (m: Readonly<MaterialSummary>) => void;
 }
 
-const MatSummaryWithStyles = matStyles<MaterialSummaryProps>(props => {
+const MatSummaryWithStyles = withStyles(matStyles)((props: MaterialSummaryProps & WithStyles<typeof matStyles>) => {
   const inspections = props.mat.signaledInspections.join(", ");
   const completed = props.mat.completedInspections || {};
 
@@ -396,7 +396,7 @@ export function MaterialDialog(props: MaterialDialogProps) {
   );
 }
 
-const whiteboardRegionStyle = withStyles(() => ({
+const whiteboardRegionStyle = createStyles({
   container: {
     width: "100%",
     minHeight: "70px"
@@ -428,7 +428,7 @@ const whiteboardRegionStyle = withStyles(() => ({
   borderRight: {
     borderRight: "1px solid rgba(0,0,0,0.12)"
   }
-}));
+});
 
 export interface WhiteboardRegionProps {
   readonly label: string;
@@ -440,45 +440,47 @@ export interface WhiteboardRegionProps {
   readonly onAddMaterial?: () => void;
 }
 
-const WhiteboardRegionWithStyle = whiteboardRegionStyle<WhiteboardRegionProps>(props => {
-  let justifyContent = "space-between";
-  if (props.spaceAround) {
-    justifyContent = "space-around";
-  } else if (props.flexStart) {
-    justifyContent = "flex-start";
-  }
-  let mainClasses = [props.classes.container];
-  if (props.borderLeft) {
-    mainClasses.push(props.classes.borderLeft);
-  }
-  if (props.borderBottom) {
-    mainClasses.push(props.classes.borderBottom);
-  }
-  if (props.borderRight) {
-    mainClasses.push(props.classes.borderRight);
-  }
-  return (
-    <div className={mainClasses.join(" ")}>
-      {props.label !== "" || props.onAddMaterial ? (
-        <div className={props.classes.labelContainer}>
-          <span className={props.classes.label}>{props.label}</span>
-          {props.onAddMaterial ? (
-            <IconButton onClick={props.onAddMaterial} className={props.classes.addButton}>
-              <AddIcon className={props.classes.addButton} />
-            </IconButton>
-          ) : (
-            undefined
-          )}
+const WhiteboardRegionWithStyle = withStyles(whiteboardRegionStyle)(
+  (props: WhiteboardRegionProps & WithStyles<typeof whiteboardRegionStyle> & { children?: React.ReactNode }) => {
+    let justifyContent = "space-between";
+    if (props.spaceAround) {
+      justifyContent = "space-around";
+    } else if (props.flexStart) {
+      justifyContent = "flex-start";
+    }
+    let mainClasses = [props.classes.container];
+    if (props.borderLeft) {
+      mainClasses.push(props.classes.borderLeft);
+    }
+    if (props.borderBottom) {
+      mainClasses.push(props.classes.borderBottom);
+    }
+    if (props.borderRight) {
+      mainClasses.push(props.classes.borderRight);
+    }
+    return (
+      <div className={mainClasses.join(" ")}>
+        {props.label !== "" || props.onAddMaterial ? (
+          <div className={props.classes.labelContainer}>
+            <span className={props.classes.label}>{props.label}</span>
+            {props.onAddMaterial ? (
+              <IconButton onClick={props.onAddMaterial} className={props.classes.addButton}>
+                <AddIcon className={props.classes.addButton} />
+              </IconButton>
+            ) : (
+              undefined
+            )}
+          </div>
+        ) : (
+          undefined
+        )}
+        <div className={props.classes.contentContainer} style={{ justifyContent }}>
+          {props.children}
         </div>
-      ) : (
-        undefined
-      )}
-      <div className={props.classes.contentContainer} style={{ justifyContent }}>
-        {props.children}
       </div>
-    </div>
-  );
-});
+    );
+  }
+);
 
 // decorate doesn't work well with classes yet.
 // https://github.com/Microsoft/TypeScript/issues/4881
