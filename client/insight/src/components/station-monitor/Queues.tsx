@@ -46,6 +46,7 @@ import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
 import TextField from "@material-ui/core/TextField";
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
+import { SortableElement, SortableContainer, SortEnd } from "react-sortable-hoc";
 
 import { LoadStationAndQueueData, selectLoadStationAndQueueProps } from "../../data/load-station";
 import {
@@ -561,7 +562,12 @@ interface QueueProps {
   readonly data: LoadStationAndQueueData;
   openMat: (m: Readonly<MaterialSummary>) => void;
   openAddToQueue: (queueName: string) => void;
+  moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
 }
+
+const SortableMaterial = SortableElement(InProcMaterial);
+
+const SortableWhiteboardRegion = SortableContainer(WhiteboardRegion);
 
 const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof queueStyles>) => {
   let queues = props.data.queues
@@ -596,17 +602,25 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
     <DocumentTitle title="Material Queues - FMS Insight">
       <main data-testid="stationmonitor-queues" className={props.classes.mainScrollable}>
         {cells.map((region, idx) => (
-          <WhiteboardRegion
+          <SortableWhiteboardRegion
             key={idx}
+            axis="x"
             label={region.label}
             borderBottom
             flexStart
             onAddMaterial={region.free ? undefined : () => props.openAddToQueue(region.label)}
+            onSortEnd={(se: SortEnd) =>
+              props.moveMaterialInQueue({
+                materialId: region.material[se.oldIndex].materialID,
+                queue: region.label,
+                queuePosition: se.newIndex
+              })
+            }
           >
             {region.material.map((m, matIdx) => (
-              <InProcMaterial key={matIdx} mat={m} onOpen={props.openMat} />
+              <SortableMaterial key={matIdx} index={matIdx} mat={m} onOpen={props.openMat} />
             ))}
-          </WhiteboardRegion>
+          </SortableWhiteboardRegion>
         ))}
         <ConnectedMaterialDialog />
         <ConnectedChooseSerialOrDirectJobDialog />
@@ -637,6 +651,7 @@ export default connect(
         },
         { type: guiState.ActionType.SetAddMatToQueueName, queue: queueName }
       ] as AppActionBeforeMiddleware,
-    openMat: matDetails.openMaterialDialog
+    openMat: matDetails.openMaterialDialog,
+    moveMaterialInQueue: matDetails.addExistingMaterialToQueue
   }
 )(Queues);
