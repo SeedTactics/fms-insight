@@ -993,11 +993,13 @@ namespace MachineWatchTest
       _jobLog.CreateMaterialID(2, "uniq2", "part2", 22);
       var mat3 = new LogMaterial(3, "uniq3", 3, "part3", 36);
       _jobLog.CreateMaterialID(3, "uniq3", "part3", 36);
+      var mat4 = new LogMaterial(4, "uniq4", 4, "part4", 44);
+      _jobLog.CreateMaterialID(4, "uniq4", "part4", 44);
 
       // add via LogMaterial with position -1
       _jobLog.RecordAddMaterialToQueue(mat1, "AAAA", -1, start)
-          .Should().BeEquivalentTo(new[] { AddToQueueExpectedEntry(mat1, 2, "AAAA", -1, start) });
-      expectedLogs.Add(AddToQueueExpectedEntry(mat1, 2, "AAAA", -1, start));
+          .Should().BeEquivalentTo(new[] { AddToQueueExpectedEntry(mat1, 2, "AAAA", 0, start) });
+      expectedLogs.Add(AddToQueueExpectedEntry(mat1, 2, "AAAA", 0, start));
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
@@ -1006,8 +1008,8 @@ namespace MachineWatchTest
 
       //adding with LogMaterial with position -1 and existing queue
       _jobLog.RecordAddMaterialToQueue(mat2, "AAAA", -1, start.AddMinutes(10))
-          .Should().BeEquivalentTo(new[] { AddToQueueExpectedEntry(mat2, 3, "AAAA", -1, start.AddMinutes(10)) });
-      expectedLogs.Add(AddToQueueExpectedEntry(mat2, 3, "AAAA", -1, start.AddMinutes(10)));
+          .Should().BeEquivalentTo(new[] { AddToQueueExpectedEntry(mat2, 3, "AAAA", 1, start.AddMinutes(10)) });
+      expectedLogs.Add(AddToQueueExpectedEntry(mat2, 3, "AAAA", 1, start.AddMinutes(10)));
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
@@ -1059,31 +1061,63 @@ namespace MachineWatchTest
                     new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 2, Unique = "uniq3", PartName = "part3", NumProcesses = 36}
           });
 
-      //add also removes from queue (rearrange material 1)
-      _jobLog.RecordAddMaterialToQueue(mat1, "AAAA", 2, start.AddMinutes(50))
+      //move item backwards in queue
+      _jobLog.RecordAddMaterialToQueue(mat1, "AAAA", 1, start.AddMinutes(50))
           .Should().BeEquivalentTo(new[] {
                     RemoveFromQueueExpectedEntry(mat1, 7, "AAAA", 0, start.AddMinutes(50)),
-                    AddToQueueExpectedEntry(mat1, 8, "AAAA", 2, start.AddMinutes(50))
+                    AddToQueueExpectedEntry(mat1, 8, "AAAA", 1, start.AddMinutes(50))
           });
       expectedLogs.Add(RemoveFromQueueExpectedEntry(mat1, 7, "AAAA", 0, start.AddMinutes(50)));
-      expectedLogs.Add(AddToQueueExpectedEntry(mat1, 8, "AAAA", 2, start.AddMinutes(50)));
+      expectedLogs.Add(AddToQueueExpectedEntry(mat1, 8, "AAAA", 1, start.AddMinutes(50)));
+
+      _jobLog.GetMaterialInQueue("AAAA")
+          .Should().BeEquivalentTo(new[] {
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartName = "part2", NumProcesses = 22},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 1, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 2, Unique = "uniq3", PartName = "part3", NumProcesses = 36},
+          });
+
+      //move item forwards in queue
+      _jobLog.RecordAddMaterialToQueue(mat3, "AAAA", 1, start.AddMinutes(55))
+          .Should().BeEquivalentTo(new[] {
+                    RemoveFromQueueExpectedEntry(mat3, 9, "AAAA", 2, start.AddMinutes(55)),
+                    AddToQueueExpectedEntry(mat3, 10, "AAAA", 1, start.AddMinutes(55))
+          });
+      expectedLogs.Add(RemoveFromQueueExpectedEntry(mat3, 9, "AAAA", 2, start.AddMinutes(55)));
+      expectedLogs.Add(AddToQueueExpectedEntry(mat3, 10, "AAAA", 1, start.AddMinutes(55)));
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
                     new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartName = "part2", NumProcesses = 22},
                     new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartName = "part3", NumProcesses = 36},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 2, Unique = "uniq1", PartName = "part111", NumProcesses = 19}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 2, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
+          });
+
+      //add large position
+      _jobLog.RecordAddMaterialToQueue(mat4, "AAAA", 500, start.AddMinutes(58))
+          .Should().BeEquivalentTo(new[] {
+                    AddToQueueExpectedEntry(mat4, 11, "AAAA", 3, start.AddMinutes(58))
+          });
+      expectedLogs.Add(AddToQueueExpectedEntry(mat4, 11, "AAAA", 3, start.AddMinutes(58)));
+
+      _jobLog.GetMaterialInQueue("AAAA")
+          .Should().BeEquivalentTo(new[] {
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartName = "part2", NumProcesses = 22},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartName = "part3", NumProcesses = 36},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 2, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 4, Queue = "AAAA", Position = 3, Unique = "uniq4", PartName = "part4", NumProcesses = 44},
           });
 
       //removing from queue with matid
       _jobLog.RecordRemoveMaterialFromAllQueues(mat2.MaterialID, start.AddMinutes(60))
-          .Should().BeEquivalentTo(new[] { RemoveFromQueueExpectedEntry(mat2, 9, "AAAA", 0, start.AddMinutes(60)) });
-      expectedLogs.Add(RemoveFromQueueExpectedEntry(mat2, 9, "AAAA", 0, start.AddMinutes(60)));
+          .Should().BeEquivalentTo(new[] { RemoveFromQueueExpectedEntry(mat2, 12, "AAAA", 0, start.AddMinutes(60)) });
+      expectedLogs.Add(RemoveFromQueueExpectedEntry(mat2, 12, "AAAA", 0, start.AddMinutes(60)));
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
                     new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 0, Unique = "uniq3", PartName = "part3", NumProcesses = 36},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 1, Unique = "uniq1", PartName = "part111", NumProcesses = 19}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 1, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 4, Queue = "AAAA", Position = 2, Unique = "uniq4", PartName = "part4", NumProcesses = 44},
           });
 
 
@@ -1108,9 +1142,9 @@ namespace MachineWatchTest
 
       // add two material into queue 1
       _jobLog.RecordAddMaterialToQueue(mat1, "AAAA", -1, start);
-      expectedLogs.Add(AddToQueueExpectedEntry(mat1, 1, "AAAA", -1, start));
+      expectedLogs.Add(AddToQueueExpectedEntry(mat1, 1, "AAAA", 0, start));
       _jobLog.RecordAddMaterialToQueue(mat2, "AAAA", -1, start);
-      expectedLogs.Add(AddToQueueExpectedEntry(mat2, 2, "AAAA", -1, start));
+      expectedLogs.Add(AddToQueueExpectedEntry(mat2, 2, "AAAA", 1, start));
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
@@ -1146,8 +1180,8 @@ namespace MachineWatchTest
                     "UNLOAD", false, start.AddMinutes(30), "UNLOAD", true,
                     TimeSpan.FromMinutes(52), TimeSpan.FromMinutes(23)),
 
-                AddToQueueExpectedEntry(mat1, 5, "AAAA", -1, start.AddMinutes(30)),
-                AddToQueueExpectedEntry(mat3, 6, "AAAA", -1, start.AddMinutes(30)),
+                AddToQueueExpectedEntry(mat1, 5, "AAAA", 1, start.AddMinutes(30)),
+                AddToQueueExpectedEntry(mat3, 6, "AAAA", 2, start.AddMinutes(30)),
             });
       expectedLogs.AddRange(unloadEndActual);
 

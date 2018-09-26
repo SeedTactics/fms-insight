@@ -72,7 +72,7 @@ namespace MachineWatchTest
       var mat2_2 = new LogMaterial(2, "uuu1", 1, "part1", 2, face: "D");
       var mat3 = new LogMaterial(3, "uuu2", 1, "part2", 1, face: "E");
 
-      _log.GetLogEntries(now, now.AddDays(1)).Should().BeEquivalentTo(new [] {
+      _log.GetLogEntries(now, now.AddDays(1)).Should().BeEquivalentTo(new[] {
         new LogEntry(
           cntr: -1,
           mat: new [] {mat1_1, mat2_1},
@@ -168,7 +168,8 @@ namespace MachineWatchTest
         options.Excluding(x => x.Counter)
       );
 
-      _log.GetMaterialDetails(1).Should().BeEquivalentTo(new MaterialDetails() {
+      _log.GetMaterialDetails(1).Should().BeEquivalentTo(new MaterialDetails()
+      {
         MaterialID = 1,
         JobUnique = "uuu1",
         PartName = "part1",
@@ -176,7 +177,8 @@ namespace MachineWatchTest
         Workorder = "work1",
         Serial = "serial1"
       });
-      _log.GetMaterialDetails(2).Should().BeEquivalentTo(new MaterialDetails() {
+      _log.GetMaterialDetails(2).Should().BeEquivalentTo(new MaterialDetails()
+      {
         MaterialID = 2,
         JobUnique = "uuu1",
         PartName = "part1",
@@ -184,7 +186,8 @@ namespace MachineWatchTest
         Workorder = null,
         Serial = "serial2"
       });
-      _log.GetMaterialDetails(3).Should().BeEquivalentTo(new MaterialDetails() {
+      _log.GetMaterialDetails(3).Should().BeEquivalentTo(new MaterialDetails()
+      {
         MaterialID = 3,
         JobUnique = "uuu2",
         PartName = "part2",
@@ -203,11 +206,11 @@ namespace MachineWatchTest
 
       _log.RecordAddMaterialToQueue(mat, "queue", 5, now.AddHours(2));
 
-      _log.GetMaterialInQueue("queue").Should().BeEquivalentTo(new [] {
+      _log.GetMaterialInQueue("queue").Should().BeEquivalentTo(new[] {
         new JobLogDB.QueuedMaterial() {
           MaterialID = matId,
           Queue = "queue",
-          Position = 5,
+          Position = 0,
           Unique = "uuu5",
           PartName = "part5",
           NumProcesses = 1,

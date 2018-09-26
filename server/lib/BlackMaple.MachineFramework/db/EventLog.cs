@@ -1869,21 +1869,6 @@ namespace BlackMaple.MachineFramework
 
             ret.AddRange(RemoveFromAllQueues(trans, mat, timeUTC));
 
-            var log = new MachineWatchInterface.LogEntry(
-                cntr: -1,
-                mat: new [] {mat},
-                pal: "",
-                ty: MachineWatchInterface.LogType.AddToQueue,
-                locName: queue,
-                locNum: position,
-                prog: "",
-                start: false,
-                endTime: timeUTC,
-                result: "",
-                endOfRoute: false);
-
-            ret.Add(AddLogEntry(trans, log, null, null));
-
             using (var cmd = _connection.CreateCommand()) {
             ((IDbCommand)cmd).Transaction = trans;
 
@@ -1894,7 +1879,9 @@ namespace BlackMaple.MachineFramework
                 cmd.Parameters.Add("p", SqliteType.Integer).Value = position;
                 cmd.ExecuteNonQuery();
 
-                cmd.CommandText = "INSERT INTO queues(MaterialID, Queue, Position) VALUES ($m, $q, $p)";
+                cmd.CommandText =
+                    "INSERT INTO queues(MaterialID, Queue, Position) " +
+                    " VALUES ($m, $q, (SELECT MIN(IFNULL(MAX(Position) + 1, 0), $p) FROM queues WHERE Queue = $q))";
                 cmd.Parameters.Add("m", SqliteType.Integer).Value = mat.MaterialID;
                 cmd.ExecuteNonQuery();
             } else {
@@ -1906,6 +1893,30 @@ namespace BlackMaple.MachineFramework
                 cmd.ExecuteNonQuery();
             }
             }
+
+            int resultingPosition;
+            using (var cmd = _connection.CreateCommand()) {
+                cmd.CommandText = "SELECT Position FROM queues WHERE Queue = $q AND MaterialID = $m";
+                cmd.Parameters.Add("m", SqliteType.Integer).Value = mat.MaterialID;
+                cmd.Parameters.Add("q", SqliteType.Text).Value = queue;
+                resultingPosition = Convert.ToInt32(cmd.ExecuteScalar());
+            }
+
+            var log = new MachineWatchInterface.LogEntry(
+                cntr: -1,
+                mat: new [] {mat},
+                pal: "",
+                ty: MachineWatchInterface.LogType.AddToQueue,
+                locName: queue,
+                locNum: resultingPosition,
+                prog: "",
+                start: false,
+                endTime: timeUTC,
+                result: "",
+                endOfRoute: false);
+
+            ret.Add(AddLogEntry(trans, log, null, null));
+
 
             return ret;
         }
