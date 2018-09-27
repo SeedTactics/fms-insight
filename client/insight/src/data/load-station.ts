@@ -173,7 +173,7 @@ export function selectLoadStationAndQueueProps(
     .Seq(curSt.material)
     .filter(m => m.location.type === api.LocType.InQueue && queueNames.has(m.location.currentQueue || ""))
     .groupBy(m => m.location.currentQueue || "")
-    .map(ms => ms.valueSeq().toArray())
+    .map(ms => ms.valueSeq().sortBy(m => m.location.queuePosition).toArray())
     .toMap();
 
   return {
