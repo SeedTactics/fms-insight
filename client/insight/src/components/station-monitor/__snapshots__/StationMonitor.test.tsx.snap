@@ -2649,75 +2649,6 @@ exports[`renders the load station page: load 1 and queue 1`] = `
                       xmlns="http://www.w3.org/2000/svg"
                     >
                       <path
-                        d="M16.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M26.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M26.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M16.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M6.7 20a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 20a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 30a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M6.7 30a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0"
-                        fill="#464646"
-                      />
-                      <path
-                        d="M6.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M6.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0"
-                        fill="#5998c7"
-                      />
-                      <path
-                        d="M15 15L25 15L25 16.6L20.8 25L15 25ZM35 15L35 25L33.4 25L25 20.8L25 15ZM35 35L25 35L25 33.4L29.2 25L35 25ZM15 35L15 25L16.6 25L25 29.2L25 35Z"
-                        fill="#e3e3e3"
-                      />
-                    </svg>
-                  </div>
-                  <div
-                    class="Component-mainContent-179"
-                  >
-                    <h2
-                      class="MuiTypography-root-209 MuiTypography-title-215"
-                    >
-                      zzz
-                    </h2>
-                    <div>
-                      <small>
-                        Serial: 
-                        MZQGQ
-                      </small>
-                    </div>
-                  </div>
-                  <div
-                    class="Component-rightContent-180"
-                  >
-                    <div>
-                      <div
-                        class="MuiAvatar-root-235 MuiAvatar-colorDefault-236 Component-avatar-181"
-                      >
-                        Q
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <span
-                  class="MuiTouchRipple-root-71"
-                />
-              </button>
-            </div>
-          </div>
-          <div>
-            <div
-              class="MuiPaper-root-182 MuiPaper-elevation4-188 MuiPaper-rounded-183 Component-paper-177"
-            >
-              <button
-                class="MuiButtonBase-root-68"
-                tabindex="0"
-                type="button"
-              >
-                <div
-                  class="Component-container-178"
-                >
-                  <div
-                    style="width: 50px; height: 50px;"
-                  >
-                    <svg
-                      height="50"
-                      preserveAspectRatio="xMidYMid meet"
-                      viewBox="0 0 50 50"
-                      width="50"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
                         d="M20 5L25 10L20 15L15 10ZM35 10L30 15L25 10L30 5ZM30 45L25 40L30 35L35 40ZM15 40L20 35L25 40L20 45ZM10 15L15 20L10 25L5 20ZM45 20L40 25L35 20L40 15ZM40 35L35 30L40 25L45 30ZM5 30L10 25L15 30L10 35Z"
                         fill="#579932"
                       />
@@ -2819,6 +2750,75 @@ exports[`renders the load station page: load 1 and queue 1`] = `
                         class="MuiAvatar-root-235 MuiAvatar-colorDefault-236 Component-avatar-181"
                       >
                         A
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <span
+                  class="MuiTouchRipple-root-71"
+                />
+              </button>
+            </div>
+          </div>
+          <div>
+            <div
+              class="MuiPaper-root-182 MuiPaper-elevation4-188 MuiPaper-rounded-183 Component-paper-177"
+            >
+              <button
+                class="MuiButtonBase-root-68"
+                tabindex="0"
+                type="button"
+              >
+                <div
+                  class="Component-container-178"
+                >
+                  <div
+                    style="width: 50px; height: 50px;"
+                  >
+                    <svg
+                      height="50"
+                      preserveAspectRatio="xMidYMid meet"
+                      viewBox="0 0 50 50"
+                      width="50"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M16.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M26.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M26.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M16.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M6.7 20a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 20a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 30a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M6.7 30a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0"
+                        fill="#464646"
+                      />
+                      <path
+                        d="M6.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M6.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0"
+                        fill="#5998c7"
+                      />
+                      <path
+                        d="M15 15L25 15L25 16.6L20.8 25L15 25ZM35 15L35 25L33.4 25L25 20.8L25 15ZM35 35L25 35L25 33.4L29.2 25L35 25ZM15 35L15 25L16.6 25L25 29.2L25 35Z"
+                        fill="#e3e3e3"
+                      />
+                    </svg>
+                  </div>
+                  <div
+                    class="Component-mainContent-179"
+                  >
+                    <h2
+                      class="MuiTypography-root-209 MuiTypography-title-215"
+                    >
+                      zzz
+                    </h2>
+                    <div>
+                      <small>
+                        Serial: 
+                        MZQGQ
+                      </small>
+                    </div>
+                  </div>
+                  <div
+                    class="Component-rightContent-180"
+                  >
+                    <div>
+                      <div
+                        class="MuiAvatar-root-235 MuiAvatar-colorDefault-236 Component-avatar-181"
+                      >
+                        Q
                       </div>
                     </div>
                   </div>
@@ -3444,78 +3444,6 @@ exports[`renders the queues page: with Queue1 1`] = `
                 xmlns="http://www.w3.org/2000/svg"
               >
                 <path
-                  d="M16.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M26.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M26.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M16.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M6.7 20a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 20a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 30a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M6.7 30a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0"
-                  fill="#464646"
-                />
-                <path
-                  d="M6.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M6.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0"
-                  fill="#5998c7"
-                />
-                <path
-                  d="M15 15L25 15L25 16.6L20.8 25L15 25ZM35 15L35 25L33.4 25L25 20.8L25 15ZM35 35L25 35L25 33.4L29.2 25L35 25ZM15 35L15 25L16.6 25L25 29.2L25 35Z"
-                  fill="#e3e3e3"
-                />
-              </svg>
-            </div>
-            <div
-              class="Component-mainContent-1096"
-            >
-              <h2
-                class="MuiTypography-root-1099 MuiTypography-title-1105"
-              >
-                zzz
-              </h2>
-              <div>
-                <small>
-                  Serial: 
-                  MZQGQ
-                </small>
-              </div>
-              <div>
-                <small>
-                  Load onto face 1 of pal 5
-                </small>
-              </div>
-            </div>
-            <div
-              class="Component-rightContent-1097"
-            >
-              <div>
-                <div
-                  class="MuiAvatar-root-1125 MuiAvatar-colorDefault-1126 Component-avatar-1098"
-                >
-                  Q
-                </div>
-              </div>
-            </div>
-          </div>
-          <span
-            class="MuiTouchRipple-root-962"
-          />
-        </button>
-      </div>
-      <div
-        class="MuiPaper-root-994 MuiPaper-elevation4-1000 MuiPaper-rounded-995 Component-paper-1094"
-      >
-        <button
-          class="MuiButtonBase-root-959"
-          tabindex="0"
-          type="button"
-        >
-          <div
-            class="Component-container-1095"
-          >
-            <div
-              style="width: 50px; height: 50px;"
-            >
-              <svg
-                height="50"
-                preserveAspectRatio="xMidYMid meet"
-                viewBox="0 0 50 50"
-                width="50"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
                   d="M20 5L25 10L20 15L15 10ZM35 10L30 15L25 10L30 5ZM30 45L25 40L30 35L35 40ZM15 40L20 35L25 40L20 45ZM10 15L15 20L10 25L5 20ZM45 20L40 25L35 20L40 15ZM40 35L35 30L40 25L45 30ZM5 30L10 25L15 30L10 35Z"
                   fill="#579932"
                 />
@@ -3615,6 +3543,78 @@ exports[`renders the queues page: with Queue1 1`] = `
                   class="MuiAvatar-root-1125 MuiAvatar-colorDefault-1126 Component-avatar-1098"
                 >
                   A
+                </div>
+              </div>
+            </div>
+          </div>
+          <span
+            class="MuiTouchRipple-root-962"
+          />
+        </button>
+      </div>
+      <div
+        class="MuiPaper-root-994 MuiPaper-elevation4-1000 MuiPaper-rounded-995 Component-paper-1094"
+      >
+        <button
+          class="MuiButtonBase-root-959"
+          tabindex="0"
+          type="button"
+        >
+          <div
+            class="Component-container-1095"
+          >
+            <div
+              style="width: 50px; height: 50px;"
+            >
+              <svg
+                height="50"
+                preserveAspectRatio="xMidYMid meet"
+                viewBox="0 0 50 50"
+                width="50"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M16.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M26.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M26.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M16.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M6.7 20a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 20a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 30a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M6.7 30a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0"
+                  fill="#464646"
+                />
+                <path
+                  d="M6.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M6.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0"
+                  fill="#5998c7"
+                />
+                <path
+                  d="M15 15L25 15L25 16.6L20.8 25L15 25ZM35 15L35 25L33.4 25L25 20.8L25 15ZM35 35L25 35L25 33.4L29.2 25L35 25ZM15 35L15 25L16.6 25L25 29.2L25 35Z"
+                  fill="#e3e3e3"
+                />
+              </svg>
+            </div>
+            <div
+              class="Component-mainContent-1096"
+            >
+              <h2
+                class="MuiTypography-root-1099 MuiTypography-title-1105"
+              >
+                zzz
+              </h2>
+              <div>
+                <small>
+                  Serial: 
+                  MZQGQ
+                </small>
+              </div>
+              <div>
+                <small>
+                  Load onto face 1 of pal 5
+                </small>
+              </div>
+            </div>
+            <div
+              class="Component-rightContent-1097"
+            >
+              <div>
+                <div
+                  class="MuiAvatar-root-1125 MuiAvatar-colorDefault-1126 Component-avatar-1098"
+                >
+                  Q
                 </div>
               </div>
             </div>
