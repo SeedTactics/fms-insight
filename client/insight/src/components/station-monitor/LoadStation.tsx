@@ -43,7 +43,15 @@ import { addSeconds } from "date-fns";
 import { duration } from "moment";
 
 import { LoadStationAndQueueData, selectLoadStationAndQueueProps, PalletData } from "../../data/load-station";
-import { MaterialDialog, InProcMaterial, WhiteboardRegion, MaterialDialogProps, InstructionButton } from "./Material";
+import {
+  MaterialDialog,
+  InProcMaterial,
+  SortableInProcMaterial,
+  WhiteboardRegion,
+  SortableWhiteboardRegion,
+  MaterialDialogProps,
+  InstructionButton
+} from "./Material";
 import * as api from "../../data/api";
 import * as routes from "../../data/routes";
 import * as guiState from "../../data/gui-state";
@@ -56,6 +64,7 @@ import SelectInspTypeDialog from "./SelectInspType";
 import SerialScanner from "./QRScan";
 import { MoveMaterialArrowContainer, MoveMaterialArrowNode } from "./MoveMaterialArrows";
 import { MoveMaterialNodeKindType } from "../../data/move-arrows";
+import { SortEnd } from "react-sortable-hoc";
 
 function stationPalMaterialStatus(mat: Readonly<api.IInProcessMaterial>, dateOfCurrentStatus: Date): JSX.Element {
   const name = mat.partName + "-" + mat.process.toString();
@@ -383,6 +392,7 @@ interface LoadStationProps {
   readonly data: LoadStationAndQueueData;
   readonly dateOfCurrentStatus: Date;
   openMat: (m: Readonly<MaterialSummary>) => void;
+  moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
 }
 
 const LoadStation = withStyles(loadStyles)((props: LoadStationProps & WithStyles<typeof loadStyles>) => {
@@ -438,7 +448,17 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationProps & WithStyles
                         queue: mat.label
                       })}
                 >
-                  <WhiteboardRegion label={mat.label}>
+                  <SortableWhiteboardRegion
+                    label={mat.label}
+                    axis="y"
+                    onSortEnd={(se: SortEnd) =>
+                      props.moveMaterialInQueue({
+                        materialId: mat.material[se.oldIndex].materialID,
+                        queue: mat.label,
+                        queuePosition: se.newIndex
+                      })
+                    }
+                  >
                     {mat.material.map((m, matIdx) => (
                       <MoveMaterialArrowNode
                         key={matIdx}
@@ -447,15 +467,15 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationProps & WithStyles
                           props.data.pallet && m.action.loadOntoPallet === props.data.pallet.pallet ? m.action : null
                         }
                       >
-                        <InProcMaterial
-                          key={matIdx}
+                        <SortableInProcMaterial
+                          index={matIdx}
                           mat={m}
                           onOpen={props.openMat}
                           displaySinglePallet={props.data.pallet ? props.data.pallet.pallet : ""}
                         />
                       </MoveMaterialArrowNode>
                     ))}
-                  </WhiteboardRegion>
+                  </SortableWhiteboardRegion>
                 </MoveMaterialArrowNode>
               ))}
             </div>
@@ -474,7 +494,17 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationProps & WithStyles
                         queue: mat.label
                       })}
                 >
-                  <WhiteboardRegion label={mat.label}>
+                  <SortableWhiteboardRegion
+                    label={mat.label}
+                    axis="y"
+                    onSortEnd={(se: SortEnd) =>
+                      props.moveMaterialInQueue({
+                        materialId: mat.material[se.oldIndex].materialID,
+                        queue: mat.label,
+                        queuePosition: se.newIndex
+                      })
+                    }
+                  >
                     {mat.material.map((m, matIdx) => (
                       <MoveMaterialArrowNode
                         key={matIdx}
@@ -483,14 +513,15 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationProps & WithStyles
                           props.data.pallet && m.action.loadOntoPallet === props.data.pallet.pallet ? m.action : null
                         }
                       >
-                        <InProcMaterial
+                        <SortableInProcMaterial
+                          index={matIdx}
                           mat={m}
                           onOpen={props.openMat}
                           displaySinglePallet={props.data.pallet ? props.data.pallet.pallet : ""}
                         />
                       </MoveMaterialArrowNode>
                     ))}
-                  </WhiteboardRegion>
+                  </SortableWhiteboardRegion>
                 </MoveMaterialArrowNode>
               ))}
             </div>
@@ -525,6 +556,7 @@ export default connect(
     dateOfCurrentStatus: st.Current.current_status.timeOfCurrentStatusUTC
   }),
   {
-    openMat: matDetails.openMaterialDialog
+    openMat: matDetails.openMaterialDialog,
+    moveMaterialInQueue: matDetails.addExistingMaterialToQueue
   }
 )(LoadStation);

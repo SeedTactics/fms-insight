@@ -50,6 +50,7 @@ import DialogTitle from "@material-ui/core/DialogTitle";
 import AddIcon from "@material-ui/icons/AddBox";
 import IconButton from "@material-ui/core/IconButton";
 import { WithStyles, createStyles, withStyles } from "@material-ui/core/styles";
+import { SortableElement, SortableContainer } from "react-sortable-hoc";
 import * as im from "immutable";
 
 import * as api from "../../data/api";
@@ -258,6 +259,8 @@ export class InProcMaterial extends React.PureComponent<InProcMaterialProps> {
     );
   }
 }
+
+export const SortableInProcMaterial = SortableElement(InProcMaterial);
 
 export class MaterialDetailTitle extends React.PureComponent<{
   partName: string;
@@ -489,3 +492,5 @@ export class WhiteboardRegion extends React.PureComponent<WhiteboardRegionProps>
     return <WhiteboardRegionWithStyle {...this.props} />;
   }
 }
+
+export const SortableWhiteboardRegion = SortableContainer(WhiteboardRegion);

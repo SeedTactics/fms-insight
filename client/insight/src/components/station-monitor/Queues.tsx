@@ -46,12 +46,12 @@ import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
 import TextField from "@material-ui/core/TextField";
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
-import { SortableElement, SortableContainer, SortEnd } from "react-sortable-hoc";
+import { SortEnd } from "react-sortable-hoc";
 
 import { LoadStationAndQueueData, selectLoadStationAndQueueProps } from "../../data/load-station";
 import {
-  InProcMaterial,
-  WhiteboardRegion,
+  SortableInProcMaterial,
+  SortableWhiteboardRegion,
   MaterialDetailTitle,
   MaterialDetailContent,
   PartIdenticon
@@ -565,10 +565,6 @@ interface QueueProps {
   moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
 }
 
-const SortableMaterial = SortableElement(InProcMaterial);
-
-const SortableWhiteboardRegion = SortableContainer(WhiteboardRegion);
-
 const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof queueStyles>) => {
   let queues = props.data.queues
     .toSeq()
@@ -604,7 +600,7 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
         {cells.map((region, idx) => (
           <SortableWhiteboardRegion
             key={idx}
-            axis="x"
+            axis="xy"
             label={region.label}
             borderBottom
             flexStart
@@ -618,7 +614,7 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
             }
           >
             {region.material.map((m, matIdx) => (
-              <SortableMaterial key={matIdx} index={matIdx} mat={m} onOpen={props.openMat} />
+              <SortableInProcMaterial key={matIdx} index={matIdx} mat={m} onOpen={props.openMat} />
             ))}
           </SortableWhiteboardRegion>
         ))}
