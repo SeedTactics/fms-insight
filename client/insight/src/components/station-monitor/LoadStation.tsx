@@ -451,6 +451,8 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationProps & WithStyles
                   <SortableWhiteboardRegion
                     label={mat.label}
                     axis="y"
+                    distance={5}
+                    shouldCancelStart={() => false}
                     onSortEnd={(se: SortEnd) =>
                       props.moveMaterialInQueue({
                         materialId: mat.material[se.oldIndex].materialID,
@@ -497,6 +499,8 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationProps & WithStyles
                   <SortableWhiteboardRegion
                     label={mat.label}
                     axis="y"
+                    distance={5}
+                    shouldCancelStart={() => false}
                     onSortEnd={(se: SortEnd) =>
                       props.moveMaterialInQueue({
                         materialId: mat.material[se.oldIndex].materialID,

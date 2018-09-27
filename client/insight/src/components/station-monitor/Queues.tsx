@@ -605,6 +605,8 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
             borderBottom
             flexStart
             onAddMaterial={region.free ? undefined : () => props.openAddToQueue(region.label)}
+            distance={5}
+            shouldCancelStart={() => false}
             onSortEnd={(se: SortEnd) =>
               props.moveMaterialInQueue({
                 materialId: region.material[se.oldIndex].materialID,
