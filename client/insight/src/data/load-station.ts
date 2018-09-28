@@ -120,44 +120,7 @@ export function selectLoadStationAndQueueProps(
   let castings: im.Seq.Indexed<api.IInProcessMaterial> = im.Seq.Indexed();
   let stationStatus: im.Map<string, { pal?: PalletData; queued?: PalletData }> | undefined;
 
-  // load pallet material
-  if (pal !== undefined) {
-    palName = pal.pallet;
-
-    byFace = im
-      .Seq(curSt.material)
-      .filter(m => m.location.type === api.LocType.OnPallet && m.location.pallet === palName)
-      .groupBy(m => m.location.face || 0)
-      .map(ms => ms.valueSeq().toArray())
-      .toMap();
-
-    // add missing blank faces
-    const maxFace = pal.numFaces >= 1 ? pal.numFaces : 1;
-    for (let face = 1; face <= maxFace; face++) {
-      if (!byFace.has(face)) {
-        byFace = byFace.set(face, []);
-      }
-    }
-
-    castings = im
-      .Seq(curSt.material)
-      .filter(
-        m =>
-          m.action.type === api.ActionType.Loading &&
-          m.action.loadOntoPallet === palName &&
-          m.action.processAfterLoad === 1 &&
-          m.location.type === api.LocType.Free
-      );
-  } else {
-    stationStatus = buildPallets(curSt);
-    if (displayFree) {
-      castings = im
-        .Seq(curSt.material)
-        .filter(m => m.action.processAfterLoad === 1 && m.location.type === api.LocType.Free);
-    }
-  }
-
-  // now free and queued material
+  // first free and queued material
   let free: MaterialList | undefined;
   if (displayFree) {
     free = im
@@ -173,8 +136,57 @@ export function selectLoadStationAndQueueProps(
     .Seq(curSt.material)
     .filter(m => m.location.type === api.LocType.InQueue && queueNames.has(m.location.currentQueue || ""))
     .groupBy(m => m.location.currentQueue || "")
-    .map(ms => ms.valueSeq().sortBy(m => m.location.queuePosition).toArray())
+    .map(ms =>
+      ms
+        .valueSeq()
+        .sortBy(m => m.location.queuePosition)
+        .toArray()
+    )
     .toMap();
+
+  // load pallet material
+  if (pal !== undefined) {
+    palName = pal.pallet;
+
+    byFace = im
+      .Seq(curSt.material)
+      .filter(m => m.location.type === api.LocType.OnPallet && m.location.pallet === palName)
+      .groupBy(m => m.location.face || 0)
+      .map(ms => ms.valueSeq().toArray())
+      .toMap();
+
+    castings = im
+      .Seq(curSt.material)
+      .filter(
+        m =>
+          m.action.type === api.ActionType.Loading &&
+          m.action.loadOntoPallet === palName &&
+          m.action.processAfterLoad === 1 &&
+          m.location.type === api.LocType.Free
+      );
+
+    // make sure all face desinations exist
+    queueMat
+      .valueSeq()
+      .flatMap(x => x)
+      .concat(free || [])
+      .concat(castings)
+      .filter(m => m.action.type === api.ActionType.Loading && m.action.loadOntoPallet === palName)
+      .map(m => m.action.loadOntoFace)
+      .toSet()
+      .forEach(face => {
+        if (face !== undefined && !byFace.has(face)) {
+          byFace = byFace.set(face, []);
+        }
+      });
+  } else {
+    stationStatus = buildPallets(curSt);
+    if (displayFree) {
+      castings = im
+        .Seq(curSt.material)
+        .filter(m => m.action.processAfterLoad === 1 && m.location.type === api.LocType.Free);
+    }
+  }
 
   return {
     loadNum,
