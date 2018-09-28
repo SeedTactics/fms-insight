@@ -57,6 +57,7 @@ import * as routes from "../../data/routes";
 import * as guiState from "../../data/gui-state";
 import { Store, connect, mkAC, AppActionBeforeMiddleware } from "../../store/store";
 import * as matDetails from "../../data/material-details";
+import * as currentSt from "../../data/current-status";
 import { MaterialSummary } from "../../data/events";
 import SelectWorkorderDialog from "./SelectWorkorder";
 import SetSerialDialog from "./EnterSerial";
@@ -561,6 +562,14 @@ export default connect(
   }),
   {
     openMat: matDetails.openMaterialDialog,
-    moveMaterialInQueue: matDetails.addExistingMaterialToQueue
+    moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => [
+      {
+        type: currentSt.ActionType.ReorderQueuedMaterial,
+        queue: d.queue,
+        materialId: d.materialId,
+        newIdx: d.queuePosition
+      },
+      matDetails.addExistingMaterialToQueue(d)
+    ]
   }
 )(LoadStation);

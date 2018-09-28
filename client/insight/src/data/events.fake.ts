@@ -31,7 +31,18 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { LogMaterial, ILogEntry, LogType, MaterialProcessActualPath, Stop } from "./api";
+import {
+  LogMaterial,
+  ILogEntry,
+  LogType,
+  LocType,
+  MaterialProcessActualPath,
+  Stop,
+  InProcessMaterial,
+  InProcessMaterialLocation,
+  InProcessMaterialAction,
+  ActionType
+} from "./api";
 import * as faker from "faker";
 import { duration } from "moment";
 import { addSeconds, addMinutes } from "date-fns";
@@ -46,6 +57,30 @@ export function fakeMaterial(part?: string, proc?: number): LogMaterial {
     proc: proc || faker.random.number({ max: 4 }),
     numproc: faker.random.number({ max: 4 }),
     face: "face" + faker.random.alphaNumeric()
+  });
+}
+
+export function fakeInProcMaterial(matId: number, queue?: string, queuePos?: number): InProcessMaterial {
+  return new InProcessMaterial({
+    materialID: matId,
+    jobUnique: "uniq" + faker.random.alphaNumeric(),
+    partName: "part" + faker.random.alphaNumeric(),
+    path: faker.random.number({ max: 100 }),
+    process: faker.random.number({ max: 100 }),
+    signaledInspections: [],
+    location:
+      queue && queuePos
+        ? new InProcessMaterialLocation({
+            type: LocType.InQueue,
+            currentQueue: queue,
+            queuePosition: queuePos
+          })
+        : new InProcessMaterialLocation({
+            type: LocType.Free
+          }),
+    action: new InProcessMaterialAction({
+      type: ActionType.Waiting
+    })
   });
 }
 

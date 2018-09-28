@@ -34,6 +34,7 @@ import * as api from "./api";
 import * as im from "immutable";
 import { Pledge, PledgeStatus, ActionBeforeMiddleware } from "../store/middleware";
 import { JobsBackend } from "./backend";
+import { InProcessMaterial } from "./api";
 
 export interface State {
   readonly loading: boolean;
@@ -56,7 +57,8 @@ export const initial: State = {
 export enum ActionType {
   LoadCurrentStatus = "CurStatus_LoadCurrentStatus",
   SetCurrentStatus = "CurStatus_SetCurrentStatus",
-  ReceiveNewLogEntry = "Events_NewLogEntry"
+  ReceiveNewLogEntry = "Events_NewLogEntry",
+  ReorderQueuedMaterial = "CurStatus_ReorderQueuedMaterial"
 }
 
 export type Action =
@@ -68,7 +70,13 @@ export type Action =
       type: ActionType.SetCurrentStatus;
       st: Readonly<api.ICurrentStatus>;
     }
-  | { type: ActionType.ReceiveNewLogEntry; entry: Readonly<api.ILogEntry> };
+  | { type: ActionType.ReceiveNewLogEntry; entry: Readonly<api.ILogEntry> }
+  | {
+      type: ActionType.ReorderQueuedMaterial;
+      materialId: number;
+      queue: string;
+      newIdx: number;
+    };
 
 type ABF = ActionBeforeMiddleware<Action>;
 
@@ -154,6 +162,53 @@ function process_new_events(entry: Readonly<api.ILogEntry>, s: State): State {
   }
 }
 
+function reorder_queued_mat(
+  queue: string,
+  matId: number,
+  newIdx: number,
+  oldMats: InProcessMaterial[]
+): InProcessMaterial[] {
+  const oldMat = oldMats.find(i => i.materialID === matId);
+  if (
+    !oldMat ||
+    oldMat.location.type !== api.LocType.InQueue ||
+    oldMat.location.currentQueue !== queue ||
+    oldMat.location.queuePosition === newIdx
+  ) {
+    return oldMats;
+  }
+  const oldIdx = oldMat.location.queuePosition;
+  if (oldIdx === undefined) {
+    return oldMats;
+  }
+
+  return oldMats.map(m => {
+    if (m.location.type === api.LocType.InQueue && m.location.currentQueue === queue) {
+      let idx = m.location.queuePosition;
+      if (idx === undefined) {
+        return m;
+      }
+      if (m.materialID === matId) {
+        idx = newIdx;
+      } else {
+        if (idx > oldIdx) {
+          idx -= 1;
+        }
+        if (idx >= newIdx) {
+          idx += 1;
+        }
+      }
+      if (idx !== m.location.queuePosition) {
+        return new InProcessMaterial({
+          ...m,
+          location: { ...m.location, queuePosition: idx }
+        } as api.IInProcessMaterial);
+      }
+    }
+    return m;
+  });
+}
+
 export function reducer(s: State, a: Action): State {
   if (s === undefined) {
     return initial;
@@ -180,6 +235,15 @@ export function reducer(s: State, a: Action): State {
 
     case ActionType.ReceiveNewLogEntry:
       return process_new_events(a.entry, s);
+
+    case ActionType.ReorderQueuedMaterial:
+      return {
+        ...s,
+        current_status: {
+          ...s.current_status,
+          material: reorder_queued_mat(a.queue, a.materialId, a.newIdx, s.current_status.material)
+        }
+      };
 
     default:
       return s;

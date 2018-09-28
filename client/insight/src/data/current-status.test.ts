@@ -39,7 +39,8 @@ import {
   fakeWorkorderAssign,
   fakeInspSignal,
   fakeInspComplete,
-  fakeInspForce
+  fakeInspForce,
+  fakeInProcMaterial
 } from "./events.fake";
 
 it("creates initial state", () => {
@@ -130,4 +131,98 @@ it("ignores other cycles", () => {
   });
 
   expect(st).toBe(statusWithMat);
+});
+
+function adjPos(m: api.InProcessMaterial, newPos: number): api.InProcessMaterial {
+  return new api.InProcessMaterial({
+    ...m,
+    location: {
+      ...m.location,
+      queuePosition: newPos
+    }
+  } as api.IInProcessMaterial);
+}
+
+it("reorders in-process material backwards", () => {
+  const mats = [
+    fakeInProcMaterial(0, "abc", 0),
+    fakeInProcMaterial(1, "abc", 1),
+    fakeInProcMaterial(2, "abc", 2),
+    fakeInProcMaterial(3, "abc", 3),
+    fakeInProcMaterial(4, "abc", 4),
+    fakeInProcMaterial(5, "other", 0),
+    fakeInProcMaterial(6),
+    fakeInProcMaterial(7)
+  ];
+  const initialSt = { ...cs.initial, current_status: { ...cs.initial.current_status, material: mats } };
+  const st = cs.reducer(initialSt, {
+    type: cs.ActionType.ReorderQueuedMaterial,
+    queue: "abc",
+    materialId: 1,
+    newIdx: 3
+  });
+
+  expect(st.current_status.material).toEqual([
+    mats[0],
+    adjPos(mats[1], 3),
+    adjPos(mats[2], 1),
+    adjPos(mats[3], 2),
+    mats[4],
+    mats[5],
+    mats[6],
+    mats[7]
+  ]);
+});
+
+it("reorders in-process material forwards", () => {
+  const mats = [
+    fakeInProcMaterial(0, "abc", 0),
+    fakeInProcMaterial(1, "abc", 1),
+    fakeInProcMaterial(2, "abc", 2),
+    fakeInProcMaterial(3, "abc", 3),
+    fakeInProcMaterial(4, "abc", 4),
+    fakeInProcMaterial(5, "other", 0),
+    fakeInProcMaterial(6),
+    fakeInProcMaterial(7)
+  ];
+  const initialSt = { ...cs.initial, current_status: { ...cs.initial.current_status, material: mats } };
+  const st = cs.reducer(initialSt, {
+    type: cs.ActionType.ReorderQueuedMaterial,
+    queue: "abc",
+    materialId: 3,
+    newIdx: 1
+  });
+
+  expect(st.current_status.material).toEqual([
+    mats[0],
+    adjPos(mats[1], 2),
+    adjPos(mats[2], 3),
+    adjPos(mats[3], 1),
+    mats[4],
+    mats[5],
+    mats[6],
+    mats[7]
+  ]);
+});
+
+it("ignores wrong material queue", () => {
+  const mats = [
+    fakeInProcMaterial(0, "abc", 0),
+    fakeInProcMaterial(1, "abc", 1),
+    fakeInProcMaterial(2, "abc", 2),
+    fakeInProcMaterial(3, "abc", 3),
+    fakeInProcMaterial(4, "abc", 4),
+    fakeInProcMaterial(5, "other", 0),
+    fakeInProcMaterial(6),
+    fakeInProcMaterial(7)
+  ];
+  const initialSt = { ...cs.initial, current_status: { ...cs.initial.current_status, material: mats } };
+  const st = cs.reducer(initialSt, {
+    type: cs.ActionType.ReorderQueuedMaterial,
+    queue: "abc",
+    materialId: 5,
+    newIdx: 1
+  });
+
+  expect(st.current_status.material).toBe(mats);
 });

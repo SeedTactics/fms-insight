@@ -59,6 +59,7 @@ import {
 import * as api from "../../data/api";
 import * as routes from "../../data/routes";
 import * as guiState from "../../data/gui-state";
+import * as currentSt from '../../data/current-status';
 import { Store, connect, AppActionBeforeMiddleware } from "../../store/store";
 import * as matDetails from "../../data/material-details";
 import { MaterialSummary } from "../../data/events";
@@ -650,6 +651,14 @@ export default connect(
         { type: guiState.ActionType.SetAddMatToQueueName, queue: queueName }
       ] as AppActionBeforeMiddleware,
     openMat: matDetails.openMaterialDialog,
-    moveMaterialInQueue: matDetails.addExistingMaterialToQueue
+    moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => [
+      {
+        type: currentSt.ActionType.ReorderQueuedMaterial,
+        queue: d.queue,
+        materialId: d.materialId,
+        newIdx: d.queuePosition
+      },
+      matDetails.addExistingMaterialToQueue(d),
+    ],
   }
 )(Queues);
