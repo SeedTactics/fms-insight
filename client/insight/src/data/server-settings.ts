@@ -31,12 +31,15 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import { User, UserManager } from "oidc-client";
 import * as api from "./api";
 import { ServerBackend, setOtherLogBackends } from "./backend";
 import { Pledge, PledgeStatus, ActionBeforeMiddleware } from "../store/middleware";
 
 export enum ActionType {
-  Load = "ServerSettings_Load"
+  Load = "ServerSettings_Load",
+  Login = "ServerSettings_Login",
+  Logout = "ServerSettings_Logout"
 }
 
 export interface LatestInstaller {
@@ -47,17 +50,24 @@ export interface LatestInstaller {
 interface LoadReturn {
   readonly fmsInfo: Readonly<api.IFMSInfo>;
   readonly latestVersion?: LatestInstaller;
+  readonly user?: User;
 }
 
-export type Action = { type: ActionType.Load; pledge: Pledge<LoadReturn> };
+export type Action =
+  | { type: ActionType.Load; pledge: Pledge<LoadReturn> }
+  | { type: ActionType.Login }
+  | { type: ActionType.Logout };
 
 export interface State {
   readonly fmsInfo?: Readonly<api.IFMSInfo>;
   readonly latestInstaller?: LatestInstaller;
   readonly loadError?: Error;
+  readonly user?: User;
 }
 
 export const initial: State = {};
+
+let userManager: UserManager | undefined;
 
 async function loadInfo(): Promise<LoadReturn> {
   const fmsInfo = await ServerBackend.fMSInformation();
@@ -86,7 +96,22 @@ async function loadInfo(): Promise<LoadReturn> {
     }
   }
 
-  return { fmsInfo, latestVersion };
+  let user: User | undefined;
+  if (fmsInfo.openIDConnectAuthority && fmsInfo.openIDConnectClientId) {
+    userManager = new UserManager({
+      authority: fmsInfo.openIDConnectAuthority,
+      client_id: fmsInfo.openIDConnectClientId,
+      redirect_uri: window.location.protocol + "//" + window.location.host + "/",
+      automaticSilentRenew: true
+    });
+    user = await userManager.getUser();
+    if (!user) {
+      user = await userManager.signinRedirectCallback();
+      window.history.replaceState({}, "", "/");
+    }
+  }
+
+  return { fmsInfo, latestVersion, user };
 }
 
 export function loadServerSettings(): ActionBeforeMiddleware<Action> {
@@ -108,13 +133,26 @@ export function reducer(s: State, a: Action): State {
         case PledgeStatus.Completed:
           return {
             fmsInfo: a.pledge.result.fmsInfo,
-            latestInstaller: a.pledge.result.latestVersion
+            latestInstaller: a.pledge.result.latestVersion,
+            user: a.pledge.result.user
           };
         case PledgeStatus.Error:
           return { ...s, loadError: a.pledge.error };
         default:
           return s;
       }
+
+    case ActionType.Login:
+      if (userManager && !s.user) {
+        userManager.signinRedirect();
+      }
+      return s;
+
+    case ActionType.Logout:
+      if (userManager && s.user) {
+        userManager.signoutRedirect();
+      }
+      return s;
 
     default:
       return s;

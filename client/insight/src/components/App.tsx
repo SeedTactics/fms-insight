@@ -38,8 +38,11 @@ import Typography from "@material-ui/core/Typography";
 import Toolbar from "@material-ui/core/Toolbar";
 import Hidden from "@material-ui/core/Hidden";
 import HelpOutline from "@material-ui/icons/HelpOutline";
+import ExitToApp from "@material-ui/icons/ExitToApp";
 import IconButton from "@material-ui/core/IconButton";
 import Tooltip from "@material-ui/core/Tooltip";
+import CircularProgress from "@material-ui/core/CircularProgress";
+import { User } from "oidc-client";
 
 import Dashboard from "./dashboard/Dashboard";
 import CostPerPiece from "./cost-per-piece/CostPerPiece";
@@ -48,11 +51,12 @@ import StationMonitor from "./station-monitor/StationMonitor";
 import DataExport from "./data-export/DataExport";
 import LoadingIcon from "./LoadingIcon";
 import * as routes from "../data/routes";
-import { Store, connect } from "../store/store";
+import { Store, connect, mkAC } from "../store/store";
 import * as api from "../data/api";
-import { LatestInstaller } from "../data/server-settings";
+import * as serverSettings from "../data/server-settings";
 import logo from "../seedtactics-logo.svg";
 import { DemoMode } from "../data/backend";
+import Button from "@material-ui/core/Button";
 
 const tabsStyle = {
   alignSelf: "flex-end" as "flex-end",
@@ -70,8 +74,11 @@ enum TabType {
 interface HeaderProps {
   routeState: routes.State;
   fmsInfo: Readonly<api.IFMSInfo> | null;
-  latestVersion: LatestInstaller | null;
+  latestVersion: serverSettings.LatestInstaller | null;
+  showTabs: boolean;
   setRoute: (arg: { ty: TabType; curSt: routes.State }) => void;
+  showLogout: boolean;
+  onLogout: () => void;
 }
 
 function Header(p: HeaderProps) {
@@ -123,6 +130,14 @@ function Header(p: HeaderProps) {
     </Tooltip>
   );
 
+  const LogoutButton = () => (
+    <Tooltip title="Logout">
+      <IconButton aria-label="Logout" onClick={p.onLogout}>
+        <ExitToApp />
+      </IconButton>
+    </Tooltip>
+  );
+
   let tooltip: JSX.Element | string = "";
   if (p.fmsInfo && p.latestVersion) {
     tooltip = (
@@ -151,9 +166,10 @@ function Header(p: HeaderProps) {
         <Typography variant="title" style={{ marginRight: "2em" }}>
           Insight
         </Typography>
-        {tabs(false)}
+        {p.showTabs ? tabs(false) : undefined}
         <LoadingIcon />
         <HelpButton />
+        {p.showLogout ? <LogoutButton /> : undefined}
       </Toolbar>
     </AppBar>
   );
@@ -168,8 +184,9 @@ function Header(p: HeaderProps) {
         <div style={{ flexGrow: 1 }} />
         <LoadingIcon />
         <HelpButton />
+        {p.showLogout ? <LogoutButton /> : undefined}
       </Toolbar>
-      {tabs(true)}
+      {p.showTabs ? tabs(true) : undefined}
     </AppBar>
   );
 
@@ -184,42 +201,67 @@ function Header(p: HeaderProps) {
 interface AppProps {
   route: routes.State;
   fmsInfo: Readonly<api.IFMSInfo> | null;
-  latestVersion: LatestInstaller | null;
+  user: User | null;
+  latestVersion: serverSettings.LatestInstaller | null;
   setRoute: (arg: { ty: TabType; curSt: routes.State }) => void;
+  onLogin: () => void;
+  onLogout: () => void;
 }
 
 class App extends React.PureComponent<AppProps> {
   render() {
     let page: JSX.Element;
-    switch (this.props.route.current) {
-      case routes.RouteLocation.CostPerPiece:
-        page = <CostPerPiece />;
-        break;
-      case routes.RouteLocation.Efficiency:
-        page = <Efficiency />;
-        break;
-      case routes.RouteLocation.LoadMonitor:
-        page = <StationMonitor monitor_type={routes.StationMonitorType.LoadUnload} />;
-        break;
-      case routes.RouteLocation.InspectionMonitor:
-        page = <StationMonitor monitor_type={routes.StationMonitorType.Inspection} />;
-        break;
-      case routes.RouteLocation.WashMonitor:
-        page = <StationMonitor monitor_type={routes.StationMonitorType.Wash} />;
-        break;
-      case routes.RouteLocation.Queues:
-        page = <StationMonitor monitor_type={routes.StationMonitorType.Queues} />;
-        break;
-      case routes.RouteLocation.AllMaterial:
-        page = <StationMonitor monitor_type={routes.StationMonitorType.AllMaterial} />;
-        break;
-      case routes.RouteLocation.DataExport:
-        page = <DataExport />;
-        break;
-      case routes.RouteLocation.Dashboard:
-      default:
-        page = <Dashboard />;
-        break;
+    let showTabs: boolean = true;
+    let showLogout: boolean = !!this.props.user;
+    if (this.props.fmsInfo && (!this.props.fmsInfo.openIDConnectAuthority || this.props.user)) {
+      switch (this.props.route.current) {
+        case routes.RouteLocation.CostPerPiece:
+          page = <CostPerPiece />;
+          break;
+        case routes.RouteLocation.Efficiency:
+          page = <Efficiency />;
+          break;
+        case routes.RouteLocation.LoadMonitor:
+          page = <StationMonitor monitor_type={routes.StationMonitorType.LoadUnload} />;
+          break;
+        case routes.RouteLocation.InspectionMonitor:
+          page = <StationMonitor monitor_type={routes.StationMonitorType.Inspection} />;
+          break;
+        case routes.RouteLocation.WashMonitor:
+          page = <StationMonitor monitor_type={routes.StationMonitorType.Wash} />;
+          break;
+        case routes.RouteLocation.Queues:
+          page = <StationMonitor monitor_type={routes.StationMonitorType.Queues} />;
+          break;
+        case routes.RouteLocation.AllMaterial:
+          page = <StationMonitor monitor_type={routes.StationMonitorType.AllMaterial} />;
+          break;
+        case routes.RouteLocation.DataExport:
+          page = <DataExport />;
+          break;
+        case routes.RouteLocation.Dashboard:
+        default:
+          page = <Dashboard />;
+          break;
+      }
+    } else if (this.props.fmsInfo && this.props.fmsInfo.openIDConnectAuthority) {
+      page = (
+        <div style={{ textAlign: "center", marginTop: "4em" }}>
+          <h3>Please Login</h3>
+          <Button variant="contained" color="primary" onClick={this.props.onLogin}>
+            Login
+          </Button>
+        </div>
+      );
+      showTabs = false;
+    } else {
+      page = (
+        <div style={{ textAlign: "center", marginTop: "4em" }}>
+          <CircularProgress />
+          <p>Loading</p>
+        </div>
+      );
+      showTabs = false;
     }
     return (
       <div id="App">
@@ -227,7 +269,10 @@ class App extends React.PureComponent<AppProps> {
           routeState={this.props.route}
           fmsInfo={this.props.fmsInfo}
           latestVersion={this.props.latestVersion}
+          showTabs={showTabs}
+          showLogout={showLogout}
           setRoute={this.props.setRoute}
+          onLogout={this.props.onLogout}
         />
         {page}
       </div>
@@ -239,6 +284,7 @@ export default connect(
   (s: Store) => ({
     route: s.Route,
     fmsInfo: s.ServerSettings.fmsInfo || null,
+    user: s.ServerSettings.user || null,
     latestVersion: s.ServerSettings.latestInstaller || null
   }),
   {
@@ -255,6 +301,8 @@ export default connect(
         case TabType.DataExport:
           return { type: routes.RouteLocation.DataExport };
       }
-    }
+    },
+    onLogin: mkAC(serverSettings.ActionType.Login),
+    onLogout: mkAC(serverSettings.ActionType.Logout)
   }
 )(App);

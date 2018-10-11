@@ -40,6 +40,7 @@ import { differenceInSeconds, addDays } from "date-fns";
 import { mockComponent } from "../test-util";
 import { initStore } from "../store/store";
 import { loadMockData } from "../mock-data/load";
+import * as serverSettings from "../data/server-settings";
 
 jest.mock("./cost-per-piece/CostPerPiece", () => ({
   default: mockComponent("CostPerPiece")
@@ -58,9 +59,28 @@ jest.mock("./data-export/DataExport", () => ({
 }));
 
 import App from "./App";
+import { PledgeStatus } from "../store/middleware";
 
 it("renders the app shell", async () => {
   const store = initStore(true);
+  store.dispatch({
+    type: serverSettings.ActionType.Load,
+    pledge: {
+      status: PledgeStatus.Completed,
+      result: {
+        fmsInfo: {
+          name: "test",
+          version: "1.2.2",
+          requireScanAtWash: false,
+          requireWorkorderBeforeAllowWashComplete: false
+        },
+        latestVersion: {
+          version: "1.2.3",
+          date: new Date(Date.UTC(2018, 7, 6, 13, 32, 0))
+        }
+      }
+    }
+  });
 
   const result = render(
     <store.Provider>
