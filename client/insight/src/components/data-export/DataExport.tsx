@@ -97,7 +97,7 @@ class CSVLogExport extends React.PureComponent<{}, CSVLogExportState> {
           </Grid>
         </CardContent>
         <CardActions>
-          <Button variant="raised" color="primary" href={"/api/v1/log/events.csv?" + startEndQuery}>
+          <Button variant="contained" color="primary" href={"/api/v1/log/events.csv?" + startEndQuery}>
             Export to CSV
           </Button>
         </CardActions>
@@ -151,7 +151,7 @@ class CSVWorkorderExport extends React.PureComponent<{}, CSVWorkorderExportState
         </CardContent>
         <CardActions>
           <Button
-            variant="raised"
+            variant="contained"
             color="primary"
             disabled={!this.state.exportWorkorder || this.state.exportWorkorder === ""}
             href={"/api/v1/log/workorders.csv?" + startEndQuery}

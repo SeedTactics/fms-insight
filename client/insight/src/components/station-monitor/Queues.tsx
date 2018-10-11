@@ -59,7 +59,7 @@ import {
 import * as api from "../../data/api";
 import * as routes from "../../data/routes";
 import * as guiState from "../../data/gui-state";
-import * as currentSt from '../../data/current-status';
+import * as currentSt from "../../data/current-status";
 import { Store, connect, AppActionBeforeMiddleware } from "../../store/store";
 import * as matDetails from "../../data/material-details";
 import { MaterialSummary } from "../../data/events";
@@ -504,7 +504,7 @@ class ChooseSerialOrDirectJob extends React.PureComponent<ChooseSerialOrDirectJo
               </div>
             </div>
             <div style={{ paddingLeft: "8px" }}>
-              <Button variant="raised" color="secondary" onClick={this.props.selectJobWithoutSerial}>
+              <Button variant="contained" color="secondary" onClick={this.props.selectJobWithoutSerial}>
                 Manually Select Job
               </Button>
             </div>
@@ -658,7 +658,7 @@ export default connect(
         materialId: d.materialId,
         newIdx: d.queuePosition
       },
-      matDetails.addExistingMaterialToQueue(d),
-    ],
+      matDetails.addExistingMaterialToQueue(d)
+    ]
   }
 )(Queues);
