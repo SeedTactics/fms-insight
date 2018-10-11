@@ -35,6 +35,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using BlackMaple.MachineWatchInterface;
 using Microsoft.AspNetCore.Cors;
 
@@ -62,7 +63,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [DataMember(IsRequired = true)] public TimeSpan Active { get; set; }
   }
 
-  [Route("api/v1/[controller]")]
+  [Route("api/v1/[controller]"), Authorize]
   public class logController : ControllerBase
   {
     private ILogDatabase _server;

@@ -40,6 +40,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -144,6 +145,16 @@ namespace BlackMaple.MachineFramework
             options.SerializerSettings.ConstructorHandling = Newtonsoft.Json.ConstructorHandling.AllowNonPublicDefaultConstructor;
           });
 
+      if (!string.IsNullOrEmpty(Program.ServerSettings.OpenIDConnectAuthority) && !string.IsNullOrEmpty(Program.ServerSettings.OpenIDConnectAudience))
+      {
+        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
+        {
+          options.Authority = Program.ServerSettings.OpenIDConnectAuthority;
+          options.Audience = Program.ServerSettings.OpenIDConnectAudience;
+        });
+      }
+
     }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -157,6 +168,10 @@ namespace BlackMaple.MachineFramework
       app.UseResponseCompression();
       app.UseCors("AllowOtherLogServers");
       app.UseMiddleware(typeof(ErrorHandlingMiddleware));
+      if (!string.IsNullOrEmpty(Program.ServerSettings.OpenIDConnectAuthority) && !string.IsNullOrEmpty(Program.ServerSettings.OpenIDConnectAudience))
+      {
+        app.UseAuthentication();
+      }
       app.UseMvc();
 
       // https://github.com/aspnet/Home/issues/2442

@@ -35,6 +35,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using BlackMaple.MachineWatchInterface;
 using System.Runtime.Serialization;
 
@@ -48,6 +49,8 @@ namespace BlackMaple.MachineFramework.Controllers
     [DataMember] public bool RequireScanAtWash { get; set; }
     [DataMember] public bool RequireWorkorderBeforeAllowWashComplete { get; set; }
     [DataMember] public IReadOnlyList<string> AdditionalLogServers { get; set; }
+    [DataMember] public string OpenIDConnectAuthority { get; set; }
+    [DataMember] public string OpenIDConnectClientId { get; set; }
   }
 
   [Route("api/v1/[controller]")]
@@ -72,17 +75,19 @@ namespace BlackMaple.MachineFramework.Controllers
         Version = info.Version,
         RequireScanAtWash = Program.FMSSettings.RequireScanAtWash,
         RequireWorkorderBeforeAllowWashComplete = Program.FMSSettings.RequireWorkorderBeforeAllowWashComplete,
-        AdditionalLogServers = Program.FMSSettings.AdditionalLogServers
+        AdditionalLogServers = Program.FMSSettings.AdditionalLogServers,
+        OpenIDConnectAuthority = Program.ServerSettings.OpenIDConnectAuthority,
+        OpenIDConnectClientId = Program.ServerSettings.OpenIDConnectClientId
       };
     }
 
-    [HttpGet("settings/{id}")]
+    [HttpGet("settings/{id}"), Authorize]
     public string GetSettings(string id)
     {
       return _settings.GetSettings(id);
     }
 
-    [HttpPut("settings/{id}")]
+    [HttpPut("settings/{id}"), Authorize]
     public void SetSetting(string id, [FromBody] string setting)
     {
       _settings.SetSettings(id, setting);
@@ -102,6 +107,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpGet("find-instructions/{part}")]
     [ProducesResponseType(302)]
     [ProducesResponseType(404)]
+    [Authorize]
     public IActionResult FindInstructions(string part, [FromQuery] string type, [FromQuery] int? process = null, [FromQuery] long? materialID = null)
     {
       try
