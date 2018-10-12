@@ -102,7 +102,8 @@ async function loadInfo(): Promise<LoadReturn> {
       authority: fmsInfo.openIDConnectAuthority,
       client_id: fmsInfo.openIDConnectClientId,
       redirect_uri: window.location.protocol + "//" + window.location.host + "/",
-      automaticSilentRenew: true
+      automaticSilentRenew: true,
+      scope: "openid profile"
     });
     user = await userManager.getUser();
     if (!user) {
@@ -111,6 +112,7 @@ async function loadInfo(): Promise<LoadReturn> {
     }
     if (user) {
       setUserToken(user);
+      localStorage.setItem("current-operator", user.profile.name || user.profile.sub);
     }
   }
 

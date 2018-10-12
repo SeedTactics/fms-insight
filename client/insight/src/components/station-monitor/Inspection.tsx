@@ -146,7 +146,9 @@ const ConnectedInspDialog = connect(
   st => ({
     display_material: st.MaterialDetails.material,
     focusInspectionType: st.Route.selected_insp_type || "",
-    operator: st.Operators.current
+    operator: st.ServerSettings.user
+      ? st.ServerSettings.user.profile.name || st.ServerSettings.user.profile.sub
+      : st.Operators.current
   }),
   {
     onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),

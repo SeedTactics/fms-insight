@@ -123,7 +123,9 @@ function WashDialog(props: WashDialogProps) {
 const ConnectedWashDialog = connect(
   st => ({
     display_material: st.MaterialDetails.material,
-    operator: st.Operators.current,
+    operator: st.ServerSettings.user
+      ? st.ServerSettings.user.profile.name || st.ServerSettings.user.profile.sub
+      : st.Operators.current,
     fmsInfo: st.ServerSettings.fmsInfo
   }),
   {

@@ -49,6 +49,7 @@ import DeleteIcon from "@material-ui/icons/Delete";
 import Typography from "@material-ui/core/Typography";
 import CameraAlt from "@material-ui/icons/CameraAlt";
 import { Tooltip } from "@material-ui/core";
+import { User } from "oidc-client";
 
 import * as routes from "../../data/routes";
 import { Store, connect, DispatchAction, mkAC } from "../../store/store";
@@ -142,6 +143,7 @@ interface StationToolbarProps {
   readonly insp_types: Set<string>;
   readonly operators: Set<string>;
   readonly currentOperator: string | null;
+  readonly currentUser: User | null;
 
   readonly displayLoadStation: (num: number, queues: ReadonlyArray<string>, freeMaterial: boolean) => void;
   readonly displayInspection: (type: string | undefined) => void;
@@ -389,12 +391,16 @@ function StationToolbar(props: StationToolbarProps) {
         )}
       </div>
       <div>
-        <OperatorSelect
-          operators={props.operators}
-          currentOperator={props.currentOperator}
-          setOperator={props.setOperator}
-          removeOperator={props.removeOperator}
-        />
+        {props.currentUser ? (
+          <div>{props.currentUser.profile.name || props.currentUser.profile.sub}</div>
+        ) : (
+          <OperatorSelect
+            operators={props.operators}
+            currentOperator={props.currentOperator}
+            setOperator={props.setOperator}
+            removeOperator={props.removeOperator}
+          />
+        )}
       </div>
     </nav>
   );
@@ -406,7 +412,8 @@ export default connect(
     queues: st.Current.current_status.queues,
     insp_types: st.Events.last30.mat_summary.inspTypes,
     operators: st.Operators.operators,
-    currentOperator: st.Operators.current || null
+    currentOperator: st.Operators.current || null,
+    currentUser: st.ServerSettings.user || null
   }),
   {
     displayLoadStation: routes.displayLoadStation,
