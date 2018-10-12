@@ -36,6 +36,7 @@ import * as events from "../data/events";
 import * as current from "../data/current-status";
 import { LogEntry, NewJobs, CurrentStatus } from "../data/api";
 import { BackendHost } from "../data/backend";
+import { User } from "oidc-client";
 
 export interface State {
   websocket_reconnecting: boolean;
@@ -68,8 +69,21 @@ export function reducer(s: State, a: Action): State {
 }
 
 // tslint:disable-next-line:no-any
-export function openWebsocket(d: (a: any) => void, getEvtState: () => events.State) {
-  d({ type: ActionType.WebsocketClose }); // set initial loading spinner
+let storeDispatch: ((a: any) => void) | undefined;
+let getEvtState: (() => events.State) | undefined;
+
+// tslint:disable-next-line:no-any
+export function configureWebsocket(d: (a: any) => void, ges: () => events.State) {
+  storeDispatch = d;
+  getEvtState = ges;
+}
+
+export function openWebsocket(user: User | undefined) {
+  if (!storeDispatch || !getEvtState) {
+    return;
+  }
+
+  storeDispatch({ type: ActionType.WebsocketClose }); // set initial loading spinner
   const loc = window.location;
   let uri: string;
   if (loc.protocol === "https:") {
@@ -79,34 +93,47 @@ export function openWebsocket(d: (a: any) => void, getEvtState: () => events.Sta
   }
   uri += "//" + (BackendHost || loc.host) + "/api/v1/events";
 
+  if (user) {
+    uri += "?token=" + encodeURIComponent(user.access_token || user.id_token);
+  }
+
   const websocket = new ReconnectingWebSocket(uri);
   websocket.onopen = () => {
-    d({ type: ActionType.WebsocketOpen });
+    if (!storeDispatch || !getEvtState) {
+      return;
+    }
+    storeDispatch({ type: ActionType.WebsocketOpen });
 
     const st = getEvtState();
     if (st.last30.latest_log_counter !== undefined) {
-      d(events.refreshLogEntries(st.last30.latest_log_counter));
+      storeDispatch(events.refreshLogEntries(st.last30.latest_log_counter));
     } else {
-      d(events.loadLast30Days());
+      storeDispatch(events.loadLast30Days());
     }
 
-    d(current.loadCurrentStatus());
+    storeDispatch(current.loadCurrentStatus());
   };
   websocket.onclose = () => {
-    d({ type: ActionType.WebsocketClose });
+    if (!storeDispatch) {
+      return;
+    }
+    storeDispatch({ type: ActionType.WebsocketClose });
   };
   websocket.onmessage = evt => {
+    if (!storeDispatch) {
+      return;
+    }
     var json = JSON.parse(evt.data);
     if (json.LogEntry) {
       const entry = LogEntry.fromJS(json.LogEntry);
-      d(events.receiveNewEvents([entry]));
-      d(current.receiveNewLogEntry(entry));
+      storeDispatch(events.receiveNewEvents([entry]));
+      storeDispatch(current.receiveNewLogEntry(entry));
     } else if (json.NewJobs) {
       const newJobs = NewJobs.fromJS(json.NewJobs);
-      d(events.receiveNewJobs(newJobs));
+      storeDispatch(events.receiveNewJobs(newJobs));
     } else if (json.NewCurrentStatus) {
       const status = CurrentStatus.fromJS(json.NewCurrentStatus);
-      d(current.setCurrentStatus(status));
+      storeDispatch(current.setCurrentStatus(status));
     }
   };
   // websocket.open();

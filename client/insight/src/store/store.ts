@@ -103,7 +103,7 @@ export function initStore(demo: boolean) {
     store.dispatch(events.loadLast30Days());
     store.dispatch(currentStatus.loadCurrentStatus());
   } else {
-    websocket.openWebsocket(a => store.dispatch(a), () => store.getState().Events);
+    websocket.configureWebsocket(a => store.dispatch(a), () => store.getState().Events);
   }
   initBarcodeListener(store.dispatch);
 

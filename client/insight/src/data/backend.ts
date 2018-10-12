@@ -86,12 +86,12 @@ export function setOtherLogBackends(servers: ReadonlyArray<string>) {
 }
 
 export function setUserToken(u: User) {
-  const token = u.access_token;
+  const token = u.access_token || u.id_token;
   function fetch(url: RequestInfo, init?: RequestInit) {
     return window.fetch(
       url,
       init
-        ? { ...init, headers: { ...init.headers, Authroization: "Bearer " + token } }
+        ? { ...init, headers: { ...init.headers, Authorization: "Bearer " + token } }
         : { headers: { Authorization: "Bearer " + token } }
     );
   }

@@ -166,7 +166,7 @@ function Header(p: HeaderProps) {
         <Typography variant="title" style={{ marginRight: "2em" }}>
           Insight
         </Typography>
-        {p.showTabs ? tabs(false) : undefined}
+        {p.showTabs ? tabs(false) : <div style={{ flexGrow: 1 }} />}
         <LoadingIcon />
         <HelpButton />
         {p.showLogout ? <LogoutButton /> : undefined}

@@ -35,6 +35,7 @@ import { User, UserManager } from "oidc-client";
 import * as api from "./api";
 import { ServerBackend, setOtherLogBackends, setUserToken } from "./backend";
 import { Pledge, PledgeStatus, ActionBeforeMiddleware } from "../store/middleware";
+import { openWebsocket } from "../store/websocket";
 
 export enum ActionType {
   Load = "ServerSettings_Load",
@@ -79,7 +80,7 @@ async function loadInfo(): Promise<LoadReturn> {
   let url: string | undefined;
   let latestVersion: LatestInstaller | undefined;
   if (fmsInfo.name === "mock") {
-    url = "https://fms-insight.seedtactics.com/installers/Mazak-latest.json";
+    url = undefined;
   } else if (fmsInfo.name === "SimulationLab") {
     url = undefined;
   } else if (fmsInfo.name) {
@@ -102,18 +103,26 @@ async function loadInfo(): Promise<LoadReturn> {
       authority: fmsInfo.openIDConnectAuthority,
       client_id: fmsInfo.openIDConnectClientId,
       redirect_uri: window.location.protocol + "//" + window.location.host + "/",
+      post_logout_redirect_uri: window.location.protocol + "//" + window.location.host + "/",
       automaticSilentRenew: true,
       scope: "openid profile"
     });
     user = await userManager.getUser();
     if (!user) {
-      user = await userManager.signinRedirectCallback();
+      try {
+        user = await userManager.signinRedirectCallback();
+      } catch {
+        user = undefined;
+      }
       window.history.replaceState({}, "", "/");
     }
     if (user) {
       setUserToken(user);
       localStorage.setItem("current-operator", user.profile.name || user.profile.sub);
+      openWebsocket(user);
     }
+  } else {
+    openWebsocket(user);
   }
 
   return { fmsInfo, latestVersion, user };
