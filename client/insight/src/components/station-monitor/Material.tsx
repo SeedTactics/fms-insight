@@ -188,7 +188,7 @@ const MatSummaryWithStyles = withStyles(matStyles)((props: MaterialSummaryProps 
         <div className={props.classes.container}>
           <PartIdenticon part={props.mat.partName} />
           <div className={props.classes.mainContent}>
-            <Typography variant="title">{props.mat.partName}</Typography>
+            <Typography variant="h6">{props.mat.partName}</Typography>
             <div>
               <small>Serial: {props.mat.serial ? props.mat.serial : "none"}</small>
             </div>
@@ -282,7 +282,7 @@ export class MaterialDetailTitle extends React.PureComponent<{
       <div style={{ display: "flex", textAlign: "left" }}>
         {this.props.partName === "" ? <SearchIcon /> : <PartIdenticon part={this.props.partName} />}
         <div style={{ marginLeft: "8px", flexGrow: 1 }}>
-          <Typography variant="title">{title}</Typography>
+          <Typography variant="h6">{title}</Typography>
         </div>
       </div>
     );

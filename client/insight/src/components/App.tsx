@@ -163,7 +163,7 @@ function Header(p: HeaderProps) {
             <img src={logo} alt="Logo" style={{ height: "30px", marginRight: "1em" }} />
           </Tooltip>
         )}
-        <Typography variant="title" style={{ marginRight: "2em" }}>
+        <Typography variant="h6" style={{ marginRight: "2em" }}>
           Insight
         </Typography>
         {p.showTabs ? tabs(false) : <div style={{ flexGrow: 1 }} />}
@@ -180,7 +180,7 @@ function Header(p: HeaderProps) {
         <Tooltip title={tooltip}>
           <img src="/seedtactics-logo.svg" alt="Logo" style={{ height: "25px", marginRight: "4px" }} />
         </Tooltip>
-        <Typography variant="title">Insight</Typography>
+        <Typography variant="h6">Insight</Typography>
         <div style={{ flexGrow: 1 }} />
         <LoadingIcon />
         <HelpButton />

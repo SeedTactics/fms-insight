@@ -56,11 +56,11 @@ exports[`renders the all material page: all material 1`] = `
               <div
                 class="Component-mainContent-1336"
               >
-                <h2
-                  class="MuiTypography-root-1366 MuiTypography-title-1372"
+                <h6
+                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
                 >
                   aaa
-                </h2>
+                </h6>
                 <div>
                   <small>
                     Serial: 
@@ -124,11 +124,11 @@ exports[`renders the all material page: all material 1`] = `
               <div
                 class="Component-mainContent-1336"
               >
-                <h2
-                  class="MuiTypography-root-1366 MuiTypography-title-1372"
+                <h6
+                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
                 >
                   aaa
-                </h2>
+                </h6>
                 <div>
                   <small>
                     Serial: 
@@ -214,11 +214,11 @@ exports[`renders the all material page: all material 1`] = `
               <div
                 class="Component-mainContent-1336"
               >
-                <h2
-                  class="MuiTypography-root-1366 MuiTypography-title-1372"
+                <h6
+                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
                 >
                   bbb
-                </h2>
+                </h6>
                 <div>
                   <small>
                     Serial: 
@@ -281,11 +281,11 @@ exports[`renders the all material page: all material 1`] = `
               <div
                 class="Component-mainContent-1336"
               >
-                <h2
-                  class="MuiTypography-root-1366 MuiTypography-title-1372"
+                <h6
+                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
                 >
                   bbb
-                </h2>
+                </h6>
                 <div>
                   <small>
                     Serial: 
@@ -366,11 +366,11 @@ exports[`renders the all material page: all material 1`] = `
               <div
                 class="Component-mainContent-1336"
               >
-                <h2
-                  class="MuiTypography-root-1366 MuiTypography-title-1372"
+                <h6
+                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
                 >
                   ccc
-                </h2>
+                </h6>
                 <div>
                   <small>
                     Serial: 
@@ -433,11 +433,11 @@ exports[`renders the all material page: all material 1`] = `
               <div
                 class="Component-mainContent-1336"
               >
-                <h2
-                  class="MuiTypography-root-1366 MuiTypography-title-1372"
+                <h6
+                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
                 >
                   ccc
-                </h2>
+                </h6>
                 <div>
                   <small>
                     Serial: 
@@ -518,11 +518,11 @@ exports[`renders the all material page: all material 1`] = `
               <div
                 class="Component-mainContent-1336"
               >
-                <h2
-                  class="MuiTypography-root-1366 MuiTypography-title-1372"
+                <h6
+                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
                 >
                   xxx
-                </h2>
+                </h6>
                 <div>
                   <small>
                     Serial: 
@@ -608,11 +608,11 @@ exports[`renders the all material page: all material 1`] = `
               <div
                 class="Component-mainContent-1336"
               >
-                <h2
-                  class="MuiTypography-root-1366 MuiTypography-title-1372"
+                <h6
+                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
                 >
                   zzz
-                </h2>
+                </h6>
                 <div>
                   <small>
                     Serial: 
@@ -689,11 +689,11 @@ exports[`renders the all material page: all material 1`] = `
               <div
                 class="Component-mainContent-1336"
               >
-                <h2
-                  class="MuiTypography-root-1366 MuiTypography-title-1372"
+                <h6
+                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
                 >
                   yyy
-                </h2>
+                </h6>
                 <div>
                   <small>
                     Serial: 
@@ -752,11 +752,11 @@ exports[`renders the all material page: all material 1`] = `
               <div
                 class="Component-mainContent-1336"
               >
-                <h2
-                  class="MuiTypography-root-1366 MuiTypography-title-1372"
+                <h6
+                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
                 >
                   yyy
-                </h2>
+                </h6>
                 <div>
                   <small>
                     Serial: 
@@ -837,11 +837,11 @@ exports[`renders the all material page: all material 1`] = `
               <div
                 class="Component-mainContent-1336"
               >
-                <h2
-                  class="MuiTypography-root-1366 MuiTypography-title-1372"
+                <h6
+                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
                 >
                   xxx
-                </h2>
+                </h6>
                 <div>
                   <small>
                     Serial: 
@@ -918,11 +918,11 @@ exports[`renders the all material page: all material 1`] = `
               <div
                 class="Component-mainContent-1336"
               >
-                <h2
-                  class="MuiTypography-root-1366 MuiTypography-title-1372"
+                <h6
+                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
                 >
                   aaa
-                </h2>
+                </h6>
                 <div>
                   <small>
                     Serial: 
@@ -985,11 +985,11 @@ exports[`renders the all material page: all material 1`] = `
               <div
                 class="Component-mainContent-1336"
               >
-                <h2
-                  class="MuiTypography-root-1366 MuiTypography-title-1372"
+                <h6
+                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
                 >
                   xxx
-                </h2>
+                </h6>
                 <div>
                   <small>
                     Serial: 
@@ -1052,11 +1052,11 @@ exports[`renders the all material page: all material 1`] = `
               <div
                 class="Component-mainContent-1336"
               >
-                <h2
-                  class="MuiTypography-root-1366 MuiTypography-title-1372"
+                <h6
+                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
                 >
                   zzz
-                </h2>
+                </h6>
                 <div>
                   <small>
                     Serial: 
@@ -1142,11 +1142,11 @@ exports[`renders the all material page: all material 1`] = `
               <div
                 class="Component-mainContent-1336"
               >
-                <h2
-                  class="MuiTypography-root-1366 MuiTypography-title-1372"
+                <h6
+                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
                 >
                   ccc
-                </h2>
+                </h6>
                 <div>
                   <small>
                     Serial: 
@@ -1209,11 +1209,11 @@ exports[`renders the all material page: all material 1`] = `
               <div
                 class="Component-mainContent-1336"
               >
-                <h2
-                  class="MuiTypography-root-1366 MuiTypography-title-1372"
+                <h6
+                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
                 >
                   zzz
-                </h2>
+                </h6>
                 <div>
                   <small>
                     Serial: 
@@ -1294,11 +1294,11 @@ exports[`renders the all material page: all material 1`] = `
               <div
                 class="Component-mainContent-1336"
               >
-                <h2
-                  class="MuiTypography-root-1366 MuiTypography-title-1372"
+                <h6
+                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
                 >
                   bbb
-                </h2>
+                </h6>
                 <div>
                   <small>
                     Serial: 
@@ -1433,11 +1433,11 @@ exports[`renders the load station page: NBTGI dialog 1`] = `
         <div
           style="margin-left: 8px;"
         >
-          <h2
-            class="MuiTypography-root-218 MuiTypography-title-224"
+          <h6
+            class="MuiTypography-root-218 MuiTypography-h6-235"
           >
             aaa - NBTGI
-          </h2>
+          </h6>
         </div>
       </div>
     </div>
@@ -1996,11 +1996,11 @@ exports[`renders the load station page: load 1 1`] = `
                 <div
                   class="Component-mainContent-100"
                 >
-                  <h2
-                    class="MuiTypography-root-130 MuiTypography-title-136"
+                  <h6
+                    class="MuiTypography-root-130 MuiTypography-h6-147"
                   >
                     bbb
-                  </h2>
+                  </h6>
                   <div>
                     <small>
                       Serial: 
@@ -2109,11 +2109,11 @@ exports[`renders the load station page: load 1 1`] = `
                         <div
                           class="Component-mainContent-100"
                         >
-                          <h2
-                            class="MuiTypography-root-130 MuiTypography-title-136"
+                          <h6
+                            class="MuiTypography-root-130 MuiTypography-h6-147"
                           >
                             aaa
-                          </h2>
+                          </h6>
                           <div>
                             <small>
                               Serial: 
@@ -2204,11 +2204,11 @@ exports[`renders the load station page: load 1 1`] = `
                         <div
                           class="Component-mainContent-100"
                         >
-                          <h2
-                            class="MuiTypography-root-130 MuiTypography-title-136"
+                          <h6
+                            class="MuiTypography-root-130 MuiTypography-h6-147"
                           >
                             aaa
-                          </h2>
+                          </h6>
                           <div>
                             <small>
                               Serial: 
@@ -2334,11 +2334,11 @@ exports[`renders the load station page: load 1 and queue 1`] = `
                 <div
                   class="Component-mainContent-188"
                 >
-                  <h2
-                    class="MuiTypography-root-218 MuiTypography-title-224"
+                  <h6
+                    class="MuiTypography-root-218 MuiTypography-h6-235"
                   >
                     bbb
-                  </h2>
+                  </h6>
                   <div>
                     <small>
                       Serial: 
@@ -2447,11 +2447,11 @@ exports[`renders the load station page: load 1 and queue 1`] = `
                         <div
                           class="Component-mainContent-188"
                         >
-                          <h2
-                            class="MuiTypography-root-218 MuiTypography-title-224"
+                          <h6
+                            class="MuiTypography-root-218 MuiTypography-h6-235"
                           >
                             aaa
-                          </h2>
+                          </h6>
                           <div>
                             <small>
                               Serial: 
@@ -2542,11 +2542,11 @@ exports[`renders the load station page: load 1 and queue 1`] = `
                         <div
                           class="Component-mainContent-188"
                         >
-                          <h2
-                            class="MuiTypography-root-218 MuiTypography-title-224"
+                          <h6
+                            class="MuiTypography-root-218 MuiTypography-h6-235"
                           >
                             aaa
-                          </h2>
+                          </h6>
                           <div>
                             <small>
                               Serial: 
@@ -2661,11 +2661,11 @@ exports[`renders the load station page: load 1 and queue 1`] = `
                   <div
                     class="Component-mainContent-188"
                   >
-                    <h2
-                      class="MuiTypography-root-218 MuiTypography-title-224"
+                    <h6
+                      class="MuiTypography-root-218 MuiTypography-h6-235"
                     >
                       aaa
-                    </h2>
+                    </h6>
                     <div>
                       <small>
                         Serial: 
@@ -2730,11 +2730,11 @@ exports[`renders the load station page: load 1 and queue 1`] = `
                   <div
                     class="Component-mainContent-188"
                   >
-                    <h2
-                      class="MuiTypography-root-218 MuiTypography-title-224"
+                    <h6
+                      class="MuiTypography-root-218 MuiTypography-h6-235"
                     >
                       xxx
-                    </h2>
+                    </h6>
                     <div>
                       <small>
                         Serial: 
@@ -2799,11 +2799,11 @@ exports[`renders the load station page: load 1 and queue 1`] = `
                   <div
                     class="Component-mainContent-188"
                   >
-                    <h2
-                      class="MuiTypography-root-218 MuiTypography-title-224"
+                    <h6
+                      class="MuiTypography-root-218 MuiTypography-h6-235"
                     >
                       zzz
-                    </h2>
+                    </h6>
                     <div>
                       <small>
                         Serial: 
@@ -2931,11 +2931,11 @@ exports[`renders the load station page: load 2 1`] = `
                       <div
                         class="Component-mainContent-100"
                       >
-                        <h2
-                          class="MuiTypography-root-130 MuiTypography-title-136"
+                        <h6
+                          class="MuiTypography-root-130 MuiTypography-h6-147"
                         >
                           xxx
-                        </h2>
+                        </h6>
                         <div>
                           <small>
                             Serial: 
@@ -3210,11 +3210,11 @@ exports[`renders the queues page: MZQGQ dialog 1`] = `
         <div
           style="margin-left: 8px;"
         >
-          <h2
-            class="MuiTypography-root-1144 MuiTypography-title-1150"
+          <h6
+            class="MuiTypography-root-1144 MuiTypography-h6-1161"
           >
             zzz - MZQGQ
-          </h2>
+          </h6>
         </div>
       </div>
     </div>
@@ -3456,11 +3456,11 @@ exports[`renders the queues page: with Queue1 1`] = `
             <div
               class="Component-mainContent-1141"
             >
-              <h2
-                class="MuiTypography-root-1144 MuiTypography-title-1150"
+              <h6
+                class="MuiTypography-root-1144 MuiTypography-h6-1161"
               >
                 aaa
-              </h2>
+              </h6>
               <div>
                 <small>
                   Serial: 
@@ -3523,11 +3523,11 @@ exports[`renders the queues page: with Queue1 1`] = `
             <div
               class="Component-mainContent-1141"
             >
-              <h2
-                class="MuiTypography-root-1144 MuiTypography-title-1150"
+              <h6
+                class="MuiTypography-root-1144 MuiTypography-h6-1161"
               >
                 xxx
-              </h2>
+              </h6>
               <div>
                 <small>
                   Serial: 
@@ -3590,11 +3590,11 @@ exports[`renders the queues page: with Queue1 1`] = `
             <div
               class="Component-mainContent-1141"
             >
-              <h2
-                class="MuiTypography-root-1144 MuiTypography-title-1150"
+              <h6
+                class="MuiTypography-root-1144 MuiTypography-h6-1161"
               >
                 zzz
-              </h2>
+              </h6>
               <div>
                 <small>
                   Serial: 
