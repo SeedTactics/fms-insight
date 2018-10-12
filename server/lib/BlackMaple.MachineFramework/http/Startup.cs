@@ -109,26 +109,9 @@ namespace BlackMaple.MachineFramework
                   _fmsImpl.Backend.JobControl())
           );
 
-      services
+      var mvcBuilder = services
           .AddResponseCompression()
-          .AddCors(options =>
-              options.AddPolicy("AllowOtherLogServers", builder =>
-                  builder
-                  .WithOrigins(
-                      Program.FMSSettings.AdditionalLogServers
-#if DEBUG
-                            .Concat(new[] { "http://localhost:1234" }) // parcel bundler url
-#endif
-                            .ToArray()
-                  )
-#if DEBUG
-                  .WithMethods(new[] { "GET", "PUT", "POST", "DELETE" })
-#else
-                  .WithMethods("GET")
-#endif
-                  .WithHeaders("content-type")
-              )
-          )
+          .AddCors()
           .AddMvcCore(options =>
           {
             options.ModelBinderProviders.Insert(0, new DateTimeBinderProvider());
@@ -147,11 +130,15 @@ namespace BlackMaple.MachineFramework
 
       if (!string.IsNullOrEmpty(Program.ServerSettings.OpenIDConnectAuthority) && !string.IsNullOrEmpty(Program.ServerSettings.OpenIDConnectAudience))
       {
+        mvcBuilder.AddAuthorization();
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
           options.Authority = Program.ServerSettings.OpenIDConnectAuthority;
           options.Audience = Program.ServerSettings.OpenIDConnectAudience;
+#if DEBUG
+          options.RequireHttpsMetadata = false;
+#endif
         });
       }
 
@@ -166,7 +153,21 @@ namespace BlackMaple.MachineFramework
         Controllers.WebsocketManager wsManager)
     {
       app.UseResponseCompression();
-      app.UseCors("AllowOtherLogServers");
+      app.UseCors(builder => builder
+        .WithOrigins(
+            Program.FMSSettings.AdditionalLogServers
+#if DEBUG
+                  .Concat(new[] { "http://localhost:1234" }) // parcel bundler url
+#endif
+                  .ToArray()
+        )
+#if DEBUG
+        .WithMethods(new[] { "GET", "PUT", "POST", "DELETE" })
+#else
+        .WithMethods("GET")
+#endif
+        .WithHeaders("content-type", "authorization")
+      );
       app.UseMiddleware(typeof(ErrorHandlingMiddleware));
       if (!string.IsNullOrEmpty(Program.ServerSettings.OpenIDConnectAuthority) && !string.IsNullOrEmpty(Program.ServerSettings.OpenIDConnectAudience))
       {
