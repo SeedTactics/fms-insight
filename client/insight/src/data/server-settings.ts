@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { User, UserManager } from "oidc-client";
 import * as api from "./api";
-import { ServerBackend, setOtherLogBackends } from "./backend";
+import { ServerBackend, setOtherLogBackends, setUserToken } from "./backend";
 import { Pledge, PledgeStatus, ActionBeforeMiddleware } from "../store/middleware";
 
 export enum ActionType {
@@ -108,6 +108,9 @@ async function loadInfo(): Promise<LoadReturn> {
     if (!user) {
       user = await userManager.signinRedirectCallback();
       window.history.replaceState({}, "", "/");
+    }
+    if (user) {
+      setUserToken(user);
     }
   }
 

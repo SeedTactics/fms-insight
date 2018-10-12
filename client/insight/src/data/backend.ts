@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as api from "./api";
 import * as im from "immutable";
+import { User } from "oidc-client";
 
 export interface JobAPI {
   history(startUTC: Date, endUTC: Date): Promise<Readonly<api.IHistoricData>>;
@@ -76,10 +77,28 @@ export const DemoMode = (window as any).FMS_INSIGHT_DEMO_MODE || false;
 export let ServerBackend: ServerAPI = new api.ServerClient(BackendUrl);
 export let JobsBackend: JobAPI = new api.JobsClient(BackendUrl);
 export let LogBackend: LogAPI = new api.LogClient(BackendUrl);
+let otherLogServers: ReadonlyArray<string> = [];
 export let OtherLogBackends: ReadonlyArray<LogAPI> = [];
 
 export function setOtherLogBackends(servers: ReadonlyArray<string>) {
+  otherLogServers = servers;
   OtherLogBackends = servers.map(s => new api.LogClient(s));
+}
+
+export function setUserToken(u: User) {
+  const token = u.access_token;
+  function fetch(url: RequestInfo, init?: RequestInit) {
+    return window.fetch(
+      url,
+      init
+        ? { ...init, headers: { ...init.headers, Authroization: "Bearer " + token } }
+        : { headers: { Authorization: "Bearer " + token } }
+    );
+  }
+  ServerBackend = new api.ServerClient(BackendUrl, { fetch });
+  JobsBackend = new api.JobsClient(BackendUrl, { fetch });
+  LogBackend = new api.LogClient(BackendUrl, { fetch });
+  OtherLogBackends = otherLogServers.map(s => new api.LogClient(s, { fetch }));
 }
 
 export interface MockData {
