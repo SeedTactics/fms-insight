@@ -75,6 +75,11 @@ namespace BlackMaple.MachineFramework
     public string OpenIDConnectAudience { get; set; } = null;
     public string OpenIDConnectClientId { get; set; } = null;
 
+    public bool UseAuthentication =>
+         !string.IsNullOrEmpty(OpenIDConnectAudience)
+      && !string.IsNullOrEmpty(OpenIDConnectAuthority)
+      && !string.IsNullOrEmpty(OpenIDConnectClientId);
+
     public static ServerSettings Load(IConfiguration config)
     {
       var s = config.GetSection("SERVER").Get<ServerSettings>();

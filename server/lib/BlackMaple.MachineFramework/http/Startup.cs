@@ -40,6 +40,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -128,7 +129,7 @@ namespace BlackMaple.MachineFramework
             options.SerializerSettings.ConstructorHandling = Newtonsoft.Json.ConstructorHandling.AllowNonPublicDefaultConstructor;
           });
 
-      if (!string.IsNullOrEmpty(Program.ServerSettings.OpenIDConnectAuthority) && !string.IsNullOrEmpty(Program.ServerSettings.OpenIDConnectAudience))
+      if (Program.ServerSettings.UseAuthentication)
       {
         mvcBuilder.AddAuthorization();
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -139,6 +140,18 @@ namespace BlackMaple.MachineFramework
 #if DEBUG
           options.RequireHttpsMetadata = false;
 #endif
+          options.Events = new JwtBearerEvents
+          {
+            OnMessageReceived = context =>
+            {
+              var token = context.Request.Query["token"];
+              if (context.Request.Path == "/api/v1/events" && !string.IsNullOrEmpty(token))
+              {
+                context.Token = token;
+              }
+              return System.Threading.Tasks.Task.CompletedTask;
+            }
+          };
         });
       }
 
@@ -169,7 +182,7 @@ namespace BlackMaple.MachineFramework
         .WithHeaders("content-type", "authorization")
       );
       app.UseMiddleware(typeof(ErrorHandlingMiddleware));
-      if (!string.IsNullOrEmpty(Program.ServerSettings.OpenIDConnectAuthority) && !string.IsNullOrEmpty(Program.ServerSettings.OpenIDConnectAudience))
+      if (Program.ServerSettings.UseAuthentication)
       {
         app.UseAuthentication();
       }
@@ -213,6 +226,15 @@ namespace BlackMaple.MachineFramework
         {
           if (context.WebSockets.IsWebSocketRequest)
           {
+            if (Program.ServerSettings.UseAuthentication)
+            {
+              var res = await context.AuthenticateAsync();
+              if (res.Failure != null)
+              {
+                context.Response.StatusCode = 401;
+                return;
+              }
+            }
             var ws = await context.WebSockets.AcceptWebSocketAsync();
             await wsManager.HandleWebsocket(ws);
           }
