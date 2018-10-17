@@ -1,19 +1,19 @@
 {
   "Fixtures": [
     {
-      "FixtureName": "Fixt:1:cccfix:2",
+      "FixtureName": "F:1:cccfix:2",
       "Comment": "schId1234"
     },
     {
-      "FixtureName": "Fixt:1:abfix:1",
+      "FixtureName": "F:1:abfix:1",
       "Comment": "schId1234"
     },
     {
-      "FixtureName": "Fixt:1:abfix:2",
+      "FixtureName": "F:1:abfix:2",
       "Comment": "schId1234"
     },
     {
-      "FixtureName": "Fixt:1:cccfix:1",
+      "FixtureName": "F:1:cccfix:1",
       "Comment": "schId1234"
     }
   ],
@@ -33,7 +33,7 @@
           "CutMc": "15",
           "FixLDS": "3",
           "FixPhoto": "",
-          "Fixture": "Fixt:1:abfix:1",
+          "Fixture": "F:1:abfix:1",
           "MainProgram": "1001",
           "RemoveLDS": "3",
           "RemovePhoto": "",
@@ -48,7 +48,7 @@
           "CutMc": "15",
           "FixLDS": "3",
           "FixPhoto": "",
-          "Fixture": "Fixt:1:abfix:2",
+          "Fixture": "F:1:abfix:2",
           "MainProgram": "1002",
           "RemoveLDS": "3",
           "RemovePhoto": "",
@@ -71,7 +71,7 @@
           "CutMc": "15",
           "FixLDS": "3",
           "FixPhoto": "",
-          "Fixture": "Fixt:1:abfix:1",
+          "Fixture": "F:1:abfix:1",
           "MainProgram": "1001",
           "RemoveLDS": "3",
           "RemovePhoto": "",
@@ -86,7 +86,7 @@
           "CutMc": "15",
           "FixLDS": "3",
           "FixPhoto": "",
-          "Fixture": "Fixt:1:abfix:2",
+          "Fixture": "F:1:abfix:2",
           "MainProgram": "1002",
           "RemoveLDS": "3",
           "RemovePhoto": "",
@@ -109,7 +109,7 @@
           "CutMc": "15",
           "FixLDS": "3",
           "FixPhoto": "",
-          "Fixture": "Fixt:1:cccfix:1",
+          "Fixture": "F:1:cccfix:1",
           "MainProgram": "1003",
           "RemoveLDS": "3",
           "RemovePhoto": "",
@@ -124,7 +124,7 @@
           "CutMc": "15",
           "FixLDS": "3",
           "FixPhoto": "",
-          "Fixture": "Fixt:1:cccfix:2",
+          "Fixture": "F:1:cccfix:2",
           "MainProgram": "1004",
           "RemoveLDS": "3",
           "RemovePhoto": "",
@@ -136,112 +136,112 @@
   "Pallets": [
     {
       "PalletNumber": 1,
-      "Fixture": "Fixt:1:abfix:1",
+      "Fixture": "F:1:abfix:1",
       "RecordID": 22,
       "AngleV1": 0,
       "FixtureGroupV2": 11
     },
     {
       "PalletNumber": 2,
-      "Fixture": "Fixt:1:abfix:1",
+      "Fixture": "F:1:abfix:1",
       "RecordID": 23,
       "AngleV1": 0,
       "FixtureGroupV2": 11
     },
     {
       "PalletNumber": 3,
-      "Fixture": "Fixt:1:abfix:1",
+      "Fixture": "F:1:abfix:1",
       "RecordID": 24,
       "AngleV1": 0,
       "FixtureGroupV2": 11
     },
     {
       "PalletNumber": 4,
-      "Fixture": "Fixt:1:abfix:1",
+      "Fixture": "F:1:abfix:1",
       "RecordID": 25,
       "AngleV1": 0,
       "FixtureGroupV2": 11
     },
     {
       "PalletNumber": 1,
-      "Fixture": "Fixt:1:abfix:2",
+      "Fixture": "F:1:abfix:2",
       "RecordID": 26,
       "AngleV1": 0,
       "FixtureGroupV2": 11
     },
     {
       "PalletNumber": 2,
-      "Fixture": "Fixt:1:abfix:2",
+      "Fixture": "F:1:abfix:2",
       "RecordID": 27,
       "AngleV1": 0,
       "FixtureGroupV2": 11
     },
     {
       "PalletNumber": 3,
-      "Fixture": "Fixt:1:abfix:2",
+      "Fixture": "F:1:abfix:2",
       "RecordID": 28,
       "AngleV1": 0,
       "FixtureGroupV2": 11
     },
     {
       "PalletNumber": 4,
-      "Fixture": "Fixt:1:abfix:2",
+      "Fixture": "F:1:abfix:2",
       "RecordID": 29,
       "AngleV1": 0,
       "FixtureGroupV2": 11
     },
     {
       "PalletNumber": 1,
-      "Fixture": "Fixt:1:cccfix:1",
+      "Fixture": "F:1:cccfix:1",
       "RecordID": 30,
       "AngleV1": 0,
       "FixtureGroupV2": 12
     },
     {
       "PalletNumber": 2,
-      "Fixture": "Fixt:1:cccfix:1",
+      "Fixture": "F:1:cccfix:1",
       "RecordID": 31,
       "AngleV1": 0,
       "FixtureGroupV2": 12
     },
     {
       "PalletNumber": 3,
-      "Fixture": "Fixt:1:cccfix:1",
+      "Fixture": "F:1:cccfix:1",
       "RecordID": 32,
       "AngleV1": 0,
       "FixtureGroupV2": 12
     },
     {
       "PalletNumber": 4,
-      "Fixture": "Fixt:1:cccfix:1",
+      "Fixture": "F:1:cccfix:1",
       "RecordID": 33,
       "AngleV1": 0,
       "FixtureGroupV2": 12
     },
     {
       "PalletNumber": 1,
-      "Fixture": "Fixt:1:cccfix:2",
+      "Fixture": "F:1:cccfix:2",
       "RecordID": 34,
       "AngleV1": 0,
       "FixtureGroupV2": 12
     },
     {
       "PalletNumber": 2,
-      "Fixture": "Fixt:1:cccfix:2",
+      "Fixture": "F:1:cccfix:2",
       "RecordID": 35,
       "AngleV1": 0,
       "FixtureGroupV2": 12
     },
     {
       "PalletNumber": 3,
-      "Fixture": "Fixt:1:cccfix:2",
+      "Fixture": "F:1:cccfix:2",
       "RecordID": 36,
       "AngleV1": 0,
       "FixtureGroupV2": 12
     },
     {
       "PalletNumber": 4,
-      "Fixture": "Fixt:1:cccfix:2",
+      "Fixture": "F:1:cccfix:2",
       "RecordID": 37,
       "AngleV1": 0,
       "FixtureGroupV2": 12
@@ -250,7 +250,7 @@
   "PalletSubStatuses": [
     {
       "PalletNumber": 1,
-      "FixtureName": "Fixt:1:abfix:1",
+      "FixtureName": "F:1:abfix:1",
       "ScheduleID": 1,
       "PartName": "aaa:1:1",
       "PartProcessNumber": 1,
@@ -258,7 +258,7 @@
     },
     {
       "PalletNumber": 2,
-      "FixtureName": "Fixt:1:abfix:1",
+      "FixtureName": "F:1:abfix:1",
       "ScheduleID": 1,
       "PartName": "aaa:1:1",
       "PartProcessNumber": 1,
@@ -266,7 +266,7 @@
     },
     {
       "PalletNumber": 3,
-      "FixtureName": "Fixt:1:abfix:1",
+      "FixtureName": "F:1:abfix:1",
       "ScheduleID": 1,
       "PartName": "aaa:1:1",
       "PartProcessNumber": 1,
@@ -326,12 +326,7 @@
       "Qty": 1
     }
   ],
-  "MainPrograms": [
-    "1001",
-    "1002",
-    "1003",
-    "1004"
-  ],
+  "MainPrograms": ["1001", "1002", "1003", "1004"],
   "Schedules": [
     {
       "Id": 1,

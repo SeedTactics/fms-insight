@@ -984,10 +984,15 @@ namespace MazakMachineInterface
         {
           //create a new fixture
           var fixture =
-            "Fixt:" +
+            "F:" +
             downloadUID.ToString() + ":" +
             group.BaseFixtureName + ":" +
             group.Face;
+          if (fixture.Length > 20)
+          {
+            throw new BlackMaple.MachineFramework.BadRequestException(
+              "Fixture " + group.BaseFixtureName + " is too long to fit in the Mazak databases");
+          }
           group.MazakFixtureName = fixture;
           Log.Debug("Creating new fixture {fix} for group {@group}", fixture, group);
         }

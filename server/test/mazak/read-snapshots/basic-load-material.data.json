@@ -1,23 +1,23 @@
 {
   "Fixtures": [
     {
-      "FixtureName": "Fixt:0:fixtureAA1:1",
+      "FixtureName": "F:0:fixtureAA1:1",
       "Comment": "schId1234"
     },
     {
-      "FixtureName": "Fixt:0:fixtureAA2:2",
+      "FixtureName": "F:0:fixtureAA2:2",
       "Comment": "schId1234"
     },
     {
-      "FixtureName": "Fixt:0:fixtureBB:1",
+      "FixtureName": "F:0:fixtureBB:1",
       "Comment": "schId1234"
     },
     {
-      "FixtureName": "Fixt:0:fixtureCC:1",
+      "FixtureName": "F:0:fixtureCC:1",
       "Comment": "schId1234"
     },
     {
-      "FixtureName": "Fixt:0:fixtureCC:2",
+      "FixtureName": "F:0:fixtureCC:2",
       "Comment": "schId1234"
     }
   ],
@@ -37,7 +37,7 @@
           "CutMc": "15",
           "FixLDS": "3",
           "FixPhoto": "",
-          "Fixture": "Fixt:0:fixtureAA1:1",
+          "Fixture": "F:0:fixtureAA1:1",
           "MainProgram": "1001",
           "RemoveLDS": "3",
           "RemovePhoto": "",
@@ -52,7 +52,7 @@
           "CutMc": "15",
           "FixLDS": "3",
           "FixPhoto": "",
-          "Fixture": "Fixt:0:fixtureAA2:2",
+          "Fixture": "F:0:fixtureAA2:2",
           "MainProgram": "1002",
           "RemoveLDS": "3",
           "RemovePhoto": "",
@@ -75,7 +75,7 @@
           "CutMc": "15",
           "FixLDS": "3",
           "FixPhoto": "",
-          "Fixture": "Fixt:0:fixtureBB:1",
+          "Fixture": "F:0:fixtureBB:1",
           "MainProgram": "1001",
           "RemoveLDS": "3",
           "RemovePhoto": "",
@@ -90,7 +90,7 @@
           "CutMc": "15",
           "FixLDS": "3",
           "FixPhoto": "",
-          "Fixture": "Fixt:0:fixtureBB:1",
+          "Fixture": "F:0:fixtureBB:1",
           "MainProgram": "1002",
           "RemoveLDS": "3",
           "RemovePhoto": "",
@@ -113,7 +113,7 @@
           "CutMc": "15",
           "FixLDS": "3",
           "FixPhoto": "",
-          "Fixture": "Fixt:0:fixtureCC:1",
+          "Fixture": "F:0:fixtureCC:1",
           "MainProgram": "1003",
           "RemoveLDS": "3",
           "RemovePhoto": "",
@@ -128,7 +128,7 @@
           "CutMc": "15",
           "FixLDS": "3",
           "FixPhoto": "",
-          "Fixture": "Fixt:0:fixtureCC:2",
+          "Fixture": "F:0:fixtureCC:2",
           "MainProgram": "1004",
           "RemoveLDS": "3",
           "RemovePhoto": "",
@@ -140,35 +140,35 @@
   "Pallets": [
     {
       "PalletNumber": 1,
-      "Fixture": "Fixt:0:fixtureAA1:1",
+      "Fixture": "F:0:fixtureAA1:1",
       "RecordID": 1064,
       "AngleV1": 0,
       "FixtureGroupV2": 1
     },
     {
       "PalletNumber": 1,
-      "Fixture": "Fixt:0:fixtureAA2:2",
+      "Fixture": "F:0:fixtureAA2:2",
       "RecordID": 1065,
       "AngleV1": 0,
       "FixtureGroupV2": 2
     },
     {
       "PalletNumber": 2,
-      "Fixture": "Fixt:0:fixtureBB:1",
+      "Fixture": "F:0:fixtureBB:1",
       "RecordID": 1066,
       "AngleV1": 0,
       "FixtureGroupV2": 3
     },
     {
       "PalletNumber": 5,
-      "Fixture": "Fixt:0:fixtureCC:1",
+      "Fixture": "F:0:fixtureCC:1",
       "RecordID": 1067,
       "AngleV1": 0,
       "FixtureGroupV2": 4
     },
     {
       "PalletNumber": 6,
-      "Fixture": "Fixt:0:fixtureCC:2",
+      "Fixture": "F:0:fixtureCC:2",
       "RecordID": 1068,
       "AngleV1": 0,
       "FixtureGroupV2": 4
@@ -208,12 +208,7 @@
       "Qty": 2
     }
   ],
-  "MainPrograms": [
-    "1001",
-    "1002",
-    "1003",
-    "1004"
-  ],
+  "MainPrograms": ["1001", "1002", "1003", "1004"],
   "Schedules": [
     {
       "Id": 1,

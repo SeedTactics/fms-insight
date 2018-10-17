@@ -1,14 +1,7 @@
 {
   "Jobs": {
     "aaa-schId1234": {
-      "Completed": [
-        [
-          0
-        ],
-        [
-          0
-        ]
-      ],
+      "Completed": [[0], [0]],
       "RouteStartUTC": "2018-07-21T19:39:49.89949Z",
       "RouteEndUTC": "2018-07-22T19:39:49.899505Z",
       "Archived": false,
@@ -18,10 +11,7 @@
       "Unique": "aaa-schId1234",
       "Priority": 75,
       "ScheduleId": "schId1234",
-      "Bookings": [
-        "book1",
-        "book2"
-      ],
+      "Bookings": ["book1", "book2"],
       "ManuallyCreated": false,
       "CreateMarkingData": false,
       "Inspections": [],
@@ -32,30 +22,17 @@
         "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
         "HoldUnholdPatternRepeats": false
       },
-      "CyclesOnFirstProcess": [
-        30
-      ],
+      "CyclesOnFirstProcess": [30],
       "ProcsAndPaths": [
         {
           "paths": [
             {
               "PathGroup": 1,
-              "Pallets": [
-                "1",
-                "2",
-                "3",
-                "4"
-              ],
+              "Pallets": ["1", "2", "3", "4"],
               "Fixtures": [],
-              "Load": [
-                1,
-                2
-              ],
+              "Load": [1, 2],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [
-                1,
-                2
-              ],
+              "Unload": [1, 2],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
@@ -216,22 +193,11 @@
           "paths": [
             {
               "PathGroup": 1,
-              "Pallets": [
-                "1",
-                "2",
-                "3",
-                "4"
-              ],
+              "Pallets": ["1", "2", "3", "4"],
               "Fixtures": [],
-              "Load": [
-                1,
-                2
-              ],
+              "Load": [1, 2],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [
-                1,
-                2
-              ],
+              "Unload": [1, 2],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
@@ -391,14 +357,7 @@
       ]
     },
     "bbb-schId1234": {
-      "Completed": [
-        [
-          0
-        ],
-        [
-          0
-        ]
-      ],
+      "Completed": [[0], [0]],
       "RouteStartUTC": "2018-07-21T19:39:49.89949Z",
       "RouteEndUTC": "2018-07-22T19:39:49.899505Z",
       "Archived": false,
@@ -408,10 +367,7 @@
       "Unique": "bbb-schId1234",
       "Priority": 75,
       "ScheduleId": "schId1234",
-      "Bookings": [
-        "book1",
-        "book2"
-      ],
+      "Bookings": ["book1", "book2"],
       "ManuallyCreated": false,
       "CreateMarkingData": false,
       "Inspections": [],
@@ -422,30 +378,17 @@
         "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
         "HoldUnholdPatternRepeats": false
       },
-      "CyclesOnFirstProcess": [
-        40
-      ],
+      "CyclesOnFirstProcess": [40],
       "ProcsAndPaths": [
         {
           "paths": [
             {
               "PathGroup": 1,
-              "Pallets": [
-                "1",
-                "2",
-                "3",
-                "4"
-              ],
+              "Pallets": ["1", "2", "3", "4"],
               "Fixtures": [],
-              "Load": [
-                1,
-                2
-              ],
+              "Load": [1, 2],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [
-                1,
-                2
-              ],
+              "Unload": [1, 2],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
@@ -646,22 +589,11 @@
           "paths": [
             {
               "PathGroup": 1,
-              "Pallets": [
-                "1",
-                "2",
-                "3",
-                "4"
-              ],
+              "Pallets": ["1", "2", "3", "4"],
               "Fixtures": [],
-              "Load": [
-                1,
-                2
-              ],
+              "Load": [1, 2],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [
-                1,
-                2
-              ],
+              "Unload": [1, 2],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
@@ -861,14 +793,7 @@
       ]
     },
     "ccc-schId1234": {
-      "Completed": [
-        [
-          0
-        ],
-        [
-          0
-        ]
-      ],
+      "Completed": [[0], [0]],
       "RouteStartUTC": "2018-07-21T19:39:49.89949Z",
       "RouteEndUTC": "2018-07-22T19:39:49.899505Z",
       "Archived": false,
@@ -878,10 +803,7 @@
       "Unique": "ccc-schId1234",
       "Priority": 75,
       "ScheduleId": "schId1234",
-      "Bookings": [
-        "book1",
-        "book2"
-      ],
+      "Bookings": ["book1", "book2"],
       "ManuallyCreated": false,
       "CreateMarkingData": false,
       "Inspections": [],
@@ -892,30 +814,17 @@
         "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
         "HoldUnholdPatternRepeats": false
       },
-      "CyclesOnFirstProcess": [
-        22
-      ],
+      "CyclesOnFirstProcess": [22],
       "ProcsAndPaths": [
         {
           "paths": [
             {
               "PathGroup": 1,
-              "Pallets": [
-                "1",
-                "2",
-                "3",
-                "4"
-              ],
+              "Pallets": ["1", "2", "3", "4"],
               "Fixtures": [],
-              "Load": [
-                1,
-                2
-              ],
+              "Load": [1, 2],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [
-                1,
-                2
-              ],
+              "Unload": [1, 2],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
@@ -1044,22 +953,11 @@
           "paths": [
             {
               "PathGroup": 1,
-              "Pallets": [
-                "1",
-                "2",
-                "3",
-                "4"
-              ],
+              "Pallets": ["1", "2", "3", "4"],
               "Fixtures": [],
-              "Load": [
-                1,
-                2
-              ],
+              "Load": [1, 2],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [
-                1,
-                2
-              ],
+              "Unload": [1, 2],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
@@ -1190,7 +1088,7 @@
   "Pallets": {
     "1": {
       "Pallet": "1",
-      "FixtureOnPallet": "Fixt:1:abfix:1",
+      "FixtureOnPallet": "F:1:abfix:1",
       "OnHold": false,
       "CurrentPalletLocation": {
         "loc": "Machine",
@@ -1201,7 +1099,7 @@
     },
     "2": {
       "Pallet": "2",
-      "FixtureOnPallet": "Fixt:1:abfix:1",
+      "FixtureOnPallet": "F:1:abfix:1",
       "OnHold": false,
       "CurrentPalletLocation": {
         "loc": "Machine",
@@ -1212,7 +1110,7 @@
     },
     "3": {
       "Pallet": "3",
-      "FixtureOnPallet": "Fixt:1:abfix:1",
+      "FixtureOnPallet": "F:1:abfix:1",
       "OnHold": false,
       "CurrentPalletLocation": {
         "loc": "LoadUnload",
@@ -1223,7 +1121,7 @@
     },
     "4": {
       "Pallet": "4",
-      "FixtureOnPallet": "Fixt:1:abfix:1",
+      "FixtureOnPallet": "F:1:abfix:1",
       "OnHold": false,
       "CurrentPalletLocation": {
         "loc": "LoadUnload",
