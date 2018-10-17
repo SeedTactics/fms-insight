@@ -45,6 +45,8 @@ namespace Makino
     private JobDB _jobDB;
     private JobLogDB _log;
 
+    public JobLogDB JobLogDB => _log;
+
     // Makino databases
     private MakinoDB _makinoDB;
     private StatusDB _status;
