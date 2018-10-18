@@ -170,7 +170,8 @@ namespace MazakMachineInterface
       var qry =
         "SELECT a8_prcnum,a8_ptnam,a8_fixqty,a6_pos,a1_schcom " +
           "FROM A8_RemoveWork " +
-          "LEFT OUTER JOIN A6_PositionData ON a6_pltnum = a8_1 " +
+          "LEFT OUTER JOIN A3_PalletStatus ON A3_PalletStatus.PalletID = a8_1 " +
+          "LEFT OUTER JOIN A6_PositionData ON a6_pltnum = a3_pltnum " +
           "LEFT OUTER JOIN A1_Schedule ON A1_Schedule.ScheduleID = a8_ScheduleID";
       var ret = new List<LoadAction>();
       var elems = conn.Query(qry);
