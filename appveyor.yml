@@ -1,183 +1,183 @@
-version: '{build}'
+version: "{build}"
 image: Visual Studio 2017
 cache:
   - "%LOCALAPPDATA%\\Yarn"
   - '%USERPROFILE%\.nuget\packages'
 install:
-- ps: Install-Product node 10
+  - ps: Install-Product node 10
 environment:
   bitbucket_auth:
     secure: rWSLJHgb9I+I5jdorS8K2T415gRW5nJ2Z23pM3DmhqQ=
 
 build_script:
-- ps: |
-    function ver ($x) { c:\python36\python.exe build/version.py $x }
-    $tag = $(hg id -t -r '.^')
-    if ($tag.StartsWith("insightapi")) {
-        $vsuffix = ""
-        Set-AppveyorBuildVariable "BMS_RELEASE_INSIGHT_API_TO_NUGET" "true"
-    } else {
-        $vsuffix = "--version-suffix=pre." + $Env:APPVEYOR_BUILD_NUMBER
-    }
-    dotnet pack `
-        --include-symbols `
-        -c Release `
-        /p:VersionPrefix=$(ver insightapi) `
-        $vsuffix `
-        client/csharp-api
+  - ps: |
+      function ver ($x) { c:\python36\python.exe build/version.py $x }
+      $tag = $(hg id -t -r '.^')
+      if ($tag.StartsWith("insightapi")) {
+          $vsuffix = ""
+          Set-AppveyorBuildVariable "BMS_RELEASE_INSIGHT_API_TO_NUGET" "true"
+      } else {
+          $vsuffix = "--version-suffix=pre." + $Env:APPVEYOR_BUILD_NUMBER
+      }
+      dotnet pack `
+          --include-symbols `
+          -c Release `
+          /p:VersionPrefix=$(ver insightapi) `
+          $vsuffix `
+          client/csharp-api
 
-- ps: |
-    function ver ($x) { c:\python36\python.exe build/version.py $x }
-    $tag = $(hg id -t -r '.^')
-    if ($tag.StartsWith("mwi")) {
-        $mwisuffix = ""
-        Set-AppveyorBuildVariable "BMS_RELEASE_MWI_TO_NUGET" "true"
-    } else {
-        $mwisuffix = "--version-suffix=pre." + $Env:APPVEYOR_BUILD_NUMBER
-    }
-    dotnet pack `
-        --include-symbols `
-        -c Release `
-        /p:VersionPrefix=$(ver mwi) `
-        $mwisuffix `
-        server/lib/BlackMaple.MachineWatchInterface
+  - ps: |
+      function ver ($x) { c:\python36\python.exe build/version.py $x }
+      $tag = $(hg id -t -r '.^')
+      if ($tag.StartsWith("mwi")) {
+          $mwisuffix = ""
+          Set-AppveyorBuildVariable "BMS_RELEASE_MWI_TO_NUGET" "true"
+      } else {
+          $mwisuffix = "--version-suffix=pre." + $Env:APPVEYOR_BUILD_NUMBER
+      }
+      dotnet pack `
+          --include-symbols `
+          -c Release `
+          /p:VersionPrefix=$(ver mwi) `
+          $mwisuffix `
+          server/lib/BlackMaple.MachineWatchInterface
 
-- ps: |
-    yarn --cwd client/insight install --frozen-lockfile
-    yarn --cwd client/insight run build
-    dotnet pack `
-        --include-symbols `
-        -c Release `
-        --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
-        server/lib/BlackMaple.MachineFramework
+  - ps: |
+      yarn --cwd client/insight install --frozen-lockfile
+      yarn --cwd client/insight run build
+      dotnet pack `
+          --include-symbols `
+          -c Release `
+          --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
+          server/lib/BlackMaple.MachineFramework
 
-- ps: |
-    function ver ($x) { c:\python36\python.exe build/version.py $x }
-    dotnet pack `
-        --include-symbols `
-        -c Release `
-        /p:VersionPrefix=$(ver mazak) `
-        --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
-        server/machines/mazak/mazak.csproj
-    dotnet publish `
-        -c Release `
-        -f net461 `
-        /p:VersionPrefix=$(ver mazak) `
-        --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
-        server/machines/mazak/mazak.csproj
+  - ps: |
+      function ver ($x) { c:\python36\python.exe build/version.py $x }
+      dotnet pack `
+          --include-symbols `
+          -c Release `
+          /p:VersionPrefix=$(ver mazak) `
+          --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
+          server/machines/mazak/mazak.csproj
+      dotnet publish `
+          -c Release `
+          -f net461 `
+          /p:VersionPrefix=$(ver mazak) `
+          --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
+          server/machines/mazak/mazak.csproj
 
-    ./build/insight-installer-build.ps1 mazak
+      ./build/insight-installer-build.ps1 mazak
 
-- ps: |
-    function ver ($x) { c:\python36\python.exe build/version.py $x }
-    dotnet pack `
-        --include-symbols `
-        -c Release `
-        /p:VersionPrefix=$(ver makino) `
-        --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
-        server/machines/makino/makino.csproj
-    dotnet publish `
-        -c Release `
-        -f net461 `
-        /p:VersionPrefix=$(ver makino) `
-        --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
-        server/machines/makino/makino.csproj
+  - ps: |
+      function ver ($x) { c:\python36\python.exe build/version.py $x }
+      dotnet pack `
+          --include-symbols `
+          -c Release `
+          /p:VersionPrefix=$(ver makino) `
+          --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
+          server/machines/makino/makino.csproj
+      dotnet publish `
+          -c Release `
+          -f net461 `
+          /p:VersionPrefix=$(ver makino) `
+          --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
+          server/machines/makino/makino.csproj
 
-    ./build/insight-installer-build.ps1 makino
+      ./build/insight-installer-build.ps1 makino
 
-- ps: |
-    function ver ($x) { c:\python36\python.exe build/version.py $x }
-    dotnet pack `
-        --include-symbols `
-        -c Release `
-        /p:VersionPrefix=$(ver cincron) `
-        --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
-        server/machines/cincron/cincron.csproj
-    dotnet publish `
-        -c Release `
-        -f net461 `
-        /p:VersionPrefix=$(ver cincron) `
-        --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
-        server/machines/cincron/cincron.csproj
+  - ps: |
+      function ver ($x) { c:\python36\python.exe build/version.py $x }
+      dotnet pack `
+          --include-symbols `
+          -c Release `
+          /p:VersionPrefix=$(ver cincron) `
+          --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
+          server/machines/cincron/cincron.csproj
+      dotnet publish `
+          -c Release `
+          -f net461 `
+          /p:VersionPrefix=$(ver cincron) `
+          --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
+          server/machines/cincron/cincron.csproj
 
-    ./build/insight-installer-build.ps1 cincron
+      ./build/insight-installer-build.ps1 cincron
 
-- ps: |
-    yarn --cwd client/insight run build-demo
-    yarn --cwd website install --frozen-lockfile
-    yarn --cwd website run build
-    Copy-Item "client\insight\demo" -Destination "website\build\fms-insight\demo" -Recurse -Force
-    7z a website.zip .\website\build\fms-insight\*
+  - ps: |
+      yarn --cwd client/insight run build-demo
+      yarn --cwd website install --frozen-lockfile
+      yarn --cwd website run build
+      Copy-Item "client\insight\demo" -Destination "website\build\fms-insight\demo" -Recurse -Force
+      7z a website.zip .\website\build\fms-insight\*
 
 test_script:
-- cmd: dotnet test server/test
-- cmd: yarn --cwd client/insight test
+  - cmd: dotnet test server/test
+  - cmd: yarn --cwd client/insight test
 
 artifacts:
-  - path: '**/*.nupkg'
+  - path: "**/*.nupkg"
     name: NugetPackages
 
-  - path: 'installers/*.msi'
+  - path: "installers/*.msi"
     name: Installers
 
-  - path: 'installers/*.json'
+  - path: "installers/*.json"
     name: InstallerVersions
 
-  - path: 'website.zip'
+  - path: "website.zip"
     name: Website
     type: zip
 
 deploy:
-- provider: NuGet
-  on:
-    branch: default
-    BMS_RELEASE_MWI_TO_NUGET: true
-  skip_symbols: false
-  artifact: /.*BlackMaple\.MachineWatchInterface.*\.nupkg/
-  api_key:
-    secure: kj0pW91vWRjFl99SLY/sageGAghMFfmqFpNdJd7y+Q73eoImzcsnPCZYlwYxKIhs
+  - provider: NuGet
+    on:
+      branch: default
+      BMS_RELEASE_MWI_TO_NUGET: true
+    skip_symbols: false
+    artifact: /.*BlackMaple\.MachineWatchInterface.*\.nupkg/
+    api_key:
+      secure: kj0pW91vWRjFl99SLY/sageGAghMFfmqFpNdJd7y+Q73eoImzcsnPCZYlwYxKIhs
 
-- provider: NuGet
-  on:
-    branch: default
-    BMS_RELEASE_INSIGHT_API_TO_NUGET: true
-  skip_symbols: false
-  artifact: /.*BlackMaple\.FMSInsight\.API.*\.nupkg/
-  api_key:
-    secure: kj0pW91vWRjFl99SLY/sageGAghMFfmqFpNdJd7y+Q73eoImzcsnPCZYlwYxKIhs
+  - provider: NuGet
+    on:
+      branch: default
+      BMS_RELEASE_INSIGHT_API_TO_NUGET: true
+    skip_symbols: false
+    artifact: /.*BlackMaple\.FMSInsight\.API.*\.nupkg/
+    api_key:
+      secure: kj0pW91vWRjFl99SLY/sageGAghMFfmqFpNdJd7y+Q73eoImzcsnPCZYlwYxKIhs
 
-- provider: S3
-  on:
-    branch: default
-    BMS_INSTALLER_makino_RELEASE: true
-  access_key_id: AKIAIK37O65OBXTG7WJQ
-  artifact: /installers.*Makino.*/
-  secret_access_key:
-    secure: VjsW1yZpL1XL5llb8a/24qaHuYHJMrMC//YgrrOAinHoy7iZtZNdSlbHudDl6kRn
-  bucket: com.seedtactics.fms-insight
-  region: us-west-2
-  set_public: true
+  - provider: S3
+    on:
+      branch: default
+      BMS_INSTALLER_makino_RELEASE: true
+    access_key_id: AKIAIH2IT2INE2ISDGJA
+    artifact: /installers.*Makino.*/
+    secret_access_key:
+      secure: 0r/dAyTIFbRaR3eIfnWdfz1hAYPu85mFntJavbWXsdUYkK6cSa1q6vZXWr2U0mUr
+    bucket: com.seedtactics.fms-insight
+    region: us-west-2
+    set_public: true
 
-- provider: S3
-  on:
-    branch: default
-    BMS_INSTALLER_mazak_RELEASE: true
-  access_key_id: AKIAIK37O65OBXTG7WJQ
-  artifact: /installers.*Mazak.*/
-  secret_access_key:
-    secure: VjsW1yZpL1XL5llb8a/24qaHuYHJMrMC//YgrrOAinHoy7iZtZNdSlbHudDl6kRn
-  bucket: com.seedtactics.fms-insight
-  region: us-west-2
-  set_public: true
+  - provider: S3
+    on:
+      branch: default
+      BMS_INSTALLER_mazak_RELEASE: true
+    access_key_id: AKIAIH2IT2INE2ISDGJA
+    artifact: /installers.*Mazak.*/
+    secret_access_key:
+      secure: 0r/dAyTIFbRaR3eIfnWdfz1hAYPu85mFntJavbWXsdUYkK6cSa1q6vZXWr2U0mUr
+    bucket: com.seedtactics.fms-insight
+    region: us-west-2
+    set_public: true
 
-- provider: S3
-  on:
-    branch: default
-  access_key_id: AKIAIK37O65OBXTG7WJQ
-  artifact: website.zip
-  unzip: true
-  secret_access_key:
-    secure: VjsW1yZpL1XL5llb8a/24qaHuYHJMrMC//YgrrOAinHoy7iZtZNdSlbHudDl6kRn
-  bucket: com.seedtactics.fms-insight
-  region: us-west-2
-  set_public: true
+  - provider: S3
+    on:
+      branch: default
+    access_key_id: AKIAIH2IT2INE2ISDGJA
+    artifact: website.zip
+    unzip: true
+    secret_access_key:
+      secure: 0r/dAyTIFbRaR3eIfnWdfz1hAYPu85mFntJavbWXsdUYkK6cSa1q6vZXWr2U0mUr
+    bucket: com.seedtactics.fms-insight
+    region: us-west-2
+    set_public: true
