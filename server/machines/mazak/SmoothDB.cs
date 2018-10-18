@@ -42,6 +42,8 @@ namespace MazakMachineInterface
 {
   public class SmoothReadOnlyDB : IReadDataAccess
   {
+    private static Serilog.ILogger Log = Serilog.Log.ForContext<SmoothReadOnlyDB>();
+
     // for now, some stuff is proxied to the open database kit databases
     private OpenDatabaseKitReadDB _openReadDB;
     private string _connStr;
@@ -123,6 +125,7 @@ namespace MazakMachineInterface
       var elems = conn.Query(qry);
       foreach (var e in conn.Query<FixWork>(qry))
       {
+        Log.Debug("Received load action {@action}", e);
         if (string.IsNullOrEmpty(e.a9_ptnam) || string.IsNullOrEmpty(e.a6_pos))
           continue;
 
@@ -149,6 +152,7 @@ namespace MazakMachineInterface
 
         ret.Add(new LoadAction(true, stat, part, comment, proc, qty));
       }
+      Log.Debug("Parsed load actions to {@actions}", ret);
       return ret;
     }
 
@@ -172,6 +176,7 @@ namespace MazakMachineInterface
       var elems = conn.Query(qry);
       foreach (var e in conn.Query<RemoveWork>(qry))
       {
+        Log.Debug("Received remove work {@action}", e);
         if (string.IsNullOrEmpty(e.a8_ptnam) || string.IsNullOrEmpty(e.a6_pos)) continue;
 
         int stat;
@@ -197,6 +202,7 @@ namespace MazakMachineInterface
 
         ret.Add(new LoadAction(false, stat, part, comment, proc, qty));
       }
+      Log.Debug("Parsed unload actions to {@actions}", ret);
       return ret;
     }
     #endregion
