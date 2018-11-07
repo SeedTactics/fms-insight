@@ -72,18 +72,26 @@ namespace BlackMaple.MachineFramework
     // This method gets called by the runtime. Use this method to add services to the container.
     public void ConfigureServices(IServiceCollection services)
     {
-      var cfgWrapper = new ConfigWrapper();
-      _fmsImpl.Backend.Init(
-          Program.ServerSettings.DataDirectory,
-          cfgWrapper,
-          Program.FMSSettings);
-      foreach (var w in _fmsImpl.Workers)
-        w.Init(
-            _fmsImpl.Backend,
+      try
+      {
+        var cfgWrapper = new ConfigWrapper();
+        _fmsImpl.Backend.Init(
             Program.ServerSettings.DataDirectory,
             cfgWrapper,
-            Program.FMSSettings
-        );
+            Program.FMSSettings);
+        foreach (var w in _fmsImpl.Workers)
+          w.Init(
+              _fmsImpl.Backend,
+              Program.ServerSettings.DataDirectory,
+              cfgWrapper,
+              Program.FMSSettings
+          );
+      }
+      catch (Exception ex)
+      {
+        Log.Error(ex, "Unhandled error initializing backend");
+        throw;
+      }
 
       var settings = new BlackMaple.MachineFramework.SettingStore(Program.ServerSettings.DataDirectory);
 
