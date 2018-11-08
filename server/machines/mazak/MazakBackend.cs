@@ -120,7 +120,7 @@ namespace MazakMachineInterface
       }
 
       // log csv
-      string logPath = cfg.GetValue<string>("Mazak", "Log CSV Path");
+      string logPath = cfg.GetValue<string>("Log CSV Path");
       if (logPath == null || logPath == "")
         logPath = "c:\\Mazak\\FMS\\Log";
 
@@ -131,9 +131,9 @@ namespace MazakMachineInterface
       }
 
       // general config
-      string useStartingForDue = cfg.GetValue<string>("Mazak", "Use Starting Offset For Due Date");
-      string useStarting = cfg.GetValue<string>("Mazak", "Use Starting Offset");
-      string decrPriority = cfg.GetValue<string>("Mazak", "Decrement Priority On Download");
+      string useStartingForDue = cfg.GetValue<string>("Use Starting Offset For Due Date");
+      string useStarting = cfg.GetValue<string>("Use Starting Offset");
+      string decrPriority = cfg.GetValue<string>("Decrement Priority On Download");
       if (string.IsNullOrEmpty(useStarting))
       {
         //useStarting is an old setting, so if it is missing use the new settings
@@ -166,7 +166,7 @@ namespace MazakMachineInterface
 
 
       // serial settings
-      string serialPerMaterial = cfg.GetValue<string>("Mazak", "Assign Serial Per Material");
+      string serialPerMaterial = cfg.GetValue<string>("Assign Serial Per Material");
       if (!string.IsNullOrEmpty(serialPerMaterial))
       {
         bool result;

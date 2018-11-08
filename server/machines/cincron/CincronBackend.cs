@@ -55,7 +55,7 @@ namespace Cincron
         msgFile = System.IO.Path.Combine(
             System.IO.Path.GetDirectoryName(path), "..\\..\\..\\test\\Cincron\\parker-example-messages");
 #else
-                msgFile = cfg.GetValue<string>("Cincron", "Message File");
+                msgFile = cfg.GetValue<string>("Message File");
 #endif
 
         Log.Information("Starting cincron backend with message file {file}", msgFile);
