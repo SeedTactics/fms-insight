@@ -31,22 +31,15 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 using BlackMaple.MachineWatchInterface;
 
 namespace BlackMaple.MachineFramework
 {
-  public interface IConfig
+  public interface IFMSBackend : IDisposable
   {
-    T GetValue<T>(string section, string key);
-  }
-
-  public interface IFMSBackend
-  {
-    void Init(string dataDirectory, IConfig config, FMSSettings settings);
-    void Halt();
-
     ILogDatabase LogDatabase();
     IJobDatabase JobDatabase();
     IJobControl JobControl();
@@ -55,10 +48,19 @@ namespace BlackMaple.MachineFramework
     IOldJobDecrement OldJobDecrement();
   }
 
-  public interface IBackgroundWorker
+  public interface IBackgroundWorker : IDisposable
   {
-    void Init(IFMSBackend backend, string dataDirectory, IConfig config, FMSSettings settings);
-    void Halt();
+  }
+
+  public interface IFMSInspectionPath
+  {
+    // allows an implementation to override the algorithm which
+    // finds an instruction file on disk given a part and type.
+    // If this throws NotImplementedException(), the default
+    // of searching for a file containing the part and type is used.
+    // If this returns null or empty, a 404 error is returned to the client.
+    // Otherwise, the returned string will be the target of a redirect.
+    string CustomizeInstructionPath(string part, int? process, string type, long? materialID);
   }
 
   [DataContract]
@@ -68,19 +70,20 @@ namespace BlackMaple.MachineFramework
     [DataMember] public string Version { get; set; }
   }
 
-  public interface IFMSImplementation
+  public class FMSImplementation
   {
-    FMSNameAndVersion NameAndVersion { get; }
-    IFMSBackend Backend { get; }
-    IList<IBackgroundWorker> Workers { get; }
+    public FMSNameAndVersion NameAndVersion { get; set; }
+    public IFMSBackend Backend { get; set; }
+    public IList<IBackgroundWorker> Workers { get; set; } = new List<IBackgroundWorker>();
+    public IFMSInspectionPath InspectionPath { get; set; } = new DefaultFMSInspectionPath();
 
-    // allows an implementation to override the algorithm which
-    // finds an instruction file on disk given a part and type.
-    // If this throws NotImplementedException(), the default
-    // of searching for a file containing the part and type is used.
-    // If this returns null or empty, a 404 error is returned to the client.
-    // Otherwise, the returned string will be the target of a redirect.
-    string CustomizeInstructionPath(string part, int? process, string type, long? materialID);
+    private class DefaultFMSInspectionPath : IFMSInspectionPath
+    {
+      public string CustomizeInstructionPath(string part, int? process, string type, long? materialID)
+      {
+        throw new NotImplementedException();
+      }
+    }
   }
 
 }

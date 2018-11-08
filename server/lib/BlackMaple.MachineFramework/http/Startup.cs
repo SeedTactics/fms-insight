@@ -54,17 +54,9 @@ namespace BlackMaple.MachineFramework
 {
   public class Startup
   {
-    private class ConfigWrapper : BlackMaple.MachineFramework.IConfig
-    {
-      public T GetValue<T>(string section, string key)
-      {
-        return Program.Configuration.GetSection(section).GetValue<T>(key);
-      }
-    }
+    private FMSImplementation _fmsImpl;
 
-    private IFMSImplementation _fmsImpl;
-
-    public Startup(IFMSImplementation fmsImpl)
+    public Startup(FMSImplementation fmsImpl)
     {
       _fmsImpl = fmsImpl;
     }
@@ -72,27 +64,6 @@ namespace BlackMaple.MachineFramework
     // This method gets called by the runtime. Use this method to add services to the container.
     public void ConfigureServices(IServiceCollection services)
     {
-      try
-      {
-        var cfgWrapper = new ConfigWrapper();
-        _fmsImpl.Backend.Init(
-            Program.ServerSettings.DataDirectory,
-            cfgWrapper,
-            Program.FMSSettings);
-        foreach (var w in _fmsImpl.Workers)
-          w.Init(
-              _fmsImpl.Backend,
-              Program.ServerSettings.DataDirectory,
-              cfgWrapper,
-              Program.FMSSettings
-          );
-      }
-      catch (Exception ex)
-      {
-        Log.Error(ex, "Unhandled error initializing backend");
-        throw;
-      }
-
       var settings = new BlackMaple.MachineFramework.SettingStore(Program.ServerSettings.DataDirectory);
 
 #if SERVE_REMOTING
@@ -108,7 +79,8 @@ namespace BlackMaple.MachineFramework
 #endif
 
       services
-          .AddSingleton<IFMSImplementation>(_fmsImpl)
+          .AddSingleton<BlackMaple.MachineFramework.FMSNameAndVersion>(_fmsImpl.NameAndVersion)
+          .AddSingleton<BlackMaple.MachineFramework.IFMSInspectionPath>(_fmsImpl.InspectionPath)
           .AddSingleton<BlackMaple.MachineFramework.IFMSBackend>(_fmsImpl.Backend)
           .AddSingleton<IStoreSettings>(settings)
           .AddSingleton<Controllers.WebsocketManager>(
@@ -282,9 +254,9 @@ namespace BlackMaple.MachineFramework
       {
         if (_fmsImpl == null) return;
         await wsManager.CloseAll();
-        _fmsImpl.Backend?.Halt();
         foreach (var w in _fmsImpl.Workers)
-          w.Halt();
+          w.Dispose();
+        _fmsImpl.Backend?.Dispose();
       });
 
 #if SERVE_REMOTING

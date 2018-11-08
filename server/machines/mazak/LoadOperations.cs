@@ -35,6 +35,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
+using Microsoft.Extensions.Configuration;
 
 namespace MazakMachineInterface
 {
@@ -46,9 +47,9 @@ namespace MazakMachineInterface
     public event LoadActionsDel LoadActions;
     private string mazakPath;
 
-    public LoadOperationsFromFile(BlackMaple.MachineFramework.IConfig cfg, bool enableWatcher)
+    public LoadOperationsFromFile(IConfigurationSection cfg, bool enableWatcher)
     {
-      mazakPath = cfg.GetValue<string>("Mazak", "Load CSV Path");
+      mazakPath = cfg.GetValue<string>("Load CSV Path");
       if (string.IsNullOrEmpty(mazakPath))
       {
         mazakPath = "c:\\mazak\\FMS\\LDS\\";
@@ -66,7 +67,8 @@ namespace MazakMachineInterface
         }
       }
 
-      if (enableWatcher) {
+      if (enableWatcher)
+      {
         _watcher = new FileSystemWatcher(mazakPath, "*.csv");
         //_watcher.Created += watcher_Changed;
         _watcher.Changed += watcher_Changed;
@@ -116,14 +118,14 @@ namespace MazakMachineInterface
 
             if (lastWriteTime.ContainsKey(lds) && lastWriteTime[lds] == last)
             {
-              Log.Debug( "Skipping load " + lds.ToString() +
+              Log.Debug("Skipping load " + lds.ToString() +
                                " file " + Path.GetFileName(file) + " because the file" +
                                " has not been modified.");
             }
             else
             {
 
-              Log.Debug( "Starting to process load station " + lds.ToString() +
+              Log.Debug("Starting to process load station " + lds.ToString() +
                                " file " + Path.GetFileName(file));
 
               a = ReadFile(lds, file);

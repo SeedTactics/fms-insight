@@ -36,12 +36,13 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using BlackMaple.MachineWatchInterface;
 using BlackMaple.MachineFramework;
+using Microsoft.Extensions.Configuration;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("BlackMaple.MachineFramework.Tests")]
 
 namespace MazakMachineInterface
 {
-  public class MazakBackend : IFMSBackend
+  public class MazakBackend : IFMSBackend, IDisposable
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<MazakBackend>();
 
@@ -79,13 +80,14 @@ namespace MazakMachineInterface
       get { return logDataLoader; }
     }
 
-    public void Init(string dataDirectory, IConfig cfg, FMSSettings settings)
+    public MazakBackend()
     {
-      string localDbPath = cfg.GetValue<string>("Mazak", "Database Path");
+      var cfg = Program.Configuration.GetSection("Mazak");
+      string localDbPath = cfg.GetValue<string>("Database Path");
       MazakType = DetectMazakType(cfg, localDbPath);
 
       // database settings
-      string sqlConnectString = cfg.GetValue<string>("Mazak", "SQL ConnectionString");
+      string sqlConnectString = cfg.GetValue<string>("SQL ConnectionString");
       string dbConnStr;
       if (MazakType == MazakDbType.MazakSmooth)
       {
@@ -171,7 +173,7 @@ namespace MazakMachineInterface
         if (bool.TryParse(serialPerMaterial, out result))
         {
           if (!result)
-            settings.SerialType = SerialType.AssignOneSerialPerCycle;
+            Program.FMSSettings.SerialType = SerialType.AssignOneSerialPerCycle;
         }
       }
 
@@ -181,17 +183,17 @@ namespace MazakMachineInterface
 
       jobLog = new BlackMaple.MachineFramework.JobLogDB();
       jobLog.Open(
-        System.IO.Path.Combine(dataDirectory, "log.db"),
-        System.IO.Path.Combine(dataDirectory, "insp.db"),
-        firstSerialOnEmpty: settings.StartingSerial
+        System.IO.Path.Combine(Program.ServerSettings.DataDirectory, "log.db"),
+        System.IO.Path.Combine(Program.ServerSettings.DataDirectory, "insp.db"),
+        firstSerialOnEmpty: Program.FMSSettings.StartingSerial
       );
 
       jobDB = new BlackMaple.MachineFramework.JobDB();
-      var jobInspName = System.IO.Path.Combine(dataDirectory, "jobinspection.db");
+      var jobInspName = System.IO.Path.Combine(Program.ServerSettings.DataDirectory, "jobinspection.db");
       if (System.IO.File.Exists(jobInspName))
         jobDB.Open(jobInspName);
       else
-        jobDB.Open(System.IO.Path.Combine(dataDirectory, "mazakjobs.db"));
+        jobDB.Open(System.IO.Path.Combine(Program.ServerSettings.DataDirectory, "mazakjobs.db"));
 
       _writeDB = new OpenDatabaseKitTransactionDB(dbConnStr, MazakType);
 
@@ -213,7 +215,7 @@ namespace MazakMachineInterface
       var sendToExternal = new SendMaterialToExternalQueue();
 
       if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakSmooth)
-        logDataLoader = new LogDataWeb(logPath, jobLog, jobDB, sendToExternal, readOnlyDb, queues, settings);
+        logDataLoader = new LogDataWeb(logPath, jobLog, jobDB, sendToExternal, readOnlyDb, queues, Program.FMSSettings);
       else
       {
 #if USE_OLEDB
@@ -224,16 +226,19 @@ namespace MazakMachineInterface
       }
 
       hold = new HoldPattern(_writeDB, readOnlyDb, jobDB, true);
-      var writeJobs = new WriteJobs(_writeDB, readOnlyDb, hold, jobDB, jobLog, settings, CheckPalletsUsedOnce, UseStartingOffsetForDueDate, DecrementPriorityOnDownload);
+      var writeJobs = new WriteJobs(_writeDB, readOnlyDb, hold, jobDB, jobLog, Program.FMSSettings, CheckPalletsUsedOnce, UseStartingOffsetForDueDate, DecrementPriorityOnDownload);
       routing = new RoutingInfo(_writeDB, readOnlyDb, logDataLoader, jobDB, jobLog, writeJobs,
-                                CheckPalletsUsedOnce, settings);
+                                CheckPalletsUsedOnce, Program.FMSSettings);
 
       logDataLoader.NewEntries += OnNewLogEntries;
       if (loadOper != null) loadOper.LoadActions += OnLoadActions;
     }
 
-    public void Halt()
+    private bool _disposed = false;
+    public void Dispose()
     {
+      if (_disposed) return;
+      _disposed = true;
       logDataLoader.NewEntries -= OnNewLogEntries;
       if (loadOper != null) loadOper.LoadActions -= OnLoadActions;
       routing.Halt();
@@ -279,11 +284,11 @@ namespace MazakMachineInterface
       routing.RaiseNewCurrentStatus(routing.GetCurrentStatus());
     }
 
-    private MazakDbType DetectMazakType(IConfig cfg, string localDbPath)
+    private MazakDbType DetectMazakType(IConfigurationSection cfg, string localDbPath)
     {
-      var verE = cfg.GetValue<bool>("Mazak", "VersionE");
-      var webver = cfg.GetValue<bool>("Mazak", "Web Version");
-      var smoothVer = cfg.GetValue<bool>("Mazak", "Smooth Version");
+      var verE = cfg.GetValue<bool>("VersionE");
+      var webver = cfg.GetValue<bool>("Web Version");
+      var smoothVer = cfg.GetValue<bool>("Smooth Version");
 
       if (verE)
         return MazakDbType.MazakVersionE;
@@ -321,24 +326,6 @@ namespace MazakMachineInterface
     }
   }
 
-  public class MazakImplementation : IFMSImplementation
-  {
-    public FMSNameAndVersion NameAndVersion => new FMSNameAndVersion()
-    {
-      Name = "Mazak",
-      Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
-    };
-
-    public IFMSBackend Backend { get; } = new MazakBackend();
-
-    public IList<IBackgroundWorker> Workers { get; } = new List<IBackgroundWorker>();
-
-    public string CustomizeInstructionPath(string part, int? process, string type, long? materialID)
-    {
-      throw new NotImplementedException();
-    }
-  }
-
   public static class MazakProgram
   {
     public static void Main()
@@ -348,7 +335,16 @@ namespace MazakMachineInterface
 #else
 			var useService = true;
 #endif
-      Program.Run(useService, new MazakImplementation());
+      Program.Run(useService, () =>
+        new FMSImplementation()
+        {
+          Backend = new MazakBackend(),
+          NameAndVersion = new FMSNameAndVersion()
+          {
+            Name = "Mazak",
+            Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
+          }
+        });
     }
   }
 }

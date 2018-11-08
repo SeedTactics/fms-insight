@@ -37,14 +37,14 @@ using BlackMaple.MachineWatchInterface;
 
 namespace Cincron
 {
-  public class CincronBackend : IFMSBackend
+  public class CincronBackend : IFMSBackend, IDisposable
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<CincronBackend>();
 
     private JobLogDB _log;
     private MessageWatcher _msgWatcher;
 
-    public void Init(string dataDirectory, IConfig cfg, FMSSettings settings)
+    public CincronBackend()
     {
       try
       {
@@ -68,8 +68,8 @@ namespace Cincron
         _log = new JobLogDB();
 
         _log.Open(
-            System.IO.Path.Combine(dataDirectory, "log.db"),
-            firstSerialOnEmpty: settings.StartingSerial
+            System.IO.Path.Combine(Program.ServerSettings.DataDirectory, "log.db"),
+            firstSerialOnEmpty: Program.FMSSettings.StartingSerial
         );
         _msgWatcher = new MessageWatcher(msgFile, _log);
         _msgWatcher.Start();
@@ -81,10 +81,12 @@ namespace Cincron
       }
     }
 
-    public void Halt()
+    public void Dispose()
     {
       if (_msgWatcher != null) _msgWatcher.Halt();
       if (_log != null) _log.Close();
+      _msgWatcher = null;
+      _log = null;
     }
 
     public IInspectionControl InspectionControl()
@@ -113,22 +115,6 @@ namespace Cincron
     }
   }
 
-  public class CincronImplementation : IFMSImplementation
-  {
-    public FMSNameAndVersion NameAndVersion => new FMSNameAndVersion()
-    {
-      Name = "Cincron",
-      Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
-    };
-    public IFMSBackend Backend { get; } = new CincronBackend();
-    public IList<IBackgroundWorker> Workers { get; } = new List<IBackgroundWorker>();
-
-    public string CustomizeInstructionPath(string part, int? process, string type, long? materialID)
-    {
-      throw new NotImplementedException();
-    }
-  }
-
   public static class CincronProgram
   {
     public static void Main()
@@ -138,7 +124,16 @@ namespace Cincron
 #else
             var useService = true;
 #endif
-      Program.Run(useService, new CincronImplementation());
+      Program.Run(useService, () =>
+        new FMSImplementation()
+        {
+          Backend = new CincronBackend(),
+          NameAndVersion = new FMSNameAndVersion()
+          {
+            Name = "Cincron",
+            Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
+          }
+        });
     }
   }
 }

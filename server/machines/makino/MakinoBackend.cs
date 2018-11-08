@@ -34,10 +34,11 @@ using System;
 using System.Collections.Generic;
 using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
+using Microsoft.Extensions.Configuration;
 
 namespace Makino
 {
-  public class MakinoBackend : IFMSBackend
+  public class MakinoBackend : IFMSBackend, IDisposable
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<MakinoBackend>();
 
@@ -57,36 +58,37 @@ namespace Makino
 #pragma warning restore 649
     private string _dataDirectory;
 
-    public void Init(string dataDir, IConfig cfg, FMSSettings settings)
+    public MakinoBackend()
     {
       try
       {
+        var cfg = Program.Configuration.GetSection("Makino");
 
-        string adePath = cfg.GetValue<string>("Makino", "ADE Path");
+        string adePath = cfg.GetValue<string>("ADE Path");
         if (string.IsNullOrEmpty(adePath))
         {
           adePath = @"c:\Makino\ADE";
         }
 
-        string dbConnStr = cfg.GetValue<string>("Makino", "SQL Server Connection String");
+        string dbConnStr = cfg.GetValue<string>("SQL Server Connection String");
         if (string.IsNullOrEmpty(dbConnStr))
         {
           dbConnStr = DetectSqlConnectionStr();
         }
 
-        bool downloadOnlyOrders = cfg.GetValue<bool>("Makino", "Download Only Orders");
+        bool downloadOnlyOrders = cfg.GetValue<bool>("Download Only Orders");
 
         Log.Information(
                     "Starting makino backend. Connection Str: {connStr}, ADE Path: {path}, DownloadOnlyOrders: {downOnlyOrders}",
                      dbConnStr, adePath, downloadOnlyOrders);
 
-        _dataDirectory = dataDir;
+        _dataDirectory = Program.ServerSettings.DataDirectory;
 
         _log = new JobLogDB();
         _log.Open(
             System.IO.Path.Combine(_dataDirectory, "log.db"),
             System.IO.Path.Combine(_dataDirectory, "inspections.db"),
-            firstSerialOnEmpty: settings.StartingSerial
+            firstSerialOnEmpty: Program.FMSSettings.StartingSerial
         );
 
         _jobDB = new BlackMaple.MachineFramework.JobDB();
@@ -100,7 +102,7 @@ namespace Makino
                 _makinoDB = new MakinoDB(MakinoDB.DBTypeEnum.SqlConnStr, dbConnStr, _status, _log);
 #endif
 
-        _logTimer = new LogTimer(_log, _jobDB, _makinoDB, _status, settings);
+        _logTimer = new LogTimer(_log, _jobDB, _makinoDB, _status, Program.FMSSettings);
 
         _jobs = new Jobs(_makinoDB, _jobDB, adePath, downloadOnlyOrders);
 
@@ -113,8 +115,11 @@ namespace Makino
       }
     }
 
-    public void Halt()
+    private bool _disposed = false;
+    public void Dispose()
     {
+      if (_disposed) return;
+      _disposed = true;
       _logTimer.LogsProcessed -= OnLogsProcessed;
       if (_logTimer != null) _logTimer.Halt();
       if (_jobDB != null) _jobDB.Close();
@@ -173,23 +178,6 @@ namespace Makino
       get { return _dataDirectory; }
     }
   }
-
-  public class MakinoImplementation : IFMSImplementation
-  {
-    public FMSNameAndVersion NameAndVersion => new FMSNameAndVersion()
-    {
-      Name = "Makino",
-      Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
-    };
-    public IFMSBackend Backend { get; } = new MakinoBackend();
-    public IList<IBackgroundWorker> Workers { get; } = new List<IBackgroundWorker>();
-
-    public string CustomizeInstructionPath(string part, int? process, string type, long? materialID)
-    {
-      throw new NotImplementedException();
-    }
-  }
-
   public static class MakinoProgram
   {
     public static void Main()
@@ -199,7 +187,16 @@ namespace Makino
 #else
 			var useService = true;
 #endif
-      Program.Run(useService, new MakinoImplementation());
+      Program.Run(useService, () =>
+        new FMSImplementation()
+        {
+          Backend = new MakinoBackend(),
+          NameAndVersion = new FMSNameAndVersion()
+          {
+            Name = "Makino",
+            Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
+          }
+        });
     }
   }
 }

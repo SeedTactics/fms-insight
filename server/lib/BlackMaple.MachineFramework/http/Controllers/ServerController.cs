@@ -57,22 +57,23 @@ namespace BlackMaple.MachineFramework.Controllers
   public class serverController : ControllerBase
   {
     private IStoreSettings _settings;
-    private IFMSImplementation _fmsImpl;
+    private IFMSInspectionPath _inspPath;
+    private FMSNameAndVersion _nameAndVer;
 
-    public serverController(IFMSImplementation impl, IStoreSettings s)
+    public serverController(IFMSInspectionPath inspPath, FMSNameAndVersion nameAndVersion, IStoreSettings s)
     {
       _settings = s;
-      _fmsImpl = impl;
+      _inspPath = inspPath;
+      _nameAndVer = nameAndVersion;
     }
 
     [HttpGet("fms-information")]
     public FMSInfo FMSInformation()
     {
-      var info = _fmsImpl.NameAndVersion;
       return new FMSInfo()
       {
-        Name = info.Name,
-        Version = info.Version,
+        Name = _nameAndVer.Name,
+        Version = _nameAndVer.Version,
         RequireScanAtWash = Program.FMSSettings.RequireScanAtWash,
         RequireWorkorderBeforeAllowWashComplete = Program.FMSSettings.RequireWorkorderBeforeAllowWashComplete,
         AdditionalLogServers = Program.FMSSettings.AdditionalLogServers,
@@ -112,17 +113,20 @@ namespace BlackMaple.MachineFramework.Controllers
     {
       try
       {
-        var path = _fmsImpl.CustomizeInstructionPath(part, process, type, materialID);
-        if (string.IsNullOrEmpty(path))
+        if (_inspPath != null)
         {
-          return NotFound(
-              "Error: could not find an instruction for " +
-              (string.IsNullOrEmpty(type) ? part : part + " and " + type) +
-              " in the directory " +
-              Program.FMSSettings.InstructionFilePath
-          );
+          var path = _inspPath.CustomizeInstructionPath(part, process, type, materialID);
+          if (string.IsNullOrEmpty(path))
+          {
+            return NotFound(
+                "Error: could not find an instruction for " +
+                (string.IsNullOrEmpty(type) ? part : part + " and " + type) +
+                " in the directory " +
+                Program.FMSSettings.InstructionFilePath
+            );
+          }
+          return Redirect(path);
         }
-        return Redirect(path);
       }
       catch (NotImplementedException)
       {

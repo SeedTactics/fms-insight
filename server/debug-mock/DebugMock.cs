@@ -54,32 +54,24 @@ namespace DebugMachineWatchApiServer
           System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
           "../../../sample-instructions/"
       ));
-      BlackMaple.MachineFramework.Program.Run(false, new MockFMSImplementation());
-    }
-  }
-
-  public class MockFMSImplementation : IFMSImplementation
-  {
-    public FMSNameAndVersion NameAndVersion { get; }
-        = new FMSNameAndVersion()
+      BlackMaple.MachineFramework.Program.Run(false, () =>
+      {
+        var backend = new MockServerBackend();
+        return new FMSImplementation()
         {
-          Name = "mock",
-          Version = "1.2.3.4"
+          Backend = backend,
+          NameAndVersion = new FMSNameAndVersion()
+          {
+            Name = "mock",
+            Version = "1.2.3.4"
+          }
         };
 
-    public IFMSBackend Backend { get; }
-        = new MockServerBackend();
-
-    public IList<IBackgroundWorker> Workers { get; }
-        = new List<IBackgroundWorker>();
-
-    public string CustomizeInstructionPath(string part, int? process, string type, long? materialID)
-    {
-      throw new NotImplementedException();
+      });
     }
   }
 
-  public class MockServerBackend : IFMSBackend, IJobControl, IOldJobDecrement
+  public class MockServerBackend : IFMSBackend, IJobControl, IOldJobDecrement, IDisposable
   {
     public JobLogDB LogDB { get; private set; }
     public JobDB JobDB { get; private set; }
@@ -91,7 +83,7 @@ namespace DebugMachineWatchApiServer
 
     public event NewCurrentStatus OnNewCurrentStatus;
 
-    public void Init(string dataDir, IConfig config, FMSSettings settings)
+    public MockServerBackend()
     {
       string path = null; // dataDir
 
@@ -140,7 +132,7 @@ namespace DebugMachineWatchApiServer
       LoadStatus(sampleDataPath, offset);
     }
 
-    public void Halt()
+    public void Dispose()
     {
       JobDB.Close();
       LogDB.Close();
