@@ -49,11 +49,11 @@ namespace BlackMaple.MachineWatch
 {
     public class RemotingServer : IDisposable
     {
-        public readonly IFMSImplementation plugin;
+        public readonly FMSImplementation plugin;
         private readonly IStoreSettings settingsServer;
         private readonly RemoteSingletons singletons;
 
-        public RemotingServer(IFMSImplementation p, string dataDir, IStoreSettings settings)
+        public RemotingServer(FMSImplementation p, string dataDir, IStoreSettings settings)
         {
             plugin = p;
 
@@ -134,7 +134,7 @@ namespace BlackMaple.MachineWatch
             return null;
         }
 
-        #region IDisposable Support
+#region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
 
         // This code added to correctly implement the disposable pattern.
@@ -147,7 +147,7 @@ namespace BlackMaple.MachineWatch
                 disposedValue = true;
             }
         }
-        #endregion
+#endregion
 
         public class RemoteSingletons
         {
