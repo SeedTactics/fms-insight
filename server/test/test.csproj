@@ -21,7 +21,7 @@
     <PackageReference Include="System.Reflection" Version="*" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="*" />
 
-    <PackageReference Include="FluentAssertions" Version="5.*"/>
+    <PackageReference Include="FluentAssertions" Version="5.4.2"/>
     <PackageReference Include="AutoFixture" Version="4.*"/>
     <PackageReference Include="NSubstitute" Version="3.1.*"/>
   </ItemGroup>
