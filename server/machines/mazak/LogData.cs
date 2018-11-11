@@ -82,17 +82,20 @@ namespace MazakMachineInterface
   }
 
   public delegate void PalletMoveDel(int pallet, string fromStation, string toStation);
+  public interface INotifyPalletMovement
+  {
+    event PalletMoveDel PalletMove;
+  }
   public delegate void NewEntriesDel();
-  public interface IMazakLogReader
+  public interface IMazakLogReader : INotifyPalletMovement
   {
     void RecheckQueues();
     void Halt();
-    event PalletMoveDel PalletMove;
     event NewEntriesDel NewEntries;
   }
 
 #if USE_OLEDB
-	public class LogDataVerE : IMazakLogReader
+	public class LogDataVerE : IMazakLogReader, INotifyPalletMovement
 	{
     private const string DateTimeFormat = "yyyyMMddHHmmss";
 
@@ -316,7 +319,7 @@ namespace MazakMachineInterface
 	}
 #endif
 
-  public class LogDataWeb : IMazakLogReader
+  public class LogDataWeb : IMazakLogReader, INotifyPalletMovement
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LogDataWeb>();
 
