@@ -52,11 +52,7 @@ namespace BlackMaple.MachineFramework
 {
   public class Program
   {
-    public static IConfiguration Configuration { get; private set; }
-    public static ServerSettings ServerSettings { get; private set; }
-    public static FMSSettings FMSSettings { get; private set; }
-
-    private static void LoadConfig()
+    private static (IConfiguration, ServerSettings) LoadConfig()
     {
       var configFile = Path.Combine(ServerSettings.ConfigDirectory, "config.ini");
       if (!File.Exists(configFile))
@@ -70,23 +66,24 @@ namespace BlackMaple.MachineFramework
         }
       }
 
-      Configuration =
+      var cfg =
           new ConfigurationBuilder()
           .AddIniFile(configFile, optional: true)
           .AddEnvironmentVariables()
           .Build();
 
-      ServerSettings = ServerSettings.Load(Configuration);
-      FMSSettings = FMSSettings.Load(Configuration);
+      var s = ServerSettings.Load(cfg);
+
+      return (cfg, s);
     }
 
-    private static void EnableSerilog(bool enableEventLog)
+    private static void EnableSerilog(ServerSettings serverSt, bool enableEventLog)
     {
       var logConfig = new LoggerConfiguration()
           .MinimumLevel.Debug()
           .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
           .WriteTo.Console(restrictedToMinimumLevel:
-              ServerSettings.EnableDebugLog ?
+              serverSt.EnableDebugLog ?
                   Serilog.Events.LogEventLevel.Debug
                 : Serilog.Events.LogEventLevel.Information);
 
@@ -99,11 +96,11 @@ namespace BlackMaple.MachineFramework
             }
 #endif
 
-      if (ServerSettings.EnableDebugLog)
+      if (serverSt.EnableDebugLog)
       {
         logConfig = logConfig.WriteTo.File(
             new Serilog.Formatting.Compact.CompactJsonFormatter(),
-            System.IO.Path.Combine(ServerSettings.DataDirectory, "fmsinsight-debug.txt"),
+            System.IO.Path.Combine(ServerSettings.ConfigDirectory, "fmsinsight-debug.txt"),
             rollingInterval: RollingInterval.Day,
             restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Debug);
       }
@@ -111,25 +108,30 @@ namespace BlackMaple.MachineFramework
       Log.Logger = logConfig.CreateLogger();
     }
 
-    public static IWebHost BuildWebHost(FMSImplementation fmsImpl)
+    public static IWebHost BuildWebHost(IConfiguration cfg, ServerSettings serverSt, FMSSettings fmsSt, FMSImplementation fmsImpl)
     {
       return new WebHostBuilder()
-          .UseConfiguration(Configuration)
-          .ConfigureServices(s => { s.AddSingleton<FMSImplementation>(fmsImpl); })
+          .UseConfiguration(cfg)
+          .ConfigureServices(s =>
+          {
+            s.AddSingleton<FMSImplementation>(fmsImpl);
+            s.AddSingleton<FMSSettings>(fmsSt);
+            s.AddSingleton<ServerSettings>(serverSt);
+          })
           .SuppressStatusMessages(suppressStatusMessages: true)
           .UseKestrel(options =>
           {
             var address = IPAddress.IPv6Any;
-            if (!string.IsNullOrEmpty(ServerSettings.TLSCertFile))
+            if (!string.IsNullOrEmpty(serverSt.TLSCertFile))
             {
-              options.Listen(address, ServerSettings.Port, listenOptions =>
+              options.Listen(address, serverSt.Port, listenOptions =>
               {
-                listenOptions.UseHttps(ServerSettings.TLSCertFile);
+                listenOptions.UseHttps(serverSt.TLSCertFile);
               });
             }
             else
             {
-              options.Listen(address, ServerSettings.Port);
+              options.Listen(address, serverSt.Port);
             }
           })
           .UseContentRoot(ServerSettings.ContentRootDirectory)
@@ -138,38 +140,39 @@ namespace BlackMaple.MachineFramework
           .Build();
     }
 
-    public static void Run(bool useService, Func<FMSImplementation> initalize, bool outputConfigToLog = true)
+    public static void Run(bool useService, Func<IConfiguration, FMSSettings, FMSImplementation> initalize, bool outputConfigToLog = true)
     {
-      LoadConfig();
-      EnableSerilog(enableEventLog: useService);
-
-      if (outputConfigToLog)
-      {
-        Log.Information("Starting FMS Insight with settings {@ServerSettings} and {@FMSSettings}. " +
-                        " Using ContentRoot {ContentRoot} and Config {ConfigDir}.",
-            ServerSettings, FMSSettings, ServerSettings.ContentRootDirectory, ServerSettings.ConfigDirectory);
-      }
+      var (cfg, serverSt) = LoadConfig();
+      EnableSerilog(serverSt: serverSt, enableEventLog: useService);
 
       FMSImplementation fmsImpl;
+      FMSSettings fmsSt;
       try
       {
-        fmsImpl = initalize();
+        fmsSt = new FMSSettings(cfg);
+        if (outputConfigToLog)
+        {
+          Log.Information("Starting FMS Insight with settings {@ServerSettings} and {@FMSSettings}. " +
+                          " Using ContentRoot {ContentRoot} and Config {ConfigDir}.",
+              serverSt, fmsSt, ServerSettings.ContentRootDirectory, ServerSettings.ConfigDirectory);
+        }
+        fmsImpl = initalize(cfg, fmsSt);
       }
       catch (Exception ex)
       {
         Serilog.Log.Error(ex, "Error initializing FMS Insight");
         return;
       }
-      var host = BuildWebHost(fmsImpl);
+      var host = BuildWebHost(cfg, serverSt, fmsSt, fmsImpl);
 
 #if SERVICE_AVAIL
-                if (useService)
-                {
-                    Microsoft.AspNetCore.Hosting.WindowsServices.WebHostWindowsServiceExtensions
-                        .RunAsService(host);
-                } else {
-                    host.Run();
-                }
+      if (useService)
+      {
+        Microsoft.AspNetCore.Hosting.WindowsServices.WebHostWindowsServiceExtensions
+          .RunAsService(host);
+      } else {
+        host.Run();
+      }
 #else
       host.Run();
 #endif

@@ -65,8 +65,6 @@ namespace BlackMaple.MachineFramework
 
 #endif
 
-
-    public string DataDirectory { get; set; } = null;
     public bool EnableDebugLog { get; set; } = false;
     public int Port { get; set; } = 5000;
     public string TLSCertFile { get; set; } = null;
@@ -86,11 +84,93 @@ namespace BlackMaple.MachineFramework
       if (s == null)
         s = new ServerSettings();
 
-      if (string.IsNullOrEmpty(s.DataDirectory))
-      {
-        s.DataDirectory = DefaultDataDirectory();
-      }
       return s;
+    }
+  }
+
+  public enum SerialType
+  {
+    NoAutomaticSerials,
+    AssignOneSerialPerMaterial,  // assign a different serial to each piece of material
+    AssignOneSerialPerCycle,     // assign a single serial to all the material on each cycle
+  }
+
+  public class FMSSettings
+  {
+    public string DataDirectory { get; set; } = null;
+    public SerialType SerialType { get; set; } = SerialType.NoAutomaticSerials;
+    public int SerialLength { get; set; } = 9;
+    public string StartingSerial { get; set; } = null;
+    public string InstructionFilePath { get; set; }
+    public bool RequireScanAtWash { get; set; }
+    public bool RequireWorkorderBeforeAllowWashComplete { get; set; }
+
+    public Dictionary<string, MachineWatchInterface.QueueSize> Queues { get; }
+      = new Dictionary<string, MachineWatchInterface.QueueSize>();
+
+    // key is queue name, value is IP address or DNS name of fms insight server with the queue
+    public Dictionary<string, string> ExternalQueues { get; }
+      = new Dictionary<string, string>();
+
+    public IReadOnlyList<string> AdditionalLogServers { get; set; }
+
+    public FMSSettings() { }
+    public FMSSettings(IConfiguration config)
+    {
+      var fmsSection = config.GetSection("FMS");
+
+      DataDirectory = fmsSection.GetValue<string>("DataDirectory", null);
+      if (string.IsNullOrEmpty(DataDirectory))
+      {
+        DataDirectory = DefaultDataDirectory();
+      }
+
+
+      if (fmsSection.GetValue<bool>("AutomaticSerials", false))
+      {
+        SerialType = SerialType.AssignOneSerialPerMaterial;
+      }
+      SerialLength = fmsSection.GetValue<int>("SerialLength", 10);
+      StartingSerial = fmsSection.GetValue<string>("StartingSerial", null);
+      RequireScanAtWash = fmsSection.GetValue<bool>("RequireScanAtWash", false);
+      RequireWorkorderBeforeAllowWashComplete = fmsSection.GetValue<bool>("RequireWorkorderBeforeAllowWashComplete", false);
+      AdditionalLogServers =
+        fmsSection.GetValue<string>("AdditionalServersForLogs", "")
+        .Split(',')
+        .Where(x => !string.IsNullOrWhiteSpace(x))
+        .Select(x =>
+        {
+          var uri = new UriBuilder(x);
+          if (uri.Scheme == "") uri.Scheme = "http";
+          if (uri.Port == 80 && x.IndexOf(':') < 0) uri.Port = 5000;
+          var uriS = uri.Uri.ToString();
+          // remove trailing slash
+          return uriS.Substring(0, uriS.Length - 1);
+        })
+        .ToList();
+
+      InstructionFilePath = fmsSection.GetValue<string>("InstructionFilePath");
+
+      foreach (var q in config.GetSection("QUEUE").AsEnumerable())
+      {
+        var key = q.Key.Substring(q.Key.IndexOf(':') + 1);
+        if (q.Key.IndexOf(':') >= 0 && !string.IsNullOrEmpty(key) && int.TryParse(q.Value, out int count))
+        {
+          Queues[key] = new MachineWatchInterface.QueueSize()
+          {
+            MaxSizeBeforeStopUnloading = count > 0 ? (int?)count : null
+          };
+        }
+      }
+
+      foreach (var q in config.GetSection("EXTERNAL_QUEUE").AsEnumerable())
+      {
+        var key = q.Key.Substring(q.Key.IndexOf(':') + 1);
+        if (q.Key.IndexOf(':') >= 0 && !string.IsNullOrEmpty(key))
+        {
+          ExternalQueues[key] = q.Value;
+        }
+      }
     }
 
     private static string DefaultDataDirectory()
@@ -129,86 +209,6 @@ namespace BlackMaple.MachineFramework
       if (!Directory.Exists(dataDir))
         Directory.CreateDirectory(dataDir);
       return dataDir;
-    }
-  }
-
-  public enum SerialType
-  {
-    NoAutomaticSerials,
-    AssignOneSerialPerMaterial,  // assign a different serial to each piece of material
-    AssignOneSerialPerCycle,     // assign a single serial to all the material on each cycle
-  }
-
-  public class FMSSettings
-  {
-    public SerialType SerialType { get; set; } = SerialType.NoAutomaticSerials;
-    public int SerialLength { get; set; } = 9;
-    public string StartingSerial { get; set; } = null;
-    public string InstructionFilePath { get; set; }
-    public bool RequireScanAtWash { get; set; }
-    public bool RequireWorkorderBeforeAllowWashComplete { get; set; }
-
-    public Dictionary<string, MachineWatchInterface.QueueSize> Queues { get; }
-      = new Dictionary<string, MachineWatchInterface.QueueSize>();
-
-    // key is queue name, value is IP address or DNS name of fms insight server with the queue
-    public Dictionary<string, string> ExternalQueues { get; }
-      = new Dictionary<string, string>();
-
-    public IReadOnlyList<string> AdditionalLogServers { get; set; }
-
-    static public FMSSettings Load(IConfiguration config)
-    {
-      var s = new FMSSettings();
-
-      var fmsSection = config.GetSection("FMS");
-      if (fmsSection.GetValue<bool>("AutomaticSerials", false))
-      {
-        s.SerialType = SerialType.AssignOneSerialPerMaterial;
-      }
-      s.SerialLength = fmsSection.GetValue<int>("SerialLength", 10);
-      s.StartingSerial = fmsSection.GetValue<string>("StartingSerial", null);
-      s.RequireScanAtWash = fmsSection.GetValue<bool>("RequireScanAtWash", false);
-      s.RequireWorkorderBeforeAllowWashComplete = fmsSection.GetValue<bool>("RequireWorkorderBeforeAllowWashComplete", false);
-      s.AdditionalLogServers =
-        fmsSection.GetValue<string>("AdditionalServersForLogs", "")
-        .Split(',')
-        .Where(x => !string.IsNullOrWhiteSpace(x))
-        .Select(x =>
-        {
-          var uri = new UriBuilder(x);
-          if (uri.Scheme == "") uri.Scheme = "http";
-          if (uri.Port == 80 && x.IndexOf(':') < 0) uri.Port = 5000;
-          var uriS = uri.Uri.ToString();
-          // remove trailing slash
-          return uriS.Substring(0, uriS.Length - 1);
-        })
-        .ToList();
-
-      s.InstructionFilePath = fmsSection.GetValue<string>("InstructionFilePath");
-
-      foreach (var q in config.GetSection("QUEUE").AsEnumerable())
-      {
-        var key = q.Key.Substring(q.Key.IndexOf(':') + 1);
-        if (q.Key.IndexOf(':') >= 0 && !string.IsNullOrEmpty(key) && int.TryParse(q.Value, out int count))
-        {
-          s.Queues[key] = new MachineWatchInterface.QueueSize()
-          {
-            MaxSizeBeforeStopUnloading = count > 0 ? (int?)count : null
-          };
-        }
-      }
-
-      foreach (var q in config.GetSection("EXTERNAL_QUEUE").AsEnumerable())
-      {
-        var key = q.Key.Substring(q.Key.IndexOf(':') + 1);
-        if (q.Key.IndexOf(':') >= 0 && !string.IsNullOrEmpty(key))
-        {
-          s.ExternalQueues[key] = q.Value;
-        }
-      }
-
-      return s;
     }
   }
 }

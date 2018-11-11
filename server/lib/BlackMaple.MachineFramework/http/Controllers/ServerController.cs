@@ -58,10 +58,14 @@ namespace BlackMaple.MachineFramework.Controllers
   {
     private IFMSInstructionPath _instrPath;
     private FMSNameAndVersion _nameAndVer;
+    private FMSSettings _cfg;
+    private ServerSettings _serverSt;
 
-    public serverController(IFMSInstructionPath instr, FMSNameAndVersion nameAndVersion)
+    public serverController(FMSSettings fmsSt, ServerSettings serverSt, IFMSInstructionPath instr, FMSNameAndVersion nameAndVersion)
     {
       _instrPath = instr;
+      _cfg = fmsSt;
+      _serverSt = serverSt;
       _nameAndVer = nameAndVersion;
     }
 
@@ -72,11 +76,11 @@ namespace BlackMaple.MachineFramework.Controllers
       {
         Name = _nameAndVer.Name,
         Version = _nameAndVer.Version,
-        RequireScanAtWash = Program.FMSSettings.RequireScanAtWash,
-        RequireWorkorderBeforeAllowWashComplete = Program.FMSSettings.RequireWorkorderBeforeAllowWashComplete,
-        AdditionalLogServers = Program.FMSSettings.AdditionalLogServers,
-        OpenIDConnectAuthority = Program.ServerSettings.OpenIDConnectAuthority,
-        OpenIDConnectClientId = Program.ServerSettings.OpenIDConnectClientId
+        RequireScanAtWash = _cfg.RequireScanAtWash,
+        RequireWorkorderBeforeAllowWashComplete = _cfg.RequireWorkorderBeforeAllowWashComplete,
+        AdditionalLogServers = _cfg.AdditionalLogServers,
+        OpenIDConnectAuthority = _serverSt.OpenIDConnectAuthority,
+        OpenIDConnectClientId = _serverSt.OpenIDConnectClientId
       };
     }
 
@@ -84,7 +88,7 @@ namespace BlackMaple.MachineFramework.Controllers
     public string GetSettings(string id)
     {
       var f = System.IO.Path.Combine(
-          Program.ServerSettings.DataDirectory,
+          _cfg.DataDirectory,
           System.IO.Path.GetFileNameWithoutExtension(id))
           + ".json";
       if (System.IO.File.Exists(f))
@@ -97,15 +101,15 @@ namespace BlackMaple.MachineFramework.Controllers
     public void SetSetting(string id, [FromBody] string setting)
     {
       var f = System.IO.Path.Combine(
-          Program.ServerSettings.DataDirectory,
+          _cfg.DataDirectory,
           System.IO.Path.GetFileNameWithoutExtension(id))
           + ".json";
       System.IO.File.WriteAllText(f, setting);
     }
 
-    private static string SearchFiles(string part, string type)
+    private string SearchFiles(string part, string type)
     {
-      foreach (var f in Directory.GetFiles(Program.FMSSettings.InstructionFilePath))
+      foreach (var f in Directory.GetFiles(_cfg.InstructionFilePath))
       {
         if (!Path.GetFileName(f).Contains(part)) continue;
         if (!string.IsNullOrEmpty(type) && !Path.GetFileName(f).ToLower().Contains(type.ToLower())) continue;
@@ -131,7 +135,7 @@ namespace BlackMaple.MachineFramework.Controllers
                 "Error: could not find an instruction for " +
                 (string.IsNullOrEmpty(type) ? part : part + " and " + type) +
                 " in the directory " +
-                Program.FMSSettings.InstructionFilePath
+                _cfg.InstructionFilePath
             );
           }
           return Redirect(path);
@@ -142,11 +146,11 @@ namespace BlackMaple.MachineFramework.Controllers
         // do nothing, continue with default impl
       }
 
-      if (string.IsNullOrEmpty(Program.FMSSettings.InstructionFilePath))
+      if (string.IsNullOrEmpty(_cfg.InstructionFilePath))
       {
         return NotFound("Error: instruction directory must be configured in FMS Insight config file.");
       }
-      if (!Directory.Exists(Program.FMSSettings.InstructionFilePath))
+      if (!Directory.Exists(_cfg.InstructionFilePath))
       {
         return NotFound("Error: configured instruction directory does not exist");
       }
@@ -183,7 +187,7 @@ namespace BlackMaple.MachineFramework.Controllers
             "Error: could not find a file with " +
             (string.IsNullOrEmpty(type) ? part : part + " and " + type) +
             " in the filename inside " +
-            Program.FMSSettings.InstructionFilePath
+            _cfg.InstructionFilePath
         );
       }
       else

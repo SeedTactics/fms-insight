@@ -58,11 +58,11 @@ namespace Makino
 #pragma warning restore 649
     private string _dataDirectory;
 
-    public MakinoBackend()
+    public MakinoBackend(IConfiguration config, FMSSettings st)
     {
       try
       {
-        var cfg = Program.Configuration.GetSection("Makino");
+        var cfg = config.GetSection("Makino");
 
         string adePath = cfg.GetValue<string>("ADE Path");
         if (string.IsNullOrEmpty(adePath))
@@ -82,13 +82,13 @@ namespace Makino
                     "Starting makino backend. Connection Str: {connStr}, ADE Path: {path}, DownloadOnlyOrders: {downOnlyOrders}",
                      dbConnStr, adePath, downloadOnlyOrders);
 
-        _dataDirectory = Program.ServerSettings.DataDirectory;
+        _dataDirectory = st.DataDirectory;
 
         _log = new JobLogDB();
         _log.Open(
             System.IO.Path.Combine(_dataDirectory, "log.db"),
             System.IO.Path.Combine(_dataDirectory, "inspections.db"),
-            firstSerialOnEmpty: Program.FMSSettings.StartingSerial
+            firstSerialOnEmpty: st.StartingSerial
         );
 
         _jobDB = new BlackMaple.MachineFramework.JobDB();
@@ -102,7 +102,7 @@ namespace Makino
                 _makinoDB = new MakinoDB(MakinoDB.DBTypeEnum.SqlConnStr, dbConnStr, _status, _log);
 #endif
 
-        _logTimer = new LogTimer(_log, _jobDB, _makinoDB, _status, Program.FMSSettings);
+        _logTimer = new LogTimer(_log, _jobDB, _makinoDB, _status, st);
 
         _jobs = new Jobs(_makinoDB, _jobDB, adePath, downloadOnlyOrders);
 
@@ -187,10 +187,10 @@ namespace Makino
 #else
 			var useService = true;
 #endif
-      Program.Run(useService, () =>
+      Program.Run(useService, (cfg, st) =>
         new FMSImplementation()
         {
-          Backend = new MakinoBackend(),
+          Backend = new MakinoBackend(cfg, st),
           NameAndVersion = new FMSNameAndVersion()
           {
             Name = "Makino",

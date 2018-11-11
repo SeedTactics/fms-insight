@@ -54,7 +54,7 @@ namespace DebugMachineWatchApiServer
           System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
           "../../../sample-instructions/"
       ));
-      BlackMaple.MachineFramework.Program.Run(false, () =>
+      BlackMaple.MachineFramework.Program.Run(false, (cfg, st) =>
       {
         var backend = new MockServerBackend();
         return new FMSImplementation()

@@ -55,10 +55,14 @@ namespace BlackMaple.MachineFramework
   public class Startup
   {
     private FMSImplementation _fmsImpl;
+    private ServerSettings _serverSt;
+    private FMSSettings _fmsSt;
 
-    public Startup(FMSImplementation fmsImpl)
+    public Startup(FMSImplementation fmsImpl, ServerSettings serverSt, FMSSettings fmsSt)
     {
       _fmsImpl = fmsImpl;
+      _serverSt = serverSt;
+      _fmsSt = fmsSt;
     }
 
     // This method gets called by the runtime. Use this method to add services to the container.
@@ -106,14 +110,14 @@ namespace BlackMaple.MachineFramework
             options.SerializerSettings.ConstructorHandling = Newtonsoft.Json.ConstructorHandling.AllowNonPublicDefaultConstructor;
           });
 
-      if (Program.ServerSettings.UseAuthentication)
+      if (_serverSt.UseAuthentication)
       {
         mvcBuilder.AddAuthorization();
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
-          options.Authority = Program.ServerSettings.OpenIDConnectAuthority;
-          options.Audience = Program.ServerSettings.OpenIDConnectAudience;
+          options.Authority = _serverSt.OpenIDConnectAuthority;
+          options.Audience = _serverSt.OpenIDConnectAudience;
 #if DEBUG
           options.RequireHttpsMetadata = false;
 #endif
@@ -145,7 +149,7 @@ namespace BlackMaple.MachineFramework
       app.UseResponseCompression();
       app.UseCors(builder => builder
         .WithOrigins(
-            Program.FMSSettings.AdditionalLogServers
+            _fmsSt.AdditionalLogServers
 #if DEBUG
                   .Concat(new[] { "http://localhost:1234" }) // parcel bundler url
 #endif
@@ -159,7 +163,7 @@ namespace BlackMaple.MachineFramework
         .WithHeaders("content-type", "authorization")
       );
       app.UseMiddleware(typeof(ErrorHandlingMiddleware));
-      if (Program.ServerSettings.UseAuthentication)
+      if (_serverSt.UseAuthentication)
       {
         app.UseAuthentication();
       }
@@ -173,23 +177,23 @@ namespace BlackMaple.MachineFramework
         ContentTypeProvider = fileExt
       });
 
-      if (!string.IsNullOrEmpty(Program.FMSSettings.InstructionFilePath))
+      if (!string.IsNullOrEmpty(_fmsSt.InstructionFilePath))
       {
-        if (System.IO.Directory.Exists(Program.FMSSettings.InstructionFilePath))
+        if (System.IO.Directory.Exists(_fmsSt.InstructionFilePath))
         {
           app.UseStaticFiles(new StaticFileOptions()
           {
-            FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(Program.FMSSettings.InstructionFilePath),
+            FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(_fmsSt.InstructionFilePath),
             RequestPath = "/instructions"
           });
         }
         else
         {
-          Log.Error("Instruction directory {path} does not exist or is not a directory", Program.FMSSettings.InstructionFilePath);
+          Log.Error("Instruction directory {path} does not exist or is not a directory", _fmsSt.InstructionFilePath);
         }
       }
 
-      if (!string.IsNullOrEmpty(Program.ServerSettings.TLSCertFile))
+      if (!string.IsNullOrEmpty(_serverSt.TLSCertFile))
       {
         if (!env.IsDevelopment())
           app.UseHsts();
@@ -203,7 +207,7 @@ namespace BlackMaple.MachineFramework
         {
           if (context.WebSockets.IsWebSocketRequest)
           {
-            if (Program.ServerSettings.UseAuthentication)
+            if (_serverSt.UseAuthentication)
             {
               var res = await context.AuthenticateAsync();
               if (res.Failure != null)

@@ -80,9 +80,9 @@ namespace MazakMachineInterface
       get { return logDataLoader; }
     }
 
-    public MazakBackend()
+    public MazakBackend(IConfiguration configuration, FMSSettings st)
     {
-      var cfg = Program.Configuration.GetSection("Mazak");
+      var cfg = configuration.GetSection("Mazak");
       string localDbPath = cfg.GetValue<string>("Database Path");
       MazakType = DetectMazakType(cfg, localDbPath);
 
@@ -173,7 +173,7 @@ namespace MazakMachineInterface
         if (bool.TryParse(serialPerMaterial, out result))
         {
           if (!result)
-            Program.FMSSettings.SerialType = SerialType.AssignOneSerialPerCycle;
+            st.SerialType = SerialType.AssignOneSerialPerCycle;
         }
       }
 
@@ -183,17 +183,17 @@ namespace MazakMachineInterface
 
       jobLog = new BlackMaple.MachineFramework.JobLogDB();
       jobLog.Open(
-        System.IO.Path.Combine(Program.ServerSettings.DataDirectory, "log.db"),
-        System.IO.Path.Combine(Program.ServerSettings.DataDirectory, "insp.db"),
-        firstSerialOnEmpty: Program.FMSSettings.StartingSerial
+        System.IO.Path.Combine(st.DataDirectory, "log.db"),
+        System.IO.Path.Combine(st.DataDirectory, "insp.db"),
+        firstSerialOnEmpty: st.StartingSerial
       );
 
       jobDB = new BlackMaple.MachineFramework.JobDB();
-      var jobInspName = System.IO.Path.Combine(Program.ServerSettings.DataDirectory, "jobinspection.db");
+      var jobInspName = System.IO.Path.Combine(st.DataDirectory, "jobinspection.db");
       if (System.IO.File.Exists(jobInspName))
         jobDB.Open(jobInspName);
       else
-        jobDB.Open(System.IO.Path.Combine(Program.ServerSettings.DataDirectory, "mazakjobs.db"));
+        jobDB.Open(System.IO.Path.Combine(st.DataDirectory, "mazakjobs.db"));
 
       _writeDB = new OpenDatabaseKitTransactionDB(dbConnStr, MazakType);
 
@@ -215,7 +215,7 @@ namespace MazakMachineInterface
       var sendToExternal = new SendMaterialToExternalQueue();
 
       if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakSmooth)
-        logDataLoader = new LogDataWeb(logPath, jobLog, jobDB, sendToExternal, readOnlyDb, queues, Program.FMSSettings);
+        logDataLoader = new LogDataWeb(logPath, jobLog, jobDB, sendToExternal, readOnlyDb, queues, st);
       else
       {
 #if USE_OLEDB
@@ -226,9 +226,9 @@ namespace MazakMachineInterface
       }
 
       hold = new HoldPattern(_writeDB, readOnlyDb, jobDB, true);
-      var writeJobs = new WriteJobs(_writeDB, readOnlyDb, hold, jobDB, jobLog, Program.FMSSettings, CheckPalletsUsedOnce, UseStartingOffsetForDueDate, DecrementPriorityOnDownload);
+      var writeJobs = new WriteJobs(_writeDB, readOnlyDb, hold, jobDB, jobLog, st, CheckPalletsUsedOnce, UseStartingOffsetForDueDate, DecrementPriorityOnDownload);
       routing = new RoutingInfo(_writeDB, readOnlyDb, logDataLoader, jobDB, jobLog, writeJobs,
-                                CheckPalletsUsedOnce, Program.FMSSettings);
+                                CheckPalletsUsedOnce, st);
 
       logDataLoader.NewEntries += OnNewLogEntries;
       if (loadOper != null) loadOper.LoadActions += OnLoadActions;
@@ -335,10 +335,10 @@ namespace MazakMachineInterface
 #else
 			var useService = true;
 #endif
-      Program.Run(useService, () =>
+      Program.Run(useService, (cfg, st) =>
         new FMSImplementation()
         {
-          Backend = new MazakBackend(),
+          Backend = new MazakBackend(cfg, st),
           NameAndVersion = new FMSNameAndVersion()
           {
             Name = "Mazak",

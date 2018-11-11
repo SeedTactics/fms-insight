@@ -44,7 +44,7 @@ namespace Cincron
     private JobLogDB _log;
     private MessageWatcher _msgWatcher;
 
-    public CincronBackend()
+    public CincronBackend(FMSSettings cfg)
     {
       try
       {
@@ -68,8 +68,8 @@ namespace Cincron
         _log = new JobLogDB();
 
         _log.Open(
-            System.IO.Path.Combine(Program.ServerSettings.DataDirectory, "log.db"),
-            firstSerialOnEmpty: Program.FMSSettings.StartingSerial
+            System.IO.Path.Combine(cfg.DataDirectory, "log.db"),
+            firstSerialOnEmpty: cfg.StartingSerial
         );
         _msgWatcher = new MessageWatcher(msgFile, _log);
         _msgWatcher.Start();
@@ -124,10 +124,10 @@ namespace Cincron
 #else
             var useService = true;
 #endif
-      Program.Run(useService, () =>
+      Program.Run(useService, (cfg, fmsSt) =>
         new FMSImplementation()
         {
-          Backend = new CincronBackend(),
+          Backend = new CincronBackend(fmsSt),
           NameAndVersion = new FMSNameAndVersion()
           {
             Name = "Cincron",
