@@ -34,6 +34,7 @@ using System;
 using System.Collections.Generic;
 using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
+using Microsoft.Extensions.Configuration;
 
 namespace Cincron
 {
@@ -44,7 +45,7 @@ namespace Cincron
     private JobLogDB _log;
     private MessageWatcher _msgWatcher;
 
-    public CincronBackend(FMSSettings cfg)
+    public CincronBackend(IConfigurationSection config, FMSSettings cfg)
     {
       try
       {
@@ -55,7 +56,7 @@ namespace Cincron
         msgFile = System.IO.Path.Combine(
             System.IO.Path.GetDirectoryName(path), "..\\..\\..\\test\\Cincron\\parker-example-messages");
 #else
-                msgFile = cfg.GetValue<string>("Message File");
+        msgFile = config.GetValue<string>("Message File");
 #endif
 
         Log.Information("Starting cincron backend with message file {file}", msgFile);
@@ -122,12 +123,12 @@ namespace Cincron
 #if DEBUG
       var useService = false;
 #else
-            var useService = true;
+      var useService = true;
 #endif
       Program.Run(useService, (cfg, fmsSt) =>
         new FMSImplementation()
         {
-          Backend = new CincronBackend(fmsSt),
+          Backend = new CincronBackend(cfg.GetSection("Cincron"), fmsSt),
           NameAndVersion = new FMSNameAndVersion()
           {
             Name = "Cincron",
