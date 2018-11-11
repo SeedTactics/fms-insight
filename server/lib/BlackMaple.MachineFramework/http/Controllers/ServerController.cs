@@ -57,13 +57,13 @@ namespace BlackMaple.MachineFramework.Controllers
   public class serverController : ControllerBase
   {
     private IStoreSettings _settings;
-    private IFMSInspectionPath _inspPath;
+    private IFMSInstructionPath _instrPath;
     private FMSNameAndVersion _nameAndVer;
 
-    public serverController(IFMSInspectionPath inspPath, FMSNameAndVersion nameAndVersion, IStoreSettings s)
+    public serverController(IFMSInstructionPath instr, FMSNameAndVersion nameAndVersion, IStoreSettings s)
     {
       _settings = s;
-      _inspPath = inspPath;
+      _instrPath = instr;
       _nameAndVer = nameAndVersion;
     }
 
@@ -113,9 +113,9 @@ namespace BlackMaple.MachineFramework.Controllers
     {
       try
       {
-        if (_inspPath != null)
+        if (_instrPath != null)
         {
-          var path = _inspPath.CustomizeInstructionPath(part, process, type, materialID);
+          var path = _instrPath.CustomizeInstructionPath(part, process, type, materialID);
           if (string.IsNullOrEmpty(path))
           {
             return NotFound(

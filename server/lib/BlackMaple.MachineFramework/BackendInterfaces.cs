@@ -44,7 +44,6 @@ namespace BlackMaple.MachineFramework
     IJobDatabase JobDatabase();
     IJobControl JobControl();
     IInspectionControl InspectionControl();
-
     IOldJobDecrement OldJobDecrement();
   }
 
@@ -52,7 +51,7 @@ namespace BlackMaple.MachineFramework
   {
   }
 
-  public interface IFMSInspectionPath
+  public interface IFMSInstructionPath
   {
     // allows an implementation to override the algorithm which
     // finds an instruction file on disk given a part and type.
@@ -75,9 +74,9 @@ namespace BlackMaple.MachineFramework
     public FMSNameAndVersion NameAndVersion { get; set; }
     public IFMSBackend Backend { get; set; }
     public IList<IBackgroundWorker> Workers { get; set; } = new List<IBackgroundWorker>();
-    public IFMSInspectionPath InspectionPath { get; set; } = new DefaultFMSInspectionPath();
+    public IFMSInstructionPath InstructionPath { get; set; } = new DefaultFMSInstrPath();
 
-    private class DefaultFMSInspectionPath : IFMSInspectionPath
+    private class DefaultFMSInstrPath : IFMSInstructionPath
     {
       public string CustomizeInstructionPath(string part, int? process, string type, long? materialID)
       {
