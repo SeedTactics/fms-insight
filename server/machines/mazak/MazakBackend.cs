@@ -218,7 +218,7 @@ namespace MazakMachineInterface
       else
       {
 #if USE_OLEDB
-				logDataLoader = new LogDataVerE(jobLog, jobDB, sendToExternal, readOnlyDb, queues, Program.FMSSettings);
+				logDataLoader = new LogDataVerE(jobLog, jobDB, sendToExternal, readOnlyDb, queues, st);
 #else
         throw new Exception("Mazak Web and VerE are not supported on .NET core");
 #endif
