@@ -125,7 +125,6 @@ namespace BlackMaple.MachineFramework
         DataDirectory = DefaultDataDirectory();
       }
 
-
       if (fmsSection.GetValue<bool>("AutomaticSerials", false))
       {
         SerialType = SerialType.AssignOneSerialPerMaterial;
@@ -175,20 +174,10 @@ namespace BlackMaple.MachineFramework
 
     private static string DefaultDataDirectory()
     {
-      var commonData = System.Environment.GetFolderPath(System.Environment.SpecialFolder.CommonApplicationData);
-
-      //check old cms research data directory
-      var dataDir = Path.Combine(commonData, "CMS Research", "MachineWatch");
-      if (Directory.Exists(dataDir))
-        return dataDir;
-
-      //try new seedtactics directory
-      dataDir = Path.Combine(commonData, "SeedTactics", "MachineWatch");
-      if (Directory.Exists(dataDir))
-        return dataDir;
-
-      //now FMSInsight directory
-      dataDir = Path.Combine(commonData, "SeedTactics", "FMSInsight");
+      // FMSInsight directory
+      var dataDir = Path.Combine(
+        System.Environment.GetFolderPath(System.Environment.SpecialFolder.CommonApplicationData),
+        "SeedTactics", "FMSInsight");
       if (!Directory.Exists(dataDir))
       {
         try
@@ -197,17 +186,19 @@ namespace BlackMaple.MachineFramework
         }
         catch (UnauthorizedAccessException)
         {
-          // don't have permissions in CommonApplicationData
+          // don't have permissions in CommonApplicationData, fall back to LocalApplicationData
           dataDir = Path.Combine(
             System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData),
             "SeedTactics",
             "FMSInsight"
           );
+          if (!Directory.Exists(dataDir))
+          {
+            Directory.CreateDirectory(dataDir);
+          }
         }
       }
 
-      if (!Directory.Exists(dataDir))
-        Directory.CreateDirectory(dataDir);
       return dataDir;
     }
   }
