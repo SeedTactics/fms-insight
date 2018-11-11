@@ -63,22 +63,22 @@ namespace MazakMachineInterface
 
   public class LogEntry
   {
-    public DateTime TimeUTC {get;set;}
-    public LogCode Code {get;set;}
-    public string ForeignID {get;set;}
+    public DateTime TimeUTC { get; set; }
+    public LogCode Code { get; set; }
+    public string ForeignID { get; set; }
 
     //Only sometimes filled in depending on the log code
-    public int Pallet {get;set;}
-    public string FullPartName {get;set;} //Full part name in the mazak system
-    public string JobPartName {get;set;}  //Part name with : stripped off
-    public int Process {get;set;}
-    public int FixedQuantity {get;set;}
-    public string Program {get;set;}
-    public int StationNumber {get;set;}
+    public int Pallet { get; set; }
+    public string FullPartName { get; set; } //Full part name in the mazak system
+    public string JobPartName { get; set; }  //Part name with : stripped off
+    public int Process { get; set; }
+    public int FixedQuantity { get; set; }
+    public string Program { get; set; }
+    public int StationNumber { get; set; }
 
     //Only filled in for pallet movement
-    public string TargetPosition {get;set;}
-    public string FromPosition {get;set;}
+    public string TargetPosition { get; set; }
+    public string FromPosition { get; set; }
   }
 
   public delegate void PalletMoveDel(int pallet, string fromStation, string toStation);
@@ -353,14 +353,17 @@ namespace MazakMachineInterface
       _shutdown = new AutoResetEvent(false);
       _newLogFile = new AutoResetEvent(false);
       _recheckQueues = new AutoResetEvent(false);
-      _thread = new Thread(new ThreadStart(ThreadFunc));
-      _thread.Start();
-      _watcher = new FileSystemWatcher(_path);
-      _watcher.Filter = "*.csv";
-      _watcher.Created += (sender, evt) =>
-        _newLogFile.Set();
-      //_watcher.Changed += (sender, evt) => _newLogFile.Set();
-      _watcher.EnableRaisingEvents = true;
+      if (System.IO.Directory.Exists(path))
+      {
+        _thread = new Thread(new ThreadStart(ThreadFunc));
+        _thread.Start();
+        _watcher = new FileSystemWatcher(_path);
+        _watcher.Filter = "*.csv";
+        _watcher.Created += (sender, evt) =>
+          _newLogFile.Set();
+        //_watcher.Changed += (sender, evt) => _newLogFile.Set();
+        _watcher.EnableRaisingEvents = true;
+      }
     }
 
     public event PalletMoveDel PalletMove;
@@ -368,13 +371,16 @@ namespace MazakMachineInterface
 
     public void ThreadFunc()
     {
-      for(;;) {
-        try {
+      for (; ; )
+      {
+        try
+        {
 
           var sleepTime = TimeSpan.FromMinutes(1);
           Log.Debug("Sleeping for {mins} minutes", sleepTime.TotalMinutes);
           var ret = WaitHandle.WaitAny(new WaitHandle[] { _shutdown, _newLogFile, _recheckQueues }, sleepTime, false);
-          if (ret == 0) {
+          if (ret == 0)
+          {
             Log.Debug("Thread shutdown");
             return;
           }
@@ -403,15 +409,19 @@ namespace MazakMachineInterface
 
           _queues.CheckQueues(mazakData);
 
-          if (sendToExternal.Count > 0) {
+          if (sendToExternal.Count > 0)
+          {
             _sendToExternal.Post(sendToExternal).Wait(TimeSpan.FromSeconds(30));
           }
 
-          if (logs.Count > 0) {
+          if (logs.Count > 0)
+          {
             NewEntries?.Invoke();
           }
 
-        } catch (Exception ex) {
+        }
+        catch (Exception ex)
+        {
           Log.Error(ex, "Error during log data processing");
         }
       }
@@ -419,10 +429,11 @@ namespace MazakMachineInterface
 
     public void Halt()
     {
-      _watcher.EnableRaisingEvents = false;
+      if (_watcher != null)
+        _watcher.EnableRaisingEvents = false;
       _shutdown.Set();
 
-      if (!_thread.Join(TimeSpan.FromSeconds(15)))
+      if (_thread != null && !_thread.Join(TimeSpan.FromSeconds(15)))
         _thread.Abort();
     }
 
@@ -435,13 +446,19 @@ namespace MazakMachineInterface
     private FileStream WaitToOpenFile(string file)
     {
       int cnt = 0;
-      while (cnt < 20) {
-        try {
+      while (cnt < 20)
+      {
+        try
+        {
           return File.Open(file, FileMode.Open, FileAccess.Read, FileShare.None);
-        } catch (UnauthorizedAccessException ex) {
+        }
+        catch (UnauthorizedAccessException ex)
+        {
           // do nothing
           Log.Debug(ex, "Error opening {file}", file);
-        } catch (IOException ex) {
+        }
+        catch (IOException ex)
+        {
           // do nothing
           Log.Debug(ex, "Error opening {file}", file);
         }

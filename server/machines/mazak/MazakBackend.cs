@@ -127,7 +127,6 @@ namespace MazakMachineInterface
       if (MazakType != MazakDbType.MazakVersionE && !System.IO.Directory.Exists(logPath))
       {
         Log.Error("Log CSV Directory {path} does not exist.  Set the directory in the config.ini file.", logPath);
-        throw new Exception("Log CSV Directory " + logPath + " does not exist");
       }
 
       // general config
