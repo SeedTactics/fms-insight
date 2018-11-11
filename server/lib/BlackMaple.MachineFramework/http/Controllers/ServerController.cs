@@ -56,13 +56,11 @@ namespace BlackMaple.MachineFramework.Controllers
   [Route("api/v1/[controller]")]
   public class serverController : ControllerBase
   {
-    private IStoreSettings _settings;
     private IFMSInstructionPath _instrPath;
     private FMSNameAndVersion _nameAndVer;
 
-    public serverController(IFMSInstructionPath instr, FMSNameAndVersion nameAndVersion, IStoreSettings s)
+    public serverController(IFMSInstructionPath instr, FMSNameAndVersion nameAndVersion)
     {
-      _settings = s;
       _instrPath = instr;
       _nameAndVer = nameAndVersion;
     }
@@ -85,13 +83,24 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpGet("settings/{id}"), Authorize]
     public string GetSettings(string id)
     {
-      return _settings.GetSettings(id);
+      var f = System.IO.Path.Combine(
+          Program.ServerSettings.DataDirectory,
+          System.IO.Path.GetFileNameWithoutExtension(id))
+          + ".json";
+      if (System.IO.File.Exists(f))
+        return System.IO.File.ReadAllText(f);
+      else
+        return null;
     }
 
     [HttpPut("settings/{id}"), Authorize]
     public void SetSetting(string id, [FromBody] string setting)
     {
-      _settings.SetSettings(id, setting);
+      var f = System.IO.Path.Combine(
+          Program.ServerSettings.DataDirectory,
+          System.IO.Path.GetFileNameWithoutExtension(id))
+          + ".json";
+      System.IO.File.WriteAllText(f, setting);
     }
 
     private static string SearchFiles(string part, string type)

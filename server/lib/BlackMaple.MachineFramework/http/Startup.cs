@@ -64,15 +64,13 @@ namespace BlackMaple.MachineFramework
     // This method gets called by the runtime. Use this method to add services to the container.
     public void ConfigureServices(IServiceCollection services)
     {
-      var settings = new BlackMaple.MachineFramework.SettingStore(Program.ServerSettings.DataDirectory);
 
 #if SERVE_REMOTING
       if (Program.ServerSettings.EnableSailAPI) {
         var machServer =
           new BlackMaple.MachineWatch.RemotingServer(
             _fmsImpl,
-            Program.ServerSettings.DataDirectory,
-            settings
+            Program.ServerSettings.DataDirectory
           );
         services.AddSingleton<BlackMaple.MachineWatch.RemotingServer>(machServer);
       }
@@ -82,7 +80,6 @@ namespace BlackMaple.MachineFramework
           .AddSingleton<BlackMaple.MachineFramework.FMSNameAndVersion>(_fmsImpl.NameAndVersion)
           .AddSingleton<BlackMaple.MachineFramework.IFMSInstructionPath>(_fmsImpl.InstructionPath)
           .AddSingleton<BlackMaple.MachineFramework.IFMSBackend>(_fmsImpl.Backend)
-          .AddSingleton<IStoreSettings>(settings)
           .AddSingleton<Controllers.WebsocketManager>(
               new Controllers.WebsocketManager(
                   _fmsImpl.Backend.LogDatabase(),
