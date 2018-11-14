@@ -366,6 +366,7 @@ namespace MazakMachineInterface
           _newLogFile.Set();
         //_watcher.Changed += (sender, evt) => _newLogFile.Set();
         _watcher.EnableRaisingEvents = true;
+        Log.Debug("Watching {path} for new CSV files", _path);
       }
     }
 

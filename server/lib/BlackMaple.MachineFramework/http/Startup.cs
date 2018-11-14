@@ -143,7 +143,9 @@ namespace BlackMaple.MachineFramework
         IApplicationBuilder app,
         IApplicationLifetime lifetime,
         IHostingEnvironment env,
-        IServiceProvider services,
+#if SERVE_REMOTING
+        BlackMaple.MachineWatch.RemotingServer machServer,
+#endif
         Controllers.WebsocketManager wsManager)
     {
       app.UseResponseCompression();
@@ -263,7 +265,6 @@ namespace BlackMaple.MachineFramework
 #if SERVE_REMOTING
       if (_serverSt.EnableSailAPI) {
         lifetime.ApplicationStopping.Register(() => {
-          var machServer = services.GetService<BlackMaple.MachineWatch.RemotingServer>();
           machServer.Dispose();
         });
       }

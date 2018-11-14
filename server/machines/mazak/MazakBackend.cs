@@ -128,6 +128,10 @@ namespace MazakMachineInterface
       {
         Log.Error("Log CSV Directory {path} does not exist.  Set the directory in the config.ini file.", logPath);
       }
+      else if (MazakType != MazakDbType.MazakVersionE)
+      {
+        Log.Information("Loading log CSV files from {logcsv}", logPath);
+      }
 
       // general config
       string useStartingForDue = cfg.GetValue<string>("Use Starting Offset For Due Date");
