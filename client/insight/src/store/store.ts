@@ -49,7 +49,6 @@ import { middleware } from "./middleware";
 
 import * as im from "immutable";
 import { connectRoutes, LocationState } from "redux-first-router";
-import createHistory from "history/createBrowserHistory";
 import * as queryString from "query-string";
 
 type InitToStore<I> = I extends (demo: boolean) => infer S ? S : never;
@@ -61,10 +60,9 @@ export const connect: InitToStore<typeof initStore>["connect"] = reactRedux.conn
 export const mkAC: InitToStore<typeof initStore>["mkAC"] = mkACF();
 
 export function initStore(demo: boolean) {
-  const history = createHistory();
   const router = demo
     ? undefined
-    : connectRoutes(history, routes.routeMap, {
+    : connectRoutes(routes.routeMap, {
         querySerializer: queryString
       });
 

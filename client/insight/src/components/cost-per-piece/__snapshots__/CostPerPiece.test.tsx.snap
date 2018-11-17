@@ -58,14 +58,14 @@ exports[`renders the cost/piece page: calculated costs 1`] = `
         class="MuiTableCell-root-184 MuiTableCell-body-186"
       >
         <div
-          class="MuiFormControl-root-90"
+          class="MuiFormControl-root-86"
         >
           <div
-            class="MuiInputBase-root-107 MuiInput-root-94 MuiInput-underline-98 MuiInputBase-formControl-108 MuiInput-formControl-95"
+            class="MuiInputBase-root-103 MuiInput-root-90 MuiInput-underline-94 MuiInputBase-formControl-104 MuiInput-formControl-91"
           >
             <input
               aria-invalid="false"
-              class="MuiInputBase-input-117 MuiInput-input-102 MuiInputBase-inputType-120 MuiInput-inputType-105"
+              class="MuiInputBase-input-113 MuiInput-input-98 MuiInputBase-inputType-116 MuiInput-inputType-101"
               min="0"
               type="number"
               value="40"
@@ -101,14 +101,14 @@ exports[`renders the cost/piece page: calculated costs 1`] = `
         class="MuiTableCell-root-184 MuiTableCell-body-186"
       >
         <div
-          class="MuiFormControl-root-90"
+          class="MuiFormControl-root-86"
         >
           <div
-            class="MuiInputBase-root-107 MuiInput-root-94 MuiInput-underline-98 MuiInputBase-formControl-108 MuiInput-formControl-95"
+            class="MuiInputBase-root-103 MuiInput-root-90 MuiInput-underline-94 MuiInputBase-formControl-104 MuiInput-formControl-91"
           >
             <input
               aria-invalid="false"
-              class="MuiInputBase-input-117 MuiInput-input-102 MuiInputBase-inputType-120 MuiInput-inputType-105"
+              class="MuiInputBase-input-113 MuiInput-input-98 MuiInputBase-inputType-116 MuiInput-inputType-101"
               min="0"
               type="number"
               value="0"
@@ -144,14 +144,14 @@ exports[`renders the cost/piece page: calculated costs 1`] = `
         class="MuiTableCell-root-184 MuiTableCell-body-186"
       >
         <div
-          class="MuiFormControl-root-90"
+          class="MuiFormControl-root-86"
         >
           <div
-            class="MuiInputBase-root-107 MuiInput-root-94 MuiInput-underline-98 MuiInputBase-formControl-108 MuiInput-formControl-95"
+            class="MuiInputBase-root-103 MuiInput-root-90 MuiInput-underline-94 MuiInputBase-formControl-104 MuiInput-formControl-91"
           >
             <input
               aria-invalid="false"
-              class="MuiInputBase-input-117 MuiInput-input-102 MuiInputBase-inputType-120 MuiInput-inputType-105"
+              class="MuiInputBase-input-113 MuiInput-input-98 MuiInputBase-inputType-116 MuiInput-inputType-101"
               min="0"
               type="number"
               value="0"
@@ -187,14 +187,14 @@ exports[`renders the cost/piece page: calculated costs 1`] = `
         class="MuiTableCell-root-184 MuiTableCell-body-186"
       >
         <div
-          class="MuiFormControl-root-90"
+          class="MuiFormControl-root-86"
         >
           <div
-            class="MuiInputBase-root-107 MuiInput-root-94 MuiInput-underline-98 MuiInputBase-formControl-108 MuiInput-formControl-95"
+            class="MuiInputBase-root-103 MuiInput-root-90 MuiInput-underline-94 MuiInputBase-formControl-104 MuiInput-formControl-91"
           >
             <input
               aria-invalid="false"
-              class="MuiInputBase-input-117 MuiInput-input-102 MuiInputBase-inputType-120 MuiInput-inputType-105"
+              class="MuiInputBase-input-113 MuiInput-input-98 MuiInputBase-inputType-116 MuiInput-inputType-101"
               min="0"
               type="number"
               value="0"
@@ -230,14 +230,14 @@ exports[`renders the cost/piece page: calculated costs 1`] = `
         class="MuiTableCell-root-184 MuiTableCell-body-186"
       >
         <div
-          class="MuiFormControl-root-90"
+          class="MuiFormControl-root-86"
         >
           <div
-            class="MuiInputBase-root-107 MuiInput-root-94 MuiInput-underline-98 MuiInputBase-formControl-108 MuiInput-formControl-95"
+            class="MuiInputBase-root-103 MuiInput-root-90 MuiInput-underline-94 MuiInputBase-formControl-104 MuiInput-formControl-91"
           >
             <input
               aria-invalid="false"
-              class="MuiInputBase-input-117 MuiInput-input-102 MuiInputBase-inputType-120 MuiInput-inputType-105"
+              class="MuiInputBase-input-113 MuiInput-input-98 MuiInputBase-inputType-116 MuiInput-inputType-101"
               min="0"
               type="number"
               value="0"
@@ -273,14 +273,14 @@ exports[`renders the cost/piece page: calculated costs 1`] = `
         class="MuiTableCell-root-184 MuiTableCell-body-186"
       >
         <div
-          class="MuiFormControl-root-90"
+          class="MuiFormControl-root-86"
         >
           <div
-            class="MuiInputBase-root-107 MuiInput-root-94 MuiInput-underline-98 MuiInputBase-formControl-108 MuiInput-formControl-95"
+            class="MuiInputBase-root-103 MuiInput-root-90 MuiInput-underline-94 MuiInputBase-formControl-104 MuiInput-formControl-91"
           >
             <input
               aria-invalid="false"
-              class="MuiInputBase-input-117 MuiInput-input-102 MuiInputBase-inputType-120 MuiInput-inputType-105"
+              class="MuiInputBase-input-113 MuiInput-input-98 MuiInputBase-inputType-116 MuiInput-inputType-101"
               min="0"
               type="number"
               value="0"

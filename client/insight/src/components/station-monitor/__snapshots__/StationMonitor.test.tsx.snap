@@ -7,31 +7,31 @@ exports[`renders the all material page: all material 1`] = `
 >
   <div>
     <div
-      class="Component-container-1326 Component-borderBottom-1332"
+      class="Component-container-1336 Component-borderBottom-1342"
     >
       <div
-        class="Component-labelContainer-1327"
+        class="Component-labelContainer-1337"
       >
         <span
-          class="Component-label-1328"
+          class="Component-label-1338"
         >
           Pallet 1 (L/U #1)
         </span>
       </div>
       <div
-        class="Component-contentContainer-1330"
+        class="Component-contentContainer-1340"
         style="justify-content: flex-start;"
       >
         <div
-          class="MuiPaper-root-1339 MuiPaper-elevation4-1345 MuiPaper-rounded-1340 Component-paper-1334"
+          class="MuiPaper-root-1349 MuiPaper-elevation4-1355 MuiPaper-rounded-1350 Component-paper-1344"
         >
           <button
-            class="MuiButtonBase-root-1304"
+            class="MuiButtonBase-root-1314"
             tabindex="0"
             type="button"
           >
             <div
-              class="Component-container-1335"
+              class="Component-container-1345"
             >
               <div
                 style="width: 50px; height: 50px;"
@@ -54,10 +54,10 @@ exports[`renders the all material page: all material 1`] = `
                 </svg>
               </div>
               <div
-                class="Component-mainContent-1336"
+                class="Component-mainContent-1346"
               >
                 <h6
-                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
+                  class="MuiTypography-root-1376 MuiTypography-h6-1393"
                 >
                   aaa
                 </h6>
@@ -74,11 +74,11 @@ exports[`renders the all material page: all material 1`] = `
                 </div>
               </div>
               <div
-                class="Component-rightContent-1337"
+                class="Component-rightContent-1347"
               >
                 <div>
                   <div
-                    class="MuiAvatar-root-1401 MuiAvatar-colorDefault-1402 Component-avatar-1338"
+                    class="MuiAvatar-root-1411 MuiAvatar-colorDefault-1412 Component-avatar-1348"
                   >
                     I
                   </div>
@@ -86,20 +86,20 @@ exports[`renders the all material page: all material 1`] = `
               </div>
             </div>
             <span
-              class="MuiTouchRipple-root-1307"
+              class="MuiTouchRipple-root-1317"
             />
           </button>
         </div>
         <div
-          class="MuiPaper-root-1339 MuiPaper-elevation4-1345 MuiPaper-rounded-1340 Component-paper-1334"
+          class="MuiPaper-root-1349 MuiPaper-elevation4-1355 MuiPaper-rounded-1350 Component-paper-1344"
         >
           <button
-            class="MuiButtonBase-root-1304"
+            class="MuiButtonBase-root-1314"
             tabindex="0"
             type="button"
           >
             <div
-              class="Component-container-1335"
+              class="Component-container-1345"
             >
               <div
                 style="width: 50px; height: 50px;"
@@ -122,10 +122,10 @@ exports[`renders the all material page: all material 1`] = `
                 </svg>
               </div>
               <div
-                class="Component-mainContent-1336"
+                class="Component-mainContent-1346"
               >
                 <h6
-                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
+                  class="MuiTypography-root-1376 MuiTypography-h6-1393"
                 >
                   aaa
                 </h6>
@@ -142,11 +142,11 @@ exports[`renders the all material page: all material 1`] = `
                 </div>
               </div>
               <div
-                class="Component-rightContent-1337"
+                class="Component-rightContent-1347"
               >
                 <div>
                   <div
-                    class="MuiAvatar-root-1401 MuiAvatar-colorDefault-1402 Component-avatar-1338"
+                    class="MuiAvatar-root-1411 MuiAvatar-colorDefault-1412 Component-avatar-1348"
                   >
                     Y
                   </div>
@@ -154,38 +154,38 @@ exports[`renders the all material page: all material 1`] = `
               </div>
             </div>
             <span
-              class="MuiTouchRipple-root-1307"
+              class="MuiTouchRipple-root-1317"
             />
           </button>
         </div>
       </div>
     </div>
     <div
-      class="Component-container-1326 Component-borderBottom-1332"
+      class="Component-container-1336 Component-borderBottom-1342"
     >
       <div
-        class="Component-labelContainer-1327"
+        class="Component-labelContainer-1337"
       >
         <span
-          class="Component-label-1328"
+          class="Component-label-1338"
         >
           Pallet 2 (Cart #1)
         </span>
       </div>
       <div
-        class="Component-contentContainer-1330"
+        class="Component-contentContainer-1340"
         style="justify-content: flex-start;"
       >
         <div
-          class="MuiPaper-root-1339 MuiPaper-elevation4-1345 MuiPaper-rounded-1340 Component-paper-1334"
+          class="MuiPaper-root-1349 MuiPaper-elevation4-1355 MuiPaper-rounded-1350 Component-paper-1344"
         >
           <button
-            class="MuiButtonBase-root-1304"
+            class="MuiButtonBase-root-1314"
             tabindex="0"
             type="button"
           >
             <div
-              class="Component-container-1335"
+              class="Component-container-1345"
             >
               <div
                 style="width: 50px; height: 50px;"
@@ -212,10 +212,10 @@ exports[`renders the all material page: all material 1`] = `
                 </svg>
               </div>
               <div
-                class="Component-mainContent-1336"
+                class="Component-mainContent-1346"
               >
                 <h6
-                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
+                  class="MuiTypography-root-1376 MuiTypography-h6-1393"
                 >
                   bbb
                 </h6>
@@ -227,11 +227,11 @@ exports[`renders the all material page: all material 1`] = `
                 </div>
               </div>
               <div
-                class="Component-rightContent-1337"
+                class="Component-rightContent-1347"
               >
                 <div>
                   <div
-                    class="MuiAvatar-root-1401 MuiAvatar-colorDefault-1402 Component-avatar-1338"
+                    class="MuiAvatar-root-1411 MuiAvatar-colorDefault-1412 Component-avatar-1348"
                   >
                     U
                   </div>
@@ -239,20 +239,20 @@ exports[`renders the all material page: all material 1`] = `
               </div>
             </div>
             <span
-              class="MuiTouchRipple-root-1307"
+              class="MuiTouchRipple-root-1317"
             />
           </button>
         </div>
         <div
-          class="MuiPaper-root-1339 MuiPaper-elevation4-1345 MuiPaper-rounded-1340 Component-paper-1334"
+          class="MuiPaper-root-1349 MuiPaper-elevation4-1355 MuiPaper-rounded-1350 Component-paper-1344"
         >
           <button
-            class="MuiButtonBase-root-1304"
+            class="MuiButtonBase-root-1314"
             tabindex="0"
             type="button"
           >
             <div
-              class="Component-container-1335"
+              class="Component-container-1345"
             >
               <div
                 style="width: 50px; height: 50px;"
@@ -279,10 +279,10 @@ exports[`renders the all material page: all material 1`] = `
                 </svg>
               </div>
               <div
-                class="Component-mainContent-1336"
+                class="Component-mainContent-1346"
               >
                 <h6
-                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
+                  class="MuiTypography-root-1376 MuiTypography-h6-1393"
                 >
                   bbb
                 </h6>
@@ -294,11 +294,11 @@ exports[`renders the all material page: all material 1`] = `
                 </div>
               </div>
               <div
-                class="Component-rightContent-1337"
+                class="Component-rightContent-1347"
               >
                 <div>
                   <div
-                    class="MuiAvatar-root-1401 MuiAvatar-colorDefault-1402 Component-avatar-1338"
+                    class="MuiAvatar-root-1411 MuiAvatar-colorDefault-1412 Component-avatar-1348"
                   >
                     Y
                   </div>
@@ -306,38 +306,38 @@ exports[`renders the all material page: all material 1`] = `
               </div>
             </div>
             <span
-              class="MuiTouchRipple-root-1307"
+              class="MuiTouchRipple-root-1317"
             />
           </button>
         </div>
       </div>
     </div>
     <div
-      class="Component-container-1326 Component-borderBottom-1332"
+      class="Component-container-1336 Component-borderBottom-1342"
     >
       <div
-        class="Component-labelContainer-1327"
+        class="Component-labelContainer-1337"
       >
         <span
-          class="Component-label-1328"
+          class="Component-label-1338"
         >
           Pallet 4 (Machine #1)
         </span>
       </div>
       <div
-        class="Component-contentContainer-1330"
+        class="Component-contentContainer-1340"
         style="justify-content: flex-start;"
       >
         <div
-          class="MuiPaper-root-1339 MuiPaper-elevation4-1345 MuiPaper-rounded-1340 Component-paper-1334"
+          class="MuiPaper-root-1349 MuiPaper-elevation4-1355 MuiPaper-rounded-1350 Component-paper-1344"
         >
           <button
-            class="MuiButtonBase-root-1304"
+            class="MuiButtonBase-root-1314"
             tabindex="0"
             type="button"
           >
             <div
-              class="Component-container-1335"
+              class="Component-container-1345"
             >
               <div
                 style="width: 50px; height: 50px;"
@@ -364,10 +364,10 @@ exports[`renders the all material page: all material 1`] = `
                 </svg>
               </div>
               <div
-                class="Component-mainContent-1336"
+                class="Component-mainContent-1346"
               >
                 <h6
-                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
+                  class="MuiTypography-root-1376 MuiTypography-h6-1393"
                 >
                   ccc
                 </h6>
@@ -379,11 +379,11 @@ exports[`renders the all material page: all material 1`] = `
                 </div>
               </div>
               <div
-                class="Component-rightContent-1337"
+                class="Component-rightContent-1347"
               >
                 <div>
                   <div
-                    class="MuiAvatar-root-1401 MuiAvatar-colorDefault-1402 Component-avatar-1338"
+                    class="MuiAvatar-root-1411 MuiAvatar-colorDefault-1412 Component-avatar-1348"
                   >
                     I
                   </div>
@@ -391,20 +391,20 @@ exports[`renders the all material page: all material 1`] = `
               </div>
             </div>
             <span
-              class="MuiTouchRipple-root-1307"
+              class="MuiTouchRipple-root-1317"
             />
           </button>
         </div>
         <div
-          class="MuiPaper-root-1339 MuiPaper-elevation4-1345 MuiPaper-rounded-1340 Component-paper-1334"
+          class="MuiPaper-root-1349 MuiPaper-elevation4-1355 MuiPaper-rounded-1350 Component-paper-1344"
         >
           <button
-            class="MuiButtonBase-root-1304"
+            class="MuiButtonBase-root-1314"
             tabindex="0"
             type="button"
           >
             <div
-              class="Component-container-1335"
+              class="Component-container-1345"
             >
               <div
                 style="width: 50px; height: 50px;"
@@ -431,10 +431,10 @@ exports[`renders the all material page: all material 1`] = `
                 </svg>
               </div>
               <div
-                class="Component-mainContent-1336"
+                class="Component-mainContent-1346"
               >
                 <h6
-                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
+                  class="MuiTypography-root-1376 MuiTypography-h6-1393"
                 >
                   ccc
                 </h6>
@@ -446,11 +446,11 @@ exports[`renders the all material page: all material 1`] = `
                 </div>
               </div>
               <div
-                class="Component-rightContent-1337"
+                class="Component-rightContent-1347"
               >
                 <div>
                   <div
-                    class="MuiAvatar-root-1401 MuiAvatar-colorDefault-1402 Component-avatar-1338"
+                    class="MuiAvatar-root-1411 MuiAvatar-colorDefault-1412 Component-avatar-1348"
                   >
                     U
                   </div>
@@ -458,38 +458,38 @@ exports[`renders the all material page: all material 1`] = `
               </div>
             </div>
             <span
-              class="MuiTouchRipple-root-1307"
+              class="MuiTouchRipple-root-1317"
             />
           </button>
         </div>
       </div>
     </div>
     <div
-      class="Component-container-1326 Component-borderBottom-1332"
+      class="Component-container-1336 Component-borderBottom-1342"
     >
       <div
-        class="Component-labelContainer-1327"
+        class="Component-labelContainer-1337"
       >
         <span
-          class="Component-label-1328"
+          class="Component-label-1338"
         >
           Pallet 5 (L/U #2)
         </span>
       </div>
       <div
-        class="Component-contentContainer-1330"
+        class="Component-contentContainer-1340"
         style="justify-content: flex-start;"
       >
         <div
-          class="MuiPaper-root-1339 MuiPaper-elevation4-1345 MuiPaper-rounded-1340 Component-paper-1334"
+          class="MuiPaper-root-1349 MuiPaper-elevation4-1355 MuiPaper-rounded-1350 Component-paper-1344"
         >
           <button
-            class="MuiButtonBase-root-1304"
+            class="MuiButtonBase-root-1314"
             tabindex="0"
             type="button"
           >
             <div
-              class="Component-container-1335"
+              class="Component-container-1345"
             >
               <div
                 style="width: 50px; height: 50px;"
@@ -516,10 +516,10 @@ exports[`renders the all material page: all material 1`] = `
                 </svg>
               </div>
               <div
-                class="Component-mainContent-1336"
+                class="Component-mainContent-1346"
               >
                 <h6
-                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
+                  class="MuiTypography-root-1376 MuiTypography-h6-1393"
                 >
                   xxx
                 </h6>
@@ -536,11 +536,11 @@ exports[`renders the all material page: all material 1`] = `
                 </div>
               </div>
               <div
-                class="Component-rightContent-1337"
+                class="Component-rightContent-1347"
               >
                 <div>
                   <div
-                    class="MuiAvatar-root-1401 MuiAvatar-colorDefault-1402 Component-avatar-1338"
+                    class="MuiAvatar-root-1411 MuiAvatar-colorDefault-1412 Component-avatar-1348"
                   >
                     4
                   </div>
@@ -548,38 +548,38 @@ exports[`renders the all material page: all material 1`] = `
               </div>
             </div>
             <span
-              class="MuiTouchRipple-root-1307"
+              class="MuiTouchRipple-root-1317"
             />
           </button>
         </div>
       </div>
     </div>
     <div
-      class="Component-container-1326 Component-borderBottom-1332"
+      class="Component-container-1336 Component-borderBottom-1342"
     >
       <div
-        class="Component-labelContainer-1327"
+        class="Component-labelContainer-1337"
       >
         <span
-          class="Component-label-1328"
+          class="Component-label-1338"
         >
           Pallet 6 (Machine #2)
         </span>
       </div>
       <div
-        class="Component-contentContainer-1330"
+        class="Component-contentContainer-1340"
         style="justify-content: flex-start;"
       >
         <div
-          class="MuiPaper-root-1339 MuiPaper-elevation4-1345 MuiPaper-rounded-1340 Component-paper-1334"
+          class="MuiPaper-root-1349 MuiPaper-elevation4-1355 MuiPaper-rounded-1350 Component-paper-1344"
         >
           <button
-            class="MuiButtonBase-root-1304"
+            class="MuiButtonBase-root-1314"
             tabindex="0"
             type="button"
           >
             <div
-              class="Component-container-1335"
+              class="Component-container-1345"
             >
               <div
                 style="width: 50px; height: 50px;"
@@ -606,10 +606,10 @@ exports[`renders the all material page: all material 1`] = `
                 </svg>
               </div>
               <div
-                class="Component-mainContent-1336"
+                class="Component-mainContent-1346"
               >
                 <h6
-                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
+                  class="MuiTypography-root-1376 MuiTypography-h6-1393"
                 >
                   zzz
                 </h6>
@@ -621,11 +621,11 @@ exports[`renders the all material page: all material 1`] = `
                 </div>
               </div>
               <div
-                class="Component-rightContent-1337"
+                class="Component-rightContent-1347"
               >
                 <div>
                   <div
-                    class="MuiAvatar-root-1401 MuiAvatar-colorDefault-1402 Component-avatar-1338"
+                    class="MuiAvatar-root-1411 MuiAvatar-colorDefault-1412 Component-avatar-1348"
                   >
                     E
                   </div>
@@ -633,38 +633,38 @@ exports[`renders the all material page: all material 1`] = `
               </div>
             </div>
             <span
-              class="MuiTouchRipple-root-1307"
+              class="MuiTouchRipple-root-1317"
             />
           </button>
         </div>
       </div>
     </div>
     <div
-      class="Component-container-1326 Component-borderBottom-1332"
+      class="Component-container-1336 Component-borderBottom-1342"
     >
       <div
-        class="Component-labelContainer-1327"
+        class="Component-labelContainer-1337"
       >
         <span
-          class="Component-label-1328"
+          class="Component-label-1338"
         >
           Pallet 7 (Machine #2)
         </span>
       </div>
       <div
-        class="Component-contentContainer-1330"
+        class="Component-contentContainer-1340"
         style="justify-content: flex-start;"
       >
         <div
-          class="MuiPaper-root-1339 MuiPaper-elevation4-1345 MuiPaper-rounded-1340 Component-paper-1334"
+          class="MuiPaper-root-1349 MuiPaper-elevation4-1355 MuiPaper-rounded-1350 Component-paper-1344"
         >
           <button
-            class="MuiButtonBase-root-1304"
+            class="MuiButtonBase-root-1314"
             tabindex="0"
             type="button"
           >
             <div
-              class="Component-container-1335"
+              class="Component-container-1345"
             >
               <div
                 style="width: 50px; height: 50px;"
@@ -687,10 +687,10 @@ exports[`renders the all material page: all material 1`] = `
                 </svg>
               </div>
               <div
-                class="Component-mainContent-1336"
+                class="Component-mainContent-1346"
               >
                 <h6
-                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
+                  class="MuiTypography-root-1376 MuiTypography-h6-1393"
                 >
                   yyy
                 </h6>
@@ -702,11 +702,11 @@ exports[`renders the all material page: all material 1`] = `
                 </div>
               </div>
               <div
-                class="Component-rightContent-1337"
+                class="Component-rightContent-1347"
               >
                 <div>
                   <div
-                    class="MuiAvatar-root-1401 MuiAvatar-colorDefault-1402 Component-avatar-1338"
+                    class="MuiAvatar-root-1411 MuiAvatar-colorDefault-1412 Component-avatar-1348"
                   >
                     U
                   </div>
@@ -714,20 +714,20 @@ exports[`renders the all material page: all material 1`] = `
               </div>
             </div>
             <span
-              class="MuiTouchRipple-root-1307"
+              class="MuiTouchRipple-root-1317"
             />
           </button>
         </div>
         <div
-          class="MuiPaper-root-1339 MuiPaper-elevation4-1345 MuiPaper-rounded-1340 Component-paper-1334"
+          class="MuiPaper-root-1349 MuiPaper-elevation4-1355 MuiPaper-rounded-1350 Component-paper-1344"
         >
           <button
-            class="MuiButtonBase-root-1304"
+            class="MuiButtonBase-root-1314"
             tabindex="0"
             type="button"
           >
             <div
-              class="Component-container-1335"
+              class="Component-container-1345"
             >
               <div
                 style="width: 50px; height: 50px;"
@@ -750,10 +750,10 @@ exports[`renders the all material page: all material 1`] = `
                 </svg>
               </div>
               <div
-                class="Component-mainContent-1336"
+                class="Component-mainContent-1346"
               >
                 <h6
-                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
+                  class="MuiTypography-root-1376 MuiTypography-h6-1393"
                 >
                   yyy
                 </h6>
@@ -765,11 +765,11 @@ exports[`renders the all material page: all material 1`] = `
                 </div>
               </div>
               <div
-                class="Component-rightContent-1337"
+                class="Component-rightContent-1347"
               >
                 <div>
                   <div
-                    class="MuiAvatar-root-1401 MuiAvatar-colorDefault-1402 Component-avatar-1338"
+                    class="MuiAvatar-root-1411 MuiAvatar-colorDefault-1412 Component-avatar-1348"
                   >
                     Y
                   </div>
@@ -777,38 +777,38 @@ exports[`renders the all material page: all material 1`] = `
               </div>
             </div>
             <span
-              class="MuiTouchRipple-root-1307"
+              class="MuiTouchRipple-root-1317"
             />
           </button>
         </div>
       </div>
     </div>
     <div
-      class="Component-container-1326 Component-borderBottom-1332"
+      class="Component-container-1336 Component-borderBottom-1342"
     >
       <div
-        class="Component-labelContainer-1327"
+        class="Component-labelContainer-1337"
       >
         <span
-          class="Component-label-1328"
+          class="Component-label-1338"
         >
           Pallet 8 (Machine #3)
         </span>
       </div>
       <div
-        class="Component-contentContainer-1330"
+        class="Component-contentContainer-1340"
         style="justify-content: flex-start;"
       >
         <div
-          class="MuiPaper-root-1339 MuiPaper-elevation4-1345 MuiPaper-rounded-1340 Component-paper-1334"
+          class="MuiPaper-root-1349 MuiPaper-elevation4-1355 MuiPaper-rounded-1350 Component-paper-1344"
         >
           <button
-            class="MuiButtonBase-root-1304"
+            class="MuiButtonBase-root-1314"
             tabindex="0"
             type="button"
           >
             <div
-              class="Component-container-1335"
+              class="Component-container-1345"
             >
               <div
                 style="width: 50px; height: 50px;"
@@ -835,10 +835,10 @@ exports[`renders the all material page: all material 1`] = `
                 </svg>
               </div>
               <div
-                class="Component-mainContent-1336"
+                class="Component-mainContent-1346"
               >
                 <h6
-                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
+                  class="MuiTypography-root-1376 MuiTypography-h6-1393"
                 >
                   xxx
                 </h6>
@@ -850,11 +850,11 @@ exports[`renders the all material page: all material 1`] = `
                 </div>
               </div>
               <div
-                class="Component-rightContent-1337"
+                class="Component-rightContent-1347"
               >
                 <div>
                   <div
-                    class="MuiAvatar-root-1401 MuiAvatar-colorDefault-1402 Component-avatar-1338"
+                    class="MuiAvatar-root-1411 MuiAvatar-colorDefault-1412 Component-avatar-1348"
                   >
                     U
                   </div>
@@ -862,38 +862,38 @@ exports[`renders the all material page: all material 1`] = `
               </div>
             </div>
             <span
-              class="MuiTouchRipple-root-1307"
+              class="MuiTouchRipple-root-1317"
             />
           </button>
         </div>
       </div>
     </div>
     <div
-      class="Component-container-1326 Component-borderBottom-1332"
+      class="Component-container-1336 Component-borderBottom-1342"
     >
       <div
-        class="Component-labelContainer-1327"
+        class="Component-labelContainer-1337"
       >
         <span
-          class="Component-label-1328"
+          class="Component-label-1338"
         >
           Queue1
         </span>
       </div>
       <div
-        class="Component-contentContainer-1330"
+        class="Component-contentContainer-1340"
         style="justify-content: flex-start;"
       >
         <div
-          class="MuiPaper-root-1339 MuiPaper-elevation4-1345 MuiPaper-rounded-1340 Component-paper-1334"
+          class="MuiPaper-root-1349 MuiPaper-elevation4-1355 MuiPaper-rounded-1350 Component-paper-1344"
         >
           <button
-            class="MuiButtonBase-root-1304"
+            class="MuiButtonBase-root-1314"
             tabindex="0"
             type="button"
           >
             <div
-              class="Component-container-1335"
+              class="Component-container-1345"
             >
               <div
                 style="width: 50px; height: 50px;"
@@ -916,10 +916,10 @@ exports[`renders the all material page: all material 1`] = `
                 </svg>
               </div>
               <div
-                class="Component-mainContent-1336"
+                class="Component-mainContent-1346"
               >
                 <h6
-                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
+                  class="MuiTypography-root-1376 MuiTypography-h6-1393"
                 >
                   aaa
                 </h6>
@@ -931,11 +931,11 @@ exports[`renders the all material page: all material 1`] = `
                 </div>
               </div>
               <div
-                class="Component-rightContent-1337"
+                class="Component-rightContent-1347"
               >
                 <div>
                   <div
-                    class="MuiAvatar-root-1401 MuiAvatar-colorDefault-1402 Component-avatar-1338"
+                    class="MuiAvatar-root-1411 MuiAvatar-colorDefault-1412 Component-avatar-1348"
                   >
                     E
                   </div>
@@ -943,20 +943,20 @@ exports[`renders the all material page: all material 1`] = `
               </div>
             </div>
             <span
-              class="MuiTouchRipple-root-1307"
+              class="MuiTouchRipple-root-1317"
             />
           </button>
         </div>
         <div
-          class="MuiPaper-root-1339 MuiPaper-elevation4-1345 MuiPaper-rounded-1340 Component-paper-1334"
+          class="MuiPaper-root-1349 MuiPaper-elevation4-1355 MuiPaper-rounded-1350 Component-paper-1344"
         >
           <button
-            class="MuiButtonBase-root-1304"
+            class="MuiButtonBase-root-1314"
             tabindex="0"
             type="button"
           >
             <div
-              class="Component-container-1335"
+              class="Component-container-1345"
             >
               <div
                 style="width: 50px; height: 50px;"
@@ -983,10 +983,10 @@ exports[`renders the all material page: all material 1`] = `
                 </svg>
               </div>
               <div
-                class="Component-mainContent-1336"
+                class="Component-mainContent-1346"
               >
                 <h6
-                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
+                  class="MuiTypography-root-1376 MuiTypography-h6-1393"
                 >
                   xxx
                 </h6>
@@ -998,11 +998,11 @@ exports[`renders the all material page: all material 1`] = `
                 </div>
               </div>
               <div
-                class="Component-rightContent-1337"
+                class="Component-rightContent-1347"
               >
                 <div>
                   <div
-                    class="MuiAvatar-root-1401 MuiAvatar-colorDefault-1402 Component-avatar-1338"
+                    class="MuiAvatar-root-1411 MuiAvatar-colorDefault-1412 Component-avatar-1348"
                   >
                     A
                   </div>
@@ -1010,20 +1010,20 @@ exports[`renders the all material page: all material 1`] = `
               </div>
             </div>
             <span
-              class="MuiTouchRipple-root-1307"
+              class="MuiTouchRipple-root-1317"
             />
           </button>
         </div>
         <div
-          class="MuiPaper-root-1339 MuiPaper-elevation4-1345 MuiPaper-rounded-1340 Component-paper-1334"
+          class="MuiPaper-root-1349 MuiPaper-elevation4-1355 MuiPaper-rounded-1350 Component-paper-1344"
         >
           <button
-            class="MuiButtonBase-root-1304"
+            class="MuiButtonBase-root-1314"
             tabindex="0"
             type="button"
           >
             <div
-              class="Component-container-1335"
+              class="Component-container-1345"
             >
               <div
                 style="width: 50px; height: 50px;"
@@ -1050,10 +1050,10 @@ exports[`renders the all material page: all material 1`] = `
                 </svg>
               </div>
               <div
-                class="Component-mainContent-1336"
+                class="Component-mainContent-1346"
               >
                 <h6
-                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
+                  class="MuiTypography-root-1376 MuiTypography-h6-1393"
                 >
                   zzz
                 </h6>
@@ -1070,11 +1070,11 @@ exports[`renders the all material page: all material 1`] = `
                 </div>
               </div>
               <div
-                class="Component-rightContent-1337"
+                class="Component-rightContent-1347"
               >
                 <div>
                   <div
-                    class="MuiAvatar-root-1401 MuiAvatar-colorDefault-1402 Component-avatar-1338"
+                    class="MuiAvatar-root-1411 MuiAvatar-colorDefault-1412 Component-avatar-1348"
                   >
                     Q
                   </div>
@@ -1082,38 +1082,38 @@ exports[`renders the all material page: all material 1`] = `
               </div>
             </div>
             <span
-              class="MuiTouchRipple-root-1307"
+              class="MuiTouchRipple-root-1317"
             />
           </button>
         </div>
       </div>
     </div>
     <div
-      class="Component-container-1326 Component-borderBottom-1332"
+      class="Component-container-1336 Component-borderBottom-1342"
     >
       <div
-        class="Component-labelContainer-1327"
+        class="Component-labelContainer-1337"
       >
         <span
-          class="Component-label-1328"
+          class="Component-label-1338"
         >
           Queue2
         </span>
       </div>
       <div
-        class="Component-contentContainer-1330"
+        class="Component-contentContainer-1340"
         style="justify-content: flex-start;"
       >
         <div
-          class="MuiPaper-root-1339 MuiPaper-elevation4-1345 MuiPaper-rounded-1340 Component-paper-1334"
+          class="MuiPaper-root-1349 MuiPaper-elevation4-1355 MuiPaper-rounded-1350 Component-paper-1344"
         >
           <button
-            class="MuiButtonBase-root-1304"
+            class="MuiButtonBase-root-1314"
             tabindex="0"
             type="button"
           >
             <div
-              class="Component-container-1335"
+              class="Component-container-1345"
             >
               <div
                 style="width: 50px; height: 50px;"
@@ -1140,10 +1140,10 @@ exports[`renders the all material page: all material 1`] = `
                 </svg>
               </div>
               <div
-                class="Component-mainContent-1336"
+                class="Component-mainContent-1346"
               >
                 <h6
-                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
+                  class="MuiTypography-root-1376 MuiTypography-h6-1393"
                 >
                   ccc
                 </h6>
@@ -1155,11 +1155,11 @@ exports[`renders the all material page: all material 1`] = `
                 </div>
               </div>
               <div
-                class="Component-rightContent-1337"
+                class="Component-rightContent-1347"
               >
                 <div>
                   <div
-                    class="MuiAvatar-root-1401 MuiAvatar-colorDefault-1402 Component-avatar-1338"
+                    class="MuiAvatar-root-1411 MuiAvatar-colorDefault-1412 Component-avatar-1348"
                   >
                     Q
                   </div>
@@ -1167,20 +1167,20 @@ exports[`renders the all material page: all material 1`] = `
               </div>
             </div>
             <span
-              class="MuiTouchRipple-root-1307"
+              class="MuiTouchRipple-root-1317"
             />
           </button>
         </div>
         <div
-          class="MuiPaper-root-1339 MuiPaper-elevation4-1345 MuiPaper-rounded-1340 Component-paper-1334"
+          class="MuiPaper-root-1349 MuiPaper-elevation4-1355 MuiPaper-rounded-1350 Component-paper-1344"
         >
           <button
-            class="MuiButtonBase-root-1304"
+            class="MuiButtonBase-root-1314"
             tabindex="0"
             type="button"
           >
             <div
-              class="Component-container-1335"
+              class="Component-container-1345"
             >
               <div
                 style="width: 50px; height: 50px;"
@@ -1207,10 +1207,10 @@ exports[`renders the all material page: all material 1`] = `
                 </svg>
               </div>
               <div
-                class="Component-mainContent-1336"
+                class="Component-mainContent-1346"
               >
                 <h6
-                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
+                  class="MuiTypography-root-1376 MuiTypography-h6-1393"
                 >
                   zzz
                 </h6>
@@ -1222,11 +1222,11 @@ exports[`renders the all material page: all material 1`] = `
                 </div>
               </div>
               <div
-                class="Component-rightContent-1337"
+                class="Component-rightContent-1347"
               >
                 <div>
                   <div
-                    class="MuiAvatar-root-1401 MuiAvatar-colorDefault-1402 Component-avatar-1338"
+                    class="MuiAvatar-root-1411 MuiAvatar-colorDefault-1412 Component-avatar-1348"
                   >
                     U
                   </div>
@@ -1234,38 +1234,38 @@ exports[`renders the all material page: all material 1`] = `
               </div>
             </div>
             <span
-              class="MuiTouchRipple-root-1307"
+              class="MuiTouchRipple-root-1317"
             />
           </button>
         </div>
       </div>
     </div>
     <div
-      class="Component-container-1326 Component-borderBottom-1332"
+      class="Component-container-1336 Component-borderBottom-1342"
     >
       <div
-        class="Component-labelContainer-1327"
+        class="Component-labelContainer-1337"
       >
         <span
-          class="Component-label-1328"
+          class="Component-label-1338"
         >
           Raw Material
         </span>
       </div>
       <div
-        class="Component-contentContainer-1330"
+        class="Component-contentContainer-1340"
         style="justify-content: flex-start;"
       >
         <div
-          class="MuiPaper-root-1339 MuiPaper-elevation4-1345 MuiPaper-rounded-1340 Component-paper-1334"
+          class="MuiPaper-root-1349 MuiPaper-elevation4-1355 MuiPaper-rounded-1350 Component-paper-1344"
         >
           <button
-            class="MuiButtonBase-root-1304"
+            class="MuiButtonBase-root-1314"
             tabindex="0"
             type="button"
           >
             <div
-              class="Component-container-1335"
+              class="Component-container-1345"
             >
               <div
                 style="width: 50px; height: 50px;"
@@ -1292,10 +1292,10 @@ exports[`renders the all material page: all material 1`] = `
                 </svg>
               </div>
               <div
-                class="Component-mainContent-1336"
+                class="Component-mainContent-1346"
               >
                 <h6
-                  class="MuiTypography-root-1366 MuiTypography-h6-1383"
+                  class="MuiTypography-root-1376 MuiTypography-h6-1393"
                 >
                   bbb
                 </h6>
@@ -1312,11 +1312,11 @@ exports[`renders the all material page: all material 1`] = `
                 </div>
               </div>
               <div
-                class="Component-rightContent-1337"
+                class="Component-rightContent-1347"
               >
                 <div>
                   <div
-                    class="MuiAvatar-root-1401 MuiAvatar-colorDefault-1402 Component-avatar-1338"
+                    class="MuiAvatar-root-1411 MuiAvatar-colorDefault-1412 Component-avatar-1348"
                   >
                     M
                   </div>
@@ -1324,7 +1324,7 @@ exports[`renders the all material page: all material 1`] = `
               </div>
             </div>
             <span
-              class="MuiTouchRipple-root-1307"
+              class="MuiTouchRipple-root-1317"
             />
           </button>
         </div>
@@ -1340,46 +1340,46 @@ exports[`renders the inspection page: empty inspection 1`] = `
   style="padding: 8px;"
 >
   <div
-    class="MuiGrid-container-532 MuiGrid-spacing-xs-16-555"
+    class="MuiGrid-container-537 MuiGrid-spacing-xs-16-560"
   >
     <div
-      class="MuiGrid-item-533 MuiGrid-grid-xs-12-572 MuiGrid-grid-md-6-594"
+      class="MuiGrid-item-538 MuiGrid-grid-xs-12-577 MuiGrid-grid-md-6-599"
     >
       <div
-        class="Component-container-419 Component-borderBottom-425 Component-borderRight-426"
+        class="Component-container-422 Component-borderBottom-428 Component-borderRight-429"
       >
         <div
-          class="Component-labelContainer-420"
+          class="Component-labelContainer-423"
         >
           <span
-            class="Component-label-421"
+            class="Component-label-424"
           >
             Parts to Inspect
           </span>
         </div>
         <div
-          class="Component-contentContainer-423"
+          class="Component-contentContainer-426"
           style="justify-content: space-between;"
         />
       </div>
     </div>
     <div
-      class="MuiGrid-item-533 MuiGrid-grid-xs-12-572 MuiGrid-grid-md-6-594"
+      class="MuiGrid-item-538 MuiGrid-grid-xs-12-577 MuiGrid-grid-md-6-599"
     >
       <div
-        class="Component-container-419 Component-borderLeft-424 Component-borderBottom-425"
+        class="Component-container-422 Component-borderLeft-427 Component-borderBottom-428"
       >
         <div
-          class="Component-labelContainer-420"
+          class="Component-labelContainer-423"
         >
           <span
-            class="Component-label-421"
+            class="Component-label-424"
           >
             Recently Inspected
           </span>
         </div>
         <div
-          class="Component-contentContainer-423"
+          class="Component-contentContainer-426"
           style="justify-content: space-between;"
         />
       </div>
@@ -1390,544 +1390,548 @@ exports[`renders the inspection page: empty inspection 1`] = `
 
 exports[`renders the load station page: NBTGI dialog 1`] = `
 <div
-  class="MuiModal-root-49 MuiDialog-root-172 MuiDialog-scrollPaper-173"
+  class="MuiModal-root-49 MuiDialog-root-172"
   role="dialog"
 >
   <div
     aria-hidden="true"
-    class="MuiBackdrop-root-256"
+    class="MuiBackdrop-root-257"
     style="opacity: 1; -webkit-transition: opacity 225ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;"
   />
   <div
-    class="MuiPaper-root-191 MuiPaper-elevation24-217 MuiPaper-rounded-192 MuiDialog-paper-175 MuiDialog-paperScrollPaper-176 MuiDialog-paperWidthMd-180"
+    class="MuiDialog-container-175 MuiDialog-scrollPaper-173"
     role="document"
     style="opacity: 1; -webkit-transition: opacity 225ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;"
     tabindex="-1"
   >
     <div
-      class="MuiDialogTitle-root-275"
+      class="MuiPaper-root-192 MuiPaper-elevation24-218 MuiPaper-rounded-193 MuiDialog-paper-176 MuiDialog-paperScrollPaper-177 MuiDialog-paperWidthMd-181"
     >
       <div
-        style="display: flex; text-align: left;"
+        class="MuiDialogTitle-root-277"
       >
         <div
-          style="width: 50px; height: 50px;"
+          style="display: flex; text-align: left;"
         >
-          <svg
-            height="50"
-            preserveAspectRatio="xMidYMid meet"
-            viewBox="0 0 50 50"
-            width="50"
-            xmlns="http://www.w3.org/2000/svg"
+          <div
+            style="width: 50px; height: 50px;"
           >
-            <path
-              d="M20 5L25 10L20 15L15 10ZM35 10L30 15L25 10L30 5ZM30 45L25 40L30 35L35 40ZM15 40L20 35L25 40L20 45ZM10 15L15 20L10 25L5 20ZM45 20L40 25L35 20L40 15ZM40 35L35 30L40 25L45 30ZM5 30L10 25L15 30L10 35Z"
-              fill="#579932"
-            />
-            <path
-              d="M5 15L5 5L15 5ZM35 5L45 5L45 15ZM45 35L45 45L35 45ZM15 45L5 45L5 35ZM15 15L25 15L25 16.6L20.8 25L15 25ZM35 15L35 25L33.4 25L25 20.8L25 15ZM35 35L25 35L25 33.4L29.2 25L35 25ZM15 35L15 25L16.6 25L25 29.2L25 35Z"
-              fill="#8acc66"
-            />
-          </svg>
-        </div>
-        <div
-          style="margin-left: 8px;"
-        >
-          <h6
-            class="MuiTypography-root-218 MuiTypography-h6-235"
+            <svg
+              height="50"
+              preserveAspectRatio="xMidYMid meet"
+              viewBox="0 0 50 50"
+              width="50"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M20 5L25 10L20 15L15 10ZM35 10L30 15L25 10L30 5ZM30 45L25 40L30 35L35 40ZM15 40L20 35L25 40L20 45ZM10 15L15 20L10 25L5 20ZM45 20L40 25L35 20L40 15ZM40 35L35 30L40 25L45 30ZM5 30L10 25L15 30L10 35Z"
+                fill="#579932"
+              />
+              <path
+                d="M5 15L5 5L15 5ZM35 5L45 5L45 15ZM45 35L45 45L35 45ZM15 45L5 45L5 35ZM15 15L25 15L25 16.6L20.8 25L15 25ZM35 15L35 25L33.4 25L25 20.8L25 15ZM35 35L25 35L25 33.4L29.2 25L35 25ZM15 35L15 25L16.6 25L25 29.2L25 35Z"
+                fill="#8acc66"
+              />
+            </svg>
+          </div>
+          <div
+            style="margin-left: 8px;"
           >
-            aaa - NBTGI
-          </h6>
+            <h6
+              class="MuiTypography-root-219 MuiTypography-h6-236"
+            >
+              aaa - NBTGI
+            </h6>
+          </div>
         </div>
       </div>
-    </div>
-    <div
-      class="MuiDialogContent-root-276"
-    >
       <div
-        style="margin-left: 1em;"
+        class="MuiDialogContent-root-278"
       >
-        <div>
-          <small>
-            Workorder: 
-            none
-          </small>
+        <div
+          style="margin-left: 1em;"
+        >
+          <div>
+            <small>
+              Workorder: 
+              none
+            </small>
+          </div>
+          <div>
+            <small>
+              Inspections: 
+            </small>
+            <small>
+              none
+            </small>
+          </div>
         </div>
-        <div>
-          <small>
-            Inspections: 
-          </small>
-          <small>
-            none
-          </small>
-        </div>
+        <table
+          class="MuiTable-root-317"
+        >
+          <thead
+            class="MuiTableHead-root-318"
+          >
+            <tr
+              class="MuiTableRow-root-319 MuiTableRow-head-322"
+            >
+              <th
+                class="MuiTableCell-root-324 MuiTableCell-head-325"
+                scope="col"
+              >
+                Date
+              </th>
+              <th
+                class="MuiTableCell-root-324 MuiTableCell-head-325"
+                scope="col"
+              >
+                Time
+              </th>
+              <th
+                class="MuiTableCell-root-324 MuiTableCell-head-325"
+                scope="col"
+              >
+                Type
+              </th>
+              <th
+                class="MuiTableCell-root-324 MuiTableCell-head-325"
+                scope="col"
+              >
+                Details
+              </th>
+            </tr>
+          </thead>
+          <tbody
+            class="MuiTableBody-root-332"
+          >
+            <tr
+              class="MuiTableRow-root-319"
+            >
+              <td
+                class="MuiTableCell-root-324 MuiTableCell-body-326 MuiTableCell-paddingDense-329"
+              >
+                <div
+                  data-testid="mock-component-DateTimeDisplay"
+                >
+                  <span
+                    data-prop="date"
+                  >
+                    "2018-07-03T06:10:00.000Z"
+                  </span>
+                  <span
+                    data-prop="formatStr"
+                  >
+                    "MMM D, YY"
+                  </span>
+                </div>
+              </td>
+              <td
+                class="MuiTableCell-root-324 MuiTableCell-body-326 MuiTableCell-paddingDense-329"
+              >
+                <div
+                  data-testid="mock-component-DateTimeDisplay"
+                >
+                  <span
+                    data-prop="date"
+                  >
+                    "2018-07-03T06:10:00.000Z"
+                  </span>
+                  <span
+                    data-prop="formatStr"
+                  >
+                    "hh:mm A"
+                  </span>
+                </div>
+              </td>
+              <td
+                class="MuiTableCell-root-324 MuiTableCell-body-326 MuiTableCell-paddingDense-329"
+              >
+                Start Load
+              </td>
+              <td
+                class="MuiTableCell-root-324 MuiTableCell-body-326 MuiTableCell-paddingDense-329"
+              >
+                aaa[1] on pallet 1 at station 1
+              </td>
+            </tr>
+            <tr
+              class="MuiTableRow-root-319"
+            >
+              <td
+                class="MuiTableCell-root-324 MuiTableCell-body-326 MuiTableCell-paddingDense-329"
+              >
+                <div
+                  data-testid="mock-component-DateTimeDisplay"
+                >
+                  <span
+                    data-prop="date"
+                  >
+                    "2018-07-03T06:17:00.000Z"
+                  </span>
+                  <span
+                    data-prop="formatStr"
+                  >
+                    "MMM D, YY"
+                  </span>
+                </div>
+              </td>
+              <td
+                class="MuiTableCell-root-324 MuiTableCell-body-326 MuiTableCell-paddingDense-329"
+              >
+                <div
+                  data-testid="mock-component-DateTimeDisplay"
+                >
+                  <span
+                    data-prop="date"
+                  >
+                    "2018-07-03T06:17:00.000Z"
+                  </span>
+                  <span
+                    data-prop="formatStr"
+                  >
+                    "hh:mm A"
+                  </span>
+                </div>
+              </td>
+              <td
+                class="MuiTableCell-root-324 MuiTableCell-body-326 MuiTableCell-paddingDense-329"
+              >
+                End Load
+              </td>
+              <td
+                class="MuiTableCell-root-324 MuiTableCell-body-326 MuiTableCell-paddingDense-329"
+              >
+                aaa[1] on pallet 1 at station 1
+              </td>
+            </tr>
+            <tr
+              class="MuiTableRow-root-319"
+            >
+              <td
+                class="MuiTableCell-root-324 MuiTableCell-body-326 MuiTableCell-paddingDense-329"
+              >
+                <div
+                  data-testid="mock-component-DateTimeDisplay"
+                >
+                  <span
+                    data-prop="date"
+                  >
+                    "2018-07-03T06:18:00.000Z"
+                  </span>
+                  <span
+                    data-prop="formatStr"
+                  >
+                    "MMM D, YY"
+                  </span>
+                </div>
+              </td>
+              <td
+                class="MuiTableCell-root-324 MuiTableCell-body-326 MuiTableCell-paddingDense-329"
+              >
+                <div
+                  data-testid="mock-component-DateTimeDisplay"
+                >
+                  <span
+                    data-prop="date"
+                  >
+                    "2018-07-03T06:18:00.000Z"
+                  </span>
+                  <span
+                    data-prop="formatStr"
+                  >
+                    "hh:mm A"
+                  </span>
+                </div>
+              </td>
+              <td
+                class="MuiTableCell-root-324 MuiTableCell-body-326 MuiTableCell-paddingDense-329"
+              >
+                Serial
+              </td>
+              <td
+                class="MuiTableCell-root-324 MuiTableCell-body-326 MuiTableCell-paddingDense-329"
+              >
+                aaa[1] marked with NBTGI
+              </td>
+            </tr>
+            <tr
+              class="MuiTableRow-root-319"
+            >
+              <td
+                class="MuiTableCell-root-324 MuiTableCell-body-326 MuiTableCell-paddingDense-329"
+              >
+                <div
+                  data-testid="mock-component-DateTimeDisplay"
+                >
+                  <span
+                    data-prop="date"
+                  >
+                    "2018-07-03T06:53:00.000Z"
+                  </span>
+                  <span
+                    data-prop="formatStr"
+                  >
+                    "MMM D, YY"
+                  </span>
+                </div>
+              </td>
+              <td
+                class="MuiTableCell-root-324 MuiTableCell-body-326 MuiTableCell-paddingDense-329"
+              >
+                <div
+                  data-testid="mock-component-DateTimeDisplay"
+                >
+                  <span
+                    data-prop="date"
+                  >
+                    "2018-07-03T06:53:00.000Z"
+                  </span>
+                  <span
+                    data-prop="formatStr"
+                  >
+                    "hh:mm A"
+                  </span>
+                </div>
+              </td>
+              <td
+                class="MuiTableCell-root-324 MuiTableCell-body-326 MuiTableCell-paddingDense-329"
+              >
+                Cycle Start
+              </td>
+              <td
+                class="MuiTableCell-root-324 MuiTableCell-body-326 MuiTableCell-paddingDense-329"
+              >
+                aaa[1] on pallet 1 at machine 4
+              </td>
+            </tr>
+            <tr
+              class="MuiTableRow-root-319"
+            >
+              <td
+                class="MuiTableCell-root-324 MuiTableCell-body-326 MuiTableCell-paddingDense-329"
+              >
+                <div
+                  data-testid="mock-component-DateTimeDisplay"
+                >
+                  <span
+                    data-prop="date"
+                  >
+                    "2018-07-03T07:08:00.000Z"
+                  </span>
+                  <span
+                    data-prop="formatStr"
+                  >
+                    "MMM D, YY"
+                  </span>
+                </div>
+              </td>
+              <td
+                class="MuiTableCell-root-324 MuiTableCell-body-326 MuiTableCell-paddingDense-329"
+              >
+                <div
+                  data-testid="mock-component-DateTimeDisplay"
+                >
+                  <span
+                    data-prop="date"
+                  >
+                    "2018-07-03T07:08:00.000Z"
+                  </span>
+                  <span
+                    data-prop="formatStr"
+                  >
+                    "hh:mm A"
+                  </span>
+                </div>
+              </td>
+              <td
+                class="MuiTableCell-root-324 MuiTableCell-body-326 MuiTableCell-paddingDense-329"
+              >
+                Cycle End
+              </td>
+              <td
+                class="MuiTableCell-root-324 MuiTableCell-body-326 MuiTableCell-paddingDense-329"
+              >
+                aaa[1] on pallet 1 at machine 4 with program prog-aaa-2
+              </td>
+            </tr>
+            <tr
+              class="MuiTableRow-root-319"
+            >
+              <td
+                class="MuiTableCell-root-324 MuiTableCell-body-326 MuiTableCell-paddingDense-329"
+              >
+                <div
+                  data-testid="mock-component-DateTimeDisplay"
+                >
+                  <span
+                    data-prop="date"
+                  >
+                    "2018-07-03T07:20:00.000Z"
+                  </span>
+                  <span
+                    data-prop="formatStr"
+                  >
+                    "MMM D, YY"
+                  </span>
+                </div>
+              </td>
+              <td
+                class="MuiTableCell-root-324 MuiTableCell-body-326 MuiTableCell-paddingDense-329"
+              >
+                <div
+                  data-testid="mock-component-DateTimeDisplay"
+                >
+                  <span
+                    data-prop="date"
+                  >
+                    "2018-07-03T07:20:00.000Z"
+                  </span>
+                  <span
+                    data-prop="formatStr"
+                  >
+                    "hh:mm A"
+                  </span>
+                </div>
+              </td>
+              <td
+                class="MuiTableCell-root-324 MuiTableCell-body-326 MuiTableCell-paddingDense-329"
+              >
+                Start Unload
+              </td>
+              <td
+                class="MuiTableCell-root-324 MuiTableCell-body-326 MuiTableCell-paddingDense-329"
+              >
+                aaa[1] on pallet 1 at station 1
+              </td>
+            </tr>
+            <tr
+              class="MuiTableRow-root-319"
+            >
+              <td
+                class="MuiTableCell-root-324 MuiTableCell-body-326 MuiTableCell-paddingDense-329"
+              >
+                <div
+                  data-testid="mock-component-DateTimeDisplay"
+                >
+                  <span
+                    data-prop="date"
+                  >
+                    "2018-07-03T07:20:00.000Z"
+                  </span>
+                  <span
+                    data-prop="formatStr"
+                  >
+                    "MMM D, YY"
+                  </span>
+                </div>
+              </td>
+              <td
+                class="MuiTableCell-root-324 MuiTableCell-body-326 MuiTableCell-paddingDense-329"
+              >
+                <div
+                  data-testid="mock-component-DateTimeDisplay"
+                >
+                  <span
+                    data-prop="date"
+                  >
+                    "2018-07-03T07:20:00.000Z"
+                  </span>
+                  <span
+                    data-prop="formatStr"
+                  >
+                    "hh:mm A"
+                  </span>
+                </div>
+              </td>
+              <td
+                class="MuiTableCell-root-324 MuiTableCell-body-326 MuiTableCell-paddingDense-329"
+              >
+                Start Load
+              </td>
+              <td
+                class="MuiTableCell-root-324 MuiTableCell-body-326 MuiTableCell-paddingDense-329"
+              >
+                aaa[2] on pallet 1 at station 1
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-      <table
-        class="MuiTable-root-314"
+      <div
+        class="MuiDialogActions-root-289"
       >
-        <thead
-          class="MuiTableHead-root-315"
+        <a
+          class="MuiButtonBase-root-68 MuiButton-root-291 MuiButton-text-293 MuiButton-textPrimary-294 MuiButton-flat-296 MuiButton-flatPrimary-297"
+          href="/api/v1/server/find-instructions/aaa?type=unload&materialID=100432&process=2"
+          role="button"
+          tabindex="0"
+          target="bms-instructions"
         >
-          <tr
-            class="MuiTableRow-root-316 MuiTableRow-head-319"
+          <span
+            class="MuiButton-label-292"
           >
-            <th
-              class="MuiTableCell-root-321 MuiTableCell-head-322"
-              scope="col"
-            >
-              Date
-            </th>
-            <th
-              class="MuiTableCell-root-321 MuiTableCell-head-322"
-              scope="col"
-            >
-              Time
-            </th>
-            <th
-              class="MuiTableCell-root-321 MuiTableCell-head-322"
-              scope="col"
-            >
-              Type
-            </th>
-            <th
-              class="MuiTableCell-root-321 MuiTableCell-head-322"
-              scope="col"
-            >
-              Details
-            </th>
-          </tr>
-        </thead>
-        <tbody
-          class="MuiTableBody-root-329"
+            Instructions
+          </span>
+          <span
+            class="MuiTouchRipple-root-71"
+          />
+        </a>
+        <button
+          class="MuiButtonBase-root-68 MuiButton-root-291 MuiButton-text-293 MuiButton-textPrimary-294 MuiButton-flat-296 MuiButton-flatPrimary-297"
+          tabindex="0"
+          type="button"
         >
-          <tr
-            class="MuiTableRow-root-316"
+          <span
+            class="MuiButton-label-292"
           >
-            <td
-              class="MuiTableCell-root-321 MuiTableCell-body-323 MuiTableCell-paddingDense-326"
-            >
-              <div
-                data-testid="mock-component-DateTimeDisplay"
-              >
-                <span
-                  data-prop="date"
-                >
-                  "2018-07-03T06:10:00.000Z"
-                </span>
-                <span
-                  data-prop="formatStr"
-                >
-                  "MMM D, YY"
-                </span>
-              </div>
-            </td>
-            <td
-              class="MuiTableCell-root-321 MuiTableCell-body-323 MuiTableCell-paddingDense-326"
-            >
-              <div
-                data-testid="mock-component-DateTimeDisplay"
-              >
-                <span
-                  data-prop="date"
-                >
-                  "2018-07-03T06:10:00.000Z"
-                </span>
-                <span
-                  data-prop="formatStr"
-                >
-                  "hh:mm A"
-                </span>
-              </div>
-            </td>
-            <td
-              class="MuiTableCell-root-321 MuiTableCell-body-323 MuiTableCell-paddingDense-326"
-            >
-              Start Load
-            </td>
-            <td
-              class="MuiTableCell-root-321 MuiTableCell-body-323 MuiTableCell-paddingDense-326"
-            >
-              aaa[1] on pallet 1 at station 1
-            </td>
-          </tr>
-          <tr
-            class="MuiTableRow-root-316"
-          >
-            <td
-              class="MuiTableCell-root-321 MuiTableCell-body-323 MuiTableCell-paddingDense-326"
-            >
-              <div
-                data-testid="mock-component-DateTimeDisplay"
-              >
-                <span
-                  data-prop="date"
-                >
-                  "2018-07-03T06:17:00.000Z"
-                </span>
-                <span
-                  data-prop="formatStr"
-                >
-                  "MMM D, YY"
-                </span>
-              </div>
-            </td>
-            <td
-              class="MuiTableCell-root-321 MuiTableCell-body-323 MuiTableCell-paddingDense-326"
-            >
-              <div
-                data-testid="mock-component-DateTimeDisplay"
-              >
-                <span
-                  data-prop="date"
-                >
-                  "2018-07-03T06:17:00.000Z"
-                </span>
-                <span
-                  data-prop="formatStr"
-                >
-                  "hh:mm A"
-                </span>
-              </div>
-            </td>
-            <td
-              class="MuiTableCell-root-321 MuiTableCell-body-323 MuiTableCell-paddingDense-326"
-            >
-              End Load
-            </td>
-            <td
-              class="MuiTableCell-root-321 MuiTableCell-body-323 MuiTableCell-paddingDense-326"
-            >
-              aaa[1] on pallet 1 at station 1
-            </td>
-          </tr>
-          <tr
-            class="MuiTableRow-root-316"
-          >
-            <td
-              class="MuiTableCell-root-321 MuiTableCell-body-323 MuiTableCell-paddingDense-326"
-            >
-              <div
-                data-testid="mock-component-DateTimeDisplay"
-              >
-                <span
-                  data-prop="date"
-                >
-                  "2018-07-03T06:18:00.000Z"
-                </span>
-                <span
-                  data-prop="formatStr"
-                >
-                  "MMM D, YY"
-                </span>
-              </div>
-            </td>
-            <td
-              class="MuiTableCell-root-321 MuiTableCell-body-323 MuiTableCell-paddingDense-326"
-            >
-              <div
-                data-testid="mock-component-DateTimeDisplay"
-              >
-                <span
-                  data-prop="date"
-                >
-                  "2018-07-03T06:18:00.000Z"
-                </span>
-                <span
-                  data-prop="formatStr"
-                >
-                  "hh:mm A"
-                </span>
-              </div>
-            </td>
-            <td
-              class="MuiTableCell-root-321 MuiTableCell-body-323 MuiTableCell-paddingDense-326"
-            >
-              Serial
-            </td>
-            <td
-              class="MuiTableCell-root-321 MuiTableCell-body-323 MuiTableCell-paddingDense-326"
-            >
-              aaa[1] marked with NBTGI
-            </td>
-          </tr>
-          <tr
-            class="MuiTableRow-root-316"
-          >
-            <td
-              class="MuiTableCell-root-321 MuiTableCell-body-323 MuiTableCell-paddingDense-326"
-            >
-              <div
-                data-testid="mock-component-DateTimeDisplay"
-              >
-                <span
-                  data-prop="date"
-                >
-                  "2018-07-03T06:53:00.000Z"
-                </span>
-                <span
-                  data-prop="formatStr"
-                >
-                  "MMM D, YY"
-                </span>
-              </div>
-            </td>
-            <td
-              class="MuiTableCell-root-321 MuiTableCell-body-323 MuiTableCell-paddingDense-326"
-            >
-              <div
-                data-testid="mock-component-DateTimeDisplay"
-              >
-                <span
-                  data-prop="date"
-                >
-                  "2018-07-03T06:53:00.000Z"
-                </span>
-                <span
-                  data-prop="formatStr"
-                >
-                  "hh:mm A"
-                </span>
-              </div>
-            </td>
-            <td
-              class="MuiTableCell-root-321 MuiTableCell-body-323 MuiTableCell-paddingDense-326"
-            >
-              Cycle Start
-            </td>
-            <td
-              class="MuiTableCell-root-321 MuiTableCell-body-323 MuiTableCell-paddingDense-326"
-            >
-              aaa[1] on pallet 1 at machine 4
-            </td>
-          </tr>
-          <tr
-            class="MuiTableRow-root-316"
-          >
-            <td
-              class="MuiTableCell-root-321 MuiTableCell-body-323 MuiTableCell-paddingDense-326"
-            >
-              <div
-                data-testid="mock-component-DateTimeDisplay"
-              >
-                <span
-                  data-prop="date"
-                >
-                  "2018-07-03T07:08:00.000Z"
-                </span>
-                <span
-                  data-prop="formatStr"
-                >
-                  "MMM D, YY"
-                </span>
-              </div>
-            </td>
-            <td
-              class="MuiTableCell-root-321 MuiTableCell-body-323 MuiTableCell-paddingDense-326"
-            >
-              <div
-                data-testid="mock-component-DateTimeDisplay"
-              >
-                <span
-                  data-prop="date"
-                >
-                  "2018-07-03T07:08:00.000Z"
-                </span>
-                <span
-                  data-prop="formatStr"
-                >
-                  "hh:mm A"
-                </span>
-              </div>
-            </td>
-            <td
-              class="MuiTableCell-root-321 MuiTableCell-body-323 MuiTableCell-paddingDense-326"
-            >
-              Cycle End
-            </td>
-            <td
-              class="MuiTableCell-root-321 MuiTableCell-body-323 MuiTableCell-paddingDense-326"
-            >
-              aaa[1] on pallet 1 at machine 4 with program prog-aaa-2
-            </td>
-          </tr>
-          <tr
-            class="MuiTableRow-root-316"
-          >
-            <td
-              class="MuiTableCell-root-321 MuiTableCell-body-323 MuiTableCell-paddingDense-326"
-            >
-              <div
-                data-testid="mock-component-DateTimeDisplay"
-              >
-                <span
-                  data-prop="date"
-                >
-                  "2018-07-03T07:20:00.000Z"
-                </span>
-                <span
-                  data-prop="formatStr"
-                >
-                  "MMM D, YY"
-                </span>
-              </div>
-            </td>
-            <td
-              class="MuiTableCell-root-321 MuiTableCell-body-323 MuiTableCell-paddingDense-326"
-            >
-              <div
-                data-testid="mock-component-DateTimeDisplay"
-              >
-                <span
-                  data-prop="date"
-                >
-                  "2018-07-03T07:20:00.000Z"
-                </span>
-                <span
-                  data-prop="formatStr"
-                >
-                  "hh:mm A"
-                </span>
-              </div>
-            </td>
-            <td
-              class="MuiTableCell-root-321 MuiTableCell-body-323 MuiTableCell-paddingDense-326"
-            >
-              Start Unload
-            </td>
-            <td
-              class="MuiTableCell-root-321 MuiTableCell-body-323 MuiTableCell-paddingDense-326"
-            >
-              aaa[1] on pallet 1 at station 1
-            </td>
-          </tr>
-          <tr
-            class="MuiTableRow-root-316"
-          >
-            <td
-              class="MuiTableCell-root-321 MuiTableCell-body-323 MuiTableCell-paddingDense-326"
-            >
-              <div
-                data-testid="mock-component-DateTimeDisplay"
-              >
-                <span
-                  data-prop="date"
-                >
-                  "2018-07-03T07:20:00.000Z"
-                </span>
-                <span
-                  data-prop="formatStr"
-                >
-                  "MMM D, YY"
-                </span>
-              </div>
-            </td>
-            <td
-              class="MuiTableCell-root-321 MuiTableCell-body-323 MuiTableCell-paddingDense-326"
-            >
-              <div
-                data-testid="mock-component-DateTimeDisplay"
-              >
-                <span
-                  data-prop="date"
-                >
-                  "2018-07-03T07:20:00.000Z"
-                </span>
-                <span
-                  data-prop="formatStr"
-                >
-                  "hh:mm A"
-                </span>
-              </div>
-            </td>
-            <td
-              class="MuiTableCell-root-321 MuiTableCell-body-323 MuiTableCell-paddingDense-326"
-            >
-              Start Load
-            </td>
-            <td
-              class="MuiTableCell-root-321 MuiTableCell-body-323 MuiTableCell-paddingDense-326"
-            >
-              aaa[2] on pallet 1 at station 1
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <div
-      class="MuiDialogActions-root-286"
-    >
-      <a
-        class="MuiButtonBase-root-68 MuiButton-root-288 MuiButton-text-290 MuiButton-textPrimary-291 MuiButton-flat-293 MuiButton-flatPrimary-294"
-        href="/api/v1/server/find-instructions/aaa?type=unload&materialID=100432&process=2"
-        role="button"
-        tabindex="0"
-        target="bms-instructions"
-      >
-        <span
-          class="MuiButton-label-289"
+            Change Serial
+          </span>
+          <span
+            class="MuiTouchRipple-root-71"
+          />
+        </button>
+        <button
+          class="MuiButtonBase-root-68 MuiButton-root-291 MuiButton-text-293 MuiButton-textPrimary-294 MuiButton-flat-296 MuiButton-flatPrimary-297"
+          tabindex="0"
+          type="button"
         >
-          Instructions
-        </span>
-        <span
-          class="MuiTouchRipple-root-71"
-        />
-      </a>
-      <button
-        class="MuiButtonBase-root-68 MuiButton-root-288 MuiButton-text-290 MuiButton-textPrimary-291 MuiButton-flat-293 MuiButton-flatPrimary-294"
-        tabindex="0"
-        type="button"
-      >
-        <span
-          class="MuiButton-label-289"
+          <span
+            class="MuiButton-label-292"
+          >
+            Signal Inspection
+          </span>
+          <span
+            class="MuiTouchRipple-root-71"
+          />
+        </button>
+        <button
+          class="MuiButtonBase-root-68 MuiButton-root-291 MuiButton-text-293 MuiButton-textPrimary-294 MuiButton-flat-296 MuiButton-flatPrimary-297"
+          tabindex="0"
+          type="button"
         >
-          Change Serial
-        </span>
-        <span
-          class="MuiTouchRipple-root-71"
-        />
-      </button>
-      <button
-        class="MuiButtonBase-root-68 MuiButton-root-288 MuiButton-text-290 MuiButton-textPrimary-291 MuiButton-flat-293 MuiButton-flatPrimary-294"
-        tabindex="0"
-        type="button"
-      >
-        <span
-          class="MuiButton-label-289"
+          <span
+            class="MuiButton-label-292"
+          >
+            Assign Workorder
+          </span>
+          <span
+            class="MuiTouchRipple-root-71"
+          />
+        </button>
+        <button
+          class="MuiButtonBase-root-68 MuiButton-root-291 MuiButton-text-293 MuiButton-textSecondary-295 MuiButton-flat-296 MuiButton-flatSecondary-298 MuiDialogActions-action-290"
+          tabindex="0"
+          type="button"
         >
-          Signal Inspection
-        </span>
-        <span
-          class="MuiTouchRipple-root-71"
-        />
-      </button>
-      <button
-        class="MuiButtonBase-root-68 MuiButton-root-288 MuiButton-text-290 MuiButton-textPrimary-291 MuiButton-flat-293 MuiButton-flatPrimary-294"
-        tabindex="0"
-        type="button"
-      >
-        <span
-          class="MuiButton-label-289"
-        >
-          Assign Workorder
-        </span>
-        <span
-          class="MuiTouchRipple-root-71"
-        />
-      </button>
-      <button
-        class="MuiButtonBase-root-68 MuiButton-root-288 MuiButton-text-290 MuiButton-textSecondary-292 MuiButton-flat-293 MuiButton-flatSecondary-295 MuiDialogActions-action-287"
-        tabindex="0"
-        type="button"
-      >
-        <span
-          class="MuiButton-label-289"
-        >
-          Close
-        </span>
-        <span
-          class="MuiTouchRipple-root-71"
-        />
-      </button>
+          <span
+            class="MuiButton-label-292"
+          >
+            Close
+          </span>
+          <span
+            class="MuiTouchRipple-root-71"
+          />
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -2297,7 +2301,7 @@ exports[`renders the load station page: load 1 and queue 1`] = `
       >
         <div>
           <div
-            class="MuiPaper-root-191 MuiPaper-elevation4-197 MuiPaper-rounded-192 Component-paper-186"
+            class="MuiPaper-root-192 MuiPaper-elevation4-198 MuiPaper-rounded-193 Component-paper-187"
           >
             <button
               class="MuiButtonBase-root-68"
@@ -2305,7 +2309,7 @@ exports[`renders the load station page: load 1 and queue 1`] = `
               type="button"
             >
               <div
-                class="Component-container-187"
+                class="Component-container-188"
               >
                 <div
                   style="width: 50px; height: 50px;"
@@ -2332,10 +2336,10 @@ exports[`renders the load station page: load 1 and queue 1`] = `
                   </svg>
                 </div>
                 <div
-                  class="Component-mainContent-188"
+                  class="Component-mainContent-189"
                 >
                   <h6
-                    class="MuiTypography-root-218 MuiTypography-h6-235"
+                    class="MuiTypography-root-219 MuiTypography-h6-236"
                   >
                     bbb
                   </h6>
@@ -2352,11 +2356,11 @@ exports[`renders the load station page: load 1 and queue 1`] = `
                   </div>
                 </div>
                 <div
-                  class="Component-rightContent-189"
+                  class="Component-rightContent-190"
                 >
                   <div>
                     <div
-                      class="MuiAvatar-root-253 MuiAvatar-colorDefault-254 Component-avatar-190"
+                      class="MuiAvatar-root-254 MuiAvatar-colorDefault-255 Component-avatar-191"
                     >
                       M
                     </div>
@@ -2414,7 +2418,7 @@ exports[`renders the load station page: load 1 and queue 1`] = `
               >
                 <div>
                   <div
-                    class="MuiPaper-root-191 MuiPaper-elevation4-197 MuiPaper-rounded-192 Component-paper-186"
+                    class="MuiPaper-root-192 MuiPaper-elevation4-198 MuiPaper-rounded-193 Component-paper-187"
                   >
                     <button
                       class="MuiButtonBase-root-68"
@@ -2422,7 +2426,7 @@ exports[`renders the load station page: load 1 and queue 1`] = `
                       type="button"
                     >
                       <div
-                        class="Component-container-187"
+                        class="Component-container-188"
                       >
                         <div
                           style="width: 50px; height: 50px;"
@@ -2445,10 +2449,10 @@ exports[`renders the load station page: load 1 and queue 1`] = `
                           </svg>
                         </div>
                         <div
-                          class="Component-mainContent-188"
+                          class="Component-mainContent-189"
                         >
                           <h6
-                            class="MuiTypography-root-218 MuiTypography-h6-235"
+                            class="MuiTypography-root-219 MuiTypography-h6-236"
                           >
                             aaa
                           </h6>
@@ -2465,11 +2469,11 @@ exports[`renders the load station page: load 1 and queue 1`] = `
                           </div>
                         </div>
                         <div
-                          class="Component-rightContent-189"
+                          class="Component-rightContent-190"
                         >
                           <div>
                             <div
-                              class="MuiAvatar-root-253 MuiAvatar-colorDefault-254 Component-avatar-190"
+                              class="MuiAvatar-root-254 MuiAvatar-colorDefault-255 Component-avatar-191"
                             >
                               I
                             </div>
@@ -2509,7 +2513,7 @@ exports[`renders the load station page: load 1 and queue 1`] = `
               >
                 <div>
                   <div
-                    class="MuiPaper-root-191 MuiPaper-elevation4-197 MuiPaper-rounded-192 Component-paper-186"
+                    class="MuiPaper-root-192 MuiPaper-elevation4-198 MuiPaper-rounded-193 Component-paper-187"
                   >
                     <button
                       class="MuiButtonBase-root-68"
@@ -2517,7 +2521,7 @@ exports[`renders the load station page: load 1 and queue 1`] = `
                       type="button"
                     >
                       <div
-                        class="Component-container-187"
+                        class="Component-container-188"
                       >
                         <div
                           style="width: 50px; height: 50px;"
@@ -2540,10 +2544,10 @@ exports[`renders the load station page: load 1 and queue 1`] = `
                           </svg>
                         </div>
                         <div
-                          class="Component-mainContent-188"
+                          class="Component-mainContent-189"
                         >
                           <h6
-                            class="MuiTypography-root-218 MuiTypography-h6-235"
+                            class="MuiTypography-root-219 MuiTypography-h6-236"
                           >
                             aaa
                           </h6>
@@ -2560,11 +2564,11 @@ exports[`renders the load station page: load 1 and queue 1`] = `
                           </div>
                         </div>
                         <div
-                          class="Component-rightContent-189"
+                          class="Component-rightContent-190"
                         >
                           <div>
                             <div
-                              class="MuiAvatar-root-253 MuiAvatar-colorDefault-254 Component-avatar-190"
+                              class="MuiAvatar-root-254 MuiAvatar-colorDefault-255 Component-avatar-191"
                             >
                               Y
                             </div>
@@ -2628,7 +2632,7 @@ exports[`renders the load station page: load 1 and queue 1`] = `
         >
           <div>
             <div
-              class="MuiPaper-root-191 MuiPaper-elevation4-197 MuiPaper-rounded-192 Component-paper-186"
+              class="MuiPaper-root-192 MuiPaper-elevation4-198 MuiPaper-rounded-193 Component-paper-187"
             >
               <button
                 class="MuiButtonBase-root-68"
@@ -2636,7 +2640,7 @@ exports[`renders the load station page: load 1 and queue 1`] = `
                 type="button"
               >
                 <div
-                  class="Component-container-187"
+                  class="Component-container-188"
                 >
                   <div
                     style="width: 50px; height: 50px;"
@@ -2659,10 +2663,10 @@ exports[`renders the load station page: load 1 and queue 1`] = `
                     </svg>
                   </div>
                   <div
-                    class="Component-mainContent-188"
+                    class="Component-mainContent-189"
                   >
                     <h6
-                      class="MuiTypography-root-218 MuiTypography-h6-235"
+                      class="MuiTypography-root-219 MuiTypography-h6-236"
                     >
                       aaa
                     </h6>
@@ -2674,11 +2678,11 @@ exports[`renders the load station page: load 1 and queue 1`] = `
                     </div>
                   </div>
                   <div
-                    class="Component-rightContent-189"
+                    class="Component-rightContent-190"
                   >
                     <div>
                       <div
-                        class="MuiAvatar-root-253 MuiAvatar-colorDefault-254 Component-avatar-190"
+                        class="MuiAvatar-root-254 MuiAvatar-colorDefault-255 Component-avatar-191"
                       >
                         E
                       </div>
@@ -2693,7 +2697,7 @@ exports[`renders the load station page: load 1 and queue 1`] = `
           </div>
           <div>
             <div
-              class="MuiPaper-root-191 MuiPaper-elevation4-197 MuiPaper-rounded-192 Component-paper-186"
+              class="MuiPaper-root-192 MuiPaper-elevation4-198 MuiPaper-rounded-193 Component-paper-187"
             >
               <button
                 class="MuiButtonBase-root-68"
@@ -2701,7 +2705,7 @@ exports[`renders the load station page: load 1 and queue 1`] = `
                 type="button"
               >
                 <div
-                  class="Component-container-187"
+                  class="Component-container-188"
                 >
                   <div
                     style="width: 50px; height: 50px;"
@@ -2728,10 +2732,10 @@ exports[`renders the load station page: load 1 and queue 1`] = `
                     </svg>
                   </div>
                   <div
-                    class="Component-mainContent-188"
+                    class="Component-mainContent-189"
                   >
                     <h6
-                      class="MuiTypography-root-218 MuiTypography-h6-235"
+                      class="MuiTypography-root-219 MuiTypography-h6-236"
                     >
                       xxx
                     </h6>
@@ -2743,11 +2747,11 @@ exports[`renders the load station page: load 1 and queue 1`] = `
                     </div>
                   </div>
                   <div
-                    class="Component-rightContent-189"
+                    class="Component-rightContent-190"
                   >
                     <div>
                       <div
-                        class="MuiAvatar-root-253 MuiAvatar-colorDefault-254 Component-avatar-190"
+                        class="MuiAvatar-root-254 MuiAvatar-colorDefault-255 Component-avatar-191"
                       >
                         A
                       </div>
@@ -2762,7 +2766,7 @@ exports[`renders the load station page: load 1 and queue 1`] = `
           </div>
           <div>
             <div
-              class="MuiPaper-root-191 MuiPaper-elevation4-197 MuiPaper-rounded-192 Component-paper-186"
+              class="MuiPaper-root-192 MuiPaper-elevation4-198 MuiPaper-rounded-193 Component-paper-187"
             >
               <button
                 class="MuiButtonBase-root-68"
@@ -2770,7 +2774,7 @@ exports[`renders the load station page: load 1 and queue 1`] = `
                 type="button"
               >
                 <div
-                  class="Component-container-187"
+                  class="Component-container-188"
                 >
                   <div
                     style="width: 50px; height: 50px;"
@@ -2797,10 +2801,10 @@ exports[`renders the load station page: load 1 and queue 1`] = `
                     </svg>
                   </div>
                   <div
-                    class="Component-mainContent-188"
+                    class="Component-mainContent-189"
                   >
                     <h6
-                      class="MuiTypography-root-218 MuiTypography-h6-235"
+                      class="MuiTypography-root-219 MuiTypography-h6-236"
                     >
                       zzz
                     </h6>
@@ -2812,11 +2816,11 @@ exports[`renders the load station page: load 1 and queue 1`] = `
                     </div>
                   </div>
                   <div
-                    class="Component-rightContent-189"
+                    class="Component-rightContent-190"
                   >
                     <div>
                       <div
-                        class="MuiAvatar-root-253 MuiAvatar-colorDefault-254 Component-avatar-190"
+                        class="MuiAvatar-root-254 MuiAvatar-colorDefault-255 Component-avatar-191"
                       >
                         Q
                       </div>
@@ -3029,10 +3033,10 @@ exports[`renders the load station page: load 3 1`] = `
       class="Component-statStatusScroll-85"
     >
       <dl
-        class="Component-defList-184"
+        class="Component-defList-185"
       >
         <dt
-          class="Component-defItem-185"
+          class="Component-defItem-186"
         >
           L/U #1
            - Pallet 
@@ -3050,7 +3054,7 @@ exports[`renders the load station page: load 3 1`] = `
           </span>
         </dd>
         <dt
-          class="Component-defItem-185"
+          class="Component-defItem-186"
         >
           L/U #2
            - Pallet 
@@ -3063,7 +3067,7 @@ exports[`renders the load station page: load 3 1`] = `
           </span>
         </dd>
         <dt
-          class="Component-defItem-185"
+          class="Component-defItem-186"
         >
           Machine #1
            - Pallet 
@@ -3090,7 +3094,7 @@ exports[`renders the load station page: load 3 1`] = `
           </span>
         </dd>
         <dt
-          class="Component-defItem-185"
+          class="Component-defItem-186"
         >
           Machine #2
            - Pallet 
@@ -3112,7 +3116,7 @@ exports[`renders the load station page: load 3 1`] = `
           </div>
         </dd>
         <dt
-          class="Component-defItem-185"
+          class="Component-defItem-186"
         >
           Machine #3
            - Pallet 
@@ -3163,204 +3167,208 @@ exports[`renders the load station page: load 3 1`] = `
 
 exports[`renders the queues page: MZQGQ dialog 1`] = `
 <div
-  class="MuiModal-root-976 MuiDialog-root-1099 MuiDialog-scrollPaper-1100"
+  class="MuiModal-root-983 MuiDialog-root-1106"
   role="dialog"
 >
   <div
     aria-hidden="true"
-    class="MuiBackdrop-root-1111"
+    class="MuiBackdrop-root-1119"
     style="opacity: 1; -webkit-transition: opacity 225ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;"
   />
   <div
-    class="MuiPaper-root-1030 MuiPaper-elevation24-1056 MuiPaper-rounded-1031 MuiDialog-paper-1102 MuiDialog-paperScrollPaper-1103 MuiDialog-paperWidthMd-1107"
+    class="MuiDialog-container-1109 MuiDialog-scrollPaper-1107"
     role="document"
     style="opacity: 1; -webkit-transition: opacity 225ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;"
     tabindex="-1"
   >
     <div
-      class="MuiDialogTitle-root-1182"
+      class="MuiPaper-root-1037 MuiPaper-elevation24-1063 MuiPaper-rounded-1038 MuiDialog-paper-1110 MuiDialog-paperScrollPaper-1111 MuiDialog-paperWidthMd-1115"
     >
       <div
-        style="display: flex; text-align: left;"
+        class="MuiDialogTitle-root-1191"
       >
         <div
-          style="width: 50px; height: 50px;"
+          style="display: flex; text-align: left;"
         >
-          <svg
-            height="50"
-            preserveAspectRatio="xMidYMid meet"
-            viewBox="0 0 50 50"
-            width="50"
-            xmlns="http://www.w3.org/2000/svg"
+          <div
+            style="width: 50px; height: 50px;"
           >
-            <path
-              d="M16.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M26.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M26.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M16.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M6.7 20a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 20a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 30a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M6.7 30a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0"
-              fill="#464646"
-            />
-            <path
-              d="M6.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M6.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0"
-              fill="#5998c7"
-            />
-            <path
-              d="M15 15L25 15L25 16.6L20.8 25L15 25ZM35 15L35 25L33.4 25L25 20.8L25 15ZM35 35L25 35L25 33.4L29.2 25L35 25ZM15 35L15 25L16.6 25L25 29.2L25 35Z"
-              fill="#e3e3e3"
-            />
-          </svg>
-        </div>
-        <div
-          style="margin-left: 8px;"
-        >
-          <h6
-            class="MuiTypography-root-1144 MuiTypography-h6-1161"
+            <svg
+              height="50"
+              preserveAspectRatio="xMidYMid meet"
+              viewBox="0 0 50 50"
+              width="50"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M16.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M26.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M26.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M16.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M6.7 20a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 20a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 30a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M6.7 30a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0"
+                fill="#464646"
+              />
+              <path
+                d="M6.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M6.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0"
+                fill="#5998c7"
+              />
+              <path
+                d="M15 15L25 15L25 16.6L20.8 25L15 25ZM35 15L35 25L33.4 25L25 20.8L25 15ZM35 35L25 35L25 33.4L29.2 25L35 25ZM15 35L15 25L16.6 25L25 29.2L25 35Z"
+                fill="#e3e3e3"
+              />
+            </svg>
+          </div>
+          <div
+            style="margin-left: 8px;"
           >
-            zzz - MZQGQ
-          </h6>
+            <h6
+              class="MuiTypography-root-1153 MuiTypography-h6-1170"
+            >
+              zzz - MZQGQ
+            </h6>
+          </div>
         </div>
       </div>
-    </div>
-    <div
-      class="MuiDialogContent-root-1183"
-    >
       <div
-        style="margin-left: 1em;"
+        class="MuiDialogContent-root-1192"
       >
-        <div>
-          <small>
-            Workorder: 
-            none
-          </small>
+        <div
+          style="margin-left: 1em;"
+        >
+          <div>
+            <small>
+              Workorder: 
+              none
+            </small>
+          </div>
+          <div>
+            <small>
+              Inspections: 
+            </small>
+            <small>
+              none
+            </small>
+          </div>
         </div>
-        <div>
-          <small>
-            Inspections: 
-          </small>
-          <small>
-            none
-          </small>
-        </div>
+        <table
+          class="MuiTable-root-1231"
+        >
+          <thead
+            class="MuiTableHead-root-1232"
+          >
+            <tr
+              class="MuiTableRow-root-1233 MuiTableRow-head-1236"
+            >
+              <th
+                class="MuiTableCell-root-1238 MuiTableCell-head-1239"
+                scope="col"
+              >
+                Date
+              </th>
+              <th
+                class="MuiTableCell-root-1238 MuiTableCell-head-1239"
+                scope="col"
+              >
+                Time
+              </th>
+              <th
+                class="MuiTableCell-root-1238 MuiTableCell-head-1239"
+                scope="col"
+              >
+                Type
+              </th>
+              <th
+                class="MuiTableCell-root-1238 MuiTableCell-head-1239"
+                scope="col"
+              >
+                Details
+              </th>
+            </tr>
+          </thead>
+          <tbody
+            class="MuiTableBody-root-1246"
+          >
+            <tr
+              class="MuiTableRow-root-1233"
+            >
+              <td
+                class="MuiTableCell-root-1238 MuiTableCell-body-1240 MuiTableCell-paddingDense-1243"
+              >
+                <div
+                  data-testid="mock-component-DateTimeDisplay"
+                >
+                  <span
+                    data-prop="date"
+                  >
+                    "2018-07-03T09:10:00.000Z"
+                  </span>
+                  <span
+                    data-prop="formatStr"
+                  >
+                    "MMM D, YY"
+                  </span>
+                </div>
+              </td>
+              <td
+                class="MuiTableCell-root-1238 MuiTableCell-body-1240 MuiTableCell-paddingDense-1243"
+              >
+                <div
+                  data-testid="mock-component-DateTimeDisplay"
+                >
+                  <span
+                    data-prop="date"
+                  >
+                    "2018-07-03T09:10:00.000Z"
+                  </span>
+                  <span
+                    data-prop="formatStr"
+                  >
+                    "hh:mm A"
+                  </span>
+                </div>
+              </td>
+              <td
+                class="MuiTableCell-root-1238 MuiTableCell-body-1240 MuiTableCell-paddingDense-1243"
+              >
+                Start Unload
+              </td>
+              <td
+                class="MuiTableCell-root-1238 MuiTableCell-body-1240 MuiTableCell-paddingDense-1243"
+              >
+                zzz on pallet 5 at station 1
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-      <table
-        class="MuiTable-root-1221"
+      <div
+        class="MuiDialogActions-root-1203"
       >
-        <thead
-          class="MuiTableHead-root-1222"
+        <button
+          class="MuiButtonBase-root-1002 MuiButton-root-1205 MuiButton-text-1207 MuiButton-textPrimary-1208 MuiButton-flat-1210 MuiButton-flatPrimary-1211 MuiDialogActions-action-1204"
+          tabindex="0"
+          type="button"
         >
-          <tr
-            class="MuiTableRow-root-1223 MuiTableRow-head-1226"
+          <span
+            class="MuiButton-label-1206"
           >
-            <th
-              class="MuiTableCell-root-1228 MuiTableCell-head-1229"
-              scope="col"
-            >
-              Date
-            </th>
-            <th
-              class="MuiTableCell-root-1228 MuiTableCell-head-1229"
-              scope="col"
-            >
-              Time
-            </th>
-            <th
-              class="MuiTableCell-root-1228 MuiTableCell-head-1229"
-              scope="col"
-            >
-              Type
-            </th>
-            <th
-              class="MuiTableCell-root-1228 MuiTableCell-head-1229"
-              scope="col"
-            >
-              Details
-            </th>
-          </tr>
-        </thead>
-        <tbody
-          class="MuiTableBody-root-1236"
+            Remove From Queue
+          </span>
+          <span
+            class="MuiTouchRipple-root-1005"
+          />
+        </button>
+        <button
+          class="MuiButtonBase-root-1002 MuiButton-root-1205 MuiButton-text-1207 MuiButton-textPrimary-1208 MuiButton-flat-1210 MuiButton-flatPrimary-1211 MuiDialogActions-action-1204"
+          tabindex="0"
+          type="button"
         >
-          <tr
-            class="MuiTableRow-root-1223"
+          <span
+            class="MuiButton-label-1206"
           >
-            <td
-              class="MuiTableCell-root-1228 MuiTableCell-body-1230 MuiTableCell-paddingDense-1233"
-            >
-              <div
-                data-testid="mock-component-DateTimeDisplay"
-              >
-                <span
-                  data-prop="date"
-                >
-                  "2018-07-03T09:10:00.000Z"
-                </span>
-                <span
-                  data-prop="formatStr"
-                >
-                  "MMM D, YY"
-                </span>
-              </div>
-            </td>
-            <td
-              class="MuiTableCell-root-1228 MuiTableCell-body-1230 MuiTableCell-paddingDense-1233"
-            >
-              <div
-                data-testid="mock-component-DateTimeDisplay"
-              >
-                <span
-                  data-prop="date"
-                >
-                  "2018-07-03T09:10:00.000Z"
-                </span>
-                <span
-                  data-prop="formatStr"
-                >
-                  "hh:mm A"
-                </span>
-              </div>
-            </td>
-            <td
-              class="MuiTableCell-root-1228 MuiTableCell-body-1230 MuiTableCell-paddingDense-1233"
-            >
-              Start Unload
-            </td>
-            <td
-              class="MuiTableCell-root-1228 MuiTableCell-body-1230 MuiTableCell-paddingDense-1233"
-            >
-              zzz on pallet 5 at station 1
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <div
-      class="MuiDialogActions-root-1193"
-    >
-      <button
-        class="MuiButtonBase-root-995 MuiButton-root-1195 MuiButton-text-1197 MuiButton-textPrimary-1198 MuiButton-flat-1200 MuiButton-flatPrimary-1201 MuiDialogActions-action-1194"
-        tabindex="0"
-        type="button"
-      >
-        <span
-          class="MuiButton-label-1196"
-        >
-          Remove From Queue
-        </span>
-        <span
-          class="MuiTouchRipple-root-998"
-        />
-      </button>
-      <button
-        class="MuiButtonBase-root-995 MuiButton-root-1195 MuiButton-text-1197 MuiButton-textPrimary-1198 MuiButton-flat-1200 MuiButton-flatPrimary-1201 MuiDialogActions-action-1194"
-        tabindex="0"
-        type="button"
-      >
-        <span
-          class="MuiButton-label-1196"
-        >
-          Close
-        </span>
-        <span
-          class="MuiTouchRipple-root-998"
-        />
-      </button>
+            Close
+          </span>
+          <span
+            class="MuiTouchRipple-root-1005"
+          />
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -3368,38 +3376,38 @@ exports[`renders the queues page: MZQGQ dialog 1`] = `
 
 exports[`renders the queues page: empty queues 1`] = `
 <main
-  class="Component-mainScrollable-1130"
+  class="Component-mainScrollable-1139"
   data-testid="stationmonitor-queues"
 />
 `;
 
 exports[`renders the queues page: with Queue1 1`] = `
 <main
-  class="Component-mainScrollable-1130"
+  class="Component-mainScrollable-1139"
   data-testid="stationmonitor-queues"
 >
   <div
-    class="Component-container-1131 Component-borderBottom-1137"
+    class="Component-container-1140 Component-borderBottom-1146"
   >
     <div
-      class="Component-labelContainer-1132"
+      class="Component-labelContainer-1141"
     >
       <span
-        class="Component-label-1133"
+        class="Component-label-1142"
       >
         Queue1
       </span>
       <button
-        class="MuiButtonBase-root-995 MuiIconButton-root-989 Component-addButton-1134"
+        class="MuiButtonBase-root-1002 MuiIconButton-root-996 Component-addButton-1143"
         tabindex="0"
         type="button"
       >
         <span
-          class="MuiIconButton-label-994"
+          class="MuiIconButton-label-1001"
         >
           <svg
             aria-hidden="true"
-            class="MuiSvgIcon-root-965 Component-addButton-1134"
+            class="MuiSvgIcon-root-972 Component-addButton-1143"
             focusable="false"
             role="presentation"
             viewBox="0 0 24 24"
@@ -3414,24 +3422,24 @@ exports[`renders the queues page: with Queue1 1`] = `
           </svg>
         </span>
         <span
-          class="MuiTouchRipple-root-998"
+          class="MuiTouchRipple-root-1005"
         />
       </button>
     </div>
     <div
-      class="Component-contentContainer-1135"
+      class="Component-contentContainer-1144"
       style="justify-content: flex-start;"
     >
       <div
-        class="MuiPaper-root-1030 MuiPaper-elevation4-1036 MuiPaper-rounded-1031 Component-paper-1139"
+        class="MuiPaper-root-1037 MuiPaper-elevation4-1043 MuiPaper-rounded-1038 Component-paper-1148"
       >
         <button
-          class="MuiButtonBase-root-995"
+          class="MuiButtonBase-root-1002"
           tabindex="0"
           type="button"
         >
           <div
-            class="Component-container-1140"
+            class="Component-container-1149"
           >
             <div
               style="width: 50px; height: 50px;"
@@ -3454,10 +3462,10 @@ exports[`renders the queues page: with Queue1 1`] = `
               </svg>
             </div>
             <div
-              class="Component-mainContent-1141"
+              class="Component-mainContent-1150"
             >
               <h6
-                class="MuiTypography-root-1144 MuiTypography-h6-1161"
+                class="MuiTypography-root-1153 MuiTypography-h6-1170"
               >
                 aaa
               </h6>
@@ -3469,11 +3477,11 @@ exports[`renders the queues page: with Queue1 1`] = `
               </div>
             </div>
             <div
-              class="Component-rightContent-1142"
+              class="Component-rightContent-1151"
             >
               <div>
                 <div
-                  class="MuiAvatar-root-1179 MuiAvatar-colorDefault-1180 Component-avatar-1143"
+                  class="MuiAvatar-root-1188 MuiAvatar-colorDefault-1189 Component-avatar-1152"
                 >
                   E
                 </div>
@@ -3481,20 +3489,20 @@ exports[`renders the queues page: with Queue1 1`] = `
             </div>
           </div>
           <span
-            class="MuiTouchRipple-root-998"
+            class="MuiTouchRipple-root-1005"
           />
         </button>
       </div>
       <div
-        class="MuiPaper-root-1030 MuiPaper-elevation4-1036 MuiPaper-rounded-1031 Component-paper-1139"
+        class="MuiPaper-root-1037 MuiPaper-elevation4-1043 MuiPaper-rounded-1038 Component-paper-1148"
       >
         <button
-          class="MuiButtonBase-root-995"
+          class="MuiButtonBase-root-1002"
           tabindex="0"
           type="button"
         >
           <div
-            class="Component-container-1140"
+            class="Component-container-1149"
           >
             <div
               style="width: 50px; height: 50px;"
@@ -3521,10 +3529,10 @@ exports[`renders the queues page: with Queue1 1`] = `
               </svg>
             </div>
             <div
-              class="Component-mainContent-1141"
+              class="Component-mainContent-1150"
             >
               <h6
-                class="MuiTypography-root-1144 MuiTypography-h6-1161"
+                class="MuiTypography-root-1153 MuiTypography-h6-1170"
               >
                 xxx
               </h6>
@@ -3536,11 +3544,11 @@ exports[`renders the queues page: with Queue1 1`] = `
               </div>
             </div>
             <div
-              class="Component-rightContent-1142"
+              class="Component-rightContent-1151"
             >
               <div>
                 <div
-                  class="MuiAvatar-root-1179 MuiAvatar-colorDefault-1180 Component-avatar-1143"
+                  class="MuiAvatar-root-1188 MuiAvatar-colorDefault-1189 Component-avatar-1152"
                 >
                   A
                 </div>
@@ -3548,20 +3556,20 @@ exports[`renders the queues page: with Queue1 1`] = `
             </div>
           </div>
           <span
-            class="MuiTouchRipple-root-998"
+            class="MuiTouchRipple-root-1005"
           />
         </button>
       </div>
       <div
-        class="MuiPaper-root-1030 MuiPaper-elevation4-1036 MuiPaper-rounded-1031 Component-paper-1139"
+        class="MuiPaper-root-1037 MuiPaper-elevation4-1043 MuiPaper-rounded-1038 Component-paper-1148"
       >
         <button
-          class="MuiButtonBase-root-995"
+          class="MuiButtonBase-root-1002"
           tabindex="0"
           type="button"
         >
           <div
-            class="Component-container-1140"
+            class="Component-container-1149"
           >
             <div
               style="width: 50px; height: 50px;"
@@ -3588,10 +3596,10 @@ exports[`renders the queues page: with Queue1 1`] = `
               </svg>
             </div>
             <div
-              class="Component-mainContent-1141"
+              class="Component-mainContent-1150"
             >
               <h6
-                class="MuiTypography-root-1144 MuiTypography-h6-1161"
+                class="MuiTypography-root-1153 MuiTypography-h6-1170"
               >
                 zzz
               </h6>
@@ -3608,11 +3616,11 @@ exports[`renders the queues page: with Queue1 1`] = `
               </div>
             </div>
             <div
-              class="Component-rightContent-1142"
+              class="Component-rightContent-1151"
             >
               <div>
                 <div
-                  class="MuiAvatar-root-1179 MuiAvatar-colorDefault-1180 Component-avatar-1143"
+                  class="MuiAvatar-root-1188 MuiAvatar-colorDefault-1189 Component-avatar-1152"
                 >
                   Q
                 </div>
@@ -3620,7 +3628,7 @@ exports[`renders the queues page: with Queue1 1`] = `
             </div>
           </div>
           <span
-            class="MuiTouchRipple-root-998"
+            class="MuiTouchRipple-root-1005"
           />
         </button>
       </div>
@@ -3635,46 +3643,46 @@ exports[`renders the wash page: empty wash 1`] = `
   style="padding: 8px;"
 >
   <div
-    class="MuiGrid-container-831 MuiGrid-spacing-xs-16-854"
+    class="MuiGrid-container-838 MuiGrid-spacing-xs-16-861"
   >
     <div
-      class="MuiGrid-item-832 MuiGrid-grid-xs-12-871 MuiGrid-grid-md-6-893"
+      class="MuiGrid-item-839 MuiGrid-grid-xs-12-878 MuiGrid-grid-md-6-900"
     >
       <div
-        class="Component-container-718 Component-borderBottom-724 Component-borderRight-725"
+        class="Component-container-723 Component-borderBottom-729 Component-borderRight-730"
       >
         <div
-          class="Component-labelContainer-719"
+          class="Component-labelContainer-724"
         >
           <span
-            class="Component-label-720"
+            class="Component-label-725"
           >
             Recently completed parts not yet washed
           </span>
         </div>
         <div
-          class="Component-contentContainer-722"
+          class="Component-contentContainer-727"
           style="justify-content: space-between;"
         />
       </div>
     </div>
     <div
-      class="MuiGrid-item-832 MuiGrid-grid-xs-12-871 MuiGrid-grid-md-6-893"
+      class="MuiGrid-item-839 MuiGrid-grid-xs-12-878 MuiGrid-grid-md-6-900"
     >
       <div
-        class="Component-container-718 Component-borderLeft-723 Component-borderBottom-724"
+        class="Component-container-723 Component-borderLeft-728 Component-borderBottom-729"
       >
         <div
-          class="Component-labelContainer-719"
+          class="Component-labelContainer-724"
         >
           <span
-            class="Component-label-720"
+            class="Component-label-725"
           >
             Recently Washed Parts
           </span>
         </div>
         <div
-          class="Component-contentContainer-722"
+          class="Component-contentContainer-727"
           style="justify-content: space-between;"
         />
       </div>
