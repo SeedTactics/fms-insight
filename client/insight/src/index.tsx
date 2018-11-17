@@ -50,6 +50,9 @@ const theme = createMuiTheme({
   palette: {
     primary: green,
     secondary: brown
+  },
+  typography: {
+    useNextVariants: true
   }
 });
 
