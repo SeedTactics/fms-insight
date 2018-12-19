@@ -87,13 +87,19 @@ async function loadInfo(): Promise<LoadReturn> {
     url = "https://fms-insight.seedtactics.com/installers/" + fmsInfo.name + "-latest.json";
   }
   if (url) {
-    const res = await fetch(url);
-    if (res && res.ok) {
-      const data = await res.json();
-      latestVersion = {
-        version: data.version,
-        date: new Date(Date.parse(data.date))
-      };
+    try {
+      const res = await fetch(url);
+      if (res && res.ok) {
+        const data = await res.json();
+        latestVersion = {
+          version: data.version,
+          date: new Date(Date.parse(data.date))
+        };
+      }
+    } catch (e) {
+      latestVersion = undefined;
+      // tslint:disable-next-line:no-console
+      console.error(e);
     }
   }
 
