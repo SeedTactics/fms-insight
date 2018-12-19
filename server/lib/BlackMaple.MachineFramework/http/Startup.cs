@@ -77,6 +77,9 @@ namespace BlackMaple.MachineFramework
             _fmsSt.DataDirectory
           );
         services.AddSingleton<BlackMaple.MachineWatch.RemotingServer>(machServer);
+      } else {
+        // add dummy service which does not serve anything
+        services.AddSingleton<BlackMaple.MachineWatch.RemotingServer>(new BlackMaple.MachineWatch.RemotingServer());
       }
 #endif
 

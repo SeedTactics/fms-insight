@@ -80,6 +80,8 @@ namespace BlackMaple.MachineWatch
             }
         }
 
+        public RemotingServer() {}
+
         public RemotingServer(FMSImplementation p, string dataDir)
         {
             plugin = p;
