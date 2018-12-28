@@ -58,10 +58,10 @@ namespace MazakMachineInterface
 
   public class MazakPartRow
   {
-    public string PartName {get;set;}
-    public string Comment {get;set;}
-    public double Price {get;set;}
-    public int TotalProcess {get;set;}
+    public string PartName { get; set; }
+    public string Comment { get; set; }
+    public double Price { get; set; }
+    public int TotalProcess { get; set; }
 
     // these columns are new on smooth
     private string _matName;
@@ -70,8 +70,8 @@ namespace MazakMachineInterface
       get => _matName ?? "";
       set => _matName = value;
     }
-    public int Part_1 {get;set;}
-    public int Part_2 {get;set;}
+    public int Part_1 { get; set; }
+    public int Part_2 { get; set; }
 
     private string _part3;
     public string Part_3
@@ -79,14 +79,14 @@ namespace MazakMachineInterface
       get => _part3 ?? "";
       set => _part3 = value;
     }
-    public int Part_4 {get;set;}
-    public int Part_5 {get;set;}
-    public int CheckCount {get;set;}
-    public int ProductCount {get;set;}
+    public int Part_4 { get; set; }
+    public int Part_5 { get; set; }
+    public int CheckCount { get; set; }
+    public int ProductCount { get; set; }
 
-    public IList<MazakPartProcessRow> Processes {get;set;} = new List<MazakPartProcessRow>();
+    public IList<MazakPartProcessRow> Processes { get; set; } = new List<MazakPartProcessRow>();
 
-    public MazakWriteCommand Command {get;set;} // only for transaction DB
+    public MazakWriteCommand Command { get; set; } // only for transaction DB
 
     public MazakPartRow Clone()
     {
@@ -101,65 +101,65 @@ namespace MazakMachineInterface
 
   public class MazakPartProcessRow
   {
-    public string PartName {get;set;}
-    public int ProcessNumber {get;set;}
+    public string PartName { get; set; }
+    public int ProcessNumber { get; set; }
 
-    public int FixQuantity {get;set;}
-    public int ContinueCut {get;set;}
-    public string CutMc {get;set;}
-    public string FixLDS {get;set;}
-    public string FixPhoto {get;set;}
-    public string Fixture {get;set;}
-    public string MainProgram {get;set;}
-    public string RemoveLDS {get;set;}
-    public string RemovePhoto {get;set;}
-    public int WashType {get;set;}
+    public int FixQuantity { get; set; }
+    public int ContinueCut { get; set; }
+    public string CutMc { get; set; }
+    public string FixLDS { get; set; }
+    public string FixPhoto { get; set; }
+    public string Fixture { get; set; }
+    public string MainProgram { get; set; }
+    public string RemoveLDS { get; set; }
+    public string RemovePhoto { get; set; }
+    public int WashType { get; set; }
 
     // these are new on smooth
-    public int PartProcess_1 {get;set;}
-    public int PartProcess_2 {get;set;}
-    public int PartProcess_3 {get;set;}
-    public int PartProcess_4 {get;set;}
-    public int FixTime {get;set;}
-    public int RemoveTime {get;set;}
-    public int CreateToolList_RA {get;set;}
+    public int PartProcess_1 { get; set; }
+    public int PartProcess_2 { get; set; }
+    public int PartProcess_3 { get; set; }
+    public int PartProcess_4 { get; set; }
+    public int FixTime { get; set; }
+    public int RemoveTime { get; set; }
+    public int CreateToolList_RA { get; set; }
 
     public MazakPartProcessRow Clone() => (MazakPartProcessRow)MemberwiseClone();
   }
 
   public class MazakScheduleRow
   {
-    public int Id {get;set;}
-    public string Comment {get;set;}
-    public string PartName {get;set;}
-    public int PlanQuantity {get;set;}
-    public int CompleteQuantity {get;set;}
-    public int Priority {get;set;}
+    public int Id { get; set; }
+    public string Comment { get; set; }
+    public string PartName { get; set; }
+    public int PlanQuantity { get; set; }
+    public int CompleteQuantity { get; set; }
+    public int Priority { get; set; }
 
-    public DateTime? DueDate {get;set;}
-    public int FixForMachine {get;set;}
-    public int HoldMode {get;set;}
-    public int MissingFixture {get;set;}
-    public int MissingProgram {get;set;}
-    public int MissingTool {get;set;}
-    public int MixScheduleID {get;set;}
-    public int ProcessingPriority {get;set;}
+    public DateTime? DueDate { get; set; }
+    public int FixForMachine { get; set; }
+    public int HoldMode { get; set; }
+    public int MissingFixture { get; set; }
+    public int MissingProgram { get; set; }
+    public int MissingTool { get; set; }
+    public int MixScheduleID { get; set; }
+    public int ProcessingPriority { get; set; }
 
     //these are only on Smooth
-    public int Schedule_1 {get;set;}
-    public int Schedule_2 {get;set;}
-    public int Schedule_3 {get;set;}
-    public int Schedule_4 {get;set;}
-    public int Schedule_5 {get;set;}
-    public int Schedule_6 {get;set;}
-    public DateTime? StartDate {get;set;}
-    public int SetNumber {get;set;}
-    public int SetQuantity {get;set;}
-    public int SetNumberSets {get;set;}
+    public int Schedule_1 { get; set; }
+    public int Schedule_2 { get; set; }
+    public int Schedule_3 { get; set; }
+    public int Schedule_4 { get; set; }
+    public int Schedule_5 { get; set; }
+    public int Schedule_6 { get; set; }
+    public DateTime? StartDate { get; set; }
+    public int SetNumber { get; set; }
+    public int SetQuantity { get; set; }
+    public int SetNumberSets { get; set; }
 
-    public IList<MazakScheduleProcessRow> Processes {get;set;} = new List<MazakScheduleProcessRow>();
+    public IList<MazakScheduleProcessRow> Processes { get; set; } = new List<MazakScheduleProcessRow>();
 
-    public MazakWriteCommand Command {get;set;} // only for transaction DB
+    public MazakWriteCommand Command { get; set; } // only for transaction DB
 
     public MazakScheduleRow Clone()
     {
@@ -174,73 +174,79 @@ namespace MazakMachineInterface
 
   public class MazakScheduleProcessRow
   {
-    public int MazakScheduleRowId {get;set;}
-    public int FixQuantity {get;set;}
+    public int MazakScheduleRowId { get; set; }
+    public int FixQuantity { get; set; }
 
-    public int ProcessNumber {get;set;}
-    public int ProcessMaterialQuantity {get;set;}
-    public int ProcessExecuteQuantity {get;set;}
-    public int ProcessBadQuantity {get;set;}
-    public int ProcessMachine {get;set;}
+    public int ProcessNumber { get; set; }
+    public int ProcessMaterialQuantity { get; set; }
+    public int ProcessExecuteQuantity { get; set; }
+    public int ProcessBadQuantity { get; set; }
+    public int ProcessMachine { get; set; }
 
     // these are only on Smooth
-    public int FixedMachineFlag {get;set;}
-    public int FixedMachineNumber {get;set;}
-    public int ScheduleProcess_1 {get;set;}
-    public int ScheduleProcess_2 {get;set;}
-    public int ScheduleProcess_3 {get;set;}
-    public int ScheduleProcess_4 {get;set;}
-    public int ScheduleProcess_5 {get;set;}
+    public int FixedMachineFlag { get; set; }
+    public int FixedMachineNumber { get; set; }
+    public int ScheduleProcess_1 { get; set; }
+    public int ScheduleProcess_2 { get; set; }
+    public int ScheduleProcess_3 { get; set; }
+    public int ScheduleProcess_4 { get; set; }
+    public int ScheduleProcess_5 { get; set; }
 
     public MazakScheduleProcessRow Clone() => (MazakScheduleProcessRow)MemberwiseClone();
   }
 
   public class MazakPalletRow
   {
-    public int PalletNumber {get;set;}
-    public string Fixture {get;set;}
-    public int RecordID {get;set;}
-    public int AngleV1 {get;set;}
-    public int FixtureGroupV2 {get;set;}
-    public MazakWriteCommand Command {get;set;} // only for transaction DB
+    public int PalletNumber { get; set; }
+    public string Fixture { get; set; }
+    public int RecordID { get; set; }
+    public int AngleV1 { get; set; }
+    public int FixtureGroupV2 { get; set; }
+    public MazakWriteCommand Command { get; set; } // only for transaction DB
 
     public MazakPalletRow Clone() => (MazakPalletRow)MemberwiseClone();
   }
 
   public class MazakPalletSubStatusRow
   {
-    public int PalletNumber {get;set;}
-    public string FixtureName {get;set;}
-    public int ScheduleID {get;set;}
-    public string PartName {get;set;}
-    public int PartProcessNumber {get;set;}
-    public int FixQuantity {get;set;}
+    public int PalletNumber { get; set; }
+    public string FixtureName { get; set; }
+    public int ScheduleID { get; set; }
+    public string PartName { get; set; }
+    public int PartProcessNumber { get; set; }
+    public int FixQuantity { get; set; }
   }
 
   public class MazakPalletPositionRow
   {
-    public int PalletNumber {get;set;}
-    public string PalletPosition {get;set;}
+    public int PalletNumber { get; set; }
+    public string PalletPosition { get; set; }
   }
 
   public class MazakFixtureRow
   {
-    public string FixtureName {get;set;}
-    public string Comment {get;set;}
-    public MazakWriteCommand Command {get;set;} // only for transaction DB
+    public string FixtureName { get; set; }
+    public string Comment { get; set; }
+    public MazakWriteCommand Command { get; set; } // only for transaction DB
 
     public MazakFixtureRow Clone() => (MazakFixtureRow)MemberwiseClone();
   }
 
+  public class MazakAlarmRow
+  {
+    public int? AlarmNumber { get; set; }
+    public string AlarmMessage { get; set; }
+  }
+
   public class LoadAction
   {
-    public int LoadStation {get;set;}
-    public bool LoadEvent {get;set;}
-    public string Unique {get;set;}
-    public string Part {get;set;}
-    public int Process {get;set;}
-    public int Path {get;set;}
-    public int Qty {get;set;}
+    public int LoadStation { get; set; }
+    public bool LoadEvent { get; set; }
+    public string Unique { get; set; }
+    public string Part { get; set; }
+    public int Process { get; set; }
+    public int Path { get; set; }
+    public int Qty { get; set; }
 
     public LoadAction(bool l, int stat, string p, string comment, int proc, int q)
     {
@@ -249,17 +255,20 @@ namespace MazakMachineInterface
       Part = p;
       Process = proc;
       Qty = q;
-      if (string.IsNullOrEmpty(comment)) {
+      if (string.IsNullOrEmpty(comment))
+      {
         Unique = "";
         Path = 1;
-      } else {
+      }
+      else
+      {
         MazakPart.ParseComment(comment, out string uniq, out var procToPath, out bool manual);
         Unique = uniq;
         Path = procToPath.PathForProc(proc);
       }
     }
 
-    [Newtonsoft.Json.JsonConstructor] public LoadAction() {}
+    [Newtonsoft.Json.JsonConstructor] public LoadAction() { }
 
     public override string ToString()
     {
@@ -271,7 +280,7 @@ namespace MazakMachineInterface
 
   public class MazakSchedules
   {
-    public IEnumerable<MazakScheduleRow> Schedules {get;set;}
+    public IEnumerable<MazakScheduleRow> Schedules { get; set; }
 
     public void FindSchedule(string mazakPartName, int proc, out string unique, out int path, out int numProc)
     {
@@ -295,27 +304,28 @@ namespace MazakMachineInterface
 
   public class MazakSchedulesAndLoadActions : MazakSchedules
   {
-    public IEnumerable<LoadAction> LoadActions {get;set;}
+    public IEnumerable<LoadAction> LoadActions { get; set; }
   }
 
   public class MazakSchedulesPartsPallets : MazakSchedules
   {
-    public IEnumerable<MazakPartRow> Parts {get;set;}
-    public IEnumerable<MazakPalletRow> Pallets {get;set;}
-    public IEnumerable<MazakPalletSubStatusRow> PalletSubStatuses {get;set;}
-    public IEnumerable<MazakPalletPositionRow> PalletPositions {get;set;}
-    public IEnumerable<LoadAction> LoadActions {get;set;}
-    public ISet<string> MainPrograms {get;set;}
+    public IEnumerable<MazakPartRow> Parts { get; set; }
+    public IEnumerable<MazakPalletRow> Pallets { get; set; }
+    public IEnumerable<MazakPalletSubStatusRow> PalletSubStatuses { get; set; }
+    public IEnumerable<MazakPalletPositionRow> PalletPositions { get; set; }
+    public IEnumerable<LoadAction> LoadActions { get; set; }
+    public ISet<string> MainPrograms { get; set; }
   }
 
   public class MazakAllData : MazakSchedulesPartsPallets
   {
-    public IEnumerable<MazakFixtureRow> Fixtures {get;set;}
+    public IEnumerable<MazakFixtureRow> Fixtures { get; set; }
+    public IEnumerable<MazakAlarmRow> Alarms { get; set; }
   }
 
   public interface IReadDataAccess
   {
-    MazakDbType MazakType {get;}
+    MazakDbType MazakType { get; }
     MazakSchedules LoadSchedules();
     MazakSchedulesAndLoadActions LoadSchedulesAndLoadActions();
     MazakSchedulesPartsPallets LoadSchedulesPartsPallets();
@@ -326,15 +336,15 @@ namespace MazakMachineInterface
 
   public class MazakWriteData
   {
-    public IList<MazakScheduleRow> Schedules {get;set;} = new List<MazakScheduleRow>();
-    public IList<MazakPartRow> Parts {get;set;} = new List<MazakPartRow>();
-    public IList<MazakPalletRow> Pallets {get;set;} = new List<MazakPalletRow>();
-    public IList<MazakFixtureRow> Fixtures {get;set;} = new List<MazakFixtureRow>();
+    public IList<MazakScheduleRow> Schedules { get; set; } = new List<MazakScheduleRow>();
+    public IList<MazakPartRow> Parts { get; set; } = new List<MazakPartRow>();
+    public IList<MazakPalletRow> Pallets { get; set; } = new List<MazakPalletRow>();
+    public IList<MazakFixtureRow> Fixtures { get; set; } = new List<MazakFixtureRow>();
   }
 
   public interface IWriteData
   {
-    MazakDbType MazakType {get;}
+    MazakDbType MazakType { get; }
     void Save(MazakWriteData data, string prefix);
   }
 

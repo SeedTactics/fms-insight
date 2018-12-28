@@ -89,7 +89,7 @@ namespace MazakMachineInterface
     #region Reading
     public CurrentStatus GetCurrentStatus()
     {
-      MazakSchedulesPartsPallets mazakData;
+      MazakAllData mazakData;
       if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
       {
         throw new Exception("Unable to obtain mazak database lock");

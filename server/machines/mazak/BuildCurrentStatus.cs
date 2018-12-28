@@ -43,7 +43,7 @@ namespace MazakMachineInterface
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<BuildCurrentStatus>();
 
-    public static CurrentStatus Build(JobDB jobDB, JobLogDB log, FMSSettings fmsSettings, MazakDbType dbType, MazakSchedulesPartsPallets mazakData, DateTime utcNow)
+    public static CurrentStatus Build(JobDB jobDB, JobLogDB log, FMSSettings fmsSettings, MazakDbType dbType, MazakAllData mazakData, DateTime utcNow)
     {
       //Load process and path numbers
       Dictionary<string, int> uniqueToMaxPath;
@@ -54,6 +54,16 @@ namespace MazakMachineInterface
 
       var curStatus = new CurrentStatus();
       foreach (var k in fmsSettings.Queues) curStatus.QueueSizes[k.Key] = k.Value;
+      if (mazakData.Alarms != null)
+      {
+        foreach (var alarm in mazakData.Alarms)
+        {
+          if (!string.IsNullOrEmpty(alarm.AlarmMessage))
+          {
+            curStatus.Alarms.Add(alarm.AlarmMessage);
+          }
+        }
+      }
 
       var jobsBySchID = new Dictionary<long, InProcessJob>();
       var pathBySchID = new Dictionary<long, MazakPart.IProcToPath>();

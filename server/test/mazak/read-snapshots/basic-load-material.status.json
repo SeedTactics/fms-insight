@@ -841,7 +841,7 @@
       }
     }
   ],
-  "Alarms": [],
+  "Alarms": ["Test alarm 1", "Test alarm two"],
   "Queues": {
     "castings": {},
     "queueAAA": {},

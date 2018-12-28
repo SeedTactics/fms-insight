@@ -21,6 +21,16 @@
       "Comment": "schId1234"
     }
   ],
+  "Alarms": [
+    {
+      "AlarmMessage": "Test alarm 1",
+      "AlarmNumber": 10
+    },
+    {
+      "AlarmMessage": "Test alarm two",
+      "AlarmNumber": 20
+    }
+  ],
   "Parts": [
     {
       "Id": 1035,
