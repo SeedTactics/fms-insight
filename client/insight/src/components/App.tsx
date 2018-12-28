@@ -42,6 +42,9 @@ import ExitToApp from "@material-ui/icons/ExitToApp";
 import IconButton from "@material-ui/core/IconButton";
 import Tooltip from "@material-ui/core/Tooltip";
 import CircularProgress from "@material-ui/core/CircularProgress";
+import Button from "@material-ui/core/Button";
+import Badge from "@material-ui/core/Badge";
+import Notifications from "@material-ui/icons/Notifications";
 import { User } from "oidc-client";
 
 import Dashboard from "./dashboard/Dashboard";
@@ -56,7 +59,6 @@ import * as api from "../data/api";
 import * as serverSettings from "../data/server-settings";
 import logo from "../seedtactics-logo.svg";
 import { DemoMode } from "../data/backend";
-import Button from "@material-ui/core/Button";
 
 const tabsStyle = {
   alignSelf: "flex-end" as "flex-end",
@@ -76,6 +78,7 @@ interface HeaderProps {
   fmsInfo: Readonly<api.IFMSInfo> | null;
   latestVersion: serverSettings.LatestInstaller | null;
   showTabs: boolean;
+  alarms: ReadonlyArray<string> | null;
   setRoute: (arg: { ty: TabType; curSt: routes.State }) => void;
   showLogout: boolean;
   onLogout: () => void;
@@ -120,6 +123,15 @@ function Header(p: HeaderProps) {
       <Tab label="Cost/Piece" value={TabType.CostPerPiece} />
       {DemoMode ? undefined : <Tab label="Data Export" value={TabType.DataExport} />}
     </Tabs>
+  );
+
+  const alarmTooltip = p.alarms ? p.alarms.join(". ") : "No Alarms";
+  const Alarms = () => (
+    <Tooltip title={alarmTooltip}>
+      <Badge badgeContent={p.alarms ? p.alarms.length : 0}>
+        <Notifications color={p.alarms ? "error" : undefined} />
+      </Badge>
+    </Tooltip>
   );
 
   const HelpButton = () => (
@@ -168,6 +180,7 @@ function Header(p: HeaderProps) {
         </Typography>
         {p.showTabs ? tabs(false) : <div style={{ flexGrow: 1 }} />}
         <LoadingIcon />
+        <Alarms />
         <HelpButton />
         {p.showLogout ? <LogoutButton /> : undefined}
       </Toolbar>
@@ -183,6 +196,7 @@ function Header(p: HeaderProps) {
         <Typography variant="h6">Insight</Typography>
         <div style={{ flexGrow: 1 }} />
         <LoadingIcon />
+        <Alarms />
         <HelpButton />
         {p.showLogout ? <LogoutButton /> : undefined}
       </Toolbar>
@@ -203,6 +217,7 @@ interface AppProps {
   fmsInfo: Readonly<api.IFMSInfo> | null;
   user: User | null;
   latestVersion: serverSettings.LatestInstaller | null;
+  alarms: ReadonlyArray<string> | null;
   setRoute: (arg: { ty: TabType; curSt: routes.State }) => void;
   onLogin: () => void;
   onLogout: () => void;
@@ -273,10 +288,19 @@ class App extends React.PureComponent<AppProps> {
           showLogout={showLogout}
           setRoute={this.props.setRoute}
           onLogout={this.props.onLogout}
+          alarms={this.props.alarms}
         />
         {page}
       </div>
     );
+  }
+}
+
+function emptyToNull<T>(s: ReadonlyArray<T> | null): ReadonlyArray<T> | null {
+  if (!s || s.length === 0) {
+    return null;
+  } else {
+    return s;
   }
 }
 
@@ -285,7 +309,8 @@ export default connect(
     route: s.Route,
     fmsInfo: s.ServerSettings.fmsInfo || null,
     user: s.ServerSettings.user || null,
-    latestVersion: s.ServerSettings.latestInstaller || null
+    latestVersion: s.ServerSettings.latestInstaller || null,
+    alarms: emptyToNull(s.Current.current_status.alarms)
   }),
   {
     setRoute: ({ ty, curSt }: { ty: TabType; curSt: routes.State }): routes.Action => {

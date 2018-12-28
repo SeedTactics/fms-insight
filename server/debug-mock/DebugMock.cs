@@ -158,8 +158,23 @@ namespace DebugMachineWatchApiServer
       return JobDB;
     }
 
+    private long _curStatusLoadCount = 0;
     public CurrentStatus GetCurrentStatus()
     {
+      _curStatusLoadCount += 1;
+      if (_curStatusLoadCount % 5 == 0)
+      {
+        if (CurrentStatus.Alarms.Count > 0)
+        {
+          CurrentStatus.Alarms.Clear();
+        }
+        else
+        {
+          CurrentStatus.Alarms.Add("Test alarm " + _curStatusLoadCount.ToString());
+          CurrentStatus.Alarms.Add("Another alarm");
+        }
+      }
+
       return CurrentStatus;
     }
 
