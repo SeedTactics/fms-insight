@@ -21,20 +21,20 @@ to obtain "Open Database Kit" that matches the specific cell controller
 
 For Mazak Web and Mazak Smooth PMC, you must enable a setting in the Mazak cell controller
 which will cause the Mazak cell controller to create log files of all events (pallet movements,
-machine cycles, etc.) in the `c:\Mazak\FMS\Log` directory.  Once enabled, FMS Insight will
+machine cycles, etc.) in the `c:\Mazak\FMS\Log` directory. Once enabled, FMS Insight will
 automatically find any log entries from this directory.
 
-To enable, go to the `c:\Mazak\FMS` directory.  Rename the file `log-parameters.ini.sample` to `log-parameters.ini` and restart the Mazak Palletech software.  The `log-parameters.ini` file
+To enable, go to the `c:\Mazak\FMS` directory. Rename the file `log-parameters.ini.sample` to `log-parameters.ini` and restart the Mazak Palletech software. The `log-parameters.ini` file
 contains settings for the path to use and how often to delete, but FMS Insight works fine with
-the default settings.  If you want, you can change the log directory in `log-parameters.ini`
+the default settings. If you want, you can change the log directory in `log-parameters.ini`
 and then specify the same folder in the FMS Insight server configuration file.
 
 ## Load Instructions
 
-Finally, one parameter must be changed.  Open the Mazak Palletech software, go to the parameter
-edit screen, select `X`, and scroll to the setting `X-31`.  Set the `X-31` setting from 0 to 1.
+Finally, one parameter must be changed. Open the Mazak Palletech software, go to the parameter
+edit screen, select `X`, and scroll to the setting `X-31`. Set the `X-31` setting from 0 to 1.
 This setting will cause CSV files describing the current load and unload operation at the load
-station to be output to the `c:\Mazak\FMS\LDS` directory.  FMS Insight monitors this directory
+station to be output to the `c:\Mazak\FMS\LDS` directory. FMS Insight monitors this directory
 and uses the CSV files to display the parts being loaded and unloaded from each pallet at
 the load station.
 
@@ -67,12 +67,12 @@ training new operators and managers.
 
 Mazak does not recommend that you enable Windows updates, and Mazak cell
 controllers run on Windows XP and Windows 8 which no longer receive support
-and security updates from Microsoft.  In addition, the FMS Insight server
+and security updates from Microsoft. In addition, the FMS Insight server
 requires Windows 7 or later so can't be installed on Version E cell controllers
-using Windows XP.  To avoid putting the cell controller on your factory network
+using Windows XP. To avoid putting the cell controller on your factory network
 directly, we suggest the following setup:
 
-* Obtain a Windows 10 computer  to be placed on the factory floor nearby the
+- Obtain a Windows 10 computer to be placed on the factory floor nearby the
   cell controller. (Windows 7 also works but Microsoft is ending support for
   Windows 7 in 2020.) Call this computer the FMS Insight Server. This
   computer will run only the FMS Insight server software. The FMS Insight
@@ -83,11 +83,11 @@ directly, we suggest the following setup:
   network cards. The only pre-installed software required is Microsoft's .NET
   Framework version 4.6.1, which comes pre-installed on Windows 10.
 
-* Connect one network card in the FMS Insight Server to your factory network.
+- Connect one network card in the FMS Insight Server to your factory network.
   Connect it to your domain using your usual security policies and
-  enterprise domain control.  Automatic Windows Updates can be enabled.
+  enterprise domain control. Automatic Windows Updates can be enabled.
 
-* Connect the second network card in a point-to-point connection (perhaps with a
+- Connect the second network card in a point-to-point connection (perhaps with a
   crossover cable) to the Mazak Cell Controller using static IPs
   for both sides of the connection. On the FMS Insight Server, you can set up
   a firewall to disallow all network traffic between the factory network and
@@ -96,7 +96,7 @@ directly, we suggest the following setup:
   and software in the factory will connect to the FMS Insight Server over the
   factory network.
 
-* (Version E And Web) For Mazak Web or Mazak Version E, on the Mazak cell controller
+- (Version E And Web) For Mazak Web or Mazak Version E, on the Mazak cell controller
   create a network share of the `c:\Mazak\NFMS\DB`
   directory. On the FMS Insight Server computer, create a mapped drive (e.g.
   `Z:`) for the share so that the FMS Insight Server computer can access the
@@ -105,30 +105,30 @@ directly, we suggest the following setup:
   `VersionE = true` and then set `Database Path = Z:\` (or whichever mapped
   drive letter you chose).
 
-* (Web and Smooth PMC) For Mazak Web or Mazak Smooth PMC, on the Mazak cell controller
-  create a network share of the `c:\Mazak\FMS\Log` directory.  On the FMS Insight server
+- (Web and Smooth PMC) For Mazak Web or Mazak Smooth PMC, on the Mazak cell controller
+  create a network share of the `c:\Mazak\FMS\Log` directory. On the FMS Insight server
   computer, create a mapped drive (e.g. `Y:`) for the share so that the FMS Insight Server
-  computer can access the Mazak log files.  On the FMS Insight server computer, edit
+  computer can access the Mazak log files. On the FMS Insight server computer, edit
   [config.ini](server-config.md) and set `Log CSV Path = Y:\`.
 
-* (Smooth PMC) Mazak Smooth PMC uses SQL Server which FMS Insight can access over the network.
+- (Smooth PMC) Mazak Smooth PMC uses SQL Server which FMS Insight can access over the network.
   Edit the [config.ini](server-config.md) file and set the `SQL ConnectionString` setting
   to a SQL Server connection string which uses the IP address of the Mazak cell controller.
 
 ## Starting Offset and Decrement Priority
 
-The Mazak [config.ini](server-config.md) contains two settings `Use Starting Offset For Due Date` and
-`Decrement Priority On Download` which control how new schedules are added into the cell controller.
+The Mazak [config.ini](server-config.md) contains a setting `Use Starting Offset`
+which control how new schedules are added into the cell controller.
 
-When `Use Starting Offset For Due Date` is enabled, new Mazak schedules will
-be created with a "Due Date" field based on the current date and a time based
-on the simulations prediction of its actual start time. If disabled, a due
-date of January 1, 2008 is used for all Mazak schedules, effectively
+When `Use Starting Offset` is enabled, new Mazak schedules will
+be created with a "Due Date" and "Priority" field based on the
+simulation's prediction of its actual start time. If disabled, a due
+date of January 1, 2008 and priority of 75 is used for all Mazak schedules, effectively
 disabling the use of due dates. Since Mazak uses due dates to decide which
 part or pallet to start producing first, due dates can help smooth production
-flow
+flow.
 
-The main downside to using due dates is that Mazak will empty out a pallet
+The main downside to using due dates and priorities is that Mazak will empty out a pallet
 before switching schedules. For example, consider a situation where you have
 a part PPP with two processes and a fixture which can hold one process 1
 material and one process 2 material. Also, consider there are two schedules
@@ -141,27 +141,21 @@ of AAA and BBB are the same, Mazak will not empty out the pallet and instead
 on the very last cycle of AAA in the process 2 location will add the very
 first cycle of BBB in the process 1 location.
 
-In our opinion, due dates should be enabled; the pallet running empty is not
-typically that big of a deal. The primary goal of the system is to keep the
-machines busy and a pallet with an empty location will return to the load
-station after cutting just the material on the pallet (as long as each
-process has a separate program). This increases slightly the burden on the
-cart and load station, but these are not the bottleneck and there should be
-enough work in the system to keep the machines busy. In addition,
-occasionally a pallet will empty out in any case because today's schedule had
-a limited quantity to allow a different part some time on the machines.
-Finally, occasionally emptying out a pallet seems to help tremendously with
-preventing traffic jams.
+In our opinion, due dates and priorities should be enabled; the pallet
+running empty is not typically that big of a deal. The primary goal of the
+system is to keep the machines busy and a pallet with an empty location will
+return to the load station after cutting just the material on the pallet (as
+long as each process has a separate program). This increases slightly the
+burden on the cart and load station, but these are not the bottleneck and
+there should be enough work in the system to keep the machines busy. In
+addition, occasionally a pallet will empty out in any case because today's
+schedule had a limited quantity to allow a different part some time on the
+machines. Finally, occasionally emptying out a pallet seems to help
+tremendously with preventing traffic jams.
 
-When FMS Insight adds a new day's schedule into the cell controller, if the
-decrement priority setting is enabled then FMS Insight will first decrement
-the priority on all existing uncompleted schedules. If disabled, no change to
-the priorities will be made so all schedules will have identical priorities.
-
-Since each day a new schedule is downloaded, if priorities of existing
-schedules are first decrement then any unfinished work from the previous day
-gains higher priority and will finish before today's schedule starts. Similar
-to due dates and starting offsets, if schedules have different priorities
-then then Mazak will empty out the pallet before switching to the new
-schedule. Similar to before, we recommend enabling the decrement priority
-setting.
+Finally, when FMS Insight adds a new day's schedule into the cell controller,
+then FMS Insight will first decrement the priority on all existing
+uncompleted schedules. Since each day a new schedule is downloaded, if
+priorities of existing schedules are first decrement then any unfinished work
+from the previous day gains higher priority and will finish before today's
+schedule starts.

@@ -51,7 +51,7 @@
       "PartName": "part2:1:1",
       "PlanQuantity": 15,
       "CompleteQuantity": 10,
-      "Priority": 49,
+      "Priority": 40,
       "DueDate": null,
       "FixForMachine": 0,
       "HoldMode": 0,

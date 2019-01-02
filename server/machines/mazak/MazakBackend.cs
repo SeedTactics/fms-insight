@@ -59,7 +59,6 @@ namespace MazakMachineInterface
     //Settings
     public MazakDbType MazakType;
     public bool UseStartingOffsetForDueDate;
-    public bool DecrementPriorityOnDownload;
     public bool CheckPalletsUsedOnce;
 
     public IWriteData WriteDB
@@ -134,38 +133,27 @@ namespace MazakMachineInterface
       }
 
       // general config
-      string useStartingForDue = cfg.GetValue<string>("Use Starting Offset For Due Date");
-      string useStarting = cfg.GetValue<string>("Use Starting Offset");
-      string decrPriority = cfg.GetValue<string>("Decrement Priority On Download");
+      string useStarting = cfg.GetValue<string>("Use Starting Offset For Due Date");
+      string useStarting2 = cfg.GetValue<string>("Use Starting Offset");
       if (string.IsNullOrEmpty(useStarting))
       {
-        //useStarting is an old setting, so if it is missing use the new settings
-        if (string.IsNullOrEmpty(useStartingForDue))
+        if (string.IsNullOrEmpty(useStarting2))
         {
           UseStartingOffsetForDueDate = true;
         }
         else
         {
-          UseStartingOffsetForDueDate = Convert.ToBoolean(useStartingForDue);
-        }
-        if (string.IsNullOrEmpty(decrPriority))
-        {
-          DecrementPriorityOnDownload = true;
-        }
-        else
-        {
-          DecrementPriorityOnDownload = Convert.ToBoolean(decrPriority);
+          UseStartingOffsetForDueDate = Convert.ToBoolean(useStarting2);
         }
       }
       else
       {
         UseStartingOffsetForDueDate = Convert.ToBoolean(useStarting);
-        DecrementPriorityOnDownload = UseStartingOffsetForDueDate;
       }
       //Perhaps this should be a new setting, but if you don't check for pallets used once
       //then you don't care if all faces on a pallet are full so might as well use priority
       //which causes pallet positions to go empty.
-      CheckPalletsUsedOnce = !UseStartingOffsetForDueDate && !DecrementPriorityOnDownload;
+      CheckPalletsUsedOnce = !UseStartingOffsetForDueDate;
 
 
       // serial settings
@@ -181,8 +169,8 @@ namespace MazakMachineInterface
       }
 
       Log.Debug(
-        "Configured UseStartingOffsetForDueDate = {useStarting}, DecrementPriority = {decr} ",
-        UseStartingOffsetForDueDate, DecrementPriorityOnDownload);
+        "Configured UseStartingOffsetForDueDate = {useStarting}",
+        UseStartingOffsetForDueDate);
 
       jobLog = new BlackMaple.MachineFramework.JobLogDB();
       jobLog.Open(
@@ -229,7 +217,7 @@ namespace MazakMachineInterface
       }
 
       hold = new HoldPattern(_writeDB, readOnlyDb, jobDB, true);
-      var writeJobs = new WriteJobs(_writeDB, readOnlyDb, hold, jobDB, jobLog, st, CheckPalletsUsedOnce, UseStartingOffsetForDueDate, DecrementPriorityOnDownload);
+      var writeJobs = new WriteJobs(_writeDB, readOnlyDb, hold, jobDB, jobLog, st, CheckPalletsUsedOnce, UseStartingOffsetForDueDate);
       routing = new RoutingInfo(_writeDB, readOnlyDb, logDataLoader, jobDB, jobLog, writeJobs,
                                 CheckPalletsUsedOnce, st);
 

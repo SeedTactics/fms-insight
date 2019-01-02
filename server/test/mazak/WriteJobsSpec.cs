@@ -224,8 +224,7 @@ namespace MachineWatchTest
         _logDB,
         _settings,
         check: false,
-        useStarting: true,
-        decrPriority: true);
+        useStarting: true);
 
       jsonSettings = new JsonSerializerSettings();
       jsonSettings.Converters.Add(new BlackMaple.MachineFramework.TimespanConverter());

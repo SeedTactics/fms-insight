@@ -91,7 +91,7 @@ namespace MachineWatchTest
 
       schedules.Schedules.First().Command = MazakWriteCommand.Delete;
       schedules.Schedules.Skip(1).First().Command = MazakWriteCommand.ScheduleSafeEdit;
-      schedules.Schedules.Skip(1).First().Priority = 49;
+      schedules.Schedules.Skip(1).First().Priority = 40;
       schedules.Schedules.Skip(1).First().Processes.Clear();
 
       actions.Schedules.Should().BeEquivalentTo(schedules.Schedules);
@@ -112,10 +112,14 @@ namespace MachineWatchTest
       job1.SetPathGroup(1, 2, 2);
       job1.SetPathGroup(2, 1, 1);
       job1.SetPathGroup(2, 2, 2);
-      job1.SetSimulatedStartingTimeUTC(1, 1, new DateTime(2018, 1, 9, 8, 7, 6, DateTimeKind.Utc));
-      job1.SetSimulatedStartingTimeUTC(1, 2, new DateTime(2018, 1, 2, 3, 4, 5, DateTimeKind.Utc));
+      job1.SetSimulatedStartingTimeUTC(1, 1, new DateTime(2018, 1, 9, 8, 7, 6, DateTimeKind.Local).ToUniversalTime());
+      job1.SetSimulatedStartingTimeUTC(1, 2, new DateTime(2018, 1, 2, 3, 4, 5, DateTimeKind.Local).ToUniversalTime());
       job1.SetPlannedCyclesOnFirstProcess(1, 51);
       job1.SetPlannedCyclesOnFirstProcess(2, 41);
+      job1.AddProcessOnFixture(1, 1, "fixA", "face1");
+      job1.AddProcessOnFixture(1, 2, "fixA", "face1");
+      job1.AddProcessOnFixture(2, 1, "fixA", "face2");
+      job1.AddProcessOnFixture(2, 2, "fixA", "face2");
 
       //one with an input queue
       var job2 = new JobPlan("uniq2", 2, new int[] { 2, 2 });
@@ -124,17 +128,19 @@ namespace MachineWatchTest
       job2.SetPathGroup(1, 2, 2);
       job2.SetPathGroup(2, 1, 1);
       job2.SetPathGroup(2, 2, 2);
-      job2.SetSimulatedStartingTimeUTC(1, 1, new DateTime(2018, 2, 9, 8, 7, 6, DateTimeKind.Utc));
-      job2.SetSimulatedStartingTimeUTC(1, 2, new DateTime(2018, 2, 2, 3, 4, 5, DateTimeKind.Utc));
+      job2.SetSimulatedStartingTimeUTC(1, 1, new DateTime(2018, 2, 9, 8, 7, 6, DateTimeKind.Local).ToUniversalTime());
+      job2.SetSimulatedStartingTimeUTC(1, 2, new DateTime(2018, 2, 2, 3, 4, 5, DateTimeKind.Local).ToUniversalTime());
       job2.SetPlannedCyclesOnFirstProcess(1, 12);
       job2.SetPlannedCyclesOnFirstProcess(2, 42);
       job2.SetInputQueue(1, 1, "aaa");
       job2.SetInputQueue(1, 2, "bbb");
+      job2.AddProcessOnFixture(1, 1, "fixA", "face2"); // conflicts with both job1 paths
+      job2.AddProcessOnFixture(2, 2, "fixB", "face2"); // no conflicts
 
       //a schedule which already exists
       var job3 = new JobPlan("uniq3", 2, new int[] { 1, 1 });
       job3.PartName = "part3";
-      job3.SetSimulatedStartingTimeUTC(1, 1, new DateTime(2018, 3, 9, 8, 7, 6, DateTimeKind.Utc));
+      job3.SetSimulatedStartingTimeUTC(1, 1, new DateTime(2018, 3, 9, 8, 7, 6, DateTimeKind.Local).ToUniversalTime());
       job3.SetPlannedCyclesOnFirstProcess(1, 23);
 
       // all the parts, plus a schedule for uniq3
@@ -185,8 +191,8 @@ namespace MachineWatchTest
           PartName = "part1:6:1",
           Comment = MazakPart.CreateComment("uniq1", new[] {1, 1}, false),
           PlanQuantity = 51,
-          Priority = 75,
-          DueDate = new DateTime(2018, 1, 9, 8, 7, 6, DateTimeKind.Utc),
+          Priority = 91 + 1, // one earlier conflict
+          DueDate = new DateTime(2018, 1, 9, 0, 0, 0, DateTimeKind.Local),
           Processes = {
             new MazakScheduleProcessRow() {
               MazakScheduleRowId = 2,
@@ -206,8 +212,8 @@ namespace MachineWatchTest
           PartName = "part1:6:2",
           Comment = MazakPart.CreateComment("uniq1", new[] {2, 2}, false),
           PlanQuantity = 41,
-          Priority = 75,
-          DueDate = new DateTime(2018, 1, 2, 3, 4, 5, DateTimeKind.Utc).AddSeconds(5),
+          Priority = 91,
+          DueDate = new DateTime(2018, 1, 2, 0, 0, 0, DateTimeKind.Local),
           Processes = {
             new MazakScheduleProcessRow() {
               MazakScheduleRowId = 3,
@@ -229,8 +235,8 @@ namespace MachineWatchTest
           PartName = "part2:6:1",
           Comment = MazakPart.CreateComment("uniq2", new[] {1, 1}, false),
           PlanQuantity = 12,
-          Priority = 75,
-          DueDate = new DateTime(2018, 2, 9, 8, 7, 6, DateTimeKind.Utc).AddSeconds(10),
+          Priority = 91 + 2, // conflicts with 2 earlier
+          DueDate = new DateTime(2018, 2, 9, 0, 0, 0, DateTimeKind.Local),
           Processes = {
             new MazakScheduleProcessRow() {
               MazakScheduleRowId = 4,
@@ -250,8 +256,8 @@ namespace MachineWatchTest
           PartName = "part2:6:2",
           Comment = MazakPart.CreateComment("uniq2", new[] {2, 2}, false),
           PlanQuantity = 42,
-          Priority = 75,
-          DueDate = new DateTime(2018, 2, 2, 3, 4, 5, DateTimeKind.Utc).AddSeconds(15),
+          Priority = 91,
+          DueDate = new DateTime(2018, 2, 2, 0, 0, 0, DateTimeKind.Local),
           Processes = {
             new MazakScheduleProcessRow() {
               MazakScheduleRowId = 5,

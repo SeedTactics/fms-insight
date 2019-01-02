@@ -56,7 +56,6 @@ namespace MazakMachineInterface
     private FMSSettings fmsSettings;
 
     private bool UseStartingOffsetForDueDate;
-    private bool DecrementPriorityOnDownload;
     private bool CheckPalletsUsedOnce;
 
     public const int JobLookbackHours = 2 * 24;
@@ -69,9 +68,9 @@ namespace MazakMachineInterface
       BlackMaple.MachineFramework.JobLogDB jLog,
       FMSSettings settings,
       bool check,
-      bool useStarting,
-      bool decrPriority
-    ) {
+      bool useStarting
+    )
+    {
       writeDb = d;
       readDatabase = readDb;
       hold = h;
@@ -80,48 +79,47 @@ namespace MazakMachineInterface
       CheckPalletsUsedOnce = check;
       UseStartingOffsetForDueDate = useStarting;
       fmsSettings = settings;
-      DecrementPriorityOnDownload = decrPriority;
     }
 
     public void AddJobs(NewJobs newJ, string expectedPreviousScheduleId)
     {
-        // check previous schedule id
-        if (!string.IsNullOrEmpty(newJ.ScheduleId))
+      // check previous schedule id
+      if (!string.IsNullOrEmpty(newJ.ScheduleId))
+      {
+        var recentDbSchedule = jobDB.LoadMostRecentSchedule();
+        if (!string.IsNullOrEmpty(expectedPreviousScheduleId) &&
+            expectedPreviousScheduleId != recentDbSchedule.LatestScheduleId)
         {
-          var recentDbSchedule = jobDB.LoadMostRecentSchedule();
-          if (!string.IsNullOrEmpty(expectedPreviousScheduleId) &&
-              expectedPreviousScheduleId != recentDbSchedule.LatestScheduleId)
-          {
-            throw new BlackMaple.MachineFramework.BadRequestException(
-              "Expected previous schedule ID does not match current schedule ID.  Another user may have already created a schedule.");
-          }
+          throw new BlackMaple.MachineFramework.BadRequestException(
+            "Expected previous schedule ID does not match current schedule ID.  Another user may have already created a schedule.");
         }
+      }
 
-        //check for an old schedule that has not yet been copied
-        var oldJobs = jobDB.LoadJobsNotCopiedToSystem(DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddHours(1));
-        if (oldJobs.Jobs.Count > 0)
-        {
-          //there are jobs to copy
-          Log.Information("Resuming copy of job schedules into mazak {uniqs}",
-              oldJobs.Jobs.Select(j => j.UniqueStr).ToList());
+      //check for an old schedule that has not yet been copied
+      var oldJobs = jobDB.LoadJobsNotCopiedToSystem(DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddHours(1));
+      if (oldJobs.Jobs.Count > 0)
+      {
+        //there are jobs to copy
+        Log.Information("Resuming copy of job schedules into mazak {uniqs}",
+            oldJobs.Jobs.Select(j => j.UniqueStr).ToList());
 
-          AddSchedules(oldJobs.Jobs);
-        }
+        AddSchedules(oldJobs.Jobs);
+      }
 
-        //add fixtures, pallets, parts.  If this fails, just throw an exception,
-        //they will be deleted during the next download.
-        AddFixturesPalletsParts(newJ);
+      //add fixtures, pallets, parts.  If this fails, just throw an exception,
+      //they will be deleted during the next download.
+      AddFixturesPalletsParts(newJ);
 
-        //Now that the parts have been added and we are confident that there no problems with the jobs,
-        //add them to the database.  Once this occurrs, the timer will pick up and eventually
-        //copy them to the system
-        AddJobsToDB(newJ);
+      //Now that the parts have been added and we are confident that there no problems with the jobs,
+      //add them to the database.  Once this occurrs, the timer will pick up and eventually
+      //copy them to the system
+      AddJobsToDB(newJ);
 
-        System.Threading.Thread.Sleep(TimeSpan.FromSeconds(5));
+      System.Threading.Thread.Sleep(TimeSpan.FromSeconds(5));
 
-        AddSchedules(newJ.Jobs);
+      AddSchedules(newJ.Jobs);
 
-        hold.SignalNewSchedules();
+      hold.SignalNewSchedules();
     }
 
     public void RecopyJobsToMazak(DateTime? nowUtc = null)
@@ -175,7 +173,7 @@ namespace MazakMachineInterface
       Log.Debug("Creating new schedule with UID {uid}", UID);
 
       var (transSet, savedParts) = BuildMazakSchedules.RemoveCompletedAndDecrementSchedules(
-        mazakData, DecrementPriorityOnDownload
+        mazakData, UseStartingOffsetForDueDate
       );
       if (transSet.Schedules.Any())
         writeDb.Save(transSet, "Update schedules");
@@ -192,7 +190,8 @@ namespace MazakMachineInterface
         CheckPalletsUsedOnce,
         fmsSettings,
         jobErrs);
-      if (jobErrs.Any()) {
+      if (jobErrs.Any())
+      {
         throw new BlackMaple.MachineFramework.BadRequestException(
           string.Join(Environment.NewLine, jobErrs)
         );

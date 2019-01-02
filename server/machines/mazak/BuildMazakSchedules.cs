@@ -66,7 +66,7 @@ namespace MazakMachineInterface
           if (DecrementPriorityOnDownload)
           {
             newSchRow.Command = MazakWriteCommand.ScheduleSafeEdit;
-            newSchRow.Priority = Math.Max(newSchRow.Priority - 1, 1);
+            newSchRow.Priority = Math.Max(newSchRow.Priority - 10, 1);
             newSchRow.Processes.Clear();  // no edit to processes, just priority
             transSet.Schedules.Add(newSchRow);
           }
@@ -91,7 +91,6 @@ namespace MazakMachineInterface
       }
 
       //now add the new schedule
-      int scheduleCount = 0;
       foreach (JobPlan part in jobs)
       {
         for (int proc1path = 1; proc1path <= part.GetNumPaths(1); proc1path++)
@@ -125,8 +124,8 @@ namespace MazakMachineInterface
           if (!scheduledParts.Contains(mazakPartName))
           {
             int schid = FindNextScheduleId(usedScheduleIDs);
-            SchedulePart(transSet, schid, mazakPartName, mazakComment, part.NumProcesses, part, proc1path, scheduleCount, UseStartingOffsetForDueDate);
-            scheduleCount += 1;
+            int earlierConflicts = CountEarlierConflicts(part, proc1path, jobs);
+            SchedulePart(transSet, schid, mazakPartName, mazakComment, part.NumProcesses, part, proc1path, earlierConflicts, UseStartingOffsetForDueDate);
           }
         }
       }
@@ -139,7 +138,7 @@ namespace MazakMachineInterface
 
     private static void SchedulePart(
       MazakWriteData transSet, int SchID, string mazakPartName, string mazakComment, int numProcess,
-      JobPlan part, int proc1path, int scheduleCount, bool UseStartingOffsetForDueDate)
+      JobPlan part, int proc1path, int earlierConflicts, bool UseStartingOffsetForDueDate)
     {
       var newSchRow = new MazakScheduleRow();
       newSchRow.Command = MazakWriteCommand.Add;
@@ -153,20 +152,25 @@ namespace MazakMachineInterface
       newSchRow.MissingTool = 0;
       newSchRow.MixScheduleID = 0;
       newSchRow.ProcessingPriority = 0;
-      newSchRow.Priority = 75;
       newSchRow.Comment = mazakComment;
 
       if (UseStartingOffsetForDueDate)
       {
-        DateTime d;
         if (part.GetSimulatedStartingTimeUTC(1, proc1path) != DateTime.MinValue)
-          d = part.GetSimulatedStartingTimeUTC(1, proc1path);
+        {
+          var start = part.GetSimulatedStartingTimeUTC(1, proc1path);
+          newSchRow.DueDate = start.ToLocalTime().Date;
+          newSchRow.Priority = 91 + Math.Min(earlierConflicts, 9);
+        }
         else
-          d = DateTime.Today;
-        newSchRow.DueDate = d.AddSeconds(5 * scheduleCount);
+        {
+          newSchRow.DueDate = DateTime.Today;
+          newSchRow.Priority = 91;
+        }
       }
       else
       {
+        newSchRow.Priority = 75;
         newSchRow.DueDate = DateTime.Parse("1/1/2008 12:00:00 AM");
       }
 
@@ -207,11 +211,75 @@ namespace MazakMachineInterface
       transSet.Schedules.Add(newSchRow);
     }
 
+    /// Count up how many JobPaths have an earlier simulation start time and also share a fixture/face with the current job
+    private static int CountEarlierConflicts(JobPlan jobToCheck, int proc1path, IEnumerable<JobPlan> jobs)
+    {
+      var startT = jobToCheck.GetSimulatedStartingTimeUTC(process: 1, path: proc1path);
+      if (startT == DateTime.MinValue) return 0;
+
+      // first, calculate the fixtures and faces used by the job to check
+      var group = jobToCheck.GetPathGroup(process: 1, path: proc1path);
+      var usedFixtureFaces = new HashSet<ValueTuple<string, string>>();
+      for (int proc = 1; proc <= jobToCheck.NumProcesses; proc++)
+      {
+        for (int path = 1; path <= jobToCheck.GetNumPaths(proc); path++)
+        {
+          if (jobToCheck.GetPathGroup(proc, path) != group) continue;
+          foreach (var f in jobToCheck.PlannedFixtures(proc, path))
+          {
+            usedFixtureFaces.Add((f.Fixture, f.Face));
+          }
+        }
+      }
+
+      int earlierConflicts = 0;
+      // go through each other job and process 1 path
+      foreach (var otherJob in jobs)
+      {
+        for (var otherProc1Path = 1; otherProc1Path <= otherJob.GetNumPaths(process: 1); otherProc1Path++)
+        {
+          if (otherJob.UniqueStr == jobToCheck.UniqueStr && proc1path == otherProc1Path) continue;
+
+          // see if the process 1 starting time is later and if so skip the remaining checks
+          var otherStart = otherJob.GetSimulatedStartingTimeUTC(process: 1, path: otherProc1Path);
+          if (otherStart == DateTime.MinValue) goto checkNextPath;
+          if (otherStart >= startT) goto checkNextPath;
+          var otherGroup = otherJob.GetPathGroup(process: 1, path: otherProc1Path);
+
+          //the job-path combo starts earlier than the job-path to check, but need to see if it conflicts.
+
+          // go through all processes matching the path group and if a fixture face matches,
+          // count it as a conflict.
+          for (var otherProc = 1; otherProc <= otherJob.NumProcesses; otherProc++)
+          {
+            for (var otherPath = 1; otherPath <= otherJob.GetNumPaths(otherProc); otherPath++)
+            {
+              if (otherJob.GetPathGroup(otherProc, otherPath) != otherGroup) continue;
+
+              foreach (var f in otherJob.PlannedFixtures(otherProc, otherPath))
+              {
+                if (usedFixtureFaces.Contains((f.Fixture, f.Face)))
+                {
+                  earlierConflicts += 1;
+                  goto checkNextPath;
+                }
+              }
+            }
+          }
+
+        checkNextPath:;
+        }
+      }
+
+      return earlierConflicts;
+    }
+
     private static void SortSchedulesByDate(MazakWriteData transSet)
     {
       transSet.Schedules =
         transSet.Schedules
         .OrderBy(x => x.DueDate)
+        .ThenBy(x => -x.Priority)
         .ToList();
     }
 
