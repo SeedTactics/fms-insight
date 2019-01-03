@@ -8,7 +8,7 @@ install:
 environment:
   bitbucket_auth:
     secure: rWSLJHgb9I+I5jdorS8K2T415gRW5nJ2Z23pM3DmhqQ=
-init: tzutil /s "Eastern Standard Time"
+init: tzutil /s "Pacific Standard Time"
 
 build_script:
   - ps: |
