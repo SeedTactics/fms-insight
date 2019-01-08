@@ -225,6 +225,7 @@ namespace MazakMachineInterface
         for (int path = 1; path <= jobToCheck.GetNumPaths(proc); path++)
         {
           if (jobToCheck.GetPathGroup(proc, path) != group) continue;
+          if (jobToCheck.PlannedFixtures(proc, path) == null) continue;
           foreach (var f in jobToCheck.PlannedFixtures(proc, path))
           {
             usedFixtureFaces.Add((f.Fixture, f.Face));
@@ -255,6 +256,7 @@ namespace MazakMachineInterface
             for (var otherPath = 1; otherPath <= otherJob.GetNumPaths(otherProc); otherPath++)
             {
               if (otherJob.GetPathGroup(otherProc, otherPath) != otherGroup) continue;
+              if (otherJob.PlannedFixtures(otherProc, otherPath) == null) continue;
 
               foreach (var f in otherJob.PlannedFixtures(otherProc, otherPath))
               {
