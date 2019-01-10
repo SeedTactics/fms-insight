@@ -36,21 +36,15 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-const React = require('react');
+const React = require("react");
 
 class Footer extends React.Component {
-  docUrl(doc, language) {
+  docUrl(doc) {
     const baseUrl = this.props.config.baseUrl;
-    return baseUrl + 'docs/' + (language ? language + '/' : '') + doc;
-  }
-
-  pageUrl(doc, language) {
-    const baseUrl = this.props.config.baseUrl;
-    return baseUrl + (language ? language + '/' : '') + doc;
+    return baseUrl + "docs/" + doc;
   }
 
   render() {
-    const currentYear = new Date().getFullYear();
     return (
       <footer className="nav-footer" id="footer">
         <section className="sitemap">
@@ -66,24 +60,16 @@ class Footer extends React.Component {
           </a>
           <div>
             <h5>Docs</h5>
-            <a href={this.docUrl('overview.html', this.props.language)}>
-              Overview
-            </a>
-            <a href={this.docUrl('getting-started.html', this.props.language)}>
-              Getting Started
-            </a>
-            <a href={this.docUrl('client-launch.html', this.props.language)}>
-              Client
-            </a>
-            <a href="/demo/demo.html">
-              Demo
-            </a>
+            <a href={this.docUrl("overview.html")}>Overview</a>
+            <a href={this.docUrl("getting-started.html")}>Getting Started</a>
+            <a href={this.docUrl("client-launch.html")}>Client</a>
+            <a href="/demo/demo.html">Demo</a>
           </div>
           <div>
             <h5>More</h5>
             <a href="https://bitbucket.org/blackmaple/fms-insight">BitBucket</a>
             <a href="https://www.seedtactics.com">SeedTactics</a>
-            <a href={this.docUrl('getting-started.html#downloads', this.props.language)}>
+            <a href={this.docUrl("getting-started.html#downloads")}>
               Downloads
             </a>
           </div>
