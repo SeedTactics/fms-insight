@@ -1,64 +1,60 @@
 {
-   // Use IntelliSense to find out which attributes exist for C# debugging
-   // Use hover for the description of the existing attributes
-   // For further information visit https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md
-   "version": "0.2.0",
-   "configurations": [
-       {
-           "type": "node",
-           "name": "vscode-jest-tests",
-           "request": "launch",
-           "program": "${workspaceFolder}/client/insight/node_modules/jest/bin/jest",
-           "args": [
-               "--runInBand"
-           ],
-           "cwd": "${workspaceFolder}/client/insight",
-           "console": "integratedTerminal",
-           "internalConsoleOptions": "neverOpen"
-       },
-       {
-           "name": "Mazak",
-           "type": "coreclr",
-           "request": "launch",
-           "program": "${workspaceRoot}/server/machines/mazak/bin/Debug/netcoreapp2.1/BlackMaple.FMSInsight.Mazak.dll",
-           "args": [],
-           "cwd": "${workspaceRoot}/server/machines/mazak/bin/Debug/netcoreapp2.1",
-           "stopAtEntry": false,
-           "console": "internalConsole",
-           "preLaunchTask": "mazak:build",
-           "env": {
-               "Mazak__SQL ConnectionString": "Server=172.16.11.6;User Id=mazakpmc;Password=Fms-978",
-               "Mazak__Log CSV Path": "../../../logcsv",
-               "QUEUE__castings": "-1",
-               "QUEUE__queueAAA": "-1",
-               "QUEUE__queueBBB": "-1",
-               "QUEUE__queueCCC": "2",
-               "FMS__AutomaticSerials": "true",
-               "FMS__StartingSerial": "abcd",
-               "SERVER__EnableDebugLog": "true"
-           }
-       },
-        {
-            "name": "Mock Server",
-            "type": "coreclr",
-            "request": "launch",
-            "program": "${workspaceRoot}/server/debug-mock/bin/Debug/netcoreapp2.1/BlackMaple.MachineFramework.DebugMock.dll",
-            "args": [],
-            "cwd": "${workspaceRoot}/server/debug-mock/bin/Debug/netcoreapp2.1",
-            "stopAtEntry": false,
-            "console": "internalConsole",
-            "preLaunchTask": "debug-mock:build"
-        },
-        {
-            "name": "Launch Chrome",
-            "type": "chrome",
-            "request": "launch",
-            "url": "http://localhost:1234",
-            "webRoot": "${workspaceFolder}/client/insight/src",
-            "runtimeExecutable": "/usr/bin/chromium",
-            "sourceMapPathOverrides": {
-                "webpack:///src/*": "${webRoot}/*"
-            }
-        }
-    ]
+  // Use IntelliSense to find out which attributes exist for C# debugging
+  // Use hover for the description of the existing attributes
+  // For further information visit https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "name": "vscode-jest-tests",
+      "request": "launch",
+      "program": "${workspaceFolder}/client/insight/node_modules/jest/bin/jest",
+      "args": ["--runInBand"],
+      "cwd": "${workspaceFolder}/client/insight",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "name": "Mazak",
+      "type": "coreclr",
+      "request": "launch",
+      "program": "${workspaceRoot}/server/machines/mazak/bin/Debug/netcoreapp2.1/BlackMaple.FMSInsight.Mazak.dll",
+      "args": [],
+      "cwd": "${workspaceRoot}/server/machines/mazak/bin/Debug/netcoreapp2.1",
+      "stopAtEntry": false,
+      "console": "internalConsole",
+      "preLaunchTask": "mazak:build",
+      "env": {
+        "Mazak__SQL ConnectionString": "Server=172.16.11.6;User Id=mazakpmc;Password=Fms-978",
+        "Mazak__Log CSV Path": "../../../logcsv",
+        "QUEUE__castings": "-1",
+        "QUEUE__transfer": "-1",
+        "FMS__AutomaticSerials": "true",
+        "FMS__StartingSerial": "abcd",
+        "SERVER__EnableDebugLog": "true"
+      }
+    },
+    {
+      "name": "Mock Server",
+      "type": "coreclr",
+      "request": "launch",
+      "program": "${workspaceRoot}/server/debug-mock/bin/Debug/netcoreapp2.1/BlackMaple.MachineFramework.DebugMock.dll",
+      "args": [],
+      "cwd": "${workspaceRoot}/server/debug-mock/bin/Debug/netcoreapp2.1",
+      "stopAtEntry": false,
+      "console": "internalConsole",
+      "preLaunchTask": "debug-mock:build"
+    },
+    {
+      "name": "Launch Chrome",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:1234",
+      "webRoot": "${workspaceFolder}/client/insight/src",
+      "runtimeExecutable": "/usr/bin/chromium",
+      "sourceMapPathOverrides": {
+        "webpack:///src/*": "${webRoot}/*"
+      }
+    }
+  ]
 }
