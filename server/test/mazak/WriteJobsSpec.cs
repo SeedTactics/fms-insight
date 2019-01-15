@@ -193,9 +193,9 @@ namespace MachineWatchTest
         PalletSubStatuses = Enumerable.Empty<MazakPalletSubStatusRow>(),
         PalletPositions = Enumerable.Empty<MazakPalletPositionRow>(),
         LoadActions = Enumerable.Empty<LoadAction>(),
-        MainPrograms = new HashSet<string>(new[] {
+        MainPrograms = (new[] {
           "1001", "1002", "1003", "1004", "1005"
-        }),
+        }).Select(p => new MazakProgramRow() { MainProgram = p, Comment = "" }),
       });
       _readMock.LoadSchedulesPartsPallets().Returns(x => new MazakSchedulesPartsPallets()
       {
@@ -205,9 +205,9 @@ namespace MachineWatchTest
         PalletSubStatuses = Enumerable.Empty<MazakPalletSubStatusRow>(),
         PalletPositions = Enumerable.Empty<MazakPalletPositionRow>(),
         LoadActions = Enumerable.Empty<LoadAction>(),
-        MainPrograms = new HashSet<string>(new[] {
+        MainPrograms = (new[] {
           "1001", "1002", "1003", "1004", "1005"
-        }),
+        }).Select(p => new MazakProgramRow() { MainProgram = p, Comment = "" }),
       });
 
       _settings = new FMSSettings();

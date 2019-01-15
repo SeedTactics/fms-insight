@@ -307,6 +307,12 @@ namespace MazakMachineInterface
     public IEnumerable<LoadAction> LoadActions { get; set; }
   }
 
+  public class MazakProgramRow
+  {
+    public string MainProgram { get; set; }
+    public string Comment { get; set; }
+  }
+
   public class MazakSchedulesPartsPallets : MazakSchedules
   {
     public IEnumerable<MazakPartRow> Parts { get; set; }
@@ -314,7 +320,7 @@ namespace MazakMachineInterface
     public IEnumerable<MazakPalletSubStatusRow> PalletSubStatuses { get; set; }
     public IEnumerable<MazakPalletPositionRow> PalletPositions { get; set; }
     public IEnumerable<LoadAction> LoadActions { get; set; }
-    public ISet<string> MainPrograms { get; set; }
+    public IEnumerable<MazakProgramRow> MainPrograms { get; set; }
   }
 
   public class MazakAllData : MazakSchedulesPartsPallets

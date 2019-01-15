@@ -532,7 +532,13 @@
       "Qty": 1
     }
   ],
-  "MainPrograms": ["1001", "1002", "1003", "1004", "1005"],
+  "MainPrograms": [
+    { "MainProgram": "1001", "Comment": "" },
+    { "MainProgram": "1002", "Comment": "" },
+    { "MainProgram": "1003", "Comment": "" },
+    { "MainProgram": "1004", "Comment": "" },
+    { "MainProgram": "1005", "Comment": "" }
+  ],
   "Schedules": [
     {
       "Id": 1,

@@ -1021,6 +1021,7 @@ namespace MachineWatchTest
       public List<MazakFixtureRow> TestFixtures { get; } = new List<MazakFixtureRow>();
       public List<MazakPalletRow> TestPallets { get; } = new List<MazakPalletRow>();
       public List<MazakScheduleRow> TestSchedules { get; } = new List<MazakScheduleRow>();
+      public List<MazakProgramRow> TestPrograms { get; } = new List<MazakProgramRow>();
 
       public MazakTestData()
       {
@@ -1028,7 +1029,7 @@ namespace MachineWatchTest
         Parts = TestParts;
         Fixtures = TestFixtures;
         Pallets = TestPallets;
-        MainPrograms = new HashSet<string>();
+        MainPrograms = TestPrograms;
       }
     }
 
@@ -1070,7 +1071,7 @@ namespace MachineWatchTest
 
     private void CreateProgram(MazakTestData dset, string program)
     {
-      dset.MainPrograms.Add(program);
+      dset.TestPrograms.Add(new MazakProgramRow() { MainProgram = program, Comment = "" });
     }
 
     private void AddBasicStopsWithProg(JobPlan job)

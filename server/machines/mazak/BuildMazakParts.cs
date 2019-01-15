@@ -767,7 +767,7 @@ namespace MazakMachineInterface
                     return;
                   }
                 }
-                if (!mazakData.MainPrograms.Contains(p.Program))
+                if (!mazakData.MainPrograms.Any(mp => mp.MainProgram == p.Program))
                 {
                   ErrorDuringCreate = "Part " + job.PartName + " program " + p.Program +
                       " does not exist in the cell controller.";

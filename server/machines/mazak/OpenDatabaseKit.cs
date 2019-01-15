@@ -818,7 +818,7 @@ namespace MazakMachineInterface
 
       _palSubStatusSelect = "SELECT FixQuantity, FixtureName, PalletNumber, PartName, PartProcessNumber, ScheduleID FROM PalletSubStatus";
       _palPositionSelect = "SELECT PalletNumber, PalletPosition FROM PalletPosition WHERE PalletNumber > 0";
-      _mainProgSelect = "SELECT MainProgram FROM MainProgram";
+      _mainProgSelect = "SELECT MainProgram, Comment FROM MainProgram";
       _alarmSelect = "SELECT AlarmNumber, AlarmMessage FROM Alarm";
     }
 
@@ -928,7 +928,7 @@ namespace MazakMachineInterface
         Pallets = conn.Query<MazakPalletRow>(_palletSelect, transaction: trans),
         PalletSubStatuses = conn.Query<MazakPalletSubStatusRow>(_palSubStatusSelect, transaction: trans),
         PalletPositions = conn.Query<MazakPalletPositionRow>(_palPositionSelect, transaction: trans),
-        MainPrograms = new HashSet<string>(conn.Query<string>(_mainProgSelect, transaction: trans)),
+        MainPrograms = conn.Query<MazakProgramRow>(_mainProgSelect, transaction: trans),
       };
     }
     public MazakSchedulesPartsPallets LoadSchedulesPartsPallets()
