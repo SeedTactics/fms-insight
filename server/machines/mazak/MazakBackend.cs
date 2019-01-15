@@ -46,6 +46,7 @@ namespace MazakMachineInterface
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<MazakBackend>();
 
+    private IReadDataAccess _readDB;
     private OpenDatabaseKitTransactionDB _writeDB;
     private RoutingInfo routing;
     private HoldPattern hold;
@@ -68,6 +69,8 @@ namespace MazakMachineInterface
         return _writeDB;
       }
     }
+
+    public IReadDataAccess ReadDB => _readDB;
 
     public JobLogDB JobLog
     {
@@ -196,17 +199,16 @@ namespace MazakMachineInterface
         loadOper = null; // smooth db doesn't use the load operations file
 
       var openReadDb = new OpenDatabaseKitReadDB(dbConnStr, MazakType, loadOper);
-      IReadDataAccess readOnlyDb;
       if (MazakType == MazakDbType.MazakSmooth)
-        readOnlyDb = new SmoothReadOnlyDB(dbConnStr, openReadDb);
+        _readDB = new SmoothReadOnlyDB(dbConnStr, openReadDb);
       else
-        readOnlyDb = openReadDb;
+        _readDB = openReadDb;
 
       queues = new MazakQueues(jobLog, jobDB, _writeDB);
       var sendToExternal = new SendMaterialToExternalQueue();
 
       if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakSmooth)
-        logDataLoader = new LogDataWeb(logPath, jobLog, jobDB, sendToExternal, readOnlyDb, queues, st);
+        logDataLoader = new LogDataWeb(logPath, jobLog, jobDB, sendToExternal, _readDB, queues, st);
       else
       {
 #if USE_OLEDB
@@ -216,9 +218,9 @@ namespace MazakMachineInterface
 #endif
       }
 
-      hold = new HoldPattern(_writeDB, readOnlyDb, jobDB, true);
-      var writeJobs = new WriteJobs(_writeDB, readOnlyDb, hold, jobDB, jobLog, st, CheckPalletsUsedOnce, UseStartingOffsetForDueDate);
-      routing = new RoutingInfo(_writeDB, readOnlyDb, logDataLoader, jobDB, jobLog, writeJobs,
+      hold = new HoldPattern(_writeDB, _readDB, jobDB, true);
+      var writeJobs = new WriteJobs(_writeDB, _readDB, hold, jobDB, jobLog, st, CheckPalletsUsedOnce, UseStartingOffsetForDueDate);
+      routing = new RoutingInfo(_writeDB, _readDB, logDataLoader, jobDB, jobLog, writeJobs,
                                 CheckPalletsUsedOnce, st);
 
       logDataLoader.NewEntries += OnNewLogEntries;
