@@ -653,6 +653,7 @@ exports[`renders the dashboard: station oee 1`] = `
     class="MuiGrid-item-2 MuiGrid-grid-xs-12-41 MuiGrid-grid-sm-6-49 MuiGrid-grid-md-4-61 MuiGrid-grid-lg-3-74"
   >
     <svg
+      class=""
       viewBox="0 0 400 400"
     >
       <circle
@@ -685,6 +686,7 @@ exports[`renders the dashboard: station oee 1`] = `
     class="MuiGrid-item-2 MuiGrid-grid-xs-12-41 MuiGrid-grid-sm-6-49 MuiGrid-grid-md-4-61 MuiGrid-grid-lg-3-74"
   >
     <svg
+      class=""
       viewBox="0 0 400 400"
     >
       <circle
@@ -717,6 +719,7 @@ exports[`renders the dashboard: station oee 1`] = `
     class="MuiGrid-item-2 MuiGrid-grid-xs-12-41 MuiGrid-grid-sm-6-49 MuiGrid-grid-md-4-61 MuiGrid-grid-lg-3-74"
   >
     <svg
+      class=""
       viewBox="0 0 400 400"
     >
       <circle
@@ -749,6 +752,7 @@ exports[`renders the dashboard: station oee 1`] = `
     class="MuiGrid-item-2 MuiGrid-grid-xs-12-41 MuiGrid-grid-sm-6-49 MuiGrid-grid-md-4-61 MuiGrid-grid-lg-3-74"
   >
     <svg
+      class=""
       viewBox="0 0 400 400"
     >
       <circle
@@ -781,6 +785,7 @@ exports[`renders the dashboard: station oee 1`] = `
     class="MuiGrid-item-2 MuiGrid-grid-xs-12-41 MuiGrid-grid-sm-6-49 MuiGrid-grid-md-4-61 MuiGrid-grid-lg-3-74"
   >
     <svg
+      class=""
       viewBox="0 0 400 400"
     >
       <circle

@@ -2,41 +2,41 @@
 
 exports[`renders the cost/piece page: calculated costs 1`] = `
 <table
-  class="MuiTable-root-177"
+  class="MuiTable-root-180"
   data-testid="part-cost-table"
 >
   <thead
-    class="MuiTableHead-root-178"
+    class="MuiTableHead-root-181"
   >
     <tr
-      class="MuiTableRow-root-179 MuiTableRow-head-182"
+      class="MuiTableRow-root-182 MuiTableRow-head-185"
     >
       <th
-        class="MuiTableCell-root-184 MuiTableCell-head-185"
+        class="MuiTableCell-root-187 MuiTableCell-head-188"
         scope="col"
       >
         Part
       </th>
       <th
-        class="MuiTableCell-root-184 MuiTableCell-head-185"
+        class="MuiTableCell-root-187 MuiTableCell-head-188"
         scope="col"
       >
         Material Cost
       </th>
       <th
-        class="MuiTableCell-root-184 MuiTableCell-head-185"
+        class="MuiTableCell-root-187 MuiTableCell-head-188"
         scope="col"
       >
         Machine Cost
       </th>
       <th
-        class="MuiTableCell-root-184 MuiTableCell-head-185"
+        class="MuiTableCell-root-187 MuiTableCell-head-188"
         scope="col"
       >
         Labor Cost
       </th>
       <th
-        class="MuiTableCell-root-184 MuiTableCell-head-185"
+        class="MuiTableCell-root-187 MuiTableCell-head-188"
         scope="col"
       >
         Total
@@ -44,28 +44,28 @@ exports[`renders the cost/piece page: calculated costs 1`] = `
     </tr>
   </thead>
   <tbody
-    class="MuiTableBody-root-192"
+    class="MuiTableBody-root-199"
   >
     <tr
-      class="MuiTableRow-root-179"
+      class="MuiTableRow-root-182"
     >
       <td
-        class="MuiTableCell-root-184 MuiTableCell-body-186"
+        class="MuiTableCell-root-187 MuiTableCell-body-189"
       >
         aaa
       </td>
       <td
-        class="MuiTableCell-root-184 MuiTableCell-body-186"
+        class="MuiTableCell-root-187 MuiTableCell-body-189"
       >
         <div
-          class="MuiFormControl-root-86"
+          class="MuiFormControl-root-88"
         >
           <div
-            class="MuiInputBase-root-103 MuiInput-root-90 MuiInput-underline-94 MuiInputBase-formControl-104 MuiInput-formControl-91"
+            class="MuiInputBase-root-105 MuiInput-root-92 MuiInput-underline-96 MuiInputBase-formControl-106 MuiInput-formControl-93"
           >
             <input
               aria-invalid="false"
-              class="MuiInputBase-input-113 MuiInput-input-98 MuiInputBase-inputType-116 MuiInput-inputType-101"
+              class="MuiInputBase-input-115 MuiInput-input-100 MuiInputBase-inputType-118 MuiInput-inputType-103"
               min="0"
               type="number"
               value="40"
@@ -74,41 +74,41 @@ exports[`renders the cost/piece page: calculated costs 1`] = `
         </div>
       </td>
       <td
-        class="MuiTableCell-root-184 MuiTableCell-body-186"
+        class="MuiTableCell-root-187 MuiTableCell-body-189"
       >
         0.3
       </td>
       <td
-        class="MuiTableCell-root-184 MuiTableCell-body-186"
+        class="MuiTableCell-root-187 MuiTableCell-body-189"
       >
         26.6
       </td>
       <td
-        class="MuiTableCell-root-184 MuiTableCell-body-186"
+        class="MuiTableCell-root-187 MuiTableCell-body-189"
       >
         66.9
       </td>
     </tr>
     <tr
-      class="MuiTableRow-root-179"
+      class="MuiTableRow-root-182"
     >
       <td
-        class="MuiTableCell-root-184 MuiTableCell-body-186"
+        class="MuiTableCell-root-187 MuiTableCell-body-189"
       >
         bbb
       </td>
       <td
-        class="MuiTableCell-root-184 MuiTableCell-body-186"
+        class="MuiTableCell-root-187 MuiTableCell-body-189"
       >
         <div
-          class="MuiFormControl-root-86"
+          class="MuiFormControl-root-88"
         >
           <div
-            class="MuiInputBase-root-103 MuiInput-root-90 MuiInput-underline-94 MuiInputBase-formControl-104 MuiInput-formControl-91"
+            class="MuiInputBase-root-105 MuiInput-root-92 MuiInput-underline-96 MuiInputBase-formControl-106 MuiInput-formControl-93"
           >
             <input
               aria-invalid="false"
-              class="MuiInputBase-input-113 MuiInput-input-98 MuiInputBase-inputType-116 MuiInput-inputType-101"
+              class="MuiInputBase-input-115 MuiInput-input-100 MuiInputBase-inputType-118 MuiInput-inputType-103"
               min="0"
               type="number"
               value="0"
@@ -117,41 +117,41 @@ exports[`renders the cost/piece page: calculated costs 1`] = `
         </div>
       </td>
       <td
-        class="MuiTableCell-root-184 MuiTableCell-body-186"
+        class="MuiTableCell-root-187 MuiTableCell-body-189"
       >
         0.4
       </td>
       <td
-        class="MuiTableCell-root-184 MuiTableCell-body-186"
+        class="MuiTableCell-root-187 MuiTableCell-body-189"
       >
         26.6
       </td>
       <td
-        class="MuiTableCell-root-184 MuiTableCell-body-186"
+        class="MuiTableCell-root-187 MuiTableCell-body-189"
       >
         27
       </td>
     </tr>
     <tr
-      class="MuiTableRow-root-179"
+      class="MuiTableRow-root-182"
     >
       <td
-        class="MuiTableCell-root-184 MuiTableCell-body-186"
+        class="MuiTableCell-root-187 MuiTableCell-body-189"
       >
         ccc
       </td>
       <td
-        class="MuiTableCell-root-184 MuiTableCell-body-186"
+        class="MuiTableCell-root-187 MuiTableCell-body-189"
       >
         <div
-          class="MuiFormControl-root-86"
+          class="MuiFormControl-root-88"
         >
           <div
-            class="MuiInputBase-root-103 MuiInput-root-90 MuiInput-underline-94 MuiInputBase-formControl-104 MuiInput-formControl-91"
+            class="MuiInputBase-root-105 MuiInput-root-92 MuiInput-underline-96 MuiInputBase-formControl-106 MuiInput-formControl-93"
           >
             <input
               aria-invalid="false"
-              class="MuiInputBase-input-113 MuiInput-input-98 MuiInputBase-inputType-116 MuiInput-inputType-101"
+              class="MuiInputBase-input-115 MuiInput-input-100 MuiInputBase-inputType-118 MuiInput-inputType-103"
               min="0"
               type="number"
               value="0"
@@ -160,41 +160,41 @@ exports[`renders the cost/piece page: calculated costs 1`] = `
         </div>
       </td>
       <td
-        class="MuiTableCell-root-184 MuiTableCell-body-186"
+        class="MuiTableCell-root-187 MuiTableCell-body-189"
       >
         0.9
       </td>
       <td
-        class="MuiTableCell-root-184 MuiTableCell-body-186"
+        class="MuiTableCell-root-187 MuiTableCell-body-189"
       >
         26.4
       </td>
       <td
-        class="MuiTableCell-root-184 MuiTableCell-body-186"
+        class="MuiTableCell-root-187 MuiTableCell-body-189"
       >
         27.3
       </td>
     </tr>
     <tr
-      class="MuiTableRow-root-179"
+      class="MuiTableRow-root-182"
     >
       <td
-        class="MuiTableCell-root-184 MuiTableCell-body-186"
+        class="MuiTableCell-root-187 MuiTableCell-body-189"
       >
         xxx
       </td>
       <td
-        class="MuiTableCell-root-184 MuiTableCell-body-186"
+        class="MuiTableCell-root-187 MuiTableCell-body-189"
       >
         <div
-          class="MuiFormControl-root-86"
+          class="MuiFormControl-root-88"
         >
           <div
-            class="MuiInputBase-root-103 MuiInput-root-90 MuiInput-underline-94 MuiInputBase-formControl-104 MuiInput-formControl-91"
+            class="MuiInputBase-root-105 MuiInput-root-92 MuiInput-underline-96 MuiInputBase-formControl-106 MuiInput-formControl-93"
           >
             <input
               aria-invalid="false"
-              class="MuiInputBase-input-113 MuiInput-input-98 MuiInputBase-inputType-116 MuiInput-inputType-101"
+              class="MuiInputBase-input-115 MuiInput-input-100 MuiInputBase-inputType-118 MuiInput-inputType-103"
               min="0"
               type="number"
               value="0"
@@ -203,41 +203,41 @@ exports[`renders the cost/piece page: calculated costs 1`] = `
         </div>
       </td>
       <td
-        class="MuiTableCell-root-184 MuiTableCell-body-186"
+        class="MuiTableCell-root-187 MuiTableCell-body-189"
       >
         0.6
       </td>
       <td
-        class="MuiTableCell-root-184 MuiTableCell-body-186"
+        class="MuiTableCell-root-187 MuiTableCell-body-189"
       >
         13.8
       </td>
       <td
-        class="MuiTableCell-root-184 MuiTableCell-body-186"
+        class="MuiTableCell-root-187 MuiTableCell-body-189"
       >
         14.4
       </td>
     </tr>
     <tr
-      class="MuiTableRow-root-179"
+      class="MuiTableRow-root-182"
     >
       <td
-        class="MuiTableCell-root-184 MuiTableCell-body-186"
+        class="MuiTableCell-root-187 MuiTableCell-body-189"
       >
         yyy
       </td>
       <td
-        class="MuiTableCell-root-184 MuiTableCell-body-186"
+        class="MuiTableCell-root-187 MuiTableCell-body-189"
       >
         <div
-          class="MuiFormControl-root-86"
+          class="MuiFormControl-root-88"
         >
           <div
-            class="MuiInputBase-root-103 MuiInput-root-90 MuiInput-underline-94 MuiInputBase-formControl-104 MuiInput-formControl-91"
+            class="MuiInputBase-root-105 MuiInput-root-92 MuiInput-underline-96 MuiInputBase-formControl-106 MuiInput-formControl-93"
           >
             <input
               aria-invalid="false"
-              class="MuiInputBase-input-113 MuiInput-input-98 MuiInputBase-inputType-116 MuiInput-inputType-101"
+              class="MuiInputBase-input-115 MuiInput-input-100 MuiInputBase-inputType-118 MuiInput-inputType-103"
               min="0"
               type="number"
               value="0"
@@ -246,41 +246,41 @@ exports[`renders the cost/piece page: calculated costs 1`] = `
         </div>
       </td>
       <td
-        class="MuiTableCell-root-184 MuiTableCell-body-186"
+        class="MuiTableCell-root-187 MuiTableCell-body-189"
       >
         1.6
       </td>
       <td
-        class="MuiTableCell-root-184 MuiTableCell-body-186"
+        class="MuiTableCell-root-187 MuiTableCell-body-189"
       >
         27.6
       </td>
       <td
-        class="MuiTableCell-root-184 MuiTableCell-body-186"
+        class="MuiTableCell-root-187 MuiTableCell-body-189"
       >
         29.1
       </td>
     </tr>
     <tr
-      class="MuiTableRow-root-179"
+      class="MuiTableRow-root-182"
     >
       <td
-        class="MuiTableCell-root-184 MuiTableCell-body-186"
+        class="MuiTableCell-root-187 MuiTableCell-body-189"
       >
         zzz
       </td>
       <td
-        class="MuiTableCell-root-184 MuiTableCell-body-186"
+        class="MuiTableCell-root-187 MuiTableCell-body-189"
       >
         <div
-          class="MuiFormControl-root-86"
+          class="MuiFormControl-root-88"
         >
           <div
-            class="MuiInputBase-root-103 MuiInput-root-90 MuiInput-underline-94 MuiInputBase-formControl-104 MuiInput-formControl-91"
+            class="MuiInputBase-root-105 MuiInput-root-92 MuiInput-underline-96 MuiInputBase-formControl-106 MuiInput-formControl-93"
           >
             <input
               aria-invalid="false"
-              class="MuiInputBase-input-113 MuiInput-input-98 MuiInputBase-inputType-116 MuiInput-inputType-101"
+              class="MuiInputBase-input-115 MuiInput-input-100 MuiInputBase-inputType-118 MuiInput-inputType-103"
               min="0"
               type="number"
               value="0"
@@ -289,17 +289,17 @@ exports[`renders the cost/piece page: calculated costs 1`] = `
         </div>
       </td>
       <td
-        class="MuiTableCell-root-184 MuiTableCell-body-186"
+        class="MuiTableCell-root-187 MuiTableCell-body-189"
       >
         2.5
       </td>
       <td
-        class="MuiTableCell-root-184 MuiTableCell-body-186"
+        class="MuiTableCell-root-187 MuiTableCell-body-189"
       >
         13.8
       </td>
       <td
-        class="MuiTableCell-root-184 MuiTableCell-body-186"
+        class="MuiTableCell-root-187 MuiTableCell-body-189"
       >
         16.3
       </td>

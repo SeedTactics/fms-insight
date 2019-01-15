@@ -79,7 +79,8 @@ class OperatorSelect extends React.PureComponent<OperatorSelectProps> {
           <div style={{ position: "relative" }}>
             <TextField
               InputProps={{
-                ...ds.getInputProps({ placeholder: "Operator" }),
+                // tslint:disable-next-line:no-any
+                ...(ds.getInputProps({ placeholder: "Operator" }) as any),
                 onKeyUp: k => {
                   if (k.keyCode === 13 && ds.inputValue && ds.inputValue.length > 0) {
                     this.props.setOperator({ operator: ds.inputValue });

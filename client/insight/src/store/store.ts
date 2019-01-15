@@ -57,7 +57,7 @@ export type AppActionBeforeMiddleware = StoreActions<InitToStore<typeof initStor
 export type Payload<T> = ACPayload<InitToStore<typeof initStore>, T>;
 export type DispatchAction<T> = (payload: Payload<T>) => void;
 export const connect: InitToStore<typeof initStore>["connect"] = reactRedux.connect;
-export const mkAC: InitToStore<typeof initStore>["mkAC"] = mkACF();
+export const mkAC = mkACF<AppActionBeforeMiddleware>();
 
 export function initStore(demo: boolean) {
   const router = demo

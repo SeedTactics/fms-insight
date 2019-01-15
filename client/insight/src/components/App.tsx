@@ -112,7 +112,7 @@ function Header(p: HeaderProps) {
   }
   const tabs = (full: boolean) => (
     <Tabs
-      fullWidth={full}
+      variant={full ? "fullWidth" : "standard"}
       style={full ? {} : tabsStyle}
       value={tabType}
       onChange={(e, v) => p.setRoute({ ty: v, curSt: p.routeState })}

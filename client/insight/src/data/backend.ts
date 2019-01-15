@@ -112,7 +112,7 @@ function initMockBackend(data: Promise<MockData>) {
   ServerBackend = {
     fMSInformation() {
       return Promise.resolve({
-        name: "Sample",
+        name: "mock",
         version: "1.0.0",
         requireScanAtWash: false,
         requireWorkorderBeforeAllowWashComplete: false,
