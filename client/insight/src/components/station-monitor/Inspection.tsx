@@ -46,6 +46,7 @@ import { MaterialDialogProps, MaterialDialog, MatSummary, WhiteboardRegion, Inst
 import * as matDetails from "../../data/material-details";
 import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 import SerialScanner from "./QRScan";
+import ManualScan from "./ManualScan";
 
 interface InspButtonsProps {
   readonly display_material: matDetails.MaterialDetail;
@@ -204,6 +205,7 @@ function Inspection(props: InspectionProps) {
         </Grid>
         <ConnectedInspDialog />
         <SerialScanner />
+        <ManualScan />
       </main>
     </DocumentTitle>
   );

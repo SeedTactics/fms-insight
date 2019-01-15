@@ -48,6 +48,7 @@ import IconButton from "@material-ui/core/IconButton";
 import DeleteIcon from "@material-ui/icons/Delete";
 import Typography from "@material-ui/core/Typography";
 import CameraAlt from "@material-ui/icons/CameraAlt";
+import SearchIcon from "@material-ui/icons/Search";
 import { Tooltip } from "@material-ui/core";
 import { User } from "oidc-client";
 
@@ -153,6 +154,7 @@ interface StationToolbarProps {
   readonly setOperator: DispatchAction<operators.ActionType.SetOperator>;
   readonly removeOperator: DispatchAction<operators.ActionType.RemoveOperator>;
   readonly openQrCodeScan: () => void;
+  readonly openManualSerial: () => void;
 }
 
 const freeMaterialSym = "@@insight_free_material@@";
@@ -389,6 +391,11 @@ function StationToolbar(props: StationToolbarProps) {
         ) : (
           undefined
         )}
+        <Tooltip title="Enter Serial">
+          <IconButton onClick={props.openManualSerial} style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}>
+            <SearchIcon />
+          </IconButton>
+        </Tooltip>
       </div>
       <div>
         {props.currentUser ? (
@@ -425,6 +432,10 @@ export default connect(
     removeOperator: mkAC(operators.ActionType.RemoveOperator),
     openQrCodeScan: () => ({
       type: guiState.ActionType.SetScanQrCodeDialog,
+      open: true
+    }),
+    openManualSerial: () => ({
+      type: guiState.ActionType.SetManualSerialEntryDialog,
       open: true
     })
   }

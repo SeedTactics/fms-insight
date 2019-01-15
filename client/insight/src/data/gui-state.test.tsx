@@ -151,3 +151,19 @@ it("sets the add mat queue name", () => {
   });
   expect(s.add_mat_to_queue).toEqual("aaaa");
 });
+
+it("opens the manual serial entry dialog", () => {
+  let s = gui.reducer(gui.initial, {
+    type: gui.ActionType.SetManualSerialEntryDialog,
+    open: true
+  });
+  expect(s.manual_serial_entry_dialog_open).toBe(true);
+});
+
+it("closes the manual serial entry dialog", () => {
+  let s = gui.reducer(gui.initial, {
+    type: gui.ActionType.SetManualSerialEntryDialog,
+    open: false
+  });
+  expect(s.manual_serial_entry_dialog_open).toBe(false);
+});

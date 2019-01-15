@@ -49,6 +49,7 @@ import SelectWorkorderDialog from "./SelectWorkorder";
 import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 import SerialScanner from "./QRScan";
 import Tooltip from "@material-ui/core/Tooltip";
+import ManualScan from "./ManualScan";
 
 interface WashDialogProps extends MaterialDialogProps {
   readonly operator?: string;
@@ -175,6 +176,7 @@ function Wash(props: WashProps) {
         <SelectWorkorderDialog />
         <ConnectedWashDialog />
         <SerialScanner />
+        <ManualScan />
       </main>
     </DocumentTitle>
   );

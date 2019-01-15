@@ -66,6 +66,7 @@ import SerialScanner from "./QRScan";
 import { MoveMaterialArrowContainer, MoveMaterialArrowNode } from "./MoveMaterialArrows";
 import { MoveMaterialNodeKindType } from "../../data/move-arrows";
 import { SortEnd } from "react-sortable-hoc";
+import ManualScan from "./ManualScan";
 
 function stationPalMaterialStatus(mat: Readonly<api.IInProcessMaterial>, dateOfCurrentStatus: Date): JSX.Element {
   const name = mat.partName + "-" + mat.process.toString();
@@ -536,6 +537,7 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationProps & WithStyles
           <SelectInspTypeDialog />
           <ConnectedMaterialDialog />
           <SerialScanner />
+          <ManualScan />
         </main>
       </MoveMaterialArrowContainer>
     </DocumentTitle>

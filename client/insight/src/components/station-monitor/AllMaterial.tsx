@@ -41,6 +41,7 @@ import * as matDetails from "../../data/material-details";
 import { AllMaterialBins, selectAllMaterialIntoBins } from "../../data/all-material-bins";
 import { createSelector } from "reselect";
 import SerialScanner from "./QRScan";
+import ManualScan from "./ManualScan";
 
 const ConnectedAllMatDialog = connect(
   st => ({
@@ -75,12 +76,16 @@ function Wash(props: AllMatProps) {
         </div>
         <ConnectedAllMatDialog />
         <SerialScanner />
+        <ManualScan />
       </main>
     </DocumentTitle>
   );
 }
 
-const extractMaterialRegions = createSelector((st: Store) => st.Current.current_status, selectAllMaterialIntoBins);
+const extractMaterialRegions = createSelector(
+  (st: Store) => st.Current.current_status,
+  selectAllMaterialIntoBins
+);
 
 export default connect(
   (st: Store) => ({

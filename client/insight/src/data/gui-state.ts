@@ -47,7 +47,8 @@ export enum ActionType {
   SetSerialDialogOpen = "Gui_SetSerialDialogOpen",
   SetAddMatToQueueModeDialogOpen = "Gui_SetAddMatToQueueModeDialogOpen",
   SetAddMatToQueueName = "Gui_SetAddMatToQueueName",
-  SetScanQrCodeDialog = "Gui_ScanQrCodeDialog"
+  SetScanQrCodeDialog = "Gui_ScanQrCodeDialog",
+  SetManualSerialEntryDialog = "Gui_ManualSerialEntryDialog"
 }
 
 export type Action =
@@ -60,7 +61,8 @@ export type Action =
   | { type: ActionType.SetSerialDialogOpen; open: boolean }
   | { type: ActionType.SetAddMatToQueueModeDialogOpen; open: boolean }
   | { type: ActionType.SetAddMatToQueueName; queue: string | undefined }
-  | { type: ActionType.SetScanQrCodeDialog; open: boolean };
+  | { type: ActionType.SetScanQrCodeDialog; open: boolean }
+  | { type: ActionType.SetManualSerialEntryDialog; open: boolean };
 
 export interface State {
   readonly station_cycle_selected_part?: string;
@@ -72,6 +74,7 @@ export interface State {
   readonly serial_dialog_open: boolean;
   readonly scan_qr_dialog_open: boolean;
   readonly queue_dialog_mode_open: boolean;
+  readonly manual_serial_entry_dialog_open: boolean;
   readonly add_mat_to_queue?: string;
 }
 
@@ -82,6 +85,7 @@ export const initial: State = {
   insptype_dialog_open: false,
   serial_dialog_open: false,
   scan_qr_dialog_open: false,
+  manual_serial_entry_dialog_open: false,
   queue_dialog_mode_open: false
 };
 
@@ -110,6 +114,8 @@ export function reducer(s: State, a: Action): State {
       return { ...s, queue_dialog_mode_open: a.open };
     case ActionType.SetAddMatToQueueName:
       return { ...s, add_mat_to_queue: a.queue };
+    case ActionType.SetManualSerialEntryDialog:
+      return { ...s, manual_serial_entry_dialog_open: a.open };
     default:
       return s;
   }
