@@ -37,7 +37,8 @@
     "redux": "^4.0.0",
     "redux-first-router": "^2.1.0",
     "reselect": "^4.0.0",
-    "typeface-roboto": "^0.0.54"
+    "typeface-roboto": "^0.0.54",
+    "prelude-ts": "^0.8.2"
   },
   "devDependencies": {
     "@types/enzyme": "^3.1.8",

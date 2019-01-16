@@ -51,6 +51,7 @@ import CameraAlt from "@material-ui/icons/CameraAlt";
 import SearchIcon from "@material-ui/icons/Search";
 import { Tooltip } from "@material-ui/core";
 import { User } from "oidc-client";
+import { HashSet } from "prelude-ts";
 
 import * as routes from "../../data/routes";
 import { Store, connect, DispatchAction, mkAC } from "../../store/store";
@@ -59,7 +60,7 @@ import * as operators from "../../data/operators";
 import * as guiState from "../../data/gui-state";
 
 interface OperatorSelectProps {
-  readonly operators: Set<string>;
+  readonly operators: HashSet<string>;
   readonly currentOperator: string | null;
   readonly setOperator: DispatchAction<operators.ActionType.SetOperator>;
   readonly removeOperator: DispatchAction<operators.ActionType.RemoveOperator>;
@@ -67,7 +68,7 @@ interface OperatorSelectProps {
 
 class OperatorSelect extends React.PureComponent<OperatorSelectProps> {
   render() {
-    const opers = this.props.operators.toSeq().sort();
+    const opers = this.props.operators.toArray({ sortOn: x => x });
     return (
       <Downshift
         selectedItem={this.props.currentOperator}
@@ -99,7 +100,7 @@ class OperatorSelect extends React.PureComponent<OperatorSelectProps> {
                   right: 0
                 }}
               >
-                {ds.inputValue && ds.inputValue.length > 0 && !this.props.operators.has(ds.inputValue) ? (
+                {ds.inputValue && ds.inputValue.length > 0 && !this.props.operators.contains(ds.inputValue) ? (
                   <Typography variant="caption" align="center">
                     Press enter to add new
                   </Typography>
@@ -143,7 +144,7 @@ interface StationToolbarProps {
   readonly current_route: routes.State;
   readonly queues: { [key: string]: api.IQueueSize };
   readonly insp_types: Set<string>;
-  readonly operators: Set<string>;
+  readonly operators: HashSet<string>;
   readonly currentOperator: string | null;
   readonly currentUser: User | null;
 

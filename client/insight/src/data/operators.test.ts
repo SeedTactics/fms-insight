@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 localStorage.setItem("operators", '["initial1"]');
 localStorage.setItem("current-operator", "initialoper");
 import * as operators from "./operators";
-import * as im from "immutable";
+import { HashSet } from "prelude-ts";
 
 it("creates the initial state", () => {
   // tslint:disable no-any
@@ -52,7 +52,7 @@ it("adds an operator", () => {
   });
 
   expect(s).toEqual({
-    operators: im.Set(["initial1", "op1"]),
+    operators: HashSet.of("initial1", "op1"),
     current: "op1"
   });
 
@@ -62,14 +62,14 @@ it("adds an operator", () => {
   });
 
   expect(s).toEqual({
-    operators: im.Set(["initial1", "op1", "op2"]),
+    operators: HashSet.of("initial1", "op1", "op2"),
     current: "op2"
   });
 });
 
 it("removes an operator", () => {
   let s: operators.State = {
-    operators: im.Set(["op1", "op2", "aaaa"]),
+    operators: HashSet.of("op1", "op2", "aaaa"),
     current: "aaaa"
   };
   s = operators.reducer(s, {
@@ -78,7 +78,7 @@ it("removes an operator", () => {
   });
 
   expect(s).toEqual({
-    operators: im.Set(["op2", "aaaa"]),
+    operators: HashSet.of("op2", "aaaa"),
     current: "aaaa"
   });
 
@@ -88,7 +88,7 @@ it("removes an operator", () => {
   });
 
   expect(s).toEqual({
-    operators: im.Set(["op2"]),
+    operators: HashSet.of("op2"),
     current: undefined
   });
 });
@@ -96,7 +96,7 @@ it("removes an operator", () => {
 it("sets local storage", () => {
   const onChange = operators.createOnStateChange();
   onChange({
-    operators: im.Set(["op1", "op2"]),
+    operators: HashSet.of("op1", "op2"),
     current: "op2"
   });
   const opers = JSON.parse(localStorage.getItem("operators") || "[]");

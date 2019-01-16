@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as im from "immutable";
+import { HashSet } from "prelude-ts";
 
 export enum ActionType {
   SetOperator = "Operators_SetOperator",
@@ -43,12 +43,12 @@ export type Action =
   | { type: ActionType.RemoveOperator; operator: string };
 
 export interface State {
-  readonly operators: im.Set<string>;
+  readonly operators: HashSet<string>;
   readonly current?: string;
 }
 
 export const initial = {
-  operators: im.Set(JSON.parse(localStorage.getItem("operators") || "[]")) as im.Set<string>,
+  operators: HashSet.ofIterable<string>(JSON.parse(localStorage.getItem("operators") || "[]")),
   current: localStorage.getItem("current-operator") || undefined
 };
 
@@ -79,11 +79,11 @@ export function reducer(s: State, a: Action): State {
   switch (a.type) {
     case ActionType.SetOperator:
       return {
-        operators: s.operators.has(a.operator) ? s.operators : s.operators.add(a.operator),
+        operators: s.operators.contains(a.operator) ? s.operators : s.operators.add(a.operator),
         current: a.operator
       };
     case ActionType.RemoveOperator:
-      if (s.operators.has(a.operator)) {
+      if (s.operators.contains(a.operator)) {
         return {
           operators: s.operators.remove(a.operator),
           current: s.current === a.operator ? undefined : s.current
