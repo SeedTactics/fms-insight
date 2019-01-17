@@ -536,7 +536,7 @@ const ConnectedChooseSerialOrDirectJobDialog = connect(
       ] as AppActionBeforeMiddleware,
     lookupSerial: (serial: string) =>
       [
-        matDetails.openMaterialBySerial(serial, false),
+        ...matDetails.openMaterialBySerial(serial, false),
         {
           type: guiState.ActionType.SetAddMatToQueueModeDialogOpen,
           open: false
