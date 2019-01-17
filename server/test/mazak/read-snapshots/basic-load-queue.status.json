@@ -844,6 +844,7 @@
       "PartName": "ccc",
       "Process": 2,
       "Path": 1,
+      "Serial": "000000abcd",
       "SignaledInspections": [],
       "Location": {
         "Type": "InQueue",
@@ -864,6 +865,7 @@
       "PartName": "ccc",
       "Process": 2,
       "Path": 1,
+      "Serial": "000000abce",
       "SignaledInspections": [],
       "Location": {
         "Type": "InQueue",

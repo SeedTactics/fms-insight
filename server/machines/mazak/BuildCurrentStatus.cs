@@ -584,6 +584,8 @@ namespace MazakMachineInterface
             }
           }
           long matId = -1;
+          string serial = null;
+          string workId = null;
           var loc = new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.Free
@@ -605,6 +607,9 @@ namespace MazakMachineInterface
                 QueuePosition = mat.Value.Position,
               };
               queuedMat.RemoveAll(m => m.MaterialID == mat.Value.MaterialID);
+              var matDetails = log.GetMaterialDetails(matId);
+              serial = matDetails?.Serial;
+              workId = matDetails?.Workorder;
             }
           }
           var inProcMat = new InProcessMaterial()
@@ -614,6 +619,8 @@ namespace MazakMachineInterface
             PartName = operation.Part,
             Process = operation.Process,
             Path = operation.Path,
+            Serial = serial,
+            WorkorderId = workId,
             Location = loc,
             Action = new InProcessMaterialAction()
             {
