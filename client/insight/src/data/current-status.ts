@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as api from "./api";
-import * as im from "immutable";
+import { HashMap } from "prelude-ts";
 import { Pledge, PledgeStatus, ActionBeforeMiddleware } from "../store/middleware";
 import { JobsBackend } from "./backend";
 import { InProcessMaterial } from "./api";
@@ -102,16 +102,17 @@ export function receiveNewLogEntry(entry: Readonly<api.ILogEntry>): ABF {
 }
 
 function process_new_events(entry: Readonly<api.ILogEntry>, s: State): State {
-  let mats: im.Map<number, Readonly<api.InProcessMaterial>> | undefined;
+  let mats: HashMap<number, Readonly<api.InProcessMaterial>> | undefined;
   function adjustMat(id: number, f: (mat: Readonly<api.IInProcessMaterial>) => Readonly<api.IInProcessMaterial>) {
     if (mats === undefined) {
       mats = s.current_status.material.reduce(
-        (map, mat) => map.set(mat.materialID, mat),
-        im.Map<number, Readonly<api.InProcessMaterial>>()
+        (map, mat) => map.put(mat.materialID, mat),
+        HashMap.empty<number, Readonly<api.InProcessMaterial>>()
       );
     }
-    if (mats.has(id)) {
-      mats = mats.update(id, mat => new api.InProcessMaterial(f(mat)));
+    const oldMat = mats.get(id);
+    if (oldMat.isSome()) {
+      mats = mats.put(id, new api.InProcessMaterial(f(oldMat.get())));
     }
   }
 
@@ -156,7 +157,7 @@ function process_new_events(entry: Readonly<api.ILogEntry>, s: State): State {
       ...s,
       current_status: {
         ...s.current_status,
-        material: mats.valueSeq().toArray()
+        material: Array.from(mats.valueIterable())
       }
     };
   }
