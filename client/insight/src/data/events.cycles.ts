@@ -158,20 +158,20 @@ function estimateCycleTimes(cycles: im.Seq.Indexed<number>): StatisticalCycleTim
   // median.  Below is assumed to be from fake cycles and above is from interrupted programs.
   // since we assume gaussian, use consistantcy constant of 1.4826
 
-  let mad_belowMinutes = 1.4826 * median(cycles.filter(x => x <= medianMinutes).map(x => medianMinutes - x));
-  if (mad_belowMinutes < 0.01) {
-    mad_belowMinutes = 0.01;
+  let madBelowMinutes = 1.4826 * median(cycles.filter(x => x <= medianMinutes).map(x => medianMinutes - x));
+  if (madBelowMinutes < 0.01) {
+    madBelowMinutes = 0.01;
   }
 
-  let mad_aboveMinutes = 1.4826 * median(cycles.filter(x => x >= medianMinutes).map(x => x - medianMinutes));
-  if (mad_aboveMinutes < 0.01) {
-    mad_aboveMinutes = 0.01;
+  let madAboveMinutes = 1.4826 * median(cycles.filter(x => x >= medianMinutes).map(x => x - medianMinutes));
+  if (madAboveMinutes < 0.01) {
+    madAboveMinutes = 0.01;
   }
 
   const statCycleTime = {
     medianMinutes,
-    MAD_belowMinutes: mad_belowMinutes,
-    MAD_aboveMinutes: mad_aboveMinutes,
+    MAD_belowMinutes: madBelowMinutes,
+    MAD_aboveMinutes: madAboveMinutes,
     expectedCycleMinutes: 0
   };
 
