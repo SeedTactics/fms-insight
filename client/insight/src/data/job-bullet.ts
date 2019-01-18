@@ -32,8 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as api from "./api";
-import * as im from "immutable";
 import { duration } from "moment";
+import { Vector, Option } from "prelude-ts";
 
 export interface DataPoint {
   readonly part: string;
@@ -73,14 +73,24 @@ export interface DataPoints {
   readonly planData: ReadonlyArray<{ x: number; y: number }>;
 }
 
+function vectorRange(start: number, count: number): Vector<number> {
+  return Vector.unfoldRight(start, x =>
+    x - start < count ? Option.of([x, x + 1] as [number, number]) : Option.none<[number, number]>()
+  );
+}
+
 export function jobsToPoints(jobs: ReadonlyArray<Readonly<api.IInProcessJob>>): DataPoints {
-  const points = im
-    .Seq(jobs)
-    .flatMap(j => im.Range(0, j.procsAndPaths.length).map(proc => displayJob(j, proc)))
-    .sortBy(pt => pt.part)
-    .reverse()
-    .cacheResult();
-  const completedData = points.map((pt, i) => ({ ...pt, x: pt.completed, y: i })).toArray();
-  const planData = points.map((pt, i) => ({ x: pt.totalPlan, y: i })).toArray();
+  const points = Vector.ofIterable(jobs)
+    .flatMap(j => vectorRange(0, j.procsAndPaths.length).map(proc => displayJob(j, proc)))
+    .sortOn(pt => pt.part)
+    .reverse();
+  const completedData = points
+    .zipWithIndex()
+    .map(([pt, i]) => ({ ...pt, x: pt.completed, y: i }))
+    .toArray();
+  const planData = points
+    .zipWithIndex()
+    .map(([pt, i]) => ({ x: pt.totalPlan, y: i }))
+    .toArray();
   return { completedData, planData };
 }
