@@ -164,6 +164,30 @@ export function openMaterialDialogWithEmptyMat(): PledgeToPromise<Action> {
   };
 }
 
+export function openMaterialById(matId: number): PledgeToPromise<Action> {
+  const mainLoad = {
+    type: ActionType.OpenMaterialDialog,
+    initial: {
+      materialID: matId,
+      partName: "",
+      jobUnique: "",
+      serial: "",
+      workorderId: "",
+      signaledInspections: [],
+      completedInspections: [],
+      loading_events: true,
+      updating_material: false,
+      events: Vector.empty(),
+      loading_workorders: false,
+      saving_workorder: false,
+      workorders: Vector.empty(),
+      openedViaBarcodeScanner: false
+    } as MaterialDetail,
+    pledge: LogBackend.logForMaterial(matId)
+  } as PledgeToPromise<Action>;
+  return mainLoad;
+}
+
 export function openMaterialBySerial(serial: string, openedByBarcode: boolean): ReadonlyArray<PledgeToPromise<Action>> {
   const mainLoad = {
     type: ActionType.OpenMaterialDialog,

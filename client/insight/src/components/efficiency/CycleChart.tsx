@@ -58,9 +58,16 @@ export interface CycleChartPoint {
   readonly y: number;
 }
 
+export interface ExtraTooltip {
+  title: string;
+  value: string;
+  link?: () => void;
+}
+
 interface CycleChartProps {
   readonly points: im.Map<string, ReadonlyArray<CycleChartPoint>>;
   readonly series_label: string;
+  readonly extra_tooltip?: (point: CycleChartPoint) => ReadonlyArray<ExtraTooltip>;
   readonly default_date_range?: Date[];
 }
 
@@ -68,6 +75,7 @@ interface CycleChartTooltip {
   readonly x: Date;
   readonly y: number;
   readonly series: string;
+  readonly extra: ReadonlyArray<ExtraTooltip>;
 }
 
 interface CycleChartState {
@@ -115,14 +123,21 @@ const CycleChart = withStyles(cycleChartStyles)(
     // unchanged so PureComponent can avoid a re-render
     setTooltip = memoize((series: string) => (point: CycleChartPoint) => {
       if (this.state.tooltip === undefined) {
-        this.setState({ tooltip: { ...point, series: series } });
+        this.setState({
+          tooltip: { ...point, series: series, extra: this.props.extra_tooltip ? this.props.extra_tooltip(point) : [] }
+        });
       } else {
         this.setState({ tooltip: undefined });
       }
     });
 
-    clearTooltip = () => {
-      this.setState({ tooltip: undefined });
+    clearTooltip = (evt: React.MouseEvent) => {
+      // onMouseLeave is triggered either when the mouse leaves the actual chart
+      // or when the mouse moves over an "a" element inside the tooltip.  When moving
+      // over an "a" element inside the tooltip, we do not want to clear it!
+      if ((evt.relatedTarget as Element).tagName !== "A") {
+        this.setState({ tooltip: undefined });
+      }
     };
 
     toggleSeries = (series: { title: string }) => {
@@ -139,7 +154,20 @@ const CycleChart = withStyles(cycleChartStyles)(
       return [
         { title: "Time", value: format(tip.x, "MMM D, YYYY, H:mm a") },
         { title: this.props.series_label, value: tip.series },
-        { title: "Cycle Time", value: tip.y.toFixed(1) + " minutes" }
+        { title: "Cycle Time", value: tip.y.toFixed(1) + " minutes" },
+        ...tip.extra.map(e => ({
+          title: e.title,
+          value: e.link ? (
+            <a
+              style={{ color: "white", pointerEvents: "auto", cursor: "pointer", borderBottom: "1px solid" }}
+              onClick={e.link}
+            >
+              {e.value}
+            </a>
+          ) : (
+            e.value
+          )
+        }))
       ];
     };
 
@@ -245,6 +273,7 @@ export interface SelectableCycleChartProps {
   readonly icon: JSX.Element;
   readonly default_date_range?: Date[];
   readonly selected?: string;
+  readonly extra_tooltip?: (point: CycleChartPoint) => ReadonlyArray<ExtraTooltip>;
   readonly useIdenticon?: boolean;
   readonly setSelected: (s: string) => void;
 }
@@ -301,6 +330,7 @@ export function SelectableCycleChart(props: SelectableCycleChartProps) {
           points={props.points.get(props.selected || "", im.Map())}
           series_label={props.series_label}
           default_date_range={props.default_date_range}
+          extra_tooltip={props.extra_tooltip}
         />
       </CardContent>
     </Card>

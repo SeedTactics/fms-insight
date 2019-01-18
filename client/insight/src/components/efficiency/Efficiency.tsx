@@ -41,31 +41,56 @@ import HourglassIcon from "@material-ui/icons/HourglassFull";
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
 import AnalysisSelectToolbar from "../AnalysisSelectToolbar";
-import { SelectableCycleChart } from "./CycleChart";
+import { SelectableCycleChart, CycleChartPoint, ExtraTooltip } from "./CycleChart";
 import { SelectableHeatChart, HeatChartPoint } from "./HeatChart";
 import * as events from "../../data/events";
-import { Store, connect } from "../../store/store";
+import { Store, connect, mkAC } from "../../store/store";
 import * as guiState from "../../data/gui-state";
+import * as matDetails from "../../data/material-details";
 import InspectionSankey from "./InspectionSankey";
+import { PartCycleData } from "../../data/events.cycles";
+import { MaterialDialog } from "../station-monitor/Material";
 
 // --------------------------------------------------------------------------------
 // Station Cycles
 // --------------------------------------------------------------------------------
+
+const ConnectedMaterialDialog = connect(
+  st => ({
+    display_material: st.MaterialDetails.material
+  }),
+  {
+    onClose: mkAC(matDetails.ActionType.CloseMaterialDialog)
+  }
+)(MaterialDialog);
 
 interface PartStationCycleChartProps {
   readonly points: im.Map<string, im.Map<string, ReadonlyArray<events.CycleData>>>;
   readonly default_date_range?: Date[];
   readonly selected?: string;
   readonly setSelected: (s: string) => void;
+  readonly openMaterial: (matId: number) => void;
 }
 
 function PartStationCycleChart(props: PartStationCycleChartProps) {
+  function extraStationCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
+    const partC = point as PartCycleData;
+    return [
+      {
+        title: "Material",
+        value: "Open Card",
+        link: () => props.openMaterial(partC.matId)
+      }
+    ];
+  }
+
   return (
     <SelectableCycleChart
       select_label="Part"
       series_label="Station"
       card_label="Station Cycles"
       icon={<WorkIcon style={{ color: "#6D4C41" }} />}
+      extra_tooltip={extraStationCycleTooltip}
       useIdenticon
       {...props}
     />
@@ -96,7 +121,8 @@ const ConnectedPartStationCycleChart = connect(
     setSelected: (s: string) => ({
       type: guiState.ActionType.SetSelectedStationCyclePart,
       part: s
-    })
+    }),
+    openMaterial: matDetails.openMaterialById
   }
 )(PartStationCycleChart);
 
@@ -373,6 +399,7 @@ export default function Efficiency() {
           <div data-testid="inspection-sankey" style={{ marginTop: "3em" }}>
             <InspectionSankey />
           </div>
+          <ConnectedMaterialDialog />
         </main>
       </>
     </DocumentTitle>

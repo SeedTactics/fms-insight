@@ -47,6 +47,7 @@ export interface PartCycleData extends CycleData {
   readonly stationGroup: string;
   readonly stationNumber: number;
   readonly isLabor: boolean;
+  readonly matId: number;
   readonly completed: boolean; // did this cycle result in a completed part
 }
 
@@ -293,6 +294,7 @@ export function process_events(
           completed: e.cycle.type === api.LogType.LoadUnloadCycle && e.cycle.result === "UNLOAD",
           part: e.mat.part,
           process: e.mat.proc,
+          matId: e.mat.id,
           isLabor: e.cycle.type === api.LogType.LoadUnloadCycle,
           stationGroup: stat_group(e.cycle),
           stationNumber: e.cycle.locnum
