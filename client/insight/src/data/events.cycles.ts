@@ -124,7 +124,9 @@ function stat_name_and_num(e: PartCycleData): string {
 // then compute average to find cycle time.
 
 function isOutlier(s: StatisticalCycleTime, mins: number): boolean {
-  if (s.medianMinutes === 0) return false;
+  if (s.medianMinutes === 0) {
+    return false;
+  }
   if (mins < s.medianMinutes) {
     return (s.medianMinutes - mins) / s.MAD_belowMinutes > 2;
   } else {
@@ -135,41 +137,47 @@ function isOutlier(s: StatisticalCycleTime, mins: number): boolean {
 function median(vals: im.Seq.Indexed<number>): number {
   const sorted = vals.sort().toArray();
   const cnt = sorted.length;
-  if (cnt == 0) return 0;
+  if (cnt === 0) {
+    return 0;
+  }
   const half = Math.floor(sorted.length / 2);
-  if (sorted.length % 2 == 0) {
-    //average two middle
+  if (sorted.length % 2 === 0) {
+    // average two middle
     return (sorted[half - 1] + sorted[half]) / 2;
   } else {
-    //return middle
+    // return middle
     return sorted[half];
   }
 }
 
 function estimateCycleTimes(cycles: im.Seq.Indexed<number>): StatisticalCycleTime {
-  //compute median
+  // compute median
   const medianMinutes = median(cycles);
 
-  //absolute deviation from median, but use different values for below and above
-  //median.  Below is assumed to be from fake cycles and above is from interrupted programs.
-  //since we assume gaussian, use consistantcy constant of 1.4826
+  // absolute deviation from median, but use different values for below and above
+  // median.  Below is assumed to be from fake cycles and above is from interrupted programs.
+  // since we assume gaussian, use consistantcy constant of 1.4826
 
-  let MAD_belowMinutes = 1.4826 * median(cycles.filter(x => x <= medianMinutes).map(x => medianMinutes - x));
-  if (MAD_belowMinutes < 0.01) MAD_belowMinutes = 0.01;
+  let mad_belowMinutes = 1.4826 * median(cycles.filter(x => x <= medianMinutes).map(x => medianMinutes - x));
+  if (mad_belowMinutes < 0.01) {
+    mad_belowMinutes = 0.01;
+  }
 
-  let MAD_aboveMinutes = 1.4826 * median(cycles.filter(x => x >= medianMinutes).map(x => x - medianMinutes));
-  if (MAD_aboveMinutes < 0.01) MAD_aboveMinutes = 0.01;
+  let mad_aboveMinutes = 1.4826 * median(cycles.filter(x => x >= medianMinutes).map(x => x - medianMinutes));
+  if (mad_aboveMinutes < 0.01) {
+    mad_aboveMinutes = 0.01;
+  }
 
   const statCycleTime = {
     medianMinutes,
-    MAD_belowMinutes,
-    MAD_aboveMinutes,
+    MAD_belowMinutes: mad_belowMinutes,
+    MAD_aboveMinutes: mad_aboveMinutes,
     expectedCycleMinutes: 0
   };
 
-  //filter to only inliers
+  // filter to only inliers
   var inliers = cycles.filter(x => !isOutlier(statCycleTime, x)).toArray();
-  //compute average of inliers
+  // compute average of inliers
   const expectedCycleMinutes = inliers.reduce((sum, x) => sum + x, 0) / inliers.length;
 
   return { ...statCycleTime, expectedCycleMinutes };

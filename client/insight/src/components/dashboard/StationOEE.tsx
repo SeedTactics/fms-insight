@@ -43,6 +43,7 @@ import * as api from "../../data/api";
 import { duration } from "moment";
 import { addSeconds, addDays } from "date-fns";
 import { PalletData, buildPallets } from "../../data/load-station";
+import { HashMap } from "prelude-ts";
 
 interface StationOEEProps {
   readonly dateOfCurrentStatus: Date | undefined;
@@ -193,16 +194,14 @@ class StationOEE extends React.PureComponent<StationOEEProps> {
 interface Props {
   dateOfCurrentStatus: Date | undefined;
   station_active_minutes_past_week: im.Map<string, number>;
-  pallets: im.Map<string, { pal?: PalletData; queued?: PalletData }>;
+  pallets: HashMap<string, { pal?: PalletData; queued?: PalletData }>;
 }
 
 function StationOEEs(p: Props) {
-  const stats = im
-    .Set(p.station_active_minutes_past_week.keySeq())
-    .union(im.Set(p.pallets.keySeq()))
-    .toSeq()
-    .sortBy(s => [s.startsWith("L/U"), s]) // put machines first
-    .cacheResult();
+  const stats = p.pallets
+    .keySet()
+    .addAll(p.station_active_minutes_past_week.keySeq())
+    .toArray({ sortOn: [s => s.startsWith("L/U"), s => s] }); // put machines first
   return (
     <Grid data-testid="stationoee-container" container justify="space-around">
       {stats.map((stat, idx) => (
@@ -211,8 +210,8 @@ function StationOEEs(p: Props) {
             dateOfCurrentStatus={p.dateOfCurrentStatus}
             station={stat}
             oee={p.station_active_minutes_past_week.get(stat, 0) / (60 * 24 * 7)}
-            pallet={p.pallets.get(stat, { pal: undefined }).pal}
-            queuedPallet={p.pallets.get(stat, { queued: undefined }).queued}
+            pallet={p.pallets.get(stat).getOrElse({ pal: undefined }).pal}
+            queuedPallet={p.pallets.get(stat).getOrElse({ queued: undefined }).queued}
           />
         </Grid>
       ))}
@@ -227,7 +226,10 @@ const oeeSelector = createSelector(
   (byPartThenStat, lastStTime) => stationMinutes(byPartThenStat, addDays(lastStTime, -7))
 );
 
-const palSelector = createSelector((s: Store) => s.Current.current_status, buildPallets);
+const palSelector = createSelector(
+  (s: Store) => s.Current.current_status,
+  buildPallets
+);
 
 export default connect(s => ({
   dateOfCurrentStatus: s.Current.current_status.timeOfCurrentStatusUTC,

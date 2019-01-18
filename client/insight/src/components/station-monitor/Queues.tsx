@@ -569,37 +569,34 @@ interface QueueProps {
 
 const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof queueStyles>) => {
   let queues = props.data.queues
-    .toSeq()
-    .sortBy((mats, q) => q)
-    .map((mats, q) => ({
+    .toVector()
+    .sortOn(([q, mats]) => q)
+    .map(([q, mats]) => ({
       label: q,
       free: false,
       material: mats
-    }))
-    .valueSeq();
+    }));
 
   let cells = queues;
   if (props.data.free) {
-    cells = im
-      .Seq([
-        {
-          label: "Raw Material",
-          free: true,
-          material: props.data.castings
-        },
-        {
-          label: "In Process Material",
-          free: true,
-          material: props.data.free
-        }
-      ])
-      .concat(queues);
+    cells = queues.prependAll([
+      {
+        label: "Raw Material",
+        free: true,
+        material: props.data.castings
+      },
+      {
+        label: "In Process Material",
+        free: true,
+        material: props.data.free
+      }
+    ]);
   }
 
   return (
     <DocumentTitle title="Material Queues - FMS Insight">
       <main data-testid="stationmonitor-queues" className={props.classes.mainScrollable}>
-        {cells.map((region, idx) => (
+        {cells.zipWithIndex().map(([region, idx]) => (
           <SortableWhiteboardRegion
             key={idx}
             axis="xy"

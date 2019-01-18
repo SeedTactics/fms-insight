@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import Divider from "@material-ui/core/Divider";
 import { WithStyles, createStyles, withStyles } from "@material-ui/core/styles";
-import * as im from "immutable";
 import { createSelector } from "reselect";
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 import Button from "@material-ui/core/Button";
@@ -67,6 +66,7 @@ import { MoveMaterialArrowContainer, MoveMaterialArrowNode } from "./MoveMateria
 import { MoveMaterialNodeKindType } from "../../data/move-arrows";
 import { SortEnd } from "react-sortable-hoc";
 import ManualScan from "./ManualScan";
+import { HashMap } from "prelude-ts";
 
 function stationPalMaterialStatus(mat: Readonly<api.IInProcessMaterial>, dateOfCurrentStatus: Date): JSX.Element {
   const name = mat.partName + "-" + mat.process.toString();
@@ -109,20 +109,20 @@ const stationStatusStyles = createStyles({
 });
 
 interface StationStatusProps extends WithStyles<typeof stationStatusStyles> {
-  byStation: im.Map<string, { pal?: PalletData; queue?: PalletData }>;
+  byStation: HashMap<string, { pal?: PalletData; queue?: PalletData }>;
   dateOfCurrentStatus: Date;
 }
 
 const StationStatus = withStyles(stationStatusStyles)((props: StationStatusProps) => {
-  if (props.byStation.size === 0) {
+  if (props.byStation.length() === 0) {
     return <div />;
   }
   return (
     <dl className={props.classes.defList}>
       {props.byStation
-        .toSeq()
-        .sortBy((p, s) => s)
-        .map((pals, stat) => (
+        .toVector()
+        .sortOn(([s, p]) => s)
+        .map(([stat, pals]) => (
           <React.Fragment key={stat}>
             {pals.pal ? (
               <>
@@ -149,8 +149,7 @@ const StationStatus = withStyles(stationStatusStyles)((props: StationStatusProps
               undefined
             )}
           </React.Fragment>
-        ))
-        .valueSeq()}
+        ))}
     </dl>
   );
 });
@@ -207,14 +206,18 @@ const PalletColumn = withStyles(palletStyles)((props: LoadStationProps & WithSty
     statStatusClass = props.classes.statStatusScroll;
   }
 
-  const maxFace = props.data.face.map((m, face) => face).max();
+  const maxFace = props.data.face
+    .keySet()
+    .maxOn(x => x)
+    .getOrElse(1);
 
   let palDetails: JSX.Element;
-  if (props.data.face.size === 1) {
-    const mat = props.data.face.first(undefined);
+  const singleMat = props.data.face.single();
+  if (singleMat.isSome()) {
+    const mat = singleMat.get()[1];
     palDetails = (
       <div className={props.classes.faceContainer}>
-        <MoveMaterialArrowNode type={MoveMaterialNodeKindType.PalletFaceZone} face={maxFace || 1}>
+        <MoveMaterialArrowNode type={MoveMaterialNodeKindType.PalletFaceZone} face={maxFace}>
           <WhiteboardRegion label={""} spaceAround>
             {(mat || []).map((m, idx) => (
               <MoveMaterialArrowNode key={idx} type={MoveMaterialNodeKindType.Material} action={m.action}>
@@ -229,9 +232,9 @@ const PalletColumn = withStyles(palletStyles)((props: LoadStationProps & WithSty
     palDetails = (
       <div className={props.classes.faceContainer}>
         {props.data.face
-          .toSeq()
-          .sortBy((data, face) => face)
-          .map((data, face) => (
+          .toVector()
+          .sortOn(([face, data]) => face)
+          .map(([face, data]) => (
             <div key={face}>
               <MoveMaterialArrowNode type={MoveMaterialNodeKindType.PalletFaceZone} face={face}>
                 <WhiteboardRegion label={"Face " + face.toString()} spaceAround>
@@ -244,8 +247,7 @@ const PalletColumn = withStyles(palletStyles)((props: LoadStationProps & WithSty
               </MoveMaterialArrowNode>
               {face === maxFace ? undefined : <Divider key={1} />}
             </div>
-          ))
-          .valueSeq()}
+          ))}
       </div>
     );
   }
@@ -396,30 +398,25 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationProps & WithStyles
   const palProps = { ...props, classes: undefined };
 
   let queues = props.data.queues
-    .toSeq()
-    .sortBy((mats, q) => q)
-    .map((mats, q) => ({
+    .toVector()
+    .sortOn(([q, mats]) => q)
+    .map(([q, mats]) => ({
       label: q,
       material: mats,
       isFree: false
-    }))
-    .valueSeq();
+    }));
 
   let cells = queues;
   if (props.data.free) {
-    cells = im
-      .Seq([
-        {
-          label: "In Process Material",
-          material: props.data.free,
-          isFree: true
-        }
-      ])
-      .concat(queues);
+    cells = queues.prepend({
+      label: "In Process Material",
+      material: props.data.free,
+      isFree: true
+    });
   }
 
   const col1 = cells.take(2);
-  const col2 = cells.skip(2).take(2);
+  const col2 = cells.drop(2).take(2);
 
   return (
     <DocumentTitle title={"Load " + props.data.loadNum.toString() + " - FMS Insight"}>
@@ -431,11 +428,11 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationProps & WithStyles
           <div className={props.classes.palCol}>
             <PalletColumn {...palProps} />
           </div>
-          {col1.size === 0 ? (
+          {col1.length() === 0 ? (
             undefined
           ) : (
             <div className={props.classes.queueCol}>
-              {col1.map((mat, idx) => (
+              {col1.zipWithIndex().map(([mat, idx]) => (
                 <MoveMaterialArrowNode
                   key={idx}
                   {...(mat.isFree
@@ -479,11 +476,11 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationProps & WithStyles
               ))}
             </div>
           )}
-          {col2.size === 0 ? (
+          {col2.length() === 0 ? (
             undefined
           ) : (
             <div className={props.classes.queueCol}>
-              {col2.map((mat, idx) => (
+              {col2.zipWithIndex().map(([mat, idx]) => (
                 <MoveMaterialArrowNode
                   key={idx}
                   {...(mat.isFree
