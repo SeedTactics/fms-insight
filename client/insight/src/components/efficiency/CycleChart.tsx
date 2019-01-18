@@ -38,6 +38,7 @@ import {
   XAxis,
   YAxis,
   Hint,
+  Highlight,
   FlexibleWidthXYPlot,
   VerticalGridLines,
   HorizontalGridLines,
@@ -47,8 +48,10 @@ import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
 import CardHeader from "@material-ui/core/CardHeader";
 import Select from "@material-ui/core/Select";
+import Button from "@material-ui/core/Button";
 import MenuItem from "@material-ui/core/MenuItem";
 import { PartIdenticon } from "../station-monitor/Material";
+import { createStyles, withStyles, WithStyles } from "@material-ui/core";
 
 export interface CycleChartPoint {
   readonly x: Date;
@@ -70,6 +73,8 @@ interface CycleChartTooltip {
 interface CycleChartState {
   readonly tooltip?: CycleChartTooltip;
   readonly disabled_series: { [key: string]: boolean };
+  readonly current_zoom_range: { x: Date; y: Date } | null;
+  readonly brushing: boolean;
 }
 
 function memoize<A, R>(f: (x: A) => R): ((x: A) => R) {
@@ -84,97 +89,153 @@ function memoize<A, R>(f: (x: A) => R): ((x: A) => R) {
   };
 }
 
-class CycleChart extends React.PureComponent<CycleChartProps, CycleChartState> {
-  state = {
-    tooltip: undefined,
-    disabled_series: {}
-  } as CycleChartState;
-
-  // memoize on the series name, since the function from CycleChartPoint => void is
-  // passed as a prop to the chart, and reusing the same function keeps the props
-  // unchanged so PureComponent can avoid a re-render
-  setTooltip = memoize((series: string) => (point: CycleChartPoint) => {
-    if (this.state.tooltip === undefined) {
-      this.setState({ tooltip: { ...point, series: series } });
-    } else {
-      this.setState({ tooltip: undefined });
+// https://github.com/uber/react-vis/issues/1067
+const cycleChartStyles = createStyles({
+  noSeriesPointerEvts: {
+    "& .rv-xy-plot__series.rv-xy-plot__series--mark": {
+      pointerEvents: "none"
     }
-  });
+  }
+});
 
-  clearTooltip = () => {
-    this.setState({ tooltip: undefined });
-  };
+const CycleChart = withStyles(cycleChartStyles)(
+  class CycleChartWithStyles extends React.PureComponent<
+    CycleChartProps & WithStyles<typeof cycleChartStyles>,
+    CycleChartState
+  > {
+    state = {
+      tooltip: undefined,
+      disabled_series: {},
+      current_zoom_range: null,
+      brushing: false
+    } as CycleChartState;
 
-  toggleSeries = (series: { title: string }) => {
-    const newState = !!!this.state.disabled_series[series.title];
-    this.setState({
-      disabled_series: {
-        ...this.state.disabled_series,
-        [series.title]: newState
+    // memoize on the series name, since the function from CycleChartPoint => void is
+    // passed as a prop to the chart, and reusing the same function keeps the props
+    // unchanged so PureComponent can avoid a re-render
+    setTooltip = memoize((series: string) => (point: CycleChartPoint) => {
+      if (this.state.tooltip === undefined) {
+        this.setState({ tooltip: { ...point, series: series } });
+      } else {
+        this.setState({ tooltip: undefined });
       }
     });
-  };
 
-  formatHint = (tip: CycleChartTooltip) => {
-    return [
-      { title: "Time", value: format(tip.x, "MMM D, YYYY, H:mm a") },
-      { title: this.props.series_label, value: tip.series },
-      { title: "Cycle Time", value: tip.y.toFixed(1) + " minutes" }
-    ];
-  };
+    clearTooltip = () => {
+      this.setState({ tooltip: undefined });
+    };
 
-  render() {
-    const seriesNames = this.props.points.toSeq().sortBy((points, s) => s);
+    toggleSeries = (series: { title: string }) => {
+      const newState = !!!this.state.disabled_series[series.title];
+      this.setState({
+        disabled_series: {
+          ...this.state.disabled_series,
+          [series.title]: newState
+        }
+      });
+    };
 
-    let dateRange = this.props.default_date_range;
-    if (dateRange === undefined) {
-      const now = new Date();
-      const oneMonthAgo = addDays(now, -30);
-      dateRange = [now, oneMonthAgo];
-    }
+    formatHint = (tip: CycleChartTooltip) => {
+      return [
+        { title: "Time", value: format(tip.x, "MMM D, YYYY, H:mm a") },
+        { title: this.props.series_label, value: tip.series },
+        { title: "Cycle Time", value: tip.y.toFixed(1) + " minutes" }
+      ];
+    };
 
-    return (
-      <div>
-        <FlexibleWidthXYPlot
-          height={window.innerHeight - 200}
-          xType="time"
-          margin={{ bottom: 50 }}
-          onMouseLeave={this.clearTooltip}
-          dontCheckIfEmpty
-          xDomain={this.props.points.isEmpty() ? dateRange : undefined}
-          yDomain={this.props.points.isEmpty() ? [0, 60] : undefined}
-        >
-          <VerticalGridLines />
-          <HorizontalGridLines />
-          <XAxis tickLabelAngle={-45} />
-          <YAxis />
-          {seriesNames
-            .map((points, series) => (
-              <MarkSeries
-                key={series}
-                data={points}
-                onValueClick={this.state.disabled_series[series] ? undefined : this.setTooltip(series)}
-                {...(this.state.disabled_series[series] ? { opacity: 0.2 } : null)}
+    render() {
+      const seriesNames = this.props.points.toSeq().sortBy((points, s) => s);
+
+      let dateRange = this.props.default_date_range;
+      if (dateRange === undefined) {
+        const now = new Date();
+        const oneMonthAgo = addDays(now, -30);
+        dateRange = [now, oneMonthAgo];
+      }
+
+      return (
+        <div className={this.state.brushing ? this.props.classes.noSeriesPointerEvts : undefined}>
+          <FlexibleWidthXYPlot
+            height={window.innerHeight - 200}
+            animation
+            xType="time"
+            margin={{ bottom: 50 }}
+            onMouseLeave={this.clearTooltip}
+            dontCheckIfEmpty
+            xDomain={
+              this.state.current_zoom_range
+                ? [this.state.current_zoom_range.x, this.state.current_zoom_range.y]
+                : this.props.points.isEmpty()
+                ? dateRange
+                : undefined
+            }
+            yDomain={this.props.points.isEmpty() ? [0, 60] : undefined}
+          >
+            <VerticalGridLines />
+            <HorizontalGridLines />
+            <XAxis tickLabelAngle={-45} />
+            <YAxis />
+            <Highlight
+              enableY={false}
+              onBrushStart={() => this.setState({ brushing: true })}
+              onBrushEnd={(area: { left: Date; right: Date }) => {
+                if (area) {
+                  this.setState({
+                    current_zoom_range: { x: area.left, y: area.right },
+                    brushing: false
+                  });
+                } else {
+                  this.setState({
+                    brushing: false
+                  });
+                }
+              }}
+            />
+            {seriesNames
+              .map((points, series) => (
+                <MarkSeries
+                  key={series}
+                  data={points}
+                  onValueClick={this.state.disabled_series[series] ? undefined : this.setTooltip(series)}
+                  {...(this.state.disabled_series[series] ? { opacity: 0.2 } : null)}
+                />
+              ))
+              .toIndexedSeq()}
+            {this.state.tooltip === undefined ? (
+              undefined
+            ) : (
+              <Hint value={this.state.tooltip} format={this.formatHint} />
+            )}
+          </FlexibleWidthXYPlot>
+
+          <div style={{ position: "relative" }}>
+            <div style={{ textAlign: "center" }}>
+              <DiscreteColorLegend
+                orientation="horizontal"
+                items={seriesNames
+                  .keySeq()
+                  .map(s => ({ title: s, disabled: this.state.disabled_series[s] }))
+                  .toArray()}
+                onItemClick={this.toggleSeries}
               />
-            ))
-            .toIndexedSeq()}
-          {this.state.tooltip === undefined ? undefined : <Hint value={this.state.tooltip} format={this.formatHint} />}
-        </FlexibleWidthXYPlot>
-
-        <div style={{ textAlign: "center" }}>
-          <DiscreteColorLegend
-            orientation="horizontal"
-            items={seriesNames
-              .keySeq()
-              .map(s => ({ title: s, disabled: this.state.disabled_series[s] }))
-              .toArray()}
-            onItemClick={this.toggleSeries}
-          />
+            </div>
+            {this.state.current_zoom_range ? (
+              <Button
+                size="small"
+                style={{ position: "absolute", right: 0, top: 0 }}
+                onClick={() => this.setState({ current_zoom_range: null })}
+              >
+                Reset Zoom
+              </Button>
+            ) : (
+              undefined
+            )}
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
   }
-}
+);
 
 export interface SelectableCycleChartProps {
   readonly points: im.Map<string, im.Map<string, ReadonlyArray<CycleChartPoint>>>;

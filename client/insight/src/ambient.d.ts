@@ -42,6 +42,7 @@ declare module "react-vis" {
   export class YAxis extends React.Component<any> {}
   export class DiscreteColorLegend extends React.Component<any> {}
   export class Hint extends React.Component<any> {}
+  export class Highlight extends React.Component<any> {}
 
   export class Sankey extends React.Component<any> {}
 }
