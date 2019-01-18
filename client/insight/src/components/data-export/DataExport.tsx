@@ -48,6 +48,7 @@ import * as queryString from "query-string";
 import * as api from "../../data/api";
 import { Store, connect } from "../../store/store";
 import { LogEntries } from "../LogEntry";
+import { Vector } from "prelude-ts";
 
 interface CSVLogExportState {
   readonly exportDate: string;
@@ -89,8 +90,9 @@ class CSVLogExport extends React.PureComponent<{}, CSVLogExportState> {
             </Grid>
             <Grid item xs={12} sm={6} md={5}>
               <p>
-                Data is also available programatically over HTTP. See the <a href="/swagger/">OpenAPI Specification</a>{" "}
-                or try the following command in the terminal or PowerShell.
+                Data is also available programatically over HTTP. See the
+                <a href="/swagger/">OpenAPI Specification</a> or try the following command in the terminal or
+                PowerShell.
               </p>
               <code>curl -o events.json {curlUrl}</code>
             </Grid>
@@ -142,8 +144,9 @@ class CSVWorkorderExport extends React.PureComponent<{}, CSVWorkorderExportState
             </Grid>
             <Grid item xs={12} sm={6} md={5}>
               <p>
-                Data is also available programatically over HTTP. See the <a href="/swagger/">OpenAPI Specification</a>{" "}
-                or try the following command in the terminal or PowerShell.
+                Data is also available programatically over HTTP. See the
+                <a href="/swagger/">OpenAPI Specification</a> or try the following command in the terminal or
+                PowerShell.
               </p>
               <code>curl -o workorders.json {curlUrl}</code>
             </Grid>
@@ -165,7 +168,7 @@ class CSVWorkorderExport extends React.PureComponent<{}, CSVWorkorderExportState
 }
 
 interface RecentEventsProps {
-  events: ReadonlyArray<Readonly<api.ILogEntry>>;
+  events: Vector<Readonly<api.ILogEntry>>;
 }
 
 function RecentEvents(p: RecentEventsProps) {

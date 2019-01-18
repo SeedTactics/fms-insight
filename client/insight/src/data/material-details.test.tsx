@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as mat from "./material-details";
-import * as im from "immutable";
 import { PledgeStatus } from "../store/middleware";
 // import * as api from './api';
 import {
@@ -43,6 +42,7 @@ import {
   fakeInspSignal,
   fakeWorkorderAssign
 } from "./events.fake";
+import { Vector } from "prelude-ts";
 
 it("creates initial state", () => {
   // tslint:disable no-any
@@ -61,9 +61,9 @@ const m: Readonly<mat.MaterialDetail> = {
   completedInspections: ["a"],
   loading_events: true,
   updating_material: false,
-  events: [],
+  events: Vector.empty(),
   loading_workorders: false,
-  workorders: [],
+  workorders: Vector.empty(),
   openedViaBarcodeScanner: false
 };
 
@@ -90,7 +90,7 @@ it("finishes material open", () => {
     add_mat_in_progress: false
   };
   let s = mat.reducer(initialSt, action);
-  expect(s.material).toEqual({ ...m, loading_events: false, events: evts });
+  expect(s.material).toEqual({ ...m, loading_events: false, events: Vector.ofIterable(evts) });
 });
 
 it("handles material error", () => {
@@ -107,7 +107,7 @@ it("handles material error", () => {
     add_mat_in_progress: false
   };
   let s = mat.reducer(initialSt, action);
-  expect(s.material).toEqual({ ...m, loading_events: false, events: [] });
+  expect(s.material).toEqual({ ...m, loading_events: false, events: Vector.empty() });
   expect(s.load_error).toEqual(new Error("aaaa"));
 });
 
@@ -213,7 +213,7 @@ it("successfully loads workorders", () => {
     type: mat.ActionType.LoadWorkorders,
     pledge: {
       status: PledgeStatus.Completed,
-      result: [work]
+      result: Vector.of(work)
     }
   };
   const st = mat.reducer(
@@ -223,7 +223,7 @@ it("successfully loads workorders", () => {
     },
     action
   );
-  expect(st.material).toEqual({ ...m, workorders: [work] });
+  expect(st.material).toEqual({ ...m, workorders: Vector.of(work) });
 });
 
 it("succeeds for an completed inspection cycle", () => {
@@ -243,7 +243,7 @@ it("succeeds for an completed inspection cycle", () => {
   const st = mat.reducer(initialSt, action);
   expect(st.material).toEqual({
     ...m,
-    events: [evt],
+    events: Vector.of(evt),
     completedInspections: [...m.completedInspections, "abc"]
   });
 });
@@ -265,7 +265,7 @@ it("succeeds for a signaled inspection cycle", () => {
   const st = mat.reducer(initialSt, action);
   expect(st.material).toEqual({
     ...m,
-    events: [evt],
+    events: Vector.of(evt),
     signaledInspections: [...m.signaledInspections, "xxx"]
   });
 });
@@ -286,7 +286,7 @@ it("succeeds for a wash complete cycle", () => {
   const st = mat.reducer(initialSt, action);
   expect(st.material).toEqual({
     ...m,
-    events: [evt]
+    events: Vector.of(evt)
   });
 });
 
@@ -307,7 +307,7 @@ it("succeeds for a workorder set", () => {
   const st = mat.reducer(initialSt, action);
   expect(st.material).toEqual({
     ...m,
-    events: [evt],
+    events: Vector.of(evt),
     workorderId: "work1234"
   });
 });
@@ -329,7 +329,7 @@ it("succeeds for a serial set", () => {
   const st = mat.reducer(initialSt, action);
   expect(st.material).toEqual({
     ...m,
-    events: [evt],
+    events: Vector.of(evt),
     serial: "serial1524"
   });
 });
@@ -344,12 +344,9 @@ it("successfully processes events", () => {
     fakeSerial(logmat, "theserial"),
     fakeWorkorderAssign(logmat, "work1234")
   ];
-  const sortedEvts = im
-    .Seq(evts)
-    .sortBy(e => e.endUTC)
-    .toArray();
+  const sortedEvts = Vector.ofIterable(evts).sortOn(e => e.endUTC.getTime());
 
-  const initial = {
+  const initial: mat.MaterialDetail = {
     materialID: -1,
     partName: "",
     jobUnique: "",
@@ -359,10 +356,9 @@ it("successfully processes events", () => {
     completedInspections: [],
     loading_events: true,
     updating_material: false,
-    events: [],
+    events: Vector.empty(),
     loading_workorders: false,
-    saving_workorder: false,
-    workorders: [],
+    workorders: Vector.empty(),
     openedViaBarcodeScanner: false
   };
   const after = {
@@ -436,7 +432,7 @@ it("adds extra logs", () => {
   const evts1 = fakeCycle(new Date(), 55);
   const evts2 = fakeCycle(new Date(), 12);
 
-  const initial = {
+  const initial: mat.MaterialDetail = {
     materialID: -1,
     partName: "adouh",
     jobUnique: "sdfoudj",
@@ -446,19 +442,16 @@ it("adds extra logs", () => {
     completedInspections: [],
     loading_events: true,
     updating_material: false,
-    events: evts1,
+    events: Vector.ofIterable(evts1),
     loading_workorders: false,
-    saving_workorder: false,
-    workorders: [],
+    workorders: Vector.empty(),
     openedViaBarcodeScanner: false
   };
   const after = {
     ...initial,
-    events: im
-      .Seq(evts1)
-      .concat(evts2)
-      .sortBy(e => e.endUTC)
-      .toArray()
+    events: Vector.ofIterable(evts1)
+      .appendAll(evts2)
+      .sortOn(e => e.endUTC.getTime())
   };
 
   const action: mat.Action = {

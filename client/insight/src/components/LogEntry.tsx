@@ -37,7 +37,8 @@ import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
 import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
-import DateTimeDisplay from './DateTimeDisplay';
+import DateTimeDisplay from "./DateTimeDisplay";
+import { Vector } from "prelude-ts";
 
 export interface LogEntryProps {
   entry: api.ILogEntry;
@@ -183,8 +184,12 @@ export class LogEntry extends React.PureComponent<LogEntryProps> {
   render() {
     return (
       <TableRow>
-        <TableCell padding="dense"><DateTimeDisplay date={this.props.entry.endUTC} formatStr={"MMM D, YY"}/></TableCell>
-        <TableCell padding="dense"><DateTimeDisplay date={this.props.entry.endUTC} formatStr={"hh:mm A"}/></TableCell>
+        <TableCell padding="dense">
+          <DateTimeDisplay date={this.props.entry.endUTC} formatStr={"MMM D, YY"} />
+        </TableCell>
+        <TableCell padding="dense">
+          <DateTimeDisplay date={this.props.entry.endUTC} formatStr={"hh:mm A"} />
+        </TableCell>
         <TableCell padding="dense">{logType(this.props.entry)}</TableCell>
         <TableCell padding="dense">{display(this.props.entry)}</TableCell>
       </TableRow>
@@ -193,7 +198,7 @@ export class LogEntry extends React.PureComponent<LogEntryProps> {
 }
 
 export interface LogEntriesProps {
-  entries: ReadonlyArray<Readonly<api.ILogEntry>>;
+  entries: Vector<Readonly<api.ILogEntry>>;
 }
 
 export class LogEntries extends React.PureComponent<LogEntriesProps> {
@@ -209,7 +214,7 @@ export class LogEntries extends React.PureComponent<LogEntriesProps> {
           </TableRow>
         </TableHead>
         <TableBody>
-          {this.props.entries.map((e, idx) => (
+          {this.props.entries.zipWithIndex().map(([e, idx]) => (
             <LogEntry key={idx} entry={e} />
           ))}
         </TableBody>

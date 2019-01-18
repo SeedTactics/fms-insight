@@ -31,13 +31,12 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as im from "immutable";
-
 import * as api from "./api";
 import { Pledge, PledgeStatus, PledgeToPromise } from "../store/middleware";
 import { MaterialSummary } from "./events";
 import { JobsBackend, LogBackend, OtherLogBackends } from "./backend";
 import { chunk } from "lodash";
+import { Vector, HashSet } from "prelude-ts";
 
 export enum ActionType {
   OpenMaterialDialog = "MaterialDetails_Open",
@@ -67,10 +66,10 @@ export interface MaterialDetail {
   readonly updating_material: boolean;
 
   readonly loading_events: boolean;
-  readonly events: ReadonlyArray<Readonly<api.ILogEntry>>;
+  readonly events: Vector<Readonly<api.ILogEntry>>;
 
   readonly loading_workorders: boolean;
-  readonly workorders: ReadonlyArray<WorkorderPlanAndSummary>;
+  readonly workorders: Vector<WorkorderPlanAndSummary>;
 }
 
 export type Action =
@@ -100,7 +99,7 @@ export type Action =
     }
   | {
       type: ActionType.LoadWorkorders;
-      pledge: Pledge<ReadonlyArray<WorkorderPlanAndSummary>>;
+      pledge: Pledge<Vector<WorkorderPlanAndSummary>>;
     }
   | {
       type: ActionType.AddNewMaterialToQueue;
@@ -120,10 +119,10 @@ export function openMaterialDialog(mat: Readonly<MaterialSummary>): ReadonlyArra
       completedInspections: [],
       loading_events: true,
       updating_material: false,
-      events: [],
+      events: Vector.empty(),
       loading_workorders: false,
       saving_workorder: false,
-      workorders: [],
+      workorders: Vector.empty(),
       openedViaBarcodeScanner: false
     } as MaterialDetail,
     pledge: LogBackend.logForMaterial(mat.materialID)
@@ -156,10 +155,10 @@ export function openMaterialDialogWithEmptyMat(): PledgeToPromise<Action> {
       completedInspections: [],
       loading_events: false,
       updating_material: false,
-      events: [],
+      events: Vector.empty(),
       loading_workorders: false,
       saving_workorder: false,
-      workorders: [],
+      workorders: Vector.empty(),
       openedViaBarcodeScanner: false
     } as MaterialDetail
   };
@@ -178,10 +177,10 @@ export function openMaterialBySerial(serial: string, openedByBarcode: boolean): 
       completedInspections: [],
       loading_events: true,
       updating_material: false,
-      events: [],
+      events: Vector.empty(),
       loading_workorders: false,
       saving_workorder: false,
-      workorders: [],
+      workorders: Vector.empty(),
       openedViaBarcodeScanner: openedByBarcode
     } as MaterialDetail,
     pledge: LogBackend.logForSerial(serial)
@@ -342,7 +341,7 @@ export function computeWorkorders(
   partName: string,
   workorders: ReadonlyArray<api.IPartWorkorder>,
   summaries: ReadonlyArray<api.IWorkorderSummary>
-): ReadonlyArray<WorkorderPlanAndSummary> {
+): Vector<WorkorderPlanAndSummary> {
   const workMap = new Map<string, WorkorderPlanAndSummary>();
   for (const w of workorders) {
     workMap.set(w.workorderId, { plan: w });
@@ -357,13 +356,10 @@ export function computeWorkorders(
       }
     }
   }
-  return im.Seq.Keyed(workMap)
-    .valueSeq()
-    .sortBy(w => [w.plan.dueDate, -w.plan.priority])
-    .toArray();
+  return Vector.ofIterable(workMap.values()).sortOn(w => w.plan.dueDate.getTime(), w => -w.plan.priority);
 }
 
-async function loadWorkordersForPart(part: string): Promise<ReadonlyArray<WorkorderPlanAndSummary>> {
+async function loadWorkordersForPart(part: string): Promise<Vector<WorkorderPlanAndSummary>> {
   const works = await JobsBackend.mostRecentUnfilledWorkordersForPart(part);
   const summaries: api.IWorkorderSummary[] = [];
   for (let ws of chunk(works, 16)) {
@@ -434,8 +430,8 @@ export const initial: State = {
 };
 
 function processEvents(evts: ReadonlyArray<Readonly<api.ILogEntry>>, mat: MaterialDetail): MaterialDetail {
-  let inspTypes = im.Set(mat.signaledInspections);
-  let completedTypes = im.Set(mat.completedInspections);
+  let inspTypes = HashSet.ofIterable(mat.signaledInspections);
+  let completedTypes = HashSet.ofIterable(mat.completedInspections);
 
   evts.forEach(e => {
     e.material.forEach(m => {
@@ -480,22 +476,12 @@ function processEvents(evts: ReadonlyArray<Readonly<api.ILogEntry>>, mat: Materi
     }
   });
 
-  var allEvents = im
-    .Seq(mat.events)
-    .concat(evts)
-    .sortBy(e => e.endUTC)
-    .toArray();
+  var allEvents = mat.events.appendAll(evts).sortOn(e => e.endUTC.getTime());
 
   return {
     ...mat,
-    signaledInspections: inspTypes
-      .toSeq()
-      .sort()
-      .toArray(),
-    completedInspections: completedTypes
-      .toSeq()
-      .sort()
-      .toArray(),
+    signaledInspections: inspTypes.toArray({ sortOn: x => x }),
+    completedInspections: completedTypes.toArray({ sortOn: x => x }),
     loading_events: false,
     events: allEvents
   };
@@ -523,7 +509,7 @@ export function reducer(s: State, a: Action): State {
             material: {
               ...a.initial,
               loading_events: false,
-              events: []
+              events: Vector.empty()
             },
             load_error: a.pledge.error
           };
@@ -539,11 +525,7 @@ export function reducer(s: State, a: Action): State {
             ...s,
             material: {
               ...s.material,
-              events: im
-                .Seq(s.material.events)
-                .concat(a.pledge.result)
-                .sortBy(e => e.endUTC)
-                .toArray()
+              events: s.material.events.appendAll(a.pledge.result).sortOn(e => e.endUTC.getTime())
             }
           };
         } else {
@@ -587,7 +569,7 @@ export function reducer(s: State, a: Action): State {
                 : oldMatEnd.signaledInspections,
               workorderId: a.newWorkorder || oldMatEnd.workorderId,
               serial: a.newSerial || oldMatEnd.serial,
-              events: a.pledge.result ? [...oldMatEnd.events, a.pledge.result] : oldMatEnd.events,
+              events: a.pledge.result ? oldMatEnd.events.append(a.pledge.result) : oldMatEnd.events,
               updating_material: false
             }
           };
@@ -637,7 +619,7 @@ export function reducer(s: State, a: Action): State {
             material: {
               ...s.material,
               loading_workorders: false,
-              workorders: []
+              workorders: Vector.empty()
             },
             load_workorders_error: a.pledge.error
           };

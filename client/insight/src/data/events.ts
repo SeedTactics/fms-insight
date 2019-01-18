@@ -32,7 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { addDays, addMonths, startOfMonth } from "date-fns";
 import { PledgeStatus, Pledge, ActionBeforeMiddleware } from "../store/middleware";
-import * as im from "immutable";
+import { Vector } from "prelude-ts";
+import { maxBy, takeRight } from "lodash";
 
 import * as api from "./api";
 import * as cycles from "./events.cycles";
@@ -53,7 +54,7 @@ export enum AnalysisPeriod {
 
 export interface Last30Days {
   readonly latest_log_counter: number | undefined;
-  readonly most_recent_10_events: ReadonlyArray<Readonly<api.ILogEntry>>;
+  readonly most_recent_10_events: Vector<Readonly<api.ILogEntry>>;
 
   readonly latest_scheduleId: string | undefined;
 
@@ -101,7 +102,7 @@ export const initial: State = {
   last30: {
     latest_log_counter: undefined,
     latest_scheduleId: undefined,
-    most_recent_10_events: [],
+    most_recent_10_events: Vector.empty(),
     cycles: cycles.initial,
     mat_summary: matsummary.initial,
     sim_use: simuse.initial,
@@ -250,22 +251,22 @@ function safeAssign<T extends R, R>(o: T, n: R): T {
   }
 }
 
-function processRecentLogEntries(now: Date, evts: Iterable<api.ILogEntry>, s: Last30Days): Last30Days {
+function processRecentLogEntries(now: Date, evts: ReadonlyArray<Readonly<api.ILogEntry>>, s: Last30Days): Last30Days {
   const thirtyDaysAgo = addDays(now, -30);
   const initialLoad = s.latest_log_counter === undefined;
   let lastCounter = s.latest_log_counter;
-  let lastNewEvent = im.Seq(evts).maxBy(e => e.counter);
+  let lastNewEvent = maxBy(evts, e => e.counter);
   let last10Evts = s.most_recent_10_events;
   if (lastNewEvent !== undefined) {
     if (lastCounter === undefined || lastCounter < lastNewEvent.counter) {
       lastCounter = lastNewEvent.counter;
     }
-    const lastNew10 = im.Seq(evts).takeLast(10);
-    last10Evts = im
-      .Seq(last10Evts)
-      .concat(lastNew10)
-      .takeLast(10)
-      .toArray();
+    const lastNew10 = takeRight(evts, 10);
+    last10Evts = last10Evts
+      .appendAll(lastNew10)
+      .reverse()
+      .take(10)
+      .reverse();
   }
   return safeAssign(s, {
     latest_log_counter: lastCounter,
@@ -300,7 +301,7 @@ function processSpecificMonthLogEntries(evts: Iterable<api.ILogEntry>, s: Analys
 function processRecentJobs(now: Date, jobs: Readonly<api.IHistoricData>, s: Last30Days): Last30Days {
   const thirtyDaysAgo = addDays(now, -30);
   let latestSchId = s.latest_scheduleId;
-  const largestJob = im.Seq(jobs.jobs).maxBy(j => j.scheduleId);
+  const largestJob = maxBy(Object.values(jobs.jobs), j => j.scheduleId);
   if (largestJob !== undefined) {
     if (latestSchId === undefined || (largestJob.scheduleId !== undefined && latestSchId < largestJob.scheduleId)) {
       latestSchId = largestJob.scheduleId;
