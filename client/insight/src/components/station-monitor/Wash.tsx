@@ -50,6 +50,7 @@ import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 import SerialScanner from "./QRScan";
 import Tooltip from "@material-ui/core/Tooltip";
 import ManualScan from "./ManualScan";
+import { HashMap } from "prelude-ts";
 
 interface WashDialogProps extends MaterialDialogProps {
   readonly operator?: string;
@@ -184,12 +185,13 @@ function Wash(props: WashProps) {
 
 const extractRecentCompleted = createSelector(
   (st: Store) => st.Events.last30.mat_summary.matsById,
-  (mats: im.Map<number, MaterialSummaryAndCompletedData>): ReadonlyArray<MaterialSummaryAndCompletedData> => {
+  (mats: HashMap<number, MaterialSummaryAndCompletedData>): ReadonlyArray<MaterialSummaryAndCompletedData> => {
     const cutoff = addHours(new Date(), -36);
     return mats
-      .valueSeq()
+      .toVector()
+      .map(([_, e]) => e)
       .filter(e => e.completed_time !== undefined && e.completed_time >= cutoff)
-      .sortBy(e => e.completed_time)
+      .sortOn(e => (e.completed_time ? e.completed_time.getTime() : 0))
       .reverse()
       .toArray();
   }

@@ -43,7 +43,7 @@ import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
 import SearchIcon from "@material-ui/icons/Search";
 import TextField from "@material-ui/core/TextField";
-import * as im from "immutable";
+import { HashSet } from "prelude-ts";
 
 import { MaterialDetailTitle } from "./Material";
 import { Store, connect, mkAC, AppActionBeforeMiddleware, DispatchAction } from "../../store/store";
@@ -84,7 +84,7 @@ class ManualInspTypeEntry extends React.PureComponent<ManualInspTypeEntryProps, 
 }
 
 interface SelectInspTypeProps {
-  readonly inspTypes: im.Set<string>;
+  readonly inspTypes: HashSet<string>;
   readonly mats: matDetails.MaterialDetail | null;
   readonly onClose: DispatchAction<guiState.ActionType.SetInspTypeDialogOpen>;
   readonly forceInspection: (data: matDetails.ForceInspectionData) => void;
@@ -102,21 +102,14 @@ function SelectInspTypeDialog(props: SelectInspTypeProps) {
     } else {
       const inspList = (
         <List>
-          {props.inspTypes
-            .toSeq()
-            .sort()
-            .map(iType => (
-              <ListItem
-                key={iType}
-                button
-                onClick={() => props.forceInspection({ mat, inspType: iType, inspect: true })}
-              >
-                <ListItemIcon>
-                  <SearchIcon />
-                </ListItemIcon>
-                <ListItemText primary={iType} />
-              </ListItem>
-            ))}
+          {props.inspTypes.toArray({ sortOn: x => x }).map(iType => (
+            <ListItem key={iType} button onClick={() => props.forceInspection({ mat, inspType: iType, inspect: true })}>
+              <ListItemIcon>
+                <SearchIcon />
+              </ListItemIcon>
+              <ListItemText primary={iType} />
+            </ListItem>
+          ))}
         </List>
       );
 

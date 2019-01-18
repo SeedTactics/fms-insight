@@ -649,39 +649,86 @@ Object {
   "latest_log_counter": 8,
   "latest_scheduleId": undefined,
   "mat_summary": Object {
-    "inspTypes": Immutable.Set [
-      "Insp1",
-    ],
-    "matsById": Immutable.Map {
-      70329: Object {
-        "completedInspections": Object {
-          "Insp1": 2018-02-02T10:04:05.000Z,
+    "inspTypes": HashSet {
+      "hamt": Map {
+        "_config": Object {
+          "hash": [Function],
+          "keyEq": [Function],
         },
-        "completed_procs": Array [
-          1,
-        ],
-        "jobUnique": "uniqi",
-        "last_event": 2018-02-02T10:04:05.000Z,
-        "materialID": 70329,
-        "partName": "part111",
-        "signaledInspections": Array [
-          "Insp1",
-        ],
+        "_edit": 1,
+        "_editable": 0,
+        "_root": Object {
+          "_modify": [Function],
+          "edit": NaN,
+          "hash": 70808079,
+          "key": "Insp1",
+          "type": 1,
+          "value": "Insp1",
+        },
+        "_size": 1,
       },
-      43888: Object {
-        "completedInspections": Object {
-          "Insp1": 2018-02-08T09:46:05.000Z,
+    },
+    "matsById": HashMap {
+      "hamt": Map {
+        "_config": Object {
+          "hash": [Function],
+          "keyEq": [Function],
         },
-        "completed_procs": Array [
-          1,
-        ],
-        "jobUnique": "uniqv",
-        "last_event": 2018-02-08T09:46:05.000Z,
-        "materialID": 43888,
-        "partName": "part111",
-        "signaledInspections": Array [
-          "Insp1",
-        ],
+        "_edit": 1,
+        "_editable": 0,
+        "_root": Object {
+          "_modify": [Function],
+          "children": Array [
+            Object {
+              "_modify": [Function],
+              "edit": NaN,
+              "hash": 43888,
+              "key": 43888,
+              "type": 1,
+              "value": Object {
+                "completedInspections": Object {
+                  "Insp1": 2018-02-08T09:46:05.000Z,
+                },
+                "completed_procs": Array [
+                  1,
+                ],
+                "jobUnique": "uniqv",
+                "last_event": 2018-02-08T09:46:05.000Z,
+                "materialID": 43888,
+                "partName": "part111",
+                "signaledInspections": Array [
+                  "Insp1",
+                ],
+              },
+            },
+            Object {
+              "_modify": [Function],
+              "edit": 1,
+              "hash": 70329,
+              "key": 70329,
+              "type": 1,
+              "value": Object {
+                "completedInspections": Object {
+                  "Insp1": 2018-02-02T10:04:05.000Z,
+                },
+                "completed_procs": Array [
+                  1,
+                ],
+                "jobUnique": "uniqi",
+                "last_event": 2018-02-02T10:04:05.000Z,
+                "materialID": 70329,
+                "partName": "part111",
+                "signaledInspections": Array [
+                  "Insp1",
+                ],
+              },
+            },
+          ],
+          "edit": NaN,
+          "mask": 33619968,
+          "type": 3,
+        },
+        "_size": 2,
       },
     },
   },
@@ -1231,55 +1278,117 @@ Object {
   "latest_log_counter": 8,
   "latest_scheduleId": undefined,
   "mat_summary": Object {
-    "inspTypes": Immutable.Set [
-      "Insp1",
-    ],
-    "matsById": Immutable.Map {
-      86489: Object {
-        "completedInspections": Object {
-          "Insp1": 2018-01-06T09:52:10.000Z,
+    "inspTypes": HashSet {
+      "hamt": Map {
+        "_config": Object {
+          "hash": [Function],
+          "keyEq": [Function],
         },
-        "completed_procs": Array [
-          2,
-        ],
-        "jobUnique": "uniqh",
-        "last_event": 2018-01-06T09:52:10.000Z,
-        "materialID": 86489,
-        "partName": "part222",
-        "signaledInspections": Array [
-          "Insp1",
-          "Insp1",
-        ],
+        "_edit": 1,
+        "_editable": 0,
+        "_root": Object {
+          "_modify": [Function],
+          "edit": NaN,
+          "hash": 70808079,
+          "key": "Insp1",
+          "type": 1,
+          "value": "Insp1",
+        },
+        "_size": 1,
       },
-      99502: Object {
-        "completedInspections": Object {
-          "Insp1": 2018-01-31T09:58:05.000Z,
+    },
+    "matsById": HashMap {
+      "hamt": Map {
+        "_config": Object {
+          "hash": [Function],
+          "keyEq": [Function],
         },
-        "completed_procs": Array [
-          1,
-        ],
-        "jobUnique": "uniqt",
-        "last_event": 2018-01-31T09:58:05.000Z,
-        "materialID": 99502,
-        "partName": "part222",
-        "signaledInspections": Array [
-          "Insp1",
-        ],
-      },
-      70329: Object {
-        "completedInspections": Object {
-          "Insp1": 2018-02-02T10:04:05.000Z,
+        "_edit": 0,
+        "_editable": 0,
+        "_root": Object {
+          "_modify": [Function],
+          "children": Array [
+            Object {
+              "_modify": [Function],
+              "edit": NaN,
+              "hash": 99502,
+              "key": 99502,
+              "type": 1,
+              "value": Object {
+                "completedInspections": Object {
+                  "Insp1": 2018-01-31T09:58:05.000Z,
+                },
+                "completed_procs": Array [
+                  1,
+                ],
+                "jobUnique": "uniqt",
+                "last_event": 2018-01-31T09:58:05.000Z,
+                "materialID": 99502,
+                "partName": "part222",
+                "signaledInspections": Array [
+                  "Insp1",
+                ],
+              },
+            },
+            Object {
+              "_modify": [Function],
+              "children": Array [
+                Object {
+                  "_modify": [Function],
+                  "edit": NaN,
+                  "hash": 86489,
+                  "key": 86489,
+                  "type": 1,
+                  "value": Object {
+                    "completedInspections": Object {
+                      "Insp1": 2018-01-06T09:52:10.000Z,
+                    },
+                    "completed_procs": Array [
+                      2,
+                    ],
+                    "jobUnique": "uniqh",
+                    "last_event": 2018-01-06T09:52:10.000Z,
+                    "materialID": 86489,
+                    "partName": "part222",
+                    "signaledInspections": Array [
+                      "Insp1",
+                      "Insp1",
+                    ],
+                  },
+                },
+                Object {
+                  "_modify": [Function],
+                  "edit": NaN,
+                  "hash": 70329,
+                  "key": 70329,
+                  "type": 1,
+                  "value": Object {
+                    "completedInspections": Object {
+                      "Insp1": 2018-02-02T10:04:05.000Z,
+                    },
+                    "completed_procs": Array [
+                      1,
+                    ],
+                    "jobUnique": "uniqi",
+                    "last_event": 2018-02-02T10:04:05.000Z,
+                    "materialID": 70329,
+                    "partName": "part111",
+                    "signaledInspections": Array [
+                      "Insp1",
+                    ],
+                  },
+                },
+              ],
+              "edit": NaN,
+              "mask": 2113536,
+              "type": 3,
+            },
+          ],
+          "edit": NaN,
+          "mask": 33570816,
+          "type": 3,
         },
-        "completed_procs": Array [
-          1,
-        ],
-        "jobUnique": "uniqi",
-        "last_event": 2018-02-02T10:04:05.000Z,
-        "materialID": 70329,
-        "partName": "part111",
-        "signaledInspections": Array [
-          "Insp1",
-        ],
+        "_size": 3,
       },
     },
   },
@@ -1837,41 +1946,88 @@ Object {
   "latest_log_counter": 8,
   "latest_scheduleId": undefined,
   "mat_summary": Object {
-    "inspTypes": Immutable.Set [
-      "Insp1",
-    ],
-    "matsById": Immutable.Map {
-      90793: Object {
-        "completedInspections": Object {
-          "Insp1": 2018-02-02T10:04:10.000Z,
+    "inspTypes": HashSet {
+      "hamt": Map {
+        "_config": Object {
+          "hash": [Function],
+          "keyEq": [Function],
         },
-        "completed_procs": Array [
-          1,
-        ],
-        "jobUnique": "uniqk",
-        "last_event": 2018-02-02T10:04:10.000Z,
-        "materialID": 90793,
-        "partName": "part111",
-        "signaledInspections": Array [
-          "Insp1",
-          "Insp1",
-        ],
+        "_edit": 1,
+        "_editable": 0,
+        "_root": Object {
+          "_modify": [Function],
+          "edit": NaN,
+          "hash": 70808079,
+          "key": "Insp1",
+          "type": 1,
+          "value": "Insp1",
+        },
+        "_size": 1,
       },
-      80572: Object {
-        "completedInspections": Object {
-          "Insp1": 2018-02-08T09:46:10.000Z,
+    },
+    "matsById": HashMap {
+      "hamt": Map {
+        "_config": Object {
+          "hash": [Function],
+          "keyEq": [Function],
         },
-        "completed_procs": Array [
-          1,
-        ],
-        "jobUnique": "uniqz",
-        "last_event": 2018-02-08T09:46:10.000Z,
-        "materialID": 80572,
-        "partName": "part111",
-        "signaledInspections": Array [
-          "Insp1",
-          "Insp1",
-        ],
+        "_edit": 1,
+        "_editable": 0,
+        "_root": Object {
+          "_modify": [Function],
+          "children": Array [
+            Object {
+              "_modify": [Function],
+              "edit": 1,
+              "hash": 90793,
+              "key": 90793,
+              "type": 1,
+              "value": Object {
+                "completedInspections": Object {
+                  "Insp1": 2018-02-02T10:04:10.000Z,
+                },
+                "completed_procs": Array [
+                  1,
+                ],
+                "jobUnique": "uniqk",
+                "last_event": 2018-02-02T10:04:10.000Z,
+                "materialID": 90793,
+                "partName": "part111",
+                "signaledInspections": Array [
+                  "Insp1",
+                  "Insp1",
+                ],
+              },
+            },
+            Object {
+              "_modify": [Function],
+              "edit": NaN,
+              "hash": 80572,
+              "key": 80572,
+              "type": 1,
+              "value": Object {
+                "completedInspections": Object {
+                  "Insp1": 2018-02-08T09:46:10.000Z,
+                },
+                "completed_procs": Array [
+                  1,
+                ],
+                "jobUnique": "uniqz",
+                "last_event": 2018-02-08T09:46:10.000Z,
+                "materialID": 80572,
+                "partName": "part111",
+                "signaledInspections": Array [
+                  "Insp1",
+                  "Insp1",
+                ],
+              },
+            },
+          ],
+          "edit": NaN,
+          "mask": 268435968,
+          "type": 3,
+        },
+        "_size": 2,
       },
     },
   },
@@ -2437,57 +2593,111 @@ Object {
   "latest_log_counter": 8,
   "latest_scheduleId": undefined,
   "mat_summary": Object {
-    "inspTypes": Immutable.Set [
-      "Insp1",
-    ],
-    "matsById": Immutable.Map {
-      76930: Object {
-        "completedInspections": Object {
-          "Insp1": 2018-01-06T09:52:10.000Z,
+    "inspTypes": HashSet {
+      "hamt": Map {
+        "_config": Object {
+          "hash": [Function],
+          "keyEq": [Function],
         },
-        "completed_procs": Array [
-          2,
-        ],
-        "jobUnique": "uniqs",
-        "last_event": 2018-01-06T09:52:10.000Z,
-        "materialID": 76930,
-        "partName": "part222",
-        "signaledInspections": Array [
-          "Insp1",
-          "Insp1",
-        ],
+        "_edit": 1,
+        "_editable": 0,
+        "_root": Object {
+          "_modify": [Function],
+          "edit": NaN,
+          "hash": 70808079,
+          "key": "Insp1",
+          "type": 1,
+          "value": "Insp1",
+        },
+        "_size": 1,
       },
-      90816: Object {
-        "completedInspections": Object {
-          "Insp1": 2018-01-31T09:58:10.000Z,
+    },
+    "matsById": HashMap {
+      "hamt": Map {
+        "_config": Object {
+          "hash": [Function],
+          "keyEq": [Function],
         },
-        "completed_procs": Array [
-          1,
-        ],
-        "jobUnique": "uniq9",
-        "last_event": 2018-01-31T09:58:10.000Z,
-        "materialID": 90816,
-        "partName": "part222",
-        "signaledInspections": Array [
-          "Insp1",
-          "Insp1",
-        ],
-      },
-      90793: Object {
-        "completedInspections": Object {
-          "Insp1": 2018-02-02T10:04:10.000Z,
+        "_edit": 0,
+        "_editable": 0,
+        "_root": Object {
+          "_modify": [Function],
+          "children": Array [
+            Object {
+              "_modify": [Function],
+              "edit": NaN,
+              "hash": 90816,
+              "key": 90816,
+              "type": 1,
+              "value": Object {
+                "completedInspections": Object {
+                  "Insp1": 2018-01-31T09:58:10.000Z,
+                },
+                "completed_procs": Array [
+                  1,
+                ],
+                "jobUnique": "uniq9",
+                "last_event": 2018-01-31T09:58:10.000Z,
+                "materialID": 90816,
+                "partName": "part222",
+                "signaledInspections": Array [
+                  "Insp1",
+                  "Insp1",
+                ],
+              },
+            },
+            Object {
+              "_modify": [Function],
+              "edit": NaN,
+              "hash": 76930,
+              "key": 76930,
+              "type": 1,
+              "value": Object {
+                "completedInspections": Object {
+                  "Insp1": 2018-01-06T09:52:10.000Z,
+                },
+                "completed_procs": Array [
+                  2,
+                ],
+                "jobUnique": "uniqs",
+                "last_event": 2018-01-06T09:52:10.000Z,
+                "materialID": 76930,
+                "partName": "part222",
+                "signaledInspections": Array [
+                  "Insp1",
+                  "Insp1",
+                ],
+              },
+            },
+            Object {
+              "_modify": [Function],
+              "edit": NaN,
+              "hash": 90793,
+              "key": 90793,
+              "type": 1,
+              "value": Object {
+                "completedInspections": Object {
+                  "Insp1": 2018-02-02T10:04:10.000Z,
+                },
+                "completed_procs": Array [
+                  1,
+                ],
+                "jobUnique": "uniqk",
+                "last_event": 2018-02-02T10:04:10.000Z,
+                "materialID": 90793,
+                "partName": "part111",
+                "signaledInspections": Array [
+                  "Insp1",
+                  "Insp1",
+                ],
+              },
+            },
+          ],
+          "edit": NaN,
+          "mask": 517,
+          "type": 3,
         },
-        "completed_procs": Array [
-          1,
-        ],
-        "jobUnique": "uniqk",
-        "last_event": 2018-02-02T10:04:10.000Z,
-        "materialID": 90793,
-        "partName": "part111",
-        "signaledInspections": Array [
-          "Insp1",
-          "Insp1",
-        ],
+        "_size": 3,
       },
     },
   },

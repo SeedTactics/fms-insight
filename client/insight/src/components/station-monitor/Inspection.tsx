@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import * as im from "immutable";
 import { addHours } from "date-fns";
 import Grid from "@material-ui/core/Grid";
 import Button from "@material-ui/core/Button";
@@ -47,6 +46,7 @@ import * as matDetails from "../../data/material-details";
 import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 import SerialScanner from "./QRScan";
 import ManualScan from "./ManualScan";
+import { HashMap, HashSet } from "prelude-ts";
 
 interface InspButtonsProps {
   readonly display_material: matDetails.MaterialDetail;
@@ -214,14 +214,16 @@ function Inspection(props: InspectionProps) {
 const extractRecentInspections = createSelector(
   (st: Store) => st.Events.last30.mat_summary.matsById,
   (st: Store) => st.Route.selected_insp_type,
-  (mats: im.Map<number, MaterialSummaryAndCompletedData>, inspType: string | undefined): PartsForInspection => {
+  (mats: HashMap<number, MaterialSummaryAndCompletedData>, inspType: string | undefined): PartsForInspection => {
     const cutoff = addHours(new Date(), -36);
-    const allDetails = mats.valueSeq().filter(e => e.completed_time !== undefined && e.completed_time >= cutoff);
+    const allDetails = mats
+      .toVector()
+      .map(([_, e]) => e)
+      .filter(e => e.completed_time !== undefined && e.completed_time >= cutoff);
 
     function checkAllCompleted(m: MaterialSummaryAndCompletedData): boolean {
-      return im
-        .Set(m.signaledInspections)
-        .subtract(im.Seq(m.completedInspections || {}).keySeq())
+      return HashSet.ofIterable(m.signaledInspections)
+        .removeAll(m.completedInspections ? Object.keys(m.completedInspections) : [])
         .isEmpty();
     }
 
@@ -241,11 +243,11 @@ const extractRecentInspections = createSelector(
 
     return {
       waiting_to_inspect: uninspected
-        .sortBy(e => e.completed_time)
+        .sortOn(e => (e.completed_time ? e.completed_time.getTime() : 0))
         .reverse()
         .toArray(),
       inspect_completed: inspected
-        .sortBy(e => e.completed_time)
+        .sortOn(e => (e.completed_time ? e.completed_time.getTime() : 0))
         .reverse()
         .toArray()
     };

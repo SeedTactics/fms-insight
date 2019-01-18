@@ -36,7 +36,7 @@ import MenuItem from "@material-ui/core/MenuItem";
 import TextField from "@material-ui/core/TextField";
 import Input from "@material-ui/core/Input";
 import FormControl from "@material-ui/core/FormControl";
-import { Seq, Set } from "immutable";
+import { Seq } from "immutable";
 import Downshift from "downshift";
 import Paper from "@material-ui/core/Paper";
 import ArrowDropDownIcon from "@material-ui/icons/ArrowDropDown";
@@ -143,7 +143,7 @@ const toolbarStyle = {
 interface StationToolbarProps {
   readonly current_route: routes.State;
   readonly queues: { [key: string]: api.IQueueSize };
-  readonly insp_types: Set<string>;
+  readonly insp_types: HashSet<string>;
   readonly operators: HashSet<string>;
   readonly currentOperator: string | null;
   readonly currentUser: User | null;
@@ -291,14 +291,11 @@ function StationToolbar(props: StationToolbarProps) {
             <MenuItem key={allInspSym} value={allInspSym}>
               <em>All</em>
             </MenuItem>
-            {props.insp_types
-              .toSeq()
-              .sort()
-              .map(ty => (
-                <MenuItem key={ty} value={ty}>
-                  {ty}
-                </MenuItem>
-              ))}
+            {props.insp_types.toArray({ sortOn: x => x }).map(ty => (
+              <MenuItem key={ty} value={ty}>
+                {ty}
+              </MenuItem>
+            ))}
           </Select>
         ) : (
           undefined
