@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from "react";
 import { WithStyles, createStyles, withStyles } from "@material-ui/core/styles";
-import * as im from "immutable";
 import { createSelector } from "reselect";
 import Button from "@material-ui/core/Button";
 import List from "@material-ui/core/List";
@@ -65,6 +64,7 @@ import * as matDetails from "../../data/material-details";
 import { MaterialSummary } from "../../data/events";
 import SerialScanner from "./QRScan";
 import ManualScan from "./ManualScan";
+import { range } from "lodash";
 
 interface ExistingMatInQueueDialogBodyProps {
   readonly display_material: matDetails.MaterialDetail;
@@ -175,10 +175,7 @@ interface SelectJobProps {
 
 class SelectJob extends React.PureComponent<SelectJobProps> {
   render() {
-    const jobs = im
-      .Map(this.props.jobs)
-      .valueSeq()
-      .sortBy(j => j.partName);
+    const jobs = Object.values(this.props.jobs).sort((j1, j2) => j1.partName.localeCompare(j2.partName));
     return (
       <div style={{ display: "flex" }}>
         <div>
@@ -214,7 +211,7 @@ class SelectJob extends React.PureComponent<SelectJobProps> {
                 >
                   Raw Material
                 </MenuItem>
-                {im.Range(1, this.props.selected_job.procsAndPaths.length).map(p => (
+                {range(1, this.props.selected_job.procsAndPaths.length).map(p => (
                   <MenuItem
                     key={p}
                     selected={this.props.selected_last_process === p}
@@ -496,7 +493,7 @@ class ChooseSerialOrDirectJob extends React.PureComponent<ChooseSerialOrDirectJo
               </div>
               <div>
                 <Button
-                  variant="raised"
+                  variant="contained"
                   color="secondary"
                   onClick={() => (this.state.serial ? this.props.lookupSerial(this.state.serial || "") : undefined)}
                 >

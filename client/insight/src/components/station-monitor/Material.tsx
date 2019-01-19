@@ -51,13 +51,13 @@ import AddIcon from "@material-ui/icons/AddBox";
 import IconButton from "@material-ui/core/IconButton";
 import { WithStyles, createStyles, withStyles } from "@material-ui/core/styles";
 import { SortableElement, SortableContainer } from "react-sortable-hoc";
-import * as im from "immutable";
 
 import * as api from "../../data/api";
 import * as matDetails from "../../data/material-details";
 import { LogEntries } from "../LogEntry";
 import { MaterialSummary } from "../../data/events";
 import { inproc_mat_to_summary, MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
+import { query } from "itiriri";
 
 /*
 function getPosition(el: Element) {
@@ -340,19 +340,18 @@ export function InstructionButton({
   readonly material: matDetails.MaterialDetail;
   readonly type: string;
 }) {
-  const maxProc = im
-    .Seq(material.events)
-    .flatMap(e => e.material)
+  const maxProc = query(material.events)
+    .flat(e => e.material)
     .filter(e => e.id === material.materialID)
-    .maxBy(e => e.proc);
-  const query =
+    .max(e => e.proc);
+  const instrQuery =
     "?type=" +
     encodeURIComponent(type) +
     ("&materialID=" + material.materialID.toString()) +
     (maxProc !== undefined ? "&process=" + maxProc.proc.toString() : "");
   return (
     <Button
-      href={"/api/v1/server/find-instructions/" + encodeURIComponent(material.partName) + query}
+      href={"/api/v1/server/find-instructions/" + encodeURIComponent(material.partName) + instrQuery}
       target="bms-instructions"
       color="primary"
     >

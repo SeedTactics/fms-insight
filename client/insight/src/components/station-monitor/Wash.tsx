@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import * as im from "immutable";
 import { addHours } from "date-fns";
 import Grid from "@material-ui/core/Grid";
 import Button from "@material-ui/core/Button";
@@ -153,8 +152,8 @@ interface WashProps {
 }
 
 function Wash(props: WashProps) {
-  const unwashed = im.Seq(props.recent_completed).filter(m => m.wash_completed === undefined);
-  const washed = im.Seq(props.recent_completed).filter(m => m.wash_completed !== undefined);
+  const unwashed = query(props.recent_completed).filter(m => m.wash_completed === undefined);
+  const washed = query(props.recent_completed).filter(m => m.wash_completed !== undefined);
 
   return (
     <DocumentTitle title="Wash - FMS Insight">

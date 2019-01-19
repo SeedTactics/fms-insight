@@ -36,7 +36,6 @@ import MenuItem from "@material-ui/core/MenuItem";
 import TextField from "@material-ui/core/TextField";
 import Input from "@material-ui/core/Input";
 import FormControl from "@material-ui/core/FormControl";
-import { Seq } from "immutable";
 import Downshift from "downshift";
 import Paper from "@material-ui/core/Paper";
 import ArrowDropDownIcon from "@material-ui/icons/ArrowDropDown";
@@ -58,6 +57,7 @@ import { Store, connect, DispatchAction, mkAC } from "../../store/store";
 import * as api from "../../data/api";
 import * as operators from "../../data/operators";
 import * as guiState from "../../data/gui-state";
+import { take } from "lodash";
 
 interface OperatorSelectProps {
   readonly operators: HashSet<string>;
@@ -223,10 +223,7 @@ function StationToolbar(props: StationToolbarProps) {
     const free = newQueues.includes(freeMaterialSym);
     props.displayLoadStation(
       props.current_route.selected_load_id,
-      Seq(newQueues)
-        .take(3)
-        .filter(q => q !== freeMaterialSym)
-        .toArray(),
+      take(newQueues, 3).filter(q => q !== freeMaterialSym),
       free
     );
   }
@@ -240,13 +237,7 @@ function StationToolbar(props: StationToolbarProps) {
   function setStandaloneQueues(newQueuesAny: any) {
     const newQueues = newQueuesAny as ReadonlyArray<string>;
     const free = newQueues.includes(freeMaterialSym);
-    props.displayQueues(
-      Seq(newQueues)
-        .take(3)
-        .filter(q => q !== freeMaterialSym)
-        .toArray(),
-      free
-    );
+    props.displayQueues(take(newQueues, 3).filter(q => q !== freeMaterialSym), free);
   }
 
   let standalonequeues: string[] = [...props.current_route.standalone_queues];
