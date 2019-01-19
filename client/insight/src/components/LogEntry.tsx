@@ -38,7 +38,7 @@ import TableCell from "@material-ui/core/TableCell";
 import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 import DateTimeDisplay from "./DateTimeDisplay";
-import { Vector } from "prelude-ts";
+import { query } from "itiriri";
 
 export interface LogEntryProps {
   entry: api.ILogEntry;
@@ -198,7 +198,7 @@ export class LogEntry extends React.PureComponent<LogEntryProps> {
 }
 
 export interface LogEntriesProps {
-  entries: Vector<Readonly<api.ILogEntry>>;
+  entries: Iterable<Readonly<api.ILogEntry>>;
 }
 
 export class LogEntries extends React.PureComponent<LogEntriesProps> {
@@ -214,7 +214,7 @@ export class LogEntries extends React.PureComponent<LogEntriesProps> {
           </TableRow>
         </TableHead>
         <TableBody>
-          {this.props.entries.zipWithIndex().map(([e, idx]) => (
+          {query(this.props.entries).map((e, idx) => (
             <LogEntry key={idx} entry={e} />
           ))}
         </TableBody>

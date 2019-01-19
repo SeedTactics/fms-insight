@@ -47,6 +47,7 @@ import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 import SerialScanner from "./QRScan";
 import ManualScan from "./ManualScan";
 import { HashMap, HashSet } from "prelude-ts";
+import { query } from "itiriri";
 
 interface InspButtonsProps {
   readonly display_material: matDetails.MaterialDetail;
@@ -216,10 +217,6 @@ const extractRecentInspections = createSelector(
   (st: Store) => st.Route.selected_insp_type,
   (mats: HashMap<number, MaterialSummaryAndCompletedData>, inspType: string | undefined): PartsForInspection => {
     const cutoff = addHours(new Date(), -36);
-    const allDetails = mats
-      .toVector()
-      .map(([_, e]) => e)
-      .filter(e => e.completed_time !== undefined && e.completed_time >= cutoff);
 
     function checkAllCompleted(m: MaterialSummaryAndCompletedData): boolean {
       return HashSet.ofIterable(m.signaledInspections)
@@ -227,29 +224,53 @@ const extractRecentInspections = createSelector(
         .isEmpty();
     }
 
-    const uninspected =
+    const uninspected = Array.from(
       inspType === undefined
-        ? allDetails.filter(m => m.signaledInspections.length > 0 && !checkAllCompleted(m))
-        : allDetails.filter(
-            m => m.signaledInspections.indexOf(inspType) >= 0 && (m.completedInspections || {})[inspType] === undefined
-          );
+        ? query(mats.valueIterable()).filter(
+            m =>
+              m.completed_time !== undefined &&
+              m.completed_time >= cutoff &&
+              m.signaledInspections.length > 0 &&
+              !checkAllCompleted(m)
+          )
+        : query(mats.valueIterable()).filter(
+            m =>
+              m.completed_time !== undefined &&
+              m.completed_time >= cutoff &&
+              m.signaledInspections.indexOf(inspType) >= 0 &&
+              (m.completedInspections || {})[inspType] === undefined
+          )
+    );
+    // sort descending
+    uninspected.sort((e1, e2) =>
+      e1.completed_time && e2.completed_time ? e2.completed_time.getTime() - e1.completed_time.getTime() : 0
+    );
 
-    const inspected =
+    const inspected = Array.from(
       inspType === undefined
-        ? allDetails.filter(m => m.signaledInspections.length > 0 && checkAllCompleted(m))
-        : allDetails.filter(
-            m => m.signaledInspections.indexOf(inspType) >= 0 && (m.completedInspections || {})[inspType] !== undefined
-          );
+        ? query(mats.valueIterable()).filter(
+            m =>
+              m.completed_time !== undefined &&
+              m.completed_time >= cutoff &&
+              m.signaledInspections.length > 0 &&
+              checkAllCompleted(m)
+          )
+        : query(mats.valueIterable()).filter(
+            m =>
+              m.completed_time !== undefined &&
+              m.completed_time >= cutoff &&
+              m.signaledInspections.indexOf(inspType) >= 0 &&
+              (m.completedInspections || {})[inspType] !== undefined
+          )
+    );
+    // sort descending
+    inspected.sort((e1, e2) =>
+      e1.completed_time && e2.completed_time ? e2.completed_time.getTime() - e1.completed_time.getTime() : 0
+    );
 
     return {
-      waiting_to_inspect: uninspected
-        .sortOn(e => (e.completed_time ? e.completed_time.getTime() : 0))
-        .reverse()
-        .toArray(),
+      waiting_to_inspect: uninspected,
       inspect_completed: inspected
-        .sortOn(e => (e.completed_time ? e.completed_time.getTime() : 0))
-        .reverse()
-        .toArray()
     };
   }
 );

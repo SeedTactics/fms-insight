@@ -34,6 +34,7 @@ import * as api from "./api";
 import { addDays } from "date-fns";
 import { HashMap, HashSet, Vector } from "prelude-ts";
 import { range } from "lodash";
+import { query } from "itiriri";
 
 export interface MaterialSummary {
   readonly materialID: number;
@@ -82,8 +83,10 @@ export function process_events(now: Date, newEvts: ReadonlyArray<api.ILogEntry>,
   const oneWeekAgo = addDays(now, -7);
 
   // check if no changes needed: no new events and nothing to filter out
-  const minEntry = st.matsById.toVector().minOn(([_, m]) => m.last_event.getTime());
-  if ((minEntry.isNone() || minEntry.get()[1].last_event >= oneWeekAgo) && newEvts.length === 0) {
+  const minEntry = query(st.matsById.valueIterable()).min(
+    (m1, m2) => m1.last_event.getTime() - m2.last_event.getTime()
+  );
+  if ((minEntry === undefined || minEntry.last_event >= oneWeekAgo) && newEvts.length === 0) {
     return st;
   }
 
@@ -91,95 +94,96 @@ export function process_events(now: Date, newEvts: ReadonlyArray<api.ILogEntry>,
 
   let inspTypes = new Map<string, boolean>();
 
-  newEvts
-    .filter(e => !e.startofcycle && e.material.length > 0)
-    .forEach(e => {
-      for (let logMat of e.material) {
-        let oldMat = mats.get(logMat.id);
-        let mat: MaterialSummaryFromEvents;
-        if (oldMat.isSome()) {
-          mat = { ...oldMat.get(), last_event: e.endUTC };
-        } else {
-          mat = {
-            materialID: logMat.id,
-            jobUnique: logMat.uniq,
-            partName: logMat.part,
-            last_event: e.endUTC,
-            completed_procs: [],
-            signaledInspections: [],
-            completedInspections: {}
-          };
-        }
+  newEvts.forEach(e => {
+    if (e.startofcycle || e.material.length === 0) {
+      return;
+    }
+    for (let logMat of e.material) {
+      let oldMat = mats.get(logMat.id);
+      let mat: MaterialSummaryFromEvents;
+      if (oldMat.isSome()) {
+        mat = { ...oldMat.get(), last_event: e.endUTC };
+      } else {
+        mat = {
+          materialID: logMat.id,
+          jobUnique: logMat.uniq,
+          partName: logMat.part,
+          last_event: e.endUTC,
+          completed_procs: [],
+          signaledInspections: [],
+          completedInspections: {}
+        };
+      }
 
-        switch (e.type) {
-          case api.LogType.PartMark:
-            mat = { ...mat, serial: e.result };
-            break;
+      switch (e.type) {
+        case api.LogType.PartMark:
+          mat = { ...mat, serial: e.result };
+          break;
 
-          case api.LogType.OrderAssignment:
-            mat = { ...mat, workorderId: e.result };
-            break;
+        case api.LogType.OrderAssignment:
+          mat = { ...mat, workorderId: e.result };
+          break;
 
-          case api.LogType.Inspection:
-            if (e.result.toLowerCase() === "true" || e.result === "1") {
-              const inspType = (e.details || {}).InspectionType;
-              if (inspType) {
-                mat = {
-                  ...mat,
-                  signaledInspections: [...mat.signaledInspections, inspType]
-                };
-                inspTypes.set(inspType, true);
-              }
-            }
-            break;
-
-          case api.LogType.InspectionForce:
-            if (e.result.toLowerCase() === "true" || e.result === "1") {
-              const inspType = e.program;
+        case api.LogType.Inspection:
+          if (e.result.toLowerCase() === "true" || e.result === "1") {
+            const inspType = (e.details || {}).InspectionType;
+            if (inspType) {
               mat = {
                 ...mat,
                 signaledInspections: [...mat.signaledInspections, inspType]
               };
               inspTypes.set(inspType, true);
             }
-            break;
+          }
+          break;
 
-          case api.LogType.InspectionResult:
+        case api.LogType.InspectionForce:
+          if (e.result.toLowerCase() === "true" || e.result === "1") {
+            const inspType = e.program;
             mat = {
               ...mat,
-              completedInspections: {
-                ...mat.completedInspections,
-                [e.program]: e.endUTC
-              }
+              signaledInspections: [...mat.signaledInspections, inspType]
             };
-            inspTypes.set(e.program, true);
-            break;
+            inspTypes.set(inspType, true);
+          }
+          break;
 
-          case api.LogType.LoadUnloadCycle:
-            if (e.result === "UNLOAD") {
-              if (logMat.proc === logMat.numproc) {
-                mat = {
-                  ...mat,
-                  completed_procs: [...mat.completed_procs, logMat.proc],
-                  completed_time: e.endUTC
-                };
-              } else {
-                mat = {
-                  ...mat,
-                  completed_procs: [...mat.completed_procs, logMat.proc]
-                };
-              }
+        case api.LogType.InspectionResult:
+          mat = {
+            ...mat,
+            completedInspections: {
+              ...mat.completedInspections,
+              [e.program]: e.endUTC
             }
-            break;
+          };
+          inspTypes.set(e.program, true);
+          break;
 
-          case api.LogType.Wash:
-            mat = { ...mat, wash_completed: e.endUTC };
-            break;
-        }
+        case api.LogType.LoadUnloadCycle:
+          if (e.result === "UNLOAD") {
+            if (logMat.proc === logMat.numproc) {
+              mat = {
+                ...mat,
+                completed_procs: [...mat.completed_procs, logMat.proc],
+                completed_time: e.endUTC
+              };
+            } else {
+              mat = {
+                ...mat,
+                completed_procs: [...mat.completed_procs, logMat.proc]
+              };
+            }
+          }
+          break;
 
-        mats = mats.put(logMat.id, mat);
+        case api.LogType.Wash:
+          mat = { ...mat, wash_completed: e.endUTC };
+          break;
       }
-    });
+
+      mats = mats.put(logMat.id, mat);
+    }
+  });
 
   var inspTypesSet = st.inspTypes;
   var newInspTypes = Vector.ofIterable(inspTypes.keys()).filter(i => !inspTypesSet.contains(i));

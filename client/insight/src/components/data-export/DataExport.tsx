@@ -48,7 +48,6 @@ import * as queryString from "query-string";
 import * as api from "../../data/api";
 import { Store, connect } from "../../store/store";
 import { LogEntries } from "../LogEntry";
-import { Vector } from "prelude-ts";
 
 interface CSVLogExportState {
   readonly exportDate: string;
@@ -168,7 +167,7 @@ class CSVWorkorderExport extends React.PureComponent<{}, CSVWorkorderExportState
 }
 
 interface RecentEventsProps {
-  events: Vector<Readonly<api.ILogEntry>>;
+  events: Iterable<Readonly<api.ILogEntry>>;
 }
 
 function RecentEvents(p: RecentEventsProps) {
