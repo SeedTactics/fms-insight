@@ -31,9 +31,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as api from "./api";
-import * as im from "immutable"; // consider collectable.js at some point?
 import { duration } from "moment";
 import { startOfDay } from "date-fns";
+import { Vector, fieldsHashCode, HashMap } from "prelude-ts";
+import { LazySeq } from "./iterators";
 
 export interface SimStationUse {
   readonly station: string;
@@ -50,13 +51,13 @@ export interface SimProduction {
 }
 
 export interface SimUseState {
-  readonly station_use: im.List<SimStationUse>;
-  readonly production: im.List<SimProduction>;
+  readonly station_use: Vector<SimStationUse>;
+  readonly production: Vector<SimProduction>;
 }
 
 export const initial: SimUseState = {
-  station_use: im.List(),
-  production: im.List()
+  station_use: Vector.empty(),
+  production: Vector.empty()
 };
 
 export enum ExpireOldDataType {
@@ -77,30 +78,20 @@ export function process_sim_use(
   newHistory: Readonly<api.IHistoricData>,
   st: SimUseState
 ): SimUseState {
-  let evtsSeq = im.Seq(newHistory.stationUse);
   let stations = st.station_use;
   let production = st.production;
-
-  let newProd = im
-    .Seq(newHistory.jobs)
-    .valueSeq()
-    .map(j => ({
-      part: j.partName,
-      start: j.routeStartUTC,
-      quantity: j.cyclesOnFirstProcess.reduce((sum, p) => sum + p, 0)
-    }));
 
   switch (expire.type) {
     case ExpireOldDataType.ExpireEarlierThan:
       // check if nothing to expire and no new data
-      const minStat = stations.minBy(e => e.end);
-      const minProd = production.minBy(e => e.start);
+      const minStat = stations.minOn(e => e.end.getTime());
+      const minProd = production.minOn(e => e.start.getTime());
 
       if (
-        (minStat === undefined || minStat.start >= expire.d) &&
-        (minProd === undefined || minProd.start >= expire.d) &&
-        evtsSeq.isEmpty() &&
-        newProd.isEmpty()
+        (minStat.isNone() || minStat.get().start >= expire.d) &&
+        (minProd.isNone() || minProd.get().start >= expire.d) &&
+        newHistory.stationUse.length === 0 &&
+        Object.keys(newHistory.jobs).length === 0
       ) {
         return st;
       }
@@ -112,13 +103,13 @@ export function process_sim_use(
       break;
 
     case ExpireOldDataType.NoExpire:
-      if (evtsSeq.isEmpty() && newProd.isEmpty()) {
+      if (newHistory.stationUse.length === 0 && Object.keys(newHistory.jobs).length === 0) {
         return st;
       }
       break;
   }
 
-  var newStationUse = evtsSeq.map(simUse => ({
+  var newStationUse = LazySeq.ofIterable(newHistory.stationUse).map(simUse => ({
     station: stat_name(simUse),
     start: simUse.startUTC,
     end: simUse.endUTC,
@@ -126,15 +117,31 @@ export function process_sim_use(
     plannedDownTime: duration(simUse.plannedDownTime).asMinutes()
   }));
 
+  let newProd = LazySeq.ofObject(newHistory.jobs).map(([_, j]) => ({
+    part: j.partName,
+    start: j.routeStartUTC,
+    quantity: j.cyclesOnFirstProcess.reduce((sum, p) => sum + p, 0)
+  }));
+
   return {
     ...st,
-    station_use: stations.concat(newStationUse),
-    production: production.concat(newProd)
+    station_use: stations.appendAll(newStationUse),
+    production: production.appendAll(newProd)
   };
 }
 
-type DayAndStation = im.Record<{ day: Date; station: string }>;
-const mkDayAndStation = im.Record({ day: new Date(), station: "" });
+class DayAndStation {
+  constructor(public day: Date, public station: string) {}
+  equals(other: DayAndStation): boolean {
+    return this.day.getTime() === other.day.getTime() && this.station === other.station;
+  }
+  hashCode(): number {
+    return fieldsHashCode(this.day.getTime(), this.station);
+  }
+  toString(): string {
+    return `{day: ${this.day.toISOString()}}, station: ${this.station}}`;
+  }
+}
 
 interface DayStatAndVal {
   day: Date;
@@ -174,25 +181,30 @@ function splitElapsedToDays(simUse: SimStationUse, extractValue: (c: SimStationU
 }
 
 export function binSimStationUseByDayAndStat(
-  simUses: im.Seq.Indexed<SimStationUse>,
+  simUses: Iterable<SimStationUse>,
   extractValue: (c: SimStationUse) => number
-): im.Map<DayAndStation, number> {
-  return simUses
-    .flatMap(s => splitElapsedToDays(s, extractValue))
-    .groupBy(s => new mkDayAndStation({ day: s.day, station: s.station }))
-    .map((points, group) => points.reduce((sum, p) => sum + p.value, 0))
-    .toMap();
+): HashMap<DayAndStation, number> {
+  return LazySeq.ofIterable(simUses)
+    .flat(s => splitElapsedToDays(s, extractValue))
+    .groupBy(s => [new DayAndStation(s.day, s.station), s.value] as [DayAndStation, number], (v1, v2) => v1 + v2);
 }
 
-type DayAndPart = im.Record<{ day: Date; part: string }>;
-const mkDayAndPart = im.Record({ day: new Date(), part: "" });
+class DayAndPart {
+  constructor(public day: Date, public part: string) {}
+  equals(other: DayAndPart): boolean {
+    return this.day.getTime() === other.day.getTime() && this.part === other.part;
+  }
+  hashCode(): number {
+    return fieldsHashCode(this.day.getTime(), this.part);
+  }
+  toString(): string {
+    return `{day: ${this.day.toISOString()}}, part: ${this.part}}`;
+  }
+}
 
-export function binSimProductionByDayAndPart(prod: im.Seq.Indexed<SimProduction>): im.Map<DayAndPart, number> {
-  return (
-    prod
-      // TODO: split across day boundary?
-      .groupBy(p => new mkDayAndPart({ day: startOfDay(p.start), part: p.part }))
-      .map((points, group) => points.reduce((sum, p) => sum + p.quantity, 0))
-      .toMap()
+export function binSimProductionByDayAndPart(prod: Iterable<SimProduction>): HashMap<DayAndPart, number> {
+  return LazySeq.ofIterable(prod).groupBy(
+    p => [new DayAndPart(startOfDay(p.start), p.part), p.quantity] as [DayAndPart, number],
+    (q1, q2) => q1 + q2
   );
 }

@@ -367,8 +367,34 @@ Object {
     },
   },
   "sim_use": Object {
-    "production": Immutable.List [],
-    "station_use": Immutable.List [],
+    "production": Vector {
+      "_list": List {
+        "bits": 0,
+        "length": 0,
+        "offset": 0,
+        "prefix": Array [
+          0,
+        ],
+        "root": undefined,
+        "suffix": Array [
+          0,
+        ],
+      },
+    },
+    "station_use": Vector {
+      "_list": List {
+        "bits": 0,
+        "length": 0,
+        "offset": 0,
+        "prefix": Array [
+          0,
+        ],
+        "root": undefined,
+        "suffix": Array [
+          0,
+        ],
+      },
+    },
   },
 }
 `;
@@ -989,8 +1015,34 @@ Object {
     },
   },
   "sim_use": Object {
-    "production": Immutable.List [],
-    "station_use": Immutable.List [],
+    "production": Vector {
+      "_list": List {
+        "bits": 0,
+        "length": 0,
+        "offset": 0,
+        "prefix": Array [
+          0,
+        ],
+        "root": undefined,
+        "suffix": Array [
+          0,
+        ],
+      },
+    },
+    "station_use": Vector {
+      "_list": List {
+        "bits": 0,
+        "length": 0,
+        "offset": 0,
+        "prefix": Array [
+          0,
+        ],
+        "root": undefined,
+        "suffix": Array [
+          0,
+        ],
+      },
+    },
   },
 }
 `;
@@ -1658,8 +1710,34 @@ Object {
     },
   },
   "sim_use": Object {
-    "production": Immutable.List [],
-    "station_use": Immutable.List [],
+    "production": Vector {
+      "_list": List {
+        "bits": 0,
+        "length": 0,
+        "offset": 0,
+        "prefix": Array [
+          0,
+        ],
+        "root": undefined,
+        "suffix": Array [
+          0,
+        ],
+      },
+    },
+    "station_use": Vector {
+      "_list": List {
+        "bits": 0,
+        "length": 0,
+        "offset": 0,
+        "prefix": Array [
+          0,
+        ],
+        "root": undefined,
+        "suffix": Array [
+          0,
+        ],
+      },
+    },
   },
 }
 `;
@@ -2306,8 +2384,34 @@ Object {
     },
   },
   "sim_use": Object {
-    "production": Immutable.List [],
-    "station_use": Immutable.List [],
+    "production": Vector {
+      "_list": List {
+        "bits": 0,
+        "length": 0,
+        "offset": 0,
+        "prefix": Array [
+          0,
+        ],
+        "root": undefined,
+        "suffix": Array [
+          0,
+        ],
+      },
+    },
+    "station_use": Vector {
+      "_list": List {
+        "bits": 0,
+        "length": 0,
+        "offset": 0,
+        "prefix": Array [
+          0,
+        ],
+        "root": undefined,
+        "suffix": Array [
+          0,
+        ],
+      },
+    },
   },
 }
 `;
@@ -2985,8 +3089,34 @@ Object {
     },
   },
   "sim_use": Object {
-    "production": Immutable.List [],
-    "station_use": Immutable.List [],
+    "production": Vector {
+      "_list": List {
+        "bits": 0,
+        "length": 0,
+        "offset": 0,
+        "prefix": Array [
+          0,
+        ],
+        "root": undefined,
+        "suffix": Array [
+          0,
+        ],
+      },
+    },
+    "station_use": Vector {
+      "_list": List {
+        "bits": 0,
+        "length": 0,
+        "offset": 0,
+        "prefix": Array [
+          0,
+        ],
+        "root": undefined,
+        "suffix": Array [
+          0,
+        ],
+      },
+    },
   },
 }
 `;

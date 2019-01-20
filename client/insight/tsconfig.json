@@ -11,6 +11,7 @@
     "jsx": "react",
     "moduleResolution": "node",
     "rootDir": "src",
+    "downlevelIteration": true,
 
     "strict": true,
     "strictPropertyInitialization": false,

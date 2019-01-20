@@ -50,6 +50,7 @@ import * as matDetails from "../../data/material-details";
 import InspectionSankey from "./InspectionSankey";
 import { PartCycleData } from "../../data/events.cycles";
 import { MaterialDialog } from "../station-monitor/Material";
+import { LazySeq } from "../../data/iterators";
 
 // --------------------------------------------------------------------------------
 // Station Cycles
@@ -226,22 +227,26 @@ const stationOeeActualPointsSelector = createSelector(
 const stationOeePlannedPointsSelector = createSelector(
   (sim: events.SimUseState) => sim.station_use,
   statUse => {
-    let pts = events.binSimStationUseByDayAndStat(statUse.toSeq(), c => c.utilizationTime - c.plannedDownTime);
-    return pts
-      .toSeq()
-      .map((val, dayAndStat) => {
+    let pts = events.binSimStationUseByDayAndStat(statUse, c => c.utilizationTime - c.plannedDownTime);
+    return LazySeq.ofIterable(pts)
+      .map(([dayAndStat, val]) => {
         const pct = val / (24 * 60);
         return {
-          x: dayAndStat.get("day", null),
-          y: dayAndStat.get("station", null),
+          x: dayAndStat.day,
+          y: dayAndStat.station,
           color: pct,
           label: (pct * 100).toFixed(1) + "%"
         };
       })
-      .valueSeq()
-      .sortBy(p => p.x)
-      .sortBy(p => p.y, (a, b) => (a === b ? 0 : a < b ? 1 : -1)) // descending
-      .toArray();
+      .toArray()
+      .sort((p1, p2) => {
+        const cmp = p2.y.localeCompare(p1.y); // descending, compare p2 to p1
+        if (cmp === 0) {
+          return p1.x.getTime() - p2.x.getTime();
+        } else {
+          return cmp;
+        }
+      });
   }
 );
 
@@ -320,21 +325,25 @@ const completedActualPointsSelector = createSelector(
 const completedPlannedPointsSelector = createSelector(
   (simUse: events.SimUseState) => simUse.production,
   production => {
-    let pts = events.binSimProductionByDayAndPart(production.toSeq());
-    return pts
-      .toSeq()
-      .map((val, dayAndStat) => {
+    let pts = events.binSimProductionByDayAndPart(production);
+    return LazySeq.ofIterable(pts)
+      .map(([dayAndStat, val]) => {
         return {
-          x: dayAndStat.get("day", null),
-          y: dayAndStat.get("part", null),
+          x: dayAndStat.day,
+          y: dayAndStat.part,
           color: val,
           label: val.toFixed(1)
         };
       })
-      .valueSeq()
-      .sortBy(p => p.x)
-      .sortBy(p => p.y, (a, b) => (a === b ? 0 : a < b ? 1 : -1)) // descending
-      .toArray();
+      .toArray()
+      .sort((p1, p2) => {
+        const cmp = p2.y.localeCompare(p1.y); // descending, compare p2 to p1
+        if (cmp === 0) {
+          return p1.x.getTime() - p2.x.getTime();
+        } else {
+          return cmp;
+        }
+      });
   }
 );
 
