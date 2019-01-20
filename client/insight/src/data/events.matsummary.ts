@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as api from "./api";
 import { addDays } from "date-fns";
 import { HashMap, HashSet, Vector } from "prelude-ts";
-import { range } from "lodash";
 import { LazySeq } from "./lazyseq";
 
 export interface MaterialSummary {
@@ -72,7 +71,7 @@ export function inproc_mat_to_summary(mat: Readonly<api.IInProcessMaterial>): Ma
     materialID: mat.materialID,
     jobUnique: mat.jobUnique,
     partName: mat.partName,
-    completed_procs: range(1, mat.process, 1),
+    completed_procs: LazySeq.ofRange(1, mat.process, 1).toArray(),
     serial: mat.serial,
     workorderId: mat.workorderId,
     signaledInspections: mat.signaledInspections

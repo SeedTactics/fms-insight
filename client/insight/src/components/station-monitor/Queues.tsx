@@ -64,7 +64,7 @@ import * as matDetails from "../../data/material-details";
 import { MaterialSummary } from "../../data/events";
 import SerialScanner from "./QRScan";
 import ManualScan from "./ManualScan";
-import { range } from "lodash";
+import { LazySeq } from "../../data/lazyseq";
 
 interface ExistingMatInQueueDialogBodyProps {
   readonly display_material: matDetails.MaterialDetail;
@@ -211,7 +211,7 @@ class SelectJob extends React.PureComponent<SelectJobProps> {
                 >
                   Raw Material
                 </MenuItem>
-                {range(1, this.props.selected_job.procsAndPaths.length).map(p => (
+                {LazySeq.ofRange(1, this.props.selected_job.procsAndPaths.length).map(p => (
                   <MenuItem
                     key={p}
                     selected={this.props.selected_last_process === p}

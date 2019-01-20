@@ -35,8 +35,8 @@ import * as api from "./api";
 import { Pledge, PledgeStatus, PledgeToPromise } from "../store/middleware";
 import { MaterialSummary } from "./events";
 import { JobsBackend, LogBackend, OtherLogBackends } from "./backend";
-import { chunk } from "lodash";
 import { Vector, HashSet } from "prelude-ts";
+import { LazySeq } from "./lazyseq";
 
 export enum ActionType {
   OpenMaterialDialog = "MaterialDetails_Open",
@@ -386,8 +386,8 @@ export function computeWorkorders(
 async function loadWorkordersForPart(part: string): Promise<Vector<WorkorderPlanAndSummary>> {
   const works = await JobsBackend.mostRecentUnfilledWorkordersForPart(part);
   const summaries: api.IWorkorderSummary[] = [];
-  for (let ws of chunk(works, 16)) {
-    summaries.push(...(await LogBackend.getWorkorders(ws.map(w => w.workorderId))));
+  for (let ws of LazySeq.ofIterable(works).chunk(16)) {
+    summaries.push(...(await LogBackend.getWorkorders(ws.map(w => w.workorderId).toArray())));
   }
   return computeWorkorders(part, works, summaries);
 }

@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { NOT_FOUND } from "redux-first-router";
-import { take } from "lodash";
 
 export enum RouteLocation {
   Dashboard = "ROUTE_Dashboard",
@@ -231,7 +230,7 @@ export function reducer(s: State, a: Action): State {
         current: RouteLocation.LoadMonitor,
         station_monitor: StationMonitorType.LoadUnload,
         selected_load_id: typeof a.payload.num === "string" ? parseInt(a.payload.num, 10) : a.payload.num,
-        load_queues: take(loadqueues, 3),
+        load_queues: loadqueues.slice(0, 3),
         load_free_material: query.free === null ? true : false
       };
     case RouteLocation.InspectionMonitor:

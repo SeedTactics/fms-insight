@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { addDays, addMonths, startOfMonth } from "date-fns";
 import { PledgeStatus, Pledge, ActionBeforeMiddleware } from "../store/middleware";
 import { Vector } from "prelude-ts";
-import { maxBy, takeRight } from "lodash";
+import { LazySeq } from "./lazyseq";
 
 import * as api from "./api";
 import * as cycles from "./events.cycles";
@@ -255,13 +255,13 @@ function processRecentLogEntries(now: Date, evts: ReadonlyArray<Readonly<api.ILo
   const thirtyDaysAgo = addDays(now, -30);
   const initialLoad = s.latest_log_counter === undefined;
   let lastCounter = s.latest_log_counter;
-  let lastNewEvent = maxBy(evts, e => e.counter);
+  let lastNewEvent = LazySeq.ofIterable(evts).maxOn(e => e.counter);
   let last10Evts = s.most_recent_10_events;
-  if (lastNewEvent !== undefined) {
-    if (lastCounter === undefined || lastCounter < lastNewEvent.counter) {
-      lastCounter = lastNewEvent.counter;
+  if (lastNewEvent.isSome()) {
+    if (lastCounter === undefined || lastCounter < lastNewEvent.get().counter) {
+      lastCounter = lastNewEvent.get().counter;
     }
-    const lastNew10 = takeRight(evts, 10);
+    const lastNew10 = evts.slice(-10);
     last10Evts = last10Evts
       .appendAll(lastNew10)
       .reverse()
@@ -301,10 +301,12 @@ function processSpecificMonthLogEntries(evts: Iterable<api.ILogEntry>, s: Analys
 function processRecentJobs(now: Date, jobs: Readonly<api.IHistoricData>, s: Last30Days): Last30Days {
   const thirtyDaysAgo = addDays(now, -30);
   let latestSchId = s.latest_scheduleId;
-  const largestJob = maxBy(Object.values(jobs.jobs), j => j.scheduleId);
-  if (largestJob !== undefined) {
-    if (latestSchId === undefined || (largestJob.scheduleId !== undefined && latestSchId < largestJob.scheduleId)) {
-      latestSchId = largestJob.scheduleId;
+  const largestSchId = LazySeq.ofObject(jobs.jobs)
+    .maxOn(([_, j]) => j.scheduleId || "")
+    .mapNullable(([_, j]) => j.scheduleId);
+  if (largestSchId.isSome()) {
+    if (latestSchId === undefined || latestSchId < largestSchId.get()) {
+      latestSchId = largestSchId.get();
     }
   }
 

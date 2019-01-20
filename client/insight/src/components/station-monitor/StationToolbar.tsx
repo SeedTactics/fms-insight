@@ -57,7 +57,6 @@ import { Store, connect, DispatchAction, mkAC } from "../../store/store";
 import * as api from "../../data/api";
 import * as operators from "../../data/operators";
 import * as guiState from "../../data/gui-state";
-import { take } from "lodash";
 
 interface OperatorSelectProps {
   readonly operators: HashSet<string>;
@@ -223,7 +222,7 @@ function StationToolbar(props: StationToolbarProps) {
     const free = newQueues.includes(freeMaterialSym);
     props.displayLoadStation(
       props.current_route.selected_load_id,
-      take(newQueues, 3).filter(q => q !== freeMaterialSym),
+      newQueues.slice(0, 3).filter(q => q !== freeMaterialSym),
       free
     );
   }
@@ -237,7 +236,7 @@ function StationToolbar(props: StationToolbarProps) {
   function setStandaloneQueues(newQueuesAny: any) {
     const newQueues = newQueuesAny as ReadonlyArray<string>;
     const free = newQueues.includes(freeMaterialSym);
-    props.displayQueues(take(newQueues, 3).filter(q => q !== freeMaterialSym), free);
+    props.displayQueues(newQueues.slice(0, 3).filter(q => q !== freeMaterialSym), free);
   }
 
   let standalonequeues: string[] = [...props.current_route.standalone_queues];

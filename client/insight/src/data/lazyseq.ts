@@ -36,6 +36,34 @@ function filterI<T>(f: (x: T) => boolean, i: Iterable<T>): Iterable<T> {
   });
 }
 
+function chunkI<T>(size: number, i: Iterable<T>): Iterable<Vector<T>> {
+  return mkIterable(function*() {
+    let chunk = Vector.empty<T>();
+    for (let x of i) {
+      chunk = chunk.append(x);
+      if (chunk.length() === size) {
+        yield chunk;
+        chunk = Vector.empty<T>();
+      }
+    }
+    if (chunk.length() > 0) {
+      yield chunk;
+    }
+  });
+}
+
+function rangeI(start: number, end: number, step?: number): Iterable<number> {
+  if (end <= start) {
+    return [];
+  }
+  const s = step || 1;
+  return mkIterable(function*() {
+    for (let x = start; x < end; x += s) {
+      yield x;
+    }
+  });
+}
+
 function objectI<V>(obj: { [k: string]: V }): Iterable<[string, V]> {
   return mkIterable(function*() {
     for (let k in obj) {
@@ -55,6 +83,10 @@ export class LazySeq<T> {
     return new LazySeq<[string, V]>(objectI(obj));
   }
 
+  static ofRange(start: number, end: number, step?: number): LazySeq<number> {
+    return new LazySeq<number>(rangeI(start, end, step));
+  }
+
   [Symbol.iterator](): Iterator<T> {
     return this.iter[Symbol.iterator]();
   }
@@ -69,6 +101,10 @@ export class LazySeq<T> {
 
   flat<S>(f: (x: T) => Iterable<S>): LazySeq<S> {
     return new LazySeq<S>(flatI(f, this.iter));
+  }
+
+  chunk(size: number): LazySeq<Vector<T>> {
+    return new LazySeq<Vector<T>>(chunkI(size, this.iter));
   }
 
   reduce(f: (x1: T, x2: T) => T): Option<T> {
