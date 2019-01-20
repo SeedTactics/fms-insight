@@ -36,11 +36,11 @@ function filterI<T>(f: (x: T) => boolean, i: Iterable<T>): Iterable<T> {
   });
 }
 
-function* objectI<V>(obj: { [k: string]: V }): Iterable<[string, V]> {
+function objectI<V>(obj: { [k: string]: V }): Iterable<[string, V]> {
   return mkIterable(function*() {
     for (let k in obj) {
       if (obj.hasOwnProperty(k)) {
-        yield [k, obj[k]];
+        yield [k, obj[k]] as [string, V];
       }
     }
   });
