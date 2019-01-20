@@ -38,7 +38,7 @@ import TableCell from "@material-ui/core/TableCell";
 import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 import DateTimeDisplay from "./DateTimeDisplay";
-import { query } from "itiriri";
+import { LazySeq } from "../data/lazyseq";
 
 export interface LogEntryProps {
   entry: api.ILogEntry;
@@ -214,7 +214,7 @@ export class LogEntries extends React.PureComponent<LogEntriesProps> {
           </TableRow>
         </TableHead>
         <TableBody>
-          {query(this.props.entries).map((e, idx) => (
+          {LazySeq.ofIterable(this.props.entries).map((e, idx) => (
             <LogEntry key={idx} entry={e} />
           ))}
         </TableBody>

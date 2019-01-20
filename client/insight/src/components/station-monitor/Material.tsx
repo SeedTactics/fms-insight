@@ -57,7 +57,7 @@ import * as matDetails from "../../data/material-details";
 import { LogEntries } from "../LogEntry";
 import { MaterialSummary } from "../../data/events";
 import { inproc_mat_to_summary, MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
-import { query } from "itiriri";
+import { LazySeq } from "../../data/lazyseq";
 
 /*
 function getPosition(el: Element) {
@@ -340,15 +340,16 @@ export function InstructionButton({
   readonly material: matDetails.MaterialDetail;
   readonly type: string;
 }) {
-  const maxProc = query(material.events)
+  const maxProc = LazySeq.ofIterable(material.events)
     .flat(e => e.material)
     .filter(e => e.id === material.materialID)
-    .max(e => e.proc);
+    .maxOn(e => e.proc)
+    .map(e => e.proc);
   const instrQuery =
     "?type=" +
     encodeURIComponent(type) +
     ("&materialID=" + material.materialID.toString()) +
-    (maxProc !== undefined ? "&process=" + maxProc.proc.toString() : "");
+    (maxProc !== undefined ? "&process=" + maxProc.getOrElse(1).toString() : "");
   return (
     <Button
       href={"/api/v1/server/find-instructions/" + encodeURIComponent(material.partName) + instrQuery}

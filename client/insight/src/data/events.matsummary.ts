@@ -34,7 +34,7 @@ import * as api from "./api";
 import { addDays } from "date-fns";
 import { HashMap, HashSet, Vector } from "prelude-ts";
 import { range } from "lodash";
-import { query } from "itiriri";
+import { LazySeq } from "./lazyseq";
 
 export interface MaterialSummary {
   readonly materialID: number;
@@ -83,10 +83,10 @@ export function process_events(now: Date, newEvts: ReadonlyArray<api.ILogEntry>,
   const oneWeekAgo = addDays(now, -7);
 
   // check if no changes needed: no new events and nothing to filter out
-  const minEntry = query(st.matsById.valueIterable()).min(
+  const minEntry = LazySeq.ofIterable(st.matsById.valueIterable()).minBy(
     (m1, m2) => m1.last_event.getTime() - m2.last_event.getTime()
   );
-  if ((minEntry === undefined || minEntry.last_event >= oneWeekAgo) && newEvts.length === 0) {
+  if ((minEntry.isNone() || minEntry.get().last_event >= oneWeekAgo) && newEvts.length === 0) {
     return st;
   }
 

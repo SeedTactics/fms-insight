@@ -50,7 +50,7 @@ import SerialScanner from "./QRScan";
 import Tooltip from "@material-ui/core/Tooltip";
 import ManualScan from "./ManualScan";
 import { HashMap } from "prelude-ts";
-import { query } from "itiriri";
+import { LazySeq } from "../../data/lazyseq";
 
 interface WashDialogProps extends MaterialDialogProps {
   readonly operator?: string;
@@ -152,8 +152,8 @@ interface WashProps {
 }
 
 function Wash(props: WashProps) {
-  const unwashed = query(props.recent_completed).filter(m => m.wash_completed === undefined);
-  const washed = query(props.recent_completed).filter(m => m.wash_completed !== undefined);
+  const unwashed = LazySeq.ofIterable(props.recent_completed).filter(m => m.wash_completed === undefined);
+  const washed = LazySeq.ofIterable(props.recent_completed).filter(m => m.wash_completed !== undefined);
 
   return (
     <DocumentTitle title="Wash - FMS Insight">
@@ -187,9 +187,9 @@ const extractRecentCompleted = createSelector(
   (st: Store) => st.Events.last30.mat_summary.matsById,
   (mats: HashMap<number, MaterialSummaryAndCompletedData>): ReadonlyArray<MaterialSummaryAndCompletedData> => {
     const cutoff = addHours(new Date(), -36);
-    const recent = Array.from(
-      query(mats.valueIterable()).filter(e => e.completed_time !== undefined && e.completed_time >= cutoff)
-    );
+    const recent = LazySeq.ofIterable(mats.valueIterable())
+      .filter(e => e.completed_time !== undefined && e.completed_time >= cutoff)
+      .toArray();
     // sort decending
     recent.sort((e1, e2) =>
       e1.completed_time && e2.completed_time ? e2.completed_time.getTime() - e1.completed_time.getTime() : 0

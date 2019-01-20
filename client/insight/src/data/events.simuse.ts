@@ -34,7 +34,7 @@ import * as api from "./api";
 import { duration } from "moment";
 import { startOfDay } from "date-fns";
 import { Vector, fieldsHashCode, HashMap } from "prelude-ts";
-import { LazySeq } from "./iterators";
+import { LazySeq } from "./lazyseq";
 
 export interface SimStationUse {
   readonly station: string;

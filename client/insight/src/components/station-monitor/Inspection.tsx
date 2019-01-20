@@ -47,7 +47,7 @@ import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 import SerialScanner from "./QRScan";
 import ManualScan from "./ManualScan";
 import { HashMap, HashSet } from "prelude-ts";
-import { query } from "itiriri";
+import { LazySeq } from "../../data/lazyseq";
 
 interface InspButtonsProps {
   readonly display_material: matDetails.MaterialDetail;
@@ -226,14 +226,14 @@ const extractRecentInspections = createSelector(
 
     const uninspected = Array.from(
       inspType === undefined
-        ? query(mats.valueIterable()).filter(
+        ? LazySeq.ofIterable(mats.valueIterable()).filter(
             m =>
               m.completed_time !== undefined &&
               m.completed_time >= cutoff &&
               m.signaledInspections.length > 0 &&
               !checkAllCompleted(m)
           )
-        : query(mats.valueIterable()).filter(
+        : LazySeq.ofIterable(mats.valueIterable()).filter(
             m =>
               m.completed_time !== undefined &&
               m.completed_time >= cutoff &&
@@ -248,14 +248,14 @@ const extractRecentInspections = createSelector(
 
     const inspected = Array.from(
       inspType === undefined
-        ? query(mats.valueIterable()).filter(
+        ? LazySeq.ofIterable(mats.valueIterable()).filter(
             m =>
               m.completed_time !== undefined &&
               m.completed_time >= cutoff &&
               m.signaledInspections.length > 0 &&
               checkAllCompleted(m)
           )
-        : query(mats.valueIterable()).filter(
+        : LazySeq.ofIterable(mats.valueIterable()).filter(
             m =>
               m.completed_time !== undefined &&
               m.completed_time >= cutoff &&

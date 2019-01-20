@@ -41,7 +41,7 @@ import Efficiency from "./Efficiency";
 import { createTestStore } from "../../test-util";
 import LoadingIcon from "../LoadingIcon";
 
-it("renders the cost/piece page", async () => {
+it("renders the efficiency page", async () => {
   const store = await createTestStore();
 
   const result = render(

@@ -50,7 +50,7 @@ import * as matDetails from "../../data/material-details";
 import InspectionSankey from "./InspectionSankey";
 import { PartCycleData } from "../../data/events.cycles";
 import { MaterialDialog } from "../station-monitor/Material";
-import { LazySeq } from "../../data/iterators";
+import { LazySeq } from "../../data/lazyseq";
 
 // --------------------------------------------------------------------------------
 // Station Cycles
