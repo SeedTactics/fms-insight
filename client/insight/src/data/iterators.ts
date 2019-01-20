@@ -6,12 +6,6 @@ function* mapI<T, S>(f: (x: T) => S, i: Iterable<T>): IterableIterator<S> {
   }
 }
 
-function* mapToKeyAndSingleton<T, K>(f: (x: T) => K, i: Iterable<T>): IterableIterator<[K, Vector<T>]> {
-  for (let x of i) {
-    yield [f(x), Vector.of(x)];
-  }
-}
-
 function* flatI<T, S>(f: (x: T) => Iterable<S>, i: Iterable<T>): IterableIterator<S> {
   for (let x of i) {
     yield* f(x);
@@ -48,11 +42,19 @@ export class LazySeq<T> {
   }
 
   groupOn<K>(f: (x: T) => K & WithEquality): HashMap<K, Vector<T>> {
-    return HashMap.empty<K, Vector<T>>().mergeWith(mapToKeyAndSingleton(f, this.iter), (v1, v2) => v1.appendAll(v2));
+    return this.groupBy<K & WithEquality, Vector<T>>(
+      x => [f(x), Vector.of(x)] as [K & WithEquality, Vector<T>],
+      (v1, v2) => v1.appendAll(v2)
+    );
   }
 
   groupBy<K, S>(f: (x: T) => [K & WithEquality, S], merge: (v1: S, v2: S) => S): HashMap<K, S> {
-    return HashMap.empty<K, S>().mergeWith(mapI(f, this.iter), merge);
+    let m = HashMap.empty<K, S>();
+    for (let x of this.iter) {
+      const [k, s] = f(x);
+      m = m.putWithMerge(k, s, merge);
+    }
+    return m;
   }
 
   toVector(): Vector<T> {
