@@ -500,7 +500,7 @@ function processEvents(evts: ReadonlyArray<Readonly<api.ILogEntry>>, mat: Materi
     }
   });
 
-  var allEvents = mat.events.appendAll(evts).sortOn(e => e.endUTC.getTime());
+  var allEvents = mat.events.appendAll(evts).sortOn(e => e.endUTC.getTime(), e => e.counter);
 
   return {
     ...mat,
