@@ -82,7 +82,7 @@ async function loadEventsJson(offsetSeconds: number): Promise<Readonly<api.ILogE
       }
     })
     .toVector()
-    .sortOn(e => e.endUTC.getTime())
+    .sortOn(e => e.endUTC.getTime(), e => e.counter)
     .toArray();
 }
 

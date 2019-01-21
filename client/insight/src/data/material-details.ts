@@ -549,7 +549,7 @@ export function reducer(s: State, a: Action): State {
             ...s,
             material: {
               ...s.material,
-              events: s.material.events.appendAll(a.pledge.result).sortOn(e => e.endUTC.getTime())
+              events: s.material.events.appendAll(a.pledge.result).sortOn(e => e.endUTC.getTime(), e => e.counter)
             }
           };
         } else {
