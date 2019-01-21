@@ -344,7 +344,7 @@ it("successfully processes events", () => {
     fakeSerial(logmat, "theserial"),
     fakeWorkorderAssign(logmat, "work1234")
   ];
-  const sortedEvts = Vector.ofIterable(evts).sortOn(e => e.endUTC.getTime());
+  const sortedEvts = Vector.ofIterable(evts).sortOn(e => e.endUTC.getTime(), e => e.counter);
 
   const initial: mat.MaterialDetail = {
     materialID: -1,
