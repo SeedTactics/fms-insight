@@ -1815,7 +1815,7 @@ exports[`renders the load station page: NBTGI dialog 1`] = `
                   <span
                     data-prop="date"
                   >
-                    "2018-07-03T07:20:00.000Z"
+                    "2018-07-03T07:20:01.000Z"
                   </span>
                   <span
                     data-prop="formatStr"
@@ -1833,7 +1833,7 @@ exports[`renders the load station page: NBTGI dialog 1`] = `
                   <span
                     data-prop="date"
                   >
-                    "2018-07-03T07:20:00.000Z"
+                    "2018-07-03T07:20:01.000Z"
                   </span>
                   <span
                     data-prop="formatStr"
