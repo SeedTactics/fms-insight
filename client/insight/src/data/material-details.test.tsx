@@ -451,7 +451,7 @@ it("adds extra logs", () => {
     ...initial,
     events: Vector.ofIterable(evts1)
       .appendAll(evts2)
-      .sortOn(e => e.endUTC.getTime())
+      .sortOn(e => e.endUTC.getTime(), e => e.counter)
   };
 
   const action: mat.Action = {
