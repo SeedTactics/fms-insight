@@ -341,7 +341,7 @@ export function InstructionButton({
   readonly type: string;
 }) {
   const maxProc = LazySeq.ofIterable(material.events)
-    .flat(e => e.material)
+    .flatMap(e => e.material)
     .filter(e => e.id === material.materialID)
     .maxOn(e => e.proc)
     .map(e => e.proc);

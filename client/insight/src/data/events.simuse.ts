@@ -185,8 +185,8 @@ export function binSimStationUseByDayAndStat(
   extractValue: (c: SimStationUse) => number
 ): HashMap<DayAndStation, number> {
   return LazySeq.ofIterable(simUses)
-    .flat(s => splitElapsedToDays(s, extractValue))
-    .groupBy(s => [new DayAndStation(s.day, s.station), s.value] as [DayAndStation, number], (v1, v2) => v1 + v2);
+    .flatMap(s => splitElapsedToDays(s, extractValue))
+    .toMap(s => [new DayAndStation(s.day, s.station), s.value] as [DayAndStation, number], (v1, v2) => v1 + v2);
 }
 
 class DayAndPart {
@@ -203,7 +203,7 @@ class DayAndPart {
 }
 
 export function binSimProductionByDayAndPart(prod: Iterable<SimProduction>): HashMap<DayAndPart, number> {
-  return LazySeq.ofIterable(prod).groupBy(
+  return LazySeq.ofIterable(prod).toMap(
     p => [new DayAndPart(startOfDay(p.start), p.part), p.quantity] as [DayAndPart, number],
     (q1, q2) => q1 + q2
   );

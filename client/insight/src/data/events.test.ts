@@ -302,13 +302,13 @@ it("bins actual cycles by day", () => {
   // Note this is after cycles are binned, which is correct since cycles are generated using
   // now in local time and then binned in local time.  Just need to update the date before
   // comparing with the snapshot
-  byDayAndStat = byDayAndStat.mapKeys(dayAndStat => dayAndStat.update("day", d => addMinutes(d, minOffset)));
+  byDayAndStat = byDayAndStat.map((dayAndStat, val) => [dayAndStat.adjustDay(d => addMinutes(d, minOffset)), val]);
 
   expect(byDayAndStat).toMatchSnapshot("cycles binned by day and station");
 
   let byDayAndPart = events.binCyclesByDayAndPart(st.last30.cycles.by_part_then_stat, c => (c.completed ? 1 : 0));
 
-  byDayAndPart = byDayAndPart.mapKeys(dayAndPart => dayAndPart.update("day", d => addMinutes(d, minOffset)));
+  byDayAndPart = byDayAndPart.map((dayAndPart, val) => [dayAndPart.adjustDay(d => addMinutes(d, minOffset)), val]);
 
   expect(byDayAndPart).toMatchSnapshot("cycles binned by day and part");
 });

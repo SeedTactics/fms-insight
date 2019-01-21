@@ -51,9 +51,10 @@ import { PartCycleData } from "../../data/events.cycles";
 import { createSelector } from "reselect";
 import BuildIcon from "@material-ui/icons/Build";
 import AnalysisSelectToolbar from "../AnalysisSelectToolbar";
+import { HashSet, HashMap } from "prelude-ts";
 
 interface CostPerPieceInputProps {
-  readonly statGroups: im.Set<string>;
+  readonly statGroups: HashSet<string>;
   readonly input: ccp.CostInput;
 
   readonly setMachineCost: DispatchAction<ccp.ActionType.SetMachineCostPerYear>;
@@ -108,28 +109,25 @@ function CostPerPieceInput(props: CostPerPieceInputProps) {
               </TableRow>
             </TableHead>
             <TableBody>
-              {props.statGroups
-                .toSeq()
-                .sort()
-                .map((s, idx) => (
-                  <TableRow key={idx}>
-                    <TableCell>{s}</TableCell>
-                    <TableCell>
-                      <TextField
-                        type="number"
-                        inputProps={{ min: 0 }}
-                        fullWidth
-                        value={props.input.machineCostPerYear[s] || 0}
-                        onChange={e =>
-                          props.setMachineCost({
-                            group: s,
-                            cost: parseFloat(e.target.value)
-                          })
-                        }
-                      />
-                    </TableCell>
-                  </TableRow>
-                ))}
+              {props.statGroups.toArray({ sortOn: x => x }).map((s, idx) => (
+                <TableRow key={idx}>
+                  <TableCell>{s}</TableCell>
+                  <TableCell>
+                    <TextField
+                      type="number"
+                      inputProps={{ min: 0 }}
+                      fullWidth
+                      value={props.input.machineCostPerYear[s] || 0}
+                      onChange={e =>
+                        props.setMachineCost({
+                          group: s,
+                          cost: parseFloat(e.target.value)
+                        })
+                      }
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </CardContent>
@@ -234,7 +232,7 @@ const calcCostPerPiece = createSelector(
   (s: Store) => s.CostPerPiece.input,
   (s: Store) => (s.Events.analysis_period === AnalysisPeriod.Last30Days ? undefined : s.Events.analysis_period_month),
   (
-    cycles: im.Map<string, im.Map<string, ReadonlyArray<PartCycleData>>>,
+    cycles: HashMap<string, HashMap<string, ReadonlyArray<PartCycleData>>>,
     input: ccp.CostInput,
     month: Date | undefined
   ) => {

@@ -85,7 +85,10 @@
       ".*events-json.txt$": "<rootDir>/file-mock.js"
     },
     "preset": "ts-jest",
-    "testMatch": null
+    "testMatch": null,
+    "snapshotSerializers": [
+      "<rootDir>/prelude-ts-snapshots.js"
+    ]
   },
   "sw-precache": {
     "navigateFallback": "index.html",

@@ -31,9 +31,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as im from "immutable";
 import { PartCycleData } from "./events.cycles";
 import { getDaysInMonth } from "date-fns";
+import { HashMap } from "prelude-ts";
+import { LazySeq } from "./lazyseq";
 
 export interface CostInput {
   // key is machine group name
@@ -159,71 +160,87 @@ export interface PartCost {
 }
 
 function machine_cost(
-  cycles: im.Seq<number, PartCycleData>,
-  totalStatUseMinutes: im.Map<string, number>,
+  cycles: LazySeq<PartCycleData>,
+  totalStatUseMinutes: HashMap<string, number>,
   machineCostPerYear: { readonly [key: string]: number },
   days: number
 ): number {
   return cycles
-    .groupBy(c => c.stationGroup)
-    .map(forPartStat => forPartStat.reduce((x, c) => x + c.active, 0))
-    .reduce((x: number, minutes: number, statGroup: string) => {
-      const totalUse = totalStatUseMinutes.get(statGroup) || 1;
+    .toMap(c => [c.stationGroup, c.active], (a1, a2) => a1 + a2)
+    .foldLeft(0, (x: number, [statGroup, minutes]: [string, number]) => {
+      const totalUse = totalStatUseMinutes.get(statGroup).getOrElse(1);
       const totalMachineCost = ((machineCostPerYear[statGroup] || 0) * days) / 365;
       return x + (minutes / totalUse) * totalMachineCost;
-    }, 0);
+    });
 }
 
 function labor_cost(
-  cycles: im.Seq<number, PartCycleData>,
-  totalStatUseMinutes: im.Map<string, number>,
+  cycles: LazySeq<PartCycleData>,
+  totalStatUseMinutes: HashMap<string, number>,
   totalLaborCost: number
 ): number {
   const pctUse = cycles
-    .groupBy(c => c.stationGroup)
-    .map(forPartStat => forPartStat.reduce((x, c) => x + c.active, 0))
-    .reduce((x: number, minutes: number, statGroup: string) => {
-      const total = totalStatUseMinutes.get(statGroup, 1);
+    .toMap(c => [c.stationGroup, c.active], (a1, a2) => a1 + a2)
+    .foldLeft(0, (x: number, [statGroup, minutes]: [string, number]) => {
+      const total = totalStatUseMinutes.get(statGroup).getOrElse(1);
       return x + minutes / total;
-    }, 0);
+    });
   return pctUse * totalLaborCost;
+}
+
+// https://github.com/emmanueltouzery/prelude-ts/pull/27
+function mapValueIterable<A, B>(m: HashMap<A, B>): Iterable<B> {
+  // empty hashmaps correctly iterate
+  if (m.isEmpty()) {
+    return m.valueIterable();
+  }
+  return {
+    [Symbol.iterator]() {
+      return (m.valueIterable() as unknown) as Iterator<B>;
+    }
+  };
 }
 
 export function compute_monthly_cost(
   i: CostInput,
-  byPart: im.Map<string, im.Map<string, ReadonlyArray<PartCycleData>>>,
+  byPart: HashMap<string, HashMap<string, ReadonlyArray<PartCycleData>>>,
   month?: Date
 ): ReadonlyArray<PartCost> {
   const days = month ? getDaysInMonth(month) : 30;
   const totalLaborCost = days * 24 * i.operatorCostPerHour * i.numOperators;
-  const cycles = byPart
-    .toSeq()
-    .flatMap(c => c)
-    .valueSeq()
+  const cycles = LazySeq.ofIterable(mapValueIterable(byPart))
+    .flatMap(c => mapValueIterable(c))
     .flatMap(c => c);
 
-  const totalStatUseMinutes: im.Map<string, number> = cycles
-    .groupBy(c => c.stationGroup)
-    .map(cs => cs.reduce((x, c) => x + c.active, 0))
-    .toMap();
+  const totalStatUseMinutes: HashMap<string, number> = cycles.toMap(
+    c => [c.stationGroup, c.active],
+    (a1, a2) => a1 + a2
+  );
 
-  return cycles
-    .groupBy(c => c.part)
-    .map((forPart, partName) => ({
-      part: partName,
-      parts_completed: forPart
-        .toSeq()
-        .filter(c => c.completed)
-        .count(),
-      machine_cost: machine_cost(
-        forPart.toSeq().filter(c => !c.isLabor),
-        totalStatUseMinutes,
-        i.machineCostPerYear,
-        days
-      ),
-      labor_cost: labor_cost(forPart.toSeq().filter(c => c.isLabor), totalStatUseMinutes, totalLaborCost),
-      material_cost: i.partMaterialCost[partName] || 0
-    }))
-    .valueSeq()
-    .toArray();
+  return Array.from(
+    cycles
+      .groupBy(c => c.part)
+      .map((partName, forPart) => [
+        partName,
+        {
+          part: partName,
+          parts_completed: LazySeq.ofIterable(forPart)
+            .filter(c => c.completed)
+            .length(),
+          machine_cost: machine_cost(
+            LazySeq.ofIterable(forPart).filter(c => !c.isLabor),
+            totalStatUseMinutes,
+            i.machineCostPerYear,
+            days
+          ),
+          labor_cost: labor_cost(
+            LazySeq.ofIterable(forPart).filter(c => c.isLabor),
+            totalStatUseMinutes,
+            totalLaborCost
+          ),
+          material_cost: i.partMaterialCost[partName] || 0
+        }
+      ])
+      .valueIterable()
+  );
 }

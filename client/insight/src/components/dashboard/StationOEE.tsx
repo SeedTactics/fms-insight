@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
 import Grid from "@material-ui/core/Grid";
-import * as im from "immutable";
 import { createSelector } from "reselect";
 import Tooltip from "@material-ui/core/Tooltip";
 import TimeAgo from "react-timeago";
@@ -193,14 +192,14 @@ class StationOEE extends React.PureComponent<StationOEEProps> {
 
 interface Props {
   dateOfCurrentStatus: Date | undefined;
-  station_active_minutes_past_week: im.Map<string, number>;
+  station_active_minutes_past_week: HashMap<string, number>;
   pallets: HashMap<string, { pal?: PalletData; queued?: PalletData }>;
 }
 
 function StationOEEs(p: Props) {
   const stats = p.pallets
     .keySet()
-    .addAll(p.station_active_minutes_past_week.keySeq())
+    .addAll(p.station_active_minutes_past_week.keySet())
     .toArray({ sortOn: [s => s.startsWith("L/U"), s => s] }); // put machines first
   return (
     <Grid data-testid="stationoee-container" container justify="space-around">
@@ -209,7 +208,7 @@ function StationOEEs(p: Props) {
           <StationOEE
             dateOfCurrentStatus={p.dateOfCurrentStatus}
             station={stat}
-            oee={p.station_active_minutes_past_week.get(stat, 0) / (60 * 24 * 7)}
+            oee={p.station_active_minutes_past_week.get(stat).getOrElse(0) / (60 * 24 * 7)}
             pallet={p.pallets.get(stat).getOrElse({ pal: undefined }).pal}
             queuedPallet={p.pallets.get(stat).getOrElse({ queued: undefined }).queued}
           />

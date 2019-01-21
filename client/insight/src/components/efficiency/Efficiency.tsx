@@ -31,7 +31,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import * as im from "immutable";
 import WorkIcon from "@material-ui/icons/Work";
 import BasketIcon from "@material-ui/icons/ShoppingBasket";
 import { addMonths, addDays } from "date-fns";
@@ -51,6 +50,7 @@ import InspectionSankey from "./InspectionSankey";
 import { PartCycleData } from "../../data/events.cycles";
 import { MaterialDialog } from "../station-monitor/Material";
 import { LazySeq } from "../../data/lazyseq";
+import { HashMap } from "prelude-ts";
 
 // --------------------------------------------------------------------------------
 // Station Cycles
@@ -66,7 +66,7 @@ const ConnectedMaterialDialog = connect(
 )(MaterialDialog);
 
 interface PartStationCycleChartProps {
-  readonly points: im.Map<string, im.Map<string, ReadonlyArray<events.CycleData>>>;
+  readonly points: HashMap<string, HashMap<string, ReadonlyArray<events.CycleData>>>;
   readonly default_date_range?: Date[];
   readonly selected?: string;
   readonly setSelected: (s: string) => void;
@@ -132,14 +132,17 @@ const ConnectedPartStationCycleChart = connect(
 // --------------------------------------------------------------------------------
 
 interface PalletCycleChartProps {
-  readonly points: im.Map<string, ReadonlyArray<events.CycleData>>;
+  readonly points: HashMap<string, ReadonlyArray<events.CycleData>>;
   readonly default_date_range?: Date[];
   readonly selected?: string;
   readonly setSelected: (s: string) => void;
 }
 
 function PalletCycleChart(props: PalletCycleChartProps) {
-  const points = props.points.map((cs, pal) => im.Map({ [pal]: cs }));
+  const points = props.points.map((pal, cs) => [
+    pal,
+    HashMap.of([pal, cs] as [string, ReadonlyArray<events.CycleData>])
+  ]);
   return (
     <SelectableCycleChart
       select_label="Pallet"
@@ -206,21 +209,25 @@ const stationOeeActualPointsSelector = createSelector(
   (cycles: events.CycleState) => cycles.by_part_then_stat,
   byPartThenStat => {
     let pts = events.binCyclesByDayAndStat(byPartThenStat, c => c.active);
-    return pts
-      .toSeq()
-      .map((val, dayAndStat) => {
+    return LazySeq.ofIterable(pts)
+      .map(([dayAndStat, val]) => {
         const pct = val / (24 * 60);
         return {
-          x: dayAndStat.get("day", null),
-          y: dayAndStat.get("station", null),
+          x: dayAndStat.day,
+          y: dayAndStat.station,
           color: pct,
           label: (pct * 100).toFixed(1) + "%"
         };
       })
-      .valueSeq()
-      .sortBy(p => p.x)
-      .sortBy(p => p.y, (a, b) => (a === b ? 0 : a < b ? 1 : -1)) // descending
-      .toArray();
+      .toArray()
+      .sort((p1, p2) => {
+        const cmp = p2.y.localeCompare(p1.y); // descending, compare p2 to p1
+        if (cmp === 0) {
+          return p1.x.getTime() - p2.x.getTime();
+        } else {
+          return cmp;
+        }
+      });
   }
 );
 
@@ -305,20 +312,24 @@ const completedActualPointsSelector = createSelector(
   (cycles: events.CycleState) => cycles.by_part_then_stat,
   byPartThenStat => {
     let pts = events.binCyclesByDayAndPart(byPartThenStat, c => (c.completed ? 1 : 0));
-    return pts
-      .toSeq()
-      .map((val, dayAndStat) => {
+    return LazySeq.ofIterable(pts)
+      .map(([dayAndPart, val]) => {
         return {
-          x: dayAndStat.get("day", null),
-          y: dayAndStat.get("part", null),
+          x: dayAndPart.day,
+          y: dayAndPart.part,
           color: val,
           label: val.toFixed(1)
         };
       })
-      .valueSeq()
-      .sortBy(p => p.x)
-      .sortBy(p => p.y, (a, b) => (a === b ? 0 : a < b ? 1 : -1)) // descending
-      .toArray();
+      .toArray()
+      .sort((p1, p2) => {
+        const cmp = p2.y.localeCompare(p1.y); // descending, compare p2 to p1
+        if (cmp === 0) {
+          return p1.x.getTime() - p2.x.getTime();
+        } else {
+          return cmp;
+        }
+      });
   }
 );
 
@@ -327,10 +338,10 @@ const completedPlannedPointsSelector = createSelector(
   production => {
     let pts = events.binSimProductionByDayAndPart(production);
     return LazySeq.ofIterable(pts)
-      .map(([dayAndStat, val]) => {
+      .map(([dayAndPart, val]) => {
         return {
-          x: dayAndStat.day,
-          y: dayAndStat.part,
+          x: dayAndPart.day,
+          y: dayAndPart.part,
           color: val,
           label: val.toFixed(1)
         };

@@ -286,7 +286,7 @@ function processRecentLogEntries(now: Date, evts: ReadonlyArray<Readonly<api.ILo
   });
 }
 
-function processSpecificMonthLogEntries(evts: Iterable<api.ILogEntry>, s: AnalysisMonth): AnalysisMonth {
+function processSpecificMonthLogEntries(evts: ReadonlyArray<Readonly<api.ILogEntry>>, s: AnalysisMonth): AnalysisMonth {
   return safeAssign(s, {
     cycles: cycles.process_events(
       { type: cycles.ExpireOldDataType.NoExpire },

@@ -31,9 +31,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as api from "./api";
-import * as im from "immutable"; // consider collectable.js at some point?
 import { duration } from "moment";
 import { startOfDay, addMinutes, differenceInMinutes } from "date-fns";
+import { HashMap, HashSet, Vector, fieldsHashCode } from "prelude-ts";
+import { LazySeq } from "./lazyseq";
 
 export interface CycleData {
   readonly x: Date;
@@ -59,17 +60,17 @@ export interface StatisticalCycleTime {
 }
 
 export interface CycleState {
-  readonly by_part_then_stat: im.Map<string, im.Map<string, ReadonlyArray<PartCycleData>>>;
-  readonly by_pallet: im.Map<string, ReadonlyArray<CycleData>>;
-  readonly station_groups: im.Set<string>;
-  readonly estimatedCycleTimes: im.Map<string, im.Map<string, StatisticalCycleTime>>;
+  readonly by_part_then_stat: HashMap<string, HashMap<string, ReadonlyArray<PartCycleData>>>;
+  readonly by_pallet: HashMap<string, ReadonlyArray<CycleData>>;
+  readonly station_groups: HashSet<string>;
+  readonly estimatedCycleTimes: HashMap<string, HashMap<string, StatisticalCycleTime>>;
 }
 
 export const initial: CycleState = {
-  by_part_then_stat: im.Map(),
-  by_pallet: im.Map(),
-  station_groups: im.Set(),
-  estimatedCycleTimes: im.Map()
+  by_part_then_stat: HashMap.empty(),
+  by_pallet: HashMap.empty(),
+  station_groups: HashSet.empty(),
+  estimatedCycleTimes: HashMap.empty()
 };
 
 export enum ExpireOldDataType {
@@ -135,8 +136,8 @@ function isOutlier(s: StatisticalCycleTime, mins: number): boolean {
   }
 }
 
-function median(vals: im.Seq.Indexed<number>): number {
-  const sorted = vals.sort().toArray();
+function median(vals: LazySeq<number>): number {
+  const sorted = vals.toArray().sort();
   const cnt = sorted.length;
   if (cnt === 0) {
     return 0;
@@ -151,20 +152,32 @@ function median(vals: im.Seq.Indexed<number>): number {
   }
 }
 
-function estimateCycleTimes(cycles: im.Seq.Indexed<number>): StatisticalCycleTime {
+function estimateCycleTimes(cycles: Vector<number>): StatisticalCycleTime {
   // compute median
-  const medianMinutes = median(cycles);
+  const medianMinutes = median(LazySeq.ofIterable(cycles));
 
   // absolute deviation from median, but use different values for below and above
   // median.  Below is assumed to be from fake cycles and above is from interrupted programs.
   // since we assume gaussian, use consistantcy constant of 1.4826
 
-  let madBelowMinutes = 1.4826 * median(cycles.filter(x => x <= medianMinutes).map(x => medianMinutes - x));
+  let madBelowMinutes =
+    1.4826 *
+    median(
+      LazySeq.ofIterable(cycles)
+        .filter(x => x <= medianMinutes)
+        .map(x => medianMinutes - x)
+    );
   if (madBelowMinutes < 0.01) {
     madBelowMinutes = 0.01;
   }
 
-  let madAboveMinutes = 1.4826 * median(cycles.filter(x => x >= medianMinutes).map(x => x - medianMinutes));
+  let madAboveMinutes =
+    1.4826 *
+    median(
+      LazySeq.ofIterable(cycles)
+        .filter(x => x >= medianMinutes)
+        .map(x => x - medianMinutes)
+    );
   if (madAboveMinutes < 0.01) {
     madAboveMinutes = 0.01;
   }
@@ -186,41 +199,33 @@ function estimateCycleTimes(cycles: im.Seq.Indexed<number>): StatisticalCycleTim
 
 function estimateCycleTimesOfParts(
   cycles: Iterable<api.ILogEntry>
-): im.Map<string, im.Map<string, StatisticalCycleTime>> {
-  const ret = im
-    .Seq(cycles)
+): HashMap<string, HashMap<string, StatisticalCycleTime>> {
+  const ret = LazySeq.ofIterable(cycles)
     .filter(c => c.type === api.LogType.MachineCycle && !c.startofcycle)
     .flatMap(c => c.material.map(m => ({ cycle: c, mat: m })))
     .groupBy(e => part_and_proc(e.mat))
-    .map(cyclesForPart =>
-      cyclesForPart
+    .mapValues(cyclesForPart =>
+      LazySeq.ofIterable(cyclesForPart)
         .groupBy(c => c.cycle.loc)
-        .map(cyclesForPartAndStat =>
-          estimateCycleTimes(
-            cyclesForPartAndStat
-              .map(p => duration(p.cycle.elapsed).asMinutes())
-              .toIndexedSeq()
-              .cacheResult()
-          )
+        .mapValues(cyclesForPartAndStat =>
+          estimateCycleTimes(cyclesForPartAndStat.map(p => duration(p.cycle.elapsed).asMinutes()))
         )
-        .toMap()
-    )
-    .toMap();
+    );
   return ret;
 }
 
 function activeMinutes(
   partAndProc: string,
   cycle: Readonly<api.ILogEntry>,
-  estimated: im.Map<string, im.Map<string, StatisticalCycleTime>>
+  estimated: HashMap<string, HashMap<string, StatisticalCycleTime>>
 ) {
   const cMins = duration(cycle.active).asMinutes();
   if (cycle.type === api.LogType.MachineCycle && (cycle.active === "" || cMins <= 0)) {
     const byStat = estimated.get(partAndProc);
-    if (byStat) {
-      const e = byStat.get(cycle.loc);
-      if (e) {
-        return e.expectedCycleMinutes;
+    if (byStat.isSome()) {
+      const e = byStat.get().get(cycle.loc);
+      if (e.isSome()) {
+        return e.get().expectedCycleMinutes;
       } else {
         return 0;
       }
@@ -234,16 +239,15 @@ function activeMinutes(
 
 export function process_events(
   expire: ExpireOldData,
-  newEvts: Iterable<api.ILogEntry>,
+  newEvts: ReadonlyArray<Readonly<api.ILogEntry>>,
   initialLoad: boolean,
   st: CycleState
 ): CycleState {
-  let evtsSeq = im.Seq(newEvts);
   let parts = st.by_part_then_stat;
   let pals = st.by_pallet;
   let statGroups = st.station_groups;
 
-  let estimatedCycleTimes: im.Map<string, im.Map<string, StatisticalCycleTime>>;
+  let estimatedCycleTimes: HashMap<string, HashMap<string, StatisticalCycleTime>>;
   if (initialLoad) {
     estimatedCycleTimes = estimateCycleTimesOfParts(newEvts);
   } else {
@@ -253,85 +257,85 @@ export function process_events(
   switch (expire.type) {
     case ExpireOldDataType.ExpireEarlierThan:
       // check if nothing to expire and no new data
-      const partEntries = parts
-        .valueSeq()
-        .flatMap(statMap => statMap.valueSeq())
+      const partEntries = LazySeq.ofIterable(parts.valueIterable())
+        .flatMap(statMap => statMap.valueIterable())
         .flatMap(cs => cs);
-      const palEntries = pals.valueSeq().flatMap(cs => cs);
-      const minEntry = palEntries.concat(partEntries).minBy(e => e.x);
+      const palEntries = LazySeq.ofIterable(pals.valueIterable()).flatMap(cs => cs);
+      const minEntry = palEntries.appendAll(partEntries).minOn(e => e.x.getTime());
 
-      if ((minEntry === undefined || minEntry.x >= expire.d) && evtsSeq.isEmpty()) {
+      if ((minEntry.isNone() || minEntry.get().x >= expire.d) && newEvts.length === 0) {
         return st;
       }
 
       // filter old events
       parts = parts
-        .map(statMap => statMap.map(es => es.filter(e => e.x >= expire.d)).filter(es => es.length > 0))
-        .filter(statMap => !statMap.isEmpty());
+        .mapValues(statMap => statMap.mapValues(es => es.filter(e => e.x >= expire.d)).filter(es => es.length > 0))
+        .filter((_, statMap) => !statMap.isEmpty());
 
-      pals = pals.map(es => es.filter(e => e.x >= expire.d)).filter(es => es.length > 0);
+      pals = pals.mapValues(es => es.filter(e => e.x >= expire.d)).filter(es => es.length > 0);
 
       break;
 
     case ExpireOldDataType.NoExpire:
-      if (evtsSeq.isEmpty()) {
+      if (newEvts.length === 0) {
         return st;
       }
       break;
   }
 
-  var newPartCycles: im.Seq.Keyed<string, im.Map<string, ReadonlyArray<PartCycleData>>> = evtsSeq
+  var newPartCycles: LazySeq<[string, HashMap<string, ReadonlyArray<PartCycleData>>]> = LazySeq.ofIterable(newEvts)
     .filter(c => !c.startofcycle && (c.type === api.LogType.LoadUnloadCycle || c.type === api.LogType.MachineCycle))
     .flatMap(c => c.material.map(m => ({ cycle: c, mat: m })))
     .groupBy(e => part_and_proc(e.mat))
-    .map((cyclesForPart, partAndProc) =>
-      cyclesForPart
-        .toSeq()
-        .map(e => ({
-          x: e.cycle.endUTC,
-          y: duration(e.cycle.elapsed).asMinutes(),
-          active: activeMinutes(partAndProc, e.cycle, estimatedCycleTimes),
-          completed: e.cycle.type === api.LogType.LoadUnloadCycle && e.cycle.result === "UNLOAD",
-          part: e.mat.part,
-          process: e.mat.proc,
-          matId: e.mat.id,
-          isLabor: e.cycle.type === api.LogType.LoadUnloadCycle,
-          stationGroup: stat_group(e.cycle),
-          stationNumber: e.cycle.locnum
-        }))
-        .filter(c => c.stationGroup !== "")
-        .groupBy(e => stat_name_and_num(e))
-        .map(cycles => cycles.valueSeq().toArray())
-        .toMap()
+    .transform(m => LazySeq.ofIterable(m))
+    .map(
+      ([partAndProc, cyclesForPart]) =>
+        [
+          partAndProc,
+          LazySeq.ofIterable(cyclesForPart)
+            .map(e => ({
+              x: e.cycle.endUTC,
+              y: duration(e.cycle.elapsed).asMinutes(),
+              active: activeMinutes(partAndProc, e.cycle, estimatedCycleTimes),
+              completed: e.cycle.type === api.LogType.LoadUnloadCycle && e.cycle.result === "UNLOAD",
+              part: e.mat.part,
+              process: e.mat.proc,
+              matId: e.mat.id,
+              isLabor: e.cycle.type === api.LogType.LoadUnloadCycle,
+              stationGroup: stat_group(e.cycle),
+              stationNumber: e.cycle.locnum
+            }))
+            .filter(c => c.stationGroup !== "")
+            .groupBy(e => stat_name_and_num(e))
+            .mapValues(cycles => cycles.toArray())
+        ] as [string, HashMap<string, ReadonlyArray<PartCycleData>>]
     );
 
-  parts = parts.mergeWith(
-    (oldStatMap, newStatMap) => oldStatMap.mergeWith((oldCs, newCs) => oldCs.concat(newCs), newStatMap),
-    newPartCycles
+  parts = parts.mergeWith(newPartCycles, (oldStatMap, newStatMap) =>
+    oldStatMap.mergeWith(newStatMap, (oldCs, newCs) => oldCs.concat(newCs))
   );
 
-  var newPalCycles = evtsSeq
+  var newPalCycles = LazySeq.ofIterable(newEvts)
     .filter(c => !c.startofcycle && c.type === api.LogType.PalletCycle && c.pal !== "")
     .groupBy(c => c.pal)
-    .map(cyclesForPal =>
-      cyclesForPal
+    .mapValues(cyclesForPal =>
+      LazySeq.ofIterable(cyclesForPal)
         .map(c => ({
           x: c.endUTC,
           y: duration(c.elapsed).asMinutes(),
           active: duration(c.active).asMinutes(),
           completed: false
         }))
-        .valueSeq()
         .toArray()
     );
-  pals = pals.mergeWith((oldCs, newCs) => oldCs.concat(newCs), newPalCycles);
+  pals = pals.mergeWith(newPalCycles, (oldCs, newCs) => oldCs.concat(newCs));
 
-  var newStatGroups = evtsSeq
+  var newStatGroups = LazySeq.ofIterable(newEvts)
     .map(stat_group_load_machine_only)
-    .filter(s => s !== "" && !statGroups.has(s))
-    .toSet();
-  if (newStatGroups.size > 0) {
-    statGroups = statGroups.union(newStatGroups);
+    .filter(s => s !== "" && !statGroups.contains(s))
+    .toSet(s => s);
+  if (newStatGroups.length() > 0) {
+    statGroups = statGroups.addAll(newStatGroups);
   }
 
   const newSt = {
@@ -377,81 +381,92 @@ function splitPartCycleToDays(cycle: CycleData, totalVal: number): Array<{ day: 
   }
 }
 
-type DayAndStation = im.Record<{ day: Date; station: string }>;
-const mkDayAndStation = im.Record({ day: new Date(), station: "" });
+class DayAndStation {
+  constructor(public day: Date, public station: string) {}
+  equals(other: DayAndStation): boolean {
+    return this.day.getTime() === other.day.getTime() && this.station === other.station;
+  }
+  hashCode(): number {
+    return fieldsHashCode(this.day.getTime(), this.station);
+  }
+  toString(): string {
+    return `{day: ${this.day.toISOString()}}, station: ${this.station}}`;
+  }
+  adjustDay(f: (d: Date) => Date): DayAndStation {
+    return new DayAndStation(f(this.day), this.station);
+  }
+}
 
 export function binCyclesByDayAndStat(
-  byPartThenStat: im.Map<string, im.Map<string, ReadonlyArray<CycleData>>>,
+  byPartThenStat: HashMap<string, HashMap<string, ReadonlyArray<CycleData>>>,
   extractValue: (c: CycleData) => number
-): im.Map<DayAndStation, number> {
-  return byPartThenStat
-    .valueSeq()
+): HashMap<DayAndStation, number> {
+  return LazySeq.ofIterable(byPartThenStat.valueIterable())
     .flatMap(byStation =>
-      byStation
-        .toSeq()
-        .map((points, station) =>
-          im.Seq(points).flatMap(point =>
+      LazySeq.ofIterable(byStation)
+        .map(([station, points]) =>
+          LazySeq.ofIterable(points).flatMap(point =>
             splitPartCycleToDays(point, extractValue(point)).map(x => ({
               ...x,
               station
             }))
           )
         )
-        .valueSeq()
         .flatMap(x => x)
     )
-    .groupBy(p => new mkDayAndStation({ day: p.day, station: p.station }))
-    .map((points, group) => points.reduce((sum, p) => sum + p.value, 0))
-    .toMap();
+    .toMap(p => [new DayAndStation(p.day, p.station), p.value] as [DayAndStation, number], (v1, v2) => v1 + v2);
 }
 
-type DayAndPart = im.Record<{ day: Date; part: string }>;
-const mkDayAndPart = im.Record({ day: new Date(), part: "" });
+class DayAndPart {
+  constructor(public day: Date, public part: string) {}
+  equals(other: DayAndPart): boolean {
+    return this.day.getTime() === other.day.getTime() && this.part === other.part;
+  }
+  hashCode(): number {
+    return fieldsHashCode(this.day.getTime(), this.part);
+  }
+  toString(): string {
+    return `{day: ${this.day.toISOString()}}, part: ${this.part}}`;
+  }
+  adjustDay(f: (d: Date) => Date): DayAndPart {
+    return new DayAndPart(f(this.day), this.part);
+  }
+}
 
 export function binCyclesByDayAndPart(
-  byPartThenStat: im.Map<string, im.Map<string, ReadonlyArray<PartCycleData>>>,
+  byPartThenStat: HashMap<string, HashMap<string, ReadonlyArray<PartCycleData>>>,
   extractValue: (c: PartCycleData) => number
-): im.Map<DayAndPart, number> {
-  return byPartThenStat
-    .toSeq()
-    .map((byStation, part) =>
-      byStation.valueSeq().flatMap(points =>
-        im.Seq(points).map(point => ({
+): HashMap<DayAndPart, number> {
+  return LazySeq.ofIterable(byPartThenStat)
+    .map(([part, byStation]) =>
+      LazySeq.ofIterable(byStation.valueIterable()).flatMap(points =>
+        LazySeq.ofIterable(points).map(point => ({
           day: startOfDay(point.x),
           part: part,
           value: extractValue(point)
         }))
       )
     )
-    .valueSeq()
     .flatMap(x => x)
-    .groupBy(p => new mkDayAndPart({ day: p.day, part: p.part }))
-    .map((points, group) => points.reduce((sum, p) => sum + p.value, 0))
-    .toMap();
+    .toMap(p => [new DayAndPart(p.day, p.part), p.value] as [DayAndPart, number], (v1, v2) => v1 + v2);
 }
 
 export function stationMinutes(
-  byPartThenStat: im.Map<string, im.Map<string, ReadonlyArray<PartCycleData>>>,
+  byPartThenStat: HashMap<string, HashMap<string, ReadonlyArray<PartCycleData>>>,
   cutoff: Date
-): im.Map<string, number> {
-  return byPartThenStat
-    .valueSeq()
-    .flatMap((byStation, part) =>
-      byStation
-        .toSeq()
-        .map((points, station) =>
-          im
-            .Seq(points)
+): HashMap<string, number> {
+  return LazySeq.ofIterable(byPartThenStat.valueIterable())
+    .flatMap(byStation =>
+      LazySeq.ofIterable(byStation)
+        .map(([station, points]) =>
+          LazySeq.ofIterable(points)
             .filter(p => p.x >= cutoff)
             .map(p => ({
               station,
               active: p.active
             }))
         )
-        .valueSeq()
         .flatMap(x => x)
     )
-    .groupBy(x => x.station)
-    .map(points => points.reduce((sum, p) => sum + p.active, 0))
-    .toMap();
+    .toMap(x => [x.station, x.active] as [string, number], (v1, v2) => v1 + v2);
 }

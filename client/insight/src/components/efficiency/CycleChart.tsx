@@ -31,7 +31,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import * as im from "immutable";
 import { format, addDays } from "date-fns";
 import {
   MarkSeries,
@@ -52,6 +51,7 @@ import Button from "@material-ui/core/Button";
 import MenuItem from "@material-ui/core/MenuItem";
 import { PartIdenticon } from "../station-monitor/Material";
 import { createStyles, withStyles, WithStyles } from "@material-ui/core";
+import { HashMap } from "prelude-ts";
 
 export interface CycleChartPoint {
   readonly x: Date;
@@ -65,7 +65,7 @@ export interface ExtraTooltip {
 }
 
 interface CycleChartProps {
-  readonly points: im.Map<string, ReadonlyArray<CycleChartPoint>>;
+  readonly points: HashMap<string, ReadonlyArray<CycleChartPoint>>;
   readonly series_label: string;
   readonly extra_tooltip?: (point: CycleChartPoint) => ReadonlyArray<ExtraTooltip>;
   readonly default_date_range?: Date[];
@@ -172,7 +172,7 @@ const CycleChart = withStyles(cycleChartStyles)(
     };
 
     render() {
-      const seriesNames = this.props.points.toSeq().sortBy((points, s) => s);
+      const seriesNames = this.props.points.keySet().toArray({ sortOn: x => x });
 
       let dateRange = this.props.default_date_range;
       if (dateRange === undefined) {
@@ -219,16 +219,14 @@ const CycleChart = withStyles(cycleChartStyles)(
                 }
               }}
             />
-            {seriesNames
-              .map((points, series) => (
-                <MarkSeries
-                  key={series}
-                  data={points}
-                  onValueClick={this.state.disabled_series[series] ? undefined : this.setTooltip(series)}
-                  {...(this.state.disabled_series[series] ? { opacity: 0.2 } : null)}
-                />
-              ))
-              .toIndexedSeq()}
+            {seriesNames.map(series => (
+              <MarkSeries
+                key={series}
+                data={this.props.points.get(series).getOrElse([])}
+                onValueClick={this.state.disabled_series[series] ? undefined : this.setTooltip(series)}
+                {...(this.state.disabled_series[series] ? { opacity: 0.2 } : null)}
+              />
+            ))}
             {this.state.tooltip === undefined ? (
               undefined
             ) : (
@@ -240,10 +238,7 @@ const CycleChart = withStyles(cycleChartStyles)(
             <div style={{ textAlign: "center" }}>
               <DiscreteColorLegend
                 orientation="horizontal"
-                items={seriesNames
-                  .keySeq()
-                  .map(s => ({ title: s, disabled: this.state.disabled_series[s] }))
-                  .toArray()}
+                items={seriesNames.map(s => ({ title: s, disabled: this.state.disabled_series[s] }))}
                 onItemClick={this.toggleSeries}
               />
             </div>
@@ -266,7 +261,7 @@ const CycleChart = withStyles(cycleChartStyles)(
 );
 
 export interface SelectableCycleChartProps {
-  readonly points: im.Map<string, im.Map<string, ReadonlyArray<CycleChartPoint>>>;
+  readonly points: HashMap<string, HashMap<string, ReadonlyArray<CycleChartPoint>>>;
   readonly select_label: string;
   readonly series_label: string;
   readonly card_label: string;
@@ -279,7 +274,7 @@ export interface SelectableCycleChartProps {
 }
 
 export function SelectableCycleChart(props: SelectableCycleChartProps) {
-  let validValue = props.selected !== undefined && props.points.has(props.selected);
+  let validValue = props.selected !== undefined && props.points.containsKey(props.selected);
   function stripAfterDash(s: string): string {
     const idx = s.indexOf("-");
     if (idx >= 0) {
@@ -311,8 +306,8 @@ export function SelectableCycleChart(props: SelectableCycleChartProps) {
                 </MenuItem>
               )}
               {props.points
-                .keySeq()
-                .sort()
+                .keySet()
+                .toArray({ sortOn: x => x })
                 .map(n => (
                   <MenuItem key={n} value={n}>
                     <div style={{ display: "flex", alignItems: "center" }}>
@@ -327,7 +322,7 @@ export function SelectableCycleChart(props: SelectableCycleChartProps) {
       />
       <CardContent>
         <CycleChart
-          points={props.points.get(props.selected || "", im.Map())}
+          points={props.points.get(props.selected || "").getOrElse(HashMap.empty())}
           series_label={props.series_label}
           default_date_range={props.default_date_range}
           extra_tooltip={props.extra_tooltip}
