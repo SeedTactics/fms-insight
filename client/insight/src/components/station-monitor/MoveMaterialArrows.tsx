@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import * as im from "immutable";
 import {
   MoveMaterialArrow,
   MoveMaterialArrowData,
@@ -40,6 +39,7 @@ import {
   MoveMaterialIdentifier,
   MoveMaterialNodeKind
 } from "../../data/move-arrows";
+import { HashMap } from "prelude-ts";
 
 class MoveMaterialArrows extends React.PureComponent<MoveMaterialArrowData<Element>> {
   static elementToRect(e: Element): ClientRect {
@@ -72,7 +72,7 @@ class MoveMaterialArrows extends React.PureComponent<MoveMaterialArrowData<Eleme
   render() {
     const data: MoveMaterialArrowData<ClientRect> = {
       container: this.props.container !== null ? MoveMaterialArrows.elementToRect(this.props.container) : null,
-      nodes: this.props.nodes.map(MoveMaterialArrows.elementToRect),
+      nodes: this.props.nodes.mapValues(MoveMaterialArrows.elementToRect),
       node_type: this.props.node_type
     };
     const arrows = computeArrows(data);
@@ -101,8 +101,8 @@ const MoveMaterialArrowCtx = React.createContext<MoveMaterialArrowContext | unde
 export class MoveMaterialArrowContainer extends React.PureComponent<{}, MoveMaterialArrowData<Element>> {
   state = {
     container: null,
-    nodes: im.Map<MoveMaterialIdentifier, Element>(),
-    node_type: im.Map<MoveMaterialIdentifier, MoveMaterialNodeKind>()
+    nodes: HashMap.empty<MoveMaterialIdentifier, Element>(),
+    node_type: HashMap.empty<MoveMaterialIdentifier, MoveMaterialNodeKind>()
   } as MoveMaterialArrowData<Element>;
 
   readonly ctx: MoveMaterialArrowContext | undefined = undefined;
@@ -118,7 +118,7 @@ export class MoveMaterialArrowContainer extends React.PureComponent<{}, MoveMate
   registerNode(id: MoveMaterialIdentifier) {
     return (ref: Element | null) => {
       if (ref) {
-        this.setState(s => ({ nodes: s.nodes.set(id, ref) }));
+        this.setState(s => ({ nodes: s.nodes.put(id, ref) }));
       } else {
         this.setState(s => ({
           nodes: s.nodes.remove(id),
@@ -130,7 +130,7 @@ export class MoveMaterialArrowContainer extends React.PureComponent<{}, MoveMate
 
   registerNodeKind(id: MoveMaterialIdentifier, kind: MoveMaterialNodeKind | null) {
     if (kind) {
-      this.setState(s => ({ node_type: s.node_type.set(id, kind) }));
+      this.setState(s => ({ node_type: s.node_type.put(id, kind) }));
     } else {
       this.setState(s => ({ node_type: s.node_type.remove(id) }));
     }
@@ -177,7 +177,7 @@ interface MoveMaterialArrowNodeHelperProps {
 }
 
 class MoveMaterialArrowNodeHelper extends React.PureComponent<MoveMaterialArrowNodeHelperProps> {
-  readonly ident = Symbol("MoveMaterialArrowNode");
+  readonly ident = MoveMaterialIdentifier.allocateNodeId();
 
   constructor(props: MoveMaterialArrowNodeHelperProps) {
     super(props);

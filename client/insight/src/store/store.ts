@@ -47,7 +47,6 @@ import { applyMiddleware, compose } from "redux";
 import * as reactRedux from "react-redux";
 import { middleware } from "./middleware";
 
-import * as im from "immutable";
 import { connectRoutes, LocationState } from "redux-first-router";
 import * as queryString from "query-string";
 
@@ -69,11 +68,7 @@ export function initStore(demo: boolean) {
   /* tslint:disable */
   const composeEnhancers =
     typeof window === "object" && (window as any)["__REDUX_DEVTOOLS_EXTENSION_COMPOSE__"]
-      ? (window as any)["__REDUX_DEVTOOLS_EXTENSION_COMPOSE__"]({
-          serialize: {
-            immutable: im
-          }
-        })
+      ? (window as any)["__REDUX_DEVTOOLS_EXTENSION_COMPOSE__"]
       : compose;
   /* tslint:enable */
 
