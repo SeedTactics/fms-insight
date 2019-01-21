@@ -31,7 +31,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import * as im from "immutable";
 import { format } from "date-fns";
 import { HeatmapSeries, XAxis, YAxis, Hint, FlexibleWidthXYPlot } from "react-vis";
 import Card from "@material-ui/core/Card";
@@ -41,6 +40,7 @@ import Select from "@material-ui/core/Select";
 import MenuItem from "@material-ui/core/MenuItem";
 
 import * as gui from "../../data/gui-state";
+import { LazySeq } from "../../data/lazyseq";
 
 export interface HeatChartPoint {
   readonly x: Date;
@@ -140,12 +140,9 @@ export function SelectableHeatChart(props: SelectableHeatChartProps) {
         <HeatChart
           points={props.points}
           label_title={props.label_title}
-          row_count={
-            im
-              .Seq(props.points)
-              .map(p => p.y)
-              .toSet().size
-          }
+          row_count={LazySeq.ofIterable(props.points)
+            .toSet(p => p.y)
+            .length()}
         />
       </CardContent>
     </Card>

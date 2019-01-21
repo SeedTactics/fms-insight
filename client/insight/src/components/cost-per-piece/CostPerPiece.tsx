@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
-import * as im from "immutable";
 import * as ccp from "../../data/cost-per-piece";
 import { DispatchAction, connect, mkAC, Store } from "../../store/store";
 import { AnalysisPeriod } from "../../data/events";
@@ -51,7 +50,8 @@ import { PartCycleData } from "../../data/events.cycles";
 import { createSelector } from "reselect";
 import BuildIcon from "@material-ui/icons/Build";
 import AnalysisSelectToolbar from "../AnalysisSelectToolbar";
-import { HashSet, HashMap } from "prelude-ts";
+import { HashSet, HashMap, Vector } from "prelude-ts";
+import { LazySeq } from "../../data/lazyseq";
 
 interface CostPerPieceInputProps {
   readonly statGroups: HashSet<string>;
@@ -185,9 +185,9 @@ function CostPerPieceOutput(props: CostPerPieceOutputProps) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {im
-              .Seq(props.costs)
-              .sortBy(c => c.part)
+            {Vector.ofIterable(props.costs)
+              .sortOn(c => c.part)
+              .transform(x => LazySeq.ofIterable(x))
               .map((c, idx) => (
                 <TableRow key={idx}>
                   <TableCell>{c.part}</TableCell>

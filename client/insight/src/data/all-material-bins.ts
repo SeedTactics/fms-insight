@@ -32,19 +32,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as api from "./api";
-import * as im from "immutable";
+import { HashMap } from "prelude-ts";
+import { LazySeq } from "./lazyseq";
 
 export type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
 
-export type AllMaterialBins = im.Map<string, MaterialList>;
+export type AllMaterialBins = HashMap<string, MaterialList>;
 
 export function selectAllMaterialIntoBins(curSt: Readonly<api.ICurrentStatus>): AllMaterialBins {
-  const palLoc = im
-    .Map(curSt.pallets)
-    .map(st => " (" + st.currentPalletLocation.group + " #" + st.currentPalletLocation.num.toString() + ")");
+  const palLoc = HashMap.ofObjectDictionary(curSt.pallets).mapValues(
+    st => " (" + st.currentPalletLocation.group + " #" + st.currentPalletLocation.num.toString() + ")"
+  );
 
-  return im
-    .Seq(curSt.material)
+  return LazySeq.ofIterable(curSt.material)
     .map(mat => {
       switch (mat.location.type) {
         case api.LocType.InQueue:
@@ -52,7 +52,7 @@ export function selectAllMaterialIntoBins(curSt: Readonly<api.ICurrentStatus>): 
         case api.LocType.OnPallet:
           let region = "Pallet";
           if (mat.location.pallet) {
-            region = "Pallet " + mat.location.pallet.toString() + palLoc.get(mat.location.pallet) || "";
+            region = "Pallet " + mat.location.pallet.toString() + palLoc.get(mat.location.pallet).getOrElse("");
           }
           return { region, mat };
         case api.LocType.Free:
@@ -66,21 +66,19 @@ export function selectAllMaterialIntoBins(curSt: Readonly<api.ICurrentStatus>): 
       }
     })
     .groupBy(x => x.region)
-    .map(group =>
+    .mapValues(group =>
       group
         .map(x => x.mat)
-        .sortBy(mat => {
+        .sortOn(mat => {
           switch (mat.location.type) {
             case api.LocType.OnPallet:
-              return mat.location.face;
+              return mat.location.face || 1;
             case api.LocType.InQueue:
             case api.LocType.Free:
             default:
-              return mat.location.queuePosition;
+              return mat.location.queuePosition || 1;
           }
         })
-        .valueSeq()
         .toArray()
-    )
-    .toMap();
+    );
 }

@@ -32,8 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as api from "../data/api";
-import * as im from "immutable";
 import { addSeconds } from "date-fns";
+import { LazySeq } from "../data/lazyseq";
 
 function offsetJob(j: api.JobPlan, offsetSeconds: number) {
   j.routeStartUTC = addSeconds(j.routeStartUTC, offsetSeconds);
@@ -50,15 +50,15 @@ function offsetJob(j: api.JobPlan, offsetSeconds: number) {
 
 async function loadEventsJson(offsetSeconds: number): Promise<Readonly<api.ILogEntry>[]> {
   const evtJson: string = require("./events-json.txt");
-  let evtsSeq: im.Seq.Indexed<object>;
+  let evtsSeq: LazySeq<object>;
   if (evtJson.startsWith("[")) {
     // jest loads the contents as a string
-    evtsSeq = im.Seq.Indexed(JSON.parse(evtJson));
+    evtsSeq = LazySeq.ofIterable(JSON.parse(evtJson));
   } else {
     // parcel provides the url to the file
     const req = await fetch(evtJson);
     const rawEvts = await req.json();
-    evtsSeq = im.Seq.Indexed(rawEvts);
+    evtsSeq = LazySeq.ofIterable(rawEvts);
   }
 
   return evtsSeq
@@ -67,7 +67,6 @@ async function loadEventsJson(offsetSeconds: number): Promise<Readonly<api.ILogE
       e.endUTC = addSeconds(e.endUTC, offsetSeconds);
       return e;
     })
-    .sortBy(e => e.endUTC)
     .filter(e => {
       if (e.type === api.LogType.InspectionResult) {
         // filter out a couple inspection results so they are uninspected
@@ -82,6 +81,8 @@ async function loadEventsJson(offsetSeconds: number): Promise<Readonly<api.ILogE
         return true;
       }
     })
+    .toVector()
+    .sortOn(e => e.endUTC.getTime())
     .toArray();
 }
 
@@ -132,8 +133,7 @@ export function loadMockData(offsetSeconds: number): MockData {
   }
   const historic: api.IHistoricData = {
     jobs: historicJobs,
-    stationUse: im
-      .Seq(allNewJobs)
+    stationUse: LazySeq.ofIterable(allNewJobs)
       .flatMap(j => j.stationUse || [])
       .toArray()
   };

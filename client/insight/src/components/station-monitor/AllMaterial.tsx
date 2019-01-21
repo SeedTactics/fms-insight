@@ -57,22 +57,23 @@ interface AllMatProps {
   readonly openMat: (mat: MaterialSummary) => void;
 }
 
-function Wash(props: AllMatProps) {
-  const regions = props.allMat.toSeq().sortBy((mats, region) => region);
+function AllMats(props: AllMatProps) {
+  const regions = props.allMat.keySet().toArray({ sortOn: x => x });
 
   return (
     <DocumentTitle title="All Material - FMS Insight">
       <main data-testid="stationmonitor-allmaterial" style={{ padding: "8px" }}>
         <div>
-          {regions
-            .map((mats, region) => (
-              <WhiteboardRegion key={region} label={region} borderBottom flexStart>
-                {mats.map((m, idx) => (
+          {regions.map(region => (
+            <WhiteboardRegion key={region} label={region} borderBottom flexStart>
+              {props.allMat
+                .get(region)
+                .getOrElse([])
+                .map((m, idx) => (
                   <InProcMaterial key={idx} mat={m} onOpen={props.openMat} />
                 ))}
-              </WhiteboardRegion>
-            ))
-            .valueSeq()}
+            </WhiteboardRegion>
+          ))}
         </div>
         <ConnectedAllMatDialog />
         <SerialScanner />
@@ -94,4 +95,4 @@ export default connect(
   {
     openMat: matDetails.openMaterialDialog
   }
-)(Wash);
+)(AllMats);
