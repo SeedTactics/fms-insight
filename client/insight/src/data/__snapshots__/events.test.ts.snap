@@ -247,18 +247,18 @@ Object {
     ],
   },
   "inspection": Object {
-    "by_part": Immutable.Map {
-      Immutable.Record {
-        "part": "partCCC",
-        "inspType": "Insp1",
-      }: Array [
+    "by_part": Map {
+      "PartAndInspType {
+      \\"inspType\\": \\"Insp1\\",
+      \\"part\\": \\"partAAA\\",
+    }" => Array [
         Object {
-          "materialID": 15339,
+          "materialID": 46081,
           "result": Object {
             "actualPath": Array [
               Object {
                 "LoadStation": 1,
-                "MaterialID": 15339,
+                "MaterialID": 46081,
                 "Pallet": "6",
                 "Process": 1,
                 "Stops": Array [
@@ -273,21 +273,21 @@ Object {
             "toInspect": true,
             "type": 0,
           },
-          "time": 2018-01-06T09:45:05.000Z,
+          "time": 2018-02-02T09:57:05.000Z,
         },
         Object {
-          "materialID": 15339,
+          "materialID": 46081,
           "result": Object {
             "success": true,
             "type": 2,
           },
-          "time": 2018-01-06T09:52:05.000Z,
+          "time": 2018-02-02T10:04:05.000Z,
         },
       ],
-      Immutable.Record {
-        "part": "partBBB",
-        "inspType": "Insp1",
-      }: Array [
+      "PartAndInspType {
+      \\"inspType\\": \\"Insp1\\",
+      \\"part\\": \\"partBBB\\",
+    }" => Array [
         Object {
           "materialID": 49400,
           "result": Object {
@@ -328,17 +328,17 @@ Object {
           "time": 2018-01-31T09:58:10.000Z,
         },
       ],
-      Immutable.Record {
-        "part": "partAAA",
-        "inspType": "Insp1",
-      }: Array [
+      "PartAndInspType {
+      \\"inspType\\": \\"Insp1\\",
+      \\"part\\": \\"partCCC\\",
+    }" => Array [
         Object {
-          "materialID": 46081,
+          "materialID": 15339,
           "result": Object {
             "actualPath": Array [
               Object {
                 "LoadStation": 1,
-                "MaterialID": 46081,
+                "MaterialID": 15339,
                 "Pallet": "6",
                 "Process": 1,
                 "Stops": Array [
@@ -353,15 +353,15 @@ Object {
             "toInspect": true,
             "type": 0,
           },
-          "time": 2018-02-02T09:57:05.000Z,
+          "time": 2018-01-06T09:45:05.000Z,
         },
         Object {
-          "materialID": 46081,
+          "materialID": 15339,
           "result": Object {
             "success": true,
             "type": 2,
           },
-          "time": 2018-02-02T10:04:05.000Z,
+          "time": 2018-01-06T09:52:05.000Z,
         },
       ],
     },
@@ -564,11 +564,11 @@ Object {
     ],
   },
   "inspection": Object {
-    "by_part": Immutable.Map {
-      Immutable.Record {
-        "part": "part222",
-        "inspType": "Insp1",
-      }: Array [
+    "by_part": Map {
+      "PartAndInspType {
+      \\"inspType\\": \\"Insp1\\",
+      \\"part\\": \\"part222\\",
+    }" => Array [
         Object {
           "materialID": 99502,
           "result": Object {
@@ -601,10 +601,10 @@ Object {
           "time": 2018-01-31T09:58:05.000Z,
         },
       ],
-      Immutable.Record {
-        "part": "part111",
-        "inspType": "Insp1",
-      }: Array [
+      "PartAndInspType {
+      \\"inspType\\": \\"Insp1\\",
+      \\"part\\": \\"part111\\",
+    }" => Array [
         Object {
           "materialID": 70329,
           "result": Object {
@@ -1136,11 +1136,11 @@ Object {
     ],
   },
   "inspection": Object {
-    "by_part": Immutable.Map {
-      Immutable.Record {
-        "part": "part222",
-        "inspType": "Insp1",
-      }: Array [
+    "by_part": Map {
+      "PartAndInspType {
+      \\"inspType\\": \\"Insp1\\",
+      \\"part\\": \\"part222\\",
+    }" => Array [
         Object {
           "materialID": 86489,
           "result": Object {
@@ -1212,10 +1212,10 @@ Object {
           "time": 2018-01-31T09:58:05.000Z,
         },
       ],
-      Immutable.Record {
-        "part": "part111",
-        "inspType": "Insp1",
-      }: Array [
+      "PartAndInspType {
+      \\"inspType\\": \\"Insp1\\",
+      \\"part\\": \\"part111\\",
+    }" => Array [
         Object {
           "materialID": 70329,
           "result": Object {
@@ -1730,11 +1730,11 @@ Object {
     ],
   },
   "inspection": Object {
-    "by_part": Immutable.Map {
-      Immutable.Record {
-        "part": "part222",
-        "inspType": "Insp1",
-      }: Array [
+    "by_part": Map {
+      "PartAndInspType {
+      \\"inspType\\": \\"Insp1\\",
+      \\"part\\": \\"part222\\",
+    }" => Array [
         Object {
           "materialID": 90816,
           "result": Object {
@@ -1775,10 +1775,10 @@ Object {
           "time": 2018-01-31T09:58:10.000Z,
         },
       ],
-      Immutable.Record {
-        "part": "part111",
-        "inspType": "Insp1",
-      }: Array [
+      "PartAndInspType {
+      \\"inspType\\": \\"Insp1\\",
+      \\"part\\": \\"part111\\",
+    }" => Array [
         Object {
           "materialID": 90793,
           "result": Object {
@@ -2328,11 +2328,11 @@ Object {
     ],
   },
   "inspection": Object {
-    "by_part": Immutable.Map {
-      Immutable.Record {
-        "part": "part222",
-        "inspType": "Insp1",
-      }: Array [
+    "by_part": Map {
+      "PartAndInspType {
+      \\"inspType\\": \\"Insp1\\",
+      \\"part\\": \\"part222\\",
+    }" => Array [
         Object {
           "materialID": 76930,
           "result": Object {
@@ -2412,10 +2412,10 @@ Object {
           "time": 2018-01-31T09:58:10.000Z,
         },
       ],
-      Immutable.Record {
-        "part": "part111",
-        "inspType": "Insp1",
-      }: Array [
+      "PartAndInspType {
+      \\"inspType\\": \\"Insp1\\",
+      \\"part\\": \\"part111\\",
+    }" => Array [
         Object {
           "materialID": 90793,
           "result": Object {

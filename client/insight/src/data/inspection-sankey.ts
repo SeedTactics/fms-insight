@@ -31,9 +31,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as im from "immutable";
 import * as api from "./api";
 import { InspectionLogResultType, InspectionLogEntry } from "./events.inspection";
+import { fieldsHashCode } from "prelude-ts";
+import { LazySeq } from "./lazyseq";
 
 export interface SankeyNode {
   readonly unique: string; // full unique of node
@@ -51,14 +52,30 @@ export interface SankeyDiagram {
   readonly links: ReadonlyArray<SankeyLink>;
 }
 
-type NodeR = im.Record<{ unique: string; name: string }>;
-const mkNodeR = im.Record({ unique: "", name: "" });
+class NodeR {
+  public constructor(public readonly unique: string, public readonly name: string) {}
+  equals(other: NodeR): boolean {
+    return this.unique === other.unique && this.name === other.name;
+  }
+  hashCode(): number {
+    return fieldsHashCode(this.unique, this.name);
+  }
+  toString(): string {
+    return `{unique: ${this.unique}}, name: ${this.name}}`;
+  }
+}
 
-const mkEdgeR = im.Record({ from: 0, to: 0 });
-
-interface Edge {
-  readonly from: NodeR;
-  readonly to: NodeR;
+class Edge {
+  public constructor(public readonly from: NodeR, public readonly to: NodeR) {}
+  equals(other: Edge): boolean {
+    return this.from.equals(other.from) && this.to.equals(other.to);
+  }
+  hashCode(): number {
+    return fieldsHashCode(this.from.hashCode(), this.to.hashCode());
+  }
+  toString(): string {
+    return `{from: ${this.from.toString()}}, to: ${this.to.toString()}}`;
+  }
 }
 
 function edgesForPath(
@@ -67,57 +84,47 @@ function edgesForPath(
   result: boolean | undefined
 ): Edge[] {
   let path = "";
-  let prevNode = mkNodeR({ unique: "", name: "raw" });
+  let prevNode = new NodeR("", "raw");
   let edges: Edge[] = [];
   for (const proc of actualPath) {
     for (const stop of proc.stops) {
       const cur = "P" + proc.pallet + ",M" + stop.stationNum;
       path += "->" + cur;
-      const nextNode = mkNodeR({ unique: path, name: cur });
-      edges.push({
-        from: prevNode,
-        to: nextNode
-      });
+      const nextNode = new NodeR(path, cur);
+      edges.push(new Edge(prevNode, nextNode));
       prevNode = nextNode;
     }
   }
 
   if (toInspect && result !== undefined) {
     if (result) {
-      edges.push({
-        from: prevNode,
-        to: mkNodeR({ unique: "@@success", name: "success" })
-      });
+      edges.push(new Edge(prevNode, new NodeR("@@success", "success")));
     } else {
-      edges.push({
-        from: prevNode,
-        to: mkNodeR({ unique: "@@failed", name: "failed" })
-      });
+      edges.push(new Edge(prevNode, new NodeR("@@failed", "failed")));
     }
   } else {
-    edges.push({
-      from: prevNode,
-      to: mkNodeR({ unique: "@@uninspected", name: "uninspected" })
-    });
+    edges.push(new Edge(prevNode, new NodeR("@@uninspected", "uninspected")));
   }
 
   return edges;
 }
 
 export function inspectionDataToSankey(d: ReadonlyArray<InspectionLogEntry>): SankeyDiagram {
-  const entrySeq = im.Seq(d);
-
-  const matIdToInspResult = entrySeq
+  const matIdToInspResult = LazySeq.ofIterable(d)
     .filter(e => e.result.type === InspectionLogResultType.Completed)
-    .toKeyedSeq()
-    .mapKeys((idx, e) => e.materialID)
-    .map(e => (e.result.type === InspectionLogResultType.Completed ? e.result.success : false))
-    .toMap();
+    .toMap(
+      e => [e.materialID, e.result.type === InspectionLogResultType.Completed ? e.result.success : false],
+      (v1, v2) => v2 // take the later value
+    );
 
   // create all the edges, likely with duplicate edges between nodes
-  const edges = entrySeq.flatMap(c => {
+  const edges = LazySeq.ofIterable(d).flatMap(c => {
     if (c.result.type === InspectionLogResultType.Triggered) {
-      return edgesForPath(c.result.actualPath, c.result.toInspect, matIdToInspResult.get(c.materialID));
+      return edgesForPath(
+        c.result.actualPath,
+        c.result.toInspect,
+        matIdToInspResult.get(c.materialID).getOrElse(false)
+      );
     } else {
       return [];
     }
@@ -126,39 +133,30 @@ export function inspectionDataToSankey(d: ReadonlyArray<InspectionLogEntry>): Sa
   // extract the nodes and assign an index
   const nodes = edges
     .flatMap(e => [e.from, e.to])
-    .toSet()
-    .toIndexedSeq()
+    .toSet(x => x)
+    .transform(s => LazySeq.ofIterable(s))
     .map((node, idx) => ({ idx, node }));
 
   // create the sankey nodes to return
   const sankeyNodes = nodes
     .map(s => ({
-      unique: s.node.get("unique", ""),
-      name: s.node.get("name", "")
+      unique: s.node.unique,
+      name: s.node.name
     }))
     .toArray();
 
   // create a map from NodeR to index
-  const nodesToIdx = nodes
-    .toKeyedSeq()
-    .mapKeys((key, n) => n.node)
-    .map(n => n.idx)
-    .toMap();
+  const nodesToIdx = nodes.toMap(n => [n.node, n.idx], (i1, i2) => i1);
 
   // create the sankey links to return by counting Edges between nodes
   const sankeyLinks = edges
-    .countBy(e =>
-      mkEdgeR({
-        from: nodesToIdx.get(e.from, 0),
-        to: nodesToIdx.get(e.to, 0)
-      })
-    )
-    .map((value, link) => ({
-      source: link.get("from", 0),
-      target: link.get("to", 0),
+    .toMap(e => [e, 1], (c1, c2) => c1 + c2)
+    .transform(LazySeq.ofIterable)
+    .map(([link, value]) => ({
+      source: nodesToIdx.get(link.from).getOrThrow(),
+      target: nodesToIdx.get(link.to).getOrThrow(),
       value
     }))
-    .valueSeq()
     .toArray();
 
   return {

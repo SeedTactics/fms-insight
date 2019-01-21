@@ -31,7 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as api from "./api";
-import * as im from "immutable"; // consider collectable.js at some point?
+import { fieldsHashCode, HashMap } from "prelude-ts";
+import { LazySeq } from "./lazyseq";
 
 export enum InspectionLogResultType {
   Triggered,
@@ -60,15 +61,25 @@ export interface InspectionLogEntry {
   readonly result: InspectionLogResult;
 }
 
-export type PartAndInspType = im.Record<{ part: string; inspType: string }>;
-export const mkPartAndInspType = im.Record({ part: "", inspType: "" });
+export class PartAndInspType {
+  public constructor(public readonly part: string, public readonly inspType: string) {}
+  equals(other: PartAndInspType): boolean {
+    return this.part === other.part && this.inspType === other.inspType;
+  }
+  hashCode(): number {
+    return fieldsHashCode(this.part, this.inspType);
+  }
+  toString(): string {
+    return `{part: ${this.part}}, inspType: ${this.inspType}}`;
+  }
+}
 
 export interface InspectionState {
-  readonly by_part: im.Map<PartAndInspType, ReadonlyArray<InspectionLogEntry>>;
+  readonly by_part: HashMap<PartAndInspType, ReadonlyArray<InspectionLogEntry>>;
 }
 
 export const initial: InspectionState = {
-  by_part: im.Map()
+  by_part: HashMap.empty()
 };
 
 export enum ExpireOldDataType {
@@ -82,41 +93,37 @@ export type ExpireOldData =
 
 export function process_events(
   expire: ExpireOldData,
-  newEvts: Iterable<api.ILogEntry>,
+  newEvts: ReadonlyArray<Readonly<api.ILogEntry>>,
   st: InspectionState
 ): InspectionState {
-  let evtsSeq = im.Seq(newEvts);
   let parts = st.by_part;
 
   switch (expire.type) {
     case ExpireOldDataType.ExpireEarlierThan:
       let eventsFiltered = false;
-      parts = parts.map(entries => {
+      parts = parts.mapValues(entries => {
         // check if expire is needed
         if (entries.length === 0 || entries[0].time >= expire.d) {
           return entries;
         } else {
           eventsFiltered = true;
-          return im
-            .Seq(entries)
-            .skipWhile(e => e.time < expire.d)
-            .toArray();
+          return entries.filter(e => e.time >= expire.d);
         }
       });
-      if (!eventsFiltered && evtsSeq.isEmpty()) {
+      if (!eventsFiltered && newEvts.length === 0) {
         return st;
       }
 
       break;
 
     case ExpireOldDataType.NoExpire:
-      if (evtsSeq.isEmpty()) {
+      if (newEvts.length === 0) {
         return st;
       }
       break;
   }
 
-  var newPartCycles = evtsSeq
+  var newPartCycles = LazySeq.ofIterable(newEvts)
     .filter(
       c =>
         c.type === api.LogType.Inspection ||
@@ -140,7 +147,7 @@ export function process_events(
             toInspect = false;
           }
           return {
-            key: mkPartAndInspType({ part: m.part, inspType: inspType }),
+            key: new PartAndInspType(m.part, inspType),
             entry: {
               time: c.endUTC,
               materialID: m.id,
@@ -159,7 +166,7 @@ export function process_events(
             forceInspect = false;
           }
           return {
-            key: mkPartAndInspType({ part: m.part, inspType: c.program }),
+            key: new PartAndInspType(m.part, c.program),
             entry: {
               time: c.endUTC,
               materialID: m.id,
@@ -178,7 +185,7 @@ export function process_events(
             success = false;
           }
           return {
-            key: mkPartAndInspType({ part: m.part, inspType: c.program }),
+            key: new PartAndInspType(m.part, c.program),
             entry: {
               time: c.endUTC,
               materialID: m.id,
@@ -189,21 +196,10 @@ export function process_events(
       })
     )
     .groupBy(e => e.key)
-    .map(es =>
-      es
-        .map(e => e.entry)
-        .valueSeq()
-        .toArray()
-    );
+    .mapValues(es => es.map(e => e.entry).toArray());
 
-  parts = parts.mergeWith(
-    (oldEntries, newEntries) =>
-      im
-        .Seq(oldEntries)
-        .concat(newEntries)
-        .sortBy(e => e.time)
-        .toArray(),
-    newPartCycles
+  parts = parts.mergeWith(newPartCycles, (oldEntries, newEntries) =>
+    oldEntries.concat(newEntries).sort((e1, e2) => e1.time.getTime() - e2.time.getTime())
   );
 
   return {

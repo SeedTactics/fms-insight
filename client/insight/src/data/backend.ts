@@ -32,8 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as api from "./api";
-import * as im from "immutable";
 import { User } from "oidc-client";
+import { LazySeq } from "./lazyseq";
 
 export interface JobAPI {
   history(startUTC: Date, endUTC: Date): Promise<Readonly<api.IHistoricData>>;
@@ -154,25 +154,16 @@ function initMockBackend(data: Promise<MockData>) {
 
   const serialsToMatId = data.then(d =>
     d.events.then(evts =>
-      im.Map(
-        im
-          .Seq(evts)
-          .filter(e => e.type === api.LogType.PartMark)
-          .flatMap(e => e.material.map(m => [e.result, m.id] as [string, number]))
-      )
+      LazySeq.ofIterable(evts)
+        .filter(e => e.type === api.LogType.PartMark)
+        .flatMap(e => e.material.map(m => [e.result, m.id] as [string, number]))
+        .toMap(x => x, (id1, id2) => id2)
     )
   );
 
   LogBackend = {
     get(startUTC: Date, endUTC: Date): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
-      return data.then(d =>
-        d.events.then(evts =>
-          im
-            .Seq(evts)
-            .filter(e => e.endUTC >= startUTC && e.endUTC <= endUTC)
-            .toArray()
-        )
-      );
+      return data.then(d => d.events.then(evts => evts.filter(e => e.endUTC >= startUTC && e.endUTC <= endUTC)));
     },
     recent(lastSeenCounter: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
       // no recent events, everything is static
@@ -180,19 +171,14 @@ function initMockBackend(data: Promise<MockData>) {
     },
     logForMaterial(materialID: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
       return data.then(d =>
-        d.events.then(evts =>
-          im
-            .Seq(evts)
-            .filter(e => im.Seq(e.material).some(m => m.id === materialID))
-            .toArray()
-        )
+        d.events.then(evts => evts.filter(e => LazySeq.ofIterable(e.material).anyMatch(m => m.id === materialID)))
       );
     },
     logForSerial(serial: string): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
       return serialsToMatId.then(s => {
         var mId = s.get(serial);
-        if (mId) {
-          return this.logForMaterial(mId);
+        if (mId.isSome()) {
+          return this.logForMaterial(mId.get());
         } else {
           return Promise.resolve([]);
         }

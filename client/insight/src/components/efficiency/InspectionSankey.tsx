@@ -31,7 +31,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import * as im from "immutable";
 import SearchIcon from "@material-ui/icons/Search";
 import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
@@ -45,7 +44,8 @@ import { connect } from "../../store/store";
 import { SankeyNode, SankeyDiagram, inspectionDataToSankey } from "../../data/inspection-sankey";
 
 import * as events from "../../data/events";
-import { PartAndInspType, mkPartAndInspType, InspectionLogEntry } from "../../data/events.inspection";
+import { PartAndInspType, InspectionLogEntry } from "../../data/events.inspection";
+import { HashMap } from "prelude-ts";
 
 interface InspectionSankeyDiagramProps {
   readonly sankey: SankeyDiagram;
@@ -126,7 +126,7 @@ class ConvertInspectionDataToSankey extends React.PureComponent<{
 }
 
 interface InspectionSankeyProps {
-  readonly inspectionlogs: im.Map<PartAndInspType, ReadonlyArray<InspectionLogEntry>>;
+  readonly inspectionlogs: HashMap<PartAndInspType, ReadonlyArray<InspectionLogEntry>>;
 }
 
 interface InspectionSankeyState {
@@ -140,25 +140,18 @@ class InspectionSankey extends React.Component<InspectionSankeyProps, Inspection
   render() {
     let curData: ReadonlyArray<InspectionLogEntry> | undefined;
     if (this.state.selectedPart && this.state.selectedInspectType) {
-      curData = this.props.inspectionlogs.get(
-        mkPartAndInspType({
-          part: this.state.selectedPart,
-          inspType: this.state.selectedInspectType
-        })
-      );
+      curData = this.props.inspectionlogs
+        .get(new PartAndInspType(this.state.selectedPart, this.state.selectedInspectType))
+        .getOrElse([]);
     }
     const parts = this.props.inspectionlogs
-      .keySeq()
-      .map(e => e.get("part", ""))
-      .toSet()
-      .toSeq()
-      .sort();
+      .keySet()
+      .map(x => x.part)
+      .toArray({ sortOn: x => x });
     const inspTypes = this.props.inspectionlogs
-      .keySeq()
-      .map(e => e.get("inspType", ""))
-      .toSet()
-      .toSeq()
-      .sort();
+      .keySet()
+      .map(e => e.inspType)
+      .toArray({ sortOn: x => x });
     return (
       <Card raised>
         <CardHeader
