@@ -64,7 +64,7 @@ it("renders the efficiency page", async () => {
   await wait(() => expect(result.queryByTestId("loading-icon")).not.toBeInTheDocument());
 
   // part cycles
-  fireEvent.click(within(result.getByTestId("part-cycle-chart")).getByText("Select Part"));
+  fireEvent.click(within(result.getByTestId("part-cycle-chart")).getByText("Any Part"));
   fireEvent.click(
     within(document.getElementById("menu-Station-Cycles-cycle-chart-select") as HTMLElement).getByText("aaa-1")
   );

@@ -47,6 +47,7 @@ export interface PartCycleData extends CycleData {
   readonly process: number;
   readonly stationGroup: string;
   readonly stationNumber: number;
+  readonly pallet: string;
   readonly isLabor: boolean;
   readonly matId: number;
   readonly completed: boolean; // did this cycle result in a completed part
@@ -61,9 +62,12 @@ export interface StatisticalCycleTime {
 
 export interface CycleState {
   readonly part_cycles: Vector<PartCycleData>;
-  readonly part_and_proc_names: HashSet<string>;
   readonly by_pallet: HashMap<string, ReadonlyArray<CycleData>>;
+
+  readonly part_and_proc_names: HashSet<string>;
   readonly station_groups: HashSet<string>;
+  readonly station_names: HashSet<string>;
+  readonly pallet_names: HashSet<string>;
   readonly estimatedCycleTimes: HashMap<string, HashMap<string, StatisticalCycleTime>>;
 }
 
@@ -72,6 +76,8 @@ export const initial: CycleState = {
   part_and_proc_names: HashSet.empty(),
   by_pallet: HashMap.empty(),
   station_groups: HashSet.empty(),
+  station_names: HashSet.empty(),
+  pallet_names: HashSet.empty(),
   estimatedCycleTimes: HashMap.empty()
 };
 
@@ -111,11 +117,11 @@ function stat_group_load_machine_only(e: Readonly<api.ILogEntry>): string {
   }
 }
 
-function stat_name_and_num(e: PartCycleData): string {
-  if (e.stationGroup.startsWith("Inspect")) {
-    return e.stationGroup;
+function stat_name_and_num(stationGroup: string, stationNumber: number): string {
+  if (stationGroup.startsWith("Inspect")) {
+    return stationGroup;
   } else {
-    return e.stationGroup + " #" + e.stationNumber.toString();
+    return stationGroup + " #" + stationNumber.toString();
   }
 }
 
@@ -246,9 +252,7 @@ export function process_events(
   st: CycleState
 ): CycleState {
   let allPartCycles = st.part_cycles;
-  let partNames = st.part_and_proc_names;
   let pals = st.by_pallet;
-  let statGroups = st.station_groups;
 
   let estimatedCycleTimes: HashMap<string, HashMap<string, StatisticalCycleTime>>;
   if (initialLoad) {
@@ -291,6 +295,7 @@ export function process_events(
       completed: e.cycle.type === api.LogType.LoadUnloadCycle && e.cycle.result === "UNLOAD",
       part: e.mat.part,
       process: e.mat.proc,
+      pallet: e.cycle.pal,
       matId: e.mat.id,
       isLabor: e.cycle.type === api.LogType.LoadUnloadCycle,
       stationGroup: stat_group(e.cycle),
@@ -298,11 +303,30 @@ export function process_events(
     }))
     .filter(c => c.stationGroup !== "");
 
+  let partNames = st.part_and_proc_names;
+  let statNames = st.station_names;
+  let statGroups = st.station_groups;
+  let palNames = st.pallet_names;
   for (let e of newEvts) {
     for (let m of e.material) {
       const p = part_and_proc(m.part, m.proc);
       if (!partNames.contains(p)) {
         partNames = partNames.add(p);
+      }
+    }
+    if (e.pal !== "") {
+      if (!palNames.contains(e.pal)) {
+        palNames = palNames.add(e.pal);
+      }
+    }
+    const statGroup = stat_group_load_machine_only(e);
+    if (statGroup !== "") {
+      if (!statGroups.contains(statGroup)) {
+        statGroups = statGroups.add(statGroup);
+      }
+      const statName = stat_name_and_num(statGroup, e.locnum);
+      if (!statNames.contains(statName)) {
+        statNames = statNames.add(statName);
       }
     }
   }
@@ -322,20 +346,14 @@ export function process_events(
     );
   pals = pals.mergeWith(newPalCycles, (oldCs, newCs) => oldCs.concat(newCs));
 
-  var newStatGroups = LazySeq.ofIterable(newEvts)
-    .map(stat_group_load_machine_only)
-    .filter(s => s !== "" && !statGroups.contains(s))
-    .toSet(s => s);
-  if (newStatGroups.length() > 0) {
-    statGroups = statGroups.addAll(newStatGroups);
-  }
-
   const newSt = {
     ...st,
     part_cycles: allPartCycles.appendAll(newCycles),
     part_and_proc_names: partNames,
     by_pallet: pals,
-    station_groups: statGroups
+    station_groups: statGroups,
+    station_names: statNames,
+    pallet_names: palNames
   };
 
   if (initialLoad) {
@@ -348,13 +366,26 @@ export function process_events(
   }
 }
 
-export function stationCyclesForPart(
-  partAndProc: string,
-  allCycles: Vector<PartCycleData>
+export function filterStationCycles(
+  allCycles: Vector<PartCycleData>,
+  partAndProc?: string,
+  pallet?: string,
+  station?: string
 ): HashMap<string, ReadonlyArray<PartCycleData>> {
   return LazySeq.ofIterable(allCycles)
-    .filter(e => part_and_proc(e.part, e.process) === partAndProc)
-    .groupBy(e => stat_name_and_num(e))
+    .filter(e => {
+      if (partAndProc && part_and_proc(e.part, e.process) !== partAndProc) {
+        return false;
+      }
+      if (pallet && e.pallet !== pallet) {
+        return false;
+      }
+      if (station && stat_name_and_num(e.stationGroup, e.stationNumber) !== station) {
+        return false;
+      }
+      return true;
+    })
+    .groupBy(e => stat_name_and_num(e.stationGroup, e.stationNumber))
     .mapValues(e => e.toArray());
 }
 
@@ -408,7 +439,7 @@ export function binCyclesByDayAndStat(
     .flatMap(point =>
       splitPartCycleToDays(point, extractValue(point)).map(x => ({
         ...x,
-        station: stat_name_and_num(point)
+        station: stat_name_and_num(point.stationGroup, point.stationNumber)
       }))
     )
     .toMap(p => [new DayAndStation(p.day, p.station), p.value] as [DayAndStation, number], (v1, v2) => v1 + v2);
@@ -447,7 +478,7 @@ export function stationMinutes(partCycles: Vector<PartCycleData>, cutoff: Date):
   return LazySeq.ofIterable(partCycles)
     .filter(p => p.x >= cutoff)
     .map(p => ({
-      station: stat_name_and_num(p),
+      station: stat_name_and_num(p.stationGroup, p.stationNumber),
       active: p.active
     }))
     .toMap(x => [x.station, x.active] as [string, number], (v1, v2) => v1 + v2);

@@ -38,7 +38,7 @@ export enum PlannedOrActual {
 }
 
 export enum ActionType {
-  SetSelectedStationCyclePart = "Gui_SetSelectedStationCyclePart",
+  SetSelectedStationCycle = "Gui_SetSelectedStationCycle",
   SetSelectedPalletCycle = "Gui_SetSelectedPalletCycle",
   SetStationOeeHeatmapType = "Gui_SetStationOeeHeatmapType",
   SetCompletedCountHeatmapType = "Gui_SetCompletedCountHeatmapType",
@@ -52,7 +52,7 @@ export enum ActionType {
 }
 
 export type Action =
-  | { type: ActionType.SetSelectedStationCyclePart; part: string }
+  | { type: ActionType.SetSelectedStationCycle; part?: string; station?: string; pallet?: string }
   | { type: ActionType.SetSelectedPalletCycle; pallet: string }
   | { type: ActionType.SetStationOeeHeatmapType; ty: PlannedOrActual }
   | { type: ActionType.SetCompletedCountHeatmapType; ty: PlannedOrActual }
@@ -66,6 +66,8 @@ export type Action =
 
 export interface State {
   readonly station_cycle_selected_part?: string;
+  readonly station_cycle_selected_station?: string;
+  readonly station_cycle_selected_pallet?: string;
   readonly pallet_cycle_selected?: string;
   readonly station_oee_heatmap_type: PlannedOrActual;
   readonly completed_count_heatmap_type: PlannedOrActual;
@@ -94,8 +96,13 @@ export function reducer(s: State, a: Action): State {
     return initial;
   }
   switch (a.type) {
-    case ActionType.SetSelectedStationCyclePart:
-      return { ...s, station_cycle_selected_part: a.part };
+    case ActionType.SetSelectedStationCycle:
+      return {
+        ...s,
+        station_cycle_selected_part: a.part,
+        station_cycle_selected_station: a.station,
+        station_cycle_selected_pallet: a.pallet
+      };
     case ActionType.SetSelectedPalletCycle:
       return { ...s, pallet_cycle_selected: a.pallet };
     case ActionType.SetStationOeeHeatmapType:

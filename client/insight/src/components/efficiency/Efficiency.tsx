@@ -49,11 +49,11 @@ import AnalysisSelectToolbar from "../AnalysisSelectToolbar";
 import { CycleChart, CycleChartPoint, ExtraTooltip } from "./CycleChart";
 import { SelectableHeatChart, HeatChartPoint } from "./HeatChart";
 import * as events from "../../data/events";
-import { Store, connect, mkAC } from "../../store/store";
+import { Store, connect, mkAC, DispatchAction } from "../../store/store";
 import * as guiState from "../../data/gui-state";
 import * as matDetails from "../../data/material-details";
 import InspectionSankey from "./InspectionSankey";
-import { PartCycleData, stationCyclesForPart } from "../../data/events.cycles";
+import { PartCycleData, filterStationCycles } from "../../data/events.cycles";
 import { MaterialDialog, PartIdenticon } from "../station-monitor/Material";
 import { LazySeq } from "../../data/lazyseq";
 
@@ -72,10 +72,14 @@ const ConnectedMaterialDialog = connect(
 
 interface PartStationCycleChartProps {
   readonly allParts: HashSet<string>;
+  readonly stationNames: HashSet<string>;
+  readonly palletNames: HashSet<string>;
   readonly points: HashMap<string, ReadonlyArray<events.CycleData>>;
   readonly default_date_range?: Date[];
-  readonly selected?: string;
-  readonly setSelected: (s: string) => void;
+  readonly selectedPart?: string;
+  readonly selectedPallet?: string;
+  readonly selectedStation?: string;
+  readonly setSelected: DispatchAction<guiState.ActionType.SetSelectedStationCycle>;
   readonly openMaterial: (matId: number) => void;
 }
 
@@ -112,20 +116,72 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
               name="Station-Cycles-cycle-chart-select"
               autoWidth
               displayEmpty
-              value={props.selected || ""}
-              onChange={e => props.setSelected(e.target.value)}
+              value={props.selectedPart || ""}
+              onChange={e =>
+                props.setSelected({
+                  part: e.target.value === "" ? undefined : e.target.value,
+                  pallet: props.selectedPallet,
+                  station: props.selectedStation
+                })
+              }
             >
-              {props.selected ? (
-                undefined
-              ) : (
-                <MenuItem key={0} value="">
-                  <em>Select Part</em>
-                </MenuItem>
-              )}
+              <MenuItem key={0} value="">
+                <em>Any Part</em>
+              </MenuItem>
               {props.allParts.toArray({ sortOn: x => x }).map(n => (
                 <MenuItem key={n} value={n}>
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <PartIdenticon part={stripAfterDash(n)} size={30} />
+                    <span style={{ marginRight: "1em" }}>{n}</span>
+                  </div>
+                </MenuItem>
+              ))}
+            </Select>
+            <Select
+              name="Station-Cycles-cycle-chart-station-select"
+              autoWidth
+              displayEmpty
+              value={props.selectedStation || ""}
+              style={{ marginLeft: "1em" }}
+              onChange={e =>
+                props.setSelected({
+                  station: e.target.value === "" ? undefined : e.target.value,
+                  pallet: props.selectedPallet,
+                  part: props.selectedPart
+                })
+              }
+            >
+              <MenuItem key={0} value="">
+                <em>Any Station</em>
+              </MenuItem>
+              {props.stationNames.toArray({ sortOn: x => x }).map(n => (
+                <MenuItem key={n} value={n}>
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <span style={{ marginRight: "1em" }}>{n}</span>
+                  </div>
+                </MenuItem>
+              ))}
+            </Select>
+            <Select
+              name="Station-Cycles-cycle-chart-station-pallet"
+              autoWidth
+              displayEmpty
+              value={props.selectedPallet || ""}
+              style={{ marginLeft: "1em" }}
+              onChange={e =>
+                props.setSelected({
+                  pallet: e.target.value === "" ? undefined : e.target.value,
+                  station: props.selectedStation,
+                  part: props.selectedPart
+                })
+              }
+            >
+              <MenuItem key={0} value="">
+                <em>Any Pallet</em>
+              </MenuItem>
+              {props.palletNames.toArray({ sortOn: x => x }).map(n => (
+                <MenuItem key={n} value={n}>
+                  <div style={{ display: "flex", alignItems: "center" }}>
                     <span style={{ marginRight: "1em" }}>{n}</span>
                   </div>
                 </MenuItem>
@@ -152,11 +208,18 @@ const stationCyclePointsSelector = createSelector(
       st.Events.analysis_period === events.AnalysisPeriod.Last30Days
         ? st.Events.last30.cycles.part_cycles
         : st.Events.selected_month.cycles.part_cycles,
-    (st: Store) => st.Gui.station_cycle_selected_part
+    (st: Store) => st.Gui.station_cycle_selected_part,
+    (st: Store) => st.Gui.station_cycle_selected_pallet,
+    (st: Store) => st.Gui.station_cycle_selected_station
   ],
-  (cycles: Vector<PartCycleData>, part: string | undefined) => {
-    if (part) {
-      return stationCyclesForPart(part, cycles);
+  (
+    cycles: Vector<PartCycleData>,
+    part: string | undefined,
+    pallet: string | undefined,
+    station: string | undefined
+  ) => {
+    if (part || pallet || station) {
+      return filterStationCycles(cycles, part, pallet, station);
     } else {
       return HashMap.empty<string, ReadonlyArray<PartCycleData>>();
     }
@@ -170,17 +233,24 @@ const ConnectedPartStationCycleChart = connect(
         ? st.Events.last30.cycles.part_and_proc_names
         : st.Events.selected_month.cycles.part_and_proc_names,
     points: stationCyclePointsSelector(st),
-    selected: st.Gui.station_cycle_selected_part,
+    selectedPart: st.Gui.station_cycle_selected_part,
+    selectedPallet: st.Gui.station_cycle_selected_pallet,
+    selectedStation: st.Gui.station_cycle_selected_station,
+    stationNames:
+      st.Events.analysis_period === events.AnalysisPeriod.Last30Days
+        ? st.Events.last30.cycles.station_names
+        : st.Events.selected_month.cycles.station_names,
+    palletNames:
+      st.Events.analysis_period === events.AnalysisPeriod.Last30Days
+        ? st.Events.last30.cycles.pallet_names
+        : st.Events.selected_month.cycles.pallet_names,
     default_date_range:
       st.Events.analysis_period === events.AnalysisPeriod.Last30Days
         ? [startOfToday(), addDays(startOfToday(), -30)]
         : [st.Events.analysis_period_month, addMonths(st.Events.analysis_period_month, 1)]
   }),
   {
-    setSelected: (s: string) => ({
-      type: guiState.ActionType.SetSelectedStationCyclePart,
-      part: s
-    }),
+    setSelected: mkAC(guiState.ActionType.SetSelectedStationCycle),
     openMaterial: matDetails.openMaterialById
   }
 )(PartStationCycleChart);

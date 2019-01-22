@@ -40,12 +40,60 @@ it("creates initial state", () => {
   expect(s).toBe(gui.initial);
 });
 
-it("selects a part for the station cycle", () => {
-  let s = gui.reducer(gui.initial, {
-    type: gui.ActionType.SetSelectedStationCyclePart,
-    part: "abcdef"
-  });
+it("selects a part and pal for the station cycle", () => {
+  let s = gui.reducer(
+    {
+      ...gui.initial,
+      station_cycle_selected_part: "origpart",
+      station_cycle_selected_station: "origstation",
+      station_cycle_selected_pallet: "origpallet"
+    },
+    {
+      type: gui.ActionType.SetSelectedStationCycle,
+      part: "abcdef",
+      pallet: "xyz"
+    }
+  );
   expect(s.station_cycle_selected_part).toEqual("abcdef");
+  expect(s.station_cycle_selected_pallet).toEqual("xyz");
+  expect(s.station_cycle_selected_station).toBeUndefined();
+});
+
+it("selects a pallet and station for the station cycle", () => {
+  let s = gui.reducer(
+    {
+      ...gui.initial,
+      station_cycle_selected_part: "origpart",
+      station_cycle_selected_station: "origstation",
+      station_cycle_selected_pallet: "origpallet"
+    },
+    {
+      type: gui.ActionType.SetSelectedStationCycle,
+      pallet: "xyz",
+      station: "www"
+    }
+  );
+  expect(s.station_cycle_selected_part).toBeUndefined();
+  expect(s.station_cycle_selected_pallet).toEqual("xyz");
+  expect(s.station_cycle_selected_station).toEqual("www");
+});
+
+it("selects a station for the station cycle", () => {
+  let s = gui.reducer(
+    {
+      ...gui.initial,
+      station_cycle_selected_part: "origpart",
+      station_cycle_selected_station: "origstation",
+      station_cycle_selected_pallet: "origpallet"
+    },
+    {
+      type: gui.ActionType.SetSelectedStationCycle,
+      station: "www"
+    }
+  );
+  expect(s.station_cycle_selected_part).toBeUndefined();
+  expect(s.station_cycle_selected_pallet).toBeUndefined();
+  expect(s.station_cycle_selected_station).toEqual("www");
 });
 
 it("selects a pallet for the pallet cycle chart", () => {
