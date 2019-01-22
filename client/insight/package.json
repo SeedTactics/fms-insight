@@ -17,6 +17,7 @@
   "dependencies": {
     "@material-ui/core": "^3.0.0",
     "@material-ui/icons": "^3.0.0",
+    "copy-to-clipboard": "^3.0.0",
     "date-fns": "^1.29.0",
     "downshift": "^3.1.0",
     "jdenticon": "^2.0.0",

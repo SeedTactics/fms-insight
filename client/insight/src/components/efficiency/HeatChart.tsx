@@ -38,9 +38,13 @@ import CardContent from "@material-ui/core/CardContent";
 import CardHeader from "@material-ui/core/CardHeader";
 import Select from "@material-ui/core/Select";
 import MenuItem from "@material-ui/core/MenuItem";
+import Tooltip from "@material-ui/core/Tooltip";
+import IconButton from "@material-ui/core/IconButton";
+import ImportExport from "@material-ui/icons/ImportExport";
 
 import * as gui from "../../data/gui-state";
 import { LazySeq } from "../../data/lazyseq";
+import { copyToClipboard } from "../../data/clipboard-table";
 
 export interface HeatChartPoint {
   readonly x: Date;
@@ -128,6 +132,14 @@ export function SelectableHeatChart(props: SelectableHeatChartProps) {
             {props.icon}
             <div style={{ marginLeft: "10px", marginRight: "3em" }}>{props.card_label}</div>
             <div style={{ flexGrow: 1 }} />
+            <Tooltip title="Copy to Clipboard">
+              <IconButton
+                onClick={() => copyToClipboard(props.y_title, props.points)}
+                style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+              >
+                <ImportExport />
+              </IconButton>
+            </Tooltip>
             <Select
               name={props.card_label.replace(" ", "-") + "-heatchart-planned-or-actual"}
               autoWidth

@@ -131,7 +131,7 @@ export function process_sim_use(
 }
 
 class DayAndStation {
-  constructor(public day: Date, public station: string) {}
+  constructor(public readonly day: Date, public readonly station: string) {}
   equals(other: DayAndStation): boolean {
     return this.day.getTime() === other.day.getTime() && this.station === other.station;
   }
@@ -139,7 +139,7 @@ class DayAndStation {
     return fieldsHashCode(this.day.getTime(), this.station);
   }
   toString(): string {
-    return `{day: ${this.day.toISOString()}}, station: ${this.station}}`;
+    return `{day: ${this.day.toISOString()}, station: ${this.station}}`;
   }
 }
 
@@ -190,7 +190,7 @@ export function binSimStationUseByDayAndStat(
 }
 
 class DayAndPart {
-  constructor(public day: Date, public part: string) {}
+  constructor(public readonly day: Date, public readonly part: string) {}
   equals(other: DayAndPart): boolean {
     return this.day.getTime() === other.day.getTime() && this.part === other.part;
   }
@@ -198,7 +198,7 @@ class DayAndPart {
     return fieldsHashCode(this.day.getTime(), this.part);
   }
   toString(): string {
-    return `{day: ${this.day.toISOString()}}, part: ${this.part}}`;
+    return `{day: ${this.day.toISOString()}, part: ${this.part}}`;
   }
 }
 

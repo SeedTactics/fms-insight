@@ -41,6 +41,8 @@ import * as simuse from "./events.simuse";
 import * as inspection from "./events.inspection";
 import { fakeCycle } from "./events.fake";
 import { ILogEntry } from "./api";
+import { LazySeq } from "./lazyseq";
+import { buildTable } from "./clipboard-table";
 
 it("creates initial state", () => {
   // tslint:disable no-any
@@ -333,6 +335,49 @@ it("computes station oee", () => {
   let statMins = events.stationMinutes(st.last30.cycles.by_part_then_stat, addDays(now, -7));
 
   expect(statMins).toMatchSnapshot("station minutes for last week");
+});
+
+it("creates clipboard table", () => {
+  const now = new Date(2018, 2, 5); // midnight in local time
+  const nowChicago = new Date(Date.UTC(2018, 2, 5, 6, 0, 0)); // America/Chicago time
+  const minOffset = differenceInMinutes(nowChicago, now);
+
+  const evts = ([] as ILogEntry[]).concat(
+    fakeCycle(now, 30),
+    fakeCycle(addHours(now, -3), 20),
+    fakeCycle(addHours(now, -15), 15)
+  );
+  const st = events.reducer(events.initial, {
+    type: events.ActionType.LoadRecentLogEntries,
+    now: addDays(now, 1),
+    pledge: {
+      status: PledgeStatus.Completed,
+      result: evts
+    }
+  });
+
+  let byDayAndStat = events.binCyclesByDayAndStat(st.last30.cycles.by_part_then_stat, c =>
+    duration(c.active).asMinutes()
+  );
+
+  // update day to be in Chicago timezone
+  // This is because the snapshot formats the day as a UTC time in Chicago timezone
+  // Note this is after cycles are binned, which is correct since cycles are generated using
+  // now in local time and then binned in local time.  Just need to update the date before
+  // comparing with the snapshot
+  byDayAndStat = byDayAndStat.map((dayAndStat, val) => [dayAndStat.adjustDay(d => addMinutes(d, minOffset)), val]);
+
+  const points = LazySeq.ofIterable(byDayAndStat)
+    .map(([dayAndStat, val]) => ({
+      x: dayAndStat.day,
+      y: dayAndStat.station,
+      label: val.toString()
+    }))
+    .toArray();
+
+  const table = document.createElement("div");
+  table.innerHTML = buildTable("Station", points);
+  expect(table).toMatchSnapshot("clipboard table");
 });
 
 /*

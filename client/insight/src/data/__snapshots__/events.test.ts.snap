@@ -54,6 +54,75 @@ Map {
 }
 `;
 
+exports[`creates clipboard table: clipboard table 1`] = `
+<div>
+  <table>
+    
+
+    <thead>
+      <tr>
+        <th>
+          Station
+        </th>
+        <th>
+          Sun Mar 04 2018
+        </th>
+        <th>
+          Mon Mar 05 2018
+        </th>
+      </tr>
+    </thead>
+    
+
+    <tbody>
+      
+
+      <tr>
+        <th>
+          L/U #1
+        </th>
+        <td>
+          0.0002
+        </td>
+        <td>
+          0.0001
+        </td>
+      </tr>
+      
+
+      <tr>
+        <th>
+          L/U #2
+        </th>
+        <td>
+          0.0001
+        </td>
+        <td>
+          0.00005
+        </td>
+      </tr>
+      
+
+      <tr>
+        <th>
+          MC #1
+        </th>
+        <td>
+          0.0005833333333333333
+        </td>
+        <td>
+          0.0005
+        </td>
+      </tr>
+      
+
+    </tbody>
+    
+
+  </table>
+</div>
+`;
+
 exports[`loads a specific month for analysis: selected month with 27 days ago, 2 days ago, and today 1`] = `
 Object {
   "cycles": Object {
