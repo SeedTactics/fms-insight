@@ -123,6 +123,10 @@ export interface SelectableHeatChartProps {
   readonly points: ReadonlyArray<HeatChartPoint>;
 }
 
+// https://github.com/uber/react-vis/issues/1092
+// tslint:disable-next-line:no-any
+(LabelSeries as any).propTypes = {};
+
 export function SelectableHeatChart(props: SelectableHeatChartProps) {
   return (
     <Card raised>
