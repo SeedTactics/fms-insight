@@ -50,7 +50,7 @@ import { PartCycleData } from "../../data/events.cycles";
 import { createSelector } from "reselect";
 import BuildIcon from "@material-ui/icons/Build";
 import AnalysisSelectToolbar from "../AnalysisSelectToolbar";
-import { HashSet, HashMap, Vector } from "prelude-ts";
+import { HashSet, Vector } from "prelude-ts";
 import { LazySeq } from "../../data/lazyseq";
 
 interface CostPerPieceInputProps {
@@ -227,15 +227,11 @@ function CostPerPieceOutput(props: CostPerPieceOutputProps) {
 const calcCostPerPiece = createSelector(
   (s: Store) =>
     s.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? s.Events.last30.cycles.by_part_then_stat
-      : s.Events.selected_month.cycles.by_part_then_stat,
+      ? s.Events.last30.cycles.part_cycles
+      : s.Events.selected_month.cycles.part_cycles,
   (s: Store) => s.CostPerPiece.input,
   (s: Store) => (s.Events.analysis_period === AnalysisPeriod.Last30Days ? undefined : s.Events.analysis_period_month),
-  (
-    cycles: HashMap<string, HashMap<string, ReadonlyArray<PartCycleData>>>,
-    input: ccp.CostInput,
-    month: Date | undefined
-  ) => {
+  (cycles: Vector<PartCycleData>, input: ccp.CostInput, month: Date | undefined) => {
     return ccp.compute_monthly_cost(input, cycles, month);
   }
 );

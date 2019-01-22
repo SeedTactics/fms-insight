@@ -198,5 +198,5 @@ it("computes part costs", async () => {
     operatorCostPerHour: 5432
   };
 
-  expect(ccp.compute_monthly_cost(costInput, cycleState.by_part_then_stat)).toMatchSnapshot("cost calcs");
+  expect(ccp.compute_monthly_cost(costInput, cycleState.part_cycles)).toMatchSnapshot("cost calcs");
 });

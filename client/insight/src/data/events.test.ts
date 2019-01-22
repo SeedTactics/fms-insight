@@ -295,9 +295,7 @@ it("bins actual cycles by day", () => {
     }
   });
 
-  let byDayAndStat = events.binCyclesByDayAndStat(st.last30.cycles.by_part_then_stat, c =>
-    duration(c.active).asMinutes()
-  );
+  let byDayAndStat = events.binCyclesByDayAndStat(st.last30.cycles.part_cycles, c => duration(c.active).asMinutes());
 
   // update day to be in Chicago timezone
   // This is because the snapshot formats the day as a UTC time in Chicago timezone
@@ -308,7 +306,7 @@ it("bins actual cycles by day", () => {
 
   expect(byDayAndStat).toMatchSnapshot("cycles binned by day and station");
 
-  let byDayAndPart = events.binCyclesByDayAndPart(st.last30.cycles.by_part_then_stat, c => (c.completed ? 1 : 0));
+  let byDayAndPart = events.binCyclesByDayAndPart(st.last30.cycles.part_cycles, c => (c.completed ? 1 : 0));
 
   byDayAndPart = byDayAndPart.map((dayAndPart, val) => [dayAndPart.adjustDay(d => addMinutes(d, minOffset)), val]);
 
@@ -332,7 +330,7 @@ it("computes station oee", () => {
     }
   });
 
-  let statMins = events.stationMinutes(st.last30.cycles.by_part_then_stat, addDays(now, -7));
+  let statMins = events.stationMinutes(st.last30.cycles.part_cycles, addDays(now, -7));
 
   expect(statMins).toMatchSnapshot("station minutes for last week");
 });
@@ -356,9 +354,7 @@ it("creates clipboard table", () => {
     }
   });
 
-  let byDayAndStat = events.binCyclesByDayAndStat(st.last30.cycles.by_part_then_stat, c =>
-    duration(c.active).asMinutes()
-  );
+  let byDayAndStat = events.binCyclesByDayAndStat(st.last30.cycles.part_cycles, c => duration(c.active).asMinutes());
 
   // update day to be in Chicago timezone
   // This is because the snapshot formats the day as a UTC time in Chicago timezone

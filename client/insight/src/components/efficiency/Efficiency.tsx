@@ -33,24 +33,29 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import WorkIcon from "@material-ui/icons/Work";
 import BasketIcon from "@material-ui/icons/ShoppingBasket";
-import { addMonths, addDays } from "date-fns";
+import { addMonths, addDays, startOfToday } from "date-fns";
 import { createSelector } from "reselect";
 import ExtensionIcon from "@material-ui/icons/Extension";
 import HourglassIcon from "@material-ui/icons/HourglassFull";
+import { HashMap, Vector, HashSet } from "prelude-ts";
+import Card from "@material-ui/core/Card";
+import CardHeader from "@material-ui/core/CardHeader";
+import Select from "@material-ui/core/Select";
+import MenuItem from "@material-ui/core/MenuItem";
+import CardContent from "@material-ui/core/CardContent";
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
 import AnalysisSelectToolbar from "../AnalysisSelectToolbar";
-import { SelectableCycleChart, CycleChartPoint, ExtraTooltip } from "./CycleChart";
+import { CycleChart, CycleChartPoint, ExtraTooltip } from "./CycleChart";
 import { SelectableHeatChart, HeatChartPoint } from "./HeatChart";
 import * as events from "../../data/events";
 import { Store, connect, mkAC } from "../../store/store";
 import * as guiState from "../../data/gui-state";
 import * as matDetails from "../../data/material-details";
 import InspectionSankey from "./InspectionSankey";
-import { PartCycleData } from "../../data/events.cycles";
-import { MaterialDialog } from "../station-monitor/Material";
+import { PartCycleData, stationCyclesForPart } from "../../data/events.cycles";
+import { MaterialDialog, PartIdenticon } from "../station-monitor/Material";
 import { LazySeq } from "../../data/lazyseq";
-import { HashMap } from "prelude-ts";
 
 // --------------------------------------------------------------------------------
 // Station Cycles
@@ -66,11 +71,21 @@ const ConnectedMaterialDialog = connect(
 )(MaterialDialog);
 
 interface PartStationCycleChartProps {
-  readonly points: HashMap<string, HashMap<string, ReadonlyArray<events.CycleData>>>;
+  readonly allParts: HashSet<string>;
+  readonly points: HashMap<string, ReadonlyArray<events.CycleData>>;
   readonly default_date_range?: Date[];
   readonly selected?: string;
   readonly setSelected: (s: string) => void;
   readonly openMaterial: (matId: number) => void;
+}
+
+function stripAfterDash(s: string): string {
+  const idx = s.indexOf("-");
+  if (idx >= 0) {
+    return s.substring(0, idx);
+  } else {
+    return s;
+  }
 }
 
 function PartStationCycleChart(props: PartStationCycleChartProps) {
@@ -86,38 +101,81 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
   }
 
   return (
-    <SelectableCycleChart
-      select_label="Part"
-      series_label="Station"
-      card_label="Station Cycles"
-      icon={<WorkIcon style={{ color: "#6D4C41" }} />}
-      extra_tooltip={extraStationCycleTooltip}
-      useIdenticon
-      {...props}
-    />
+    <Card raised>
+      <CardHeader
+        title={
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
+            <WorkIcon style={{ color: "#6D4C41" }} />
+            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Station Cycles</div>
+            <div style={{ flexGrow: 1 }} />
+            <Select
+              name="Station-Cycles-cycle-chart-select"
+              autoWidth
+              displayEmpty
+              value={props.selected || ""}
+              onChange={e => props.setSelected(e.target.value)}
+            >
+              {props.selected ? (
+                undefined
+              ) : (
+                <MenuItem key={0} value="">
+                  <em>Select Part</em>
+                </MenuItem>
+              )}
+              {props.allParts.toArray({ sortOn: x => x }).map(n => (
+                <MenuItem key={n} value={n}>
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <PartIdenticon part={stripAfterDash(n)} size={30} />
+                    <span style={{ marginRight: "1em" }}>{n}</span>
+                  </div>
+                </MenuItem>
+              ))}
+            </Select>
+          </div>
+        }
+      />
+      <CardContent>
+        <CycleChart
+          points={props.points}
+          series_label="Station"
+          default_date_range={props.default_date_range}
+          extra_tooltip={extraStationCycleTooltip}
+        />
+      </CardContent>
+    </Card>
   );
 }
 
-function stationCycleSelector(st: Store) {
-  if (st.Events.analysis_period === events.AnalysisPeriod.Last30Days) {
-    const now = new Date();
-    const oneMonthAgo = addDays(now, -30);
-    return {
-      points: st.Events.last30.cycles.by_part_then_stat,
-      selected: st.Gui.station_cycle_selected_part,
-      default_date_range: [now, oneMonthAgo]
-    };
-  } else {
-    return {
-      points: st.Events.selected_month.cycles.by_part_then_stat,
-      selected: st.Gui.station_cycle_selected_part,
-      default_date_range: [st.Events.analysis_period_month, addMonths(st.Events.analysis_period_month, 1)]
-    };
+const stationCyclePointsSelector = createSelector(
+  [
+    (st: Store) =>
+      st.Events.analysis_period === events.AnalysisPeriod.Last30Days
+        ? st.Events.last30.cycles.part_cycles
+        : st.Events.selected_month.cycles.part_cycles,
+    (st: Store) => st.Gui.station_cycle_selected_part
+  ],
+  (cycles: Vector<PartCycleData>, part: string | undefined) => {
+    if (part) {
+      return stationCyclesForPart(part, cycles);
+    } else {
+      return HashMap.empty<string, ReadonlyArray<PartCycleData>>();
+    }
   }
-}
+);
 
 const ConnectedPartStationCycleChart = connect(
-  stationCycleSelector,
+  st => ({
+    allParts:
+      st.Events.analysis_period === events.AnalysisPeriod.Last30Days
+        ? st.Events.last30.cycles.part_and_proc_names
+        : st.Events.selected_month.cycles.part_and_proc_names,
+    points: stationCyclePointsSelector(st),
+    selected: st.Gui.station_cycle_selected_part,
+    default_date_range:
+      st.Events.analysis_period === events.AnalysisPeriod.Last30Days
+        ? [startOfToday(), addDays(startOfToday(), -30)]
+        : [st.Events.analysis_period_month, addMonths(st.Events.analysis_period_month, 1)]
+  }),
   {
     setSelected: (s: string) => ({
       type: guiState.ActionType.SetSelectedStationCyclePart,
@@ -139,20 +197,53 @@ interface PalletCycleChartProps {
 }
 
 function PalletCycleChart(props: PalletCycleChartProps) {
-  const points = props.points.map((pal, cs) => [
-    pal,
-    HashMap.of([pal, cs] as [string, ReadonlyArray<events.CycleData>])
-  ]);
+  let points = HashMap.empty<string, ReadonlyArray<events.CycleData>>();
+  if (props.selected) {
+    const palData = props.points.get(props.selected);
+    if (palData.isSome()) {
+      points = HashMap.of([props.selected, palData.get()]);
+    }
+  }
   return (
-    <SelectableCycleChart
-      select_label="Pallet"
-      series_label="Pallet"
-      card_label="Pallet Cycles"
-      icon={<BasketIcon style={{ color: "#6D4C41" }} />}
-      selected={props.selected}
-      setSelected={props.setSelected}
-      points={points}
-    />
+    <Card raised>
+      <CardHeader
+        title={
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
+            <BasketIcon style={{ color: "#6D4C41" }} />
+            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Pallet Cycles</div>
+            <div style={{ flexGrow: 1 }} />
+            <Select
+              name={"Pallet-Cycles-cycle-chart-select"}
+              autoWidth
+              displayEmpty
+              value={props.selected || ""}
+              onChange={e => props.setSelected(e.target.value)}
+            >
+              {props.selected ? (
+                undefined
+              ) : (
+                <MenuItem key={0} value="">
+                  <em>Select Pallet</em>
+                </MenuItem>
+              )}
+              {props.points
+                .keySet()
+                .toArray({ sortOn: x => x })
+                .map(n => (
+                  <MenuItem key={n} value={n}>
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <span style={{ marginRight: "1em" }}>{n}</span>
+                    </div>
+                  </MenuItem>
+                ))}
+            </Select>
+          </div>
+        }
+      />
+      <CardContent>
+        <CycleChart points={points} series_label="Pallet" default_date_range={props.default_date_range} />
+      </CardContent>
+    </Card>
   );
 }
 
@@ -207,9 +298,9 @@ function StationOeeHeatmap(props: HeatmapProps) {
 }
 
 const stationOeeActualPointsSelector = createSelector(
-  (cycles: events.CycleState) => cycles.by_part_then_stat,
-  byPartThenStat => {
-    let pts = events.binCyclesByDayAndStat(byPartThenStat, c => c.active);
+  (cycles: events.CycleState) => cycles.part_cycles,
+  cycles => {
+    let pts = events.binCyclesByDayAndStat(cycles, c => c.active);
     return LazySeq.ofIterable(pts)
       .map(([dayAndStat, val]) => {
         const pct = val / (24 * 60);
@@ -311,9 +402,9 @@ function CompletedCountHeatmap(props: HeatmapProps) {
 }
 
 const completedActualPointsSelector = createSelector(
-  (cycles: events.CycleState) => cycles.by_part_then_stat,
-  byPartThenStat => {
-    let pts = events.binCyclesByDayAndPart(byPartThenStat, c => (c.completed ? 1 : 0));
+  (cycles: events.CycleState) => cycles.part_cycles,
+  cycles => {
+    let pts = events.binCyclesByDayAndPart(cycles, c => (c.completed ? 1 : 0));
     return LazySeq.ofIterable(pts)
       .map(([dayAndPart, val]) => {
         return {

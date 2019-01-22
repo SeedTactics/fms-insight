@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { PartCycleData } from "./events.cycles";
 import { getDaysInMonth } from "date-fns";
-import { HashMap } from "prelude-ts";
+import { HashMap, Vector } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 
 export interface CostInput {
@@ -188,37 +188,21 @@ function labor_cost(
   return pctUse * totalLaborCost;
 }
 
-// https://github.com/emmanueltouzery/prelude-ts/pull/27
-function mapValueIterable<A, B>(m: HashMap<A, B>): Iterable<B> {
-  // empty hashmaps correctly iterate
-  if (m.isEmpty()) {
-    return m.valueIterable();
-  }
-  return {
-    [Symbol.iterator]() {
-      return (m.valueIterable() as unknown) as Iterator<B>;
-    }
-  };
-}
-
 export function compute_monthly_cost(
   i: CostInput,
-  byPart: HashMap<string, HashMap<string, ReadonlyArray<PartCycleData>>>,
+  cycles: Vector<PartCycleData>,
   month?: Date
 ): ReadonlyArray<PartCost> {
   const days = month ? getDaysInMonth(month) : 30;
   const totalLaborCost = days * 24 * i.operatorCostPerHour * i.numOperators;
-  const cycles = LazySeq.ofIterable(mapValueIterable(byPart))
-    .flatMap(c => mapValueIterable(c))
-    .flatMap(c => c);
 
-  const totalStatUseMinutes: HashMap<string, number> = cycles.toMap(
+  const totalStatUseMinutes: HashMap<string, number> = LazySeq.ofIterable(cycles).toMap(
     c => [c.stationGroup, c.active],
     (a1, a2) => a1 + a2
   );
 
   return Array.from(
-    cycles
+    LazySeq.ofIterable(cycles)
       .groupBy(c => c.part)
       .map((partName, forPart) => [
         partName,

@@ -43,13 +43,7 @@ import {
   HorizontalGridLines,
   DiscreteColorLegend
 } from "react-vis";
-import Card from "@material-ui/core/Card";
-import CardContent from "@material-ui/core/CardContent";
-import CardHeader from "@material-ui/core/CardHeader";
-import Select from "@material-ui/core/Select";
 import Button from "@material-ui/core/Button";
-import MenuItem from "@material-ui/core/MenuItem";
-import { PartIdenticon } from "../station-monitor/Material";
 import { createStyles, withStyles, WithStyles } from "@material-ui/core";
 import { HashMap } from "prelude-ts";
 
@@ -64,7 +58,7 @@ export interface ExtraTooltip {
   link?: () => void;
 }
 
-interface CycleChartProps {
+export interface CycleChartProps {
   readonly points: HashMap<string, ReadonlyArray<CycleChartPoint>>;
   readonly series_label: string;
   readonly extra_tooltip?: (point: CycleChartPoint) => ReadonlyArray<ExtraTooltip>;
@@ -113,7 +107,7 @@ const cycleChartStyles = createStyles({
   }
 });
 
-const CycleChart = withStyles(cycleChartStyles)(
+export const CycleChart = withStyles(cycleChartStyles)(
   class CycleChartWithStyles extends React.PureComponent<
     CycleChartProps & WithStyles<typeof cycleChartStyles>,
     CycleChartState
@@ -271,75 +265,3 @@ const CycleChart = withStyles(cycleChartStyles)(
     }
   }
 );
-
-export interface SelectableCycleChartProps {
-  readonly points: HashMap<string, HashMap<string, ReadonlyArray<CycleChartPoint>>>;
-  readonly select_label: string;
-  readonly series_label: string;
-  readonly card_label: string;
-  readonly icon: JSX.Element;
-  readonly default_date_range?: Date[];
-  readonly selected?: string;
-  readonly extra_tooltip?: (point: CycleChartPoint) => ReadonlyArray<ExtraTooltip>;
-  readonly useIdenticon?: boolean;
-  readonly setSelected: (s: string) => void;
-}
-
-export function SelectableCycleChart(props: SelectableCycleChartProps) {
-  let validValue = props.selected !== undefined && props.points.containsKey(props.selected);
-  function stripAfterDash(s: string): string {
-    const idx = s.indexOf("-");
-    if (idx >= 0) {
-      return s.substring(0, idx);
-    } else {
-      return s;
-    }
-  }
-  return (
-    <Card raised>
-      <CardHeader
-        title={
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
-            {props.icon}
-            <div style={{ marginLeft: "10px", marginRight: "3em" }}>{props.card_label}</div>
-            <div style={{ flexGrow: 1 }} />
-            <Select
-              name={props.card_label.replace(" ", "-") + "-cycle-chart-select"}
-              autoWidth
-              displayEmpty
-              value={validValue ? props.selected : ""}
-              onChange={e => props.setSelected(e.target.value)}
-            >
-              {validValue ? (
-                undefined
-              ) : (
-                <MenuItem key={0} value="">
-                  <em>Select {props.select_label}</em>
-                </MenuItem>
-              )}
-              {props.points
-                .keySet()
-                .toArray({ sortOn: x => x })
-                .map(n => (
-                  <MenuItem key={n} value={n}>
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      {props.useIdenticon ? <PartIdenticon part={stripAfterDash(n)} size={30} /> : undefined}
-                      <span style={{ marginRight: "1em" }}>{n}</span>
-                    </div>
-                  </MenuItem>
-                ))}
-            </Select>
-          </div>
-        }
-      />
-      <CardContent>
-        <CycleChart
-          points={props.points.get(props.selected || "").getOrElse(HashMap.empty())}
-          series_label={props.series_label}
-          default_date_range={props.default_date_range}
-          extra_tooltip={props.extra_tooltip}
-        />
-      </CardContent>
-    </Card>
-  );
-}

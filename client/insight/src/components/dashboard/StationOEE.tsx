@@ -220,7 +220,7 @@ function StationOEEs(p: Props) {
 }
 
 const oeeSelector = createSelector(
-  (s: Store) => s.Events.last30.cycles.by_part_then_stat,
+  (s: Store) => s.Events.last30.cycles.part_cycles,
   (s: Store) => s.Current.current_status.timeOfCurrentStatusUTC,
   (byPartThenStat, lastStTime) => stationMinutes(byPartThenStat, addDays(lastStTime, -7))
 );
