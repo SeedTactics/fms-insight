@@ -29,7 +29,8 @@
       "command": "dotnet run -p server/debug-mock",
       "type": "shell",
       "presentation": {
-        "reveal": "always"
+        "reveal": "silent",
+        "panel": "dedicated"
       },
       "problemMatcher": []
     },
@@ -76,6 +77,15 @@
         "reveal": "silent",
         "panel": "dedicated"
       },
+      "problemMatcher": []
+    },
+    {
+      "label": "insight:test",
+      "command": "yarn test",
+      "options": {
+        "cwd": "${workspaceFolder}/client/insight"
+      },
+      "type": "shell",
       "problemMatcher": []
     },
     {

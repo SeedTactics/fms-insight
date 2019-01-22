@@ -78,14 +78,21 @@ interface CycleChartTooltip {
   readonly extra: ReadonlyArray<ExtraTooltip>;
 }
 
+interface ZoomRange {
+  x_low: Date;
+  x_high: Date;
+  y_low: number;
+  y_high: number;
+}
+
 interface CycleChartState {
   readonly tooltip?: CycleChartTooltip;
   readonly disabled_series: { [key: string]: boolean };
-  readonly current_zoom_range: { x: Date; y: Date } | null;
+  readonly current_zoom_range: ZoomRange | null;
   readonly brushing: boolean;
 }
 
-function memoize<A, R>(f: (x: A) => R): ((x: A) => R) {
+function memoize<A, R>(f: (x: A) => R): (x: A) => R {
   let memo = new Map<A, R>();
   return x => {
     let ret = memo.get(x);
@@ -192,24 +199,29 @@ const CycleChart = withStyles(cycleChartStyles)(
             dontCheckIfEmpty
             xDomain={
               this.state.current_zoom_range
-                ? [this.state.current_zoom_range.x, this.state.current_zoom_range.y]
+                ? [this.state.current_zoom_range.x_low, this.state.current_zoom_range.x_high]
                 : this.props.points.isEmpty()
                 ? dateRange
                 : undefined
             }
-            yDomain={this.props.points.isEmpty() ? [0, 60] : undefined}
+            yDomain={
+              this.state.current_zoom_range
+                ? [this.state.current_zoom_range.y_low, this.state.current_zoom_range.y_high]
+                : this.props.points.isEmpty()
+                ? [0, 60]
+                : undefined
+            }
           >
             <VerticalGridLines />
             <HorizontalGridLines />
             <XAxis tickLabelAngle={-45} />
             <YAxis />
             <Highlight
-              enableY={false}
               onBrushStart={() => this.setState({ brushing: true })}
-              onBrushEnd={(area: { left: Date; right: Date }) => {
+              onBrushEnd={(area: { left: Date; right: Date; bottom: number; top: number }) => {
                 if (area) {
                   this.setState({
-                    current_zoom_range: { x: area.left, y: area.right },
+                    current_zoom_range: { x_low: area.left, x_high: area.right, y_low: area.bottom, y_high: area.top },
                     brushing: false
                   });
                 } else {
