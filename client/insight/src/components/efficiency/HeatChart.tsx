@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
 import { format } from "date-fns";
-import { HeatmapSeries, XAxis, YAxis, Hint, FlexibleWidthXYPlot } from "react-vis";
+import { HeatmapSeries, XAxis, YAxis, Hint, FlexibleWidthXYPlot, LabelSeries } from "react-vis";
 import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
 import CardHeader from "@material-ui/core/CardHeader";
@@ -51,6 +51,7 @@ export interface HeatChartPoint {
 
 interface HeatChartProps {
   readonly points: ReadonlyArray<HeatChartPoint>;
+  readonly y_title: string;
   readonly row_count: number;
   readonly label_title: string;
 }
@@ -59,9 +60,9 @@ interface HeatChartState {
   readonly selected_point?: HeatChartPoint;
 }
 
-const formatHint = (labelTitle: string) => (p: HeatChartPoint) => {
+const formatHint = (yTitle: string, labelTitle: string) => (p: HeatChartPoint) => {
   return [
-    { title: "Station", value: p.y },
+    { title: yTitle, value: p.y },
     { title: "Day", value: p.x.toDateString() },
     { title: labelTitle, value: p.label }
   ];
@@ -90,10 +91,17 @@ class HeatChart extends React.PureComponent<HeatChartProps, HeatChartState> {
           onValueMouseOver={(pt: HeatChartPoint) => this.setState({ selected_point: pt })}
           onValueMouseOut={() => this.setState({ selected_point: undefined })}
         />
+        <LabelSeries
+          style={{ pointerEvents: "none", fill: "#6b6b76" }}
+          data={this.props.points}
+          labelAnchorX="middle"
+          labelAnchorY="baseline"
+          getLabel={(d: HeatChartPoint) => d.label}
+        />
         {this.state.selected_point === undefined ? (
           undefined
         ) : (
-          <Hint value={this.state.selected_point} format={formatHint(this.props.label_title)} />
+          <Hint value={this.state.selected_point} format={formatHint(this.props.y_title, this.props.label_title)} />
         )}
       </FlexibleWidthXYPlot>
     );
@@ -103,6 +111,7 @@ class HeatChart extends React.PureComponent<HeatChartProps, HeatChartState> {
 export interface SelectableHeatChartProps {
   readonly icon: JSX.Element;
   readonly card_label: string;
+  readonly y_title: string;
   readonly label_title: string;
   readonly planned_or_actual: gui.PlannedOrActual;
   readonly setType: (p: gui.PlannedOrActual) => void;
@@ -139,6 +148,7 @@ export function SelectableHeatChart(props: SelectableHeatChartProps) {
       <CardContent>
         <HeatChart
           points={props.points}
+          y_title={props.y_title}
           label_title={props.label_title}
           row_count={LazySeq.ofIterable(props.points)
             .toSet(p => p.y)

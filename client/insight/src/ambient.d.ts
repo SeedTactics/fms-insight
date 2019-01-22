@@ -34,6 +34,7 @@ declare module "react-vis" {
   export class MarkSeriesCanvas extends React.Component<any> {}
   export class HeatmapSeries extends React.Component<any> {}
   export class CustomSVGSeries extends React.Component<any> {}
+  export class LabelSeries extends React.Component<any> {}
 
   export class VerticalGridLines extends React.Component<any> {}
   export class HorizontalGridLines extends React.Component<any> {}

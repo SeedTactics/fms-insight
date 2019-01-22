@@ -198,6 +198,7 @@ function StationOeeHeatmap(props: HeatmapProps) {
   return (
     <SelectableHeatChart
       card_label="Station OEE"
+      y_title="Station"
       label_title="OEE"
       icon={<HourglassIcon style={{ color: "#6D4C41" }} />}
       {...props}
@@ -221,9 +222,9 @@ const stationOeeActualPointsSelector = createSelector(
       })
       .toArray()
       .sort((p1, p2) => {
-        const cmp = p2.y.localeCompare(p1.y); // descending, compare p2 to p1
+        const cmp = p1.x.getTime() - p2.x.getTime();
         if (cmp === 0) {
-          return p1.x.getTime() - p2.x.getTime();
+          return p2.y.localeCompare(p1.y); // descending, compare p2 to p1
         } else {
           return cmp;
         }
@@ -247,9 +248,9 @@ const stationOeePlannedPointsSelector = createSelector(
       })
       .toArray()
       .sort((p1, p2) => {
-        const cmp = p2.y.localeCompare(p1.y); // descending, compare p2 to p1
+        const cmp = p1.x.getTime() - p2.x.getTime();
         if (cmp === 0) {
-          return p1.x.getTime() - p2.x.getTime();
+          return p2.y.localeCompare(p1.y); // descending, compare p2 to p1
         } else {
           return cmp;
         }
@@ -301,6 +302,7 @@ function CompletedCountHeatmap(props: HeatmapProps) {
   return (
     <SelectableHeatChart
       card_label="Part Production"
+      y_title="Part"
       label_title={props.planned_or_actual === guiState.PlannedOrActual.Actual ? "Completed" : "Planned"}
       icon={<ExtensionIcon style={{ color: "#6D4C41" }} />}
       {...props}
@@ -318,14 +320,14 @@ const completedActualPointsSelector = createSelector(
           x: dayAndPart.day,
           y: dayAndPart.part,
           color: val,
-          label: val.toFixed(1)
+          label: val.toFixed(0)
         };
       })
       .toArray()
       .sort((p1, p2) => {
-        const cmp = p2.y.localeCompare(p1.y); // descending, compare p2 to p1
+        const cmp = p1.x.getTime() - p2.x.getTime();
         if (cmp === 0) {
-          return p1.x.getTime() - p2.x.getTime();
+          return p2.y.localeCompare(p1.y); // descending, compare p2 to p1
         } else {
           return cmp;
         }
@@ -343,14 +345,14 @@ const completedPlannedPointsSelector = createSelector(
           x: dayAndPart.day,
           y: dayAndPart.part,
           color: val,
-          label: val.toFixed(1)
+          label: val.toFixed(0)
         };
       })
       .toArray()
       .sort((p1, p2) => {
-        const cmp = p2.y.localeCompare(p1.y); // descending, compare p2 to p1
+        const cmp = p1.x.getTime() - p2.x.getTime();
         if (cmp === 0) {
-          return p1.x.getTime() - p2.x.getTime();
+          return p2.y.localeCompare(p1.y); // descending, compare p2 to p1
         } else {
           return cmp;
         }
