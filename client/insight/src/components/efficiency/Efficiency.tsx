@@ -75,7 +75,7 @@ interface PartStationCycleChartProps {
   readonly stationNames: HashSet<string>;
   readonly palletNames: HashSet<string>;
   readonly points: HashMap<string, ReadonlyArray<events.CycleData>>;
-  readonly default_date_range?: Date[];
+  readonly default_date_range: Date[];
   readonly selectedPart?: string;
   readonly selectedPallet?: string;
   readonly selectedStation?: string;
@@ -246,7 +246,7 @@ const ConnectedPartStationCycleChart = connect(
         : st.Events.selected_month.cycles.pallet_names,
     default_date_range:
       st.Events.analysis_period === events.AnalysisPeriod.Last30Days
-        ? [startOfToday(), addDays(startOfToday(), -30)]
+        ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
         : [st.Events.analysis_period_month, addMonths(st.Events.analysis_period_month, 1)]
   }),
   {
@@ -261,7 +261,7 @@ const ConnectedPartStationCycleChart = connect(
 
 interface PalletCycleChartProps {
   readonly points: HashMap<string, ReadonlyArray<events.CycleData>>;
-  readonly default_date_range?: Date[];
+  readonly default_date_range: Date[];
   readonly selected?: string;
   readonly setSelected: (s: string) => void;
 }
@@ -319,12 +319,12 @@ function PalletCycleChart(props: PalletCycleChartProps) {
 
 function palletCycleSelector(st: Store) {
   if (st.Events.analysis_period === events.AnalysisPeriod.Last30Days) {
-    const now = new Date();
+    const now = addDays(startOfToday(), 1);
     const oneMonthAgo = addDays(now, -30);
     return {
       points: st.Events.last30.cycles.by_pallet,
       selected: st.Gui.pallet_cycle_selected,
-      default_date_range: [now, oneMonthAgo]
+      default_date_range: [oneMonthAgo, now]
     };
   } else {
     return {
