@@ -336,9 +336,8 @@ it("computes station oee", () => {
 });
 
 it("creates clipboard table", () => {
+  // table formats columns in local time, so no need to convert to a specific timezone
   const now = new Date(2018, 2, 5); // midnight in local time
-  const nowChicago = new Date(Date.UTC(2018, 2, 5, 6, 0, 0)); // America/Chicago time
-  const minOffset = differenceInMinutes(nowChicago, now);
 
   const evts = ([] as ILogEntry[]).concat(
     fakeCycle(now, 30),
@@ -355,13 +354,6 @@ it("creates clipboard table", () => {
   });
 
   let byDayAndStat = events.binCyclesByDayAndStat(st.last30.cycles.part_cycles, c => duration(c.active).asMinutes());
-
-  // update day to be in Chicago timezone
-  // This is because the snapshot formats the day as a UTC time in Chicago timezone
-  // Note this is after cycles are binned, which is correct since cycles are generated using
-  // now in local time and then binned in local time.  Just need to update the date before
-  // comparing with the snapshot
-  byDayAndStat = byDayAndStat.map((dayAndStat, val) => [dayAndStat.adjustDay(d => addMinutes(d, minOffset)), val]);
 
   const points = LazySeq.ofIterable(byDayAndStat)
     .map(([dayAndStat, val]) => ({
