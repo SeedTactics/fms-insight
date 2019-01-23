@@ -157,7 +157,6 @@ deploy:
       secure: 0r/dAyTIFbRaR3eIfnWdfz1hAYPu85mFntJavbWXsdUYkK6cSa1q6vZXWr2U0mUr
     bucket: com.seedtactics.fms-insight
     region: us-west-2
-    set_public: true
 
   - provider: S3
     on:
@@ -169,7 +168,6 @@ deploy:
       secure: 0r/dAyTIFbRaR3eIfnWdfz1hAYPu85mFntJavbWXsdUYkK6cSa1q6vZXWr2U0mUr
     bucket: com.seedtactics.fms-insight
     region: us-west-2
-    set_public: true
 
   - provider: S3
     on:
@@ -181,4 +179,3 @@ deploy:
       secure: 0r/dAyTIFbRaR3eIfnWdfz1hAYPu85mFntJavbWXsdUYkK6cSa1q6vZXWr2U0mUr
     bucket: com.seedtactics.fms-insight
     region: us-west-2
-    set_public: true
