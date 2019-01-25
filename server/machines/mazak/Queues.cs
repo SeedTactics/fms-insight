@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2019, John Lenz
 
 All rights reserved.
 
@@ -41,7 +41,12 @@ using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
 {
-  public class MazakQueues
+  public interface IQueueSyncFault
+  {
+    bool CurrentQueueMismatch { get; }
+  }
+
+  public class MazakQueues : IQueueSyncFault
   {
     private static ILogger log = Serilog.Log.ForContext<MazakQueues>();
 
@@ -49,11 +54,14 @@ namespace MazakMachineInterface
     private JobDB _jobDB;
     private IWriteData _transDB;
 
+    public bool CurrentQueueMismatch { get; private set; }
+
     public MazakQueues(JobLogDB log, JobDB jDB, IWriteData trans)
     {
       _jobDB = jDB;
       _log = log;
       _transDB = trans;
+      CurrentQueueMismatch = false;
     }
 
     public void CheckQueues(MazakSchedulesAndLoadActions mazakData)
@@ -71,9 +79,11 @@ namespace MazakMachineInterface
         {
           _transDB.Save(transSet, "Setting material from queues");
         }
+        CurrentQueueMismatch = false;
       }
       catch (Exception ex)
       {
+        CurrentQueueMismatch = true;
         log.Error(ex, "Error checking for new material");
       }
       finally

@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2019, John Lenz
 
 All rights reserved.
 
@@ -41,6 +41,7 @@ using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
 using MazakMachineInterface;
 using Newtonsoft.Json;
+using NSubstitute;
 
 namespace MachineWatchTest
 {
@@ -50,6 +51,8 @@ namespace MachineWatchTest
     private JobDB _jobDB;
     private JsonSerializerSettings jsonSettings;
     private FMSSettings _settings;
+
+    private IQueueSyncFault queueSyncFault;
 
     public BuildCurrentStatusSpec()
     {
@@ -75,6 +78,9 @@ namespace MachineWatchTest
       jsonSettings.DateTimeZoneHandling = DateTimeZoneHandling.Utc;
       jsonSettings.Formatting = Formatting.Indented;
       jsonSettings.ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor;
+
+      queueSyncFault = Substitute.For<IQueueSyncFault>();
+      queueSyncFault.CurrentQueueMismatch.Returns(false);
 
     }
 
@@ -193,10 +199,15 @@ namespace MachineWatchTest
         close = true;
       }
 
+      if (scenario == "basic-no-material")
+      {
+        queueSyncFault.CurrentQueueMismatch.Returns(true);
+      }
+
       CurrentStatus status;
       try
       {
-        status = BuildCurrentStatus.Build(_jobDB, logDb, _settings, MazakDbType.MazakSmooth, allData,
+        status = BuildCurrentStatus.Build(_jobDB, logDb, _settings, queueSyncFault, MazakDbType.MazakSmooth, allData,
           new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc));
       }
       finally

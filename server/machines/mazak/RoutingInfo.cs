@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2019, John Lenz
 
 All rights reserved.
 
@@ -49,6 +49,7 @@ namespace MazakMachineInterface
     private BlackMaple.MachineFramework.JobDB jobDB;
     private BlackMaple.MachineFramework.JobLogDB log;
     private IWriteJobs _writeJobs;
+    private readonly IQueueSyncFault queueFault;
     private System.Timers.Timer _copySchedulesTimer;
     private readonly BlackMaple.MachineFramework.FMSSettings fmsSettings;
 
@@ -64,6 +65,7 @@ namespace MazakMachineInterface
       BlackMaple.MachineFramework.JobDB jDB,
       BlackMaple.MachineFramework.JobLogDB jLog,
       IWriteJobs wJobs,
+      IQueueSyncFault queueSyncFault,
       bool check,
       BlackMaple.MachineFramework.FMSSettings settings)
     {
@@ -74,6 +76,7 @@ namespace MazakMachineInterface
       logReader = logR;
       log = jLog;
       _writeJobs = wJobs;
+      queueFault = queueSyncFault;
       CheckPalletsUsedOnce = check;
 
       _copySchedulesTimer = new System.Timers.Timer(TimeSpan.FromMinutes(4.5).TotalMilliseconds);
@@ -103,7 +106,7 @@ namespace MazakMachineInterface
         OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
       }
 
-      return BuildCurrentStatus.Build(jobDB, log, fmsSettings, readDatabase.MazakType, mazakData, DateTime.UtcNow);
+      return BuildCurrentStatus.Build(jobDB, log, fmsSettings, queueFault, readDatabase.MazakType, mazakData, DateTime.UtcNow);
     }
 
     #endregion

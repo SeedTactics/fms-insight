@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2019, John Lenz
 
 All rights reserved.
 
@@ -43,7 +43,7 @@ namespace MazakMachineInterface
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<BuildCurrentStatus>();
 
-    public static CurrentStatus Build(JobDB jobDB, JobLogDB log, FMSSettings fmsSettings, MazakDbType dbType, MazakAllData mazakData, DateTime utcNow)
+    public static CurrentStatus Build(JobDB jobDB, JobLogDB log, FMSSettings fmsSettings, IQueueSyncFault queueSyncFault, MazakDbType dbType, MazakAllData mazakData, DateTime utcNow)
     {
       //Load process and path numbers
       Dictionary<string, int> uniqueToMaxPath;
@@ -63,6 +63,10 @@ namespace MazakMachineInterface
             curStatus.Alarms.Add(alarm.AlarmMessage);
           }
         }
+      }
+      if (queueSyncFault.CurrentQueueMismatch)
+      {
+        curStatus.Alarms.Add("Queue contents and Mazak schedule quantity mismatch.");
       }
 
       var jobsBySchID = new Dictionary<long, InProcessJob>();

@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2019, John Lenz
 
 All rights reserved.
 
@@ -220,7 +220,7 @@ namespace MazakMachineInterface
 
       hold = new HoldPattern(_writeDB, _readDB, jobDB, true);
       var writeJobs = new WriteJobs(_writeDB, _readDB, hold, jobDB, jobLog, st, CheckPalletsUsedOnce, UseStartingOffsetForDueDate);
-      routing = new RoutingInfo(_writeDB, _readDB, logDataLoader, jobDB, jobLog, writeJobs,
+      routing = new RoutingInfo(_writeDB, _readDB, logDataLoader, jobDB, jobLog, writeJobs, queues,
                                 CheckPalletsUsedOnce, st);
 
       logDataLoader.NewEntries += OnNewLogEntries;
