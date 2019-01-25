@@ -53,7 +53,7 @@ import { Store, connect, mkAC, DispatchAction } from "../../store/store";
 import * as guiState from "../../data/gui-state";
 import * as matDetails from "../../data/material-details";
 import InspectionSankey from "./InspectionSankey";
-import { PartCycleData, filterStationCycles } from "../../data/events.cycles";
+import { PartCycleData, filterStationCycles, FilteredStationCycles } from "../../data/events.cycles";
 import { MaterialDialog, PartIdenticon } from "../station-monitor/Material";
 import { LazySeq } from "../../data/lazyseq";
 
@@ -74,7 +74,7 @@ interface PartStationCycleChartProps {
   readonly allParts: HashSet<string>;
   readonly stationNames: HashSet<string>;
   readonly palletNames: HashSet<string>;
-  readonly points: HashMap<string, ReadonlyArray<events.CycleData>>;
+  readonly points: FilteredStationCycles;
   readonly default_date_range: Date[];
   readonly selectedPart?: string;
   readonly selectedPallet?: string;
@@ -192,8 +192,8 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
       />
       <CardContent>
         <CycleChart
-          points={props.points}
-          series_label="Station"
+          points={props.points.data}
+          series_label={props.points.seriesLabel}
           default_date_range={props.default_date_range}
           extra_tooltip={extraStationCycleTooltip}
         />
@@ -221,7 +221,7 @@ const stationCyclePointsSelector = createSelector(
     if (part || pallet || station) {
       return filterStationCycles(cycles, part, pallet, station);
     } else {
-      return HashMap.empty<string, ReadonlyArray<PartCycleData>>();
+      return { seriesLabel: "Station", data: HashMap.empty<string, ReadonlyArray<PartCycleData>>() };
     }
   }
 );

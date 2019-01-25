@@ -252,11 +252,15 @@ export const CycleChart = withStyles(cycleChartStyles)(
 
           <div style={{ position: "relative" }}>
             <div style={{ textAlign: "center" }}>
-              <DiscreteColorLegend
-                orientation="horizontal"
-                items={seriesNames.map(s => ({ title: s, disabled: this.state.disabled_series[s] }))}
-                onItemClick={this.toggleSeries}
-              />
+              {seriesNames.length > 1 ? (
+                <DiscreteColorLegend
+                  orientation="horizontal"
+                  items={seriesNames.map(s => ({ title: s, disabled: this.state.disabled_series[s] }))}
+                  onItemClick={this.toggleSeries}
+                />
+              ) : (
+                undefined
+              )}
             </div>
             {this.state.current_x_zoom_range || this.state.current_y_zoom_range ? (
               <Button

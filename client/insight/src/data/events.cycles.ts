@@ -366,27 +366,43 @@ export function process_events(
   }
 }
 
+export interface FilteredStationCycles {
+  readonly seriesLabel: string;
+  readonly data: HashMap<string, ReadonlyArray<PartCycleData>>;
+}
+
 export function filterStationCycles(
   allCycles: Vector<PartCycleData>,
   partAndProc?: string,
   pallet?: string,
   station?: string
-): HashMap<string, ReadonlyArray<PartCycleData>> {
-  return LazySeq.ofIterable(allCycles)
-    .filter(e => {
-      if (partAndProc && part_and_proc(e.part, e.process) !== partAndProc) {
-        return false;
-      }
-      if (pallet && e.pallet !== pallet) {
-        return false;
-      }
-      if (station && stat_name_and_num(e.stationGroup, e.stationNumber) !== station) {
-        return false;
-      }
-      return true;
-    })
-    .groupBy(e => stat_name_and_num(e.stationGroup, e.stationNumber))
-    .mapValues(e => e.toArray());
+): FilteredStationCycles {
+  return {
+    seriesLabel: partAndProc && station ? "Pallet" : station && pallet ? "Part" : "Station",
+    data: LazySeq.ofIterable(allCycles)
+      .filter(e => {
+        if (partAndProc && part_and_proc(e.part, e.process) !== partAndProc) {
+          return false;
+        }
+        if (pallet && e.pallet !== pallet) {
+          return false;
+        }
+        if (station && stat_name_and_num(e.stationGroup, e.stationNumber) !== station) {
+          return false;
+        }
+        return true;
+      })
+      .groupBy(e => {
+        if (partAndProc && station) {
+          return e.pallet;
+        } else if (station && pallet) {
+          return part_and_proc(e.part, e.process);
+        } else {
+          return stat_name_and_num(e.stationGroup, e.stationNumber);
+        }
+      })
+      .mapValues(e => e.toArray())
+  };
 }
 
 function splitPartCycleToDays(cycle: CycleData, totalVal: number): Array<{ day: Date; value: number }> {
