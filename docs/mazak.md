@@ -123,7 +123,7 @@ which control how new schedules are added into the cell controller.
 When `Use Starting Offset` is enabled, new Mazak schedules will
 be created with a "Due Date" and "Priority" field based on the
 simulation's prediction of its actual start time. If disabled, a due
-date of January 1, 2008 and priority of 75 is used for all Mazak schedules, effectively
+date of January 1, 2008 and priority of 91 is used for all Mazak schedules, effectively
 disabling the use of due dates. Since Mazak uses due dates to decide which
 part or pallet to start producing first, due dates can help smooth production
 flow.
