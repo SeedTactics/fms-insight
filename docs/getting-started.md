@@ -20,8 +20,8 @@ must be installed first.
 The following are links to the latest installers for FMS Insight for each supported cell controller.
 The installers will also upgrade an existing install to the latest version.
 
-* [FMS Insight Mazak Install.msi](/installers/FMS%20Insight%20Mazak%20Install.msi)
-* [FMS Insight Makino Install.msi](/installers/FMS%20Insight%20Makino%20Install.msi)
+- [FMS Insight Mazak Install.msi](/installers/FMS%20Insight%20Mazak%20Install.msi)
+- [FMS Insight Makino Install.msi](/installers/FMS%20Insight%20Makino%20Install.msi)
 
 ## Install the server
 
@@ -55,7 +55,7 @@ The client has three tabs for exploring data about the cell:
 
 ## Implement station monitoring
 
-The [stations](client-stations.md) tab in the client is designed to be viewed
+The [stations](client-station-monitor.md) tab in the client is designed to be viewed
 on the factory floor by operators throughout the processes. The station
 monitor screens are designed with touch-screens in mind, so we suggest either
 mounting tablets or small touchscreen computers at various stations on the
@@ -79,7 +79,7 @@ quantities.
 One option is paying for our [SeedTactic:
 OrderLink](https://www.seedtactics.com/products/seedtactic-orderlink)
 software which uses AI to automatically schedule a collection of orders and
-due dates using a customized flexibility plan. *OrderLink* will translate ERP
+due dates using a customized flexibility plan. _OrderLink_ will translate ERP
 orders to the format expected by FMS Insight without custom programming.
 Alternatively, if daily scheduling takes place directly in the ERP system,
 some custom software can be created to send the jobs and schedules from the
