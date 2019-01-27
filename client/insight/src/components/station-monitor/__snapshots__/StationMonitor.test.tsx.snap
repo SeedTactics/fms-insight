@@ -1390,7 +1390,7 @@ exports[`renders the inspection page: empty inspection 1`] = `
 
 exports[`renders the load station page: NBTGI dialog 1`] = `
 <div
-  class="mui-fixed MuiModal-root-49 MuiDialog-root-175"
+  class="MuiModal-root-49 MuiDialog-root-175"
   role="dialog"
 >
   <div
@@ -3167,7 +3167,7 @@ exports[`renders the load station page: load 3 1`] = `
 
 exports[`renders the queues page: MZQGQ dialog 1`] = `
 <div
-  class="mui-fixed MuiModal-root-1003 MuiDialog-root-1129"
+  class="MuiModal-root-1003 MuiDialog-root-1129"
   role="dialog"
 >
   <div
