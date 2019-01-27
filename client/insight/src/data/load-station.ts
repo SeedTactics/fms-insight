@@ -132,7 +132,17 @@ export function selectLoadStationAndQueueProps(
     queues.map(q => [q, []] as [string, api.IInProcessMaterial[]])
   );
   const queueMat = Vector.ofIterable(curSt.material)
-    .filter(m => m.location.type === api.LocType.InQueue && queueNames.containsKey(m.location.currentQueue || ""))
+    .filter(m => {
+      if (m.location.type !== api.LocType.InQueue) {
+        return false;
+      }
+      if (queueNames.containsKey(m.location.currentQueue || "")) {
+        return true;
+      } else if (pal && m.action.type === api.ActionType.Loading && m.action.loadOntoPallet === pal.pallet) {
+        return true; // display even if queue not selected
+      }
+      return false;
+    })
     .groupBy(m => m.location.currentQueue || "")
     .mapValues(ms => ms.sortOn(m => m.location.queuePosition || 0).toArray());
 

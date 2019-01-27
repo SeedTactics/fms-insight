@@ -2998,6 +2998,104 @@ exports[`renders the load station page: load 2 1`] = `
       </div>
     </div>
   </div>
+  <div
+    class="Component-queueCol-82"
+  >
+    <div>
+      <div
+        class="Component-container-91"
+      >
+        <div
+          class="Component-labelContainer-92"
+        >
+          <span
+            class="Component-label-93"
+          >
+            Queue1
+          </span>
+        </div>
+        <div
+          class="Component-contentContainer-95"
+          style="justify-content: space-between;"
+        >
+          <div>
+            <div
+              class="MuiPaper-root-104 MuiPaper-elevation4-110 MuiPaper-rounded-105 Component-paper-99"
+            >
+              <button
+                class="MuiButtonBase-root-69"
+                tabindex="0"
+                type="button"
+              >
+                <div
+                  class="Component-container-100"
+                >
+                  <div
+                    style="width: 50px; height: 50px;"
+                  >
+                    <svg
+                      height="50"
+                      preserveAspectRatio="xMidYMid meet"
+                      viewBox="0 0 50 50"
+                      width="50"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M16.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M26.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M26.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M16.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M6.7 20a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 20a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 30a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M6.7 30a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0"
+                        fill="#464646"
+                      />
+                      <path
+                        d="M6.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 10a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M36.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0M6.7 40a3.3,3.3 0 1,1 6.7,0a3.3,3.3 0 1,1 -6.7,0"
+                        fill="#5998c7"
+                      />
+                      <path
+                        d="M15 15L25 15L25 16.6L20.8 25L15 25ZM35 15L35 25L33.4 25L25 20.8L25 15ZM35 35L25 35L25 33.4L29.2 25L35 25ZM15 35L15 25L16.6 25L25 29.2L25 35Z"
+                        fill="#e3e3e3"
+                      />
+                    </svg>
+                  </div>
+                  <div
+                    class="Component-mainContent-101"
+                  >
+                    <h6
+                      class="MuiTypography-root-131 MuiTypography-h6-148"
+                    >
+                      zzz
+                    </h6>
+                    <div>
+                      <small>
+                        Serial: 
+                        MZQGQ
+                      </small>
+                    </div>
+                    <div>
+                      <small>
+                        Load onto face 1
+                      </small>
+                    </div>
+                  </div>
+                  <div
+                    class="Component-rightContent-102"
+                  >
+                    <div>
+                      <div
+                        class="MuiAvatar-root-167 MuiAvatar-colorDefault-168 Component-avatar-103"
+                      >
+                        Q
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <span
+                  class="MuiTouchRipple-root-72"
+                />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </main>
 `;
 
@@ -3326,7 +3424,7 @@ exports[`renders the queues page: MZQGQ dialog 1`] = `
               <td
                 class="MuiTableCell-root-1264 MuiTableCell-body-1266 MuiTableCell-paddingDense-1269"
               >
-                Start Unload
+                Start Load
               </td>
               <td
                 class="MuiTableCell-root-1264 MuiTableCell-body-1266 MuiTableCell-paddingDense-1269"
