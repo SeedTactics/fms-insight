@@ -7,10 +7,10 @@
 FMS Insight is a client and server which runs on an flexible machining system (FMS)
 cell controller which provides:
 
-* A server which stores a log of all events and stores a log of planned jobs.
-* A server which translates incomming planned jobs into jobs in the cell controller.
-* A REST-like HTTP API which allows other programs to view the events and create planned jobs.
-* An HTML client which displays a dashboard, station monitor, and data analysis
+- A server which stores a log of all events and stores a log of planned jobs.
+- A server which translates incomming planned jobs into jobs in the cell controller.
+- A REST-like HTTP API which allows other programs to view the events and create planned jobs.
+- An HTML client which displays a dashboard, station monitor, and data analysis
   based on the log of events, planned jobs, and current cell status.
 
 ### Server
@@ -26,8 +26,8 @@ database code, and ASP.NET Core controllers.
 For each machine manufacturer (currently Mazak, Makino, and Cincron),
 there is an executable project which is what is installed by the user.
 This per-manufacturer project references the common code in `BlackMaple.MachineFramework`
-to provide the data storage and HTTP api.  The per-manufacturer project
-also implements the custom interop for logging and jobs.  The code lives
+to provide the data storage and HTTP api. The per-manufacturer project
+also implements the custom interop for logging and jobs. The code lives
 in [server/machines](https://bitbucket.org/blackmaple/fms-insight/src/default/server/machines/).
 
 The server focuses on providing an immutable log of events and planned jobs.
@@ -41,19 +41,19 @@ possible to provide a stable immutable API for cell controllers.
 
 ### Swagger
 
-[![NuGet Stats](https://img.shields.io/nuget/v/BlackMaple.FMSInsight.API.svg)](https://www.nuget.org/packages/BlackMaple.FMSInsight.API/)
+[![NuGet Stats](https://img.shields.io/nuget/v/BlackMaple.FMSInsight.API.svg)](https://www.nuget.org/packages/BlackMaple.FMSInsight.API/) [![Swagger](https://img.shields.io/swagger/valid/2.0/https/bitbucket.org/blackmaple/fms-insight/raw/tip/server/fms-insight-api.json.svg)](http://petstore.swagger.io/?url=https%3A%2F%2Fbitbucket.org%2Fblackmaple%2Ffms-insight%2Fraw%2Fdefault%2Fserver%2Ffms-insight-api.json)
 
 The server generates a Swagger file and serves SwaggerUI using [NSwag](https://github.com/RSuter/NSwag).
-The latest swagger file can be obtained by running the server and then accessing `http://localhost:5000/swagger/v1/swagger.json`.  For each version of the API, I export the swagger document
-and then commit it to source control in the `server` directory.  The swagger file is then used to generate two
-clients: one in typescript for use in the HTTP client and one in C#.  The C# client is published on
+The latest swagger file can be obtained by running the server and then accessing `http://localhost:5000/swagger/v1/swagger.json`
+or [browsed online](http://petstore.swagger.io/?url=https%3A%2F%2Fbitbucket.org%2Fblackmaple%2Ffms-insight%2Fraw%2Fdefault%2Fserver%2Ffms-insight-api.json). The swagger file is then used to generate two
+clients: one in typescript for use in the HTTP client and one in C#. The C# client is published on
 nuget as [BlackMaple.FMSInsight.API](https://www.nuget.org/packages/BlackMaple.FMSInsight.API/).
 
 ### HTML Client
 
-The client is written using React, Redux, Typescript, and MaterialUI.  The
+The client is written using React, Redux, Typescript, and MaterialUI. The
 client is compiled using parcel and the resulting
-HTML and Javascript is included in the server builds.  The code lives in
+HTML and Javascript is included in the server builds. The code lives in
 [client/insight](https://bitbucket.org/blackmaple/fms-insight/src/default/client/insight/).
 
 I use VSCode as an editor and there are VSCode tasks for launching parcel in
@@ -81,7 +81,7 @@ cell controller manufacturer integration project includes code to translate
 this common job JSON format into the specific jobs and schedules in the cell
 controller. Typically the integration does not implement any complex logic or
 control itself; instead FMS Insight is a generic conduit which allows other
-software to communicate jobs into the cell controller.  FMS Insight also keeps
+software to communicate jobs into the cell controller. FMS Insight also keeps
 a log of all jobs sent into the cell controller.
 
 ## Log of events
@@ -106,22 +106,22 @@ Here are the events that are stored:
 
 ##### Machine Cycle
 
-An event for cycle start and cycle stop of each machine.  Data includes
+An event for cycle start and cycle stop of each machine. Data includes
 
-* Date and Time
-* Station number
-* Pallet
-* Program
-* Active operation time (time that the program is actually cutting/running.  For example, if the machine goes down the time between
+- Date and Time
+- Station number
+- Pallet
+- Program
+- Active operation time (time that the program is actually cutting/running. For example, if the machine goes down the time between
   cycle start and cycle stop will be longer than the active operation time.)
-* List of material being cut by the program:
-    - MaterialID
-    - Part Name
-    - Process #
-    - Part Quantity
-    - JobUnique
-* Any additional data which might help the customer.  In the past we have included probe data produced by the part program,
-  tools used and their life, and others.  This kind of data is largely based on what the customer wants.  Our system can attach
+- List of material being cut by the program:
+  - MaterialID
+  - Part Name
+  - Process #
+  - Part Quantity
+  - JobUnique
+- Any additional data which might help the customer. In the past we have included probe data produced by the part program,
+  tools used and their life, and others. This kind of data is largely based on what the customer wants. Our system can attach
   any extra data that the cell controller produces.
 
 This data must be present in the cell controller log and custom code will translate the cycle event
@@ -130,34 +130,34 @@ from the cell controller to the FMS Insight log.
 ##### Load Cycle
 
 We log an event for start of loading/unloading (when the pallet arrives at the load station) and
-another event for end of loading/unloading (when the pallet leaves the load station).  The data we
+another event for end of loading/unloading (when the pallet leaves the load station). The data we
 store is
 
-* Date and Time
-* Station number
-* Pallet
+- Date and Time
+- Station number
+- Pallet
 
 For start of load/unload (when the pallet arrives at the load station), the event also contains
 
-* a list of material the operator should load onto the pallet:
-    - MaterialID
-    - Part Name
-    - Process #
-    - Quantity
-    - JobUnique
-* a list of material that the operator should remove from the pallet:
-    - MaterialID
-    - Part Name
-    - Process #
-    - Quantity
-    - JobUnique
-* a list of material that the operator should transfer from one process to another (reclamp):
-    - MaterialID
-    - Part Name
-    - Process # to remove from
-    - Process # to place into
-    - Quantity
-    - JobUnique
+- a list of material the operator should load onto the pallet:
+  - MaterialID
+  - Part Name
+  - Process #
+  - Quantity
+  - JobUnique
+- a list of material that the operator should remove from the pallet:
+  - MaterialID
+  - Part Name
+  - Process #
+  - Quantity
+  - JobUnique
+- a list of material that the operator should transfer from one process to another (reclamp):
+  - MaterialID
+  - Part Name
+  - Process # to remove from
+  - Process # to place into
+  - Quantity
+  - JobUnique
 
 For end of load/unload (when the pallet leaves the load station), the event contains the same
 material data as the start, except restricted to what the operator actually performed. Typically
@@ -201,12 +201,12 @@ the operator which completed the wash.
 
 #### Workorder Assignment
 
-The HTML client allows the user to assign a part to a workorder.  The workorder can be any
-string.  When the user clicks the button to assign a part to a workorder, an event is added
+The HTML client allows the user to assign a part to a workorder. The workorder can be any
+string. When the user clicks the button to assign a part to a workorder, an event is added
 to the log recording the date and time, MaterialID, and workorder.
 
-FMS Insight also can record an event when a workorder is finalized.  This includes the
-date/time and workorder.  Typically these events are created by custom code which
+FMS Insight also can record an event when a workorder is finalized. This includes the
+date/time and workorder. Typically these events are created by custom code which
 integrates with the customer's ERP system.
 
 #### API Access
@@ -216,10 +216,9 @@ all log events in some date range, log events for a single MaterialID or
 serial, or log events for completed parts. The API also provides one report,
 a workorder report which calculates a summary of all parts assigned to a
 specific workorder. Finally, the API allows creation of serial assignments,
-workorders, wash cycles, and inspection cycles.  All of these APIs are implemented
+workorders, wash cycles, and inspection cycles. All of these APIs are implemented
 by FMS Insight itself and don't require access to the cell controller; indeed all the
 events have already been translated into FMS Insight's own SQLite database.
-
 
 ## Jobs
 
@@ -232,7 +231,7 @@ to jobs. The following is the data included as part of the job.
 - Priority
 - Quantity to Produce
 - Number of Processes
-- (optional) Hold Pattern.  Occasionally the customer wants a hold pattern such as hold this
+- (optional) Hold Pattern. Occasionally the customer wants a hold pattern such as hold this
   job until 3rd shift.
 
 For each process, the job includes the following data:
@@ -272,7 +271,7 @@ integration will create the current pallet status from the log of events.
 
 #### Job History
 
-FMS Insight stores a log of all jobs sent into the cell controller.  This log can be
+FMS Insight stores a log of all jobs sent into the cell controller. This log can be
 queried by date range over the network API.
 
 #### Adding Jobs
@@ -288,7 +287,7 @@ are created each day and the flexibility of which pallets or machines to use
 can change for each job.
 
 The network API provides a route which allows this custom software to post
-the new jobs to create.  Each FMS Insight integration then has code to convert
+the new jobs to create. Each FMS Insight integration then has code to convert
 the new jobs from the common JSON definition into the format expected by the
 cell controller.
 
@@ -309,11 +308,11 @@ from existing jobs. When we are scheduling a new day, sometimes it is helpful
 to start from a blank slate and remove planned but not yet started quantities
 from jobs. We don't want to delete the job because any in-process material
 should finish, but we don't want the job to start any new parts. The easiest
-way to do that is to reduce the planned quantity on the job.  The FMS Insight
+way to do that is to reduce the planned quantity on the job. The FMS Insight
 integration provides a way to perform these edits on the cell controller itself.
 
 Implementation of this is optional and depends on the level of access FMS Insight
-has to the cell controller.  If such job modification is not implemented, it isn't that
+has to the cell controller. If such job modification is not implemented, it isn't that
 bad since jobs are only sized for one day and it is easier operationally to just
 let past jobs run to completion.
 
