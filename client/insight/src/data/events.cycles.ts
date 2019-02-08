@@ -50,6 +50,8 @@ export interface PartCycleData extends CycleData {
   readonly pallet: string;
   readonly isLabor: boolean;
   readonly matId: number;
+  readonly serial?: string;
+  readonly workorder?: string;
   readonly completed: boolean; // did this cycle result in a completed part
 }
 
@@ -298,6 +300,8 @@ export function process_events(
       pallet: e.cycle.pal,
       matId: e.mat.id,
       isLabor: e.cycle.type === api.LogType.LoadUnloadCycle,
+      serial: e.mat.serial,
+      workorder: e.mat.workorder,
       stationGroup: stat_group(e.cycle),
       stationNumber: e.cycle.locnum
     }))

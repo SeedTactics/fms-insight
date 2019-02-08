@@ -56,7 +56,9 @@ export function fakeMaterial(part?: string, proc?: number): LogMaterial {
     part: part || "part" + faker.random.alphaNumeric(),
     proc: proc || faker.random.number({ max: 4 }),
     numproc: faker.random.number({ max: 4 }),
-    face: "face" + faker.random.alphaNumeric()
+    face: "face" + faker.random.alphaNumeric(),
+    serial: "serial" + faker.random.alphaNumeric(),
+    workorder: "work" + faker.random.alphaNumeric()
   });
 }
 

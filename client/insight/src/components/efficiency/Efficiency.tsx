@@ -95,13 +95,21 @@ function stripAfterDash(s: string): string {
 function PartStationCycleChart(props: PartStationCycleChartProps) {
   function extraStationCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
     const partC = point as PartCycleData;
-    return [
-      {
+    const ret = [];
+    if (partC.serial) {
+      ret.push({
+        title: "Serial",
+        value: partC.serial
+      });
+    }
+    if (partC.matId >= 0) {
+      ret.push({
         title: "Material",
         value: "Open Card",
         link: () => props.openMaterial(partC.matId)
-      }
-    ];
+      });
+    }
+    return ret;
   }
 
   return (
