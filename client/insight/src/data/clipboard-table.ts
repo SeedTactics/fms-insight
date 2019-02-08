@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { LazySeq } from "./lazyseq";
 import { fieldsHashCode } from "prelude-ts";
+import { FilteredStationCycles, stat_name_and_num } from "./events.cycles";
 const copy = require("copy-to-clipboard");
 
 export interface ClipboardTablePoint {
@@ -41,9 +42,9 @@ export interface ClipboardTablePoint {
   readonly label: string;
 }
 
-class TableCell {
+class PointsTableCell {
   public constructor(public readonly x: number, public readonly y: string) {}
-  equals(other: TableCell): boolean {
+  equals(other: PointsTableCell): boolean {
     return this.x === other.x && this.y === other.y;
   }
   hashCode(): number {
@@ -54,9 +55,9 @@ class TableCell {
   }
 }
 
-export function buildTable(yTitle: string, points: ReadonlyArray<ClipboardTablePoint>): string {
+export function buildPointsTable(yTitle: string, points: ReadonlyArray<ClipboardTablePoint>): string {
   const cells = LazySeq.ofIterable(points).toMap(
-    p => [new TableCell(p.x.getTime(), p.y), p],
+    p => [new PointsTableCell(p.x.getTime(), p.y), p],
     (_, c) => c // cells should be unique, but just in case take the second
   );
   const days = LazySeq.ofIterable(points)
@@ -74,7 +75,7 @@ export function buildTable(yTitle: string, points: ReadonlyArray<ClipboardTableP
   for (let y of rows) {
     table += "<tr><th>" + y + "</th>";
     for (let x of days) {
-      const cell = cells.get(new TableCell(x, y));
+      const cell = cells.get(new PointsTableCell(x, y));
       if (cell.isSome()) {
         table += "<td>" + cell.get().label + "</td>";
       } else {
@@ -87,6 +88,24 @@ export function buildTable(yTitle: string, points: ReadonlyArray<ClipboardTableP
   return table;
 }
 
-export function copyToClipboard(yTitle: string, points: ReadonlyArray<ClipboardTablePoint>): void {
-  copy(buildTable(yTitle, points));
+export function copyPointsToClipboard(yTitle: string, points: ReadonlyArray<ClipboardTablePoint>): void {
+  copy(buildPointsTable(yTitle, points));
+}
+
+export function buildCycleTable(cycles: FilteredStationCycles): string {
+  let table = "<table>\n<thead><tr>";
+  table += "<th>Date</th><th>Part</th><th>Station</th><th>Pallet</th><td>Elapsed Min</td><td>Active Min</td>";
+  table += "</tr></thead>\n<tbody>\n";
+  for (let cycle of LazySeq.ofIterable(cycles.data).flatMap(([_, c]) => c)) {
+    table += "<tr>";
+    table += "<td>" + cycle.x.toDateString() + "</td>";
+    table += "<td>" + cycle.part + "-" + cycle.process.toString() + "</td>";
+    table += "<td>" + stat_name_and_num(cycle.stationGroup, cycle.stationNumber) + "</td>";
+    table += "<td>" + cycle.pallet + "</td>";
+    table += "<td>" + cycle.y.toFixed(1) + "</td>";
+    table += "<td>" + cycle.active.toFixed(1) + "</td>";
+    table += "</tr>\n";
+  }
+  table += "</tbody>\n</table>";
+  return table;
 }

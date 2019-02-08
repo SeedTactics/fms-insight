@@ -44,7 +44,7 @@ import ImportExport from "@material-ui/icons/ImportExport";
 
 import * as gui from "../../data/gui-state";
 import { LazySeq } from "../../data/lazyseq";
-import { copyToClipboard } from "../../data/clipboard-table";
+import { copyPointsToClipboard } from "../../data/clipboard-table";
 
 export interface HeatChartPoint {
   readonly x: Date;
@@ -138,7 +138,7 @@ export function SelectableHeatChart(props: SelectableHeatChartProps) {
             <div style={{ flexGrow: 1 }} />
             <Tooltip title="Copy to Clipboard">
               <IconButton
-                onClick={() => copyToClipboard(props.y_title, props.points)}
+                onClick={() => copyPointsToClipboard(props.y_title, props.points)}
                 style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
               >
                 <ImportExport />

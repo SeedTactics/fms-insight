@@ -42,7 +42,7 @@ import * as inspection from "./events.inspection";
 import { fakeCycle } from "./events.fake";
 import { ILogEntry } from "./api";
 import { LazySeq } from "./lazyseq";
-import { buildTable } from "./clipboard-table";
+import { buildPointsTable } from "./clipboard-table";
 
 it("creates initial state", () => {
   // tslint:disable no-any
@@ -364,7 +364,7 @@ it("creates clipboard table", () => {
     .toArray();
 
   const table = document.createElement("div");
-  table.innerHTML = buildTable("Station", points);
+  table.innerHTML = buildPointsTable("Station", points);
   expect(table).toMatchSnapshot("clipboard table");
 });
 

@@ -117,7 +117,7 @@ function stat_group_load_machine_only(e: Readonly<api.ILogEntry>): string {
   }
 }
 
-function stat_name_and_num(stationGroup: string, stationNumber: number): string {
+export function stat_name_and_num(stationGroup: string, stationNumber: number): string {
   if (stationGroup.startsWith("Inspect")) {
     return stationGroup;
   } else {
