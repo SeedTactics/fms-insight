@@ -269,12 +269,12 @@ namespace MazakMachineInterface
       if (!string.IsNullOrEmpty(serial))
       {
         log.RecordSerialForMaterialID(
-          new LogMaterial(
-            matID: matId,
-            uniq: "",
-            proc: 0,
-            part: part,
-            numProc: 1),
+          new BlackMaple.MachineFramework.JobLogDB.EventLogMaterial()
+          {
+            MaterialID = matId,
+            Process = 0,
+            Face = ""
+          },
           serial);
       }
       // the add to queue log entry will use the process, so later when we lookup the latest completed process
@@ -301,12 +301,12 @@ namespace MazakMachineInterface
       if (!string.IsNullOrEmpty(serial))
       {
         log.RecordSerialForMaterialID(
-          new LogMaterial(
-            matID: matId,
-            uniq: jobUnique,
-            proc: process,
-            part: job.PartName,
-            numProc: job.NumProcesses),
+          new BlackMaple.MachineFramework.JobLogDB.EventLogMaterial()
+          {
+            MaterialID = matId,
+            Process = process,
+            Face = ""
+          },
           serial);
       }
       // the add to queue log entry will use the process, so later when we lookup the latest completed process

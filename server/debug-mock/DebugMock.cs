@@ -267,12 +267,12 @@ namespace DebugMachineWatchApiServer
         if (e.LogType == LogType.PartMark)
         {
           foreach (var m in e.Material)
-            LogDB.RecordSerialForMaterialID(m, e.Result, e.EndTimeUTC.Add(offset));
+            LogDB.RecordSerialForMaterialID(JobLogDB.EventLogMaterial.FromLogMat(m), e.Result, e.EndTimeUTC.Add(offset));
         }
         else if (e.LogType == LogType.OrderAssignment)
         {
           foreach (var m in e.Material)
-            LogDB.RecordWorkorderForMaterialID(m, e.Result, e.EndTimeUTC.Add(offset));
+            LogDB.RecordWorkorderForMaterialID(JobLogDB.EventLogMaterial.FromLogMat(m), e.Result, e.EndTimeUTC.Add(offset));
         }
         else if (e.LogType == LogType.FinalizeWorkorder)
         {

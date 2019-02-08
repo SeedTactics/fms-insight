@@ -39,441 +39,438 @@ using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
 using FluentAssertions;
 
-namespace MachineWatchTest {
-  public class InspectionTest : IDisposable {
+namespace MachineWatchTest
+{
+  public class InspectionTest : IDisposable
+  {
 
-		private JobLogDB _insp;
+    private JobLogDB _insp;
 
     public InspectionTest()
-		{
-			var logConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
+    {
+      var logConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
       logConn.Open();
       _insp = new JobLogDB(logConn);
       _insp.CreateTables(firstSerialOnEmpty: null);
-		}
+    }
 
-		public void Dispose()
-		{
-			_insp.Close();
-		}
+    public void Dispose()
+    {
+      _insp.Close();
+    }
 
-		[Fact]
-		public void Counts()
-		{
-			List<InspectCount> cnts = new List<InspectCount>();
+    [Fact]
+    public void Counts()
+    {
+      List<InspectCount> cnts = new List<InspectCount>();
 
-			InspectCount cnt = new InspectCount();
-
-			cnt.Counter = "Test1";
-			cnt.Value = 15;
-			cnt.LastUTC = DateTime.Parse("1/5/2009 4:23:12 GMT");
-			cnts.Add(cnt);
-
-			cnt = new InspectCount();
-
-			cnt.Counter = "Test2";
-			cnt.Value = 1563;
-			cnt.LastUTC = DateTime.Parse("1/15/2009 3:35:24 GMT");
-			cnts.Add(cnt);
-
-			cnt = new InspectCount();
-
-			cnt.Counter = "Test3";
-			cnt.Value = 532;
-			cnt.LastUTC = DateTime.Parse("2/12/2009 15:03:55 GMT");
-			cnts.Add(cnt);
-
-			_insp.SetInspectCounts(cnts);
-
-			IList<InspectCount> loaded = _insp.LoadInspectCounts();
-
-			Assert.Equal(loaded, cnts);
-		}
-
-		[Fact]
-		public void Frequencies()
-		{
-			var job = new JobPlan("job1", 1);
-			job.PartName = "part1";
-			var freqProg = new JobInspectionData("insp1", "counter1", 0.5, TimeSpan.FromHours (100));
-			job.AddInspection(freqProg);
-
-			for (int i = 0; i < 100; i++)
-				_insp.MakeInspectionDecisions(i, job, 1, new[] {freqProg});
-
-			int numInsp = 0;
-			for (int i = 0; i < 100; i++) {
-				if (FindDecision(i, "insp1", "counter1"))
-					numInsp += 1;
-			}
-
-			Assert.True(numInsp > 0);
-			Assert.True(numInsp < 100);
-		}
-
-		[Fact]
-		public void Inspections()
-		{
-			var now = DateTime.UtcNow;
-			//set the count as zero, otherwise it chooses a random
       InspectCount cnt = new InspectCount();
-			cnt.Counter = "counter1";
-			cnt.Value = 0;
-			cnt.LastUTC = DateTime.UtcNow.AddHours(-11).AddMinutes(2);
-			_insp.SetInspectCounts(new InspectCount[] {cnt});
 
-			var job = new JobPlan("job1", 1);
-			job.PartName = "part1";
-			var job2 = new JobPlan("job2", 1);
-			job2.PartName = "part2";
+      cnt.Counter = "Test1";
+      cnt.Value = 15;
+      cnt.LastUTC = DateTime.Parse("1/5/2009 4:23:12 GMT");
+      cnts.Add(cnt);
 
-			//set up a program
-			var inspProg = new JobInspectionData("insp1", "counter1", 3, TimeSpan.FromHours(11));
-			job.AddInspection(inspProg);
-			var inspProg2 = new JobInspectionData(inspProg);
-			job2.AddInspection(inspProg2);
+      cnt = new InspectCount();
 
-			//the lastutc should be 2 minutes too short, so only inspections from the counter should take place
+      cnt.Counter = "Test2";
+      cnt.Value = 1563;
+      cnt.LastUTC = DateTime.Parse("1/15/2009 3:35:24 GMT");
+      cnts.Add(cnt);
 
-			_insp.MakeInspectionDecisions(1, job, 2, new [] {inspProg}, now);
-			_insp.MakeInspectionDecisions(1, job, 2, new [] {inspProg}, now); // twice should have no effect
-			CheckDecision(1, "insp1", "counter1", false, now);
-			CheckCount("counter1", 1);
-			CheckLastUTC("counter1", cnt.LastUTC);
+      cnt = new InspectCount();
 
-			_insp.MakeInspectionDecisions(2, job2, 2, new[] {inspProg2}, now);
-			CheckDecision(2, "insp1", "counter1", false, now);
-			CheckCount("counter1", 2);
-			CheckLastUTC("counter1", cnt.LastUTC);
+      cnt.Counter = "Test3";
+      cnt.Value = 532;
+      cnt.LastUTC = DateTime.Parse("2/12/2009 15:03:55 GMT");
+      cnts.Add(cnt);
 
-			_insp.MakeInspectionDecisions(3, job, 2, new[] {inspProg}, now);
-			CheckDecision(3, "insp1", "counter1", true, now);
+      _insp.SetInspectCounts(cnts);
 
-			CheckCount("counter1", 0);
-			CheckLastUTC("counter1", DateTime.UtcNow);
+      IList<InspectCount> loaded = _insp.LoadInspectCounts();
 
-			//now check lastutc. set lastutc to be 2 minutes
-			cnt = new InspectCount();
-			cnt.Counter = "counter1";
-			cnt.Value = 0;
-			cnt.LastUTC = DateTime.UtcNow.AddHours(-11).AddMinutes(-2);
-			_insp.SetInspectCounts(new InspectCount[] {cnt});
+      Assert.Equal(loaded, cnts);
+    }
 
-			job.PartName = "part5";
+    [Fact]
+    public void Frequencies()
+    {
+      var freqProg = new JobInspectionData("insp1", "counter1", 0.5, TimeSpan.FromHours(100));
 
-			_insp.MakeInspectionDecisions(4, job, 2, new[] {inspProg});
-			CheckDecision(4, "insp1", "counter1", true, now);
-			CheckLastUTC("counter1", now);
-		}
+      for (int i = 0; i < 100; i++)
+        _insp.MakeInspectionDecisions(i, 1, new[] { freqProg });
 
-		[Fact]
-		public void ForcedInspection()
-		{
-			DateTime now = DateTime.UtcNow;
-			var job = new JobPlan("job1", 1);
-			job.PartName = "part1";
-			var job2 = new JobPlan("job2", 1);
-			job2.PartName = "part2";
+      int numInsp = 0;
+      for (int i = 0; i < 100; i++)
+      {
+        if (FindDecision(i, "insp1", "counter1"))
+          numInsp += 1;
+      }
 
-			//set up a program
-			var inspProg = new JobInspectionData("insp1", "counter1", 13, TimeSpan.FromHours(11));
-			job.AddInspection(inspProg);
-			var inspProg2 = new JobInspectionData(inspProg);
-			job2.AddInspection(inspProg2);
+      Assert.True(numInsp > 0);
+      Assert.True(numInsp < 100);
+    }
 
-			//set the count as zero, otherwise it chooses a random
-			InspectCount cnt = new InspectCount();
-			cnt.Counter = "counter1";
-			cnt.Value = 0;
-			cnt.LastUTC = DateTime.UtcNow.AddHours(-10);
-			_insp.SetInspectCounts(new InspectCount[] {cnt});
+    [Fact]
+    public void Inspections()
+    {
+      var now = DateTime.UtcNow;
+      //set the count as zero, otherwise it chooses a random
+      InspectCount cnt = new InspectCount();
+      cnt.Counter = "counter1";
+      cnt.Value = 0;
+      cnt.LastUTC = DateTime.UtcNow.AddHours(-11).AddMinutes(2);
+      _insp.SetInspectCounts(new InspectCount[] { cnt });
 
-			//try making a decision
-			_insp.ForceInspection(2, "insp1");
+      //set up a program
+      var inspProg = new JobInspectionData("insp1", "counter1", 3, TimeSpan.FromHours(11));
+      var inspProg2 = new JobInspectionData(inspProg);
 
-			_insp.MakeInspectionDecisions(1, job, 1, new[] {inspProg}, now);
-			_insp.MakeInspectionDecisions(1, job, 1, new[] {inspProg}, now);
-			CheckDecision(1, "insp1", "counter1", false, now);
-			CheckCount("counter1", 1);
+      //the lastutc should be 2 minutes too short, so only inspections from the counter should take place
 
-			_insp.MakeInspectionDecisions(2, job2, 1, new[] {inspProg2}, now);
-			CheckDecision(2, "insp1", "counter1", true, now, true);
+      _insp.MakeInspectionDecisions(1, 2, new[] { inspProg }, now);
+      _insp.MakeInspectionDecisions(1, 2, new[] { inspProg }, now); // twice should have no effect
+      CheckDecision(1, "insp1", "counter1", false, now);
+      CheckCount("counter1", 1);
+      CheckLastUTC("counter1", cnt.LastUTC);
 
-			CheckCount("counter1", 2);
-		}
+      _insp.MakeInspectionDecisions(2, 2, new[] { inspProg2 }, now);
+      CheckDecision(2, "insp1", "counter1", false, now);
+      CheckCount("counter1", 2);
+      CheckLastUTC("counter1", cnt.LastUTC);
 
-		[Fact]
-		public void NextPiece()
-		{
-			DateTime now = DateTime.UtcNow;
-			var job = new JobPlan("job1", 1);
-			job.PartName = "part1";
+      _insp.MakeInspectionDecisions(3, 2, new[] { inspProg }, now);
+      CheckDecision(3, "insp1", "counter1", true, now);
 
-			//set up a program
-			var inspProg = new JobInspectionData("insp1", "counter1", 3, TimeSpan.FromHours(11));
-			job.AddInspection(inspProg);
+      CheckCount("counter1", 0);
+      CheckLastUTC("counter1", DateTime.UtcNow);
 
-			//set the count as zero, otherwise it chooses a random
-			InspectCount cnt = new InspectCount();
-			cnt.Counter = "counter1";
-			cnt.Value = 0;
-			cnt.LastUTC = DateTime.UtcNow.AddHours(-10);
-			_insp.SetInspectCounts(new InspectCount[] {cnt});
+      //now check lastutc. set lastutc to be 2 minutes
+      cnt = new InspectCount();
+      cnt.Counter = "counter1";
+      cnt.Value = 0;
+      cnt.LastUTC = DateTime.UtcNow.AddHours(-11).AddMinutes(-2);
+      _insp.SetInspectCounts(new InspectCount[] { cnt });
 
-			PalletLocation palLoc = new PalletLocation(PalletLocationEnum.Machine, "MC", 1);
+      _insp.MakeInspectionDecisions(4, 2, new[] { inspProg });
+      CheckDecision(4, "insp1", "counter1", true, now);
+      CheckLastUTC("counter1", now);
+    }
 
-			_insp.NextPieceInspection(palLoc, "insp1");
-			_insp.CheckMaterialForNextPeiceInspection(palLoc, 1);
+    [Fact]
+    public void ForcedInspection()
+    {
+      DateTime now = DateTime.UtcNow;
 
-			CheckCount("counter1", 0);
+      //set up a program
+      var inspProg = new JobInspectionData("insp1", "counter1", 13, TimeSpan.FromHours(11));
+      var inspProg2 = new JobInspectionData(inspProg);
 
-			_insp.MakeInspectionDecisions(1, job, 1, new[] {inspProg}, now);
-			CheckCount("counter1", 1);
-			CheckDecision(1, "insp1", "counter1", true, now, true);
-		}
+      //set the count as zero, otherwise it chooses a random
+      InspectCount cnt = new InspectCount();
+      cnt.Counter = "counter1";
+      cnt.Value = 0;
+      cnt.LastUTC = DateTime.UtcNow.AddHours(-10);
+      _insp.SetInspectCounts(new InspectCount[] { cnt });
 
-		[Fact]
-		public void TranslateCounter()
-		{
-			var counter = "counter1-" +
-				JobInspectionData.LoadFormatFlag(1) + "-" +
-				JobInspectionData.UnloadFormatFlag(1) + "-" +
-				JobInspectionData.LoadFormatFlag(2) + "-" +
-				JobInspectionData.UnloadFormatFlag(2) + "-" +
-				JobInspectionData.PalletFormatFlag(1) + "-" +
-				JobInspectionData.PalletFormatFlag(2) + "-" +
-				JobInspectionData.StationFormatFlag(1, 1) + "-" +
-				JobInspectionData.StationFormatFlag(1, 2) + "-" +
-				JobInspectionData.StationFormatFlag(2, 1) + "-" +
-				JobInspectionData.StationFormatFlag(2, 2);
+      //try making a decision
+      _insp.ForceInspection(2, "insp1");
 
-			var expandedCounter1 = "counter1-1-2-3-4-P1-P2-10-11-12-13";
-			var expandedCounter2 = "counter1-6-8-7-9-P5-P4-15-16-18-19";
+      _insp.MakeInspectionDecisions(1, 1, new[] { inspProg }, now);
+      _insp.MakeInspectionDecisions(1, 1, new[] { inspProg }, now);
+      CheckDecision(1, "insp1", "counter1", false, now);
+      CheckCount("counter1", 1);
 
-			//set the count as zero, otherwise it chooses a random
-			var cnt = new InspectCount();
-			cnt.Counter = expandedCounter1;
-			cnt.Value = 0;
-			cnt.LastUTC = DateTime.UtcNow.AddHours(-10);
-			var cnt2 = new InspectCount();
-			cnt2.Counter = expandedCounter2;
-			cnt2.Value = 0;
-			cnt2.LastUTC = DateTime.UtcNow.AddHours(-10);
-			_insp.SetInspectCounts(new [] {cnt, cnt2});
+      _insp.MakeInspectionDecisions(2, 1, new[] { inspProg2 }, now);
+      CheckDecision(2, "insp1", "counter1", true, now, true);
+
+      CheckCount("counter1", 2);
+    }
+
+    [Fact]
+    public void NextPiece()
+    {
+      DateTime now = DateTime.UtcNow;
+      var job = new JobPlan("job1", 1);
+      job.PartName = "part1";
+
+      //set up a program
+      var inspProg = new JobInspectionData("insp1", "counter1", 3, TimeSpan.FromHours(11));
+      job.AddInspection(inspProg);
+
+      //set the count as zero, otherwise it chooses a random
+      InspectCount cnt = new InspectCount();
+      cnt.Counter = "counter1";
+      cnt.Value = 0;
+      cnt.LastUTC = DateTime.UtcNow.AddHours(-10);
+      _insp.SetInspectCounts(new InspectCount[] { cnt });
+
+      PalletLocation palLoc = new PalletLocation(PalletLocationEnum.Machine, "MC", 1);
+
+      _insp.NextPieceInspection(palLoc, "insp1");
+      _insp.CheckMaterialForNextPeiceInspection(palLoc, 1);
+
+      CheckCount("counter1", 0);
+
+      _insp.MakeInspectionDecisions(1, 1, new[] { inspProg }, now);
+      CheckCount("counter1", 1);
+      CheckDecision(1, "insp1", "counter1", true, now, true);
+    }
+
+    [Fact]
+    public void TranslateCounter()
+    {
+      var counter = "counter1-" +
+        JobInspectionData.LoadFormatFlag(1) + "-" +
+        JobInspectionData.UnloadFormatFlag(1) + "-" +
+        JobInspectionData.LoadFormatFlag(2) + "-" +
+        JobInspectionData.UnloadFormatFlag(2) + "-" +
+        JobInspectionData.PalletFormatFlag(1) + "-" +
+        JobInspectionData.PalletFormatFlag(2) + "-" +
+        JobInspectionData.StationFormatFlag(1, 1) + "-" +
+        JobInspectionData.StationFormatFlag(1, 2) + "-" +
+        JobInspectionData.StationFormatFlag(2, 1) + "-" +
+        JobInspectionData.StationFormatFlag(2, 2);
+
+      var expandedCounter1 = "counter1-1-2-3-4-P1-P2-10-11-12-13";
+      var expandedCounter2 = "counter1-6-8-7-9-P5-P4-15-16-18-19";
+
+      //set the count as zero, otherwise it chooses a random
+      var cnt = new InspectCount();
+      cnt.Counter = expandedCounter1;
+      cnt.Value = 0;
+      cnt.LastUTC = DateTime.UtcNow.AddHours(-10);
+      var cnt2 = new InspectCount();
+      cnt2.Counter = expandedCounter2;
+      cnt2.Value = 0;
+      cnt2.LastUTC = DateTime.UtcNow.AddHours(-10);
+      _insp.SetInspectCounts(new[] { cnt, cnt2 });
 
 
-			var mat1Proc1 = new [] {new LogMaterial(1, "job1", 1, "part1", 2)};
-			var mat1Proc2 = new [] {new LogMaterial(1, "job1", 2, "part1", 2)};
-			var mat2Proc1 = new [] {new LogMaterial(2, "job1", 1, "part1", 2)};
-			var mat2Proc2 = new [] {new LogMaterial(2, "job1", 2, "part1", 2)};
+      var mat1Proc1 = new[] { new LogMaterial(1, "job1", 1, "part1", 2, "", "", "") };
+      var mat1Proc2 = new[] { new LogMaterial(1, "job1", 2, "part1", 2, "", "", "") };
+      var mat2Proc1 = new[] { new LogMaterial(2, "job1", 1, "part1", 2, "", "", "") };
+      var mat2Proc2 = new[] { new LogMaterial(2, "job1", 2, "part1", 2, "", "", "") };
 
-			_lastCycleTime = DateTime.UtcNow.AddDays(-1);
+      _lastCycleTime = DateTime.UtcNow.AddDays(-1);
 
-			AddCycle(mat1Proc1, "P1", LogType.LoadUnloadCycle, 1, false);
-			AddCycle(mat2Proc1, "P5", LogType.LoadUnloadCycle, 6, false);
-			AddCycle(mat1Proc1, "P1", LogType.MachineCycle, 10, false);
-			AddCycle(mat2Proc1, "P5", LogType.MachineCycle, 15, false);
-			AddCycle(mat1Proc1, "P1", LogType.MachineCycle, 11, false);
-			AddCycle(mat2Proc1, "P5", LogType.MachineCycle, 16, false);
-			AddCycle(mat1Proc1, "P1", LogType.LoadUnloadCycle, 2, false);
-			AddCycle(mat2Proc1, "P5", LogType.LoadUnloadCycle, 8, false);
+      AddCycle(mat1Proc1, "P1", LogType.LoadUnloadCycle, 1, false);
+      AddCycle(mat2Proc1, "P5", LogType.LoadUnloadCycle, 6, false);
+      AddCycle(mat1Proc1, "P1", LogType.MachineCycle, 10, false);
+      AddCycle(mat2Proc1, "P5", LogType.MachineCycle, 15, false);
+      AddCycle(mat1Proc1, "P1", LogType.MachineCycle, 11, false);
+      AddCycle(mat2Proc1, "P5", LogType.MachineCycle, 16, false);
+      AddCycle(mat1Proc1, "P1", LogType.LoadUnloadCycle, 2, false);
+      AddCycle(mat2Proc1, "P5", LogType.LoadUnloadCycle, 8, false);
 
-			AddCycle(mat1Proc2, "P2", LogType.LoadUnloadCycle, 3, false);
-			AddCycle(mat2Proc2, "P4", LogType.LoadUnloadCycle, 7, false);
-			AddCycle(mat1Proc2, "P2", LogType.MachineCycle, 12, false);
-			AddCycle(mat2Proc2, "P4", LogType.MachineCycle, 18, false);
-			AddCycle(mat1Proc2, "P2", LogType.MachineCycle, 13, false);
-			AddCycle(mat2Proc2, "P4", LogType.MachineCycle, 19, false);
-			AddCycle(mat1Proc2, "P2", LogType.LoadUnloadCycle, 4, true);
-			AddCycle(mat2Proc2, "P4", LogType.LoadUnloadCycle, 9, true);
+      AddCycle(mat1Proc2, "P2", LogType.LoadUnloadCycle, 3, false);
+      AddCycle(mat2Proc2, "P4", LogType.LoadUnloadCycle, 7, false);
+      AddCycle(mat1Proc2, "P2", LogType.MachineCycle, 12, false);
+      AddCycle(mat2Proc2, "P4", LogType.MachineCycle, 18, false);
+      AddCycle(mat1Proc2, "P2", LogType.MachineCycle, 13, false);
+      AddCycle(mat2Proc2, "P4", LogType.MachineCycle, 19, false);
+      AddCycle(mat1Proc2, "P2", LogType.LoadUnloadCycle, 4, true);
+      AddCycle(mat2Proc2, "P4", LogType.LoadUnloadCycle, 9, true);
 
-			var job = new JobPlan("job1", 2);
-			job.PartName = "part1";
-			var inspProg = new JobInspectionData("insp1", counter, 10, TimeSpan.FromDays(2));
-			job.AddInspection(inspProg);
+      var inspProg = new JobInspectionData("insp1", counter, 10, TimeSpan.FromDays(2));
 
-			var now = DateTime.UtcNow;
-			_insp.MakeInspectionDecisions(1, job, 2, new[] {inspProg}, now);
-			CheckDecision(1, "insp1", expandedCounter1, false, now);
-			Assert.Equal(2, _insp.LoadInspectCounts().Count);
-			CheckCount(expandedCounter1, 1);
-			CheckCount(expandedCounter2, 0);
-			ExpectPathToBe(1, "insp1", new[] {
-				new MaterialProcessActualPath() {
-					MaterialID = 1,
-					Process = 1,
-					Pallet = "P1",
-					LoadStation = 1,
-					Stops = {
-						new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 10},
-						new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 11}
-					},
-					UnloadStation = 2,
-				},
-				new MaterialProcessActualPath() {
-					MaterialID = 1,
-					Process = 2,
-					Pallet = "P2",
-					LoadStation = 3,
-					Stops = {
-						new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 12},
-						new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 13}
-					},
-					UnloadStation = 4,
-				}
-			});
+      var now = DateTime.UtcNow;
+      _insp.MakeInspectionDecisions(1, 2, new[] { inspProg }, now);
+      CheckDecision(1, "insp1", expandedCounter1, false, now);
+      Assert.Equal(2, _insp.LoadInspectCounts().Count);
+      CheckCount(expandedCounter1, 1);
+      CheckCount(expandedCounter2, 0);
+      ExpectPathToBe(1, "insp1", new[] {
+        new MaterialProcessActualPath() {
+          MaterialID = 1,
+          Process = 1,
+          Pallet = "P1",
+          LoadStation = 1,
+          Stops = {
+            new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 10},
+            new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 11}
+          },
+          UnloadStation = 2,
+        },
+        new MaterialProcessActualPath() {
+          MaterialID = 1,
+          Process = 2,
+          Pallet = "P2",
+          LoadStation = 3,
+          Stops = {
+            new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 12},
+            new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 13}
+          },
+          UnloadStation = 4,
+        }
+      });
 
-			_insp.MakeInspectionDecisions(2, job, 2, new[] {inspProg});
-			CheckDecision(2, "insp1", expandedCounter2, false, now);
-			ExpectPathToBe(2, "insp1", new[] {
-				new MaterialProcessActualPath() {
-					MaterialID = 2,
-					Process = 1,
-					Pallet = "P5",
-					LoadStation = 6,
-					Stops = {
-						new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 15},
-						new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 16}
-					},
-					UnloadStation = 8,
-				},
-				new MaterialProcessActualPath() {
-					MaterialID = 2,
-					Process = 2,
-					Pallet = "P4",
-					LoadStation = 7,
-					Stops = {
-						new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 18},
-						new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 19}
-					},
-					UnloadStation = 9,
-				}
-			});
+      _insp.MakeInspectionDecisions(2, 2, new[] { inspProg });
+      CheckDecision(2, "insp1", expandedCounter2, false, now);
+      ExpectPathToBe(2, "insp1", new[] {
+        new MaterialProcessActualPath() {
+          MaterialID = 2,
+          Process = 1,
+          Pallet = "P5",
+          LoadStation = 6,
+          Stops = {
+            new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 15},
+            new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 16}
+          },
+          UnloadStation = 8,
+        },
+        new MaterialProcessActualPath() {
+          MaterialID = 2,
+          Process = 2,
+          Pallet = "P4",
+          LoadStation = 7,
+          Stops = {
+            new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 18},
+            new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 19}
+          },
+          UnloadStation = 9,
+        }
+      });
 
-			Assert.Equal(2, _insp.LoadInspectCounts().Count);
-			CheckCount(expandedCounter1, 1);
-			CheckCount(expandedCounter2, 1);
-		}
+      Assert.Equal(2, _insp.LoadInspectCounts().Count);
+      CheckCount(expandedCounter1, 1);
+      CheckCount(expandedCounter2, 1);
+    }
 
-		[Fact]
-		public void WithoutInspectProgram()
-		{
-			DateTime now = DateTime.UtcNow;
-			var mat1 = new LogMaterial(1, "uniq1", 1, "part1", -1);
-			var mat2 = new LogMaterial(2, "uniq1", 1, "part1", -1);
-			_insp.ForceInspection(mat1, "myinspection", true, now);
-			_insp.ForceInspection(mat2, "myinspection", false, now);
+    [Fact]
+    public void WithoutInspectProgram()
+    {
+      DateTime now = DateTime.UtcNow;
+      var mat1 = new JobLogDB.EventLogMaterial() { MaterialID = 1, Process = 1 };
+      var mat2 = new JobLogDB.EventLogMaterial() { MaterialID = 2, Process = 1 };
+      _insp.ForceInspection(mat1, "myinspection", true, now);
+      _insp.ForceInspection(mat2, "myinspection", false, now);
 
-			_insp.MakeInspectionDecisions(1, "unique1", "part1", 1, null, now);
-			_insp.MakeInspectionDecisions(2, "unique1", "part1", 1, null, now);
+      _insp.MakeInspectionDecisions(1, 1, null, now);
+      _insp.MakeInspectionDecisions(2, 1, null, now);
 
-			CheckDecision(1, "myinspection", "", true, now, true);
-			CheckDecision(2, "myinspection", "", false, now, true);
-		}
+      CheckDecision(1, "myinspection", "", true, now, true);
+      CheckDecision(2, "myinspection", "", false, now, true);
+    }
 
-		private DateTime _lastCycleTime;
-		private void AddCycle(LogMaterial[] mat, string pal, LogType loc, int statNum, bool end)
-		{
-			string name = loc == LogType.MachineCycle ? "MC" : "Load";
-   		_insp.AddLogEntryFromUnitTest(new LogEntry(-1, mat, pal, loc, name, statNum, "", true, _lastCycleTime, "", end));
-			_lastCycleTime = _lastCycleTime.AddMinutes(15);
-			_insp.AddLogEntryFromUnitTest(new LogEntry(-1, mat, pal, loc, name, statNum, "", false, _lastCycleTime, "", end));
-			_lastCycleTime = _lastCycleTime.AddMinutes(15);
-		}
+    private DateTime _lastCycleTime;
+    private void AddCycle(LogMaterial[] mat, string pal, LogType loc, int statNum, bool end)
+    {
+      string name = loc == LogType.MachineCycle ? "MC" : "Load";
+      _insp.AddLogEntryFromUnitTest(new LogEntry(-1, mat, pal, loc, name, statNum, "", true, _lastCycleTime, "", end));
+      _lastCycleTime = _lastCycleTime.AddMinutes(15);
+      _insp.AddLogEntryFromUnitTest(new LogEntry(-1, mat, pal, loc, name, statNum, "", false, _lastCycleTime, "", end));
+      _lastCycleTime = _lastCycleTime.AddMinutes(15);
+    }
 
-		private void CheckDecision(long matID, string iType, string counter, bool inspect, DateTime now, bool forced = false)
-		{
-			int decisionCnt = 0;
-			int forcedCnt = 0;
-			foreach (var d in _insp.LookupInspectionDecisions(matID)) {
-				if (d.InspType == iType) {
-					d.Should().BeEquivalentTo(
-							new JobLogDB.Decision() {
-								MaterialID = matID,
-								InspType = iType,
-								Counter = d.Forced ? "" : counter,
-								Inspect = inspect,
-								Forced = d.Forced,
-								CreateUTC = now
-							},
-							options =>
-								options
-									.Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, 1000))
-										.WhenTypeIs<DateTime>()
-						);
-					if (d.Forced) forcedCnt += 1; else decisionCnt += 1;
-				}
-			}
-			Assert.Equal(decisionCnt, 1);
-			Assert.Equal(forcedCnt, forced ? 1 :  0);
+    private void CheckDecision(long matID, string iType, string counter, bool inspect, DateTime now, bool forced = false)
+    {
+      int decisionCnt = 0;
+      int forcedCnt = 0;
+      foreach (var d in _insp.LookupInspectionDecisions(matID))
+      {
+        if (d.InspType == iType)
+        {
+          d.Should().BeEquivalentTo(
+              new JobLogDB.Decision()
+              {
+                MaterialID = matID,
+                InspType = iType,
+                Counter = d.Forced ? "" : counter,
+                Inspect = inspect,
+                Forced = d.Forced,
+                CreateUTC = now
+              },
+              options =>
+                options
+                  .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, 1000))
+                    .WhenTypeIs<DateTime>()
+            );
+          if (d.Forced) forcedCnt += 1; else decisionCnt += 1;
+        }
+      }
+      Assert.Equal(decisionCnt, 1);
+      Assert.Equal(forcedCnt, forced ? 1 : 0);
 
-			var log = _insp.GetLogForMaterial(matID);
-			int inspEntries = 0;
-			int forceEntries = 0;
-			foreach (var entry in _insp.GetLogForMaterial(matID)) {
-				if (entry.LogType == LogType.Inspection && entry.ProgramDetails["InspectionType"] == iType) {
-					inspEntries += 1;
-					entry.EndTimeUTC.Should().BeCloseTo(now, 1000);
-					entry.Program.Should().Be(counter);
-					entry.Result.Should().Be(inspect.ToString());
-				} else if (entry.LogType == LogType.InspectionForce && entry.Program == iType) {
-					forceEntries += 1;
-					entry.Result.Should().Be(inspect.ToString());
-				}
-			}
-			inspEntries.Should().Be(1);
-			forceEntries.Should().Be(forced ? 1 : 0);
-		}
+      var log = _insp.GetLogForMaterial(matID);
+      int inspEntries = 0;
+      int forceEntries = 0;
+      foreach (var entry in _insp.GetLogForMaterial(matID))
+      {
+        if (entry.LogType == LogType.Inspection && entry.ProgramDetails["InspectionType"] == iType)
+        {
+          inspEntries += 1;
+          entry.EndTimeUTC.Should().BeCloseTo(now, 1000);
+          entry.Program.Should().Be(counter);
+          entry.Result.Should().Be(inspect.ToString());
+        }
+        else if (entry.LogType == LogType.InspectionForce && entry.Program == iType)
+        {
+          forceEntries += 1;
+          entry.Result.Should().Be(inspect.ToString());
+        }
+      }
+      inspEntries.Should().Be(1);
+      forceEntries.Should().Be(forced ? 1 : 0);
+    }
 
-		private void ExpectPathToBe(long matID, string iType, IEnumerable<MaterialProcessActualPath> expected)
-		{
-			bool foundEntry = false;
-			foreach (var entry in _insp.GetLogForMaterial(matID)) {
-				if (entry.LogType == LogType.Inspection && entry.ProgramDetails["InspectionType"] == iType) {
-					foundEntry = true;
-					var path = Newtonsoft.Json.JsonConvert.DeserializeObject<List<MaterialProcessActualPath>>(
-						entry.ProgramDetails["ActualPath"]);
-					path.Should().BeEquivalentTo(expected);
-					break;
-				}
-			}
-			Assert.True(foundEntry, "Unable to find inspection path");
-		}
+    private void ExpectPathToBe(long matID, string iType, IEnumerable<MaterialProcessActualPath> expected)
+    {
+      bool foundEntry = false;
+      foreach (var entry in _insp.GetLogForMaterial(matID))
+      {
+        if (entry.LogType == LogType.Inspection && entry.ProgramDetails["InspectionType"] == iType)
+        {
+          foundEntry = true;
+          var path = Newtonsoft.Json.JsonConvert.DeserializeObject<List<MaterialProcessActualPath>>(
+            entry.ProgramDetails["ActualPath"]);
+          path.Should().BeEquivalentTo(expected);
+          break;
+        }
+      }
+      Assert.True(foundEntry, "Unable to find inspection path");
+    }
 
-		private bool FindDecision(long matID, string iType, string counter)
-		{
-			foreach (var d in _insp.LookupInspectionDecisions(matID)) {
-				if (d.Counter == counter && d.InspType == iType) {
-					return d.Inspect;
-				}
-			}
-			Assert.True(false, "Unable to find counter and inspection type");
-			return false;
-		}
+    private bool FindDecision(long matID, string iType, string counter)
+    {
+      foreach (var d in _insp.LookupInspectionDecisions(matID))
+      {
+        if (d.Counter == counter && d.InspType == iType)
+        {
+          return d.Inspect;
+        }
+      }
+      Assert.True(false, "Unable to find counter and inspection type");
+      return false;
+    }
 
-		private void CheckCount(string counter, int val)
-		{
-			foreach (var c in _insp.LoadInspectCounts()) {
-				if (c.Counter == counter) {
-					Assert.Equal(val, c.Value);
-					return;
-				}
-			}
-			Assert.True(false, "Unable to find counter " + counter);
-		}
+    private void CheckCount(string counter, int val)
+    {
+      foreach (var c in _insp.LoadInspectCounts())
+      {
+        if (c.Counter == counter)
+        {
+          Assert.Equal(val, c.Value);
+          return;
+        }
+      }
+      Assert.True(false, "Unable to find counter " + counter);
+    }
 
-		private void CheckLastUTC(string counter, DateTime val)
-		{
-			foreach (var c in _insp.LoadInspectCounts()) {
-				if (c.Counter == counter) {
-					if (val == DateTime.MaxValue)
-						Assert.Equal(DateTime.MaxValue, c.LastUTC);
-					else
-						Assert.True(5 >= Math.Abs(val.Subtract(c.LastUTC).TotalMinutes));
-					return;
-				}
-			}
-			Assert.True(false, "Unable to find counter");
-		}
-	}
+    private void CheckLastUTC(string counter, DateTime val)
+    {
+      foreach (var c in _insp.LoadInspectCounts())
+      {
+        if (c.Counter == counter)
+        {
+          if (val == DateTime.MaxValue)
+            Assert.Equal(DateTime.MaxValue, c.LastUTC);
+          else
+            Assert.True(5 >= Math.Abs(val.Subtract(c.LastUTC).TotalMinutes));
+          return;
+        }
+      }
+      Assert.True(false, "Unable to find counter");
+    }
+  }
 }

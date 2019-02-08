@@ -35,6 +35,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.Serialization;
+using System.Linq;
 
 namespace BlackMaple.MachineWatchInterface
 {
@@ -59,7 +60,13 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember(Name = "face", IsRequired = true)]
     public string Face { get; private set; }
 
-    public LogMaterial(long matID, string uniq, int proc, string part, int numProc, string face = "")
+    [DataMember(Name = "serial", IsRequired = false, EmitDefaultValue = false)]
+    public string Serial { get; private set; }
+
+    [DataMember(Name = "workorder", IsRequired = false, EmitDefaultValue = false)]
+    public string Workorder { get; private set; }
+
+    public LogMaterial(long matID, string uniq, int proc, string part, int numProc, string serial, string workorder, string face)
     {
       MaterialID = matID;
       JobUniqueStr = uniq;
@@ -67,6 +74,8 @@ namespace BlackMaple.MachineWatchInterface
       Process = proc;
       NumProcesses = numProc;
       Face = face;
+      Serial = serial;
+      Workorder = workorder;
     }
 
     private LogMaterial() { } //for json deserialization

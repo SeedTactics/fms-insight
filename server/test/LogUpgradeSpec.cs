@@ -66,11 +66,11 @@ namespace MachineWatchTest
       // existing v17 file has the following data in it
       var now = new DateTime(2018, 7, 12, 5, 6, 7, DateTimeKind.Utc);
 
-      var mat1_1 = new LogMaterial(1, "uuu1", 1, "part1", 2, face: "A");
-      var mat1_2 = new LogMaterial(1, "uuu1", 2, "part1", 2, face: "B");
-      var mat2_1 = new LogMaterial(2, "uuu1", 1, "part1", 2, face: "C");
-      var mat2_2 = new LogMaterial(2, "uuu1", 1, "part1", 2, face: "D");
-      var mat3 = new LogMaterial(3, "uuu2", 1, "part2", 1, face: "E");
+      var mat1_1 = new LogMaterial(1, "uuu1", 1, "part1", 2, "serial1", "work1", face: "A");
+      var mat1_2 = new LogMaterial(1, "uuu1", 2, "part1", 2, "serial1", "work1", face: "B");
+      var mat2_1 = new LogMaterial(2, "uuu1", 1, "part1", 2, "serial2", "", face: "C");
+      var mat2_2 = new LogMaterial(2, "uuu1", 1, "part1", 2, "serial2", "", face: "D");
+      var mat3 = new LogMaterial(3, "uuu2", 1, "part2", 1, "", "work3", face: "E");
 
       _log.GetLogEntries(now, now.AddDays(1)).Should().BeEquivalentTo(new[] {
         new LogEntry(
@@ -202,9 +202,9 @@ namespace MachineWatchTest
     {
       var now = new DateTime(2018, 7, 12, 5, 6, 7, DateTimeKind.Utc);
       var matId = _log.AllocateMaterialID("uuu5", "part5", 1);
-      var mat = new LogMaterial(matId, "uuu5", 1, "part5", 1);
+      var mat = new LogMaterial(matId, "uuu5", 1, "part5", 1, "", "", "");
 
-      _log.RecordAddMaterialToQueue(mat, "queue", 5, now.AddHours(2));
+      _log.RecordAddMaterialToQueue(JobLogDB.EventLogMaterial.FromLogMat(mat), "queue", 5, now.AddHours(2));
 
       _log.GetMaterialInQueue("queue").Should().BeEquivalentTo(new[] {
         new JobLogDB.QueuedMaterial() {

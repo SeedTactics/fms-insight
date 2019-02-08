@@ -196,7 +196,9 @@ namespace MachineWatchTest
             proc: mat.Process,
             part: mat.JobPartName,
             numProc: mat.NumProcess,
-            face: mat.Face
+            face: mat.Face,
+            serial: JobLogDB.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            workorder: ""
           )),
           pal: mats.First().Pallet.ToString(),
           ty: BlackMaple.MachineWatchInterface.LogType.MachineCycle,
@@ -243,7 +245,9 @@ namespace MachineWatchTest
           proc: mat.Process,
           part: mat.JobPartName,
           numProc: mat.NumProcess,
-          face: mat.Face
+          face: mat.Face,
+          serial: JobLogDB.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+          workorder: ""
         )),
         pal: mats.First().Pallet.ToString(),
         ty: BlackMaple.MachineWatchInterface.LogType.MachineCycle,
@@ -269,7 +273,9 @@ namespace MachineWatchTest
           proc: mat.Process,
           part: mat.JobPartName,
           numProc: mat.NumProcess,
-          face: ""
+          face: "",
+          serial: JobLogDB.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+          workorder: ""
         )},
         pal: "",
         ty: BlackMaple.MachineWatchInterface.LogType.Inspection,
@@ -318,7 +324,9 @@ namespace MachineWatchTest
             proc: mats.First().Process,
             part: "",
             numProc: -1,
-            face: ""
+            face: "",
+            serial: "",
+            workorder: ""
           )},
           pal: mats.First().Pallet.ToString(),
           ty: BlackMaple.MachineWatchInterface.LogType.LoadUnloadCycle,
@@ -364,7 +372,9 @@ namespace MachineWatchTest
             proc: mat.Process,
             part: mat.JobPartName,
             numProc: mat.NumProcess,
-            face: mat.Face
+            face: mat.Face,
+            serial: JobLogDB.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            workorder: ""
           )),
           pal: mats.First().Pallet.ToString(),
           ty: BlackMaple.MachineWatchInterface.LogType.LoadUnloadCycle,
@@ -390,7 +400,9 @@ namespace MachineWatchTest
               proc: mat.Process,
               part: mat.JobPartName,
               numProc: mat.NumProcess,
-              face: mat.Face
+              face: mat.Face,
+              serial: JobLogDB.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+              workorder: ""
             )},
             pal: "",
             ty: BlackMaple.MachineWatchInterface.LogType.PartMark,
@@ -437,7 +449,9 @@ namespace MachineWatchTest
             proc: mat.Process,
             part: mat.JobPartName,
             numProc: mat.NumProcess,
-            face: mat.Face
+            face: mat.Face,
+            serial: JobLogDB.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            workorder: ""
           )),
           pal: mats.First().Pallet.ToString(),
           ty: BlackMaple.MachineWatchInterface.LogType.LoadUnloadCycle,
@@ -485,7 +499,9 @@ namespace MachineWatchTest
             proc: mat.Process,
             part: mat.JobPartName,
             numProc: mat.NumProcess,
-            face: mat.Face
+            face: mat.Face,
+            serial: JobLogDB.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            workorder: ""
           )),
           pal: mats.First().Pallet.ToString(),
           ty: BlackMaple.MachineWatchInterface.LogType.LoadUnloadCycle,
@@ -556,7 +572,9 @@ namespace MachineWatchTest
               proc: mat.Process,
               part: mat.JobPartName,
               numProc: mat.NumProcess,
-              face: mat.Face
+              face: mat.Face,
+              serial: JobLogDB.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+              workorder: ""
             )},
             pal: "",
             ty: BlackMaple.MachineWatchInterface.LogType.AddToQueue,
@@ -587,7 +605,9 @@ namespace MachineWatchTest
               proc: mat.Process,
               part: mat.JobPartName,
               numProc: mat.NumProcess,
-              face: mat.Face
+              face: mat.Face,
+              serial: JobLogDB.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+              workorder: ""
             )},
             pal: "",
             ty: BlackMaple.MachineWatchInterface.LogType.RemoveFromQueue,
