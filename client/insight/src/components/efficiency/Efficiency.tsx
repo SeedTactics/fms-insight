@@ -43,6 +43,9 @@ import CardHeader from "@material-ui/core/CardHeader";
 import Select from "@material-ui/core/Select";
 import MenuItem from "@material-ui/core/MenuItem";
 import CardContent from "@material-ui/core/CardContent";
+import Tooltip from "@material-ui/core/Tooltip";
+import IconButton from "@material-ui/core/IconButton";
+import ImportExport from "@material-ui/icons/ImportExport";
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
 import AnalysisSelectToolbar from "../AnalysisSelectToolbar";
@@ -56,6 +59,7 @@ import InspectionSankey from "./InspectionSankey";
 import { PartCycleData, filterStationCycles, FilteredStationCycles } from "../../data/events.cycles";
 import { MaterialDialog, PartIdenticon } from "../station-monitor/Material";
 import { LazySeq } from "../../data/lazyseq";
+import { copyCyclesToClipboard } from "../../data/clipboard-table";
 
 // --------------------------------------------------------------------------------
 // Station Cycles
@@ -120,6 +124,18 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
             <WorkIcon style={{ color: "#6D4C41" }} />
             <div style={{ marginLeft: "10px", marginRight: "3em" }}>Station Cycles</div>
             <div style={{ flexGrow: 1 }} />
+            {props.points.data.length() > 0 ? (
+              <Tooltip title="Copy to Clipboard">
+                <IconButton
+                  onClick={() => copyCyclesToClipboard(props.points)}
+                  style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+                >
+                  <ImportExport />
+                </IconButton>
+              </Tooltip>
+            ) : (
+              undefined
+            )}
             <Select
               name="Station-Cycles-cycle-chart-select"
               autoWidth

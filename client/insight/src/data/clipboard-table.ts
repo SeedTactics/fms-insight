@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { LazySeq } from "./lazyseq";
 import { fieldsHashCode } from "prelude-ts";
 import { FilteredStationCycles, stat_name_and_num } from "./events.cycles";
+import { format } from "date-fns";
 const copy = require("copy-to-clipboard");
 
 export interface ClipboardTablePoint {
@@ -94,18 +95,25 @@ export function copyPointsToClipboard(yTitle: string, points: ReadonlyArray<Clip
 
 export function buildCycleTable(cycles: FilteredStationCycles): string {
   let table = "<table>\n<thead><tr>";
-  table += "<th>Date</th><th>Part</th><th>Station</th><th>Pallet</th><td>Elapsed Min</td><td>Active Min</td>";
+  table += "<th>Date</th><th>Part</th><th>Station</th><th>Pallet</th>";
+  table += "<th>Serial</th><th>Workorder</th><td>Elapsed Min</td><td>Active Min</td>";
   table += "</tr></thead>\n<tbody>\n";
   for (let cycle of LazySeq.ofIterable(cycles.data).flatMap(([_, c]) => c)) {
     table += "<tr>";
-    table += "<td>" + cycle.x.toDateString() + "</td>";
+    table += "<td>" + format(cycle.x, "MMM D, YYYY, H:mm a") + "</td>";
     table += "<td>" + cycle.part + "-" + cycle.process.toString() + "</td>";
     table += "<td>" + stat_name_and_num(cycle.stationGroup, cycle.stationNumber) + "</td>";
     table += "<td>" + cycle.pallet + "</td>";
+    table += "<td>" + (cycle.serial || "") + "</td>";
+    table += "<td>" + (cycle.workorder || "") + "</td>";
     table += "<td>" + cycle.y.toFixed(1) + "</td>";
     table += "<td>" + cycle.active.toFixed(1) + "</td>";
     table += "</tr>\n";
   }
   table += "</tbody>\n</table>";
   return table;
+}
+
+export function copyCyclesToClipboard(cycles: FilteredStationCycles): void {
+  copy(buildCycleTable(cycles));
 }
