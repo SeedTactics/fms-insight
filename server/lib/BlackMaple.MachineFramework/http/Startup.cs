@@ -239,7 +239,7 @@ namespace BlackMaple.MachineFramework
       {
         settings.GeneratorSettings.Title = "SeedTactic FMS Insight";
         settings.GeneratorSettings.Description = "API for access to FMS Insight for flexible manufacturing system control";
-        settings.GeneratorSettings.Version = "1.6";
+        settings.GeneratorSettings.Version = "1.7";
         settings.GeneratorSettings.DefaultEnumHandling = NJsonSchema.EnumHandling.String;
         settings.GeneratorSettings.DefaultPropertyNameHandling = NJsonSchema.PropertyNameHandling.Default;
         settings.PostProcess = document =>

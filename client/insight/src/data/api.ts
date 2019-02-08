@@ -3029,6 +3029,8 @@ export class LogMaterial implements ILogMaterial {
     proc: number;
     numproc: number;
     face: string;
+    serial?: string;
+    workorder?: string;
 
     constructor(data?: ILogMaterial) {
         if (data) {
@@ -3047,6 +3049,8 @@ export class LogMaterial implements ILogMaterial {
             this.proc = data["proc"];
             this.numproc = data["numproc"];
             this.face = data["face"];
+            this.serial = data["serial"];
+            this.workorder = data["workorder"];
         }
     }
 
@@ -3065,6 +3069,8 @@ export class LogMaterial implements ILogMaterial {
         data["proc"] = this.proc;
         data["numproc"] = this.numproc;
         data["face"] = this.face;
+        data["serial"] = this.serial;
+        data["workorder"] = this.workorder;
         return data;
     }
 }
@@ -3076,6 +3082,8 @@ export interface ILogMaterial {
     proc: number;
     numproc: number;
     face: string;
+    serial?: string;
+    workorder?: string;
 }
 
 export enum LogType {

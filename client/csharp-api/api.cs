@@ -5585,6 +5585,8 @@ namespace BlackMaple.FMSInsight.API
         private int _proc;
         private int _numproc;
         private string _face;
+        private string _serial;
+        private string _workorder;
     
         [Newtonsoft.Json.JsonProperty("id", Required = Newtonsoft.Json.Required.Always)]
         public long Id
@@ -5668,6 +5670,34 @@ namespace BlackMaple.FMSInsight.API
                 if (_face != value)
                 {
                     _face = value; 
+                    RaisePropertyChanged();
+                }
+            }
+        }
+    
+        [Newtonsoft.Json.JsonProperty("serial", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public string Serial
+        {
+            get { return _serial; }
+            set 
+            {
+                if (_serial != value)
+                {
+                    _serial = value; 
+                    RaisePropertyChanged();
+                }
+            }
+        }
+    
+        [Newtonsoft.Json.JsonProperty("workorder", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public string Workorder
+        {
+            get { return _workorder; }
+            set 
+            {
+                if (_workorder != value)
+                {
+                    _workorder = value; 
                     RaisePropertyChanged();
                 }
             }
