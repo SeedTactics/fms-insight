@@ -136,7 +136,7 @@ deploy:
     skip_symbols: false
     artifact: /.*BlackMaple\.MachineWatchInterface.*\.nupkg/
     api_key:
-      secure: kj0pW91vWRjFl99SLY/sageGAghMFfmqFpNdJd7y+Q73eoImzcsnPCZYlwYxKIhs
+      secure: G2TzGogQH+sScPOuDvM6Cp3lEo8ibadnPBsSnkfumHdRZPw7dJeougI+7KIEXVIo
 
   - provider: NuGet
     on:
@@ -145,7 +145,7 @@ deploy:
     skip_symbols: false
     artifact: /.*BlackMaple\.FMSInsight\.API.*\.nupkg/
     api_key:
-      secure: kj0pW91vWRjFl99SLY/sageGAghMFfmqFpNdJd7y+Q73eoImzcsnPCZYlwYxKIhs
+      secure: G2TzGogQH+sScPOuDvM6Cp3lEo8ibadnPBsSnkfumHdRZPw7dJeougI+7KIEXVIo
 
   - provider: S3
     on:
