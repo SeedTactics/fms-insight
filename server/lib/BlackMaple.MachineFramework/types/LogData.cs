@@ -148,6 +148,9 @@ namespace BlackMaple.MachineWatchInterface
     private Dictionary<string, string> _details;
     public IDictionary<string, string> ProgramDetails { get { return _details; } }
 
+    [DataMember(Name = "tools", IsRequired = false, EmitDefaultValue = false)]
+    public IDictionary<string, ToolUse> Tools { get; private set; }
+
     public LogEntry(
         long cntr,
         IEnumerable<LogMaterial> mat,
@@ -193,6 +196,7 @@ namespace BlackMaple.MachineWatchInterface
       ElapsedTime = elapsed;
       ActiveOperationTime = active;
       _details = new Dictionary<string, string>();
+      Tools = new Dictionary<string, ToolUse>();
     }
 
     public LogEntry(LogEntry copy, long newCounter)
@@ -211,6 +215,7 @@ namespace BlackMaple.MachineWatchInterface
       ElapsedTime = copy.ElapsedTime;
       ActiveOperationTime = copy.ActiveOperationTime;
       _details = new Dictionary<string, string>(copy._details);
+      Tools = new Dictionary<string, ToolUse>(copy.Tools);
     }
 
     public LogEntry(LogEntry copy) : this(copy, copy.Counter) { }
@@ -220,6 +225,11 @@ namespace BlackMaple.MachineWatchInterface
     public bool ShouldSerializeProgramDetails()
     {
       return _details.Count > 0;
+    }
+
+    public bool ShouldSerializeTools()
+    {
+      return Tools.Count > 0;
     }
   }
 
@@ -232,6 +242,14 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember] public int NumProcesses { get; set; }
     [DataMember] public string Workorder { get; set; }
     [DataMember] public string Serial { get; set; }
+  }
+
+  [DataContract]
+  public class ToolUse
+  {
+    [DataMember(IsRequired = true)] public TimeSpan ToolUseDuringCycle { get; set; }
+    [DataMember(IsRequired = true)] public TimeSpan TotalToolUseAtEndOfCycle { get; set; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public TimeSpan ConfiguredToolLife { get; set; }
   }
 
   // stored serialized in json format in the details for inspection logs.

@@ -86,7 +86,7 @@ namespace BlackMaple.MachineFramework
       _connection.Close();
     }
 
-    private const int Version = 18;
+    private const int Version = 19;
 
     public void CreateTables(string firstSerialOnEmpty)
     {
@@ -147,6 +147,10 @@ namespace BlackMaple.MachineFramework
 
         cmd.CommandText = "CREATE TABLE program_details(Counter INTEGER, Key TEXT, Value TEXT, " +
             "PRIMARY KEY(Counter, Key))";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText = "CREATE TABLE station_tools(Counter INTEGER, Tool TEXT, UseInCycle INTEGER, UseAtEndOfCycle INTEGER, ToolLife INTEGER, " +
+            "PRIMARY KEY(Counter, Tool))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE TABLE inspection_counters(Counter TEXT PRIMARY KEY, Val INTEGER, LastUTC INTEGER)";
@@ -259,6 +263,8 @@ namespace BlackMaple.MachineFramework
             detachInsp = Ver16ToVer17(trans, inspDbFile);
 
           if (curVersion < 18) Ver17ToVer18(trans);
+
+          if (curVersion < 19) Ver18ToVer19(trans);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -552,6 +558,17 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    private void Ver18ToVer19(IDbTransaction trans)
+    {
+      using (IDbCommand cmd = _connection.CreateCommand())
+      {
+        cmd.Transaction = trans;
+        cmd.CommandText = "CREATE TABLE station_tools(Counter INTEGER, Tool TEXT, UseInCycle INTEGER, UseAtEndOfCycle INTEGER, ToolLife INTEGER, " +
+            "PRIMARY KEY(Counter, Tool))";
+        cmd.ExecuteNonQuery();
+      }
+    }
+
     #endregion
 
     #region Event
@@ -562,6 +579,8 @@ namespace BlackMaple.MachineFramework
     private List<MachineWatchInterface.LogEntry> LoadLog(IDataReader reader)
     {
       using (var matCmd = _connection.CreateCommand())
+      using (var detailCmd = _connection.CreateCommand())
+      using (var toolCmd = _connection.CreateCommand())
       {
         matCmd.CommandText = "SELECT stations_mat.MaterialID, UniqueStr, Process, PartName, NumProcesses, Face, Serial, Workorder " +
           " FROM stations_mat " +
@@ -570,134 +589,148 @@ namespace BlackMaple.MachineFramework
           " ORDER BY stations_mat.Counter ASC";
         matCmd.Parameters.Add("cntr", SqliteType.Integer);
 
-        using (var detailCmd = _connection.CreateCommand())
+        detailCmd.CommandText = "SELECT Key, Value FROM program_details WHERE Counter = $cntr";
+        detailCmd.Parameters.Add("cntr", SqliteType.Integer);
+
+        toolCmd.CommandText = "SELECT Tool, UseInCycle, UseAtEndOfCycle, ToolLife FROM station_tools WHERE Counter = $cntr";
+        toolCmd.Parameters.Add("cntr", SqliteType.Integer);
+
+        var lst = new List<MachineWatchInterface.LogEntry>();
+
+        while (reader.Read())
         {
-          detailCmd.CommandText = "SELECT Key, Value FROM program_details WHERE Counter = $cntr";
-          detailCmd.Parameters.Add("cntr", SqliteType.Integer);
+          long ctr = reader.GetInt64(0);
+          string pal = reader.GetString(1);
+          int logType = reader.GetInt32(2);
+          int locNum = reader.GetInt32(3);
+          string prog = reader.GetString(4);
+          bool start = reader.GetBoolean(5);
+          System.DateTime timeUTC = new DateTime(reader.GetInt64(6), DateTimeKind.Utc);
+          string result = reader.GetString(7);
+          bool endOfRoute = false;
+          if (!reader.IsDBNull(8))
+            endOfRoute = reader.GetBoolean(8);
+          TimeSpan elapsed = TimeSpan.FromMinutes(-1);
+          if (!reader.IsDBNull(9))
+            elapsed = TimeSpan.FromTicks(reader.GetInt64(9));
+          TimeSpan active = TimeSpan.Zero;
+          if (!reader.IsDBNull(10))
+            active = TimeSpan.FromTicks(reader.GetInt64(10));
+          string locName = null;
+          if (!reader.IsDBNull(11))
+            locName = reader.GetString(11);
 
-          var lst = new List<MachineWatchInterface.LogEntry>();
-
-          while (reader.Read())
+          MachineWatchInterface.LogType ty;
+          if (Enum.IsDefined(typeof(MachineWatchInterface.LogType), logType))
           {
-            long ctr = reader.GetInt64(0);
-            string pal = reader.GetString(1);
-            int logType = reader.GetInt32(2);
-            int locNum = reader.GetInt32(3);
-            string prog = reader.GetString(4);
-            bool start = reader.GetBoolean(5);
-            System.DateTime timeUTC = new DateTime(reader.GetInt64(6), DateTimeKind.Utc);
-            string result = reader.GetString(7);
-            bool endOfRoute = false;
-            if (!reader.IsDBNull(8))
-              endOfRoute = reader.GetBoolean(8);
-            TimeSpan elapsed = TimeSpan.FromMinutes(-1);
-            if (!reader.IsDBNull(9))
-              elapsed = TimeSpan.FromTicks(reader.GetInt64(9));
-            TimeSpan active = TimeSpan.Zero;
-            if (!reader.IsDBNull(10))
-              active = TimeSpan.FromTicks(reader.GetInt64(10));
-            string locName = null;
-            if (!reader.IsDBNull(11))
-              locName = reader.GetString(11);
-
-            MachineWatchInterface.LogType ty;
-            if (Enum.IsDefined(typeof(MachineWatchInterface.LogType), logType))
+            ty = (MachineWatchInterface.LogType)logType;
+            if (locName == null)
             {
-              ty = (MachineWatchInterface.LogType)logType;
-              if (locName == null)
+              //For compatibility with old logs
+              switch (ty)
               {
-                //For compatibility with old logs
-                switch (ty)
-                {
-                  case MachineWatchInterface.LogType.GeneralMessage:
-                    locName = "General";
-                    break;
-                  case MachineWatchInterface.LogType.Inspection:
-                    locName = "Inspect";
-                    break;
-                  case MachineWatchInterface.LogType.LoadUnloadCycle:
-                    locName = "Load";
-                    break;
-                  case MachineWatchInterface.LogType.MachineCycle:
-                    locName = "MC";
-                    break;
-                  case MachineWatchInterface.LogType.OrderAssignment:
-                    locName = "Order";
-                    break;
-                  case MachineWatchInterface.LogType.PartMark:
-                    locName = "Mark";
-                    break;
-                  case MachineWatchInterface.LogType.PalletCycle:
-                    locName = "Pallet Cycle";
-                    break;
-                }
+                case MachineWatchInterface.LogType.GeneralMessage:
+                  locName = "General";
+                  break;
+                case MachineWatchInterface.LogType.Inspection:
+                  locName = "Inspect";
+                  break;
+                case MachineWatchInterface.LogType.LoadUnloadCycle:
+                  locName = "Load";
+                  break;
+                case MachineWatchInterface.LogType.MachineCycle:
+                  locName = "MC";
+                  break;
+                case MachineWatchInterface.LogType.OrderAssignment:
+                  locName = "Order";
+                  break;
+                case MachineWatchInterface.LogType.PartMark:
+                  locName = "Mark";
+                  break;
+                case MachineWatchInterface.LogType.PalletCycle:
+                  locName = "Pallet Cycle";
+                  break;
               }
             }
-            else
+          }
+          else
+          {
+            ty = MachineWatchInterface.LogType.GeneralMessage;
+            switch (logType)
             {
-              ty = MachineWatchInterface.LogType.GeneralMessage;
-              switch (logType)
-              {
-                case 3: locName = "Machine"; break;
-                case 4: locName = "Buffer"; break;
-                case 5: locName = "Cart"; break;
-                case 8: locName = "Wash"; break;
-                case 9: locName = "Deburr"; break;
-                default: locName = "Unknown"; break;
-              }
+              case 3: locName = "Machine"; break;
+              case 4: locName = "Buffer"; break;
+              case 5: locName = "Cart"; break;
+              case 8: locName = "Wash"; break;
+              case 9: locName = "Deburr"; break;
+              default: locName = "Unknown"; break;
             }
-
-            var matLst = new List<MachineWatchInterface.LogMaterial>();
-            matCmd.Parameters[0].Value = ctr;
-            using (var matReader = matCmd.ExecuteReader())
-            {
-              while (matReader.Read())
-              {
-                string uniq = "";
-                string part = "";
-                int numProc = -1;
-                string face = "";
-                string serial = "";
-                string workorder = "";
-                if (!matReader.IsDBNull(1))
-                  uniq = matReader.GetString(1);
-                if (!matReader.IsDBNull(3))
-                  part = matReader.GetString(3);
-                if (!matReader.IsDBNull(4))
-                  numProc = matReader.GetInt32(4);
-                if (!matReader.IsDBNull(5))
-                  face = matReader.GetString(5);
-                if (!matReader.IsDBNull(6))
-                  serial = matReader.GetString(6);
-                if (!matReader.IsDBNull(7))
-                  workorder = matReader.GetString(7);
-                matLst.Add(new MachineWatchInterface.LogMaterial(
-                    matID: matReader.GetInt64(0),
-                                                                 uniq: uniq,
-                                                                 proc: matReader.GetInt32(2),
-                                                                 part: part, numProc: numProc, serial: serial, workorder: workorder, face: face));
-              }
-            }
-
-            var logRow = new MachineWatchInterface.LogEntry(ctr, matLst, pal,
-                  ty, locName, locNum,
-                prog, start, timeUTC, result, endOfRoute, elapsed, active);
-
-            detailCmd.Parameters[0].Value = ctr;
-            using (var detailReader = detailCmd.ExecuteReader())
-            {
-              while (detailReader.Read())
-              {
-                logRow.ProgramDetails[detailReader.GetString(0)] = detailReader.GetString(1);
-              }
-            }
-
-            lst.Add(logRow);
           }
 
-          return lst;
+          var matLst = new List<MachineWatchInterface.LogMaterial>();
+          matCmd.Parameters[0].Value = ctr;
+          using (var matReader = matCmd.ExecuteReader())
+          {
+            while (matReader.Read())
+            {
+              string uniq = "";
+              string part = "";
+              int numProc = -1;
+              string face = "";
+              string serial = "";
+              string workorder = "";
+              if (!matReader.IsDBNull(1))
+                uniq = matReader.GetString(1);
+              if (!matReader.IsDBNull(3))
+                part = matReader.GetString(3);
+              if (!matReader.IsDBNull(4))
+                numProc = matReader.GetInt32(4);
+              if (!matReader.IsDBNull(5))
+                face = matReader.GetString(5);
+              if (!matReader.IsDBNull(6))
+                serial = matReader.GetString(6);
+              if (!matReader.IsDBNull(7))
+                workorder = matReader.GetString(7);
+              matLst.Add(new MachineWatchInterface.LogMaterial(
+                  matID: matReader.GetInt64(0),
+                                                                uniq: uniq,
+                                                                proc: matReader.GetInt32(2),
+                                                                part: part, numProc: numProc, serial: serial, workorder: workorder, face: face));
+            }
+          }
 
+          var logRow = new MachineWatchInterface.LogEntry(ctr, matLst, pal,
+                ty, locName, locNum,
+              prog, start, timeUTC, result, endOfRoute, elapsed, active);
+
+          detailCmd.Parameters[0].Value = ctr;
+          using (var detailReader = detailCmd.ExecuteReader())
+          {
+            while (detailReader.Read())
+            {
+              logRow.ProgramDetails[detailReader.GetString(0)] = detailReader.GetString(1);
+            }
+          }
+
+          toolCmd.Parameters[0].Value = ctr;
+          using (var toolReader = toolCmd.ExecuteReader())
+          {
+            while (toolReader.Read())
+            {
+              logRow.Tools[toolReader.GetString(0)] = new MachineWatchInterface.ToolUse()
+              {
+                ToolUseDuringCycle = TimeSpan.FromTicks(toolReader.GetInt64(1)),
+                TotalToolUseAtEndOfCycle = TimeSpan.FromTicks(toolReader.GetInt64(2)),
+                ConfiguredToolLife = TimeSpan.FromTicks(toolReader.GetInt64(3))
+              };
+            }
+          }
+
+          lst.Add(logRow);
         }
+
+        return lst;
+
       } // close usings
     }
 
@@ -1249,6 +1282,8 @@ namespace BlackMaple.MachineFramework
       public TimeSpan ActiveOperationTime { get; set; } //time that the machining or operation is actually active
       private Dictionary<string, string> _details = new Dictionary<string, string>();
       public IDictionary<string, string> ProgramDetails { get { return _details; } }
+      private Dictionary<string, MachineWatchInterface.ToolUse> _tools = new Dictionary<string, MachineWatchInterface.ToolUse>();
+      public IDictionary<string, MachineWatchInterface.ToolUse> Tools => _tools;
 
       internal MachineWatchInterface.LogEntry ToLogEntry(long newCntr, Func<long, MachineWatchInterface.MaterialDetails> getDetails)
       {
@@ -1284,12 +1319,21 @@ namespace BlackMaple.MachineFramework
         {
           e.ProgramDetails[d.Key] = d.Value;
         }
+        foreach (var t in this.Tools)
+        {
+          e.Tools[t.Key] = new MachineWatchInterface.ToolUse()
+          {
+            ToolUseDuringCycle = t.Value.ToolUseDuringCycle,
+            TotalToolUseAtEndOfCycle = t.Value.TotalToolUseAtEndOfCycle,
+            ConfiguredToolLife = t.Value.ConfiguredToolLife
+          };
+        }
         return e;
       }
 
       internal static NewEventLogEntry FromLogEntry(MachineWatchInterface.LogEntry e)
       {
-        return new NewEventLogEntry()
+        var ret = new NewEventLogEntry()
         {
           Material = e.Material.Select(EventLogMaterial.FromLogMat),
           Pallet = e.Pallet,
@@ -1304,6 +1348,20 @@ namespace BlackMaple.MachineFramework
           ElapsedTime = e.ElapsedTime,
           ActiveOperationTime = e.ActiveOperationTime
         };
+        foreach (var d in e.ProgramDetails)
+        {
+          ret.ProgramDetails[d.Key] = d.Value;
+        }
+        foreach (var t in e.Tools)
+        {
+          ret.Tools[t.Key] = new MachineWatchInterface.ToolUse()
+          {
+            ToolUseDuringCycle = t.Value.ToolUseDuringCycle,
+            TotalToolUseAtEndOfCycle = t.Value.TotalToolUseAtEndOfCycle,
+            ConfiguredToolLife = t.Value.ConfiguredToolLife
+          };
+        }
+        return ret;
       }
     }
 
@@ -1350,6 +1408,7 @@ namespace BlackMaple.MachineFramework
 
         AddMaterial(ctr, log.Material, trans);
         AddProgramDetail(ctr, log.ProgramDetails, trans);
+        AddToolUse(ctr, log.Tools, trans);
 
         return log.ToLogEntry(ctr, m => this.GetMaterialDetails(m, trans));
       }
@@ -1393,6 +1452,30 @@ namespace BlackMaple.MachineFramework
         {
           cmd.Parameters[1].Value = pair.Key;
           cmd.Parameters[2].Value = pair.Value;
+          cmd.ExecuteNonQuery();
+        }
+      }
+    }
+
+    private void AddToolUse(long counter, IDictionary<string, MachineWatchInterface.ToolUse> tools, IDbTransaction trans)
+    {
+      using (var cmd = _connection.CreateCommand())
+      {
+        ((IDbCommand)cmd).Transaction = trans;
+
+        cmd.CommandText = "INSERT INTO station_tools(Counter, Tool, UseInCycle, UseAtEndOfCycle, ToolLife) VALUES ($cntr,$tool,$use,$totalUse,$life)";
+        cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
+        cmd.Parameters.Add("tool", SqliteType.Text);
+        cmd.Parameters.Add("use", SqliteType.Integer);
+        cmd.Parameters.Add("totalUse", SqliteType.Integer);
+        cmd.Parameters.Add("life", SqliteType.Integer);
+
+        foreach (var pair in tools)
+        {
+          cmd.Parameters[1].Value = pair.Key;
+          cmd.Parameters[2].Value = pair.Value.ToolUseDuringCycle.Ticks;
+          cmd.Parameters[3].Value = pair.Value.TotalToolUseAtEndOfCycle.Ticks;
+          cmd.Parameters[4].Value = pair.Value.ConfiguredToolLife.Ticks;
           cmd.ExecuteNonQuery();
         }
       }
@@ -1616,6 +1699,7 @@ namespace BlackMaple.MachineFramework
         TimeSpan elapsed,
         TimeSpan active,
         IDictionary<string, string> extraData = null,
+        IDictionary<string, MachineWatchInterface.ToolUse> tools = null,
         string foreignId = null,
         string originalMessage = null
     )
@@ -1639,6 +1723,11 @@ namespace BlackMaple.MachineFramework
       {
         foreach (var k in extraData)
           log.ProgramDetails[k.Key] = k.Value;
+      }
+      if (tools != null)
+      {
+        foreach (var t in tools)
+          log.Tools[t.Key] = t.Value;
       }
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
     }

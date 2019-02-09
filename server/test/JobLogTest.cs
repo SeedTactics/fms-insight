@@ -192,6 +192,18 @@ namespace MachineWatchTest
           active: TimeSpan.FromMinutes(99),
           extraData: new Dictionary<string, string>() {
                     {"aa", "AA"}, {"bb", "BB"}
+          },
+          tools: new Dictionary<string, ToolUse>() {
+            {"tool1", new ToolUse() {
+                ToolUseDuringCycle = TimeSpan.FromMinutes(10),
+                TotalToolUseAtEndOfCycle = TimeSpan.FromMinutes(20),
+                ConfiguredToolLife = TimeSpan.FromMinutes(30)}
+            },
+            {"tool2", new ToolUse() {
+                ToolUseDuringCycle = TimeSpan.FromMinutes(40),
+                TotalToolUseAtEndOfCycle = TimeSpan.FromMinutes(50),
+                ConfiguredToolLife = TimeSpan.FromMinutes(60)}
+            },
           }
       );
       var machineEndExpectedCycle =
@@ -202,6 +214,18 @@ namespace MachineWatchTest
               TimeSpan.FromMinutes(12), TimeSpan.FromMinutes(99));
       machineEndExpectedCycle.ProgramDetails["aa"] = "AA";
       machineEndExpectedCycle.ProgramDetails["bb"] = "BB";
+      machineEndExpectedCycle.Tools["tool1"] = new ToolUse()
+      {
+        ToolUseDuringCycle = TimeSpan.FromMinutes(10),
+        TotalToolUseAtEndOfCycle = TimeSpan.FromMinutes(20),
+        ConfiguredToolLife = TimeSpan.FromMinutes(30)
+      };
+      machineEndExpectedCycle.Tools["tool2"] = new ToolUse()
+      {
+        ToolUseDuringCycle = TimeSpan.FromMinutes(40),
+        TotalToolUseAtEndOfCycle = TimeSpan.FromMinutes(50),
+        ConfiguredToolLife = TimeSpan.FromMinutes(60)
+      };
       machineEndActualCycle.Should().BeEquivalentTo(machineEndExpectedCycle);
       logs.Add(machineEndActualCycle);
 
