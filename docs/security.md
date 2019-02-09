@@ -48,7 +48,7 @@ The client must require implict grant flow with no client secret. The Redirect U
 must be set to the common name from the TLS certificate with a root path. For example, say that you
 created a TLS certificate with common name `cell-10-fms-insight.mycompany.com` and a DNS entry
 mapping `cell-10-fms-insight.mycompany.com` to the FMS Insight cell controller. Then when configuring
-the client, you would set the Redirect URL to `https://cell-10-fms-insight.mycompany.com/`. Note down
+the client, you would set the Redirect URL to `https://cell-10-fms-insight.mycompany.com:5000/`. Note down
 the ClientID and find the authority URL for the identity provider. Finally, most identity providers allow
 the administrator to restrict an application to a set of users (e.g. Azure Active Directory allows assigning
 specific users or groups to the application). In this way, only certian users will be allowed to login and use
