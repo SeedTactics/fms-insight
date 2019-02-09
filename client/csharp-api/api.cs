@@ -5376,6 +5376,7 @@ namespace BlackMaple.FMSInsight.API
         private string _result;
         private System.TimeSpan _elapsed;
         private System.TimeSpan _active;
+        private System.Collections.Generic.Dictionary<string, ToolUse> _tools;
     
         [Newtonsoft.Json.JsonProperty("details", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.Dictionary<string, string> Details
@@ -5564,6 +5565,20 @@ namespace BlackMaple.FMSInsight.API
                 if (_active != value)
                 {
                     _active = value; 
+                    RaisePropertyChanged();
+                }
+            }
+        }
+    
+        [Newtonsoft.Json.JsonProperty("tools", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public System.Collections.Generic.Dictionary<string, ToolUse> Tools
+        {
+            get { return _tools; }
+            set 
+            {
+                if (_tools != value)
+                {
+                    _tools = value; 
                     RaisePropertyChanged();
                 }
             }
@@ -5779,6 +5794,79 @@ namespace BlackMaple.FMSInsight.API
     
         [System.Runtime.Serialization.EnumMember(Value = "InspectionForce")]
         InspectionForce = 12,
+    
+    }
+    
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.11.0.0 (Newtonsoft.Json v9.0.0.0)")]
+    public partial class ToolUse : System.ComponentModel.INotifyPropertyChanged
+    {
+        private System.TimeSpan _toolUseDuringCycle;
+        private System.TimeSpan _totalToolUseAtEndOfCycle;
+        private System.TimeSpan _configuredToolLife;
+    
+        [Newtonsoft.Json.JsonProperty("ToolUseDuringCycle", Required = Newtonsoft.Json.Required.Always)]
+        [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
+        public System.TimeSpan ToolUseDuringCycle
+        {
+            get { return _toolUseDuringCycle; }
+            set 
+            {
+                if (_toolUseDuringCycle != value)
+                {
+                    _toolUseDuringCycle = value; 
+                    RaisePropertyChanged();
+                }
+            }
+        }
+    
+        [Newtonsoft.Json.JsonProperty("TotalToolUseAtEndOfCycle", Required = Newtonsoft.Json.Required.Always)]
+        [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
+        public System.TimeSpan TotalToolUseAtEndOfCycle
+        {
+            get { return _totalToolUseAtEndOfCycle; }
+            set 
+            {
+                if (_totalToolUseAtEndOfCycle != value)
+                {
+                    _totalToolUseAtEndOfCycle = value; 
+                    RaisePropertyChanged();
+                }
+            }
+        }
+    
+        [Newtonsoft.Json.JsonProperty("ConfiguredToolLife", Required = Newtonsoft.Json.Required.Always)]
+        [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
+        public System.TimeSpan ConfiguredToolLife
+        {
+            get { return _configuredToolLife; }
+            set 
+            {
+                if (_configuredToolLife != value)
+                {
+                    _configuredToolLife = value; 
+                    RaisePropertyChanged();
+                }
+            }
+        }
+    
+        public string ToJson() 
+        {
+            return Newtonsoft.Json.JsonConvert.SerializeObject(this);
+        }
+        
+        public static ToolUse FromJson(string data)
+        {
+            return Newtonsoft.Json.JsonConvert.DeserializeObject<ToolUse>(data);
+        }
+    
+        public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
+        
+        protected virtual void RaisePropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string propertyName = null)
+        {
+            var handler = PropertyChanged;
+            if (handler != null) 
+                handler(this, new System.ComponentModel.PropertyChangedEventArgs(propertyName));
+        }
     
     }
     

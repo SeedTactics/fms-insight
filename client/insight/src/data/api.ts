@@ -21,11 +21,11 @@ export class JobsClient {
         if (startUTC === undefined || startUTC === null)
             throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
         else
-            url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toJSON() : "") + "&";
+            url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toJSON() : "") + "&"; 
         if (endUTC === undefined || endUTC === null)
             throw new Error("The parameter 'endUTC' must be defined and cannot be null.");
         else
-            url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toJSON() : "") + "&";
+            url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toJSON() : "") + "&"; 
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
@@ -63,7 +63,7 @@ export class JobsClient {
         if (afterScheduleId === undefined)
             throw new Error("The parameter 'afterScheduleId' must be defined.");
         else
-            url_ += "afterScheduleId=" + encodeURIComponent("" + afterScheduleId) + "&";
+            url_ += "afterScheduleId=" + encodeURIComponent("" + afterScheduleId) + "&"; 
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
@@ -134,7 +134,7 @@ export class JobsClient {
         let url_ = this.baseUrl + "/api/v1/jobs/unfilled-workorders/by-part/{part}";
         if (part === undefined || part === null)
             throw new Error("The parameter 'part' must be defined.");
-        url_ = url_.replace("{part}", encodeURIComponent("" + part));
+        url_ = url_.replace("{part}", encodeURIComponent("" + part)); 
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
@@ -215,7 +215,7 @@ export class JobsClient {
             body: content_,
             method: "GET",
             headers: {
-                "Content-Type": "application/json",
+                "Content-Type": "application/json", 
                 "Accept": "application/json"
             }
         };
@@ -252,7 +252,7 @@ export class JobsClient {
         if (expectedPreviousScheduleId === undefined)
             throw new Error("The parameter 'expectedPreviousScheduleId' must be defined.");
         else
-            url_ += "expectedPreviousScheduleId=" + encodeURIComponent("" + expectedPreviousScheduleId) + "&";
+            url_ += "expectedPreviousScheduleId=" + encodeURIComponent("" + expectedPreviousScheduleId) + "&"; 
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(newJobs);
@@ -261,7 +261,7 @@ export class JobsClient {
             body: content_,
             method: "POST",
             headers: {
-                "Content-Type": "application/json",
+                "Content-Type": "application/json", 
             }
         };
 
@@ -289,15 +289,15 @@ export class JobsClient {
         let url_ = this.baseUrl + "/api/v1/jobs/part/{partName}/casting?";
         if (partName === undefined || partName === null)
             throw new Error("The parameter 'partName' must be defined.");
-        url_ = url_.replace("{partName}", encodeURIComponent("" + partName));
+        url_ = url_.replace("{partName}", encodeURIComponent("" + partName)); 
         if (queue === undefined)
             throw new Error("The parameter 'queue' must be defined.");
         else
-            url_ += "queue=" + encodeURIComponent("" + queue) + "&";
+            url_ += "queue=" + encodeURIComponent("" + queue) + "&"; 
         if (pos === undefined || pos === null)
             throw new Error("The parameter 'pos' must be defined and cannot be null.");
         else
-            url_ += "pos=" + encodeURIComponent("" + pos) + "&";
+            url_ += "pos=" + encodeURIComponent("" + pos) + "&"; 
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(serial);
@@ -306,7 +306,7 @@ export class JobsClient {
             body: content_,
             method: "POST",
             headers: {
-                "Content-Type": "application/json",
+                "Content-Type": "application/json", 
             }
         };
 
@@ -334,19 +334,19 @@ export class JobsClient {
         let url_ = this.baseUrl + "/api/v1/jobs/job/{jobUnique}/unprocessed-material?";
         if (jobUnique === undefined || jobUnique === null)
             throw new Error("The parameter 'jobUnique' must be defined.");
-        url_ = url_.replace("{jobUnique}", encodeURIComponent("" + jobUnique));
+        url_ = url_.replace("{jobUnique}", encodeURIComponent("" + jobUnique)); 
         if (lastCompletedProcess === undefined || lastCompletedProcess === null)
             throw new Error("The parameter 'lastCompletedProcess' must be defined and cannot be null.");
         else
-            url_ += "lastCompletedProcess=" + encodeURIComponent("" + lastCompletedProcess) + "&";
+            url_ += "lastCompletedProcess=" + encodeURIComponent("" + lastCompletedProcess) + "&"; 
         if (queue === undefined)
             throw new Error("The parameter 'queue' must be defined.");
         else
-            url_ += "queue=" + encodeURIComponent("" + queue) + "&";
+            url_ += "queue=" + encodeURIComponent("" + queue) + "&"; 
         if (pos === undefined || pos === null)
             throw new Error("The parameter 'pos' must be defined and cannot be null.");
         else
-            url_ += "pos=" + encodeURIComponent("" + pos) + "&";
+            url_ += "pos=" + encodeURIComponent("" + pos) + "&"; 
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(serial);
@@ -355,7 +355,7 @@ export class JobsClient {
             body: content_,
             method: "POST",
             headers: {
-                "Content-Type": "application/json",
+                "Content-Type": "application/json", 
             }
         };
 
@@ -383,7 +383,7 @@ export class JobsClient {
         let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/queue";
         if (materialId === undefined || materialId === null)
             throw new Error("The parameter 'materialId' must be defined.");
-        url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId));
+        url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId)); 
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(queue);
@@ -392,7 +392,7 @@ export class JobsClient {
             body: content_,
             method: "PUT",
             headers: {
-                "Content-Type": "application/json",
+                "Content-Type": "application/json", 
             }
         };
 
@@ -420,7 +420,7 @@ export class JobsClient {
         let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/queue";
         if (materialId === undefined || materialId === null)
             throw new Error("The parameter 'materialId' must be defined.");
-        url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId));
+        url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId)); 
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
@@ -452,9 +452,9 @@ export class JobsClient {
     decrementQuantities(loadDecrementsStrictlyAfterDecrementId: string, loadDecrementsAfterTimeUTC: Date): Promise<JobAndDecrementQuantity[]> {
         let url_ = this.baseUrl + "/api/v1/jobs/planned-cycles?";
         if (loadDecrementsStrictlyAfterDecrementId !== undefined)
-            url_ += "loadDecrementsStrictlyAfterDecrementId=" + encodeURIComponent("" + loadDecrementsStrictlyAfterDecrementId) + "&";
+            url_ += "loadDecrementsStrictlyAfterDecrementId=" + encodeURIComponent("" + loadDecrementsStrictlyAfterDecrementId) + "&"; 
         if (loadDecrementsAfterTimeUTC !== undefined)
-            url_ += "loadDecrementsAfterTimeUTC=" + encodeURIComponent(loadDecrementsAfterTimeUTC ? "" + loadDecrementsAfterTimeUTC.toJSON() : "") + "&";
+            url_ += "loadDecrementsAfterTimeUTC=" + encodeURIComponent(loadDecrementsAfterTimeUTC ? "" + loadDecrementsAfterTimeUTC.toJSON() : "") + "&"; 
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
@@ -507,11 +507,11 @@ export class LogClient {
         if (startUTC === undefined || startUTC === null)
             throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
         else
-            url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toJSON() : "") + "&";
+            url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toJSON() : "") + "&"; 
         if (endUTC === undefined || endUTC === null)
             throw new Error("The parameter 'endUTC' must be defined and cannot be null.");
         else
-            url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toJSON() : "") + "&";
+            url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toJSON() : "") + "&"; 
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
@@ -553,11 +553,11 @@ export class LogClient {
         if (startUTC === undefined || startUTC === null)
             throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
         else
-            url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toJSON() : "") + "&";
+            url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toJSON() : "") + "&"; 
         if (endUTC === undefined || endUTC === null)
             throw new Error("The parameter 'endUTC' must be defined and cannot be null.");
         else
-            url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toJSON() : "") + "&";
+            url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toJSON() : "") + "&"; 
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
@@ -593,11 +593,11 @@ export class LogClient {
         if (startUTC === undefined || startUTC === null)
             throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
         else
-            url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toJSON() : "") + "&";
+            url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toJSON() : "") + "&"; 
         if (endUTC === undefined || endUTC === null)
             throw new Error("The parameter 'endUTC' must be defined and cannot be null.");
         else
-            url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toJSON() : "") + "&";
+            url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toJSON() : "") + "&"; 
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
@@ -639,7 +639,7 @@ export class LogClient {
         if (lastSeenCounter === undefined || lastSeenCounter === null)
             throw new Error("The parameter 'lastSeenCounter' must be defined and cannot be null.");
         else
-            url_ += "lastSeenCounter=" + encodeURIComponent("" + lastSeenCounter) + "&";
+            url_ += "lastSeenCounter=" + encodeURIComponent("" + lastSeenCounter) + "&"; 
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
@@ -680,7 +680,7 @@ export class LogClient {
         let url_ = this.baseUrl + "/api/v1/log/events/for-material/{materialID}";
         if (materialID === undefined || materialID === null)
             throw new Error("The parameter 'materialID' must be defined.");
-        url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID));
+        url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID)); 
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
@@ -721,7 +721,7 @@ export class LogClient {
         let url_ = this.baseUrl + "/api/v1/log/events/for-serial/{serial}";
         if (serial === undefined || serial === null)
             throw new Error("The parameter 'serial' must be defined.");
-        url_ = url_.replace("{serial}", encodeURIComponent("" + serial));
+        url_ = url_.replace("{serial}", encodeURIComponent("" + serial)); 
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
@@ -762,7 +762,7 @@ export class LogClient {
         let url_ = this.baseUrl + "/api/v1/log/events/for-workorder/{workorder}";
         if (workorder === undefined || workorder === null)
             throw new Error("The parameter 'workorder' must be defined.");
-        url_ = url_.replace("{workorder}", encodeURIComponent("" + workorder));
+        url_ = url_.replace("{workorder}", encodeURIComponent("" + workorder)); 
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
@@ -803,7 +803,7 @@ export class LogClient {
         let url_ = this.baseUrl + "/api/v1/log/material-details/{materialID}";
         if (materialID === undefined || materialID === null)
             throw new Error("The parameter 'materialID' must be defined.");
-        url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID));
+        url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID)); 
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
@@ -914,11 +914,11 @@ export class LogClient {
         let url_ = this.baseUrl + "/api/v1/log/material-details/{materialID}/serial?";
         if (materialID === undefined || materialID === null)
             throw new Error("The parameter 'materialID' must be defined.");
-        url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID));
+        url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID)); 
         if (process === null)
             throw new Error("The parameter 'process' cannot be null.");
         else if (process !== undefined)
-            url_ += "process=" + encodeURIComponent("" + process) + "&";
+            url_ += "process=" + encodeURIComponent("" + process) + "&"; 
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(serial);
@@ -927,7 +927,7 @@ export class LogClient {
             body: content_,
             method: "POST",
             headers: {
-                "Content-Type": "application/json",
+                "Content-Type": "application/json", 
                 "Accept": "application/json"
             }
         };
@@ -959,11 +959,11 @@ export class LogClient {
         let url_ = this.baseUrl + "/api/v1/log/material-details/{materialID}/workorder?";
         if (materialID === undefined || materialID === null)
             throw new Error("The parameter 'materialID' must be defined.");
-        url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID));
+        url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID)); 
         if (process === null)
             throw new Error("The parameter 'process' cannot be null.");
         else if (process !== undefined)
-            url_ += "process=" + encodeURIComponent("" + process) + "&";
+            url_ += "process=" + encodeURIComponent("" + process) + "&"; 
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(workorder);
@@ -972,7 +972,7 @@ export class LogClient {
             body: content_,
             method: "POST",
             headers: {
-                "Content-Type": "application/json",
+                "Content-Type": "application/json", 
                 "Accept": "application/json"
             }
         };
@@ -1004,14 +1004,14 @@ export class LogClient {
         let url_ = this.baseUrl + "/api/v1/log/material-details/{materialID}/inspections/{inspType}?";
         if (materialID === undefined || materialID === null)
             throw new Error("The parameter 'materialID' must be defined.");
-        url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID));
+        url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID)); 
         if (inspType === undefined || inspType === null)
             throw new Error("The parameter 'inspType' must be defined.");
-        url_ = url_.replace("{inspType}", encodeURIComponent("" + inspType));
+        url_ = url_.replace("{inspType}", encodeURIComponent("" + inspType)); 
         if (process === null)
             throw new Error("The parameter 'process' cannot be null.");
         else if (process !== undefined)
-            url_ += "process=" + encodeURIComponent("" + process) + "&";
+            url_ += "process=" + encodeURIComponent("" + process) + "&"; 
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(inspect);
@@ -1020,7 +1020,7 @@ export class LogClient {
             body: content_,
             method: "POST",
             headers: {
-                "Content-Type": "application/json",
+                "Content-Type": "application/json", 
                 "Accept": "application/json"
             }
         };
@@ -1058,7 +1058,7 @@ export class LogClient {
             body: content_,
             method: "POST",
             headers: {
-                "Content-Type": "application/json",
+                "Content-Type": "application/json", 
                 "Accept": "application/json"
             }
         };
@@ -1096,7 +1096,7 @@ export class LogClient {
             body: content_,
             method: "POST",
             headers: {
-                "Content-Type": "application/json",
+                "Content-Type": "application/json", 
                 "Accept": "application/json"
             }
         };
@@ -1128,7 +1128,7 @@ export class LogClient {
         let url_ = this.baseUrl + "/api/v1/log/workorder/{workorder}/finalize";
         if (workorder === undefined || workorder === null)
             throw new Error("The parameter 'workorder' must be defined.");
-        url_ = url_.replace("{workorder}", encodeURIComponent("" + workorder));
+        url_ = url_.replace("{workorder}", encodeURIComponent("" + workorder)); 
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
@@ -1210,7 +1210,7 @@ export class ServerClient {
         let url_ = this.baseUrl + "/api/v1/server/settings/{id}";
         if (id === undefined || id === null)
             throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace("{id}", encodeURIComponent("" + id)); 
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
@@ -1247,7 +1247,7 @@ export class ServerClient {
         let url_ = this.baseUrl + "/api/v1/server/settings/{id}";
         if (id === undefined || id === null)
             throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace("{id}", encodeURIComponent("" + id)); 
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(setting);
@@ -1256,7 +1256,7 @@ export class ServerClient {
             body: content_,
             method: "PUT",
             headers: {
-                "Content-Type": "application/json",
+                "Content-Type": "application/json", 
             }
         };
 
@@ -1284,15 +1284,15 @@ export class ServerClient {
         let url_ = this.baseUrl + "/api/v1/server/find-instructions/{part}?";
         if (part === undefined || part === null)
             throw new Error("The parameter 'part' must be defined.");
-        url_ = url_.replace("{part}", encodeURIComponent("" + part));
+        url_ = url_.replace("{part}", encodeURIComponent("" + part)); 
         if (type === undefined)
             throw new Error("The parameter 'type' must be defined.");
         else
-            url_ += "type=" + encodeURIComponent("" + type) + "&";
+            url_ += "type=" + encodeURIComponent("" + type) + "&"; 
         if (process !== undefined)
-            url_ += "process=" + encodeURIComponent("" + process) + "&";
+            url_ += "process=" + encodeURIComponent("" + process) + "&"; 
         if (materialID !== undefined)
-            url_ += "materialID=" + encodeURIComponent("" + materialID) + "&";
+            url_ += "materialID=" + encodeURIComponent("" + materialID) + "&"; 
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
@@ -1381,7 +1381,7 @@ export class HistoricData implements IHistoricData {
             for (let item of this.stationUse)
                 data["StationUse"].push(item.toJSON());
         }
-        return data;
+        return data; 
     }
 }
 
@@ -1499,7 +1499,7 @@ export class JobPlan implements IJobPlan {
             for (let item of this.procsAndPaths)
                 data["ProcsAndPaths"].push(item.toJSON());
         }
-        return data;
+        return data; 
     }
 }
 
@@ -1565,7 +1565,7 @@ export class JobInspectionData implements IJobInspectionData {
         data["RandomFreq"] = this.randomFreq;
         data["TimeInterval"] = this.timeInterval;
         data["InspectSingleProcess"] = this.inspectSingleProcess;
-        return data;
+        return data; 
     }
 }
 
@@ -1629,7 +1629,7 @@ export class JobHoldPattern implements IJobHoldPattern {
         }
         data["HoldUnholdPatternStartUTC"] = this.holdUnholdPatternStartUTC ? this.holdUnholdPatternStartUTC.toISOString() : <any>undefined;
         data["HoldUnholdPatternRepeats"] = this.holdUnholdPatternRepeats;
-        return data;
+        return data; 
     }
 }
 
@@ -1680,7 +1680,7 @@ export class ProcessInfo implements IProcessInfo {
             for (let item of this.paths)
                 data["paths"].push(item.toJSON());
         }
-        return data;
+        return data; 
     }
 }
 
@@ -1815,7 +1815,7 @@ export class ProcPathInfo implements IProcPathInfo {
         data["PartsPerPallet"] = this.partsPerPallet;
         data["InputQueue"] = this.inputQueue;
         data["OutputQueue"] = this.outputQueue;
-        return data;
+        return data; 
     }
 }
 
@@ -1869,7 +1869,7 @@ export class FixtureFace implements IFixtureFace {
         data = typeof data === 'object' ? data : {};
         data["Fixture"] = this.fixture;
         data["Face"] = this.face;
-        return data;
+        return data; 
     }
 }
 
@@ -1943,7 +1943,7 @@ export class JobMachiningStop implements IJobMachiningStop {
         }
         data["StationGroup"] = this.stationGroup;
         data["ExpectedCycleTime"] = this.expectedCycleTime;
-        return data;
+        return data; 
     }
 }
 
@@ -1985,7 +1985,7 @@ export class SimulatedProduction implements ISimulatedProduction {
         data = typeof data === 'object' ? data : {};
         data["TimeUTC"] = this.timeUTC ? this.timeUTC.toISOString() : <any>undefined;
         data["Quantity"] = this.quantity;
-        return data;
+        return data; 
     }
 }
 
@@ -2040,7 +2040,7 @@ export class SimulatedStationUtilization implements ISimulatedStationUtilization
         data["EndUTC"] = this.endUTC ? this.endUTC.toISOString() : <any>undefined;
         data["UtilizationTime"] = this.utilizationTime;
         data["PlannedDownTime"] = this.plannedDownTime;
-        return data;
+        return data; 
     }
 }
 
@@ -2123,7 +2123,7 @@ export class PlannedSchedule implements IPlannedSchedule {
             for (let item of this.currentUnfilledWorkorders)
                 data["CurrentUnfilledWorkorders"].push(item.toJSON());
         }
-        return data;
+        return data; 
     }
 }
 
@@ -2174,7 +2174,7 @@ export class PartWorkorder implements IPartWorkorder {
         data["Quantity"] = this.quantity;
         data["DueDate"] = this.dueDate ? this.dueDate.toISOString() : <any>undefined;
         data["Priority"] = this.priority;
-        return data;
+        return data; 
     }
 }
 
@@ -2288,7 +2288,7 @@ export class CurrentStatus implements ICurrentStatus {
             }
         }
         data["TimeOfCurrentStatusUTC"] = this.timeOfCurrentStatusUTC ? this.timeOfCurrentStatusUTC.toISOString() : <any>undefined;
-        return data;
+        return data; 
     }
 }
 
@@ -2337,7 +2337,7 @@ export class InProcessJob extends JobPlan implements IInProcessJob {
                 data["Completed"].push(item);
         }
         super.toJSON(data);
-        return data;
+        return data; 
     }
 }
 
@@ -2397,7 +2397,7 @@ export class PalletStatus implements IPalletStatus {
         data["NumFaces"] = this.numFaces;
         data["TargetLocation"] = this.targetLocation ? this.targetLocation.toJSON() : <any>undefined;
         data["PercentMoveCompleted"] = this.percentMoveCompleted;
-        return data;
+        return data; 
     }
 }
 
@@ -2446,7 +2446,7 @@ export class PalletLocation implements IPalletLocation {
         data["loc"] = this.loc;
         data["group"] = this.group;
         data["num"] = this.num;
-        return data;
+        return data; 
     }
 }
 
@@ -2457,11 +2457,11 @@ export interface IPalletLocation {
 }
 
 export enum PalletLocationEnum {
-    LoadUnload = <any>"LoadUnload",
-    Machine = <any>"Machine",
-    MachineQueue = <any>"MachineQueue",
-    Buffer = <any>"Buffer",
-    Cart = <any>"Cart",
+    LoadUnload = <any>"LoadUnload", 
+    Machine = <any>"Machine", 
+    MachineQueue = <any>"MachineQueue", 
+    Buffer = <any>"Buffer", 
+    Cart = <any>"Cart", 
 }
 
 export class InProcessMaterial implements IInProcessMaterial {
@@ -2532,7 +2532,7 @@ export class InProcessMaterial implements IInProcessMaterial {
         }
         data["Location"] = this.location ? this.location.toJSON() : <any>undefined;
         data["Action"] = this.action ? this.action.toJSON() : <any>undefined;
-        return data;
+        return data; 
     }
 }
 
@@ -2589,7 +2589,7 @@ export class InProcessMaterialLocation implements IInProcessMaterialLocation {
         data["Face"] = this.face;
         data["CurrentQueue"] = this.currentQueue;
         data["QueuePosition"] = this.queuePosition;
-        return data;
+        return data; 
     }
 }
 
@@ -2602,9 +2602,9 @@ export interface IInProcessMaterialLocation {
 }
 
 export enum LocType {
-    Free = <any>"Free",
-    OnPallet = <any>"OnPallet",
-    InQueue = <any>"InQueue",
+    Free = <any>"Free", 
+    OnPallet = <any>"OnPallet", 
+    InQueue = <any>"InQueue", 
 }
 
 export class InProcessMaterialAction implements IInProcessMaterialAction {
@@ -2659,7 +2659,7 @@ export class InProcessMaterialAction implements IInProcessMaterialAction {
         data["Program"] = this.program;
         data["ElapsedMachiningTime"] = this.elapsedMachiningTime;
         data["ExpectedRemainingMachiningTime"] = this.expectedRemainingMachiningTime;
-        return data;
+        return data; 
     }
 }
 
@@ -2676,11 +2676,11 @@ export interface IInProcessMaterialAction {
 }
 
 export enum ActionType {
-    Waiting = <any>"Waiting",
-    Loading = <any>"Loading",
-    UnloadToInProcess = <any>"UnloadToInProcess",
-    UnloadToCompletedMaterial = <any>"UnloadToCompletedMaterial",
-    Machining = <any>"Machining",
+    Waiting = <any>"Waiting", 
+    Loading = <any>"Loading", 
+    UnloadToInProcess = <any>"UnloadToInProcess", 
+    UnloadToCompletedMaterial = <any>"UnloadToCompletedMaterial", 
+    Machining = <any>"Machining", 
 }
 
 export class QueueSize implements IQueueSize {
@@ -2711,7 +2711,7 @@ export class QueueSize implements IQueueSize {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         data["MaxSizeBeforeStopUnloading"] = this.maxSizeBeforeStopUnloading;
-        return data;
+        return data; 
     }
 }
 
@@ -2819,7 +2819,7 @@ export class NewJobs implements INewJobs {
                     data["QueueSizes"][key] = this.queueSizes[key];
             }
         }
-        return data;
+        return data; 
     }
 }
 
@@ -2865,7 +2865,7 @@ export class QueuePosition implements IQueuePosition {
         data = typeof data === 'object' ? data : {};
         data["Queue"] = this.queue;
         data["Position"] = this.position;
-        return data;
+        return data; 
     }
 }
 
@@ -2914,7 +2914,7 @@ export class JobAndDecrementQuantity implements IJobAndDecrementQuantity {
         data["TimeUTC"] = this.timeUTC ? this.timeUTC.toISOString() : <any>undefined;
         data["Part"] = this.part;
         data["Quantity"] = this.quantity;
-        return data;
+        return data; 
     }
 }
 
@@ -2940,6 +2940,7 @@ export class LogEntry implements ILogEntry {
     result: string;
     elapsed: string;
     active: string;
+    tools?: { [key: string] : ToolUse; };
 
     constructor(data?: ILogEntry) {
         if (data) {
@@ -2978,6 +2979,13 @@ export class LogEntry implements ILogEntry {
             this.result = data["result"];
             this.elapsed = data["elapsed"];
             this.active = data["active"];
+            if (data["tools"]) {
+                this.tools = {};
+                for (let key in data["tools"]) {
+                    if (data["tools"].hasOwnProperty(key))
+                        this.tools[key] = data["tools"][key] ? ToolUse.fromJS(data["tools"][key]) : new ToolUse();
+                }
+            }
         }
     }
 
@@ -3013,7 +3021,14 @@ export class LogEntry implements ILogEntry {
         data["result"] = this.result;
         data["elapsed"] = this.elapsed;
         data["active"] = this.active;
-        return data;
+        if (this.tools) {
+            data["tools"] = {};
+            for (let key in this.tools) {
+                if (this.tools.hasOwnProperty(key))
+                    data["tools"][key] = this.tools[key];
+            }
+        }
+        return data; 
     }
 }
 
@@ -3031,6 +3046,7 @@ export interface ILogEntry {
     result: string;
     elapsed: string;
     active: string;
+    tools?: { [key: string] : ToolUse; };
 }
 
 export class LogMaterial implements ILogMaterial {
@@ -3082,7 +3098,7 @@ export class LogMaterial implements ILogMaterial {
         data["face"] = this.face;
         data["serial"] = this.serial;
         data["workorder"] = this.workorder;
-        return data;
+        return data; 
     }
 }
 
@@ -3098,19 +3114,63 @@ export interface ILogMaterial {
 }
 
 export enum LogType {
-    LoadUnloadCycle = <any>"LoadUnloadCycle",
-    MachineCycle = <any>"MachineCycle",
-    PartMark = <any>"PartMark",
-    Inspection = <any>"Inspection",
-    OrderAssignment = <any>"OrderAssignment",
-    GeneralMessage = <any>"GeneralMessage",
-    PalletCycle = <any>"PalletCycle",
-    FinalizeWorkorder = <any>"FinalizeWorkorder",
-    InspectionResult = <any>"InspectionResult",
-    Wash = <any>"Wash",
-    AddToQueue = <any>"AddToQueue",
-    RemoveFromQueue = <any>"RemoveFromQueue",
-    InspectionForce = <any>"InspectionForce",
+    LoadUnloadCycle = <any>"LoadUnloadCycle", 
+    MachineCycle = <any>"MachineCycle", 
+    PartMark = <any>"PartMark", 
+    Inspection = <any>"Inspection", 
+    OrderAssignment = <any>"OrderAssignment", 
+    GeneralMessage = <any>"GeneralMessage", 
+    PalletCycle = <any>"PalletCycle", 
+    FinalizeWorkorder = <any>"FinalizeWorkorder", 
+    InspectionResult = <any>"InspectionResult", 
+    Wash = <any>"Wash", 
+    AddToQueue = <any>"AddToQueue", 
+    RemoveFromQueue = <any>"RemoveFromQueue", 
+    InspectionForce = <any>"InspectionForce", 
+}
+
+export class ToolUse implements IToolUse {
+    toolUseDuringCycle: string;
+    totalToolUseAtEndOfCycle: string;
+    configuredToolLife: string;
+
+    constructor(data?: IToolUse) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.toolUseDuringCycle = data["ToolUseDuringCycle"];
+            this.totalToolUseAtEndOfCycle = data["TotalToolUseAtEndOfCycle"];
+            this.configuredToolLife = data["ConfiguredToolLife"];
+        }
+    }
+
+    static fromJS(data: any): ToolUse {
+        data = typeof data === 'object' ? data : {};
+        let result = new ToolUse();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["ToolUseDuringCycle"] = this.toolUseDuringCycle;
+        data["TotalToolUseAtEndOfCycle"] = this.totalToolUseAtEndOfCycle;
+        data["ConfiguredToolLife"] = this.configuredToolLife;
+        return data; 
+    }
+}
+
+export interface IToolUse {
+    toolUseDuringCycle: string;
+    totalToolUseAtEndOfCycle: string;
+    configuredToolLife: string;
 }
 
 export class MaterialProcessActualPath implements IMaterialProcessActualPath {
@@ -3167,7 +3227,7 @@ export class MaterialProcessActualPath implements IMaterialProcessActualPath {
                 data["Stops"].push(item.toJSON());
         }
         data["UnloadStation"] = this.unloadStation;
-        return data;
+        return data; 
     }
 }
 
@@ -3211,7 +3271,7 @@ export class Stop implements IStop {
         data = typeof data === 'object' ? data : {};
         data["StationName"] = this.stationName;
         data["StationNum"] = this.stationNum;
-        return data;
+        return data; 
     }
 }
 
@@ -3263,7 +3323,7 @@ export class MaterialDetails implements IMaterialDetails {
         data["NumProcesses"] = this.numProcesses;
         data["Workorder"] = this.workorder;
         data["Serial"] = this.serial;
-        return data;
+        return data; 
     }
 }
 
@@ -3333,7 +3393,7 @@ export class WorkorderSummary implements IWorkorderSummary {
         }
         data["id"] = this.id;
         data["finalized"] = this.finalized ? this.finalized.toISOString() : <any>undefined;
-        return data;
+        return data; 
     }
 }
 
@@ -3409,7 +3469,7 @@ export class WorkorderPartSummary implements IWorkorderPartSummary {
         }
         data["name"] = this.name;
         data["completed-qty"] = this.completedQty;
-        return data;
+        return data; 
     }
 }
 
@@ -3481,7 +3541,7 @@ export class NewInspectionCompleted implements INewInspectionCompleted {
         }
         data["Elapsed"] = this.elapsed;
         data["Active"] = this.active;
-        return data;
+        return data; 
     }
 }
 
@@ -3551,7 +3611,7 @@ export class NewWash implements INewWash {
         }
         data["Elapsed"] = this.elapsed;
         data["Active"] = this.active;
-        return data;
+        return data; 
     }
 }
 
@@ -3618,7 +3678,7 @@ export class FMSInfo implements IFMSInfo {
         }
         data["OpenIDConnectAuthority"] = this.openIDConnectAuthority;
         data["OpenIDConnectClientId"] = this.openIDConnectClientId;
-        return data;
+        return data; 
     }
 }
 
@@ -3641,10 +3701,10 @@ export interface FileResponse {
 
 export class SwaggerException extends Error {
     message: string;
-    status: number;
-    response: string;
+    status: number; 
+    response: string; 
     headers: { [key: string]: any; };
-    result: any;
+    result: any; 
 
     constructor(message: string, status: number, response: string, headers: { [key: string]: any; }, result: any) {
         super();

@@ -1977,6 +1977,12 @@
         "active": {
           "type": "string",
           "format": "time-span"
+        },
+        "tools": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/ToolUse"
+          }
         }
       }
     },
@@ -2054,6 +2060,29 @@
         "RemoveFromQueue",
         "InspectionForce"
       ]
+    },
+    "ToolUse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ToolUseDuringCycle",
+        "TotalToolUseAtEndOfCycle",
+        "ConfiguredToolLife"
+      ],
+      "properties": {
+        "ToolUseDuringCycle": {
+          "type": "string",
+          "format": "time-span"
+        },
+        "TotalToolUseAtEndOfCycle": {
+          "type": "string",
+          "format": "time-span"
+        },
+        "ConfiguredToolLife": {
+          "type": "string",
+          "format": "time-span"
+        }
+      }
     },
     "MaterialProcessActualPath": {
       "type": "object",
