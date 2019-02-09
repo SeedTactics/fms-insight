@@ -62,11 +62,34 @@ export interface LogAPI {
   logForSerial(serial: string): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   getWorkorders(ids: string[]): Promise<ReadonlyArray<Readonly<api.IWorkorderSummary>>>;
 
-  setInspectionDecision(inspType: string, mat: api.LogMaterial, inspect: boolean): Promise<Readonly<api.ILogEntry>>;
-  recordInspectionCompleted(insp: api.NewInspectionCompleted): Promise<Readonly<api.ILogEntry>>;
-  recordWashCompleted(insp: api.NewWash): Promise<Readonly<api.ILogEntry>>;
-  setWorkorder(workorder: string, mat: api.LogMaterial): Promise<Readonly<api.ILogEntry>>;
-  setSerial(serial: string, mat: api.LogMaterial): Promise<Readonly<api.ILogEntry>>;
+  setInspectionDecision(
+    materialID: number,
+    inspType: string,
+    inspect: boolean,
+    process: number,
+    jobUnique?: string,
+    partName?: string
+  ): Promise<Readonly<api.ILogEntry>>;
+  recordInspectionCompleted(
+    insp: api.NewInspectionCompleted,
+    jobUnique?: string,
+    partName?: string
+  ): Promise<Readonly<api.ILogEntry>>;
+  recordWashCompleted(insp: api.NewWash, jobUnique?: string, partName?: string): Promise<Readonly<api.ILogEntry>>;
+  setWorkorder(
+    materialID: number,
+    workorder: string,
+    process: number,
+    jobUnique?: string,
+    partName?: string
+  ): Promise<Readonly<api.ILogEntry>>;
+  setSerial(
+    materialID: number,
+    serial: string,
+    process: number,
+    jobUnique?: string,
+    partName?: string
+  ): Promise<Readonly<api.ILogEntry>>;
 }
 
 export const BackendHost = process.env.NODE_ENV === "production" ? undefined : "localhost:5000";
@@ -189,7 +212,22 @@ function initMockBackend(data: Promise<MockData>) {
       return Promise.resolve([]);
     },
 
-    setInspectionDecision(inspType: string, mat: api.LogMaterial, inspect: boolean): Promise<Readonly<api.ILogEntry>> {
+    setInspectionDecision(
+      materialID: number,
+      inspType: string,
+      inspect: boolean,
+      process: number,
+      jobUnique?: string,
+      partName?: string
+    ): Promise<Readonly<api.ILogEntry>> {
+      const mat = new api.LogMaterial({
+        id: materialID,
+        uniq: jobUnique || "",
+        part: partName || "",
+        proc: process,
+        numproc: 1,
+        face: "1"
+      });
       const evt = {
         counter: 0,
         material: [mat],
@@ -214,10 +252,22 @@ function initMockBackend(data: Promise<MockData>) {
         })
       );
     },
-    recordInspectionCompleted(insp: api.NewInspectionCompleted): Promise<Readonly<api.ILogEntry>> {
+    recordInspectionCompleted(
+      insp: api.NewInspectionCompleted,
+      jobUnique?: string,
+      partName?: string
+    ): Promise<Readonly<api.ILogEntry>> {
+      const mat = new api.LogMaterial({
+        id: insp.materialID,
+        uniq: jobUnique || "",
+        part: partName || "",
+        proc: insp.process,
+        numproc: 1,
+        face: "1"
+      });
       const evt: api.ILogEntry = {
         counter: 0,
-        material: [insp.material],
+        material: [mat],
         pal: "",
         type: api.LogType.InspectionResult,
         startofcycle: false,
@@ -237,10 +287,18 @@ function initMockBackend(data: Promise<MockData>) {
         })
       );
     },
-    recordWashCompleted(wash: api.NewWash): Promise<Readonly<api.ILogEntry>> {
+    recordWashCompleted(wash: api.NewWash, jobUnique?: string, partName?: string): Promise<Readonly<api.ILogEntry>> {
+      const mat = new api.LogMaterial({
+        id: wash.materialID,
+        uniq: jobUnique || "",
+        part: partName || "",
+        proc: wash.process,
+        numproc: 1,
+        face: "1"
+      });
       const evt: api.ILogEntry = {
         counter: 0,
-        material: [wash.material],
+        material: [mat],
         pal: "",
         type: api.LogType.Wash,
         startofcycle: false,
@@ -260,7 +318,21 @@ function initMockBackend(data: Promise<MockData>) {
         })
       );
     },
-    setWorkorder(workorder: string, mat: api.LogMaterial): Promise<Readonly<api.ILogEntry>> {
+    setWorkorder(
+      materialID: number,
+      workorder: string,
+      process: number,
+      jobUnique?: string,
+      partName?: string
+    ): Promise<Readonly<api.ILogEntry>> {
+      const mat = new api.LogMaterial({
+        id: materialID,
+        uniq: jobUnique || "",
+        part: partName || "",
+        proc: process,
+        numproc: 1,
+        face: "1"
+      });
       const evt: api.ILogEntry = {
         counter: 0,
         material: [mat],
@@ -282,7 +354,21 @@ function initMockBackend(data: Promise<MockData>) {
         })
       );
     },
-    setSerial(serial: string, mat: api.LogMaterial): Promise<Readonly<api.ILogEntry>> {
+    setSerial(
+      materialID: number,
+      serial: string,
+      process: number,
+      jobUnique?: string,
+      partName?: string
+    ): Promise<Readonly<api.ILogEntry>> {
+      const mat = new api.LogMaterial({
+        id: materialID,
+        uniq: jobUnique || "",
+        part: partName || "",
+        proc: process,
+        numproc: 1,
+        face: "1"
+      });
       const evt: api.ILogEntry = {
         counter: 0,
         material: [mat],

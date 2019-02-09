@@ -44,7 +44,8 @@ namespace BlackMaple.MachineFramework.Controllers
   [DataContract]
   public struct NewInspectionCompleted
   {
-    [DataMember(IsRequired = true)] public LogMaterial Material { get; set; }
+    [DataMember(IsRequired = true)] public long MaterialID { get; set; }
+    [DataMember(IsRequired = true)] public int Process { get; set; }
     [DataMember(IsRequired = true)] public int InspectionLocationNum { get; set; }
     [DataMember(IsRequired = true)] public string InspectionType { get; set; }
     [DataMember(IsRequired = true)] public bool Success { get; set; }
@@ -56,7 +57,8 @@ namespace BlackMaple.MachineFramework.Controllers
   [DataContract]
   public struct NewWash
   {
-    [DataMember(IsRequired = true)] public LogMaterial Material { get; set; }
+    [DataMember(IsRequired = true)] public long MaterialID { get; set; }
+    [DataMember(IsRequired = true)] public int Process { get; set; }
     [DataMember(IsRequired = true)] public int WashLocationNum { get; set; }
     [DataMember(IsRequired = false)] public Dictionary<string, string> ExtraData { get; set; }
     [DataMember(IsRequired = true)] public TimeSpan Elapsed { get; set; }
@@ -170,31 +172,31 @@ namespace BlackMaple.MachineFramework.Controllers
       };
     }
 
-    [HttpPost("serial/{serial}/material")]
-    public LogEntry SetSerial(string serial, [FromBody] LogMaterial mat)
+    [HttpPost("material-details/{materialID}/serial")]
+    public LogEntry SetSerial(long materialID, [FromBody] string serial, [FromQuery] int process = 1)
     {
-      return _server.RecordSerialForMaterialID(mat, serial);
+      return _server.RecordSerialForMaterialID(materialID, process, serial);
     }
 
-    [HttpPost("workorder/{workorder}/material")]
-    public LogEntry SetWorkorder(string workorder, [FromBody] LogMaterial mat)
+    [HttpPost("material-details/{materialID}/workorder")]
+    public LogEntry SetWorkorder(long materialID, [FromBody] string workorder, [FromQuery] int process = 1)
     {
-      return _server.RecordWorkorderForMaterialID(mat, workorder);
+      return _server.RecordWorkorderForMaterialID(materialID, process, workorder);
     }
 
-    [HttpPost("inspections/{inspType}/material")]
-    public LogEntry SetInspectionDecision(string inspType, [FromBody] LogMaterial mat, [FromQuery] bool inspect = true)
+    [HttpPost("material-details/{materialID}/inspections/{inspType}")]
+    public LogEntry SetInspectionDecision(long materialID, string inspType, [FromBody] bool inspect, [FromQuery] int process = 1)
     {
-      return _server.ForceInspection(mat, inspType, inspect);
+      return _server.ForceInspection(materialID, process, inspType, inspect);
     }
 
     [HttpPost("events/inspection-result")]
     public LogEntry RecordInspectionCompleted([FromBody] NewInspectionCompleted insp)
     {
       if (string.IsNullOrEmpty(insp.InspectionType)) throw new BadRequestException("Must give inspection type");
-      if (insp.Material == null) throw new BadRequestException("Must give material type");
       return _server.RecordInspectionCompleted(
-          insp.Material,
+          insp.MaterialID,
+          insp.Process,
           insp.InspectionLocationNum,
           insp.InspectionType,
           insp.Success,
@@ -208,7 +210,8 @@ namespace BlackMaple.MachineFramework.Controllers
     public LogEntry RecordWashCompleted([FromBody] NewWash insp)
     {
       return _server.RecordWashCompleted(
-          insp.Material,
+          insp.MaterialID,
+          insp.Process,
           insp.WashLocationNum,
           insp.ExtraData == null ? new Dictionary<string, string>() : insp.ExtraData,
           insp.Elapsed,

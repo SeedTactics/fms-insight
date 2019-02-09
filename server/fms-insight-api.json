@@ -707,7 +707,7 @@
         }
       }
     },
-    "/api/v1/log/serial/{serial}/material": {
+    "/api/v1/log/material-details/{materialID}/serial": {
       "post": {
         "tags": [
           "log"
@@ -715,20 +715,29 @@
         "operationId": "log_SetSerial",
         "parameters": [
           {
-            "type": "string",
-            "name": "serial",
+            "type": "integer",
+            "name": "materialID",
             "in": "path",
             "required": true,
+            "format": "int64",
             "x-nullable": false
           },
           {
-            "name": "mat",
+            "name": "serial",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/LogMaterial"
+              "type": "string"
             },
             "x-nullable": true
+          },
+          {
+            "type": "integer",
+            "name": "process",
+            "in": "query",
+            "format": "int32",
+            "default": 1,
+            "x-nullable": false
           }
         ],
         "responses": {
@@ -742,7 +751,7 @@
         }
       }
     },
-    "/api/v1/log/workorder/{workorder}/material": {
+    "/api/v1/log/material-details/{materialID}/workorder": {
       "post": {
         "tags": [
           "log"
@@ -750,20 +759,29 @@
         "operationId": "log_SetWorkorder",
         "parameters": [
           {
-            "type": "string",
-            "name": "workorder",
+            "type": "integer",
+            "name": "materialID",
             "in": "path",
             "required": true,
+            "format": "int64",
             "x-nullable": false
           },
           {
-            "name": "mat",
+            "name": "workorder",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/LogMaterial"
+              "type": "string"
             },
             "x-nullable": true
+          },
+          {
+            "type": "integer",
+            "name": "process",
+            "in": "query",
+            "format": "int32",
+            "default": 1,
+            "x-nullable": false
           }
         ],
         "responses": {
@@ -777,13 +795,21 @@
         }
       }
     },
-    "/api/v1/log/inspections/{inspType}/material": {
+    "/api/v1/log/material-details/{materialID}/inspections/{inspType}": {
       "post": {
         "tags": [
           "log"
         ],
         "operationId": "log_SetInspectionDecision",
         "parameters": [
+          {
+            "type": "integer",
+            "name": "materialID",
+            "in": "path",
+            "required": true,
+            "format": "int64",
+            "x-nullable": false
+          },
           {
             "type": "string",
             "name": "inspType",
@@ -792,19 +818,20 @@
             "x-nullable": false
           },
           {
-            "name": "mat",
+            "name": "inspect",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/LogMaterial"
+              "type": "boolean"
             },
-            "x-nullable": true
+            "x-nullable": false
           },
           {
-            "type": "boolean",
-            "name": "inspect",
+            "type": "integer",
+            "name": "process",
             "in": "query",
-            "default": true,
+            "format": "int32",
+            "default": 1,
             "x-nullable": false
           }
         ],
@@ -2181,7 +2208,8 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "Material",
+        "MaterialID",
+        "Process",
         "InspectionLocationNum",
         "InspectionType",
         "Success",
@@ -2189,8 +2217,13 @@
         "Active"
       ],
       "properties": {
-        "Material": {
-          "$ref": "#/definitions/LogMaterial"
+        "MaterialID": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "Process": {
+          "type": "integer",
+          "format": "int32"
         },
         "InspectionLocationNum": {
           "type": "integer",
@@ -2222,14 +2255,20 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "Material",
+        "MaterialID",
+        "Process",
         "WashLocationNum",
         "Elapsed",
         "Active"
       ],
       "properties": {
-        "Material": {
-          "$ref": "#/definitions/LogMaterial"
+        "MaterialID": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "Process": {
+          "type": "integer",
+          "format": "int32"
         },
         "WashLocationNum": {
           "type": "integer",

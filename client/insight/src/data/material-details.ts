@@ -229,18 +229,10 @@ export interface ForceInspectionData {
 }
 
 export function forceInspection({ mat, inspType, inspect }: ForceInspectionData): PledgeToPromise<Action> {
-  const logMat = new api.LogMaterial({
-    id: mat.materialID,
-    uniq: mat.jobUnique,
-    part: mat.partName,
-    proc: 1,
-    numproc: 1,
-    face: "1"
-  });
   return {
     type: ActionType.UpdateMaterial,
     newSignaledInspection: inspType,
-    pledge: LogBackend.setInspectionDecision(inspType, logMat, inspect)
+    pledge: LogBackend.setInspectionDecision(mat.materialID, inspType, inspect, 1, mat.jobUnique, mat.partName)
   };
 }
 
@@ -262,21 +254,17 @@ export function completeInspection({
     newCompletedInspection: inspType,
     pledge: LogBackend.recordInspectionCompleted(
       new api.NewInspectionCompleted({
-        material: new api.LogMaterial({
-          id: mat.materialID,
-          uniq: mat.jobUnique,
-          part: mat.partName,
-          proc: 1,
-          numproc: 1,
-          face: "1"
-        }),
+        materialID: mat.materialID,
+        process: 1,
         inspectionLocationNum: 1,
         inspectionType: inspType,
         success,
         active: "PT0S",
         elapsed: "PT0S",
         extraData: operator ? { operator } : undefined
-      })
+      }),
+      mat.jobUnique,
+      mat.partName
     )
   };
 }
@@ -291,19 +279,15 @@ export function completeWash(d: CompleteWashData): PledgeToPromise<Action> {
     type: ActionType.UpdateMaterial,
     pledge: LogBackend.recordWashCompleted(
       new api.NewWash({
-        material: new api.LogMaterial({
-          id: d.mat.materialID,
-          uniq: d.mat.jobUnique,
-          part: d.mat.partName,
-          proc: 1,
-          numproc: 1,
-          face: "1"
-        }),
+        materialID: d.mat.materialID,
+        process: 1,
         washLocationNum: 1,
         active: "PT0S",
         elapsed: "PT0S",
         extraData: d.operator ? { operator: d.operator } : undefined
-      })
+      }),
+      d.mat.jobUnique,
+      d.mat.partName
     )
   };
 }
@@ -324,17 +308,7 @@ export function assignWorkorder({ mat, workorder }: AssignWorkorderData): Pledge
   return {
     type: ActionType.UpdateMaterial,
     newWorkorder: workorder,
-    pledge: LogBackend.setWorkorder(
-      workorder,
-      new api.LogMaterial({
-        id: mat.materialID,
-        uniq: mat.jobUnique,
-        part: mat.partName,
-        proc: 1,
-        numproc: 1,
-        face: "1"
-      })
-    )
+    pledge: LogBackend.setWorkorder(mat.materialID, workorder, 1, mat.jobUnique, mat.partName)
   };
 }
 
@@ -347,17 +321,7 @@ export function assignSerial({ mat, serial }: AssignSerialData): PledgeToPromise
   return {
     type: ActionType.UpdateMaterial,
     newSerial: serial,
-    pledge: LogBackend.setSerial(
-      serial,
-      new api.LogMaterial({
-        id: mat.materialID,
-        uniq: mat.jobUnique,
-        part: mat.partName,
-        proc: 1,
-        numproc: 1,
-        face: "1"
-      })
-    )
+    pledge: LogBackend.setSerial(mat.materialID, serial, 1, mat.jobUnique, mat.partName)
   };
 }
 

@@ -36,40 +36,42 @@ using System.Collections.Generic;
 
 namespace BlackMaple.MachineWatchInterface
 {
-    public delegate void NewLogEntryDelegate(LogEntry e, string foreignId);
+  public delegate void NewLogEntryDelegate(LogEntry e, string foreignId);
 
-    public interface ILogDatabase
-    {
-        List<LogEntry> GetLogEntries(DateTime startUTC, DateTime endUTC);
-        List<LogEntry> GetLog(long lastSeenCounter);
-        List<LogEntry> GetLogForMaterial(long materialID);
-        List<LogEntry> GetLogForSerial(string serial);
-        List<LogEntry> GetLogForWorkorder(string workorder);
-        List<LogEntry> GetCompletedPartLogs(DateTime startUTC, DateTime endUTC);
-        List<WorkorderSummary> GetWorkorderSummaries(IEnumerable<string> workorderIds);
-        MaterialDetails GetMaterialDetails(long materialID);
+  public interface ILogDatabase
+  {
+    List<LogEntry> GetLogEntries(DateTime startUTC, DateTime endUTC);
+    List<LogEntry> GetLog(long lastSeenCounter);
+    List<LogEntry> GetLogForMaterial(long materialID);
+    List<LogEntry> GetLogForSerial(string serial);
+    List<LogEntry> GetLogForWorkorder(string workorder);
+    List<LogEntry> GetCompletedPartLogs(DateTime startUTC, DateTime endUTC);
+    List<WorkorderSummary> GetWorkorderSummaries(IEnumerable<string> workorderIds);
+    MaterialDetails GetMaterialDetails(long materialID);
 
-        LogEntry RecordSerialForMaterialID(LogMaterial mat, string serial);
-        LogEntry RecordWorkorderForMaterialID(LogMaterial mat, string workorder);
-        LogEntry RecordFinalizedWorkorder(string workorder);
-        LogEntry ForceInspection(LogMaterial mat, string inspType, bool inspect);
+    LogEntry RecordSerialForMaterialID(long materialID, int process, string serial);
+    LogEntry RecordWorkorderForMaterialID(long materialID, int process, string workorder);
+    LogEntry RecordFinalizedWorkorder(string workorder);
+    LogEntry ForceInspection(long materialID, int process, string inspType, bool inspect);
 
-        LogEntry RecordInspectionCompleted(
-          LogMaterial mat,
-          int inspectionLocNum,
-          string inspectionType,
-          bool success,
-          IDictionary<string, string> extraData,
-          TimeSpan elapsed,
-          TimeSpan active);
-        LogEntry RecordWashCompleted(
-          LogMaterial mat,
-          int washLocNum,
-          IDictionary<string, string> extraData,
-          TimeSpan elapsed,
-          TimeSpan active);
+    LogEntry RecordInspectionCompleted(
+      long materialID,
+      int process,
+      int inspectionLocNum,
+      string inspectionType,
+      bool success,
+      IDictionary<string, string> extraData,
+      TimeSpan elapsed,
+      TimeSpan active);
+    LogEntry RecordWashCompleted(
+      long materialID,
+      int process,
+      int washLocNum,
+      IDictionary<string, string> extraData,
+      TimeSpan elapsed,
+      TimeSpan active);
 
-        event NewLogEntryDelegate NewLogEntry;
-    }
+    event NewLogEntryDelegate NewLogEntry;
+  }
 }
 

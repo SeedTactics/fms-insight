@@ -1643,9 +1643,10 @@ namespace BlackMaple.MachineFramework
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
     }
 
-    MachineWatchInterface.LogEntry MachineWatchInterface.ILogDatabase.RecordSerialForMaterialID(MachineWatchInterface.LogMaterial mat, string serial)
+    public MachineWatchInterface.LogEntry RecordSerialForMaterialID(long materialID, int proc, string serial)
     {
-      return RecordSerialForMaterialID(EventLogMaterial.FromLogMat(mat), serial, DateTime.UtcNow);
+      var mat = new EventLogMaterial() { MaterialID = materialID, Process = proc, Face = "" };
+      return RecordSerialForMaterialID(mat, serial, DateTime.UtcNow);
     }
 
     public MachineWatchInterface.LogEntry RecordSerialForMaterialID(EventLogMaterial mat, string serial)
@@ -1676,9 +1677,10 @@ namespace BlackMaple.MachineFramework
     }
 
     // For backwards compatibility
-    MachineWatchInterface.LogEntry MachineWatchInterface.ILogDatabase.RecordWorkorderForMaterialID(MachineWatchInterface.LogMaterial mat, string workorder)
+    public MachineWatchInterface.LogEntry RecordWorkorderForMaterialID(long materialID, int proc, string workorder)
     {
-      return RecordWorkorderForMaterialID(EventLogMaterial.FromLogMat(mat), workorder, DateTime.UtcNow);
+      var mat = new EventLogMaterial() { MaterialID = materialID, Process = proc, Face = "" };
+      return RecordWorkorderForMaterialID(mat, workorder, DateTime.UtcNow);
     }
 
     public MachineWatchInterface.LogEntry RecordWorkorderForMaterialID(EventLogMaterial mat, string workorder)
@@ -1708,8 +1710,9 @@ namespace BlackMaple.MachineFramework
       });
     }
 
-    MachineWatchInterface.LogEntry MachineWatchInterface.ILogDatabase.RecordInspectionCompleted(
-        MachineWatchInterface.LogMaterial mat,
+    public MachineWatchInterface.LogEntry RecordInspectionCompleted(
+        long materialID,
+        int process,
         int inspectionLocNum,
         string inspectionType,
         bool success,
@@ -1717,7 +1720,8 @@ namespace BlackMaple.MachineFramework
         TimeSpan elapsed,
         TimeSpan active)
     {
-      return RecordInspectionCompleted(EventLogMaterial.FromLogMat(mat), inspectionLocNum, inspectionType, success, extraData, elapsed, active, DateTime.UtcNow);
+      var mat = new EventLogMaterial() { MaterialID = materialID, Process = process, Face = "" };
+      return RecordInspectionCompleted(mat, inspectionLocNum, inspectionType, success, extraData, elapsed, active, DateTime.UtcNow);
     }
 
     public MachineWatchInterface.LogEntry RecordInspectionCompleted(
@@ -1762,15 +1766,17 @@ namespace BlackMaple.MachineFramework
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, null, null));
     }
 
-    MachineWatchInterface.LogEntry MachineWatchInterface.ILogDatabase.RecordWashCompleted(
-        MachineWatchInterface.LogMaterial mat,
+    public MachineWatchInterface.LogEntry RecordWashCompleted(
+        long materialID,
+        int process,
         int washLocNum,
         IDictionary<string, string> extraData,
         TimeSpan elapsed,
         TimeSpan active
     )
     {
-      return RecordWashCompleted(EventLogMaterial.FromLogMat(mat), washLocNum, extraData, elapsed, active, DateTime.UtcNow);
+      var mat = new EventLogMaterial() { MaterialID = materialID, Process = process, Face = "" };
+      return RecordWashCompleted(mat, washLocNum, extraData, elapsed, active, DateTime.UtcNow);
     }
 
     public MachineWatchInterface.LogEntry RecordWashCompleted(
@@ -3234,10 +3240,10 @@ namespace BlackMaple.MachineFramework
       ForceInspection(mat, inspType, inspect: true, utcNow: DateTime.UtcNow);
     }
 
-    // for backwards compatibility
-    MachineWatchInterface.LogEntry MachineWatchInterface.ILogDatabase.ForceInspection(MachineWatchInterface.LogMaterial mat, string inspType, bool inspect)
+    public MachineWatchInterface.LogEntry ForceInspection(long materialID, int process, string inspType, bool inspect)
     {
-      return ForceInspection(EventLogMaterial.FromLogMat(mat), inspType, inspect, DateTime.UtcNow);
+      var mat = new EventLogMaterial() { MaterialID = materialID, Process = process, Face = "" };
+      return ForceInspection(mat, inspType, inspect, DateTime.UtcNow);
     }
 
     public MachineWatchInterface.LogEntry ForceInspection(EventLogMaterial mat, string inspType, bool inspect)

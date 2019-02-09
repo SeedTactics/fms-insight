@@ -910,14 +910,18 @@ export class LogClient {
         return Promise.resolve<FileResponse>(<any>null);
     }
 
-    setSerial(serial: string, mat: LogMaterial): Promise<LogEntry> {
-        let url_ = this.baseUrl + "/api/v1/log/serial/{serial}/material";
-        if (serial === undefined || serial === null)
-            throw new Error("The parameter 'serial' must be defined.");
-        url_ = url_.replace("{serial}", encodeURIComponent("" + serial));
+    setSerial(materialID: number, serial: string, process: number): Promise<LogEntry> {
+        let url_ = this.baseUrl + "/api/v1/log/material-details/{materialID}/serial?";
+        if (materialID === undefined || materialID === null)
+            throw new Error("The parameter 'materialID' must be defined.");
+        url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID));
+        if (process === null)
+            throw new Error("The parameter 'process' cannot be null.");
+        else if (process !== undefined)
+            url_ += "process=" + encodeURIComponent("" + process) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
-        const content_ = JSON.stringify(mat);
+        const content_ = JSON.stringify(serial);
 
         let options_ = <RequestInit>{
             body: content_,
@@ -951,14 +955,18 @@ export class LogClient {
         return Promise.resolve<LogEntry>(<any>null);
     }
 
-    setWorkorder(workorder: string, mat: LogMaterial): Promise<LogEntry> {
-        let url_ = this.baseUrl + "/api/v1/log/workorder/{workorder}/material";
-        if (workorder === undefined || workorder === null)
-            throw new Error("The parameter 'workorder' must be defined.");
-        url_ = url_.replace("{workorder}", encodeURIComponent("" + workorder));
+    setWorkorder(materialID: number, workorder: string, process: number): Promise<LogEntry> {
+        let url_ = this.baseUrl + "/api/v1/log/material-details/{materialID}/workorder?";
+        if (materialID === undefined || materialID === null)
+            throw new Error("The parameter 'materialID' must be defined.");
+        url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID));
+        if (process === null)
+            throw new Error("The parameter 'process' cannot be null.");
+        else if (process !== undefined)
+            url_ += "process=" + encodeURIComponent("" + process) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
-        const content_ = JSON.stringify(mat);
+        const content_ = JSON.stringify(workorder);
 
         let options_ = <RequestInit>{
             body: content_,
@@ -992,18 +1000,21 @@ export class LogClient {
         return Promise.resolve<LogEntry>(<any>null);
     }
 
-    setInspectionDecision(inspType: string, mat: LogMaterial, inspect: boolean): Promise<LogEntry> {
-        let url_ = this.baseUrl + "/api/v1/log/inspections/{inspType}/material?";
+    setInspectionDecision(materialID: number, inspType: string, inspect: boolean, process: number): Promise<LogEntry> {
+        let url_ = this.baseUrl + "/api/v1/log/material-details/{materialID}/inspections/{inspType}?";
+        if (materialID === undefined || materialID === null)
+            throw new Error("The parameter 'materialID' must be defined.");
+        url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID));
         if (inspType === undefined || inspType === null)
             throw new Error("The parameter 'inspType' must be defined.");
         url_ = url_.replace("{inspType}", encodeURIComponent("" + inspType));
-        if (inspect === null)
-            throw new Error("The parameter 'inspect' cannot be null.");
-        else if (inspect !== undefined)
-            url_ += "inspect=" + encodeURIComponent("" + inspect) + "&";
+        if (process === null)
+            throw new Error("The parameter 'process' cannot be null.");
+        else if (process !== undefined)
+            url_ += "process=" + encodeURIComponent("" + process) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
-        const content_ = JSON.stringify(mat);
+        const content_ = JSON.stringify(inspect);
 
         let options_ = <RequestInit>{
             body: content_,
@@ -3410,7 +3421,8 @@ export interface IWorkorderPartSummary {
 }
 
 export class NewInspectionCompleted implements INewInspectionCompleted {
-    material: LogMaterial;
+    materialID: number;
+    process: number;
     inspectionLocationNum: number;
     inspectionType: string;
     success: boolean;
@@ -3425,14 +3437,12 @@ export class NewInspectionCompleted implements INewInspectionCompleted {
                     (<any>this)[property] = (<any>data)[property];
             }
         }
-        if (!data) {
-            this.material = new LogMaterial();
-        }
     }
 
     init(data?: any) {
         if (data) {
-            this.material = data["Material"] ? LogMaterial.fromJS(data["Material"]) : new LogMaterial();
+            this.materialID = data["MaterialID"];
+            this.process = data["Process"];
             this.inspectionLocationNum = data["InspectionLocationNum"];
             this.inspectionType = data["InspectionType"];
             this.success = data["Success"];
@@ -3457,7 +3467,8 @@ export class NewInspectionCompleted implements INewInspectionCompleted {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["Material"] = this.material ? this.material.toJSON() : <any>undefined;
+        data["MaterialID"] = this.materialID;
+        data["Process"] = this.process;
         data["InspectionLocationNum"] = this.inspectionLocationNum;
         data["InspectionType"] = this.inspectionType;
         data["Success"] = this.success;
@@ -3475,7 +3486,8 @@ export class NewInspectionCompleted implements INewInspectionCompleted {
 }
 
 export interface INewInspectionCompleted {
-    material: LogMaterial;
+    materialID: number;
+    process: number;
     inspectionLocationNum: number;
     inspectionType: string;
     success: boolean;
@@ -3485,7 +3497,8 @@ export interface INewInspectionCompleted {
 }
 
 export class NewWash implements INewWash {
-    material: LogMaterial;
+    materialID: number;
+    process: number;
     washLocationNum: number;
     extraData?: { [key: string] : string; };
     elapsed: string;
@@ -3498,14 +3511,12 @@ export class NewWash implements INewWash {
                     (<any>this)[property] = (<any>data)[property];
             }
         }
-        if (!data) {
-            this.material = new LogMaterial();
-        }
     }
 
     init(data?: any) {
         if (data) {
-            this.material = data["Material"] ? LogMaterial.fromJS(data["Material"]) : new LogMaterial();
+            this.materialID = data["MaterialID"];
+            this.process = data["Process"];
             this.washLocationNum = data["WashLocationNum"];
             if (data["ExtraData"]) {
                 this.extraData = {};
@@ -3528,7 +3539,8 @@ export class NewWash implements INewWash {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["Material"] = this.material ? this.material.toJSON() : <any>undefined;
+        data["MaterialID"] = this.materialID;
+        data["Process"] = this.process;
         data["WashLocationNum"] = this.washLocationNum;
         if (this.extraData) {
             data["ExtraData"] = {};
@@ -3544,7 +3556,8 @@ export class NewWash implements INewWash {
 }
 
 export interface INewWash {
-    material: LogMaterial;
+    materialID: number;
+    process: number;
     washLocationNum: number;
     extraData?: { [key: string] : string; };
     elapsed: string;
