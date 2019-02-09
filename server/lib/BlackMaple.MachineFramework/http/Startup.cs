@@ -120,7 +120,11 @@ namespace BlackMaple.MachineFramework
         .AddJwtBearer(options =>
         {
           options.Authority = _serverSt.OpenIDConnectAuthority;
-          options.Audience = _serverSt.OpenIDConnectAudience;
+          options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
+          {
+            ValidateIssuer = true,
+            ValidAudiences = _serverSt.AuthTokenAudiences.Split(';')
+          };
 #if DEBUG
           options.RequireHttpsMetadata = false;
 #endif

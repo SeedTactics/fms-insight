@@ -70,11 +70,11 @@ namespace BlackMaple.MachineFramework
     public string TLSCertFile { get; set; } = null;
     public bool EnableSailAPI { get; set; } = false;
     public string OpenIDConnectAuthority { get; set; } = null;
-    public string OpenIDConnectAudience { get; set; } = null;
     public string OpenIDConnectClientId { get; set; } = null;
+    public string AuthTokenAudiences { get; set; } = null;
 
     public bool UseAuthentication =>
-         !string.IsNullOrEmpty(OpenIDConnectAudience)
+         !string.IsNullOrEmpty(AuthTokenAudiences)
       && !string.IsNullOrEmpty(OpenIDConnectAuthority)
       && !string.IsNullOrEmpty(OpenIDConnectClientId);
 
