@@ -42,7 +42,7 @@ import * as inspection from "./events.inspection";
 import { fakeCycle } from "./events.fake";
 import { ILogEntry } from "./api";
 import { LazySeq } from "./lazyseq";
-import { buildPointsTable } from "./clipboard-table";
+import { buildPointsTable, buildCycleTable } from "./clipboard-table";
 
 it("creates initial state", () => {
   // tslint:disable no-any
@@ -335,7 +335,7 @@ it("computes station oee", () => {
   expect(statMins).toMatchSnapshot("station minutes for last week");
 });
 
-it("creates clipboard table", () => {
+it("creates points clipboard table", () => {
   // table formats columns in local time, so no need to convert to a specific timezone
   const now = new Date(2018, 2, 5); // midnight in local time
 
@@ -366,6 +366,29 @@ it("creates clipboard table", () => {
   const table = document.createElement("div");
   table.innerHTML = buildPointsTable("Station", points);
   expect(table).toMatchSnapshot("clipboard table");
+});
+
+it("creates cycles clipboard table", () => {
+  const now = new Date(2018, 2, 5); // midnight in local time
+
+  const evts = ([] as ILogEntry[]).concat(
+    fakeCycle(now, 30),
+    fakeCycle(addHours(now, -3), 20),
+    fakeCycle(addHours(now, -15), 15)
+  );
+  const st = events.reducer(events.initial, {
+    type: events.ActionType.LoadRecentLogEntries,
+    now: addDays(now, 1),
+    pledge: {
+      status: PledgeStatus.Completed,
+      result: evts
+    }
+  });
+  const data = stationCycles.filterStationCycles(st.last30.cycles.part_cycles, undefined, undefined, undefined);
+
+  const table = document.createElement("div");
+  table.innerHTML = buildCycleTable(data);
+  expect(table).toMatchSnapshot("cycle clipboard table");
 });
 
 /*

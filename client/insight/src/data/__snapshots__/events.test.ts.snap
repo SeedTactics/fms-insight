@@ -54,7 +54,304 @@ Map {
 }
 `;
 
-exports[`creates clipboard table: clipboard table 1`] = `
+exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
+<div>
+  <table>
+    
+
+    <thead>
+      <tr>
+        <th>
+          Date
+        </th>
+        <th>
+          Part
+        </th>
+        <th>
+          Station
+        </th>
+        <th>
+          Pallet
+        </th>
+        <th>
+          Serial
+        </th>
+        <th>
+          Workorder
+        </th>
+        <td>
+          Elapsed Min
+        </td>
+        <td>
+          Active Min
+        </td>
+      </tr>
+    </thead>
+    
+
+    <tbody>
+      
+
+      <tr>
+        <td>
+          Mar 5, 2018, 0:38 am
+        </td>
+        <td>
+          partp-1
+        </td>
+        <td>
+          MC #1
+        </td>
+        <td>
+          palj
+        </td>
+        <td>
+          serialc
+        </td>
+        <td>
+          workh
+        </td>
+        <td>
+          30.0
+        </td>
+        <td>
+          30.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 21:28 pm
+        </td>
+        <td>
+          parte-4
+        </td>
+        <td>
+          MC #1
+        </td>
+        <td>
+          pal9
+        </td>
+        <td>
+          serial6
+        </td>
+        <td>
+          worki
+        </td>
+        <td>
+          20.0
+        </td>
+        <td>
+          20.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 9:23 am
+        </td>
+        <td>
+          partw-0
+        </td>
+        <td>
+          MC #1
+        </td>
+        <td>
+          pal8
+        </td>
+        <td>
+          serialm
+        </td>
+        <td>
+          worki
+        </td>
+        <td>
+          15.0
+        </td>
+        <td>
+          15.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 5, 2018, 0:05 am
+        </td>
+        <td>
+          partp-1
+        </td>
+        <td>
+          L/U #1
+        </td>
+        <td>
+          palj
+        </td>
+        <td>
+          serialc
+        </td>
+        <td>
+          workh
+        </td>
+        <td>
+          6.0
+        </td>
+        <td>
+          6.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 21:05 pm
+        </td>
+        <td>
+          parte-4
+        </td>
+        <td>
+          L/U #1
+        </td>
+        <td>
+          pal9
+        </td>
+        <td>
+          serial6
+        </td>
+        <td>
+          worki
+        </td>
+        <td>
+          6.0
+        </td>
+        <td>
+          6.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 9:05 am
+        </td>
+        <td>
+          partw-0
+        </td>
+        <td>
+          L/U #1
+        </td>
+        <td>
+          pal8
+        </td>
+        <td>
+          serialm
+        </td>
+        <td>
+          worki
+        </td>
+        <td>
+          6.0
+        </td>
+        <td>
+          6.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 5, 2018, 0:48 am
+        </td>
+        <td>
+          partp-1
+        </td>
+        <td>
+          L/U #2
+        </td>
+        <td>
+          palj
+        </td>
+        <td>
+          serialc
+        </td>
+        <td>
+          workh
+        </td>
+        <td>
+          3.0
+        </td>
+        <td>
+          3.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 21:38 pm
+        </td>
+        <td>
+          parte-4
+        </td>
+        <td>
+          L/U #2
+        </td>
+        <td>
+          pal9
+        </td>
+        <td>
+          serial6
+        </td>
+        <td>
+          worki
+        </td>
+        <td>
+          3.0
+        </td>
+        <td>
+          3.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 9:33 am
+        </td>
+        <td>
+          partw-0
+        </td>
+        <td>
+          L/U #2
+        </td>
+        <td>
+          pal8
+        </td>
+        <td>
+          serialm
+        </td>
+        <td>
+          worki
+        </td>
+        <td>
+          3.0
+        </td>
+        <td>
+          3.0
+        </td>
+      </tr>
+      
+
+    </tbody>
+    
+
+  </table>
+</div>
+`;
+
+exports[`creates points clipboard table: clipboard table 1`] = `
 <div>
   <table>
     
