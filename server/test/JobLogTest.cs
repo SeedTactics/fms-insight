@@ -289,7 +289,7 @@ namespace MachineWatchTest
           DateTime.Parse("4/6/2011"), "Pallll", LogType.MachineCycle, "MC", 3));
 
       CheckLog(logsForMat1, _jobLog.GetLogForMaterial(1), start);
-      Assert.Equal(_jobLog.GetLogForMaterial(18).Count, 0);
+      _jobLog.GetLogForMaterial(18).Should().BeEmpty();
 
       var markLog = _jobLog.RecordSerialForMaterialID(JobLogDB.EventLogMaterial.FromLogMat(mat1), "ser1");
       logsForMat1.Add(new LogEntry(-1, new LogMaterial[] { mat1 }, "",
@@ -299,7 +299,7 @@ namespace MachineWatchTest
       logs = logs.Select(TransformLog(mat1.MaterialID, SetSerialInMat("ser1"))).ToList();
       mat1 = SetSerialInMat("ser1")(mat1);
       CheckLog(logsForMat1, _jobLog.GetLogForSerial("ser1"), start);
-      Assert.Equal(_jobLog.GetLogForSerial("ser2").Count, 0);
+      _jobLog.GetLogForSerial("ser2").Should().BeEmpty();
 
       var orderLog = _jobLog.RecordWorkorderForMaterialID(JobLogDB.EventLogMaterial.FromLogMat(mat1), "work1");
       logsForMat1.Add(new LogEntry(-1, new LogMaterial[] { mat1 }, "",
@@ -309,10 +309,10 @@ namespace MachineWatchTest
       logs = logs.Select(TransformLog(mat1.MaterialID, SetWorkorderInMat("work1"))).ToList();
       mat1 = SetWorkorderInMat("work1")(mat1);
       CheckLog(logsForMat1, _jobLog.GetLogForWorkorder("work1"), start);
-      Assert.Equal(_jobLog.GetLogForWorkorder("work2").Count, 0);
+      _jobLog.GetLogForWorkorder("work2").Should().BeEmpty();
 
       CheckLog(logsForMat1, _jobLog.GetLogForJobUnique(mat1.JobUniqueStr), start);
-      Assert.Equal(_jobLog.GetLogForJobUnique("sofusadouf").Count, 0);
+      _jobLog.GetLogForJobUnique("sofusadouf").Should().BeEmpty();
 
       //inspection, wash, and general
       var inspCompLog = _jobLog.RecordInspectionCompleted(
@@ -347,8 +347,8 @@ namespace MachineWatchTest
     [Fact]
     public void LookupByPallet()
     {
-      Assert.Equal(0, _jobLog.CurrentPalletLog("pal1").Count);
-      Assert.Equal(0, _jobLog.CurrentPalletLog("pal2").Count);
+      _jobLog.CurrentPalletLog("pal1").Should().BeEmpty();
+      _jobLog.CurrentPalletLog("pal2").Should().BeEmpty();
       Assert.Equal(DateTime.MinValue, _jobLog.LastPalletCycleTime("pal1"));
 
       var pal1Initial = new List<LogEntry>();
@@ -395,10 +395,10 @@ namespace MachineWatchTest
           true)); //end of route
                   // ***********  End of Route for pal1
 
-      AddLog(pal1Initial);
+      AddToDB(pal1Initial);
 
       CheckLog(pal1Initial, _jobLog.CurrentPalletLog("pal1"), DateTime.UtcNow.AddHours(-10));
-      Assert.Equal(0, _jobLog.CurrentPalletLog("pal2").Count);
+      _jobLog.CurrentPalletLog("pal2").Should().BeEmpty();
 
       _jobLog.CompletePalletCycle("pal1", pal1InitialTime.AddMinutes(25), "");
 
@@ -407,8 +407,8 @@ namespace MachineWatchTest
 
       Assert.Equal(pal1InitialTime.AddMinutes(25), _jobLog.LastPalletCycleTime("pal1"));
       CheckLog(pal1Initial, _jobLog.GetLogEntries(DateTime.UtcNow.AddHours(-10), DateTime.UtcNow), DateTime.UtcNow.AddHours(-50));
-      Assert.Equal(0, _jobLog.CurrentPalletLog("pal1").Count);
-      Assert.Equal(0, _jobLog.CurrentPalletLog("pal2").Count);
+      _jobLog.CurrentPalletLog("pal1").Should().BeEmpty();
+      _jobLog.CurrentPalletLog("pal2").Should().BeEmpty();
 
       DateTime pal2CycleTime = DateTime.UtcNow.AddHours(-3);
 
@@ -428,9 +428,9 @@ namespace MachineWatchTest
           "result",
           false)); //end of route
 
-      AddLog(pal2Cycle);
+      AddToDB(pal2Cycle);
 
-      Assert.Equal(0, _jobLog.CurrentPalletLog("pal1").Count);
+      _jobLog.CurrentPalletLog("pal1").Should().BeEmpty();
       CheckLog(pal2Cycle, _jobLog.CurrentPalletLog("pal2"), DateTime.UtcNow.AddHours(-10));
 
       DateTime pal1CycleTime = DateTime.UtcNow.AddHours(-2);
@@ -460,7 +460,7 @@ namespace MachineWatchTest
           "result",
           false)); //end of route
 
-      AddLog(pal1Cycle);
+      AddToDB(pal1Cycle);
 
       CheckLog(pal1Cycle, _jobLog.CurrentPalletLog("pal1"), DateTime.UtcNow.AddHours(-10));
       CheckLog(pal2Cycle, _jobLog.CurrentPalletLog("pal2"), DateTime.UtcNow.AddHours(-10));
@@ -487,7 +487,7 @@ namespace MachineWatchTest
           "", false, pal1CycleTime.AddMinutes(40), "PalletCycle", false, elapsed, TimeSpan.Zero));
 
       Assert.Equal(pal1CycleTime.AddMinutes(40), _jobLog.LastPalletCycleTime("pal1"));
-      Assert.Equal(0, _jobLog.CurrentPalletLog("pal1").Count);
+      _jobLog.CurrentPalletLog("pal1").Should().BeEmpty();
       CheckLog(pal1Cycle, _jobLog.GetLogEntries(pal1CycleTime.AddMinutes(-5), DateTime.UtcNow), DateTime.UtcNow.AddHours(-50));
 
       CheckLog(pal2Cycle, _jobLog.CurrentPalletLog("pal2"), DateTime.UtcNow.AddHours(-10));
@@ -526,22 +526,22 @@ namespace MachineWatchTest
       Assert.Equal("for4", _jobLog.MaxForeignID()); // for4 should be copied
 
       var load1 = _jobLog.StationLogByForeignID("for1");
-      Assert.Equal(1, load1.Count);
+      load1.Count.Should().Be(1);
       CheckEqual(log1, load1[0]);
 
       var load2 = _jobLog.StationLogByForeignID("for2");
-      Assert.Equal(1, load2.Count);
+      load2.Count.Should().Be(1);
       CheckEqual(log2, load2[0]);
 
       var load3 = _jobLog.StationLogByForeignID("for3");
-      Assert.Equal(1, load3.Count);
+      load3.Count.Should().Be(1);
       Assert.Equal(LogType.PalletCycle, load3[0].LogType);
 
       var load4 = _jobLog.StationLogByForeignID("for4");
-      Assert.Equal(1, load4.Count);
+      load4.Count.Should().Be(1);
       Assert.Equal(LogType.LoadUnloadCycle, load4[0].LogType);
 
-      Assert.Equal(0, _jobLog.StationLogByForeignID("abwgtweg").Count);
+      _jobLog.StationLogByForeignID("abwgtweg").Should().BeEmpty();
 
       Assert.Equal("for1", _jobLog.ForeignIDForCounter(load1[0].Counter));
       Assert.Equal("for2", _jobLog.ForeignIDForCounter(load2[0].Counter));
@@ -565,7 +565,7 @@ namespace MachineWatchTest
       Assert.Equal("foreign1", _jobLog.MaxForeignID());
 
       var load1 = _jobLog.StationLogByForeignID("foreign1");
-      Assert.Equal(1, load1.Count);
+      load1.Count.Should().Be(1);
       CheckEqual(log1, load1[0]);
 
       Assert.Equal("the original message", _jobLog.OriginalMessageByForeignID("foreign1"));
@@ -575,7 +575,7 @@ namespace MachineWatchTest
     [Fact]
     public void PendingLoadOneSerialPerMat()
     {
-      Assert.Equal(0, _jobLog.PendingLoads("pal1").Count);
+      _jobLog.PendingLoads("pal1").Should().BeEmpty();
       _jobLog.AllPendingLoads().Should().BeEmpty();
 
       var mat1 = new LogMaterial(
@@ -687,7 +687,7 @@ namespace MachineWatchTest
       CheckEqual(nLoad2, _jobLog.StationLogByForeignID("for2")[0]);
       CheckEqual(palCycle, _jobLog.StationLogByForeignID("for3")[0]);
 
-      Assert.Equal(0, _jobLog.PendingLoads("pal1").Count);
+      _jobLog.PendingLoads("pal1").Should().BeEmpty();
     }
 
     [Fact]
@@ -767,7 +767,7 @@ namespace MachineWatchTest
       CheckEqual(nLoad2, _jobLog.StationLogByForeignID("for2")[0]);
       CheckEqual(palCycle, _jobLog.StationLogByForeignID("for3")[0]);
 
-      Assert.Equal(0, _jobLog.PendingLoads("pal1").Count);
+      _jobLog.PendingLoads("pal1").Should().BeEmpty();
     }
 
     [Fact]
@@ -882,7 +882,7 @@ namespace MachineWatchTest
       Assert.Equal("work2", summary[1].WorkorderId);
       Assert.False(summary[1].FinalizedTimeUTC.HasValue);
       Assert.Equal(new[] { "serial5", "serial6" }, summary[1].Serials);
-      Assert.Equal(1, summary[1].Parts.Count);
+      summary[1].Parts.Count.Should().Be(1);
       var work2Part2 = summary[1].Parts[0];
       Assert.Equal("part3", work2Part2.Part); //part3 is mat5 and 6
       Assert.Equal(2, work2Part2.PartsCompleted); //part3 is mat5 and 6
@@ -1271,7 +1271,7 @@ namespace MachineWatchTest
       return l;
     }
 
-    private System.DateTime AddLog(IList<LogEntry> logs)
+    private System.DateTime AddToDB(IList<LogEntry> logs)
     {
       System.DateTime last = default(System.DateTime);
 

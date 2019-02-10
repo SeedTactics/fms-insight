@@ -239,7 +239,7 @@ namespace MachineWatchTest
       _jobDB.Close();
     }
 
-    public void ShouldMatchSnapshot<T>(T val, string snapshot)
+    private void ShouldMatchSnapshot<T>(T val, string snapshot)
     {
       /*
       File.WriteAllText(

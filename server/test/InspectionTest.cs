@@ -389,7 +389,7 @@ namespace MachineWatchTest
           if (d.Forced) forcedCnt += 1; else decisionCnt += 1;
         }
       }
-      Assert.Equal(decisionCnt, 1);
+      Assert.Equal(1, decisionCnt);
       Assert.Equal(forcedCnt, forced ? 1 : 0);
 
       var log = _insp.GetLogForMaterial(matID);
