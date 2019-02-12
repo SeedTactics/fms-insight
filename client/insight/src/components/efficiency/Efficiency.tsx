@@ -46,6 +46,7 @@ import CardContent from "@material-ui/core/CardContent";
 import Tooltip from "@material-ui/core/Tooltip";
 import IconButton from "@material-ui/core/IconButton";
 import ImportExport from "@material-ui/icons/ImportExport";
+import SearchIcon from "@material-ui/icons/Search";
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
 import AnalysisSelectToolbar from "../AnalysisSelectToolbar";
@@ -60,6 +61,7 @@ import { PartCycleData, filterStationCycles, FilteredStationCycles } from "../..
 import { MaterialDialog, PartIdenticon } from "../station-monitor/Material";
 import { LazySeq } from "../../data/lazyseq";
 import { copyCyclesToClipboard } from "../../data/clipboard-table";
+import ManualScan from "../station-monitor/ManualScan";
 
 // --------------------------------------------------------------------------------
 // Station Cycles
@@ -84,6 +86,7 @@ interface PartStationCycleChartProps {
   readonly selectedPallet?: string;
   readonly selectedStation?: string;
   readonly setSelected: DispatchAction<guiState.ActionType.SetSelectedStationCycle>;
+  readonly openManualSerialEntry: () => void;
   readonly openMaterial: (matId: number) => void;
 }
 
@@ -136,6 +139,14 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
             ) : (
               undefined
             )}
+            <Tooltip title="Enter Serial">
+              <IconButton
+                onClick={props.openManualSerialEntry}
+                style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+              >
+                <SearchIcon />
+              </IconButton>
+            </Tooltip>
             <Select
               name="Station-Cycles-cycle-chart-select"
               autoWidth
@@ -275,6 +286,10 @@ const ConnectedPartStationCycleChart = connect(
   }),
   {
     setSelected: mkAC(guiState.ActionType.SetSelectedStationCycle),
+    openManualSerialEntry: () => ({
+      type: guiState.ActionType.SetManualSerialEntryDialog,
+      open: true
+    }),
     openMaterial: matDetails.openMaterialById
   }
 )(PartStationCycleChart);
@@ -607,6 +622,7 @@ export default function Efficiency() {
             <InspectionSankey />
           </div>
           <ConnectedMaterialDialog />
+          <ManualScan />
         </main>
       </>
     </DocumentTitle>
