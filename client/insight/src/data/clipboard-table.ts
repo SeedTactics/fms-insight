@@ -35,6 +35,8 @@ import { LazySeq } from "./lazyseq";
 import { fieldsHashCode } from "prelude-ts";
 import { FilteredStationCycles, stat_name_and_num } from "./events.cycles";
 import { format } from "date-fns";
+import * as api from "../data/api";
+import { duration } from "moment";
 const copy = require("copy-to-clipboard");
 
 export interface ClipboardTablePoint {
@@ -96,7 +98,7 @@ export function copyPointsToClipboard(yTitle: string, points: ReadonlyArray<Clip
 export function buildCycleTable(cycles: FilteredStationCycles): string {
   let table = "<table>\n<thead><tr>";
   table += "<th>Date</th><th>Part</th><th>Station</th><th>Pallet</th>";
-  table += "<th>Serial</th><th>Workorder</th><td>Elapsed Min</td><td>Active Min</td>";
+  table += "<th>Serial</th><th>Workorder</th><th>Elapsed Min</th><th>Active Min</th>";
   table += "</tr></thead>\n<tbody>\n";
   for (let cycle of LazySeq.ofIterable(cycles.data).flatMap(([_, c]) => c)) {
     table += "<tr>";
@@ -116,4 +118,97 @@ export function buildCycleTable(cycles: FilteredStationCycles): string {
 
 export function copyCyclesToClipboard(cycles: FilteredStationCycles): void {
   copy(buildCycleTable(cycles));
+}
+
+function stat_name(e: Readonly<api.ILogEntry>): string {
+  switch (e.type) {
+    case api.LogType.LoadUnloadCycle:
+    case api.LogType.MachineCycle:
+      return e.loc + " #" + e.locnum.toString();
+    case api.LogType.AddToQueue:
+    case api.LogType.RemoveFromQueue:
+      return e.loc;
+    case api.LogType.PartMark:
+      return "Mark";
+    case api.LogType.OrderAssignment:
+      return "Workorder";
+    case api.LogType.Wash:
+      return "Wash";
+    case api.LogType.Inspection:
+      const inspName = (e.details || {}).InspectionType || "";
+      return "Signal " + inspName;
+    case api.LogType.InspectionForce:
+      return "Signal " + e.program;
+    case api.LogType.InspectionResult:
+      return "Inspect " + e.program;
+    default:
+      return e.loc;
+  }
+}
+
+function result(e: Readonly<api.ILogEntry>): string {
+  switch (e.type) {
+    case api.LogType.Inspection:
+    case api.LogType.InspectionForce:
+    case api.LogType.LoadUnloadCycle:
+    case api.LogType.PartMark:
+    case api.LogType.OrderAssignment:
+      return e.result;
+    case api.LogType.AddToQueue:
+      return "Add";
+    case api.LogType.RemoveFromQueue:
+      return "Remove";
+    case api.LogType.MachineCycle:
+      return e.program;
+    case api.LogType.InspectionResult:
+      if (e.result.toLowerCase() === "false") {
+        return "Failed";
+      } else {
+        return "Succeeded";
+      }
+    default:
+      return "";
+  }
+}
+
+export function buildLogEntriesTable(cycles: Iterable<Readonly<api.ILogEntry>>): string {
+  let table = "<table>\n<thead><tr>";
+  table += "<th>Date</th><th>Part</th><th>Station</th><th>Pallet</th>";
+  table += "<th>Serial</th><th>Workorder</th><th>Result</th><th>Elapsed Min</th><th>Active Min</th>";
+  table += "</tr></thead>\n<tbody>\n";
+  for (let cycle of cycles) {
+    if (cycle.startofcycle) {
+      continue;
+    }
+    for (let mat of cycle.material) {
+      table += "<tr>";
+      table += "<td>" + format(cycle.endUTC, "MMM D, YYYY, H:mm a") + "</td>";
+      table += "<td>" + mat.part + "-" + mat.proc.toString() + "</td>";
+      table += "<td>" + stat_name(cycle) + "</td>";
+      table += "<td>" + cycle.pal + "</td>";
+      table += "<td>" + (mat.serial || "") + "</td>";
+      table += "<td>" + (mat.workorder || "") + "</td>";
+      table += "<td>" + result(cycle) + "</td>";
+      table +=
+        "<td>" +
+        duration(cycle.elapsed)
+          .asMinutes()
+          .toFixed(1) +
+        "</td>";
+      table +=
+        "<td>" +
+        duration(cycle.active)
+          .asMinutes()
+          .toFixed(1) +
+        "</td>";
+      table += "</tr>\n";
+    }
+  }
+
+  table += "</tbody>\n</table>";
+  return table;
+}
+
+export function copyLogEntriesToClipboard(cycles: Iterable<Readonly<api.ILogEntry>>): void {
+  copy(buildLogEntriesTable(cycles));
 }

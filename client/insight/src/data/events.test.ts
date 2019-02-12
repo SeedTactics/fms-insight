@@ -42,7 +42,7 @@ import * as inspection from "./events.inspection";
 import { fakeCycle } from "./events.fake";
 import { ILogEntry } from "./api";
 import { LazySeq } from "./lazyseq";
-import { buildPointsTable, buildCycleTable } from "./clipboard-table";
+import { buildPointsTable, buildCycleTable, buildLogEntriesTable } from "./clipboard-table";
 
 it("creates initial state", () => {
   // tslint:disable no-any
@@ -389,6 +389,19 @@ it("creates cycles clipboard table", () => {
   const table = document.createElement("div");
   table.innerHTML = buildCycleTable(data);
   expect(table).toMatchSnapshot("cycle clipboard table");
+});
+
+it("creates log entries clipboard table", () => {
+  const now = new Date(2018, 2, 5); // midnight in local time
+
+  const evts = ([] as ILogEntry[]).concat(
+    fakeCycle(now, 30),
+    fakeCycle(addHours(now, -3), 20),
+    fakeCycle(addHours(now, -15), 15)
+  );
+  const table = document.createElement("div");
+  table.innerHTML = buildLogEntriesTable(evts);
+  expect(table).toMatchSnapshot("events clipboard table");
 });
 
 /*

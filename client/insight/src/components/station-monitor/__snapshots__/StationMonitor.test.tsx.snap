@@ -1497,6 +1497,40 @@ exports[`renders the load station page: NBTGI dialog 1`] = `
                 scope="col"
               >
                 Details
+                <div
+                  style="float: right;"
+                >
+                  <button
+                    class="MuiButtonBase-root-69 MuiIconButton-root-63"
+                    style="height: 25px; padding-top: 0px; padding-bottom: 0px;"
+                    tabindex="0"
+                    title="Copy to Clipboard"
+                    type="button"
+                  >
+                    <span
+                      class="MuiIconButton-label-68"
+                    >
+                      <svg
+                        aria-hidden="true"
+                        class="MuiSvgIcon-root-38"
+                        focusable="false"
+                        role="presentation"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M9 3L5 6.99h3V14h2V6.99h3L9 3zm7 14.01V10h-2v7.01h-3L15 21l4-3.99h-3z"
+                        />
+                        <path
+                          d="M0 0h24v24H0z"
+                          fill="none"
+                        />
+                      </svg>
+                    </span>
+                    <span
+                      class="MuiTouchRipple-root-72"
+                    />
+                  </button>
+                </div>
               </th>
             </tr>
           </thead>
@@ -3376,6 +3410,40 @@ exports[`renders the queues page: MZQGQ dialog 1`] = `
                 scope="col"
               >
                 Details
+                <div
+                  style="float: right;"
+                >
+                  <button
+                    class="MuiButtonBase-root-1023 MuiIconButton-root-1017"
+                    style="height: 25px; padding-top: 0px; padding-bottom: 0px;"
+                    tabindex="0"
+                    title="Copy to Clipboard"
+                    type="button"
+                  >
+                    <span
+                      class="MuiIconButton-label-1022"
+                    >
+                      <svg
+                        aria-hidden="true"
+                        class="MuiSvgIcon-root-992"
+                        focusable="false"
+                        role="presentation"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M9 3L5 6.99h3V14h2V6.99h3L9 3zm7 14.01V10h-2v7.01h-3L15 21l4-3.99h-3z"
+                        />
+                        <path
+                          d="M0 0h24v24H0z"
+                          fill="none"
+                        />
+                      </svg>
+                    </span>
+                    <span
+                      class="MuiTouchRipple-root-1026"
+                    />
+                  </button>
+                </div>
               </th>
             </tr>
           </thead>

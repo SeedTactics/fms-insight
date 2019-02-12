@@ -326,7 +326,7 @@ export class MaterialDetailContent extends React.PureComponent<MaterialDetailPro
         {mat.loading_events ? (
           <CircularProgress data-testid="material-events-loading" color="secondary" />
         ) : (
-          <LogEntries entries={mat.events} />
+          <LogEntries entries={mat.events} copyToClipboard />
         )}
       </>
     );

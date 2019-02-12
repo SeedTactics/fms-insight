@@ -39,6 +39,10 @@ import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 import DateTimeDisplay from "./DateTimeDisplay";
 import { LazySeq } from "../data/lazyseq";
+import Tooltip from "@material-ui/core/Tooltip";
+import IconButton from "@material-ui/core/IconButton";
+import ImportExport from "@material-ui/icons/ImportExport";
+import { copyLogEntriesToClipboard } from "../data/clipboard-table";
 
 export interface LogEntryProps {
   entry: api.ILogEntry;
@@ -199,6 +203,7 @@ export class LogEntry extends React.PureComponent<LogEntryProps> {
 
 export interface LogEntriesProps {
   entries: Iterable<Readonly<api.ILogEntry>>;
+  copyToClipboard?: boolean;
 }
 
 export class LogEntries extends React.PureComponent<LogEntriesProps> {
@@ -210,7 +215,23 @@ export class LogEntries extends React.PureComponent<LogEntriesProps> {
             <TableCell>Date</TableCell>
             <TableCell>Time</TableCell>
             <TableCell>Type</TableCell>
-            <TableCell>Details</TableCell>
+            <TableCell>
+              Details
+              {this.props.copyToClipboard ? (
+                <div style={{ float: "right" }}>
+                  <Tooltip title="Copy to Clipboard">
+                    <IconButton
+                      onClick={() => copyLogEntriesToClipboard(this.props.entries)}
+                      style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+                    >
+                      <ImportExport />
+                    </IconButton>
+                  </Tooltip>
+                </div>
+              ) : (
+                undefined
+              )}
+            </TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
