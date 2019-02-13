@@ -8,14 +8,28 @@
   "main": "main.js",
   "scripts": {
     "build": "tsc --build && parcel build --target=electron --public-url ./dist/ --bundle-node-modules src/renderer.ts",
-    "start": "yarn run build && electron ."
+    "start": "yarn run build && electron .",
+    "postinstall": "electron-builder install-app-deps",
+    "dist": "electron-builder"
   },
-  "dependencies": {
-    "electron": "^4.0.4"
+  "build": {
+    "appId": "com.seedtactics.fms-insight.backup-viewer",
+    "directories": {
+      "output": "package"
+    },
+    "files": [
+      "package.json",
+      "main.js",
+      "index.html",
+      "dist/*"
+    ]
   },
+  "dependencies": {},
   "devDependencies": {
     "tslint": "^5.12.1",
     "typescript": "^3.3.3",
-    "parcel": "^1.11.0"
+    "parcel": "^1.11.0",
+    "electron": "4.0.4",
+    "electron-builder": "^20.38.5"
   }
 }
