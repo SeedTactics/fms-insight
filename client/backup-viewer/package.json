@@ -7,18 +7,13 @@
   "license": "BSD-3-Clause",
   "main": "main.js",
   "scripts": {
-    "build": "tsc --build && parcel build --target=electron --bundle-node-modules src/renderer.tsx",
+    "build": "tsc --build && parcel build --target=electron --public-url ./dist/ --bundle-node-modules src/renderer.ts",
     "start": "yarn run build && electron ."
   },
   "dependencies": {
-    "@material-ui/core": "^3.9.2",
-    "electron": "^4.0.4",
-    "react": "^16.8.0",
-    "react-dom": "^16.8.0"
+    "electron": "^4.0.4"
   },
   "devDependencies": {
-    "@types/react": "^16.8.2",
-    "@types/react-dom": "^16.8.0",
     "tslint": "^5.12.1",
     "typescript": "^3.3.3",
     "parcel": "^1.11.0"
