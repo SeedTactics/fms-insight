@@ -400,3 +400,19 @@ export function registerMockBackend() {
   });
   initMockBackend(mockDataPromise);
 }
+
+export function registerBackupViewerBackend(log: LogAPI, job: JobAPI) {
+  LogBackend = log;
+  JobsBackend = job;
+  ServerBackend = {
+    fMSInformation() {
+      return Promise.resolve({
+        name: "Backup Viewer",
+        version: "1.0.0",
+        requireScanAtWash: false,
+        requireWorkorderBeforeAllowWashComplete: false,
+        additionalLogServers: []
+      });
+    }
+  };
+}

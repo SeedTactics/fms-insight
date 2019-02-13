@@ -60,9 +60,14 @@ jest.mock("./data-export/DataExport", () => ({
 
 import App from "./App";
 import { PledgeStatus } from "../store/middleware";
+import { registerMockBackend } from "../data/backend";
+import * as events from "../data/events";
 
 it("renders the app shell", async () => {
-  const store = initStore(true);
+  const store = initStore({ useRouter: false });
+  registerMockBackend();
+  store.dispatch(events.loadLast30Days());
+  store.dispatch(serverSettings.loadServerSettings());
   store.dispatch({
     type: serverSettings.ActionType.Load,
     pledge: {

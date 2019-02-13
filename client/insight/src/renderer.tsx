@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2019, John Lenz
 
 All rights reserved.
 
@@ -30,48 +30,40 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 import * as React from "react";
-import { loadMockData } from "./mock-data/load";
-import { initStore } from "./store/store";
-import { differenceInSeconds } from "date-fns";
-import { registerMockBackend } from "./data/backend";
-import * as events from "./data/events";
-import * as currentStatus from "./data/current-status";
-import * as serverSettings from "./data/server-settings";
+import * as ReactDOM from "react-dom";
 
-export function mockComponent(name: string): (props: { [key: string]: object }) => JSX.Element {
-  return props => (
-    <div data-testid={"mock-component-" + name}>
-      {Object.getOwnPropertyNames(props)
-        .sort()
-        .map((p, idx) => (
-          <span key={idx} data-prop={p}>
-            {JSON.stringify(props[p], null, 2)}
-          </span>
-        ))}
-    </div>
+import "typeface-roboto";
+import CssBaseline from "@material-ui/core/CssBaseline";
+import green from "@material-ui/core/colors/green";
+import brown from "@material-ui/core/colors/brown";
+import MuiThemeProvider from "@material-ui/core/styles/MuiThemeProvider";
+import createMuiTheme from "@material-ui/core/styles/createMuiTheme";
+import "react-vis/dist/style.css";
+
+import App from "./components/App";
+import { Store } from "./store/typed-redux";
+
+export function render<A, S>(store: Store<A, S>, elem: HTMLElement | null) {
+  const theme = createMuiTheme({
+    palette: {
+      primary: green,
+      secondary: brown
+    },
+    typography: {
+      useNextVariants: true
+    }
+  });
+
+  ReactDOM.render(
+    <MuiThemeProvider theme={theme}>
+      <CssBaseline />
+      <store.Provider>
+        {/* <React.StrictMode> */}
+        <App />
+        {/* </React.StrictMode> */}
+      </store.Provider>
+    </MuiThemeProvider>,
+    elem
   );
-}
-
-export async function createTestStore() {
-  const store = initStore({ useRouter: false });
-  registerMockBackend();
-  store.dispatch(events.loadLast30Days());
-  store.dispatch(currentStatus.loadCurrentStatus());
-  store.dispatch(serverSettings.loadServerSettings());
-
-  // offset is such that all events fall within July no matter the timezone, so
-  // selecting July 2018 as the month loads the same set of data
-  const jan18 = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
-  const offsetSeconds = differenceInSeconds(new Date(Date.UTC(2018, 6, 2, 4, 10, 0)), jan18);
-
-  const mockD = loadMockData(offsetSeconds);
-
-  await mockD.events;
-
-  // tslint:disable-next-line:no-any
-  (window as any).FMS_INSIGHT_RESOLVE_MOCK_DATA(mockD);
-
-  return store;
 }

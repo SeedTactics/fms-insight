@@ -37,7 +37,6 @@ import * as routes from "../data/routes";
 import * as mat from "../data/material-details";
 import * as operators from "../data/operators";
 import * as serverSettings from "../data/server-settings";
-import { registerMockBackend } from "../data/backend";
 import * as ccp from "../data/cost-per-piece";
 import * as websocket from "./websocket";
 import { initBarcodeListener } from "./barcode";
@@ -50,7 +49,7 @@ import { middleware } from "./middleware";
 import { connectRoutes, LocationState } from "redux-first-router";
 import * as queryString from "query-string";
 
-type InitToStore<I> = I extends (demo: boolean) => infer S ? S : never;
+type InitToStore<I> = I extends (a: { useRouter: boolean }) => infer S ? S : never;
 export type Store = StoreState<InitToStore<typeof initStore>>;
 export type AppActionBeforeMiddleware = StoreActions<InitToStore<typeof initStore>>;
 export type Payload<T> = ACPayload<InitToStore<typeof initStore>, T>;
@@ -58,12 +57,12 @@ export type DispatchAction<T> = (payload: Payload<T>) => void;
 export const connect: InitToStore<typeof initStore>["connect"] = reactRedux.connect;
 export const mkAC = mkACF<AppActionBeforeMiddleware>();
 
-export function initStore(demo: boolean) {
-  const router = demo
-    ? undefined
-    : connectRoutes(routes.routeMap, {
+export function initStore({ useRouter }: { useRouter: boolean }) {
+  const router = useRouter
+    ? connectRoutes(routes.routeMap, {
         querySerializer: queryString
-      });
+      })
+    : undefined;
 
   /* tslint:disable */
   const composeEnhancers =
@@ -91,18 +90,10 @@ export function initStore(demo: boolean) {
       : m => composeEnhancers(applyMiddleware(m))
   );
 
-  if (demo) {
-    registerMockBackend();
-    store.dispatch(events.loadLast30Days());
-    store.dispatch(currentStatus.loadCurrentStatus());
-  } else {
-    websocket.configureWebsocket(a => store.dispatch(a), () => store.getState().Events);
-  }
   initBarcodeListener(store.dispatch);
 
   const operatorOnStateChange = operators.createOnStateChange();
   store.subscribe(() => operatorOnStateChange(store.getState().Operators));
-  store.dispatch(serverSettings.loadServerSettings());
 
   return store;
 }

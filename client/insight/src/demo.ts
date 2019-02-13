@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2019, John Lenz
 
 All rights reserved.
 
@@ -30,44 +30,19 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
-import * as ReactDOM from "react-dom";
 
-import "typeface-roboto";
-import CssBaseline from "@material-ui/core/CssBaseline";
-import green from "@material-ui/core/colors/green";
-import brown from "@material-ui/core/colors/brown";
-import MuiThemeProvider from "@material-ui/core/styles/MuiThemeProvider";
-import createMuiTheme from "@material-ui/core/styles/createMuiTheme";
-import "react-vis/dist/style.css";
-
-import App from "./components/App";
-import { register } from "./store/registerServiceWorker";
 import { initStore } from "./store/store";
-import { DemoMode } from "./data/backend";
+import { registerMockBackend } from "./data/backend";
+import * as events from "./data/events";
+import * as currentStatus from "./data/current-status";
+import * as serverSettings from "./data/server-settings";
+import { render } from "./renderer";
 
-const theme = createMuiTheme({
-  palette: {
-    primary: green,
-    secondary: brown
-  },
-  typography: {
-    useNextVariants: true
-  }
-});
+const store = initStore({ useRouter: false });
 
-const store = initStore(DemoMode);
+registerMockBackend();
+store.dispatch(events.loadLast30Days());
+store.dispatch(currentStatus.loadCurrentStatus());
+store.dispatch(serverSettings.loadServerSettings());
 
-ReactDOM.render(
-  <MuiThemeProvider theme={theme}>
-    <CssBaseline />
-    <store.Provider>
-      {/* <React.StrictMode> */}
-      <App />
-      {/* </React.StrictMode> */}
-    </store.Provider>
-  </MuiThemeProvider>,
-  document.getElementById("root") as HTMLElement
-);
-
-register();
+render(store, document.getElementById("root"));

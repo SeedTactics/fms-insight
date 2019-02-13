@@ -4,7 +4,8 @@
   "license": "BSD-3-Clause",
   "private": true,
   "sideEffects": [
-    "./src/index.tsx"
+    "./src/index.ts",
+    "./src/demo.ts"
   ],
   "scripts": {
     "start": "parcel src/index.html",

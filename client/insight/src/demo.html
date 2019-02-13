@@ -1,28 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link rel="shortcut icon" href="./favicon.ico">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <link rel="shortcut icon" href="./favicon.ico" />
     <title>SeedTactic FMS Insight Demo</title>
     <style type="text/css">
-        .download-loader {width: 100px; height: 100px; display: inline-block;}
-        .download-circular {width: 100px; height: 100px; animation: rotate 2s linear infinite;}
-        .download-path {
-             stroke-dasharray: 1, 200;
-             stroke-dashoffset: 0;
-             animation: dash 1.5s ease-out infinite;
-             stroke-linecap: round;
-             stroke: #8d6e63;
-         }
-         @keyframes rotate {
-             100% {transform: rotate(360deg);}
-         }
-         @keyframes dash {
-             0% { stroke-dasharray: 1, 200; stroke-dashoffset: 0; }
-             50% { stroke-dasharray: 89, 200; stroke-dashoffset: -35px; }
-             100% { stroke-dasharray: 89, 200; stroke-dashoffset: -124px; }
-         }
+      .download-loader {
+        width: 100px;
+        height: 100px;
+        display: inline-block;
+      }
+      .download-circular {
+        width: 100px;
+        height: 100px;
+        animation: rotate 2s linear infinite;
+      }
+      .download-path {
+        stroke-dasharray: 1, 200;
+        stroke-dashoffset: 0;
+        animation: dash 1.5s ease-out infinite;
+        stroke-linecap: round;
+        stroke: #8d6e63;
+      }
+      @keyframes rotate {
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      @keyframes dash {
+        0% {
+          stroke-dasharray: 1, 200;
+          stroke-dashoffset: 0;
+        }
+        50% {
+          stroke-dasharray: 89, 200;
+          stroke-dashoffset: -35px;
+        }
+        100% {
+          stroke-dasharray: 89, 200;
+          stroke-dashoffset: -124px;
+        }
+      }
     </style>
   </head>
   <body>
@@ -31,17 +50,19 @@
     </noscript>
     <div id="root">
       <div style="text-align: center">
-          <h3>Welcome to the FMS Insight Demo</h3>
-          <div class="download-loader">
-              <svg class="download-circular" viewBox="25 25 50 50">
-                  <circle class="download-path" cx="50" cy="50" r="20" fill="none" stroke-width="2" stroke-miterlimit="10"/>
-              </svg>
-          </div>
-          <p>Loading....</p>
+        <h3>Welcome to the FMS Insight Demo</h3>
+        <div class="download-loader">
+          <svg class="download-circular" viewBox="25 25 50 50">
+            <circle class="download-path" cx="50" cy="50" r="20" fill="none" stroke-width="2" stroke-miterlimit="10" />
+          </svg>
+        </div>
+        <p>Loading....</p>
       </div>
     </div>
-    <script type="text/javascript">window.FMS_INSIGHT_DEMO_MODE = true;</script>
-    <script src="./index.tsx"></script>
+    <script type="text/javascript">
+      window.FMS_INSIGHT_DEMO_MODE = true;
+    </script>
+    <script src="./demo.ts"></script>
     <script src="./mock-data/index.ts"></script>
   </body>
 </html>
