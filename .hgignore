@@ -7,6 +7,9 @@ client/insight/build/
 client/insight/.cache/
 client/insight/dist/
 client/insight/demo/
+client/backup-viewer/build/
+client/backup-viewer/.cache/
+client/backup-viewer/dist/
 
 website/build/
 website/yarn.lock

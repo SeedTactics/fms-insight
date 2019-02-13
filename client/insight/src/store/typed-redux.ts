@@ -66,7 +66,7 @@ type Payload<A, T> = A extends { type: T } ? RemoveType<A> : never;
 
 // a generic action creator factory which takes the payload (object without the type property)
 // and adds the type literal to the object.
-interface ActionCreatorFactory<AppActionBeforeMiddleware> {
+export interface ActionCreatorFactory<AppActionBeforeMiddleware> {
   <T extends ActionTypes<AppActionBeforeMiddleware>>(ty: T): (
     payload: Payload<AppActionBeforeMiddleware, T>
   ) => AppActionBeforeMiddleware;

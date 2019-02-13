@@ -48,7 +48,7 @@ export interface LatestInstaller {
   readonly date: Date;
 }
 
-interface LoadReturn {
+export interface LoadReturn {
   readonly fmsInfo: Readonly<api.IFMSInfo>;
   readonly latestVersion?: LatestInstaller;
   readonly user?: User;
