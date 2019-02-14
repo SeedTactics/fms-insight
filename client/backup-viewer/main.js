@@ -43,7 +43,7 @@ function createWindow() {
     }
   });
 
-  mainWindow.loadFile("index.html");
+  mainWindow.loadFile("dist/index.html");
 
   mainWindow.webContents.openDevTools();
 

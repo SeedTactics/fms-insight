@@ -7,10 +7,10 @@
   "license": "BSD-3-Clause",
   "main": "main.js",
   "scripts": {
-    "build": "tsc --build && parcel build --target=electron --public-url ./dist/ --bundle-node-modules src/renderer.ts",
-    "start": "yarn run build && electron .",
     "postinstall": "electron-builder install-app-deps",
-    "dist": "electron-builder"
+    "build": "tsc --build && parcel build --target=electron --public-url ./ --bundle-node-modules index.html",
+    "start": "yarn run build && electron .",
+    "dist": "yarn run build && electron-builder"
   },
   "build": {
     "appId": "com.seedtactics.fms-insight.backup-viewer",
@@ -20,7 +20,6 @@
     "files": [
       "package.json",
       "main.js",
-      "index.html",
       "dist/*"
     ]
   },
