@@ -3,14 +3,14 @@ bin/
 obj/
 integration.pdf
 node_modules/
-client/insight/build/
+client/insight/.build/
 client/insight/.cache/
-client/insight/dist/
 client/insight/demo/
-client/backup-viewer/build/
+client/insight/dist/
+client/backup-viewer/.build/
 client/backup-viewer/.cache/
 client/backup-viewer/dist/
-client/backup-viewer/package
+client/backup-viewer/package/
 
 website/build/
 website/yarn.lock

@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
-    "outDir": "build",
+    "outDir": ".build",
     "baseUrl": ".",
-    "module": "es6",
+    "module": "esnext",
     // "target": "es2016", https://github.com/parcel-bundler/parcel/issues/954
     "target": "es5",
     "lib": ["es2017", "dom"],
@@ -21,12 +21,5 @@
     "noUnusedLocals": true
   },
   "references": [{ "path": "../insight" }],
-  "exclude": [
-    "node_modules",
-    "build",
-    "scripts",
-    "acceptance-tests",
-    "webpack",
-    "jest"
-  ]
+  "exclude": ["node_modules", ".build", ".cache", "dist", "package"]
 }
