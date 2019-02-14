@@ -16,6 +16,7 @@
     "appId": "com.seedtactics.fms-insight.backup-viewer",
     "productName": "SeedTactic FMS Insight Backup Viewer",
     "directories": {
+      "buildResources": "resources",
       "output": "package"
     },
     "files": [
