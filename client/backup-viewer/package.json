@@ -8,7 +8,7 @@
   "main": "main.js",
   "scripts": {
     "postinstall": "electron-builder install-app-deps",
-    "build": "tsc --build && parcel build --target=electron --public-url ./ --bundle-node-modules index.html",
+    "build": "tsc --build && parcel build --public-url ./ index.html",
     "start": "yarn run build && electron .",
     "dist": "yarn run build && electron-builder"
   },
@@ -20,6 +20,7 @@
     "files": [
       "package.json",
       "main.js",
+      "preload.js",
       "dist/*"
     ]
   },

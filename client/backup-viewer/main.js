@@ -39,13 +39,14 @@ function createWindow() {
     height: 600,
     width: 800,
     webPreferences: {
-      nodeIntegration: true
+      nodeIntegration: false,
+      contextIsolation: false,
+      preload: __dirname + "/preload.js"
     }
   });
+  mainWindow.maximize();
 
   mainWindow.loadFile("dist/index.html");
-
-  mainWindow.webContents.openDevTools();
 
   mainWindow.on("closed", () => {
     mainWindow = null;
