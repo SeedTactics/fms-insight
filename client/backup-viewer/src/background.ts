@@ -30,48 +30,18 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-const { app, BrowserWindow, ipcMain } = require("electron");
 
-app.on("web-contents-created", (_, contents) => {
-  contents.on("will-navigate", event => {
-    event.preventDefault();
-  });
-  contents.on("new-window", event => {
-    event.preventDefault();
-  });
-});
+import { BackgroundResponse } from "./ipc";
+import { ipcRenderer } from "electron";
 
-app.on("ready", () => {
-  const background = new BrowserWindow({
-    show: false,
-    webPreferences: {
-      nodeIntegration: true
-    }
-  });
-  background.loadFile("dist/background.html");
+const b = new BackgroundResponse(ipcRenderer, {});
 
-  const mainWindow = new BrowserWindow({
-    height: 600,
-    width: 800,
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: false,
-      preload: __dirname + "/preload.js"
-    }
-  });
-  mainWindow.maximize();
-  mainWindow.loadFile("dist/renderer.html");
-  mainWindow.on("closed", () => {
-    app.quit();
-  });
-
-  ipcMain.on("to-background", (_, arg) => {
-    background.webContents.send("background-request", arg);
-  });
-  ipcMain.on("background-response", (_, arg) => {
-    mainWindow.webContents.send(
-      "background-response-" + arg.id.toString(),
-      arg
-    );
-  });
-});
+b.register(
+  "log-get",
+  async (a: {
+    startUTC: Date;
+    endUTC: Date;
+  }): Promise<ReadonlyArray<number>> => {
+    return [];
+  }
+);

@@ -8,7 +8,7 @@
   "main": "main.js",
   "scripts": {
     "postinstall": "electron-builder install-app-deps",
-    "build": "tsc --build && parcel build --public-url ./ index.html",
+    "build": "rimraf dist && tsc --build && parcel build --public-url ./ src/renderer.html && parcel build --target=electron --public-url ./ src/background.html",
     "start": "yarn run build && electron .",
     "dist": "yarn run build && electron-builder"
   },
@@ -30,6 +30,7 @@
     "typescript": "^3.3.3",
     "parcel": "^1.11.0",
     "electron": "4.0.4",
-    "electron-builder": "^20.38.5"
+    "electron-builder": "^20.38.5",
+    "rimraf": "^2.6.3"
   }
 }

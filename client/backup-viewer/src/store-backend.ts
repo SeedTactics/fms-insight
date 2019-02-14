@@ -32,13 +32,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as api from "../../insight/src/data/api";
 import { IpcRenderer } from "electron";
+import { RendererToBackground } from "./ipc";
 
 declare global {
   interface Window {
     electronIpc: IpcRenderer;
   }
 }
-console.log(window.electronIpc);
+const ToBackground = new RendererToBackground(window.electronIpc);
 
 export const JobsBackend = {
   history(startUTC: Date, endUTC: Date): Promise<Readonly<api.IHistoricData>> {
@@ -84,11 +85,11 @@ export const JobsBackend = {
 };
 
 export const LogBackend = {
-  get(
+  async get(
     startUTC: Date,
     endUTC: Date
   ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
-    return Promise.resolve([]);
+    return await ToBackground.send("log-get", { startUTC, endUTC });
   },
 
   recent(
