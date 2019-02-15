@@ -79,6 +79,10 @@
       "jsx",
       "json"
     ],
+    "modulePathIgnorePatterns": [
+      "<rootDir>/.build/",
+      "<rootDir>/.cache/"
+    ],
     "transform": {
       "^.+\\.tsx?$": "ts-jest",
       ".*\\.svg$": "<rootDir>/file-mock.js",

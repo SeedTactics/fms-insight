@@ -37,10 +37,25 @@ import { render } from "../../insight/src/renderer";
 import { loadLast30Days } from "../../insight/src/data/events";
 import { loadServerSettings } from "../../insight/src/data/server-settings";
 import { LogBackend, JobsBackend } from "./store-backend";
+import { AppProps } from "../../insight/src/components/App";
+import * as gui from "../../insight/src/data/gui-state";
+import * as routes from "../../insight/src/data/routes";
 
 const store = initStore({ useRouter: false });
 registerBackupViewerBackend(LogBackend, JobsBackend);
-store.dispatch(loadLast30Days());
 store.dispatch(loadServerSettings());
+store.dispatch({ type: routes.RouteLocation.Efficiency });
 
-render(store, document.getElementById("root"));
+const props: AppProps = {
+  demo: false,
+  backupViewerOnRequestOpenFile: () => {
+    window.electronIpc.send("open-file");
+  }
+};
+
+window.electronIpc.on("file-opened", () => {
+  store.dispatch({ type: gui.ActionType.SetBackupFileOpenened, open: true });
+  store.dispatch(loadLast30Days());
+});
+
+render(props, store, document.getElementById("root"));

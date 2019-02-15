@@ -94,8 +94,6 @@ export interface LogAPI {
 
 export const BackendHost = process.env.NODE_ENV === "production" ? undefined : "localhost:5000";
 const BackendUrl = BackendHost ? "http://" + BackendHost : undefined;
-// tslint:disable-next-line:no-any
-export const DemoMode = (window as any).FMS_INSIGHT_DEMO_MODE || false;
 
 export let ServerBackend: ServerAPI = new api.ServerClient(BackendUrl);
 export let JobsBackend: JobAPI = new api.JobsClient(BackendUrl);

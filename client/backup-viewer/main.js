@@ -30,25 +30,41 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-const { app, BrowserWindow, ipcMain } = require("electron");
+const {
+  app,
+  BrowserWindow,
+  Menu,
+  ipcMain,
+  shell,
+  dialog
+} = require("electron");
 
 app.on("web-contents-created", (_, contents) => {
-  contents.on("will-navigate", event => {
+  contents.on("will-navigate", (event, url) => {
+    if (url.startsWith("https://fms-insight.seedtactics.com")) {
+      shell.openExternal(url);
+    }
     event.preventDefault();
   });
-  contents.on("new-window", event => {
+  contents.on("new-window", (event, url) => {
+    if (url.startsWith("https://fms-insight.seedtactics.com")) {
+      shell.openExternal(url);
+    }
     event.preventDefault();
   });
 });
 
 app.on("ready", () => {
   const background = new BrowserWindow({
-    show: false,
+    show: true,
     webPreferences: {
       nodeIntegration: true
     }
   });
   background.loadFile("dist/background.html");
+  background.webContents.openDevTools();
+
+  Menu.setApplicationMenu(null);
 
   const mainWindow = new BrowserWindow({
     height: 600,
@@ -72,6 +88,21 @@ app.on("ready", () => {
     mainWindow.webContents.send(
       "background-response-" + arg.id.toString(),
       arg
+    );
+  });
+  ipcMain.on("open-file", (_, arg) => {
+    dialog.showOpenDialog(
+      mainWindow,
+      {
+        title: "Open Backup Database File",
+        properties: ["openFile"]
+      },
+      paths => {
+        if (paths.length > 0) {
+          mainWindow.webContents.send("file-opened", paths[0]);
+          background.webContents.send("open-file", paths[0]);
+        }
+      }
     );
   });
 });

@@ -45,4 +45,4 @@ store.dispatch(events.loadLast30Days());
 store.dispatch(currentStatus.loadCurrentStatus());
 store.dispatch(serverSettings.loadServerSettings());
 
-render(store, document.getElementById("root"));
+render({ demo: true }, store, document.getElementById("root"));

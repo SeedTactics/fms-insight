@@ -41,10 +41,10 @@ import MuiThemeProvider from "@material-ui/core/styles/MuiThemeProvider";
 import createMuiTheme from "@material-ui/core/styles/createMuiTheme";
 import "react-vis/dist/style.css";
 
-import App from "./components/App";
+import App, { AppProps } from "./components/App";
 import { Store } from "./store/typed-redux";
 
-export function render<A, S>(store: Store<A, S>, elem: HTMLElement | null) {
+export function render<A, S>(props: AppProps, store: Store<A, S>, elem: HTMLElement | null) {
   const theme = createMuiTheme({
     palette: {
       primary: green,
@@ -60,7 +60,7 @@ export function render<A, S>(store: Store<A, S>, elem: HTMLElement | null) {
       <CssBaseline />
       <store.Provider>
         {/* <React.StrictMode> */}
-        <App />
+        <App {...props} />
         {/* </React.StrictMode> */}
       </store.Provider>
     </MuiThemeProvider>,

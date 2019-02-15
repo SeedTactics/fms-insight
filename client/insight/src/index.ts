@@ -42,6 +42,6 @@ const store = initStore({ useRouter: true });
 websocket.configureWebsocket(a => store.dispatch(a), () => store.getState().Events);
 store.dispatch(serverSettings.loadServerSettings());
 
-render(store, document.getElementById("root"));
+render({ demo: false }, store, document.getElementById("root"));
 
 register();

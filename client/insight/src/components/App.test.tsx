@@ -89,7 +89,7 @@ it("renders the app shell", async () => {
 
   const result = render(
     <store.Provider>
-      <App />
+      <App demo={false} />
     </store.Provider>
   );
 

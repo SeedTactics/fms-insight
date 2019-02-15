@@ -58,7 +58,7 @@ import { Store, connect, mkAC } from "../store/store";
 import * as api from "../data/api";
 import * as serverSettings from "../data/server-settings";
 import logo from "../seedtactics-logo.svg";
-import { DemoMode } from "../data/backend";
+import BackupViewer from "./BackupViewer";
 
 const tabsStyle = {
   alignSelf: "flex-end" as "flex-end",
@@ -74,13 +74,17 @@ enum TabType {
 }
 
 interface HeaderProps {
+  showTabs: boolean;
+  showAlarms: boolean;
+  showDataExport: boolean;
+  showLogout: boolean;
+  iconIsLink: boolean;
+
   routeState: routes.State;
   fmsInfo: Readonly<api.IFMSInfo> | null;
   latestVersion: serverSettings.LatestInstaller | null;
-  showTabs: boolean;
   alarms: ReadonlyArray<string> | null;
   setRoute: (arg: { ty: TabType; curSt: routes.State }) => void;
-  showLogout: boolean;
   onLogout: () => void;
 }
 
@@ -121,7 +125,7 @@ function Header(p: HeaderProps) {
       <Tab label="Station Monitor" value={TabType.StationMonitor} />
       <Tab label="Efficiency" value={TabType.Efficiency} />
       <Tab label="Cost/Piece" value={TabType.CostPerPiece} />
-      {DemoMode ? undefined : <Tab label="Data Export" value={TabType.DataExport} />}
+      {p.showDataExport ? <Tab label="Data Export" value={TabType.DataExport} /> : undefined}
     </Tabs>
   );
 
@@ -166,7 +170,7 @@ function Header(p: HeaderProps) {
   const largeAppBar = (
     <AppBar position="static">
       <Toolbar>
-        {DemoMode ? (
+        {p.iconIsLink ? (
           <a href="/">
             <img src={logo} alt="Logo" style={{ height: "30px", marginRight: "1em" }} />
           </a>
@@ -180,7 +184,7 @@ function Header(p: HeaderProps) {
         </Typography>
         {p.showTabs ? tabs(false) : <div style={{ flexGrow: 1 }} />}
         <LoadingIcon />
-        <Alarms />
+        {p.showAlarms ? <Alarms /> : undefined}
         <HelpButton />
         {p.showLogout ? <LogoutButton /> : undefined}
       </Toolbar>
@@ -196,7 +200,7 @@ function Header(p: HeaderProps) {
         <Typography variant="h6">Insight</Typography>
         <div style={{ flexGrow: 1 }} />
         <LoadingIcon />
-        <Alarms />
+        {p.showAlarms ? <Alarms /> : undefined}
         <HelpButton />
         {p.showLogout ? <LogoutButton /> : undefined}
       </Toolbar>
@@ -212,7 +216,12 @@ function Header(p: HeaderProps) {
   );
 }
 
-interface AppProps {
+export interface AppProps {
+  demo: boolean;
+  backupViewerOnRequestOpenFile?: () => void;
+}
+
+interface AppConnectedProps extends AppProps {
   route: routes.State;
   fmsInfo: Readonly<api.IFMSInfo> | null;
   user: User | null;
@@ -223,12 +232,21 @@ interface AppProps {
   onLogout: () => void;
 }
 
-class App extends React.PureComponent<AppProps> {
+class App extends React.PureComponent<AppConnectedProps> {
   render() {
     let page: JSX.Element;
     let showTabs: boolean = true;
+    let showAlarms: boolean = true;
     let showLogout: boolean = !!this.props.user;
-    if (this.props.fmsInfo && (!this.props.fmsInfo.openIDConnectAuthority || this.props.user)) {
+    let showDataExport: boolean = !this.props.demo;
+    let iconIsLink: boolean = this.props.demo;
+    if (this.props.backupViewerOnRequestOpenFile) {
+      page = <BackupViewer onRequestOpenFile={this.props.backupViewerOnRequestOpenFile} />;
+      showTabs = false;
+      showAlarms = false;
+      showDataExport = false;
+      iconIsLink = false;
+    } else if (this.props.fmsInfo && (!this.props.fmsInfo.openIDConnectAuthority || this.props.user)) {
       switch (this.props.route.current) {
         case routes.RouteLocation.CostPerPiece:
           page = <CostPerPiece />;
@@ -281,11 +299,14 @@ class App extends React.PureComponent<AppProps> {
     return (
       <div id="App">
         <Header
+          iconIsLink={iconIsLink}
           routeState={this.props.route}
           fmsInfo={this.props.fmsInfo}
           latestVersion={this.props.latestVersion}
           showTabs={showTabs}
+          showAlarms={showAlarms}
           showLogout={showLogout}
+          showDataExport={showDataExport}
           setRoute={this.props.setRoute}
           onLogout={this.props.onLogout}
           alarms={this.props.alarms}

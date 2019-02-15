@@ -48,7 +48,8 @@ export enum ActionType {
   SetAddMatToQueueModeDialogOpen = "Gui_SetAddMatToQueueModeDialogOpen",
   SetAddMatToQueueName = "Gui_SetAddMatToQueueName",
   SetScanQrCodeDialog = "Gui_ScanQrCodeDialog",
-  SetManualSerialEntryDialog = "Gui_ManualSerialEntryDialog"
+  SetManualSerialEntryDialog = "Gui_ManualSerialEntryDialog",
+  SetBackupFileOpenened = "Gui_SetBackupFileOpened"
 }
 
 export type Action =
@@ -62,7 +63,8 @@ export type Action =
   | { type: ActionType.SetAddMatToQueueModeDialogOpen; open: boolean }
   | { type: ActionType.SetAddMatToQueueName; queue: string | undefined }
   | { type: ActionType.SetScanQrCodeDialog; open: boolean }
-  | { type: ActionType.SetManualSerialEntryDialog; open: boolean };
+  | { type: ActionType.SetManualSerialEntryDialog; open: boolean }
+  | { type: ActionType.SetBackupFileOpenened; open: boolean };
 
 export interface State {
   readonly station_cycle_selected_part?: string;
@@ -78,6 +80,7 @@ export interface State {
   readonly queue_dialog_mode_open: boolean;
   readonly manual_serial_entry_dialog_open: boolean;
   readonly add_mat_to_queue?: string;
+  readonly backup_file_opened: boolean;
 }
 
 export const initial: State = {
@@ -88,7 +91,8 @@ export const initial: State = {
   serial_dialog_open: false,
   scan_qr_dialog_open: false,
   manual_serial_entry_dialog_open: false,
-  queue_dialog_mode_open: false
+  queue_dialog_mode_open: false,
+  backup_file_opened: false
 };
 
 export function reducer(s: State, a: Action): State {
@@ -123,6 +127,8 @@ export function reducer(s: State, a: Action): State {
       return { ...s, add_mat_to_queue: a.queue };
     case ActionType.SetManualSerialEntryDialog:
       return { ...s, manual_serial_entry_dialog_open: a.open };
+    case ActionType.SetBackupFileOpenened:
+      return { ...s, backup_file_opened: a.open };
     default:
       return s;
   }

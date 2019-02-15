@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2018, John Lenz
 
 All rights reserved.
 
@@ -30,22 +30,29 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+import * as React from "react";
+import Button from "@material-ui/core/Button";
 
-import { BackgroundResponse } from "./ipc";
-import { ipcRenderer, IpcMessageEvent } from "electron";
+import { connect } from "../store/store";
+import Efficiency from "./efficiency/Efficiency";
 
-ipcRenderer.on("open-file", (_: IpcMessageEvent, path: string) => {
-  console.log(path);
+interface BackupViewerProps {
+  file_opened: boolean;
+  onRequestOpenFile: () => void;
+}
+
+const InitialPage = React.memo(function(props: { onRequestOpenFile: () => void }) {
+  return <Button onClick={props.onRequestOpenFile}>Open File</Button>;
 });
 
-const b = new BackgroundResponse(ipcRenderer, {});
-
-b.register(
-  "log-get",
-  async (a: {
-    startUTC: Date;
-    endUTC: Date;
-  }): Promise<ReadonlyArray<number>> => {
-    return [];
+const BackupViewer = React.memo(function BackupViewerF(props: BackupViewerProps) {
+  if (props.file_opened) {
+    return <Efficiency />;
+  } else {
+    return <InitialPage onRequestOpenFile={props.onRequestOpenFile} />;
   }
-);
+});
+
+export default connect(s => ({
+  file_opened: s.Gui.backup_file_opened
+}))(BackupViewer);
