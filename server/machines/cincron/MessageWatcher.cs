@@ -46,10 +46,12 @@ namespace Cincron
     private string _msgFile;
     private object _lock;
     private System.Timers.Timer _timer;
+    private FMSSettings _settings;
 
-    public MessageWatcher(string msgFile, JobLogDB log)
+    public MessageWatcher(string msgFile, JobLogDB log, FMSSettings s)
     {
       _msgFile = msgFile;
+      _settings = s;
       _log = log;
       _lock = new object();
       _timer = new System.Timers.Timer(TimeSpan.FromMinutes(1).TotalMilliseconds);
@@ -385,6 +387,9 @@ namespace Cincron
 
     private IEnumerable<JobLogDB.EventLogMaterial> CreateUnloadMaterial(MessageState state, string pal)
     {
+      Log.Debug("During unload, found {cnt} parts that were unloaded/completed",
+          state.PartCompletedMessages.Count);
+
       var oldMat = FindMaterial(pal)[0];
       var ret = new List<JobLogDB.EventLogMaterial>();
       string partName = "";
@@ -392,27 +397,36 @@ namespace Cincron
         partName = state.PartCompletedMessages[0].PartName;
       _log.SetDetailsForMaterialID(oldMat.MaterialID, null, partName, null);
 
-      ret.Add(new JobLogDB.EventLogMaterial()
+      if (_settings.SerialType == BlackMaple.MachineFramework.SerialType.AssignOneSerialPerCycle ||
+          _settings.SerialType == BlackMaple.MachineFramework.SerialType.AssignOneSerialPerMaterial
+         )
       {
-        MaterialID = oldMat.MaterialID,
-        Process = 1,
-        Face = ""
-      });
+        _log.RecordSerialForMaterialID(oldMat, JobLogDB.ConvertToBase62(oldMat.MaterialID).PadLeft(_settings.SerialLength, '0'), state.LastSeenMessage.TimeUTC);
+      }
+      ret.Add(oldMat);
 
-      Log.Debug("During unload, found {cnt} parts that were unloaded/completed",
-          state.PartCompletedMessages.Count);
+      var oldMatDetails = _log.GetMaterialDetails(oldMat.MaterialID);
 
       //allocate new materials, one per completed part in addition to the existing one
-      //Seems that multiple part completed messages are not multiple completed parts?
-      //for (int i = 1; i < state.PartCompletedMessages.Count; i++) {
-      //    var newId = _log.AllocateMaterialID(oldMat.JobUniqueStr);
-      //    ret.Add(new LogMaterial(
-      //       matID: newId,
-      //       uniq: oldMat.JobUniqueStr,
-      //       proc: 1,
-      //       part: partName,
-      //       numProc: 1));
-      //}
+      for (int i = 1; i < state.PartCompletedMessages.Count; i++)
+      {
+        var newId = _log.AllocateMaterialID(oldMatDetails.JobUnique, oldMatDetails.PartName, 1);
+        var newMat = new JobLogDB.EventLogMaterial()
+        {
+          MaterialID = newId,
+          Process = 1,
+          Face = ""
+        };
+        if (_settings.SerialType == BlackMaple.MachineFramework.SerialType.AssignOneSerialPerCycle)
+        {
+          _log.RecordSerialForMaterialID(newMat, oldMatDetails.Serial, state.LastSeenMessage.TimeUTC);
+        }
+        else if (_settings.SerialType == BlackMaple.MachineFramework.SerialType.AssignOneSerialPerMaterial)
+        {
+          _log.RecordSerialForMaterialID(newMat, JobLogDB.ConvertToBase62(newId).PadLeft(_settings.SerialLength, '0'), state.LastSeenMessage.TimeUTC);
+        }
+        ret.Add(newMat);
+      }
 
       return ret;
     }

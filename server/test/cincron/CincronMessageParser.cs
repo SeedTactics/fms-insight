@@ -48,7 +48,6 @@ namespace MachineWatchTest.Cincron
       TypeNameHandling = Newtonsoft.Json.TypeNameHandling.All
     };
 
-
     [Fact]
     public void ParseAllMessages()
     {
