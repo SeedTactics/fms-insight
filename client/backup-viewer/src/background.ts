@@ -33,19 +33,114 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { BackgroundResponse } from "./ipc";
 import { ipcRenderer, IpcMessageEvent } from "electron";
+import * as sqlite from "sqlite";
+import { ILogEntry, LogType } from "../../insight/.build/data/api";
+import { duration } from "moment";
 
-ipcRenderer.on("open-file", (_: IpcMessageEvent, path: string) => {
-  console.log(path);
+let dbP: Promise<sqlite.Database> = new Promise(resolve => {
+  ipcRenderer.once("open-file", (_: IpcMessageEvent, path: string) => {
+    resolve(sqlite.open(path));
+  });
 });
 
 const b = new BackgroundResponse(ipcRenderer, {});
+
+// 10000 ticks in a millisecond
+// 621355968000000000 ticks between unix epoch and Jan 1, 0001
+function dateToTicks(d: Date): number {
+  return d.getTime() * 10000 + 621355968000000000;
+}
+
+function parseDateFromTicks(t: number): string {
+  return new Date((t - 621355968000000000) / 10000).toISOString();
+}
+
+function parseTimespan(t: number | null): string {
+  if (!t) return "";
+  return duration(t / 10000).toISOString();
+}
+
+function convertLogType(t: number): LogType {
+  switch (t) {
+    case 1:
+      return LogType.LoadUnloadCycle;
+    case 2:
+      return LogType.MachineCycle;
+    case 6:
+      return LogType.PartMark;
+    case 7:
+      return LogType.Inspection;
+    case 10:
+      return LogType.OrderAssignment;
+    case 100:
+      return LogType.GeneralMessage;
+    case 101:
+      return LogType.PalletCycle;
+    case 102:
+      return LogType.FinalizeWorkorder;
+    case 103:
+      return LogType.InspectionResult;
+    case 104:
+      return LogType.Wash;
+    case 105:
+      return LogType.AddToQueue;
+    case 106:
+      return LogType.RemoveFromQueue;
+    case 107:
+      return LogType.InspectionForce;
+    default:
+      return LogType.GeneralMessage;
+  }
+}
+
+async function convertRowToLog(db: sqlite.Database, row: any): Promise<any> {
+  const cmd =
+    "SELECT stations_mat.MaterialID, UniqueStr, Process, PartName, NumProcesses, Face, Serial, Workorder " +
+    " FROM stations_mat " +
+    " LEFT OUTER JOIN matdetails ON stations_mat.MaterialID = matdetails.MaterialID " +
+    " WHERE stations_mat.Counter = $cntr " +
+    " ORDER BY stations_mat.Counter ASC";
+  const matRows = await db.all(cmd, { $cntr: row.Counter });
+  return {
+    counter: row.Counter,
+    material: matRows.map(m => ({
+      id: m.MaterialID,
+      uniq: m.UniqueStr,
+      part: m.PartName,
+      proc: m.Process,
+      numproc: m.NumProcesses,
+      face: m.Face,
+      serial: m.Serial,
+      workorder: m.Workorder
+    })),
+    type: convertLogType(row.StationLoc),
+    startofcycle: row.Start > 0,
+    endUTC: parseDateFromTicks(row.TimeUTC),
+    loc: row.StationName,
+    locnum: row.StationNum,
+    pal: row.Pallet,
+    program: row.Program,
+    result: row.Result,
+    elapsed: parseTimespan(row.Elapsed),
+    active: parseTimespan(row.ActiveTime)
+  };
+}
 
 b.register(
   "log-get",
   async (a: {
     startUTC: Date;
     endUTC: Date;
-  }): Promise<ReadonlyArray<number>> => {
-    return [];
+  }): Promise<ReadonlyArray<Readonly<ILogEntry>>> => {
+    const db = await dbP;
+    const rows = await db.all(
+      "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
+        " FROM stations WHERE TimeUTC >= $start AND TimeUTC <= $end ORDER BY Counter ASC",
+      {
+        $start: dateToTicks(new Date(a.startUTC)),
+        $end: dateToTicks(new Date(a.endUTC))
+      }
+    );
+    return await Promise.all(rows.map(r => convertRowToLog(db, r)));
   }
 );

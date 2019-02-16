@@ -89,7 +89,11 @@ export const LogBackend = {
     startUTC: Date,
     endUTC: Date
   ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
-    return await ToBackground.send("log-get", { startUTC, endUTC });
+    const entries: ReadonlyArray<object> = await ToBackground.send("log-get", {
+      startUTC,
+      endUTC
+    });
+    return entries.map(api.LogEntry.fromJS);
   },
 
   recent(

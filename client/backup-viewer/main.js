@@ -76,6 +76,7 @@ app.on("ready", () => {
     }
   });
   mainWindow.maximize();
+  mainWindow.webContents.openDevTools();
   mainWindow.loadFile("dist/renderer.html");
   mainWindow.on("closed", () => {
     app.quit();
@@ -98,9 +99,9 @@ app.on("ready", () => {
         properties: ["openFile"]
       },
       paths => {
-        if (paths.length > 0) {
-          mainWindow.webContents.send("file-opened", paths[0]);
+        if (paths && paths.length > 0) {
           background.webContents.send("open-file", paths[0]);
+          mainWindow.webContents.send("file-opened", paths[0]);
         }
       }
     );
