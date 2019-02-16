@@ -9,6 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj" />
     <ProjectReference Include="../machines/mazak/mazak.csproj" />
+    <ProjectReference Include="../machines/cincron/cincron.csproj" />
     <None Update="log.v17.db" CopyToOutputDirectory="Always"/>
   </ItemGroup>
 
