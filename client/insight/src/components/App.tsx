@@ -252,7 +252,7 @@ class App extends React.PureComponent<AppConnectedProps> {
           page = <CostPerPiece />;
           break;
         case routes.RouteLocation.Efficiency:
-          page = <Efficiency />;
+          page = <Efficiency allowSetType={true} />;
           break;
         case routes.RouteLocation.LoadMonitor:
           page = <StationMonitor monitor_type={routes.StationMonitorType.LoadUnload} />;

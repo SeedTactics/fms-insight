@@ -48,7 +48,7 @@ it("renders the efficiency page", async () => {
     <store.Provider>
       <div>
         <LoadingIcon />
-        <Efficiency />
+        <Efficiency allowSetType={true} />
       </div>
     </store.Provider>
   );

@@ -53,7 +53,7 @@ const InitialPage = React.memo(function(props: { onRequestOpenFile: () => void; 
 
 const BackupViewer = React.memo(function BackupViewerF(props: BackupViewerProps) {
   if (props.file_opened && props.loading_err === undefined) {
-    return <Efficiency />;
+    return <Efficiency allowSetType={false} />;
   } else {
     return <InitialPage onRequestOpenFile={props.onRequestOpenFile} loading_error={props.loading_err} />;
   }

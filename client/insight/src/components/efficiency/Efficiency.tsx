@@ -392,6 +392,7 @@ interface HeatmapProps {
   readonly planned_or_actual: guiState.PlannedOrActual;
   readonly setType: (p: guiState.PlannedOrActual) => void;
   readonly points: ReadonlyArray<HeatChartPoint>;
+  readonly allowSetType: boolean;
 }
 
 function StationOeeHeatmap(props: HeatmapProps) {
@@ -401,7 +402,9 @@ function StationOeeHeatmap(props: HeatmapProps) {
       y_title="Station"
       label_title="OEE"
       icon={<HourglassIcon style={{ color: "#6D4C41" }} />}
-      {...props}
+      planned_or_actual={props.planned_or_actual}
+      points={props.points}
+      setType={props.allowSetType ? props.setType : undefined}
     />
   );
 }
@@ -505,7 +508,9 @@ function CompletedCountHeatmap(props: HeatmapProps) {
       y_title="Part"
       label_title={props.planned_or_actual === guiState.PlannedOrActual.Actual ? "Completed" : "Planned"}
       icon={<ExtensionIcon style={{ color: "#6D4C41" }} />}
-      {...props}
+      planned_or_actual={props.planned_or_actual}
+      points={props.points}
+      setType={props.allowSetType ? props.setType : undefined}
     />
   );
 }
@@ -600,7 +605,7 @@ const ConnectedCompletedCountHeatmap = connect(
 // Efficiency
 // --------------------------------------------------------------------------------
 
-export default function Efficiency() {
+export default function Efficiency({ allowSetType }: { allowSetType: boolean }) {
   return (
     <DocumentTitle title="Efficiency - FMS Insight">
       <>
@@ -613,10 +618,10 @@ export default function Efficiency() {
             <ConnectedPalletCycleChart />
           </div>
           <div data-testid="station-oee-heatmap" style={{ marginTop: "3em" }}>
-            <ConnectedStationOeeHeatmap />
+            <ConnectedStationOeeHeatmap allowSetType={allowSetType} />
           </div>
           <div data-testid="completed-heatmap" style={{ marginTop: "3em" }}>
-            <ConnectedCompletedCountHeatmap />
+            <ConnectedCompletedCountHeatmap allowSetType={allowSetType} />
           </div>
           <div data-testid="inspection-sankey" style={{ marginTop: "3em" }}>
             <InspectionSankey />

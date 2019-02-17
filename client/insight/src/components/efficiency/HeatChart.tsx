@@ -118,7 +118,7 @@ export interface SelectableHeatChartProps {
   readonly y_title: string;
   readonly label_title: string;
   readonly planned_or_actual: gui.PlannedOrActual;
-  readonly setType: (p: gui.PlannedOrActual) => void;
+  readonly setType?: (p: gui.PlannedOrActual) => void;
 
   readonly points: ReadonlyArray<HeatChartPoint>;
 }
@@ -128,6 +128,7 @@ export interface SelectableHeatChartProps {
 (LabelSeries as any).propTypes = {};
 
 export function SelectableHeatChart(props: SelectableHeatChartProps) {
+  const setType = props.setType;
   return (
     <Card raised>
       <CardHeader
@@ -144,20 +145,24 @@ export function SelectableHeatChart(props: SelectableHeatChartProps) {
                 <ImportExport />
               </IconButton>
             </Tooltip>
-            <Select
-              name={props.card_label.replace(" ", "-") + "-heatchart-planned-or-actual"}
-              autoWidth
-              displayEmpty
-              value={props.planned_or_actual}
-              onChange={e => props.setType(e.target.value as gui.PlannedOrActual)}
-            >
-              <MenuItem key={gui.PlannedOrActual.Actual} value={gui.PlannedOrActual.Actual}>
-                Actual
-              </MenuItem>
-              <MenuItem key={gui.PlannedOrActual.Planned} value={gui.PlannedOrActual.Planned}>
-                Planned
-              </MenuItem>
-            </Select>
+            {setType ? (
+              <Select
+                name={props.card_label.replace(" ", "-") + "-heatchart-planned-or-actual"}
+                autoWidth
+                displayEmpty
+                value={props.planned_or_actual}
+                onChange={e => setType(e.target.value as gui.PlannedOrActual)}
+              >
+                <MenuItem key={gui.PlannedOrActual.Actual} value={gui.PlannedOrActual.Actual}>
+                  Actual
+                </MenuItem>
+                <MenuItem key={gui.PlannedOrActual.Planned} value={gui.PlannedOrActual.Planned}>
+                  Planned
+                </MenuItem>
+              </Select>
+            ) : (
+              undefined
+            )}
           </div>
         }
       />
