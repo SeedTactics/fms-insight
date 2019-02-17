@@ -38,21 +38,28 @@ import Efficiency from "./efficiency/Efficiency";
 
 interface BackupViewerProps {
   file_opened: boolean;
+  loading_err: Error | undefined;
   onRequestOpenFile: () => void;
 }
 
-const InitialPage = React.memo(function(props: { onRequestOpenFile: () => void }) {
-  return <Button onClick={props.onRequestOpenFile}>Open File</Button>;
+const InitialPage = React.memo(function(props: { onRequestOpenFile: () => void; loading_error: Error | undefined }) {
+  return (
+    <div>
+      {props.loading_error ? <p>{props.loading_error.message || props.loading_error}</p> : undefined}
+      <Button onClick={props.onRequestOpenFile}>Open File</Button>
+    </div>
+  );
 });
 
 const BackupViewer = React.memo(function BackupViewerF(props: BackupViewerProps) {
-  if (props.file_opened) {
+  if (props.file_opened && props.loading_err === undefined) {
     return <Efficiency />;
   } else {
-    return <InitialPage onRequestOpenFile={props.onRequestOpenFile} />;
+    return <InitialPage onRequestOpenFile={props.onRequestOpenFile} loading_error={props.loading_err} />;
   }
 });
 
 export default connect(s => ({
-  file_opened: s.Gui.backup_file_opened
+  file_opened: s.Gui.backup_file_opened,
+  loading_err: s.Events.loading_error
 }))(BackupViewer);

@@ -37,10 +37,32 @@ import * as sqlite from "sqlite";
 import { ILogEntry, LogType } from "../../insight/.build/data/api";
 import { duration } from "moment";
 
-let dbP: Promise<sqlite.Database> = new Promise(resolve => {
-  ipcRenderer.once("open-file", (_: IpcMessageEvent, path: string) => {
-    resolve(sqlite.open(path));
-  });
+let dbP: Promise<sqlite.Database> = Promise.reject("No opened file yet");
+
+ipcRenderer.on("open-file", (_: IpcMessageEvent, path: string) => {
+  dbP = (async function() {
+    let db: sqlite.Database | undefined;
+    try {
+      db = await sqlite.open(path);
+    } catch {
+      throw "The file is not a FMS Insight database";
+    }
+    let verRow: any;
+    try {
+      verRow = await db.get("SELECT ver from version");
+    } catch {
+      throw "The file is not a FMS Insight database.";
+    }
+    if (verRow.ver !== 19) {
+      throw "The FMS Insight database is from a newer version of FMS Insight.  Please update BackupViewer to the latest version.";
+    }
+    try {
+      await db.get("SELECT Counter from stations");
+    } catch {
+      throw "The file is not a FMS Insight Log database.";
+    }
+    return db;
+  })();
 });
 
 const b = new BackgroundResponse(ipcRenderer, {});
