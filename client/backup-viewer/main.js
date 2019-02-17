@@ -56,13 +56,12 @@ app.on("web-contents-created", (_, contents) => {
 
 app.on("ready", () => {
   const background = new BrowserWindow({
-    show: true,
+    show: false,
     webPreferences: {
       nodeIntegration: true
     }
   });
   background.loadFile("dist/background.html");
-  background.webContents.openDevTools();
 
   Menu.setApplicationMenu(null);
 
@@ -76,7 +75,6 @@ app.on("ready", () => {
     }
   });
   mainWindow.maximize();
-  mainWindow.webContents.openDevTools();
   mainWindow.loadFile("dist/renderer.html");
   mainWindow.on("closed", () => {
     app.quit();
