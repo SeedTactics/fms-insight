@@ -48,10 +48,24 @@ namespace MachineWatchTest.Cincron
       TypeNameHandling = Newtonsoft.Json.TypeNameHandling.All
     };
 
+    private TimeZoneInfo centralZone;
+
+    public MessageParseTest()
+    {
+      try
+      {
+        centralZone = TimeZoneInfo.FindSystemTimeZoneById("US/Central");
+      }
+      catch (TimeZoneNotFoundException)
+      {
+        centralZone = TimeZoneInfo.FindSystemTimeZoneById("Central Standard Time");
+      }
+    }
+
     [Fact]
     public void ParseAllMessages()
     {
-      var msg = MessageParser.ExtractMessages("../../../cincron/sample-messages", 0, "");
+      var msg = MessageParser.ExtractMessages("../../../cincron/sample-messages", 0, "", centralZone);
       var expected = Newtonsoft.Json.JsonConvert.DeserializeObject<List<CincronMessage>>(System.IO.File.ReadAllText("../../../cincron/sample-messages.json"), jsonSettings);
       msg.Should().BeEquivalentTo(expected);
     }
@@ -59,7 +73,7 @@ namespace MachineWatchTest.Cincron
     [Fact]
     public void ParseMiddle()
     {
-      var msg = MessageParser.ExtractMessages("../../../cincron/sample-messages", 363143, "Jan 25 01:13:12 ABCDEF CINCRON[5889]: stn002--I10402:Control Data for Work Unit 22 Updated   [STEP_NO = 2]");
+      var msg = MessageParser.ExtractMessages("../../../cincron/sample-messages", 363143, "Jan 25 01:13:12 ABCDEF CINCRON[5889]: stn002--I10402:Control Data for Work Unit 22 Updated   [STEP_NO = 2]", centralZone);
       var expected = Newtonsoft.Json.JsonConvert.DeserializeObject<List<CincronMessage>>(System.IO.File.ReadAllText("../../../cincron/sample-messages.json"), jsonSettings);
       msg.Should().BeEquivalentTo(expected.GetRange(2533, 2233));
     }
@@ -67,7 +81,7 @@ namespace MachineWatchTest.Cincron
     [Fact]
     public void Rollover()
     {
-      var msg = MessageParser.ExtractMessages("../../../cincron/sample-messages", 363143, "bad match");
+      var msg = MessageParser.ExtractMessages("../../../cincron/sample-messages", 363143, "bad match", centralZone);
       var expected = Newtonsoft.Json.JsonConvert.DeserializeObject<List<CincronMessage>>(System.IO.File.ReadAllText("../../../cincron/sample-messages.json"), jsonSettings);
       // since offset doesn't match, should load everything from beginning
       msg.Should().BeEquivalentTo(expected);

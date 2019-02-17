@@ -407,7 +407,7 @@ namespace Cincron
     private static Serilog.ILogger Log = Serilog.Log.ForContext<MessageParser>();
 
     public static IList<CincronMessage>
-        ExtractMessages(string file, int prevMessageOffset, string prevMessage)
+        ExtractMessages(string file, int prevMessageOffset, string prevMessage, TimeZoneInfo zone)
     {
       if (!File.Exists(file))
         return new CincronMessage[] { };
@@ -423,7 +423,7 @@ namespace Cincron
         {
           var s = new StreamReader(f);
           var firstLine = s.ReadLine();
-          firstTimeInFile = ParseTimeUTC(s.ReadLine());
+          firstTimeInFile = ParseTimeUTC(s.ReadLine(), zone);
         }
 
         //check if the previous message matches and if so seek to it
@@ -471,7 +471,7 @@ namespace Cincron
               msg.TimeOfFirstEntryInLogFileUTC = firstTimeInFile;
               msg.LogFileOffset = pos;
               msg.LogMessage = line;
-              msg.TimeUTC = ParseTimeUTC(line);
+              msg.TimeUTC = ParseTimeUTC(line, zone);
               ret.Add(msg);
             }
             pos = GetStreamPosition(s);
@@ -524,7 +524,7 @@ namespace Cincron
       }
     }
 
-    private static DateTime ParseTimeUTC(string line)
+    private static DateTime ParseTimeUTC(string line, TimeZoneInfo zone)
     {
       var d = DateTime.ParseExact(line.Substring(0, 15), "MMM d HH:mm:ss", null, System.Globalization.DateTimeStyles.AllowInnerWhite);
       //the timestamp does not have a year and so the current year is used when processing.
@@ -534,7 +534,14 @@ namespace Cincron
       {
         d = d.AddYears(-1);
       }
-      return d.ToUniversalTime();
+      if (zone == null)
+      {
+        return d.ToUniversalTime();
+      }
+      else
+      {
+        return TimeZoneInfo.ConvertTimeToUtc(d, zone);
+      }
     }
 
     private static CincronMessage ParseMessage(string line)

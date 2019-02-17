@@ -132,13 +132,13 @@ namespace Cincron
           if (maxParts.Length >= 7 && int.TryParse(maxParts[6], out offset))
           {
             Log.Debug("Starting read at offset {offset} with message {msg}", offset, expected);
-            return MessageParser.ExtractMessages(_msgFile, offset, expected);
+            return MessageParser.ExtractMessages(_msgFile, offset, expected, zone: null);
           }
         }
       }
 
       Log.Debug("Starting reading message file from beginning");
-      return MessageParser.ExtractMessages(_msgFile, 0, "");
+      return MessageParser.ExtractMessages(_msgFile, 0, "", zone: null);
     }
     #endregion
 
