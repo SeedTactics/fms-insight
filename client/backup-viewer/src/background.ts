@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { BackgroundResponse } from "./ipc";
 import { ipcRenderer, IpcMessageEvent } from "electron";
 import * as sqlite from "sqlite";
-import { ILogEntry, LogType } from "../../insight/.build/data/api";
+import { ILogEntry, LogType, IToolUse } from "../../insight/.build/data/api";
 import { duration } from "moment";
 
 let dbP: Promise<sqlite.Database> = Promise.reject("No opened file yet");
@@ -123,6 +123,31 @@ async function convertRowToLog(db: sqlite.Database, row: any): Promise<any> {
     " WHERE stations_mat.Counter = $cntr " +
     " ORDER BY stations_mat.Counter ASC";
   const matRows = await db.all(cmd, { $cntr: row.Counter });
+  const details: { [key: string]: string } = {};
+  const tools: { [key: string]: Readonly<IToolUse> } = {};
+  await db.each(
+    "SELECT Key, Value FROM program_details WHERE Counter = $cntr",
+    { $cntr: row.Counter },
+    (_err: any, row: any) => {
+      if (row) {
+        details[row.Key] = row.Value;
+      }
+    }
+  );
+  await db.each(
+    "SELECT Tool, UseInCycle, UseAtEndOfCycle, ToolLife FROM station_tools WHERE Counter = $cntr",
+    { $cntr: row.Counter },
+    (_err: any, row: any) => {
+      if (row) {
+        tools[row.Tool] = {
+          toolUseDuringCycle: parseTimespan(row.UseInCycle),
+          totalToolUseAtEndOfCycle: parseTimespan(row.UseAtEndOfCycle),
+          configuredToolLife: parseTimespan(row.ToolLife)
+        };
+      }
+    }
+  );
+
   return {
     counter: row.Counter,
     material: matRows.map(m => ({
@@ -144,7 +169,9 @@ async function convertRowToLog(db: sqlite.Database, row: any): Promise<any> {
     program: row.Program,
     result: row.Result,
     elapsed: parseTimespan(row.Elapsed),
-    active: parseTimespan(row.ActiveTime)
+    active: parseTimespan(row.ActiveTime),
+    details: details,
+    tools: tools
   };
 }
 
