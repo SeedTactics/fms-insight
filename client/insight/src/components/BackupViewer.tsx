@@ -44,9 +44,17 @@ interface BackupViewerProps {
 
 const InitialPage = React.memo(function(props: { onRequestOpenFile: () => void; loading_error: Error | undefined }) {
   return (
-    <div>
+    <div style={{ textAlign: "center" }}>
+      <h1 style={{ marginTop: "2em" }}>FMS Insight Backup Viewer</h1>
+      <p style={{ marginTop: "2em", maxWidth: "50em", margin: "0 auto" }}>
+        FMS Insight creates a log database in the configured data directory (defaults to{" "}
+        <code>c:\ProgramData\SeedTactics\FMSInsight</code>). The log database should be periodically backed up and can
+        then be opened directly by this program to view the data.
+      </p>
       {props.loading_error ? <p>{props.loading_error.message || props.loading_error}</p> : undefined}
-      <Button onClick={props.onRequestOpenFile}>Open File</Button>
+      <Button style={{ marginTop: "2em" }} variant="contained" color="primary" onClick={props.onRequestOpenFile}>
+        Open File
+      </Button>
     </div>
   );
 });
