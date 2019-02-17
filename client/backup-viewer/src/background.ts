@@ -166,3 +166,37 @@ b.register(
     return await Promise.all(rows.map(r => convertRowToLog(db, r)));
   }
 );
+
+b.register(
+  "log-for-material",
+  async (a: {
+    materialID: number;
+  }): Promise<ReadonlyArray<Readonly<ILogEntry>>> => {
+    const db = await dbP;
+    const rows = await db.all(
+      "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
+        " FROM stations WHERE Counter IN (SELECT Counter FROM stations_mat WHERE MaterialID = $mat) ORDER BY Counter ASC",
+      {
+        $mat: a.materialID
+      }
+    );
+    return await Promise.all(rows.map(r => convertRowToLog(db, r)));
+  }
+);
+
+b.register(
+  "log-for-serial",
+  async (a: {
+    serial: string;
+  }): Promise<ReadonlyArray<Readonly<ILogEntry>>> => {
+    const db = await dbP;
+    const rows = await db.all(
+      "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
+        " FROM stations WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.Serial = $ser) ORDER BY Counter ASC",
+      {
+        $ser: a.serial
+      }
+    );
+    return await Promise.all(rows.map(r => convertRowToLog(db, r)));
+  }
+);

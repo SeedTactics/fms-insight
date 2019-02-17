@@ -99,17 +99,29 @@ export const LogBackend = {
   recent(
     lastSeenCounter: number
   ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
-    return Promise.resolve([]);
+    return Promise.reject("not implemented");
   },
-  logForMaterial(
+  async logForMaterial(
     materialID: number
   ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
-    return Promise.resolve([]);
+    const entries: ReadonlyArray<object> = await ToBackground.send(
+      "log-for-material",
+      {
+        materialID
+      }
+    );
+    return entries.map(api.LogEntry.fromJS);
   },
-  logForSerial(
+  async logForSerial(
     serial: string
   ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
-    return Promise.resolve([]);
+    const entries: ReadonlyArray<object> = await ToBackground.send(
+      "log-for-serial",
+      {
+        serial
+      }
+    );
+    return entries.map(api.LogEntry.fromJS);
   },
   getWorkorders(
     ids: string[]
