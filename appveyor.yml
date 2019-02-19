@@ -119,6 +119,10 @@ build_script:
       Copy-Item "client\insight\demo" -Destination "website\build\fms-insight\demo" -Recurse -Force
       7z a website.zip .\website\build\fms-insight\*
 
+  - ps: |
+      yarn --cwd client/backup-viewer install --frozen-lockfile
+      yarn --cwd client/backup-viewer dist
+
 test_script:
   - cmd: dotnet test server/test
   - cmd: yarn --cwd client/insight test
@@ -136,6 +140,9 @@ artifacts:
   - path: "website.zip"
     name: Website
     type: zip
+
+  - path: "client/backup-viewer/package/*"
+    name: Backup Viewer Install
 
 deploy:
   - provider: NuGet
