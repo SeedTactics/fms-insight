@@ -20,7 +20,8 @@
       "client-station-monitor",
       "client-efficiency",
       "client-cost-per-piece",
-      "client-scanners"
+      "client-scanners",
+      "client-backup-viewer"
     ],
     "Integrations": ["mazak", "makino"]
   }

@@ -120,8 +120,13 @@ build_script:
       7z a website.zip .\website\build\fms-insight\*
 
   - ps: |
-      yarn --cwd client/backup-viewer install --frozen-lockfile
-      yarn --cwd client/backup-viewer dist
+      $tag = $(hg id -t -r '.^')
+      if ($tag.StartsWith("backup-viewer")) {
+        yarn --cwd client/backup-viewer install --frozen-lockfile
+        yarn --cwd client/backup-viewer dist
+        Copy-Item "client\backup-viewer\package\*.exe" -Destination "installers\FMS Insight Backup Viewer Install.exe" -Force
+        Set-AppveyorBuildVariable "BMS_INSTALLER_backup_RELEASE" "true"
+      }
 
 test_script:
   - cmd: dotnet test server/test
@@ -141,8 +146,8 @@ artifacts:
     name: Website
     type: zip
 
-  - path: "client/backup-viewer/package/*"
-    name: Backup Viewer Install
+  - path: "installers/*.exe"
+    name: Installers NSIS
 
 deploy:
   - provider: NuGet
@@ -191,6 +196,17 @@ deploy:
     access_key_id: AKIAIH2IT2INE2ISDGJA
     artifact: website.zip
     unzip: true
+    secret_access_key:
+      secure: 0r/dAyTIFbRaR3eIfnWdfz1hAYPu85mFntJavbWXsdUYkK6cSa1q6vZXWr2U0mUr
+    bucket: com.seedtactics.fms-insight
+    region: us-west-2
+
+  - provider: S3
+    on:
+      branch: default
+      BMS_INSTALLER_backup_RELEASE: true
+    access_key_id: AKIAIH2IT2INE2ISDGJA
+    artifact: /installers.*Backup.*/
     secret_access_key:
       secure: 0r/dAyTIFbRaR3eIfnWdfz1hAYPu85mFntJavbWXsdUYkK6cSa1q6vZXWr2U0mUr
     bucket: com.seedtactics.fms-insight
