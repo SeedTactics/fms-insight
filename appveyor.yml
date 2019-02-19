@@ -54,54 +54,63 @@ build_script:
 
   - ps: |
       function ver ($x) { c:\python36\python.exe build/version.py $x }
+      $tag = $(hg id -t -r '.^')
       dotnet pack `
           --include-symbols `
           -c Release `
           /p:VersionPrefix=$(ver mazak) `
           --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
           server/machines/mazak/mazak.csproj
-      dotnet publish `
-          -c Release `
-          -f net461 `
-          /p:VersionPrefix=$(ver mazak) `
-          --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
-          server/machines/mazak/mazak.csproj
+      if ($tag.StartsWith("mazak")) {
+        dotnet publish `
+            -c Release `
+            -f net461 `
+            /p:VersionPrefix=$(ver mazak) `
+            --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
+            server/machines/mazak/mazak.csproj
 
-      ./build/insight-installer-build.ps1 mazak
+        ./build/insight-installer-build.ps1 mazak
+      }
 
   - ps: |
       function ver ($x) { c:\python36\python.exe build/version.py $x }
+      $tag = $(hg id -t -r '.^')
       dotnet pack `
           --include-symbols `
           -c Release `
           /p:VersionPrefix=$(ver makino) `
           --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
           server/machines/makino/makino.csproj
-      dotnet publish `
-          -c Release `
-          -f net461 `
-          /p:VersionPrefix=$(ver makino) `
-          --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
-          server/machines/makino/makino.csproj
+      if ($tag.StartsWith("makino")) {
+        dotnet publish `
+            -c Release `
+            -f net461 `
+            /p:VersionPrefix=$(ver makino) `
+            --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
+            server/machines/makino/makino.csproj
 
-      ./build/insight-installer-build.ps1 makino
+        ./build/insight-installer-build.ps1 makino
+      }
 
   - ps: |
       function ver ($x) { c:\python36\python.exe build/version.py $x }
+      $tag = $(hg id -t -r '.^')
       dotnet pack `
           --include-symbols `
           -c Release `
           /p:VersionPrefix=$(ver cincron) `
           --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
           server/machines/cincron/cincron.csproj
-      dotnet publish `
-          -c Release `
-          -f net461 `
-          /p:VersionPrefix=$(ver cincron) `
-          --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
-          server/machines/cincron/cincron.csproj
+      if ($tag.StartsWith("cincron")) {
+        dotnet publish `
+            -c Release `
+            -f net461 `
+            /p:VersionPrefix=$(ver cincron) `
+            --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
+            server/machines/cincron/cincron.csproj
 
-      ./build/insight-installer-build.ps1 cincron
+        ./build/insight-installer-build.ps1 cincron
+      }
 
   - ps: |
       yarn --cwd client/insight run build-demo
