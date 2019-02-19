@@ -83,6 +83,8 @@ async function loadInfo(): Promise<LoadReturn> {
     url = undefined;
   } else if (fmsInfo.name === "SimulationLab") {
     url = undefined;
+  } else if (fmsInfo.name === "FMS Insight Backup Viewer") {
+    url = undefined;
   } else if (fmsInfo.name) {
     url = "https://fms-insight.seedtactics.com/installers/" + fmsInfo.name + "-latest.json";
   }

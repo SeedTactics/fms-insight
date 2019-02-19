@@ -37,9 +37,22 @@ import { RendererToBackground } from "./ipc";
 declare global {
   interface Window {
     electronIpc: IpcRenderer;
+    bmsVersion: string;
   }
 }
 const ToBackground = new RendererToBackground(window.electronIpc);
+
+export const ServerBackend = {
+  fMSInformation() {
+    return Promise.resolve({
+      name: "FMS Insight Backup Viewer",
+      version: window.bmsVersion,
+      requireScanAtWash: false,
+      requireWorkorderBeforeAllowWashComplete: false,
+      additionalLogServers: []
+    });
+  }
+};
 
 export const JobsBackend = {
   history(startUTC: Date, endUTC: Date): Promise<Readonly<api.IHistoricData>> {

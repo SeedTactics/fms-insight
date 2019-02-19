@@ -399,18 +399,8 @@ export function registerMockBackend() {
   initMockBackend(mockDataPromise);
 }
 
-export function registerBackupViewerBackend(log: LogAPI, job: JobAPI) {
+export function registerBackend(log: LogAPI, job: JobAPI, server: ServerAPI) {
   LogBackend = log;
   JobsBackend = job;
-  ServerBackend = {
-    fMSInformation() {
-      return Promise.resolve({
-        name: "Backup Viewer",
-        version: "1.0.0",
-        requireScanAtWash: false,
-        requireWorkorderBeforeAllowWashComplete: false,
-        additionalLogServers: []
-      });
-    }
-  };
+  ServerBackend = server;
 }
