@@ -217,7 +217,7 @@ namespace Cincron
       //part completed message.  Store in memory since typically there is an Unload Start event
       //which happens right afterwords.
       var comp = msg as CincronMessage.PartCompleted;
-      if (comp != null)
+      if (comp != null && comp.Setup == 2)
       {
         for (int i = 0; i < repeatCount; i++)
         {
