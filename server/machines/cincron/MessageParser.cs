@@ -219,7 +219,7 @@ namespace Cincron
 
       public string WorkId { get; set; }
       public string PartName { get; set; }
-      public int Setup { get; set; } // what is this???
+      public int Setup { get; set; } // process number
 
       public override string ToString()
       {
