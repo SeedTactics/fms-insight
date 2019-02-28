@@ -113,7 +113,7 @@ function format_tick(p: CompletedDataPoint) {
   return (
     <tspan>
       <tspan>{p.part}</tspan>
-      <tspan x={0} dy={12}>
+      <tspan x={0} dy="1.2em">
         {p.completedCount} / {p.totalCount}
       </tspan>
     </tspan>
