@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2019, John Lenz
 
 All rights reserved.
 
@@ -109,6 +109,17 @@ function format_hint(j: CompletedDataPoint) {
   ];
 }
 
+function format_tick(p: CompletedDataPoint) {
+  return (
+    <tspan>
+      <tspan>{p.part}</tspan>
+      <tspan x={0} dy={12}>
+        {p.completedCount} / {p.totalCount}
+      </tspan>
+    </tspan>
+  );
+}
+
 class CurrentJobs extends React.PureComponent<CurrentJobsProps, JobState> {
   state: JobState = {};
 
@@ -125,7 +136,7 @@ class CurrentJobs extends React.PureComponent<CurrentJobsProps, JobState> {
     return (
       <Plot cnt={this.props.completedData.length}>
         <XAxis />
-        <YAxis tickFormat={(y: number, i: number) => this.props.completedData[i].part} />
+        <YAxis tickFormat={(y: number, i: number) => format_tick(this.props.completedData[i])} />
         <HorizontalGridLines />
         <VerticalGridLines />
         <HorizontalBarSeries
@@ -134,7 +145,12 @@ class CurrentJobs extends React.PureComponent<CurrentJobsProps, JobState> {
           onValueMouseOver={this.setHint}
           onValueMouseOut={this.clearHint}
         />
-        <CustomSVGSeries data={this.props.planData} customComponent={targetMark} />
+        <CustomSVGSeries
+          data={this.props.planData}
+          customComponent={targetMark}
+          onValueMouseOver={(p: { x: number; y: number }) => this.setHint({ ...this.props.completedData[p.y], x: p.x })}
+          onValueMouseOut={this.clearHint}
+        />
         {this.state.hoveredJob === undefined ? undefined : <Hint value={this.state.hoveredJob} format={format_hint} />}
       </Plot>
     );
