@@ -179,7 +179,19 @@ exports[`renders the dashboard: current jobs plot 1`] = `
             text-anchor="end"
             transform="translate(-14, 0)"
           >
-            zzz-1
+            <tspan>
+              <tspan>
+                zzz-1
+              </tspan>
+              <tspan
+                dy="1.2em"
+                x="0"
+              >
+                17
+                 / 
+                22
+              </tspan>
+            </tspan>
           </text>
         </g>
         <g
@@ -199,7 +211,19 @@ exports[`renders the dashboard: current jobs plot 1`] = `
             text-anchor="end"
             transform="translate(-14, 0)"
           >
-            yyy-1
+            <tspan>
+              <tspan>
+                yyy-1
+              </tspan>
+              <tspan
+                dy="1.2em"
+                x="0"
+              >
+                10
+                 / 
+                28
+              </tspan>
+            </tspan>
           </text>
         </g>
         <g
@@ -219,7 +243,19 @@ exports[`renders the dashboard: current jobs plot 1`] = `
             text-anchor="end"
             transform="translate(-14, 0)"
           >
-            xxx-1
+            <tspan>
+              <tspan>
+                xxx-1
+              </tspan>
+              <tspan
+                dy="1.2em"
+                x="0"
+              >
+                1
+                 / 
+                3
+              </tspan>
+            </tspan>
           </text>
         </g>
         <g
@@ -239,7 +275,19 @@ exports[`renders the dashboard: current jobs plot 1`] = `
             text-anchor="end"
             transform="translate(-14, 0)"
           >
-            ccc-2
+            <tspan>
+              <tspan>
+                ccc-2
+              </tspan>
+              <tspan
+                dy="1.2em"
+                x="0"
+              >
+                0
+                 / 
+                17
+              </tspan>
+            </tspan>
           </text>
         </g>
         <g
@@ -259,7 +307,19 @@ exports[`renders the dashboard: current jobs plot 1`] = `
             text-anchor="end"
             transform="translate(-14, 0)"
           >
-            ccc-1
+            <tspan>
+              <tspan>
+                ccc-1
+              </tspan>
+              <tspan
+                dy="1.2em"
+                x="0"
+              >
+                0
+                 / 
+                17
+              </tspan>
+            </tspan>
           </text>
         </g>
         <g
@@ -279,7 +339,19 @@ exports[`renders the dashboard: current jobs plot 1`] = `
             text-anchor="end"
             transform="translate(-14, 0)"
           >
-            bbb-2
+            <tspan>
+              <tspan>
+                bbb-2
+              </tspan>
+              <tspan
+                dy="1.2em"
+                x="0"
+              >
+                0
+                 / 
+                10
+              </tspan>
+            </tspan>
           </text>
         </g>
         <g
@@ -299,7 +371,19 @@ exports[`renders the dashboard: current jobs plot 1`] = `
             text-anchor="end"
             transform="translate(-14, 0)"
           >
-            bbb-1
+            <tspan>
+              <tspan>
+                bbb-1
+              </tspan>
+              <tspan
+                dy="1.2em"
+                x="0"
+              >
+                8
+                 / 
+                10
+              </tspan>
+            </tspan>
           </text>
         </g>
         <g
@@ -319,7 +403,19 @@ exports[`renders the dashboard: current jobs plot 1`] = `
             text-anchor="end"
             transform="translate(-14, 0)"
           >
-            aaa-2
+            <tspan>
+              <tspan>
+                aaa-2
+              </tspan>
+              <tspan
+                dy="1.2em"
+                x="0"
+              >
+                2
+                 / 
+                16
+              </tspan>
+            </tspan>
           </text>
         </g>
         <g
@@ -339,7 +435,19 @@ exports[`renders the dashboard: current jobs plot 1`] = `
             text-anchor="end"
             transform="translate(-14, 0)"
           >
-            aaa-1
+            <tspan>
+              <tspan>
+                aaa-1
+              </tspan>
+              <tspan
+                dy="1.2em"
+                x="0"
+              >
+                5
+                 / 
+                16
+              </tspan>
+            </tspan>
           </text>
         </g>
       </g>

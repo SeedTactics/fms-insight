@@ -85,7 +85,9 @@ interface PartStationCycleChartProps {
   readonly selectedPart?: string;
   readonly selectedPallet?: string;
   readonly selectedStation?: string;
+  readonly zoomDateRange?: { start: Date; end: Date };
   readonly setSelected: DispatchAction<guiState.ActionType.SetSelectedStationCycle>;
+  readonly setZoomRange: DispatchAction<guiState.ActionType.SetStationCycleDateZoom>;
   readonly openManualSerialEntry: () => void;
   readonly openMaterial: (matId: number) => void;
 }
@@ -130,7 +132,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
             {props.points.data.length() > 0 ? (
               <Tooltip title="Copy to Clipboard">
                 <IconButton
-                  onClick={() => copyCyclesToClipboard(props.points)}
+                  onClick={() => copyCyclesToClipboard(props.points, props.zoomDateRange)}
                   style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
                 >
                   <ImportExport />
@@ -231,6 +233,8 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
           series_label={props.points.seriesLabel}
           default_date_range={props.default_date_range}
           extra_tooltip={extraStationCycleTooltip}
+          current_date_zoom={props.zoomDateRange}
+          set_date_zoom_range={props.setZoomRange}
         />
       </CardContent>
     </Card>
@@ -271,6 +275,7 @@ const ConnectedPartStationCycleChart = connect(
     selectedPart: st.Gui.station_cycle_selected_part,
     selectedPallet: st.Gui.station_cycle_selected_pallet,
     selectedStation: st.Gui.station_cycle_selected_station,
+    zoomDateRange: st.Gui.station_cycle_date_zoom,
     stationNames:
       st.Events.analysis_period === events.AnalysisPeriod.Last30Days
         ? st.Events.last30.cycles.station_names
@@ -286,6 +291,7 @@ const ConnectedPartStationCycleChart = connect(
   }),
   {
     setSelected: mkAC(guiState.ActionType.SetSelectedStationCycle),
+    setZoomRange: mkAC(guiState.ActionType.SetStationCycleDateZoom),
     openManualSerialEntry: () => ({
       type: guiState.ActionType.SetManualSerialEntryDialog,
       open: true
@@ -303,6 +309,8 @@ interface PalletCycleChartProps {
   readonly default_date_range: Date[];
   readonly selected?: string;
   readonly setSelected: (s: string) => void;
+  readonly zoomDateRange?: { start: Date; end: Date };
+  readonly setZoomRange: DispatchAction<guiState.ActionType.SetStationCycleDateZoom>;
 }
 
 function PalletCycleChart(props: PalletCycleChartProps) {
@@ -350,7 +358,13 @@ function PalletCycleChart(props: PalletCycleChartProps) {
         }
       />
       <CardContent>
-        <CycleChart points={points} series_label="Pallet" default_date_range={props.default_date_range} />
+        <CycleChart
+          points={points}
+          series_label="Pallet"
+          default_date_range={props.default_date_range}
+          current_date_zoom={props.zoomDateRange}
+          set_date_zoom_range={props.setZoomRange}
+        />
       </CardContent>
     </Card>
   );
@@ -363,13 +377,15 @@ function palletCycleSelector(st: Store) {
     return {
       points: st.Events.last30.cycles.by_pallet,
       selected: st.Gui.pallet_cycle_selected,
-      default_date_range: [oneMonthAgo, now]
+      default_date_range: [oneMonthAgo, now],
+      zoomDateRange: st.Gui.pallet_cycle_date_zoom
     };
   } else {
     return {
       points: st.Events.selected_month.cycles.by_pallet,
       selected: st.Gui.pallet_cycle_selected,
-      default_date_range: [st.Events.analysis_period_month, addMonths(st.Events.analysis_period_month, 1)]
+      default_date_range: [st.Events.analysis_period_month, addMonths(st.Events.analysis_period_month, 1)],
+      zoomDateRange: st.Gui.pallet_cycle_date_zoom
     };
   }
 }
@@ -380,7 +396,8 @@ const ConnectedPalletCycleChart = connect(
     setSelected: (p: string) => ({
       type: guiState.ActionType.SetSelectedPalletCycle,
       pallet: p
-    })
+    }),
+    setZoomRange: mkAC(guiState.ActionType.SetStationCycleDateZoom)
   }
 )(PalletCycleChart);
 

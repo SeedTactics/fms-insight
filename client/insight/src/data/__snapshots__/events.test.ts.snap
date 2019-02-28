@@ -94,56 +94,28 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 5, 2018, 0:38 am
+          Mar 4, 2018, 9:05 am
         </td>
         <td>
-          partp-1
+          partw-0
         </td>
         <td>
-          MC #1
+          L/U #1
         </td>
         <td>
-          palj
+          pal8
         </td>
         <td>
-          serialc
-        </td>
-        <td>
-          workh
-        </td>
-        <td>
-          30.0
-        </td>
-        <td>
-          30.0
-        </td>
-      </tr>
-      
-
-      <tr>
-        <td>
-          Mar 4, 2018, 21:28 pm
-        </td>
-        <td>
-          parte-4
-        </td>
-        <td>
-          MC #1
-        </td>
-        <td>
-          pal9
-        </td>
-        <td>
-          serial6
+          serialm
         </td>
         <td>
           worki
         </td>
         <td>
-          20.0
+          6.0
         </td>
         <td>
-          20.0
+          6.0
         </td>
       </tr>
       
@@ -178,28 +150,28 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 5, 2018, 0:05 am
+          Mar 4, 2018, 9:33 am
         </td>
         <td>
-          partp-1
+          partw-0
         </td>
         <td>
-          L/U #1
+          L/U #2
         </td>
         <td>
-          palj
+          pal8
         </td>
         <td>
-          serialc
+          serialm
         </td>
         <td>
-          workh
+          worki
         </td>
         <td>
-          6.0
+          3.0
         </td>
         <td>
-          6.0
+          3.0
         </td>
       </tr>
       
@@ -234,56 +206,28 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 9:05 am
+          Mar 4, 2018, 21:28 pm
         </td>
         <td>
-          partw-0
+          parte-4
         </td>
         <td>
-          L/U #1
+          MC #1
         </td>
         <td>
-          pal8
+          pal9
         </td>
         <td>
-          serialm
+          serial6
         </td>
         <td>
           worki
         </td>
         <td>
-          6.0
+          20.0
         </td>
         <td>
-          6.0
-        </td>
-      </tr>
-      
-
-      <tr>
-        <td>
-          Mar 5, 2018, 0:48 am
-        </td>
-        <td>
-          partp-1
-        </td>
-        <td>
-          L/U #2
-        </td>
-        <td>
-          palj
-        </td>
-        <td>
-          serialc
-        </td>
-        <td>
-          workh
-        </td>
-        <td>
-          3.0
-        </td>
-        <td>
-          3.0
+          20.0
         </td>
       </tr>
       
@@ -318,19 +262,204 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 9:33 am
+          Mar 5, 2018, 0:05 am
         </td>
         <td>
-          partw-0
+          partp-1
+        </td>
+        <td>
+          L/U #1
+        </td>
+        <td>
+          palj
+        </td>
+        <td>
+          serialc
+        </td>
+        <td>
+          workh
+        </td>
+        <td>
+          6.0
+        </td>
+        <td>
+          6.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 5, 2018, 0:38 am
+        </td>
+        <td>
+          partp-1
+        </td>
+        <td>
+          MC #1
+        </td>
+        <td>
+          palj
+        </td>
+        <td>
+          serialc
+        </td>
+        <td>
+          workh
+        </td>
+        <td>
+          30.0
+        </td>
+        <td>
+          30.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 5, 2018, 0:48 am
+        </td>
+        <td>
+          partp-1
         </td>
         <td>
           L/U #2
         </td>
         <td>
-          pal8
+          palj
         </td>
         <td>
-          serialm
+          serialc
+        </td>
+        <td>
+          workh
+        </td>
+        <td>
+          3.0
+        </td>
+        <td>
+          3.0
+        </td>
+      </tr>
+      
+
+    </tbody>
+    
+
+  </table>
+</div>
+`;
+
+exports[`creates cycles clipboard table: cycle filtered clipboard table 1`] = `
+<div>
+  <table>
+    
+
+    <thead>
+      <tr>
+        <th>
+          Date
+        </th>
+        <th>
+          Part
+        </th>
+        <th>
+          Station
+        </th>
+        <th>
+          Pallet
+        </th>
+        <th>
+          Serial
+        </th>
+        <th>
+          Workorder
+        </th>
+        <th>
+          Elapsed Min
+        </th>
+        <th>
+          Active Min
+        </th>
+      </tr>
+    </thead>
+    
+
+    <tbody>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 21:05 pm
+        </td>
+        <td>
+          parte-4
+        </td>
+        <td>
+          L/U #1
+        </td>
+        <td>
+          pal9
+        </td>
+        <td>
+          serial6
+        </td>
+        <td>
+          worki
+        </td>
+        <td>
+          6.0
+        </td>
+        <td>
+          6.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 21:28 pm
+        </td>
+        <td>
+          parte-4
+        </td>
+        <td>
+          MC #1
+        </td>
+        <td>
+          pal9
+        </td>
+        <td>
+          serial6
+        </td>
+        <td>
+          worki
+        </td>
+        <td>
+          20.0
+        </td>
+        <td>
+          20.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 21:38 pm
+        </td>
+        <td>
+          parte-4
+        </td>
+        <td>
+          L/U #2
+        </td>
+        <td>
+          pal9
+        </td>
+        <td>
+          serial6
         </td>
         <td>
           worki

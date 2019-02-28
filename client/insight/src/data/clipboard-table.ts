@@ -95,12 +95,22 @@ export function copyPointsToClipboard(yTitle: string, points: ReadonlyArray<Clip
   copy(buildPointsTable(yTitle, points));
 }
 
-export function buildCycleTable(cycles: FilteredStationCycles): string {
+export function buildCycleTable(
+  cycles: FilteredStationCycles,
+  startD: Date | undefined,
+  endD: Date | undefined
+): string {
   let table = "<table>\n<thead><tr>";
   table += "<th>Date</th><th>Part</th><th>Station</th><th>Pallet</th>";
   table += "<th>Serial</th><th>Workorder</th><th>Elapsed Min</th><th>Active Min</th>";
   table += "</tr></thead>\n<tbody>\n";
-  for (let cycle of LazySeq.ofIterable(cycles.data).flatMap(([_, c]) => c)) {
+
+  let filteredCycles = LazySeq.ofIterable(cycles.data)
+    .flatMap(([_, c]) => c)
+    .filter(p => (!startD || p.x >= startD) && (!endD || p.x < endD))
+    .toArray()
+    .sort((a, b) => a.x.getTime() - b.x.getTime());
+  for (let cycle of filteredCycles) {
     table += "<tr>";
     table += "<td>" + format(cycle.x, "MMM D, YYYY, H:mm a") + "</td>";
     table += "<td>" + cycle.part + "-" + cycle.process.toString() + "</td>";
@@ -116,8 +126,11 @@ export function buildCycleTable(cycles: FilteredStationCycles): string {
   return table;
 }
 
-export function copyCyclesToClipboard(cycles: FilteredStationCycles): void {
-  copy(buildCycleTable(cycles));
+export function copyCyclesToClipboard(
+  cycles: FilteredStationCycles,
+  zoom: { start: Date; end: Date } | undefined
+): void {
+  copy(buildCycleTable(cycles, zoom ? zoom.start : undefined, zoom ? zoom.end : undefined));
 }
 
 function stat_name(e: Readonly<api.ILogEntry>): string {

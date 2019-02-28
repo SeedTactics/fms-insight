@@ -39,7 +39,9 @@ export enum PlannedOrActual {
 
 export enum ActionType {
   SetSelectedStationCycle = "Gui_SetSelectedStationCycle",
+  SetStationCycleDateZoom = "Gui_SetStationCycleDateZoom",
   SetSelectedPalletCycle = "Gui_SetSelectedPalletCycle",
+  SetPalletCycleDateZoom = "Gui_SetPalletCycleDateZoom",
   SetStationOeeHeatmapType = "Gui_SetStationOeeHeatmapType",
   SetCompletedCountHeatmapType = "Gui_SetCompletedCountHeatmapType",
   SetWorkorderDialogOpen = "Gui_SetWorkorderDialog",
@@ -54,7 +56,9 @@ export enum ActionType {
 
 export type Action =
   | { type: ActionType.SetSelectedStationCycle; part?: string; station?: string; pallet?: string }
+  | { type: ActionType.SetStationCycleDateZoom; zoom?: { start: Date; end: Date } }
   | { type: ActionType.SetSelectedPalletCycle; pallet: string }
+  | { type: ActionType.SetPalletCycleDateZoom; zoom?: { start: Date; end: Date } }
   | { type: ActionType.SetStationOeeHeatmapType; ty: PlannedOrActual }
   | { type: ActionType.SetCompletedCountHeatmapType; ty: PlannedOrActual }
   | { type: ActionType.SetWorkorderDialogOpen; open: boolean }
@@ -70,7 +74,9 @@ export interface State {
   readonly station_cycle_selected_part?: string;
   readonly station_cycle_selected_station?: string;
   readonly station_cycle_selected_pallet?: string;
+  readonly station_cycle_date_zoom?: { start: Date; end: Date };
   readonly pallet_cycle_selected?: string;
+  readonly pallet_cycle_date_zoom?: { start: Date; end: Date };
   readonly station_oee_heatmap_type: PlannedOrActual;
   readonly completed_count_heatmap_type: PlannedOrActual;
   readonly workorder_dialog_open: boolean;
@@ -107,8 +113,12 @@ export function reducer(s: State, a: Action): State {
         station_cycle_selected_station: a.station,
         station_cycle_selected_pallet: a.pallet
       };
+    case ActionType.SetStationCycleDateZoom:
+      return { ...s, station_cycle_date_zoom: a.zoom };
     case ActionType.SetSelectedPalletCycle:
       return { ...s, pallet_cycle_selected: a.pallet };
+    case ActionType.SetPalletCycleDateZoom:
+      return { ...s, pallet_cycle_date_zoom: a.zoom };
     case ActionType.SetStationOeeHeatmapType:
       return { ...s, station_oee_heatmap_type: a.ty };
     case ActionType.SetCompletedCountHeatmapType:

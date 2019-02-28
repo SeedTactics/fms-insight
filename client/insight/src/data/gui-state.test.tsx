@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as gui from "./gui-state";
+import { addHours } from "date-fns";
 
 it("creates initial state", () => {
   // tslint:disable no-any
@@ -96,12 +97,42 @@ it("selects a station for the station cycle", () => {
   expect(s.station_cycle_selected_station).toEqual("www");
 });
 
+it("sets the station zoom range", () => {
+  const now = new Date();
+  let s = gui.reducer(gui.initial, {
+    type: gui.ActionType.SetStationCycleDateZoom,
+    zoom: { start: addHours(now, -2), end: now }
+  });
+  expect(s.station_cycle_date_zoom).toEqual({ start: addHours(now, -2), end: now });
+
+  s = gui.reducer(gui.initial, {
+    type: gui.ActionType.SetStationCycleDateZoom,
+    zoom: undefined
+  });
+  expect(s.station_cycle_date_zoom).toBeUndefined();
+});
+
 it("selects a pallet for the pallet cycle chart", () => {
   let s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetSelectedPalletCycle,
     pallet: "pal555"
   });
   expect(s.pallet_cycle_selected).toEqual("pal555");
+});
+
+it("sets the pallet zoom range", () => {
+  const now = new Date();
+  let s = gui.reducer(gui.initial, {
+    type: gui.ActionType.SetPalletCycleDateZoom,
+    zoom: { start: addHours(now, -2), end: now }
+  });
+  expect(s.pallet_cycle_date_zoom).toEqual({ start: addHours(now, -2), end: now });
+
+  s = gui.reducer(gui.initial, {
+    type: gui.ActionType.SetPalletCycleDateZoom,
+    zoom: undefined
+  });
+  expect(s.pallet_cycle_date_zoom).toBeUndefined();
 });
 
 it("sets the station oee heatmap type", () => {

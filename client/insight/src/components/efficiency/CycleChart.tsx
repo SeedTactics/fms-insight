@@ -68,6 +68,8 @@ export interface CycleChartProps {
   readonly series_label: string;
   readonly extra_tooltip?: (point: CycleChartPoint) => ReadonlyArray<ExtraTooltip>;
   readonly default_date_range: Date[];
+  readonly current_date_zoom: { start: Date; end: Date } | undefined;
+  readonly set_date_zoom_range: (p: { zoom?: { start: Date; end: Date } }) => void;
 }
 
 interface CycleChartTooltip {
@@ -77,10 +79,6 @@ interface CycleChartTooltip {
   readonly extra: ReadonlyArray<ExtraTooltip>;
 }
 
-interface DateZoomRange {
-  x_low: Date;
-  x_high: Date;
-}
 interface YZoomRange {
   y_low: number;
   y_high: number;
@@ -89,7 +87,6 @@ interface YZoomRange {
 interface CycleChartState {
   readonly tooltip?: CycleChartTooltip;
   readonly disabled_series: { [key: string]: boolean };
-  readonly current_x_zoom_range: DateZoomRange | null;
   readonly current_y_zoom_range: YZoomRange | null;
   readonly brushing: boolean;
   readonly zoom_dialog_open: boolean;
@@ -128,7 +125,6 @@ export const CycleChart = withStyles(cycleChartStyles)(
     state = {
       tooltip: undefined,
       disabled_series: {},
-      current_x_zoom_range: null,
       current_y_zoom_range: null,
       brushing: false,
       zoom_dialog_open: false
@@ -201,8 +197,8 @@ export const CycleChart = withStyles(cycleChartStyles)(
             onMouseLeave={this.clearTooltip}
             dontCheckIfEmpty
             xDomain={
-              this.state.current_x_zoom_range
-                ? [this.state.current_x_zoom_range.x_low, this.state.current_x_zoom_range.x_high]
+              this.props.current_date_zoom
+                ? [this.props.current_date_zoom.start, this.props.current_date_zoom.end]
                 : this.props.points.isEmpty()
                 ? dateRange
                 : undefined
@@ -223,8 +219,8 @@ export const CycleChart = withStyles(cycleChartStyles)(
               onBrushStart={() => this.setState({ brushing: true })}
               onBrushEnd={(area: { left: Date; right: Date; bottom: number; top: number }) => {
                 if (area) {
+                  this.props.set_date_zoom_range({ zoom: { start: area.left, end: area.right } });
                   this.setState({
-                    current_x_zoom_range: { x_low: area.left, x_high: area.right },
                     current_y_zoom_range: { y_low: area.bottom, y_high: area.top },
                     brushing: false
                   });
@@ -262,11 +258,14 @@ export const CycleChart = withStyles(cycleChartStyles)(
                 undefined
               )}
             </div>
-            {this.state.current_x_zoom_range || this.state.current_y_zoom_range ? (
+            {this.props.current_date_zoom || this.state.current_y_zoom_range ? (
               <Button
                 size="small"
                 style={{ position: "absolute", right: "10em", top: 0 }}
-                onClick={() => this.setState({ current_x_zoom_range: null, current_y_zoom_range: null })}
+                onClick={() => {
+                  this.props.set_date_zoom_range({ zoom: undefined });
+                  this.setState({ current_y_zoom_range: null });
+                }}
               >
                 Reset Zoom
               </Button>
@@ -294,15 +293,13 @@ export const CycleChart = withStyles(cycleChartStyles)(
                     type="date"
                     inputProps={{ step: 1 }}
                     value={encodeDateForInput(
-                      this.state.current_x_zoom_range ? this.state.current_x_zoom_range.x_low : dateRange[0]
+                      this.props.current_date_zoom ? this.props.current_date_zoom.start : dateRange[0]
                     )}
                     onChange={e =>
-                      this.setState({
-                        current_x_zoom_range: {
-                          x_low: new Date((e.target as HTMLInputElement).valueAsDate),
-                          x_high: this.state.current_x_zoom_range
-                            ? this.state.current_x_zoom_range.x_high
-                            : dateRange[1]
+                      this.props.set_date_zoom_range({
+                        zoom: {
+                          start: new Date((e.target as HTMLInputElement).valueAsDate),
+                          end: this.props.current_date_zoom ? this.props.current_date_zoom.end : dateRange[1]
                         }
                       })
                     }
@@ -314,13 +311,13 @@ export const CycleChart = withStyles(cycleChartStyles)(
                     type="date"
                     inputProps={{ step: 1 }}
                     value={encodeDateForInput(
-                      this.state.current_x_zoom_range ? this.state.current_x_zoom_range.x_high : dateRange[1]
+                      this.props.current_date_zoom ? this.props.current_date_zoom.end : dateRange[1]
                     )}
                     onChange={e =>
-                      this.setState({
-                        current_x_zoom_range: {
-                          x_low: this.state.current_x_zoom_range ? this.state.current_x_zoom_range.x_low : dateRange[0],
-                          x_high: new Date((e.target as HTMLInputElement).valueAsDate)
+                      this.props.set_date_zoom_range({
+                        zoom: {
+                          start: this.props.current_date_zoom ? this.props.current_date_zoom.start : dateRange[0],
+                          end: new Date((e.target as HTMLInputElement).valueAsDate)
                         }
                       })
                     }
