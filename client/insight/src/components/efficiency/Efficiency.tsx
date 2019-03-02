@@ -62,6 +62,7 @@ import { MaterialDialog, PartIdenticon } from "../station-monitor/Material";
 import { LazySeq } from "../../data/lazyseq";
 import { copyCyclesToClipboard } from "../../data/clipboard-table";
 import ManualScan from "../station-monitor/ManualScan";
+import StationDataTable from "./StationDataTable";
 
 // --------------------------------------------------------------------------------
 // Station Cycles
@@ -82,6 +83,7 @@ interface PartStationCycleChartProps {
   readonly palletNames: HashSet<string>;
   readonly points: FilteredStationCycles;
   readonly default_date_range: Date[];
+  readonly analysisPeriod: events.AnalysisPeriod;
   readonly selectedPart?: string;
   readonly selectedPallet?: string;
   readonly selectedStation?: string;
@@ -121,6 +123,8 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
     return ret;
   }
 
+  const [showGraph, setShowGraph] = React.useState(true);
+
   return (
     <Card raised>
       <CardHeader
@@ -150,10 +154,24 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
               </IconButton>
             </Tooltip>
             <Select
+              name="Station-Cycles-chart-or-table-select"
+              autoWidth
+              value={showGraph ? "graph" : "table"}
+              onChange={e => setShowGraph(e.target.value === "graph")}
+            >
+              <MenuItem key="graph" value="graph">
+                Graph
+              </MenuItem>
+              <MenuItem key="table" value="table">
+                Table
+              </MenuItem>
+            </Select>
+            <Select
               name="Station-Cycles-cycle-chart-select"
               autoWidth
               displayEmpty
               value={props.selectedPart || ""}
+              style={{ marginLeft: "1em" }}
               onChange={e =>
                 props.setSelected({
                   part: e.target.value === "" ? undefined : e.target.value,
@@ -228,14 +246,24 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
         }
       />
       <CardContent>
-        <CycleChart
-          points={props.points.data}
-          series_label={props.points.seriesLabel}
-          default_date_range={props.default_date_range}
-          extra_tooltip={extraStationCycleTooltip}
-          current_date_zoom={props.zoomDateRange}
-          set_date_zoom_range={props.setZoomRange}
-        />
+        {showGraph ? (
+          <CycleChart
+            points={props.points.data}
+            series_label={props.points.seriesLabel}
+            default_date_range={props.default_date_range}
+            extra_tooltip={extraStationCycleTooltip}
+            current_date_zoom={props.zoomDateRange}
+            set_date_zoom_range={props.setZoomRange}
+          />
+        ) : (
+          <StationDataTable
+            points={props.points.data}
+            default_date_range={props.default_date_range}
+            current_date_zoom={props.zoomDateRange}
+            set_date_zoom_range={props.setZoomRange}
+            last30_days={props.analysisPeriod === events.AnalysisPeriod.Last30Days}
+          />
+        )}
       </CardContent>
     </Card>
   );
@@ -276,6 +304,7 @@ const ConnectedPartStationCycleChart = connect(
     selectedPallet: st.Gui.station_cycle_selected_pallet,
     selectedStation: st.Gui.station_cycle_selected_station,
     zoomDateRange: st.Gui.station_cycle_date_zoom,
+    analysisPeriod: st.Events.analysis_period,
     stationNames:
       st.Events.analysis_period === events.AnalysisPeriod.Last30Days
         ? st.Events.last30.cycles.station_names
