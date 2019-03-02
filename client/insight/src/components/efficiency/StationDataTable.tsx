@@ -53,6 +53,7 @@ import Button from "@material-ui/core/Button";
 import { HashMap } from "prelude-ts";
 import moment from "moment";
 import "react-dates/lib/css/_datepicker.css";
+import "./station-data-table.css";
 import "react-dates/initialize";
 import { DateRangePicker } from "react-dates";
 
@@ -80,7 +81,13 @@ interface Column {
 }
 
 const columns: ReadonlyArray<Column> = [
-  { id: ColumnId.Date, numeric: false, label: "Date", getDisplay: c => c.x.toString(), getForSort: c => c.x.getTime() },
+  {
+    id: ColumnId.Date,
+    numeric: false,
+    label: "Date",
+    getDisplay: c => c.x.toLocaleString(),
+    getForSort: c => c.x.getTime()
+  },
   { id: ColumnId.Part, numeric: false, label: "Part", getDisplay: c => c.part },
   {
     id: ColumnId.Station,
@@ -286,6 +293,7 @@ function StationTableActions(props: StationTableActionsProps) {
             numberOfMonths={1}
             withPortal
             openDirection="up"
+            hideKeyboardShortcutsPanel
             minimumNights={0}
             onDatesChange={d =>
               props.set_date_zoom_range({

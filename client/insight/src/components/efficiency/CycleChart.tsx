@@ -44,11 +44,6 @@ import {
   DiscreteColorLegend
 } from "react-vis";
 import Button from "@material-ui/core/Button";
-import Dialog from "@material-ui/core/Dialog";
-import DialogTitle from "@material-ui/core/DialogTitle";
-import DialogContent from "@material-ui/core/DialogContent";
-import DialogContentText from "@material-ui/core/DialogContentText";
-import TextField from "@material-ui/core/TextField";
 import { createStyles, withStyles, WithStyles } from "@material-ui/core";
 import { HashMap } from "prelude-ts";
 
@@ -89,7 +84,6 @@ interface CycleChartState {
   readonly disabled_series: { [key: string]: boolean };
   readonly current_y_zoom_range: YZoomRange | null;
   readonly brushing: boolean;
-  readonly zoom_dialog_open: boolean;
 }
 
 function memoize<A, R>(f: (x: A) => R): (x: A) => R {
@@ -112,10 +106,6 @@ const cycleChartStyles = createStyles({
     }
   }
 });
-
-function encodeDateForInput(d: Date): string {
-  return format(d, "YYYY-MM-DD");
-}
 
 export const CycleChart = withStyles(cycleChartStyles)(
   class CycleChartWithStyles extends React.PureComponent<
@@ -261,7 +251,7 @@ export const CycleChart = withStyles(cycleChartStyles)(
             {this.props.current_date_zoom || this.state.current_y_zoom_range ? (
               <Button
                 size="small"
-                style={{ position: "absolute", right: "10em", top: 0 }}
+                style={{ position: "absolute", right: 0, top: 0 }}
                 onClick={() => {
                   this.props.set_date_zoom_range({ zoom: undefined });
                   this.setState({ current_y_zoom_range: null });
@@ -272,94 +262,7 @@ export const CycleChart = withStyles(cycleChartStyles)(
             ) : (
               undefined
             )}
-            <Button
-              size="small"
-              style={{ position: "absolute", right: 0, top: 0 }}
-              onClick={() => this.setState({ zoom_dialog_open: true })}
-            >
-              Set Zoom
-            </Button>
           </div>
-          <Dialog onClose={() => this.setState({ zoom_dialog_open: false })} open={this.state.zoom_dialog_open}>
-            <DialogTitle>Set Zoom</DialogTitle>
-            <DialogContent>
-              <DialogContentText>
-                <em>You can also zoom by clicking and dragging on the chart.</em>
-              </DialogContentText>
-              <div>
-                <div style={{ marginTop: "0.5em" }}>
-                  <TextField
-                    label="Starting Day"
-                    type="date"
-                    inputProps={{ step: 1 }}
-                    value={encodeDateForInput(
-                      this.props.current_date_zoom ? this.props.current_date_zoom.start : dateRange[0]
-                    )}
-                    onChange={e =>
-                      this.props.set_date_zoom_range({
-                        zoom: {
-                          start: new Date((e.target as HTMLInputElement).valueAsDate),
-                          end: this.props.current_date_zoom ? this.props.current_date_zoom.end : dateRange[1]
-                        }
-                      })
-                    }
-                  />
-                </div>
-                <div style={{ marginTop: "0.5em" }}>
-                  <TextField
-                    label="Ending Day"
-                    type="date"
-                    inputProps={{ step: 1 }}
-                    value={encodeDateForInput(
-                      this.props.current_date_zoom ? this.props.current_date_zoom.end : dateRange[1]
-                    )}
-                    onChange={e =>
-                      this.props.set_date_zoom_range({
-                        zoom: {
-                          start: this.props.current_date_zoom ? this.props.current_date_zoom.start : dateRange[0],
-                          end: new Date((e.target as HTMLInputElement).valueAsDate)
-                        }
-                      })
-                    }
-                  />
-                </div>
-                <div style={{ marginTop: "0.5em" }}>
-                  <TextField
-                    label="Low Y Value (min)"
-                    type="number"
-                    inputProps={{ step: 1 }}
-                    placeholder="auto"
-                    value={this.state.current_y_zoom_range ? this.state.current_y_zoom_range.y_low : ""}
-                    onChange={e =>
-                      this.setState({
-                        current_y_zoom_range: {
-                          y_low: parseInt(e.target.value, 10),
-                          y_high: this.state.current_y_zoom_range ? this.state.current_y_zoom_range.y_high : 60
-                        }
-                      })
-                    }
-                  />
-                </div>
-                <div style={{ marginTop: "0.5em" }}>
-                  <TextField
-                    label="High Y Value (min)"
-                    type="number"
-                    inputProps={{ step: 1 }}
-                    placeholder="auto"
-                    value={this.state.current_y_zoom_range ? this.state.current_y_zoom_range.y_high : ""}
-                    onChange={e =>
-                      this.setState({
-                        current_y_zoom_range: {
-                          y_low: this.state.current_y_zoom_range ? this.state.current_y_zoom_range.y_low : 0,
-                          y_high: parseInt(e.target.value, 10)
-                        }
-                      })
-                    }
-                  />
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
         </div>
       );
     }
