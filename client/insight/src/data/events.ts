@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { addDays, addMonths, startOfMonth } from "date-fns";
-import { PledgeStatus, Pledge, ActionBeforeMiddleware } from "../store/middleware";
+import { PledgeStatus, Pledge, ActionBeforeMiddleware, PledgeToPromise } from "../store/middleware";
 import { Vector } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 
@@ -212,7 +212,7 @@ export function analyzeLast30Days(): ABF {
   return { type: ActionType.SetAnalysisLast30Days };
 }
 
-export function analyzeSpecificMonth(month: Date): ABF {
+export function analyzeSpecificMonth(month: Date): ReadonlyArray<PledgeToPromise<Action>> {
   var startOfNextMonth = addMonths(month, 1);
   return [
     {

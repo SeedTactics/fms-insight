@@ -42,25 +42,23 @@ import IconButton from "@material-ui/core/IconButton";
 import FirstPageIcon from "@material-ui/icons/FirstPage";
 import KeyboardArrowLeft from "@material-ui/icons/KeyboardArrowLeft";
 import KeyboardArrowRight from "@material-ui/icons/KeyboardArrowRight";
-import TextField from "@material-ui/core/TextField";
 import LastPageIcon from "@material-ui/icons/LastPage";
-import CalendarIcon from "@material-ui/icons/CalendarToday";
 import Toolbar from "@material-ui/core/Toolbar";
 import Typography from "@material-ui/core/Typography";
 import Select from "@material-ui/core/Select";
 import ZoomOutIcon from "@material-ui/icons/ZoomOut";
 import InputBase from "@material-ui/core/InputBase";
-import Dialog from "@material-ui/core/Dialog";
-import DialogTitle from "@material-ui/core/DialogTitle";
-import DialogContent from "@material-ui/core/DialogContent";
-import DialogContentText from "@material-ui/core/DialogContentText";
 import MenuItem from "@material-ui/core/MenuItem";
 import Button from "@material-ui/core/Button";
 import { HashMap } from "prelude-ts";
+import moment from "moment";
+import "react-dates/lib/css/_datepicker.css";
+import "react-dates/initialize";
+import { DateRangePicker } from "react-dates";
 
 import { PartCycleData } from "../../data/events.cycles";
 import { LazySeq } from "../../data/lazyseq";
-import { addDays, format, addHours } from "date-fns";
+import { addDays, addHours } from "date-fns";
 
 enum ColumnId {
   Date,
@@ -161,9 +159,9 @@ interface StationTableActionsProps {
   readonly last30_days: boolean;
   readonly setPage: (page: number) => void;
   readonly setRowsPerPage: (rpp: number) => void;
-  readonly end_time: Date;
+  readonly default_date_range: Date[];
+  readonly current_date_zoom: { start: Date; end: Date } | undefined;
   readonly set_date_zoom_range: (p: { zoom?: { start: Date; end: Date } }) => void;
-  readonly openDateSelect: () => void;
 }
 
 function StationTableActions(props: StationTableActionsProps) {
@@ -171,6 +169,7 @@ function StationTableActions(props: StationTableActionsProps) {
     const now = new Date();
     props.set_date_zoom_range({ zoom: { start: addDays(now, -numDaysBack), end: addHours(now, 1) } });
   }
+  const [focusedDateEntry, setFocusedDateEntry] = React.useState<"startDate" | "endDate" | null>(null);
   return (
     <Toolbar>
       <Typography color="textSecondary" variant="caption">
@@ -274,11 +273,35 @@ function StationTableActions(props: StationTableActionsProps) {
         </>
       ) : (
         <>
-          <Tooltip title="Set Date Range">
-            <IconButton onClick={props.openDateSelect}>
-              <CalendarIcon />
-            </IconButton>
-          </Tooltip>
+          <DateRangePicker
+            startDate={moment(props.current_date_zoom ? props.current_date_zoom.start : props.default_date_range[0])}
+            startDateId="station-data-table-start-date"
+            endDate={moment(
+              addDays(props.current_date_zoom ? props.current_date_zoom.end : props.default_date_range[1], -1)
+            )}
+            navPrev={<span />}
+            navNext={<span />}
+            endDateId="station-data-table-start-date"
+            noBorder={true}
+            numberOfMonths={1}
+            withPortal
+            openDirection="up"
+            minimumNights={0}
+            onDatesChange={d =>
+              props.set_date_zoom_range({
+                zoom: {
+                  start: d.startDate ? d.startDate.toDate() : props.default_date_range[0],
+                  end: d.endDate ? addDays(d.endDate.toDate(), 1) : props.default_date_range[1]
+                }
+              })
+            }
+            keepOpenOnDateSelect
+            isOutsideRange={day =>
+              day.toDate() < props.default_date_range[0] || day.toDate >= props.default_date_range[1]
+            }
+            focusedInput={focusedDateEntry}
+            onFocusChange={setFocusedDateEntry}
+          />
           <Tooltip title="Reset Date Range">
             <IconButton onClick={() => props.set_date_zoom_range({ zoom: undefined })}>
               <ZoomOutIcon />
@@ -287,69 +310,6 @@ function StationTableActions(props: StationTableActionsProps) {
         </>
       )}
     </Toolbar>
-  );
-}
-
-interface SetDateRangeProps {
-  readonly open: boolean;
-  readonly close: () => void;
-  readonly default_date_range: Date[];
-  readonly current_date_zoom: { start: Date; end: Date } | undefined;
-  readonly set_date_zoom_range: (p: { zoom?: { start: Date; end: Date } }) => void;
-}
-
-function encodeDateForInput(d: Date): string {
-  return format(d, "YYYY-MM-DD");
-}
-
-function SetDateRange(props: SetDateRangeProps) {
-  return (
-    <Dialog onClose={props.close} open={props.open}>
-      <DialogTitle>Set Zoom</DialogTitle>
-      <DialogContent>
-        <DialogContentText>
-          <em>You can also zoom by clicking and dragging on the chart.</em>
-        </DialogContentText>
-        <div>
-          <div style={{ marginTop: "0.5em" }}>
-            <TextField
-              label="Starting Day"
-              type="date"
-              inputProps={{ step: 1 }}
-              value={encodeDateForInput(
-                props.current_date_zoom ? props.current_date_zoom.start : props.default_date_range[0]
-              )}
-              onChange={e =>
-                props.set_date_zoom_range({
-                  zoom: {
-                    start: new Date((e.target as HTMLInputElement).valueAsDate),
-                    end: props.current_date_zoom ? props.current_date_zoom.end : props.default_date_range[1]
-                  }
-                })
-              }
-            />
-          </div>
-          <div style={{ marginTop: "0.5em" }}>
-            <TextField
-              label="Ending Day"
-              type="date"
-              inputProps={{ step: 1 }}
-              value={encodeDateForInput(
-                props.current_date_zoom ? props.current_date_zoom.end : props.default_date_range[1]
-              )}
-              onChange={e =>
-                props.set_date_zoom_range({
-                  zoom: {
-                    start: props.current_date_zoom ? props.current_date_zoom.start : props.default_date_range[0],
-                    end: new Date((e.target as HTMLInputElement).valueAsDate)
-                  }
-                })
-              }
-            />
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
   );
 }
 
@@ -407,7 +367,6 @@ export default React.memo(function StationDataTable(props: StationDataTableProps
   const [order, setOrder] = React.useState<"asc" | "desc">("asc");
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
-  const [dialogOpen, setDialogOpen] = React.useState(false);
 
   function handleRequestSort(property: ColumnId) {
     if (orderBy === property) {
@@ -444,13 +403,6 @@ export default React.memo(function StationDataTable(props: StationDataTableProps
         rowsPerPage={rowsPerPage}
         setPage={setPage}
         setRowsPerPage={setRowsPerPage}
-        set_date_zoom_range={props.set_date_zoom_range}
-        end_time={props.default_date_range[1]}
-        openDateSelect={() => setDialogOpen(true)}
-      />
-      <SetDateRange
-        open={dialogOpen}
-        close={() => setDialogOpen(false)}
         set_date_zoom_range={props.set_date_zoom_range}
         default_date_range={props.default_date_range}
         current_date_zoom={props.current_date_zoom}

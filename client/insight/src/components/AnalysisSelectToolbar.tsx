@@ -37,6 +37,7 @@ import FormControlLabel from "@material-ui/core/FormControlLabel";
 import { startOfMonth, format, parse } from "date-fns";
 
 import * as events from "../data/events";
+import * as gui from "../data/gui-state";
 import { Store, connect } from "../store/store";
 
 const toolbarStyle = {
@@ -127,8 +128,20 @@ export default connect(
     period_month: s.Events.analysis_period_month
   }),
   {
-    analyzeLast30Days: events.analyzeLast30Days,
-    analyzeMonth: events.analyzeSpecificMonth,
-    setMonth: events.setAnalysisMonth
+    analyzeLast30Days: () => [
+      events.analyzeLast30Days(),
+      { type: gui.ActionType.SetStationCycleDateZoom, zoom: undefined },
+      { type: gui.ActionType.SetPalletCycleDateZoom, zoom: undefined }
+    ],
+    analyzeMonth: (m: Date) => [
+      ...events.analyzeSpecificMonth(m),
+      { type: gui.ActionType.SetStationCycleDateZoom, zoom: undefined },
+      { type: gui.ActionType.SetPalletCycleDateZoom, zoom: undefined }
+    ],
+    setMonth: (m: Date) => [
+      events.setAnalysisMonth(m),
+      { type: gui.ActionType.SetStationCycleDateZoom, zoom: undefined },
+      { type: gui.ActionType.SetPalletCycleDateZoom, zoom: undefined }
+    ]
   }
 )(AnalysisSelectToolbar);
