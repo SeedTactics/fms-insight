@@ -204,7 +204,14 @@ function StationTableActions(props: StationTableActionsProps) {
         value={props.rowsPerPage}
         SelectDisplayProps={{ style: { color: "rgba(0, 0, 0, 0.54)" } }}
         input={<InputBase />}
-        onChange={evt => props.setRowsPerPage(parseInt(evt.target.value, 10))}
+        onChange={evt => {
+          const rpp = parseInt(evt.target.value, 10);
+          props.setRowsPerPage(rpp);
+          const maxPage = Math.ceil(props.count / rpp) - 1;
+          if (props.page > maxPage) {
+            props.setPage(maxPage);
+          }
+        }}
       >
         {[10, 15, 20, 50].map(rowsPerPageOption => (
           <MenuItem key={rowsPerPageOption} value={rowsPerPageOption}>
