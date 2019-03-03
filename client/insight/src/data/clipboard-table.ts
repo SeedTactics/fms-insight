@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { LazySeq } from "./lazyseq";
 import { fieldsHashCode } from "prelude-ts";
-import { FilteredStationCycles, stat_name_and_num } from "./events.cycles";
+import { FilteredStationCycles, stat_name_and_num, format_cycle_inspection } from "./events.cycles";
 import { format } from "date-fns";
 import * as api from "../data/api";
 import { duration } from "moment";
@@ -102,7 +102,8 @@ export function buildCycleTable(
 ): string {
   let table = "<table>\n<thead><tr>";
   table += "<th>Date</th><th>Part</th><th>Station</th><th>Pallet</th>";
-  table += "<th>Serial</th><th>Workorder</th><th>Elapsed Min</th><th>Active Min</th>";
+  table += "<th>Serial</th><th>Workorder</th><th>Inspection</th>";
+  table += "<th>Elapsed Min</th><th>Active Min</th><th>Operator</th>";
   table += "</tr></thead>\n<tbody>\n";
 
   let filteredCycles = LazySeq.ofIterable(cycles.data)
@@ -118,8 +119,10 @@ export function buildCycleTable(
     table += "<td>" + cycle.pallet + "</td>";
     table += "<td>" + (cycle.serial || "") + "</td>";
     table += "<td>" + (cycle.workorder || "") + "</td>";
+    table += "<td>" + format_cycle_inspection(cycle) + "</td>";
     table += "<td>" + cycle.y.toFixed(1) + "</td>";
     table += "<td>" + cycle.active.toFixed(1) + "</td>";
+    table += "<td>" + cycle.operator + "</td>";
     table += "</tr>\n";
   }
   table += "</tbody>\n</table>";

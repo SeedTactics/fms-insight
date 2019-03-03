@@ -130,6 +130,21 @@ export function stat_name_and_num(stationGroup: string, stationNumber: number): 
   }
 }
 
+export function format_cycle_inspection(c: PartCycleData): string {
+  let ret = [];
+  const names = c.signaledInspections.addAll(c.completedInspections.keySet());
+  for (var name of names.toArray({ sortOn: x => x })) {
+    const completed = c.completedInspections.get(name);
+    if (completed.isSome()) {
+      const success = completed.get();
+      ret.push(name + "[" + (success ? "success" : "failed") + "]");
+    } else {
+      ret.push(name);
+    }
+  }
+  return ret.join(", ");
+}
+
 // Assume: samples come from two distributions:
 //  - the program runs without interruption, giving a guassian iid around the cycle time.
 //  - the program is interrupted or stopped, which adds a random amount to the program

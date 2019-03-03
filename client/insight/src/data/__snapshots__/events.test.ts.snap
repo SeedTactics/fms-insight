@@ -80,10 +80,16 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
           Workorder
         </th>
         <th>
+          Inspection
+        </th>
+        <th>
           Elapsed Min
         </th>
         <th>
           Active Min
+        </th>
+        <th>
+          Operator
         </th>
       </tr>
     </thead>
@@ -112,11 +118,15 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
           worki
         </td>
         <td>
+          Insp1[success]
+        </td>
+        <td>
           6.0
         </td>
         <td>
           6.0
         </td>
+        <td />
       </tr>
       
 
@@ -140,11 +150,15 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
           worki
         </td>
         <td>
+          Insp1[success]
+        </td>
+        <td>
           15.0
         </td>
         <td>
           15.0
         </td>
+        <td />
       </tr>
       
 
@@ -168,11 +182,15 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
           worki
         </td>
         <td>
+          Insp1[success]
+        </td>
+        <td>
           3.0
         </td>
         <td>
           3.0
         </td>
+        <td />
       </tr>
       
 
@@ -196,11 +214,15 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
           worki
         </td>
         <td>
+          Insp1[success]
+        </td>
+        <td>
           6.0
         </td>
         <td>
           6.0
         </td>
+        <td />
       </tr>
       
 
@@ -224,11 +246,15 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
           worki
         </td>
         <td>
+          Insp1[success]
+        </td>
+        <td>
           20.0
         </td>
         <td>
           20.0
         </td>
+        <td />
       </tr>
       
 
@@ -252,11 +278,15 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
           worki
         </td>
         <td>
+          Insp1[success]
+        </td>
+        <td>
           3.0
         </td>
         <td>
           3.0
         </td>
+        <td />
       </tr>
       
 
@@ -280,11 +310,15 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
           workh
         </td>
         <td>
+          Insp1[success]
+        </td>
+        <td>
           6.0
         </td>
         <td>
           6.0
         </td>
+        <td />
       </tr>
       
 
@@ -308,11 +342,15 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
           workh
         </td>
         <td>
+          Insp1[success]
+        </td>
+        <td>
           30.0
         </td>
         <td>
           30.0
         </td>
+        <td />
       </tr>
       
 
@@ -336,11 +374,15 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
           workh
         </td>
         <td>
+          Insp1[success]
+        </td>
+        <td>
           3.0
         </td>
         <td>
           3.0
         </td>
+        <td />
       </tr>
       
 
@@ -377,10 +419,16 @@ exports[`creates cycles clipboard table: cycle filtered clipboard table 1`] = `
           Workorder
         </th>
         <th>
+          Inspection
+        </th>
+        <th>
           Elapsed Min
         </th>
         <th>
           Active Min
+        </th>
+        <th>
+          Operator
         </th>
       </tr>
     </thead>
@@ -409,11 +457,15 @@ exports[`creates cycles clipboard table: cycle filtered clipboard table 1`] = `
           worki
         </td>
         <td>
+          Insp1[success]
+        </td>
+        <td>
           6.0
         </td>
         <td>
           6.0
         </td>
+        <td />
       </tr>
       
 
@@ -437,11 +489,15 @@ exports[`creates cycles clipboard table: cycle filtered clipboard table 1`] = `
           worki
         </td>
         <td>
+          Insp1[success]
+        </td>
+        <td>
           20.0
         </td>
         <td>
           20.0
         </td>
+        <td />
       </tr>
       
 
@@ -465,11 +521,15 @@ exports[`creates cycles clipboard table: cycle filtered clipboard table 1`] = `
           worki
         </td>
         <td>
+          Insp1[success]
+        </td>
+        <td>
           3.0
         </td>
         <td>
           3.0
         </td>
+        <td />
       </tr>
       
 

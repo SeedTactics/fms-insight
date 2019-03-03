@@ -57,7 +57,7 @@ import "./station-data-table.css";
 import "react-dates/initialize";
 import { DateRangePicker } from "react-dates";
 
-import { PartCycleData } from "../../data/events.cycles";
+import { PartCycleData, format_cycle_inspection } from "../../data/events.cycles";
 import { LazySeq } from "../../data/lazyseq";
 import { addDays, addHours } from "date-fns";
 
@@ -68,8 +68,10 @@ enum ColumnId {
   Pallet,
   Serial,
   Workorder,
+  Inspection,
   ElapsedMin,
-  ActiveMin
+  ActiveMin,
+  Operator
 }
 
 interface Column {
@@ -114,6 +116,15 @@ const columns: ReadonlyArray<Column> = [
     getDisplay: c => c.workorder || ""
   },
   {
+    id: ColumnId.Inspection,
+    numeric: false,
+    label: "Inspection",
+    getDisplay: format_cycle_inspection,
+    getForSort: c => {
+      return c.signaledInspections.toArray({ sortOn: x => x }).join(",");
+    }
+  },
+  {
     id: ColumnId.ElapsedMin,
     numeric: true,
     label: "Elapsed Min",
@@ -124,6 +135,12 @@ const columns: ReadonlyArray<Column> = [
     numeric: true,
     label: "Active Min",
     getDisplay: c => c.active.toFixed(1)
+  },
+  {
+    id: ColumnId.Operator,
+    numeric: false,
+    label: "Operator",
+    getDisplay: c => c.operator
   }
 ];
 
