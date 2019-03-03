@@ -57,7 +57,13 @@ import { Store, connect, mkAC, DispatchAction } from "../../store/store";
 import * as guiState from "../../data/gui-state";
 import * as matDetails from "../../data/material-details";
 import InspectionSankey from "./InspectionSankey";
-import { PartCycleData, filterStationCycles, FilteredStationCycles } from "../../data/events.cycles";
+import {
+  PartCycleData,
+  filterStationCycles,
+  FilteredStationCycles,
+  FilterAnyMachineKey,
+  FilterAnyLoadKey
+} from "../../data/events.cycles";
 import { MaterialDialog, PartIdenticon } from "../station-monitor/Material";
 import { LazySeq } from "../../data/lazyseq";
 import { copyCyclesToClipboard } from "../../data/clipboard-table";
@@ -208,6 +214,12 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
             >
               <MenuItem key={0} value="">
                 <em>Any Station</em>
+              </MenuItem>
+              <MenuItem key={1} value={FilterAnyMachineKey}>
+                <em>Any Machine</em>
+              </MenuItem>
+              <MenuItem key={2} value={FilterAnyLoadKey}>
+                <em>Any Load Station</em>
               </MenuItem>
               {props.stationNames.toArray({ sortOn: x => x }).map(n => (
                 <MenuItem key={n} value={n}>

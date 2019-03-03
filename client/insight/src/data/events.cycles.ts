@@ -454,14 +454,19 @@ export interface FilteredStationCycles {
   readonly data: HashMap<string, ReadonlyArray<PartCycleData>>;
 }
 
+export const FilterAnyMachineKey = "@@@_FMSInsight_FilterAnyMachineKey_@@@";
+export const FilterAnyLoadKey = "@@@_FMSInsigt_FilterAnyLoadKey_@@@";
+
 export function filterStationCycles(
   allCycles: Vector<PartCycleData>,
   partAndProc?: string,
   pallet?: string,
   station?: string
 ): FilteredStationCycles {
+  const groupByPal = partAndProc && station && station !== FilterAnyMachineKey && station !== FilterAnyLoadKey;
+  const groupByPart = pallet && station && station !== FilterAnyMachineKey && station !== FilterAnyLoadKey;
   return {
-    seriesLabel: partAndProc && station ? "Pallet" : station && pallet ? "Part" : "Station",
+    seriesLabel: groupByPal ? "Pallet" : groupByPart ? "Part" : "Station",
     data: LazySeq.ofIterable(allCycles)
       .filter(e => {
         if (partAndProc && part_and_proc(e.part, e.process) !== partAndProc) {
@@ -470,15 +475,25 @@ export function filterStationCycles(
         if (pallet && e.pallet !== pallet) {
           return false;
         }
-        if (station && stat_name_and_num(e.stationGroup, e.stationNumber) !== station) {
+
+        if (station === FilterAnyMachineKey) {
+          if (e.isLabor) {
+            return false;
+          }
+        } else if (station === FilterAnyLoadKey) {
+          if (!e.isLabor) {
+            return false;
+          }
+        } else if (station && stat_name_and_num(e.stationGroup, e.stationNumber) !== station) {
           return false;
         }
+
         return true;
       })
       .groupBy(e => {
-        if (partAndProc && station) {
+        if (groupByPal) {
           return e.pallet;
-        } else if (station && pallet) {
+        } else if (groupByPart) {
           return part_and_proc(e.part, e.process);
         } else {
           return stat_name_and_num(e.stationGroup, e.stationNumber);
