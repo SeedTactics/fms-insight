@@ -85,6 +85,9 @@
       "<rootDir>/.build/",
       "<rootDir>/.cache/"
     ],
+    "moduleNameMapper": {
+      ".*\\.css$": "<rootDir>/file-mock.js"
+    },
     "transform": {
       "^.+\\.tsx?$": "ts-jest",
       ".*\\.svg$": "<rootDir>/file-mock.js",

@@ -13,7 +13,7 @@
     "rootDir": "src",
     "downlevelIteration": true,
     "composite": true,
-    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
 
     "strict": true,
     "strictPropertyInitialization": false,
