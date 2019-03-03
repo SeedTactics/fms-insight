@@ -1145,12 +1145,19 @@ Object {
       Object {
         "active": 6,
         "completed": false,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": true,
         "matId": 13842,
+        "operator": "",
         "pallet": "paltt",
         "part": "partCCC",
         "process": 3,
         "serial": "serialo",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "L/U",
         "stationNumber": 1,
         "workorder": "work2",
@@ -1160,12 +1167,19 @@ Object {
       Object {
         "active": 18,
         "completed": false,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": false,
         "matId": 13842,
+        "operator": "",
         "pallet": "paltt",
         "part": "partCCC",
         "process": 3,
         "serial": "serialo",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "MC",
         "stationNumber": 1,
         "workorder": "work2",
@@ -1175,12 +1189,19 @@ Object {
       Object {
         "active": 3,
         "completed": true,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": true,
         "matId": 13842,
+        "operator": "",
         "pallet": "paltt",
         "part": "partCCC",
         "process": 3,
         "serial": "serialo",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "L/U",
         "stationNumber": 2,
         "workorder": "work2",
@@ -1190,12 +1211,19 @@ Object {
       Object {
         "active": 6,
         "completed": false,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": true,
         "matId": 4419,
+        "operator": "",
         "pallet": "paltt",
         "part": "partBBB",
         "process": 2,
         "serial": "seriald",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "L/U",
         "stationNumber": 1,
         "workorder": "work0",
@@ -1205,12 +1233,19 @@ Object {
       Object {
         "active": 24,
         "completed": false,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": false,
         "matId": 4419,
+        "operator": "",
         "pallet": "paltt",
         "part": "partBBB",
         "process": 2,
         "serial": "seriald",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "MC",
         "stationNumber": 1,
         "workorder": "work0",
@@ -1220,12 +1255,19 @@ Object {
       Object {
         "active": 3,
         "completed": true,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": true,
         "matId": 4419,
+        "operator": "",
         "pallet": "paltt",
         "part": "partBBB",
         "process": 2,
         "serial": "seriald",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "L/U",
         "stationNumber": 2,
         "workorder": "work0",
@@ -1235,12 +1277,19 @@ Object {
       Object {
         "active": 6,
         "completed": false,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": true,
         "matId": 87097,
+        "operator": "",
         "pallet": "palss",
         "part": "partAAA",
         "process": 1,
         "serial": "serialm",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "L/U",
         "stationNumber": 1,
         "workorder": "workx",
@@ -1250,12 +1299,19 @@ Object {
       Object {
         "active": 30,
         "completed": false,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": false,
         "matId": 87097,
+        "operator": "",
         "pallet": "palss",
         "part": "partAAA",
         "process": 1,
         "serial": "serialm",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "MC",
         "stationNumber": 1,
         "workorder": "workx",
@@ -1265,12 +1321,19 @@ Object {
       Object {
         "active": 3,
         "completed": true,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": true,
         "matId": 87097,
+        "operator": "",
         "pallet": "palss",
         "part": "partAAA",
         "process": 1,
         "serial": "serialm",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "L/U",
         "stationNumber": 2,
         "workorder": "workx",
@@ -1491,12 +1554,19 @@ Object {
       Object {
         "active": 6,
         "completed": false,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": true,
         "matId": 15510,
+        "operator": "",
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
         "serial": "serialv",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "L/U",
         "stationNumber": 1,
         "workorder": "workh",
@@ -1506,12 +1576,19 @@ Object {
       Object {
         "active": 24,
         "completed": false,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": false,
         "matId": 15510,
+        "operator": "",
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
         "serial": "serialv",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "MC",
         "stationNumber": 1,
         "workorder": "workh",
@@ -1521,12 +1598,19 @@ Object {
       Object {
         "active": 3,
         "completed": true,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": true,
         "matId": 15510,
+        "operator": "",
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
         "serial": "serialv",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "L/U",
         "stationNumber": 2,
         "workorder": "workh",
@@ -1536,12 +1620,19 @@ Object {
       Object {
         "active": 6,
         "completed": false,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": true,
         "matId": 70329,
+        "operator": "",
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
         "serial": "seriala",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "L/U",
         "stationNumber": 1,
         "workorder": "work7",
@@ -1551,12 +1642,19 @@ Object {
       Object {
         "active": 30,
         "completed": false,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": false,
         "matId": 70329,
+        "operator": "",
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
         "serial": "seriala",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "MC",
         "stationNumber": 1,
         "workorder": "work7",
@@ -1566,12 +1664,19 @@ Object {
       Object {
         "active": 3,
         "completed": true,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": true,
         "matId": 70329,
+        "operator": "",
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
         "serial": "seriala",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "L/U",
         "stationNumber": 2,
         "workorder": "work7",
@@ -1581,12 +1686,19 @@ Object {
       Object {
         "active": 6,
         "completed": false,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": true,
         "matId": 90793,
+        "operator": "",
         "pallet": "palcc",
         "part": "part111",
         "process": 1,
         "serial": "serial8",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "L/U",
         "stationNumber": 1,
         "workorder": "worko",
@@ -1596,12 +1708,19 @@ Object {
       Object {
         "active": 12,
         "completed": false,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": false,
         "matId": 90793,
+        "operator": "",
         "pallet": "palcc",
         "part": "part111",
         "process": 1,
         "serial": "serial8",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "MC",
         "stationNumber": 1,
         "workorder": "worko",
@@ -1611,12 +1730,19 @@ Object {
       Object {
         "active": 3,
         "completed": true,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": true,
         "matId": 90793,
+        "operator": "",
         "pallet": "palcc",
         "part": "part111",
         "process": 1,
         "serial": "serial8",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "L/U",
         "stationNumber": 2,
         "workorder": "worko",
@@ -2115,12 +2241,19 @@ Object {
       Object {
         "active": 6,
         "completed": false,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": true,
         "matId": 90079,
+        "operator": "",
         "pallet": "palaa",
         "part": "part222",
         "process": 2,
         "serial": "serialm",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "L/U",
         "stationNumber": 1,
         "workorder": "work7",
@@ -2130,12 +2263,19 @@ Object {
       Object {
         "active": 18,
         "completed": false,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": false,
         "matId": 90079,
+        "operator": "",
         "pallet": "palaa",
         "part": "part222",
         "process": 2,
         "serial": "serialm",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "MC",
         "stationNumber": 1,
         "workorder": "work7",
@@ -2145,12 +2285,19 @@ Object {
       Object {
         "active": 3,
         "completed": true,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": true,
         "matId": 90079,
+        "operator": "",
         "pallet": "palaa",
         "part": "part222",
         "process": 2,
         "serial": "serialm",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "L/U",
         "stationNumber": 2,
         "workorder": "work7",
@@ -2160,12 +2307,19 @@ Object {
       Object {
         "active": 6,
         "completed": false,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": true,
         "matId": 15510,
+        "operator": "",
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
         "serial": "serialv",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "L/U",
         "stationNumber": 1,
         "workorder": "workh",
@@ -2175,12 +2329,19 @@ Object {
       Object {
         "active": 24,
         "completed": false,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": false,
         "matId": 15510,
+        "operator": "",
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
         "serial": "serialv",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "MC",
         "stationNumber": 1,
         "workorder": "workh",
@@ -2190,12 +2351,19 @@ Object {
       Object {
         "active": 3,
         "completed": true,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": true,
         "matId": 15510,
+        "operator": "",
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
         "serial": "serialv",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "L/U",
         "stationNumber": 2,
         "workorder": "workh",
@@ -2205,12 +2373,19 @@ Object {
       Object {
         "active": 6,
         "completed": false,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": true,
         "matId": 70329,
+        "operator": "",
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
         "serial": "seriala",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "L/U",
         "stationNumber": 1,
         "workorder": "work7",
@@ -2220,12 +2395,19 @@ Object {
       Object {
         "active": 30,
         "completed": false,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": false,
         "matId": 70329,
+        "operator": "",
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
         "serial": "seriala",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "MC",
         "stationNumber": 1,
         "workorder": "work7",
@@ -2235,12 +2417,19 @@ Object {
       Object {
         "active": 3,
         "completed": true,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": true,
         "matId": 70329,
+        "operator": "",
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
         "serial": "seriala",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "L/U",
         "stationNumber": 2,
         "workorder": "work7",
@@ -2759,12 +2948,19 @@ Object {
       Object {
         "active": 6,
         "completed": false,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": true,
         "matId": 47261,
+        "operator": "",
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
         "serial": "serialm",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "L/U",
         "stationNumber": 1,
         "workorder": "workn",
@@ -2774,12 +2970,19 @@ Object {
       Object {
         "active": 24,
         "completed": false,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": false,
         "matId": 47261,
+        "operator": "",
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
         "serial": "serialm",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "MC",
         "stationNumber": 1,
         "workorder": "workn",
@@ -2789,12 +2992,19 @@ Object {
       Object {
         "active": 3,
         "completed": true,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": true,
         "matId": 47261,
+        "operator": "",
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
         "serial": "serialm",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "L/U",
         "stationNumber": 2,
         "workorder": "workn",
@@ -2804,12 +3014,19 @@ Object {
       Object {
         "active": 6,
         "completed": false,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": true,
         "matId": 11231,
+        "operator": "",
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
         "serial": "serialr",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "L/U",
         "stationNumber": 1,
         "workorder": "works",
@@ -2819,12 +3036,19 @@ Object {
       Object {
         "active": 30,
         "completed": false,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": false,
         "matId": 11231,
+        "operator": "",
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
         "serial": "serialr",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "MC",
         "stationNumber": 1,
         "workorder": "works",
@@ -2834,12 +3058,19 @@ Object {
       Object {
         "active": 3,
         "completed": true,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": true,
         "matId": 11231,
+        "operator": "",
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
         "serial": "serialr",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "L/U",
         "stationNumber": 2,
         "workorder": "works",
@@ -2849,12 +3080,19 @@ Object {
       Object {
         "active": 6,
         "completed": false,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": true,
         "matId": 88570,
+        "operator": "",
         "pallet": "palcc",
         "part": "part111",
         "process": 1,
         "serial": "serialk",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "L/U",
         "stationNumber": 1,
         "workorder": "work6",
@@ -2864,12 +3102,19 @@ Object {
       Object {
         "active": 12,
         "completed": false,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": false,
         "matId": 88570,
+        "operator": "",
         "pallet": "palcc",
         "part": "part111",
         "process": 1,
         "serial": "serialk",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "MC",
         "stationNumber": 1,
         "workorder": "work6",
@@ -2879,12 +3124,19 @@ Object {
       Object {
         "active": 3,
         "completed": true,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": true,
         "matId": 88570,
+        "operator": "",
         "pallet": "palcc",
         "part": "part111",
         "process": 1,
         "serial": "serialk",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "L/U",
         "stationNumber": 2,
         "workorder": "work6",
@@ -3383,12 +3635,19 @@ Object {
       Object {
         "active": 6,
         "completed": false,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": true,
         "matId": 68845,
+        "operator": "",
         "pallet": "palaa",
         "part": "part222",
         "process": 2,
         "serial": "serialm",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "L/U",
         "stationNumber": 1,
         "workorder": "workf",
@@ -3398,12 +3657,19 @@ Object {
       Object {
         "active": 18,
         "completed": false,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": false,
         "matId": 68845,
+        "operator": "",
         "pallet": "palaa",
         "part": "part222",
         "process": 2,
         "serial": "serialm",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "MC",
         "stationNumber": 1,
         "workorder": "workf",
@@ -3413,12 +3679,19 @@ Object {
       Object {
         "active": 3,
         "completed": true,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": true,
         "matId": 68845,
+        "operator": "",
         "pallet": "palaa",
         "part": "part222",
         "process": 2,
         "serial": "serialm",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "L/U",
         "stationNumber": 2,
         "workorder": "workf",
@@ -3428,12 +3701,19 @@ Object {
       Object {
         "active": 6,
         "completed": false,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": true,
         "matId": 47261,
+        "operator": "",
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
         "serial": "serialm",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "L/U",
         "stationNumber": 1,
         "workorder": "workn",
@@ -3443,12 +3723,19 @@ Object {
       Object {
         "active": 24,
         "completed": false,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": false,
         "matId": 47261,
+        "operator": "",
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
         "serial": "serialm",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "MC",
         "stationNumber": 1,
         "workorder": "workn",
@@ -3458,12 +3745,19 @@ Object {
       Object {
         "active": 3,
         "completed": true,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": true,
         "matId": 47261,
+        "operator": "",
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
         "serial": "serialm",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "L/U",
         "stationNumber": 2,
         "workorder": "workn",
@@ -3473,12 +3767,19 @@ Object {
       Object {
         "active": 6,
         "completed": false,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": true,
         "matId": 11231,
+        "operator": "",
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
         "serial": "serialr",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "L/U",
         "stationNumber": 1,
         "workorder": "works",
@@ -3488,12 +3789,19 @@ Object {
       Object {
         "active": 30,
         "completed": false,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": false,
         "matId": 11231,
+        "operator": "",
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
         "serial": "serialr",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "MC",
         "stationNumber": 1,
         "workorder": "works",
@@ -3503,12 +3811,19 @@ Object {
       Object {
         "active": 3,
         "completed": true,
+        "completedInspections": Map {
+          "Insp1" => true,
+        },
         "isLabor": true,
         "matId": 11231,
+        "operator": "",
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
         "serial": "serialr",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
         "stationGroup": "L/U",
         "stationNumber": 2,
         "workorder": "works",

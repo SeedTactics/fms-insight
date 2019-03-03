@@ -56,10 +56,24 @@ it("renders the cost/piece page", async () => {
   expect(result.getByTestId("part-cost-table").querySelector("tbody")).toBeEmpty();
 
   // now go to July 2018 which has the test store data
-  const chooseMonth = result.getByPlaceholderText("Choose Month") as HTMLInputElement;
-  chooseMonth.value = "2018-07";
-  Simulate.change(chooseMonth);
-  fireEvent.blur(chooseMonth);
+  fireEvent.click(result.getByTestId("open-month-select"));
+  await wait(() => expect(result.queryByTestId("select-month-dialog-choose-month")).toBeInTheDocument());
+  // go to 2018
+  let curYear = new Date().getFullYear();
+  while (curYear > 2018) {
+    fireEvent.click(result.getByTestId("select-month-dialog-previous-year"));
+    curYear -= 1;
+  }
+  await wait(() => {
+    const curYearElem = result.queryByTestId("select-month-dialog-current-year");
+    if (curYearElem) {
+      expect(curYearElem.innerHTML).toBe("2018");
+    } else {
+      expect(curYearElem).not.toBeUndefined();
+    }
+  });
+  fireEvent.click(within(result.getByTestId("select-month-dialog-choose-month")).getByText("Jul"));
+  await wait(() => expect(result.queryByTestId("select-month-dialog-current-year")).not.toBeInTheDocument());
   fireEvent.click(result.getByLabelText("Select Month"));
   await wait(() => expect(result.queryByTestId("loading-icon")).not.toBeInTheDocument());
 

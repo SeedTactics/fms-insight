@@ -53,6 +53,9 @@ export interface PartCycleData extends CycleData {
   readonly serial?: string;
   readonly workorder?: string;
   readonly completed: boolean; // did this cycle result in a completed part
+  readonly signaledInspections: HashSet<string>;
+  readonly completedInspections: HashMap<string, boolean>; // boolean is if successful or failed
+  readonly operator: string;
 }
 
 export interface StatisticalCycleTime {
@@ -247,6 +250,50 @@ function activeMinutes(
   }
 }
 
+interface InspectionData {
+  readonly signaled: { [materialId: number]: HashSet<string> };
+  readonly result: { [materialId: number]: HashMap<string, boolean> };
+}
+
+function newInspectionData(newEvts: ReadonlyArray<Readonly<api.ILogEntry>>): InspectionData {
+  const signaled: { [materialId: number]: HashSet<string> } = {};
+  const result: { [materialId: number]: HashMap<string, boolean> } = {};
+  for (const evt of newEvts) {
+    switch (evt.type) {
+      case api.LogType.Inspection:
+        const inspName = (evt.details || {}).InspectionType;
+        const inspected = evt.result.toLowerCase() === "true" || evt.result === "1";
+        if (inspected && inspName) {
+          for (const m of evt.material) {
+            signaled[m.id] = (signaled[m.id] || HashSet.empty()).add(inspName);
+          }
+        }
+        break;
+
+      case api.LogType.InspectionForce:
+        const forceInspName = evt.program;
+        let forced = evt.result.toLowerCase() === "true" || evt.result === "1";
+        if (forceInspName && forced) {
+          for (const m of evt.material) {
+            signaled[m.id] = (signaled[m.id] || HashSet.empty()).add(forceInspName);
+          }
+        }
+        break;
+
+      case api.LogType.InspectionResult:
+        const resultInspName = evt.program;
+        const succeeded = evt.result.toLowerCase() !== "false";
+        if (resultInspName) {
+          for (const m of evt.material) {
+            result[m.id] = (result[m.id] || HashMap.empty()).put(resultInspName, succeeded);
+          }
+        }
+        break;
+    }
+  }
+  return { signaled, result };
+}
+
 export function process_events(
   expire: ExpireOldData,
   newEvts: ReadonlyArray<Readonly<api.ILogEntry>>,
@@ -303,7 +350,10 @@ export function process_events(
       serial: e.mat.serial,
       workorder: e.mat.workorder,
       stationGroup: stat_group(e.cycle),
-      stationNumber: e.cycle.locnum
+      stationNumber: e.cycle.locnum,
+      signaledInspections: HashSet.empty<string>(),
+      completedInspections: HashMap.empty<string, boolean>(),
+      operator: e.cycle.details ? e.cycle.details.operator || "" : ""
     }))
     .filter(c => c.stationGroup !== "");
 
@@ -350,9 +400,23 @@ export function process_events(
     );
   pals = pals.mergeWith(newPalCycles, (oldCs, newCs) => oldCs.concat(newCs));
 
+  // merge inspections
+  const inspResult = newInspectionData(newEvts);
+  allPartCycles = allPartCycles.appendAll(newCycles).map(x => {
+    const signaled = inspResult.signaled[x.matId];
+    if (signaled) {
+      x = { ...x, signaledInspections: x.signaledInspections.addAll(signaled) };
+    }
+    const result = inspResult.result[x.matId];
+    if (result) {
+      x = { ...x, completedInspections: x.completedInspections.mergeWith(result, (_a, b) => b) };
+    }
+    return x;
+  });
+
   const newSt = {
     ...st,
-    part_cycles: allPartCycles.appendAll(newCycles),
+    part_cycles: allPartCycles,
     part_and_proc_names: partNames,
     by_pallet: pals,
     station_groups: statGroups,

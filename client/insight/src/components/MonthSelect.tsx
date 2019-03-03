@@ -69,6 +69,7 @@ export default React.memo(function MonthSelect(props: MonthSelectProps) {
           <InputAdornment position="end">
             <IconButton
               aria-label="Open month select"
+              data-testid="open-month-select"
               onClick={() => {
                 setTempDialogCurMonth(startOfMonth(props.curMonth));
                 setDialogOpen(true);
@@ -88,11 +89,14 @@ export default React.memo(function MonthSelect(props: MonthSelectProps) {
       >
         <DialogContent>
           <div style={{ display: "flex", alignItems: "center" }}>
-            <IconButton onClick={() => setTempDialogCurMonth(addYears(tempDialogCurMonth || props.curMonth, -1))}>
+            <IconButton
+              data-testid="select-month-dialog-previous-year"
+              onClick={() => setTempDialogCurMonth(addYears(tempDialogCurMonth || props.curMonth, -1))}
+            >
               <LeftArrowIcon />
             </IconButton>
             <div style={{ flexGrow: 1 }}>
-              <Typography variant="h5" align="center">
+              <Typography variant="h5" align="center" data-testid="select-month-dialog-current-year">
                 {format(tempDialogCurMonth || props.curMonth, "YYYY")}
               </Typography>
             </div>
@@ -100,7 +104,7 @@ export default React.memo(function MonthSelect(props: MonthSelectProps) {
               <RightArrowIcon />
             </IconButton>
           </div>
-          <div>
+          <div data-testid="select-month-dialog-choose-month">
             {months.map((monthRow, monthRowIdx) => (
               <div key={monthRowIdx} style={monthRowIdx > 0 ? { marginTop: "1.2em" } : undefined}>
                 {monthRow.map((month, monthIdx) => (

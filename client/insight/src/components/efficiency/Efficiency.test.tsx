@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import { render, cleanup, fireEvent, wait, within } from "react-testing-library";
 afterEach(cleanup);
-import { Simulate } from "react-dom/test-utils";
 import "jest-dom/extend-expect";
 
 import Efficiency from "./Efficiency";
@@ -56,10 +55,24 @@ it("renders the efficiency page", async () => {
   expect(result.getByTestId("completed-heatmap").querySelector("div.rv-xy-plot")).toBeEmpty();
 
   // now go to July 2018 which has the test store data
-  const chooseMonth = result.getByPlaceholderText("Choose Month") as HTMLInputElement;
-  chooseMonth.value = "2018-07";
-  Simulate.change(chooseMonth);
-  fireEvent.blur(chooseMonth);
+  fireEvent.click(result.getByTestId("open-month-select"));
+  await wait(() => expect(result.queryByTestId("select-month-dialog-choose-month")).toBeInTheDocument());
+  // go to 2018
+  let curYear = new Date().getFullYear();
+  while (curYear > 2018) {
+    fireEvent.click(result.getByTestId("select-month-dialog-previous-year"));
+    curYear -= 1;
+  }
+  await wait(() => {
+    const curYearElem = result.queryByTestId("select-month-dialog-current-year");
+    if (curYearElem) {
+      expect(curYearElem.innerHTML).toBe("2018");
+    } else {
+      expect(curYearElem).not.toBeUndefined();
+    }
+  });
+  fireEvent.click(within(result.getByTestId("select-month-dialog-choose-month")).getByText("Jul"));
+  await wait(() => expect(result.queryByTestId("select-month-dialog-current-year")).not.toBeInTheDocument());
   fireEvent.click(result.getByLabelText("Select Month"));
   await wait(() => expect(result.queryByTestId("loading-icon")).not.toBeInTheDocument());
 
