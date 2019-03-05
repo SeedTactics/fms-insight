@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2019, John Lenz
 
 All rights reserved.
 
@@ -94,6 +94,49 @@ function computeCircle(oee: number): JSX.Element {
   }
 }
 
+function palletMaterial(
+  dateOfCurrentStatus: Date | undefined,
+  material: Iterable<Readonly<api.IInProcessMaterial>>
+): { title: string; value: JSX.Element }[] {
+  let entries: { title: string; value: JSX.Element }[] = [];
+
+  for (let mat of material) {
+    const name = mat.partName + "-" + mat.process.toString();
+
+    let matStatus = "";
+    let matTime: JSX.Element | undefined;
+    switch (mat.action.type) {
+      case api.ActionType.Loading:
+        matStatus = " (loading)";
+        break;
+      case api.ActionType.UnloadToCompletedMaterial:
+      case api.ActionType.UnloadToInProcess:
+        matStatus = " (unloading)";
+        break;
+      case api.ActionType.Machining:
+        matStatus = " (machining)";
+        if (mat.action.expectedRemainingMachiningTime && dateOfCurrentStatus) {
+          matStatus += " completing ";
+          const seconds = duration(mat.action.expectedRemainingMachiningTime).asSeconds();
+          matTime = <TimeAgo date={addSeconds(dateOfCurrentStatus, seconds)} />;
+        }
+        break;
+    }
+
+    entries.push({
+      title: "Part",
+      value: (
+        <>
+          <span>{name + matStatus}</span>
+          {matTime}
+        </>
+      )
+    });
+  }
+
+  return entries;
+}
+
 function computeTooltip(p: StationOEEProps): JSX.Element {
   let entries: { title: string; value: JSX.Element }[] = [];
 
@@ -110,39 +153,15 @@ function computeTooltip(p: StationOEEProps): JSX.Element {
       value: <span>{p.pallet.pallet.pallet}</span>
     });
 
-    for (let mat of p.pallet.material) {
-      const name = mat.partName + "-" + mat.process.toString();
+    entries.push(...palletMaterial(p.dateOfCurrentStatus, p.pallet.material));
+  }
 
-      let matStatus = "";
-      let matTime: JSX.Element | undefined;
-      switch (mat.action.type) {
-        case api.ActionType.Loading:
-          matStatus = " (loading)";
-          break;
-        case api.ActionType.UnloadToCompletedMaterial:
-        case api.ActionType.UnloadToInProcess:
-          matStatus = " (unloading)";
-          break;
-        case api.ActionType.Machining:
-          matStatus = " (machining)";
-          if (mat.action.expectedRemainingMachiningTime && p.dateOfCurrentStatus) {
-            matStatus += " completing ";
-            const seconds = duration(mat.action.expectedRemainingMachiningTime).asSeconds();
-            matTime = <TimeAgo date={addSeconds(p.dateOfCurrentStatus, seconds)} />;
-          }
-          break;
-      }
-
-      entries.push({
-        title: "Part",
-        value: (
-          <>
-            <span>{name + matStatus}</span>
-            {matTime}
-          </>
-        )
-      });
-    }
+  if (p.queuedPallet !== undefined) {
+    entries.push({
+      title: "Queued Pallet",
+      value: <span>{p.queuedPallet.pallet.pallet}</span>
+    });
+    entries.push(...palletMaterial(p.dateOfCurrentStatus, p.queuedPallet.material));
   }
 
   return (
@@ -158,15 +177,23 @@ function computeTooltip(p: StationOEEProps): JSX.Element {
 }
 
 function StationOEEWithStyles(p: StationOEEProps) {
-  let pallet: string = "Empty";
+  let pallet: JSX.Element = <tspan>Empty</tspan>;
   if (p.pallet !== undefined) {
-    pallet = p.pallet.pallet.pallet;
-    if (!isNaN(parseFloat(pallet))) {
-      pallet = "Pal " + pallet;
+    if (isNaN(parseFloat(p.pallet.pallet.pallet))) {
+      pallet = <tspan fill="#D84315">{p.pallet.pallet.pallet}</tspan>;
+    } else {
+      pallet = <tspan fill="#D84315">Pal {p.pallet.pallet.pallet}</tspan>;
+    }
+  }
+  let queued: JSX.Element | undefined;
+  if (p.queuedPallet !== undefined) {
+    if (isNaN(parseFloat(p.queuedPallet.pallet.pallet))) {
+      queued = <tspan fill="#F9A825">{p.queuedPallet.pallet.pallet}</tspan>;
+    } else {
+      queued = <tspan fill="#F9A825">Pal {p.queuedPallet.pallet.pallet}</tspan>;
     }
   }
 
-  // TODO: add back tooltip
   return (
     <Tooltip title={computeTooltip(p)}>
       <svg viewBox="0 0 400 400">
@@ -177,6 +204,13 @@ function StationOEEWithStyles(p: StationOEEProps) {
         <text x={200} y={250} textAnchor="middle" style={{ fontSize: 30 }}>
           {pallet}
         </text>
+        {queued ? (
+          <text x={200} y={300} textAnchor="middle" style={{ fontSize: 30 }}>
+            {queued}
+          </text>
+        ) : (
+          undefined
+        )}
       </svg>
     </Tooltip>
   );
@@ -216,7 +250,6 @@ function StationOEEs(p: Props) {
       ))}
     </Grid>
   );
-  // TODO: buffer and cart
 }
 
 const oeeSelector = createSelector(
