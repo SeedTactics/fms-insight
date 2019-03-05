@@ -90,7 +90,7 @@ const columns: ReadonlyArray<Column> = [
     getDisplay: c => c.x.toLocaleString(),
     getForSort: c => c.x.getTime()
   },
-  { id: ColumnId.Part, numeric: false, label: "Part", getDisplay: c => c.part },
+  { id: ColumnId.Part, numeric: false, label: "Part", getDisplay: c => c.part + "-" + c.process.toString() },
   {
     id: ColumnId.Station,
     numeric: false,
