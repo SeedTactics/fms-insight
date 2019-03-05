@@ -786,7 +786,12 @@ exports[`renders the dashboard: station oee 1`] = `
         x="200"
         y="250"
       >
-        Pal 4
+        <tspan
+          fill="#D84315"
+        >
+          Pal 
+          4
+        </tspan>
       </text>
     </svg>
   </div>
@@ -819,7 +824,25 @@ exports[`renders the dashboard: station oee 1`] = `
         x="200"
         y="250"
       >
-        Pal 6
+        <tspan
+          fill="#D84315"
+        >
+          Pal 
+          6
+        </tspan>
+      </text>
+      <text
+        style="font-size: 30px;"
+        text-anchor="middle"
+        x="200"
+        y="300"
+      >
+        <tspan
+          fill="#F9A825"
+        >
+          Pal 
+          7
+        </tspan>
       </text>
     </svg>
   </div>
@@ -852,7 +875,12 @@ exports[`renders the dashboard: station oee 1`] = `
         x="200"
         y="250"
       >
-        Pal 8
+        <tspan
+          fill="#D84315"
+        >
+          Pal 
+          8
+        </tspan>
       </text>
     </svg>
   </div>
@@ -885,7 +913,12 @@ exports[`renders the dashboard: station oee 1`] = `
         x="200"
         y="250"
       >
-        Pal 1
+        <tspan
+          fill="#D84315"
+        >
+          Pal 
+          1
+        </tspan>
       </text>
     </svg>
   </div>
@@ -918,7 +951,12 @@ exports[`renders the dashboard: station oee 1`] = `
         x="200"
         y="250"
       >
-        Pal 5
+        <tspan
+          fill="#D84315"
+        >
+          Pal 
+          5
+        </tspan>
       </text>
     </svg>
   </div>

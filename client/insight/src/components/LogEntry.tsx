@@ -43,8 +43,30 @@ import Tooltip from "@material-ui/core/Tooltip";
 import IconButton from "@material-ui/core/IconButton";
 import ImportExport from "@material-ui/icons/ImportExport";
 import { copyLogEntriesToClipboard } from "../data/clipboard-table";
+import { createStyles, withStyles, WithStyles } from "@material-ui/core/styles";
 
-export interface LogEntryProps {
+const logStyles = createStyles({
+  machine: {
+    color: "#1565C0"
+  },
+  loadStation: {
+    color: "#795548"
+  },
+  pallet: {
+    color: "#00695C"
+  },
+  queue: {
+    color: "#6A1B9A"
+  },
+  inspectionNotSignaled: {
+    color: "#4527A0"
+  },
+  inspectionSignaled: {
+    color: "red"
+  }
+});
+
+export interface LogEntryProps extends WithStyles<typeof logStyles> {
   entry: api.ILogEntry;
 }
 
@@ -112,7 +134,7 @@ function displayMat(mats: ReadonlyArray<api.ILogMaterial>) {
       mat += ", ";
     }
     if (m.numproc > 1) {
-      mat += m.part + "[" + m.proc.toString() + "]";
+      mat += m.part + "-" + m.proc.toString();
     } else {
       mat += m.part;
     }
@@ -120,86 +142,129 @@ function displayMat(mats: ReadonlyArray<api.ILogMaterial>) {
   return mat;
 }
 
-function display(entry: api.ILogEntry): string {
+function display(props: LogEntryProps): JSX.Element {
+  const entry = props.entry;
   switch (entry.type) {
     case api.LogType.LoadUnloadCycle:
-      return displayMat(entry.material) + " on pallet " + entry.pal + " at station " + entry.locnum.toString();
+      return (
+        <span>
+          {displayMat(entry.material)} on <span className={props.classes.pallet}>pallet {entry.pal}</span> at{" "}
+          <span className={props.classes.loadStation}>station {entry.locnum.toString()}</span>
+        </span>
+      );
 
     case api.LogType.MachineCycle:
-      let msg;
-      msg = displayMat(entry.material) + " on pallet " + entry.pal + " at machine " + entry.locnum.toString();
-      if (entry.program && entry.program !== "") {
-        msg += " with program " + entry.program;
-      }
-      return msg;
+      return (
+        <span>
+          {displayMat(entry.material)} on <span className={props.classes.pallet}>pallet {entry.pal}</span> at{" "}
+          <span className={props.classes.machine}>machine {entry.locnum.toString()}</span>
+          {entry.program && entry.program !== "" ? <span> with program {entry.program}</span> : undefined}
+        </span>
+      );
 
     case api.LogType.PartMark:
-      return displayMat(entry.material) + " marked with " + entry.result;
+      return (
+        <span>
+          {displayMat(entry.material)} marked with {entry.result}
+        </span>
+      );
 
     case api.LogType.OrderAssignment:
-      return displayMat(entry.material) + " assigned to workorder " + entry.result;
+      return (
+        <span>
+          {displayMat(entry.material)} assigned to workorder {entry.result}
+        </span>
+      );
 
     case api.LogType.PalletCycle:
-      return "Pallet " + entry.pal + " completed route";
+      return <span>Pallet {entry.pal} completed route</span>;
 
     case api.LogType.Inspection:
       const inspName = (entry.details || {}).InspectionType || "";
       let inspected = entry.result.toLowerCase() === "true" || entry.result === "1";
       if (inspected) {
-        return displayMat(entry.material) + " signaled for inspection " + inspName;
+        return (
+          <span>
+            {displayMat(entry.material)} signaled for inspection{" "}
+            <span className={props.classes.inspectionSignaled}>{inspName}</span>
+          </span>
+        );
       } else {
-        return displayMat(entry.material) + " skipped inspection " + inspName;
+        return (
+          <span>
+            {displayMat(entry.material)} skipped inspection{" "}
+            <span className={props.classes.inspectionNotSignaled}>{inspName}</span>
+          </span>
+        );
       }
 
     case api.LogType.InspectionForce:
       const forceInspName = entry.program;
       let forced = entry.result.toLowerCase() === "true" || entry.result === "1";
       if (forced) {
-        return displayMat(entry.material) + " declared for inspection " + forceInspName;
+        return (
+          <span>
+            {displayMat(entry.material)} declared for inspection{" "}
+            <span className={props.classes.inspectionSignaled}>{forceInspName}</span>
+          </span>
+        );
       } else {
-        return displayMat(entry.material) + " passed over for inspection " + forceInspName;
+        return (
+          <span>
+            {displayMat(entry.material)} passed over for inspection{" "}
+            <span className={props.classes.inspectionNotSignaled}>{forceInspName}</span>
+          </span>
+        );
       }
 
     case api.LogType.FinalizeWorkorder:
-      return "Finalize workorder " + entry.result;
+      return <span>Finalize workorder {entry.result}</span>;
 
     case api.LogType.InspectionResult:
       if (entry.result.toLowerCase() === "false") {
-        return entry.program + " Failed";
+        return <span className={props.classes.inspectionSignaled}>{entry.program} Failed</span>;
       } else {
-        return entry.program + " Succeeded";
+        return <span className={props.classes.inspectionSignaled}>{entry.program} Succeeded</span>;
       }
 
     case api.LogType.Wash:
-      return "Wash Completed";
+      return <span>Wash Completed</span>;
 
     case api.LogType.AddToQueue:
-      return displayMat(entry.material) + " added to queue " + entry.loc;
+      return (
+        <span>
+          {displayMat(entry.material)} added to queue <span className={props.classes.queue}>{entry.loc}</span>
+        </span>
+      );
 
     case api.LogType.RemoveFromQueue:
-      return displayMat(entry.material) + " removed from queue " + entry.loc;
+      return (
+        <span>
+          {displayMat(entry.material)} removed from queue <span className={props.classes.queue}>{entry.loc}</span>
+        </span>
+      );
 
     default:
-      return entry.result;
+      return <span>{entry.result}</span>;
   }
 }
 
-export class LogEntry extends React.PureComponent<LogEntryProps> {
-  render() {
+export const LogEntry = React.memo(
+  withStyles(logStyles)((props: LogEntryProps) => {
     return (
       <TableRow>
         <TableCell padding="dense">
-          <DateTimeDisplay date={this.props.entry.endUTC} formatStr={"MMM D, YY"} />
+          <DateTimeDisplay date={props.entry.endUTC} formatStr={"MMM D, YY"} />
         </TableCell>
         <TableCell padding="dense">
-          <DateTimeDisplay date={this.props.entry.endUTC} formatStr={"hh:mm A"} />
+          <DateTimeDisplay date={props.entry.endUTC} formatStr={"hh:mm A"} />
         </TableCell>
-        <TableCell padding="dense">{logType(this.props.entry)}</TableCell>
-        <TableCell padding="dense">{display(this.props.entry)}</TableCell>
+        <TableCell padding="dense">{logType(props.entry)}</TableCell>
+        <TableCell padding="dense">{display(props)}</TableCell>
       </TableRow>
     );
-  }
-}
+  })
+);
 
 export interface LogEntriesProps {
   entries: Iterable<Readonly<api.ILogEntry>>;
