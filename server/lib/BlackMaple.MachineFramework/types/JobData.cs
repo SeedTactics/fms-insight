@@ -665,6 +665,7 @@ namespace BlackMaple.MachineWatchInterface
                 throw new IndexOutOfRangeException("Invalid process or path number");
             }
         }
+        //Expected Load time is per material, need to multiply by PartsPerPallet to get total time
         public TimeSpan GetExpectedLoadTime(int process, int path)
         {
             if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process)) {
@@ -697,6 +698,7 @@ namespace BlackMaple.MachineWatchInterface
                 throw new IndexOutOfRangeException("Invalid process or path number");
             }
         }
+        //Expected Unload time is per material, need to multiply by PartsPerPallet to get total time
         public TimeSpan GetExpectedUnloadTime(int process, int path)
         {
             if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process)) {
