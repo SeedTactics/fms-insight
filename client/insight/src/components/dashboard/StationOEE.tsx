@@ -176,21 +176,44 @@ function computeTooltip(p: StationOEEProps): JSX.Element {
   );
 }
 
+function isMaterialOverdue(dateOfCurrentStatus: Date | undefined, p: PalletData): boolean {
+  if (!dateOfCurrentStatus) {
+    return false;
+  }
+  for (let mat of p.material) {
+    if (mat.action.expectedRemainingMachiningTime) {
+      const seconds = duration(mat.action.expectedRemainingMachiningTime).asSeconds();
+      if (seconds < 0) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 function StationOEEWithStyles(p: StationOEEProps) {
   let pallet: JSX.Element = <tspan>Empty</tspan>;
   if (p.pallet !== undefined) {
     if (isNaN(parseFloat(p.pallet.pallet.pallet))) {
-      pallet = <tspan fill="#D84315">{p.pallet.pallet.pallet}</tspan>;
+      pallet = (
+        <tspan fill={isMaterialOverdue(p.dateOfCurrentStatus, p.pallet) ? "#C62828" : "#1B5E20"}>
+          {p.pallet.pallet.pallet}
+        </tspan>
+      );
     } else {
-      pallet = <tspan fill="#D84315">Pal {p.pallet.pallet.pallet}</tspan>;
+      pallet = (
+        <tspan fill={isMaterialOverdue(p.dateOfCurrentStatus, p.pallet) ? "#C62828" : "#1B5E20"}>
+          Pal {p.pallet.pallet.pallet}
+        </tspan>
+      );
     }
   }
   let queued: JSX.Element | undefined;
   if (p.queuedPallet !== undefined) {
     if (isNaN(parseFloat(p.queuedPallet.pallet.pallet))) {
-      queued = <tspan fill="#F9A825">{p.queuedPallet.pallet.pallet}</tspan>;
+      queued = <tspan fill="#F57F17">{p.queuedPallet.pallet.pallet}</tspan>;
     } else {
-      queued = <tspan fill="#F9A825">Pal {p.queuedPallet.pallet.pallet}</tspan>;
+      queued = <tspan fill="#F57F17">Pal {p.queuedPallet.pallet.pallet}</tspan>;
     }
   }
 
