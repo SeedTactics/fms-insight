@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2019, John Lenz
 
 All rights reserved.
 
@@ -39,10 +39,12 @@ import * as events from "./events";
 import * as stationCycles from "./events.cycles";
 import * as simuse from "./events.simuse";
 import * as inspection from "./events.inspection";
+import * as inspEvts from "./events.inspection";
 import { fakeCycle } from "./events.fake";
 import { ILogEntry } from "./api";
 import { LazySeq } from "./lazyseq";
-import { buildPointsTable, buildCycleTable, buildLogEntriesTable } from "./clipboard-table";
+import { buildPointsTable, buildCycleTable, buildLogEntriesTable, buildInspectionTable } from "./clipboard-table";
+import { loadMockData } from "../mock-data/load";
 
 it("creates initial state", () => {
   // tslint:disable no-any
@@ -405,6 +407,21 @@ it("creates log entries clipboard table", () => {
   const table = document.createElement("div");
   table.innerHTML = buildLogEntriesTable(evts);
   expect(table).toMatchSnapshot("events clipboard table");
+});
+
+it("groups inspections by path", async () => {
+  const data = loadMockData(30 * 24 * 60 * 60);
+  const evts = await data.events;
+  const inspState = inspEvts.process_events({ type: inspEvts.ExpireOldDataType.NoExpire }, evts, inspEvts.initial);
+
+  const entries = inspState.by_part.get(new inspection.PartAndInspType("aaa", "CMM")).getOrThrow();
+  const range = { start: new Date(2018, 1, 6), end: new Date(2018, 1, 9) };
+  const groups = inspection.groupInspectionsByPath(entries, range, e => e.serial || "");
+  expect(groups).toMatchSnapshot("grouped inspections");
+
+  const table = document.createElement("div");
+  table.innerHTML = buildInspectionTable("aaa", "CMM", entries);
+  expect(table).toMatchSnapshot("inspection clipboard table");
 });
 
 /*

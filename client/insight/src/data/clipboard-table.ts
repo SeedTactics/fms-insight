@@ -37,6 +37,8 @@ import { FilteredStationCycles, stat_name_and_num, format_cycle_inspection } fro
 import { format } from "date-fns";
 import * as api from "../data/api";
 import { duration } from "moment";
+import { InspectionLogEntry } from "./events";
+import { groupInspectionsByPath } from "./events.inspection";
 const copy = require("copy-to-clipboard");
 
 export interface ClipboardTablePoint {
@@ -227,4 +229,45 @@ export function buildLogEntriesTable(cycles: Iterable<Readonly<api.ILogEntry>>):
 
 export function copyLogEntriesToClipboard(cycles: Iterable<Readonly<api.ILogEntry>>): void {
   copy(buildLogEntriesTable(cycles));
+}
+
+export function buildInspectionTable(
+  part: string,
+  inspType: string,
+  entries: ReadonlyArray<InspectionLogEntry>
+): string {
+  let table = "<table>\n<thead><tr>";
+  table += "<th>Path</th><th>Date</th><th>Part</th><th>Inspection</th>";
+  table += "<th>Serial</th><th>Workorder</th><th>Inspected</th><th>Failed</th>";
+  table += "</tr></thead>\n<tbody>\n";
+
+  const groups = groupInspectionsByPath(entries, undefined, e => e.time.getTime());
+  const paths = groups.keySet().toArray({ sortOn: x => x });
+
+  for (let path of paths) {
+    const data = groups.get(path).getOrThrow();
+    for (let mat of data.material) {
+      table += "<tr>";
+      table += "<td>" + path + "</td>";
+      table += "<td>" + format(mat.time, "MMM D, YYYY, H:mm a") + "</td>";
+      table += "<td>" + part + "</td>";
+      table += "<td>" + inspType + "</td>";
+      table += "<td>" + (mat.serial || "") + "</td>";
+      table += "<td>" + (mat.workorder || "") + "</td>";
+      table += "<td>" + (mat.toInspect ? "inspected" : "") + "</td>";
+      table += "<td>" + (mat.failed ? "failed" : "") + "</td>";
+      table += "</tr>\n";
+    }
+  }
+
+  table += "</tbody>\n</table>";
+  return table;
+}
+
+export function copyInspectionEntriesToClipboard(
+  part: string,
+  inspType: string,
+  entries: ReadonlyArray<InspectionLogEntry>
+): void {
+  copy(buildInspectionTable(part, inspType, entries));
 }

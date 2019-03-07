@@ -38,6 +38,9 @@ import CardHeader from "@material-ui/core/CardHeader";
 import Select from "@material-ui/core/Select";
 import MenuItem from "@material-ui/core/MenuItem";
 import { Sankey, Hint } from "react-vis";
+import Tooltip from "@material-ui/core/Tooltip";
+import IconButton from "@material-ui/core/IconButton";
+import ImportExport from "@material-ui/icons/ImportExport";
 
 import { PartIdenticon } from "../station-monitor/Material";
 import { connect } from "../../store/store";
@@ -48,6 +51,7 @@ import { PartAndInspType, InspectionLogEntry } from "../../data/events.inspectio
 import { HashMap } from "prelude-ts";
 import { addDays, startOfToday, addMonths } from "date-fns";
 import InspectionDataTable from "./InspectionDataTable";
+import { copyInspectionEntriesToClipboard } from "../../data/clipboard-table";
 
 interface InspectionSankeyDiagramProps {
   readonly sankey: SankeyDiagram;
@@ -171,6 +175,26 @@ class InspectionSankey extends React.Component<InspectionSankeyProps, Inspection
               <SearchIcon />
               <div style={{ marginLeft: "10px", marginRight: "3em" }}>Inspections</div>
               <div style={{ flexGrow: 1 }} />
+              {curData ? (
+                <Tooltip title="Copy to Clipboard">
+                  <IconButton
+                    onClick={() =>
+                      curData
+                        ? copyInspectionEntriesToClipboard(
+                            this.state.selectedPart || "",
+                            this.state.selectedInspectType || "",
+                            curData
+                          )
+                        : undefined
+                    }
+                    style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+                  >
+                    <ImportExport />
+                  </IconButton>
+                </Tooltip>
+              ) : (
+                undefined
+              )}
               <Select
                 autoWidth
                 value={this.state.showTable ? "table" : "sankey"}
