@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2019, John Lenz
 
 All rights reserved.
 
@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as api from "./api";
-import { fieldsHashCode, HashMap } from "prelude-ts";
+import { fieldsHashCode, HashMap, Option, Vector, ToOrderable } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 
 export enum InspectionLogResultType {
@@ -58,6 +58,8 @@ export type InspectionLogResult =
 export interface InspectionLogEntry {
   readonly time: Date;
   readonly materialID: number;
+  readonly serial?: string;
+  readonly workorder?: string;
   readonly result: InspectionLogResult;
 }
 
@@ -151,6 +153,8 @@ export function process_events(
             entry: {
               time: c.endUTC,
               materialID: m.id,
+              serial: m.serial,
+              workorder: m.workorder,
               result: {
                 type: InspectionLogResultType.Triggered,
                 actualPath: paths,
@@ -170,6 +174,8 @@ export function process_events(
             entry: {
               time: c.endUTC,
               materialID: m.id,
+              serial: m.serial,
+              workorder: m.workorder,
               result: {
                 type: InspectionLogResultType.Forced,
                 toInspect: forceInspect
@@ -189,6 +195,8 @@ export function process_events(
             entry: {
               time: c.endUTC,
               materialID: m.id,
+              serial: m.serial,
+              workorder: m.workorder,
               result: { type: InspectionLogResultType.Completed, success }
             } as InspectionLogEntry
           };
@@ -206,4 +214,71 @@ export function process_events(
     ...st,
     by_part: parts
   };
+}
+
+export interface TriggeredInspectionEntry {
+  readonly time: Date;
+  readonly materialID: number;
+  readonly serial?: string;
+  readonly workorder?: string;
+  readonly toInspect: boolean;
+  readonly path: string;
+  readonly failed: boolean;
+}
+
+function buildPathString(procs: ReadonlyArray<Readonly<api.IMaterialProcessActualPath>>) {
+  const pathStrs = [];
+  for (let proc of procs) {
+    for (let stop of proc.stops) {
+      pathStrs.push("P" + proc.pallet.toString() + "," + "M" + stop.stationNum.toString());
+    }
+  }
+  return pathStrs.join(" -> ");
+}
+
+export interface InspectionsForPath {
+  readonly material: Vector<TriggeredInspectionEntry>;
+  readonly failedCnt: number;
+}
+
+export function groupInspectionsByPath(
+  entries: ReadonlyArray<InspectionLogEntry>,
+  dateRange: { start: Date; end: Date } | undefined,
+  sortOn: ToOrderable<TriggeredInspectionEntry> | { desc: ToOrderable<TriggeredInspectionEntry> }
+): HashMap<string, InspectionsForPath> {
+  const failed = LazySeq.ofIterable(entries)
+    .mapOption(e => {
+      if (e.result.type === InspectionLogResultType.Completed && !e.result.success) {
+        return Option.some(e.materialID);
+      } else {
+        return Option.none<number>();
+      }
+    })
+    .toSet(e => e);
+
+  return LazySeq.ofIterable(entries)
+    .mapOption(e => {
+      if (dateRange && (e.time < dateRange.start || e.time > dateRange.end)) {
+        return Option.none<TriggeredInspectionEntry>();
+      }
+      switch (e.result.type) {
+        case InspectionLogResultType.Triggered:
+          return Option.some({
+            time: e.time,
+            materialID: e.materialID,
+            serial: e.serial,
+            workorder: e.workorder,
+            toInspect: e.result.toInspect,
+            path: buildPathString(e.result.actualPath),
+            failed: failed.contains(e.materialID)
+          });
+        default:
+          return Option.none<TriggeredInspectionEntry>();
+      }
+    })
+    .groupBy(e => e.path)
+    .mapValues(mats => ({
+      material: mats.sortOn(sortOn, e => e.time.getTime()),
+      failedCnt: mats.sumOn(e => (e.failed ? 1 : 0))
+    }));
 }

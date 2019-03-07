@@ -46,6 +46,8 @@ import { SankeyNode, SankeyDiagram, inspectionDataToSankey } from "../../data/in
 import * as events from "../../data/events";
 import { PartAndInspType, InspectionLogEntry } from "../../data/events.inspection";
 import { HashMap } from "prelude-ts";
+import { addDays, startOfToday, addMonths } from "date-fns";
+import InspectionDataTable from "./InspectionDataTable";
 
 interface InspectionSankeyDiagramProps {
   readonly sankey: SankeyDiagram;
@@ -127,15 +129,18 @@ class ConvertInspectionDataToSankey extends React.PureComponent<{
 
 interface InspectionSankeyProps {
   readonly inspectionlogs: HashMap<PartAndInspType, ReadonlyArray<InspectionLogEntry>>;
+  readonly analysisPeriod: events.AnalysisPeriod;
+  readonly default_date_range: Date[];
 }
 
 interface InspectionSankeyState {
   readonly selectedPart?: string;
   readonly selectedInspectType?: string;
+  readonly showTable: boolean;
 }
 
 class InspectionSankey extends React.Component<InspectionSankeyProps, InspectionSankeyState> {
-  state: InspectionSankeyState = {};
+  state: InspectionSankeyState = { showTable: false };
 
   render() {
     let curData: ReadonlyArray<InspectionLogEntry> | undefined;
@@ -167,10 +172,22 @@ class InspectionSankey extends React.Component<InspectionSankeyProps, Inspection
               <div style={{ marginLeft: "10px", marginRight: "3em" }}>Inspections</div>
               <div style={{ flexGrow: 1 }} />
               <Select
+                autoWidth
+                value={this.state.showTable ? "table" : "sankey"}
+                onChange={e => this.setState({ showTable: e.target.value === "table" })}
+              >
+                <MenuItem key="sankey" value="sankey">
+                  Sankey
+                </MenuItem>
+                <MenuItem key="table" value="table">
+                  Table
+                </MenuItem>
+              </Select>
+              <Select
                 name="inspection-sankey-select-type"
                 autoWidth
                 displayEmpty
-                style={{ marginRight: "1em" }}
+                style={{ marginRight: "1em", marginLeft: "1em" }}
                 value={this.state.selectedInspectType || ""}
                 onChange={e => this.setState({ selectedInspectType: e.target.value })}
               >
@@ -215,7 +232,19 @@ class InspectionSankey extends React.Component<InspectionSankeyProps, Inspection
         />
         <CardContent>
           <div style={{ display: "flex", justifyContent: "center" }}>
-            {curData ? <ConvertInspectionDataToSankey data={curData} /> : undefined}
+            {curData ? (
+              this.state.showTable ? (
+                <InspectionDataTable
+                  last30_days={this.props.analysisPeriod === events.AnalysisPeriod.Last30Days}
+                  points={curData}
+                  default_date_range={this.props.default_date_range}
+                />
+              ) : (
+                <ConvertInspectionDataToSankey data={curData} />
+              )
+            ) : (
+              undefined
+            )}
           </div>
         </CardContent>
       </Card>
@@ -227,5 +256,10 @@ export default connect(st => ({
   inspectionlogs:
     st.Events.analysis_period === events.AnalysisPeriod.Last30Days
       ? st.Events.last30.inspection.by_part
-      : st.Events.selected_month.inspection.by_part
+      : st.Events.selected_month.inspection.by_part,
+  analysisPeriod: st.Events.analysis_period,
+  default_date_range:
+    st.Events.analysis_period === events.AnalysisPeriod.Last30Days
+      ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
+      : [st.Events.analysis_period_month, addMonths(st.Events.analysis_period_month, 1)]
 }))(InspectionSankey);

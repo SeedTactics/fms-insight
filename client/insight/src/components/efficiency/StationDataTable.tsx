@@ -32,34 +32,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
 import Table from "@material-ui/core/Table";
-import TableBody from "@material-ui/core/TableBody";
-import TableCell from "@material-ui/core/TableCell";
-import TableHead from "@material-ui/core/TableHead";
-import TableRow from "@material-ui/core/TableRow";
-import TableSortLabel from "@material-ui/core/TableSortLabel";
-import Tooltip from "@material-ui/core/Tooltip";
-import IconButton from "@material-ui/core/IconButton";
-import FirstPageIcon from "@material-ui/icons/FirstPage";
-import KeyboardArrowLeft from "@material-ui/icons/KeyboardArrowLeft";
-import KeyboardArrowRight from "@material-ui/icons/KeyboardArrowRight";
-import LastPageIcon from "@material-ui/icons/LastPage";
-import Toolbar from "@material-ui/core/Toolbar";
-import Typography from "@material-ui/core/Typography";
-import Select from "@material-ui/core/Select";
-import ZoomOutIcon from "@material-ui/icons/ZoomOut";
-import InputBase from "@material-ui/core/InputBase";
-import MenuItem from "@material-ui/core/MenuItem";
-import Button from "@material-ui/core/Button";
-import { HashMap } from "prelude-ts";
-import moment from "moment";
-import "react-dates/lib/css/_datepicker.css";
-import "./station-data-table.css";
-import "react-dates/initialize";
-import { DateRangePicker } from "react-dates";
+import { HashMap, ToOrderable } from "prelude-ts";
 
 import { PartCycleData, format_cycle_inspection } from "../../data/events.cycles";
 import { LazySeq } from "../../data/lazyseq";
-import { addDays, addHours } from "date-fns";
+import { Column, DataTableHead, DataTableActions, DataTableBody } from "./DataTable";
 
 enum ColumnId {
   Date,
@@ -74,15 +51,7 @@ enum ColumnId {
   Operator
 }
 
-interface Column {
-  readonly id: ColumnId;
-  readonly numeric: boolean;
-  readonly label: string;
-  readonly getDisplay: (c: PartCycleData) => string;
-  readonly getForSort?: (c: PartCycleData) => string | number;
-}
-
-const columns: ReadonlyArray<Column> = [
+const columns: ReadonlyArray<Column<ColumnId, PartCycleData>> = [
   {
     id: ColumnId.Date,
     numeric: false,
@@ -144,207 +113,6 @@ const columns: ReadonlyArray<Column> = [
   }
 ];
 
-interface StationTableHeadProps {
-  readonly orderBy: ColumnId;
-  readonly order: "asc" | "desc";
-  readonly onRequestSort: (id: ColumnId) => void;
-}
-
-function StationTableHead(props: StationTableHeadProps) {
-  return (
-    <TableHead>
-      <TableRow>
-        {columns.map(col => (
-          <TableCell
-            key={col.id}
-            align={col.numeric ? "right" : "left"}
-            sortDirection={props.orderBy === col.id ? props.order : false}
-          >
-            <Tooltip title="Sort" placement={col.numeric ? "bottom-end" : "bottom-start"} enterDelay={300}>
-              <TableSortLabel
-                active={props.orderBy === col.id}
-                direction={props.order}
-                onClick={() => props.onRequestSort(col.id)}
-              >
-                {col.label}
-              </TableSortLabel>
-            </Tooltip>
-          </TableCell>
-        ))}
-      </TableRow>
-    </TableHead>
-  );
-}
-
-interface StationTableActionsProps {
-  readonly page: number;
-  readonly count: number;
-  readonly rowsPerPage: number;
-  readonly last30_days: boolean;
-  readonly setPage: (page: number) => void;
-  readonly setRowsPerPage: (rpp: number) => void;
-  readonly default_date_range: Date[];
-  readonly current_date_zoom: { start: Date; end: Date } | undefined;
-  readonly set_date_zoom_range: (p: { zoom?: { start: Date; end: Date } }) => void;
-}
-
-function StationTableActions(props: StationTableActionsProps) {
-  function setDateRange(numDaysBack: number) {
-    const now = new Date();
-    props.set_date_zoom_range({ zoom: { start: addDays(now, -numDaysBack), end: addHours(now, 1) } });
-  }
-  const [focusedDateEntry, setFocusedDateEntry] = React.useState<"startDate" | "endDate" | null>(null);
-  return (
-    <Toolbar>
-      <Typography color="textSecondary" variant="caption">
-        Rows per page:
-      </Typography>
-      <Select
-        style={{ marginLeft: 8, marginRight: "1em" }}
-        value={props.rowsPerPage}
-        SelectDisplayProps={{ style: { color: "rgba(0, 0, 0, 0.54)" } }}
-        input={<InputBase />}
-        onChange={evt => {
-          const rpp = parseInt(evt.target.value, 10);
-          props.setRowsPerPage(rpp);
-          const maxPage = Math.ceil(props.count / rpp) - 1;
-          if (props.page > maxPage) {
-            props.setPage(maxPage);
-          }
-        }}
-      >
-        {[10, 15, 20, 50].map(rowsPerPageOption => (
-          <MenuItem key={rowsPerPageOption} value={rowsPerPageOption}>
-            {rowsPerPageOption}
-          </MenuItem>
-        ))}
-      </Select>
-      <Typography color="textSecondary" variant="caption">
-        {`${props.count === 0 ? 0 : props.page * props.rowsPerPage + 1}-${Math.min(
-          props.count,
-          (props.page + 1) * props.rowsPerPage
-        )} of ${props.count}`}
-      </Typography>
-      <IconButton onClick={() => props.setPage(0)} disabled={props.page === 0} aria-label="First Page">
-        <FirstPageIcon />
-      </IconButton>
-      <IconButton onClick={() => props.setPage(props.page - 1)} disabled={props.page === 0} aria-label="Previous Page">
-        <KeyboardArrowLeft />
-      </IconButton>
-      <IconButton
-        onClick={() => props.setPage(props.page + 1)}
-        disabled={props.page >= Math.ceil(props.count / props.rowsPerPage) - 1}
-        aria-label="Next Page"
-      >
-        <KeyboardArrowRight />
-      </IconButton>
-      <IconButton
-        onClick={() => props.setPage(Math.max(0, Math.ceil(props.count / props.rowsPerPage) - 1))}
-        disabled={props.page >= Math.ceil(props.count / props.rowsPerPage) - 1}
-        aria-label="Last Page"
-      >
-        <LastPageIcon />
-      </IconButton>
-      <div style={{ flexGrow: 1 }} />
-      {props.last30_days ? (
-        <>
-          <Tooltip title="Last 24 hours">
-            <Button onClick={() => setDateRange(1)} style={{ color: "rgba(0, 0, 0, 0.54)" }}>
-              24h
-            </Button>
-          </Tooltip>
-          <Tooltip title="Last 2 days">
-            <Button onClick={() => setDateRange(2)} style={{ color: "rgba(0, 0, 0, 0.54)" }}>
-              2d
-            </Button>
-          </Tooltip>
-          <Tooltip title="Last 3 days">
-            <Button onClick={() => setDateRange(3)} style={{ color: "rgba(0, 0, 0, 0.54)" }}>
-              3d
-            </Button>
-          </Tooltip>
-          <Tooltip title="Last 4 days">
-            <Button onClick={() => setDateRange(4)} style={{ color: "rgba(0, 0, 0, 0.54)" }}>
-              4d
-            </Button>
-          </Tooltip>
-          <Tooltip title="Last 5 days">
-            <Button onClick={() => setDateRange(5)} style={{ color: "rgba(0, 0, 0, 0.54)" }}>
-              5d
-            </Button>
-          </Tooltip>
-          <Tooltip title="Last 6 days">
-            <Button onClick={() => setDateRange(6)} style={{ color: "rgba(0, 0, 0, 0.54)" }}>
-              6d
-            </Button>
-          </Tooltip>
-          <Tooltip title="Last 1 week">
-            <Button onClick={() => setDateRange(7)} style={{ color: "rgba(0, 0, 0, 0.54)" }}>
-              1w
-            </Button>
-          </Tooltip>
-          <Tooltip title="Last 2 weeks">
-            <Button onClick={() => setDateRange(7 * 2)} style={{ color: "rgba(0, 0, 0, 0.54)" }}>
-              2w
-            </Button>
-          </Tooltip>
-          <Tooltip title="Last 3 weeks">
-            <Button onClick={() => setDateRange(7 * 3)} style={{ color: "rgba(0, 0, 0, 0.54)" }}>
-              3w
-            </Button>
-          </Tooltip>
-          <Tooltip title="Last 30 days">
-            <Button
-              onClick={() => props.set_date_zoom_range({ zoom: undefined })}
-              style={{ color: "rgba(0, 0, 0, 0.54)" }}
-            >
-              30d
-            </Button>
-          </Tooltip>
-        </>
-      ) : (
-        <>
-          <DateRangePicker
-            startDate={moment(props.current_date_zoom ? props.current_date_zoom.start : props.default_date_range[0])}
-            startDateId="station-data-table-start-date"
-            endDate={moment(
-              addDays(props.current_date_zoom ? props.current_date_zoom.end : props.default_date_range[1], -1)
-            )}
-            navPrev={<span />}
-            navNext={<span />}
-            endDateId="station-data-table-start-date"
-            noBorder={true}
-            numberOfMonths={1}
-            withPortal
-            openDirection="up"
-            hideKeyboardShortcutsPanel
-            minimumNights={0}
-            onDatesChange={d =>
-              props.set_date_zoom_range({
-                zoom: {
-                  start: d.startDate ? d.startDate.toDate() : props.default_date_range[0],
-                  end: d.endDate ? addDays(d.endDate.toDate(), 1) : props.default_date_range[1]
-                }
-              })
-            }
-            keepOpenOnDateSelect
-            isOutsideRange={day =>
-              day.toDate() < props.default_date_range[0] || day.toDate >= props.default_date_range[1]
-            }
-            focusedInput={focusedDateEntry}
-            onFocusChange={setFocusedDateEntry}
-          />
-          <Tooltip title="Reset Date Range">
-            <IconButton onClick={() => props.set_date_zoom_range({ zoom: undefined })}>
-              <ZoomOutIcon />
-            </IconButton>
-          </Tooltip>
-        </>
-      )}
-    </Toolbar>
-  );
-}
-
 interface StationDataTableProps {
   readonly points: HashMap<string, ReadonlyArray<PartCycleData>>;
   readonly default_date_range: Date[];
@@ -359,7 +127,7 @@ function extractData(
   orderBy: ColumnId,
   order: "asc" | "desc"
 ): ReadonlyArray<PartCycleData> {
-  let getData: ((p: PartCycleData) => string | number) | undefined;
+  let getData: ToOrderable<PartCycleData> | undefined;
   for (let col of columns) {
     if (col.id === orderBy) {
       getData = col.getForSort || col.getDisplay;
@@ -411,24 +179,14 @@ export default React.memo(function StationDataTable(props: StationDataTableProps
 
   const allData = extractData(props.points, props.current_date_zoom, orderBy, order);
   const totalDataLength = allData.length;
-  const pageData = allData.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
+  const pageData: ReadonlyArray<PartCycleData> = allData.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
   return (
     <div>
       <Table>
-        <StationTableHead onRequestSort={handleRequestSort} orderBy={orderBy} order={order} />
-        <TableBody>
-          {pageData.map((row, idx) => (
-            <TableRow key={idx}>
-              {columns.map(col => (
-                <TableCell key={col.id} align={col.numeric ? "right" : "left"}>
-                  {col.getDisplay(row)}
-                </TableCell>
-              ))}
-            </TableRow>
-          ))}
-        </TableBody>
+        <DataTableHead columns={columns} onRequestSort={handleRequestSort} orderBy={orderBy} order={order} />
+        <DataTableBody columns={columns} pageData={pageData} />
       </Table>
-      <StationTableActions
+      <DataTableActions
         page={page}
         count={totalDataLength}
         last30_days={props.last30_days}
