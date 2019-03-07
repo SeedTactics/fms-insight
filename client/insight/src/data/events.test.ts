@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { addDays, addHours, differenceInMinutes, addMinutes } from "date-fns";
+import { addDays, addHours, differenceInMinutes, addMinutes, differenceInSeconds } from "date-fns";
 import { duration } from "moment";
 
 import { PledgeStatus } from "../store/middleware";
@@ -410,15 +410,27 @@ it("creates log entries clipboard table", () => {
 });
 
 it("groups inspections by path", async () => {
-  const data = loadMockData(30 * 24 * 60 * 60);
+  const jan18 = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
+  const offsetSeconds = differenceInSeconds(addDays(new Date(Date.UTC(2018, 7, 6, 15, 39, 0)), -28), jan18);
+  const data = loadMockData(offsetSeconds);
   const evts = await data.events;
   const inspState = inspEvts.process_events({ type: inspEvts.ExpireOldDataType.NoExpire }, evts, inspEvts.initial);
 
   const entries = inspState.by_part.get(new inspection.PartAndInspType("aaa", "CMM")).getOrThrow();
-  const range = { start: new Date(2018, 1, 6), end: new Date(2018, 1, 9) };
+  const range = { start: new Date(Date.UTC(2018, 7, 1)), end: new Date(Date.UTC(2018, 7, 4)) };
   const groups = inspection.groupInspectionsByPath(entries, range, e => e.serial || "");
   expect(groups).toMatchSnapshot("grouped inspections");
+});
 
+it("copies inspections by path to clipboard", async () => {
+  const jan18 = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
+  // use local time zone for offset since clipboard also uses local time
+  const offsetSeconds = differenceInSeconds(addDays(new Date(2018, 7, 6, 15, 39, 0), -28), jan18);
+  const data = loadMockData(offsetSeconds);
+  const evts = await data.events;
+  const inspState = inspEvts.process_events({ type: inspEvts.ExpireOldDataType.NoExpire }, evts, inspEvts.initial);
+
+  const entries = inspState.by_part.get(new inspection.PartAndInspType("aaa", "CMM")).getOrThrow();
   const table = document.createElement("div");
   table.innerHTML = buildInspectionTable("aaa", "CMM", entries);
   expect(table).toMatchSnapshot("inspection clipboard table");
