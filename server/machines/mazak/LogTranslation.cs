@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2019, John Lenz
 
 All rights reserved.
 
@@ -44,7 +44,7 @@ namespace MazakMachineInterface
     private BlackMaple.MachineFramework.JobDB _jobDB;
     private BlackMaple.MachineFramework.JobLogDB _log;
     private BlackMaple.MachineFramework.FMSSettings _settings;
-    private Action<LogEntry> _onPalletMove;
+    private Action<LogEntry> _onMazakLog;
     private MazakSchedules _mazakSchedules;
     private Dictionary<string, JobPlan> _jobs;
 
@@ -54,13 +54,13 @@ namespace MazakMachineInterface
                           BlackMaple.MachineFramework.JobLogDB logDB,
                           MazakSchedules mazakSch,
                           BlackMaple.MachineFramework.FMSSettings settings,
-                          Action<LogEntry> onPalletMove)
+                          Action<LogEntry> onMazakLogMessage)
     {
       _jobDB = jDB;
       _log = logDB;
       _mazakSchedules = mazakSch;
       _settings = settings;
-      _onPalletMove = onPalletMove;
+      _onMazakLog = onMazakLogMessage;
       _jobs = new Dictionary<string, JobPlan>();
     }
 
@@ -194,10 +194,11 @@ namespace MazakMachineInterface
           {
             CheckPendingLoads(e.Pallet, e.TimeUTC, e.ForeignID, true, cycle);
           }
-          _onPalletMove(e);
 
           break;
       }
+
+      _onMazakLog(e);
 
       return sendToExternal;
     }

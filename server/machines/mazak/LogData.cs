@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2019, John Lenz
 
 All rights reserved.
 
@@ -49,16 +49,13 @@ namespace MazakMachineInterface
     UnloadEnd = 512,
 
     PalletMoving = 301,
+    //PalletMoveComplete = 302,
 
-    // Some old events we don't use anymore
+    StartRotatePalletIntoMachine = 431,
+    //EndRotatePalletIntoMachine = 432,
 
-    //Pallet transfer refers to the rotation of pallets between the machining table
-    //and the input/output cart pickup location.  There are three kinds of transfers: both pallets,
-    //only a pallet moving to the machine, and only a pallet moving out of the machine.
-    //PalletTransfer = 221,
-    //PalletTransferNoPalletToMachine = 433,
-
-
+    StartRotatePalletOutOfMachine = 433,
+    //EndRotatePalletOutOfMachine = 434,
   }
 
   public class LogEntry
@@ -81,13 +78,13 @@ namespace MazakMachineInterface
     public string FromPosition { get; set; }
   }
 
-  public delegate void PalletMoveDel(int pallet, string fromStation, string toStation);
-  public interface INotifyPalletMovement
+  public delegate void MazakLogEventDel(LogEntry e);
+  public interface INotifyMazakLogEvent
   {
-    event PalletMoveDel PalletMove;
+    event MazakLogEventDel MazakLogEvent;
   }
   public delegate void NewEntriesDel();
-  public interface IMazakLogReader : INotifyPalletMovement
+  public interface IMazakLogReader : INotifyMazakLogEvent
   {
     void RecheckQueues();
     void Halt();
@@ -95,7 +92,7 @@ namespace MazakMachineInterface
   }
 
 #if USE_OLEDB
-	public class LogDataVerE : IMazakLogReader, INotifyPalletMovement
+	public class LogDataVerE : IMazakLogReader, INotifyMazakLogEvent
 	{
     private const string DateTimeFormat = "yyyyMMddHHmmss";
 
@@ -110,7 +107,7 @@ namespace MazakMachineInterface
     private object _lock;
     private System.Timers.Timer _timer;
 
-    public event PalletMoveDel PalletMove;
+    public event MazakLogEventDel MazakLogEvent;
     public event NewEntriesDel NewEntries;
 
     public LogDataVerE(BlackMaple.MachineFramework.JobLogDB log,
@@ -151,7 +148,7 @@ namespace MazakMachineInterface
           var mazakData = _readDB.LoadSchedulesAndLoadActions();
           var logs = LoadLog(_log.MaxForeignID());
           var trans = new LogTranslation(_jobDB, _log, mazakData, FMSSettings,
-            le => PalletMove?.Invoke(le.Pallet, le.FromPosition, le.TargetPosition)
+            le => MazakLogEvent?.Invoke(le)
           );
           var sendToExternal = new List<BlackMaple.MachineFramework.MaterialToSendToExternalQueue>();
           foreach (var ev in logs)
@@ -319,7 +316,7 @@ namespace MazakMachineInterface
 	}
 #endif
 
-  public class LogDataWeb : IMazakLogReader, INotifyPalletMovement
+  public class LogDataWeb : IMazakLogReader, INotifyMazakLogEvent
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LogDataWeb>();
 
@@ -370,7 +367,7 @@ namespace MazakMachineInterface
       }
     }
 
-    public event PalletMoveDel PalletMove;
+    public event MazakLogEventDel MazakLogEvent;
     public event NewEntriesDel NewEntries;
 
     public void ThreadFunc()
@@ -394,7 +391,7 @@ namespace MazakMachineInterface
           var mazakData = _readDB.LoadSchedulesAndLoadActions();
           var logs = LoadLog(_log.MaxForeignID());
           var trans = new LogTranslation(_jobDB, _log, mazakData, _settings,
-            le => PalletMove?.Invoke(le.Pallet, le.FromPosition, le.TargetPosition)
+            le => MazakLogEvent?.Invoke(le)
           );
           var sendToExternal = new List<BlackMaple.MachineFramework.MaterialToSendToExternalQueue>();
           foreach (var ev in logs)
