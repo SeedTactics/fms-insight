@@ -49,6 +49,7 @@ import ZoomOutIcon from "@material-ui/icons/ZoomOut";
 import InputBase from "@material-ui/core/InputBase";
 import MenuItem from "@material-ui/core/MenuItem";
 import Button from "@material-ui/core/Button";
+import MoreHoriz from "@material-ui/icons/MoreHoriz";
 import moment from "moment";
 import "react-dates/lib/css/_datepicker.css";
 import "./data-table.css";
@@ -95,6 +96,7 @@ export function DataTableHead<Id extends string | number, Row>(props: DataTableH
             </Tooltip>
           </TableCell>
         ))}
+        <TableCell padding="checkbox" />
       </TableRow>
     </TableHead>
   );
@@ -272,6 +274,7 @@ export function DataTableActions(props: DataTableActionsProps) {
 export interface DataTableBodyProps<Id, Row> {
   readonly pageData: Iterable<Row>;
   readonly columns: ReadonlyArray<Column<Id, Row>>;
+  readonly onClickDetails: (r: Row) => void;
 }
 
 export class DataTableBody<Id extends string | number, Row> extends React.PureComponent<DataTableBodyProps<Id, Row>> {
@@ -285,6 +288,11 @@ export class DataTableBody<Id extends string | number, Row> extends React.PureCo
                 {col.getDisplay(row)}
               </TableCell>
             ))}
+            <TableCell padding="checkbox">
+              <IconButton onClick={() => this.props.onClickDetails(row)}>
+                <MoreHoriz />
+              </IconButton>
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>

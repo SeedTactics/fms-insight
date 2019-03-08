@@ -119,6 +119,7 @@ interface StationDataTableProps {
   readonly current_date_zoom: { start: Date; end: Date } | undefined;
   readonly set_date_zoom_range: (p: { zoom?: { start: Date; end: Date } }) => void;
   readonly last30_days: boolean;
+  readonly openDetails: (matId: number) => void;
 }
 
 function extractData(
@@ -184,7 +185,7 @@ export default React.memo(function StationDataTable(props: StationDataTableProps
     <div>
       <Table>
         <DataTableHead columns={columns} onRequestSort={handleRequestSort} orderBy={orderBy} order={order} />
-        <DataTableBody columns={columns} pageData={pageData} />
+        <DataTableBody columns={columns} pageData={pageData} onClickDetails={row => props.openDetails(row.matId)} />
       </Table>
       <DataTableActions
         page={page}

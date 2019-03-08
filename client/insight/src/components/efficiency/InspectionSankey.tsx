@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2019, John Lenz
 
 All rights reserved.
 
@@ -47,6 +47,7 @@ import { connect } from "../../store/store";
 import { SankeyNode, SankeyDiagram, inspectionDataToSankey } from "../../data/inspection-sankey";
 
 import * as events from "../../data/events";
+import * as matDetails from "../../data/material-details";
 import { PartAndInspType, InspectionLogEntry } from "../../data/events.inspection";
 import { HashMap } from "prelude-ts";
 import { addDays, startOfToday, addMonths } from "date-fns";
@@ -135,6 +136,7 @@ interface InspectionSankeyProps {
   readonly inspectionlogs: HashMap<PartAndInspType, ReadonlyArray<InspectionLogEntry>>;
   readonly analysisPeriod: events.AnalysisPeriod;
   readonly default_date_range: Date[];
+  readonly openMaterialDetails: (matId: number) => void;
 }
 
 interface InspectionSankeyState {
@@ -262,6 +264,7 @@ class InspectionSankey extends React.Component<InspectionSankeyProps, Inspection
                   last30_days={this.props.analysisPeriod === events.AnalysisPeriod.Last30Days}
                   points={curData}
                   default_date_range={this.props.default_date_range}
+                  openDetails={this.props.openMaterialDetails}
                 />
               ) : (
                 <ConvertInspectionDataToSankey data={curData} />
@@ -276,14 +279,19 @@ class InspectionSankey extends React.Component<InspectionSankeyProps, Inspection
   }
 }
 
-export default connect(st => ({
-  inspectionlogs:
-    st.Events.analysis_period === events.AnalysisPeriod.Last30Days
-      ? st.Events.last30.inspection.by_part
-      : st.Events.selected_month.inspection.by_part,
-  analysisPeriod: st.Events.analysis_period,
-  default_date_range:
-    st.Events.analysis_period === events.AnalysisPeriod.Last30Days
-      ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
-      : [st.Events.analysis_period_month, addMonths(st.Events.analysis_period_month, 1)]
-}))(InspectionSankey);
+export default connect(
+  st => ({
+    inspectionlogs:
+      st.Events.analysis_period === events.AnalysisPeriod.Last30Days
+        ? st.Events.last30.inspection.by_part
+        : st.Events.selected_month.inspection.by_part,
+    analysisPeriod: st.Events.analysis_period,
+    default_date_range:
+      st.Events.analysis_period === events.AnalysisPeriod.Last30Days
+        ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
+        : [st.Events.analysis_period_month, addMonths(st.Events.analysis_period_month, 1)]
+  }),
+  {
+    openMaterialDetails: matDetails.openMaterialById
+  }
+)(InspectionSankey);

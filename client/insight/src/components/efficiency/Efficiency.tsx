@@ -274,6 +274,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
             current_date_zoom={props.zoomDateRange}
             set_date_zoom_range={props.setZoomRange}
             last30_days={props.analysisPeriod === events.AnalysisPeriod.Last30Days}
+            openDetails={props.openMaterial}
           />
         )}
       </CardContent>

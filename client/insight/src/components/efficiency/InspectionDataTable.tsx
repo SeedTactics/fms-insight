@@ -88,6 +88,7 @@ interface InspectionDataTableProps {
   readonly points: ReadonlyArray<InspectionLogEntry>;
   readonly default_date_range: Date[];
   readonly last30_days: boolean;
+  readonly openDetails: (matId: number) => void;
 }
 
 export default React.memo(function InspDataTable(props: InspectionDataTableProps) {
@@ -146,6 +147,7 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
                   <DataTableBody
                     columns={columns}
                     pageData={points.material.drop(page * rowsPerPage).take(rowsPerPage)}
+                    onClickDetails={row => props.openDetails(row.materialID)}
                   />
                 </Table>
                 <DataTableActions
