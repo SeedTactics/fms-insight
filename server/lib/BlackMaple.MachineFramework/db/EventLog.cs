@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2019, John Lenz
 
 All rights reserved.
 
@@ -1963,7 +1963,7 @@ namespace BlackMaple.MachineFramework
     }
 
     public MachineWatchInterface.LogEntry RecordGeneralMessage(
-        EventLogMaterial mat, string program, string result, DateTime? timeUTC = null)
+        EventLogMaterial mat, string program, string result, DateTime? timeUTC = null, string foreignId = null, string originalMessage = null)
     {
       var log = new NewEventLogEntry()
       {
@@ -1978,7 +1978,7 @@ namespace BlackMaple.MachineFramework
         Result = result,
         EndOfRoute = false
       };
-      return AddEntryInTransaction(trans => AddLogEntry(trans, log, null, null));
+      return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
     }
     #endregion
 
