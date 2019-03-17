@@ -84,86 +84,101 @@ enum TabType {
   Analysis_DataExport
 }
 
-interface HeaderTabsProps {
-  readonly demo: boolean;
+interface HeaderNavProps {
   readonly full: boolean;
   readonly setRoute: (arg: { ty: TabType; curSt: routes.State }) => void;
   readonly routeState: routes.State;
 }
 
-function HeaderTabs(p: HeaderTabsProps) {
-  let tabType: TabType = TabType.Operations_Dashboard;
-  const loc = p.routeState.current;
-
+function routeToTabType(loc: routes.RouteLocation): TabType {
   switch (loc) {
     case routes.RouteLocation.Operations_Dashboard:
-      tabType = TabType.Operations_Dashboard;
-      break;
+      return TabType.Operations_Dashboard;
     case routes.RouteLocation.Operations_Cycles:
-      tabType = TabType.Operations_Cycles;
-      break;
+      return TabType.Operations_Cycles;
     case routes.RouteLocation.Quality_Dashboard:
-      tabType = TabType.Quality_Dashboard;
-      break;
+      return TabType.Quality_Dashboard;
     case routes.RouteLocation.Quality_Serials:
-      tabType = TabType.Quality_Serials;
-      break;
+      return TabType.Quality_Serials;
     case routes.RouteLocation.Analysis_Efficiency:
-      tabType = TabType.Analysis_Efficiency;
-      break;
+      return TabType.Analysis_Efficiency;
     case routes.RouteLocation.Analysis_CostPerPiece:
-      tabType = TabType.Analysis_CostPerPiece;
-      break;
+      return TabType.Analysis_CostPerPiece;
     case routes.RouteLocation.Analysis_DataExport:
-      tabType = TabType.Analysis_DataExport;
-      break;
+      return TabType.Analysis_DataExport;
+    default:
+      return TabType.Operations_Dashboard;
   }
+}
 
-  let tabs: JSX.Element[] = [];
-  if (p.demo || loc === routes.RouteLocation.Operations_Dashboard || loc === routes.RouteLocation.Operations_Cycles) {
-    tabs.push(<Tab label="Operations" value={TabType.Operations_Dashboard} />);
-    tabs.push(<Tab label="Cycles" value={TabType.Operations_Cycles} />);
-  }
-  if (p.demo || loc === routes.RouteLocation.Quality_Dashboard || loc === routes.RouteLocation.Quality_Serials) {
-    tabs.push(<Tab label="Quality" value={TabType.Quality_Dashboard} />);
-    tabs.push(<Tab label="Serials" value={TabType.Quality_Serials} />);
-  }
-  if (
-    p.demo ||
-    loc === routes.RouteLocation.Analysis_Efficiency ||
-    loc === routes.RouteLocation.Analysis_CostPerPiece ||
-    loc === routes.RouteLocation.Analysis_DataExport
-  ) {
-    tabs.push(<Tab label="Efficiency" value={TabType.Analysis_Efficiency} />);
-    tabs.push(<Tab label="Cost/Piece" value={TabType.Analysis_CostPerPiece} />);
-  }
-  if (
-    loc === routes.RouteLocation.Analysis_Efficiency ||
-    loc === routes.RouteLocation.Analysis_CostPerPiece ||
-    loc === routes.RouteLocation.Analysis_DataExport
-  ) {
-    tabs.push(<Tab label="Data Export" value={TabType.Analysis_DataExport} />);
-  }
-
+function DemoTabs(p: HeaderNavProps) {
   return (
     <Tabs
       variant={p.full ? "fullWidth" : "standard"}
       style={p.full ? {} : tabsStyle}
-      value={tabType}
+      value={routeToTabType(p.routeState.current)}
       onChange={(e, v) => p.setRoute({ ty: v, curSt: p.routeState })}
     >
-      {tabs}
+      <Tab label="Operations" value={TabType.Operations_Dashboard} />
+      <Tab label="Cycles" value={TabType.Operations_Cycles} />
+      <Tab label="Quality" value={TabType.Quality_Dashboard} />
+      <Tab label="Serials" value={TabType.Quality_Serials} />
+      <Tab label="Efficiency" value={TabType.Analysis_Efficiency} />
+      <Tab label="Cost/Piece" value={TabType.Analysis_CostPerPiece} />
+    </Tabs>
+  );
+}
+
+function OperationsTabs(p: HeaderNavProps) {
+  return (
+    <Tabs
+      variant={p.full ? "fullWidth" : "standard"}
+      style={p.full ? {} : tabsStyle}
+      value={routeToTabType(p.routeState.current)}
+      onChange={(e, v) => p.setRoute({ ty: v, curSt: p.routeState })}
+    >
+      <Tab label="Operations" value={TabType.Operations_Dashboard} />
+      <Tab label="Cycles" value={TabType.Operations_Cycles} />
+    </Tabs>
+  );
+}
+
+function QualityTabs(p: HeaderNavProps) {
+  return (
+    <Tabs
+      variant={p.full ? "fullWidth" : "standard"}
+      style={p.full ? {} : tabsStyle}
+      value={routeToTabType(p.routeState.current)}
+      onChange={(e, v) => p.setRoute({ ty: v, curSt: p.routeState })}
+    >
+      <Tab label="Quality" value={TabType.Quality_Dashboard} />
+      <Tab label="Serials" value={TabType.Quality_Serials} />
+    </Tabs>
+  );
+}
+
+function AnalysisTabs(p: HeaderNavProps) {
+  return (
+    <Tabs
+      variant={p.full ? "fullWidth" : "standard"}
+      style={p.full ? {} : tabsStyle}
+      value={routeToTabType(p.routeState.current)}
+      onChange={(e, v) => p.setRoute({ ty: v, curSt: p.routeState })}
+    >
+      <Tab label="Efficiency" value={TabType.Analysis_Efficiency} />
+      <Tab label="Cost/Piece" value={TabType.Analysis_CostPerPiece} />
+      <Tab label="Data Export" value={TabType.Analysis_DataExport} />
     </Tabs>
   );
 }
 
 interface HeaderProps {
   demo: boolean;
-  showTabs: boolean;
   showAlarms: boolean;
   showLogout: boolean;
   showSearch: boolean;
   showOperator: boolean;
+  children?: (p: HeaderNavProps) => React.ReactNode;
 
   routeState: routes.State;
   fmsInfo: Readonly<api.IFMSInfo> | null;
@@ -265,8 +280,8 @@ function Header(p: HeaderProps) {
         <Typography variant="h6" style={{ marginRight: "2em" }}>
           Insight
         </Typography>
-        {p.showTabs ? (
-          <HeaderTabs demo={p.demo} full={false} setRoute={p.setRoute} routeState={p.routeState} />
+        {p.children ? (
+          p.children({ full: false, setRoute: p.setRoute, routeState: p.routeState })
         ) : (
           <div style={{ flexGrow: 1 }} />
         )}
@@ -294,11 +309,7 @@ function Header(p: HeaderProps) {
         {p.showLogout ? <LogoutButton /> : undefined}
         {p.showAlarms ? <Alarms /> : undefined}
       </Toolbar>
-      {p.showTabs ? (
-        <HeaderTabs demo={p.demo} full={true} setRoute={p.setRoute} routeState={p.routeState} />
-      ) : (
-        undefined
-      )}
+      {p.children ? p.children({ full: true, setRoute: p.setRoute, routeState: p.routeState }) : undefined}
     </AppBar>
   );
 
@@ -331,14 +342,13 @@ interface AppConnectedProps extends AppProps {
 class App extends React.PureComponent<AppConnectedProps> {
   render() {
     let page: JSX.Element;
-    let showTabs: boolean = true;
+    let navigation: ((p: HeaderNavProps) => JSX.Element) | undefined = undefined;
     let showAlarms: boolean = true;
     let showLogout: boolean = !!this.props.user;
     let showSearch: boolean = true;
     let showOperator: boolean = false;
     if (this.props.backupViewerOnRequestOpenFile) {
       page = <BackupViewer onRequestOpenFile={this.props.backupViewerOnRequestOpenFile} />;
-      showTabs = false;
       showAlarms = false;
       showSearch = false;
     } else if (this.props.fmsInfo && (!this.props.fmsInfo.openIDConnectAuthority || this.props.user)) {
@@ -366,30 +376,37 @@ class App extends React.PureComponent<AppConnectedProps> {
 
         case routes.RouteLocation.Analysis_CostPerPiece:
           page = <CostPerPiece />;
+          navigation = AnalysisTabs;
           showAlarms = false;
           break;
         case routes.RouteLocation.Analysis_Efficiency:
           page = <Efficiency allowSetType={true} />;
+          navigation = AnalysisTabs;
           showAlarms = false;
           break;
         case routes.RouteLocation.Analysis_DataExport:
           page = <DataExport />;
+          navigation = AnalysisTabs;
           showAlarms = false;
           break;
 
         case routes.RouteLocation.Operations_Dashboard:
           page = <OperationDashboard />;
+          navigation = OperationsTabs;
           break;
         case routes.RouteLocation.Operations_Cycles:
           page = <p>Operations Cycles</p>;
+          navigation = OperationsTabs;
           break;
 
         case routes.RouteLocation.Quality_Dashboard:
           page = <p>Quality Dashboard</p>;
+          navigation = QualityTabs;
           showAlarms = false;
           break;
         case routes.RouteLocation.Quality_Serials:
           page = <p>Quality Serials</p>;
+          navigation = QualityTabs;
           showAlarms = false;
           break;
 
@@ -412,7 +429,6 @@ class App extends React.PureComponent<AppConnectedProps> {
           </Button>
         </div>
       );
-      showTabs = false;
       showAlarms = false;
       showSearch = false;
     } else {
@@ -422,9 +438,11 @@ class App extends React.PureComponent<AppConnectedProps> {
           <p>Loading</p>
         </div>
       );
-      showTabs = false;
       showAlarms = false;
       showSearch = false;
+    }
+    if (this.props.demo) {
+      navigation = DemoTabs;
     }
     return (
       <div id="App">
@@ -433,7 +451,6 @@ class App extends React.PureComponent<AppConnectedProps> {
           fmsInfo={this.props.fmsInfo}
           latestVersion={this.props.latestVersion}
           demo={this.props.demo}
-          showTabs={showTabs}
           showAlarms={showAlarms}
           showSearch={showSearch}
           showLogout={showLogout}
@@ -443,7 +460,9 @@ class App extends React.PureComponent<AppConnectedProps> {
           alarms={this.props.alarms}
           openManualSerial={this.props.openManualSerial}
           openQrCodeScan={this.props.openQrCodeScan}
-        />
+        >
+          {navigation}
+        </Header>
         {page}
         <SerialScanner />
         <ManualScan />
