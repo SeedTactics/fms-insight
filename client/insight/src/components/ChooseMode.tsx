@@ -37,7 +37,6 @@ import ListItem from "@material-ui/core/ListItem";
 import ListItemIcon from "@material-ui/core/ListItemIcon";
 import ListSubheader from "@material-ui/core/ListSubheader";
 import ListItemText from "@material-ui/core/ListItemText";
-import Hidden from "@material-ui/core/Hidden";
 import Typography from "@material-ui/core/Typography";
 import BuildIcon from "@material-ui/icons/Build";
 import ShoppingBasket from "@material-ui/icons/ShoppingBasket";

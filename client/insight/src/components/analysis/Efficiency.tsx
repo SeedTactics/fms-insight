@@ -49,7 +49,7 @@ import ImportExport from "@material-ui/icons/ImportExport";
 import SearchIcon from "@material-ui/icons/Search";
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
-import AnalysisSelectToolbar from "../AnalysisSelectToolbar";
+import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
 import { CycleChart, CycleChartPoint, ExtraTooltip } from "./CycleChart";
 import { SelectableHeatChart, HeatChartPoint } from "./HeatChart";
 import * as events from "../../data/events";

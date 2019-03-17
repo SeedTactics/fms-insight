@@ -47,11 +47,11 @@ import Badge from "@material-ui/core/Badge";
 import Notifications from "@material-ui/icons/Notifications";
 import { User } from "oidc-client";
 
-import Dashboard from "./dashboard/Dashboard";
-import CostPerPiece from "./cost-per-piece/CostPerPiece";
-import Efficiency from "./efficiency/Efficiency";
+import OperationDashboard from "./operations/Dashboard";
+import CostPerPiece from "./analysis/CostPerPiece";
+import Efficiency from "./analysis/Efficiency";
 import StationMonitor from "./station-monitor/StationMonitor";
-import DataExport from "./data-export/DataExport";
+import DataExport from "./analysis/DataExport";
 import ChooseMode from "./ChooseMode";
 import LoadingIcon from "./LoadingIcon";
 import * as routes from "../data/routes";
@@ -336,7 +336,7 @@ class App extends React.PureComponent<AppConnectedProps> {
           break;
 
         case routes.RouteLocation.Operations_Dashboard:
-          page = <Dashboard />;
+          page = <OperationDashboard />;
           break;
         case routes.RouteLocation.Operations_Cycles:
           page = <p>Operations Cycles</p>;
