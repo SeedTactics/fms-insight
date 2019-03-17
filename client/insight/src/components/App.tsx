@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2019, John Lenz
 
 All rights reserved.
 
@@ -52,6 +52,7 @@ import CostPerPiece from "./cost-per-piece/CostPerPiece";
 import Efficiency from "./efficiency/Efficiency";
 import StationMonitor from "./station-monitor/StationMonitor";
 import DataExport from "./data-export/DataExport";
+import ChooseMode from "./ChooseMode";
 import LoadingIcon from "./LoadingIcon";
 import * as routes from "../data/routes";
 import { Store, connect, mkAC } from "../store/store";
@@ -66,19 +67,95 @@ const tabsStyle = {
 };
 
 enum TabType {
-  Dashboard,
-  StationMonitor,
-  Efficiency,
-  CostPerPiece,
-  DataExport
+  Operations_Dashboard,
+  Operations_Cycles,
+
+  Quality_Dashboard,
+  Quality_Serials,
+
+  Analysis_Efficiency,
+  Analysis_CostPerPiece,
+  Analysis_DataExport
+}
+
+interface HeaderTabsProps {
+  readonly demo: boolean;
+  readonly full: boolean;
+  readonly setRoute: (arg: { ty: TabType; curSt: routes.State }) => void;
+  readonly routeState: routes.State;
+}
+
+function HeaderTabs(p: HeaderTabsProps) {
+  let tabType: TabType = TabType.Operations_Dashboard;
+  const loc = p.routeState.current;
+
+  switch (loc) {
+    case routes.RouteLocation.Operations_Dashboard:
+      tabType = TabType.Operations_Dashboard;
+      break;
+    case routes.RouteLocation.Operations_Cycles:
+      tabType = TabType.Operations_Cycles;
+      break;
+    case routes.RouteLocation.Quality_Dashboard:
+      tabType = TabType.Quality_Dashboard;
+      break;
+    case routes.RouteLocation.Quality_Serials:
+      tabType = TabType.Quality_Serials;
+      break;
+    case routes.RouteLocation.Analysis_Efficiency:
+      tabType = TabType.Analysis_Efficiency;
+      break;
+    case routes.RouteLocation.Analysis_CostPerPiece:
+      tabType = TabType.Analysis_CostPerPiece;
+      break;
+    case routes.RouteLocation.Analysis_DataExport:
+      tabType = TabType.Analysis_DataExport;
+      break;
+  }
+
+  let tabs: JSX.Element[] = [];
+  if (p.demo || loc === routes.RouteLocation.Operations_Dashboard || loc === routes.RouteLocation.Operations_Cycles) {
+    tabs.push(<Tab label="Operations" value={TabType.Operations_Dashboard} />);
+    tabs.push(<Tab label="Cycles" value={TabType.Operations_Cycles} />);
+  }
+  if (p.demo || loc === routes.RouteLocation.Quality_Dashboard || loc === routes.RouteLocation.Quality_Serials) {
+    tabs.push(<Tab label="Quality" value={TabType.Quality_Dashboard} />);
+    tabs.push(<Tab label="Serials" value={TabType.Quality_Serials} />);
+  }
+  if (
+    p.demo ||
+    loc === routes.RouteLocation.Analysis_Efficiency ||
+    loc === routes.RouteLocation.Analysis_CostPerPiece ||
+    loc === routes.RouteLocation.Analysis_DataExport
+  ) {
+    tabs.push(<Tab label="Efficiency" value={TabType.Analysis_Efficiency} />);
+    tabs.push(<Tab label="Cost/Piece" value={TabType.Analysis_CostPerPiece} />);
+  }
+  if (
+    loc === routes.RouteLocation.Analysis_Efficiency ||
+    loc === routes.RouteLocation.Analysis_CostPerPiece ||
+    loc === routes.RouteLocation.Analysis_DataExport
+  ) {
+    tabs.push(<Tab label="Data Export" value={TabType.Analysis_DataExport} />);
+  }
+
+  return (
+    <Tabs
+      variant={p.full ? "fullWidth" : "standard"}
+      style={p.full ? {} : tabsStyle}
+      value={tabType}
+      onChange={(e, v) => p.setRoute({ ty: v, curSt: p.routeState })}
+    >
+      {tabs}
+    </Tabs>
+  );
 }
 
 interface HeaderProps {
+  demo: boolean;
   showTabs: boolean;
   showAlarms: boolean;
-  showDataExport: boolean;
   showLogout: boolean;
-  iconIsLink: boolean;
 
   routeState: routes.State;
   fmsInfo: Readonly<api.IFMSInfo> | null;
@@ -89,45 +166,22 @@ interface HeaderProps {
 }
 
 function Header(p: HeaderProps) {
-  let tabType: TabType = TabType.Dashboard;
   let helpUrl = "https://fms-insight.seedtactics.com/docs/client-dashboard.html";
   switch (p.routeState.current) {
-    case routes.RouteLocation.Dashboard:
-      tabType = TabType.Dashboard;
-      break;
-    case routes.RouteLocation.LoadMonitor:
-    case routes.RouteLocation.InspectionMonitor:
-    case routes.RouteLocation.WashMonitor:
-    case routes.RouteLocation.Queues:
-    case routes.RouteLocation.AllMaterial:
-      tabType = TabType.StationMonitor;
+    case routes.RouteLocation.Station_LoadMonitor:
+    case routes.RouteLocation.Station_InspectionMonitor:
+    case routes.RouteLocation.Station_WashMonitor:
+    case routes.RouteLocation.Station_Queues:
+    case routes.RouteLocation.Station_AllMaterial:
       helpUrl = "https://fms-insight.seedtactics.com/docs/client-station-monitor.html";
       break;
-    case routes.RouteLocation.Efficiency:
-      tabType = TabType.Efficiency;
+    case routes.RouteLocation.Analysis_Efficiency:
       helpUrl = "https://fms-insight.seedtactics.com/docs/client-efficiency.html";
       break;
-    case routes.RouteLocation.CostPerPiece:
-      tabType = TabType.CostPerPiece;
+    case routes.RouteLocation.Analysis_CostPerPiece:
       helpUrl = "https://fms-insight.seedtactics.com/docs/client-cost-per-piece.html";
       break;
-    case routes.RouteLocation.DataExport:
-      tabType = TabType.DataExport;
   }
-  const tabs = (full: boolean) => (
-    <Tabs
-      variant={full ? "fullWidth" : "standard"}
-      style={full ? {} : tabsStyle}
-      value={tabType}
-      onChange={(e, v) => p.setRoute({ ty: v, curSt: p.routeState })}
-    >
-      <Tab label="Dashboard" value={TabType.Dashboard} />
-      <Tab label="Station Monitor" value={TabType.StationMonitor} />
-      <Tab label="Efficiency" value={TabType.Efficiency} />
-      <Tab label="Cost/Piece" value={TabType.CostPerPiece} />
-      {p.showDataExport ? <Tab label="Data Export" value={TabType.DataExport} /> : undefined}
-    </Tabs>
-  );
 
   const alarmTooltip = p.alarms ? p.alarms.join(". ") : "No Alarms";
   const Alarms = () => (
@@ -170,7 +224,7 @@ function Header(p: HeaderProps) {
   const largeAppBar = (
     <AppBar position="static">
       <Toolbar>
-        {p.iconIsLink ? (
+        {p.demo ? (
           <a href="/">
             <img src={logo} alt="Logo" style={{ height: "30px", marginRight: "1em" }} />
           </a>
@@ -182,7 +236,11 @@ function Header(p: HeaderProps) {
         <Typography variant="h6" style={{ marginRight: "2em" }}>
           Insight
         </Typography>
-        {p.showTabs ? tabs(false) : <div style={{ flexGrow: 1 }} />}
+        {p.showTabs ? (
+          <HeaderTabs demo={p.demo} full={false} setRoute={p.setRoute} routeState={p.routeState} />
+        ) : (
+          <div style={{ flexGrow: 1 }} />
+        )}
         <LoadingIcon />
         {p.showAlarms ? <Alarms /> : undefined}
         <HelpButton />
@@ -204,7 +262,11 @@ function Header(p: HeaderProps) {
         <HelpButton />
         {p.showLogout ? <LogoutButton /> : undefined}
       </Toolbar>
-      {p.showTabs ? tabs(true) : undefined}
+      {p.showTabs ? (
+        <HeaderTabs demo={p.demo} full={true} setRoute={p.setRoute} routeState={p.routeState} />
+      ) : (
+        undefined
+      )}
     </AppBar>
   );
 
@@ -238,44 +300,65 @@ class App extends React.PureComponent<AppConnectedProps> {
     let showTabs: boolean = true;
     let showAlarms: boolean = true;
     let showLogout: boolean = !!this.props.user;
-    let showDataExport: boolean = !this.props.demo;
-    let iconIsLink: boolean = this.props.demo;
     if (this.props.backupViewerOnRequestOpenFile) {
       page = <BackupViewer onRequestOpenFile={this.props.backupViewerOnRequestOpenFile} />;
       showTabs = false;
       showAlarms = false;
-      showDataExport = false;
-      iconIsLink = false;
     } else if (this.props.fmsInfo && (!this.props.fmsInfo.openIDConnectAuthority || this.props.user)) {
       switch (this.props.route.current) {
-        case routes.RouteLocation.CostPerPiece:
-          page = <CostPerPiece />;
-          break;
-        case routes.RouteLocation.Efficiency:
-          page = <Efficiency allowSetType={true} />;
-          break;
-        case routes.RouteLocation.LoadMonitor:
+        case routes.RouteLocation.Station_LoadMonitor:
           page = <StationMonitor monitor_type={routes.StationMonitorType.LoadUnload} />;
           break;
-        case routes.RouteLocation.InspectionMonitor:
+        case routes.RouteLocation.Station_InspectionMonitor:
           page = <StationMonitor monitor_type={routes.StationMonitorType.Inspection} />;
           break;
-        case routes.RouteLocation.WashMonitor:
+        case routes.RouteLocation.Station_WashMonitor:
           page = <StationMonitor monitor_type={routes.StationMonitorType.Wash} />;
           break;
-        case routes.RouteLocation.Queues:
+        case routes.RouteLocation.Station_Queues:
           page = <StationMonitor monitor_type={routes.StationMonitorType.Queues} />;
           break;
-        case routes.RouteLocation.AllMaterial:
+        case routes.RouteLocation.Station_AllMaterial:
           page = <StationMonitor monitor_type={routes.StationMonitorType.AllMaterial} />;
           break;
-        case routes.RouteLocation.DataExport:
-          page = <DataExport />;
+
+        case routes.RouteLocation.Analysis_CostPerPiece:
+          page = <CostPerPiece />;
+          showAlarms = false;
           break;
-        case routes.RouteLocation.Dashboard:
-        default:
+        case routes.RouteLocation.Analysis_Efficiency:
+          page = <Efficiency allowSetType={true} />;
+          showAlarms = false;
+          break;
+        case routes.RouteLocation.Analysis_DataExport:
+          page = <DataExport />;
+          showAlarms = false;
+          break;
+
+        case routes.RouteLocation.Operations_Dashboard:
           page = <Dashboard />;
           break;
+        case routes.RouteLocation.Operations_Cycles:
+          page = <p>Operations Cycles</p>;
+          break;
+
+        case routes.RouteLocation.Quality_Dashboard:
+          page = <p>Quality Dashboard</p>;
+          showAlarms = false;
+          break;
+        case routes.RouteLocation.Quality_Serials:
+          page = <p>Quality Serials</p>;
+          showAlarms = false;
+          break;
+
+        case routes.RouteLocation.Tools_Dashboard:
+          page = <p>Tools Dashboard</p>;
+          break;
+
+        case routes.RouteLocation.ChooseMode:
+        default:
+          page = <ChooseMode />;
+          showAlarms = false;
       }
     } else if (this.props.fmsInfo && this.props.fmsInfo.openIDConnectAuthority) {
       page = (
@@ -299,14 +382,13 @@ class App extends React.PureComponent<AppConnectedProps> {
     return (
       <div id="App">
         <Header
-          iconIsLink={iconIsLink}
           routeState={this.props.route}
           fmsInfo={this.props.fmsInfo}
           latestVersion={this.props.latestVersion}
+          demo={this.props.demo}
           showTabs={showTabs}
           showAlarms={showAlarms}
           showLogout={showLogout}
-          showDataExport={showDataExport}
           setRoute={this.props.setRoute}
           onLogout={this.props.onLogout}
           alarms={this.props.alarms}
@@ -336,16 +418,20 @@ export default connect(
   {
     setRoute: ({ ty, curSt }: { ty: TabType; curSt: routes.State }): routes.Action => {
       switch (ty) {
-        case TabType.Dashboard:
-          return { type: routes.RouteLocation.Dashboard };
-        case TabType.Efficiency:
-          return { type: routes.RouteLocation.Efficiency };
-        case TabType.CostPerPiece:
-          return { type: routes.RouteLocation.CostPerPiece };
-        case TabType.StationMonitor:
-          return routes.switchToStationMonitorPage(curSt);
-        case TabType.DataExport:
-          return { type: routes.RouteLocation.DataExport };
+        case TabType.Operations_Dashboard:
+          return { type: routes.RouteLocation.Operations_Dashboard };
+        case TabType.Operations_Cycles:
+          return { type: routes.RouteLocation.Operations_Cycles };
+        case TabType.Quality_Dashboard:
+          return { type: routes.RouteLocation.Quality_Dashboard };
+        case TabType.Quality_Serials:
+          return { type: routes.RouteLocation.Quality_Serials };
+        case TabType.Analysis_Efficiency:
+          return { type: routes.RouteLocation.Analysis_Efficiency };
+        case TabType.Analysis_CostPerPiece:
+          return { type: routes.RouteLocation.Analysis_CostPerPiece };
+        case TabType.Analysis_DataExport:
+          return { type: routes.RouteLocation.Analysis_DataExport };
       }
     },
     onLogin: mkAC(serverSettings.ActionType.Login),

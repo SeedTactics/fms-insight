@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2019, John Lenz
 
 All rights reserved.
 
@@ -34,33 +34,53 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { NOT_FOUND } from "redux-first-router";
 
 export enum RouteLocation {
-  Dashboard = "ROUTE_Dashboard",
-  LoadMonitor = "ROUTE_LoadMonitor",
-  InspectionMonitor = "ROUTE_Inspection",
-  WashMonitor = "ROUTE_Wash",
-  Queues = "ROUTE_Queues",
-  AllMaterial = "ROUTE_AllMaterial",
-  CostPerPiece = "ROUTE_CostPerPiece",
-  Efficiency = "ROUTE_Efficiency",
-  DataExport = "ROUTE_DataExport"
+  ChooseMode = "ROUTE_ChooseMode",
+
+  Station_LoadMonitor = "ROUTE_Station_LoadMonitor",
+  Station_InspectionMonitor = "ROUTE_Station_Inspection",
+  Station_WashMonitor = "ROUTE_Station_Wash",
+  Station_Queues = "ROUTE_Station_Queues",
+  Station_AllMaterial = "ROUTE_Station_AllMaterial",
+
+  Operations_Dashboard = "ROUTE_Operations_Dashboard",
+  Operations_Cycles = "ROUTE_Operations_Cycles",
+
+  Quality_Dashboard = "ROUTE_Quality_Dashboard",
+  Quality_Serials = "ROUTE_Quality_Serials",
+
+  Tools_Dashboard = "ROUTE_Tools_Dashboard",
+
+  Analysis_Efficiency = "ROUTE_Analysis_Efficiency",
+  Analysis_CostPerPiece = "ROUTE_Analysis_CostPerPiece",
+  Analysis_DataExport = "ROUTE_Analysis_DataExport"
 }
 
 export const routeMap = {
-  [RouteLocation.Dashboard]: "/",
-  [RouteLocation.LoadMonitor]: "/station/loadunload/:num",
-  [RouteLocation.InspectionMonitor]: "/station/inspection",
-  [RouteLocation.WashMonitor]: "/station/wash",
-  [RouteLocation.Queues]: "/station/queues",
-  [RouteLocation.AllMaterial]: "/station/all-material",
-  [RouteLocation.CostPerPiece]: "/cost",
-  [RouteLocation.Efficiency]: "/efficiency",
-  [RouteLocation.DataExport]: "/data-export"
+  [RouteLocation.ChooseMode]: "/",
+
+  [RouteLocation.Station_LoadMonitor]: "/station/loadunload/:num",
+  [RouteLocation.Station_InspectionMonitor]: "/station/inspection",
+  [RouteLocation.Station_WashMonitor]: "/station/wash",
+  [RouteLocation.Station_Queues]: "/station/queues",
+  [RouteLocation.Station_AllMaterial]: "/station/all-material",
+
+  [RouteLocation.Operations_Dashboard]: "/operations",
+  [RouteLocation.Operations_Cycles]: "/operations/cycles",
+
+  [RouteLocation.Quality_Dashboard]: "/quality",
+  [RouteLocation.Quality_Serials]: "/quality/serials",
+
+  [RouteLocation.Tools_Dashboard]: "/tools",
+
+  [RouteLocation.Analysis_Efficiency]: "/analysis/efficiency",
+  [RouteLocation.Analysis_CostPerPiece]: "/analysis/cost",
+  [RouteLocation.Analysis_DataExport]: "/analysis/data-export"
 };
 
 export type Action =
-  | { type: RouteLocation.Dashboard }
+  | { type: RouteLocation.ChooseMode }
   | {
-      type: RouteLocation.LoadMonitor;
+      type: RouteLocation.Station_LoadMonitor;
       payload: { num: number | string };
       meta?: {
         query?: {
@@ -70,7 +90,7 @@ export type Action =
       };
     }
   | {
-      type: RouteLocation.InspectionMonitor;
+      type: RouteLocation.Station_InspectionMonitor;
       meta?: {
         query?: {
           type?: string;
@@ -78,10 +98,10 @@ export type Action =
       };
     }
   | {
-      type: RouteLocation.WashMonitor;
+      type: RouteLocation.Station_WashMonitor;
     }
   | {
-      type: RouteLocation.Queues;
+      type: RouteLocation.Station_Queues;
       meta?: {
         query?: {
           queue?: string | ReadonlyArray<string>;
@@ -89,10 +109,15 @@ export type Action =
         };
       };
     }
-  | { type: RouteLocation.AllMaterial }
-  | { type: RouteLocation.CostPerPiece }
-  | { type: RouteLocation.Efficiency }
-  | { type: RouteLocation.DataExport }
+  | { type: RouteLocation.Station_AllMaterial }
+  | { type: RouteLocation.Operations_Dashboard }
+  | { type: RouteLocation.Operations_Cycles }
+  | { type: RouteLocation.Quality_Dashboard }
+  | { type: RouteLocation.Quality_Serials }
+  | { type: RouteLocation.Tools_Dashboard }
+  | { type: RouteLocation.Analysis_Efficiency }
+  | { type: RouteLocation.Analysis_CostPerPiece }
+  | { type: RouteLocation.Analysis_DataExport }
   | { type: typeof NOT_FOUND };
 
 export enum StationMonitorType {
@@ -115,7 +140,7 @@ export interface State {
 }
 
 export const initial: State = {
-  current: RouteLocation.Dashboard,
+  current: RouteLocation.ChooseMode,
   station_monitor: StationMonitorType.LoadUnload,
   selected_load_id: 1,
   selected_insp_type: undefined,
@@ -129,7 +154,7 @@ export function switchToStationMonitorPage(curSt: State): Action {
   switch (curSt.station_monitor) {
     case StationMonitorType.LoadUnload:
       return {
-        type: RouteLocation.LoadMonitor,
+        type: RouteLocation.Station_LoadMonitor,
         payload: { num: curSt.selected_load_id },
         meta: {
           query: {
@@ -141,18 +166,18 @@ export function switchToStationMonitorPage(curSt: State): Action {
 
     case StationMonitorType.Inspection:
       return {
-        type: RouteLocation.InspectionMonitor,
+        type: RouteLocation.Station_InspectionMonitor,
         meta: { query: { type: curSt.selected_insp_type } }
       };
 
     case StationMonitorType.Wash:
       return {
-        type: RouteLocation.WashMonitor
+        type: RouteLocation.Station_WashMonitor
       };
 
     case StationMonitorType.Queues:
       return {
-        type: RouteLocation.Queues,
+        type: RouteLocation.Station_Queues,
         meta: {
           query: {
             queue: curSt.load_queues,
@@ -163,14 +188,14 @@ export function switchToStationMonitorPage(curSt: State): Action {
 
     case StationMonitorType.AllMaterial:
       return {
-        type: RouteLocation.AllMaterial
+        type: RouteLocation.Station_AllMaterial
       };
   }
 }
 
 export function displayLoadStation(num: number, queues: ReadonlyArray<string>, freeMaterial: boolean): Action {
   return {
-    type: RouteLocation.LoadMonitor,
+    type: RouteLocation.Station_LoadMonitor,
     payload: { num },
     meta: {
       query: {
@@ -183,20 +208,20 @@ export function displayLoadStation(num: number, queues: ReadonlyArray<string>, f
 
 export function displayInspectionType(type: string | undefined): Action {
   return {
-    type: RouteLocation.InspectionMonitor,
+    type: RouteLocation.Station_InspectionMonitor,
     meta: { query: { type } }
   };
 }
 
 export function displayWash(): Action {
   return {
-    type: RouteLocation.WashMonitor
+    type: RouteLocation.Station_WashMonitor
   };
 }
 
 export function displayQueues(queues: ReadonlyArray<string>, freeMaterial: boolean): Action {
   return {
-    type: RouteLocation.Queues,
+    type: RouteLocation.Station_Queues,
     meta: {
       query: {
         queue: queues.length === 0 ? undefined : queues,
@@ -207,7 +232,7 @@ export function displayQueues(queues: ReadonlyArray<string>, freeMaterial: boole
 }
 
 export function displayAllMaterial(): Action {
-  return { type: RouteLocation.AllMaterial };
+  return { type: RouteLocation.Station_AllMaterial };
 }
 
 export function reducer(s: State, a: Action): State {
@@ -215,7 +240,7 @@ export function reducer(s: State, a: Action): State {
     return initial;
   }
   switch (a.type) {
-    case RouteLocation.LoadMonitor:
+    case RouteLocation.Station_LoadMonitor:
       const query = (a.meta || {}).query || {};
       let loadqueues: ReadonlyArray<string> = [];
       if (query.queue) {
@@ -227,27 +252,27 @@ export function reducer(s: State, a: Action): State {
       }
       return {
         ...s,
-        current: RouteLocation.LoadMonitor,
+        current: RouteLocation.Station_LoadMonitor,
         station_monitor: StationMonitorType.LoadUnload,
         selected_load_id: typeof a.payload.num === "string" ? parseInt(a.payload.num, 10) : a.payload.num,
         load_queues: loadqueues.slice(0, 3),
         load_free_material: query.free === null ? true : false
       };
-    case RouteLocation.InspectionMonitor:
+    case RouteLocation.Station_InspectionMonitor:
       var iquery = (a.meta || {}).query || {};
       return {
         ...s,
-        current: RouteLocation.InspectionMonitor,
+        current: RouteLocation.Station_InspectionMonitor,
         station_monitor: StationMonitorType.Inspection,
         selected_insp_type: iquery.type
       };
-    case RouteLocation.WashMonitor:
+    case RouteLocation.Station_WashMonitor:
       return {
         ...s,
-        current: RouteLocation.WashMonitor,
+        current: RouteLocation.Station_WashMonitor,
         station_monitor: StationMonitorType.Wash
       };
-    case RouteLocation.Queues:
+    case RouteLocation.Station_Queues:
       const standalonequery = (a.meta || {}).query || {};
       let queues: ReadonlyArray<string> = [];
       if (standalonequery.queue) {
@@ -259,26 +284,56 @@ export function reducer(s: State, a: Action): State {
       }
       return {
         ...s,
-        current: RouteLocation.Queues,
+        current: RouteLocation.Station_Queues,
         station_monitor: StationMonitorType.Queues,
         standalone_queues: queues,
         standalone_free_material: standalonequery.free === null ? true : false
       };
-    case RouteLocation.AllMaterial:
+    case RouteLocation.Station_AllMaterial:
       return {
         ...s,
-        current: RouteLocation.AllMaterial,
+        current: RouteLocation.Station_AllMaterial,
         station_monitor: StationMonitorType.AllMaterial
       };
-    case RouteLocation.CostPerPiece:
-      return { ...s, current: RouteLocation.CostPerPiece };
-    case RouteLocation.Efficiency:
-      return { ...s, current: RouteLocation.Efficiency };
-    case RouteLocation.DataExport:
-      return { ...s, current: RouteLocation.DataExport };
-    case RouteLocation.Dashboard:
+
+    case RouteLocation.Operations_Dashboard:
+      return {
+        ...s,
+        current: RouteLocation.Operations_Dashboard
+      };
+    case RouteLocation.Operations_Cycles:
+      return {
+        ...s,
+        current: RouteLocation.Operations_Cycles
+      };
+
+    case RouteLocation.Quality_Dashboard:
+      return {
+        ...s,
+        current: RouteLocation.Quality_Dashboard
+      };
+    case RouteLocation.Quality_Serials:
+      return {
+        ...s,
+        current: RouteLocation.Quality_Serials
+      };
+
+    case RouteLocation.Tools_Dashboard:
+      return {
+        ...s,
+        current: RouteLocation.Tools_Dashboard
+      };
+
+    case RouteLocation.Analysis_CostPerPiece:
+      return { ...s, current: RouteLocation.Analysis_CostPerPiece };
+    case RouteLocation.Analysis_Efficiency:
+      return { ...s, current: RouteLocation.Analysis_Efficiency };
+    case RouteLocation.Analysis_DataExport:
+      return { ...s, current: RouteLocation.Analysis_DataExport };
+
+    case RouteLocation.ChooseMode:
     case NOT_FOUND:
-      return { ...s, current: RouteLocation.Dashboard };
+      return { ...s, current: RouteLocation.ChooseMode };
     default:
       return s;
   }
