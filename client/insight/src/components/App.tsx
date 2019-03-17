@@ -65,6 +65,7 @@ import logo from "../seedtactics-logo.svg";
 import BackupViewer from "./BackupViewer";
 import SerialScanner from "./QRScan";
 import ManualScan from "./ManualScan";
+import ChooseOperator from "./ChooseOperator";
 
 const tabsStyle = {
   alignSelf: "flex-end" as "flex-end",
@@ -162,6 +163,7 @@ interface HeaderProps {
   showAlarms: boolean;
   showLogout: boolean;
   showSearch: boolean;
+  showOperator: boolean;
 
   routeState: routes.State;
   fmsInfo: Readonly<api.IFMSInfo> | null;
@@ -269,6 +271,7 @@ function Header(p: HeaderProps) {
           <div style={{ flexGrow: 1 }} />
         )}
         <LoadingIcon />
+        {p.showOperator ? <ChooseOperator /> : undefined}
         {p.showSearch ? <SearchButtons /> : undefined}
         <HelpButton />
         {p.showLogout ? <LogoutButton /> : undefined}
@@ -332,6 +335,7 @@ class App extends React.PureComponent<AppConnectedProps> {
     let showAlarms: boolean = true;
     let showLogout: boolean = !!this.props.user;
     let showSearch: boolean = true;
+    let showOperator: boolean = false;
     if (this.props.backupViewerOnRequestOpenFile) {
       page = <BackupViewer onRequestOpenFile={this.props.backupViewerOnRequestOpenFile} />;
       showTabs = false;
@@ -341,18 +345,23 @@ class App extends React.PureComponent<AppConnectedProps> {
       switch (this.props.route.current) {
         case routes.RouteLocation.Station_LoadMonitor:
           page = <StationMonitor monitor_type={routes.StationMonitorType.LoadUnload} />;
+          showOperator = true;
           break;
         case routes.RouteLocation.Station_InspectionMonitor:
           page = <StationMonitor monitor_type={routes.StationMonitorType.Inspection} />;
+          showOperator = true;
           break;
         case routes.RouteLocation.Station_WashMonitor:
           page = <StationMonitor monitor_type={routes.StationMonitorType.Wash} />;
+          showOperator = true;
           break;
         case routes.RouteLocation.Station_Queues:
           page = <StationMonitor monitor_type={routes.StationMonitorType.Queues} />;
+          showOperator = true;
           break;
         case routes.RouteLocation.Station_AllMaterial:
           page = <StationMonitor monitor_type={routes.StationMonitorType.AllMaterial} />;
+          showOperator = true;
           break;
 
         case routes.RouteLocation.Analysis_CostPerPiece:
@@ -428,6 +437,7 @@ class App extends React.PureComponent<AppConnectedProps> {
           showAlarms={showAlarms}
           showSearch={showSearch}
           showLogout={showLogout}
+          showOperator={showOperator}
           setRoute={this.props.setRoute}
           onLogout={this.props.onLogout}
           alarms={this.props.alarms}
