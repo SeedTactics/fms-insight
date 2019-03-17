@@ -46,9 +46,7 @@ import * as guiState from "../../data/gui-state";
 import * as api from "../../data/api";
 import SelectWorkorderDialog from "./SelectWorkorder";
 import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
-import SerialScanner from "./QRScan";
 import Tooltip from "@material-ui/core/Tooltip";
-import ManualScan from "./ManualScan";
 import { HashMap } from "prelude-ts";
 import { LazySeq } from "../../data/lazyseq";
 
@@ -176,8 +174,6 @@ function Wash(props: WashProps) {
         </Grid>
         <SelectWorkorderDialog />
         <ConnectedWashDialog />
-        <SerialScanner />
-        <ManualScan />
       </main>
     </DocumentTitle>
   );

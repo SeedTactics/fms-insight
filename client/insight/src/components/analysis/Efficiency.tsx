@@ -67,7 +67,6 @@ import {
 import { MaterialDialog, PartIdenticon } from "../station-monitor/Material";
 import { LazySeq } from "../../data/lazyseq";
 import { copyCyclesToClipboard } from "../../data/clipboard-table";
-import ManualScan from "../station-monitor/ManualScan";
 import StationDataTable from "./StationDataTable";
 
 // --------------------------------------------------------------------------------
@@ -686,7 +685,6 @@ export default function Efficiency({ allowSetType }: { allowSetType: boolean }) 
             <InspectionSankey />
           </div>
           <ConnectedMaterialDialog />
-          <ManualScan />
         </main>
       </>
     </DocumentTitle>

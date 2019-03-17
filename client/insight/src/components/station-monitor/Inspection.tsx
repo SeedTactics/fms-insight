@@ -44,8 +44,6 @@ import { Store, connect, mkAC, AppActionBeforeMiddleware } from "../../store/sto
 import { MaterialDialogProps, MaterialDialog, MatSummary, WhiteboardRegion, InstructionButton } from "./Material";
 import * as matDetails from "../../data/material-details";
 import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
-import SerialScanner from "./QRScan";
-import ManualScan from "./ManualScan";
 import { HashMap, HashSet } from "prelude-ts";
 import { LazySeq } from "../../data/lazyseq";
 
@@ -205,8 +203,6 @@ function Inspection(props: InspectionProps) {
           </Grid>
         </Grid>
         <ConnectedInspDialog />
-        <SerialScanner />
-        <ManualScan />
       </main>
     </DocumentTitle>
   );

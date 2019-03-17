@@ -61,11 +61,9 @@ import { MaterialSummary } from "../../data/events";
 import SelectWorkorderDialog from "./SelectWorkorder";
 import SetSerialDialog from "./EnterSerial";
 import SelectInspTypeDialog from "./SelectInspType";
-import SerialScanner from "./QRScan";
 import { MoveMaterialArrowContainer, MoveMaterialArrowNode } from "./MoveMaterialArrows";
 import { MoveMaterialNodeKindType } from "../../data/move-arrows";
 import { SortEnd } from "react-sortable-hoc";
-import ManualScan from "./ManualScan";
 import { HashMap } from "prelude-ts";
 
 function stationPalMaterialStatus(mat: Readonly<api.IInProcessMaterial>, dateOfCurrentStatus: Date): JSX.Element {
@@ -528,8 +526,6 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationProps & WithStyles
           <SetSerialDialog />
           <SelectInspTypeDialog />
           <ConnectedMaterialDialog />
-          <SerialScanner />
-          <ManualScan />
         </main>
       </MoveMaterialArrowContainer>
     </DocumentTitle>

@@ -46,9 +46,6 @@ import ListItemSecondaryAction from "@material-ui/core/ListItemSecondaryAction";
 import IconButton from "@material-ui/core/IconButton";
 import DeleteIcon from "@material-ui/icons/Delete";
 import Typography from "@material-ui/core/Typography";
-import CameraAlt from "@material-ui/icons/CameraAlt";
-import SearchIcon from "@material-ui/icons/Search";
-import { Tooltip } from "@material-ui/core";
 import { User } from "oidc-client";
 import { HashSet } from "prelude-ts";
 
@@ -56,7 +53,6 @@ import * as routes from "../../data/routes";
 import { Store, connect, DispatchAction, mkAC } from "../../store/store";
 import * as api from "../../data/api";
 import * as operators from "../../data/operators";
-import * as guiState from "../../data/gui-state";
 
 interface OperatorSelectProps {
   readonly operators: HashSet<string>;
@@ -154,8 +150,6 @@ interface StationToolbarProps {
   readonly displayAllMaterial: () => void;
   readonly setOperator: DispatchAction<operators.ActionType.SetOperator>;
   readonly removeOperator: DispatchAction<operators.ActionType.RemoveOperator>;
-  readonly openQrCodeScan: () => void;
-  readonly openManualSerial: () => void;
 }
 
 const freeMaterialSym = "@@insight_free_material@@";
@@ -371,20 +365,6 @@ function StationToolbar(props: StationToolbarProps) {
         ) : (
           undefined
         )}
-        {window.location.protocol === "https:" || window.location.hostname === "localhost" ? (
-          <Tooltip title="Scan QR Code">
-            <IconButton onClick={props.openQrCodeScan} style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}>
-              <CameraAlt />
-            </IconButton>
-          </Tooltip>
-        ) : (
-          undefined
-        )}
-        <Tooltip title="Enter Serial">
-          <IconButton onClick={props.openManualSerial} style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}>
-            <SearchIcon />
-          </IconButton>
-        </Tooltip>
       </div>
       <div>
         {props.currentUser ? (
@@ -418,14 +398,6 @@ export default connect(
     displayQueues: routes.displayQueues,
     displayAllMaterial: routes.displayAllMaterial,
     setOperator: mkAC(operators.ActionType.SetOperator),
-    removeOperator: mkAC(operators.ActionType.RemoveOperator),
-    openQrCodeScan: () => ({
-      type: guiState.ActionType.SetScanQrCodeDialog,
-      open: true
-    }),
-    openManualSerial: () => ({
-      type: guiState.ActionType.SetManualSerialEntryDialog,
-      open: true
-    })
+    removeOperator: mkAC(operators.ActionType.RemoveOperator)
   }
 )(StationToolbar);

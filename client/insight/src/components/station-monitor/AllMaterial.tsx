@@ -40,8 +40,6 @@ import { MaterialDialog, WhiteboardRegion, InProcMaterial } from "./Material";
 import * as matDetails from "../../data/material-details";
 import { AllMaterialBins, selectAllMaterialIntoBins } from "../../data/all-material-bins";
 import { createSelector } from "reselect";
-import SerialScanner from "./QRScan";
-import ManualScan from "./ManualScan";
 
 const ConnectedAllMatDialog = connect(
   st => ({
@@ -76,8 +74,6 @@ function AllMats(props: AllMatProps) {
           ))}
         </div>
         <ConnectedAllMatDialog />
-        <SerialScanner />
-        <ManualScan />
       </main>
     </DocumentTitle>
   );

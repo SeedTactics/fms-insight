@@ -45,6 +45,8 @@ import CircularProgress from "@material-ui/core/CircularProgress";
 import Button from "@material-ui/core/Button";
 import Badge from "@material-ui/core/Badge";
 import Notifications from "@material-ui/icons/Notifications";
+import CameraAlt from "@material-ui/icons/CameraAlt";
+import SearchIcon from "@material-ui/icons/Search";
 import { User } from "oidc-client";
 
 import OperationDashboard from "./operations/Dashboard";
@@ -58,8 +60,11 @@ import * as routes from "../data/routes";
 import { Store, connect, mkAC } from "../store/store";
 import * as api from "../data/api";
 import * as serverSettings from "../data/server-settings";
+import * as guiState from "../data/gui-state";
 import logo from "../seedtactics-logo.svg";
 import BackupViewer from "./BackupViewer";
+import SerialScanner from "./QRScan";
+import ManualScan from "./ManualScan";
 
 const tabsStyle = {
   alignSelf: "flex-end" as "flex-end",
@@ -156,6 +161,7 @@ interface HeaderProps {
   showTabs: boolean;
   showAlarms: boolean;
   showLogout: boolean;
+  showSearch: boolean;
 
   routeState: routes.State;
   fmsInfo: Readonly<api.IFMSInfo> | null;
@@ -163,6 +169,8 @@ interface HeaderProps {
   alarms: ReadonlyArray<string> | null;
   setRoute: (arg: { ty: TabType; curSt: routes.State }) => void;
   onLogout: () => void;
+  readonly openQrCodeScan: () => void;
+  readonly openManualSerial: () => void;
 }
 
 function Header(p: HeaderProps) {
@@ -208,6 +216,25 @@ function Header(p: HeaderProps) {
     </Tooltip>
   );
 
+  const SearchButtons = () => (
+    <>
+      {window.location.protocol === "https:" || window.location.hostname === "localhost" ? (
+        <Tooltip title="Scan QR Code">
+          <IconButton onClick={p.openQrCodeScan}>
+            <CameraAlt />
+          </IconButton>
+        </Tooltip>
+      ) : (
+        undefined
+      )}
+      <Tooltip title="Enter Serial">
+        <IconButton onClick={p.openManualSerial}>
+          <SearchIcon />
+        </IconButton>
+      </Tooltip>
+    </>
+  );
+
   let tooltip: JSX.Element | string = "";
   if (p.fmsInfo && p.latestVersion) {
     tooltip = (
@@ -242,9 +269,10 @@ function Header(p: HeaderProps) {
           <div style={{ flexGrow: 1 }} />
         )}
         <LoadingIcon />
-        {p.showAlarms ? <Alarms /> : undefined}
+        {p.showSearch ? <SearchButtons /> : undefined}
         <HelpButton />
         {p.showLogout ? <LogoutButton /> : undefined}
+        {p.showAlarms ? <Alarms /> : undefined}
       </Toolbar>
     </AppBar>
   );
@@ -258,9 +286,10 @@ function Header(p: HeaderProps) {
         <Typography variant="h6">Insight</Typography>
         <div style={{ flexGrow: 1 }} />
         <LoadingIcon />
-        {p.showAlarms ? <Alarms /> : undefined}
+        {p.showSearch ? <SearchButtons /> : undefined}
         <HelpButton />
         {p.showLogout ? <LogoutButton /> : undefined}
+        {p.showAlarms ? <Alarms /> : undefined}
       </Toolbar>
       {p.showTabs ? (
         <HeaderTabs demo={p.demo} full={true} setRoute={p.setRoute} routeState={p.routeState} />
@@ -292,6 +321,8 @@ interface AppConnectedProps extends AppProps {
   setRoute: (arg: { ty: TabType; curSt: routes.State }) => void;
   onLogin: () => void;
   onLogout: () => void;
+  readonly openQrCodeScan: () => void;
+  readonly openManualSerial: () => void;
 }
 
 class App extends React.PureComponent<AppConnectedProps> {
@@ -300,10 +331,12 @@ class App extends React.PureComponent<AppConnectedProps> {
     let showTabs: boolean = true;
     let showAlarms: boolean = true;
     let showLogout: boolean = !!this.props.user;
+    let showSearch: boolean = true;
     if (this.props.backupViewerOnRequestOpenFile) {
       page = <BackupViewer onRequestOpenFile={this.props.backupViewerOnRequestOpenFile} />;
       showTabs = false;
       showAlarms = false;
+      showSearch = false;
     } else if (this.props.fmsInfo && (!this.props.fmsInfo.openIDConnectAuthority || this.props.user)) {
       switch (this.props.route.current) {
         case routes.RouteLocation.Station_LoadMonitor:
@@ -359,6 +392,7 @@ class App extends React.PureComponent<AppConnectedProps> {
         default:
           page = <ChooseMode />;
           showAlarms = false;
+          showSearch = false;
       }
     } else if (this.props.fmsInfo && this.props.fmsInfo.openIDConnectAuthority) {
       page = (
@@ -370,6 +404,8 @@ class App extends React.PureComponent<AppConnectedProps> {
         </div>
       );
       showTabs = false;
+      showAlarms = false;
+      showSearch = false;
     } else {
       page = (
         <div style={{ textAlign: "center", marginTop: "4em" }}>
@@ -378,6 +414,8 @@ class App extends React.PureComponent<AppConnectedProps> {
         </div>
       );
       showTabs = false;
+      showAlarms = false;
+      showSearch = false;
     }
     return (
       <div id="App">
@@ -388,12 +426,17 @@ class App extends React.PureComponent<AppConnectedProps> {
           demo={this.props.demo}
           showTabs={showTabs}
           showAlarms={showAlarms}
+          showSearch={showSearch}
           showLogout={showLogout}
           setRoute={this.props.setRoute}
           onLogout={this.props.onLogout}
           alarms={this.props.alarms}
+          openManualSerial={this.props.openManualSerial}
+          openQrCodeScan={this.props.openQrCodeScan}
         />
         {page}
+        <SerialScanner />
+        <ManualScan />
       </div>
     );
   }
@@ -435,6 +478,14 @@ export default connect(
       }
     },
     onLogin: mkAC(serverSettings.ActionType.Login),
-    onLogout: mkAC(serverSettings.ActionType.Logout)
+    onLogout: mkAC(serverSettings.ActionType.Logout),
+    openQrCodeScan: () => ({
+      type: guiState.ActionType.SetScanQrCodeDialog,
+      open: true
+    }),
+    openManualSerial: () => ({
+      type: guiState.ActionType.SetManualSerialEntryDialog,
+      open: true
+    })
   }
 )(App);
