@@ -53,6 +53,7 @@ import OperationDashboard from "./operations/Dashboard";
 import CostPerPiece from "./analysis/CostPerPiece";
 import Efficiency from "./analysis/Efficiency";
 import StationMonitor from "./station-monitor/StationMonitor";
+import StationToolbar from "./station-monitor/StationToolbar";
 import DataExport from "./analysis/DataExport";
 import ChooseMode from "./ChooseMode";
 import LoadingIcon from "./LoadingIcon";
@@ -75,6 +76,8 @@ const tabsStyle = {
 enum TabType {
   Operations_Dashboard,
   Operations_Cycles,
+
+  StationMontior,
 
   Quality_Dashboard,
   Quality_Serials,
@@ -106,6 +109,12 @@ function routeToTabType(loc: routes.RouteLocation): TabType {
       return TabType.Analysis_CostPerPiece;
     case routes.RouteLocation.Analysis_DataExport:
       return TabType.Analysis_DataExport;
+    case routes.RouteLocation.Station_AllMaterial:
+    case routes.RouteLocation.Station_LoadMonitor:
+    case routes.RouteLocation.Station_InspectionMonitor:
+    case routes.RouteLocation.Station_Queues:
+    case routes.RouteLocation.Station_WashMonitor:
+      return TabType.StationMontior;
     default:
       return TabType.Operations_Dashboard;
   }
@@ -120,6 +129,7 @@ function DemoTabs(p: HeaderNavProps) {
       onChange={(e, v) => p.setRoute({ ty: v, curSt: p.routeState })}
     >
       <Tab label="Operations" value={TabType.Operations_Dashboard} />
+      <Tab label="Station Monitor" value={TabType.StationMontior} />
       <Tab label="Cycles" value={TabType.Operations_Cycles} />
       <Tab label="Quality" value={TabType.Quality_Dashboard} />
       <Tab label="Serials" value={TabType.Quality_Serials} />
@@ -299,7 +309,7 @@ function Header(p: HeaderProps) {
     <AppBar position="static">
       <Toolbar>
         <Tooltip title={tooltip}>
-          <img src="/seedtactics-logo.svg" alt="Logo" style={{ height: "25px", marginRight: "4px" }} />
+          <img src={logo} alt="Logo" style={{ height: "25px", marginRight: "4px" }} />
         </Tooltip>
         <Typography variant="h6">Insight</Typography>
         <div style={{ flexGrow: 1 }} />
@@ -354,23 +364,28 @@ class App extends React.PureComponent<AppConnectedProps> {
     } else if (this.props.fmsInfo && (!this.props.fmsInfo.openIDConnectAuthority || this.props.user)) {
       switch (this.props.route.current) {
         case routes.RouteLocation.Station_LoadMonitor:
-          page = <StationMonitor monitor_type={routes.StationMonitorType.LoadUnload} />;
+          page = <StationMonitor monitor_type={routes.StationMonitorType.LoadUnload} showToolbar={this.props.demo} />;
+          navigation = p => <StationToolbar full={p.full} />;
           showOperator = true;
           break;
         case routes.RouteLocation.Station_InspectionMonitor:
-          page = <StationMonitor monitor_type={routes.StationMonitorType.Inspection} />;
+          page = <StationMonitor monitor_type={routes.StationMonitorType.Inspection} showToolbar={this.props.demo} />;
+          navigation = p => <StationToolbar full={p.full} />;
           showOperator = true;
           break;
         case routes.RouteLocation.Station_WashMonitor:
-          page = <StationMonitor monitor_type={routes.StationMonitorType.Wash} />;
+          page = <StationMonitor monitor_type={routes.StationMonitorType.Wash} showToolbar={this.props.demo} />;
+          navigation = p => <StationToolbar full={p.full} />;
           showOperator = true;
           break;
         case routes.RouteLocation.Station_Queues:
-          page = <StationMonitor monitor_type={routes.StationMonitorType.Queues} />;
+          page = <StationMonitor monitor_type={routes.StationMonitorType.Queues} showToolbar={this.props.demo} />;
+          navigation = p => <StationToolbar full={p.full} />;
           showOperator = true;
           break;
         case routes.RouteLocation.Station_AllMaterial:
-          page = <StationMonitor monitor_type={routes.StationMonitorType.AllMaterial} />;
+          page = <StationMonitor monitor_type={routes.StationMonitorType.AllMaterial} showToolbar={this.props.demo} />;
+          navigation = p => <StationToolbar full={p.full} />;
           showOperator = true;
           break;
 
@@ -504,6 +519,8 @@ export default connect(
           return { type: routes.RouteLocation.Analysis_CostPerPiece };
         case TabType.Analysis_DataExport:
           return { type: routes.RouteLocation.Analysis_DataExport };
+        case TabType.StationMontior:
+          return routes.switchToStationMonitorPage(curSt);
       }
     },
     onLogin: mkAC(serverSettings.ActionType.Login),

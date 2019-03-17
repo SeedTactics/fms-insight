@@ -43,6 +43,7 @@ import Queues from "./Queues";
 import AllMaterial from "./AllMaterial";
 
 export interface StationMonitorProps {
+  readonly showToolbar: boolean;
   readonly monitor_type: routes.StationMonitorType;
 }
 
@@ -64,7 +65,7 @@ function monitorElement(type: routes.StationMonitorType, fillViewport: boolean):
 export default function StationMonitor(props: StationMonitorProps) {
   return (
     <div>
-      <StationToolbar />
+      {props.showToolbar ? <StationToolbar full={true} /> : undefined}
       <Hidden mdDown>{monitorElement(props.monitor_type, true)}</Hidden>
       <Hidden lgUp>{monitorElement(props.monitor_type, false)}</Hidden>
     </div>

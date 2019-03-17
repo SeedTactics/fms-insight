@@ -51,7 +51,15 @@ const toolbarStyle = {
   alignItems: "flex-end" as "flex-end"
 };
 
+const inHeaderStyle = {
+  display: "flex",
+  flexGrow: 1,
+  justifyContent: "center",
+  alignItems: "flex-end" as "flex-end"
+};
+
 interface StationToolbarProps {
+  readonly full: boolean;
   readonly current_route: routes.State;
   readonly queues: { [key: string]: api.IQueueSize };
   readonly insp_types: HashSet<string>;
@@ -150,133 +158,131 @@ function StationToolbar(props: StationToolbarProps) {
   }
 
   return (
-    <nav style={toolbarStyle}>
-      <div style={{ display: "flex", alignItems: "flex-end", flexGrow: 1 }}>
+    <nav style={props.full ? toolbarStyle : inHeaderStyle}>
+      <Select
+        name="choose-station-type-select"
+        value={props.current_route.station_monitor}
+        onChange={e => setStation(e.target.value)}
+        autoWidth
+      >
+        <MenuItem value={routes.StationMonitorType.LoadUnload}>Load Station</MenuItem>
+        <MenuItem value={routes.StationMonitorType.Inspection}>Inspection</MenuItem>
+        <MenuItem value={routes.StationMonitorType.Wash}>Wash</MenuItem>
+        <MenuItem value={routes.StationMonitorType.Queues}>Queues</MenuItem>
+        <MenuItem value={routes.StationMonitorType.AllMaterial}>All Material</MenuItem>
+      </Select>
+      {props.current_route.station_monitor === routes.StationMonitorType.LoadUnload ? (
+        <Input
+          type="number"
+          placeholder="Load Station Number"
+          key="loadnumselect"
+          value={props.current_route.selected_load_id}
+          onChange={e => setLoadNumber(e.target.value)}
+          style={{ width: "3em", marginLeft: "1em" }}
+        />
+      ) : (
+        undefined
+      )}
+      {props.current_route.station_monitor === routes.StationMonitorType.Inspection ? (
         <Select
-          name="choose-station-type-select"
-          value={props.current_route.station_monitor}
-          onChange={e => setStation(e.target.value)}
-          autoWidth
+          key="inspselect"
+          value={props.current_route.selected_insp_type || allInspSym}
+          onChange={e => setInspType(e.target.value)}
+          style={{ marginLeft: "1em" }}
         >
-          <MenuItem value={routes.StationMonitorType.LoadUnload}>Load Station</MenuItem>
-          <MenuItem value={routes.StationMonitorType.Inspection}>Inspection</MenuItem>
-          <MenuItem value={routes.StationMonitorType.Wash}>Wash</MenuItem>
-          <MenuItem value={routes.StationMonitorType.Queues}>Queues</MenuItem>
-          <MenuItem value={routes.StationMonitorType.AllMaterial}>All Material</MenuItem>
-        </Select>
-        {props.current_route.station_monitor === routes.StationMonitorType.LoadUnload ? (
-          <Input
-            type="number"
-            placeholder="Load Station Number"
-            key="loadnumselect"
-            value={props.current_route.selected_load_id}
-            onChange={e => setLoadNumber(e.target.value)}
-            style={{ width: "3em", marginLeft: "1em" }}
-          />
-        ) : (
-          undefined
-        )}
-        {props.current_route.station_monitor === routes.StationMonitorType.Inspection ? (
-          <Select
-            key="inspselect"
-            value={props.current_route.selected_insp_type || allInspSym}
-            onChange={e => setInspType(e.target.value)}
-            style={{ marginLeft: "1em" }}
-          >
-            <MenuItem key={allInspSym} value={allInspSym}>
-              <em>All</em>
+          <MenuItem key={allInspSym} value={allInspSym}>
+            <em>All</em>
+          </MenuItem>
+          {props.insp_types.toArray({ sortOn: x => x }).map(ty => (
+            <MenuItem key={ty} value={ty}>
+              {ty}
             </MenuItem>
-            {props.insp_types.toArray({ sortOn: x => x }).map(ty => (
-              <MenuItem key={ty} value={ty}>
-                {ty}
+          ))}
+        </Select>
+      ) : (
+        undefined
+      )}
+      {props.current_route.station_monitor === routes.StationMonitorType.LoadUnload ? (
+        <FormControl style={{ marginLeft: "1em" }}>
+          {loadqueues.length === 0 ? (
+            <label
+              style={{
+                position: "absolute",
+                top: "24px",
+                left: 0,
+                color: "rgba(0,0,0,0.54)",
+                fontSize: "0.9rem"
+              }}
+            >
+              Display queue(s)
+            </label>
+          ) : (
+            undefined
+          )}
+          <Select
+            multiple
+            name="station-monitor-queue-select"
+            data-testid="station-monitor-queue-select"
+            key="queueselect"
+            displayEmpty
+            value={loadqueues}
+            inputProps={{ id: "queueselect" }}
+            style={{ minWidth: "10em" }}
+            onChange={e => setLoadQueues(e.target.value)}
+          >
+            <MenuItem key={freeMaterialSym} value={freeMaterialSym}>
+              Free Material
+            </MenuItem>
+            {queueNames.map((q, idx) => (
+              <MenuItem key={idx} value={q}>
+                {q}
               </MenuItem>
             ))}
           </Select>
-        ) : (
-          undefined
-        )}
-        {props.current_route.station_monitor === routes.StationMonitorType.LoadUnload ? (
-          <FormControl style={{ marginLeft: "1em" }}>
-            {loadqueues.length === 0 ? (
-              <label
-                style={{
-                  position: "absolute",
-                  top: "24px",
-                  left: 0,
-                  color: "rgba(0,0,0,0.54)",
-                  fontSize: "0.9rem"
-                }}
-              >
-                Display queue(s)
-              </label>
-            ) : (
-              undefined
-            )}
-            <Select
-              multiple
-              name="station-monitor-queue-select"
-              data-testid="station-monitor-queue-select"
-              key="queueselect"
-              displayEmpty
-              value={loadqueues}
-              inputProps={{ id: "queueselect" }}
-              style={{ minWidth: "10em" }}
-              onChange={e => setLoadQueues(e.target.value)}
+        </FormControl>
+      ) : (
+        undefined
+      )}
+      {props.current_route.station_monitor === routes.StationMonitorType.Queues ? (
+        <FormControl style={{ marginLeft: "1em", minWidth: "10em" }}>
+          {standalonequeues.length === 0 ? (
+            <label
+              style={{
+                position: "absolute",
+                top: "24px",
+                left: 0,
+                color: "rgba(0,0,0,0.54)",
+                fontSize: "0.9rem"
+              }}
             >
-              <MenuItem key={freeMaterialSym} value={freeMaterialSym}>
-                Free Material
+              Select queue(s)
+            </label>
+          ) : (
+            undefined
+          )}
+          <Select
+            multiple
+            name="station-monitor-queue-select"
+            data-testid="station-monitor-queue-select"
+            key="queueselect"
+            displayEmpty
+            value={standalonequeues}
+            inputProps={{ id: "queueselect" }}
+            onChange={e => setStandaloneQueues(e.target.value)}
+          >
+            <MenuItem key={freeMaterialSym} value={freeMaterialSym}>
+              Free Material
+            </MenuItem>
+            {queueNames.map((q, idx) => (
+              <MenuItem key={idx} value={q}>
+                {q}
               </MenuItem>
-              {queueNames.map((q, idx) => (
-                <MenuItem key={idx} value={q}>
-                  {q}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        ) : (
-          undefined
-        )}
-        {props.current_route.station_monitor === routes.StationMonitorType.Queues ? (
-          <FormControl style={{ marginLeft: "1em", minWidth: "10em" }}>
-            {standalonequeues.length === 0 ? (
-              <label
-                style={{
-                  position: "absolute",
-                  top: "24px",
-                  left: 0,
-                  color: "rgba(0,0,0,0.54)",
-                  fontSize: "0.9rem"
-                }}
-              >
-                Select queue(s)
-              </label>
-            ) : (
-              undefined
-            )}
-            <Select
-              multiple
-              name="station-monitor-queue-select"
-              data-testid="station-monitor-queue-select"
-              key="queueselect"
-              displayEmpty
-              value={standalonequeues}
-              inputProps={{ id: "queueselect" }}
-              onChange={e => setStandaloneQueues(e.target.value)}
-            >
-              <MenuItem key={freeMaterialSym} value={freeMaterialSym}>
-                Free Material
-              </MenuItem>
-              {queueNames.map((q, idx) => (
-                <MenuItem key={idx} value={q}>
-                  {q}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        ) : (
-          undefined
-        )}
-      </div>
+            ))}
+          </Select>
+        </FormControl>
+      ) : (
+        undefined
+      )}
     </nav>
   );
 }
