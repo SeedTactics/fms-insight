@@ -74,53 +74,10 @@ const tabsStyle = {
   flexGrow: 1
 };
 
-enum TabType {
-  Operations_Dashboard,
-  Operations_Cycles,
-  Operations_Material,
-
-  StationMontior,
-
-  Quality_Dashboard,
-  Quality_Serials,
-
-  Analysis_Efficiency,
-  Analysis_CostPerPiece,
-  Analysis_DataExport
-}
-
 interface HeaderNavProps {
   readonly full: boolean;
-  readonly setRoute: (arg: { ty: TabType; curSt: routes.State }) => void;
+  readonly setRoute: (arg: { ty: routes.RouteLocation; curSt: routes.State }) => void;
   readonly routeState: routes.State;
-}
-
-function routeToTabType(loc: routes.RouteLocation): TabType {
-  switch (loc) {
-    case routes.RouteLocation.Operations_Dashboard:
-      return TabType.Operations_Dashboard;
-    case routes.RouteLocation.Operations_Cycles:
-      return TabType.Operations_Cycles;
-    case routes.RouteLocation.Operations_AllMaterial:
-      return TabType.Operations_Material;
-    case routes.RouteLocation.Quality_Dashboard:
-      return TabType.Quality_Dashboard;
-    case routes.RouteLocation.Quality_Serials:
-      return TabType.Quality_Serials;
-    case routes.RouteLocation.Analysis_Efficiency:
-      return TabType.Analysis_Efficiency;
-    case routes.RouteLocation.Analysis_CostPerPiece:
-      return TabType.Analysis_CostPerPiece;
-    case routes.RouteLocation.Analysis_DataExport:
-      return TabType.Analysis_DataExport;
-    case routes.RouteLocation.Station_LoadMonitor:
-    case routes.RouteLocation.Station_InspectionMonitor:
-    case routes.RouteLocation.Station_Queues:
-    case routes.RouteLocation.Station_WashMonitor:
-      return TabType.StationMontior;
-    default:
-      return TabType.Operations_Dashboard;
-  }
 }
 
 function DemoTabs(p: HeaderNavProps) {
@@ -128,16 +85,17 @@ function DemoTabs(p: HeaderNavProps) {
     <Tabs
       variant={p.full ? "fullWidth" : "standard"}
       style={p.full ? {} : tabsStyle}
-      value={routeToTabType(p.routeState.current)}
+      value={p.routeState.current}
       onChange={(e, v) => p.setRoute({ ty: v, curSt: p.routeState })}
     >
-      <Tab label="Operations" value={TabType.Operations_Dashboard} />
-      <Tab label="Station Monitor" value={TabType.StationMontior} />
-      <Tab label="Cycles" value={TabType.Operations_Cycles} />
-      <Tab label="Quality" value={TabType.Quality_Dashboard} />
-      <Tab label="Serials" value={TabType.Quality_Serials} />
-      <Tab label="Efficiency" value={TabType.Analysis_Efficiency} />
-      <Tab label="Cost/Piece" value={TabType.Analysis_CostPerPiece} />
+      <Tab label="Operations" value={routes.RouteLocation.Operations_Dashboard} />
+      <Tab label="Station Monitor" value={routes.RouteLocation.Station_LoadMonitor} />
+      <Tab label="Load/Unload" value={routes.RouteLocation.Operations_LoadStation} />
+      <Tab label="Machines" value={routes.RouteLocation.Operations_Machines} />
+      <Tab label="Quality" value={routes.RouteLocation.Quality_Dashboard} />
+      <Tab label="Serials" value={routes.RouteLocation.Quality_Serials} />
+      <Tab label="Efficiency" value={routes.RouteLocation.Analysis_Efficiency} />
+      <Tab label="Cost/Piece" value={routes.RouteLocation.Analysis_CostPerPiece} />
     </Tabs>
   );
 }
@@ -147,12 +105,13 @@ function OperationsTabs(p: HeaderNavProps) {
     <Tabs
       variant={p.full ? "fullWidth" : "standard"}
       style={p.full ? {} : tabsStyle}
-      value={routeToTabType(p.routeState.current)}
+      value={p.routeState.current}
       onChange={(e, v) => p.setRoute({ ty: v, curSt: p.routeState })}
     >
-      <Tab label="Operations" value={TabType.Operations_Dashboard} />
-      <Tab label="Cycles" value={TabType.Operations_Cycles} />
-      <Tab label="Material" value={TabType.Operations_Material} />
+      <Tab label="Operations" value={routes.RouteLocation.Operations_Dashboard} />
+      <Tab label="Load/Unload" value={routes.RouteLocation.Operations_LoadStation} />
+      <Tab label="Machines" value={routes.RouteLocation.Operations_Machines} />
+      <Tab label="Material" value={routes.RouteLocation.Operations_AllMaterial} />
     </Tabs>
   );
 }
@@ -162,11 +121,11 @@ function QualityTabs(p: HeaderNavProps) {
     <Tabs
       variant={p.full ? "fullWidth" : "standard"}
       style={p.full ? {} : tabsStyle}
-      value={routeToTabType(p.routeState.current)}
+      value={p.routeState.current}
       onChange={(e, v) => p.setRoute({ ty: v, curSt: p.routeState })}
     >
-      <Tab label="Quality" value={TabType.Quality_Dashboard} />
-      <Tab label="Serials" value={TabType.Quality_Serials} />
+      <Tab label="Quality" value={routes.RouteLocation.Quality_Dashboard} />
+      <Tab label="Serials" value={routes.RouteLocation.Quality_Serials} />
     </Tabs>
   );
 }
@@ -176,12 +135,12 @@ function AnalysisTabs(p: HeaderNavProps) {
     <Tabs
       variant={p.full ? "fullWidth" : "standard"}
       style={p.full ? {} : tabsStyle}
-      value={routeToTabType(p.routeState.current)}
+      value={p.routeState.current}
       onChange={(e, v) => p.setRoute({ ty: v, curSt: p.routeState })}
     >
-      <Tab label="Efficiency" value={TabType.Analysis_Efficiency} />
-      <Tab label="Cost/Piece" value={TabType.Analysis_CostPerPiece} />
-      <Tab label="Data Export" value={TabType.Analysis_DataExport} />
+      <Tab label="Efficiency" value={routes.RouteLocation.Analysis_Efficiency} />
+      <Tab label="Cost/Piece" value={routes.RouteLocation.Analysis_CostPerPiece} />
+      <Tab label="Data Export" value={routes.RouteLocation.Analysis_DataExport} />
     </Tabs>
   );
 }
@@ -198,7 +157,7 @@ interface HeaderProps {
   fmsInfo: Readonly<api.IFMSInfo> | null;
   latestVersion: serverSettings.LatestInstaller | null;
   alarms: ReadonlyArray<string> | null;
-  setRoute: (arg: { ty: TabType; curSt: routes.State }) => void;
+  setRoute: (arg: { ty: routes.RouteLocation; curSt: routes.State }) => void;
   onLogout: () => void;
   readonly openQrCodeScan: () => void;
   readonly openManualSerial: () => void;
@@ -346,7 +305,7 @@ interface AppConnectedProps extends AppProps {
   user: User | null;
   latestVersion: serverSettings.LatestInstaller | null;
   alarms: ReadonlyArray<string> | null;
-  setRoute: (arg: { ty: TabType; curSt: routes.State }) => void;
+  setRoute: (arg: { ty: routes.RouteLocation; curSt: routes.State }) => void;
   onLogin: () => void;
   onLogout: () => void;
   readonly openQrCodeScan: () => void;
@@ -398,8 +357,12 @@ class App extends React.PureComponent<AppConnectedProps> {
           page = <OperationDashboard />;
           navigation = OperationsTabs;
           break;
-        case routes.RouteLocation.Operations_Cycles:
-          page = <p>Operations Cycles</p>;
+        case routes.RouteLocation.Operations_LoadStation:
+          page = <p>Operations Load</p>;
+          navigation = OperationsTabs;
+          break;
+        case routes.RouteLocation.Operations_Machines:
+          page = <p>Operations Machines</p>;
           navigation = OperationsTabs;
           break;
         case routes.RouteLocation.Operations_AllMaterial:
@@ -497,28 +460,8 @@ export default connect(
     alarms: emptyToNull(s.Current.current_status.alarms)
   }),
   {
-    setRoute: ({ ty, curSt }: { ty: TabType; curSt: routes.State }): routes.Action => {
-      switch (ty) {
-        case TabType.Operations_Dashboard:
-          return { type: routes.RouteLocation.Operations_Dashboard };
-        case TabType.Operations_Cycles:
-          return { type: routes.RouteLocation.Operations_Cycles };
-        case TabType.Operations_Material:
-          return { type: routes.RouteLocation.Operations_AllMaterial };
-        case TabType.Quality_Dashboard:
-          return { type: routes.RouteLocation.Quality_Dashboard };
-        case TabType.Quality_Serials:
-          return { type: routes.RouteLocation.Quality_Serials };
-        case TabType.Analysis_Efficiency:
-          return { type: routes.RouteLocation.Analysis_Efficiency };
-        case TabType.Analysis_CostPerPiece:
-          return { type: routes.RouteLocation.Analysis_CostPerPiece };
-        case TabType.Analysis_DataExport:
-          return { type: routes.RouteLocation.Analysis_DataExport };
-        case TabType.StationMontior:
-          return routes.displayLoadStation(curSt.selected_load_id, curSt.load_queues, curSt.load_free_material);
-      }
-    },
+    setRoute: ({ ty, curSt }: { ty: routes.RouteLocation; curSt: routes.State }): routes.Action =>
+      routes.displayPage(ty, curSt),
     onLogin: mkAC(serverSettings.ActionType.Login),
     onLogout: mkAC(serverSettings.ActionType.Logout),
     openQrCodeScan: () => ({

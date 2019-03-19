@@ -42,7 +42,8 @@ export enum RouteLocation {
   Station_Queues = "ROUTE_Station_Queues",
 
   Operations_Dashboard = "ROUTE_Operations_Dashboard",
-  Operations_Cycles = "ROUTE_Operations_Cycles",
+  Operations_LoadStation = "ROUTE_Operations_LoadStation",
+  Operations_Machines = "ROUTE_Operations_Machines",
   Operations_AllMaterial = "ROUTE_Operations_AllMaterial",
 
   Quality_Dashboard = "ROUTE_Quality_Dashboard",
@@ -64,8 +65,9 @@ export const routeMap = {
   [RouteLocation.Station_Queues]: "/station/queues",
 
   [RouteLocation.Operations_Dashboard]: "/operations",
-  [RouteLocation.Operations_Cycles]: "/operations/cycles",
-  [RouteLocation.Operations_AllMaterial]: "/operations/all-material",
+  [RouteLocation.Operations_LoadStation]: "/operations/loadunload",
+  [RouteLocation.Operations_Machines]: "/operations/machines",
+  [RouteLocation.Operations_AllMaterial]: "/operations/material",
 
   [RouteLocation.Quality_Dashboard]: "/quality",
   [RouteLocation.Quality_Serials]: "/quality/serials",
@@ -110,7 +112,8 @@ export type Action =
       };
     }
   | { type: RouteLocation.Operations_Dashboard }
-  | { type: RouteLocation.Operations_Cycles }
+  | { type: RouteLocation.Operations_LoadStation }
+  | { type: RouteLocation.Operations_Machines }
   | { type: RouteLocation.Operations_AllMaterial }
   | { type: RouteLocation.Quality_Dashboard }
   | { type: RouteLocation.Quality_Serials }
@@ -139,6 +142,21 @@ export const initial: State = {
   standalone_queues: [],
   standalone_free_material: false
 };
+
+export function displayPage(ty: RouteLocation, oldSt: State): Action {
+  switch (ty) {
+    case RouteLocation.Station_LoadMonitor:
+      return displayLoadStation(oldSt.selected_load_id, oldSt.load_queues, oldSt.load_free_material);
+    case RouteLocation.ChooseMode:
+      return { type: NOT_FOUND };
+    case RouteLocation.Station_InspectionMonitor:
+      return displayInspectionType(oldSt.selected_insp_type);
+    case RouteLocation.Station_Queues:
+      return displayQueues(oldSt.standalone_queues, oldSt.standalone_free_material);
+    default:
+      return { type: ty } as Action;
+  }
+}
 
 export function displayLoadStation(num: number, queues: ReadonlyArray<string>, freeMaterial: boolean): Action {
   return {
@@ -228,46 +246,21 @@ export function reducer(s: State, a: Action): State {
         standalone_queues: queues,
         standalone_free_material: standalonequery.free === null ? true : false
       };
-    case RouteLocation.Operations_AllMaterial:
-      return {
-        ...s,
-        current: RouteLocation.Operations_AllMaterial
-      };
 
     case RouteLocation.Operations_Dashboard:
-      return {
-        ...s,
-        current: RouteLocation.Operations_Dashboard
-      };
-    case RouteLocation.Operations_Cycles:
-      return {
-        ...s,
-        current: RouteLocation.Operations_Cycles
-      };
-
+    case RouteLocation.Operations_AllMaterial:
+    case RouteLocation.Operations_LoadStation:
+    case RouteLocation.Operations_Machines:
     case RouteLocation.Quality_Dashboard:
-      return {
-        ...s,
-        current: RouteLocation.Quality_Dashboard
-      };
     case RouteLocation.Quality_Serials:
-      return {
-        ...s,
-        current: RouteLocation.Quality_Serials
-      };
-
     case RouteLocation.Tools_Dashboard:
+    case RouteLocation.Analysis_CostPerPiece:
+    case RouteLocation.Analysis_Efficiency:
+    case RouteLocation.Analysis_DataExport:
       return {
         ...s,
-        current: RouteLocation.Tools_Dashboard
+        current: a.type
       };
-
-    case RouteLocation.Analysis_CostPerPiece:
-      return { ...s, current: RouteLocation.Analysis_CostPerPiece };
-    case RouteLocation.Analysis_Efficiency:
-      return { ...s, current: RouteLocation.Analysis_Efficiency };
-    case RouteLocation.Analysis_DataExport:
-      return { ...s, current: RouteLocation.Analysis_DataExport };
 
     case RouteLocation.ChooseMode:
     case NOT_FOUND:
