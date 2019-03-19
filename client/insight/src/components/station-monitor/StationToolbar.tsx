@@ -75,13 +75,21 @@ interface StationToolbarProps {
 const freeMaterialSym = "@@insight_free_material@@";
 const allInspSym = "@@all_inspection_display@@";
 
+enum StationMonitorType {
+  LoadUnload = "LoadUnload",
+  Inspection = "Inspection",
+  Wash = "Wash",
+  Queues = "Queues",
+  AllMaterial = "AllMaterial"
+}
+
 function StationToolbar(props: StationToolbarProps) {
   const queueNames = Object.keys(props.queues).sort();
 
   function setStation(s: string) {
-    const type = s as routes.StationMonitorType;
+    const type = s as StationMonitorType;
     switch (type) {
-      case routes.StationMonitorType.LoadUnload:
+      case StationMonitorType.LoadUnload:
         props.displayLoadStation(
           props.current_route.selected_load_id,
           props.current_route.load_queues,
@@ -89,19 +97,19 @@ function StationToolbar(props: StationToolbarProps) {
         );
         break;
 
-      case routes.StationMonitorType.Inspection:
+      case StationMonitorType.Inspection:
         props.displayInspection(props.current_route.selected_insp_type);
         break;
 
-      case routes.StationMonitorType.Wash:
+      case StationMonitorType.Wash:
         props.displayWash();
         break;
 
-      case routes.StationMonitorType.Queues:
+      case StationMonitorType.Queues:
         props.displayQueues(props.current_route.standalone_queues, props.current_route.standalone_free_material);
         break;
 
-      case routes.StationMonitorType.AllMaterial:
+      case StationMonitorType.AllMaterial:
         props.displayAllMaterial();
         break;
     }
@@ -158,25 +166,35 @@ function StationToolbar(props: StationToolbarProps) {
     standalonequeues.push(freeMaterialSym);
   }
 
+  let curType = StationMonitorType.LoadUnload;
+  switch (props.current_route.current) {
+    case routes.RouteLocation.Station_InspectionMonitor:
+      curType = StationMonitorType.Inspection;
+      break;
+    case routes.RouteLocation.Station_Queues:
+      curType = StationMonitorType.Queues;
+      break;
+    case routes.RouteLocation.Station_WashMonitor:
+      curType = StationMonitorType.Wash;
+      break;
+    case routes.RouteLocation.Station_AllMaterial:
+      curType = StationMonitorType.AllMaterial;
+  }
+
   return (
     <nav style={props.full ? toolbarStyle : inHeaderStyle}>
       {props.allowChangeType ? (
-        <Select
-          name="choose-station-type-select"
-          value={props.current_route.station_monitor}
-          onChange={e => setStation(e.target.value)}
-          autoWidth
-        >
-          <MenuItem value={routes.StationMonitorType.LoadUnload}>Load Station</MenuItem>
-          <MenuItem value={routes.StationMonitorType.Inspection}>Inspection</MenuItem>
-          <MenuItem value={routes.StationMonitorType.Wash}>Wash</MenuItem>
-          <MenuItem value={routes.StationMonitorType.Queues}>Queues</MenuItem>
-          <MenuItem value={routes.StationMonitorType.AllMaterial}>All Material</MenuItem>
+        <Select name="choose-station-type-select" value={curType} onChange={e => setStation(e.target.value)} autoWidth>
+          <MenuItem value={StationMonitorType.LoadUnload}>Load Station</MenuItem>
+          <MenuItem value={StationMonitorType.Inspection}>Inspection</MenuItem>
+          <MenuItem value={StationMonitorType.Wash}>Wash</MenuItem>
+          <MenuItem value={StationMonitorType.Queues}>Queues</MenuItem>
+          <MenuItem value={StationMonitorType.AllMaterial}>All Material</MenuItem>
         </Select>
       ) : (
         undefined
       )}
-      {props.current_route.station_monitor === routes.StationMonitorType.LoadUnload ? (
+      {curType === StationMonitorType.LoadUnload ? (
         <Input
           type="number"
           placeholder="Load Station Number"
@@ -188,7 +206,7 @@ function StationToolbar(props: StationToolbarProps) {
       ) : (
         undefined
       )}
-      {props.current_route.station_monitor === routes.StationMonitorType.Inspection ? (
+      {curType === StationMonitorType.Inspection ? (
         <Select
           key="inspselect"
           value={props.current_route.selected_insp_type || allInspSym}
@@ -207,7 +225,7 @@ function StationToolbar(props: StationToolbarProps) {
       ) : (
         undefined
       )}
-      {props.current_route.station_monitor === routes.StationMonitorType.LoadUnload ? (
+      {curType === StationMonitorType.LoadUnload ? (
         <FormControl style={{ marginLeft: "1em" }}>
           {loadqueues.length === 0 ? (
             <label
@@ -248,7 +266,7 @@ function StationToolbar(props: StationToolbarProps) {
       ) : (
         undefined
       )}
-      {props.current_route.station_monitor === routes.StationMonitorType.Queues ? (
+      {curType === StationMonitorType.Queues ? (
         <FormControl style={{ marginLeft: "1em", minWidth: "10em" }}>
           {standalonequeues.length === 0 ? (
             <label

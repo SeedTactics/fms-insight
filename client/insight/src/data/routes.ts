@@ -120,17 +120,8 @@ export type Action =
   | { type: RouteLocation.Analysis_DataExport }
   | { type: typeof NOT_FOUND };
 
-export enum StationMonitorType {
-  LoadUnload = "StationType_LoadUnload",
-  Inspection = "StationType_Insp",
-  Wash = "StationType_Wash",
-  Queues = "StationType_Queues",
-  AllMaterial = "StationType_AllMaterial"
-}
-
 export interface State {
   readonly current: RouteLocation;
-  readonly station_monitor: StationMonitorType;
   readonly selected_load_id: number;
   readonly selected_insp_type?: string;
   readonly load_queues: ReadonlyArray<string>;
@@ -141,7 +132,6 @@ export interface State {
 
 export const initial: State = {
   current: RouteLocation.ChooseMode,
-  station_monitor: StationMonitorType.LoadUnload,
   selected_load_id: 1,
   selected_insp_type: undefined,
   load_queues: [],
@@ -149,49 +139,6 @@ export const initial: State = {
   standalone_queues: [],
   standalone_free_material: false
 };
-
-export function switchToStationMonitorPage(curSt: State): Action {
-  switch (curSt.station_monitor) {
-    case StationMonitorType.LoadUnload:
-      return {
-        type: RouteLocation.Station_LoadMonitor,
-        payload: { num: curSt.selected_load_id },
-        meta: {
-          query: {
-            queue: curSt.load_queues,
-            free: curSt.load_free_material ? null : undefined
-          }
-        }
-      };
-
-    case StationMonitorType.Inspection:
-      return {
-        type: RouteLocation.Station_InspectionMonitor,
-        meta: { query: { type: curSt.selected_insp_type } }
-      };
-
-    case StationMonitorType.Wash:
-      return {
-        type: RouteLocation.Station_WashMonitor
-      };
-
-    case StationMonitorType.Queues:
-      return {
-        type: RouteLocation.Station_Queues,
-        meta: {
-          query: {
-            queue: curSt.load_queues,
-            free: curSt.load_free_material ? null : undefined
-          }
-        }
-      };
-
-    case StationMonitorType.AllMaterial:
-      return {
-        type: RouteLocation.Station_AllMaterial
-      };
-  }
-}
 
 export function displayLoadStation(num: number, queues: ReadonlyArray<string>, freeMaterial: boolean): Action {
   return {
@@ -253,7 +200,6 @@ export function reducer(s: State, a: Action): State {
       return {
         ...s,
         current: RouteLocation.Station_LoadMonitor,
-        station_monitor: StationMonitorType.LoadUnload,
         selected_load_id: typeof a.payload.num === "string" ? parseInt(a.payload.num, 10) : a.payload.num,
         load_queues: loadqueues.slice(0, 3),
         load_free_material: query.free === null ? true : false
@@ -263,14 +209,12 @@ export function reducer(s: State, a: Action): State {
       return {
         ...s,
         current: RouteLocation.Station_InspectionMonitor,
-        station_monitor: StationMonitorType.Inspection,
         selected_insp_type: iquery.type
       };
     case RouteLocation.Station_WashMonitor:
       return {
         ...s,
-        current: RouteLocation.Station_WashMonitor,
-        station_monitor: StationMonitorType.Wash
+        current: RouteLocation.Station_WashMonitor
       };
     case RouteLocation.Station_Queues:
       const standalonequery = (a.meta || {}).query || {};
@@ -285,15 +229,13 @@ export function reducer(s: State, a: Action): State {
       return {
         ...s,
         current: RouteLocation.Station_Queues,
-        station_monitor: StationMonitorType.Queues,
         standalone_queues: queues,
         standalone_free_material: standalonequery.free === null ? true : false
       };
     case RouteLocation.Station_AllMaterial:
       return {
         ...s,
-        current: RouteLocation.Station_AllMaterial,
-        station_monitor: StationMonitorType.AllMaterial
+        current: RouteLocation.Station_AllMaterial
       };
 
     case RouteLocation.Operations_Dashboard:

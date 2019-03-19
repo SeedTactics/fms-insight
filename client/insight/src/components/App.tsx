@@ -366,30 +366,11 @@ class App extends React.PureComponent<AppConnectedProps> {
     } else if (this.props.fmsInfo && (!this.props.fmsInfo.openIDConnectAuthority || this.props.user)) {
       switch (this.props.route.current) {
         case routes.RouteLocation.Station_LoadMonitor:
-          page = <StationMonitor monitor_type={routes.StationMonitorType.LoadUnload} showToolbar={this.props.demo} />;
-          navigation = p => <StationToolbar full={p.full} allowChangeType={false} />;
-          showOperator = true;
-          addBasicMaterialDialog = false;
-          break;
         case routes.RouteLocation.Station_InspectionMonitor:
-          page = <StationMonitor monitor_type={routes.StationMonitorType.Inspection} showToolbar={this.props.demo} />;
-          navigation = p => <StationToolbar full={p.full} allowChangeType={false} />;
-          showOperator = true;
-          addBasicMaterialDialog = false;
-          break;
         case routes.RouteLocation.Station_WashMonitor:
-          page = <StationMonitor monitor_type={routes.StationMonitorType.Wash} showToolbar={this.props.demo} />;
-          showOperator = true;
-          addBasicMaterialDialog = false;
-          break;
         case routes.RouteLocation.Station_Queues:
-          page = <StationMonitor monitor_type={routes.StationMonitorType.Queues} showToolbar={this.props.demo} />;
-          navigation = p => <StationToolbar full={p.full} allowChangeType={false} />;
-          showOperator = true;
-          addBasicMaterialDialog = false;
-          break;
         case routes.RouteLocation.Station_AllMaterial:
-          page = <StationMonitor monitor_type={routes.StationMonitorType.AllMaterial} showToolbar={this.props.demo} />;
+          page = <StationMonitor route_loc={this.props.route.current} showToolbar={this.props.demo} />;
           navigation = p => <StationToolbar full={p.full} allowChangeType={false} />;
           showOperator = true;
           addBasicMaterialDialog = false;
@@ -527,7 +508,7 @@ export default connect(
         case TabType.Analysis_DataExport:
           return { type: routes.RouteLocation.Analysis_DataExport };
         case TabType.StationMontior:
-          return routes.switchToStationMonitorPage(curSt);
+          return routes.displayLoadStation(curSt.selected_load_id, curSt.load_queues, curSt.load_free_material);
       }
     },
     onLogin: mkAC(serverSettings.ActionType.Login),
