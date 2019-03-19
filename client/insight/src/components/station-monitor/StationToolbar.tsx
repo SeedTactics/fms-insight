@@ -54,12 +54,13 @@ const toolbarStyle = {
 const inHeaderStyle = {
   display: "flex",
   flexGrow: 1,
-  justifyContent: "center",
+  alignSelf: "center",
   alignItems: "flex-end" as "flex-end"
 };
 
 interface StationToolbarProps {
   readonly full: boolean;
+  readonly allowChangeType: boolean;
   readonly current_route: routes.State;
   readonly queues: { [key: string]: api.IQueueSize };
   readonly insp_types: HashSet<string>;
@@ -159,18 +160,22 @@ function StationToolbar(props: StationToolbarProps) {
 
   return (
     <nav style={props.full ? toolbarStyle : inHeaderStyle}>
-      <Select
-        name="choose-station-type-select"
-        value={props.current_route.station_monitor}
-        onChange={e => setStation(e.target.value)}
-        autoWidth
-      >
-        <MenuItem value={routes.StationMonitorType.LoadUnload}>Load Station</MenuItem>
-        <MenuItem value={routes.StationMonitorType.Inspection}>Inspection</MenuItem>
-        <MenuItem value={routes.StationMonitorType.Wash}>Wash</MenuItem>
-        <MenuItem value={routes.StationMonitorType.Queues}>Queues</MenuItem>
-        <MenuItem value={routes.StationMonitorType.AllMaterial}>All Material</MenuItem>
-      </Select>
+      {props.allowChangeType ? (
+        <Select
+          name="choose-station-type-select"
+          value={props.current_route.station_monitor}
+          onChange={e => setStation(e.target.value)}
+          autoWidth
+        >
+          <MenuItem value={routes.StationMonitorType.LoadUnload}>Load Station</MenuItem>
+          <MenuItem value={routes.StationMonitorType.Inspection}>Inspection</MenuItem>
+          <MenuItem value={routes.StationMonitorType.Wash}>Wash</MenuItem>
+          <MenuItem value={routes.StationMonitorType.Queues}>Queues</MenuItem>
+          <MenuItem value={routes.StationMonitorType.AllMaterial}>All Material</MenuItem>
+        </Select>
+      ) : (
+        undefined
+      )}
       {props.current_route.station_monitor === routes.StationMonitorType.LoadUnload ? (
         <Input
           type="number"
@@ -208,7 +213,7 @@ function StationToolbar(props: StationToolbarProps) {
             <label
               style={{
                 position: "absolute",
-                top: "24px",
+                top: "10px",
                 left: 0,
                 color: "rgba(0,0,0,0.54)",
                 fontSize: "0.9rem"
@@ -227,7 +232,7 @@ function StationToolbar(props: StationToolbarProps) {
             displayEmpty
             value={loadqueues}
             inputProps={{ id: "queueselect" }}
-            style={{ minWidth: "10em" }}
+            style={{ minWidth: "10em", marginTop: "0" }}
             onChange={e => setLoadQueues(e.target.value)}
           >
             <MenuItem key={freeMaterialSym} value={freeMaterialSym}>
@@ -249,7 +254,7 @@ function StationToolbar(props: StationToolbarProps) {
             <label
               style={{
                 position: "absolute",
-                top: "24px",
+                top: "10px",
                 left: 0,
                 color: "rgba(0,0,0,0.54)",
                 fontSize: "0.9rem"
@@ -268,6 +273,7 @@ function StationToolbar(props: StationToolbarProps) {
             displayEmpty
             value={standalonequeues}
             inputProps={{ id: "queueselect" }}
+            style={{ marginTop: "0" }}
             onChange={e => setStandaloneQueues(e.target.value)}
           >
             <MenuItem key={freeMaterialSym} value={freeMaterialSym}>

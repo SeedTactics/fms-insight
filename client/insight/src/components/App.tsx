@@ -365,27 +365,26 @@ class App extends React.PureComponent<AppConnectedProps> {
       switch (this.props.route.current) {
         case routes.RouteLocation.Station_LoadMonitor:
           page = <StationMonitor monitor_type={routes.StationMonitorType.LoadUnload} showToolbar={this.props.demo} />;
-          navigation = p => <StationToolbar full={p.full} />;
+          navigation = p => <StationToolbar full={p.full} allowChangeType={false} />;
           showOperator = true;
           break;
         case routes.RouteLocation.Station_InspectionMonitor:
           page = <StationMonitor monitor_type={routes.StationMonitorType.Inspection} showToolbar={this.props.demo} />;
-          navigation = p => <StationToolbar full={p.full} />;
+          navigation = p => <StationToolbar full={p.full} allowChangeType={false} />;
           showOperator = true;
           break;
         case routes.RouteLocation.Station_WashMonitor:
           page = <StationMonitor monitor_type={routes.StationMonitorType.Wash} showToolbar={this.props.demo} />;
-          navigation = p => <StationToolbar full={p.full} />;
           showOperator = true;
           break;
         case routes.RouteLocation.Station_Queues:
           page = <StationMonitor monitor_type={routes.StationMonitorType.Queues} showToolbar={this.props.demo} />;
-          navigation = p => <StationToolbar full={p.full} />;
+          navigation = p => <StationToolbar full={p.full} allowChangeType={false} />;
           showOperator = true;
           break;
         case routes.RouteLocation.Station_AllMaterial:
           page = <StationMonitor monitor_type={routes.StationMonitorType.AllMaterial} showToolbar={this.props.demo} />;
-          navigation = p => <StationToolbar full={p.full} />;
+          navigation = p => <StationToolbar full={p.full} allowChangeType={false} />;
           showOperator = true;
           break;
 

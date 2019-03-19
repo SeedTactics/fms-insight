@@ -65,7 +65,7 @@ function monitorElement(type: routes.StationMonitorType, fillViewport: boolean):
 export default function StationMonitor(props: StationMonitorProps) {
   return (
     <div>
-      {props.showToolbar ? <StationToolbar full={true} /> : undefined}
+      {props.showToolbar ? <StationToolbar full={true} allowChangeType={true} /> : undefined}
       <Hidden mdDown>{monitorElement(props.monitor_type, true)}</Hidden>
       <Hidden lgUp>{monitorElement(props.monitor_type, false)}</Hidden>
     </div>

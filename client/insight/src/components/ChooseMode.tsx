@@ -43,12 +43,18 @@ import ShoppingBasket from "@material-ui/icons/ShoppingBasket";
 import DirectionsIcon from "@material-ui/icons/Directions";
 import StarIcon from "@material-ui/icons/StarRate";
 import ChartIcon from "@material-ui/icons/InsertChart";
+import ExtensionIcon from "@material-ui/icons/Extension";
+import InfoIcon from "@material-ui/icons/Info";
+import OpacityIcon from "@material-ui/icons/Opacity";
 
 import * as routes from "../data/routes";
 import { connect } from "../store/store";
 
 export interface ChooseModeProps {
-  readonly setStations: () => void;
+  readonly setLoad: () => void;
+  readonly setQueue: () => void;
+  readonly setInspect: () => void;
+  readonly setWash: () => void;
   readonly setOperations: () => void;
   readonly setQuality: () => void;
   readonly setAnalysis: () => void;
@@ -59,11 +65,29 @@ export function ChooseMode(p: ChooseModeProps) {
     <Paper>
       <List component="nav">
         <ListSubheader>Shop Floor</ListSubheader>
-        <ListItem button onClick={p.setStations}>
+        <ListItem button onClick={p.setLoad}>
           <ListItemIcon>
             <DirectionsIcon />
           </ListItemIcon>
-          <ListItemText>Station Monitor</ListItemText>
+          <ListItemText>Load Station</ListItemText>
+        </ListItem>
+        <ListItem button onClick={p.setQueue}>
+          <ListItemIcon>
+            <ExtensionIcon />
+          </ListItemIcon>
+          <ListItemText>Queue Management</ListItemText>
+        </ListItem>
+        <ListItem button onClick={p.setInspect}>
+          <ListItemIcon>
+            <InfoIcon />
+          </ListItemIcon>
+          <ListItemText>Inspection Stand</ListItemText>
+        </ListItem>
+        <ListItem button onClick={p.setWash}>
+          <ListItemIcon>
+            <OpacityIcon />
+          </ListItemIcon>
+          <ListItemText>Wash</ListItemText>
         </ListItem>
         <ListItem button disabled>
           <ListItemIcon>
@@ -82,7 +106,7 @@ export function ChooseMode(p: ChooseModeProps) {
           <ListItemIcon>
             <StarIcon />
           </ListItemIcon>
-          <ListItemText>Quality Review</ListItemText>
+          <ListItemText>Quality Analysis</ListItemText>
         </ListItem>
         <ListSubheader>Monthly Review</ListSubheader>
         <ListItem button onClick={p.setAnalysis}>
@@ -119,9 +143,18 @@ export function ChooseMode(p: ChooseModeProps) {
 export default connect(
   () => ({}),
   {
-    setStations: () => ({
+    setLoad: () => ({
       type: routes.RouteLocation.Station_LoadMonitor,
       payload: { num: 1 }
+    }),
+    setQueue: () => ({
+      type: routes.RouteLocation.Station_Queues
+    }),
+    setInspect: () => ({
+      type: routes.RouteLocation.Station_InspectionMonitor
+    }),
+    setWash: () => ({
+      type: routes.RouteLocation.Station_WashMonitor
     }),
     setOperations: () => ({
       type: routes.RouteLocation.Operations_Dashboard
