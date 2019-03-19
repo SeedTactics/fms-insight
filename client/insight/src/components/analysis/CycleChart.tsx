@@ -64,7 +64,7 @@ export interface CycleChartProps {
   readonly extra_tooltip?: (point: CycleChartPoint) => ReadonlyArray<ExtraTooltip>;
   readonly default_date_range: Date[];
   readonly current_date_zoom: { start: Date; end: Date } | undefined;
-  readonly set_date_zoom_range: (p: { zoom?: { start: Date; end: Date } }) => void;
+  readonly set_date_zoom_range: ((p: { zoom?: { start: Date; end: Date } }) => void) | undefined;
 }
 
 interface CycleChartTooltip {
@@ -176,6 +176,7 @@ export const CycleChart = withStyles(cycleChartStyles)(
     render() {
       const seriesNames = this.props.points.keySet().toArray({ sortOn: x => x });
       const dateRange = this.props.default_date_range;
+      const setZoom = this.props.set_date_zoom_range;
 
       return (
         <div className={this.state.brushing ? this.props.classes.noSeriesPointerEvts : undefined}>
@@ -205,22 +206,26 @@ export const CycleChart = withStyles(cycleChartStyles)(
             <HorizontalGridLines />
             <XAxis tickLabelAngle={-45} />
             <YAxis />
-            <Highlight
-              onBrushStart={() => this.setState({ brushing: true })}
-              onBrushEnd={(area: { left: Date; right: Date; bottom: number; top: number }) => {
-                if (area) {
-                  this.props.set_date_zoom_range({ zoom: { start: area.left, end: area.right } });
-                  this.setState({
-                    current_y_zoom_range: { y_low: area.bottom, y_high: area.top },
-                    brushing: false
-                  });
-                } else {
-                  this.setState({
-                    brushing: false
-                  });
-                }
-              }}
-            />
+            {setZoom ? (
+              <Highlight
+                onBrushStart={() => this.setState({ brushing: true })}
+                onBrushEnd={(area: { left: Date; right: Date; bottom: number; top: number }) => {
+                  if (area) {
+                    setZoom({ zoom: { start: area.left, end: area.right } });
+                    this.setState({
+                      current_y_zoom_range: { y_low: area.bottom, y_high: area.top },
+                      brushing: false
+                    });
+                  } else {
+                    this.setState({
+                      brushing: false
+                    });
+                  }
+                }}
+              />
+            ) : (
+              undefined
+            )}
             {seriesNames.map(series => (
               <MarkSeries
                 key={series}
@@ -248,12 +253,12 @@ export const CycleChart = withStyles(cycleChartStyles)(
                 undefined
               )}
             </div>
-            {this.props.current_date_zoom || this.state.current_y_zoom_range ? (
+            {setZoom && (this.props.current_date_zoom || this.state.current_y_zoom_range) ? (
               <Button
                 size="small"
                 style={{ position: "absolute", right: 0, top: 0 }}
                 onClick={() => {
-                  this.props.set_date_zoom_range({ zoom: undefined });
+                  setZoom({ zoom: undefined });
                   this.setState({ current_y_zoom_range: null });
                 }}
               >

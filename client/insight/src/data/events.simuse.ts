@@ -35,6 +35,7 @@ import { duration } from "moment";
 import { startOfDay } from "date-fns";
 import { Vector, fieldsHashCode, HashMap } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
+import { DayAndStation } from "./events.cycles";
 
 export interface SimStationUse {
   readonly station: string;
@@ -128,19 +129,6 @@ export function process_sim_use(
     station_use: stations.appendAll(newStationUse),
     production: production.appendAll(newProd)
   };
-}
-
-class DayAndStation {
-  constructor(public readonly day: Date, public readonly station: string) {}
-  equals(other: DayAndStation): boolean {
-    return this.day.getTime() === other.day.getTime() && this.station === other.station;
-  }
-  hashCode(): number {
-    return fieldsHashCode(this.day.getTime(), this.station);
-  }
-  toString(): string {
-    return `{day: ${this.day.toISOString()}, station: ${this.station}}`;
-  }
 }
 
 interface DayStatAndVal {

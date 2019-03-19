@@ -50,6 +50,7 @@ import SearchIcon from "@material-ui/icons/Search";
 import { User } from "oidc-client";
 
 import OperationDashboard from "./operations/Dashboard";
+import { OperationLoadUnload, OperationMachines } from "./operations/DailyStationMonitor";
 import CostPerPiece from "./analysis/CostPerPiece";
 import Efficiency from "./analysis/Efficiency";
 import StationMonitor from "./station-monitor/StationMonitor";
@@ -358,11 +359,11 @@ class App extends React.PureComponent<AppConnectedProps> {
           navigation = OperationsTabs;
           break;
         case routes.RouteLocation.Operations_LoadStation:
-          page = <p>Operations Load</p>;
+          page = <OperationLoadUnload />;
           navigation = OperationsTabs;
           break;
         case routes.RouteLocation.Operations_Machines:
-          page = <p>Operations Machines</p>;
+          page = <OperationMachines />;
           navigation = OperationsTabs;
           break;
         case routes.RouteLocation.Operations_AllMaterial:

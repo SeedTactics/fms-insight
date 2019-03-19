@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2019, John Lenz
 
 All rights reserved.
 
@@ -48,6 +48,8 @@ export interface PartCycleData extends CycleData {
   readonly stationGroup: string;
   readonly stationNumber: number;
   readonly pallet: string;
+  readonly medianElapsed: number;
+  readonly outlier: boolean;
   readonly isLabor: boolean;
   readonly matId: number;
   readonly serial?: string;
@@ -229,17 +231,60 @@ function estimateCycleTimesOfParts(
   cycles: Iterable<api.ILogEntry>
 ): HashMap<string, HashMap<string, StatisticalCycleTime>> {
   const ret = LazySeq.ofIterable(cycles)
-    .filter(c => c.type === api.LogType.MachineCycle && !c.startofcycle)
+    .filter(c => (c.type === api.LogType.MachineCycle || c.type === api.LogType.LoadUnloadCycle) && !c.startofcycle)
     .flatMap(c => c.material.map(m => ({ cycle: c, mat: m })))
     .groupBy(e => part_and_proc(e.mat.part, e.mat.proc))
     .mapValues(cyclesForPart =>
       LazySeq.ofIterable(cyclesForPart)
-        .groupBy(c => c.cycle.loc)
+        .groupBy(c => stat_name_and_num(stat_group(c.cycle), c.cycle.locnum))
         .mapValues(cyclesForPartAndStat =>
           estimateCycleTimes(cyclesForPartAndStat.map(p => duration(p.cycle.elapsed).asMinutes()))
         )
     );
   return ret;
+}
+
+function medianElapsedMinutes(
+  partAndProc: string,
+  cycle: Readonly<api.ILogEntry>,
+  estimated: HashMap<string, HashMap<string, StatisticalCycleTime>>
+) {
+  const byStat = estimated.get(partAndProc);
+  if (byStat.isSome()) {
+    const e = byStat.get().get(stat_name_and_num(stat_group(cycle), cycle.locnum));
+    if (e.isSome()) {
+      return e.get().expectedCycleMinutes;
+    } else {
+      return 0;
+    }
+  } else {
+    return 0;
+  }
+}
+
+function cycleIsOutlier(
+  partAndProc: string,
+  cycle: Readonly<api.ILogEntry>,
+  estimated: HashMap<string, HashMap<string, StatisticalCycleTime>>
+): boolean {
+  const elapsed = duration(cycle.elapsed).asMinutes();
+  const active = duration(cycle.active).asMinutes();
+
+  const byStat = estimated.get(partAndProc);
+  if (byStat.isSome()) {
+    const e = byStat.get().get(stat_name_and_num(stat_group(cycle), cycle.locnum));
+    if (e.isSome()) {
+      if (isOutlier(e.get(), elapsed)) {
+        return true;
+      }
+      if (cycle.active !== "" && active >= 0) {
+        if (isOutlier(e.get(), active)) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
 }
 
 function activeMinutes(
@@ -248,18 +293,11 @@ function activeMinutes(
   estimated: HashMap<string, HashMap<string, StatisticalCycleTime>>
 ) {
   const cMins = duration(cycle.active).asMinutes();
-  if (cycle.type === api.LogType.MachineCycle && (cycle.active === "" || cMins <= 0)) {
-    const byStat = estimated.get(partAndProc);
-    if (byStat.isSome()) {
-      const e = byStat.get().get(cycle.loc);
-      if (e.isSome()) {
-        return e.get().expectedCycleMinutes;
-      } else {
-        return 0;
-      }
-    } else {
-      return 0;
-    }
+  if (
+    (cycle.type === api.LogType.MachineCycle || cycle.type === api.LogType.LoadUnloadCycle) &&
+    (cycle.active === "" || cMins <= 0)
+  ) {
+    return medianElapsedMinutes(partAndProc, cycle, estimated);
   } else {
     return cMins;
   }
@@ -356,6 +394,8 @@ export function process_events(
       x: e.cycle.endUTC,
       y: duration(e.cycle.elapsed).asMinutes(),
       active: activeMinutes(part_and_proc(e.mat.part, e.mat.proc), e.cycle, estimatedCycleTimes),
+      medianElapsed: medianElapsedMinutes(part_and_proc(e.mat.part, e.mat.proc), e.cycle, estimatedCycleTimes),
+      outlier: cycleIsOutlier(part_and_proc(e.mat.part, e.mat.proc), e.cycle, estimatedCycleTimes),
       completed: e.cycle.type === api.LogType.LoadUnloadCycle && e.cycle.result === "UNLOAD",
       part: e.mat.part,
       process: e.mat.proc,
@@ -459,6 +499,7 @@ export const FilterAnyLoadKey = "@@@_FMSInsigt_FilterAnyLoadKey_@@@";
 
 export function filterStationCycles(
   allCycles: Vector<PartCycleData>,
+  zoom: { start: Date; end: Date } | undefined,
   partAndProc?: string,
   pallet?: string,
   station?: string
@@ -469,6 +510,9 @@ export function filterStationCycles(
     seriesLabel: groupByPal ? "Pallet" : groupByPart ? "Part" : "Station",
     data: LazySeq.ofIterable(allCycles)
       .filter(e => {
+        if (zoom && (e.x < zoom.start || e.x > zoom.end)) {
+          return false;
+        }
         if (partAndProc && part_and_proc(e.part, e.process) !== partAndProc) {
           return false;
         }
@@ -503,6 +547,21 @@ export function filterStationCycles(
   };
 }
 
+export function outlierCycles(
+  allCycles: Vector<PartCycleData>,
+  onlyLabor: boolean,
+  start: Date,
+  end: Date
+): FilteredStationCycles {
+  return {
+    seriesLabel: "Part",
+    data: LazySeq.ofIterable(allCycles)
+      .filter(e => onlyLabor === e.isLabor && e.outlier && e.x >= start && e.x <= end)
+      .groupBy(e => part_and_proc(e.part, e.process))
+      .mapValues(e => e.toArray())
+  };
+}
+
 function splitPartCycleToDays(cycle: CycleData, totalVal: number): Array<{ day: Date; value: number }> {
   const startDay = startOfDay(cycle.x);
   const endTime = addMinutes(cycle.x, totalVal);
@@ -529,8 +588,8 @@ function splitPartCycleToDays(cycle: CycleData, totalVal: number): Array<{ day: 
   }
 }
 
-class DayAndStation {
-  constructor(public day: Date, public station: string) {}
+export class DayAndStation {
+  constructor(public readonly day: Date, public readonly station: string) {}
   equals(other: DayAndStation): boolean {
     return this.day.getTime() === other.day.getTime() && this.station === other.station;
   }
@@ -546,14 +605,15 @@ class DayAndStation {
 }
 
 export function binCyclesByDayAndStat(
-  cycles: Vector<PartCycleData>,
+  cycles: Iterable<PartCycleData>,
   extractValue: (c: PartCycleData) => number
 ): HashMap<DayAndStation, number> {
   return LazySeq.ofIterable(cycles)
     .flatMap(point =>
       splitPartCycleToDays(point, extractValue(point)).map(x => ({
         ...x,
-        station: stat_name_and_num(point.stationGroup, point.stationNumber)
+        station: stat_name_and_num(point.stationGroup, point.stationNumber),
+        isLabor: point.isLabor
       }))
     )
     .toMap(p => [new DayAndStation(p.day, p.station), p.value] as [DayAndStation, number], (v1, v2) => v1 + v2);

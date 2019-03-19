@@ -48,7 +48,7 @@ enum ColumnId {
   Inspection,
   ElapsedMin,
   ActiveMin,
-  Operator
+  MedianElapsed
 }
 
 const columns: ReadonlyArray<Column<ColumnId, PartCycleData>> = [
@@ -106,10 +106,10 @@ const columns: ReadonlyArray<Column<ColumnId, PartCycleData>> = [
     getDisplay: c => c.active.toFixed(1)
   },
   {
-    id: ColumnId.Operator,
-    numeric: false,
-    label: "Operator",
-    getDisplay: c => c.operator
+    id: ColumnId.MedianElapsed,
+    numeric: true,
+    label: "Median Elapsed Min",
+    getDisplay: c => c.medianElapsed.toFixed(1)
   }
 ];
 
@@ -117,8 +117,10 @@ interface StationDataTableProps {
   readonly points: HashMap<string, ReadonlyArray<PartCycleData>>;
   readonly default_date_range: Date[];
   readonly current_date_zoom: { start: Date; end: Date } | undefined;
-  readonly set_date_zoom_range: (p: { zoom?: { start: Date; end: Date } }) => void;
+  readonly set_date_zoom_range: ((p: { zoom?: { start: Date; end: Date } }) => void) | undefined;
   readonly last30_days: boolean;
+  readonly showWorkorderAndInspect: boolean;
+  readonly showMedian: boolean;
   readonly openDetails: (matId: number) => void;
 }
 
@@ -181,11 +183,27 @@ export default React.memo(function StationDataTable(props: StationDataTableProps
   const allData = extractData(props.points, props.current_date_zoom, orderBy, order);
   const totalDataLength = allData.length;
   const pageData: ReadonlyArray<PartCycleData> = allData.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
+  const filteredColumns = columns.filter(c => {
+    if (!props.showWorkorderAndInspect && c.id === ColumnId.Workorder) {
+      return false;
+    }
+    if (!props.showWorkorderAndInspect && c.id === ColumnId.Inspection) {
+      return false;
+    }
+    if (!props.showMedian && c.id === ColumnId.MedianElapsed) {
+      return false;
+    }
+    return true;
+  });
   return (
     <div>
       <Table>
-        <DataTableHead columns={columns} onRequestSort={handleRequestSort} orderBy={orderBy} order={order} />
-        <DataTableBody columns={columns} pageData={pageData} onClickDetails={row => props.openDetails(row.matId)} />
+        <DataTableHead columns={filteredColumns} onRequestSort={handleRequestSort} orderBy={orderBy} order={order} />
+        <DataTableBody
+          columns={filteredColumns}
+          pageData={pageData}
+          onClickDetails={row => props.openDetails(row.matId)}
+        />
       </Table>
       <DataTableActions
         page={page}

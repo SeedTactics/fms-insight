@@ -255,6 +255,8 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
             set_date_zoom_range={props.setZoomRange}
             last30_days={props.analysisPeriod === events.AnalysisPeriod.Last30Days}
             openDetails={props.openMaterial}
+            showWorkorderAndInspect={true}
+            showMedian={false}
           />
         )}
       </CardContent>
@@ -279,7 +281,7 @@ const stationCyclePointsSelector = createSelector(
     station: string | undefined
   ) => {
     if (part || pallet || station) {
-      return filterStationCycles(cycles, part, pallet, station);
+      return filterStationCycles(cycles, undefined, part, pallet, station);
     } else {
       return { seriesLabel: "Station", data: HashMap.empty<string, ReadonlyArray<PartCycleData>>() };
     }
