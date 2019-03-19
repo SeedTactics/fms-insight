@@ -40,10 +40,10 @@ export enum RouteLocation {
   Station_InspectionMonitor = "ROUTE_Station_Inspection",
   Station_WashMonitor = "ROUTE_Station_Wash",
   Station_Queues = "ROUTE_Station_Queues",
-  Station_AllMaterial = "ROUTE_Station_AllMaterial",
 
   Operations_Dashboard = "ROUTE_Operations_Dashboard",
   Operations_Cycles = "ROUTE_Operations_Cycles",
+  Operations_AllMaterial = "ROUTE_Operations_AllMaterial",
 
   Quality_Dashboard = "ROUTE_Quality_Dashboard",
   Quality_Serials = "ROUTE_Quality_Serials",
@@ -62,10 +62,10 @@ export const routeMap = {
   [RouteLocation.Station_InspectionMonitor]: "/station/inspection",
   [RouteLocation.Station_WashMonitor]: "/station/wash",
   [RouteLocation.Station_Queues]: "/station/queues",
-  [RouteLocation.Station_AllMaterial]: "/station/all-material",
 
   [RouteLocation.Operations_Dashboard]: "/operations",
   [RouteLocation.Operations_Cycles]: "/operations/cycles",
+  [RouteLocation.Operations_AllMaterial]: "/operations/all-material",
 
   [RouteLocation.Quality_Dashboard]: "/quality",
   [RouteLocation.Quality_Serials]: "/quality/serials",
@@ -109,9 +109,9 @@ export type Action =
         };
       };
     }
-  | { type: RouteLocation.Station_AllMaterial }
   | { type: RouteLocation.Operations_Dashboard }
   | { type: RouteLocation.Operations_Cycles }
+  | { type: RouteLocation.Operations_AllMaterial }
   | { type: RouteLocation.Quality_Dashboard }
   | { type: RouteLocation.Quality_Serials }
   | { type: RouteLocation.Tools_Dashboard }
@@ -178,10 +178,6 @@ export function displayQueues(queues: ReadonlyArray<string>, freeMaterial: boole
   };
 }
 
-export function displayAllMaterial(): Action {
-  return { type: RouteLocation.Station_AllMaterial };
-}
-
 export function reducer(s: State, a: Action): State {
   if (s === undefined) {
     return initial;
@@ -232,10 +228,10 @@ export function reducer(s: State, a: Action): State {
         standalone_queues: queues,
         standalone_free_material: standalonequery.free === null ? true : false
       };
-    case RouteLocation.Station_AllMaterial:
+    case RouteLocation.Operations_AllMaterial:
       return {
         ...s,
-        current: RouteLocation.Station_AllMaterial
+        current: RouteLocation.Operations_AllMaterial
       };
 
     case RouteLocation.Operations_Dashboard:

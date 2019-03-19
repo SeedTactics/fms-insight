@@ -77,6 +77,7 @@ const tabsStyle = {
 enum TabType {
   Operations_Dashboard,
   Operations_Cycles,
+  Operations_Material,
 
   StationMontior,
 
@@ -100,6 +101,8 @@ function routeToTabType(loc: routes.RouteLocation): TabType {
       return TabType.Operations_Dashboard;
     case routes.RouteLocation.Operations_Cycles:
       return TabType.Operations_Cycles;
+    case routes.RouteLocation.Operations_AllMaterial:
+      return TabType.Operations_Material;
     case routes.RouteLocation.Quality_Dashboard:
       return TabType.Quality_Dashboard;
     case routes.RouteLocation.Quality_Serials:
@@ -110,7 +113,6 @@ function routeToTabType(loc: routes.RouteLocation): TabType {
       return TabType.Analysis_CostPerPiece;
     case routes.RouteLocation.Analysis_DataExport:
       return TabType.Analysis_DataExport;
-    case routes.RouteLocation.Station_AllMaterial:
     case routes.RouteLocation.Station_LoadMonitor:
     case routes.RouteLocation.Station_InspectionMonitor:
     case routes.RouteLocation.Station_Queues:
@@ -150,6 +152,7 @@ function OperationsTabs(p: HeaderNavProps) {
     >
       <Tab label="Operations" value={TabType.Operations_Dashboard} />
       <Tab label="Cycles" value={TabType.Operations_Cycles} />
+      <Tab label="Material" value={TabType.Operations_Material} />
     </Tabs>
   );
 }
@@ -208,7 +211,7 @@ function Header(p: HeaderProps) {
     case routes.RouteLocation.Station_InspectionMonitor:
     case routes.RouteLocation.Station_WashMonitor:
     case routes.RouteLocation.Station_Queues:
-    case routes.RouteLocation.Station_AllMaterial:
+    case routes.RouteLocation.Operations_AllMaterial:
       helpUrl = "https://fms-insight.seedtactics.com/docs/client-station-monitor.html";
       break;
     case routes.RouteLocation.Analysis_Efficiency:
@@ -369,7 +372,6 @@ class App extends React.PureComponent<AppConnectedProps> {
         case routes.RouteLocation.Station_InspectionMonitor:
         case routes.RouteLocation.Station_WashMonitor:
         case routes.RouteLocation.Station_Queues:
-        case routes.RouteLocation.Station_AllMaterial:
           page = <StationMonitor route_loc={this.props.route.current} showToolbar={this.props.demo} />;
           navigation = p => <StationToolbar full={p.full} allowChangeType={false} />;
           showOperator = true;
@@ -398,6 +400,10 @@ class App extends React.PureComponent<AppConnectedProps> {
           break;
         case routes.RouteLocation.Operations_Cycles:
           page = <p>Operations Cycles</p>;
+          navigation = OperationsTabs;
+          break;
+        case routes.RouteLocation.Operations_AllMaterial:
+          page = <StationMonitor route_loc={this.props.route.current} showToolbar={this.props.demo} />;
           navigation = OperationsTabs;
           break;
 
@@ -497,6 +503,8 @@ export default connect(
           return { type: routes.RouteLocation.Operations_Dashboard };
         case TabType.Operations_Cycles:
           return { type: routes.RouteLocation.Operations_Cycles };
+        case TabType.Operations_Material:
+          return { type: routes.RouteLocation.Operations_AllMaterial };
         case TabType.Quality_Dashboard:
           return { type: routes.RouteLocation.Quality_Dashboard };
         case TabType.Quality_Serials:

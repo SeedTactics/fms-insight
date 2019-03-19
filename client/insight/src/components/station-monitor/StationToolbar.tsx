@@ -168,6 +168,9 @@ function StationToolbar(props: StationToolbarProps) {
 
   let curType = StationMonitorType.LoadUnload;
   switch (props.current_route.current) {
+    case routes.RouteLocation.Station_LoadMonitor:
+      curType = StationMonitorType.LoadUnload;
+      break;
     case routes.RouteLocation.Station_InspectionMonitor:
       curType = StationMonitorType.Inspection;
       break;
@@ -177,8 +180,9 @@ function StationToolbar(props: StationToolbarProps) {
     case routes.RouteLocation.Station_WashMonitor:
       curType = StationMonitorType.Wash;
       break;
-    case routes.RouteLocation.Station_AllMaterial:
+    default:
       curType = StationMonitorType.AllMaterial;
+      break;
   }
 
   return (
@@ -322,6 +326,6 @@ export default connect(
     displayInspection: routes.displayInspectionType,
     displayWash: routes.displayWash,
     displayQueues: routes.displayQueues,
-    displayAllMaterial: routes.displayAllMaterial
+    displayAllMaterial: () => ({ type: routes.RouteLocation.Operations_AllMaterial })
   }
 )(StationToolbar);

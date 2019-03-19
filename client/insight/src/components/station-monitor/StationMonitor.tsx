@@ -57,7 +57,7 @@ function monitorElement(type: routes.RouteLocation, fillViewport: boolean): JSX.
       return <Wash />;
     case routes.RouteLocation.Station_Queues:
       return <Queues />;
-    case routes.RouteLocation.Station_AllMaterial:
+    case routes.RouteLocation.Operations_AllMaterial:
     default:
       return <AllMaterial />;
   }
