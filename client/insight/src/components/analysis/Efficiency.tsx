@@ -46,7 +46,6 @@ import CardContent from "@material-ui/core/CardContent";
 import Tooltip from "@material-ui/core/Tooltip";
 import IconButton from "@material-ui/core/IconButton";
 import ImportExport from "@material-ui/icons/ImportExport";
-import SearchIcon from "@material-ui/icons/Search";
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
 import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
@@ -95,7 +94,6 @@ interface PartStationCycleChartProps {
   readonly zoomDateRange?: { start: Date; end: Date };
   readonly setSelected: DispatchAction<guiState.ActionType.SetSelectedStationCycle>;
   readonly setZoomRange: DispatchAction<guiState.ActionType.SetStationCycleDateZoom>;
-  readonly openManualSerialEntry: () => void;
   readonly openMaterial: (matId: number) => void;
 }
 
@@ -150,14 +148,6 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
             ) : (
               undefined
             )}
-            <Tooltip title="Enter Serial">
-              <IconButton
-                onClick={props.openManualSerialEntry}
-                style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-              >
-                <SearchIcon />
-              </IconButton>
-            </Tooltip>
             <Select
               name="Station-Cycles-chart-or-table-select"
               autoWidth
@@ -333,10 +323,6 @@ const ConnectedPartStationCycleChart = connect(
   {
     setSelected: mkAC(guiState.ActionType.SetSelectedStationCycle),
     setZoomRange: mkAC(guiState.ActionType.SetStationCycleDateZoom),
-    openManualSerialEntry: () => ({
-      type: guiState.ActionType.SetManualSerialEntryDialog,
-      open: true
-    }),
     openMaterial: matDetails.openMaterialById
   }
 )(PartStationCycleChart);

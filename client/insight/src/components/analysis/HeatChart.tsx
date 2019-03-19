@@ -95,13 +95,6 @@ class HeatChart extends React.PureComponent<HeatChartProps, HeatChartState> {
           onValueMouseOver={(pt: HeatChartPoint) => this.setState({ selected_point: pt })}
           onValueMouseOut={() => this.setState({ selected_point: undefined })}
         />
-        <LabelSeries
-          style={{ pointerEvents: "none", fill: "#6b6b76" }}
-          data={this.props.points}
-          labelAnchorX="middle"
-          labelAnchorY="baseline"
-          getLabel={(d: HeatChartPoint) => d.label}
-        />
         {this.state.selected_point === undefined ? (
           undefined
         ) : (
