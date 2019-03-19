@@ -267,6 +267,11 @@ export const CycleChart = withStyles(cycleChartStyles)(
             ) : (
               undefined
             )}
+            {setZoom && !this.props.current_date_zoom && !this.state.current_y_zoom_range ? (
+              <span style={{ position: "absolute", right: 0, top: 0, color: "#6b6b76" }}>Zoom via mouse drag</span>
+            ) : (
+              undefined
+            )}
           </div>
         </div>
       );

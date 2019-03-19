@@ -189,7 +189,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
   }
 
   const [showGraph, setShowGraph] = React.useState(true);
-  const zoomDateRange = { start: props.default_date_range[0], end: props.default_date_range[1] };
+  const [chartZoom, setChartZoom] = React.useState<{ zoom?: { start: Date; end: Date } }>({});
 
   return (
     <Card raised>
@@ -204,7 +204,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
             {props.points.data.length() > 0 ? (
               <Tooltip title="Copy to Clipboard">
                 <IconButton
-                  onClick={() => copyCyclesToClipboard(props.points, zoomDateRange)}
+                  onClick={() => copyCyclesToClipboard(props.points, undefined)}
                   style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
                 >
                   <ImportExport />
@@ -285,14 +285,14 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
             series_label={props.points.seriesLabel}
             default_date_range={props.default_date_range}
             extra_tooltip={extraStationCycleTooltip}
-            current_date_zoom={zoomDateRange}
-            set_date_zoom_range={undefined}
+            current_date_zoom={chartZoom.zoom}
+            set_date_zoom_range={setChartZoom}
           />
         ) : (
           <StationDataTable
             points={props.points.data}
             default_date_range={props.default_date_range}
-            current_date_zoom={zoomDateRange}
+            current_date_zoom={undefined}
             set_date_zoom_range={undefined}
             last30_days={true}
             openDetails={props.openMaterial}
