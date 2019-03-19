@@ -63,7 +63,7 @@ import {
   FilterAnyMachineKey,
   FilterAnyLoadKey
 } from "../../data/events.cycles";
-import { MaterialDialog, PartIdenticon } from "../station-monitor/Material";
+import { PartIdenticon } from "../station-monitor/Material";
 import { LazySeq } from "../../data/lazyseq";
 import { copyCyclesToClipboard } from "../../data/clipboard-table";
 import StationDataTable from "./StationDataTable";
@@ -71,15 +71,6 @@ import StationDataTable from "./StationDataTable";
 // --------------------------------------------------------------------------------
 // Station Cycles
 // --------------------------------------------------------------------------------
-
-const ConnectedMaterialDialog = connect(
-  st => ({
-    display_material: st.MaterialDetails.material
-  }),
-  {
-    onClose: mkAC(matDetails.ActionType.CloseMaterialDialog)
-  }
-)(MaterialDialog);
 
 interface PartStationCycleChartProps {
   readonly allParts: HashSet<string>;
@@ -670,7 +661,6 @@ export default function Efficiency({ allowSetType }: { allowSetType: boolean }) 
           <div data-testid="inspection-sankey" style={{ marginTop: "3em" }}>
             <InspectionSankey />
           </div>
-          <ConnectedMaterialDialog />
         </main>
       </>
     </DocumentTitle>

@@ -67,6 +67,7 @@ import BackupViewer from "./BackupViewer";
 import SerialScanner from "./QRScan";
 import ManualScan from "./ManualScan";
 import ChooseOperator from "./ChooseOperator";
+import { BasicMaterialDialog } from "./station-monitor/Material";
 
 const tabsStyle = {
   alignSelf: "flex-end" as "flex-end",
@@ -357,6 +358,7 @@ class App extends React.PureComponent<AppConnectedProps> {
     let showLogout: boolean = !!this.props.user;
     let showSearch: boolean = true;
     let showOperator: boolean = false;
+    let addBasicMaterialDialog: boolean = true;
     if (this.props.backupViewerOnRequestOpenFile) {
       page = <BackupViewer onRequestOpenFile={this.props.backupViewerOnRequestOpenFile} />;
       showAlarms = false;
@@ -367,25 +369,30 @@ class App extends React.PureComponent<AppConnectedProps> {
           page = <StationMonitor monitor_type={routes.StationMonitorType.LoadUnload} showToolbar={this.props.demo} />;
           navigation = p => <StationToolbar full={p.full} allowChangeType={false} />;
           showOperator = true;
+          addBasicMaterialDialog = false;
           break;
         case routes.RouteLocation.Station_InspectionMonitor:
           page = <StationMonitor monitor_type={routes.StationMonitorType.Inspection} showToolbar={this.props.demo} />;
           navigation = p => <StationToolbar full={p.full} allowChangeType={false} />;
           showOperator = true;
+          addBasicMaterialDialog = false;
           break;
         case routes.RouteLocation.Station_WashMonitor:
           page = <StationMonitor monitor_type={routes.StationMonitorType.Wash} showToolbar={this.props.demo} />;
           showOperator = true;
+          addBasicMaterialDialog = false;
           break;
         case routes.RouteLocation.Station_Queues:
           page = <StationMonitor monitor_type={routes.StationMonitorType.Queues} showToolbar={this.props.demo} />;
           navigation = p => <StationToolbar full={p.full} allowChangeType={false} />;
           showOperator = true;
+          addBasicMaterialDialog = false;
           break;
         case routes.RouteLocation.Station_AllMaterial:
           page = <StationMonitor monitor_type={routes.StationMonitorType.AllMaterial} showToolbar={this.props.demo} />;
           navigation = p => <StationToolbar full={p.full} allowChangeType={false} />;
           showOperator = true;
+          addBasicMaterialDialog = false;
           break;
 
         case routes.RouteLocation.Analysis_CostPerPiece:
@@ -480,6 +487,7 @@ class App extends React.PureComponent<AppConnectedProps> {
         {page}
         <SerialScanner />
         <ManualScan />
+        {addBasicMaterialDialog ? <BasicMaterialDialog /> : undefined}
       </div>
     );
   }

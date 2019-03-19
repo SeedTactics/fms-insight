@@ -56,6 +56,7 @@ import * as api from "../../data/api";
 import * as matDetails from "../../data/material-details";
 import { LogEntries } from "../LogEntry";
 import { MaterialSummary } from "../../data/events";
+import { connect, mkAC } from "../../store/store";
 import { inproc_mat_to_summary, MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 import { LazySeq } from "../../data/lazyseq";
 
@@ -398,6 +399,15 @@ export function MaterialDialog(props: MaterialDialogProps) {
     </Dialog>
   );
 }
+
+export const BasicMaterialDialog = connect(
+  st => ({
+    display_material: st.MaterialDetails.material
+  }),
+  {
+    onClose: mkAC(matDetails.ActionType.CloseMaterialDialog)
+  }
+)(MaterialDialog);
 
 const whiteboardRegionStyle = createStyles({
   container: {
