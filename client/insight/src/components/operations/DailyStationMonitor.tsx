@@ -362,7 +362,7 @@ const ConnectedMachineCycleChart = connect(
 
 interface OEEBarPoint {
   readonly x: string;
-  readonly y: number;
+  readonly actual: number;
   readonly planned: number;
 }
 
@@ -381,7 +381,7 @@ interface OEEProps {
 function format_oee_hint(p: OEEBarPoint): ReadonlyArray<{ title: string; value: string }> {
   return [
     { title: "Day", value: p.x },
-    { title: "Actual Hours", value: p.y.toFixed(1) },
+    { title: "Actual Hours", value: p.actual.toFixed(1) },
     { title: "Planned Hours", value: p.planned.toFixed(1) }
   ];
 }
@@ -423,6 +423,7 @@ function StationOee(props: OEEProps) {
                   <YAxis />
                   <VerticalBarSeries
                     data={series.points}
+                    getY={(p: OEEBarPoint) => p.actual}
                     onValueMouseOver={(p: OEEBarPoint) => setHoveredSeries({ station: series.station, day: p.x })}
                     onValueMouseOut={() => setHoveredSeries(undefined)}
                     color={actualOeeColor}
@@ -499,7 +500,7 @@ const oeePointsSelector = createSelector(
         const planned = plannedBins.get(dAndStat);
         points.push({
           x: d.toLocaleDateString(),
-          y: actual.getOrElse(0) / 60,
+          actual: actual.getOrElse(0) / 60,
           planned: planned.getOrElse(0) / 60
         });
       }
