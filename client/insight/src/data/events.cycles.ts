@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as api from "./api";
 import { duration } from "moment";
 import { startOfDay, addMinutes, differenceInMinutes } from "date-fns";
-import { HashMap, HashSet, Vector, fieldsHashCode } from "prelude-ts";
+import { HashMap, HashSet, Vector, fieldsHashCode, Option } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 
 export interface CycleData {
@@ -49,6 +49,7 @@ export interface PartCycleData extends CycleData {
   readonly stationNumber: number;
   readonly pallet: string;
   readonly medianElapsed: number;
+  readonly MAD_aboveMinutes: number;
   readonly outlier: boolean;
   readonly isLabor: boolean;
   readonly matId: number;
@@ -244,21 +245,16 @@ function estimateCycleTimesOfParts(
   return ret;
 }
 
-function medianElapsedMinutes(
+function statisticalCycleTime(
   partAndProc: string,
   cycle: Readonly<api.ILogEntry>,
   estimated: HashMap<string, HashMap<string, StatisticalCycleTime>>
-) {
+): Option<StatisticalCycleTime> {
   const byStat = estimated.get(partAndProc);
   if (byStat.isSome()) {
-    const e = byStat.get().get(stat_name_and_num(stat_group(cycle), cycle.locnum));
-    if (e.isSome()) {
-      return e.get().expectedCycleMinutes;
-    } else {
-      return 0;
-    }
+    return byStat.get().get(stat_name_and_num(stat_group(cycle), cycle.locnum));
   } else {
-    return 0;
+    return Option.none();
   }
 }
 
@@ -287,17 +283,13 @@ function cycleIsOutlier(
   return false;
 }
 
-function activeMinutes(
-  partAndProc: string,
-  cycle: Readonly<api.ILogEntry>,
-  estimated: HashMap<string, HashMap<string, StatisticalCycleTime>>
-) {
+function activeMinutes(cycle: Readonly<api.ILogEntry>, stats: Option<StatisticalCycleTime>) {
   const cMins = duration(cycle.active).asMinutes();
   if (
     (cycle.type === api.LogType.MachineCycle || cycle.type === api.LogType.LoadUnloadCycle) &&
     (cycle.active === "" || cMins <= 0)
   ) {
-    return medianElapsedMinutes(partAndProc, cycle, estimated);
+    return stats.map(s => s.expectedCycleMinutes).getOrElse(0);
   } else {
     return cMins;
   }
@@ -390,26 +382,30 @@ export function process_events(
   var newCycles: LazySeq<PartCycleData> = LazySeq.ofIterable(newEvts)
     .filter(c => !c.startofcycle && (c.type === api.LogType.LoadUnloadCycle || c.type === api.LogType.MachineCycle))
     .flatMap(c => c.material.map(m => ({ cycle: c, mat: m })))
-    .map(e => ({
-      x: e.cycle.endUTC,
-      y: duration(e.cycle.elapsed).asMinutes(),
-      active: activeMinutes(part_and_proc(e.mat.part, e.mat.proc), e.cycle, estimatedCycleTimes),
-      medianElapsed: medianElapsedMinutes(part_and_proc(e.mat.part, e.mat.proc), e.cycle, estimatedCycleTimes),
-      outlier: cycleIsOutlier(part_and_proc(e.mat.part, e.mat.proc), e.cycle, estimatedCycleTimes),
-      completed: e.cycle.type === api.LogType.LoadUnloadCycle && e.cycle.result === "UNLOAD",
-      part: e.mat.part,
-      process: e.mat.proc,
-      pallet: e.cycle.pal,
-      matId: e.mat.id,
-      isLabor: e.cycle.type === api.LogType.LoadUnloadCycle,
-      serial: e.mat.serial,
-      workorder: e.mat.workorder,
-      stationGroup: stat_group(e.cycle),
-      stationNumber: e.cycle.locnum,
-      signaledInspections: HashSet.empty<string>(),
-      completedInspections: HashMap.empty<string, boolean>(),
-      operator: e.cycle.details ? e.cycle.details.operator || "" : ""
-    }))
+    .map(e => {
+      const stats = statisticalCycleTime(part_and_proc(e.mat.part, e.mat.proc), e.cycle, estimatedCycleTimes);
+      return {
+        x: e.cycle.endUTC,
+        y: duration(e.cycle.elapsed).asMinutes(),
+        active: activeMinutes(e.cycle, stats),
+        medianElapsed: stats.map(s => s.medianMinutes).getOrElse(0),
+        MAD_aboveMinutes: stats.map(s => s.MAD_aboveMinutes).getOrElse(0),
+        outlier: cycleIsOutlier(part_and_proc(e.mat.part, e.mat.proc), e.cycle, estimatedCycleTimes),
+        completed: e.cycle.type === api.LogType.LoadUnloadCycle && e.cycle.result === "UNLOAD",
+        part: e.mat.part,
+        process: e.mat.proc,
+        pallet: e.cycle.pal,
+        matId: e.mat.id,
+        isLabor: e.cycle.type === api.LogType.LoadUnloadCycle,
+        serial: e.mat.serial,
+        workorder: e.mat.workorder,
+        stationGroup: stat_group(e.cycle),
+        stationNumber: e.cycle.locnum,
+        signaledInspections: HashSet.empty<string>(),
+        completedInspections: HashMap.empty<string, boolean>(),
+        operator: e.cycle.details ? e.cycle.details.operator || "" : ""
+      };
+    })
     .filter(c => c.stationGroup !== "");
 
   let partNames = st.part_and_proc_names;

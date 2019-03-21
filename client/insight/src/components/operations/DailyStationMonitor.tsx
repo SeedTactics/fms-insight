@@ -397,10 +397,12 @@ function StationOee(props: OEEProps) {
       <CardContent>
         <Table>
           <TableHead>
-            <TableCell>Day</TableCell>
-            <TableCell>Station</TableCell>
-            <TableCell>Planned Hours</TableCell>
-            <TableCell>Actual Hours</TableCell>
+            <TableRow>
+              <TableCell>Day</TableCell>
+              <TableCell>Station</TableCell>
+              <TableCell>Planned Hours</TableCell>
+              <TableCell>Actual Hours</TableCell>
+            </TableRow>
           </TableHead>
           <TableBody>
             {props.points.map((pt, i) => (

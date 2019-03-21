@@ -48,7 +48,8 @@ enum ColumnId {
   Inspection,
   ElapsedMin,
   ActiveMin,
-  MedianElapsed
+  MedianElapsed,
+  MedianDeviation
 }
 
 const columns: ReadonlyArray<Column<ColumnId, PartCycleData>> = [
@@ -110,6 +111,12 @@ const columns: ReadonlyArray<Column<ColumnId, PartCycleData>> = [
     numeric: true,
     label: "Median Elapsed Min",
     getDisplay: c => c.medianElapsed.toFixed(1)
+  },
+  {
+    id: ColumnId.MedianDeviation,
+    numeric: true,
+    label: "Median Deviation",
+    getDisplay: c => c.MAD_aboveMinutes.toFixed(1)
   }
 ];
 
@@ -191,6 +198,9 @@ export default React.memo(function StationDataTable(props: StationDataTableProps
       return false;
     }
     if (!props.showMedian && c.id === ColumnId.MedianElapsed) {
+      return false;
+    }
+    if (!props.showMedian && c.id === ColumnId.MedianDeviation) {
       return false;
     }
     return true;
