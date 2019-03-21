@@ -139,6 +139,99 @@ const ConnectedOutlierMachines = connect(
   }
 )(OutlierCycles);
 
+// -----------------------------------------------------------------------------------
+// OEE
+// -----------------------------------------------------------------------------------
+
+function StationOEEChart(p: OEEProps) {
+  return (
+    <Card raised>
+      <CardHeader
+        title={
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
+            <HourglassIcon style={{ color: "#6D4C41" }} />
+            <div style={{ marginLeft: "10px", marginRight: "3em" }}>OEE</div>
+            <div style={{ flexGrow: 1 }} />
+            <Tooltip title="Copy to Clipboard">
+              <IconButton style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}>
+                <ImportExport />
+              </IconButton>
+            </Tooltip>
+          </div>
+        }
+      />
+      <CardContent>
+        <OEEChart {...p} />
+      </CardContent>
+    </Card>
+  );
+}
+
+const oeePointsSelector = createSelector(
+  (last30: events.Last30Days, _: boolean) => last30.cycles.part_cycles,
+  (last30: events.Last30Days, _: boolean) => last30.sim_use.station_use,
+  (_: events.Last30Days, showLabor: boolean) => showLabor,
+  (cycles, statUse, showLabor): ReadonlyArray<OEEBarSeries> => {
+    const start = addDays(startOfToday(), -6);
+    const end = addDays(startOfToday(), 1);
+    const filteredCycles = LazySeq.ofIterable(cycles).filter(
+      e => showLabor === e.isLabor && e.x >= start && e.x <= end
+    );
+    const actualBins = events.binCyclesByDayAndStat(filteredCycles, c => c.active);
+    const filteredStatUse = LazySeq.ofIterable(statUse).filter(
+      e => showLabor === e.station.startsWith("L/U") && e.end >= start && e.start <= end
+    );
+    const plannedBins = events.binSimStationUseByDayAndStat(
+      filteredStatUse,
+      c => c.utilizationTime - c.plannedDownTime
+    );
+
+    const series: Array<OEEBarSeries> = [];
+    const statNames = actualBins
+      .keySet()
+      .addAll(plannedBins.keySet())
+      .map(e => e.station)
+      .toArray({ sortOn: x => x });
+
+    for (let stat of statNames) {
+      const points: Array<OEEBarPoint> = [];
+      for (let d = start; d <= end; d = addDays(d, 1)) {
+        const dAndStat = new DayAndStation(d, stat);
+        const actual = actualBins.get(dAndStat);
+        const planned = plannedBins.get(dAndStat);
+        points.push({
+          x: d.toLocaleDateString(),
+          y: actual.getOrElse(0) / 60,
+          planned: planned.getOrElse(0) / 60
+        });
+      }
+      series.push({
+        station: stat,
+        points: points
+      });
+    }
+    return series;
+  }
+);
+
+const ConnectedLoadOEE = connect((st: Store) => {
+  return {
+    showLabor: true,
+    start: addDays(startOfToday(), -6),
+    end: addDays(startOfToday(), 1),
+    points: oeePointsSelector(st.Events.last30, true)
+  };
+})(StationOEEChart);
+
+const ConnectedMachineOEE = connect((st: Store) => {
+  return {
+    showLabor: false,
+    start: addDays(startOfToday(), -6),
+    end: addDays(startOfToday(), 1),
+    points: oeePointsSelector(st.Events.last30, false)
+  };
+})(StationOEEChart);
+
 // --------------------------------------------------------------------------------
 // Station Cycles
 // --------------------------------------------------------------------------------
@@ -354,99 +447,6 @@ const ConnectedMachineCycleChart = connect(
     openMaterial: matDetails.openMaterialById
   }
 )(PartStationCycleChart);
-
-// -----------------------------------------------------------------------------------
-// OEE
-// -----------------------------------------------------------------------------------
-
-function StationOEEChart(p: OEEProps) {
-  return (
-    <Card raised>
-      <CardHeader
-        title={
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
-            <HourglassIcon style={{ color: "#6D4C41" }} />
-            <div style={{ marginLeft: "10px", marginRight: "3em" }}>OEE</div>
-            <div style={{ flexGrow: 1 }} />
-            <Tooltip title="Copy to Clipboard">
-              <IconButton style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}>
-                <ImportExport />
-              </IconButton>
-            </Tooltip>
-          </div>
-        }
-      />
-      <CardContent>
-        <OEEChart {...p} />
-      </CardContent>
-    </Card>
-  );
-}
-
-const oeePointsSelector = createSelector(
-  (last30: events.Last30Days, _: boolean) => last30.cycles.part_cycles,
-  (last30: events.Last30Days, _: boolean) => last30.sim_use.station_use,
-  (_: events.Last30Days, showLabor: boolean) => showLabor,
-  (cycles, statUse, showLabor): ReadonlyArray<OEEBarSeries> => {
-    const start = addDays(startOfToday(), -6);
-    const end = addDays(startOfToday(), 1);
-    const filteredCycles = LazySeq.ofIterable(cycles).filter(
-      e => showLabor === e.isLabor && e.x >= start && e.x <= end
-    );
-    const actualBins = events.binCyclesByDayAndStat(filteredCycles, c => c.active);
-    const filteredStatUse = LazySeq.ofIterable(statUse).filter(
-      e => showLabor === e.station.startsWith("L/U") && e.end >= start && e.start <= end
-    );
-    const plannedBins = events.binSimStationUseByDayAndStat(
-      filteredStatUse,
-      c => c.utilizationTime - c.plannedDownTime
-    );
-
-    const series: Array<OEEBarSeries> = [];
-    const statNames = actualBins
-      .keySet()
-      .addAll(plannedBins.keySet())
-      .map(e => e.station)
-      .toArray({ sortOn: x => x });
-
-    for (let stat of statNames) {
-      const points: Array<OEEBarPoint> = [];
-      for (let d = start; d <= end; d = addDays(d, 1)) {
-        const dAndStat = new DayAndStation(d, stat);
-        const actual = actualBins.get(dAndStat);
-        const planned = plannedBins.get(dAndStat);
-        points.push({
-          x: d.toLocaleDateString(),
-          y: actual.getOrElse(0) / 60,
-          planned: planned.getOrElse(0) / 60
-        });
-      }
-      series.push({
-        station: stat,
-        points: points
-      });
-    }
-    return series;
-  }
-);
-
-const ConnectedLoadOEE = connect((st: Store) => {
-  return {
-    showLabor: true,
-    start: addDays(startOfToday(), -6),
-    end: addDays(startOfToday(), 1),
-    points: oeePointsSelector(st.Events.last30, true)
-  };
-})(StationOEEChart);
-
-const ConnectedMachineOEE = connect((st: Store) => {
-  return {
-    showLabor: false,
-    start: addDays(startOfToday(), -6),
-    end: addDays(startOfToday(), 1),
-    points: oeePointsSelector(st.Events.last30, false)
-  };
-})(StationOEEChart);
 
 // -----------------------------------------------------------------------------------
 // Main
