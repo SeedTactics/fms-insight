@@ -208,7 +208,13 @@ export default React.memo(function StationDataTable(props: StationDataTableProps
   return (
     <div>
       <Table>
-        <DataTableHead columns={filteredColumns} onRequestSort={handleRequestSort} orderBy={orderBy} order={order} />
+        <DataTableHead
+          columns={filteredColumns}
+          onRequestSort={handleRequestSort}
+          orderBy={orderBy}
+          order={order}
+          showDetailsCol
+        />
         <DataTableBody
           columns={filteredColumns}
           pageData={pageData}

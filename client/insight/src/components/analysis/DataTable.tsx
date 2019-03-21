@@ -73,6 +73,7 @@ export interface DataTableHeadProps<Id, Row> {
   readonly order: "asc" | "desc";
   readonly columns: ReadonlyArray<Column<Id, Row>>;
   readonly onRequestSort: (id: Id) => void;
+  readonly showDetailsCol: boolean;
 }
 
 export function DataTableHead<Id extends string | number, Row>(props: DataTableHeadProps<Id, Row>) {
@@ -96,7 +97,7 @@ export function DataTableHead<Id extends string | number, Row>(props: DataTableH
             </Tooltip>
           </TableCell>
         ))}
-        <TableCell padding="checkbox" />
+        {props.showDetailsCol ? <TableCell padding="checkbox" /> : undefined}
       </TableRow>
     </TableHead>
   );
@@ -282,11 +283,12 @@ export function DataTableActions(props: DataTableActionsProps) {
 export interface DataTableBodyProps<Id, Row> {
   readonly pageData: Iterable<Row>;
   readonly columns: ReadonlyArray<Column<Id, Row>>;
-  readonly onClickDetails: (r: Row) => void;
+  readonly onClickDetails?: (r: Row) => void;
 }
 
 export class DataTableBody<Id extends string | number, Row> extends React.PureComponent<DataTableBodyProps<Id, Row>> {
   render() {
+    const onClickDetails = this.props.onClickDetails;
     return (
       <TableBody>
         {LazySeq.ofIterable(this.props.pageData).map((row, idx) => (
@@ -296,11 +298,15 @@ export class DataTableBody<Id extends string | number, Row> extends React.PureCo
                 {col.getDisplay(row)}
               </TableCell>
             ))}
-            <TableCell padding="checkbox">
-              <IconButton onClick={() => this.props.onClickDetails(row)}>
-                <MoreHoriz />
-              </IconButton>
-            </TableCell>
+            {onClickDetails ? (
+              <TableCell padding="checkbox">
+                <IconButton onClick={() => onClickDetails(row)}>
+                  <MoreHoriz />
+                </IconButton>
+              </TableCell>
+            ) : (
+              undefined
+            )}
           </TableRow>
         ))}
       </TableBody>

@@ -32,13 +32,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
 import Grid from "@material-ui/core/Grid";
+import Table from "@material-ui/core/Table";
 
 import { FlexibleWidthXYPlot, XAxis, YAxis, VerticalBarSeries, DiscreteColorLegend, Hint } from "react-vis";
+import { Column, DataTableHead, DataTableBody } from "../analysis/DataTable";
+import { LazySeq } from "../../data/lazyseq";
+import { ToOrderable } from "prelude-ts";
 
 export interface OEEBarPoint {
   readonly x: string;
   readonly y: number;
   readonly planned: number;
+  readonly station: string;
+  readonly day: Date;
 }
 
 export interface OEEBarSeries {
@@ -121,3 +127,120 @@ export function OEEChart(props: OEEProps) {
     </Grid>
   );
 }
+
+enum ColumnId {
+  Date,
+  Station,
+  ActualHours,
+  ActualOEE,
+  PlannedHours,
+  PlannedOEE
+}
+
+const columns: ReadonlyArray<Column<ColumnId, OEEBarPoint>> = [
+  {
+    id: ColumnId.Date,
+    numeric: false,
+    label: "Date",
+    getDisplay: c => c.x,
+    getForSort: c => c.day.getTime()
+  },
+  {
+    id: ColumnId.Station,
+    numeric: false,
+    label: "Station",
+    getDisplay: c => c.station
+  },
+  {
+    id: ColumnId.ActualHours,
+    numeric: true,
+    label: "Actual Hours",
+    getDisplay: c => c.y.toFixed(1),
+    getForSort: c => c.y
+  },
+  {
+    id: ColumnId.ActualOEE,
+    numeric: true,
+    label: "Actual OEE",
+    getDisplay: c => ((c.y * 100) / 24).toFixed(0) + "%",
+    getForSort: c => c.y
+  },
+  {
+    id: ColumnId.PlannedHours,
+    numeric: true,
+    label: "Planned Hours",
+    getDisplay: c => c.planned.toFixed(1),
+    getForSort: c => c.planned
+  },
+  {
+    id: ColumnId.PlannedOEE,
+    numeric: true,
+    label: "Planned OEE",
+    getDisplay: c => ((c.planned * 100) / 24).toFixed(0) + "%",
+    getForSort: c => c.planned
+  }
+];
+
+function dataForTable(
+  series: ReadonlyArray<OEEBarSeries>,
+  orderBy: ColumnId,
+  order: "asc" | "desc"
+): ReadonlyArray<OEEBarPoint> {
+  let getData: ToOrderable<OEEBarPoint> | undefined;
+  for (let col of columns) {
+    if (col.id === orderBy) {
+      getData = col.getForSort || col.getDisplay;
+    }
+  }
+  if (getData === undefined) {
+    getData = columns[0].getForSort || columns[0].getDisplay;
+  }
+  const getDataC = getData;
+
+  const arr = LazySeq.ofIterable(series)
+    .flatMap(e => e.points)
+    .toArray();
+  return arr.sort((a, b) => {
+    const aVal = getDataC(a);
+    const bVal = getDataC(b);
+    if (aVal === bVal) {
+      // sort by date
+      if (order === "desc") {
+        return b.day.getTime() - a.day.getTime();
+      } else {
+        return a.day.getTime() - b.day.getTime();
+      }
+    } else {
+      if (order === "desc") {
+        return aVal > bVal ? -1 : 1;
+      } else {
+        return aVal > bVal ? 1 : -1;
+      }
+    }
+  });
+}
+
+export const OEETable = React.memo(function OEETableF(p: OEEProps) {
+  const [orderBy, setOrderBy] = React.useState(ColumnId.Date);
+  const [order, setOrder] = React.useState<"asc" | "desc">("asc");
+  function handleRequestSort(property: ColumnId) {
+    if (orderBy === property) {
+      setOrder(order === "asc" ? "desc" : "asc");
+    } else {
+      setOrderBy(property);
+      setOrder("asc");
+    }
+  }
+  return (
+    <Table>
+      <DataTableHead
+        columns={columns}
+        onRequestSort={handleRequestSort}
+        orderBy={orderBy}
+        order={order}
+        showDetailsCol={false}
+      />
+      <DataTableBody columns={columns} pageData={dataForTable(p.points, orderBy, order)} />
+    </Table>
+  );
+});

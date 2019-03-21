@@ -65,7 +65,7 @@ import { CycleChart, CycleChartPoint, ExtraTooltip } from "../analysis/CycleChar
 import { copyCyclesToClipboard } from "../../data/clipboard-table";
 import * as guiState from "../../data/gui-state";
 import { LazySeq } from "../../data/lazyseq";
-import { OEEProps, OEEChart, OEEBarSeries, OEEBarPoint } from "./OEEChart";
+import { OEEProps, OEEChart, OEEBarSeries, OEEBarPoint, OEETable } from "./OEEChart";
 
 // -----------------------------------------------------------------------------------
 // Outliers
@@ -144,6 +144,7 @@ const ConnectedOutlierMachines = connect(
 // -----------------------------------------------------------------------------------
 
 function StationOEEChart(p: OEEProps) {
+  const [showChart, setShowChart] = React.useState(true);
   return (
     <Card raised>
       <CardHeader
@@ -157,12 +158,23 @@ function StationOEEChart(p: OEEProps) {
                 <ImportExport />
               </IconButton>
             </Tooltip>
+            <Select
+              name="Station-OEE-chart-or-table-select"
+              autoWidth
+              value={showChart ? "chart" : "table"}
+              onChange={e => setShowChart(e.target.value === "chart")}
+            >
+              <MenuItem key="chart" value="chart">
+                Chart
+              </MenuItem>
+              <MenuItem key="table" value="table">
+                Table
+              </MenuItem>
+            </Select>
           </div>
         }
       />
-      <CardContent>
-        <OEEChart {...p} />
-      </CardContent>
+      <CardContent>{showChart ? <OEEChart {...p} /> : <OEETable {...p} />}</CardContent>
     </Card>
   );
 }
@@ -202,7 +214,9 @@ const oeePointsSelector = createSelector(
         points.push({
           x: d.toLocaleDateString(),
           y: actual.getOrElse(0) / 60,
-          planned: planned.getOrElse(0) / 60
+          planned: planned.getOrElse(0) / 60,
+          station: stat,
+          day: d
         });
       }
       series.push({
