@@ -43,11 +43,7 @@ import WorkIcon from "@material-ui/icons/Work";
 import IconButton from "@material-ui/core/IconButton";
 import Select from "@material-ui/core/Select";
 import ImportExport from "@material-ui/icons/ImportExport";
-import Table from "@material-ui/core/Table";
-import TableBody from "@material-ui/core/TableBody";
-import TableCell from "@material-ui/core/TableCell";
-import TableHead from "@material-ui/core/TableHead";
-import TableRow from "@material-ui/core/TableRow";
+import Grid from "@material-ui/core/Grid";
 import MenuItem from "@material-ui/core/MenuItem";
 import HourglassIcon from "@material-ui/icons/HourglassFull";
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
@@ -70,6 +66,7 @@ import { CycleChart, CycleChartPoint, ExtraTooltip } from "../analysis/CycleChar
 import { copyCyclesToClipboard } from "../../data/clipboard-table";
 import * as guiState from "../../data/gui-state";
 import { LazySeq } from "../../data/lazyseq";
+import { FlexibleWidthXYPlot, XAxis, YAxis, VerticalBarSeries, DiscreteColorLegend, Hint } from "react-vis";
 
 // -----------------------------------------------------------------------------------
 // Outliers
@@ -363,27 +360,43 @@ const ConnectedMachineCycleChart = connect(
 // OEE
 // -----------------------------------------------------------------------------------
 
-interface OEEPoint {
-  readonly day: Date;
+interface OEEBarPoint {
+  readonly x: string;
+  readonly y: number;
+  readonly planned: number;
+}
+
+interface OEEBarSeries {
   readonly station: string;
-  readonly plannedHours: number;
-  readonly actualHours: number;
+  readonly points: ReadonlyArray<OEEBarPoint>;
 }
 
 interface OEEProps {
   readonly showLabor: boolean;
   readonly start: Date;
   readonly end: Date;
-  readonly points: ReadonlyArray<OEEPoint>;
+  readonly points: ReadonlyArray<OEEBarSeries>;
 }
 
+function format_oee_hint(p: OEEBarPoint): ReadonlyArray<{ title: string; value: string }> {
+  return [
+    { title: "Day", value: p.x },
+    { title: "Actual Hours", value: p.y.toFixed(1) },
+    { title: "Planned Hours", value: p.planned.toFixed(1) }
+  ];
+}
+
+const actualOeeColor = "#6200EE";
+const plannedOeeColor = "#03DAC5";
+
 function StationOee(props: OEEProps) {
+  const [hoveredSeries, setHoveredSeries] = React.useState<{ station: string; day: string } | undefined>(undefined);
   return (
     <Card raised>
       <CardHeader
         title={
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
-            <HourglassIcon />
+            <HourglassIcon style={{ color: "#6D4C41" }} />
             <div style={{ marginLeft: "10px", marginRight: "3em" }}>OEE</div>
             <div style={{ flexGrow: 1 }} />
             <Tooltip title="Copy to Clipboard">
@@ -395,26 +408,58 @@ function StationOee(props: OEEProps) {
         }
       />
       <CardContent>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Day</TableCell>
-              <TableCell>Station</TableCell>
-              <TableCell>Planned Hours</TableCell>
-              <TableCell>Actual Hours</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {props.points.map((pt, i) => (
-              <TableRow key={i}>
-                <TableCell>{pt.day.toLocaleDateString()}</TableCell>
-                <TableCell>{pt.station}</TableCell>
-                <TableCell>{pt.plannedHours.toFixed(1)}</TableCell>
-                <TableCell>{pt.actualHours.toFixed(1)}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <Grid container>
+          {props.points.map((series, idx) => (
+            <Grid item xs={12} md={6} key={idx}>
+              <div>
+                <FlexibleWidthXYPlot
+                  xType="ordinal"
+                  height={window.innerHeight / 2 - 200}
+                  animation
+                  yDomain={[0, 24]}
+                  onMouseLeave={() => setHoveredSeries(undefined)}
+                >
+                  <XAxis />
+                  <YAxis />
+                  <VerticalBarSeries
+                    data={series.points}
+                    onValueMouseOver={(p: OEEBarPoint) => setHoveredSeries({ station: series.station, day: p.x })}
+                    onValueMouseOut={() => setHoveredSeries(undefined)}
+                    color={actualOeeColor}
+                  />
+                  <VerticalBarSeries
+                    data={series.points}
+                    getY={(p: OEEBarPoint) => p.planned}
+                    color={plannedOeeColor}
+                    onValueMouseOver={(p: OEEBarPoint) => setHoveredSeries({ station: series.station, day: p.x })}
+                    onValueMouseOut={() => setHoveredSeries(undefined)}
+                  />
+                  {hoveredSeries === undefined || hoveredSeries.station !== series.station ? (
+                    undefined
+                  ) : (
+                    <Hint
+                      value={series.points.find((p: OEEBarPoint) => p.x === hoveredSeries.day)}
+                      format={format_oee_hint}
+                    />
+                  )}
+                </FlexibleWidthXYPlot>
+                <div style={{ textAlign: "center" }}>
+                  {props.points.length > 1 ? (
+                    <DiscreteColorLegend
+                      orientation="horizontal"
+                      items={[
+                        { title: series.station + " Actual", color: actualOeeColor },
+                        { title: series.station + " Planned", color: plannedOeeColor }
+                      ]}
+                    />
+                  ) : (
+                    undefined
+                  )}
+                </div>
+              </div>
+            </Grid>
+          ))}
+        </Grid>
       </CardContent>
     </Card>
   );
@@ -424,7 +469,7 @@ const oeePointsSelector = createSelector(
   (last30: events.Last30Days, _: boolean) => last30.cycles.part_cycles,
   (last30: events.Last30Days, _: boolean) => last30.sim_use.station_use,
   (_: events.Last30Days, showLabor: boolean) => showLabor,
-  (cycles, statUse, showLabor): ReadonlyArray<OEEPoint> => {
+  (cycles, statUse, showLabor): ReadonlyArray<OEEBarSeries> => {
     const start = addDays(startOfToday(), -6);
     const end = addDays(startOfToday(), 1);
     const filteredCycles = LazySeq.ofIterable(cycles).filter(
@@ -439,26 +484,31 @@ const oeePointsSelector = createSelector(
       c => c.utilizationTime - c.plannedDownTime
     );
 
-    const statNames = plannedBins
+    const series: Array<OEEBarSeries> = [];
+    const statNames = actualBins
       .keySet()
-      .addAll(actualBins.keySet())
-      .map(e => e.station);
+      .addAll(plannedBins.keySet())
+      .map(e => e.station)
+      .toArray({ sortOn: x => x });
 
-    const points = [];
-    for (let d = start; d <= end; d = addDays(d, 1)) {
-      for (let stat of statNames) {
+    for (let stat of statNames) {
+      const points: Array<OEEBarPoint> = [];
+      for (let d = start; d <= end; d = addDays(d, 1)) {
         const dAndStat = new DayAndStation(d, stat);
-        const planned = plannedBins.get(dAndStat);
         const actual = actualBins.get(dAndStat);
+        const planned = plannedBins.get(dAndStat);
         points.push({
-          day: d,
-          station: stat,
-          actualHours: actual.getOrElse(0) / 60,
-          plannedHours: planned.getOrElse(0) / 60
+          x: d.toLocaleDateString(),
+          y: actual.getOrElse(0) / 60,
+          planned: planned.getOrElse(0) / 60
         });
       }
+      series.push({
+        station: stat,
+        points: points
+      });
     }
-    return points;
+    return series;
   }
 );
 
