@@ -50,7 +50,7 @@ import SearchIcon from "@material-ui/icons/Search";
 import { User } from "oidc-client";
 
 import OperationDashboard from "./operations/Dashboard";
-import { OperationLoadUnload, OperationMachines } from "./operations/DailyStationMonitor";
+import { OperationLoadUnload, OperationMachines } from "./operations/DailyStationOverview";
 import CostPerPiece from "./analysis/CostPerPiece";
 import Efficiency from "./analysis/Efficiency";
 import StationMonitor from "./station-monitor/StationMonitor";
