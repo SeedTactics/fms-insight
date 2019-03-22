@@ -67,12 +67,8 @@ import { PartIdenticon } from "../station-monitor/Material";
 import { LazySeq } from "../../data/lazyseq";
 import StationDataTable from "./StationDataTable";
 import { AnalysisPeriod } from "../../data/events";
-import {
-  binCyclesByDayAndStat,
-  binSimStationUseByDayAndStat,
-  binCyclesByDayAndPart,
-  binSimProductionByDayAndPart
-} from "../../data/results.oee";
+import { binCyclesByDayAndStat, binSimStationUseByDayAndStat } from "../../data/results.oee";
+import { binCyclesByDayAndPart, binSimProductionByDayAndPart } from "../../data/results.completed-parts";
 import { SimUseState } from "../../data/events.simuse";
 
 // --------------------------------------------------------------------------------

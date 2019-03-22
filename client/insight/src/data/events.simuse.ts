@@ -34,6 +34,7 @@ import * as api from "./api";
 import { duration } from "moment";
 import { Vector } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
+import { part_and_proc } from "./events.cycles";
 
 export interface SimStationUse {
   readonly station: string;
@@ -116,11 +117,14 @@ export function process_sim_use(
     plannedDownTime: duration(simUse.plannedDownTime).asMinutes()
   }));
 
-  let newProd = LazySeq.ofObject(newHistory.jobs).map(([_, j]) => ({
-    part: j.partName,
-    start: j.routeStartUTC,
-    quantity: j.cyclesOnFirstProcess.reduce((sum, p) => sum + p, 0)
-  }));
+  let newProd = LazySeq.ofObject(newHistory.jobs).flatMap(([_, j]) => {
+    const count = j.cyclesOnFirstProcess.reduce((sum, p) => sum + p, 0);
+    return LazySeq.ofRange(1, j.procsAndPaths.length + 1).map(proc => ({
+      part: part_and_proc(j.partName, proc),
+      start: j.routeStartUTC,
+      quantity: count
+    }));
+  });
 
   return {
     ...st,

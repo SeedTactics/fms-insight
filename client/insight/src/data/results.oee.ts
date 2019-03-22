@@ -31,12 +31,12 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { SimStationUse, SimProduction } from "./events.simuse";
+import { SimStationUse } from "./events.simuse";
 import { startOfDay, addMinutes, differenceInMinutes, addDays } from "date-fns";
-import { HashMap, fieldsHashCode, Vector } from "prelude-ts";
+import { HashMap, fieldsHashCode } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 import { CycleData } from "./events.cycles";
-import { PartCycleData, stat_name_and_num, part_and_proc } from "./events.cycles";
+import { PartCycleData, stat_name_and_num } from "./events.cycles";
 const copy = require("copy-to-clipboard");
 
 // --------------------------------------------------------------------------------
@@ -100,35 +100,6 @@ export function binCyclesByDayAndStat(
     .toMap(p => [new DayAndStation(p.day, p.station), p.value] as [DayAndStation, number], (v1, v2) => v1 + v2);
 }
 
-class DayAndPart {
-  constructor(public day: Date, public part: string) {}
-  equals(other: DayAndPart): boolean {
-    return this.day.getTime() === other.day.getTime() && this.part === other.part;
-  }
-  hashCode(): number {
-    return fieldsHashCode(this.day.getTime(), this.part);
-  }
-  toString(): string {
-    return `{day: ${this.day.toISOString()}}, part: ${this.part}}`;
-  }
-  adjustDay(f: (d: Date) => Date): DayAndPart {
-    return new DayAndPart(f(this.day), this.part);
-  }
-}
-
-export function binCyclesByDayAndPart(
-  cycles: Vector<PartCycleData>,
-  extractValue: (c: PartCycleData) => number
-): HashMap<DayAndPart, number> {
-  return LazySeq.ofIterable(cycles)
-    .map(point => ({
-      day: startOfDay(point.x),
-      part: part_and_proc(point.part, point.process),
-      value: extractValue(point)
-    }))
-    .toMap(p => [new DayAndPart(p.day, p.part), p.value] as [DayAndPart, number], (v1, v2) => v1 + v2);
-}
-
 // --------------------------------------------------------------------------------
 // Planned
 // --------------------------------------------------------------------------------
@@ -177,13 +148,6 @@ export function binSimStationUseByDayAndStat(
   return LazySeq.ofIterable(simUses)
     .flatMap(s => splitElapsedToDays(s, extractValue))
     .toMap(s => [new DayAndStation(s.day, s.station), s.value] as [DayAndStation, number], (v1, v2) => v1 + v2);
-}
-
-export function binSimProductionByDayAndPart(prod: Iterable<SimProduction>): HashMap<DayAndPart, number> {
-  return LazySeq.ofIterable(prod).toMap(
-    p => [new DayAndPart(startOfDay(p.start), p.part), p.quantity] as [DayAndPart, number],
-    (q1, q2) => q1 + q2
-  );
 }
 
 // --------------------------------------------------------------------------------
