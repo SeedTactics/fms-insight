@@ -42,7 +42,7 @@ import { LazySeq } from "../data/lazyseq";
 import Tooltip from "@material-ui/core/Tooltip";
 import IconButton from "@material-ui/core/IconButton";
 import ImportExport from "@material-ui/icons/ImportExport";
-import { copyLogEntriesToClipboard } from "../data/clipboard-table";
+import { copyLogEntriesToClipboard } from "../data/events.clipboard";
 import { createStyles, withStyles, WithStyles } from "@material-ui/core/styles";
 
 const logStyles = createStyles({

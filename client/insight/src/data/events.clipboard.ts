@@ -41,15 +41,15 @@ import { InspectionLogEntry } from "./events";
 import { groupInspectionsByPath } from "./events.inspection";
 const copy = require("copy-to-clipboard");
 
-export interface ClipboardTablePoint {
+export interface HeatmapClipboardPoint {
   readonly x: Date;
   readonly y: string;
   readonly label: string;
 }
 
-class PointsTableCell {
+class HeatmapClipboardCell {
   public constructor(public readonly x: number, public readonly y: string) {}
-  equals(other: PointsTableCell): boolean {
+  equals(other: HeatmapClipboardCell): boolean {
     return this.x === other.x && this.y === other.y;
   }
   hashCode(): number {
@@ -60,9 +60,9 @@ class PointsTableCell {
   }
 }
 
-export function buildPointsTable(yTitle: string, points: ReadonlyArray<ClipboardTablePoint>): string {
+export function buildHeatmapTable(yTitle: string, points: ReadonlyArray<HeatmapClipboardPoint>): string {
   const cells = LazySeq.ofIterable(points).toMap(
-    p => [new PointsTableCell(p.x.getTime(), p.y), p],
+    p => [new HeatmapClipboardCell(p.x.getTime(), p.y), p],
     (_, c) => c // cells should be unique, but just in case take the second
   );
   const days = LazySeq.ofIterable(points)
@@ -80,7 +80,7 @@ export function buildPointsTable(yTitle: string, points: ReadonlyArray<Clipboard
   for (let y of rows) {
     table += "<tr><th>" + y + "</th>";
     for (let x of days) {
-      const cell = cells.get(new PointsTableCell(x, y));
+      const cell = cells.get(new HeatmapClipboardCell(x, y));
       if (cell.isSome()) {
         table += "<td>" + cell.get().label + "</td>";
       } else {
@@ -93,19 +93,23 @@ export function buildPointsTable(yTitle: string, points: ReadonlyArray<Clipboard
   return table;
 }
 
-export function copyPointsToClipboard(yTitle: string, points: ReadonlyArray<ClipboardTablePoint>): void {
-  copy(buildPointsTable(yTitle, points));
+export function copyHeatmapToClipboard(yTitle: string, points: ReadonlyArray<HeatmapClipboardPoint>): void {
+  copy(buildHeatmapTable(yTitle, points));
 }
 
 export function buildCycleTable(
   cycles: FilteredStationCycles,
+  includeStats: boolean,
   startD: Date | undefined,
   endD: Date | undefined
 ): string {
   let table = "<table>\n<thead><tr>";
   table += "<th>Date</th><th>Part</th><th>Station</th><th>Pallet</th>";
   table += "<th>Serial</th><th>Workorder</th><th>Inspection</th>";
-  table += "<th>Elapsed Min</th><th>Active Min</th><th>Operator</th>";
+  table += "<th>Elapsed Min</th><th>Active Min</th>";
+  if (includeStats) {
+    table += "<th>Median Elapsed Min</th><th>Median Deviation</th>";
+  }
   table += "</tr></thead>\n<tbody>\n";
 
   let filteredCycles = LazySeq.ofIterable(cycles.data)
@@ -124,7 +128,10 @@ export function buildCycleTable(
     table += "<td>" + format_cycle_inspection(cycle) + "</td>";
     table += "<td>" + cycle.y.toFixed(1) + "</td>";
     table += "<td>" + cycle.active.toFixed(1) + "</td>";
-    table += "<td>" + cycle.operator + "</td>";
+    if (includeStats) {
+      table += "<td>" + cycle.medianElapsed.toFixed(1) + "</td>";
+      table += "<td>" + cycle.MAD_aboveMinutes.toFixed(1) + "</td>";
+    }
     table += "</tr>\n";
   }
   table += "</tbody>\n</table>";
@@ -133,9 +140,10 @@ export function buildCycleTable(
 
 export function copyCyclesToClipboard(
   cycles: FilteredStationCycles,
+  includeStats: boolean,
   zoom: { start: Date; end: Date } | undefined
 ): void {
-  copy(buildCycleTable(cycles, zoom ? zoom.start : undefined, zoom ? zoom.end : undefined));
+  copy(buildCycleTable(cycles, includeStats, zoom ? zoom.start : undefined, zoom ? zoom.end : undefined));
 }
 
 function stat_name(e: Readonly<api.ILogEntry>): string {
@@ -270,4 +278,33 @@ export function copyInspectionEntriesToClipboard(
   entries: ReadonlyArray<InspectionLogEntry>
 ): void {
   copy(buildInspectionTable(part, inspType, entries));
+}
+
+export interface OEEClipboardPoint {
+  readonly day: Date;
+  readonly y: number;
+  readonly planned: number;
+  readonly station: string;
+}
+
+export function buildOeeTable(points: LazySeq<OEEClipboardPoint>) {
+  let table = "<table>\n<thead><tr>";
+  table += "<th>Day</th><th>Station</th><th>Actual Hours</th><th>Planned Hours</th>";
+  table += "</tr></thead>\n<tbody>\n";
+
+  for (let pt of points) {
+    table += "<tr>";
+    table += "<td>" + pt.day.toLocaleDateString() + "</td>";
+    table += "<td>" + pt.station + "</td>";
+    table += "<td>" + pt.y.toFixed(1) + "</td>";
+    table += "<td>" + pt.planned.toFixed(1) + "</td>";
+    table += "</tr>\n";
+  }
+
+  table += "</tbody>\n</table>";
+  return table;
+}
+
+export function copyOeeToClipboard(points: LazySeq<OEEClipboardPoint>): void {
+  copy(buildOeeTable(points));
 }

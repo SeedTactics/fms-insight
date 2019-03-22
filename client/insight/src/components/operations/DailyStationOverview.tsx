@@ -62,7 +62,7 @@ import {
 import * as events from "../../data/events";
 import * as matDetails from "../../data/material-details";
 import { CycleChart, CycleChartPoint, ExtraTooltip } from "../analysis/CycleChart";
-import { copyCyclesToClipboard } from "../../data/clipboard-table";
+import { copyCyclesToClipboard, copyOeeToClipboard } from "../../data/events.clipboard";
 import * as guiState from "../../data/gui-state";
 import { LazySeq } from "../../data/lazyseq";
 import { OEEProps, OEEChart, OEEBarSeries, OEEBarPoint, OEETable } from "./OEEChart";
@@ -86,6 +86,15 @@ export function OutlierCycles(props: OutlierCycleProps) {
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
             <BugIcon style={{ color: "#6D4C41" }} />
             <div style={{ marginLeft: "10px", marginRight: "3em" }}>Outlier Cycles</div>
+            <div style={{ flexGrow: 1 }} />
+            <Tooltip title="Copy to Clipboard">
+              <IconButton
+                style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+                onClick={() => copyCyclesToClipboard(props.points, true, undefined)}
+              >
+                <ImportExport />
+              </IconButton>
+            </Tooltip>
           </div>
         }
         subheader={
@@ -154,7 +163,10 @@ function StationOEEChart(p: OEEProps) {
             <div style={{ marginLeft: "10px", marginRight: "3em" }}>OEE</div>
             <div style={{ flexGrow: 1 }} />
             <Tooltip title="Copy to Clipboard">
-              <IconButton style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}>
+              <IconButton
+                style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+                onClick={() => copyOeeToClipboard(LazySeq.ofIterable(p.points).flatMap(s => s.points))}
+              >
                 <ImportExport />
               </IconButton>
             </Tooltip>
@@ -307,7 +319,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
             {props.points.data.length() > 0 ? (
               <Tooltip title="Copy to Clipboard">
                 <IconButton
-                  onClick={() => copyCyclesToClipboard(props.points, undefined)}
+                  onClick={() => copyCyclesToClipboard(props.points, false, undefined)}
                   style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
                 >
                   <ImportExport />

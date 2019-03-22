@@ -65,7 +65,7 @@ import {
 } from "../../data/events.cycles";
 import { PartIdenticon } from "../station-monitor/Material";
 import { LazySeq } from "../../data/lazyseq";
-import { copyCyclesToClipboard } from "../../data/clipboard-table";
+import { copyCyclesToClipboard } from "../../data/events.clipboard";
 import StationDataTable from "./StationDataTable";
 
 // --------------------------------------------------------------------------------
@@ -130,7 +130,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
             {props.points.data.length() > 0 ? (
               <Tooltip title="Copy to Clipboard">
                 <IconButton
-                  onClick={() => copyCyclesToClipboard(props.points, props.zoomDateRange)}
+                  onClick={() => copyCyclesToClipboard(props.points, false, props.zoomDateRange)}
                   style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
                 >
                   <ImportExport />

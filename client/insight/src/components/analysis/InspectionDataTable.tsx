@@ -143,7 +143,13 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
             <ExpansionPanelDetails>
               <div style={{ width: "100%" }}>
                 <Table>
-                  <DataTableHead columns={columns} onRequestSort={handleRequestSort} orderBy={orderBy} order={order} />
+                  <DataTableHead
+                    columns={columns}
+                    onRequestSort={handleRequestSort}
+                    orderBy={orderBy}
+                    order={order}
+                    showDetailsCol
+                  />
                   <DataTableBody
                     columns={columns}
                     pageData={points.material.drop(page * rowsPerPage).take(rowsPerPage)}
