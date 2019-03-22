@@ -50,22 +50,27 @@ const DocumentTitle = require("react-document-title"); // https://github.com/gae
 import StationDataTable from "../analysis/StationDataTable";
 import { connect, Store, DispatchAction, mkAC } from "../../store/store";
 import { PartIdenticon } from "../station-monitor/Material";
+import { PartCycleData } from "../../data/events.cycles";
 import {
-  PartCycleData,
   filterStationCycles,
   outlierCycles,
   FilteredStationCycles,
   FilterAnyMachineKey,
   FilterAnyLoadKey,
-  DayAndStation
-} from "../../data/events.cycles";
+  copyCyclesToClipboard
+} from "../../data/results.cycles";
 import * as events from "../../data/events";
 import * as matDetails from "../../data/material-details";
 import { CycleChart, CycleChartPoint, ExtraTooltip } from "../analysis/CycleChart";
-import { copyCyclesToClipboard, copyOeeToClipboard } from "../../data/events.clipboard";
 import * as guiState from "../../data/gui-state";
 import { LazySeq } from "../../data/lazyseq";
 import { OEEProps, OEEChart, OEEBarSeries, OEEBarPoint, OEETable } from "./OEEChart";
+import {
+  copyOeeToClipboard,
+  binCyclesByDayAndStat,
+  binSimStationUseByDayAndStat,
+  DayAndStation
+} from "../../data/results.oee";
 
 // -----------------------------------------------------------------------------------
 // Outliers
@@ -201,14 +206,11 @@ const oeePointsSelector = createSelector(
     const filteredCycles = LazySeq.ofIterable(cycles).filter(
       e => showLabor === e.isLabor && e.x >= start && e.x <= end
     );
-    const actualBins = events.binCyclesByDayAndStat(filteredCycles, c => c.active);
+    const actualBins = binCyclesByDayAndStat(filteredCycles, c => c.active);
     const filteredStatUse = LazySeq.ofIterable(statUse).filter(
       e => showLabor === e.station.startsWith("L/U") && e.end >= start && e.start <= end
     );
-    const plannedBins = events.binSimStationUseByDayAndStat(
-      filteredStatUse,
-      c => c.utilizationTime - c.plannedDownTime
-    );
+    const plannedBins = binSimStationUseByDayAndStat(filteredStatUse, c => c.utilizationTime - c.plannedDownTime);
 
     const series: Array<OEEBarSeries> = [];
     const statNames = actualBins

@@ -34,12 +34,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
-import { MaterialSummary } from "../../data/events";
 import { Store, connect } from "../../store/store";
 import { WhiteboardRegion, InProcMaterial } from "./Material";
 import * as matDetails from "../../data/material-details";
 import { AllMaterialBins, selectAllMaterialIntoBins } from "../../data/all-material-bins";
 import { createSelector } from "reselect";
+import { MaterialSummary } from "../../data/events.matsummary";
 
 interface AllMatProps {
   readonly allMat: AllMaterialBins;

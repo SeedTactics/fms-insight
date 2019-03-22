@@ -38,9 +38,10 @@ import ExpansionPanelSummary from "@material-ui/core/ExpansionPanelSummary";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 
 import { Column, DataTableHead, DataTableActions, DataTableBody } from "./DataTable";
-import { TriggeredInspectionEntry, InspectionLogEntry, groupInspectionsByPath } from "../../data/events.inspection";
+import { InspectionLogEntry } from "../../data/events.inspection";
 import { Typography } from "@material-ui/core";
 import { HashMap, ToOrderable } from "prelude-ts";
+import { TriggeredInspectionEntry, groupInspectionsByPath } from "../../data/results.inspection";
 
 enum ColumnId {
   Date,

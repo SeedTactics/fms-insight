@@ -57,7 +57,6 @@ import * as guiState from "../../data/gui-state";
 import { Store, connect, mkAC, AppActionBeforeMiddleware } from "../../store/store";
 import * as matDetails from "../../data/material-details";
 import * as currentSt from "../../data/current-status";
-import { MaterialSummary } from "../../data/events";
 import SelectWorkorderDialog from "./SelectWorkorder";
 import SetSerialDialog from "./EnterSerial";
 import SelectInspTypeDialog from "./SelectInspType";
@@ -65,6 +64,7 @@ import { MoveMaterialArrowContainer, MoveMaterialArrowNode } from "./MoveMateria
 import { MoveMaterialNodeKindType } from "../../data/move-arrows";
 import { SortEnd } from "react-sortable-hoc";
 import { HashMap } from "prelude-ts";
+import { MaterialSummary } from "../../data/events.matsummary";
 
 function stationPalMaterialStatus(mat: Readonly<api.IInProcessMaterial>, dateOfCurrentStatus: Date): JSX.Element {
   const name = mat.partName + "-" + mat.process.toString();

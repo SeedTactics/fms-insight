@@ -32,10 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as api from "./api";
 import { duration } from "moment";
-import { startOfDay } from "date-fns";
-import { Vector, fieldsHashCode, HashMap } from "prelude-ts";
+import { Vector } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
-import { DayAndStation } from "./events.cycles";
 
 export interface SimStationUse {
   readonly station: string;
@@ -129,70 +127,4 @@ export function process_sim_use(
     station_use: stations.appendAll(newStationUse),
     production: production.appendAll(newProd)
   };
-}
-
-interface DayStatAndVal {
-  day: Date;
-  station: string;
-  value: number;
-}
-
-function splitElapsedToDays(simUse: SimStationUse, extractValue: (c: SimStationUse) => number): DayStatAndVal[] {
-  const startDay = startOfDay(simUse.start);
-  const endDay = startOfDay(simUse.end);
-
-  if (startDay.getTime() === endDay.getTime()) {
-    return [
-      {
-        day: startDay,
-        station: simUse.station,
-        value: extractValue(simUse)
-      }
-    ];
-  } else {
-    const totalVal = extractValue(simUse);
-    const endDayPercentage =
-      (simUse.end.getTime() - endDay.getTime()) / (simUse.end.getTime() - simUse.start.getTime());
-    return [
-      {
-        day: startDay,
-        station: simUse.station,
-        value: totalVal * (1 - endDayPercentage)
-      },
-      {
-        day: endDay,
-        station: simUse.station,
-        value: totalVal * endDayPercentage
-      }
-    ];
-  }
-}
-
-export function binSimStationUseByDayAndStat(
-  simUses: Iterable<SimStationUse>,
-  extractValue: (c: SimStationUse) => number
-): HashMap<DayAndStation, number> {
-  return LazySeq.ofIterable(simUses)
-    .flatMap(s => splitElapsedToDays(s, extractValue))
-    .toMap(s => [new DayAndStation(s.day, s.station), s.value] as [DayAndStation, number], (v1, v2) => v1 + v2);
-}
-
-class DayAndPart {
-  constructor(public readonly day: Date, public readonly part: string) {}
-  equals(other: DayAndPart): boolean {
-    return this.day.getTime() === other.day.getTime() && this.part === other.part;
-  }
-  hashCode(): number {
-    return fieldsHashCode(this.day.getTime(), this.part);
-  }
-  toString(): string {
-    return `{day: ${this.day.toISOString()}, part: ${this.part}}`;
-  }
-}
-
-export function binSimProductionByDayAndPart(prod: Iterable<SimProduction>): HashMap<DayAndPart, number> {
-  return LazySeq.ofIterable(prod).toMap(
-    p => [new DayAndPart(startOfDay(p.start), p.part), p.quantity] as [DayAndPart, number],
-    (q1, q2) => q1 + q2
-  );
 }

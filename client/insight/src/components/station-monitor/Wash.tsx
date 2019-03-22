@@ -38,14 +38,13 @@ import Button from "@material-ui/core/Button";
 import { createSelector } from "reselect";
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
-import { MaterialSummary } from "../../data/events";
 import { Store, connect, mkAC } from "../../store/store";
 import { MaterialDialog, WhiteboardRegion, MatSummary, MaterialDialogProps, InstructionButton } from "./Material";
 import * as matDetails from "../../data/material-details";
 import * as guiState from "../../data/gui-state";
 import * as api from "../../data/api";
 import SelectWorkorderDialog from "./SelectWorkorder";
-import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
+import { MaterialSummaryAndCompletedData, MaterialSummary } from "../../data/events.matsummary";
 import Tooltip from "@material-ui/core/Tooltip";
 import { HashMap } from "prelude-ts";
 import { LazySeq } from "../../data/lazyseq";

@@ -32,8 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as api from "./api";
 import { duration } from "moment";
-import { startOfDay, addMinutes, differenceInMinutes } from "date-fns";
-import { HashMap, HashSet, Vector, fieldsHashCode, Option } from "prelude-ts";
+import { HashMap, HashSet, Vector, Option } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 
 export interface CycleData {
@@ -98,7 +97,7 @@ export type ExpireOldData =
   | { type: ExpireOldDataType.ExpireEarlierThan; d: Date }
   | { type: ExpireOldDataType.NoExpire };
 
-function part_and_proc(part: string, proc: number): string {
+export function part_and_proc(part: string, proc: number): string {
   return part + "-" + proc.toString();
 }
 
@@ -483,173 +482,4 @@ export function process_events(
   } else {
     return newSt;
   }
-}
-
-export interface FilteredStationCycles {
-  readonly seriesLabel: string;
-  readonly data: HashMap<string, ReadonlyArray<PartCycleData>>;
-}
-
-export const FilterAnyMachineKey = "@@@_FMSInsight_FilterAnyMachineKey_@@@";
-export const FilterAnyLoadKey = "@@@_FMSInsigt_FilterAnyLoadKey_@@@";
-
-export function filterStationCycles(
-  allCycles: Vector<PartCycleData>,
-  zoom: { start: Date; end: Date } | undefined,
-  partAndProc?: string,
-  pallet?: string,
-  station?: string
-): FilteredStationCycles {
-  const groupByPal = partAndProc && station && station !== FilterAnyMachineKey && station !== FilterAnyLoadKey;
-  const groupByPart = pallet && station && station !== FilterAnyMachineKey && station !== FilterAnyLoadKey;
-  return {
-    seriesLabel: groupByPal ? "Pallet" : groupByPart ? "Part" : "Station",
-    data: LazySeq.ofIterable(allCycles)
-      .filter(e => {
-        if (zoom && (e.x < zoom.start || e.x > zoom.end)) {
-          return false;
-        }
-        if (partAndProc && part_and_proc(e.part, e.process) !== partAndProc) {
-          return false;
-        }
-        if (pallet && e.pallet !== pallet) {
-          return false;
-        }
-
-        if (station === FilterAnyMachineKey) {
-          if (e.isLabor) {
-            return false;
-          }
-        } else if (station === FilterAnyLoadKey) {
-          if (!e.isLabor) {
-            return false;
-          }
-        } else if (station && stat_name_and_num(e.stationGroup, e.stationNumber) !== station) {
-          return false;
-        }
-
-        return true;
-      })
-      .groupBy(e => {
-        if (groupByPal) {
-          return e.pallet;
-        } else if (groupByPart) {
-          return part_and_proc(e.part, e.process);
-        } else {
-          return stat_name_and_num(e.stationGroup, e.stationNumber);
-        }
-      })
-      .mapValues(e => e.toArray())
-  };
-}
-
-export function outlierCycles(
-  allCycles: Vector<PartCycleData>,
-  onlyLabor: boolean,
-  start: Date,
-  end: Date
-): FilteredStationCycles {
-  return {
-    seriesLabel: "Part",
-    data: LazySeq.ofIterable(allCycles)
-      .filter(e => onlyLabor === e.isLabor && e.outlier && e.x >= start && e.x <= end)
-      .groupBy(e => part_and_proc(e.part, e.process))
-      .mapValues(e => e.toArray())
-  };
-}
-
-function splitPartCycleToDays(cycle: CycleData, totalVal: number): Array<{ day: Date; value: number }> {
-  const startDay = startOfDay(cycle.x);
-  const endTime = addMinutes(cycle.x, totalVal);
-  const endDay = startOfDay(endTime);
-  if (startDay.getTime() === endDay.getTime()) {
-    return [
-      {
-        day: startDay,
-        value: totalVal
-      }
-    ];
-  } else {
-    const startDayPct = differenceInMinutes(endDay, cycle.x) / totalVal;
-    return [
-      {
-        day: startDay,
-        value: totalVal * startDayPct
-      },
-      {
-        day: endDay,
-        value: totalVal * (1 - startDayPct)
-      }
-    ];
-  }
-}
-
-export class DayAndStation {
-  constructor(public readonly day: Date, public readonly station: string) {}
-  equals(other: DayAndStation): boolean {
-    return this.day.getTime() === other.day.getTime() && this.station === other.station;
-  }
-  hashCode(): number {
-    return fieldsHashCode(this.day.getTime(), this.station);
-  }
-  toString(): string {
-    return `{day: ${this.day.toISOString()}}, station: ${this.station}}`;
-  }
-  adjustDay(f: (d: Date) => Date): DayAndStation {
-    return new DayAndStation(f(this.day), this.station);
-  }
-}
-
-export function binCyclesByDayAndStat(
-  cycles: Iterable<PartCycleData>,
-  extractValue: (c: PartCycleData) => number
-): HashMap<DayAndStation, number> {
-  return LazySeq.ofIterable(cycles)
-    .flatMap(point =>
-      splitPartCycleToDays(point, extractValue(point)).map(x => ({
-        ...x,
-        station: stat_name_and_num(point.stationGroup, point.stationNumber),
-        isLabor: point.isLabor
-      }))
-    )
-    .toMap(p => [new DayAndStation(p.day, p.station), p.value] as [DayAndStation, number], (v1, v2) => v1 + v2);
-}
-
-class DayAndPart {
-  constructor(public day: Date, public part: string) {}
-  equals(other: DayAndPart): boolean {
-    return this.day.getTime() === other.day.getTime() && this.part === other.part;
-  }
-  hashCode(): number {
-    return fieldsHashCode(this.day.getTime(), this.part);
-  }
-  toString(): string {
-    return `{day: ${this.day.toISOString()}}, part: ${this.part}}`;
-  }
-  adjustDay(f: (d: Date) => Date): DayAndPart {
-    return new DayAndPart(f(this.day), this.part);
-  }
-}
-
-export function binCyclesByDayAndPart(
-  cycles: Vector<PartCycleData>,
-  extractValue: (c: PartCycleData) => number
-): HashMap<DayAndPart, number> {
-  return LazySeq.ofIterable(cycles)
-    .map(point => ({
-      day: startOfDay(point.x),
-      part: part_and_proc(point.part, point.process),
-      value: extractValue(point)
-    }))
-    .toMap(p => [new DayAndPart(p.day, p.part), p.value] as [DayAndPart, number], (v1, v2) => v1 + v2);
-}
-
-export function stationMinutes(partCycles: Vector<PartCycleData>, cutoff: Date): HashMap<string, number> {
-  return LazySeq.ofIterable(partCycles)
-    .filter(p => p.x >= cutoff)
-    .map(p => ({
-      station: stat_name_and_num(p.stationGroup, p.stationNumber),
-      active: p.active
-    }))
-    .toMap(x => [x.station, x.active] as [string, number], (v1, v2) => v1 + v2);
 }

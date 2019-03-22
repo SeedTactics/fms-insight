@@ -52,7 +52,7 @@ import { PartAndInspType, InspectionLogEntry } from "../../data/events.inspectio
 import { HashMap } from "prelude-ts";
 import { addDays, startOfToday, addMonths } from "date-fns";
 import InspectionDataTable from "./InspectionDataTable";
-import { copyInspectionEntriesToClipboard } from "../../data/events.clipboard";
+import { copyInspectionEntriesToClipboard } from "../../data/results.inspection";
 
 interface InspectionSankeyDiagramProps {
   readonly sankey: SankeyDiagram;

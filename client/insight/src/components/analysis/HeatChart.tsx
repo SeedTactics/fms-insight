@@ -44,7 +44,7 @@ import ImportExport from "@material-ui/icons/ImportExport";
 
 import * as gui from "../../data/gui-state";
 import { LazySeq } from "../../data/lazyseq";
-import { copyHeatmapToClipboard } from "../../data/events.clipboard";
+import { copyHeatmapToClipboard } from "../../data/results.oee";
 
 export interface HeatChartPoint {
   readonly x: Date;

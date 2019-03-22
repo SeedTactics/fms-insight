@@ -55,9 +55,8 @@ import { SortableElement, SortableContainer } from "react-sortable-hoc";
 import * as api from "../../data/api";
 import * as matDetails from "../../data/material-details";
 import { LogEntries } from "../LogEntry";
-import { MaterialSummary } from "../../data/events";
 import { connect, mkAC } from "../../store/store";
-import { inproc_mat_to_summary, MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
+import { inproc_mat_to_summary, MaterialSummaryAndCompletedData, MaterialSummary } from "../../data/events.matsummary";
 import { LazySeq } from "../../data/lazyseq";
 
 /*

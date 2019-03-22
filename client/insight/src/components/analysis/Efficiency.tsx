@@ -51,22 +51,29 @@ const DocumentTitle = require("react-document-title"); // https://github.com/gae
 import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
 import { CycleChart, CycleChartPoint, ExtraTooltip } from "./CycleChart";
 import { SelectableHeatChart, HeatChartPoint } from "./HeatChart";
-import * as events from "../../data/events";
 import { Store, connect, mkAC, DispatchAction } from "../../store/store";
 import * as guiState from "../../data/gui-state";
 import * as matDetails from "../../data/material-details";
 import InspectionSankey from "./InspectionSankey";
+import { PartCycleData, CycleData, CycleState } from "../../data/events.cycles";
 import {
-  PartCycleData,
   filterStationCycles,
   FilteredStationCycles,
   FilterAnyMachineKey,
-  FilterAnyLoadKey
-} from "../../data/events.cycles";
+  FilterAnyLoadKey,
+  copyCyclesToClipboard
+} from "../../data/results.cycles";
 import { PartIdenticon } from "../station-monitor/Material";
 import { LazySeq } from "../../data/lazyseq";
-import { copyCyclesToClipboard } from "../../data/events.clipboard";
 import StationDataTable from "./StationDataTable";
+import { AnalysisPeriod } from "../../data/events";
+import {
+  binCyclesByDayAndStat,
+  binSimStationUseByDayAndStat,
+  binCyclesByDayAndPart,
+  binSimProductionByDayAndPart
+} from "../../data/results.oee";
+import { SimUseState } from "../../data/events.simuse";
 
 // --------------------------------------------------------------------------------
 // Station Cycles
@@ -78,7 +85,7 @@ interface PartStationCycleChartProps {
   readonly palletNames: HashSet<string>;
   readonly points: FilteredStationCycles;
   readonly default_date_range: Date[];
-  readonly analysisPeriod: events.AnalysisPeriod;
+  readonly analysisPeriod: AnalysisPeriod;
   readonly selectedPart?: string;
   readonly selectedPallet?: string;
   readonly selectedStation?: string;
@@ -253,7 +260,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
             default_date_range={props.default_date_range}
             current_date_zoom={props.zoomDateRange}
             set_date_zoom_range={props.setZoomRange}
-            last30_days={props.analysisPeriod === events.AnalysisPeriod.Last30Days}
+            last30_days={props.analysisPeriod === AnalysisPeriod.Last30Days}
             openDetails={props.openMaterial}
             showWorkorderAndInspect={true}
             showMedian={false}
@@ -267,7 +274,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
 const stationCyclePointsSelector = createSelector(
   [
     (st: Store) =>
-      st.Events.analysis_period === events.AnalysisPeriod.Last30Days
+      st.Events.analysis_period === AnalysisPeriod.Last30Days
         ? st.Events.last30.cycles.part_cycles
         : st.Events.selected_month.cycles.part_cycles,
     (st: Store) => st.Gui.station_cycle_selected_part,
@@ -291,7 +298,7 @@ const stationCyclePointsSelector = createSelector(
 const ConnectedPartStationCycleChart = connect(
   st => ({
     allParts:
-      st.Events.analysis_period === events.AnalysisPeriod.Last30Days
+      st.Events.analysis_period === AnalysisPeriod.Last30Days
         ? st.Events.last30.cycles.part_and_proc_names
         : st.Events.selected_month.cycles.part_and_proc_names,
     points: stationCyclePointsSelector(st),
@@ -301,15 +308,15 @@ const ConnectedPartStationCycleChart = connect(
     zoomDateRange: st.Gui.station_cycle_date_zoom,
     analysisPeriod: st.Events.analysis_period,
     stationNames:
-      st.Events.analysis_period === events.AnalysisPeriod.Last30Days
+      st.Events.analysis_period === AnalysisPeriod.Last30Days
         ? st.Events.last30.cycles.station_names
         : st.Events.selected_month.cycles.station_names,
     palletNames:
-      st.Events.analysis_period === events.AnalysisPeriod.Last30Days
+      st.Events.analysis_period === AnalysisPeriod.Last30Days
         ? st.Events.last30.cycles.pallet_names
         : st.Events.selected_month.cycles.pallet_names,
     default_date_range:
-      st.Events.analysis_period === events.AnalysisPeriod.Last30Days
+      st.Events.analysis_period === AnalysisPeriod.Last30Days
         ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
         : [st.Events.analysis_period_month, addMonths(st.Events.analysis_period_month, 1)]
   }),
@@ -325,7 +332,7 @@ const ConnectedPartStationCycleChart = connect(
 // --------------------------------------------------------------------------------
 
 interface PalletCycleChartProps {
-  readonly points: HashMap<string, ReadonlyArray<events.CycleData>>;
+  readonly points: HashMap<string, ReadonlyArray<CycleData>>;
   readonly default_date_range: Date[];
   readonly selected?: string;
   readonly setSelected: (s: string) => void;
@@ -334,7 +341,7 @@ interface PalletCycleChartProps {
 }
 
 function PalletCycleChart(props: PalletCycleChartProps) {
-  let points = HashMap.empty<string, ReadonlyArray<events.CycleData>>();
+  let points = HashMap.empty<string, ReadonlyArray<CycleData>>();
   if (props.selected) {
     const palData = props.points.get(props.selected);
     if (palData.isSome()) {
@@ -391,7 +398,7 @@ function PalletCycleChart(props: PalletCycleChartProps) {
 }
 
 function palletCycleSelector(st: Store) {
-  if (st.Events.analysis_period === events.AnalysisPeriod.Last30Days) {
+  if (st.Events.analysis_period === AnalysisPeriod.Last30Days) {
     const now = addDays(startOfToday(), 1);
     const oneMonthAgo = addDays(now, -30);
     return {
@@ -447,9 +454,9 @@ function StationOeeHeatmap(props: HeatmapProps) {
 }
 
 const stationOeeActualPointsSelector = createSelector(
-  (cycles: events.CycleState) => cycles.part_cycles,
+  (cycles: CycleState) => cycles.part_cycles,
   cycles => {
-    let pts = events.binCyclesByDayAndStat(cycles, c => c.active);
+    let pts = binCyclesByDayAndStat(cycles, c => c.active);
     return LazySeq.ofIterable(pts)
       .map(([dayAndStat, val]) => {
         const pct = val / (24 * 60);
@@ -473,9 +480,9 @@ const stationOeeActualPointsSelector = createSelector(
 );
 
 const stationOeePlannedPointsSelector = createSelector(
-  (sim: events.SimUseState) => sim.station_use,
+  (sim: SimUseState) => sim.station_use,
   statUse => {
-    let pts = events.binSimStationUseByDayAndStat(statUse, c => c.utilizationTime - c.plannedDownTime);
+    let pts = binSimStationUseByDayAndStat(statUse, c => c.utilizationTime - c.plannedDownTime);
     return LazySeq.ofIterable(pts)
       .map(([dayAndStat, val]) => {
         const pct = val / (24 * 60);
@@ -499,9 +506,9 @@ const stationOeePlannedPointsSelector = createSelector(
 );
 
 function stationOeePoints(st: Store) {
-  let cycles: events.CycleState;
-  let sim: events.SimUseState;
-  if (st.Events.analysis_period === events.AnalysisPeriod.Last30Days) {
+  let cycles: CycleState;
+  let sim: SimUseState;
+  if (st.Events.analysis_period === AnalysisPeriod.Last30Days) {
     cycles = st.Events.last30.cycles;
     sim = st.Events.last30.sim_use;
   } else {
@@ -553,9 +560,9 @@ function CompletedCountHeatmap(props: HeatmapProps) {
 }
 
 const completedActualPointsSelector = createSelector(
-  (cycles: events.CycleState) => cycles.part_cycles,
+  (cycles: CycleState) => cycles.part_cycles,
   cycles => {
-    let pts = events.binCyclesByDayAndPart(cycles, c => (c.completed ? 1 : 0));
+    let pts = binCyclesByDayAndPart(cycles, c => (c.completed ? 1 : 0));
     return LazySeq.ofIterable(pts)
       .map(([dayAndPart, val]) => {
         return {
@@ -578,9 +585,9 @@ const completedActualPointsSelector = createSelector(
 );
 
 const completedPlannedPointsSelector = createSelector(
-  (simUse: events.SimUseState) => simUse.production,
+  (simUse: SimUseState) => simUse.production,
   production => {
-    let pts = events.binSimProductionByDayAndPart(production);
+    let pts = binSimProductionByDayAndPart(production);
     return LazySeq.ofIterable(pts)
       .map(([dayAndPart, val]) => {
         return {
@@ -603,9 +610,9 @@ const completedPlannedPointsSelector = createSelector(
 );
 
 function completedPoints(st: Store) {
-  let cycles: events.CycleState;
-  let sim: events.SimUseState;
-  if (st.Events.analysis_period === events.AnalysisPeriod.Last30Days) {
+  let cycles: CycleState;
+  let sim: SimUseState;
+  if (st.Events.analysis_period === AnalysisPeriod.Last30Days) {
     cycles = st.Events.last30.cycles;
     sim = st.Events.last30.sim_use;
   } else {
