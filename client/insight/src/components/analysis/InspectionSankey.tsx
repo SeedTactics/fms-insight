@@ -174,7 +174,7 @@ class InspectionSankey extends React.Component<InspectionSankeyProps, Inspection
                 alignItems: "center"
               }}
             >
-              <SearchIcon />
+              <SearchIcon style={{ color: "#6D4C41" }} />
               <div style={{ marginLeft: "10px", marginRight: "3em" }}>Inspections</div>
               <div style={{ flexGrow: 1 }} />
               {curData ? (
