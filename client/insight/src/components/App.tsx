@@ -72,6 +72,7 @@ import { BasicMaterialDialog } from "./station-monitor/Material";
 import { CompletedParts } from "./operations/CompletedParts";
 import { FailedPartLookup } from "./quality/FailedPartLookup";
 import { QualityPaths } from "./quality/QualityPaths";
+import { QualityDashboard } from "./quality/RecentFailedInspections";
 
 const tabsStyle = {
   alignSelf: "flex-end" as "flex-end",
@@ -383,7 +384,7 @@ class App extends React.PureComponent<AppConnectedProps> {
           break;
 
         case routes.RouteLocation.Quality_Dashboard:
-          page = <p>Quality Dashboard</p>;
+          page = <QualityDashboard />;
           navigation = QualityTabs;
           showAlarms = false;
           break;
