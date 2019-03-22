@@ -94,6 +94,14 @@ class HeatChart extends React.PureComponent<HeatChartProps, HeatChartState> {
           data={this.props.points}
           onValueMouseOver={(pt: HeatChartPoint) => this.setState({ selected_point: pt })}
           onValueMouseOut={() => this.setState({ selected_point: undefined })}
+          style={{
+            stroke: "white",
+            strokeWidth: "2px",
+            rectStyle: {
+              rx: 10,
+              ry: 10
+            }
+          }}
         />
         {this.state.selected_point === undefined ? (
           undefined
