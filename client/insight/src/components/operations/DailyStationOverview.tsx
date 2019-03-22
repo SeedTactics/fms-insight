@@ -63,14 +63,8 @@ import * as events from "../../data/events";
 import * as matDetails from "../../data/material-details";
 import { CycleChart, CycleChartPoint, ExtraTooltip } from "../analysis/CycleChart";
 import * as guiState from "../../data/gui-state";
-import { LazySeq } from "../../data/lazyseq";
-import { OEEProps, OEEChart, OEEBarSeries, OEEBarPoint, OEETable } from "./OEEChart";
-import {
-  copyOeeToClipboard,
-  binCyclesByDayAndStat,
-  binSimStationUseByDayAndStat,
-  DayAndStation
-} from "../../data/results.oee";
+import { OEEProps, OEEChart, OEETable } from "./OEEChart";
+import { copyOeeToClipboard, buildOeeSeries, OEEBarSeries } from "../../data/results.oee";
 
 // -----------------------------------------------------------------------------------
 // Outliers
@@ -170,7 +164,7 @@ function StationOEEChart(p: OEEProps) {
             <Tooltip title="Copy to Clipboard">
               <IconButton
                 style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-                onClick={() => copyOeeToClipboard(LazySeq.ofIterable(p.points).flatMap(s => s.points))}
+                onClick={() => copyOeeToClipboard(p.points)}
               >
                 <ImportExport />
               </IconButton>
@@ -203,42 +197,7 @@ const oeePointsSelector = createSelector(
   (cycles, statUse, showLabor): ReadonlyArray<OEEBarSeries> => {
     const start = addDays(startOfToday(), -6);
     const end = addDays(startOfToday(), 1);
-    const filteredCycles = LazySeq.ofIterable(cycles).filter(
-      e => showLabor === e.isLabor && e.x >= start && e.x <= end
-    );
-    const actualBins = binCyclesByDayAndStat(filteredCycles, c => c.active);
-    const filteredStatUse = LazySeq.ofIterable(statUse).filter(
-      e => showLabor === e.station.startsWith("L/U") && e.end >= start && e.start <= end
-    );
-    const plannedBins = binSimStationUseByDayAndStat(filteredStatUse, c => c.utilizationTime - c.plannedDownTime);
-
-    const series: Array<OEEBarSeries> = [];
-    const statNames = actualBins
-      .keySet()
-      .addAll(plannedBins.keySet())
-      .map(e => e.station)
-      .toArray({ sortOn: x => x });
-
-    for (let stat of statNames) {
-      const points: Array<OEEBarPoint> = [];
-      for (let d = start; d <= end; d = addDays(d, 1)) {
-        const dAndStat = new DayAndStation(d, stat);
-        const actual = actualBins.get(dAndStat);
-        const planned = plannedBins.get(dAndStat);
-        points.push({
-          x: d.toLocaleDateString(),
-          y: actual.getOrElse(0) / 60,
-          planned: planned.getOrElse(0) / 60,
-          station: stat,
-          day: d
-        });
-      }
-      series.push({
-        station: stat,
-        points: points
-      });
-    }
-    return series;
+    return buildOeeSeries(start, end, showLabor, cycles, statUse);
   }
 );
 

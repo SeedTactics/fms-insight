@@ -38,19 +38,7 @@ import { FlexibleWidthXYPlot, XAxis, YAxis, VerticalBarSeries, DiscreteColorLege
 import { Column, DataTableHead, DataTableBody } from "../analysis/DataTable";
 import { LazySeq } from "../../data/lazyseq";
 import { ToOrderable } from "prelude-ts";
-
-export interface OEEBarPoint {
-  readonly x: string;
-  readonly y: number;
-  readonly planned: number;
-  readonly station: string;
-  readonly day: Date;
-}
-
-export interface OEEBarSeries {
-  readonly station: string;
-  readonly points: ReadonlyArray<OEEBarPoint>;
-}
+import { OEEBarSeries, OEEBarPoint } from "../../data/results.oee";
 
 export interface OEEProps {
   readonly showLabor: boolean;

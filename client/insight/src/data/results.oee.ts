@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { SimStationUse, SimProduction } from "./events.simuse";
-import { startOfDay, addMinutes, differenceInMinutes } from "date-fns";
+import { startOfDay, addMinutes, differenceInMinutes, addDays } from "date-fns";
 import { HashMap, fieldsHashCode, Vector } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 import { CycleData } from "./events.cycles";
@@ -187,6 +187,66 @@ export function binSimProductionByDayAndPart(prod: Iterable<SimProduction>): Has
 }
 
 // --------------------------------------------------------------------------------
+// Combined
+// --------------------------------------------------------------------------------
+
+export interface OEEBarPoint {
+  readonly x: string;
+  readonly y: number;
+  readonly planned: number;
+  readonly station: string;
+  readonly day: Date;
+}
+
+export interface OEEBarSeries {
+  readonly station: string;
+  readonly points: ReadonlyArray<OEEBarPoint>;
+}
+
+export function buildOeeSeries(
+  start: Date,
+  end: Date,
+  isLabor: boolean,
+  cycles: Iterable<PartCycleData>,
+  statUse: Iterable<SimStationUse>
+): ReadonlyArray<OEEBarSeries> {
+  const filteredCycles = LazySeq.ofIterable(cycles).filter(e => isLabor === e.isLabor && e.x >= start && e.x <= end);
+  const actualBins = binCyclesByDayAndStat(filteredCycles, c => c.active);
+  const filteredStatUse = LazySeq.ofIterable(statUse).filter(
+    e => isLabor === e.station.startsWith("L/U") && e.end >= start && e.start <= end
+  );
+  const plannedBins = binSimStationUseByDayAndStat(filteredStatUse, c => c.utilizationTime - c.plannedDownTime);
+
+  const series: Array<OEEBarSeries> = [];
+  const statNames = actualBins
+    .keySet()
+    .addAll(plannedBins.keySet())
+    .map(e => e.station)
+    .toArray({ sortOn: x => x });
+
+  for (let stat of statNames) {
+    const points: Array<OEEBarPoint> = [];
+    for (let d = start; d <= end; d = addDays(d, 1)) {
+      const dAndStat = new DayAndStation(d, stat);
+      const actual = actualBins.get(dAndStat);
+      const planned = plannedBins.get(dAndStat);
+      points.push({
+        x: d.toLocaleDateString(),
+        y: actual.getOrElse(0) / 60,
+        planned: planned.getOrElse(0) / 60,
+        station: stat,
+        day: d
+      });
+    }
+    series.push({
+      station: stat,
+      points: points
+    });
+  }
+  return series;
+}
+
+// --------------------------------------------------------------------------------
 // Clipboard
 // --------------------------------------------------------------------------------
 
@@ -246,31 +306,26 @@ export function copyHeatmapToClipboard(yTitle: string, points: ReadonlyArray<Hea
   copy(buildHeatmapTable(yTitle, points));
 }
 
-export interface OEEClipboardPoint {
-  readonly day: Date;
-  readonly y: number;
-  readonly planned: number;
-  readonly station: string;
-}
-
-export function buildOeeTable(points: LazySeq<OEEClipboardPoint>) {
+export function buildOeeTable(series: Iterable<OEEBarSeries>) {
   let table = "<table>\n<thead><tr>";
   table += "<th>Day</th><th>Station</th><th>Actual Hours</th><th>Planned Hours</th>";
   table += "</tr></thead>\n<tbody>\n";
 
-  for (let pt of points) {
-    table += "<tr>";
-    table += "<td>" + pt.day.toLocaleDateString() + "</td>";
-    table += "<td>" + pt.station + "</td>";
-    table += "<td>" + pt.y.toFixed(1) + "</td>";
-    table += "<td>" + pt.planned.toFixed(1) + "</td>";
-    table += "</tr>\n";
+  for (let s of series) {
+    for (let pt of s.points) {
+      table += "<tr>";
+      table += "<td>" + pt.day.toLocaleDateString() + "</td>";
+      table += "<td>" + pt.station + "</td>";
+      table += "<td>" + pt.y.toFixed(1) + "</td>";
+      table += "<td>" + pt.planned.toFixed(1) + "</td>";
+      table += "</tr>\n";
+    }
   }
 
   table += "</tbody>\n</table>";
   return table;
 }
 
-export function copyOeeToClipboard(points: LazySeq<OEEClipboardPoint>): void {
-  copy(buildOeeTable(points));
+export function copyOeeToClipboard(series: Iterable<OEEBarSeries>): void {
+  copy(buildOeeTable(series));
 }
