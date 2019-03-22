@@ -45,6 +45,7 @@ export enum RouteLocation {
   Operations_LoadStation = "ROUTE_Operations_LoadStation",
   Operations_Machines = "ROUTE_Operations_Machines",
   Operations_AllMaterial = "ROUTE_Operations_AllMaterial",
+  Operations_CompletedParts = "ROUTE_Operations_CompletedParts",
 
   Quality_Dashboard = "ROUTE_Quality_Dashboard",
   Quality_Serials = "ROUTE_Quality_Serials",
@@ -68,6 +69,7 @@ export const routeMap = {
   [RouteLocation.Operations_LoadStation]: "/operations/loadunload",
   [RouteLocation.Operations_Machines]: "/operations/machines",
   [RouteLocation.Operations_AllMaterial]: "/operations/material",
+  [RouteLocation.Operations_CompletedParts]: "/operations/completed",
 
   [RouteLocation.Quality_Dashboard]: "/quality",
   [RouteLocation.Quality_Serials]: "/quality/serials",
@@ -115,6 +117,7 @@ export type Action =
   | { type: RouteLocation.Operations_LoadStation }
   | { type: RouteLocation.Operations_Machines }
   | { type: RouteLocation.Operations_AllMaterial }
+  | { type: RouteLocation.Operations_CompletedParts }
   | { type: RouteLocation.Quality_Dashboard }
   | { type: RouteLocation.Quality_Serials }
   | { type: RouteLocation.Tools_Dashboard }
@@ -251,6 +254,7 @@ export function reducer(s: State, a: Action): State {
     case RouteLocation.Operations_AllMaterial:
     case RouteLocation.Operations_LoadStation:
     case RouteLocation.Operations_Machines:
+    case RouteLocation.Operations_CompletedParts:
     case RouteLocation.Quality_Dashboard:
     case RouteLocation.Quality_Serials:
     case RouteLocation.Tools_Dashboard:

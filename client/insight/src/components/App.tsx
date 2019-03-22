@@ -69,6 +69,7 @@ import SerialScanner from "./QRScan";
 import ManualScan from "./ManualScan";
 import ChooseOperator from "./ChooseOperator";
 import { BasicMaterialDialog } from "./station-monitor/Material";
+import { CompletedParts } from "./operations/CompletedParts";
 
 const tabsStyle = {
   alignSelf: "flex-end" as "flex-end",
@@ -93,6 +94,7 @@ function DemoTabs(p: HeaderNavProps) {
       <Tab label="Station Monitor" value={routes.RouteLocation.Station_LoadMonitor} />
       <Tab label="Load/Unload" value={routes.RouteLocation.Operations_LoadStation} />
       <Tab label="Machines" value={routes.RouteLocation.Operations_Machines} />
+      <Tab label="Completed Parts" value={routes.RouteLocation.Operations_CompletedParts} />
       <Tab label="Quality" value={routes.RouteLocation.Quality_Dashboard} />
       <Tab label="Serials" value={routes.RouteLocation.Quality_Serials} />
       <Tab label="Efficiency" value={routes.RouteLocation.Analysis_Efficiency} />
@@ -112,6 +114,7 @@ function OperationsTabs(p: HeaderNavProps) {
       <Tab label="Operations" value={routes.RouteLocation.Operations_Dashboard} />
       <Tab label="Load/Unload" value={routes.RouteLocation.Operations_LoadStation} />
       <Tab label="Machines" value={routes.RouteLocation.Operations_Machines} />
+      <Tab label="Completed Parts" value={routes.RouteLocation.Operations_CompletedParts} />
       <Tab label="Material" value={routes.RouteLocation.Operations_AllMaterial} />
     </Tabs>
   );
@@ -368,6 +371,10 @@ class App extends React.PureComponent<AppConnectedProps> {
           break;
         case routes.RouteLocation.Operations_AllMaterial:
           page = <StationMonitor route_loc={this.props.route.current} showToolbar={this.props.demo} />;
+          navigation = OperationsTabs;
+          break;
+        case routes.RouteLocation.Operations_CompletedParts:
+          page = <CompletedParts />;
           navigation = OperationsTabs;
           break;
 
