@@ -54,7 +54,7 @@ import { SelectableHeatChart, HeatChartPoint } from "./HeatChart";
 import { Store, connect, mkAC, DispatchAction } from "../../store/store";
 import * as guiState from "../../data/gui-state";
 import * as matDetails from "../../data/material-details";
-import InspectionSankey from "./InspectionSankey";
+import { InspectionSankey } from "./InspectionSankey";
 import { PartCycleData, CycleData, CycleState } from "../../data/events.cycles";
 import {
   filterStationCycles,
@@ -642,6 +642,27 @@ const ConnectedCompletedCountHeatmap = connect(
 )(CompletedCountHeatmap);
 
 // --------------------------------------------------------------------------------
+// Inspection
+// --------------------------------------------------------------------------------
+
+const ConnectedInspection = connect(
+  st => ({
+    inspectionlogs:
+      st.Events.analysis_period === AnalysisPeriod.Last30Days
+        ? st.Events.last30.inspection.by_part
+        : st.Events.selected_month.inspection.by_part,
+    analysisPeriod: st.Events.analysis_period,
+    default_date_range:
+      st.Events.analysis_period === AnalysisPeriod.Last30Days
+        ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
+        : [st.Events.analysis_period_month, addMonths(st.Events.analysis_period_month, 1)]
+  }),
+  {
+    openMaterialDetails: matDetails.openMaterialById
+  }
+)(InspectionSankey);
+
+// --------------------------------------------------------------------------------
 // Efficiency
 // --------------------------------------------------------------------------------
 
@@ -664,7 +685,7 @@ export default function Efficiency({ allowSetType }: { allowSetType: boolean }) 
             <ConnectedCompletedCountHeatmap allowSetType={allowSetType} />
           </div>
           <div data-testid="inspection-sankey" style={{ marginTop: "3em" }}>
-            <InspectionSankey />
+            <ConnectedInspection />
           </div>
         </main>
       </>

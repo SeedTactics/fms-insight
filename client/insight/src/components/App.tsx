@@ -71,6 +71,7 @@ import ChooseOperator from "./ChooseOperator";
 import { BasicMaterialDialog } from "./station-monitor/Material";
 import { CompletedParts } from "./operations/CompletedParts";
 import { FailedPartLookup } from "./quality/FailedPartLookup";
+import { QualityPaths } from "./quality/QualityPaths";
 
 const tabsStyle = {
   alignSelf: "flex-end" as "flex-end",
@@ -98,6 +99,7 @@ function DemoTabs(p: HeaderNavProps) {
       <Tab label="Completed Parts" value={routes.RouteLocation.Operations_CompletedParts} />
       <Tab label="Quality" value={routes.RouteLocation.Quality_Dashboard} />
       <Tab label="Failed Part" value={routes.RouteLocation.Quality_Serials} />
+      <Tab label="Paths" value={routes.RouteLocation.Quality_Paths} />
       <Tab label="Efficiency" value={routes.RouteLocation.Analysis_Efficiency} />
       <Tab label="Cost/Piece" value={routes.RouteLocation.Analysis_CostPerPiece} />
     </Tabs>
@@ -131,6 +133,7 @@ function QualityTabs(p: HeaderNavProps) {
     >
       <Tab label="Quality" value={routes.RouteLocation.Quality_Dashboard} />
       <Tab label="Failed Part Lookup" value={routes.RouteLocation.Quality_Serials} />
+      <Tab label="Paths" value={routes.RouteLocation.Quality_Paths} />
     </Tabs>
   );
 }
@@ -388,6 +391,11 @@ class App extends React.PureComponent<AppConnectedProps> {
           page = <FailedPartLookup />;
           navigation = QualityTabs;
           addBasicMaterialDialog = false;
+          showAlarms = false;
+          break;
+        case routes.RouteLocation.Quality_Paths:
+          page = <QualityPaths />;
+          navigation = QualityTabs;
           showAlarms = false;
           break;
 

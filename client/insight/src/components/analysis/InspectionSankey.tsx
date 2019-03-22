@@ -43,14 +43,11 @@ import IconButton from "@material-ui/core/IconButton";
 import ImportExport from "@material-ui/icons/ImportExport";
 
 import { PartIdenticon } from "../station-monitor/Material";
-import { connect } from "../../store/store";
 import { SankeyNode, SankeyDiagram, inspectionDataToSankey } from "../../data/inspection-sankey";
 
 import * as events from "../../data/events";
-import * as matDetails from "../../data/material-details";
 import { PartAndInspType, InspectionLogEntry } from "../../data/events.inspection";
 import { HashMap } from "prelude-ts";
-import { addDays, startOfToday, addMonths } from "date-fns";
 import InspectionDataTable from "./InspectionDataTable";
 import { copyInspectionEntriesToClipboard } from "../../data/results.inspection";
 
@@ -137,6 +134,7 @@ interface InspectionSankeyProps {
   readonly analysisPeriod: events.AnalysisPeriod;
   readonly default_date_range: Date[];
   readonly openMaterialDetails: (matId: number) => void;
+  readonly subtitle?: string;
 }
 
 interface InspectionSankeyState {
@@ -145,7 +143,7 @@ interface InspectionSankeyState {
   readonly showTable: boolean;
 }
 
-class InspectionSankey extends React.Component<InspectionSankeyProps, InspectionSankeyState> {
+export class InspectionSankey extends React.Component<InspectionSankeyProps, InspectionSankeyState> {
   state: InspectionSankeyState = { showTable: false };
 
   render() {
@@ -255,6 +253,7 @@ class InspectionSankey extends React.Component<InspectionSankeyProps, Inspection
               </Select>
             </div>
           }
+          subheader={this.props.subtitle}
         />
         <CardContent>
           <div style={{ display: "flex", justifyContent: "center" }}>
@@ -278,20 +277,3 @@ class InspectionSankey extends React.Component<InspectionSankeyProps, Inspection
     );
   }
 }
-
-export default connect(
-  st => ({
-    inspectionlogs:
-      st.Events.analysis_period === events.AnalysisPeriod.Last30Days
-        ? st.Events.last30.inspection.by_part
-        : st.Events.selected_month.inspection.by_part,
-    analysisPeriod: st.Events.analysis_period,
-    default_date_range:
-      st.Events.analysis_period === events.AnalysisPeriod.Last30Days
-        ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
-        : [st.Events.analysis_period_month, addMonths(st.Events.analysis_period_month, 1)]
-  }),
-  {
-    openMaterialDetails: matDetails.openMaterialById
-  }
-)(InspectionSankey);

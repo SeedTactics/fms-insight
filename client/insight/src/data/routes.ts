@@ -49,6 +49,7 @@ export enum RouteLocation {
 
   Quality_Dashboard = "ROUTE_Quality_Dashboard",
   Quality_Serials = "ROUTE_Quality_Serials",
+  Quality_Paths = "ROUTE_Quality_Paths",
 
   Tools_Dashboard = "ROUTE_Tools_Dashboard",
 
@@ -73,6 +74,7 @@ export const routeMap = {
 
   [RouteLocation.Quality_Dashboard]: "/quality",
   [RouteLocation.Quality_Serials]: "/quality/serials",
+  [RouteLocation.Quality_Paths]: "/quality/paths",
 
   [RouteLocation.Tools_Dashboard]: "/tools",
 
@@ -120,6 +122,7 @@ export type Action =
   | { type: RouteLocation.Operations_CompletedParts }
   | { type: RouteLocation.Quality_Dashboard }
   | { type: RouteLocation.Quality_Serials }
+  | { type: RouteLocation.Quality_Paths }
   | { type: RouteLocation.Tools_Dashboard }
   | { type: RouteLocation.Analysis_Efficiency }
   | { type: RouteLocation.Analysis_CostPerPiece }
@@ -257,6 +260,7 @@ export function reducer(s: State, a: Action): State {
     case RouteLocation.Operations_CompletedParts:
     case RouteLocation.Quality_Dashboard:
     case RouteLocation.Quality_Serials:
+    case RouteLocation.Quality_Paths:
     case RouteLocation.Tools_Dashboard:
     case RouteLocation.Analysis_CostPerPiece:
     case RouteLocation.Analysis_Efficiency:
