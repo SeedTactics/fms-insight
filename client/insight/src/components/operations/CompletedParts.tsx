@@ -121,7 +121,7 @@ const ConnectedPartsTable = connect(st => ({
 
 export function CompletedParts() {
   return (
-    <DocumentTitle title="Load/Unload Management - FMS Insight">
+    <DocumentTitle title="Completed Parts - FMS Insight">
       <main style={{ padding: "24px" }}>
         <div data-testid="completed-parts">
           <ConnectedPartsTable />

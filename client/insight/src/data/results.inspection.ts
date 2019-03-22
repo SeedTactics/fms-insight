@@ -35,6 +35,7 @@ import { Vector, ToOrderable, HashMap, Option } from "prelude-ts";
 import { InspectionLogEntry, InspectionLogResultType } from "./events.inspection";
 import { LazySeq } from "./lazyseq";
 import { format } from "date-fns";
+import { MaterialDetail } from "./material-details";
 const copy = require("copy-to-clipboard");
 
 export interface TriggeredInspectionEntry {
@@ -47,7 +48,7 @@ export interface TriggeredInspectionEntry {
   readonly failed: boolean;
 }
 
-function buildPathString(procs: ReadonlyArray<Readonly<api.IMaterialProcessActualPath>>) {
+export function buildPathString(procs: ReadonlyArray<Readonly<api.IMaterialProcessActualPath>>) {
   const pathStrs = [];
   for (let proc of procs) {
     for (let stop of proc.stops) {
@@ -102,6 +103,26 @@ export function groupInspectionsByPath(
       material: mats.sortOn(sortOn, e => e.time.getTime()),
       failedCnt: mats.sumOn(e => (e.failed ? 1 : 0))
     }));
+}
+
+// --------------------------------------------------------------------------------
+// Failed Lookup
+// --------------------------------------------------------------------------------
+
+export function extractPath(mat: MaterialDetail): ReadonlyArray<Readonly<api.IMaterialProcessActualPath>> {
+  for (let e of mat.events) {
+    if (e.type === api.LogType.Inspection) {
+      const pathsJson: ReadonlyArray<object> = JSON.parse((e.details || {}).ActualPath || "[]");
+      const paths: Array<Readonly<api.IMaterialProcessActualPath>> = [];
+      for (const pathJson of pathsJson) {
+        paths.push(api.MaterialProcessActualPath.fromJS(pathJson));
+      }
+      if (paths.length > 0) {
+        return paths;
+      }
+    }
+  }
+  return [];
 }
 
 // --------------------------------------------------------------------------------

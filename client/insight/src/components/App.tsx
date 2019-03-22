@@ -70,6 +70,7 @@ import ManualScan from "./ManualScan";
 import ChooseOperator from "./ChooseOperator";
 import { BasicMaterialDialog } from "./station-monitor/Material";
 import { CompletedParts } from "./operations/CompletedParts";
+import { FailedPartLookup } from "./quality/FailedPartLookup";
 
 const tabsStyle = {
   alignSelf: "flex-end" as "flex-end",
@@ -96,7 +97,7 @@ function DemoTabs(p: HeaderNavProps) {
       <Tab label="Machines" value={routes.RouteLocation.Operations_Machines} />
       <Tab label="Completed Parts" value={routes.RouteLocation.Operations_CompletedParts} />
       <Tab label="Quality" value={routes.RouteLocation.Quality_Dashboard} />
-      <Tab label="Serials" value={routes.RouteLocation.Quality_Serials} />
+      <Tab label="Failed Part" value={routes.RouteLocation.Quality_Serials} />
       <Tab label="Efficiency" value={routes.RouteLocation.Analysis_Efficiency} />
       <Tab label="Cost/Piece" value={routes.RouteLocation.Analysis_CostPerPiece} />
     </Tabs>
@@ -129,7 +130,7 @@ function QualityTabs(p: HeaderNavProps) {
       onChange={(e, v) => p.setRoute({ ty: v, curSt: p.routeState })}
     >
       <Tab label="Quality" value={routes.RouteLocation.Quality_Dashboard} />
-      <Tab label="Serials" value={routes.RouteLocation.Quality_Serials} />
+      <Tab label="Failed Part Lookup" value={routes.RouteLocation.Quality_Serials} />
     </Tabs>
   );
 }
@@ -384,8 +385,9 @@ class App extends React.PureComponent<AppConnectedProps> {
           showAlarms = false;
           break;
         case routes.RouteLocation.Quality_Serials:
-          page = <p>Quality Serials</p>;
+          page = <FailedPartLookup />;
           navigation = QualityTabs;
+          addBasicMaterialDialog = false;
           showAlarms = false;
           break;
 

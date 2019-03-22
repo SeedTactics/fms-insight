@@ -265,6 +265,7 @@ export const SortableInProcMaterial = SortableElement(InProcMaterial);
 export class MaterialDetailTitle extends React.PureComponent<{
   partName: string;
   serial?: string;
+  subtitle?: string;
 }> {
   render() {
     let title;
@@ -283,6 +284,7 @@ export class MaterialDetailTitle extends React.PureComponent<{
         {this.props.partName === "" ? <SearchIcon /> : <PartIdenticon part={this.props.partName} />}
         <div style={{ marginLeft: "8px", flexGrow: 1 }}>
           <Typography variant="h6">{title}</Typography>
+          {this.props.subtitle ? <Typography variant="caption">{this.props.subtitle}</Typography> : undefined}
         </div>
       </div>
     );
