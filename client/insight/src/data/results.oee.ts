@@ -226,7 +226,7 @@ export function buildOeeSeries(
 
   for (let stat of statNames) {
     const points: Array<OEEBarPoint> = [];
-    for (let d = start; d <= end; d = addDays(d, 1)) {
+    for (let d = start; d < end; d = addDays(d, 1)) {
       const dAndStat = new DayAndStation(d, stat);
       const actual = actualBins.get(dAndStat);
       const planned = plannedBins.get(dAndStat);
