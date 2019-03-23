@@ -61,6 +61,8 @@ export interface InspectionLogEntry {
   readonly serial?: string;
   readonly workorder?: string;
   readonly result: InspectionLogResult;
+  readonly part: string;
+  readonly inspType: string;
 }
 
 export class PartAndInspType {
@@ -159,7 +161,9 @@ export function process_events(
                 type: InspectionLogResultType.Triggered,
                 actualPath: paths,
                 toInspect
-              }
+              },
+              part: m.part,
+              inspType: inspType
             } as InspectionLogEntry
           };
         } else if (c.type === api.LogType.InspectionForce) {
@@ -179,7 +183,9 @@ export function process_events(
               result: {
                 type: InspectionLogResultType.Forced,
                 toInspect: forceInspect
-              }
+              },
+              part: m.part,
+              inspType: c.program
             } as InspectionLogEntry
           };
         } else {
@@ -197,7 +203,9 @@ export function process_events(
               materialID: m.id,
               serial: m.serial,
               workorder: m.workorder,
-              result: { type: InspectionLogResultType.Completed, success }
+              result: { type: InspectionLogResultType.Completed, success },
+              part: m.part,
+              inspType: c.program
             } as InspectionLogEntry
           };
         }

@@ -105,6 +105,41 @@ export function groupInspectionsByPath(
     }));
 }
 
+export interface FailedInspectionEntry {
+  readonly time: Date;
+  readonly materialID: number;
+  readonly serial?: string;
+  readonly workorder?: string;
+  readonly inspType: string;
+  readonly part: string;
+}
+
+export function extractFailedInspections(
+  entries: Iterable<InspectionLogEntry>,
+  start: Date,
+  end: Date
+): Vector<FailedInspectionEntry> {
+  return LazySeq.ofIterable(entries)
+    .mapOption(e => {
+      if (e.time < start || e.time > end) {
+        return Option.none<FailedInspectionEntry>();
+      }
+      if (e.result.type === InspectionLogResultType.Completed && !e.result.success) {
+        return Option.some({
+          time: e.time,
+          materialID: e.materialID,
+          serial: e.serial,
+          workorder: e.workorder,
+          inspType: e.inspType,
+          part: e.part
+        });
+      } else {
+        return Option.none<FailedInspectionEntry>();
+      }
+    })
+    .toVector();
+}
+
 // --------------------------------------------------------------------------------
 // Failed Lookup
 // --------------------------------------------------------------------------------
@@ -168,4 +203,27 @@ export function copyInspectionEntriesToClipboard(
   entries: ReadonlyArray<InspectionLogEntry>
 ): void {
   copy(buildInspectionTable(part, inspType, entries));
+}
+
+export function buildFailedInspTable(entries: Vector<FailedInspectionEntry>): string {
+  let table = "<table>\n<thead><tr>";
+  table += "<th>Date</th><th>Part</th><th>Inspection</th><th>Serial</th><th>Workorder</th>";
+  table += "</tr></thead>\n<tbody>\n";
+
+  for (const e of entries.sortOn({ desc: x => x.time.getTime() })) {
+    table += "<tr>";
+    table += "<td>" + e.time.toLocaleString() + "</td>";
+    table += "<td>" + e.part + "</td>";
+    table += "<td>" + e.inspType + "</td>";
+    table += "<td>" + (e.serial || "") + "</td>";
+    table += "<td>" + (e.workorder || "") + "</td>";
+    table += "</tr>\n";
+  }
+
+  table += "</tbody>\n</table>";
+  return table;
+}
+
+export function copyFailedInspectionsToClipboard(entries: Vector<FailedInspectionEntry>) {
+  copy(buildFailedInspTable(entries));
 }
