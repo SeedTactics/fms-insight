@@ -131,28 +131,32 @@ class ConvertInspectionDataToSankey extends React.PureComponent<{
 
 interface InspectionSankeyProps {
   readonly inspectionlogs: HashMap<PartAndInspType, ReadonlyArray<InspectionLogEntry>>;
-  readonly analysisPeriod: events.AnalysisPeriod;
   readonly default_date_range: Date[];
-  readonly openMaterialDetails: (matId: number) => void;
+  readonly analysisPeriod?: events.AnalysisPeriod;
+  readonly openMaterialDetails?: (matId: number) => void;
   readonly subtitle?: string;
+  readonly restrictToPart?: string;
+  readonly defaultToTable: boolean;
 }
 
 interface InspectionSankeyState {
   readonly selectedPart?: string;
   readonly selectedInspectType?: string;
-  readonly showTable: boolean;
+  readonly showTable: boolean | null;
 }
 
 export class InspectionSankey extends React.Component<InspectionSankeyProps, InspectionSankeyState> {
-  state: InspectionSankeyState = { showTable: false };
+  state: InspectionSankeyState = { showTable: null };
 
   render() {
     let curData: ReadonlyArray<InspectionLogEntry> | undefined;
-    if (this.state.selectedPart && this.state.selectedInspectType) {
+    const selectedPart = this.props.restrictToPart || this.state.selectedPart;
+    if (selectedPart && this.state.selectedInspectType) {
       curData = this.props.inspectionlogs
-        .get(new PartAndInspType(this.state.selectedPart, this.state.selectedInspectType))
+        .get(new PartAndInspType(selectedPart, this.state.selectedInspectType))
         .getOrElse([]);
     }
+    const showTable = this.state.showTable === null ? this.props.defaultToTable : this.state.showTable;
     const parts = this.props.inspectionlogs
       .keySet()
       .map(x => x.part)
@@ -181,7 +185,7 @@ export class InspectionSankey extends React.Component<InspectionSankeyProps, Ins
                     onClick={() =>
                       curData
                         ? copyInspectionEntriesToClipboard(
-                            this.state.selectedPart || "",
+                            selectedPart || "",
                             this.state.selectedInspectType || "",
                             curData
                           )
@@ -197,7 +201,7 @@ export class InspectionSankey extends React.Component<InspectionSankeyProps, Ins
               )}
               <Select
                 autoWidth
-                value={this.state.showTable ? "table" : "sankey"}
+                value={showTable ? "table" : "sankey"}
                 onChange={e => this.setState({ showTable: e.target.value === "table" })}
               >
                 <MenuItem key="sankey" value="sankey">
@@ -228,29 +232,33 @@ export class InspectionSankey extends React.Component<InspectionSankeyProps, Ins
                   </MenuItem>
                 ))}
               </Select>
-              <Select
-                name="inspection-sankey-select-part"
-                autoWidth
-                displayEmpty
-                value={this.state.selectedPart || ""}
-                onChange={e => this.setState({ selectedPart: e.target.value })}
-              >
-                {this.state.selectedPart ? (
-                  undefined
-                ) : (
-                  <MenuItem key={0} value="">
-                    <em>Select Part</em>
-                  </MenuItem>
-                )}
-                {parts.map(n => (
-                  <MenuItem key={n} value={n}>
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <PartIdenticon part={n} size={30} />
-                      <span style={{ marginRight: "1em" }}>{n}</span>
-                    </div>
-                  </MenuItem>
-                ))}
-              </Select>
+              {this.props.restrictToPart === undefined ? (
+                <Select
+                  name="inspection-sankey-select-part"
+                  autoWidth
+                  displayEmpty
+                  value={this.state.selectedPart || ""}
+                  onChange={e => this.setState({ selectedPart: e.target.value })}
+                >
+                  {this.state.selectedPart ? (
+                    undefined
+                  ) : (
+                    <MenuItem key={0} value="">
+                      <em>Select Part</em>
+                    </MenuItem>
+                  )}
+                  {parts.map(n => (
+                    <MenuItem key={n} value={n}>
+                      <div style={{ display: "flex", alignItems: "center" }}>
+                        <PartIdenticon part={n} size={30} />
+                        <span style={{ marginRight: "1em" }}>{n}</span>
+                      </div>
+                    </MenuItem>
+                  ))}
+                </Select>
+              ) : (
+                undefined
+              )}
             </div>
           }
           subheader={this.props.subtitle}
@@ -258,9 +266,10 @@ export class InspectionSankey extends React.Component<InspectionSankeyProps, Ins
         <CardContent>
           <div style={{ display: "flex", justifyContent: "center" }}>
             {curData ? (
-              this.state.showTable ? (
+              showTable ? (
                 <InspectionDataTable
                   last30_days={this.props.analysisPeriod === events.AnalysisPeriod.Last30Days}
+                  allowChangeDateRange={this.props.analysisPeriod !== undefined}
                   points={curData}
                   default_date_range={this.props.default_date_range}
                   openDetails={this.props.openMaterialDetails}

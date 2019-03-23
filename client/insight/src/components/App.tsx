@@ -63,6 +63,7 @@ import { Store, connect, mkAC } from "../store/store";
 import * as api from "../data/api";
 import * as serverSettings from "../data/server-settings";
 import * as guiState from "../data/gui-state";
+import * as pathLookup from "../data/path-lookup";
 import * as matDetails from "../data/material-details";
 import logo from "../seedtactics-logo.svg";
 import BackupViewer from "./BackupViewer";
@@ -482,7 +483,8 @@ export default connect(
   {
     setRoute: ({ ty, curSt }: { ty: routes.RouteLocation; curSt: routes.State }) => [
       routes.displayPage(ty, curSt),
-      { type: matDetails.ActionType.CloseMaterialDialog }
+      { type: matDetails.ActionType.CloseMaterialDialog },
+      { type: pathLookup.ActionType.Clear }
     ],
     onLogin: mkAC(serverSettings.ActionType.Login),
     onLogout: mkAC(serverSettings.ActionType.Logout),

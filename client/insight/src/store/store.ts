@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2019, John Lenz
 
 All rights reserved.
 
@@ -36,6 +36,7 @@ import * as gui from "../data/gui-state";
 import * as routes from "../data/routes";
 import * as mat from "../data/material-details";
 import * as operators from "../data/operators";
+import * as paths from "../data/path-lookup";
 import * as serverSettings from "../data/server-settings";
 import * as ccp from "../data/cost-per-piece";
 import * as websocket from "./websocket";
@@ -77,6 +78,7 @@ export function initStore({ useRouter }: { useRouter: boolean }) {
       Events: events.reducer,
       Gui: gui.reducer,
       MaterialDetails: mat.reducer,
+      PathLookup: paths.reducer,
       Route: routes.reducer,
       Websocket: websocket.reducer,
       Operators: operators.reducer,

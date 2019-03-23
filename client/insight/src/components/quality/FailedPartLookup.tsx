@@ -38,12 +38,16 @@ import Step from "@material-ui/core/Step";
 import StepLabel from "@material-ui/core/StepLabel";
 import StepContent from "@material-ui/core/StepContent";
 
-import { connect, mkAC } from "../../store/store";
+import { connect } from "../../store/store";
 import * as matDetails from "../../data/material-details";
+import * as pathLookup from "../../data/path-lookup";
 import { MaterialDetailTitle, MaterialDetailContent } from "../station-monitor/Material";
 import { buildPathString, extractPath } from "../../data/results.inspection";
 import { startOfToday, addDays } from "date-fns";
 import { LogType } from "../../data/api";
+import { HashMap } from "prelude-ts";
+import { PartAndInspType, InspectionLogEntry } from "../../data/events.inspection";
+import { InspectionSankey } from "../analysis/InspectionSankey";
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
 interface SerialLookupProps {
@@ -75,10 +79,6 @@ function SerialLookup(props: SerialLookupProps) {
   );
 }
 
-interface PathLookupProps {
-  readonly mat: matDetails.MaterialDetail;
-}
-
 function lastMachineTime(mat: matDetails.MaterialDetail) {
   const first = mat.events.get(0);
   if (first.isNone()) {
@@ -93,15 +93,30 @@ function lastMachineTime(mat: matDetails.MaterialDetail) {
   return lastEnd;
 }
 
+interface PathLookupProps {
+  readonly mat: matDetails.MaterialDetail;
+  readonly logs: HashMap<PartAndInspType, ReadonlyArray<InspectionLogEntry>>;
+}
+
 function PathLookup(props: PathLookupProps) {
-  return <p>Show similar paths here</p>;
+  return (
+    <InspectionSankey
+      inspectionlogs={props.logs}
+      restrictToPart={props.mat.partName}
+      subtitle={"Paths for " + props.mat.partName + " for 5 days around " + lastMachineTime(props.mat).toLocaleString()}
+      default_date_range={[]}
+      defaultToTable
+    />
+  );
 }
 
 export interface PartLookupStepperProps {
   readonly mat: matDetails.MaterialDetail | null;
+  readonly pathDetails: HashMap<PartAndInspType, ReadonlyArray<InspectionLogEntry>> | undefined;
+  readonly pathLoading: boolean;
   readonly openMaterialBySerial: (s: string) => void;
-  readonly searchPartRange: (payload: { part: string; start: Date; end: Date }) => void;
-  readonly clearMat: () => void;
+  readonly searchPartRange: (part: string, start: Date, end: Date) => void;
+  readonly reset: () => void;
 }
 
 export function PartLookupStepper(props: PartLookupStepperProps) {
@@ -109,7 +124,11 @@ export function PartLookupStepper(props: PartLookupStepperProps) {
   if (step === 0 && props.mat) {
     step = 1;
   }
+  if (step < 2 && props.pathDetails && !props.pathLoading) {
+    step = 2;
+  }
   const mat = props.mat;
+  const pathDetails = props.pathDetails;
   return (
     <Stepper activeStep={step} orientation="vertical">
       <Step>
@@ -147,7 +166,7 @@ export function PartLookupStepper(props: PartLookupStepperProps) {
                   color="secondary"
                   onClick={() => {
                     const d = lastMachineTime(mat);
-                    props.searchPartRange({ part: mat.partName, start: addDays(d, -5), end: addDays(d, 5) });
+                    props.searchPartRange(mat.partName, addDays(d, -5), addDays(d, 5));
                     setStep(2);
                   }}
                 >
@@ -157,7 +176,7 @@ export function PartLookupStepper(props: PartLookupStepperProps) {
                   variant="raised"
                   style={{ marginLeft: "2em" }}
                   onClick={() => {
-                    props.clearMat();
+                    props.reset();
                     setStep(0);
                   }}
                 >
@@ -173,12 +192,12 @@ export function PartLookupStepper(props: PartLookupStepperProps) {
       <Step>
         <StepLabel>Lookup similar paths</StepLabel>
         <StepContent>
-          {mat ? <PathLookup mat={mat} /> : undefined}
+          {pathDetails && mat ? <PathLookup logs={pathDetails} mat={mat} /> : undefined}
           <Button
             variant="raised"
             style={{ marginTop: "2em" }}
             onClick={() => {
-              props.clearMat();
+              props.reset();
               setStep(0);
             }}
           >
@@ -192,12 +211,14 @@ export function PartLookupStepper(props: PartLookupStepperProps) {
 
 const ConnectedStepper = connect(
   st => ({
-    mat: st.MaterialDetails.material
+    mat: st.MaterialDetails.material,
+    pathDetails: st.PathLookup.entries,
+    pathLoading: st.PathLookup.loading
   }),
   {
     openMaterialBySerial: (s: string) => matDetails.openMaterialBySerial(s, true),
-    searchPartRange: (payload: { part: string; start: Date; end: Date }) => [],
-    clearMat: mkAC(matDetails.ActionType.CloseMaterialDialog)
+    searchPartRange: pathLookup.searchForPaths,
+    reset: () => [{ type: matDetails.ActionType.CloseMaterialDialog }, { type: pathLookup.ActionType.Clear }]
   }
 )(PartLookupStepper);
 

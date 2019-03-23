@@ -655,7 +655,8 @@ const ConnectedInspection = connect(
     default_date_range:
       st.Events.analysis_period === AnalysisPeriod.Last30Days
         ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
-        : [st.Events.analysis_period_month, addMonths(st.Events.analysis_period_month, 1)]
+        : [st.Events.analysis_period_month, addMonths(st.Events.analysis_period_month, 1)],
+    defaultToTable: false
   }),
   {
     openMaterialDetails: matDetails.openMaterialById

@@ -98,6 +98,7 @@ export type ExpireOldData =
 export function process_events(
   expire: ExpireOldData,
   newEvts: ReadonlyArray<Readonly<api.ILogEntry>>,
+  filterPart: string | undefined,
   st: InspectionState
 ): InspectionState {
   let parts = st.by_part;
@@ -211,6 +212,7 @@ export function process_events(
         }
       })
     )
+    .filter(e => filterPart === undefined || e.entry.part === filterPart)
     .groupBy(e => e.key)
     .mapValues(es => es.map(e => e.entry).toArray());
 

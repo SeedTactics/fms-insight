@@ -276,6 +276,7 @@ function processRecentLogEntries(now: Date, evts: ReadonlyArray<Readonly<api.ILo
     inspection: inspection.process_events(
       { type: cycles.ExpireOldDataType.ExpireEarlierThan, d: thirtyDaysAgo },
       evts,
+      undefined,
       s.inspection
     )
   });
@@ -289,7 +290,7 @@ function processSpecificMonthLogEntries(evts: ReadonlyArray<Readonly<api.ILogEnt
       true, // initial load is true
       s.cycles
     ),
-    inspection: inspection.process_events({ type: cycles.ExpireOldDataType.NoExpire }, evts, s.inspection)
+    inspection: inspection.process_events({ type: cycles.ExpireOldDataType.NoExpire }, evts, undefined, s.inspection)
   });
 }
 

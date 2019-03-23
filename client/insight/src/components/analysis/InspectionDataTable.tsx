@@ -89,10 +89,12 @@ interface InspectionDataTableProps {
   readonly points: ReadonlyArray<InspectionLogEntry>;
   readonly default_date_range: Date[];
   readonly last30_days: boolean;
-  readonly openDetails: (matId: number) => void;
+  readonly allowChangeDateRange: boolean;
+  readonly openDetails: ((matId: number) => void) | undefined;
 }
 
 export default React.memo(function InspDataTable(props: InspectionDataTableProps) {
+  const openDetails = props.openDetails;
   const [orderBy, setOrderBy] = React.useState(ColumnId.Date);
   const [order, setOrder] = React.useState<"asc" | "desc">("asc");
   const [pages, setPages] = React.useState<HashMap<string, number>>(HashMap.empty());
@@ -149,12 +151,12 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
                     onRequestSort={handleRequestSort}
                     orderBy={orderBy}
                     order={order}
-                    showDetailsCol
+                    showDetailsCol={props.openDetails !== undefined}
                   />
                   <DataTableBody
                     columns={columns}
                     pageData={points.material.drop(page * rowsPerPage).take(rowsPerPage)}
-                    onClickDetails={row => props.openDetails(row.materialID)}
+                    onClickDetails={openDetails ? row => openDetails(row.materialID) : undefined}
                   />
                 </Table>
                 <DataTableActions
@@ -164,7 +166,7 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
                   rowsPerPage={rowsPerPage}
                   setPage={p => setPages(pages.put(path, p))}
                   setRowsPerPage={setRowsPerPage}
-                  set_date_zoom_range={p => setCurZoom(p.zoom)}
+                  set_date_zoom_range={props.allowChangeDateRange ? p => setCurZoom(p.zoom) : undefined}
                   default_date_range={props.default_date_range}
                   current_date_zoom={curZoom}
                 />
