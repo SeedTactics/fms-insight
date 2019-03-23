@@ -52,6 +52,7 @@ import { addDays, startOfToday } from "date-fns";
 import { connect } from "../../store/store";
 import { DataTableHead, DataTableBody, DataTableActions, Column } from "../analysis/DataTable";
 import { openMaterialById } from "../../data/material-details";
+import { RouteLocation } from "../../data/routes";
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
 export interface RecentFailedInspectionsProps {
@@ -202,7 +203,7 @@ const ConnectedFailedInspections = connect(
     failed: failedReducer(st.Events.last30.inspection, startOfToday())
   }),
   {
-    openDetails: openMaterialById
+    openDetails: (matId: number) => [{ type: RouteLocation.Quality_Serials }, openMaterialById(matId)]
   }
 )(RecentFailedInspections);
 
