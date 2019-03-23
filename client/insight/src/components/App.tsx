@@ -63,6 +63,7 @@ import { Store, connect, mkAC } from "../store/store";
 import * as api from "../data/api";
 import * as serverSettings from "../data/server-settings";
 import * as guiState from "../data/gui-state";
+import * as matDetails from "../data/material-details";
 import logo from "../seedtactics-logo.svg";
 import BackupViewer from "./BackupViewer";
 import SerialScanner from "./QRScan";
@@ -479,8 +480,10 @@ export default connect(
     alarms: emptyToNull(s.Current.current_status.alarms)
   }),
   {
-    setRoute: ({ ty, curSt }: { ty: routes.RouteLocation; curSt: routes.State }): routes.Action =>
+    setRoute: ({ ty, curSt }: { ty: routes.RouteLocation; curSt: routes.State }) => [
       routes.displayPage(ty, curSt),
+      { type: matDetails.ActionType.CloseMaterialDialog }
+    ],
     onLogin: mkAC(serverSettings.ActionType.Login),
     onLogout: mkAC(serverSettings.ActionType.Logout),
     openQrCodeScan: () => ({
