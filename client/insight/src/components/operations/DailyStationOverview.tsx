@@ -118,17 +118,18 @@ function OutlierCycles(props: OutlierCycleProps) {
 }
 
 const outlierPointsSelector = createSelector(
-  (st: Store, _: boolean) => st.Events.last30.cycles.part_cycles,
-  (_: Store, showLabor: boolean) => showLabor,
-  (cycles: Vector<PartCycleData>, showLabor: boolean) => {
-    return outlierCycles(cycles, showLabor, addDays(startOfToday(), -2), addDays(startOfToday(), 1));
+  (st: Store, _: boolean, _t: Date) => st.Events.last30.cycles.part_cycles,
+  (_: Store, showLabor: boolean, _t: Date) => showLabor,
+  (_: Store, _l: boolean, today: Date) => today,
+  (cycles: Vector<PartCycleData>, showLabor: boolean, today: Date) => {
+    return outlierCycles(cycles, showLabor, addDays(today, -2), addDays(today, 1));
   }
 );
 
 const ConnectedOutlierLabor = connect(
   st => ({
     showLabor: true,
-    points: outlierPointsSelector(st, true),
+    points: outlierPointsSelector(st, true, startOfToday()),
     default_date_range: [addDays(startOfToday(), -2), addDays(startOfToday(), 1)]
   }),
   {
@@ -139,7 +140,7 @@ const ConnectedOutlierLabor = connect(
 const ConnectedOutlierMachines = connect(
   st => ({
     showLabor: false,
-    points: outlierPointsSelector(st, false),
+    points: outlierPointsSelector(st, false, startOfToday()),
     default_date_range: [addDays(startOfToday(), -2), addDays(startOfToday(), 1)]
   }),
   {
@@ -191,12 +192,13 @@ function StationOEEChart(p: OEEProps) {
 }
 
 const oeePointsSelector = createSelector(
-  (last30: events.Last30Days, _: boolean) => last30.cycles.part_cycles,
-  (last30: events.Last30Days, _: boolean) => last30.sim_use.station_use,
-  (_: events.Last30Days, showLabor: boolean) => showLabor,
-  (cycles, statUse, showLabor): ReadonlyArray<OEEBarSeries> => {
-    const start = addDays(startOfToday(), -6);
-    const end = addDays(startOfToday(), 1);
+  (last30: events.Last30Days, _: boolean, _t: Date) => last30.cycles.part_cycles,
+  (last30: events.Last30Days, _: boolean, _t: Date) => last30.sim_use.station_use,
+  (_: events.Last30Days, showLabor: boolean, _t: Date) => showLabor,
+  (_: events.Last30Days, _l: boolean, today: Date) => today,
+  (cycles, statUse, showLabor, today): ReadonlyArray<OEEBarSeries> => {
+    const start = addDays(today, -6);
+    const end = addDays(today, 1);
     return buildOeeSeries(start, end, showLabor, cycles, statUse);
   }
 );
@@ -206,7 +208,7 @@ const ConnectedLoadOEE = connect((st: Store) => {
     showLabor: true,
     start: addDays(startOfToday(), -6),
     end: addDays(startOfToday(), 1),
-    points: oeePointsSelector(st.Events.last30, true)
+    points: oeePointsSelector(st.Events.last30, true, startOfToday())
   };
 })(StationOEEChart);
 
@@ -215,7 +217,7 @@ const ConnectedMachineOEE = connect((st: Store) => {
     showLabor: false,
     start: addDays(startOfToday(), -6),
     end: addDays(startOfToday(), 1),
-    points: oeePointsSelector(st.Events.last30, false)
+    points: oeePointsSelector(st.Events.last30, false, startOfToday())
   };
 })(StationOEEChart);
 
@@ -274,7 +276,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
             <WorkIcon style={{ color: "#6D4C41" }} />
             <div style={{ marginLeft: "10px", marginRight: "3em" }}>
-              All {props.showLabor ? "Load/Unload" : "Machines"} Cycles
+              Recent {props.showLabor ? "Load/Unload" : "Machines"} Cycles
             </div>
             <div style={{ flexGrow: 1 }} />
             {props.points.data.length() > 0 ? (
@@ -383,15 +385,22 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
 
 const stationCyclePointsSelector = createSelector(
   [
-    (st: Store, _: boolean) => st.Events.last30.cycles.part_cycles,
-    (st: Store, _: boolean) => st.Gui.station_cycle_selected_part,
-    (st: Store, _: boolean) => st.Gui.station_cycle_selected_pallet,
-    (_: Store, showLabor: boolean) => showLabor
+    (st: Store, _: boolean, _t: Date) => st.Events.last30.cycles.part_cycles,
+    (st: Store, _: boolean, _t: Date) => st.Gui.station_cycle_selected_part,
+    (st: Store, _: boolean, _t: Date) => st.Gui.station_cycle_selected_pallet,
+    (_s: Store, showLabor: boolean, _t: Date) => showLabor,
+    (_s: Store, _l: boolean, today: Date) => today
   ],
-  (cycles: Vector<PartCycleData>, part: string | undefined, pallet: string | undefined, showLabor: boolean) => {
+  (
+    cycles: Vector<PartCycleData>,
+    part: string | undefined,
+    pallet: string | undefined,
+    showLabor: boolean,
+    today: Date
+  ) => {
     return filterStationCycles(
       cycles,
-      { start: addDays(startOfToday(), -2), end: addDays(startOfToday(), 1) },
+      { start: addDays(today, -2), end: addDays(today, 1) },
       part,
       pallet,
       showLabor ? FilterAnyLoadKey : FilterAnyMachineKey
@@ -403,7 +412,7 @@ const ConnectedLaborCycleChart = connect(
   st => ({
     showLabor: true,
     allParts: st.Events.last30.cycles.part_and_proc_names,
-    points: stationCyclePointsSelector(st, true),
+    points: stationCyclePointsSelector(st, true, startOfToday()),
     selectedPart: st.Gui.station_cycle_selected_part,
     selectedPallet: st.Gui.station_cycle_selected_pallet,
     zoomDateRange: st.Gui.station_cycle_date_zoom,
@@ -421,7 +430,7 @@ const ConnectedMachineCycleChart = connect(
   st => ({
     showLabor: false,
     allParts: st.Events.last30.cycles.part_and_proc_names,
-    points: stationCyclePointsSelector(st, false),
+    points: stationCyclePointsSelector(st, false, startOfToday()),
     selectedPart: st.Gui.station_cycle_selected_part,
     selectedPallet: st.Gui.station_cycle_selected_pallet,
     zoomDateRange: st.Gui.station_cycle_date_zoom,

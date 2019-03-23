@@ -106,17 +106,18 @@ function CompletedPartsTable(props: CompletedPartsTableProps) {
 }
 
 const completedPartsSelector = createSelector(
-  (last30: Last30Days) => last30.cycles.part_cycles,
-  (last30: Last30Days) => last30.sim_use.production,
-  (cycles, sim): ReadonlyArray<CompletedPartSeries> => {
-    const start = addDays(startOfToday(), -6);
-    const end = addDays(startOfToday(), 1);
+  (last30: Last30Days, _: Date) => last30.cycles.part_cycles,
+  (last30: Last30Days, _: Date) => last30.sim_use.production,
+  (_: Last30Days, today: Date) => today,
+  (cycles, sim, today): ReadonlyArray<CompletedPartSeries> => {
+    const start = addDays(today, -6);
+    const end = addDays(today, 1);
     return buildCompletedPartSeries(start, end, cycles, sim);
   }
 );
 
 const ConnectedPartsTable = connect(st => ({
-  series: completedPartsSelector(st.Events.last30)
+  series: completedPartsSelector(st.Events.last30, startOfToday())
 }))(CompletedPartsTable);
 
 export function CompletedParts() {

@@ -393,28 +393,26 @@ function PalletCycleChart(props: PalletCycleChartProps) {
   );
 }
 
-function palletCycleSelector(st: Store) {
-  if (st.Events.analysis_period === AnalysisPeriod.Last30Days) {
-    const now = addDays(startOfToday(), 1);
-    const oneMonthAgo = addDays(now, -30);
-    return {
-      points: st.Events.last30.cycles.by_pallet,
-      selected: st.Gui.pallet_cycle_selected,
-      default_date_range: [oneMonthAgo, now],
-      zoomDateRange: st.Gui.pallet_cycle_date_zoom
-    };
-  } else {
-    return {
-      points: st.Events.selected_month.cycles.by_pallet,
-      selected: st.Gui.pallet_cycle_selected,
-      default_date_range: [st.Events.analysis_period_month, addMonths(st.Events.analysis_period_month, 1)],
-      zoomDateRange: st.Gui.pallet_cycle_date_zoom
-    };
-  }
-}
-
 const ConnectedPalletCycleChart = connect(
-  palletCycleSelector,
+  st => {
+    if (st.Events.analysis_period === AnalysisPeriod.Last30Days) {
+      const now = addDays(startOfToday(), 1);
+      const oneMonthAgo = addDays(now, -30);
+      return {
+        points: st.Events.last30.cycles.by_pallet,
+        selected: st.Gui.pallet_cycle_selected,
+        default_date_range: [oneMonthAgo, now],
+        zoomDateRange: st.Gui.pallet_cycle_date_zoom
+      };
+    } else {
+      return {
+        points: st.Events.selected_month.cycles.by_pallet,
+        selected: st.Gui.pallet_cycle_selected,
+        default_date_range: [st.Events.analysis_period_month, addMonths(st.Events.analysis_period_month, 1)],
+        zoomDateRange: st.Gui.pallet_cycle_date_zoom
+      };
+    }
+  },
   {
     setSelected: (p: string) => ({
       type: guiState.ActionType.SetSelectedPalletCycle,

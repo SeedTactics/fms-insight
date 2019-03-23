@@ -42,17 +42,18 @@ import { PartAndInspType, InspectionLogEntry } from "../../data/events.inspectio
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
 const filterLogSelector = createSelector(
-  (last30: Last30Days) => last30.inspection.by_part,
-  (byPart: HashMap<PartAndInspType, ReadonlyArray<InspectionLogEntry>>) => {
-    const start = addDays(startOfToday(), -6);
-    const end = addDays(startOfToday(), 1);
+  (last30: Last30Days, _t: Date) => last30.inspection.by_part,
+  (_: Last30Days, today: Date) => today,
+  (byPart: HashMap<PartAndInspType, ReadonlyArray<InspectionLogEntry>>, today: Date) => {
+    const start = addDays(today, -6);
+    const end = addDays(today, 1);
     return byPart.mapValues(log => log.filter(e => e.time >= start && e.time <= end));
   }
 );
 
 const ConnectedInspection = connect(
   st => ({
-    inspectionlogs: filterLogSelector(st.Events.last30),
+    inspectionlogs: filterLogSelector(st.Events.last30, startOfToday()),
     analysisPeriod: st.Events.analysis_period,
     default_date_range: [addDays(startOfToday(), -6), addDays(startOfToday(), 1)],
     defaultToTable: false
