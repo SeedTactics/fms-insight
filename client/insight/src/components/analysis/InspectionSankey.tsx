@@ -129,7 +129,7 @@ class ConvertInspectionDataToSankey extends React.PureComponent<{
   }
 }
 
-interface InspectionSankeyProps {
+export interface InspectionSankeyProps {
   readonly inspectionlogs: HashMap<PartAndInspType, ReadonlyArray<InspectionLogEntry>>;
   readonly default_date_range: Date[];
   readonly analysisPeriod?: events.AnalysisPeriod;

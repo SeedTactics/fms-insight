@@ -55,7 +55,7 @@ import { openMaterialById } from "../../data/material-details";
 import { RouteLocation } from "../../data/routes";
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
-export interface RecentFailedInspectionsProps {
+interface RecentFailedInspectionsProps {
   readonly failed: Vector<FailedInspectionEntry>;
   readonly openDetails: (matId: number) => void;
 }
@@ -161,7 +161,7 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
   );
 }
 
-export function RecentFailedInspections(props: RecentFailedInspectionsProps) {
+function RecentFailedInspections(props: RecentFailedInspectionsProps) {
   return (
     <Card raised>
       <CardHeader

@@ -54,11 +54,11 @@ import { Last30Days } from "../../data/events";
 import { addDays, startOfToday } from "date-fns";
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
-export interface CompletedPartsTableProps {
+interface CompletedPartsTableProps {
   readonly series: ReadonlyArray<CompletedPartSeries>;
 }
 
-export function CompletedPartsTable(props: CompletedPartsTableProps) {
+function CompletedPartsTable(props: CompletedPartsTableProps) {
   const days = props.series.length > 0 ? props.series[0].days.map(p => p.day) : [];
   return (
     <Card raised>

@@ -110,7 +110,7 @@ function PathLookup(props: PathLookupProps) {
   );
 }
 
-export interface PartLookupStepperProps {
+interface PartLookupStepperProps {
   readonly mat: matDetails.MaterialDetail | null;
   readonly pathDetails: HashMap<PartAndInspType, ReadonlyArray<InspectionLogEntry>> | undefined;
   readonly pathLoading: boolean;
@@ -119,7 +119,7 @@ export interface PartLookupStepperProps {
   readonly reset: () => void;
 }
 
-export function PartLookupStepper(props: PartLookupStepperProps) {
+function PartLookupStepper(props: PartLookupStepperProps) {
   let [step, setStep] = React.useState(0);
   if (step === 0 && props.mat) {
     step = 1;

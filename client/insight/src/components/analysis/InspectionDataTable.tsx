@@ -85,7 +85,7 @@ const columns: ReadonlyArray<Column<ColumnId, TriggeredInspectionEntry>> = [
   }
 ];
 
-interface InspectionDataTableProps {
+export interface InspectionDataTableProps {
   readonly points: ReadonlyArray<InspectionLogEntry>;
   readonly default_date_range: Date[];
   readonly last30_days: boolean;

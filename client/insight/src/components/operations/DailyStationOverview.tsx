@@ -70,14 +70,14 @@ import { copyOeeToClipboard, buildOeeSeries, OEEBarSeries } from "../../data/res
 // Outliers
 // -----------------------------------------------------------------------------------
 
-export interface OutlierCycleProps {
+interface OutlierCycleProps {
   readonly showLabor: boolean;
   readonly points: FilteredStationCycles;
   readonly default_date_range: Date[];
   readonly openMaterial: (matId: number) => void;
 }
 
-export function OutlierCycles(props: OutlierCycleProps) {
+function OutlierCycles(props: OutlierCycleProps) {
   return (
     <Card raised>
       <CardHeader
