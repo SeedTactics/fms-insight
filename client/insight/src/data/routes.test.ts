@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2018, John Lenz
 
 All rights reserved.
 
@@ -41,11 +41,11 @@ it("has the initial state", () => {
 
 it("changes to the station page", () => {
   let st = routes.reducer(routes.initial, {
-    type: routes.RouteLocation.Station_WashMonitor
+    type: routes.RouteLocation.WashMonitor
   });
 
   expect(st).toEqual({
-    current: routes.RouteLocation.Station_WashMonitor,
+    current: routes.RouteLocation.WashMonitor,
     station_monitor: routes.StationMonitorType.Wash,
     selected_load_id: 1,
     load_queues: [],
@@ -56,7 +56,7 @@ it("changes to the station page", () => {
 
   // now one with load queues
   st = routes.reducer(st, {
-    type: routes.RouteLocation.Station_LoadMonitor,
+    type: routes.RouteLocation.LoadMonitor,
     payload: {
       num: 4
     },
@@ -68,7 +68,7 @@ it("changes to the station page", () => {
   });
 
   expect(st).toEqual({
-    current: routes.RouteLocation.Station_LoadMonitor,
+    current: routes.RouteLocation.LoadMonitor,
     station_monitor: routes.StationMonitorType.LoadUnload,
     selected_load_id: 4,
     load_queues: ["z", "y", "x"],
@@ -79,7 +79,7 @@ it("changes to the station page", () => {
 
   // now with free material
   st = routes.reducer(st, {
-    type: routes.RouteLocation.Station_LoadMonitor,
+    type: routes.RouteLocation.LoadMonitor,
     payload: {
       num: 6
     },
@@ -92,7 +92,7 @@ it("changes to the station page", () => {
   });
 
   expect(st).toEqual({
-    current: routes.RouteLocation.Station_LoadMonitor,
+    current: routes.RouteLocation.LoadMonitor,
     station_monitor: routes.StationMonitorType.LoadUnload,
     selected_load_id: 6,
     load_queues: ["w"],
@@ -103,7 +103,7 @@ it("changes to the station page", () => {
 
   // now with standalone queues
   st = routes.reducer(st, {
-    type: routes.RouteLocation.Station_Queues,
+    type: routes.RouteLocation.Queues,
     meta: {
       query: {
         queue: ["a", "b", "c"]
@@ -112,7 +112,7 @@ it("changes to the station page", () => {
   });
 
   expect(st).toEqual({
-    current: routes.RouteLocation.Station_Queues,
+    current: routes.RouteLocation.Queues,
     station_monitor: routes.StationMonitorType.Queues,
     selected_load_id: 6,
     load_queues: ["w"],
@@ -123,7 +123,7 @@ it("changes to the station page", () => {
 
   // now with free material
   st = routes.reducer(st, {
-    type: routes.RouteLocation.Station_Queues,
+    type: routes.RouteLocation.Queues,
     meta: {
       query: {
         queue: ["d"],
@@ -133,7 +133,7 @@ it("changes to the station page", () => {
   });
 
   expect(st).toEqual({
-    current: routes.RouteLocation.Station_Queues,
+    current: routes.RouteLocation.Queues,
     station_monitor: routes.StationMonitorType.Queues,
     selected_load_id: 6,
     load_queues: ["w"],
@@ -144,13 +144,9 @@ it("changes to the station page", () => {
 });
 
 it("transitions to the cost/piece, dashboard, and efficiency pages", () => {
-  const pages = [
-    routes.RouteLocation.Analysis_CostPerPiece,
-    routes.RouteLocation.Operations_Dashboard,
-    routes.RouteLocation.Analysis_Efficiency
-  ];
+  const pages = [routes.RouteLocation.CostPerPiece, routes.RouteLocation.Dashboard, routes.RouteLocation.Efficiency];
   const initialSt = {
-    current: routes.RouteLocation.Station_LoadMonitor,
+    current: routes.RouteLocation.LoadMonitor,
     station_monitor: routes.StationMonitorType.LoadUnload,
     selected_load_id: 2,
     load_queues: ["a", "b"],

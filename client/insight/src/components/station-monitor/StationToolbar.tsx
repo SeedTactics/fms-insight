@@ -33,13 +33,101 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import Select from "@material-ui/core/Select";
 import MenuItem from "@material-ui/core/MenuItem";
+import TextField from "@material-ui/core/TextField";
 import Input from "@material-ui/core/Input";
 import FormControl from "@material-ui/core/FormControl";
+import Downshift from "downshift";
+import Paper from "@material-ui/core/Paper";
+import ArrowDropDownIcon from "@material-ui/icons/ArrowDropDown";
+import List from "@material-ui/core/List";
+import ListItem from "@material-ui/core/ListItem";
+import ListItemText from "@material-ui/core/ListItemText";
+import ListItemSecondaryAction from "@material-ui/core/ListItemSecondaryAction";
+import IconButton from "@material-ui/core/IconButton";
+import DeleteIcon from "@material-ui/icons/Delete";
+import Typography from "@material-ui/core/Typography";
+import CameraAlt from "@material-ui/icons/CameraAlt";
+import SearchIcon from "@material-ui/icons/Search";
+import { Tooltip } from "@material-ui/core";
+import { User } from "oidc-client";
 import { HashSet } from "prelude-ts";
 
 import * as routes from "../../data/routes";
-import { Store, connect } from "../../store/store";
+import { Store, connect, DispatchAction, mkAC } from "../../store/store";
 import * as api from "../../data/api";
+import * as operators from "../../data/operators";
+import * as guiState from "../../data/gui-state";
+
+interface OperatorSelectProps {
+  readonly operators: HashSet<string>;
+  readonly currentOperator: string | null;
+  readonly setOperator: DispatchAction<operators.ActionType.SetOperator>;
+  readonly removeOperator: DispatchAction<operators.ActionType.RemoveOperator>;
+}
+
+class OperatorSelect extends React.PureComponent<OperatorSelectProps> {
+  render() {
+    const opers = this.props.operators.toArray({ sortOn: x => x });
+    return (
+      <Downshift
+        selectedItem={this.props.currentOperator}
+        onChange={o => {
+          this.props.setOperator({ operator: o });
+        }}
+      >
+        {ds => (
+          <div style={{ position: "relative" }}>
+            <TextField
+              InputProps={{
+                // tslint:disable-next-line:no-any
+                ...(ds.getInputProps({ placeholder: "Operator" }) as any),
+                onKeyUp: k => {
+                  if (k.keyCode === 13 && ds.inputValue && ds.inputValue.length > 0) {
+                    this.props.setOperator({ operator: ds.inputValue });
+                    ds.closeMenu();
+                  }
+                },
+                endAdornment: <ArrowDropDownIcon onClick={() => ds.openMenu()} />
+              }}
+            />
+            {ds.isOpen ? (
+              <Paper
+                style={{
+                  position: "absolute",
+                  zIndex: 1,
+                  left: 0,
+                  right: 0
+                }}
+              >
+                {ds.inputValue && ds.inputValue.length > 0 && !this.props.operators.contains(ds.inputValue) ? (
+                  <Typography variant="caption" align="center">
+                    Press enter to add new
+                  </Typography>
+                ) : (
+                  undefined
+                )}
+                <List>
+                  {opers.map((o, idx) => (
+                    <ListItem key={idx} button {...ds.getItemProps({ item: o })}>
+                      <ListItemText primary={o} />
+                      <ListItemSecondaryAction>
+                        <IconButton onClick={() => this.props.removeOperator({ operator: o })}>
+                          <DeleteIcon />
+                        </IconButton>
+                      </ListItemSecondaryAction>
+                    </ListItem>
+                  ))}
+                </List>
+              </Paper>
+            ) : (
+              undefined
+            )}
+          </div>
+        )}
+      </Downshift>
+    );
+  }
+}
 
 const toolbarStyle = {
   display: "flex",
@@ -51,45 +139,35 @@ const toolbarStyle = {
   alignItems: "flex-end" as "flex-end"
 };
 
-const inHeaderStyle = {
-  display: "flex",
-  flexGrow: 1,
-  alignSelf: "center",
-  alignItems: "flex-end" as "flex-end"
-};
-
 interface StationToolbarProps {
-  readonly full: boolean;
-  readonly allowChangeType: boolean;
   readonly current_route: routes.State;
   readonly queues: { [key: string]: api.IQueueSize };
   readonly insp_types: HashSet<string>;
+  readonly operators: HashSet<string>;
+  readonly currentOperator: string | null;
+  readonly currentUser: User | null;
 
   readonly displayLoadStation: (num: number, queues: ReadonlyArray<string>, freeMaterial: boolean) => void;
   readonly displayInspection: (type: string | undefined) => void;
   readonly displayWash: () => void;
   readonly displayQueues: (queues: ReadonlyArray<string>, freeMaterial: boolean) => void;
   readonly displayAllMaterial: () => void;
+  readonly setOperator: DispatchAction<operators.ActionType.SetOperator>;
+  readonly removeOperator: DispatchAction<operators.ActionType.RemoveOperator>;
+  readonly openQrCodeScan: () => void;
+  readonly openManualSerial: () => void;
 }
 
 const freeMaterialSym = "@@insight_free_material@@";
 const allInspSym = "@@all_inspection_display@@";
 
-enum StationMonitorType {
-  LoadUnload = "LoadUnload",
-  Inspection = "Inspection",
-  Wash = "Wash",
-  Queues = "Queues",
-  AllMaterial = "AllMaterial"
-}
-
 function StationToolbar(props: StationToolbarProps) {
   const queueNames = Object.keys(props.queues).sort();
 
   function setStation(s: string) {
-    const type = s as StationMonitorType;
+    const type = s as routes.StationMonitorType;
     switch (type) {
-      case StationMonitorType.LoadUnload:
+      case routes.StationMonitorType.LoadUnload:
         props.displayLoadStation(
           props.current_route.selected_load_id,
           props.current_route.load_queues,
@@ -97,19 +175,19 @@ function StationToolbar(props: StationToolbarProps) {
         );
         break;
 
-      case StationMonitorType.Inspection:
+      case routes.StationMonitorType.Inspection:
         props.displayInspection(props.current_route.selected_insp_type);
         break;
 
-      case StationMonitorType.Wash:
+      case routes.StationMonitorType.Wash:
         props.displayWash();
         break;
 
-      case StationMonitorType.Queues:
+      case routes.StationMonitorType.Queues:
         props.displayQueues(props.current_route.standalone_queues, props.current_route.standalone_free_material);
         break;
 
-      case StationMonitorType.AllMaterial:
+      case routes.StationMonitorType.AllMaterial:
         props.displayAllMaterial();
         break;
     }
@@ -166,151 +244,160 @@ function StationToolbar(props: StationToolbarProps) {
     standalonequeues.push(freeMaterialSym);
   }
 
-  let curType = StationMonitorType.LoadUnload;
-  switch (props.current_route.current) {
-    case routes.RouteLocation.Station_LoadMonitor:
-      curType = StationMonitorType.LoadUnload;
-      break;
-    case routes.RouteLocation.Station_InspectionMonitor:
-      curType = StationMonitorType.Inspection;
-      break;
-    case routes.RouteLocation.Station_Queues:
-      curType = StationMonitorType.Queues;
-      break;
-    case routes.RouteLocation.Station_WashMonitor:
-      curType = StationMonitorType.Wash;
-      break;
-    default:
-      curType = StationMonitorType.AllMaterial;
-      break;
-  }
-
   return (
-    <nav style={props.full ? toolbarStyle : inHeaderStyle}>
-      {props.allowChangeType ? (
-        <Select name="choose-station-type-select" value={curType} onChange={e => setStation(e.target.value)} autoWidth>
-          <MenuItem value={StationMonitorType.LoadUnload}>Load Station</MenuItem>
-          <MenuItem value={StationMonitorType.Inspection}>Inspection</MenuItem>
-          <MenuItem value={StationMonitorType.Wash}>Wash</MenuItem>
-          <MenuItem value={StationMonitorType.Queues}>Queues</MenuItem>
-          <MenuItem value={StationMonitorType.AllMaterial}>All Material</MenuItem>
-        </Select>
-      ) : (
-        undefined
-      )}
-      {curType === StationMonitorType.LoadUnload ? (
-        <Input
-          type="number"
-          placeholder="Load Station Number"
-          key="loadnumselect"
-          value={props.current_route.selected_load_id}
-          onChange={e => setLoadNumber(e.target.value)}
-          style={{ width: "3em", marginLeft: "1em" }}
-        />
-      ) : (
-        undefined
-      )}
-      {curType === StationMonitorType.Inspection ? (
+    <nav style={toolbarStyle}>
+      <div style={{ display: "flex", alignItems: "flex-end", flexGrow: 1 }}>
         <Select
-          key="inspselect"
-          value={props.current_route.selected_insp_type || allInspSym}
-          onChange={e => setInspType(e.target.value)}
-          style={{ marginLeft: "1em" }}
+          name="choose-station-type-select"
+          value={props.current_route.station_monitor}
+          onChange={e => setStation(e.target.value)}
+          autoWidth
         >
-          <MenuItem key={allInspSym} value={allInspSym}>
-            <em>All</em>
-          </MenuItem>
-          {props.insp_types.toArray({ sortOn: x => x }).map(ty => (
-            <MenuItem key={ty} value={ty}>
-              {ty}
-            </MenuItem>
-          ))}
+          <MenuItem value={routes.StationMonitorType.LoadUnload}>Load Station</MenuItem>
+          <MenuItem value={routes.StationMonitorType.Inspection}>Inspection</MenuItem>
+          <MenuItem value={routes.StationMonitorType.Wash}>Wash</MenuItem>
+          <MenuItem value={routes.StationMonitorType.Queues}>Queues</MenuItem>
+          <MenuItem value={routes.StationMonitorType.AllMaterial}>All Material</MenuItem>
         </Select>
-      ) : (
-        undefined
-      )}
-      {curType === StationMonitorType.LoadUnload ? (
-        <FormControl style={{ marginLeft: "1em" }}>
-          {loadqueues.length === 0 ? (
-            <label
-              style={{
-                position: "absolute",
-                top: "10px",
-                left: 0,
-                color: "rgba(0,0,0,0.54)",
-                fontSize: "0.9rem"
-              }}
-            >
-              Display queue(s)
-            </label>
-          ) : (
-            undefined
-          )}
+        {props.current_route.station_monitor === routes.StationMonitorType.LoadUnload ? (
+          <Input
+            type="number"
+            placeholder="Load Station Number"
+            key="loadnumselect"
+            value={props.current_route.selected_load_id}
+            onChange={e => setLoadNumber(e.target.value)}
+            style={{ width: "3em", marginLeft: "1em" }}
+          />
+        ) : (
+          undefined
+        )}
+        {props.current_route.station_monitor === routes.StationMonitorType.Inspection ? (
           <Select
-            multiple
-            name="station-monitor-queue-select"
-            data-testid="station-monitor-queue-select"
-            key="queueselect"
-            displayEmpty
-            value={loadqueues}
-            inputProps={{ id: "queueselect" }}
-            style={{ minWidth: "10em", marginTop: "0" }}
-            onChange={e => setLoadQueues(e.target.value)}
+            key="inspselect"
+            value={props.current_route.selected_insp_type || allInspSym}
+            onChange={e => setInspType(e.target.value)}
+            style={{ marginLeft: "1em" }}
           >
-            <MenuItem key={freeMaterialSym} value={freeMaterialSym}>
-              Free Material
+            <MenuItem key={allInspSym} value={allInspSym}>
+              <em>All</em>
             </MenuItem>
-            {queueNames.map((q, idx) => (
-              <MenuItem key={idx} value={q}>
-                {q}
+            {props.insp_types.toArray({ sortOn: x => x }).map(ty => (
+              <MenuItem key={ty} value={ty}>
+                {ty}
               </MenuItem>
             ))}
           </Select>
-        </FormControl>
-      ) : (
-        undefined
-      )}
-      {curType === StationMonitorType.Queues ? (
-        <FormControl style={{ marginLeft: "1em", minWidth: "10em" }}>
-          {standalonequeues.length === 0 ? (
-            <label
-              style={{
-                position: "absolute",
-                top: "10px",
-                left: 0,
-                color: "rgba(0,0,0,0.54)",
-                fontSize: "0.9rem"
-              }}
+        ) : (
+          undefined
+        )}
+        {props.current_route.station_monitor === routes.StationMonitorType.LoadUnload ? (
+          <FormControl style={{ marginLeft: "1em" }}>
+            {loadqueues.length === 0 ? (
+              <label
+                style={{
+                  position: "absolute",
+                  top: "24px",
+                  left: 0,
+                  color: "rgba(0,0,0,0.54)",
+                  fontSize: "0.9rem"
+                }}
+              >
+                Display queue(s)
+              </label>
+            ) : (
+              undefined
+            )}
+            <Select
+              multiple
+              name="station-monitor-queue-select"
+              data-testid="station-monitor-queue-select"
+              key="queueselect"
+              displayEmpty
+              value={loadqueues}
+              inputProps={{ id: "queueselect" }}
+              style={{ minWidth: "10em" }}
+              onChange={e => setLoadQueues(e.target.value)}
             >
-              Select queue(s)
-            </label>
-          ) : (
-            undefined
-          )}
-          <Select
-            multiple
-            name="station-monitor-queue-select"
-            data-testid="station-monitor-queue-select"
-            key="queueselect"
-            displayEmpty
-            value={standalonequeues}
-            inputProps={{ id: "queueselect" }}
-            style={{ marginTop: "0" }}
-            onChange={e => setStandaloneQueues(e.target.value)}
-          >
-            <MenuItem key={freeMaterialSym} value={freeMaterialSym}>
-              Free Material
-            </MenuItem>
-            {queueNames.map((q, idx) => (
-              <MenuItem key={idx} value={q}>
-                {q}
+              <MenuItem key={freeMaterialSym} value={freeMaterialSym}>
+                Free Material
               </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      ) : (
-        undefined
-      )}
+              {queueNames.map((q, idx) => (
+                <MenuItem key={idx} value={q}>
+                  {q}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        ) : (
+          undefined
+        )}
+        {props.current_route.station_monitor === routes.StationMonitorType.Queues ? (
+          <FormControl style={{ marginLeft: "1em", minWidth: "10em" }}>
+            {standalonequeues.length === 0 ? (
+              <label
+                style={{
+                  position: "absolute",
+                  top: "24px",
+                  left: 0,
+                  color: "rgba(0,0,0,0.54)",
+                  fontSize: "0.9rem"
+                }}
+              >
+                Select queue(s)
+              </label>
+            ) : (
+              undefined
+            )}
+            <Select
+              multiple
+              name="station-monitor-queue-select"
+              data-testid="station-monitor-queue-select"
+              key="queueselect"
+              displayEmpty
+              value={standalonequeues}
+              inputProps={{ id: "queueselect" }}
+              onChange={e => setStandaloneQueues(e.target.value)}
+            >
+              <MenuItem key={freeMaterialSym} value={freeMaterialSym}>
+                Free Material
+              </MenuItem>
+              {queueNames.map((q, idx) => (
+                <MenuItem key={idx} value={q}>
+                  {q}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        ) : (
+          undefined
+        )}
+        {window.location.protocol === "https:" || window.location.hostname === "localhost" ? (
+          <Tooltip title="Scan QR Code">
+            <IconButton onClick={props.openQrCodeScan} style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}>
+              <CameraAlt />
+            </IconButton>
+          </Tooltip>
+        ) : (
+          undefined
+        )}
+        <Tooltip title="Enter Serial">
+          <IconButton onClick={props.openManualSerial} style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}>
+            <SearchIcon />
+          </IconButton>
+        </Tooltip>
+      </div>
+      <div>
+        {props.currentUser ? (
+          <div>{props.currentUser.profile.name || props.currentUser.profile.sub}</div>
+        ) : (
+          <OperatorSelect
+            operators={props.operators}
+            currentOperator={props.currentOperator}
+            setOperator={props.setOperator}
+            removeOperator={props.removeOperator}
+          />
+        )}
+      </div>
     </nav>
   );
 }
@@ -319,13 +406,26 @@ export default connect(
   (st: Store) => ({
     current_route: st.Route,
     queues: st.Current.current_status.queues,
-    insp_types: st.Events.last30.mat_summary.inspTypes
+    insp_types: st.Events.last30.mat_summary.inspTypes,
+    operators: st.Operators.operators,
+    currentOperator: st.Operators.current || null,
+    currentUser: st.ServerSettings.user || null
   }),
   {
     displayLoadStation: routes.displayLoadStation,
     displayInspection: routes.displayInspectionType,
     displayWash: routes.displayWash,
     displayQueues: routes.displayQueues,
-    displayAllMaterial: () => ({ type: routes.RouteLocation.Operations_AllMaterial })
+    displayAllMaterial: routes.displayAllMaterial,
+    setOperator: mkAC(operators.ActionType.SetOperator),
+    removeOperator: mkAC(operators.ActionType.RemoveOperator),
+    openQrCodeScan: () => ({
+      type: guiState.ActionType.SetScanQrCodeDialog,
+      open: true
+    }),
+    openManualSerial: () => ({
+      type: guiState.ActionType.SetManualSerialEntryDialog,
+      open: true
+    })
   }
 )(StationToolbar);

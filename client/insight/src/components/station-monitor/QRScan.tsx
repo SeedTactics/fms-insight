@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2018, John Lenz
 
 All rights reserved.
 
@@ -32,67 +32,57 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { Dialog, Button, DialogActions, DialogContent, DialogTitle, TextField } from "@material-ui/core";
-import { connect } from "../store/store";
-import * as guiState from "../data/gui-state";
-import { openMaterialBySerial } from "../data/material-details";
+import QrReader from "react-qr-reader";
+import { Dialog, Button, DialogActions, DialogContent, DialogTitle } from "@material-ui/core";
+import { connect } from "../../store/store";
+import * as guiState from "../../data/gui-state";
+import { openMaterialBySerial } from "../../data/material-details";
 
-interface ManualScanProps {
+interface QrScanProps {
   readonly dialogOpen: boolean;
   readonly onClose: () => void;
   readonly onScan: (s: string) => void;
 }
 
-interface ManualScanState {
-  serial: string;
-}
-
-class ManualScan extends React.PureComponent<ManualScanProps, ManualScanState> {
-  state = { serial: "" };
-
-  render() {
-    return (
-      <Dialog open={this.props.dialogOpen} onClose={this.props.onClose} maxWidth="md">
-        <DialogTitle>Enter a part's serial</DialogTitle>
-        <DialogContent>
-          <div style={{ minWidth: "20em" }}>
-            <TextField
-              label={this.state.serial === "" ? "Serial" : "Serial (press enter)"}
-              value={this.state.serial}
-              onChange={e => this.setState({ serial: e.target.value })}
-              onKeyPress={e => {
-                if (e.key === "Enter" && this.state.serial && this.state.serial !== "") {
-                  e.preventDefault();
-                  this.props.onScan(this.state.serial);
-                }
-              }}
-            />
-          </div>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => this.props.onScan(this.state.serial)}
-            disabled={this.state.serial === ""}
-            color="secondary"
-          >
-            Open
-          </Button>
-          <Button onClick={this.props.onClose} color="secondary">
-            Cancel
-          </Button>
-        </DialogActions>
-      </Dialog>
-    );
+function SerialScanner(props: QrScanProps) {
+  function onScan(serial: string | undefined | null): void {
+    if (serial === undefined || serial == null) {
+      return;
+    }
+    let commaIdx = serial.indexOf(",");
+    if (commaIdx >= 0) {
+      serial = serial.substring(0, commaIdx);
+    }
+    serial = serial.replace(/[^0-9a-zA-Z-_]/g, "");
+    if (serial === "") {
+      return;
+    }
+    props.onScan(serial);
   }
+  return (
+    <Dialog open={props.dialogOpen} onClose={props.onClose} maxWidth="md">
+      <DialogTitle>Scan a part's serial</DialogTitle>
+      <DialogContent>
+        <div style={{ minWidth: "20em" }}>
+          {props.dialogOpen ? <QrReader onScan={onScan} onError={() => 0} /> : undefined}
+        </div>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={props.onClose} color="secondary">
+          Cancel
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
 }
 
 export default connect(
   s => ({
-    dialogOpen: s.Gui.manual_serial_entry_dialog_open
+    dialogOpen: s.Gui.scan_qr_dialog_open
   }),
   {
     onClose: () => ({
-      type: guiState.ActionType.SetManualSerialEntryDialog,
+      type: guiState.ActionType.SetScanQrCodeDialog,
       open: false
     }),
     onScan: (s: string) => [
@@ -100,11 +90,7 @@ export default connect(
       {
         type: guiState.ActionType.SetAddMatToQueueName,
         queue: undefined
-      },
-      {
-        type: guiState.ActionType.SetManualSerialEntryDialog,
-        open: false
       }
     ]
   }
-)(ManualScan);
+)(SerialScanner);

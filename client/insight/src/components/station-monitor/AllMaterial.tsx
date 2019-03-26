@@ -34,12 +34,23 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
-import { Store, connect } from "../../store/store";
-import { WhiteboardRegion, InProcMaterial } from "./Material";
+import { MaterialSummary } from "../../data/events";
+import { Store, connect, mkAC } from "../../store/store";
+import { MaterialDialog, WhiteboardRegion, InProcMaterial } from "./Material";
 import * as matDetails from "../../data/material-details";
 import { AllMaterialBins, selectAllMaterialIntoBins } from "../../data/all-material-bins";
 import { createSelector } from "reselect";
-import { MaterialSummary } from "../../data/events.matsummary";
+import SerialScanner from "./QRScan";
+import ManualScan from "./ManualScan";
+
+const ConnectedAllMatDialog = connect(
+  st => ({
+    display_material: st.MaterialDetails.material
+  }),
+  {
+    onClose: mkAC(matDetails.ActionType.CloseMaterialDialog)
+  }
+)(MaterialDialog);
 
 interface AllMatProps {
   readonly allMat: AllMaterialBins;
@@ -64,6 +75,9 @@ function AllMats(props: AllMatProps) {
             </WhiteboardRegion>
           ))}
         </div>
+        <ConnectedAllMatDialog />
+        <SerialScanner />
+        <ManualScan />
       </main>
     </DocumentTitle>
   );

@@ -46,34 +46,42 @@ import CardContent from "@material-ui/core/CardContent";
 import Tooltip from "@material-ui/core/Tooltip";
 import IconButton from "@material-ui/core/IconButton";
 import ImportExport from "@material-ui/icons/ImportExport";
+import SearchIcon from "@material-ui/icons/Search";
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
-import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
+import AnalysisSelectToolbar from "../AnalysisSelectToolbar";
 import { CycleChart, CycleChartPoint, ExtraTooltip } from "./CycleChart";
 import { SelectableHeatChart, HeatChartPoint } from "./HeatChart";
+import * as events from "../../data/events";
 import { Store, connect, mkAC, DispatchAction } from "../../store/store";
 import * as guiState from "../../data/gui-state";
 import * as matDetails from "../../data/material-details";
-import { InspectionSankey } from "./InspectionSankey";
-import { PartCycleData, CycleData, CycleState } from "../../data/events.cycles";
+import InspectionSankey from "./InspectionSankey";
 import {
+  PartCycleData,
   filterStationCycles,
   FilteredStationCycles,
   FilterAnyMachineKey,
-  FilterAnyLoadKey,
-  copyCyclesToClipboard
-} from "../../data/results.cycles";
-import { PartIdenticon } from "../station-monitor/Material";
+  FilterAnyLoadKey
+} from "../../data/events.cycles";
+import { MaterialDialog, PartIdenticon } from "../station-monitor/Material";
 import { LazySeq } from "../../data/lazyseq";
+import { copyCyclesToClipboard } from "../../data/clipboard-table";
+import ManualScan from "../station-monitor/ManualScan";
 import StationDataTable from "./StationDataTable";
-import { AnalysisPeriod } from "../../data/events";
-import { binCyclesByDayAndStat, binSimStationUseByDayAndStat } from "../../data/results.oee";
-import { binCyclesByDayAndPart, binSimProductionByDayAndPart } from "../../data/results.completed-parts";
-import { SimUseState } from "../../data/events.simuse";
 
 // --------------------------------------------------------------------------------
 // Station Cycles
 // --------------------------------------------------------------------------------
+
+const ConnectedMaterialDialog = connect(
+  st => ({
+    display_material: st.MaterialDetails.material
+  }),
+  {
+    onClose: mkAC(matDetails.ActionType.CloseMaterialDialog)
+  }
+)(MaterialDialog);
 
 interface PartStationCycleChartProps {
   readonly allParts: HashSet<string>;
@@ -81,13 +89,14 @@ interface PartStationCycleChartProps {
   readonly palletNames: HashSet<string>;
   readonly points: FilteredStationCycles;
   readonly default_date_range: Date[];
-  readonly analysisPeriod: AnalysisPeriod;
+  readonly analysisPeriod: events.AnalysisPeriod;
   readonly selectedPart?: string;
   readonly selectedPallet?: string;
   readonly selectedStation?: string;
   readonly zoomDateRange?: { start: Date; end: Date };
   readonly setSelected: DispatchAction<guiState.ActionType.SetSelectedStationCycle>;
   readonly setZoomRange: DispatchAction<guiState.ActionType.SetStationCycleDateZoom>;
+  readonly openManualSerialEntry: () => void;
   readonly openMaterial: (matId: number) => void;
 }
 
@@ -133,7 +142,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
             {props.points.data.length() > 0 ? (
               <Tooltip title="Copy to Clipboard">
                 <IconButton
-                  onClick={() => copyCyclesToClipboard(props.points, false, props.zoomDateRange)}
+                  onClick={() => copyCyclesToClipboard(props.points, props.zoomDateRange)}
                   style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
                 >
                   <ImportExport />
@@ -142,6 +151,14 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
             ) : (
               undefined
             )}
+            <Tooltip title="Enter Serial">
+              <IconButton
+                onClick={props.openManualSerialEntry}
+                style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+              >
+                <SearchIcon />
+              </IconButton>
+            </Tooltip>
             <Select
               name="Station-Cycles-chart-or-table-select"
               autoWidth
@@ -256,10 +273,8 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
             default_date_range={props.default_date_range}
             current_date_zoom={props.zoomDateRange}
             set_date_zoom_range={props.setZoomRange}
-            last30_days={props.analysisPeriod === AnalysisPeriod.Last30Days}
+            last30_days={props.analysisPeriod === events.AnalysisPeriod.Last30Days}
             openDetails={props.openMaterial}
-            showWorkorderAndInspect={true}
-            showMedian={false}
           />
         )}
       </CardContent>
@@ -270,7 +285,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
 const stationCyclePointsSelector = createSelector(
   [
     (st: Store) =>
-      st.Events.analysis_period === AnalysisPeriod.Last30Days
+      st.Events.analysis_period === events.AnalysisPeriod.Last30Days
         ? st.Events.last30.cycles.part_cycles
         : st.Events.selected_month.cycles.part_cycles,
     (st: Store) => st.Gui.station_cycle_selected_part,
@@ -284,7 +299,7 @@ const stationCyclePointsSelector = createSelector(
     station: string | undefined
   ) => {
     if (part || pallet || station) {
-      return filterStationCycles(cycles, undefined, part, pallet, station);
+      return filterStationCycles(cycles, part, pallet, station);
     } else {
       return { seriesLabel: "Station", data: HashMap.empty<string, ReadonlyArray<PartCycleData>>() };
     }
@@ -294,7 +309,7 @@ const stationCyclePointsSelector = createSelector(
 const ConnectedPartStationCycleChart = connect(
   st => ({
     allParts:
-      st.Events.analysis_period === AnalysisPeriod.Last30Days
+      st.Events.analysis_period === events.AnalysisPeriod.Last30Days
         ? st.Events.last30.cycles.part_and_proc_names
         : st.Events.selected_month.cycles.part_and_proc_names,
     points: stationCyclePointsSelector(st),
@@ -304,21 +319,25 @@ const ConnectedPartStationCycleChart = connect(
     zoomDateRange: st.Gui.station_cycle_date_zoom,
     analysisPeriod: st.Events.analysis_period,
     stationNames:
-      st.Events.analysis_period === AnalysisPeriod.Last30Days
+      st.Events.analysis_period === events.AnalysisPeriod.Last30Days
         ? st.Events.last30.cycles.station_names
         : st.Events.selected_month.cycles.station_names,
     palletNames:
-      st.Events.analysis_period === AnalysisPeriod.Last30Days
+      st.Events.analysis_period === events.AnalysisPeriod.Last30Days
         ? st.Events.last30.cycles.pallet_names
         : st.Events.selected_month.cycles.pallet_names,
     default_date_range:
-      st.Events.analysis_period === AnalysisPeriod.Last30Days
+      st.Events.analysis_period === events.AnalysisPeriod.Last30Days
         ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
         : [st.Events.analysis_period_month, addMonths(st.Events.analysis_period_month, 1)]
   }),
   {
     setSelected: mkAC(guiState.ActionType.SetSelectedStationCycle),
     setZoomRange: mkAC(guiState.ActionType.SetStationCycleDateZoom),
+    openManualSerialEntry: () => ({
+      type: guiState.ActionType.SetManualSerialEntryDialog,
+      open: true
+    }),
     openMaterial: matDetails.openMaterialById
   }
 )(PartStationCycleChart);
@@ -328,7 +347,7 @@ const ConnectedPartStationCycleChart = connect(
 // --------------------------------------------------------------------------------
 
 interface PalletCycleChartProps {
-  readonly points: HashMap<string, ReadonlyArray<CycleData>>;
+  readonly points: HashMap<string, ReadonlyArray<events.CycleData>>;
   readonly default_date_range: Date[];
   readonly selected?: string;
   readonly setSelected: (s: string) => void;
@@ -337,7 +356,7 @@ interface PalletCycleChartProps {
 }
 
 function PalletCycleChart(props: PalletCycleChartProps) {
-  let points = HashMap.empty<string, ReadonlyArray<CycleData>>();
+  let points = HashMap.empty<string, ReadonlyArray<events.CycleData>>();
   if (props.selected) {
     const palData = props.points.get(props.selected);
     if (palData.isSome()) {
@@ -393,26 +412,28 @@ function PalletCycleChart(props: PalletCycleChartProps) {
   );
 }
 
+function palletCycleSelector(st: Store) {
+  if (st.Events.analysis_period === events.AnalysisPeriod.Last30Days) {
+    const now = addDays(startOfToday(), 1);
+    const oneMonthAgo = addDays(now, -30);
+    return {
+      points: st.Events.last30.cycles.by_pallet,
+      selected: st.Gui.pallet_cycle_selected,
+      default_date_range: [oneMonthAgo, now],
+      zoomDateRange: st.Gui.pallet_cycle_date_zoom
+    };
+  } else {
+    return {
+      points: st.Events.selected_month.cycles.by_pallet,
+      selected: st.Gui.pallet_cycle_selected,
+      default_date_range: [st.Events.analysis_period_month, addMonths(st.Events.analysis_period_month, 1)],
+      zoomDateRange: st.Gui.pallet_cycle_date_zoom
+    };
+  }
+}
+
 const ConnectedPalletCycleChart = connect(
-  st => {
-    if (st.Events.analysis_period === AnalysisPeriod.Last30Days) {
-      const now = addDays(startOfToday(), 1);
-      const oneMonthAgo = addDays(now, -30);
-      return {
-        points: st.Events.last30.cycles.by_pallet,
-        selected: st.Gui.pallet_cycle_selected,
-        default_date_range: [oneMonthAgo, now],
-        zoomDateRange: st.Gui.pallet_cycle_date_zoom
-      };
-    } else {
-      return {
-        points: st.Events.selected_month.cycles.by_pallet,
-        selected: st.Gui.pallet_cycle_selected,
-        default_date_range: [st.Events.analysis_period_month, addMonths(st.Events.analysis_period_month, 1)],
-        zoomDateRange: st.Gui.pallet_cycle_date_zoom
-      };
-    }
-  },
+  palletCycleSelector,
   {
     setSelected: (p: string) => ({
       type: guiState.ActionType.SetSelectedPalletCycle,
@@ -448,9 +469,9 @@ function StationOeeHeatmap(props: HeatmapProps) {
 }
 
 const stationOeeActualPointsSelector = createSelector(
-  (cycles: CycleState) => cycles.part_cycles,
+  (cycles: events.CycleState) => cycles.part_cycles,
   cycles => {
-    let pts = binCyclesByDayAndStat(cycles, c => c.active);
+    let pts = events.binCyclesByDayAndStat(cycles, c => c.active);
     return LazySeq.ofIterable(pts)
       .map(([dayAndStat, val]) => {
         const pct = val / (24 * 60);
@@ -474,9 +495,9 @@ const stationOeeActualPointsSelector = createSelector(
 );
 
 const stationOeePlannedPointsSelector = createSelector(
-  (sim: SimUseState) => sim.station_use,
+  (sim: events.SimUseState) => sim.station_use,
   statUse => {
-    let pts = binSimStationUseByDayAndStat(statUse, c => c.utilizationTime - c.plannedDownTime);
+    let pts = events.binSimStationUseByDayAndStat(statUse, c => c.utilizationTime - c.plannedDownTime);
     return LazySeq.ofIterable(pts)
       .map(([dayAndStat, val]) => {
         const pct = val / (24 * 60);
@@ -500,9 +521,9 @@ const stationOeePlannedPointsSelector = createSelector(
 );
 
 function stationOeePoints(st: Store) {
-  let cycles: CycleState;
-  let sim: SimUseState;
-  if (st.Events.analysis_period === AnalysisPeriod.Last30Days) {
+  let cycles: events.CycleState;
+  let sim: events.SimUseState;
+  if (st.Events.analysis_period === events.AnalysisPeriod.Last30Days) {
     cycles = st.Events.last30.cycles;
     sim = st.Events.last30.sim_use;
   } else {
@@ -554,9 +575,9 @@ function CompletedCountHeatmap(props: HeatmapProps) {
 }
 
 const completedActualPointsSelector = createSelector(
-  (cycles: CycleState) => cycles.part_cycles,
+  (cycles: events.CycleState) => cycles.part_cycles,
   cycles => {
-    let pts = binCyclesByDayAndPart(cycles, c => (c.completed ? 1 : 0));
+    let pts = events.binCyclesByDayAndPart(cycles, c => (c.completed ? 1 : 0));
     return LazySeq.ofIterable(pts)
       .map(([dayAndPart, val]) => {
         return {
@@ -579,9 +600,9 @@ const completedActualPointsSelector = createSelector(
 );
 
 const completedPlannedPointsSelector = createSelector(
-  (simUse: SimUseState) => simUse.production,
+  (simUse: events.SimUseState) => simUse.production,
   production => {
-    let pts = binSimProductionByDayAndPart(production);
+    let pts = events.binSimProductionByDayAndPart(production);
     return LazySeq.ofIterable(pts)
       .map(([dayAndPart, val]) => {
         return {
@@ -604,9 +625,9 @@ const completedPlannedPointsSelector = createSelector(
 );
 
 function completedPoints(st: Store) {
-  let cycles: CycleState;
-  let sim: SimUseState;
-  if (st.Events.analysis_period === AnalysisPeriod.Last30Days) {
+  let cycles: events.CycleState;
+  let sim: events.SimUseState;
+  if (st.Events.analysis_period === events.AnalysisPeriod.Last30Days) {
     cycles = st.Events.last30.cycles;
     sim = st.Events.last30.sim_use;
   } else {
@@ -640,28 +661,6 @@ const ConnectedCompletedCountHeatmap = connect(
 )(CompletedCountHeatmap);
 
 // --------------------------------------------------------------------------------
-// Inspection
-// --------------------------------------------------------------------------------
-
-const ConnectedInspection = connect(
-  st => ({
-    inspectionlogs:
-      st.Events.analysis_period === AnalysisPeriod.Last30Days
-        ? st.Events.last30.inspection.by_part
-        : st.Events.selected_month.inspection.by_part,
-    analysisPeriod: st.Events.analysis_period,
-    default_date_range:
-      st.Events.analysis_period === AnalysisPeriod.Last30Days
-        ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
-        : [st.Events.analysis_period_month, addMonths(st.Events.analysis_period_month, 1)],
-    defaultToTable: false
-  }),
-  {
-    openMaterialDetails: matDetails.openMaterialById
-  }
-)(InspectionSankey);
-
-// --------------------------------------------------------------------------------
 // Efficiency
 // --------------------------------------------------------------------------------
 
@@ -684,8 +683,10 @@ export default function Efficiency({ allowSetType }: { allowSetType: boolean }) 
             <ConnectedCompletedCountHeatmap allowSetType={allowSetType} />
           </div>
           <div data-testid="inspection-sankey" style={{ marginTop: "3em" }}>
-            <ConnectedInspection />
+            <InspectionSankey />
           </div>
+          <ConnectedMaterialDialog />
+          <ManualScan />
         </main>
       </>
     </DocumentTitle>

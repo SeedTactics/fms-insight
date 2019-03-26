@@ -34,10 +34,10 @@ import * as React from "react";
 import Radio from "@material-ui/core/Radio";
 import FormControlLabel from "@material-ui/core/FormControlLabel";
 
-import * as events from "../../data/events";
-import * as gui from "../../data/gui-state";
-import { Store, connect } from "../../store/store";
-import MonthSelect from "../MonthSelect";
+import * as events from "../data/events";
+import * as gui from "../data/gui-state";
+import { Store, connect } from "../store/store";
+import MonthSelect from "./MonthSelect";
 
 const toolbarStyle = {
   display: "flex",

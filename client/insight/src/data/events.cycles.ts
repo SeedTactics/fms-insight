@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2018, John Lenz
 
 All rights reserved.
 
@@ -32,7 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as api from "./api";
 import { duration } from "moment";
-import { HashMap, HashSet, Vector, Option } from "prelude-ts";
+import { startOfDay, addMinutes, differenceInMinutes } from "date-fns";
+import { HashMap, HashSet, Vector, fieldsHashCode } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 
 export interface CycleData {
@@ -47,9 +48,6 @@ export interface PartCycleData extends CycleData {
   readonly stationGroup: string;
   readonly stationNumber: number;
   readonly pallet: string;
-  readonly medianElapsed: number;
-  readonly MAD_aboveMinutes: number;
-  readonly outlier: boolean;
   readonly isLabor: boolean;
   readonly matId: number;
   readonly serial?: string;
@@ -97,7 +95,7 @@ export type ExpireOldData =
   | { type: ExpireOldDataType.ExpireEarlierThan; d: Date }
   | { type: ExpireOldDataType.NoExpire };
 
-export function part_and_proc(part: string, proc: number): string {
+function part_and_proc(part: string, proc: number): string {
   return part + "-" + proc.toString();
 }
 
@@ -231,12 +229,12 @@ function estimateCycleTimesOfParts(
   cycles: Iterable<api.ILogEntry>
 ): HashMap<string, HashMap<string, StatisticalCycleTime>> {
   const ret = LazySeq.ofIterable(cycles)
-    .filter(c => (c.type === api.LogType.MachineCycle || c.type === api.LogType.LoadUnloadCycle) && !c.startofcycle)
+    .filter(c => c.type === api.LogType.MachineCycle && !c.startofcycle)
     .flatMap(c => c.material.map(m => ({ cycle: c, mat: m })))
     .groupBy(e => part_and_proc(e.mat.part, e.mat.proc))
     .mapValues(cyclesForPart =>
       LazySeq.ofIterable(cyclesForPart)
-        .groupBy(c => stat_name_and_num(stat_group(c.cycle), c.cycle.locnum))
+        .groupBy(c => c.cycle.loc)
         .mapValues(cyclesForPartAndStat =>
           estimateCycleTimes(cyclesForPartAndStat.map(p => duration(p.cycle.elapsed).asMinutes()))
         )
@@ -244,51 +242,24 @@ function estimateCycleTimesOfParts(
   return ret;
 }
 
-function statisticalCycleTime(
+function activeMinutes(
   partAndProc: string,
   cycle: Readonly<api.ILogEntry>,
   estimated: HashMap<string, HashMap<string, StatisticalCycleTime>>
-): Option<StatisticalCycleTime> {
-  const byStat = estimated.get(partAndProc);
-  if (byStat.isSome()) {
-    return byStat.get().get(stat_name_and_num(stat_group(cycle), cycle.locnum));
-  } else {
-    return Option.none();
-  }
-}
-
-function cycleIsOutlier(
-  partAndProc: string,
-  cycle: Readonly<api.ILogEntry>,
-  estimated: HashMap<string, HashMap<string, StatisticalCycleTime>>
-): boolean {
-  const elapsed = duration(cycle.elapsed).asMinutes();
-  const active = duration(cycle.active).asMinutes();
-
-  const byStat = estimated.get(partAndProc);
-  if (byStat.isSome()) {
-    const e = byStat.get().get(stat_name_and_num(stat_group(cycle), cycle.locnum));
-    if (e.isSome()) {
-      if (isOutlier(e.get(), elapsed)) {
-        return true;
-      }
-      if (cycle.active !== "" && active >= 0) {
-        if (isOutlier(e.get(), active)) {
-          return true;
-        }
-      }
-    }
-  }
-  return false;
-}
-
-function activeMinutes(cycle: Readonly<api.ILogEntry>, stats: Option<StatisticalCycleTime>) {
+) {
   const cMins = duration(cycle.active).asMinutes();
-  if (
-    (cycle.type === api.LogType.MachineCycle || cycle.type === api.LogType.LoadUnloadCycle) &&
-    (cycle.active === "" || cMins <= 0)
-  ) {
-    return stats.map(s => s.expectedCycleMinutes).getOrElse(0);
+  if (cycle.type === api.LogType.MachineCycle && (cycle.active === "" || cMins <= 0)) {
+    const byStat = estimated.get(partAndProc);
+    if (byStat.isSome()) {
+      const e = byStat.get().get(cycle.loc);
+      if (e.isSome()) {
+        return e.get().expectedCycleMinutes;
+      } else {
+        return 0;
+      }
+    } else {
+      return 0;
+    }
   } else {
     return cMins;
   }
@@ -381,30 +352,24 @@ export function process_events(
   var newCycles: LazySeq<PartCycleData> = LazySeq.ofIterable(newEvts)
     .filter(c => !c.startofcycle && (c.type === api.LogType.LoadUnloadCycle || c.type === api.LogType.MachineCycle))
     .flatMap(c => c.material.map(m => ({ cycle: c, mat: m })))
-    .map(e => {
-      const stats = statisticalCycleTime(part_and_proc(e.mat.part, e.mat.proc), e.cycle, estimatedCycleTimes);
-      return {
-        x: e.cycle.endUTC,
-        y: duration(e.cycle.elapsed).asMinutes(),
-        active: activeMinutes(e.cycle, stats),
-        medianElapsed: stats.map(s => s.medianMinutes).getOrElse(0),
-        MAD_aboveMinutes: stats.map(s => s.MAD_aboveMinutes).getOrElse(0),
-        outlier: cycleIsOutlier(part_and_proc(e.mat.part, e.mat.proc), e.cycle, estimatedCycleTimes),
-        completed: e.cycle.type === api.LogType.LoadUnloadCycle && e.cycle.result === "UNLOAD",
-        part: e.mat.part,
-        process: e.mat.proc,
-        pallet: e.cycle.pal,
-        matId: e.mat.id,
-        isLabor: e.cycle.type === api.LogType.LoadUnloadCycle,
-        serial: e.mat.serial,
-        workorder: e.mat.workorder,
-        stationGroup: stat_group(e.cycle),
-        stationNumber: e.cycle.locnum,
-        signaledInspections: HashSet.empty<string>(),
-        completedInspections: HashMap.empty<string, boolean>(),
-        operator: e.cycle.details ? e.cycle.details.operator || "" : ""
-      };
-    })
+    .map(e => ({
+      x: e.cycle.endUTC,
+      y: duration(e.cycle.elapsed).asMinutes(),
+      active: activeMinutes(part_and_proc(e.mat.part, e.mat.proc), e.cycle, estimatedCycleTimes),
+      completed: e.cycle.type === api.LogType.LoadUnloadCycle && e.cycle.result === "UNLOAD",
+      part: e.mat.part,
+      process: e.mat.proc,
+      pallet: e.cycle.pal,
+      matId: e.mat.id,
+      isLabor: e.cycle.type === api.LogType.LoadUnloadCycle,
+      serial: e.mat.serial,
+      workorder: e.mat.workorder,
+      stationGroup: stat_group(e.cycle),
+      stationNumber: e.cycle.locnum,
+      signaledInspections: HashSet.empty<string>(),
+      completedInspections: HashMap.empty<string, boolean>(),
+      operator: e.cycle.details ? e.cycle.details.operator || "" : ""
+    }))
     .filter(c => c.stationGroup !== "");
 
   let partNames = st.part_and_proc_names;
@@ -482,4 +447,153 @@ export function process_events(
   } else {
     return newSt;
   }
+}
+
+export interface FilteredStationCycles {
+  readonly seriesLabel: string;
+  readonly data: HashMap<string, ReadonlyArray<PartCycleData>>;
+}
+
+export const FilterAnyMachineKey = "@@@_FMSInsight_FilterAnyMachineKey_@@@";
+export const FilterAnyLoadKey = "@@@_FMSInsigt_FilterAnyLoadKey_@@@";
+
+export function filterStationCycles(
+  allCycles: Vector<PartCycleData>,
+  partAndProc?: string,
+  pallet?: string,
+  station?: string
+): FilteredStationCycles {
+  const groupByPal = partAndProc && station && station !== FilterAnyMachineKey && station !== FilterAnyLoadKey;
+  const groupByPart = pallet && station && station !== FilterAnyMachineKey && station !== FilterAnyLoadKey;
+  return {
+    seriesLabel: groupByPal ? "Pallet" : groupByPart ? "Part" : "Station",
+    data: LazySeq.ofIterable(allCycles)
+      .filter(e => {
+        if (partAndProc && part_and_proc(e.part, e.process) !== partAndProc) {
+          return false;
+        }
+        if (pallet && e.pallet !== pallet) {
+          return false;
+        }
+
+        if (station === FilterAnyMachineKey) {
+          if (e.isLabor) {
+            return false;
+          }
+        } else if (station === FilterAnyLoadKey) {
+          if (!e.isLabor) {
+            return false;
+          }
+        } else if (station && stat_name_and_num(e.stationGroup, e.stationNumber) !== station) {
+          return false;
+        }
+
+        return true;
+      })
+      .groupBy(e => {
+        if (groupByPal) {
+          return e.pallet;
+        } else if (groupByPart) {
+          return part_and_proc(e.part, e.process);
+        } else {
+          return stat_name_and_num(e.stationGroup, e.stationNumber);
+        }
+      })
+      .mapValues(e => e.toArray())
+  };
+}
+
+function splitPartCycleToDays(cycle: CycleData, totalVal: number): Array<{ day: Date; value: number }> {
+  const startDay = startOfDay(cycle.x);
+  const endTime = addMinutes(cycle.x, totalVal);
+  const endDay = startOfDay(endTime);
+  if (startDay.getTime() === endDay.getTime()) {
+    return [
+      {
+        day: startDay,
+        value: totalVal
+      }
+    ];
+  } else {
+    const startDayPct = differenceInMinutes(endDay, cycle.x) / totalVal;
+    return [
+      {
+        day: startDay,
+        value: totalVal * startDayPct
+      },
+      {
+        day: endDay,
+        value: totalVal * (1 - startDayPct)
+      }
+    ];
+  }
+}
+
+class DayAndStation {
+  constructor(public day: Date, public station: string) {}
+  equals(other: DayAndStation): boolean {
+    return this.day.getTime() === other.day.getTime() && this.station === other.station;
+  }
+  hashCode(): number {
+    return fieldsHashCode(this.day.getTime(), this.station);
+  }
+  toString(): string {
+    return `{day: ${this.day.toISOString()}}, station: ${this.station}}`;
+  }
+  adjustDay(f: (d: Date) => Date): DayAndStation {
+    return new DayAndStation(f(this.day), this.station);
+  }
+}
+
+export function binCyclesByDayAndStat(
+  cycles: Vector<PartCycleData>,
+  extractValue: (c: PartCycleData) => number
+): HashMap<DayAndStation, number> {
+  return LazySeq.ofIterable(cycles)
+    .flatMap(point =>
+      splitPartCycleToDays(point, extractValue(point)).map(x => ({
+        ...x,
+        station: stat_name_and_num(point.stationGroup, point.stationNumber)
+      }))
+    )
+    .toMap(p => [new DayAndStation(p.day, p.station), p.value] as [DayAndStation, number], (v1, v2) => v1 + v2);
+}
+
+class DayAndPart {
+  constructor(public day: Date, public part: string) {}
+  equals(other: DayAndPart): boolean {
+    return this.day.getTime() === other.day.getTime() && this.part === other.part;
+  }
+  hashCode(): number {
+    return fieldsHashCode(this.day.getTime(), this.part);
+  }
+  toString(): string {
+    return `{day: ${this.day.toISOString()}}, part: ${this.part}}`;
+  }
+  adjustDay(f: (d: Date) => Date): DayAndPart {
+    return new DayAndPart(f(this.day), this.part);
+  }
+}
+
+export function binCyclesByDayAndPart(
+  cycles: Vector<PartCycleData>,
+  extractValue: (c: PartCycleData) => number
+): HashMap<DayAndPart, number> {
+  return LazySeq.ofIterable(cycles)
+    .map(point => ({
+      day: startOfDay(point.x),
+      part: part_and_proc(point.part, point.process),
+      value: extractValue(point)
+    }))
+    .toMap(p => [new DayAndPart(p.day, p.part), p.value] as [DayAndPart, number], (v1, v2) => v1 + v2);
+}
+
+export function stationMinutes(partCycles: Vector<PartCycleData>, cutoff: Date): HashMap<string, number> {
+  return LazySeq.ofIterable(partCycles)
+    .filter(p => p.x >= cutoff)
+    .map(p => ({
+      station: stat_name_and_num(p.stationGroup, p.stationNumber),
+      active: p.active
+    }))
+    .toMap(x => [x.station, x.active] as [string, number], (v1, v2) => v1 + v2);
 }

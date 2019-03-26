@@ -55,8 +55,8 @@ import { SortableElement, SortableContainer } from "react-sortable-hoc";
 import * as api from "../../data/api";
 import * as matDetails from "../../data/material-details";
 import { LogEntries } from "../LogEntry";
-import { connect, mkAC } from "../../store/store";
-import { inproc_mat_to_summary, MaterialSummaryAndCompletedData, MaterialSummary } from "../../data/events.matsummary";
+import { MaterialSummary } from "../../data/events";
+import { inproc_mat_to_summary, MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 import { LazySeq } from "../../data/lazyseq";
 
 /*
@@ -265,7 +265,6 @@ export const SortableInProcMaterial = SortableElement(InProcMaterial);
 export class MaterialDetailTitle extends React.PureComponent<{
   partName: string;
   serial?: string;
-  subtitle?: string;
 }> {
   render() {
     let title;
@@ -284,7 +283,6 @@ export class MaterialDetailTitle extends React.PureComponent<{
         {this.props.partName === "" ? <SearchIcon /> : <PartIdenticon part={this.props.partName} />}
         <div style={{ marginLeft: "8px", flexGrow: 1 }}>
           <Typography variant="h6">{title}</Typography>
-          {this.props.subtitle ? <Typography variant="caption">{this.props.subtitle}</Typography> : undefined}
         </div>
       </div>
     );
@@ -400,15 +398,6 @@ export function MaterialDialog(props: MaterialDialogProps) {
     </Dialog>
   );
 }
-
-export const BasicMaterialDialog = connect(
-  st => ({
-    display_material: st.MaterialDetails.material
-  }),
-  {
-    onClose: mkAC(matDetails.ActionType.CloseMaterialDialog)
-  }
-)(MaterialDialog);
 
 const whiteboardRegionStyle = createStyles({
   container: {

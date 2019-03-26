@@ -39,10 +39,13 @@ import { DialogActions } from "@material-ui/core";
 import { createSelector } from "reselect";
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
+import { MaterialSummary } from "../../data/events";
 import { Store, connect, mkAC, AppActionBeforeMiddleware } from "../../store/store";
 import { MaterialDialogProps, MaterialDialog, MatSummary, WhiteboardRegion, InstructionButton } from "./Material";
 import * as matDetails from "../../data/material-details";
-import { MaterialSummaryAndCompletedData, MaterialSummary } from "../../data/events.matsummary";
+import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
+import SerialScanner from "./QRScan";
+import ManualScan from "./ManualScan";
 import { HashMap, HashSet } from "prelude-ts";
 import { LazySeq } from "../../data/lazyseq";
 
@@ -202,6 +205,8 @@ function Inspection(props: InspectionProps) {
           </Grid>
         </Grid>
         <ConnectedInspDialog />
+        <SerialScanner />
+        <ManualScan />
       </main>
     </DocumentTitle>
   );

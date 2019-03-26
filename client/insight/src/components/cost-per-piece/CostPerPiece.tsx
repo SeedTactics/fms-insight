@@ -49,7 +49,7 @@ import MoneyIcon from "@material-ui/icons/AttachMoney";
 import { PartCycleData } from "../../data/events.cycles";
 import { createSelector } from "reselect";
 import BuildIcon from "@material-ui/icons/Build";
-import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
+import AnalysisSelectToolbar from "../AnalysisSelectToolbar";
 import { HashSet, Vector } from "prelude-ts";
 import { LazySeq } from "../../data/lazyseq";
 

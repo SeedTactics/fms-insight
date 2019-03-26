@@ -42,6 +42,11 @@ import * as simuse from "./events.simuse";
 import * as inspection from "./events.inspection";
 import { JobsBackend, LogBackend } from "./backend";
 
+export { CycleState, CycleData, binCyclesByDayAndStat, binCyclesByDayAndPart, stationMinutes } from "./events.cycles";
+export { MaterialSummary } from "./events.matsummary";
+export { SimUseState, binSimStationUseByDayAndStat, binSimProductionByDayAndPart } from "./events.simuse";
+export { InspectionLogResultType, InspectionLogResult, InspectionLogEntry, InspectionState } from "./events.inspection";
+
 export enum AnalysisPeriod {
   Last30Days = "Last_30_Days",
   SpecificMonth = "Specific_Month"
@@ -276,7 +281,6 @@ function processRecentLogEntries(now: Date, evts: ReadonlyArray<Readonly<api.ILo
     inspection: inspection.process_events(
       { type: cycles.ExpireOldDataType.ExpireEarlierThan, d: thirtyDaysAgo },
       evts,
-      undefined,
       s.inspection
     )
   });
@@ -290,7 +294,7 @@ function processSpecificMonthLogEntries(evts: ReadonlyArray<Readonly<api.ILogEnt
       true, // initial load is true
       s.cycles
     ),
-    inspection: inspection.process_events({ type: cycles.ExpireOldDataType.NoExpire }, evts, undefined, s.inspection)
+    inspection: inspection.process_events({ type: cycles.ExpireOldDataType.NoExpire }, evts, s.inspection)
   });
 }
 

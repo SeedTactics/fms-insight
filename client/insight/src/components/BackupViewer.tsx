@@ -34,7 +34,7 @@ import * as React from "react";
 import Button from "@material-ui/core/Button";
 
 import { connect } from "../store/store";
-import Efficiency from "./analysis/Efficiency";
+import Efficiency from "./efficiency/Efficiency";
 
 interface BackupViewerProps {
   file_opened: boolean;
