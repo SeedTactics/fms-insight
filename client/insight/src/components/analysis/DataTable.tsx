@@ -73,6 +73,7 @@ export interface DataTableHeadProps<Id, Row> {
   readonly order: "asc" | "desc";
   readonly columns: ReadonlyArray<Column<Id, Row>>;
   readonly onRequestSort: (id: Id) => void;
+  readonly showDetailsCol: boolean;
 }
 
 export function DataTableHead<Id extends string | number, Row>(props: DataTableHeadProps<Id, Row>) {
@@ -96,7 +97,7 @@ export function DataTableHead<Id extends string | number, Row>(props: DataTableH
             </Tooltip>
           </TableCell>
         ))}
-        <TableCell padding="checkbox" />
+        {props.showDetailsCol ? <TableCell padding="checkbox" /> : undefined}
       </TableRow>
     </TableHead>
   );
@@ -111,13 +112,16 @@ export interface DataTableActionsProps {
   readonly setRowsPerPage: (rpp: number) => void;
   readonly default_date_range: Date[];
   readonly current_date_zoom: { start: Date; end: Date } | undefined;
-  readonly set_date_zoom_range: (p: { zoom?: { start: Date; end: Date } }) => void;
+  readonly set_date_zoom_range: ((p: { zoom?: { start: Date; end: Date } }) => void) | undefined;
 }
 
 export function DataTableActions(props: DataTableActionsProps) {
+  const setDateZoom = props.set_date_zoom_range;
   function setDateRange(numDaysBack: number) {
     const now = new Date();
-    props.set_date_zoom_range({ zoom: { start: addDays(now, -numDaysBack), end: addHours(now, 1) } });
+    if (setDateZoom) {
+      setDateZoom({ zoom: { start: addDays(now, -numDaysBack), end: addHours(now, 1) } });
+    }
   }
   const [focusedDateEntry, setFocusedDateEntry] = React.useState<"startDate" | "endDate" | null>(null);
   return (
@@ -171,101 +175,106 @@ export function DataTableActions(props: DataTableActionsProps) {
       >
         <LastPageIcon />
       </IconButton>
-      <div style={{ flexGrow: 1 }} />
-      {props.last30_days ? (
+      {setDateZoom ? (
         <>
-          <Tooltip title="Last 24 hours">
-            <Button onClick={() => setDateRange(1)} style={{ color: "rgba(0, 0, 0, 0.54)" }}>
-              24h
-            </Button>
-          </Tooltip>
-          <Tooltip title="Last 2 days">
-            <Button onClick={() => setDateRange(2)} style={{ color: "rgba(0, 0, 0, 0.54)" }}>
-              2d
-            </Button>
-          </Tooltip>
-          <Tooltip title="Last 3 days">
-            <Button onClick={() => setDateRange(3)} style={{ color: "rgba(0, 0, 0, 0.54)" }}>
-              3d
-            </Button>
-          </Tooltip>
-          <Tooltip title="Last 4 days">
-            <Button onClick={() => setDateRange(4)} style={{ color: "rgba(0, 0, 0, 0.54)" }}>
-              4d
-            </Button>
-          </Tooltip>
-          <Tooltip title="Last 5 days">
-            <Button onClick={() => setDateRange(5)} style={{ color: "rgba(0, 0, 0, 0.54)" }}>
-              5d
-            </Button>
-          </Tooltip>
-          <Tooltip title="Last 6 days">
-            <Button onClick={() => setDateRange(6)} style={{ color: "rgba(0, 0, 0, 0.54)" }}>
-              6d
-            </Button>
-          </Tooltip>
-          <Tooltip title="Last 1 week">
-            <Button onClick={() => setDateRange(7)} style={{ color: "rgba(0, 0, 0, 0.54)" }}>
-              1w
-            </Button>
-          </Tooltip>
-          <Tooltip title="Last 2 weeks">
-            <Button onClick={() => setDateRange(7 * 2)} style={{ color: "rgba(0, 0, 0, 0.54)" }}>
-              2w
-            </Button>
-          </Tooltip>
-          <Tooltip title="Last 3 weeks">
-            <Button onClick={() => setDateRange(7 * 3)} style={{ color: "rgba(0, 0, 0, 0.54)" }}>
-              3w
-            </Button>
-          </Tooltip>
-          <Tooltip title="Last 30 days">
-            <Button
-              onClick={() => props.set_date_zoom_range({ zoom: undefined })}
-              style={{ color: "rgba(0, 0, 0, 0.54)" }}
-            >
-              30d
-            </Button>
-          </Tooltip>
+          <div style={{ flexGrow: 1 }} />
+          {props.last30_days ? (
+            <>
+              <Tooltip title="Last 24 hours">
+                <Button onClick={() => setDateRange(1)} style={{ color: "rgba(0, 0, 0, 0.54)" }}>
+                  24h
+                </Button>
+              </Tooltip>
+              <Tooltip title="Last 2 days">
+                <Button onClick={() => setDateRange(2)} style={{ color: "rgba(0, 0, 0, 0.54)" }}>
+                  2d
+                </Button>
+              </Tooltip>
+              <Tooltip title="Last 3 days">
+                <Button onClick={() => setDateRange(3)} style={{ color: "rgba(0, 0, 0, 0.54)" }}>
+                  3d
+                </Button>
+              </Tooltip>
+              <Tooltip title="Last 4 days">
+                <Button onClick={() => setDateRange(4)} style={{ color: "rgba(0, 0, 0, 0.54)" }}>
+                  4d
+                </Button>
+              </Tooltip>
+              <Tooltip title="Last 5 days">
+                <Button onClick={() => setDateRange(5)} style={{ color: "rgba(0, 0, 0, 0.54)" }}>
+                  5d
+                </Button>
+              </Tooltip>
+              <Tooltip title="Last 6 days">
+                <Button onClick={() => setDateRange(6)} style={{ color: "rgba(0, 0, 0, 0.54)" }}>
+                  6d
+                </Button>
+              </Tooltip>
+              <Tooltip title="Last 1 week">
+                <Button onClick={() => setDateRange(7)} style={{ color: "rgba(0, 0, 0, 0.54)" }}>
+                  1w
+                </Button>
+              </Tooltip>
+              <Tooltip title="Last 2 weeks">
+                <Button onClick={() => setDateRange(7 * 2)} style={{ color: "rgba(0, 0, 0, 0.54)" }}>
+                  2w
+                </Button>
+              </Tooltip>
+              <Tooltip title="Last 3 weeks">
+                <Button onClick={() => setDateRange(7 * 3)} style={{ color: "rgba(0, 0, 0, 0.54)" }}>
+                  3w
+                </Button>
+              </Tooltip>
+              <Tooltip title="Last 30 days">
+                <Button onClick={() => setDateZoom({ zoom: undefined })} style={{ color: "rgba(0, 0, 0, 0.54)" }}>
+                  30d
+                </Button>
+              </Tooltip>
+            </>
+          ) : (
+            <>
+              <DateRangePicker
+                startDate={moment(
+                  props.current_date_zoom ? props.current_date_zoom.start : props.default_date_range[0]
+                )}
+                startDateId="station-data-table-start-date"
+                endDate={moment(
+                  addDays(props.current_date_zoom ? props.current_date_zoom.end : props.default_date_range[1], -1)
+                )}
+                navPrev={<span />}
+                navNext={<span />}
+                endDateId="station-data-table-start-date"
+                noBorder={true}
+                numberOfMonths={1}
+                withPortal
+                openDirection="up"
+                hideKeyboardShortcutsPanel
+                minimumNights={0}
+                onDatesChange={d =>
+                  setDateZoom({
+                    zoom: {
+                      start: d.startDate ? d.startDate.toDate() : props.default_date_range[0],
+                      end: d.endDate ? addDays(d.endDate.toDate(), 1) : props.default_date_range[1]
+                    }
+                  })
+                }
+                keepOpenOnDateSelect
+                isOutsideRange={day =>
+                  day.toDate() < props.default_date_range[0] || day.toDate >= props.default_date_range[1]
+                }
+                focusedInput={focusedDateEntry}
+                onFocusChange={setFocusedDateEntry}
+              />
+              <Tooltip title="Reset Date Range">
+                <IconButton onClick={() => setDateZoom({ zoom: undefined })}>
+                  <ZoomOutIcon />
+                </IconButton>
+              </Tooltip>
+            </>
+          )}
         </>
       ) : (
-        <>
-          <DateRangePicker
-            startDate={moment(props.current_date_zoom ? props.current_date_zoom.start : props.default_date_range[0])}
-            startDateId="station-data-table-start-date"
-            endDate={moment(
-              addDays(props.current_date_zoom ? props.current_date_zoom.end : props.default_date_range[1], -1)
-            )}
-            navPrev={<span />}
-            navNext={<span />}
-            endDateId="station-data-table-start-date"
-            noBorder={true}
-            numberOfMonths={1}
-            withPortal
-            openDirection="up"
-            hideKeyboardShortcutsPanel
-            minimumNights={0}
-            onDatesChange={d =>
-              props.set_date_zoom_range({
-                zoom: {
-                  start: d.startDate ? d.startDate.toDate() : props.default_date_range[0],
-                  end: d.endDate ? addDays(d.endDate.toDate(), 1) : props.default_date_range[1]
-                }
-              })
-            }
-            keepOpenOnDateSelect
-            isOutsideRange={day =>
-              day.toDate() < props.default_date_range[0] || day.toDate >= props.default_date_range[1]
-            }
-            focusedInput={focusedDateEntry}
-            onFocusChange={setFocusedDateEntry}
-          />
-          <Tooltip title="Reset Date Range">
-            <IconButton onClick={() => props.set_date_zoom_range({ zoom: undefined })}>
-              <ZoomOutIcon />
-            </IconButton>
-          </Tooltip>
-        </>
+        undefined
       )}
     </Toolbar>
   );
@@ -274,11 +283,12 @@ export function DataTableActions(props: DataTableActionsProps) {
 export interface DataTableBodyProps<Id, Row> {
   readonly pageData: Iterable<Row>;
   readonly columns: ReadonlyArray<Column<Id, Row>>;
-  readonly onClickDetails: (r: Row) => void;
+  readonly onClickDetails?: (r: Row) => void;
 }
 
 export class DataTableBody<Id extends string | number, Row> extends React.PureComponent<DataTableBodyProps<Id, Row>> {
   render() {
+    const onClickDetails = this.props.onClickDetails;
     return (
       <TableBody>
         {LazySeq.ofIterable(this.props.pageData).map((row, idx) => (
@@ -288,11 +298,15 @@ export class DataTableBody<Id extends string | number, Row> extends React.PureCo
                 {col.getDisplay(row)}
               </TableCell>
             ))}
-            <TableCell padding="checkbox">
-              <IconButton onClick={() => this.props.onClickDetails(row)}>
-                <MoreHoriz />
-              </IconButton>
-            </TableCell>
+            {onClickDetails ? (
+              <TableCell padding="checkbox">
+                <IconButton onClick={() => onClickDetails(row)}>
+                  <MoreHoriz />
+                </IconButton>
+              </TableCell>
+            ) : (
+              undefined
+            )}
           </TableRow>
         ))}
       </TableBody>

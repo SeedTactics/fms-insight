@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2019, John Lenz
 
 All rights reserved.
 
@@ -30,55 +30,47 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 import * as React from "react";
+import { connect } from "../../store/store";
+import { addDays, startOfToday } from "date-fns";
+import { openMaterialById } from "../../data/material-details";
+import { InspectionSankey } from "../analysis/InspectionSankey";
+import { Last30Days } from "../../data/events";
+import { HashMap } from "prelude-ts";
+import { createSelector } from "reselect";
+import { PartAndInspType, InspectionLogEntry } from "../../data/events.inspection";
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
-import { Store, connect } from "../../store/store";
-import { WhiteboardRegion, InProcMaterial } from "./Material";
-import * as matDetails from "../../data/material-details";
-import { AllMaterialBins, selectAllMaterialIntoBins } from "../../data/all-material-bins";
-import { createSelector } from "reselect";
-import { MaterialSummary } from "../../data/events.matsummary";
+const filterLogSelector = createSelector(
+  (last30: Last30Days, _t: Date) => last30.inspection.by_part,
+  (_: Last30Days, today: Date) => today,
+  (byPart: HashMap<PartAndInspType, ReadonlyArray<InspectionLogEntry>>, today: Date) => {
+    const start = addDays(today, -6);
+    const end = addDays(today, 1);
+    return byPart.mapValues(log => log.filter(e => e.time >= start && e.time <= end));
+  }
+);
 
-interface AllMatProps {
-  readonly allMat: AllMaterialBins;
-  readonly openMat: (mat: MaterialSummary) => void;
-}
+const ConnectedInspection = connect(
+  st => ({
+    inspectionlogs: filterLogSelector(st.Events.last30, startOfToday()),
+    analysisPeriod: st.Events.analysis_period,
+    default_date_range: [addDays(startOfToday(), -6), addDays(startOfToday(), 1)],
+    defaultToTable: false
+  }),
+  {
+    openMaterialDetails: openMaterialById
+  }
+)(InspectionSankey);
 
-function AllMats(props: AllMatProps) {
-  const regions = props.allMat.keySet().toArray({ sortOn: x => x });
-
+export function QualityPaths() {
   return (
-    <DocumentTitle title="All Material - FMS Insight">
-      <main data-testid="stationmonitor-allmaterial" style={{ padding: "8px" }}>
-        <div>
-          {regions.map(region => (
-            <WhiteboardRegion key={region} label={region} borderBottom flexStart>
-              {props.allMat
-                .get(region)
-                .getOrElse([])
-                .map((m, idx) => (
-                  <InProcMaterial key={idx} mat={m} onOpen={props.openMat} />
-                ))}
-            </WhiteboardRegion>
-          ))}
+    <DocumentTitle title="Paths - FMS Insight">
+      <main style={{ padding: "24px" }}>
+        <div data-testid="failed-parts">
+          <ConnectedInspection subtitle="Paths from the last 7 days" />
         </div>
       </main>
     </DocumentTitle>
   );
 }
-
-const extractMaterialRegions = createSelector(
-  (st: Store) => st.Current.current_status,
-  selectAllMaterialIntoBins
-);
-
-export default connect(
-  (st: Store) => ({
-    allMat: extractMaterialRegions(st)
-  }),
-  {
-    openMat: matDetails.openMaterialDialog
-  }
-)(AllMats);

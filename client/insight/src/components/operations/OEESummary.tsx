@@ -37,12 +37,12 @@ import Tooltip from "@material-ui/core/Tooltip";
 import TimeAgo from "react-timeago";
 
 import { connect, Store } from "../../store/store";
-import { stationMinutes } from "../../data/events";
 import * as api from "../../data/api";
 import { duration } from "moment";
 import { addSeconds, addDays } from "date-fns";
 import { PalletData, buildPallets } from "../../data/load-station";
 import { HashMap } from "prelude-ts";
+import { stationMinutes } from "../../data/results.cycles";
 
 interface StationOEEProps {
   readonly dateOfCurrentStatus: Date | undefined;

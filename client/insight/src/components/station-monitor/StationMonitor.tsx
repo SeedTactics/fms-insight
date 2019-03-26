@@ -43,20 +43,22 @@ import Queues from "./Queues";
 import AllMaterial from "./AllMaterial";
 
 export interface StationMonitorProps {
-  readonly monitor_type: routes.StationMonitorType;
+  readonly showToolbar: boolean;
+  readonly route_loc: routes.RouteLocation;
 }
 
-function monitorElement(type: routes.StationMonitorType, fillViewport: boolean): JSX.Element {
+function monitorElement(type: routes.RouteLocation, fillViewport: boolean): JSX.Element {
   switch (type) {
-    case routes.StationMonitorType.LoadUnload:
+    case routes.RouteLocation.Station_LoadMonitor:
       return <LoadStation fillViewPort={fillViewport} />;
-    case routes.StationMonitorType.Inspection:
+    case routes.RouteLocation.Station_InspectionMonitor:
       return <Inspection />;
-    case routes.StationMonitorType.Wash:
+    case routes.RouteLocation.Station_WashMonitor:
       return <Wash />;
-    case routes.StationMonitorType.Queues:
+    case routes.RouteLocation.Station_Queues:
       return <Queues />;
-    case routes.StationMonitorType.AllMaterial:
+    case routes.RouteLocation.Operations_AllMaterial:
+    default:
       return <AllMaterial />;
   }
 }
@@ -64,9 +66,9 @@ function monitorElement(type: routes.StationMonitorType, fillViewport: boolean):
 export default function StationMonitor(props: StationMonitorProps) {
   return (
     <div>
-      <StationToolbar />
-      <Hidden mdDown>{monitorElement(props.monitor_type, true)}</Hidden>
-      <Hidden lgUp>{monitorElement(props.monitor_type, false)}</Hidden>
+      {props.showToolbar ? <StationToolbar full={true} allowChangeType={true} /> : undefined}
+      <Hidden mdDown>{monitorElement(props.route_loc, true)}</Hidden>
+      <Hidden lgUp>{monitorElement(props.route_loc, false)}</Hidden>
     </div>
   );
 }

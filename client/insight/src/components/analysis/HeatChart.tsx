@@ -44,7 +44,7 @@ import ImportExport from "@material-ui/icons/ImportExport";
 
 import * as gui from "../../data/gui-state";
 import { LazySeq } from "../../data/lazyseq";
-import { copyPointsToClipboard } from "../../data/clipboard-table";
+import { copyHeatmapToClipboard } from "../../data/results.oee";
 
 export interface HeatChartPoint {
   readonly x: Date;
@@ -94,13 +94,14 @@ class HeatChart extends React.PureComponent<HeatChartProps, HeatChartState> {
           data={this.props.points}
           onValueMouseOver={(pt: HeatChartPoint) => this.setState({ selected_point: pt })}
           onValueMouseOut={() => this.setState({ selected_point: undefined })}
-        />
-        <LabelSeries
-          style={{ pointerEvents: "none", fill: "#6b6b76" }}
-          data={this.props.points}
-          labelAnchorX="middle"
-          labelAnchorY="baseline"
-          getLabel={(d: HeatChartPoint) => d.label}
+          style={{
+            stroke: "white",
+            strokeWidth: "2px",
+            rectStyle: {
+              rx: 10,
+              ry: 10
+            }
+          }}
         />
         {this.state.selected_point === undefined ? (
           undefined
@@ -139,7 +140,7 @@ export function SelectableHeatChart(props: SelectableHeatChartProps) {
             <div style={{ flexGrow: 1 }} />
             <Tooltip title="Copy to Clipboard">
               <IconButton
-                onClick={() => copyPointsToClipboard(props.y_title, props.points)}
+                onClick={() => copyHeatmapToClipboard(props.y_title, props.points)}
                 style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
               >
                 <ImportExport />

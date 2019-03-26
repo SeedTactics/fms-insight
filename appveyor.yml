@@ -131,7 +131,6 @@ build_script:
 
 test_script:
   - cmd: dotnet test server/test
-  - cmd: yarn --cwd client/insight test
 
 artifacts:
   - path: "**/*.nupkg"

@@ -33,10 +33,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as api from "./api";
 import { Pledge, PledgeStatus, PledgeToPromise } from "../store/middleware";
-import { MaterialSummary } from "./events";
 import { JobsBackend, LogBackend, OtherLogBackends } from "./backend";
 import { Vector, HashSet } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
+import { MaterialSummary } from "./events.matsummary";
 
 export enum ActionType {
   OpenMaterialDialog = "MaterialDetails_Open",

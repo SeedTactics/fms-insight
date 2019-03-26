@@ -61,10 +61,8 @@ import * as guiState from "../../data/gui-state";
 import * as currentSt from "../../data/current-status";
 import { Store, connect, AppActionBeforeMiddleware } from "../../store/store";
 import * as matDetails from "../../data/material-details";
-import { MaterialSummary } from "../../data/events";
-import SerialScanner from "./QRScan";
-import ManualScan from "./ManualScan";
 import { LazySeq } from "../../data/lazyseq";
+import { MaterialSummary } from "../../data/events.matsummary";
 
 interface ExistingMatInQueueDialogBodyProps {
   readonly display_material: matDetails.MaterialDetail;
@@ -618,8 +616,6 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
         ))}
         <ConnectedMaterialDialog />
         <ConnectedChooseSerialOrDirectJobDialog />
-        <SerialScanner />
-        <ManualScan />
       </main>
     </DocumentTitle>
   );

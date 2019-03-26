@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2019, John Lenz
 
 All rights reserved.
 
@@ -45,89 +45,152 @@ import CircularProgress from "@material-ui/core/CircularProgress";
 import Button from "@material-ui/core/Button";
 import Badge from "@material-ui/core/Badge";
 import Notifications from "@material-ui/icons/Notifications";
+import CameraAlt from "@material-ui/icons/CameraAlt";
+import SearchIcon from "@material-ui/icons/Search";
 import { User } from "oidc-client";
 
-import Dashboard from "./dashboard/Dashboard";
-import CostPerPiece from "./cost-per-piece/CostPerPiece";
-import Efficiency from "./efficiency/Efficiency";
+import OperationDashboard from "./operations/Dashboard";
+import { OperationLoadUnload, OperationMachines } from "./operations/DailyStationOverview";
+import CostPerPiece from "./analysis/CostPerPiece";
+import Efficiency from "./analysis/Efficiency";
 import StationMonitor from "./station-monitor/StationMonitor";
-import DataExport from "./data-export/DataExport";
+import StationToolbar from "./station-monitor/StationToolbar";
+import DataExport from "./analysis/DataExport";
+import ChooseMode from "./ChooseMode";
 import LoadingIcon from "./LoadingIcon";
 import * as routes from "../data/routes";
 import { Store, connect, mkAC } from "../store/store";
 import * as api from "../data/api";
 import * as serverSettings from "../data/server-settings";
+import * as guiState from "../data/gui-state";
+import * as pathLookup from "../data/path-lookup";
+import * as matDetails from "../data/material-details";
 import logo from "../seedtactics-logo.svg";
 import BackupViewer from "./BackupViewer";
+import SerialScanner from "./QRScan";
+import ManualScan from "./ManualScan";
+import ChooseOperator from "./ChooseOperator";
+import { BasicMaterialDialog } from "./station-monitor/Material";
+import { CompletedParts } from "./operations/CompletedParts";
+import { FailedPartLookup } from "./quality/FailedPartLookup";
+import { QualityPaths } from "./quality/QualityPaths";
+import { QualityDashboard } from "./quality/RecentFailedInspections";
 
 const tabsStyle = {
   alignSelf: "flex-end" as "flex-end",
   flexGrow: 1
 };
 
-enum TabType {
-  Dashboard,
-  StationMonitor,
-  Efficiency,
-  CostPerPiece,
-  DataExport
+interface HeaderNavProps {
+  readonly full: boolean;
+  readonly setRoute: (arg: { ty: routes.RouteLocation; curSt: routes.State }) => void;
+  readonly routeState: routes.State;
+}
+
+function DemoTabs(p: HeaderNavProps) {
+  return (
+    <Tabs
+      variant={p.full ? "fullWidth" : "standard"}
+      style={p.full ? {} : tabsStyle}
+      value={p.routeState.current}
+      onChange={(e, v) => p.setRoute({ ty: v, curSt: p.routeState })}
+    >
+      <Tab label="Operations" value={routes.RouteLocation.Operations_Dashboard} />
+      <Tab label="Station Monitor" value={routes.RouteLocation.Station_LoadMonitor} />
+      <Tab label="Load/Unload" value={routes.RouteLocation.Operations_LoadStation} />
+      <Tab label="Machines" value={routes.RouteLocation.Operations_Machines} />
+      <Tab label="Completed Parts" value={routes.RouteLocation.Operations_CompletedParts} />
+      <Tab label="Quality" value={routes.RouteLocation.Quality_Dashboard} />
+      <Tab label="Failed Part" value={routes.RouteLocation.Quality_Serials} />
+      <Tab label="Paths" value={routes.RouteLocation.Quality_Paths} />
+      <Tab label="Efficiency" value={routes.RouteLocation.Analysis_Efficiency} />
+      <Tab label="Cost/Piece" value={routes.RouteLocation.Analysis_CostPerPiece} />
+    </Tabs>
+  );
+}
+
+function OperationsTabs(p: HeaderNavProps) {
+  return (
+    <Tabs
+      variant={p.full ? "fullWidth" : "standard"}
+      style={p.full ? {} : tabsStyle}
+      value={p.routeState.current}
+      onChange={(e, v) => p.setRoute({ ty: v, curSt: p.routeState })}
+    >
+      <Tab label="Operations" value={routes.RouteLocation.Operations_Dashboard} />
+      <Tab label="Load/Unload" value={routes.RouteLocation.Operations_LoadStation} />
+      <Tab label="Machines" value={routes.RouteLocation.Operations_Machines} />
+      <Tab label="Completed Parts" value={routes.RouteLocation.Operations_CompletedParts} />
+      <Tab label="Material" value={routes.RouteLocation.Operations_AllMaterial} />
+    </Tabs>
+  );
+}
+
+function QualityTabs(p: HeaderNavProps) {
+  return (
+    <Tabs
+      variant={p.full ? "fullWidth" : "standard"}
+      style={p.full ? {} : tabsStyle}
+      value={p.routeState.current}
+      onChange={(e, v) => p.setRoute({ ty: v, curSt: p.routeState })}
+    >
+      <Tab label="Quality" value={routes.RouteLocation.Quality_Dashboard} />
+      <Tab label="Failed Part Lookup" value={routes.RouteLocation.Quality_Serials} />
+      <Tab label="Paths" value={routes.RouteLocation.Quality_Paths} />
+    </Tabs>
+  );
+}
+
+function AnalysisTabs(p: HeaderNavProps) {
+  return (
+    <Tabs
+      variant={p.full ? "fullWidth" : "standard"}
+      style={p.full ? {} : tabsStyle}
+      value={p.routeState.current}
+      onChange={(e, v) => p.setRoute({ ty: v, curSt: p.routeState })}
+    >
+      <Tab label="Efficiency" value={routes.RouteLocation.Analysis_Efficiency} />
+      <Tab label="Cost/Piece" value={routes.RouteLocation.Analysis_CostPerPiece} />
+      <Tab label="Data Export" value={routes.RouteLocation.Analysis_DataExport} />
+    </Tabs>
+  );
 }
 
 interface HeaderProps {
-  showTabs: boolean;
+  demo: boolean;
   showAlarms: boolean;
-  showDataExport: boolean;
   showLogout: boolean;
-  iconIsLink: boolean;
+  showSearch: boolean;
+  showOperator: boolean;
+  children?: (p: HeaderNavProps) => React.ReactNode;
 
   routeState: routes.State;
   fmsInfo: Readonly<api.IFMSInfo> | null;
   latestVersion: serverSettings.LatestInstaller | null;
   alarms: ReadonlyArray<string> | null;
-  setRoute: (arg: { ty: TabType; curSt: routes.State }) => void;
+  setRoute: (arg: { ty: routes.RouteLocation; curSt: routes.State }) => void;
   onLogout: () => void;
+  readonly openQrCodeScan: () => void;
+  readonly openManualSerial: () => void;
 }
 
 function Header(p: HeaderProps) {
-  let tabType: TabType = TabType.Dashboard;
   let helpUrl = "https://fms-insight.seedtactics.com/docs/client-dashboard.html";
   switch (p.routeState.current) {
-    case routes.RouteLocation.Dashboard:
-      tabType = TabType.Dashboard;
-      break;
-    case routes.RouteLocation.LoadMonitor:
-    case routes.RouteLocation.InspectionMonitor:
-    case routes.RouteLocation.WashMonitor:
-    case routes.RouteLocation.Queues:
-    case routes.RouteLocation.AllMaterial:
-      tabType = TabType.StationMonitor;
+    case routes.RouteLocation.Station_LoadMonitor:
+    case routes.RouteLocation.Station_InspectionMonitor:
+    case routes.RouteLocation.Station_WashMonitor:
+    case routes.RouteLocation.Station_Queues:
+    case routes.RouteLocation.Operations_AllMaterial:
       helpUrl = "https://fms-insight.seedtactics.com/docs/client-station-monitor.html";
       break;
-    case routes.RouteLocation.Efficiency:
-      tabType = TabType.Efficiency;
+    case routes.RouteLocation.Analysis_Efficiency:
       helpUrl = "https://fms-insight.seedtactics.com/docs/client-efficiency.html";
       break;
-    case routes.RouteLocation.CostPerPiece:
-      tabType = TabType.CostPerPiece;
+    case routes.RouteLocation.Analysis_CostPerPiece:
       helpUrl = "https://fms-insight.seedtactics.com/docs/client-cost-per-piece.html";
       break;
-    case routes.RouteLocation.DataExport:
-      tabType = TabType.DataExport;
   }
-  const tabs = (full: boolean) => (
-    <Tabs
-      variant={full ? "fullWidth" : "standard"}
-      style={full ? {} : tabsStyle}
-      value={tabType}
-      onChange={(e, v) => p.setRoute({ ty: v, curSt: p.routeState })}
-    >
-      <Tab label="Dashboard" value={TabType.Dashboard} />
-      <Tab label="Station Monitor" value={TabType.StationMonitor} />
-      <Tab label="Efficiency" value={TabType.Efficiency} />
-      <Tab label="Cost/Piece" value={TabType.CostPerPiece} />
-      {p.showDataExport ? <Tab label="Data Export" value={TabType.DataExport} /> : undefined}
-    </Tabs>
-  );
 
   const alarmTooltip = p.alarms ? p.alarms.join(". ") : "No Alarms";
   const Alarms = () => (
@@ -154,6 +217,25 @@ function Header(p: HeaderProps) {
     </Tooltip>
   );
 
+  const SearchButtons = () => (
+    <>
+      {window.location.protocol === "https:" || window.location.hostname === "localhost" ? (
+        <Tooltip title="Scan QR Code">
+          <IconButton onClick={p.openQrCodeScan}>
+            <CameraAlt />
+          </IconButton>
+        </Tooltip>
+      ) : (
+        undefined
+      )}
+      <Tooltip title="Enter Serial">
+        <IconButton onClick={p.openManualSerial}>
+          <SearchIcon />
+        </IconButton>
+      </Tooltip>
+    </>
+  );
+
   let tooltip: JSX.Element | string = "";
   if (p.fmsInfo && p.latestVersion) {
     tooltip = (
@@ -170,7 +252,7 @@ function Header(p: HeaderProps) {
   const largeAppBar = (
     <AppBar position="static">
       <Toolbar>
-        {p.iconIsLink ? (
+        {p.demo ? (
           <a href="/">
             <img src={logo} alt="Logo" style={{ height: "30px", marginRight: "1em" }} />
           </a>
@@ -182,11 +264,17 @@ function Header(p: HeaderProps) {
         <Typography variant="h6" style={{ marginRight: "2em" }}>
           Insight
         </Typography>
-        {p.showTabs ? tabs(false) : <div style={{ flexGrow: 1 }} />}
+        {p.children ? (
+          p.children({ full: false, setRoute: p.setRoute, routeState: p.routeState })
+        ) : (
+          <div style={{ flexGrow: 1 }} />
+        )}
         <LoadingIcon />
-        {p.showAlarms ? <Alarms /> : undefined}
+        {p.showOperator ? <ChooseOperator /> : undefined}
+        {p.showSearch ? <SearchButtons /> : undefined}
         <HelpButton />
         {p.showLogout ? <LogoutButton /> : undefined}
+        {p.showAlarms ? <Alarms /> : undefined}
       </Toolbar>
     </AppBar>
   );
@@ -195,16 +283,17 @@ function Header(p: HeaderProps) {
     <AppBar position="static">
       <Toolbar>
         <Tooltip title={tooltip}>
-          <img src="/seedtactics-logo.svg" alt="Logo" style={{ height: "25px", marginRight: "4px" }} />
+          <img src={logo} alt="Logo" style={{ height: "25px", marginRight: "4px" }} />
         </Tooltip>
         <Typography variant="h6">Insight</Typography>
         <div style={{ flexGrow: 1 }} />
         <LoadingIcon />
-        {p.showAlarms ? <Alarms /> : undefined}
+        {p.showSearch ? <SearchButtons /> : undefined}
         <HelpButton />
         {p.showLogout ? <LogoutButton /> : undefined}
+        {p.showAlarms ? <Alarms /> : undefined}
       </Toolbar>
-      {p.showTabs ? tabs(true) : undefined}
+      {p.children ? p.children({ full: true, setRoute: p.setRoute, routeState: p.routeState }) : undefined}
     </AppBar>
   );
 
@@ -227,55 +316,106 @@ interface AppConnectedProps extends AppProps {
   user: User | null;
   latestVersion: serverSettings.LatestInstaller | null;
   alarms: ReadonlyArray<string> | null;
-  setRoute: (arg: { ty: TabType; curSt: routes.State }) => void;
+  setRoute: (arg: { ty: routes.RouteLocation; curSt: routes.State }) => void;
   onLogin: () => void;
   onLogout: () => void;
+  readonly openQrCodeScan: () => void;
+  readonly openManualSerial: () => void;
 }
 
 class App extends React.PureComponent<AppConnectedProps> {
   render() {
     let page: JSX.Element;
-    let showTabs: boolean = true;
+    let navigation: ((p: HeaderNavProps) => JSX.Element) | undefined = undefined;
     let showAlarms: boolean = true;
     let showLogout: boolean = !!this.props.user;
-    let showDataExport: boolean = !this.props.demo;
-    let iconIsLink: boolean = this.props.demo;
+    let showSearch: boolean = true;
+    let showOperator: boolean = false;
+    let addBasicMaterialDialog: boolean = true;
     if (this.props.backupViewerOnRequestOpenFile) {
       page = <BackupViewer onRequestOpenFile={this.props.backupViewerOnRequestOpenFile} />;
-      showTabs = false;
       showAlarms = false;
-      showDataExport = false;
-      iconIsLink = false;
+      showSearch = false;
     } else if (this.props.fmsInfo && (!this.props.fmsInfo.openIDConnectAuthority || this.props.user)) {
       switch (this.props.route.current) {
-        case routes.RouteLocation.CostPerPiece:
+        case routes.RouteLocation.Station_LoadMonitor:
+        case routes.RouteLocation.Station_InspectionMonitor:
+        case routes.RouteLocation.Station_WashMonitor:
+        case routes.RouteLocation.Station_Queues:
+          page = <StationMonitor route_loc={this.props.route.current} showToolbar={this.props.demo} />;
+          navigation = p => <StationToolbar full={p.full} allowChangeType={false} />;
+          showOperator = true;
+          addBasicMaterialDialog = false;
+          break;
+
+        case routes.RouteLocation.Analysis_CostPerPiece:
           page = <CostPerPiece />;
+          navigation = AnalysisTabs;
+          showAlarms = false;
           break;
-        case routes.RouteLocation.Efficiency:
+        case routes.RouteLocation.Analysis_Efficiency:
           page = <Efficiency allowSetType={true} />;
+          navigation = AnalysisTabs;
+          showAlarms = false;
           break;
-        case routes.RouteLocation.LoadMonitor:
-          page = <StationMonitor monitor_type={routes.StationMonitorType.LoadUnload} />;
-          break;
-        case routes.RouteLocation.InspectionMonitor:
-          page = <StationMonitor monitor_type={routes.StationMonitorType.Inspection} />;
-          break;
-        case routes.RouteLocation.WashMonitor:
-          page = <StationMonitor monitor_type={routes.StationMonitorType.Wash} />;
-          break;
-        case routes.RouteLocation.Queues:
-          page = <StationMonitor monitor_type={routes.StationMonitorType.Queues} />;
-          break;
-        case routes.RouteLocation.AllMaterial:
-          page = <StationMonitor monitor_type={routes.StationMonitorType.AllMaterial} />;
-          break;
-        case routes.RouteLocation.DataExport:
+        case routes.RouteLocation.Analysis_DataExport:
           page = <DataExport />;
+          navigation = AnalysisTabs;
+          showAlarms = false;
           break;
-        case routes.RouteLocation.Dashboard:
+
+        case routes.RouteLocation.Operations_Dashboard:
+          page = <OperationDashboard />;
+          navigation = OperationsTabs;
+          break;
+        case routes.RouteLocation.Operations_LoadStation:
+          page = <OperationLoadUnload />;
+          navigation = OperationsTabs;
+          break;
+        case routes.RouteLocation.Operations_Machines:
+          page = <OperationMachines />;
+          navigation = OperationsTabs;
+          break;
+        case routes.RouteLocation.Operations_AllMaterial:
+          page = <StationMonitor route_loc={this.props.route.current} showToolbar={this.props.demo} />;
+          navigation = OperationsTabs;
+          break;
+        case routes.RouteLocation.Operations_CompletedParts:
+          page = <CompletedParts />;
+          navigation = OperationsTabs;
+          break;
+
+        case routes.RouteLocation.Engineering:
+          page = <OperationMachines />;
+          showAlarms = false;
+          break;
+
+        case routes.RouteLocation.Quality_Dashboard:
+          page = <QualityDashboard />;
+          navigation = QualityTabs;
+          showAlarms = false;
+          break;
+        case routes.RouteLocation.Quality_Serials:
+          page = <FailedPartLookup />;
+          navigation = QualityTabs;
+          addBasicMaterialDialog = false;
+          showAlarms = false;
+          break;
+        case routes.RouteLocation.Quality_Paths:
+          page = <QualityPaths />;
+          navigation = QualityTabs;
+          showAlarms = false;
+          break;
+
+        case routes.RouteLocation.Tools_Dashboard:
+          page = <p>Tools Dashboard</p>;
+          break;
+
+        case routes.RouteLocation.ChooseMode:
         default:
-          page = <Dashboard />;
-          break;
+          page = <ChooseMode />;
+          showAlarms = false;
+          showSearch = false;
       }
     } else if (this.props.fmsInfo && this.props.fmsInfo.openIDConnectAuthority) {
       page = (
@@ -286,7 +426,8 @@ class App extends React.PureComponent<AppConnectedProps> {
           </Button>
         </div>
       );
-      showTabs = false;
+      showAlarms = false;
+      showSearch = false;
     } else {
       page = (
         <div style={{ textAlign: "center", marginTop: "4em" }}>
@@ -294,24 +435,35 @@ class App extends React.PureComponent<AppConnectedProps> {
           <p>Loading</p>
         </div>
       );
-      showTabs = false;
+      showAlarms = false;
+      showSearch = false;
+    }
+    if (this.props.demo) {
+      navigation = DemoTabs;
     }
     return (
       <div id="App">
         <Header
-          iconIsLink={iconIsLink}
           routeState={this.props.route}
           fmsInfo={this.props.fmsInfo}
           latestVersion={this.props.latestVersion}
-          showTabs={showTabs}
+          demo={this.props.demo}
           showAlarms={showAlarms}
+          showSearch={showSearch}
           showLogout={showLogout}
-          showDataExport={showDataExport}
+          showOperator={showOperator}
           setRoute={this.props.setRoute}
           onLogout={this.props.onLogout}
           alarms={this.props.alarms}
-        />
+          openManualSerial={this.props.openManualSerial}
+          openQrCodeScan={this.props.openQrCodeScan}
+        >
+          {navigation}
+        </Header>
         {page}
+        <SerialScanner />
+        <ManualScan />
+        {addBasicMaterialDialog ? <BasicMaterialDialog /> : undefined}
       </div>
     );
   }
@@ -334,21 +486,20 @@ export default connect(
     alarms: emptyToNull(s.Current.current_status.alarms)
   }),
   {
-    setRoute: ({ ty, curSt }: { ty: TabType; curSt: routes.State }): routes.Action => {
-      switch (ty) {
-        case TabType.Dashboard:
-          return { type: routes.RouteLocation.Dashboard };
-        case TabType.Efficiency:
-          return { type: routes.RouteLocation.Efficiency };
-        case TabType.CostPerPiece:
-          return { type: routes.RouteLocation.CostPerPiece };
-        case TabType.StationMonitor:
-          return routes.switchToStationMonitorPage(curSt);
-        case TabType.DataExport:
-          return { type: routes.RouteLocation.DataExport };
-      }
-    },
+    setRoute: ({ ty, curSt }: { ty: routes.RouteLocation; curSt: routes.State }) => [
+      routes.displayPage(ty, curSt),
+      { type: matDetails.ActionType.CloseMaterialDialog },
+      { type: pathLookup.ActionType.Clear }
+    ],
     onLogin: mkAC(serverSettings.ActionType.Login),
-    onLogout: mkAC(serverSettings.ActionType.Logout)
+    onLogout: mkAC(serverSettings.ActionType.Logout),
+    openQrCodeScan: () => ({
+      type: guiState.ActionType.SetScanQrCodeDialog,
+      open: true
+    }),
+    openManualSerial: () => ({
+      type: guiState.ActionType.SetManualSerialEntryDialog,
+      open: true
+    })
   }
 )(App);

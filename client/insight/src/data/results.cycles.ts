@@ -31,81 +31,114 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import { HashMap, Vector } from "prelude-ts";
+import { PartCycleData, stat_name_and_num, part_and_proc, format_cycle_inspection } from "./events.cycles";
 import { LazySeq } from "./lazyseq";
-import { fieldsHashCode } from "prelude-ts";
-import { FilteredStationCycles, stat_name_and_num, format_cycle_inspection } from "./events.cycles";
+import * as api from "./api";
 import { format } from "date-fns";
-import * as api from "../data/api";
 import { duration } from "moment";
-import { InspectionLogEntry } from "./events";
-import { groupInspectionsByPath } from "./events.inspection";
 const copy = require("copy-to-clipboard");
 
-export interface ClipboardTablePoint {
-  readonly x: Date;
-  readonly y: string;
-  readonly label: string;
+export interface FilteredStationCycles {
+  readonly seriesLabel: string;
+  readonly data: HashMap<string, ReadonlyArray<PartCycleData>>;
 }
 
-class PointsTableCell {
-  public constructor(public readonly x: number, public readonly y: string) {}
-  equals(other: PointsTableCell): boolean {
-    return this.x === other.x && this.y === other.y;
-  }
-  hashCode(): number {
-    return fieldsHashCode(this.x, this.y);
-  }
-  toString(): string {
-    return `{x: ${new Date(this.x).toISOString()}, y: ${this.y}}`;
-  }
+export const FilterAnyMachineKey = "@@@_FMSInsight_FilterAnyMachineKey_@@@";
+export const FilterAnyLoadKey = "@@@_FMSInsigt_FilterAnyLoadKey_@@@";
+
+export function filterStationCycles(
+  allCycles: Vector<PartCycleData>,
+  zoom: { start: Date; end: Date } | undefined,
+  partAndProc?: string,
+  pallet?: string,
+  station?: string
+): FilteredStationCycles {
+  const groupByPal = partAndProc && station && station !== FilterAnyMachineKey && station !== FilterAnyLoadKey;
+  const groupByPart = pallet && station && station !== FilterAnyMachineKey && station !== FilterAnyLoadKey;
+  return {
+    seriesLabel: groupByPal ? "Pallet" : groupByPart ? "Part" : "Station",
+    data: LazySeq.ofIterable(allCycles)
+      .filter(e => {
+        if (zoom && (e.x < zoom.start || e.x > zoom.end)) {
+          return false;
+        }
+        if (partAndProc && part_and_proc(e.part, e.process) !== partAndProc) {
+          return false;
+        }
+        if (pallet && e.pallet !== pallet) {
+          return false;
+        }
+
+        if (station === FilterAnyMachineKey) {
+          if (e.isLabor) {
+            return false;
+          }
+        } else if (station === FilterAnyLoadKey) {
+          if (!e.isLabor) {
+            return false;
+          }
+        } else if (station && stat_name_and_num(e.stationGroup, e.stationNumber) !== station) {
+          return false;
+        }
+
+        return true;
+      })
+      .groupBy(e => {
+        if (groupByPal) {
+          return e.pallet;
+        } else if (groupByPart) {
+          return part_and_proc(e.part, e.process);
+        } else {
+          return stat_name_and_num(e.stationGroup, e.stationNumber);
+        }
+      })
+      .mapValues(e => e.toArray())
+  };
 }
 
-export function buildPointsTable(yTitle: string, points: ReadonlyArray<ClipboardTablePoint>): string {
-  const cells = LazySeq.ofIterable(points).toMap(
-    p => [new PointsTableCell(p.x.getTime(), p.y), p],
-    (_, c) => c // cells should be unique, but just in case take the second
-  );
-  const days = LazySeq.ofIterable(points)
-    .toSet(p => p.x.getTime())
-    .toArray({ sortOn: x => x });
-  const rows = LazySeq.ofIterable(points)
-    .toSet(p => p.y)
-    .toArray({ sortOn: x => x });
-
-  let table = "<table>\n<thead><tr><th>" + yTitle + "</th>";
-  for (let x of days) {
-    table += "<th>" + new Date(x).toDateString() + "</th>";
-  }
-  table += "</tr></thead>\n<tbody>\n";
-  for (let y of rows) {
-    table += "<tr><th>" + y + "</th>";
-    for (let x of days) {
-      const cell = cells.get(new PointsTableCell(x, y));
-      if (cell.isSome()) {
-        table += "<td>" + cell.get().label + "</td>";
-      } else {
-        table += "<td></td>";
-      }
-    }
-    table += "</tr>\n";
-  }
-  table += "</tbody>\n</table>";
-  return table;
+export function outlierCycles(
+  allCycles: Vector<PartCycleData>,
+  onlyLabor: boolean,
+  start: Date,
+  end: Date
+): FilteredStationCycles {
+  return {
+    seriesLabel: "Part",
+    data: LazySeq.ofIterable(allCycles)
+      .filter(e => onlyLabor === e.isLabor && e.outlier && e.x >= start && e.x <= end)
+      .groupBy(e => part_and_proc(e.part, e.process))
+      .mapValues(e => e.toArray())
+  };
 }
 
-export function copyPointsToClipboard(yTitle: string, points: ReadonlyArray<ClipboardTablePoint>): void {
-  copy(buildPointsTable(yTitle, points));
+export function stationMinutes(partCycles: Vector<PartCycleData>, cutoff: Date): HashMap<string, number> {
+  return LazySeq.ofIterable(partCycles)
+    .filter(p => p.x >= cutoff)
+    .map(p => ({
+      station: stat_name_and_num(p.stationGroup, p.stationNumber),
+      active: p.active
+    }))
+    .toMap(x => [x.station, x.active] as [string, number], (v1, v2) => v1 + v2);
 }
+
+// --------------------------------------------------------------------------------
+// Clipboard
+// --------------------------------------------------------------------------------
 
 export function buildCycleTable(
   cycles: FilteredStationCycles,
+  includeStats: boolean,
   startD: Date | undefined,
   endD: Date | undefined
 ): string {
   let table = "<table>\n<thead><tr>";
   table += "<th>Date</th><th>Part</th><th>Station</th><th>Pallet</th>";
   table += "<th>Serial</th><th>Workorder</th><th>Inspection</th>";
-  table += "<th>Elapsed Min</th><th>Active Min</th><th>Operator</th>";
+  table += "<th>Elapsed Min</th><th>Active Min</th>";
+  if (includeStats) {
+    table += "<th>Median Elapsed Min</th><th>Median Deviation</th>";
+  }
   table += "</tr></thead>\n<tbody>\n";
 
   let filteredCycles = LazySeq.ofIterable(cycles.data)
@@ -124,7 +157,10 @@ export function buildCycleTable(
     table += "<td>" + format_cycle_inspection(cycle) + "</td>";
     table += "<td>" + cycle.y.toFixed(1) + "</td>";
     table += "<td>" + cycle.active.toFixed(1) + "</td>";
-    table += "<td>" + cycle.operator + "</td>";
+    if (includeStats) {
+      table += "<td>" + cycle.medianElapsed.toFixed(1) + "</td>";
+      table += "<td>" + cycle.MAD_aboveMinutes.toFixed(1) + "</td>";
+    }
     table += "</tr>\n";
   }
   table += "</tbody>\n</table>";
@@ -133,9 +169,10 @@ export function buildCycleTable(
 
 export function copyCyclesToClipboard(
   cycles: FilteredStationCycles,
+  includeStats: boolean,
   zoom: { start: Date; end: Date } | undefined
 ): void {
-  copy(buildCycleTable(cycles, zoom ? zoom.start : undefined, zoom ? zoom.end : undefined));
+  copy(buildCycleTable(cycles, includeStats, zoom ? zoom.start : undefined, zoom ? zoom.end : undefined));
 }
 
 function stat_name(e: Readonly<api.ILogEntry>): string {
@@ -229,45 +266,4 @@ export function buildLogEntriesTable(cycles: Iterable<Readonly<api.ILogEntry>>):
 
 export function copyLogEntriesToClipboard(cycles: Iterable<Readonly<api.ILogEntry>>): void {
   copy(buildLogEntriesTable(cycles));
-}
-
-export function buildInspectionTable(
-  part: string,
-  inspType: string,
-  entries: ReadonlyArray<InspectionLogEntry>
-): string {
-  let table = "<table>\n<thead><tr>";
-  table += "<th>Path</th><th>Date</th><th>Part</th><th>Inspection</th>";
-  table += "<th>Serial</th><th>Workorder</th><th>Inspected</th><th>Failed</th>";
-  table += "</tr></thead>\n<tbody>\n";
-
-  const groups = groupInspectionsByPath(entries, undefined, e => e.time.getTime());
-  const paths = groups.keySet().toArray({ sortOn: x => x });
-
-  for (let path of paths) {
-    const data = groups.get(path).getOrThrow();
-    for (let mat of data.material) {
-      table += "<tr>";
-      table += "<td>" + path + "</td>";
-      table += "<td>" + format(mat.time, "MMM D, YYYY, H:mm a") + "</td>";
-      table += "<td>" + part + "</td>";
-      table += "<td>" + inspType + "</td>";
-      table += "<td>" + (mat.serial || "") + "</td>";
-      table += "<td>" + (mat.workorder || "") + "</td>";
-      table += "<td>" + (mat.toInspect ? "inspected" : "") + "</td>";
-      table += "<td>" + (mat.failed ? "failed" : "") + "</td>";
-      table += "</tr>\n";
-    }
-  }
-
-  table += "</tbody>\n</table>";
-  return table;
-}
-
-export function copyInspectionEntriesToClipboard(
-  part: string,
-  inspType: string,
-  entries: ReadonlyArray<InspectionLogEntry>
-): void {
-  copy(buildInspectionTable(part, inspType, entries));
 }
