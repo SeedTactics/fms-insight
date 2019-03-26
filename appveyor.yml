@@ -112,6 +112,23 @@ build_script:
         ./build/insight-installer-build.ps1 cincron
       }
 
+  - ps: |
+      yarn --cwd client/insight run build-demo
+      yarn --cwd website install --frozen-lockfile
+      yarn --cwd website run build
+      Copy-Item "client\insight\demo" -Destination "website\build\fms-insight\demo" -Recurse -Force
+      7z a website.zip .\website\build\fms-insight\*
+
+  - ps: |
+      $tag = $(hg id -t -r '.^')
+      if ($tag.StartsWith("backup-viewer")) {
+        yarn --cwd client/backup-viewer install --frozen-lockfile
+        yarn --cwd client/backup-viewer dist
+        New-Item -ItemType Directory -Force -Path installers
+        Copy-Item "client\backup-viewer\package\*.exe" -Destination "installers\FMS Insight Backup Viewer Install.exe" -Force
+        Set-AppveyorBuildVariable "BMS_INSTALLER_backup_RELEASE" "true"
+      }
+
 test_script:
   - cmd: dotnet test server/test
 

@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "start": "parcel src/index.html",
-    "build": "parcel build src/index.html",
+    "build": "tsc --noEmit && parcel build src/index.html",
     "build-demo": "parcel build --out-dir demo --public-url /demo/ src/demo.html",
     "test": "jest --ci --runInBand",
     "test:watch": "jest --watch",
