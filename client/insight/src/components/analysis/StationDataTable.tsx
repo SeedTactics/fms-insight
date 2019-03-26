@@ -103,7 +103,7 @@ const columns: ReadonlyArray<Column<ColumnId, PartCycleData>> = [
   {
     id: ColumnId.ActiveMin,
     numeric: true,
-    label: "Active Min",
+    label: "Target Min",
     getDisplay: c => c.active.toFixed(1)
   },
   {

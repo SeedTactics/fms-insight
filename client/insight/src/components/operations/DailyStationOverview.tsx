@@ -149,7 +149,7 @@ const ConnectedOutlierMachines = connect(
 )(OutlierCycles);
 
 // -----------------------------------------------------------------------------------
-// OEE
+// OEE/Hours
 // -----------------------------------------------------------------------------------
 
 function StationOEEChart(p: OEEProps) {
@@ -160,7 +160,7 @@ function StationOEEChart(p: OEEProps) {
         title={
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
             <HourglassIcon style={{ color: "#6D4C41" }} />
-            <div style={{ marginLeft: "10px", marginRight: "3em" }}>OEE</div>
+            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Hours</div>
             <div style={{ flexGrow: 1 }} />
             <Tooltip title="Copy to Clipboard">
               <IconButton

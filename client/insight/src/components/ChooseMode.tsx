@@ -46,6 +46,7 @@ import ChartIcon from "@material-ui/icons/InsertChart";
 import ExtensionIcon from "@material-ui/icons/Extension";
 import InfoIcon from "@material-ui/icons/Info";
 import OpacityIcon from "@material-ui/icons/Opacity";
+import MemoryIcon from "@material-ui/icons/Memory";
 
 import * as routes from "../data/routes";
 import { connect } from "../store/store";
@@ -56,6 +57,7 @@ export interface ChooseModeProps {
   readonly setInspect: () => void;
   readonly setWash: () => void;
   readonly setOperations: () => void;
+  readonly setEngieering: () => void;
   readonly setQuality: () => void;
   readonly setAnalysis: () => void;
 }
@@ -102,6 +104,12 @@ export function ChooseMode(p: ChooseModeProps) {
           </ListItemIcon>
           <ListItemText>Operation Management</ListItemText>
         </ListItem>
+        <ListItem button onClick={p.setEngieering}>
+          <ListItemIcon>
+            <MemoryIcon />
+          </ListItemIcon>
+          <ListItemText>Engineering</ListItemText>
+        </ListItem>
         <ListItem button onClick={p.setQuality}>
           <ListItemIcon>
             <StarIcon />
@@ -113,7 +121,7 @@ export function ChooseMode(p: ChooseModeProps) {
           <ListItemIcon>
             <ChartIcon />
           </ListItemIcon>
-          <ListItemText>Efficiency Analysis</ListItemText>
+          <ListItemText>Flexibility Analysis</ListItemText>
         </ListItem>
       </List>
     </Paper>
@@ -149,6 +157,9 @@ export default connect(
     }),
     setQueue: () => ({
       type: routes.RouteLocation.Station_Queues
+    }),
+    setEngieering: () => ({
+      type: routes.RouteLocation.Engineering
     }),
     setInspect: () => ({
       type: routes.RouteLocation.Station_InspectionMonitor

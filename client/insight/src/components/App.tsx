@@ -385,6 +385,11 @@ class App extends React.PureComponent<AppConnectedProps> {
           navigation = OperationsTabs;
           break;
 
+        case routes.RouteLocation.Engineering:
+          page = <OperationMachines />;
+          showAlarms = false;
+          break;
+
         case routes.RouteLocation.Quality_Dashboard:
           page = <QualityDashboard />;
           navigation = QualityTabs;
