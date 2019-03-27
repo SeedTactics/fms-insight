@@ -8590,7 +8590,10 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
           Active Min
         </th>
         <th>
-          Operator
+          Median Elapsed Min
+        </th>
+        <th>
+          Median Deviation
         </th>
       </tr>
     </thead>
@@ -8627,7 +8630,12 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
         <td>
           6.0
         </td>
-        <td />
+        <td>
+          6.0
+        </td>
+        <td>
+          0.0
+        </td>
       </tr>
       
 
@@ -8659,7 +8667,12 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
         <td>
           15.0
         </td>
-        <td />
+        <td>
+          15.0
+        </td>
+        <td>
+          0.0
+        </td>
       </tr>
       
 
@@ -8691,7 +8704,12 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
         <td>
           3.0
         </td>
-        <td />
+        <td>
+          3.0
+        </td>
+        <td>
+          0.0
+        </td>
       </tr>
       
 
@@ -8723,7 +8741,12 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
         <td>
           6.0
         </td>
-        <td />
+        <td>
+          6.0
+        </td>
+        <td>
+          0.0
+        </td>
       </tr>
       
 
@@ -8755,7 +8778,12 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
         <td>
           20.0
         </td>
-        <td />
+        <td>
+          20.0
+        </td>
+        <td>
+          0.0
+        </td>
       </tr>
       
 
@@ -8787,7 +8815,12 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
         <td>
           3.0
         </td>
-        <td />
+        <td>
+          3.0
+        </td>
+        <td>
+          0.0
+        </td>
       </tr>
       
 
@@ -8819,7 +8852,12 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
         <td>
           6.0
         </td>
-        <td />
+        <td>
+          6.0
+        </td>
+        <td>
+          0.0
+        </td>
       </tr>
       
 
@@ -8851,7 +8889,12 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
         <td>
           30.0
         </td>
-        <td />
+        <td>
+          30.0
+        </td>
+        <td>
+          0.0
+        </td>
       </tr>
       
 
@@ -8883,7 +8926,12 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
         <td>
           3.0
         </td>
-        <td />
+        <td>
+          3.0
+        </td>
+        <td>
+          0.0
+        </td>
       </tr>
       
 
@@ -8929,7 +8977,10 @@ exports[`creates cycles clipboard table: cycle filtered clipboard table 1`] = `
           Active Min
         </th>
         <th>
-          Operator
+          Median Elapsed Min
+        </th>
+        <th>
+          Median Deviation
         </th>
       </tr>
     </thead>
@@ -8966,7 +9017,12 @@ exports[`creates cycles clipboard table: cycle filtered clipboard table 1`] = `
         <td>
           6.0
         </td>
-        <td />
+        <td>
+          6.0
+        </td>
+        <td>
+          0.0
+        </td>
       </tr>
       
 
@@ -8998,7 +9054,12 @@ exports[`creates cycles clipboard table: cycle filtered clipboard table 1`] = `
         <td>
           20.0
         </td>
-        <td />
+        <td>
+          20.0
+        </td>
+        <td>
+          0.0
+        </td>
       </tr>
       
 
@@ -9030,7 +9091,12 @@ exports[`creates cycles clipboard table: cycle filtered clipboard table 1`] = `
         <td>
           3.0
         </td>
-        <td />
+        <td>
+          3.0
+        </td>
+        <td>
+          0.0
+        </td>
       </tr>
       
 
@@ -10164,27 +10230,63 @@ Object {
     },
     "estimatedCycleTimes": Map {
       "partAAA-1" => Map {
-        "MC" => Object {
+        "MC #1" => Object {
           "MAD_aboveMinutes": 0.01,
           "MAD_belowMinutes": 0.01,
           "expectedCycleMinutes": 30,
           "medianMinutes": 30,
         },
+        "L/U #1" => Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 6,
+          "medianMinutes": 6,
+        },
+        "L/U #2" => Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 3,
+          "medianMinutes": 3,
+        },
       },
       "partBBB-2" => Map {
-        "MC" => Object {
+        "MC #1" => Object {
           "MAD_aboveMinutes": 0.01,
           "MAD_belowMinutes": 0.01,
           "expectedCycleMinutes": 24,
           "medianMinutes": 24,
         },
+        "L/U #1" => Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 6,
+          "medianMinutes": 6,
+        },
+        "L/U #2" => Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 3,
+          "medianMinutes": 3,
+        },
       },
       "partCCC-3" => Map {
-        "MC" => Object {
+        "MC #1" => Object {
           "MAD_aboveMinutes": 0.01,
           "MAD_belowMinutes": 0.01,
           "expectedCycleMinutes": 18,
           "medianMinutes": 18,
+        },
+        "L/U #1" => Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 6,
+          "medianMinutes": 6,
+        },
+        "L/U #2" => Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 3,
+          "medianMinutes": 3,
         },
       },
     },
@@ -10199,6 +10301,7 @@ Object {
     ],
     "part_cycles": Array [
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 6,
         "completed": false,
         "completedInspections": Map {
@@ -10206,7 +10309,9 @@ Object {
         },
         "isLabor": true,
         "matId": 13842,
+        "medianElapsed": 6,
         "operator": "",
+        "outlier": false,
         "pallet": "paltt",
         "part": "partCCC",
         "process": 3,
@@ -10221,6 +10326,7 @@ Object {
         "y": 6,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 18,
         "completed": false,
         "completedInspections": Map {
@@ -10228,7 +10334,9 @@ Object {
         },
         "isLabor": false,
         "matId": 13842,
+        "medianElapsed": 18,
         "operator": "",
+        "outlier": false,
         "pallet": "paltt",
         "part": "partCCC",
         "process": 3,
@@ -10243,6 +10351,7 @@ Object {
         "y": 18,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 3,
         "completed": true,
         "completedInspections": Map {
@@ -10250,7 +10359,9 @@ Object {
         },
         "isLabor": true,
         "matId": 13842,
+        "medianElapsed": 3,
         "operator": "",
+        "outlier": false,
         "pallet": "paltt",
         "part": "partCCC",
         "process": 3,
@@ -10265,6 +10376,7 @@ Object {
         "y": 3,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 6,
         "completed": false,
         "completedInspections": Map {
@@ -10272,7 +10384,9 @@ Object {
         },
         "isLabor": true,
         "matId": 4419,
+        "medianElapsed": 6,
         "operator": "",
+        "outlier": false,
         "pallet": "paltt",
         "part": "partBBB",
         "process": 2,
@@ -10287,6 +10401,7 @@ Object {
         "y": 6,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 24,
         "completed": false,
         "completedInspections": Map {
@@ -10294,7 +10409,9 @@ Object {
         },
         "isLabor": false,
         "matId": 4419,
+        "medianElapsed": 24,
         "operator": "",
+        "outlier": false,
         "pallet": "paltt",
         "part": "partBBB",
         "process": 2,
@@ -10309,6 +10426,7 @@ Object {
         "y": 24,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 3,
         "completed": true,
         "completedInspections": Map {
@@ -10316,7 +10434,9 @@ Object {
         },
         "isLabor": true,
         "matId": 4419,
+        "medianElapsed": 3,
         "operator": "",
+        "outlier": false,
         "pallet": "paltt",
         "part": "partBBB",
         "process": 2,
@@ -10331,6 +10451,7 @@ Object {
         "y": 3,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 6,
         "completed": false,
         "completedInspections": Map {
@@ -10338,7 +10459,9 @@ Object {
         },
         "isLabor": true,
         "matId": 87097,
+        "medianElapsed": 6,
         "operator": "",
+        "outlier": false,
         "pallet": "palss",
         "part": "partAAA",
         "process": 1,
@@ -10353,6 +10476,7 @@ Object {
         "y": 6,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 30,
         "completed": false,
         "completedInspections": Map {
@@ -10360,7 +10484,9 @@ Object {
         },
         "isLabor": false,
         "matId": 87097,
+        "medianElapsed": 30,
         "operator": "",
+        "outlier": false,
         "pallet": "palss",
         "part": "partAAA",
         "process": 1,
@@ -10375,6 +10501,7 @@ Object {
         "y": 30,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 3,
         "completed": true,
         "completedInspections": Map {
@@ -10382,7 +10509,9 @@ Object {
         },
         "isLabor": true,
         "matId": 87097,
+        "medianElapsed": 3,
         "operator": "",
+        "outlier": false,
         "pallet": "palss",
         "part": "partAAA",
         "process": 1,
@@ -10414,7 +10543,9 @@ Object {
       \\"part\\": \\"partAAA\\",
     }" => Array [
         Object {
+          "inspType": "Insp1",
           "materialID": 87097,
+          "part": "partAAA",
           "result": Object {
             "toInspect": true,
             "type": 1,
@@ -10424,7 +10555,9 @@ Object {
           "workorder": "workx",
         },
         Object {
+          "inspType": "Insp1",
           "materialID": 87097,
+          "part": "partAAA",
           "result": Object {
             "actualPath": Array [
               Object {
@@ -10449,7 +10582,9 @@ Object {
           "workorder": "workx",
         },
         Object {
+          "inspType": "Insp1",
           "materialID": 87097,
+          "part": "partAAA",
           "result": Object {
             "success": true,
             "type": 2,
@@ -10464,7 +10599,9 @@ Object {
       \\"part\\": \\"partBBB\\",
     }" => Array [
         Object {
+          "inspType": "Insp1",
           "materialID": 4419,
+          "part": "partBBB",
           "result": Object {
             "actualPath": Array [
               Object {
@@ -10489,7 +10626,9 @@ Object {
           "workorder": "work0",
         },
         Object {
+          "inspType": "Insp1",
           "materialID": 4419,
+          "part": "partBBB",
           "result": Object {
             "success": true,
             "type": 2,
@@ -10504,7 +10643,9 @@ Object {
       \\"part\\": \\"partCCC\\",
     }" => Array [
         Object {
+          "inspType": "Insp1",
           "materialID": 13842,
+          "part": "partCCC",
           "result": Object {
             "toInspect": true,
             "type": 1,
@@ -10514,7 +10655,9 @@ Object {
           "workorder": "work2",
         },
         Object {
+          "inspType": "Insp1",
           "materialID": 13842,
+          "part": "partCCC",
           "result": Object {
             "actualPath": Array [
               Object {
@@ -10539,7 +10682,9 @@ Object {
           "workorder": "work2",
         },
         Object {
+          "inspType": "Insp1",
           "materialID": 13842,
+          "part": "partCCC",
           "result": Object {
             "success": true,
             "type": 2,
@@ -10588,27 +10733,63 @@ Object {
     },
     "estimatedCycleTimes": Map {
       "part111-1" => Map {
-        "MC" => Object {
+        "MC #1" => Object {
           "MAD_aboveMinutes": 0.01,
           "MAD_belowMinutes": 0.01,
           "expectedCycleMinutes": 30,
           "medianMinutes": 30,
         },
+        "L/U #1" => Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 6,
+          "medianMinutes": 6,
+        },
+        "L/U #2" => Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 3,
+          "medianMinutes": 3,
+        },
       },
       "part222-1" => Map {
-        "MC" => Object {
+        "MC #1" => Object {
           "MAD_aboveMinutes": 0.01,
           "MAD_belowMinutes": 0.01,
           "expectedCycleMinutes": 24,
           "medianMinutes": 24,
         },
+        "L/U #1" => Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 6,
+          "medianMinutes": 6,
+        },
+        "L/U #2" => Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 3,
+          "medianMinutes": 3,
+        },
       },
       "part222-2" => Map {
-        "MC" => Object {
+        "MC #1" => Object {
           "MAD_aboveMinutes": 0.01,
           "MAD_belowMinutes": 0.01,
           "expectedCycleMinutes": 18,
           "medianMinutes": 18,
+        },
+        "L/U #1" => Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 6,
+          "medianMinutes": 6,
+        },
+        "L/U #2" => Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 3,
+          "medianMinutes": 3,
         },
       },
     },
@@ -10624,6 +10805,7 @@ Object {
     ],
     "part_cycles": Array [
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 6,
         "completed": false,
         "completedInspections": Map {
@@ -10631,7 +10813,9 @@ Object {
         },
         "isLabor": true,
         "matId": 15510,
+        "medianElapsed": 6,
         "operator": "",
+        "outlier": false,
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
@@ -10646,6 +10830,7 @@ Object {
         "y": 6,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 24,
         "completed": false,
         "completedInspections": Map {
@@ -10653,7 +10838,9 @@ Object {
         },
         "isLabor": false,
         "matId": 15510,
+        "medianElapsed": 24,
         "operator": "",
+        "outlier": false,
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
@@ -10668,6 +10855,7 @@ Object {
         "y": 24,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 3,
         "completed": true,
         "completedInspections": Map {
@@ -10675,7 +10863,9 @@ Object {
         },
         "isLabor": true,
         "matId": 15510,
+        "medianElapsed": 3,
         "operator": "",
+        "outlier": false,
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
@@ -10690,6 +10880,7 @@ Object {
         "y": 3,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 6,
         "completed": false,
         "completedInspections": Map {
@@ -10697,7 +10888,9 @@ Object {
         },
         "isLabor": true,
         "matId": 70329,
+        "medianElapsed": 6,
         "operator": "",
+        "outlier": false,
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
@@ -10712,6 +10905,7 @@ Object {
         "y": 6,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 30,
         "completed": false,
         "completedInspections": Map {
@@ -10719,7 +10913,9 @@ Object {
         },
         "isLabor": false,
         "matId": 70329,
+        "medianElapsed": 30,
         "operator": "",
+        "outlier": false,
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
@@ -10734,6 +10930,7 @@ Object {
         "y": 30,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 3,
         "completed": true,
         "completedInspections": Map {
@@ -10741,7 +10938,9 @@ Object {
         },
         "isLabor": true,
         "matId": 70329,
+        "medianElapsed": 3,
         "operator": "",
+        "outlier": false,
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
@@ -10756,6 +10955,7 @@ Object {
         "y": 3,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 6,
         "completed": false,
         "completedInspections": Map {
@@ -10763,7 +10963,9 @@ Object {
         },
         "isLabor": true,
         "matId": 90793,
+        "medianElapsed": 6,
         "operator": "",
+        "outlier": false,
         "pallet": "palcc",
         "part": "part111",
         "process": 1,
@@ -10778,6 +10980,7 @@ Object {
         "y": 6,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 12,
         "completed": false,
         "completedInspections": Map {
@@ -10785,7 +10988,9 @@ Object {
         },
         "isLabor": false,
         "matId": 90793,
+        "medianElapsed": 30,
         "operator": "",
+        "outlier": true,
         "pallet": "palcc",
         "part": "part111",
         "process": 1,
@@ -10800,6 +11005,7 @@ Object {
         "y": 12,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 3,
         "completed": true,
         "completedInspections": Map {
@@ -10807,7 +11013,9 @@ Object {
         },
         "isLabor": true,
         "matId": 90793,
+        "medianElapsed": 3,
         "operator": "",
+        "outlier": false,
         "pallet": "palcc",
         "part": "part111",
         "process": 1,
@@ -10839,7 +11047,9 @@ Object {
       \\"part\\": \\"part222\\",
     }" => Array [
         Object {
+          "inspType": "Insp1",
           "materialID": 15510,
+          "part": "part222",
           "result": Object {
             "toInspect": true,
             "type": 1,
@@ -10849,7 +11059,9 @@ Object {
           "workorder": "workh",
         },
         Object {
+          "inspType": "Insp1",
           "materialID": 15510,
+          "part": "part222",
           "result": Object {
             "actualPath": Array [
               Object {
@@ -10874,7 +11086,9 @@ Object {
           "workorder": "workh",
         },
         Object {
+          "inspType": "Insp1",
           "materialID": 15510,
+          "part": "part222",
           "result": Object {
             "success": true,
             "type": 2,
@@ -10889,7 +11103,9 @@ Object {
       \\"part\\": \\"part111\\",
     }" => Array [
         Object {
+          "inspType": "Insp1",
           "materialID": 70329,
+          "part": "part111",
           "result": Object {
             "toInspect": true,
             "type": 1,
@@ -10899,7 +11115,9 @@ Object {
           "workorder": "work7",
         },
         Object {
+          "inspType": "Insp1",
           "materialID": 70329,
+          "part": "part111",
           "result": Object {
             "actualPath": Array [
               Object {
@@ -10924,7 +11142,9 @@ Object {
           "workorder": "work7",
         },
         Object {
+          "inspType": "Insp1",
           "materialID": 70329,
+          "part": "part111",
           "result": Object {
             "success": true,
             "type": 2,
@@ -10934,7 +11154,9 @@ Object {
           "workorder": "work7",
         },
         Object {
+          "inspType": "Insp1",
           "materialID": 90793,
+          "part": "part111",
           "result": Object {
             "actualPath": Array [
               Object {
@@ -10959,7 +11181,9 @@ Object {
           "workorder": "worko",
         },
         Object {
+          "inspType": "Insp1",
           "materialID": 90793,
+          "part": "part111",
           "result": Object {
             "success": true,
             "type": 2,
@@ -11292,27 +11516,63 @@ Object {
     },
     "estimatedCycleTimes": Map {
       "part111-1" => Map {
-        "MC" => Object {
+        "MC #1" => Object {
           "MAD_aboveMinutes": 0.01,
           "MAD_belowMinutes": 0.01,
           "expectedCycleMinutes": 30,
           "medianMinutes": 30,
         },
+        "L/U #1" => Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 6,
+          "medianMinutes": 6,
+        },
+        "L/U #2" => Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 3,
+          "medianMinutes": 3,
+        },
       },
       "part222-1" => Map {
-        "MC" => Object {
+        "MC #1" => Object {
           "MAD_aboveMinutes": 0.01,
           "MAD_belowMinutes": 0.01,
           "expectedCycleMinutes": 24,
           "medianMinutes": 24,
         },
+        "L/U #1" => Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 6,
+          "medianMinutes": 6,
+        },
+        "L/U #2" => Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 3,
+          "medianMinutes": 3,
+        },
       },
       "part222-2" => Map {
-        "MC" => Object {
+        "MC #1" => Object {
           "MAD_aboveMinutes": 0.01,
           "MAD_belowMinutes": 0.01,
           "expectedCycleMinutes": 18,
           "medianMinutes": 18,
+        },
+        "L/U #1" => Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 6,
+          "medianMinutes": 6,
+        },
+        "L/U #2" => Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 3,
+          "medianMinutes": 3,
         },
       },
     },
@@ -11327,6 +11587,7 @@ Object {
     ],
     "part_cycles": Array [
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 6,
         "completed": false,
         "completedInspections": Map {
@@ -11334,7 +11595,9 @@ Object {
         },
         "isLabor": true,
         "matId": 90079,
+        "medianElapsed": 6,
         "operator": "",
+        "outlier": false,
         "pallet": "palaa",
         "part": "part222",
         "process": 2,
@@ -11349,6 +11612,7 @@ Object {
         "y": 6,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 18,
         "completed": false,
         "completedInspections": Map {
@@ -11356,7 +11620,9 @@ Object {
         },
         "isLabor": false,
         "matId": 90079,
+        "medianElapsed": 18,
         "operator": "",
+        "outlier": false,
         "pallet": "palaa",
         "part": "part222",
         "process": 2,
@@ -11371,6 +11637,7 @@ Object {
         "y": 18,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 3,
         "completed": true,
         "completedInspections": Map {
@@ -11378,7 +11645,9 @@ Object {
         },
         "isLabor": true,
         "matId": 90079,
+        "medianElapsed": 3,
         "operator": "",
+        "outlier": false,
         "pallet": "palaa",
         "part": "part222",
         "process": 2,
@@ -11393,6 +11662,7 @@ Object {
         "y": 3,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 6,
         "completed": false,
         "completedInspections": Map {
@@ -11400,7 +11670,9 @@ Object {
         },
         "isLabor": true,
         "matId": 15510,
+        "medianElapsed": 6,
         "operator": "",
+        "outlier": false,
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
@@ -11415,6 +11687,7 @@ Object {
         "y": 6,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 24,
         "completed": false,
         "completedInspections": Map {
@@ -11422,7 +11695,9 @@ Object {
         },
         "isLabor": false,
         "matId": 15510,
+        "medianElapsed": 24,
         "operator": "",
+        "outlier": false,
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
@@ -11437,6 +11712,7 @@ Object {
         "y": 24,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 3,
         "completed": true,
         "completedInspections": Map {
@@ -11444,7 +11720,9 @@ Object {
         },
         "isLabor": true,
         "matId": 15510,
+        "medianElapsed": 3,
         "operator": "",
+        "outlier": false,
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
@@ -11459,6 +11737,7 @@ Object {
         "y": 3,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 6,
         "completed": false,
         "completedInspections": Map {
@@ -11466,7 +11745,9 @@ Object {
         },
         "isLabor": true,
         "matId": 70329,
+        "medianElapsed": 6,
         "operator": "",
+        "outlier": false,
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
@@ -11481,6 +11762,7 @@ Object {
         "y": 6,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 30,
         "completed": false,
         "completedInspections": Map {
@@ -11488,7 +11770,9 @@ Object {
         },
         "isLabor": false,
         "matId": 70329,
+        "medianElapsed": 30,
         "operator": "",
+        "outlier": false,
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
@@ -11503,6 +11787,7 @@ Object {
         "y": 30,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 3,
         "completed": true,
         "completedInspections": Map {
@@ -11510,7 +11795,9 @@ Object {
         },
         "isLabor": true,
         "matId": 70329,
+        "medianElapsed": 3,
         "operator": "",
+        "outlier": false,
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
@@ -11542,7 +11829,9 @@ Object {
       \\"part\\": \\"part222\\",
     }" => Array [
         Object {
+          "inspType": "Insp1",
           "materialID": 90079,
+          "part": "part222",
           "result": Object {
             "actualPath": Array [
               Object {
@@ -11567,7 +11856,9 @@ Object {
           "workorder": "work7",
         },
         Object {
+          "inspType": "Insp1",
           "materialID": 90079,
+          "part": "part222",
           "result": Object {
             "success": true,
             "type": 2,
@@ -11577,7 +11868,9 @@ Object {
           "workorder": "work7",
         },
         Object {
+          "inspType": "Insp1",
           "materialID": 15510,
+          "part": "part222",
           "result": Object {
             "toInspect": true,
             "type": 1,
@@ -11587,7 +11880,9 @@ Object {
           "workorder": "workh",
         },
         Object {
+          "inspType": "Insp1",
           "materialID": 15510,
+          "part": "part222",
           "result": Object {
             "actualPath": Array [
               Object {
@@ -11612,7 +11907,9 @@ Object {
           "workorder": "workh",
         },
         Object {
+          "inspType": "Insp1",
           "materialID": 15510,
+          "part": "part222",
           "result": Object {
             "success": true,
             "type": 2,
@@ -11627,7 +11924,9 @@ Object {
       \\"part\\": \\"part111\\",
     }" => Array [
         Object {
+          "inspType": "Insp1",
           "materialID": 70329,
+          "part": "part111",
           "result": Object {
             "toInspect": true,
             "type": 1,
@@ -11637,7 +11936,9 @@ Object {
           "workorder": "work7",
         },
         Object {
+          "inspType": "Insp1",
           "materialID": 70329,
+          "part": "part111",
           "result": Object {
             "actualPath": Array [
               Object {
@@ -11662,7 +11963,9 @@ Object {
           "workorder": "work7",
         },
         Object {
+          "inspType": "Insp1",
           "materialID": 70329,
+          "part": "part111",
           "result": Object {
             "success": true,
             "type": 2,
@@ -12014,27 +12317,63 @@ Object {
     },
     "estimatedCycleTimes": Map {
       "part111-1" => Map {
-        "MC" => Object {
+        "MC #1" => Object {
           "MAD_aboveMinutes": 0.01,
           "MAD_belowMinutes": 0.01,
           "expectedCycleMinutes": 30,
           "medianMinutes": 30,
         },
+        "L/U #1" => Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 6,
+          "medianMinutes": 6,
+        },
+        "L/U #2" => Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 3,
+          "medianMinutes": 3,
+        },
       },
       "part222-1" => Map {
-        "MC" => Object {
+        "MC #1" => Object {
           "MAD_aboveMinutes": 0.01,
           "MAD_belowMinutes": 0.01,
           "expectedCycleMinutes": 24,
           "medianMinutes": 24,
         },
+        "L/U #1" => Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 6,
+          "medianMinutes": 6,
+        },
+        "L/U #2" => Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 3,
+          "medianMinutes": 3,
+        },
       },
       "part222-2" => Map {
-        "MC" => Object {
+        "MC #1" => Object {
           "MAD_aboveMinutes": 0.01,
           "MAD_belowMinutes": 0.01,
           "expectedCycleMinutes": 18,
           "medianMinutes": 18,
+        },
+        "L/U #1" => Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 6,
+          "medianMinutes": 6,
+        },
+        "L/U #2" => Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 3,
+          "medianMinutes": 3,
         },
       },
     },
@@ -12050,6 +12389,7 @@ Object {
     ],
     "part_cycles": Array [
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 6,
         "completed": false,
         "completedInspections": Map {
@@ -12057,7 +12397,9 @@ Object {
         },
         "isLabor": true,
         "matId": 47261,
+        "medianElapsed": 6,
         "operator": "",
+        "outlier": false,
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
@@ -12072,6 +12414,7 @@ Object {
         "y": 6,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 24,
         "completed": false,
         "completedInspections": Map {
@@ -12079,7 +12422,9 @@ Object {
         },
         "isLabor": false,
         "matId": 47261,
+        "medianElapsed": 24,
         "operator": "",
+        "outlier": false,
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
@@ -12094,6 +12439,7 @@ Object {
         "y": 24,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 3,
         "completed": true,
         "completedInspections": Map {
@@ -12101,7 +12447,9 @@ Object {
         },
         "isLabor": true,
         "matId": 47261,
+        "medianElapsed": 3,
         "operator": "",
+        "outlier": false,
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
@@ -12116,6 +12464,7 @@ Object {
         "y": 3,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 6,
         "completed": false,
         "completedInspections": Map {
@@ -12123,7 +12472,9 @@ Object {
         },
         "isLabor": true,
         "matId": 11231,
+        "medianElapsed": 6,
         "operator": "",
+        "outlier": false,
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
@@ -12138,6 +12489,7 @@ Object {
         "y": 6,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 30,
         "completed": false,
         "completedInspections": Map {
@@ -12145,7 +12497,9 @@ Object {
         },
         "isLabor": false,
         "matId": 11231,
+        "medianElapsed": 30,
         "operator": "",
+        "outlier": false,
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
@@ -12160,6 +12514,7 @@ Object {
         "y": 30,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 3,
         "completed": true,
         "completedInspections": Map {
@@ -12167,7 +12522,9 @@ Object {
         },
         "isLabor": true,
         "matId": 11231,
+        "medianElapsed": 3,
         "operator": "",
+        "outlier": false,
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
@@ -12182,6 +12539,7 @@ Object {
         "y": 3,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 6,
         "completed": false,
         "completedInspections": Map {
@@ -12189,7 +12547,9 @@ Object {
         },
         "isLabor": true,
         "matId": 88570,
+        "medianElapsed": 6,
         "operator": "",
+        "outlier": false,
         "pallet": "palcc",
         "part": "part111",
         "process": 1,
@@ -12204,6 +12564,7 @@ Object {
         "y": 6,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 12,
         "completed": false,
         "completedInspections": Map {
@@ -12211,7 +12572,9 @@ Object {
         },
         "isLabor": false,
         "matId": 88570,
+        "medianElapsed": 30,
         "operator": "",
+        "outlier": true,
         "pallet": "palcc",
         "part": "part111",
         "process": 1,
@@ -12226,6 +12589,7 @@ Object {
         "y": 12,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 3,
         "completed": true,
         "completedInspections": Map {
@@ -12233,7 +12597,9 @@ Object {
         },
         "isLabor": true,
         "matId": 88570,
+        "medianElapsed": 3,
         "operator": "",
+        "outlier": false,
         "pallet": "palcc",
         "part": "part111",
         "process": 1,
@@ -12265,7 +12631,9 @@ Object {
       \\"part\\": \\"part222\\",
     }" => Array [
         Object {
+          "inspType": "Insp1",
           "materialID": 47261,
+          "part": "part222",
           "result": Object {
             "toInspect": true,
             "type": 1,
@@ -12275,7 +12643,9 @@ Object {
           "workorder": "workn",
         },
         Object {
+          "inspType": "Insp1",
           "materialID": 47261,
+          "part": "part222",
           "result": Object {
             "actualPath": Array [
               Object {
@@ -12300,7 +12670,9 @@ Object {
           "workorder": "workn",
         },
         Object {
+          "inspType": "Insp1",
           "materialID": 47261,
+          "part": "part222",
           "result": Object {
             "success": true,
             "type": 2,
@@ -12315,7 +12687,9 @@ Object {
       \\"part\\": \\"part111\\",
     }" => Array [
         Object {
+          "inspType": "Insp1",
           "materialID": 11231,
+          "part": "part111",
           "result": Object {
             "toInspect": true,
             "type": 1,
@@ -12325,7 +12699,9 @@ Object {
           "workorder": "works",
         },
         Object {
+          "inspType": "Insp1",
           "materialID": 11231,
+          "part": "part111",
           "result": Object {
             "actualPath": Array [
               Object {
@@ -12350,7 +12726,9 @@ Object {
           "workorder": "works",
         },
         Object {
+          "inspType": "Insp1",
           "materialID": 11231,
+          "part": "part111",
           "result": Object {
             "success": true,
             "type": 2,
@@ -12360,7 +12738,9 @@ Object {
           "workorder": "works",
         },
         Object {
+          "inspType": "Insp1",
           "materialID": 88570,
+          "part": "part111",
           "result": Object {
             "actualPath": Array [
               Object {
@@ -12385,7 +12765,9 @@ Object {
           "workorder": "work6",
         },
         Object {
+          "inspType": "Insp1",
           "materialID": 88570,
+          "part": "part111",
           "result": Object {
             "success": true,
             "type": 2,
@@ -12718,27 +13100,63 @@ Object {
     },
     "estimatedCycleTimes": Map {
       "part111-1" => Map {
-        "MC" => Object {
+        "MC #1" => Object {
           "MAD_aboveMinutes": 0.01,
           "MAD_belowMinutes": 0.01,
           "expectedCycleMinutes": 30,
           "medianMinutes": 30,
         },
+        "L/U #1" => Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 6,
+          "medianMinutes": 6,
+        },
+        "L/U #2" => Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 3,
+          "medianMinutes": 3,
+        },
       },
       "part222-1" => Map {
-        "MC" => Object {
+        "MC #1" => Object {
           "MAD_aboveMinutes": 0.01,
           "MAD_belowMinutes": 0.01,
           "expectedCycleMinutes": 24,
           "medianMinutes": 24,
         },
+        "L/U #1" => Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 6,
+          "medianMinutes": 6,
+        },
+        "L/U #2" => Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 3,
+          "medianMinutes": 3,
+        },
       },
       "part222-2" => Map {
-        "MC" => Object {
+        "MC #1" => Object {
           "MAD_aboveMinutes": 0.01,
           "MAD_belowMinutes": 0.01,
           "expectedCycleMinutes": 18,
           "medianMinutes": 18,
+        },
+        "L/U #1" => Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 6,
+          "medianMinutes": 6,
+        },
+        "L/U #2" => Object {
+          "MAD_aboveMinutes": 0.01,
+          "MAD_belowMinutes": 0.01,
+          "expectedCycleMinutes": 3,
+          "medianMinutes": 3,
         },
       },
     },
@@ -12753,6 +13171,7 @@ Object {
     ],
     "part_cycles": Array [
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 6,
         "completed": false,
         "completedInspections": Map {
@@ -12760,7 +13179,9 @@ Object {
         },
         "isLabor": true,
         "matId": 68845,
+        "medianElapsed": 6,
         "operator": "",
+        "outlier": false,
         "pallet": "palaa",
         "part": "part222",
         "process": 2,
@@ -12775,6 +13196,7 @@ Object {
         "y": 6,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 18,
         "completed": false,
         "completedInspections": Map {
@@ -12782,7 +13204,9 @@ Object {
         },
         "isLabor": false,
         "matId": 68845,
+        "medianElapsed": 18,
         "operator": "",
+        "outlier": false,
         "pallet": "palaa",
         "part": "part222",
         "process": 2,
@@ -12797,6 +13221,7 @@ Object {
         "y": 18,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 3,
         "completed": true,
         "completedInspections": Map {
@@ -12804,7 +13229,9 @@ Object {
         },
         "isLabor": true,
         "matId": 68845,
+        "medianElapsed": 3,
         "operator": "",
+        "outlier": false,
         "pallet": "palaa",
         "part": "part222",
         "process": 2,
@@ -12819,6 +13246,7 @@ Object {
         "y": 3,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 6,
         "completed": false,
         "completedInspections": Map {
@@ -12826,7 +13254,9 @@ Object {
         },
         "isLabor": true,
         "matId": 47261,
+        "medianElapsed": 6,
         "operator": "",
+        "outlier": false,
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
@@ -12841,6 +13271,7 @@ Object {
         "y": 6,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 24,
         "completed": false,
         "completedInspections": Map {
@@ -12848,7 +13279,9 @@ Object {
         },
         "isLabor": false,
         "matId": 47261,
+        "medianElapsed": 24,
         "operator": "",
+        "outlier": false,
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
@@ -12863,6 +13296,7 @@ Object {
         "y": 24,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 3,
         "completed": true,
         "completedInspections": Map {
@@ -12870,7 +13304,9 @@ Object {
         },
         "isLabor": true,
         "matId": 47261,
+        "medianElapsed": 3,
         "operator": "",
+        "outlier": false,
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
@@ -12885,6 +13321,7 @@ Object {
         "y": 3,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 6,
         "completed": false,
         "completedInspections": Map {
@@ -12892,7 +13329,9 @@ Object {
         },
         "isLabor": true,
         "matId": 11231,
+        "medianElapsed": 6,
         "operator": "",
+        "outlier": false,
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
@@ -12907,6 +13346,7 @@ Object {
         "y": 6,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 30,
         "completed": false,
         "completedInspections": Map {
@@ -12914,7 +13354,9 @@ Object {
         },
         "isLabor": false,
         "matId": 11231,
+        "medianElapsed": 30,
         "operator": "",
+        "outlier": false,
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
@@ -12929,6 +13371,7 @@ Object {
         "y": 30,
       },
       Object {
+        "MAD_aboveMinutes": 0.01,
         "active": 3,
         "completed": true,
         "completedInspections": Map {
@@ -12936,7 +13379,9 @@ Object {
         },
         "isLabor": true,
         "matId": 11231,
+        "medianElapsed": 3,
         "operator": "",
+        "outlier": false,
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
@@ -12968,7 +13413,9 @@ Object {
       \\"part\\": \\"part222\\",
     }" => Array [
         Object {
+          "inspType": "Insp1",
           "materialID": 68845,
+          "part": "part222",
           "result": Object {
             "actualPath": Array [
               Object {
@@ -12993,7 +13440,9 @@ Object {
           "workorder": "workf",
         },
         Object {
+          "inspType": "Insp1",
           "materialID": 68845,
+          "part": "part222",
           "result": Object {
             "success": true,
             "type": 2,
@@ -13003,7 +13452,9 @@ Object {
           "workorder": "workf",
         },
         Object {
+          "inspType": "Insp1",
           "materialID": 47261,
+          "part": "part222",
           "result": Object {
             "toInspect": true,
             "type": 1,
@@ -13013,7 +13464,9 @@ Object {
           "workorder": "workn",
         },
         Object {
+          "inspType": "Insp1",
           "materialID": 47261,
+          "part": "part222",
           "result": Object {
             "actualPath": Array [
               Object {
@@ -13038,7 +13491,9 @@ Object {
           "workorder": "workn",
         },
         Object {
+          "inspType": "Insp1",
           "materialID": 47261,
+          "part": "part222",
           "result": Object {
             "success": true,
             "type": 2,
@@ -13053,7 +13508,9 @@ Object {
       \\"part\\": \\"part111\\",
     }" => Array [
         Object {
+          "inspType": "Insp1",
           "materialID": 11231,
+          "part": "part111",
           "result": Object {
             "toInspect": true,
             "type": 1,
@@ -13063,7 +13520,9 @@ Object {
           "workorder": "works",
         },
         Object {
+          "inspType": "Insp1",
           "materialID": 11231,
+          "part": "part111",
           "result": Object {
             "actualPath": Array [
               Object {
@@ -13088,7 +13547,9 @@ Object {
           "workorder": "works",
         },
         Object {
+          "inspType": "Insp1",
           "materialID": 11231,
+          "part": "part111",
           "result": Object {
             "success": true,
             "type": 2,

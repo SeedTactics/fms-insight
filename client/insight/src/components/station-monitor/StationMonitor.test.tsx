@@ -48,13 +48,16 @@ jest.mock("../DateTimeDisplay", () => ({
 import StationMonitor from "./StationMonitor";
 import { createTestStore } from "../../test-util";
 import { connect } from "../../store/store";
+import { RouteLocation } from "../../data/routes";
 
 const ConnStatMonitor = connect(s => ({
-  monitor_type: s.Route.station_monitor
+  route_loc: s.Route.current,
+  showToolbar: true
 }))(StationMonitor);
 
 it("renders the load station page", async () => {
   const store = await createTestStore();
+  store.dispatch({ type: RouteLocation.Station_LoadMonitor, payload: { num: 1 } });
 
   const result = render(
     <store.Provider>
@@ -107,6 +110,7 @@ it("renders the load station page", async () => {
 
 it("renders the inspection page", async () => {
   const store = await createTestStore();
+  store.dispatch({ type: RouteLocation.Station_LoadMonitor, payload: { num: 1 } });
 
   const result = render(
     <store.Provider>
@@ -130,6 +134,7 @@ it("renders the inspection page", async () => {
 
 it("renders the wash page", async () => {
   const store = await createTestStore();
+  store.dispatch({ type: RouteLocation.Station_LoadMonitor, payload: { num: 1 } });
 
   const result = render(
     <store.Provider>
@@ -151,6 +156,7 @@ it("renders the wash page", async () => {
 
 it("renders the queues page", async () => {
   const store = await createTestStore();
+  store.dispatch({ type: RouteLocation.Station_LoadMonitor, payload: { num: 1 } });
 
   const result = render(
     <store.Provider>
@@ -195,12 +201,6 @@ it("renders the all material page", async () => {
         <ConnStatMonitor />
       </div>
     </store.Provider>
-  );
-
-  fireEvent.click(result.getByText("Load Station"));
-
-  fireEvent.click(
-    within(document.getElementById("menu-choose-station-type-select") as HTMLElement).getByText("All Material")
   );
 
   expect(result.getByTestId("stationmonitor-allmaterial")).toMatchSnapshot("all material");

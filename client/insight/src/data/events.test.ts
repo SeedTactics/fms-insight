@@ -43,8 +43,11 @@ import * as inspEvts from "./events.inspection";
 import { fakeCycle } from "./events.fake";
 import { ILogEntry } from "./api";
 import { LazySeq } from "./lazyseq";
-import { buildPointsTable, buildCycleTable, buildLogEntriesTable, buildInspectionTable } from "./clipboard-table";
 import { loadMockData } from "../mock-data/load";
+import { binCyclesByDayAndStat, buildHeatmapTable } from "./results.oee";
+import { binCyclesByDayAndPart } from "./results.completed-parts";
+import { stationMinutes, filterStationCycles, buildCycleTable, buildLogEntriesTable } from "./results.cycles";
+import { groupInspectionsByPath, buildInspectionTable } from "./results.inspection";
 
 it("creates initial state", () => {
   // tslint:disable no-any
@@ -297,7 +300,7 @@ it("bins actual cycles by day", () => {
     }
   });
 
-  let byDayAndStat = events.binCyclesByDayAndStat(st.last30.cycles.part_cycles, c => duration(c.active).asMinutes());
+  let byDayAndStat = binCyclesByDayAndStat(st.last30.cycles.part_cycles, c => duration(c.active).asMinutes());
 
   // update day to be in Chicago timezone
   // This is because the snapshot formats the day as a UTC time in Chicago timezone
@@ -308,7 +311,7 @@ it("bins actual cycles by day", () => {
 
   expect(byDayAndStat).toMatchSnapshot("cycles binned by day and station");
 
-  let byDayAndPart = events.binCyclesByDayAndPart(st.last30.cycles.part_cycles, c => (c.completed ? 1 : 0));
+  let byDayAndPart = binCyclesByDayAndPart(st.last30.cycles.part_cycles, c => (c.completed ? 1 : 0));
 
   byDayAndPart = byDayAndPart.map((dayAndPart, val) => [dayAndPart.adjustDay(d => addMinutes(d, minOffset)), val]);
 
@@ -332,7 +335,7 @@ it("computes station oee", () => {
     }
   });
 
-  let statMins = events.stationMinutes(st.last30.cycles.part_cycles, addDays(now, -7));
+  let statMins = stationMinutes(st.last30.cycles.part_cycles, addDays(now, -7));
 
   expect(statMins).toMatchSnapshot("station minutes for last week");
 });
@@ -355,7 +358,7 @@ it("creates points clipboard table", () => {
     }
   });
 
-  let byDayAndStat = events.binCyclesByDayAndStat(st.last30.cycles.part_cycles, c => duration(c.active).asMinutes());
+  let byDayAndStat = binCyclesByDayAndStat(st.last30.cycles.part_cycles, c => duration(c.active).asMinutes());
 
   const points = LazySeq.ofIterable(byDayAndStat)
     .map(([dayAndStat, val]) => ({
@@ -366,7 +369,7 @@ it("creates points clipboard table", () => {
     .toArray();
 
   const table = document.createElement("div");
-  table.innerHTML = buildPointsTable("Station", points);
+  table.innerHTML = buildHeatmapTable("Station", points);
   expect(table).toMatchSnapshot("clipboard table");
 });
 
@@ -386,13 +389,13 @@ it("creates cycles clipboard table", () => {
       result: evts
     }
   });
-  const data = stationCycles.filterStationCycles(st.last30.cycles.part_cycles, undefined, undefined, undefined);
+  const data = filterStationCycles(st.last30.cycles.part_cycles, undefined, undefined, undefined);
 
   const table = document.createElement("div");
-  table.innerHTML = buildCycleTable(data, undefined, undefined);
+  table.innerHTML = buildCycleTable(data, true, undefined, undefined);
   expect(table).toMatchSnapshot("cycle clipboard table");
 
-  table.innerHTML = buildCycleTable(data, addHours(now, -3), now);
+  table.innerHTML = buildCycleTable(data, true, addHours(now, -3), now);
   expect(table).toMatchSnapshot("cycle filtered clipboard table");
 });
 
@@ -414,11 +417,16 @@ it("groups inspections by path", async () => {
   const offsetSeconds = differenceInSeconds(addDays(new Date(Date.UTC(2018, 7, 6, 15, 39, 0)), -28), jan18);
   const data = loadMockData(offsetSeconds);
   const evts = await data.events;
-  const inspState = inspEvts.process_events({ type: inspEvts.ExpireOldDataType.NoExpire }, evts, inspEvts.initial);
+  const inspState = inspEvts.process_events(
+    { type: inspEvts.ExpireOldDataType.NoExpire },
+    evts,
+    undefined,
+    inspEvts.initial
+  );
 
   const entries = inspState.by_part.get(new inspection.PartAndInspType("aaa", "CMM")).getOrThrow();
   const range = { start: new Date(Date.UTC(2018, 7, 1)), end: new Date(Date.UTC(2018, 7, 4)) };
-  const groups = inspection.groupInspectionsByPath(entries, range, e => e.serial || "");
+  const groups = groupInspectionsByPath(entries, range, e => e.serial || "");
   expect(groups).toMatchSnapshot("grouped inspections");
 });
 
@@ -428,7 +436,12 @@ it("copies inspections by path to clipboard", async () => {
   const offsetSeconds = differenceInSeconds(addDays(new Date(2018, 7, 6, 15, 39, 0), -28), jan18);
   const data = loadMockData(offsetSeconds);
   const evts = await data.events;
-  const inspState = inspEvts.process_events({ type: inspEvts.ExpireOldDataType.NoExpire }, evts, inspEvts.initial);
+  const inspState = inspEvts.process_events(
+    { type: inspEvts.ExpireOldDataType.NoExpire },
+    evts,
+    undefined,
+    inspEvts.initial
+  );
 
   const entries = inspState.by_part.get(new inspection.PartAndInspType("aaa", "CMM")).getOrThrow();
   const table = document.createElement("div");

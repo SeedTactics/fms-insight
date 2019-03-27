@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { wait, render, cleanup, fireEvent } from "react-testing-library";
+import { wait, render, cleanup } from "react-testing-library";
 afterEach(cleanup);
 import "jest-dom/extend-expect";
 import { differenceInSeconds, addDays } from "date-fns";
@@ -42,19 +42,19 @@ import { initStore } from "../store/store";
 import { loadMockData } from "../mock-data/load";
 import * as serverSettings from "../data/server-settings";
 
-jest.mock("./cost-per-piece/CostPerPiece", () => ({
+jest.mock("./analysis/CostPerPiece", () => ({
   default: mockComponent("CostPerPiece")
 }));
-jest.mock("./dashboard/Dashboard", () => ({
+jest.mock("./operations/Dashboard", () => ({
   default: mockComponent("Dashboard")
 }));
-jest.mock("./efficiency/Efficiency", () => ({
+jest.mock("./analysis/Efficiency", () => ({
   default: mockComponent("Efficiency")
 }));
 jest.mock("./station-monitor/StationMonitor", () => ({
   default: mockComponent("StationMonitor")
 }));
-jest.mock("./data-export/DataExport", () => ({
+jest.mock("./analysis/DataExport", () => ({
   default: mockComponent("DataExport")
 }));
 
@@ -103,20 +103,8 @@ it("renders the app shell", async () => {
 
   await wait(() => expect(result.queryByTestId("loading-icon")).not.toBeInTheDocument());
 
-  expect(result.getByTestId("mock-component-Dashboard")).toBeDefined();
+  expect(result.queryByTestId("mock-component-Dashboard")).not.toBeInTheDocument();
   expect(result.queryByTestId("mock-component-StationMonitor")).not.toBeInTheDocument();
   expect(result.queryByTestId("mock-component-Efficiency")).not.toBeInTheDocument();
   expect(result.queryByTestId("mock-component-CostPerPiece")).not.toBeInTheDocument();
-
-  fireEvent.click(result.getByText("Station Monitor"));
-  expect(result.queryByTestId("mock-component-StationMonitor")).toBeInTheDocument();
-
-  fireEvent.click(result.getByText("Efficiency"));
-  expect(result.queryByTestId("mock-component-Efficiency")).toBeInTheDocument();
-
-  fireEvent.click(result.getByText("Cost/Piece"));
-  expect(result.queryByTestId("mock-component-CostPerPiece")).toBeInTheDocument();
-
-  fireEvent.click(result.getByText("Dashboard"));
-  expect(result.queryByTestId("mock-component-Dashboard")).toBeInTheDocument();
 });

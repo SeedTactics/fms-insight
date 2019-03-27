@@ -38,7 +38,12 @@ import * as inspEvts from "./events.inspection";
 it("creates inspection sankey", async () => {
   const data = loadMockData(30 * 24 * 60 * 60);
   const evts = await data.events;
-  const cycleState = inspEvts.process_events({ type: inspEvts.ExpireOldDataType.NoExpire }, evts, inspEvts.initial);
+  const cycleState = inspEvts.process_events(
+    { type: inspEvts.ExpireOldDataType.NoExpire },
+    evts,
+    undefined,
+    inspEvts.initial
+  );
   expect(
     inspectionDataToSankey(cycleState.by_part.get(new inspEvts.PartAndInspType("aaa", "CMM")).getOrElse([]))
   ).toMatchSnapshot("part aaa CMM sankey");

@@ -46,7 +46,6 @@ it("changes to the station page", () => {
 
   expect(st).toEqual({
     current: routes.RouteLocation.Station_WashMonitor,
-    station_monitor: routes.StationMonitorType.Wash,
     selected_load_id: 1,
     load_queues: [],
     load_free_material: false,
@@ -69,7 +68,6 @@ it("changes to the station page", () => {
 
   expect(st).toEqual({
     current: routes.RouteLocation.Station_LoadMonitor,
-    station_monitor: routes.StationMonitorType.LoadUnload,
     selected_load_id: 4,
     load_queues: ["z", "y", "x"],
     load_free_material: false,
@@ -93,7 +91,6 @@ it("changes to the station page", () => {
 
   expect(st).toEqual({
     current: routes.RouteLocation.Station_LoadMonitor,
-    station_monitor: routes.StationMonitorType.LoadUnload,
     selected_load_id: 6,
     load_queues: ["w"],
     load_free_material: true,
@@ -113,7 +110,6 @@ it("changes to the station page", () => {
 
   expect(st).toEqual({
     current: routes.RouteLocation.Station_Queues,
-    station_monitor: routes.StationMonitorType.Queues,
     selected_load_id: 6,
     load_queues: ["w"],
     load_free_material: true,
@@ -134,7 +130,6 @@ it("changes to the station page", () => {
 
   expect(st).toEqual({
     current: routes.RouteLocation.Station_Queues,
-    station_monitor: routes.StationMonitorType.Queues,
     selected_load_id: 6,
     load_queues: ["w"],
     load_free_material: true,
@@ -145,13 +140,26 @@ it("changes to the station page", () => {
 
 it("transitions to the cost/piece, dashboard, and efficiency pages", () => {
   const pages = [
-    routes.RouteLocation.Analysis_CostPerPiece,
     routes.RouteLocation.Operations_Dashboard,
-    routes.RouteLocation.Analysis_Efficiency
+    routes.RouteLocation.Operations_LoadStation,
+    routes.RouteLocation.Operations_Machines,
+    routes.RouteLocation.Operations_AllMaterial,
+    routes.RouteLocation.Operations_CompletedParts,
+
+    routes.RouteLocation.Engineering,
+
+    routes.RouteLocation.Quality_Dashboard,
+    routes.RouteLocation.Quality_Serials,
+    routes.RouteLocation.Quality_Paths,
+
+    routes.RouteLocation.Tools_Dashboard,
+
+    routes.RouteLocation.Analysis_Efficiency,
+    routes.RouteLocation.Analysis_CostPerPiece,
+    routes.RouteLocation.Analysis_DataExport
   ];
   const initialSt = {
     current: routes.RouteLocation.Station_LoadMonitor,
-    station_monitor: routes.StationMonitorType.LoadUnload,
     selected_load_id: 2,
     load_queues: ["a", "b"],
     load_free_material: false,
