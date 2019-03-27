@@ -51,9 +51,6 @@ jest.mock("./operations/Dashboard", () => ({
 jest.mock("./analysis/Efficiency", () => ({
   default: mockComponent("Efficiency")
 }));
-jest.mock("./station-monitor/StationMonitor", () => ({
-  default: mockComponent("StationMonitor")
-}));
 jest.mock("./analysis/DataExport", () => ({
   default: mockComponent("DataExport")
 }));
