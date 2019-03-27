@@ -162,7 +162,7 @@ function PartLookupStepper(props: PartLookupStepperProps) {
               <MaterialDetailContent mat={mat} />
               <div style={{ marginTop: "2em" }}>
                 <Button
-                  variant="raised"
+                  variant="contained"
                   color="secondary"
                   onClick={() => {
                     const d = lastMachineTime(mat);

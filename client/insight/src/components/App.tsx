@@ -41,12 +41,31 @@ import HelpOutline from "@material-ui/icons/HelpOutline";
 import ExitToApp from "@material-ui/icons/ExitToApp";
 import IconButton from "@material-ui/core/IconButton";
 import Tooltip from "@material-ui/core/Tooltip";
+import List from "@material-ui/core/List";
+import ListItem from "@material-ui/core/ListItem";
+import ListItemIcon from "@material-ui/core/ListItemIcon";
+import ListSubheader from "@material-ui/core/ListSubheader";
+import ListItemText from "@material-ui/core/ListItemText";
 import CircularProgress from "@material-ui/core/CircularProgress";
 import Button from "@material-ui/core/Button";
 import Badge from "@material-ui/core/Badge";
 import Notifications from "@material-ui/icons/Notifications";
+import Drawer from "@material-ui/core/Drawer";
 import CameraAlt from "@material-ui/icons/CameraAlt";
 import SearchIcon from "@material-ui/icons/Search";
+import ShoppingBasket from "@material-ui/icons/ShoppingBasket";
+import DirectionsIcon from "@material-ui/icons/Directions";
+import StarIcon from "@material-ui/icons/StarRate";
+import ChartIcon from "@material-ui/icons/InsertChart";
+import ExtensionIcon from "@material-ui/icons/Extension";
+import BugIcon from "@material-ui/icons/BugReport";
+import InfoIcon from "@material-ui/icons/Info";
+import OpacityIcon from "@material-ui/icons/Opacity";
+import MemoryIcon from "@material-ui/icons/Memory";
+import MoneyIcon from "@material-ui/icons/AttachMoney";
+import MenuIcon from "@material-ui/icons/Menu";
+import CheckIcon from "@material-ui/icons/CheckCircle";
+import PersonIcon from "@material-ui/icons/Person";
 import { User } from "oidc-client";
 
 import OperationDashboard from "./operations/Dashboard";
@@ -86,34 +105,16 @@ const tabsStyle = {
 };
 
 interface HeaderNavProps {
+  readonly demo: boolean;
   readonly full: boolean;
   readonly setRoute: (arg: { ty: routes.RouteLocation; curSt: routes.State }) => void;
   readonly routeState: routes.State;
 }
 
-function DemoTabs(p: HeaderNavProps) {
-  return (
-    <Tabs
-      variant={p.full ? "fullWidth" : "standard"}
-      style={p.full ? {} : tabsStyle}
-      value={p.routeState.current}
-      onChange={(e, v) => p.setRoute({ ty: v, curSt: p.routeState })}
-    >
-      <Tab label="Operations" value={routes.RouteLocation.Operations_Dashboard} />
-      <Tab label="Station Monitor" value={routes.RouteLocation.Station_LoadMonitor} />
-      <Tab label="Load/Unload" value={routes.RouteLocation.Operations_LoadStation} />
-      <Tab label="Machines" value={routes.RouteLocation.Operations_Machines} />
-      <Tab label="Completed Parts" value={routes.RouteLocation.Operations_CompletedParts} />
-      <Tab label="Quality" value={routes.RouteLocation.Quality_Dashboard} />
-      <Tab label="Failed Part" value={routes.RouteLocation.Quality_Serials} />
-      <Tab label="Paths" value={routes.RouteLocation.Quality_Paths} />
-      <Tab label="Efficiency" value={routes.RouteLocation.Analysis_Efficiency} />
-      <Tab label="Cost/Piece" value={routes.RouteLocation.Analysis_CostPerPiece} />
-    </Tabs>
-  );
-}
-
 function OperationsTabs(p: HeaderNavProps) {
+  if (p.demo) {
+    return <div style={{ flexGrow: 1 }} />;
+  }
   return (
     <Tabs
       variant={p.full ? "fullWidth" : "standard"}
@@ -131,6 +132,9 @@ function OperationsTabs(p: HeaderNavProps) {
 }
 
 function QualityTabs(p: HeaderNavProps) {
+  if (p.demo) {
+    return <div style={{ flexGrow: 1 }} />;
+  }
   return (
     <Tabs
       variant={p.full ? "fullWidth" : "standard"}
@@ -146,6 +150,9 @@ function QualityTabs(p: HeaderNavProps) {
 }
 
 function AnalysisTabs(p: HeaderNavProps) {
+  if (p.demo) {
+    return <div style={{ flexGrow: 1 }} />;
+  }
   return (
     <Tabs
       variant={p.full ? "fullWidth" : "standard"}
@@ -157,6 +164,136 @@ function AnalysisTabs(p: HeaderNavProps) {
       <Tab label="Cost/Piece" value={routes.RouteLocation.Analysis_CostPerPiece} />
       <Tab label="Data Export" value={routes.RouteLocation.Analysis_DataExport} />
     </Tabs>
+  );
+}
+
+function DemoNav(p: HeaderNavProps) {
+  return (
+    <List component="nav">
+      <ListSubheader>Shop Floor</ListSubheader>
+      <ListItem
+        button
+        selected={p.routeState.current === routes.RouteLocation.Station_LoadMonitor}
+        onClick={() => p.setRoute({ ty: routes.RouteLocation.Station_LoadMonitor, curSt: p.routeState })}
+      >
+        <ListItemIcon>
+          <DirectionsIcon />
+        </ListItemIcon>
+        <ListItemText>Load Station</ListItemText>
+      </ListItem>
+      <ListItem
+        button
+        selected={p.routeState.current === routes.RouteLocation.Station_Queues}
+        onClick={() => p.setRoute({ ty: routes.RouteLocation.Station_Queues, curSt: p.routeState })}
+      >
+        <ListItemIcon>
+          <ExtensionIcon />
+        </ListItemIcon>
+        <ListItemText>Queue Management</ListItemText>
+      </ListItem>
+      <ListItem
+        button
+        selected={p.routeState.current === routes.RouteLocation.Station_InspectionMonitor}
+        onClick={() => p.setRoute({ ty: routes.RouteLocation.Station_InspectionMonitor, curSt: p.routeState })}
+      >
+        <ListItemIcon>
+          <InfoIcon />
+        </ListItemIcon>
+        <ListItemText>Inspection Stand</ListItemText>
+      </ListItem>
+      <ListItem
+        button
+        selected={p.routeState.current === routes.RouteLocation.Station_WashMonitor}
+        onClick={() => p.setRoute({ ty: routes.RouteLocation.Station_WashMonitor, curSt: p.routeState })}
+      >
+        <ListItemIcon>
+          <OpacityIcon />
+        </ListItemIcon>
+        <ListItemText>Wash</ListItemText>
+      </ListItem>
+      <ListSubheader>Daily Monitoring</ListSubheader>
+      <ListItem
+        button
+        selected={p.routeState.current === routes.RouteLocation.Operations_Dashboard}
+        onClick={() => p.setRoute({ ty: routes.RouteLocation.Operations_Dashboard, curSt: p.routeState })}
+      >
+        <ListItemIcon>
+          <ShoppingBasket />
+        </ListItemIcon>
+        <ListItemText>Operation Overview</ListItemText>
+      </ListItem>
+      <ListItem
+        button
+        selected={p.routeState.current === routes.RouteLocation.Operations_LoadStation}
+        onClick={() => p.setRoute({ ty: routes.RouteLocation.Operations_LoadStation, curSt: p.routeState })}
+      >
+        <ListItemIcon>
+          <PersonIcon />
+        </ListItemIcon>
+        <ListItemText>Load Station Management</ListItemText>
+      </ListItem>
+      <ListItem
+        button
+        selected={p.routeState.current === routes.RouteLocation.Operations_Machines}
+        onClick={() => p.setRoute({ ty: routes.RouteLocation.Operations_Machines, curSt: p.routeState })}
+      >
+        <ListItemIcon>
+          <MemoryIcon />
+        </ListItemIcon>
+        <ListItemText>Engineering</ListItemText>
+      </ListItem>
+      <ListItem
+        button
+        selected={p.routeState.current === routes.RouteLocation.Operations_CompletedParts}
+        onClick={() => p.setRoute({ ty: routes.RouteLocation.Operations_CompletedParts, curSt: p.routeState })}
+      >
+        <ListItemIcon>
+          <CheckIcon />
+        </ListItemIcon>
+        <ListItemText>Scheduled/Completed Parts</ListItemText>
+      </ListItem>
+      <ListItem
+        button
+        selected={p.routeState.current === routes.RouteLocation.Quality_Dashboard}
+        onClick={() => p.setRoute({ ty: routes.RouteLocation.Quality_Dashboard, curSt: p.routeState })}
+      >
+        <ListItemIcon>
+          <StarIcon />
+        </ListItemIcon>
+        <ListItemText>Quality Analysis</ListItemText>
+      </ListItem>
+      <ListItem
+        button
+        selected={p.routeState.current === routes.RouteLocation.Quality_Serials}
+        onClick={() => p.setRoute({ ty: routes.RouteLocation.Quality_Serials, curSt: p.routeState })}
+      >
+        <ListItemIcon>
+          <BugIcon />
+        </ListItemIcon>
+        <ListItemText>Failed Parts</ListItemText>
+      </ListItem>
+      <ListSubheader>Monthly Review</ListSubheader>
+      <ListItem
+        button
+        selected={p.routeState.current === routes.RouteLocation.Analysis_Efficiency}
+        onClick={() => p.setRoute({ ty: routes.RouteLocation.Analysis_Efficiency, curSt: p.routeState })}
+      >
+        <ListItemIcon>
+          <ChartIcon />
+        </ListItemIcon>
+        <ListItemText>Flexibility Analysis</ListItemText>
+      </ListItem>
+      <ListItem
+        button
+        selected={p.routeState.current === routes.RouteLocation.Analysis_CostPerPiece}
+        onClick={() => p.setRoute({ ty: routes.RouteLocation.Analysis_CostPerPiece, curSt: p.routeState })}
+      >
+        <ListItemIcon>
+          <MoneyIcon />
+        </ListItemIcon>
+        <ListItemText>Cost Per Piece</ListItemText>
+      </ListItem>
+    </List>
   );
 }
 
@@ -196,6 +333,8 @@ interface HeaderProps {
 }
 
 function Header(p: HeaderProps) {
+  const [drawerOpen, setDrawerOpen] = React.useState(false);
+
   const alarmTooltip = p.alarms ? p.alarms.join(". ") : "No Alarms";
   const Alarms = () => (
     <Tooltip title={alarmTooltip}>
@@ -253,59 +392,79 @@ function Header(p: HeaderProps) {
     tooltip = (p.fmsInfo.name || "") + " " + (p.fmsInfo.version || "");
   }
 
-  const largeAppBar = (
-    <AppBar position="static">
-      <Toolbar>
-        {p.demo ? (
-          <a href="/">
-            <img src={logo} alt="Logo" style={{ height: "30px", marginRight: "1em" }} />
-          </a>
-        ) : (
-          <Tooltip title={tooltip}>
-            <img src={logo} alt="Logo" style={{ height: "30px", marginRight: "1em" }} />
-          </Tooltip>
-        )}
-        <Typography variant="h6" style={{ marginRight: "2em" }}>
-          Insight
-        </Typography>
-        {p.children ? (
-          p.children({ full: false, setRoute: p.setRoute, routeState: p.routeState })
-        ) : (
-          <div style={{ flexGrow: 1 }} />
-        )}
-        <LoadingIcon />
-        {p.showOperator ? <ChooseOperator /> : undefined}
-        {p.showSearch ? <SearchButtons /> : undefined}
-        <HelpButton />
-        {p.showLogout ? <LogoutButton /> : undefined}
-        {p.showAlarms ? <Alarms /> : undefined}
-      </Toolbar>
-    </AppBar>
-  );
-
-  const smallAppBar = (
-    <AppBar position="static">
-      <Toolbar>
-        <Tooltip title={tooltip}>
-          <img src={logo} alt="Logo" style={{ height: "25px", marginRight: "4px" }} />
-        </Tooltip>
-        <Typography variant="h6">Insight</Typography>
-        <div style={{ flexGrow: 1 }} />
-        <LoadingIcon />
-        {p.showSearch ? <SearchButtons /> : undefined}
-        <HelpButton />
-        {p.showLogout ? <LogoutButton /> : undefined}
-        {p.showAlarms ? <Alarms /> : undefined}
-      </Toolbar>
-      {p.children ? p.children({ full: true, setRoute: p.setRoute, routeState: p.routeState }) : undefined}
-    </AppBar>
-  );
-
   return (
-    <nav id="navHeader">
-      <Hidden smDown>{largeAppBar}</Hidden>
-      <Hidden mdUp>{smallAppBar}</Hidden>
-    </nav>
+    <>
+      <Hidden smDown>
+        <AppBar position="static">
+          <Toolbar>
+            {p.demo ? (
+              <a href="/">
+                <img src={logo} alt="Logo" style={{ height: "30px", marginRight: "1em" }} />
+              </a>
+            ) : (
+              <Tooltip title={tooltip}>
+                <img src={logo} alt="Logo" style={{ height: "30px", marginRight: "1em" }} />
+              </Tooltip>
+            )}
+            <Typography variant="h6" style={{ marginRight: "2em" }}>
+              Insight
+            </Typography>
+            {p.children ? (
+              p.children({ full: false, setRoute: p.setRoute, demo: p.demo, routeState: p.routeState })
+            ) : (
+              <div style={{ flexGrow: 1 }} />
+            )}
+            <LoadingIcon />
+            {p.showOperator ? <ChooseOperator /> : undefined}
+            {p.showSearch ? <SearchButtons /> : undefined}
+            <HelpButton />
+            {p.showLogout ? <LogoutButton /> : undefined}
+            {p.showAlarms ? <Alarms /> : undefined}
+          </Toolbar>
+        </AppBar>
+      </Hidden>
+      <Hidden mdUp>
+        <AppBar position="static">
+          <Toolbar>
+            {p.demo ? (
+              <IconButton onClick={() => setDrawerOpen(!drawerOpen)}>
+                <MenuIcon />
+              </IconButton>
+            ) : (
+              undefined
+            )}
+            <Tooltip title={tooltip}>
+              <img src={logo} alt="Logo" style={{ height: "25px", marginRight: "4px" }} />
+            </Tooltip>
+            <Typography variant="h6">Insight</Typography>
+            <div style={{ flexGrow: 1 }} />
+            <LoadingIcon />
+            {p.showSearch ? <SearchButtons /> : undefined}
+            <HelpButton />
+            {p.showLogout ? <LogoutButton /> : undefined}
+            {p.showAlarms ? <Alarms /> : undefined}
+          </Toolbar>
+          {p.children
+            ? p.children({ full: true, setRoute: p.setRoute, demo: p.demo, routeState: p.routeState })
+            : undefined}
+        </AppBar>
+        {p.demo ? (
+          <Drawer variant="temporary" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
+            <DemoNav
+              full={false}
+              setRoute={r => {
+                p.setRoute(r);
+                setDrawerOpen(false);
+              }}
+              demo={true}
+              routeState={p.routeState}
+            />
+          </Drawer>
+        ) : (
+          undefined
+        )}
+      </Hidden>
+    </>
   );
 }
 
@@ -432,9 +591,13 @@ class App extends React.PureComponent<AppConnectedProps> {
 
         case routes.RouteLocation.ChooseMode:
         default:
-          page = <ChooseMode />;
-          showAlarms = false;
-          showSearch = false;
+          if (this.props.demo) {
+            page = <OperationDashboard />;
+          } else {
+            page = <ChooseMode />;
+            showSearch = false;
+            showAlarms = false;
+          }
       }
     } else if (this.props.fmsInfo && this.props.fmsInfo.openIDConnectAuthority) {
       page = (
@@ -457,9 +620,6 @@ class App extends React.PureComponent<AppConnectedProps> {
       showAlarms = false;
       showSearch = false;
     }
-    if (this.props.demo) {
-      navigation = DemoTabs;
-    }
     return (
       <div id="App">
         <Header
@@ -479,7 +639,18 @@ class App extends React.PureComponent<AppConnectedProps> {
         >
           {navigation}
         </Header>
-        {page}
+        {this.props.demo ? (
+          <div style={{ display: "flex" }}>
+            <Hidden smDown>
+              <div style={{ borderRight: "1px solid" }}>
+                <DemoNav full={false} setRoute={this.props.setRoute} demo={true} routeState={this.props.route} />
+              </div>
+            </Hidden>
+            <div style={{ width: "100%" }}>{page}</div>
+          </div>
+        ) : (
+          page
+        )}
         <SerialScanner />
         <ManualScan />
         {addBasicMaterialDialog ? <BasicMaterialDialog /> : undefined}

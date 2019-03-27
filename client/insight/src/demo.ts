@@ -36,9 +36,13 @@ import { registerMockBackend } from "./data/backend";
 import * as events from "./data/events";
 import * as currentStatus from "./data/current-status";
 import * as serverSettings from "./data/server-settings";
+import * as routes from "./data/routes";
 import { render } from "./renderer";
 
 const store = initStore({ useRouter: false });
+store.dispatch({ type: routes.RouteLocation.Station_Queues, meta: { query: { queue: "Queue 1" } } });
+store.dispatch({ type: routes.RouteLocation.Station_InspectionMonitor, meta: { query: { type: "CMM" } } });
+store.dispatch({ type: routes.RouteLocation.Operations_Dashboard });
 
 registerMockBackend();
 store.dispatch(events.loadLast30Days());
