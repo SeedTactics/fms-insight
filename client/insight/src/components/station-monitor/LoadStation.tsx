@@ -37,6 +37,7 @@ import { WithStyles, createStyles, withStyles } from "@material-ui/core/styles";
 import { createSelector } from "reselect";
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 import Button from "@material-ui/core/Button";
+import Hidden from "@material-ui/core/Hidden";
 import TimeAgo from "react-timeago";
 import { addSeconds } from "date-fns";
 import { duration } from "moment";
@@ -193,7 +194,7 @@ const palletStyles = createStyles({
   }
 });
 
-const PalletColumn = withStyles(palletStyles)((props: LoadStationProps & WithStyles<typeof palletStyles>) => {
+const PalletColumn = withStyles(palletStyles)((props: LoadStationDisplayProps & WithStyles<typeof palletStyles>) => {
   let palletClass: string;
   let statStatusClass: string;
   if (props.fillViewPort) {
@@ -385,14 +386,17 @@ const loadStyles = createStyles({
 });
 
 interface LoadStationProps {
-  readonly fillViewPort: boolean;
   readonly data: LoadStationAndQueueData;
   readonly dateOfCurrentStatus: Date;
   openMat: (m: Readonly<MaterialSummary>) => void;
   moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
 }
 
-const LoadStation = withStyles(loadStyles)((props: LoadStationProps & WithStyles<typeof loadStyles>) => {
+interface LoadStationDisplayProps extends LoadStationProps {
+  readonly fillViewPort: boolean;
+}
+
+const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & WithStyles<typeof loadStyles>) => {
   const palProps = { ...props, classes: undefined };
 
   let queues = props.data.queues
@@ -545,6 +549,21 @@ const buildLoadData = createSelector(
   }
 );
 
+function LoadStationCheckWidth(props: LoadStationProps) {
+  return (
+    <DocumentTitle title={"Load " + props.data.loadNum.toString() + " - FMS Insight"}>
+      <div>
+        <Hidden mdDown>
+          <LoadStation {...props} fillViewPort />
+        </Hidden>
+        <Hidden lgUp>
+          <LoadStation {...props} fillViewPort={false} />
+        </Hidden>
+      </div>
+    </DocumentTitle>
+  );
+}
+
 export default connect(
   (st: Store) => ({
     data: buildLoadData(st),
@@ -562,4 +581,4 @@ export default connect(
       matDetails.addExistingMaterialToQueue(d)
     ]
   }
-)(LoadStation);
+)(LoadStationCheckWidth);

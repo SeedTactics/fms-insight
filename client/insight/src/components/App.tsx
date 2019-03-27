@@ -53,7 +53,6 @@ import OperationDashboard from "./operations/Dashboard";
 import { OperationLoadUnload, OperationMachines } from "./operations/DailyStationOverview";
 import CostPerPiece from "./analysis/CostPerPiece";
 import Efficiency from "./analysis/Efficiency";
-import StationMonitor from "./station-monitor/StationMonitor";
 import StationToolbar from "./station-monitor/StationToolbar";
 import DataExport from "./analysis/DataExport";
 import ChooseMode from "./ChooseMode";
@@ -75,6 +74,11 @@ import { CompletedParts } from "./operations/CompletedParts";
 import { FailedPartLookup } from "./quality/FailedPartLookup";
 import { QualityPaths } from "./quality/QualityPaths";
 import { QualityDashboard } from "./quality/RecentFailedInspections";
+import LoadStation from "./station-monitor/LoadStation";
+import Inspection from "./station-monitor/Inspection";
+import Wash from "./station-monitor/Wash";
+import Queues from "./station-monitor/Queues";
+import AllMaterial from "./station-monitor/AllMaterial";
 
 const tabsStyle = {
   alignSelf: "flex-end" as "flex-end",
@@ -339,11 +343,26 @@ class App extends React.PureComponent<AppConnectedProps> {
     } else if (this.props.fmsInfo && (!this.props.fmsInfo.openIDConnectAuthority || this.props.user)) {
       switch (this.props.route.current) {
         case routes.RouteLocation.Station_LoadMonitor:
+          page = <LoadStation />;
+          navigation = p => <StationToolbar full={p.full} />;
+          showOperator = true;
+          addBasicMaterialDialog = false;
+          break;
         case routes.RouteLocation.Station_InspectionMonitor:
+          page = <Inspection />;
+          navigation = p => <StationToolbar full={p.full} />;
+          showOperator = true;
+          addBasicMaterialDialog = false;
+          break;
         case routes.RouteLocation.Station_WashMonitor:
+          page = <Wash />;
+          navigation = p => <StationToolbar full={p.full} />;
+          showOperator = true;
+          addBasicMaterialDialog = false;
+          break;
         case routes.RouteLocation.Station_Queues:
-          page = <StationMonitor route_loc={this.props.route.current} showToolbar={this.props.demo} />;
-          navigation = p => <StationToolbar full={p.full} allowChangeType={false} />;
+          page = <Queues />;
+          navigation = p => <StationToolbar full={p.full} />;
           showOperator = true;
           addBasicMaterialDialog = false;
           break;
@@ -377,7 +396,7 @@ class App extends React.PureComponent<AppConnectedProps> {
           navigation = OperationsTabs;
           break;
         case routes.RouteLocation.Operations_AllMaterial:
-          page = <StationMonitor route_loc={this.props.route.current} showToolbar={this.props.demo} />;
+          page = <AllMaterial />;
           navigation = OperationsTabs;
           break;
         case routes.RouteLocation.Operations_CompletedParts:

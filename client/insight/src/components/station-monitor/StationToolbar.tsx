@@ -60,7 +60,6 @@ const inHeaderStyle = {
 
 interface StationToolbarProps {
   readonly full: boolean;
-  readonly allowChangeType: boolean;
   readonly current_route: routes.State;
   readonly queues: { [key: string]: api.IQueueSize };
   readonly insp_types: HashSet<string>;
@@ -85,35 +84,6 @@ enum StationMonitorType {
 
 function StationToolbar(props: StationToolbarProps) {
   const queueNames = Object.keys(props.queues).sort();
-
-  function setStation(s: string) {
-    const type = s as StationMonitorType;
-    switch (type) {
-      case StationMonitorType.LoadUnload:
-        props.displayLoadStation(
-          props.current_route.selected_load_id,
-          props.current_route.load_queues,
-          props.current_route.load_free_material
-        );
-        break;
-
-      case StationMonitorType.Inspection:
-        props.displayInspection(props.current_route.selected_insp_type);
-        break;
-
-      case StationMonitorType.Wash:
-        props.displayWash();
-        break;
-
-      case StationMonitorType.Queues:
-        props.displayQueues(props.current_route.standalone_queues, props.current_route.standalone_free_material);
-        break;
-
-      case StationMonitorType.AllMaterial:
-        props.displayAllMaterial();
-        break;
-    }
-  }
 
   function setLoadNumber(valStr: string) {
     const val = parseFloat(valStr);
@@ -187,17 +157,6 @@ function StationToolbar(props: StationToolbarProps) {
 
   return (
     <nav style={props.full ? toolbarStyle : inHeaderStyle}>
-      {props.allowChangeType ? (
-        <Select name="choose-station-type-select" value={curType} onChange={e => setStation(e.target.value)} autoWidth>
-          <MenuItem value={StationMonitorType.LoadUnload}>Load Station</MenuItem>
-          <MenuItem value={StationMonitorType.Inspection}>Inspection</MenuItem>
-          <MenuItem value={StationMonitorType.Wash}>Wash</MenuItem>
-          <MenuItem value={StationMonitorType.Queues}>Queues</MenuItem>
-          <MenuItem value={StationMonitorType.AllMaterial}>All Material</MenuItem>
-        </Select>
-      ) : (
-        undefined
-      )}
       {curType === StationMonitorType.LoadUnload ? (
         <Input
           type="number"
