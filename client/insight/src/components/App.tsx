@@ -160,6 +160,23 @@ function AnalysisTabs(p: HeaderNavProps) {
   );
 }
 
+function helpUrl(r: routes.RouteLocation): string {
+  switch (r) {
+    case routes.RouteLocation.Station_LoadMonitor:
+    case routes.RouteLocation.Station_InspectionMonitor:
+    case routes.RouteLocation.Station_WashMonitor:
+    case routes.RouteLocation.Station_Queues:
+    case routes.RouteLocation.Operations_AllMaterial:
+      return "https://fms-insight.seedtactics.com/docs/client-station-monitor.html";
+    case routes.RouteLocation.Analysis_Efficiency:
+      return "https://fms-insight.seedtactics.com/docs/client-efficiency.html";
+    case routes.RouteLocation.Analysis_CostPerPiece:
+      return "https://fms-insight.seedtactics.com/docs/client-cost-per-piece.html";
+    default:
+      return "https://fms-insight.seedtactics.com/docs/client-dashboard.html";
+  }
+}
+
 interface HeaderProps {
   demo: boolean;
   showAlarms: boolean;
@@ -179,23 +196,6 @@ interface HeaderProps {
 }
 
 function Header(p: HeaderProps) {
-  let helpUrl = "https://fms-insight.seedtactics.com/docs/client-dashboard.html";
-  switch (p.routeState.current) {
-    case routes.RouteLocation.Station_LoadMonitor:
-    case routes.RouteLocation.Station_InspectionMonitor:
-    case routes.RouteLocation.Station_WashMonitor:
-    case routes.RouteLocation.Station_Queues:
-    case routes.RouteLocation.Operations_AllMaterial:
-      helpUrl = "https://fms-insight.seedtactics.com/docs/client-station-monitor.html";
-      break;
-    case routes.RouteLocation.Analysis_Efficiency:
-      helpUrl = "https://fms-insight.seedtactics.com/docs/client-efficiency.html";
-      break;
-    case routes.RouteLocation.Analysis_CostPerPiece:
-      helpUrl = "https://fms-insight.seedtactics.com/docs/client-cost-per-piece.html";
-      break;
-  }
-
   const alarmTooltip = p.alarms ? p.alarms.join(". ") : "No Alarms";
   const Alarms = () => (
     <Tooltip title={alarmTooltip}>
@@ -207,7 +207,7 @@ function Header(p: HeaderProps) {
 
   const HelpButton = () => (
     <Tooltip title="Help">
-      <IconButton aria-label="Help" href={helpUrl} target="_help">
+      <IconButton aria-label="Help" href={helpUrl(p.routeState.current)} target="_help">
         <HelpOutline />
       </IconButton>
     </Tooltip>
