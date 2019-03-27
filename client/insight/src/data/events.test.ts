@@ -31,18 +31,15 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { addDays, differenceInSeconds } from "date-fns";
+import { addDays } from "date-fns";
 
 import { PledgeStatus } from "../store/middleware";
 import * as events from "./events";
 import * as stationCycles from "./events.cycles";
 import * as simuse from "./events.simuse";
 import * as inspection from "./events.inspection";
-import * as inspEvts from "./events.inspection";
 import { fakeCycle } from "./events.fake";
 import { ILogEntry } from "./api";
-import { loadMockData } from "../mock-data/load";
-import { groupInspectionsByPath, buildInspectionTable } from "./results.inspection";
 
 it("creates initial state", () => {
   // tslint:disable no-any
@@ -274,43 +271,6 @@ it("loads a specific month for analysis", () => {
   expect(st.loading_analysis_month_log).toBe(false);
   expect(st.analysis_period_month).toEqual(new Date(2018, 1, 1));
   expect(st.selected_month).toMatchSnapshot("selected month with 27 days ago, 2 days ago, and today");
-});
-
-it("groups inspections by path", async () => {
-  const jan18 = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
-  const offsetSeconds = differenceInSeconds(addDays(new Date(Date.UTC(2018, 7, 6, 15, 39, 0)), -28), jan18);
-  const data = loadMockData(offsetSeconds);
-  const evts = await data.events;
-  const inspState = inspEvts.process_events(
-    { type: inspEvts.ExpireOldDataType.NoExpire },
-    evts,
-    undefined,
-    inspEvts.initial
-  );
-
-  const entries = inspState.by_part.get(new inspection.PartAndInspType("aaa", "CMM")).getOrThrow();
-  const range = { start: new Date(Date.UTC(2018, 7, 1)), end: new Date(Date.UTC(2018, 7, 4)) };
-  const groups = groupInspectionsByPath(entries, range, e => e.serial || "");
-  expect(groups).toMatchSnapshot("grouped inspections");
-});
-
-it("copies inspections by path to clipboard", async () => {
-  const jan18 = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
-  // use local time zone for offset since clipboard also uses local time
-  const offsetSeconds = differenceInSeconds(addDays(new Date(2018, 7, 6, 15, 39, 0), -28), jan18);
-  const data = loadMockData(offsetSeconds);
-  const evts = await data.events;
-  const inspState = inspEvts.process_events(
-    { type: inspEvts.ExpireOldDataType.NoExpire },
-    evts,
-    undefined,
-    inspEvts.initial
-  );
-
-  const entries = inspState.by_part.get(new inspection.PartAndInspType("aaa", "CMM")).getOrThrow();
-  const table = document.createElement("div");
-  table.innerHTML = buildInspectionTable("aaa", "CMM", entries);
-  expect(table).toMatchSnapshot("inspection clipboard table");
 });
 
 /*
