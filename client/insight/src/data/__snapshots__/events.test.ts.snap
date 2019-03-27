@@ -1,51 +1,5 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`bins actual cycles by day: cycles binned by day and part 1`] = `
-Map {
-  "DayAndPart {
-  \\"day\\": 2018-03-04T06:00:00.000Z,
-  \\"part\\": \\"partr-4\\",
-}" => 1,
-  "DayAndPart {
-  \\"day\\": 2018-03-05T06:00:00.000Z,
-  \\"part\\": \\"parti-3\\",
-}" => 1,
-  "DayAndPart {
-  \\"day\\": 2018-03-04T06:00:00.000Z,
-  \\"part\\": \\"partl-1\\",
-}" => 1,
-}
-`;
-
-exports[`bins actual cycles by day: cycles binned by day and station 1`] = `
-Map {
-  "DayAndStation {
-  \\"day\\": 2018-03-05T06:00:00.000Z,
-  \\"station\\": \\"L/U #2\\",
-}" => 0.00005,
-  "DayAndStation {
-  \\"day\\": 2018-03-04T06:00:00.000Z,
-  \\"station\\": \\"L/U #2\\",
-}" => 0.0001,
-  "DayAndStation {
-  \\"day\\": 2018-03-05T06:00:00.000Z,
-  \\"station\\": \\"L/U #1\\",
-}" => 0.0001,
-  "DayAndStation {
-  \\"day\\": 2018-03-04T06:00:00.000Z,
-  \\"station\\": \\"L/U #1\\",
-}" => 0.0002,
-  "DayAndStation {
-  \\"day\\": 2018-03-05T06:00:00.000Z,
-  \\"station\\": \\"MC #1\\",
-}" => 0.0005,
-  "DayAndStation {
-  \\"day\\": 2018-03-04T06:00:00.000Z,
-  \\"station\\": \\"MC #1\\",
-}" => 0.0005833333333333333,
-}
-`;
-
 exports[`copies inspections by path to clipboard: inspection clipboard table 1`] = `
 <div>
   <table>
@@ -8537,75 +8491,6 @@ exports[`copies inspections by path to clipboard: inspection clipboard table 1`]
           inspected
         </td>
         <td />
-      </tr>
-      
-
-    </tbody>
-    
-
-  </table>
-</div>
-`;
-
-exports[`creates points clipboard table: clipboard table 1`] = `
-<div>
-  <table>
-    
-
-    <thead>
-      <tr>
-        <th>
-          Station
-        </th>
-        <th>
-          Sun Mar 04 2018
-        </th>
-        <th>
-          Mon Mar 05 2018
-        </th>
-      </tr>
-    </thead>
-    
-
-    <tbody>
-      
-
-      <tr>
-        <th>
-          L/U #1
-        </th>
-        <td>
-          0.0002
-        </td>
-        <td>
-          0.0001
-        </td>
-      </tr>
-      
-
-      <tr>
-        <th>
-          L/U #2
-        </th>
-        <td>
-          0.0001
-        </td>
-        <td>
-          0.00005
-        </td>
-      </tr>
-      
-
-      <tr>
-        <th>
-          MC #1
-        </th>
-        <td>
-          0.0005833333333333333
-        </td>
-        <td>
-          0.0005
-        </td>
       </tr>
       
 

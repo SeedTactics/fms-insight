@@ -31,8 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { addDays, addHours, differenceInMinutes, addMinutes, differenceInSeconds } from "date-fns";
-import { duration } from "moment";
+import { addDays, differenceInSeconds } from "date-fns";
 
 import { PledgeStatus } from "../store/middleware";
 import * as events from "./events";
@@ -42,10 +41,7 @@ import * as inspection from "./events.inspection";
 import * as inspEvts from "./events.inspection";
 import { fakeCycle } from "./events.fake";
 import { ILogEntry } from "./api";
-import { LazySeq } from "./lazyseq";
 import { loadMockData } from "../mock-data/load";
-import { binCyclesByDayAndStat, buildHeatmapTable } from "./results.oee";
-import { binCyclesByDayAndPart } from "./results.completed-parts";
 import { groupInspectionsByPath, buildInspectionTable } from "./results.inspection";
 
 it("creates initial state", () => {
@@ -278,76 +274,6 @@ it("loads a specific month for analysis", () => {
   expect(st.loading_analysis_month_log).toBe(false);
   expect(st.analysis_period_month).toEqual(new Date(2018, 1, 1));
   expect(st.selected_month).toMatchSnapshot("selected month with 27 days ago, 2 days ago, and today");
-});
-
-it("bins actual cycles by day", () => {
-  const now = new Date(2018, 2, 5); // midnight in local time
-  const nowChicago = new Date(Date.UTC(2018, 2, 5, 6, 0, 0)); // America/Chicago time
-  const minOffset = differenceInMinutes(nowChicago, now);
-
-  const evts = ([] as ILogEntry[]).concat(
-    fakeCycle(now, 30),
-    fakeCycle(addHours(now, -3), 20),
-    fakeCycle(addHours(now, -15), 15)
-  );
-  const st = events.reducer(events.initial, {
-    type: events.ActionType.LoadRecentLogEntries,
-    now: addDays(now, 1),
-    pledge: {
-      status: PledgeStatus.Completed,
-      result: evts
-    }
-  });
-
-  let byDayAndStat = binCyclesByDayAndStat(st.last30.cycles.part_cycles, c => duration(c.active).asMinutes());
-
-  // update day to be in Chicago timezone
-  // This is because the snapshot formats the day as a UTC time in Chicago timezone
-  // Note this is after cycles are binned, which is correct since cycles are generated using
-  // now in local time and then binned in local time.  Just need to update the date before
-  // comparing with the snapshot
-  byDayAndStat = byDayAndStat.map((dayAndStat, val) => [dayAndStat.adjustDay(d => addMinutes(d, minOffset)), val]);
-
-  expect(byDayAndStat).toMatchSnapshot("cycles binned by day and station");
-
-  let byDayAndPart = binCyclesByDayAndPart(st.last30.cycles.part_cycles, c => (c.completed ? 1 : 0));
-
-  byDayAndPart = byDayAndPart.map((dayAndPart, val) => [dayAndPart.adjustDay(d => addMinutes(d, minOffset)), val]);
-
-  expect(byDayAndPart).toMatchSnapshot("cycles binned by day and part");
-});
-
-it("creates points clipboard table", () => {
-  // table formats columns in local time, so no need to convert to a specific timezone
-  const now = new Date(2018, 2, 5); // midnight in local time
-
-  const evts = ([] as ILogEntry[]).concat(
-    fakeCycle(now, 30),
-    fakeCycle(addHours(now, -3), 20),
-    fakeCycle(addHours(now, -15), 15)
-  );
-  const st = events.reducer(events.initial, {
-    type: events.ActionType.LoadRecentLogEntries,
-    now: addDays(now, 1),
-    pledge: {
-      status: PledgeStatus.Completed,
-      result: evts
-    }
-  });
-
-  let byDayAndStat = binCyclesByDayAndStat(st.last30.cycles.part_cycles, c => duration(c.active).asMinutes());
-
-  const points = LazySeq.ofIterable(byDayAndStat)
-    .map(([dayAndStat, val]) => ({
-      x: dayAndStat.day,
-      y: dayAndStat.station,
-      label: val.toString()
-    }))
-    .toArray();
-
-  const table = document.createElement("div");
-  table.innerHTML = buildHeatmapTable("Station", points);
-  expect(table).toMatchSnapshot("clipboard table");
 });
 
 it("groups inspections by path", async () => {
