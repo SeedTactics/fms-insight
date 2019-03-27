@@ -114,6 +114,16 @@ build_script:
         ./build/insight-installer-build.ps1 cincron
       }
 
+  - ps: |
+      yarn --cwd client/insight run build-demo
+      if ($LastExitCode -ne 0) { $host.SetShouldExit($LastExitCode)  }
+      yarn --cwd website install --frozen-lockfile
+      if ($LastExitCode -ne 0) { $host.SetShouldExit($LastExitCode)  }
+      yarn --cwd website run build
+      if ($LastExitCode -ne 0) { $host.SetShouldExit($LastExitCode)  }
+      Copy-Item "client\insight\demo" -Destination "website\build\fms-insight\demo" -Recurse -Force
+      7z a website.zip .\website\build\fms-insight\*
+
 test_script:
   - cmd: dotnet test server/test
   - cmd: yarn --cwd client/insight test
