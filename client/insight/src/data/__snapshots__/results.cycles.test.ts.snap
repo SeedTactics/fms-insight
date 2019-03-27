@@ -1,0 +1,1091 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`computes station oee: station minutes for last week 1`] = `
+Map {
+  "MC #1" => 50,
+  "L/U #1" => 12,
+  "L/U #2" => 6,
+}
+`;
+
+exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
+<div>
+  <table>
+    
+
+    <thead>
+      <tr>
+        <th>
+          Date
+        </th>
+        <th>
+          Part
+        </th>
+        <th>
+          Station
+        </th>
+        <th>
+          Pallet
+        </th>
+        <th>
+          Serial
+        </th>
+        <th>
+          Workorder
+        </th>
+        <th>
+          Inspection
+        </th>
+        <th>
+          Elapsed Min
+        </th>
+        <th>
+          Active Min
+        </th>
+        <th>
+          Median Elapsed Min
+        </th>
+        <th>
+          Median Deviation
+        </th>
+      </tr>
+    </thead>
+    
+
+    <tbody>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 9:05 am
+        </td>
+        <td>
+          partk-3
+        </td>
+        <td>
+          L/U #1
+        </td>
+        <td>
+          pali
+        </td>
+        <td>
+          serialo
+        </td>
+        <td>
+          workw
+        </td>
+        <td>
+          Insp1[success]
+        </td>
+        <td>
+          6.0
+        </td>
+        <td>
+          6.0
+        </td>
+        <td>
+          6.0
+        </td>
+        <td>
+          0.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 9:23 am
+        </td>
+        <td>
+          partk-3
+        </td>
+        <td>
+          MC #1
+        </td>
+        <td>
+          pali
+        </td>
+        <td>
+          serialo
+        </td>
+        <td>
+          workw
+        </td>
+        <td>
+          Insp1[success]
+        </td>
+        <td>
+          15.0
+        </td>
+        <td>
+          15.0
+        </td>
+        <td>
+          15.0
+        </td>
+        <td>
+          0.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 9:33 am
+        </td>
+        <td>
+          partk-3
+        </td>
+        <td>
+          L/U #2
+        </td>
+        <td>
+          pali
+        </td>
+        <td>
+          serialo
+        </td>
+        <td>
+          workw
+        </td>
+        <td>
+          Insp1[success]
+        </td>
+        <td>
+          3.0
+        </td>
+        <td>
+          3.0
+        </td>
+        <td>
+          3.0
+        </td>
+        <td>
+          0.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 21:05 pm
+        </td>
+        <td>
+          partm-2
+        </td>
+        <td>
+          L/U #1
+        </td>
+        <td>
+          palc
+        </td>
+        <td>
+          serialf
+        </td>
+        <td>
+          workv
+        </td>
+        <td>
+          Insp1[success]
+        </td>
+        <td>
+          6.0
+        </td>
+        <td>
+          6.0
+        </td>
+        <td>
+          6.0
+        </td>
+        <td>
+          0.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 21:28 pm
+        </td>
+        <td>
+          partm-2
+        </td>
+        <td>
+          MC #1
+        </td>
+        <td>
+          palc
+        </td>
+        <td>
+          serialf
+        </td>
+        <td>
+          workv
+        </td>
+        <td>
+          Insp1[success]
+        </td>
+        <td>
+          20.0
+        </td>
+        <td>
+          20.0
+        </td>
+        <td>
+          20.0
+        </td>
+        <td>
+          0.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 21:38 pm
+        </td>
+        <td>
+          partm-2
+        </td>
+        <td>
+          L/U #2
+        </td>
+        <td>
+          palc
+        </td>
+        <td>
+          serialf
+        </td>
+        <td>
+          workv
+        </td>
+        <td>
+          Insp1[success]
+        </td>
+        <td>
+          3.0
+        </td>
+        <td>
+          3.0
+        </td>
+        <td>
+          3.0
+        </td>
+        <td>
+          0.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 5, 2018, 0:05 am
+        </td>
+        <td>
+          part4-1
+        </td>
+        <td>
+          L/U #1
+        </td>
+        <td>
+          palp
+        </td>
+        <td>
+          serialt
+        </td>
+        <td>
+          work5
+        </td>
+        <td>
+          Insp1[success]
+        </td>
+        <td>
+          6.0
+        </td>
+        <td>
+          6.0
+        </td>
+        <td>
+          6.0
+        </td>
+        <td>
+          0.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 5, 2018, 0:38 am
+        </td>
+        <td>
+          part4-1
+        </td>
+        <td>
+          MC #1
+        </td>
+        <td>
+          palp
+        </td>
+        <td>
+          serialt
+        </td>
+        <td>
+          work5
+        </td>
+        <td>
+          Insp1[success]
+        </td>
+        <td>
+          30.0
+        </td>
+        <td>
+          30.0
+        </td>
+        <td>
+          30.0
+        </td>
+        <td>
+          0.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 5, 2018, 0:48 am
+        </td>
+        <td>
+          part4-1
+        </td>
+        <td>
+          L/U #2
+        </td>
+        <td>
+          palp
+        </td>
+        <td>
+          serialt
+        </td>
+        <td>
+          work5
+        </td>
+        <td>
+          Insp1[success]
+        </td>
+        <td>
+          3.0
+        </td>
+        <td>
+          3.0
+        </td>
+        <td>
+          3.0
+        </td>
+        <td>
+          0.0
+        </td>
+      </tr>
+      
+
+    </tbody>
+    
+
+  </table>
+</div>
+`;
+
+exports[`creates cycles clipboard table: cycle filtered clipboard table 1`] = `
+<div>
+  <table>
+    
+
+    <thead>
+      <tr>
+        <th>
+          Date
+        </th>
+        <th>
+          Part
+        </th>
+        <th>
+          Station
+        </th>
+        <th>
+          Pallet
+        </th>
+        <th>
+          Serial
+        </th>
+        <th>
+          Workorder
+        </th>
+        <th>
+          Inspection
+        </th>
+        <th>
+          Elapsed Min
+        </th>
+        <th>
+          Active Min
+        </th>
+        <th>
+          Median Elapsed Min
+        </th>
+        <th>
+          Median Deviation
+        </th>
+      </tr>
+    </thead>
+    
+
+    <tbody>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 21:05 pm
+        </td>
+        <td>
+          partm-2
+        </td>
+        <td>
+          L/U #1
+        </td>
+        <td>
+          palc
+        </td>
+        <td>
+          serialf
+        </td>
+        <td>
+          workv
+        </td>
+        <td>
+          Insp1[success]
+        </td>
+        <td>
+          6.0
+        </td>
+        <td>
+          6.0
+        </td>
+        <td>
+          6.0
+        </td>
+        <td>
+          0.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 21:28 pm
+        </td>
+        <td>
+          partm-2
+        </td>
+        <td>
+          MC #1
+        </td>
+        <td>
+          palc
+        </td>
+        <td>
+          serialf
+        </td>
+        <td>
+          workv
+        </td>
+        <td>
+          Insp1[success]
+        </td>
+        <td>
+          20.0
+        </td>
+        <td>
+          20.0
+        </td>
+        <td>
+          20.0
+        </td>
+        <td>
+          0.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 21:38 pm
+        </td>
+        <td>
+          partm-2
+        </td>
+        <td>
+          L/U #2
+        </td>
+        <td>
+          palc
+        </td>
+        <td>
+          serialf
+        </td>
+        <td>
+          workv
+        </td>
+        <td>
+          Insp1[success]
+        </td>
+        <td>
+          3.0
+        </td>
+        <td>
+          3.0
+        </td>
+        <td>
+          3.0
+        </td>
+        <td>
+          0.0
+        </td>
+      </tr>
+      
+
+    </tbody>
+    
+
+  </table>
+</div>
+`;
+
+exports[`creates log entries clipboard table: events clipboard table 1`] = `
+<div>
+  <table>
+    
+
+    <thead>
+      <tr>
+        <th>
+          Date
+        </th>
+        <th>
+          Part
+        </th>
+        <th>
+          Station
+        </th>
+        <th>
+          Pallet
+        </th>
+        <th>
+          Serial
+        </th>
+        <th>
+          Workorder
+        </th>
+        <th>
+          Result
+        </th>
+        <th>
+          Elapsed Min
+        </th>
+        <th>
+          Active Min
+        </th>
+      </tr>
+    </thead>
+    
+
+    <tbody>
+      
+
+      <tr>
+        <td>
+          Mar 5, 2018, 0:05 am
+        </td>
+        <td>
+          parti-3
+        </td>
+        <td>
+          L/U #1
+        </td>
+        <td>
+          palo
+        </td>
+        <td>
+          serialr
+        </td>
+        <td>
+          work3
+        </td>
+        <td>
+          LOAD
+        </td>
+        <td>
+          6.0
+        </td>
+        <td>
+          6.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 5, 2018, 0:38 am
+        </td>
+        <td>
+          parti-3
+        </td>
+        <td>
+          MC #1
+        </td>
+        <td>
+          palo
+        </td>
+        <td>
+          serialr
+        </td>
+        <td>
+          work3
+        </td>
+        <td>
+          progy
+        </td>
+        <td>
+          30.0
+        </td>
+        <td>
+          30.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 5, 2018, 0:48 am
+        </td>
+        <td>
+          parti-3
+        </td>
+        <td>
+          L/U #2
+        </td>
+        <td>
+          palo
+        </td>
+        <td>
+          serialr
+        </td>
+        <td>
+          work3
+        </td>
+        <td>
+          UNLOAD
+        </td>
+        <td>
+          3.0
+        </td>
+        <td>
+          3.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 5, 2018, 0:53 am
+        </td>
+        <td>
+          parti-3
+        </td>
+        <td>
+          Signal Insp1
+        </td>
+        <td />
+        <td>
+          serialr
+        </td>
+        <td>
+          work3
+        </td>
+        <td>
+          True
+        </td>
+        <td>
+          0.0
+        </td>
+        <td>
+          0.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 5, 2018, 0:53 am
+        </td>
+        <td>
+          parti-3
+        </td>
+        <td>
+          Signal Insp1
+        </td>
+        <td />
+        <td>
+          serialr
+        </td>
+        <td>
+          work3
+        </td>
+        <td>
+          True
+        </td>
+        <td>
+          0.0
+        </td>
+        <td>
+          0.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 5, 2018, 1:00 am
+        </td>
+        <td>
+          parti-3
+        </td>
+        <td>
+          Inspect Insp1
+        </td>
+        <td />
+        <td>
+          serialr
+        </td>
+        <td>
+          work3
+        </td>
+        <td>
+          Succeeded
+        </td>
+        <td>
+          0.0
+        </td>
+        <td>
+          0.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 21:05 pm
+        </td>
+        <td>
+          partl-1
+        </td>
+        <td>
+          L/U #1
+        </td>
+        <td>
+          palv
+        </td>
+        <td>
+          serialw
+        </td>
+        <td>
+          workj
+        </td>
+        <td>
+          LOAD
+        </td>
+        <td>
+          6.0
+        </td>
+        <td>
+          6.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 21:28 pm
+        </td>
+        <td>
+          partl-1
+        </td>
+        <td>
+          MC #1
+        </td>
+        <td>
+          palv
+        </td>
+        <td>
+          serialw
+        </td>
+        <td>
+          workj
+        </td>
+        <td>
+          progz
+        </td>
+        <td>
+          20.0
+        </td>
+        <td>
+          20.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 21:38 pm
+        </td>
+        <td>
+          partl-1
+        </td>
+        <td>
+          L/U #2
+        </td>
+        <td>
+          palv
+        </td>
+        <td>
+          serialw
+        </td>
+        <td>
+          workj
+        </td>
+        <td>
+          UNLOAD
+        </td>
+        <td>
+          3.0
+        </td>
+        <td>
+          3.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 21:43 pm
+        </td>
+        <td>
+          partl-1
+        </td>
+        <td>
+          Signal Insp1
+        </td>
+        <td />
+        <td>
+          serialw
+        </td>
+        <td>
+          workj
+        </td>
+        <td>
+          True
+        </td>
+        <td>
+          0.0
+        </td>
+        <td>
+          0.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 21:50 pm
+        </td>
+        <td>
+          partl-1
+        </td>
+        <td>
+          Inspect Insp1
+        </td>
+        <td />
+        <td>
+          serialw
+        </td>
+        <td>
+          workj
+        </td>
+        <td>
+          Succeeded
+        </td>
+        <td>
+          0.0
+        </td>
+        <td>
+          0.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 9:05 am
+        </td>
+        <td>
+          partr-4
+        </td>
+        <td>
+          L/U #1
+        </td>
+        <td>
+          pal2
+        </td>
+        <td>
+          seriald
+        </td>
+        <td>
+          workz
+        </td>
+        <td>
+          LOAD
+        </td>
+        <td>
+          6.0
+        </td>
+        <td>
+          6.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 9:23 am
+        </td>
+        <td>
+          partr-4
+        </td>
+        <td>
+          MC #1
+        </td>
+        <td>
+          pal2
+        </td>
+        <td>
+          seriald
+        </td>
+        <td>
+          workz
+        </td>
+        <td>
+          progn
+        </td>
+        <td>
+          15.0
+        </td>
+        <td>
+          15.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 9:33 am
+        </td>
+        <td>
+          partr-4
+        </td>
+        <td>
+          L/U #2
+        </td>
+        <td>
+          pal2
+        </td>
+        <td>
+          seriald
+        </td>
+        <td>
+          workz
+        </td>
+        <td>
+          UNLOAD
+        </td>
+        <td>
+          3.0
+        </td>
+        <td>
+          3.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 9:38 am
+        </td>
+        <td>
+          partr-4
+        </td>
+        <td>
+          Signal Insp1
+        </td>
+        <td />
+        <td>
+          seriald
+        </td>
+        <td>
+          workz
+        </td>
+        <td>
+          True
+        </td>
+        <td>
+          0.0
+        </td>
+        <td>
+          0.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 9:45 am
+        </td>
+        <td>
+          partr-4
+        </td>
+        <td>
+          Inspect Insp1
+        </td>
+        <td />
+        <td>
+          seriald
+        </td>
+        <td>
+          workz
+        </td>
+        <td>
+          Succeeded
+        </td>
+        <td>
+          0.0
+        </td>
+        <td>
+          0.0
+        </td>
+      </tr>
+      
+
+    </tbody>
+    
+
+  </table>
+</div>
+`;
