@@ -34,13 +34,6 @@ import * as React from "react";
 import Button from "@material-ui/core/Button";
 
 import { connect } from "../store/store";
-import Efficiency from "./analysis/Efficiency";
-
-interface BackupViewerProps {
-  file_opened: boolean;
-  loading_err: Error | undefined;
-  onRequestOpenFile: () => void;
-}
 
 const InitialPage = React.memo(function(props: { onRequestOpenFile: () => void; loading_error: Error | undefined }) {
   return (
@@ -59,15 +52,6 @@ const InitialPage = React.memo(function(props: { onRequestOpenFile: () => void; 
   );
 });
 
-const BackupViewer = React.memo(function BackupViewerF(props: BackupViewerProps) {
-  if (props.file_opened && props.loading_err === undefined) {
-    return <Efficiency allowSetType={false} />;
-  } else {
-    return <InitialPage onRequestOpenFile={props.onRequestOpenFile} loading_error={props.loading_err} />;
-  }
-});
-
 export default connect(s => ({
-  file_opened: s.Gui.backup_file_opened,
-  loading_err: s.Events.loading_error
-}))(BackupViewer);
+  loading_error: s.Events.loading_error
+}))(InitialPage);

@@ -44,7 +44,7 @@ import * as routes from "../../insight/src/data/routes";
 const store = initStore({ useRouter: false });
 registerBackend(LogBackend, JobsBackend, ServerBackend);
 store.dispatch(loadServerSettings());
-store.dispatch({ type: routes.RouteLocation.Efficiency });
+store.dispatch({ type: routes.RouteLocation.Analysis_Efficiency });
 
 const props: AppProps = {
   demo: false,

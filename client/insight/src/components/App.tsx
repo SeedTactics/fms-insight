@@ -297,6 +297,20 @@ function DemoNav(p: HeaderNavProps) {
   );
 }
 
+function BackupTabs(p: HeaderNavProps) {
+  return (
+    <Tabs
+      variant={p.full ? "fullWidth" : "standard"}
+      style={p.full ? {} : tabsStyle}
+      value={p.routeState.current}
+      onChange={(e, v) => p.setRoute({ ty: v, curSt: p.routeState })}
+    >
+      <Tab label="Efficiency" value={routes.RouteLocation.Analysis_Efficiency} />
+      <Tab label="Failed Part Lookup" value={routes.RouteLocation.Quality_Serials} />
+    </Tabs>
+  );
+}
+
 function helpUrl(r: routes.RouteLocation): string {
   switch (r) {
     case routes.RouteLocation.Station_LoadMonitor:
@@ -477,6 +491,7 @@ interface AppConnectedProps extends AppProps {
   route: routes.State;
   fmsInfo: Readonly<api.IFMSInfo> | null;
   user: User | null;
+  backupFileOpened: boolean;
   latestVersion: serverSettings.LatestInstaller | null;
   alarms: ReadonlyArray<string> | null;
   setRoute: (arg: { ty: routes.RouteLocation; curSt: routes.State }) => void;
@@ -496,9 +511,18 @@ class App extends React.PureComponent<AppConnectedProps> {
     let showOperator: boolean = false;
     let addBasicMaterialDialog: boolean = true;
     if (this.props.backupViewerOnRequestOpenFile) {
-      page = <BackupViewer onRequestOpenFile={this.props.backupViewerOnRequestOpenFile} />;
+      if (this.props.backupFileOpened) {
+        if (this.props.route.current === routes.RouteLocation.Quality_Serials) {
+          page = <FailedPartLookup />;
+          addBasicMaterialDialog = false;
+        } else {
+          page = <Efficiency allowSetType={false} />;
+        }
+        navigation = BackupTabs;
+      } else {
+        page = <BackupViewer onRequestOpenFile={this.props.backupViewerOnRequestOpenFile} />;
+      }
       showAlarms = false;
-      showSearch = false;
     } else if (this.props.fmsInfo && (!this.props.fmsInfo.openIDConnectAuthority || this.props.user)) {
       switch (this.props.route.current) {
         case routes.RouteLocation.Station_LoadMonitor:
@@ -673,6 +697,7 @@ export default connect(
     fmsInfo: s.ServerSettings.fmsInfo || null,
     user: s.ServerSettings.user || null,
     latestVersion: s.ServerSettings.latestInstaller || null,
+    backupFileOpened: s.Gui.backup_file_opened,
     alarms: emptyToNull(s.Current.current_status.alarms)
   }),
   {
