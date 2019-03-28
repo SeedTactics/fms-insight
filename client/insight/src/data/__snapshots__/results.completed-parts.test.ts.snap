@@ -81,19 +81,19 @@ exports[`build completed series: clipboard table 1`] = `
           0
         </td>
         <td>
-          23
+          13
         </td>
         <td>
           0
         </td>
         <td>
-          0
+          12
         </td>
         <td>
           0
         </td>
         <td>
-          27
+          15
         </td>
         <td>
           0
@@ -124,19 +124,19 @@ exports[`build completed series: clipboard table 1`] = `
           0
         </td>
         <td>
-          25
+          13
         </td>
         <td>
           0
         </td>
         <td>
-          0
+          12
         </td>
         <td>
           0
         </td>
         <td>
-          27
+          15
         </td>
         <td>
           0
@@ -167,31 +167,31 @@ exports[`build completed series: clipboard table 1`] = `
           0
         </td>
         <td>
-          11
-        </td>
-        <td>
-          0
-        </td>
-        <td>
-          31
-        </td>
-        <td>
-          0
-        </td>
-        <td>
-          9
-        </td>
-        <td>
-          0
-        </td>
-        <td>
           19
         </td>
         <td>
           0
         </td>
         <td>
-          12
+          24
+        </td>
+        <td>
+          0
+        </td>
+        <td>
+          21
+        </td>
+        <td>
+          0
+        </td>
+        <td>
+          18
+        </td>
+        <td>
+          0
+        </td>
+        <td>
+          0
         </td>
         <td>
           0
@@ -210,31 +210,31 @@ exports[`build completed series: clipboard table 1`] = `
           0
         </td>
         <td>
-          9
-        </td>
-        <td>
-          0
-        </td>
-        <td>
-          31
-        </td>
-        <td>
-          0
-        </td>
-        <td>
-          9
-        </td>
-        <td>
-          0
-        </td>
-        <td>
           19
         </td>
         <td>
           0
         </td>
         <td>
-          14
+          24
+        </td>
+        <td>
+          0
+        </td>
+        <td>
+          21
+        </td>
+        <td>
+          0
+        </td>
+        <td>
+          18
+        </td>
+        <td>
+          0
+        </td>
+        <td>
+          0
         </td>
         <td>
           0
@@ -247,19 +247,7 @@ exports[`build completed series: clipboard table 1`] = `
           ccc-1
         </td>
         <td>
-          22
-        </td>
-        <td>
-          0
-        </td>
-        <td>
-          17
-        </td>
-        <td>
-          0
-        </td>
-        <td>
-          21
+          19
         </td>
         <td>
           0
@@ -271,13 +259,25 @@ exports[`build completed series: clipboard table 1`] = `
           0
         </td>
         <td>
+          21
+        </td>
+        <td>
+          0
+        </td>
+        <td>
           18
         </td>
         <td>
           0
         </td>
         <td>
-          6
+          16
+        </td>
+        <td>
+          0
+        </td>
+        <td>
+          0
         </td>
         <td>
           0
@@ -290,19 +290,7 @@ exports[`build completed series: clipboard table 1`] = `
           ccc-2
         </td>
         <td>
-          22
-        </td>
-        <td>
-          0
-        </td>
-        <td>
-          17
-        </td>
-        <td>
-          0
-        </td>
-        <td>
-          21
+          19
         </td>
         <td>
           0
@@ -314,13 +302,25 @@ exports[`build completed series: clipboard table 1`] = `
           0
         </td>
         <td>
-          18
+          20
         </td>
         <td>
           0
         </td>
         <td>
-          8
+          19
+        </td>
+        <td>
+          0
+        </td>
+        <td>
+          16
+        </td>
+        <td>
+          0
+        </td>
+        <td>
+          0
         </td>
         <td>
           0
@@ -333,13 +333,19 @@ exports[`build completed series: clipboard table 1`] = `
           xxx-1
         </td>
         <td>
-          22
+          23
         </td>
         <td>
           0
         </td>
         <td>
-          24
+          25
+        </td>
+        <td>
+          0
+        </td>
+        <td>
+          26
         </td>
         <td>
           0
@@ -351,19 +357,13 @@ exports[`build completed series: clipboard table 1`] = `
           0
         </td>
         <td>
-          31
+          29
         </td>
         <td>
           0
         </td>
         <td>
-          23
-        </td>
-        <td>
-          0
-        </td>
-        <td>
-          38
+          48
         </td>
         <td>
           0
@@ -400,13 +400,13 @@ exports[`build completed series: clipboard table 1`] = `
           0
         </td>
         <td>
-          32
+          30
         </td>
         <td>
           0
         </td>
         <td>
-          36
+          40
         </td>
         <td>
           0
@@ -417,24 +417,6 @@ exports[`build completed series: clipboard table 1`] = `
       <tr>
         <td>
           zzz-1
-        </td>
-        <td>
-          8
-        </td>
-        <td>
-          0
-        </td>
-        <td>
-          12
-        </td>
-        <td>
-          0
-        </td>
-        <td>
-          7
-        </td>
-        <td>
-          0
         </td>
         <td>
           10
@@ -449,7 +431,25 @@ exports[`build completed series: clipboard table 1`] = `
           0
         </td>
         <td>
-          12
+          9
+        </td>
+        <td>
+          0
+        </td>
+        <td>
+          9
+        </td>
+        <td>
+          0
+        </td>
+        <td>
+          9
+        </td>
+        <td>
+          0
+        </td>
+        <td>
+          13
         </td>
         <td>
           0
@@ -474,17 +474,17 @@ Array [
         "planned": 0,
       },
       Object {
-        "actual": 23,
+        "actual": 13,
         "day": 2018-08-01T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 0,
+        "actual": 12,
         "day": 2018-08-02T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 27,
+        "actual": 15,
         "day": 2018-08-03T05:00:00.000Z,
         "planned": 0,
       },
@@ -509,17 +509,17 @@ Array [
         "planned": 0,
       },
       Object {
-        "actual": 25,
+        "actual": 13,
         "day": 2018-08-01T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 0,
+        "actual": 12,
         "day": 2018-08-02T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 27,
+        "actual": 15,
         "day": 2018-08-03T05:00:00.000Z,
         "planned": 0,
       },
@@ -544,27 +544,27 @@ Array [
         "planned": 0,
       },
       Object {
-        "actual": 11,
+        "actual": 19,
         "day": 2018-08-01T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 31,
+        "actual": 24,
         "day": 2018-08-02T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 9,
+        "actual": 21,
         "day": 2018-08-03T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 19,
+        "actual": 18,
         "day": 2018-08-04T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 12,
+        "actual": 0,
         "day": 2018-08-05T05:00:00.000Z,
         "planned": 0,
       },
@@ -579,27 +579,27 @@ Array [
         "planned": 0,
       },
       Object {
-        "actual": 9,
+        "actual": 19,
         "day": 2018-08-01T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 31,
+        "actual": 24,
         "day": 2018-08-02T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 9,
+        "actual": 21,
         "day": 2018-08-03T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 19,
+        "actual": 18,
         "day": 2018-08-04T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 14,
+        "actual": 0,
         "day": 2018-08-05T05:00:00.000Z,
         "planned": 0,
       },
@@ -609,12 +609,12 @@ Array [
   Object {
     "days": Array [
       Object {
-        "actual": 22,
+        "actual": 19,
         "day": 2018-07-31T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 17,
+        "actual": 20,
         "day": 2018-08-01T05:00:00.000Z,
         "planned": 0,
       },
@@ -624,17 +624,17 @@ Array [
         "planned": 0,
       },
       Object {
-        "actual": 20,
+        "actual": 18,
         "day": 2018-08-03T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 18,
+        "actual": 16,
         "day": 2018-08-04T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 6,
+        "actual": 0,
         "day": 2018-08-05T05:00:00.000Z,
         "planned": 0,
       },
@@ -644,32 +644,32 @@ Array [
   Object {
     "days": Array [
       Object {
-        "actual": 22,
+        "actual": 19,
         "day": 2018-07-31T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 17,
+        "actual": 20,
         "day": 2018-08-01T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 21,
+        "actual": 20,
         "day": 2018-08-02T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 20,
+        "actual": 19,
         "day": 2018-08-03T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 18,
+        "actual": 16,
         "day": 2018-08-04T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 8,
+        "actual": 0,
         "day": 2018-08-05T05:00:00.000Z,
         "planned": 0,
       },
@@ -679,32 +679,32 @@ Array [
   Object {
     "days": Array [
       Object {
-        "actual": 22,
+        "actual": 23,
         "day": 2018-07-31T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 24,
+        "actual": 25,
         "day": 2018-08-01T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 23,
+        "actual": 26,
         "day": 2018-08-02T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 31,
+        "actual": 23,
         "day": 2018-08-03T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 23,
+        "actual": 29,
         "day": 2018-08-04T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 38,
+        "actual": 48,
         "day": 2018-08-05T05:00:00.000Z,
         "planned": 0,
       },
@@ -734,12 +734,12 @@ Array [
         "planned": 0,
       },
       Object {
-        "actual": 32,
+        "actual": 30,
         "day": 2018-08-04T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 36,
+        "actual": 40,
         "day": 2018-08-05T05:00:00.000Z,
         "planned": 0,
       },
@@ -749,22 +749,22 @@ Array [
   Object {
     "days": Array [
       Object {
-        "actual": 8,
+        "actual": 10,
         "day": 2018-07-31T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 12,
+        "actual": 9,
         "day": 2018-08-01T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 7,
+        "actual": 9,
         "day": 2018-08-02T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 10,
+        "actual": 9,
         "day": 2018-08-03T05:00:00.000Z,
         "planned": 0,
       },
@@ -774,7 +774,7 @@ Array [
         "planned": 0,
       },
       Object {
-        "actual": 12,
+        "actual": 13,
         "day": 2018-08-05T05:00:00.000Z,
         "planned": 0,
       },

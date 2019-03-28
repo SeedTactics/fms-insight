@@ -68,26 +68,31 @@ it("bins actual cycles by day", () => {
 
 it("build completed series", async () => {
   const jan18 = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
-  const now = new Date(Date.UTC(2018, 7, 6, 15, 39, 0));
   const today = new Date(2018, 7, 6);
-  const offsetSeconds = differenceInSeconds(addDays(now, -28), jan18);
+  const todayChicago = new Date(Date.UTC(2018, 7, 6, 5, 0, 0)); // America/Chicago time during DST
+  const zoneOffset = differenceInMinutes(todayChicago, today);
+  const offsetSeconds = differenceInSeconds(addDays(today, -28), jan18);
   const data = loadMockData(offsetSeconds);
   const evts = await data.events;
   const st = events.reducer(events.initial, {
     type: events.ActionType.LoadRecentLogEntries,
-    now: now,
+    now: today,
     pledge: {
       status: PledgeStatus.Completed,
       result: evts
     }
   });
 
-  const series = buildCompletedPartSeries(
+  let series = buildCompletedPartSeries(
     addDays(today, -6),
     today,
     st.last30.cycles.part_cycles,
     st.last30.sim_use.production
   );
+  series = series.map(s => ({
+    ...s,
+    days: s.days.map(d => ({ ...d, day: addMinutes(d.day, zoneOffset) }))
+  }));
   expect(series).toMatchSnapshot("completed part series");
 
   const table = document.createElement("div");
