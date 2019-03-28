@@ -75,4 +75,4 @@ it("copies inspections by path to clipboard", async () => {
   expect(table).toMatchSnapshot("inspection clipboard table");
 });
 
-it.skip("extracts failed inspections");
+it.skip("extracts failed inspections", () => undefined);
