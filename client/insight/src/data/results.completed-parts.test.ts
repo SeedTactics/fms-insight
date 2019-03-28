@@ -83,19 +83,19 @@ it("build completed series", async () => {
     }
   });
 
-  let series = buildCompletedPartSeries(
+  const origSeries = buildCompletedPartSeries(
     addDays(today, -6),
     today,
     st.last30.cycles.part_cycles,
     st.last30.sim_use.production
   );
-  series = series.map(s => ({
+  const adjustedSeries = origSeries.map(s => ({
     ...s,
     days: s.days.map(d => ({ ...d, day: addMinutes(d.day, zoneOffset) }))
   }));
-  expect(series).toMatchSnapshot("completed part series");
+  expect(adjustedSeries).toMatchSnapshot("completed part series");
 
   const table = document.createElement("div");
-  table.innerHTML = buildCompletedPartsTable(series);
+  table.innerHTML = buildCompletedPartsTable(origSeries);
   expect(table).toMatchSnapshot("clipboard table");
 });
