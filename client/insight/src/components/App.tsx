@@ -312,20 +312,7 @@ function BackupTabs(p: HeaderNavProps) {
 }
 
 function helpUrl(r: routes.RouteLocation): string {
-  switch (r) {
-    case routes.RouteLocation.Station_LoadMonitor:
-    case routes.RouteLocation.Station_InspectionMonitor:
-    case routes.RouteLocation.Station_WashMonitor:
-    case routes.RouteLocation.Station_Queues:
-    case routes.RouteLocation.Operations_AllMaterial:
-      return "https://fms-insight.seedtactics.com/docs/client-station-monitor.html";
-    case routes.RouteLocation.Analysis_Efficiency:
-      return "https://fms-insight.seedtactics.com/docs/client-efficiency.html";
-    case routes.RouteLocation.Analysis_CostPerPiece:
-      return "https://fms-insight.seedtactics.com/docs/client-cost-per-piece.html";
-    default:
-      return "https://fms-insight.seedtactics.com/docs/client-dashboard.html";
-  }
+  return "https://fms-insight.seedtactics.com/docs/client-launch.html";
 }
 
 interface HeaderProps {
