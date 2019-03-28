@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "start": "parcel src/index.html",
-    "build": "parcel build src/index.html",
+    "build": "tsc --noEmit && parcel build src/index.html",
     "build-demo": "tsc --noEmit && parcel build --out-dir demo --public-url /demo/ src/demo.html",
     "test": "jest --ci --runInBand",
     "test:watch": "jest --watch",
@@ -57,6 +57,7 @@
     "@types/react-redux": "^7.0.0",
     "@types/react-sortable-hoc": "^0.6.4",
     "@types/redux-first-router": "^2.1.0",
+    "hoist-non-react-statics": "^3.3.0",
     "faker": "^4.1.0",
     "jest": "^24.0.0",
     "jest-dom": "^3.0.0",
@@ -64,7 +65,7 @@
     "parcel-bundler": "^1.9.7",
     "parcel-plugin-sw-precache": "^1.0.1",
     "prettier": "^1.14.2",
-    "react-testing-library": "^5.0.0",
+    "react-testing-library": "^6.0.0",
     "source-map-explorer": "^1.5.0",
     "ts-jest": "^24.0.0",
     "tslint": "^5.11.0",
@@ -98,8 +99,7 @@
     "testMatch": null,
     "snapshotSerializers": [
       "<rootDir>/prelude-ts-snapshots.js"
-    ],
-    "transformIgnorePatterns": []
+    ]
   },
   "sw-precache": {
     "navigateFallback": "index.html",
