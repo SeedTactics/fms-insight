@@ -1,13 +1,13 @@
 ---
-id: client-dashboard
-title: Dashboard
-sidebar_label: Dashboard
+id: client-operations
+title: Daily Cell Operations
+sidebar_label: Operations
 ---
 
 ![Screenshot of Dashboard](assets/insight-dashboard.jpg)
 
-The dashboard shows an overview of the current status of the cell.  On the left is a bullet chart showing
-the current jobs with their completed count and remaining machining time.  On the right is an overview of the
+The dashboard shows an overview of the current status of the cell. On the left is a bullet chart showing
+the current jobs with their completed count and remaining machining time. On the right is an overview of the
 stations, showing the OEE for the past week and information about the pallet at each station (if any).
 
 ## Current Jobs
@@ -25,8 +25,8 @@ As parts are completed, a brown bar is filled in with the credited machine
 hours for the completed parts. For example, if the job for part `zzz` has
 completed 17 parts, then the credited machine hours is 17 times 77 minutes
 which is about 21.8 hours so a brown bar will be drawn up to 21.8 hours (see
-the bottom row in the screenshot above).  A completed part is credited only with
-its expected cycle time even if the actual time on the machine is larger.  Also,
+the bottom row in the screenshot above). A completed part is credited only with
+its expected cycle time even if the actual time on the machine is larger. Also,
 a completed part is assigned only once the part has been completely machined and unloaded.
 Indeed, the bullet chart does not reflect in-process or partially machined material, because
 the program might not finish correctly or the part might be become scrap.
@@ -40,11 +40,20 @@ the chart).
 
 On the right of the dashboard, there is one circle for each machine and load station in the cell.
 The outside of the station is a circular gauge displaying the operating equipment effectiveness (OEE)
-for the past week.  This is calculated by taking all cycles from the past `7 * 24 = 168 hours`, adding up
-their expected machine or load time, and dividing by 168 hours to obtain a percentage.  This percentage is used
+for the past week. This is calculated by taking all cycles from the past `7 * 24 = 168 hours`, adding up
+their expected machine or load time, and dividing by 168 hours to obtain a percentage. This percentage is used
 to fill in the gauge on the outside of the station, and can also be viewed in a tooltip by mousing over the station.
 
 In addition, each station shows the pallet currently at the station (if any) and when moused over the tooltip will
 display additional information about the material on the pallet, including the program currently in execution,
-expected remaining time, or parts being loaded.  More details about the current material on the various pallets
+expected remaining time, or parts being loaded. More details about the current material on the various pallets
 is available in the [station monitor tab](client-station-monitor.md).
+
+## All Material
+
+![Screenshot of All Material screen](/docs/assets/insight-all-material.jpg)
+
+The All Material screen displays all virtual whiteboard regions. This includes the regions for all pallets
+and all configured in-process queues. This is primarily intended to help visualize and debug the current state
+of the whole cell; typically at specific stations during normal operation one of the other screens which focuses
+on only a section of the virtual whiteboard is more appropriate.

@@ -4,11 +4,12 @@ title: Getting Started
 sidebar_label: Getting Started
 ---
 
-FMS Insight is a program which runs on a flexible machining system (FMS)
-cell controller which provides material tracking by serial, operator instructions
-and data displays for loading/unloading, inspection decisions, data analytics to improve
-the performance, and simplify job data creation in the cell controller.
-Learn more in the [overview](overview.md).
+FMS Insight is a program which runs on a flexible machining system (FMS) cell
+controller which provides material tracking by serial, operator instructions
+and data displays for loading/unloading, inspection decisions, daily
+monitoring for supervisors and engineers, data analytics to improve the
+performance, and simplify job data creation in the cell controller. Learn
+more in the [overview](overview.md).
 
 ## Downloads
 
@@ -47,15 +48,17 @@ Insight client page. Also, this address can be set as the homepage of
 Firefox, Chrome, or Edge so that it opens automatically when the browser
 starts.
 
-## Explore data about the cell
+## Day-to-day monitoring of the cell
 
-The client has three tabs for exploring data about the cell:
-[dashboard](client-dashboard.md), [efficiency](client-efficiency.md), and
-[cost/piece](client-cost-per-piece.md).
+Many people such as supervisors, engineers, quality control, and management
+throughout the factory interact with the cell in different ways. Thus, FMS
+Insight provides specific pages targeted at specific users which display
+relevant information about the day-to-day operation of the cell. [Select a
+mode](client-launch.md) to view reports and ensure the cell runs well.
 
 ## Implement station monitoring
 
-The [stations](client-station-monitor.md) tab in the client is designed to be viewed
+The [stations](client-station-monitor.md) pages in the client are designed to be viewed
 on the factory floor by operators throughout the processes. The station
 monitor screens are designed with touch-screens in mind, so we suggest either
 mounting tablets or small touchscreen computers at various stations on the

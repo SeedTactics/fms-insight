@@ -16,11 +16,13 @@
     ],
     "Client": [
       "client-launch",
-      "client-dashboard",
-      "client-station-monitor",
-      "client-efficiency",
-      "client-cost-per-piece",
       "client-scanners",
+      "client-station-monitor",
+      "client-operations",
+      "client-engineering",
+      "client-scheduling",
+      "client-quality",
+      "client-flexibility-analysis",
       "client-backup-viewer"
     ],
     "Integrations": ["mazak", "makino"]
