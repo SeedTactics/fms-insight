@@ -72,7 +72,7 @@ function SerialLookup(props: SerialLookupProps) {
           }}
         />
       </div>
-      <Button variant="raised" color="secondary" disabled={serial === ""} onClick={() => props.onSelect(serial)}>
+      <Button variant="contained" color="secondary" disabled={serial === ""} onClick={() => props.onSelect(serial)}>
         Lookup
       </Button>
     </div>
@@ -173,7 +173,7 @@ function PartLookupStepper(props: PartLookupStepperProps) {
                   Lookup Similar Paths
                 </Button>
                 <Button
-                  variant="raised"
+                  variant="contained"
                   style={{ marginLeft: "2em" }}
                   onClick={() => {
                     props.reset();
@@ -194,7 +194,7 @@ function PartLookupStepper(props: PartLookupStepperProps) {
         <StepContent>
           {pathDetails && mat ? <PathLookup logs={pathDetails} mat={mat} /> : undefined}
           <Button
-            variant="raised"
+            variant="contained"
             style={{ marginTop: "2em" }}
             onClick={() => {
               props.reset();

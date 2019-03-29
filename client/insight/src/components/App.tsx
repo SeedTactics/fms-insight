@@ -189,7 +189,7 @@ function DemoNav(p: HeaderNavProps) {
         <ListItemIcon>
           <ExtensionIcon />
         </ListItemIcon>
-        <ListItemText>Queue Management</ListItemText>
+        <ListItemText>Queues</ListItemText>
       </ListItem>
       <ListItem
         button
@@ -199,7 +199,7 @@ function DemoNav(p: HeaderNavProps) {
         <ListItemIcon>
           <InfoIcon />
         </ListItemIcon>
-        <ListItemText>Inspection Stand</ListItemText>
+        <ListItemText>Inspection</ListItemText>
       </ListItem>
       <ListItem
         button
@@ -220,7 +220,7 @@ function DemoNav(p: HeaderNavProps) {
         <ListItemIcon>
           <ShoppingBasket />
         </ListItemIcon>
-        <ListItemText>Operation Overview</ListItemText>
+        <ListItemText>Operations</ListItemText>
       </ListItem>
       <ListItem
         button
@@ -230,7 +230,7 @@ function DemoNav(p: HeaderNavProps) {
         <ListItemIcon>
           <PersonIcon />
         </ListItemIcon>
-        <ListItemText>Load Station Management</ListItemText>
+        <ListItemText>Load Station</ListItemText>
       </ListItem>
       <ListItem
         button
@@ -250,7 +250,7 @@ function DemoNav(p: HeaderNavProps) {
         <ListItemIcon>
           <CheckIcon />
         </ListItemIcon>
-        <ListItemText>Scheduled/Completed Parts</ListItemText>
+        <ListItemText>Scheduling</ListItemText>
       </ListItem>
       <ListItem
         button
@@ -260,7 +260,7 @@ function DemoNav(p: HeaderNavProps) {
         <ListItemIcon>
           <StarIcon />
         </ListItemIcon>
-        <ListItemText>Quality Analysis</ListItemText>
+        <ListItemText>Quality</ListItemText>
       </ListItem>
       <ListItem
         button
@@ -270,7 +270,7 @@ function DemoNav(p: HeaderNavProps) {
         <ListItemIcon>
           <BugIcon />
         </ListItemIcon>
-        <ListItemText>Failed Parts</ListItemText>
+        <ListItemText>Part Lookup</ListItemText>
       </ListItem>
       <ListSubheader>Monthly Review</ListSubheader>
       <ListItem
@@ -281,7 +281,7 @@ function DemoNav(p: HeaderNavProps) {
         <ListItemIcon>
           <ChartIcon />
         </ListItemIcon>
-        <ListItemText>Flexibility Analysis</ListItemText>
+        <ListItemText>OEE Improvement</ListItemText>
       </ListItem>
       <ListItem
         button
