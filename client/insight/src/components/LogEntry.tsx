@@ -41,6 +41,7 @@ import DateTimeDisplay from "./DateTimeDisplay";
 import { LazySeq } from "../data/lazyseq";
 import Tooltip from "@material-ui/core/Tooltip";
 import IconButton from "@material-ui/core/IconButton";
+import ChevronRightIcon from "@material-ui/icons/ChevronRight";
 import ImportExport from "@material-ui/icons/ImportExport";
 import { createStyles, withStyles, WithStyles } from "@material-ui/core/styles";
 import { copyLogEntriesToClipboard } from "../data/results.cycles";
@@ -68,6 +69,8 @@ const logStyles = createStyles({
 
 export interface LogEntryProps extends WithStyles<typeof logStyles> {
   entry: api.ILogEntry;
+  detailLogCounter: number | null;
+  setDetail: (counter: number | null) => void;
 }
 
 function logType(entry: api.ILogEntry): string {
@@ -249,19 +252,72 @@ function display(props: LogEntryProps): JSX.Element {
   }
 }
 
+interface LogDetail {
+  readonly name: string;
+  readonly value: string;
+}
+
+function detailsForEntry(e: api.ILogEntry): ReadonlyArray<LogDetail> {
+  const details = [];
+  if (e.details && e.details.operator) {
+    details.push({
+      name: "Operator",
+      value: e.details.operator
+    });
+  }
+  return details;
+}
+
 export const LogEntry = React.memo(
   withStyles(logStyles)((props: LogEntryProps) => {
+    let details = detailsForEntry(props.entry);
+
     return (
-      <TableRow>
-        <TableCell padding="dense">
-          <DateTimeDisplay date={props.entry.endUTC} formatStr={"MMM D, YY"} />
-        </TableCell>
-        <TableCell padding="dense">
-          <DateTimeDisplay date={props.entry.endUTC} formatStr={"hh:mm A"} />
-        </TableCell>
-        <TableCell padding="dense">{logType(props.entry)}</TableCell>
-        <TableCell padding="dense">{display(props)}</TableCell>
-      </TableRow>
+      <>
+        <TableRow>
+          <TableCell padding="dense">
+            <DateTimeDisplay date={props.entry.endUTC} formatStr={"MMM D, YY"} />
+          </TableCell>
+          <TableCell padding="dense">
+            <DateTimeDisplay date={props.entry.endUTC} formatStr={"hh:mm A"} />
+          </TableCell>
+          <TableCell padding="dense">{logType(props.entry)}</TableCell>
+          <TableCell padding="dense">{display(props)}</TableCell>
+          <TableCell padding="checkbox">
+            {details.length > 0 ? (
+              <IconButton
+                style={{
+                  transition: "all ease 200ms",
+                  transform: props.entry.counter === props.detailLogCounter ? "rotate(90deg)" : "none"
+                }}
+                onClick={event => {
+                  props.setDetail(props.entry.counter === props.detailLogCounter ? null : props.entry.counter);
+                  event.stopPropagation();
+                }}
+              >
+                <ChevronRightIcon />
+              </IconButton>
+            ) : (
+              undefined
+            )}
+          </TableCell>
+        </TableRow>
+        {details.length > 0 && props.entry.counter === props.detailLogCounter ? (
+          <TableRow>
+            <TableCell colSpan={5}>
+              <ul>
+                {details.map((d, idx) => (
+                  <li key={idx}>
+                    {d.name}: {d.value}
+                  </li>
+                ))}
+              </ul>
+            </TableCell>
+          </TableRow>
+        ) : (
+          undefined
+        )}
+      </>
     );
   })
 );
@@ -271,40 +327,37 @@ export interface LogEntriesProps {
   copyToClipboard?: boolean;
 }
 
-export class LogEntries extends React.PureComponent<LogEntriesProps> {
-  render() {
-    return (
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Date</TableCell>
-            <TableCell>Time</TableCell>
-            <TableCell>Type</TableCell>
-            <TableCell>
-              Details
-              {this.props.copyToClipboard ? (
-                <div style={{ float: "right" }}>
-                  <Tooltip title="Copy to Clipboard">
-                    <IconButton
-                      onClick={() => copyLogEntriesToClipboard(this.props.entries)}
-                      style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-                    >
-                      <ImportExport />
-                    </IconButton>
-                  </Tooltip>
-                </div>
-              ) : (
-                undefined
-              )}
-            </TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {LazySeq.ofIterable(this.props.entries).map((e, idx) => (
-            <LogEntry key={idx} entry={e} />
-          ))}
-        </TableBody>
-      </Table>
-    );
-  }
-}
+export const LogEntries = React.memo(function LogEntriesF(props: LogEntriesProps) {
+  const [curDetail, setDetail] = React.useState<number | null>(null);
+  return (
+    <Table>
+      <TableHead>
+        <TableRow>
+          <TableCell>Date</TableCell>
+          <TableCell>Time</TableCell>
+          <TableCell>Type</TableCell>
+          <TableCell>Details</TableCell>
+          <TableCell padding="checkbox">
+            {props.copyToClipboard ? (
+              <Tooltip title="Copy to Clipboard">
+                <IconButton
+                  onClick={() => copyLogEntriesToClipboard(props.entries)}
+                  style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+                >
+                  <ImportExport />
+                </IconButton>
+              </Tooltip>
+            ) : (
+              undefined
+            )}
+          </TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {LazySeq.ofIterable(props.entries).map((e, idx) => (
+          <LogEntry key={idx} entry={e} detailLogCounter={curDetail} setDetail={setDetail} />
+        ))}
+      </TableBody>
+    </Table>
+  );
+});
