@@ -4,7 +4,8 @@ title: Station Monitor
 sidebar_label: Stations
 ---
 
-The station monitor screen displays the [virtual whiteboard of material
+The station monitor pages are intended to be used on the shop floor by the operators;
+these pages display the [virtual whiteboard of material
 sticky notes](material-tracking.md). Each in-process piece of material is
 represented by a virtual sticky note. On the sticky note, FMS Insight
 displays the part name, serial, assigned workorder, and any signaled

@@ -73,7 +73,7 @@ unload and at the inspection stand it shows what inspections were triggered.
 
 FMS Insight provides targeted pages to assist with the day-to-day operation of the cell.
 There is a targeted page for [factory floor supervisors](client-operations.md), [engineering/programming](client-engineering.md),
-[scheduling](client-scheduling.md), and [quality control](client-quality.md).
+and [quality control](client-quality.md).
 
 ##### Monthly Review
 

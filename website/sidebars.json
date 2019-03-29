@@ -20,7 +20,6 @@
       "client-station-monitor",
       "client-operations",
       "client-engineering",
-      "client-scheduling",
       "client-quality",
       "client-flexibility-analysis",
       "client-backup-viewer"
