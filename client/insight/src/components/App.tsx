@@ -312,7 +312,39 @@ function BackupTabs(p: HeaderNavProps) {
 }
 
 function helpUrl(r: routes.RouteLocation): string {
-  return "https://fms-insight.seedtactics.com/docs/client-launch.html";
+  switch (r) {
+    case routes.RouteLocation.ChooseMode:
+      return "https://fms-insight.seedtactics.com/docs/client-launch.html";
+
+    case routes.RouteLocation.Station_LoadMonitor:
+    case routes.RouteLocation.Station_InspectionMonitor:
+    case routes.RouteLocation.Station_WashMonitor:
+    case routes.RouteLocation.Station_Queues:
+      return "https://fms-insight.seedtactics.com/docs/client-station-monitor.html";
+
+    case routes.RouteLocation.Operations_Dashboard:
+    case routes.RouteLocation.Operations_LoadStation:
+    case routes.RouteLocation.Operations_Machines:
+    case routes.RouteLocation.Operations_AllMaterial:
+    case routes.RouteLocation.Operations_CompletedParts:
+      return "https://fms-insight.seedtactics.com/docs/client-operations.html";
+
+    case routes.RouteLocation.Engineering:
+      return "https://fms-insight.seedtactics.com/docs/client-engineering.html";
+
+    case routes.RouteLocation.Quality_Dashboard:
+    case routes.RouteLocation.Quality_Serials:
+    case routes.RouteLocation.Quality_Paths:
+      return "https://fms-insight.seedtactics.com/docs/client-quality.html";
+
+    case routes.RouteLocation.Tools_Dashboard:
+      return "https://fms-insight.seedtactics.com/docs/client-launch.html";
+
+    case routes.RouteLocation.Analysis_Efficiency:
+    case routes.RouteLocation.Analysis_CostPerPiece:
+    case routes.RouteLocation.Analysis_DataExport:
+      return "https://fms-insight.seedtactics.com/docs/client-flexibility-analysis.html";
+  }
 }
 
 interface HeaderProps {
