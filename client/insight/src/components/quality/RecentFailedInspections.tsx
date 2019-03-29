@@ -149,13 +149,9 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
       <DataTableActions
         page={curPage}
         count={props.failed.length()}
-        last30_days
         rowsPerPage={rowsPerPage}
         setPage={setPage}
         setRowsPerPage={setRowsPerPage}
-        default_date_range={[]}
-        set_date_zoom_range={undefined}
-        current_date_zoom={undefined}
       />
     </>
   );

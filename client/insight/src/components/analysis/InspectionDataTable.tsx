@@ -37,11 +37,19 @@ import ExpansionPanelDetails from "@material-ui/core/ExpansionPanelDetails";
 import ExpansionPanelSummary from "@material-ui/core/ExpansionPanelSummary";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 
-import { Column, DataTableHead, DataTableActions, DataTableBody } from "./DataTable";
+import {
+  Column,
+  DataTableHead,
+  DataTableActions,
+  DataTableBody,
+  DataTableActionZoom,
+  DataTableActionZoomType
+} from "./DataTable";
 import { InspectionLogEntry } from "../../data/events.inspection";
 import { Typography } from "@material-ui/core";
 import { HashMap, ToOrderable } from "prelude-ts";
 import { TriggeredInspectionEntry, groupInspectionsByPath } from "../../data/results.inspection";
+import { addDays, addHours } from "date-fns";
 
 enum ColumnId {
   Date,
@@ -124,6 +132,28 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
   const groups = groupInspectionsByPath(props.points, curZoom, sortOn);
   const paths = groups.keySet().toArray({ sortOn: x => x });
 
+  let zoom: DataTableActionZoom | undefined;
+  if (props.allowChangeDateRange && props.last30_days) {
+    zoom = {
+      type: DataTableActionZoomType.Last30Days,
+      set_days_back: numDaysBack => {
+        if (numDaysBack) {
+          const now = new Date();
+          setCurZoom({ start: addDays(now, -numDaysBack), end: addHours(now, 1) });
+        } else {
+          setCurZoom(undefined);
+        }
+      }
+    };
+  } else if (props.allowChangeDateRange) {
+    zoom = {
+      type: DataTableActionZoomType.ZoomIntoRange,
+      default_date_range: props.default_date_range,
+      current_date_zoom: curZoom,
+      set_date_zoom_range: setCurZoom
+    };
+  }
+
   return (
     <div style={{ width: "100%" }}>
       {paths.map(path => {
@@ -162,13 +192,10 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
                 <DataTableActions
                   page={page}
                   count={points.material.length()}
-                  last30_days={props.last30_days}
                   rowsPerPage={rowsPerPage}
                   setPage={p => setPages(pages.put(path, p))}
                   setRowsPerPage={setRowsPerPage}
-                  set_date_zoom_range={props.allowChangeDateRange ? p => setCurZoom(p.zoom) : undefined}
-                  default_date_range={props.default_date_range}
-                  current_date_zoom={curZoom}
+                  zoom={zoom}
                 />
               </div>
             </ExpansionPanelDetails>

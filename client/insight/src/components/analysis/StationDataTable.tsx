@@ -36,7 +36,15 @@ import { HashMap, ToOrderable } from "prelude-ts";
 
 import { PartCycleData, format_cycle_inspection } from "../../data/events.cycles";
 import { LazySeq } from "../../data/lazyseq";
-import { Column, DataTableHead, DataTableActions, DataTableBody } from "./DataTable";
+import {
+  Column,
+  DataTableHead,
+  DataTableActions,
+  DataTableBody,
+  DataTableActionZoom,
+  DataTableActionZoomType
+} from "./DataTable";
+import { addDays, addHours } from "date-fns";
 
 enum ColumnId {
   Date,
@@ -187,6 +195,29 @@ export default React.memo(function StationDataTable(props: StationDataTableProps
     }
   }
 
+  let zoom: DataTableActionZoom | undefined;
+  const setZoomRange = props.set_date_zoom_range;
+  if (setZoomRange && props.last30_days) {
+    zoom = {
+      type: DataTableActionZoomType.Last30Days,
+      set_days_back: numDaysBack => {
+        if (numDaysBack) {
+          const now = new Date();
+          setZoomRange({ zoom: { start: addDays(now, -numDaysBack), end: addHours(now, 1) } });
+        } else {
+          setZoomRange({ zoom: undefined });
+        }
+      }
+    };
+  } else if (setZoomRange) {
+    zoom = {
+      type: DataTableActionZoomType.ZoomIntoRange,
+      default_date_range: props.default_date_range,
+      current_date_zoom: props.current_date_zoom,
+      set_date_zoom_range: z => setZoomRange({ zoom: z })
+    };
+  }
+
   const allData = extractData(props.points, props.current_date_zoom, orderBy, order);
   const totalDataLength = allData.length;
   const pageData: ReadonlyArray<PartCycleData> = allData.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
@@ -224,13 +255,10 @@ export default React.memo(function StationDataTable(props: StationDataTableProps
       <DataTableActions
         page={page}
         count={totalDataLength}
-        last30_days={props.last30_days}
         rowsPerPage={rowsPerPage}
         setPage={setPage}
         setRowsPerPage={setRowsPerPage}
-        set_date_zoom_range={props.set_date_zoom_range}
-        default_date_range={props.default_date_range}
-        current_date_zoom={props.current_date_zoom}
+        zoom={zoom}
       />
     </div>
   );
