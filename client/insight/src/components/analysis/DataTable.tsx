@@ -47,6 +47,8 @@ import Typography from "@material-ui/core/Typography";
 import Select from "@material-ui/core/Select";
 import ZoomOutIcon from "@material-ui/icons/ZoomOut";
 import InputBase from "@material-ui/core/InputBase";
+import SkipPrevIcon from "@material-ui/icons/SkipPrevious";
+import SkipNextIcon from "@material-ui/icons/SkipNext";
 import MenuItem from "@material-ui/core/MenuItem";
 import Button from "@material-ui/core/Button";
 import MoreHoriz from "@material-ui/icons/MoreHoriz";
@@ -104,9 +106,9 @@ export function DataTableHead<Id extends string | number, Row>(props: DataTableH
 }
 
 export enum DataTableActionZoomType {
-  Last30Days,
-  ZoomIntoRange,
-  ExtendDays
+  Last30Days = "Last30",
+  ZoomIntoRange = "IntoRange",
+  ExtendDays = "Extend"
 }
 
 export type DataTableActionZoom =
@@ -228,6 +230,24 @@ export function DataTableActions(props: DataTableActionsProps) {
         <Tooltip title="Reset Date Range">
           <IconButton onClick={() => zoom.set_date_zoom_range(undefined)}>
             <ZoomOutIcon />
+          </IconButton>
+        </Tooltip>
+      </>
+    );
+  } else if (zoom && zoom.type === DataTableActionZoomType.ExtendDays) {
+    zoomCtrl = (
+      <>
+        <Tooltip title="Extend 1 day previous">
+          <IconButton onClick={() => zoom.extend(-1)}>
+            <SkipPrevIcon />
+          </IconButton>
+        </Tooltip>
+        <Typography variant="caption">
+          {zoom.curStart.toLocaleDateString() + " to " + zoom.curEnd.toLocaleDateString()}
+        </Typography>
+        <Tooltip title="Extend 1 day">
+          <IconButton onClick={() => zoom.extend(1)}>
+            <SkipNextIcon />
           </IconButton>
         </Tooltip>
       </>

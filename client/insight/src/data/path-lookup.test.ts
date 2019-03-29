@@ -48,6 +48,9 @@ it("initially searches", () => {
   const s = reducer(initial, {
     type: ActionType.SearchDateRange,
     part: "aaa",
+    initialLoad: true,
+    curStart: new Date(Date.UTC(2018, 7, 6, 15, 33, 0)),
+    curEnd: new Date(Date.UTC(2018, 7, 6, 16, 33, 0)),
     pledge: {
       status: PledgeStatus.Starting
     }
@@ -55,6 +58,8 @@ it("initially searches", () => {
 
   expect(s.loading).toBe(true);
   expect(s.load_error).toBeUndefined();
+  expect(s.curStart).toEqual(new Date(Date.UTC(2018, 7, 6, 15, 33, 0)));
+  expect(s.curEnd).toEqual(new Date(Date.UTC(2018, 7, 6, 16, 33, 0)));
 });
 
 it("responds to errors", () => {
@@ -63,6 +68,9 @@ it("responds to errors", () => {
     {
       type: ActionType.SearchDateRange,
       part: "aaa",
+      initialLoad: true,
+      curStart: new Date(Date.UTC(2018, 7, 6, 15, 33, 0)),
+      curEnd: new Date(Date.UTC(2018, 7, 6, 15, 33, 0)),
       pledge: {
         status: PledgeStatus.Error,
         error: new Error("the error")
@@ -91,6 +99,9 @@ it("loads the data", async () => {
   const s = reducer(initial, {
     type: ActionType.SearchDateRange,
     part: "aaa",
+    initialLoad: true,
+    curStart: new Date(Date.UTC(2018, 7, 6, 15, 33, 0)),
+    curEnd: new Date(Date.UTC(2018, 7, 6, 15, 33, 0)),
     pledge: {
       status: PledgeStatus.Completed,
       result: evts

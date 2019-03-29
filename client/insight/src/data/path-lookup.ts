@@ -37,6 +37,7 @@ import { LogBackend, OtherLogBackends } from "./backend";
 import { HashMap } from "prelude-ts";
 import { InspectionLogEntry } from "./events.inspection";
 import * as insp from "./events.inspection";
+import { addDays } from "date-fns";
 
 export enum ActionType {
   SearchDateRange = "PathLookup_Search",
@@ -51,6 +52,9 @@ export type Action =
   | {
       type: ActionType.SearchDateRange;
       part: string;
+      initialLoad: boolean;
+      curStart: Date;
+      curEnd: Date;
       pledge: Pledge<ReadonlyArray<Readonly<api.ILogEntry>>>;
     }
   | {
@@ -63,6 +67,46 @@ export function searchForPaths(part: string, start: Date, end: Date): ReadonlyAr
   const mainLoad = {
     type: ActionType.SearchDateRange,
     part,
+    initialLoad: true,
+    curStart: start,
+    curEnd: end,
+    pledge: LogBackend.get(start, end)
+  } as PledgeToPromise<Action>;
+
+  const extra = OtherLogBackends.map(
+    b =>
+      ({
+        type: ActionType.LoadLogFromOtherServer,
+        part,
+        pledge: b.get(start, end)
+      } as PledgeToPromise<Action>)
+  );
+  return [mainLoad].concat(extra);
+}
+
+export function extendRange(
+  part: string,
+  oldStart: Date,
+  oldEnd: Date,
+  numDays: number
+): ReadonlyArray<PledgeToPromise<Action>> {
+  let start: Date, end: Date;
+  let newStart: Date | undefined, newEnd: Date | undefined;
+  if (numDays < 0) {
+    start = addDays(oldStart, numDays);
+    end = oldStart;
+    newStart = start;
+  } else {
+    start = oldEnd;
+    end = addDays(oldEnd, numDays);
+    newEnd = end;
+  }
+  const mainLoad = {
+    type: ActionType.SearchDateRange,
+    part,
+    initialLoad: false,
+    curStart: newStart,
+    curEnd: newEnd,
     pledge: LogBackend.get(start, end)
   } as PledgeToPromise<Action>;
 
@@ -80,6 +124,8 @@ export function searchForPaths(part: string, start: Date, end: Date): ReadonlyAr
 export interface State {
   readonly entries: HashMap<insp.PartAndInspType, ReadonlyArray<InspectionLogEntry>> | undefined;
   readonly loading: boolean;
+  readonly curStart?: Date;
+  readonly curEnd?: Date;
   readonly load_error?: Error;
 }
 
@@ -105,7 +151,12 @@ export function reducer(s: State, a: Action): State {
     case ActionType.SearchDateRange:
       switch (a.pledge.status) {
         case PledgeStatus.Starting:
-          return { entries: HashMap.empty(), loading: true };
+          return {
+            entries: a.initialLoad ? HashMap.empty() : s.entries,
+            loading: true,
+            curStart: a.curStart || s.curStart,
+            curEnd: a.curEnd || s.curEnd
+          };
         case PledgeStatus.Error:
           return { entries: HashMap.empty(), loading: false, load_error: a.pledge.error };
         case PledgeStatus.Completed:

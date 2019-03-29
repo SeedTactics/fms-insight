@@ -70,6 +70,7 @@ import { AnalysisPeriod } from "../../data/events";
 import { binCyclesByDayAndStat, binSimStationUseByDayAndStat } from "../../data/results.oee";
 import { binCyclesByDayAndPart, binSimProductionByDayAndPart } from "../../data/results.completed-parts";
 import { SimUseState } from "../../data/events.simuse";
+import { DataTableActionZoomType } from "./DataTable";
 
 // --------------------------------------------------------------------------------
 // Station Cycles
@@ -649,7 +650,10 @@ const ConnectedInspection = connect(
       st.Events.analysis_period === AnalysisPeriod.Last30Days
         ? st.Events.last30.inspection.by_part
         : st.Events.selected_month.inspection.by_part,
-    analysisPeriod: st.Events.analysis_period,
+    zoomType:
+      st.Events.analysis_period === AnalysisPeriod.Last30Days
+        ? DataTableActionZoomType.Last30Days
+        : DataTableActionZoomType.ZoomIntoRange,
     default_date_range:
       st.Events.analysis_period === AnalysisPeriod.Last30Days
         ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]

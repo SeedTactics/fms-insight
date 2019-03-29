@@ -96,9 +96,9 @@ const columns: ReadonlyArray<Column<ColumnId, TriggeredInspectionEntry>> = [
 export interface InspectionDataTableProps {
   readonly points: ReadonlyArray<InspectionLogEntry>;
   readonly default_date_range: Date[];
-  readonly last30_days: boolean;
-  readonly allowChangeDateRange: boolean;
+  readonly zoomType?: DataTableActionZoomType;
   readonly openDetails: ((matId: number) => void) | undefined;
+  readonly extendDateRange?: (numDays: number) => void;
 }
 
 export default React.memo(function InspDataTable(props: InspectionDataTableProps) {
@@ -133,7 +133,7 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
   const paths = groups.keySet().toArray({ sortOn: x => x });
 
   let zoom: DataTableActionZoom | undefined;
-  if (props.allowChangeDateRange && props.last30_days) {
+  if (props.zoomType && props.zoomType === DataTableActionZoomType.Last30Days) {
     zoom = {
       type: DataTableActionZoomType.Last30Days,
       set_days_back: numDaysBack => {
@@ -145,12 +145,19 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
         }
       }
     };
-  } else if (props.allowChangeDateRange) {
+  } else if (props.zoomType && props.zoomType === DataTableActionZoomType.ZoomIntoRange) {
     zoom = {
       type: DataTableActionZoomType.ZoomIntoRange,
       default_date_range: props.default_date_range,
       current_date_zoom: curZoom,
       set_date_zoom_range: setCurZoom
+    };
+  } else if (props.zoomType && props.extendDateRange && props.zoomType === DataTableActionZoomType.ExtendDays) {
+    zoom = {
+      type: DataTableActionZoomType.ExtendDays,
+      curStart: props.default_date_range[0],
+      curEnd: props.default_date_range[1],
+      extend: props.extendDateRange
     };
   }
 

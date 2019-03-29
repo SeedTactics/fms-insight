@@ -45,11 +45,11 @@ import ImportExport from "@material-ui/icons/ImportExport";
 import { PartIdenticon } from "../station-monitor/Material";
 import { SankeyNode, SankeyDiagram, inspectionDataToSankey } from "../../data/inspection-sankey";
 
-import * as events from "../../data/events";
 import { PartAndInspType, InspectionLogEntry } from "../../data/events.inspection";
 import { HashMap } from "prelude-ts";
 import InspectionDataTable from "./InspectionDataTable";
 import { copyInspectionEntriesToClipboard } from "../../data/results.inspection";
+import { DataTableActionZoomType } from "./DataTable";
 
 interface InspectionSankeyDiagramProps {
   readonly sankey: SankeyDiagram;
@@ -132,11 +132,12 @@ class ConvertInspectionDataToSankey extends React.PureComponent<{
 export interface InspectionSankeyProps {
   readonly inspectionlogs: HashMap<PartAndInspType, ReadonlyArray<InspectionLogEntry>>;
   readonly default_date_range: Date[];
-  readonly analysisPeriod?: events.AnalysisPeriod;
+  readonly zoomType?: DataTableActionZoomType;
   readonly openMaterialDetails?: (matId: number) => void;
   readonly subtitle?: string;
   readonly restrictToPart?: string;
   readonly defaultToTable: boolean;
+  readonly extendDateRange?: (numDays: number) => void;
 }
 
 interface InspectionSankeyState {
@@ -268,10 +269,10 @@ export class InspectionSankey extends React.Component<InspectionSankeyProps, Ins
             {curData ? (
               showTable ? (
                 <InspectionDataTable
-                  last30_days={this.props.analysisPeriod === events.AnalysisPeriod.Last30Days}
-                  allowChangeDateRange={this.props.analysisPeriod !== undefined}
+                  zoomType={this.props.zoomType}
                   points={curData}
                   default_date_range={this.props.default_date_range}
+                  extendDateRange={this.props.extendDateRange}
                   openDetails={this.props.openMaterialDetails}
                 />
               ) : (

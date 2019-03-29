@@ -54,7 +54,6 @@ const filterLogSelector = createSelector(
 const ConnectedInspection = connect(
   st => ({
     inspectionlogs: filterLogSelector(st.Events.last30, startOfToday()),
-    analysisPeriod: st.Events.analysis_period,
     default_date_range: [addDays(startOfToday(), -6), addDays(startOfToday(), 1)],
     defaultToTable: false
   }),
