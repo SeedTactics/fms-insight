@@ -47,6 +47,7 @@ export interface MaterialSummary {
 }
 
 export interface MaterialSummaryAndCompletedData extends MaterialSummary {
+  readonly completed_machining?: boolean;
   readonly last_unload_time?: Date;
   readonly completed_inspect_time?: Date;
   readonly wash_completed?: Date;
@@ -162,11 +163,20 @@ export function process_events(now: Date, newEvts: ReadonlyArray<api.ILogEntry>,
 
         case api.LogType.LoadUnloadCycle:
           if (e.result === "UNLOAD") {
-            mat = {
-              ...mat,
-              completed_procs: [...mat.completed_procs, logMat.proc],
-              last_unload_time: e.endUTC
-            };
+            if (logMat.proc === logMat.numproc) {
+              mat = {
+                ...mat,
+                completed_procs: [...mat.completed_procs, logMat.proc],
+                last_unload_time: e.endUTC,
+                completed_machining: true
+              };
+            } else {
+              mat = {
+                ...mat,
+                completed_procs: [...mat.completed_procs, logMat.proc],
+                last_unload_time: e.endUTC
+              };
+            }
           }
           break;
 

@@ -1792,6 +1792,7 @@ Object {
           "Insp1": 2018-01-31T09:58:10.000Z,
         },
         "completed_inspect_time": 2018-01-31T09:58:10.000Z,
+        "completed_machining": true,
         "completed_procs": Array [
           1,
         ],
@@ -1828,6 +1829,7 @@ Object {
           "Insp1": 2018-01-06T09:52:05.000Z,
         },
         "completed_inspect_time": 2018-01-06T09:52:05.000Z,
+        "completed_machining": true,
         "completed_procs": Array [
           2,
         ],
@@ -3384,6 +3386,7 @@ Object {
           "Insp1": 2018-01-06T09:52:05.000Z,
         },
         "completed_inspect_time": 2018-01-06T09:52:05.000Z,
+        "completed_machining": true,
         "completed_procs": Array [
           2,
         ],
