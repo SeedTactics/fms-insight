@@ -36,19 +36,17 @@ using System.Collections.Generic;
 
 namespace BlackMaple.MachineWatchInterface
 {
-    public interface IMachineWatchVersion
-    {
-        string Version();
-	    string PluginName();
-    }
+  public interface IMachineWatchVersion
+  {
+    string Version();
+    string PluginName();
+  }
 
-    //Allow programs to store and load JSON settings.  Useful to allow programs to
-    //share settings across differnet computers.  Settings should be versioned by flexible
-    //JSON parsing.
-    public interface IStoreSettings
-    {
-        string GetSettings(string ID);
-        void SetSettings(string ID, string settingsJson);
-    }
+  //Only used for legacy SAIL API access.  Do not use in any new code.
+  public interface IStoreSettings
+  {
+    string GetSettings(string ID);
+    void SetSettings(string ID, string settingsJson);
+  }
 }
 
