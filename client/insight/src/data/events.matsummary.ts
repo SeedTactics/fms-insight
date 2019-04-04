@@ -47,7 +47,8 @@ export interface MaterialSummary {
 }
 
 export interface MaterialSummaryAndCompletedData extends MaterialSummary {
-  readonly completed_time?: Date;
+  readonly last_unload_time?: Date;
+  readonly completed_inspect_time?: Date;
   readonly wash_completed?: Date;
   readonly completedInspections?: { [key: string]: Date };
 }
@@ -153,25 +154,19 @@ export function process_events(now: Date, newEvts: ReadonlyArray<api.ILogEntry>,
             completedInspections: {
               ...mat.completedInspections,
               [e.program]: e.endUTC
-            }
+            },
+            completed_inspect_time: e.endUTC
           };
           inspTypes.set(e.program, true);
           break;
 
         case api.LogType.LoadUnloadCycle:
           if (e.result === "UNLOAD") {
-            if (logMat.proc === logMat.numproc) {
-              mat = {
-                ...mat,
-                completed_procs: [...mat.completed_procs, logMat.proc],
-                completed_time: e.endUTC
-              };
-            } else {
-              mat = {
-                ...mat,
-                completed_procs: [...mat.completed_procs, logMat.proc]
-              };
-            }
+            mat = {
+              ...mat,
+              completed_procs: [...mat.completed_procs, logMat.proc],
+              last_unload_time: e.endUTC
+            };
           }
           break;
 

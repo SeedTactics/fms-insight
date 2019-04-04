@@ -224,44 +224,46 @@ const extractRecentInspections = createSelector(
       inspType === undefined
         ? LazySeq.ofIterable(mats.valueIterable()).filter(
             m =>
-              m.completed_time !== undefined &&
-              m.completed_time >= uninspectedCutoff &&
+              m.last_unload_time !== undefined &&
+              m.last_unload_time >= uninspectedCutoff &&
               m.signaledInspections.length > 0 &&
               !checkAllCompleted(m)
           )
         : LazySeq.ofIterable(mats.valueIterable()).filter(
             m =>
-              m.completed_time !== undefined &&
-              m.completed_time >= uninspectedCutoff &&
+              m.last_unload_time !== undefined &&
+              m.last_unload_time >= uninspectedCutoff &&
               m.signaledInspections.indexOf(inspType) >= 0 &&
               (m.completedInspections || {})[inspType] === undefined
           )
     );
     // sort descending
     uninspected.sort((e1, e2) =>
-      e1.completed_time && e2.completed_time ? e2.completed_time.getTime() - e1.completed_time.getTime() : 0
+      e1.last_unload_time && e2.last_unload_time ? e2.last_unload_time.getTime() - e1.last_unload_time.getTime() : 0
     );
 
     const inspected = Array.from(
       inspType === undefined
         ? LazySeq.ofIterable(mats.valueIterable()).filter(
             m =>
-              m.completed_time !== undefined &&
-              m.completed_time >= inspectedCutoff &&
+              m.completed_inspect_time !== undefined &&
+              m.completed_inspect_time >= inspectedCutoff &&
               m.signaledInspections.length > 0 &&
               checkAllCompleted(m)
           )
         : LazySeq.ofIterable(mats.valueIterable()).filter(
             m =>
-              m.completed_time !== undefined &&
-              m.completed_time >= inspectedCutoff &&
+              m.completed_inspect_time !== undefined &&
+              m.completed_inspect_time >= inspectedCutoff &&
               m.signaledInspections.indexOf(inspType) >= 0 &&
               (m.completedInspections || {})[inspType] !== undefined
           )
     );
     // sort descending
     inspected.sort((e1, e2) =>
-      e1.completed_time && e2.completed_time ? e2.completed_time.getTime() - e1.completed_time.getTime() : 0
+      e1.completed_inspect_time && e2.completed_inspect_time
+        ? e2.completed_inspect_time.getTime() - e1.completed_inspect_time.getTime()
+        : 0
     );
 
     return {
