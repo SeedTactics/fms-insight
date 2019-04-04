@@ -4,7 +4,7 @@
   "info": {
     "title": "SeedTactic FMS Insight",
     "description": "API for access to FMS Insight for flexible manufacturing system control",
-    "version": "1.7"
+    "version": "1.8"
   },
   "consumes": [
     "application/json"
@@ -13,6 +13,158 @@
     "application/json"
   ],
   "paths": {
+    "/api/v1/fms/fms-information": {
+      "get": {
+        "tags": [
+          "fms"
+        ],
+        "operationId": "fms_FMSInformation",
+        "responses": {
+          "200": {
+            "x-nullable": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/FMSInfo"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fms/settings/{id}": {
+      "get": {
+        "tags": [
+          "fms"
+        ],
+        "operationId": "fms_GetSettings",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "x-nullable": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": true,
+            "description": "",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "fms"
+        ],
+        "operationId": "fms_SetSetting",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "x-nullable": false
+          },
+          {
+            "name": "setting",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-nullable": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v1/fms/find-instructions/{part}": {
+      "get": {
+        "tags": [
+          "fms"
+        ],
+        "operationId": "fms_FindInstructions",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "part",
+            "in": "path",
+            "required": true,
+            "x-nullable": false
+          },
+          {
+            "type": "string",
+            "name": "type",
+            "in": "query",
+            "required": true,
+            "x-nullable": true
+          },
+          {
+            "type": "integer",
+            "name": "process",
+            "in": "query",
+            "format": "int32",
+            "x-nullable": true
+          },
+          {
+            "type": "integer",
+            "name": "materialID",
+            "in": "query",
+            "format": "int64",
+            "x-nullable": true
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v1/fms/print-label/{materialId}": {
+      "post": {
+        "tags": [
+          "fms"
+        ],
+        "operationId": "fms_PrintLabel",
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "materialId",
+            "in": "path",
+            "required": true,
+            "format": "int64",
+            "x-nullable": false
+          },
+          {
+            "type": "integer",
+            "name": "process",
+            "in": "query",
+            "format": "int32",
+            "default": 1,
+            "x-nullable": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/v1/jobs/history": {
       "get": {
         "tags": [
@@ -927,127 +1079,47 @@
           }
         }
       }
-    },
-    "/api/v1/server/fms-information": {
-      "get": {
-        "tags": [
-          "server"
-        ],
-        "operationId": "server_FMSInformation",
-        "responses": {
-          "200": {
-            "x-nullable": true,
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/FMSInfo"
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/server/settings/{id}": {
-      "get": {
-        "tags": [
-          "server"
-        ],
-        "operationId": "server_GetSettings",
-        "parameters": [
-          {
-            "type": "string",
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "x-nullable": false
-          }
-        ],
-        "responses": {
-          "200": {
-            "x-nullable": true,
-            "description": "",
-            "schema": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "server"
-        ],
-        "operationId": "server_SetSetting",
-        "parameters": [
-          {
-            "type": "string",
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "x-nullable": false
-          },
-          {
-            "name": "setting",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "x-nullable": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/v1/server/find-instructions/{part}": {
-      "get": {
-        "tags": [
-          "server"
-        ],
-        "operationId": "server_FindInstructions",
-        "parameters": [
-          {
-            "type": "string",
-            "name": "part",
-            "in": "path",
-            "required": true,
-            "x-nullable": false
-          },
-          {
-            "type": "string",
-            "name": "type",
-            "in": "query",
-            "required": true,
-            "x-nullable": true
-          },
-          {
-            "type": "integer",
-            "name": "process",
-            "in": "query",
-            "format": "int32",
-            "x-nullable": true
-          },
-          {
-            "type": "integer",
-            "name": "materialID",
-            "in": "query",
-            "format": "int64",
-            "x-nullable": true
-          }
-        ],
-        "responses": {
-          "302": {
-            "description": ""
-          },
-          "404": {
-            "description": ""
-          }
-        }
-      }
     }
   },
   "definitions": {
+    "FMSInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "RequireScanAtWash",
+        "RequireWorkorderBeforeAllowWashComplete",
+        "UsingLabelPrinterForSerials"
+      ],
+      "properties": {
+        "Name": {
+          "type": "string"
+        },
+        "Version": {
+          "type": "string"
+        },
+        "RequireScanAtWash": {
+          "type": "boolean"
+        },
+        "RequireWorkorderBeforeAllowWashComplete": {
+          "type": "boolean"
+        },
+        "AdditionalLogServers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "OpenIDConnectAuthority": {
+          "type": "string"
+        },
+        "OpenIDConnectClientId": {
+          "type": "string"
+        },
+        "UsingLabelPrinterForSerials": {
+          "type": "boolean"
+        }
+      }
+    },
     "HistoricData": {
       "type": "object",
       "additionalProperties": false,
@@ -2316,40 +2388,6 @@
         "Active": {
           "type": "string",
           "format": "time-span"
-        }
-      }
-    },
-    "FMSInfo": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "RequireScanAtWash",
-        "RequireWorkorderBeforeAllowWashComplete"
-      ],
-      "properties": {
-        "Name": {
-          "type": "string"
-        },
-        "Version": {
-          "type": "string"
-        },
-        "RequireScanAtWash": {
-          "type": "boolean"
-        },
-        "RequireWorkorderBeforeAllowWashComplete": {
-          "type": "boolean"
-        },
-        "AdditionalLogServers": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "OpenIDConnectAuthority": {
-          "type": "string"
-        },
-        "OpenIDConnectClientId": {
-          "type": "string"
         }
       }
     }

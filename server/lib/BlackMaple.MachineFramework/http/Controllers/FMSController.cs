@@ -54,14 +54,14 @@ namespace BlackMaple.MachineFramework.Controllers
     [DataMember] public bool UsingLabelPrinterForSerials { get; set; }
   }
 
-  [Route("api/v1/[controller]")]
-  public class serverController : ControllerBase
+  [Route("api/v1/fms")]
+  public class fmsController : ControllerBase
   {
     private FMSImplementation _impl;
     private FMSSettings _cfg;
     private ServerSettings _serverSt;
 
-    public serverController(FMSSettings fmsSt, ServerSettings serverSt, FMSImplementation impl)
+    public fmsController(FMSSettings fmsSt, ServerSettings serverSt, FMSImplementation impl)
     {
       _cfg = fmsSt;
       _serverSt = serverSt;
@@ -195,5 +195,33 @@ namespace BlackMaple.MachineFramework.Controllers
         return Redirect("/instructions/" + System.Uri.EscapeDataString(instrFile));
       }
     }
+
+    [HttpPost("print-label/{materialId}"), Authorize]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(400)]
+    public IActionResult PrintLabel(long materialId, [FromQuery] int process = 1)
+    {
+      if (_impl != null && _impl.PrintLabel != null)
+      {
+        _impl.PrintLabel(materialId, process);
+        return Ok();
+      }
+      else
+      {
+        return BadRequest("FMS configuration does not support printing labels");
+      }
+    }
+  }
+
+
+  // the old controller before I renamed server to fms
+  [Route("api/v1/server"), NSwag.Annotations.SwaggerIgnore]
+  public class serverController : fmsController
+  {
+    public serverController(FMSSettings fmsSt, ServerSettings serverSt, FMSImplementation impl)
+      : base(fmsSt, serverSt, impl)
+    {
+    }
+
   }
 }

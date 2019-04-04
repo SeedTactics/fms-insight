@@ -52,6 +52,7 @@ namespace BlackMaple.MachineFramework
   }
 
   public delegate string CustomizeInstructionPath(string part, int? process, string type, long? materialID);
+  public delegate void PrintLabelForMaterial(long materialId, int process);
 
   public class FMSImplementation
   {
@@ -61,6 +62,7 @@ namespace BlackMaple.MachineFramework
     public IList<IBackgroundWorker> Workers { get; set; } = new List<IBackgroundWorker>();
     public CustomizeInstructionPath InstructionPath { get; set; } = null;
     public bool UsingLabelPrinterForSerials { get; set; } = false;
+    public PrintLabelForMaterial PrintLabel { get; set; } = null;
   }
 
 }
