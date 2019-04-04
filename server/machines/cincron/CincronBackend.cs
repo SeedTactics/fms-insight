@@ -129,11 +129,8 @@ namespace Cincron
         new FMSImplementation()
         {
           Backend = new CincronBackend(cfg.GetSection("Cincron"), fmsSt),
-          NameAndVersion = new FMSNameAndVersion()
-          {
-            Name = "Cincron",
-            Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
-          }
+          Name = "Cincron",
+          Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
         });
     }
   }

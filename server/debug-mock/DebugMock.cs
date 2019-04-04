@@ -60,11 +60,8 @@ namespace DebugMachineWatchApiServer
         return new FMSImplementation()
         {
           Backend = backend,
-          NameAndVersion = new FMSNameAndVersion()
-          {
-            Name = "mock",
-            Version = "1.2.3.4"
-          }
+          Name = "mock",
+          Version = "1.2.3.4"
         };
 
       });

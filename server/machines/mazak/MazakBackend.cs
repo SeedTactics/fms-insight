@@ -332,11 +332,8 @@ namespace MazakMachineInterface
         new FMSImplementation()
         {
           Backend = new MazakBackend(cfg, st),
-          NameAndVersion = new FMSNameAndVersion()
-          {
-            Name = "Mazak",
-            Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
-          }
+          Name = "Mazak",
+          Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
         });
     }
   }

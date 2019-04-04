@@ -191,11 +191,8 @@ namespace Makino
         new FMSImplementation()
         {
           Backend = new MakinoBackend(cfg, st),
-          NameAndVersion = new FMSNameAndVersion()
-          {
-            Name = "Makino",
-            Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
-          }
+          Name = "Makino",
+          Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
         });
     }
   }

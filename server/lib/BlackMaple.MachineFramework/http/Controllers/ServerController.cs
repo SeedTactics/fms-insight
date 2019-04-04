@@ -51,22 +51,21 @@ namespace BlackMaple.MachineFramework.Controllers
     [DataMember] public IReadOnlyList<string> AdditionalLogServers { get; set; }
     [DataMember] public string OpenIDConnectAuthority { get; set; }
     [DataMember] public string OpenIDConnectClientId { get; set; }
+    [DataMember] public bool UsingLabelPrinterForSerials { get; set; }
   }
 
   [Route("api/v1/[controller]")]
   public class serverController : ControllerBase
   {
-    private IFMSInstructionPath _instrPath;
-    private FMSNameAndVersion _nameAndVer;
+    private FMSImplementation _impl;
     private FMSSettings _cfg;
     private ServerSettings _serverSt;
 
-    public serverController(FMSSettings fmsSt, ServerSettings serverSt, IFMSInstructionPath instr, FMSNameAndVersion nameAndVersion)
+    public serverController(FMSSettings fmsSt, ServerSettings serverSt, FMSImplementation impl)
     {
-      _instrPath = instr;
       _cfg = fmsSt;
       _serverSt = serverSt;
-      _nameAndVer = nameAndVersion;
+      _impl = impl;
     }
 
     [HttpGet("fms-information")]
@@ -74,13 +73,14 @@ namespace BlackMaple.MachineFramework.Controllers
     {
       return new FMSInfo()
       {
-        Name = _nameAndVer.Name,
-        Version = _nameAndVer.Version,
+        Name = _impl.Name,
+        Version = _impl.Version,
         RequireScanAtWash = _cfg.RequireScanAtWash,
         RequireWorkorderBeforeAllowWashComplete = _cfg.RequireWorkorderBeforeAllowWashComplete,
         AdditionalLogServers = _cfg.AdditionalLogServers,
         OpenIDConnectAuthority = _serverSt.OpenIDConnectAuthority,
-        OpenIDConnectClientId = _serverSt.OpenIDConnectClientId
+        OpenIDConnectClientId = _serverSt.OpenIDConnectClientId,
+        UsingLabelPrinterForSerials = _impl.UsingLabelPrinterForSerials
       };
     }
 
@@ -126,9 +126,9 @@ namespace BlackMaple.MachineFramework.Controllers
     {
       try
       {
-        if (_instrPath != null)
+        if (_impl != null && _impl.InstructionPath != null)
         {
-          var path = _instrPath.CustomizeInstructionPath(part, process, type, materialID);
+          var path = _impl.InstructionPath(part, process, type, materialID);
           if (string.IsNullOrEmpty(path))
           {
             return NotFound(

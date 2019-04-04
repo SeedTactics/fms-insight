@@ -51,38 +51,16 @@ namespace BlackMaple.MachineFramework
   {
   }
 
-  public interface IFMSInstructionPath
-  {
-    // allows an implementation to override the algorithm which
-    // finds an instruction file on disk given a part and type.
-    // If this throws NotImplementedException(), the default
-    // of searching for a file containing the part and type is used.
-    // If this returns null or empty, a 404 error is returned to the client.
-    // Otherwise, the returned string will be the target of a redirect.
-    string CustomizeInstructionPath(string part, int? process, string type, long? materialID);
-  }
-
-  [DataContract]
-  public class FMSNameAndVersion
-  {
-    [DataMember] public string Name { get; set; }
-    [DataMember] public string Version { get; set; }
-  }
+  public delegate string CustomizeInstructionPath(string part, int? process, string type, long? materialID);
 
   public class FMSImplementation
   {
-    public FMSNameAndVersion NameAndVersion { get; set; }
+    public string Name { get; set; }
+    public string Version { get; set; }
     public IFMSBackend Backend { get; set; }
     public IList<IBackgroundWorker> Workers { get; set; } = new List<IBackgroundWorker>();
-    public IFMSInstructionPath InstructionPath { get; set; } = new DefaultFMSInstrPath();
-
-    private class DefaultFMSInstrPath : IFMSInstructionPath
-    {
-      public string CustomizeInstructionPath(string part, int? process, string type, long? materialID)
-      {
-        throw new NotImplementedException();
-      }
-    }
+    public CustomizeInstructionPath InstructionPath { get; set; } = null;
+    public bool UsingLabelPrinterForSerials { get; set; } = false;
   }
 
 }
