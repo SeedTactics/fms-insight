@@ -1005,11 +1005,13 @@ Object {
         "completedInspections": Object {
           "Insp1": 2018-02-08T09:46:05.000Z,
         },
+        "completed_inspect_time": 2018-02-08T09:46:05.000Z,
         "completed_procs": Array [
           1,
         ],
         "jobUnique": "uniqk",
         "last_event": 2018-02-08T09:46:05.000Z,
+        "last_unload_time": 2018-02-08T09:34:05.000Z,
         "materialID": 90793,
         "partName": "part111",
         "signaledInspections": Array [
@@ -1020,11 +1022,13 @@ Object {
         "completedInspections": Object {
           "Insp1": 2018-02-02T10:04:10.000Z,
         },
+        "completed_inspect_time": 2018-02-02T10:04:10.000Z,
         "completed_procs": Array [
           1,
         ],
         "jobUnique": "uniqi",
         "last_event": 2018-02-02T10:04:10.000Z,
+        "last_unload_time": 2018-02-02T09:52:05.000Z,
         "materialID": 70329,
         "partName": "part111",
         "signaledInspections": Array [
@@ -1787,12 +1791,13 @@ Object {
         "completedInspections": Object {
           "Insp1": 2018-01-31T09:58:10.000Z,
         },
+        "completed_inspect_time": 2018-01-31T09:58:10.000Z,
         "completed_procs": Array [
           1,
         ],
-        "completed_time": 2018-01-31T09:46:05.000Z,
         "jobUnique": "uniqv",
         "last_event": 2018-01-31T09:58:10.000Z,
+        "last_unload_time": 2018-01-31T09:46:05.000Z,
         "materialID": 15510,
         "partName": "part222",
         "signaledInspections": Array [
@@ -1804,11 +1809,13 @@ Object {
         "completedInspections": Object {
           "Insp1": 2018-02-02T10:04:10.000Z,
         },
+        "completed_inspect_time": 2018-02-02T10:04:10.000Z,
         "completed_procs": Array [
           1,
         ],
         "jobUnique": "uniqi",
         "last_event": 2018-02-02T10:04:10.000Z,
+        "last_unload_time": 2018-02-02T09:52:05.000Z,
         "materialID": 70329,
         "partName": "part111",
         "signaledInspections": Array [
@@ -1820,12 +1827,13 @@ Object {
         "completedInspections": Object {
           "Insp1": 2018-01-06T09:52:05.000Z,
         },
+        "completed_inspect_time": 2018-01-06T09:52:05.000Z,
         "completed_procs": Array [
           2,
         ],
-        "completed_time": 2018-01-06T09:40:05.000Z,
         "jobUnique": "uniqt",
         "last_event": 2018-01-06T09:52:05.000Z,
+        "last_unload_time": 2018-01-06T09:40:05.000Z,
         "materialID": 90079,
         "partName": "part222",
         "signaledInspections": Array [
@@ -2589,11 +2597,13 @@ Object {
         "completedInspections": Object {
           "Insp1": 2018-02-08T09:46:05.000Z,
         },
+        "completed_inspect_time": 2018-02-08T09:46:05.000Z,
         "completed_procs": Array [
           1,
         ],
         "jobUnique": "uniqg",
         "last_event": 2018-02-08T09:46:05.000Z,
+        "last_unload_time": 2018-02-08T09:34:05.000Z,
         "materialID": 88570,
         "partName": "part111",
         "signaledInspections": Array [
@@ -2604,11 +2614,13 @@ Object {
         "completedInspections": Object {
           "Insp1": 2018-02-02T10:04:10.000Z,
         },
+        "completed_inspect_time": 2018-02-02T10:04:10.000Z,
         "completed_procs": Array [
           1,
         ],
         "jobUnique": "uniqk",
         "last_event": 2018-02-02T10:04:10.000Z,
+        "last_unload_time": 2018-02-02T09:52:05.000Z,
         "materialID": 11231,
         "partName": "part111",
         "signaledInspections": Array [
@@ -3371,12 +3383,13 @@ Object {
         "completedInspections": Object {
           "Insp1": 2018-01-06T09:52:05.000Z,
         },
+        "completed_inspect_time": 2018-01-06T09:52:05.000Z,
         "completed_procs": Array [
           2,
         ],
-        "completed_time": 2018-01-06T09:40:05.000Z,
         "jobUnique": "uniqv",
         "last_event": 2018-01-06T09:52:05.000Z,
+        "last_unload_time": 2018-01-06T09:40:05.000Z,
         "materialID": 68845,
         "partName": "part222",
         "signaledInspections": Array [
@@ -3387,11 +3400,13 @@ Object {
         "completedInspections": Object {
           "Insp1": 2018-01-31T09:58:10.000Z,
         },
+        "completed_inspect_time": 2018-01-31T09:58:10.000Z,
         "completed_procs": Array [
           1,
         ],
         "jobUnique": "uniqy",
         "last_event": 2018-01-31T09:58:10.000Z,
+        "last_unload_time": 2018-01-31T09:46:05.000Z,
         "materialID": 47261,
         "partName": "part222",
         "signaledInspections": Array [
@@ -3403,11 +3418,13 @@ Object {
         "completedInspections": Object {
           "Insp1": 2018-02-02T10:04:10.000Z,
         },
+        "completed_inspect_time": 2018-02-02T10:04:10.000Z,
         "completed_procs": Array [
           1,
         ],
         "jobUnique": "uniqk",
         "last_event": 2018-02-02T10:04:10.000Z,
+        "last_unload_time": 2018-02-02T09:52:05.000Z,
         "materialID": 11231,
         "partName": "part111",
         "signaledInspections": Array [
