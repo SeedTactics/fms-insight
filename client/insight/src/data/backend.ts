@@ -51,8 +51,9 @@ export interface JobAPI {
   ): Promise<void>;
 }
 
-export interface ServerAPI {
+export interface FmsAPI {
   fMSInformation(): Promise<Readonly<api.IFMSInfo>>;
+  printLabel(materialId: number, process: number): Promise<void>;
 }
 
 export interface LogAPI {
@@ -95,7 +96,7 @@ export interface LogAPI {
 export const BackendHost = process.env.NODE_ENV === "production" ? undefined : "localhost:5000";
 const BackendUrl = BackendHost ? "http://" + BackendHost : undefined;
 
-export let ServerBackend: ServerAPI = new api.ServerClient(BackendUrl);
+export let FmsServerBackend: FmsAPI = new api.FmsClient(BackendUrl);
 export let JobsBackend: JobAPI = new api.JobsClient(BackendUrl);
 export let LogBackend: LogAPI = new api.LogClient(BackendUrl);
 let otherLogServers: ReadonlyArray<string> = [];
@@ -116,7 +117,7 @@ export function setUserToken(u: User) {
         : { headers: { Authorization: "Bearer " + token } }
     );
   }
-  ServerBackend = new api.ServerClient(BackendUrl, { fetch });
+  FmsServerBackend = new api.FmsClient(BackendUrl, { fetch });
   JobsBackend = new api.JobsClient(BackendUrl, { fetch });
   LogBackend = new api.LogClient(BackendUrl, { fetch });
   OtherLogBackends = otherLogServers.map(s => new api.LogClient(s, { fetch }));
@@ -130,15 +131,19 @@ export interface MockData {
 }
 
 function initMockBackend(data: Promise<MockData>) {
-  ServerBackend = {
+  FmsServerBackend = {
     fMSInformation() {
       return Promise.resolve({
         name: "mock",
         version: "1.0.0",
         requireScanAtWash: false,
         requireWorkorderBeforeAllowWashComplete: false,
-        additionalLogServers: []
+        additionalLogServers: [],
+        usingLabelPrinterForSerials: false
       });
+    },
+    printLabel() {
+      return Promise.resolve();
     }
   };
 
@@ -399,8 +404,8 @@ export function registerMockBackend() {
   initMockBackend(mockDataPromise);
 }
 
-export function registerBackend(log: LogAPI, job: JobAPI, server: ServerAPI) {
+export function registerBackend(log: LogAPI, job: JobAPI, fms: FmsAPI) {
   LogBackend = log;
   JobsBackend = job;
-  ServerBackend = server;
+  FmsServerBackend = fms;
 }

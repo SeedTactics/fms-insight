@@ -53,7 +53,8 @@ it("loads data", () => {
           version: "1.2.3.4",
           requireScanAtWash: false,
           requireWorkorderBeforeAllowWashComplete: true,
-          additionalLogServers: ["aaa"]
+          additionalLogServers: ["aaa"],
+          usingLabelPrinterForSerials: false
         },
         latestVersion: {
           version: "hello",
@@ -69,7 +70,8 @@ it("loads data", () => {
       version: "1.2.3.4",
       requireScanAtWash: false,
       requireWorkorderBeforeAllowWashComplete: true,
-      additionalLogServers: ["aaa"]
+      additionalLogServers: ["aaa"],
+      usingLabelPrinterForSerials: false
     },
     latestInstaller: {
       version: "hello",

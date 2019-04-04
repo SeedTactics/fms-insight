@@ -6,6 +6,211 @@
 //----------------------
 // ReSharper disable InconsistentNaming
 
+export class FmsClient {
+    private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
+    private baseUrl: string;
+    protected jsonParseReviver: (key: string, value: any) => any = undefined as any;
+
+    constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
+        this.http = http ? http : <any>window;
+        this.baseUrl = baseUrl ? baseUrl : "";
+    }
+
+    fMSInformation(): Promise<FMSInfo> {
+        let url_ = this.baseUrl + "/api/v1/fms/fms-information";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ = <RequestInit>{
+            method: "GET",
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processFMSInformation(_response);
+        });
+    }
+
+    protected processFMSInformation(response: Response): Promise<FMSInfo> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = resultData200 ? FMSInfo.fromJS(resultData200) : <any>null;
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<FMSInfo>(<any>null);
+    }
+
+    getSettings(id: string): Promise<string> {
+        let url_ = this.baseUrl + "/api/v1/fms/settings/{id}";
+        if (id === undefined || id === null)
+            throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id)); 
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ = <RequestInit>{
+            method: "GET",
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGetSettings(_response);
+        });
+    }
+
+    protected processGetSettings(response: Response): Promise<string> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = resultData200 !== undefined ? resultData200 : <any>null;
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<string>(<any>null);
+    }
+
+    setSetting(id: string, setting: string): Promise<void> {
+        let url_ = this.baseUrl + "/api/v1/fms/settings/{id}";
+        if (id === undefined || id === null)
+            throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id)); 
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(setting);
+
+        let options_ = <RequestInit>{
+            body: content_,
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json", 
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processSetSetting(_response);
+        });
+    }
+
+    protected processSetSetting(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(<any>null);
+    }
+
+    findInstructions(part: string, type: string, process: number, materialID: number): Promise<void> {
+        let url_ = this.baseUrl + "/api/v1/fms/find-instructions/{part}?";
+        if (part === undefined || part === null)
+            throw new Error("The parameter 'part' must be defined.");
+        url_ = url_.replace("{part}", encodeURIComponent("" + part)); 
+        if (type === undefined)
+            throw new Error("The parameter 'type' must be defined.");
+        else
+            url_ += "type=" + encodeURIComponent("" + type) + "&"; 
+        if (process !== undefined)
+            url_ += "process=" + encodeURIComponent("" + process) + "&"; 
+        if (materialID !== undefined)
+            url_ += "materialID=" + encodeURIComponent("" + materialID) + "&"; 
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ = <RequestInit>{
+            method: "GET",
+            headers: {
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processFindInstructions(_response);
+        });
+    }
+
+    protected processFindInstructions(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 302) {
+            return response.text().then((_responseText) => {
+            return throwException("A server error occurred.", status, _responseText, _headers);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            return throwException("A server error occurred.", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(<any>null);
+    }
+
+    printLabel(materialId: number, process: number): Promise<void> {
+        let url_ = this.baseUrl + "/api/v1/fms/print-label/{materialId}?";
+        if (materialId === undefined || materialId === null)
+            throw new Error("The parameter 'materialId' must be defined.");
+        url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId)); 
+        if (process === null)
+            throw new Error("The parameter 'process' cannot be null.");
+        else if (process !== undefined)
+            url_ += "process=" + encodeURIComponent("" + process) + "&"; 
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ = <RequestInit>{
+            method: "POST",
+            headers: {
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processPrintLabel(_response);
+        });
+    }
+
+    protected processPrintLabel(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            return throwException("A server error occurred.", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(<any>null);
+    }
+}
+
 export class JobsClient {
     private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
     private baseUrl: string;
@@ -1162,168 +1367,76 @@ export class LogClient {
     }
 }
 
-export class ServerClient {
-    private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
-    private baseUrl: string;
-    protected jsonParseReviver: (key: string, value: any) => any = undefined as any;
+export class FMSInfo implements IFMSInfo {
+    name?: string;
+    version?: string;
+    requireScanAtWash: boolean;
+    requireWorkorderBeforeAllowWashComplete: boolean;
+    additionalLogServers?: string[];
+    openIDConnectAuthority?: string;
+    openIDConnectClientId?: string;
+    usingLabelPrinterForSerials: boolean;
 
-    constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
-        this.http = http ? http : <any>window;
-        this.baseUrl = baseUrl ? baseUrl : "";
-    }
-
-    fMSInformation(): Promise<FMSInfo> {
-        let url_ = this.baseUrl + "/api/v1/server/fms-information";
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_ = <RequestInit>{
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
+    constructor(data?: IFMSInfo) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
             }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processFMSInformation(_response);
-        });
-    }
-
-    protected processFMSInformation(response: Response): Promise<FMSInfo> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = resultData200 ? FMSInfo.fromJS(resultData200) : <any>null;
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
         }
-        return Promise.resolve<FMSInfo>(<any>null);
     }
 
-    getSettings(id: string): Promise<string> {
-        let url_ = this.baseUrl + "/api/v1/server/settings/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id)); 
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_ = <RequestInit>{
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
+    init(data?: any) {
+        if (data) {
+            this.name = data["Name"];
+            this.version = data["Version"];
+            this.requireScanAtWash = data["RequireScanAtWash"];
+            this.requireWorkorderBeforeAllowWashComplete = data["RequireWorkorderBeforeAllowWashComplete"];
+            if (data["AdditionalLogServers"] && data["AdditionalLogServers"].constructor === Array) {
+                this.additionalLogServers = [];
+                for (let item of data["AdditionalLogServers"])
+                    this.additionalLogServers.push(item);
             }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processGetSettings(_response);
-        });
-    }
-
-    protected processGetSettings(response: Response): Promise<string> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = resultData200 !== undefined ? resultData200 : <any>null;
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
+            this.openIDConnectAuthority = data["OpenIDConnectAuthority"];
+            this.openIDConnectClientId = data["OpenIDConnectClientId"];
+            this.usingLabelPrinterForSerials = data["UsingLabelPrinterForSerials"];
         }
-        return Promise.resolve<string>(<any>null);
     }
 
-    setSetting(id: string, setting: string): Promise<void> {
-        let url_ = this.baseUrl + "/api/v1/server/settings/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id)); 
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(setting);
-
-        let options_ = <RequestInit>{
-            body: content_,
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json", 
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processSetSetting(_response);
-        });
+    static fromJS(data: any): FMSInfo {
+        data = typeof data === 'object' ? data : {};
+        let result = new FMSInfo();
+        result.init(data);
+        return result;
     }
 
-    protected processSetSetting(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            return;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["Name"] = this.name;
+        data["Version"] = this.version;
+        data["RequireScanAtWash"] = this.requireScanAtWash;
+        data["RequireWorkorderBeforeAllowWashComplete"] = this.requireWorkorderBeforeAllowWashComplete;
+        if (this.additionalLogServers && this.additionalLogServers.constructor === Array) {
+            data["AdditionalLogServers"] = [];
+            for (let item of this.additionalLogServers)
+                data["AdditionalLogServers"].push(item);
         }
-        return Promise.resolve<void>(<any>null);
+        data["OpenIDConnectAuthority"] = this.openIDConnectAuthority;
+        data["OpenIDConnectClientId"] = this.openIDConnectClientId;
+        data["UsingLabelPrinterForSerials"] = this.usingLabelPrinterForSerials;
+        return data; 
     }
+}
 
-    findInstructions(part: string, type: string, process: number, materialID: number): Promise<void> {
-        let url_ = this.baseUrl + "/api/v1/server/find-instructions/{part}?";
-        if (part === undefined || part === null)
-            throw new Error("The parameter 'part' must be defined.");
-        url_ = url_.replace("{part}", encodeURIComponent("" + part)); 
-        if (type === undefined)
-            throw new Error("The parameter 'type' must be defined.");
-        else
-            url_ += "type=" + encodeURIComponent("" + type) + "&"; 
-        if (process !== undefined)
-            url_ += "process=" + encodeURIComponent("" + process) + "&"; 
-        if (materialID !== undefined)
-            url_ += "materialID=" + encodeURIComponent("" + materialID) + "&"; 
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_ = <RequestInit>{
-            method: "GET",
-            headers: {
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processFindInstructions(_response);
-        });
-    }
-
-    protected processFindInstructions(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 302) {
-            return response.text().then((_responseText) => {
-            return throwException("A server error occurred.", status, _responseText, _headers);
-            });
-        } else if (status === 404) {
-            return response.text().then((_responseText) => {
-            return throwException("A server error occurred.", status, _responseText, _headers);
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(<any>null);
-    }
+export interface IFMSInfo {
+    name?: string;
+    version?: string;
+    requireScanAtWash: boolean;
+    requireWorkorderBeforeAllowWashComplete: boolean;
+    additionalLogServers?: string[];
+    openIDConnectAuthority?: string;
+    openIDConnectClientId?: string;
+    usingLabelPrinterForSerials: boolean;
 }
 
 export class HistoricData implements IHistoricData {
@@ -3622,74 +3735,6 @@ export interface INewWash {
     extraData?: { [key: string] : string; };
     elapsed: string;
     active: string;
-}
-
-export class FMSInfo implements IFMSInfo {
-    name?: string;
-    version?: string;
-    requireScanAtWash: boolean;
-    requireWorkorderBeforeAllowWashComplete: boolean;
-    additionalLogServers?: string[];
-    openIDConnectAuthority?: string;
-    openIDConnectClientId?: string;
-
-    constructor(data?: IFMSInfo) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            this.name = data["Name"];
-            this.version = data["Version"];
-            this.requireScanAtWash = data["RequireScanAtWash"];
-            this.requireWorkorderBeforeAllowWashComplete = data["RequireWorkorderBeforeAllowWashComplete"];
-            if (data["AdditionalLogServers"] && data["AdditionalLogServers"].constructor === Array) {
-                this.additionalLogServers = [];
-                for (let item of data["AdditionalLogServers"])
-                    this.additionalLogServers.push(item);
-            }
-            this.openIDConnectAuthority = data["OpenIDConnectAuthority"];
-            this.openIDConnectClientId = data["OpenIDConnectClientId"];
-        }
-    }
-
-    static fromJS(data: any): FMSInfo {
-        data = typeof data === 'object' ? data : {};
-        let result = new FMSInfo();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["Name"] = this.name;
-        data["Version"] = this.version;
-        data["RequireScanAtWash"] = this.requireScanAtWash;
-        data["RequireWorkorderBeforeAllowWashComplete"] = this.requireWorkorderBeforeAllowWashComplete;
-        if (this.additionalLogServers && this.additionalLogServers.constructor === Array) {
-            data["AdditionalLogServers"] = [];
-            for (let item of this.additionalLogServers)
-                data["AdditionalLogServers"].push(item);
-        }
-        data["OpenIDConnectAuthority"] = this.openIDConnectAuthority;
-        data["OpenIDConnectClientId"] = this.openIDConnectClientId;
-        return data; 
-    }
-}
-
-export interface IFMSInfo {
-    name?: string;
-    version?: string;
-    requireScanAtWash: boolean;
-    requireWorkorderBeforeAllowWashComplete: boolean;
-    additionalLogServers?: string[];
-    openIDConnectAuthority?: string;
-    openIDConnectClientId?: string;
 }
 
 export interface FileResponse {

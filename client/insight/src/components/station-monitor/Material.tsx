@@ -354,7 +354,7 @@ export function InstructionButton({
     (maxProc !== undefined ? "&process=" + maxProc.getOrElse(1).toString() : "");
   return (
     <Button
-      href={"/api/v1/server/find-instructions/" + encodeURIComponent(material.partName) + instrQuery}
+      href={"/api/v1/fms/find-instructions/" + encodeURIComponent(material.partName) + instrQuery}
       target="bms-instructions"
       color="primary"
     >

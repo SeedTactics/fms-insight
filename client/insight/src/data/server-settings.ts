@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { User, UserManager } from "oidc-client";
 import * as api from "./api";
-import { ServerBackend, setOtherLogBackends, setUserToken } from "./backend";
+import { FmsServerBackend, setOtherLogBackends, setUserToken } from "./backend";
 import { Pledge, PledgeStatus, ActionBeforeMiddleware } from "../store/middleware";
 import { openWebsocket } from "../store/websocket";
 
@@ -71,7 +71,7 @@ export const initial: State = {};
 let userManager: UserManager | undefined;
 
 async function loadInfo(): Promise<LoadReturn> {
-  const fmsInfo = await ServerBackend.fMSInformation();
+  const fmsInfo = await FmsServerBackend.fMSInformation();
 
   if (fmsInfo.additionalLogServers && fmsInfo.additionalLogServers.length > 0) {
     setOtherLogBackends(fmsInfo.additionalLogServers);
