@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as api from "./api";
 import { Pledge, PledgeStatus, PledgeToPromise } from "../store/middleware";
-import { JobsBackend, LogBackend, OtherLogBackends } from "./backend";
+import { JobsBackend, LogBackend, OtherLogBackends, FmsServerBackend } from "./backend";
 import { Vector, HashSet } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 import { MaterialSummary } from "./events.matsummary";
@@ -289,6 +289,13 @@ export function completeWash(d: CompleteWashData): PledgeToPromise<Action> {
       d.mat.jobUnique,
       d.mat.partName
     )
+  };
+}
+
+export function printLabel(matId: number): PledgeToPromise<Action> {
+  return {
+    type: ActionType.UpdateMaterial,
+    pledge: FmsServerBackend.printLabel(matId, 1).then(() => undefined)
   };
 }
 

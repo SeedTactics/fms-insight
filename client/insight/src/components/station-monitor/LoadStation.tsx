@@ -290,6 +290,8 @@ interface LoadMatDialogProps extends MaterialDialogProps {
   readonly openSelectWorkorder: (mat: matDetails.MaterialDetail) => void;
   readonly openSetSerial: () => void;
   readonly openForceInspection: () => void;
+  readonly usingLabelPrinter: boolean;
+  readonly printLabel: (matId: number) => void;
 }
 
 function instructionType(mat: matDetails.MaterialDetail): string {
@@ -308,6 +310,7 @@ function LoadMatDialog(props: LoadMatDialogProps) {
     }
     props.openSelectWorkorder(props.display_material);
   }
+  const displayMat = props.display_material;
   return (
     <MaterialDialog
       display_material={props.display_material}
@@ -322,6 +325,13 @@ function LoadMatDialog(props: LoadMatDialogProps) {
           <Button color="primary" onClick={props.openSetSerial}>
             {props.display_material && props.display_material.serial ? "Change Serial" : "Assign Serial"}
           </Button>
+          {displayMat && props.usingLabelPrinter ? (
+            <Button color="primary" onClick={() => props.printLabel(displayMat.materialID)}>
+              Print Label
+            </Button>
+          ) : (
+            undefined
+          )}
           <Button color="primary" onClick={props.openForceInspection}>
             Signal Inspection
           </Button>
@@ -336,7 +346,8 @@ function LoadMatDialog(props: LoadMatDialogProps) {
 
 const ConnectedMaterialDialog = connect(
   st => ({
-    display_material: st.MaterialDetails.material
+    display_material: st.MaterialDetails.material,
+    usingLabelPrinter: st.ServerSettings.fmsInfo ? st.ServerSettings.fmsInfo.usingLabelPrinterForSerials : false
   }),
   {
     onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
@@ -355,7 +366,8 @@ const ConnectedMaterialDialog = connect(
     openForceInspection: () => ({
       type: guiState.ActionType.SetInspTypeDialogOpen,
       open: true
-    })
+    }),
+    printLabel: matDetails.printLabel
   }
 )(LoadMatDialog);
 
