@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2019, John Lenz
 
 All rights reserved.
 
@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { addHours } from "date-fns";
+import { addDays } from "date-fns";
 import Grid from "@material-ui/core/Grid";
 import Button from "@material-ui/core/Button";
 import { DialogActions } from "@material-ui/core";
@@ -211,7 +211,8 @@ const extractRecentInspections = createSelector(
   (st: Store) => st.Events.last30.mat_summary.matsById,
   (st: Store) => st.Route.selected_insp_type,
   (mats: HashMap<number, MaterialSummaryAndCompletedData>, inspType: string | undefined): PartsForInspection => {
-    const cutoff = addHours(new Date(), -36);
+    const uninspectedCutoff = addDays(new Date(), -7);
+    const inspectedCutoff = addDays(new Date(), -1);
 
     function checkAllCompleted(m: MaterialSummaryAndCompletedData): boolean {
       return HashSet.ofIterable(m.signaledInspections)
@@ -224,14 +225,14 @@ const extractRecentInspections = createSelector(
         ? LazySeq.ofIterable(mats.valueIterable()).filter(
             m =>
               m.completed_time !== undefined &&
-              m.completed_time >= cutoff &&
+              m.completed_time >= uninspectedCutoff &&
               m.signaledInspections.length > 0 &&
               !checkAllCompleted(m)
           )
         : LazySeq.ofIterable(mats.valueIterable()).filter(
             m =>
               m.completed_time !== undefined &&
-              m.completed_time >= cutoff &&
+              m.completed_time >= uninspectedCutoff &&
               m.signaledInspections.indexOf(inspType) >= 0 &&
               (m.completedInspections || {})[inspType] === undefined
           )
@@ -246,14 +247,14 @@ const extractRecentInspections = createSelector(
         ? LazySeq.ofIterable(mats.valueIterable()).filter(
             m =>
               m.completed_time !== undefined &&
-              m.completed_time >= cutoff &&
+              m.completed_time >= inspectedCutoff &&
               m.signaledInspections.length > 0 &&
               checkAllCompleted(m)
           )
         : LazySeq.ofIterable(mats.valueIterable()).filter(
             m =>
               m.completed_time !== undefined &&
-              m.completed_time >= cutoff &&
+              m.completed_time >= inspectedCutoff &&
               m.signaledInspections.indexOf(inspType) >= 0 &&
               (m.completedInspections || {})[inspType] !== undefined
           )
