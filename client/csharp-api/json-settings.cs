@@ -56,7 +56,7 @@ namespace BlackMaple.FMSInsight.API
     }
   }
 
-  public partial class ServerClient
+  public partial class FmsClient
   {
     partial void UpdateJsonSerializerSettings(Newtonsoft.Json.JsonSerializerSettings settings)
     {
