@@ -63,6 +63,72 @@ server lives in
 [server/debug-mock](https://bitbucket.org/blackmaple/fms-insight/src/default/server/debug-mock/).
 There is a VSCode task for launching the debug mock server.
 
+# Custom Plugins
+
+FMS Insight supports customized plugins. Actually, FMS Insight itself is a library so the "plugin"
+is an executable project which sets up any customization and then calls into the FMS Insight library.
+
+#### Project Structure
+
+To create a plugin, start a new executable C# project and
+reference the `BlackMaple.MachineFramework` nuget package from [AppVeyor](https://ci.appveyor.com/project/wuzzeb/fms-insight).
+To do so, create a file called `NuGet.config` with the following contents
+
+```
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <packageSources>
+    <add key="Appveyor" value="https://ci.appveyor.com/nuget/fms-insight-xlcclvt7hpwp" />
+  </packageSources>
+</configuration>
+```
+
+Then in the `.csproj` file, add references for
+
+```
+<PackageReference Include="BlackMaple.MachineFramework" Version="####" />
+<PackageReference Include="BlackMaple.FMSInsight.Mazak" Version="####" />
+```
+
+Where the `####` are filled in with the latest version from the Appveyor build (on the Appveyor page, click on
+the artifacts tab to see the nuget versions).
+
+#### Project Code
+
+Create a file `Main.cs` with code such as the following
+
+```
+using System;
+
+namespace MyCompanyName.Insight
+{
+  public static class InsightMain
+  {
+    public static void Main()
+    {
+      BlackMaple.MachineFramework.Program.Run(true, (cfg, st) =>
+      {
+        var Mazak = new MazakMachineInterface.MazakBackend(cfg, st);
+        // Attach to events in Mazak here
+        return new BlackMaple.MachineFramework.FMSImplementation()
+        {
+          Name = "MyCompanyNameInsight",
+          Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
+          Backend = Mazak,
+        };
+      });
+    }
+  }
+}
+```
+
+The `FMSImplementation` data structure is defined in [BackendInterfaces.cs](https://bitbucket.org/blackmaple/fms-insight/src/default/server/lib/BlackMaple.MachineFramework/BackendInterfaces.cs). It contains properties and settings that can be overridden to add customized
+behavior to FMS Insight. Also, the `MazakBackend` contains events that can be registered to respond to various events.
+
+For example, to implement customized part marking, a class can be implemented which attaches to the events in the `IMazakLogReader` interface.
+When a Mazak Rotary Table Swap event occurs, the code can output a EIA program to perform the mark and also record the generated serial
+in the FMS Insight Log.
+
 # Data and API
 
 The data and API is diveded into two main sections: event log data and jobs.

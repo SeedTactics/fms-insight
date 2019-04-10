@@ -38,68 +38,80 @@ about each cell controller integration.
 
 The installer will create a link in the start menu called "FMS Insight". When
 clicked, this link will open the FMS Insight client in the default web
-browser. FMS Insight works with any recent version of Firefox, Chrome, or
-Edge, so if Internet Explorer is the default browser, the address should be
-opened in Firefox, Chrome, or Edge.
+browser. FMS Insight works with any recent version of Firefox, Chrome,
+Edge, Android, or iOS browsers (Internet Explorer is too old to work properly).
 
-Instead, the address [http://localhost:5000](http://localhost:5000) can be
-entered into the location bar of Firefox, Chrome, or Edge to open the FMS
-Insight client page. Also, this address can be set as the homepage of
-Firefox, Chrome, or Edge so that it opens automatically when the browser
-starts.
+The address `http://<ip address of cell controller>:5000` can be
+entered into the location bar of the browser on any computer in the factory
+(which can see the cell controller through the firewall). We suggest that
+the page is bookmarked or set as the home page of the browser.
 
-## Day-to-day monitoring of the cell
+## Project Outline
 
-Many people such as supervisors, engineers, quality control, and management
-throughout the factory interact with the cell in different ways. Thus, FMS
-Insight provides specific pages targeted at specific users which display
-relevant information about the day-to-day operation of the cell. [Select a
-mode](client-launch.md) to view reports and ensure the cell runs well.
+##### Stage 1: Day-to-day monitoring of the cell
 
-## Implement station monitoring
+Once installed, the day-to-day monitoring pages for
+[supervisors](client-operations.md) and [engineering](client-engineering.md)
+will be updated with data about the past week of operation. Also, the
+[flexibility analysis](client-flexibility-analysis.md) page will start
+collecting data to help with monthly review.
 
-The [stations](client-station-monitor.md) pages in the client are designed to be viewed
-on the factory floor by operators throughout the processes. The station
-monitor screens are designed with touch-screens in mind, so we suggest either
-mounting tablets or small touchscreen computers at various stations on the
-factory floor. At these stations, the operator can view instructions and
-details about the current operation, parts can be signaled for inspection,
-marked with a serial, and the operator can record the completion of an
-inspection or wash. Barcode readers and scanners can be attached to make
-operator data entry a breeze.
+##### Stage 2: Part Marking
 
-## Automatic job download
+To unlock the [full potential](material-tracking.md) of the remaining FMS Insight pages, each part
+must be marked with a unique serial and that serial recorded in the FMS
+Insight log. Each project is unique so this must be done with a
+custom-developed plugin. Typically, marking is done inside the machine with a
+special tool or via a label-printer at the load station.
+You can [contact us](https://www.seedtactics.com/contact) to obtain a quote
+for us to develop a customized part-marking plugin. Alternatively, you can
+develop the plugin yourself; the [FMS Insight source
+code](https://bitbucket.org/blackmaple/fms-insight/src) contains some
+documentation on building plugins.
+
+Once part-marking is being used, the [station monitor
+pages](client-station-monitor.md) will start working and can be used by
+operators to help operate the cell.
+Barcode readers and scanners can be attached to each computer on the factory floor
+to read the marked serial.
+
+##### Stage 3: Operator Instructions
+
+[Operator Instructions](part-instructions.md) can be created for each part and station
+in the factory. These instruction files can then be opened by the operator by
+clicking on a card on the [station monitor page](client-station-monitor.md).
+
+##### Stage 4: ERP to Cell Controller Automatic Job Download
 
 FMS Insight provides the conduit to automatically create jobs and schedules
-in the cell controller. External software is needed to create the jobs,
-prioritize the work, and make sure no traffic jams occur (too much work for
-too few machines) and that the cell stays efficient (enough jobs are created
-to keep the machines busy). Despite requiring extra software, automatic job
-download provides a large benefit in station utilization and lean
-manufacturing when running a large variety of parts with variable part
-quantities.
+in the cell controller. External software is needed to read data from
+the ERP and send it to the cell controller.
 
 One option is paying for our [SeedTactic:
-OrderLink](https://www.seedtactics.com/products/seedtactic-orderlink)
+OrderLink](https://www.seedtactics.com/features#seedtactic-orderlink)
 software which uses AI to automatically schedule a collection of orders and
 due dates using a customized flexibility plan. _OrderLink_ will translate ERP
 orders to the format expected by FMS Insight without custom programming.
-Alternatively, if daily scheduling takes place directly in the ERP system,
-some custom software can be created to send the jobs and schedules from the
-ERP system into FMS Insight; FMS Insight uses HTTP and JSON so the jobs just
-need to be posted to FMS Insight in the correct format. More information is
-available in the [creating jobs and schedules](creating-jobs.md)
-documentation.
+Alternatively, you can develop some custom software to send the jobs and schedules from the
+ERP system into FMS Insight, see the [creating jobs and schedules](creating-jobs.md)
+documentation for more details.
 
-## ERP Data Reports
+##### Stage 5: Quality and Inspection Plan
 
-While the FMS Insight client provides some efficiency and cost reports, these
-are useful for focusing on the cell operations only. FMS Insight does not
-have the whole picture. FMS Insight provides the log data about the cell over
-HTTP in the JSON format to easily allow the ERP software to integrate
-information about the cell into its own reports. A preview of this data can
-be obtained by vising the "Data Export" tab in the FMS Insight client. If
-each material is assigned a workorder, FMS Insight will also provide a
-workorder report in JSON over HTTP for even easier integration into the ERP
-system. More information is available in the [workorder
-reporting](workorder-report.md) documentation.
+Jobs downloaded into the cell controller from the ERP can optionally contain
+an inspection plan; this includes the frequency of inspection, how separate
+paths are tracked, and other data. Once inspections are included into the job
+data, FMS Insight will automatically signal parts for inspection based on the
+frequencies from the job and then display the inspections on the [station
+monitor pages](client-station-monitor.md). Also, the [quality
+monitoring](client-quality.md) page will be filled with data on the
+inspections.
+
+##### Stage 6: ERP Workorder Reports
+
+Jobs downloaded into the cell controller from the ERP can optionally contain
+a list of workorders. On the [station monitor pages](client-station-monitor.md),
+the operator can assign each completed part to a workorder. FMS Insight then
+provides a [workorder report](workorder-report.md) for each workorder. This
+workorder report should be sent back into the ERP using custom software or
+our _OrderLink_ product.
