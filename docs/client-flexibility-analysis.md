@@ -10,6 +10,11 @@ decide on potential improvements. The [improve an FMS](improve-fms.md)
 documentation goes into more details about how to make the most of these
 efficiency calculations.
 
+![Screenshot of choosing analysis month](assets/insight-choose-analysis-month.png)
+
+At the top of the page are two radio buttons allowing you to analyize either the last
+30 days or a specific calendar month.
+
 # Efficiency
 
 The best metric for continuous improvement of an FMS is not cost/piece but
@@ -23,7 +28,7 @@ of the cell to improve the performance.
 
 ## Station Cycles
 
-![Screenshot of station cycle chart](assets/insight-station-cycle.jpg)
+![Screenshot of station cycle chart](assets/insight-analysis-cycles.png)
 
 The station cycle chart displays a point for each load and machine cycle. The
 cycles can be filtered by a specific part, a specific machine, a specific
@@ -35,8 +40,7 @@ legend at the bottom shows which colors correspond to which stations, and by
 clicking on stations in the legend you can enable or disable the viewing of
 specific stations. By clicking on a point you can obtain details about that
 specific cycle in a tooltip and open the material card for the cycle.
-Finally, the chart can be zoomed by clicking and dragging or by manually
-setting the zoom range via the button in the bottom-right corner.
+Finally, the chart can be zoomed by clicking and dragging.
 
 The example screenshot above is an example of a part program which might need
 improvement. We see that most of the machine cycles are fine at around 40
@@ -53,9 +57,15 @@ and potentially making operational changes. By periodically viewing this
 cycle chart for each part, you can get a feel for your specific system
 and iteratively detect and fix problems.
 
+![Screenshot of station cycle table](assets/insight-analysis-cycle-table.png)
+
+The cycles can be toggled to display the raw data in a table instead of a chart.
+The table can be filtered, sorted, and restricted to a specific date range. The resulting
+raw data can be copied to the clipboard to be pasted into a spreadsheet for further analysis.
+
 ## Pallet Cycles
 
-![Screenshot of pallet cycle chart](assets/insight-pallet-cycles.jpg)
+![Screenshot of pallet cycle chart](assets/insight-analysis-pallets.png)
 
 Select a pallet from the combo box in the top-right. Once selected, all
 pallet cycles are displayed. The x-axis is the days of the month and the
@@ -68,9 +78,16 @@ Similarly to the station cycle chart, the pallet cycle chart can be zoomed by
 clicking and dragging or the zoom range can be manually set via the button in
 the bottom-right.
 
+The pallet cycle chart is best used to determine if the cell is running lean
+and validate the [daily allocation and scheduling
+technique](https://www.seedtactics.com/docs/concepts/preventing-traffic-jams)
+to determine if there are traffic jams occuring in the pallets. In a lean,
+healthy cell, most pallet cycles should be low and reasonably consistent. If
+pallet cycle times vary wildly, there is likely taffic jams or other flow problems.
+
 ## Station OEE
 
-![Screenshot of Station OEE Heatmap](assets/insight-station-oee.jpg)
+![Screenshot of Station OEE Heatmap](assets/insight-analysis-station-oee.png)
 
 The Station OEE heatmap shows the station overall equipment effectiveness (OEE)
 over the month. On the x-axis are the days of the month and on the y-axis are
@@ -83,9 +100,17 @@ expected cycle time.) For each grid cell in the chart, the OEE percentage is dra
 with a color with darker colors higher OEE and lighter colors lower OEE. A grid cell
 can be moused over to obtain extra information in a tooltip.
 
+The Station OEE heatmap helps visualize how balanced the machines were loaded over the month.
+We want to see all the machines consitantly roughly the same color. If you see that
+a machine has a lighter color for a couple days, that indiciates either the machine was down or
+that the daily mix for that day did not have enough flexibility. You should then consider
+picking a part and extending that part to run on the lightly loaded machine. To find such a
+part, you can use the part production chart below to see which part mix was run on this day
+to help find a part that might be changed to run on the lightly loaded machine.
+
 ## Part Production
 
-![Screenshot of Part Production Heatmap](assets/insight-part-production.jpg)
+![Screenshot of Part Production Heatmap](assets/insight-analysis-part-completed.png)
 
 The Part Production heatmap shows the distribution of completed parts over
 the month. On the x-axis are the days of the month and on the y-axis are the
@@ -95,25 +120,22 @@ is drawn as a color with darker colors higher counts and lighter colors lower
 counts. A grid cell can be moused over to obtain extra information in a
 tooltip.
 
-The part production and station OEE heatmaps are useful to brainstorm potential
-flexibility changes. For example, the above station OEE screenshot shows that
-machines 3 and 4 have higher OEE than machines 1 and 2. As long as station cycles
-are stable around their expected time, this likely reflects that not enough pallets
-and parts are routed to machines 1 and 2. Looking at the part production heatmap,
-some of the darker parts might be candidates to be expanded to include machines 1 and 2.
-Indeed, in the scenario which produced the screenshot, part `yyy` was routed only
-to machines 3 and 4 and we can see from the part heatmap that it has large production.
-We could therefore brainstorm that part `yyy` could be expanded to also include machine 2.
+The part production OEE heatmap is mainly useful to visualize the part mix as it
+varies throughout the month, by comparing the relative color shades. Also, it can help
+find a part to change move onto a lightly loaded machine. For example, consider that a machine
+is found to be lightly loaded via the station OEE heatmap. That same day can be viewed on
+the part production OEE heatmap and the darkest colored part was the highest run that day and
+could be considered to be extended to be run on the lightly loaded machine.
 
 Note that these heatmaps should only be used to brainstorm ideas. We would still
 to investigate if expanding `yyy` to include machine 2 would increase overall
 system performance. Are there enough pallets? How many extra inspections are required?
-Will this cause a traffic jam? These questions can be answered using simulation,
+Will this cause a traffic jam? These questions can be answered using simulation, _SeedTactic: Designer_,
 Little's Law, or a tool such as our [SeedTactic: Planning](https://www.seedtactics.com/products/seedtactic-planning).
 
 ## Inspections
 
-![Screenshot of Inspection Sankey](assets/insight-inspection-sankey.jpg)
+![Screenshot of Inspection Sankey](assets/insight-analysis-sankey.png)
 
 The inspections chart shows a Sankey diagram of the material paths and
 inspection results. First, select an inspection type and then select a part
@@ -126,10 +148,10 @@ of parts which took that path, with parts "flowing" from left to right.
 Any link can be moused over to obtain additional information in a tooltip.
 
 For example, in the above screenshot, one path is to use pallet 1 and machine
-1 (P1,M1) for the first sequence and then pallet 1 and machine 2 for the
-second sequence (P1,M2). This corresponds to the large top link between `raw`
-and `P1,M1` and then the downward-curved link between "P1,M1" on the left and
-`P1,M2` on the right. The path is then further split with uninspected parts
+2 (P1,M2) for the first sequence and then pallet 1 and machine 1 for the
+second sequence (P1,M1). This corresponds to the large top link between `raw`
+and `P1,M2` and then the downward-curved link between `P1,M2` on the left and
+`P1,M1` on the right. The path is then further split with uninspected parts
 and successfully inspected parts.
 
 The width of these paths shows the relative count of parts taking these
@@ -158,7 +180,7 @@ in your ERP taking into account all factors.
 Cost/piece is not a great metric for improving the cell's operations since
 focusing only on cost/piece risks introducing quality problems and OEE
 reduction when shared costs are not correctly accounted. Instead, the
-[efficiency tab](client-efficiency.md) should be used to improve the system.
+efficiency tab should be used to improve the system.
 
 ## Calculations
 
@@ -197,7 +219,7 @@ method does this by using planned cycle times to divide the total machine cost (
 active and idle time) among the parts produced during the month based on their weights. A quick
 calculation of machine utilization gives `(1200 + 1000) / (24*30*4) = 76%` use. The above method
 divides the 24% of the time the machine is not in use among aaa and bbb based on their percentages
-of planned use. Attempting to identify OEE problems are better addressed using [bottleneck and utilization metrics](client-efficiency.md).
+of planned use. Attempting to identify OEE problems are better addressed using the efficiency tab.
 
 ## Cost Inputs
 

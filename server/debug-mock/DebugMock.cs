@@ -277,6 +277,11 @@ namespace DebugMachineWatchApiServer
         }
         else
         {
+          if (e.LogType == LogType.InspectionResult && e.Material.Any(m => m.MaterialID == 2965))
+          {
+            // ignore inspection complete
+            continue;
+          }
           var e2 = new BlackMaple.MachineWatchInterface.LogEntry(
               cntr: e.Counter,
               mat: e.Material,

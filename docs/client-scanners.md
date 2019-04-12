@@ -11,6 +11,13 @@ the dialog for this serial will be opened to show the material details, log of e
 complete the inspection. (The exact same dialog which is opened if you click on a piece of material on the screen.)
 In this way, the scanner can be used to more quickly locate the material card and open the details about it.
 
+## Manual Serial Entry
+
+A serial can be entered via the keyboard by clicking on the magnifying glass icon in the top-right of the page.
+A dialog will open allowing you to enter a serial and then the material details for that serial will be loaded.
+
+![Screenshot of toolbar buttons](assets/insight-toolbar-btns.png).
+
 ## Configuring a handheld scanner
 
 Handheld USB or bluetooth scanners are presented to the system as keyboards.
@@ -37,10 +44,10 @@ as the postfix key.
 On devices with attached cameras such as tablets or phones, the camera can be used to
 scan a QR-code. Similar to above, the contents of the QR-code up to the first comma
 are used as the serial. To scan a QR-code, there is a camera button on the
-station monitor toolbar. Clicking this button will open a dialog showing the camera
+toolbar in the top-right. Clicking this button will open a dialog showing the camera
 and will close when a QR-code is detected.
 
-![Screenshot of station monitor toolbar](/docs/assets/insight-station-monitor-toolbar.jpg)
+![Screenshot of toolbar buttons](assets/insight-toolbar-btns.png)
 
 Due to browser security restrictions, the camera is only available to
 web pages when the location is `localhost` or secure https SSL is used. Thus if you

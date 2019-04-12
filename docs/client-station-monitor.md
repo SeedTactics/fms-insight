@@ -24,7 +24,7 @@ as the homepage for the browser.
 
 ## Load Station
 
-![Screenshot of Load Station screen](/docs/assets/insight-load-station.jpg)
+![Screenshot of Load Station screen](assets/insight-load-station.png)
 
 On the top toolbar, the specific load station number is set. Insight will display
 only regions relevant to this specific load station, including the raw material region,
@@ -35,18 +35,18 @@ in-process queues have their own computer with a dedicated display, but for queu
 associated with the load station such as a transfer stand, the virtual whiteboard region for
 the queue can be displayed along with the pallet regions.
 
-![Screenshot of Load Station Material Dialog](/docs/assets/insight-loadstation-details.jpg)
+![Screenshot of Load Station Material Dialog](assets/insight-load-station-details.png)
 
-When a material sticky note is clicked or tapped, a dialog will open with a log of events for the
-piece of material. In the dialog, a serial can be entered or changed, the part can be
-marked for inspection, assigned to a workorder, and [load instructions](part-instructions.md) can
-be opened.
-An attached [barcode scanner](client-scanners.md) can also be used to open the material
-dialog.
+When a material sticky note is clicked or tapped, a dialog will open with a
+log of events for the piece of material. The dialog can also be opened by
+[using a scanner](client-scanners.md) or manually entering a serial via the
+magnifying glass button on the toolbar. In the dialog, a serial can be
+entered or changed, the part can be marked for inspection, assigned to a
+workorder, and [load instructions](part-instructions.md) can be opened.
 
 ## Queues
 
-![Screenshot of Queues Screen](/docs/assets/insight-queues.jpg)
+![Screenshot of Queues Screen](assets/insight-queues.png)
 
 The queues screen shows the material currently inside one or more queues. On the top toolbar,
 one or more queues can be selected and the virtual whiteboard regions for the selected queues
@@ -55,7 +55,7 @@ To add new material to the queue, click the plus icon button in the top-right of
 virtual whiteboard region. This will bring up a dialog allowing you to enter a serial,
 scan a barcode, or manually select a job for the added material.
 
-![Screenshot of Queue Material Dialog](/docs/assets/insight-queue-details.jpg)
+![Screenshot of Queue Material Dialog](assets/insight-queue-details.png)
 
 By clicking or tapping on a material sticky note, a dialog will open with
 details about the specific piece of material. The dialog will have a button
@@ -65,15 +65,14 @@ dialog.
 
 ## Inspection
 
-![Screenshot of Inspection Station screen](/docs/assets/insight-inspection-monitor.jpg)
+![Screenshot of Inspection Station screen](assets/insight-inspection.png)
 
 The inspection screen shows completed material that has been marked for inspection. On the top
 toolbar, a specific inspection type can be selected or all material for inspection can be shown.
 On the left is the virtual whiteboard region for completed but not yet inspected material and on
-the right is material which has completed inspections. Insight only displays material completed
-within the last 36 hours.
+the right is material which has completed inspections.
 
-![Screenshot of Inspection Station Material Dialog](/docs/assets/insight-inspection-details.jpg)
+![Screenshot of Inspection Station Material Dialog](assets/insight-inspection-details.png)
 
 When a material sticky note is clicked or tapped, a dialog will open with a
 log of events for the piece of material. If a specific inspection type is
@@ -86,17 +85,17 @@ Finally, the operator can open [inspection instructions](part-instructions.md).
 
 An attached [barcode scanner](client-scanners.md) can also be used to open the material
 dialog. This allows viewing details and marking as inspected or uninspected
-any part by scanned serial (even if the part is not on the screen because more than 36 hours has passed).
+any part by scanned serial (even if the part is not on the screen).
 
 ## Wash
 
-![Screenshot of Wash Screen](/docs/assets/insight-wash.jpg)
+![Screenshot of Wash Screen](assets/insight-wash.png)
 
 The wash screen shows completed material from the last 36 hours. On the left
 is the virtual whiteboard region for completed but not yet washed material
 and on the right is material which has completed final wash.
 
-![Screenshot of Wash Material Details](/docs/assets/insight-wash-details.jpg)
+![Screenshot of Wash Material Details](assets/insight-wash-details.png)
 
 When a material sticky note is clicked or tapped, a dialog will open with a
 log of events for the piece of material. There is a button to mark a piece of
