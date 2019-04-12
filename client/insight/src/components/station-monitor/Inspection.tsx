@@ -183,7 +183,13 @@ function Inspection(props: InspectionProps) {
           <Grid item xs={12} md={6}>
             <WhiteboardRegion label="Parts to Inspect" borderRight borderBottom>
               {props.recent_inspections.waiting_to_inspect.map((m, idx) => (
-                <MatSummary key={idx} mat={m} onOpen={props.openMat} hideInspectionIcon />
+                <MatSummary
+                  key={idx}
+                  mat={m}
+                  onOpen={props.openMat}
+                  focusInspectionType={props.focusInspectionType}
+                  hideInspectionIcon
+                />
               ))}
             </WhiteboardRegion>
           </Grid>
