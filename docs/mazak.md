@@ -31,7 +31,8 @@ and then specify the same folder in the FMS Insight server configuration file.
 
 ## Load Instructions
 
-Finally, one parameter must be changed. Open the Mazak Palletech software, go to the parameter
+On Version E and MazakWeb, one parameter must be changed. If you are using Mazak Smooth PMC, this step can be
+skipped! Open the Mazak Palletech software, go to the parameter
 edit screen, select `X`, and scroll to the setting `X-31`. Set the `X-31` setting from 0 to 1.
 This setting will cause CSV files describing the current load and unload operation at the load
 station to be output to the `c:\Mazak\FMS\LDS` directory. FMS Insight monitors this directory
