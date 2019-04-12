@@ -98,18 +98,15 @@ directly, we suggest the following setup:
 
 - (Version E And Web) For Mazak Web or Mazak Version E, on the Mazak cell controller
   create a network share of the `c:\Mazak\NFMS\DB`
-  directory. On the FMS Insight Server computer, create a mapped drive (e.g.
-  `Z:`) for the share so that the FMS Insight Server computer can access the
-  DBs. On the FMS Insight server computer, edit
+  directory. On the FMS Insight server computer, edit
   [config.ini](server-config.md) and change two settings in the Mazak section. First, set
-  `VersionE = true` and then set `Database Path = Z:\` (or whichever mapped
-  drive letter you chose).
+  `VersionE = true` and then set `Database Path = \\<ip address of cell controller>\DBshare`
+  (or whatever share name you chose).
 
 - (Web and Smooth PMC) For Mazak Web or Mazak Smooth PMC, on the Mazak cell controller
-  create a network share of the `c:\Mazak\FMS\Log` directory. On the FMS Insight server
-  computer, create a mapped drive (e.g. `Y:`) for the share so that the FMS Insight Server
-  computer can access the Mazak log files. On the FMS Insight server computer, edit
-  [config.ini](server-config.md) and set `Log CSV Path = Y:\`.
+  create a network share of the `c:\Mazak\FMS\Log` directory. On the FMS Insight server computer, edit
+  [config.ini](server-config.md) and set `Log CSV Path = \\<ip address of cell controller\MazakLog`
+  (or whatever share name you chose).
 
 - (Smooth PMC) Mazak Smooth PMC uses SQL Server which FMS Insight can access over the network.
   Edit the [config.ini](server-config.md) file and set the `SQL ConnectionString` setting
