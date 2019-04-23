@@ -19,7 +19,7 @@ Insight databases are not required.
 
 Despite this, the FMS Insight log database does contain a wealth of
 historical data that is helpful for [analyzing the
-cell](client-efficiency.md) as well as the production history for each
+cell](client-flexibility-analysis.md) as well as the production history for each
 serial. Thus the SQLite databases can be periodically backed up to maintain
 an archive of historical log data. The _FMS Insight Backup Viewer_ program is
 a desktop application which allows you to open the SQLite database file
