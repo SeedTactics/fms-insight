@@ -62,6 +62,7 @@ app.on("ready", () => {
     }
   });
   background.loadFile("dist/background.html");
+  //background.webContents.openDevTools();
 
   Menu.setApplicationMenu(null);
 
@@ -79,6 +80,7 @@ app.on("ready", () => {
   mainWindow.on("closed", () => {
     app.quit();
   });
+  //mainWindow.webContents.openDevTools();
 
   ipcMain.on("to-background", (_, arg) => {
     background.webContents.send("background-request", arg);
