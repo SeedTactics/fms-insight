@@ -148,7 +148,7 @@ class AddSerialFound extends React.PureComponent<AddSerialFoundProps, AddSerialF
               this.props.addMat({
                 materialId: this.props.display_material.materialID,
                 queue: queue || "",
-                queuePosition: 0
+                queuePosition: -1
               })
             }
           >
@@ -270,7 +270,7 @@ class AddNewMaterialBody extends React.PureComponent<AddNewMaterialProps, AddNew
       jobUnique: this.state.selected_job.unique,
       lastCompletedProcess: this.state.selected_last_proc,
       queue: queue,
-      queuePosition: 0,
+      queuePosition: -1,
       serial: this.props.not_found_serial
     });
 
