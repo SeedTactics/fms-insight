@@ -107,6 +107,116 @@ const cycleChartStyles = createStyles({
   }
 });
 
+// https://personal.sron.nl/~pault/
+const paulTolSeqColors = [
+  ["4477aa"],
+  ["4477aa", "cc6677"],
+  ["4477aa", "ddcc77", "cc6677"],
+  ["4477aa", "117733", "ddcc77", "cc6677"],
+  ["332288", "88ccee", "117733", "ddcc77", "cc6677"],
+  ["332288", "88ccee", "117733", "ddcc77", "cc6677", "aa4499"],
+  ["332288", "88ccee", "44aa99", "117733", "ddcc77", "cc6677", "aa4499"],
+  ["332288", "88ccee", "44aa99", "117733", "999933", "ddcc77", "cc6677", "aa4499"],
+  ["332288", "88ccee", "44aa99", "117733", "999933", "ddcc77", "cc6677", "882255", "aa4499"],
+  ["332288", "88ccee", "44aa99", "117733", "999933", "ddcc77", "661100", "cc6677", "882255", "aa4499"],
+  ["332288", "6699cc", "88ccee", "44aa99", "117733", "999933", "ddcc77", "661100", "cc6677", "882255", "aa4499"],
+  [
+    "332288",
+    "6699cc",
+    "88ccee",
+    "44aa99",
+    "117733",
+    "999933",
+    "ddcc77",
+    "661100",
+    "cc6677",
+    "aa4466",
+    "882255",
+    "aa4499"
+  ]
+];
+
+function paulTolColor(idx: number, count: number): string {
+  return "#" + paulTolSeqColors[count - 1][idx];
+}
+
+// https://github.com/google/palette.js/blob/master/palette.js
+const mpn65Colors = [
+  "ff0029",
+  "377eb8",
+  "66a61e",
+  "984ea3",
+  "00d2d5",
+  "ff7f00",
+  "af8d00",
+  "7f80cd",
+  "b3e900",
+  "c42e60",
+  "a65628",
+  "f781bf",
+  "8dd3c7",
+  "bebada",
+  "fb8072",
+  "80b1d3",
+  "fdb462",
+  "fccde5",
+  "bc80bd",
+  "ffed6f",
+  "c4eaff",
+  "cf8c00",
+  "1b9e77",
+  "d95f02",
+  "e7298a",
+  "e6ab02",
+  "a6761d",
+  "0097ff",
+  "00d067",
+  "000000",
+  "252525",
+  "525252",
+  "737373",
+  "969696",
+  "bdbdbd",
+  "f43600",
+  "4ba93b",
+  "5779bb",
+  "927acc",
+  "97ee3f",
+  "bf3947",
+  "9f5b00",
+  "f48758",
+  "8caed6",
+  "f2b94f",
+  "eff26e",
+  "e43872",
+  "d9b100",
+  "9d7a00",
+  "698cff",
+  "d9d9d9",
+  "00d27e",
+  "d06800",
+  "009f82",
+  "c49200",
+  "cbe8ff",
+  "fecddf",
+  "c27eb6",
+  "8cd2ce",
+  "c4b8d9",
+  "f883b0",
+  "a49100",
+  "f48800",
+  "27d0df",
+  "a04a9b"
+];
+
+function seriesColor(idx: number, count: number): string {
+  if (count <= 12) {
+    return paulTolColor(idx, count);
+  } else {
+    return mpn65Colors[idx % mpn65Colors.length];
+  }
+}
+
 export const CycleChart = withStyles(cycleChartStyles)(
   class CycleChartWithStyles extends React.PureComponent<
     CycleChartProps & WithStyles<typeof cycleChartStyles>,
@@ -226,9 +336,10 @@ export const CycleChart = withStyles(cycleChartStyles)(
             ) : (
               undefined
             )}
-            {seriesNames.map(series => (
+            {seriesNames.map((series, idx) => (
               <MarkSeries
                 key={series}
+                color={seriesColor(idx, seriesNames.length)}
                 data={this.props.points.get(series).getOrElse([])}
                 onValueClick={this.state.disabled_series[series] ? undefined : this.setTooltip(series)}
                 {...(this.state.disabled_series[series] ? { opacity: 0.2 } : null)}
@@ -246,7 +357,11 @@ export const CycleChart = withStyles(cycleChartStyles)(
               {seriesNames.length > 1 ? (
                 <DiscreteColorLegend
                   orientation="horizontal"
-                  items={seriesNames.map(s => ({ title: s, disabled: this.state.disabled_series[s] }))}
+                  items={seriesNames.map((s, idx) => ({
+                    title: s,
+                    color: seriesColor(idx, seriesNames.length),
+                    disabled: this.state.disabled_series[s]
+                  }))}
                   onItemClick={this.toggleSeries}
                 />
               ) : (
