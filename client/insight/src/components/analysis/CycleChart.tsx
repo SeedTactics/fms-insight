@@ -108,7 +108,7 @@ const cycleChartStyles = createStyles({
 });
 
 // https://personal.sron.nl/~pault/
-const paulTolSeqColors = [
+const paulTolQualitativeColors = [
   ["4477aa"],
   ["4477aa", "cc6677"],
   ["4477aa", "ddcc77", "cc6677"],
@@ -135,10 +135,6 @@ const paulTolSeqColors = [
     "aa4499"
   ]
 ];
-
-function paulTolColor(idx: number, count: number): string {
-  return "#" + paulTolSeqColors[count - 1][idx];
-}
 
 // https://github.com/google/palette.js/blob/master/palette.js
 const mpn65Colors = [
@@ -210,10 +206,10 @@ const mpn65Colors = [
 ];
 
 function seriesColor(idx: number, count: number): string {
-  if (count <= 12) {
-    return paulTolColor(idx, count);
+  if (count <= paulTolQualitativeColors.length) {
+    return "#" + paulTolQualitativeColors[count - 1][idx];
   } else {
-    return mpn65Colors[idx % mpn65Colors.length];
+    return "#" + mpn65Colors[idx % mpn65Colors.length];
   }
 }
 
