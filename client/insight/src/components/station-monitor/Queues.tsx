@@ -268,6 +268,7 @@ class AddNewMaterialBody extends React.PureComponent<AddNewMaterialProps, AddNew
 
     this.props.addMat({
       jobUnique: this.state.selected_job.unique,
+      partName: this.state.selected_job.partName,
       lastCompletedProcess: this.state.selected_last_proc,
       queue: queue,
       queuePosition: -1,

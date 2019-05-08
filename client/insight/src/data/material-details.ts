@@ -391,6 +391,7 @@ export function addExistingMaterialToQueue(d: AddExistingMaterialToQueueData): P
 
 export interface AddNewMaterialToQueueData {
   readonly jobUnique: string;
+  readonly partName: string;
   readonly lastCompletedProcess?: number;
   readonly queue: string;
   readonly queuePosition: number;
@@ -398,16 +399,23 @@ export interface AddNewMaterialToQueueData {
 }
 
 export function addNewMaterialToQueue(d: AddNewMaterialToQueueData) {
-  return {
-    type: ActionType.AddNewMaterialToQueue,
-    pledge: JobsBackend.addUnprocessedMaterialToQueue(
-      d.jobUnique,
-      d.lastCompletedProcess || -1,
-      d.queue,
-      d.queuePosition,
-      d.serial || ""
-    )
-  };
+  if (d.lastCompletedProcess) {
+    return {
+      type: ActionType.AddNewMaterialToQueue,
+      pledge: JobsBackend.addUnprocessedMaterialToQueue(
+        d.jobUnique,
+        d.lastCompletedProcess || -1,
+        d.queue,
+        d.queuePosition,
+        d.serial || ""
+      )
+    };
+  } else {
+    return {
+      type: ActionType.AddNewMaterialToQueue,
+      pledge: JobsBackend.addUnallocatedCastingToQueue(d.partName, d.queue, d.queuePosition, d.serial || "")
+    };
+  }
 }
 
 export interface State {

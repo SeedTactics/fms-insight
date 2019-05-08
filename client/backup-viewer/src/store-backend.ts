@@ -94,6 +94,15 @@ export const JobsBackend = {
   ): Promise<void> {
     // do nothing
     return Promise.resolve();
+  },
+  addUnallocatedCastingToQueue(
+    partName: string,
+    queue: string,
+    pos: number,
+    serial: string
+  ): Promise<void> {
+    // do nothing
+    return Promise.resolve();
   }
 };
 

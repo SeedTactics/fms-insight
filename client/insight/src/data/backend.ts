@@ -49,6 +49,8 @@ export interface JobAPI {
     pos: number,
     serial: string
   ): Promise<void>;
+
+  addUnallocatedCastingToQueue(partName: string, queue: string, pos: number, serial: string): Promise<void>;
 }
 
 export interface FmsAPI {
@@ -173,6 +175,10 @@ function initMockBackend(data: Promise<MockData>) {
       pos: number,
       serial: string
     ): Promise<void> {
+      // do nothing
+      return Promise.resolve();
+    },
+    addUnallocatedCastingToQueue(partName: string, queue: string, pos: number, serial: string): Promise<void> {
       // do nothing
       return Promise.resolve();
     }
