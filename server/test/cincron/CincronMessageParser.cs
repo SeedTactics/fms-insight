@@ -45,7 +45,8 @@ namespace MachineWatchTest.Cincron
   {
     private static Newtonsoft.Json.JsonSerializerSettings jsonSettings = new Newtonsoft.Json.JsonSerializerSettings()
     {
-      TypeNameHandling = Newtonsoft.Json.TypeNameHandling.All
+      TypeNameHandling = Newtonsoft.Json.TypeNameHandling.All,
+      Formatting = Newtonsoft.Json.Formatting.Indented
     };
 
     private TimeZoneInfo centralZone;
@@ -86,5 +87,22 @@ namespace MachineWatchTest.Cincron
       // since offset doesn't match, should load everything from beginning
       msg.Should().BeEquivalentTo(expected);
     }
+
+    /*
+    [Fact]
+    public void ProcessEvents()
+    {
+      var logConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
+      logConn.Open();
+      var log = new BlackMaple.MachineFramework.JobLogDB(logConn);
+      log.CreateTables(firstSerialOnEmpty: null);
+
+      var w = new MessageWatcher("../../../cincron/sample-messages", log, new BlackMaple.MachineFramework.FMSSettings());
+      w.CheckMessages(null, null);
+
+      var evts = log.GetLog(0).Where(e => e.Pallet == "27").ToList();
+      System.IO.File.WriteAllText("../../../cincron/sample-events.json", Newtonsoft.Json.JsonConvert.SerializeObject(evts, jsonSettings));
+    }
+    */
   }
 }
