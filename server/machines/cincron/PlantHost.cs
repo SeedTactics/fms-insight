@@ -40,13 +40,6 @@ using System.Threading.Tasks;
 namespace Cincron
 {
 
-  public class PlantHostSettings
-  {
-    public int ListenPort { get; set; }
-    public string NetworkSharePath { get; set; }
-    public string CellLocalPath { get; set; }
-  }
-
   public class MessageResponse
   {
     public IReadOnlyList<string> RawLines { get; set; }
@@ -63,9 +56,11 @@ namespace Cincron
     #region Communication
     private readonly object _sendLock = new object();
     private StreamWriter _send;
+    private TcpListener _listener;
+    private bool _exiting = false;
     private readonly Dictionary<int, TaskCompletionSource<MessageResponse>> _inFlightMsgs = new Dictionary<int, TaskCompletionSource<MessageResponse>>();
     private int _lastUsedTrans = 1;
-    private async Task<MessageResponse> Send(string cmd)
+    public async Task<MessageResponse> Send(string cmd)
     {
 
       var comp = new TaskCompletionSource<MessageResponse>();
@@ -81,22 +76,23 @@ namespace Cincron
         {
           _lastUsedTrans = 1;
         }
-        if (_inFlightMsgs.ContainsKey(_lastUsedTrans))
-        {
-          Log.Error("Too many outstanding commands to cell controller");
-          throw new Exception("Too many outstanding commands to cell controller");
-        }
-
         lock (_inFlightMsgs)
         {
+          if (_inFlightMsgs.ContainsKey(_lastUsedTrans))
+          {
+            Log.Error("Too many outstanding commands to cell controller");
+            throw new Exception("Too many outstanding commands to cell controller");
+          }
+
           _inFlightMsgs.Add(_lastUsedTrans, comp);
         }
 
         Log.Debug("Sending command {cmd} with trans number {trans}", cmd, _lastUsedTrans);
         _send.Write(cmd + " -t " + _lastUsedTrans.ToString() + "\n");
+        _send.Flush();
+
       }
 
-      await _send.FlushAsync();
       var resp = await comp.Task;
       if (resp.Fields.ContainsKey("statu") && resp.Fields["statu"] != "SUCCESS")
       {
@@ -106,6 +102,8 @@ namespace Cincron
 
       return resp;
     }
+
+    private class SocketClosed : Exception { }
 
 
     private void ReadResponseMessage(StreamReader r)
@@ -120,7 +118,7 @@ namespace Cincron
         int i = r.Read();
         if (i < 0)
         {
-          break;
+          throw new SocketClosed();
         }
         char c = (char)i;
 
@@ -177,7 +175,7 @@ namespace Cincron
       }
       string respn = fields["respn"];
 
-      // send an acknoledgement
+      // send an ack
       lock (_sendLock)
       {
         _send.Write("ackcel -r " + respn + " -t " + transNumber.ToString() + " -s SUCCESS\n");
@@ -191,11 +189,9 @@ namespace Cincron
         Fields = fields
       };
 
-      // check for failure
       if (transNumber >= 5000)
       {
         OnUnsolicitiedResponse?.Invoke(resp);
-
       }
       else
       {
@@ -218,15 +214,19 @@ namespace Cincron
     {
       try
       {
-        var server = new TcpListener(System.Net.IPAddress.Parse("0.0.0.0"), _settings.ListenPort);
-        server.Start();
+        _listener = new TcpListener(System.Net.IPAddress.Parse("0.0.0.0"), Port);
+        _listener.Start();
+        if (Port == 0)
+        {
+          Port = ((System.Net.IPEndPoint)_listener.LocalEndpoint).Port;
+        }
 
-        while (true)
+        while (!_exiting)
         {
           try
           {
             //there is only one client (the cell controller) that will connect, so just do it here on this thread
-            using (var client = server.AcceptTcpClient())
+            using (var client = _listener.AcceptTcpClient())
             using (var ns = client.GetStream())
             using (var reader = new StreamReader(ns))
             using (var writer = new StreamWriter(ns))
@@ -238,7 +238,7 @@ namespace Cincron
 
               try
               {
-                while (true)
+                while (!_exiting)
                 {
                   ReadResponseMessage(reader);
                 }
@@ -251,6 +251,10 @@ namespace Cincron
                 }
               }
             }
+          }
+          catch (SocketClosed)
+          {
+            Log.Debug("Socket closed");
           }
           catch (SocketException ex)
           {
@@ -282,7 +286,9 @@ namespace Cincron
           // dispose managed state (managed objects).
         }
 
-        _thread.Abort();
+        _exiting = true;
+        _listener.Server.Shutdown(SocketShutdown.Both);
+        _listener.Stop();
         _thread.Join();
 
         disposedValue = true;
@@ -302,12 +308,12 @@ namespace Cincron
     #endregion
 
     private static Serilog.ILogger Log = Serilog.Log.ForContext<PlantHostCommunication>();
-    private readonly PlantHostSettings _settings;
+    public int Port { get; private set; }
     private readonly Thread _thread;
 
-    public PlantHostCommunication(PlantHostSettings s)
+    public PlantHostCommunication(int port)
     {
-      _settings = s;
+      this.Port = port;
       _thread = new Thread(ListenThread);
       _thread.Start();
     }
