@@ -46,9 +46,17 @@ namespace Cincron
     public IReadOnlyDictionary<string, string> Fields { get; set; }
   }
 
-  public class PlantHostCommunication : IDisposable
+  public delegate void UnsolicitedResponse(MessageResponse r);
+
+  public interface IPlantHostCommunication
   {
-    public delegate void UnsolicitedResponse(MessageResponse r);
+    event UnsolicitedResponse OnUnsolicitiedResponse;
+    Task<MessageResponse> Send(string cmd);
+    int Port { get; }
+  }
+
+  public class PlantHostCommunication : IPlantHostCommunication, IDisposable
+  {
     public event UnsolicitedResponse OnUnsolicitiedResponse;
 
 
