@@ -119,16 +119,66 @@ namespace MachineWatchTest.Cincron
     {
       var msg1 = mkMessage(2, "mytestcommand", new Dictionary<string, string> { { "a", "b" }, { "statu", "SUCCESS" } });
 
-      await WithPlantHost(async host =>
-      {
-        (await host.Send("mytestcommand")).ResponseShouldBe(msg1);
-      },
-      async (reader, writer) =>
-      {
-        (await reader.ReadLineAsync())
-          .Should().Be("mytestcommand -t 2");
-        writer(msg1);
-      });
+      await WithPlantHost(
+        async host =>
+        {
+          (await host.Send("mytestcommand")).ResponseShouldBe(msg1);
+        },
+        async (reader, writer) =>
+        {
+          (await reader.ReadLineAsync())
+            .Should().Be("mytestcommand -t 2");
+          writer(msg1);
+          (await reader.ReadLineAsync())
+            .Should().Be("ackcel -r mytestcommand -t 2 -s SUCCESS");
+        }
+      );
+    }
+
+    [Fact]
+    public async Task UnsolicitedResponse()
+    {
+      var msg = mkMessage(5004, "myevent", new Dictionary<string, string> { { "c", "d" }, { "eeee", "fff" } });
+      var waitForSubscribe = new TaskCompletionSource<int>();
+      await WithPlantHost(
+        async host =>
+        {
+          var comp = new TaskCompletionSource<MessageResponse>();
+          host.OnUnsolicitiedResponse += comp.SetResult;
+          waitForSubscribe.SetResult(1);
+          (await comp.Task).ResponseShouldBe(msg);
+        },
+        async (reader, writer) =>
+        {
+          await waitForSubscribe.Task;
+          writer(msg);
+          (await reader.ReadLineAsync())
+            .Should().Be("ackcel -r myevent -t 5004 -s SUCCESS");
+        }
+      );
+    }
+
+    [Fact]
+    public async Task ThrowsError()
+    {
+      var msg1 = mkMessage(2, "mytestcommand", new Dictionary<string, string> { { "a", "b" }, { "statu", "ERROR" } });
+
+      await WithPlantHost(
+        async host =>
+        {
+          Func<Task> act = async () => { await host.Send("mytestcommand"); };
+          await act.Should().ThrowAsync<Exception>();
+        },
+        async (reader, writer) =>
+        {
+          (await reader.ReadLineAsync())
+            .Should().Be("mytestcommand -t 2");
+          writer(msg1);
+          (await reader.ReadLineAsync())
+                  .Should().Be("ackcel -r mytestcommand -t 2 -s SUCCESS");
+        }
+      );
+
     }
   }
 
