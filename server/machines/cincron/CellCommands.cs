@@ -76,14 +76,14 @@ namespace Cincron
         "-a \"" + startUTC.ToLocalTime().ToString(DateFormat) + "\" " +
         "-e \"" + endUTC.ToLocalTime().ToString(DateFormat) + "\""
       );
-      return await File.ReadAllBytesAsync(file.NetworkPath);
+      return await ReadAllBytesAsync(file.NetworkPath);
     }
 
     public async Task<byte[]> RouteReport()
     {
       var file = AllocateFilename("routes", "rpt");
       await _plantHost.Send("rpsrte -R " + file.CellPath + " -s DETAIL");
-      return await File.ReadAllBytesAsync(file.NetworkPath);
+      return await ReadAllBytesAsync(file.NetworkPath);
 
     }
 
@@ -91,7 +91,7 @@ namespace Cincron
     {
       var file = AllocateFilename("work", "rpt");
       await _plantHost.Send("rpwrkl -R " + file.CellPath);
-      return await File.ReadAllBytesAsync(file.NetworkPath);
+      return await ReadAllBytesAsync(file.NetworkPath);
     }
 
 
@@ -135,6 +135,35 @@ namespace Cincron
         await f.FlushAsync();
       }
     }
+
+
+#if NET461
+    private async Task<byte[]> ReadAllBytesAsync(string file)
+    {
+      using (var fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, useAsync: true))
+      {
+        int count = (int)fs.Length;
+        byte[] buffer = new byte[count];
+        int index = 0;
+        while (index < count)
+        {
+          int n = await fs.ReadAsync(buffer, index, count - index);
+          if (n == 0)
+          {
+            throw new Exception("Unexpected end of file");
+          }
+          index += n;
+        }
+
+        return buffer;
+      }
+    }
+#else
+    private Task<byte[]> ReadAllBytesAsync(string file)
+    {
+      return File.ReadAllBytesAsync(file);
+    }
+#endif
 
     private const string DateFormat = "ddd MMM dd yyyy HH:mm:ss";
   }
