@@ -73,8 +73,8 @@ namespace Cincron
     private class MessageState
     {
       public CincronMessage LastSeenMessage;
-      public List<CincronMessage.PartCompleted> PartCompletedMessages
-          = new List<CincronMessage.PartCompleted>();
+      public SortedList<int, List<CincronMessage.PartCompleted>> PartCompletedMessagesBySetup
+          = new SortedList<int, List<CincronMessage.PartCompleted>>(); // key is Setup
       public PalletLocation LastUnloadStation;
     }
 
@@ -115,6 +115,9 @@ namespace Cincron
         catch (Exception ex)
         {
           Log.Error(ex, "Unhandled error in message file watcher");
+#if DEBUG
+          throw ex;
+#endif
         }
       }
     }
@@ -217,11 +220,15 @@ namespace Cincron
       //part completed message.  Store in memory since typically there is an Unload Start event
       //which happens right afterwords.
       var comp = msg as CincronMessage.PartCompleted;
-      if (comp != null && comp.Setup == 2)
+      if (comp != null)
       {
         for (int i = 0; i < repeatCount; i++)
         {
-          state.PartCompletedMessages.Add(comp);
+          if (!state.PartCompletedMessagesBySetup.ContainsKey(comp.Setup))
+          {
+            state.PartCompletedMessagesBySetup[comp.Setup] = new List<CincronMessage.PartCompleted>();
+          }
+          state.PartCompletedMessagesBySetup[comp.Setup].Add(comp);
         }
       }
 
@@ -245,7 +252,7 @@ namespace Cincron
             foreignId: ForeignId(msg),
             originalMessage: msg.LogMessage
         );
-        state.PartCompletedMessages.Clear();
+        state.PartCompletedMessagesBySetup.Clear();
       }
 
       var loadStart = msg as CincronMessage.PartLoadStart;
@@ -387,14 +394,20 @@ namespace Cincron
 
     private IEnumerable<JobLogDB.EventLogMaterial> CreateUnloadMaterial(MessageState state, string pal)
     {
-      Log.Debug("During unload, found {cnt} parts that were unloaded/completed",
-          state.PartCompletedMessages.Count);
-
       var oldMat = FindMaterial(pal)[0];
       var ret = new List<JobLogDB.EventLogMaterial>();
       string partName = "";
-      if (state.PartCompletedMessages.Count > 0)
-        partName = state.PartCompletedMessages[0].PartName;
+      int count = 1;
+      if (state.PartCompletedMessagesBySetup.Count > 0)
+      {
+        // use highest setup value
+        var msgs = state.PartCompletedMessagesBySetup.ElementAt(state.PartCompletedMessagesBySetup.Count - 1).Value;
+        count = msgs.Count;
+        partName = msgs[0].PartName;
+      }
+      Log.Debug("During unload, found {cnt} parts with name {part} that were unloaded/completed",
+          count, partName);
+
       _log.SetDetailsForMaterialID(oldMat.MaterialID, null, partName, null);
 
       if (_settings.SerialType == BlackMaple.MachineFramework.SerialType.AssignOneSerialPerCycle ||
@@ -408,7 +421,7 @@ namespace Cincron
       var oldMatDetails = _log.GetMaterialDetails(oldMat.MaterialID);
 
       //allocate new materials, one per completed part in addition to the existing one
-      for (int i = 1; i < state.PartCompletedMessages.Count; i++)
+      for (int i = 1; i < count; i++)
       {
         var newId = _log.AllocateMaterialID(oldMatDetails.JobUnique, oldMatDetails.PartName, 1);
         var newMat = new JobLogDB.EventLogMaterial()
