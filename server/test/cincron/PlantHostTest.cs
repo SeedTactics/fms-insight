@@ -114,7 +114,7 @@ namespace MachineWatchTest.Cincron
       };
     }
 
-    [Fact(Skip = "Fails on windows")]
+    [Fact]
     public async Task SendCommand()
     {
       var msg1 = mkMessage(2, "mytestcommand", new Dictionary<string, string> { { "a", "b" }, { "statu", "SUCCESS" } });
@@ -135,7 +135,7 @@ namespace MachineWatchTest.Cincron
       );
     }
 
-    [Fact(Skip = "fails on windows")]
+    [Fact]
     public async Task UnsolicitedResponse()
     {
       var msg = mkMessage(5004, "myevent", new Dictionary<string, string> { { "c", "d" }, { "eeee", "fff" } });
@@ -158,7 +158,7 @@ namespace MachineWatchTest.Cincron
       );
     }
 
-    [Fact(Skip = "Fails on windows")]
+    [Fact]
     public async Task ThrowsError()
     {
       var msg1 = mkMessage(2, "mytestcommand", new Dictionary<string, string> { { "a", "b" }, { "statu", "ERROR" } });

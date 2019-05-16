@@ -295,7 +295,12 @@ namespace Cincron
         }
 
         _exiting = true;
-        _listener.Server.Shutdown(SocketShutdown.Both);
+        #if !NET461
+        // https://github.com/dotnet/corefx/issues/26034
+        if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Linux)) {
+          _listener.Server.Shutdown(SocketShutdown.Both);
+        }
+        #endif
         _listener.Stop();
         _thread.Join();
 
