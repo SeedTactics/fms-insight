@@ -390,7 +390,7 @@ export function addExistingMaterialToQueue(d: AddExistingMaterialToQueueData): P
 }
 
 export interface AddNewMaterialToQueueData {
-  readonly jobUnique: string;
+  readonly jobUnique?: string;
   readonly partName: string;
   readonly lastCompletedProcess?: number;
   readonly queue: string;
@@ -399,7 +399,7 @@ export interface AddNewMaterialToQueueData {
 }
 
 export function addNewMaterialToQueue(d: AddNewMaterialToQueueData) {
-  if (d.lastCompletedProcess) {
+  if (d.jobUnique && d.lastCompletedProcess) {
     return {
       type: ActionType.AddNewMaterialToQueue,
       pledge: JobsBackend.addUnprocessedMaterialToQueue(

@@ -101,6 +101,15 @@ export function part_and_proc(part: string, proc: number): string {
   return part + "-" + proc.toString();
 }
 
+export function strip_proc(partAndProc: string): string {
+  const idx = partAndProc.lastIndexOf("-");
+  if (idx >= 0 && idx < partAndProc.length) {
+    return partAndProc.substring(0, idx);
+  } else {
+    return partAndProc;
+  }
+}
+
 function stat_group(e: Readonly<api.ILogEntry>): string {
   switch (e.type) {
     case api.LogType.LoadUnloadCycle:

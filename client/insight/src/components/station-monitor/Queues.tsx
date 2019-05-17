@@ -63,6 +63,8 @@ import { Store, connect, AppActionBeforeMiddleware } from "../../store/store";
 import * as matDetails from "../../data/material-details";
 import { LazySeq } from "../../data/lazyseq";
 import { MaterialSummary } from "../../data/events.matsummary";
+import { HashSet } from "prelude-ts";
+import { strip_proc } from "../../data/events.cycles";
 
 interface ExistingMatInQueueDialogBodyProps {
   readonly display_material: matDetails.MaterialDetail;
@@ -164,64 +166,114 @@ class AddSerialFound extends React.PureComponent<AddSerialFoundProps, AddSerialF
 }
 
 interface SelectJobProps {
+  readonly partNames: HashSet<string>;
   readonly jobs: { [key: string]: Readonly<api.IInProcessJob> };
+  readonly selected_raw?: boolean; // true = adding raw material, false = adding in-process material
+  readonly selected_part?: string;
   readonly selected_job?: Readonly<api.IInProcessJob>;
   readonly selected_last_process?: number;
+  readonly onSelectRaw: (raw: boolean) => void;
   readonly onSelectJob: (j: Readonly<api.IInProcessJob>) => void;
-  readonly onSelectProcess: (p?: number) => void;
+  readonly onSelectPart: (p: string) => void;
+  readonly onSelectProcess: (p: number) => void;
 }
 
 class SelectJob extends React.PureComponent<SelectJobProps> {
   render() {
-    const jobs = Object.values(this.props.jobs).sort((j1, j2) => j1.partName.localeCompare(j2.partName));
-    return (
-      <div style={{ display: "flex" }}>
-        <div>
-          <p>Select a job.</p>
+    const jobs = Object.values(this.props.jobs)
+      .filter(j => j.procsAndPaths.length > 1)
+      .sort((j1, j2) => j1.partName.localeCompare(j2.partName));
+    const parts = LazySeq.ofIterable(this.props.partNames)
+      .map(strip_proc)
+      .appendAll(Object.values(this.props.jobs).map(j => j.partName))
+      .toSet(x => x)
+      .toArray({ sortOn: x => x });
+
+    const selectPart = (
+      <div style={{ marginLeft: "1em" }}>
+        <p>Select a part</p>
+        <List>
+          {parts.map((p, idx) => (
+            <MenuItem key={idx} selected={p === this.props.selected_part} onClick={() => this.props.onSelectPart(p)}>
+              <ListItemIcon>
+                <PartIdenticon part={p} />
+              </ListItemIcon>
+              <ListItemText primary={p} />
+            </MenuItem>
+          ))}
+        </List>
+      </div>
+    );
+
+    const selectJob = (
+      <div style={{ marginLeft: "1em" }}>
+        <p>Select a job.</p>
+        <List>
+          {jobs.map((j, idx) => (
+            <MenuItem
+              key={idx}
+              selected={this.props.selected_job && j.unique === this.props.selected_job.unique}
+              onClick={() => this.props.onSelectJob(j)}
+            >
+              <ListItemIcon>
+                <PartIdenticon part={j.partName} />
+              </ListItemIcon>
+              <ListItemText primary={j.partName} secondary={j.unique} />
+            </MenuItem>
+          ))}
+        </List>
+      </div>
+    );
+
+    const selectProc =
+      this.props.selected_job === undefined || this.props.selected_job.procsAndPaths.length === 1 ? (
+        undefined
+      ) : (
+        <div style={{ marginLeft: "1em" }}>
+          <p style={{ margin: "1em", maxWidth: "15em" }}>Select the last completed process.</p>
           <List>
-            {jobs.map((j, idx) => (
+            {LazySeq.ofRange(1, this.props.selected_job.procsAndPaths.length).map(p => (
               <MenuItem
-                key={idx}
-                selected={this.props.selected_job && j.unique === this.props.selected_job.unique}
-                onClick={() => this.props.onSelectJob(j)}
+                key={p}
+                selected={this.props.selected_last_process === p}
+                onClick={() => this.props.onSelectProcess(p)}
               >
-                <ListItemIcon>
-                  <PartIdenticon part={j.partName} />
-                </ListItemIcon>
-                <ListItemText primary={j.partName} secondary={j.unique} />
+                Last completed process {p}
               </MenuItem>
             ))}
           </List>
         </div>
+      );
+
+    return (
+      <div style={{ display: "flex" }}>
         <div>
-          {this.props.selected_job === undefined || this.props.selected_job.procsAndPaths.length === 1 ? (
-            undefined
-          ) : (
-            <div style={{ marginLeft: "1em" }}>
-              <p style={{ margin: "1em", maxWidth: "15em" }}>
-                Select the last completed process, or "Raw Material" if this part has not yet completed any process.
-              </p>
-              <List>
-                <MenuItem
-                  key="rawmaterial"
-                  selected={this.props.selected_last_process === undefined}
-                  onClick={() => this.props.onSelectProcess()}
-                >
-                  Raw Material
-                </MenuItem>
-                {LazySeq.ofRange(1, this.props.selected_job.procsAndPaths.length).map(p => (
-                  <MenuItem
-                    key={p}
-                    selected={this.props.selected_last_process === p}
-                    onClick={() => this.props.onSelectProcess(p)}
-                  >
-                    Last completed process {p}
-                  </MenuItem>
-                ))}
-              </List>
-            </div>
-          )}
+          <List>
+            <MenuItem
+              key="rawmaterial"
+              selected={this.props.selected_raw === true}
+              onClick={() => this.props.onSelectRaw(true)}
+            >
+              Material not yet machined by this cell
+            </MenuItem>
+            <MenuItem
+              key="inprocmaterial"
+              selected={this.props.selected_raw === false}
+              onClick={() => this.props.onSelectRaw(false)}
+            >
+              In-Process Material
+            </MenuItem>
+          </List>
         </div>
+        {this.props.selected_raw === false ? (
+          <>
+            <div>{selectJob}</div>
+            <div>{selectProc}</div>
+          </>
+        ) : (
+          undefined
+        )}
+        {this.props.selected_raw === true ? <div>{selectPart}</div> : undefined}
       </div>
     );
   }
@@ -230,7 +282,8 @@ class SelectJob extends React.PureComponent<SelectJobProps> {
 const ConnectedSelectJob = connect(s => ({
   jobs: s.Current.current_status.jobs as {
     [key: string]: Readonly<api.IInProcessJob>;
-  }
+  },
+  partNames: s.Events.last30.cycles.part_and_proc_names
 }))(SelectJob);
 
 interface AddNewMaterialProps {
@@ -242,7 +295,9 @@ interface AddNewMaterialProps {
 }
 
 interface AddNewMaterialState {
+  readonly selected_raw?: boolean; // true = adding raw material, false = adding in-process material
   readonly selected_job?: Readonly<api.IInProcessJob>;
+  readonly selected_part?: string;
   readonly selected_last_proc?: number;
   readonly selected_queue?: string;
 }
@@ -254,29 +309,56 @@ class AddNewMaterialBody extends React.PureComponent<AddNewMaterialProps, AddNew
     this.setState({ selected_job: j });
   };
 
-  onSelectProcess = (p?: number) => {
+  onSelectRaw = (raw: boolean) => {
+    this.setState({ selected_raw: raw });
+  };
+
+  onSelectPart = (part: string) => {
+    this.setState({ selected_part: part });
+  };
+
+  onSelectProcess = (p: number) => {
     this.setState({ selected_last_proc: p });
   };
 
   addMaterial = (queue?: string) => {
-    if (this.state.selected_job === undefined) {
+    if (this.state.selected_raw === undefined) {
       return;
     }
     if (queue === undefined) {
       return;
     }
 
-    this.props.addMat({
-      jobUnique: this.state.selected_job.unique,
-      partName: this.state.selected_job.partName,
-      lastCompletedProcess: this.state.selected_last_proc,
-      queue: queue,
-      queuePosition: -1,
-      serial: this.props.not_found_serial
-    });
+    if (this.state.selected_raw === true) {
+      if (this.state.selected_part === undefined) {
+        return;
+      }
+      this.props.addMat({
+        jobUnique: undefined,
+        partName: this.state.selected_part,
+        lastCompletedProcess: undefined,
+        queue: queue,
+        queuePosition: -1,
+        serial: this.props.not_found_serial
+      });
+    } else if (this.state.selected_raw === false) {
+      if (this.state.selected_job === undefined) {
+        return;
+      }
+      this.props.addMat({
+        jobUnique: this.state.selected_job.unique,
+        partName: this.state.selected_job.partName,
+        lastCompletedProcess: this.state.selected_last_proc,
+        queue: queue,
+        queuePosition: -1,
+        serial: this.props.not_found_serial
+      });
+    }
 
     this.setState({
+      selected_raw: undefined,
       selected_job: undefined,
+      selected_part: undefined,
       selected_last_proc: undefined,
       selected_queue: undefined
     });
@@ -287,6 +369,18 @@ class AddNewMaterialBody extends React.PureComponent<AddNewMaterialProps, AddNew
     if (queue === undefined && this.props.queues.length === 1) {
       queue = this.props.queues[0];
     }
+
+    let allowAdd = false;
+    if (this.state.selected_raw === true && this.state.selected_part !== undefined) {
+      allowAdd = true;
+    } else if (this.state.selected_raw === false && this.state.selected_job !== undefined) {
+      if (this.state.selected_job.procsAndPaths.length === 1) {
+        allowAdd = true;
+      } else if (this.state.selected_job.procsAndPaths.length > 1 && this.state.selected_last_proc !== undefined) {
+        allowAdd = true;
+      }
+    }
+
     return (
       <>
         <DialogTitle>{this.props.not_found_serial ? this.props.not_found_serial : "Add New Material"}</DialogTitle>
@@ -318,19 +412,19 @@ class AddNewMaterialBody extends React.PureComponent<AddNewMaterialProps, AddNew
               undefined
             )}
             <ConnectedSelectJob
+              selected_raw={this.state.selected_raw}
               selected_job={this.state.selected_job}
+              selected_part={this.state.selected_part}
               selected_last_process={this.state.selected_last_proc}
+              onSelectRaw={this.onSelectRaw}
               onSelectJob={this.onSelectJob}
+              onSelectPart={this.onSelectPart}
               onSelectProcess={this.onSelectProcess}
             />
           </div>
         </DialogContent>
         <DialogActions>
-          <Button
-            color="primary"
-            onClick={() => this.addMaterial(queue)}
-            disabled={this.state.selected_job === undefined || queue === undefined}
-          >
+          <Button color="primary" onClick={() => this.addMaterial(queue)} disabled={!allowAdd}>
             Add To {queue}
           </Button>
           <Button onClick={this.props.onClose} color="primary">
