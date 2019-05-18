@@ -175,7 +175,7 @@ export function buildOeeSeries(
   statUse: Iterable<SimStationUse>
 ): ReadonlyArray<OEEBarSeries> {
   const filteredCycles = LazySeq.ofIterable(cycles).filter(e => isLabor === e.isLabor && e.x >= start && e.x <= end);
-  const actualBins = binCyclesByDayAndStat(filteredCycles, c => c.active);
+  const actualBins = binCyclesByDayAndStat(filteredCycles, c => c.activeMinsForSingleMat);
   const filteredStatUse = LazySeq.ofIterable(statUse).filter(
     e => isLabor === e.station.startsWith("L/U") && e.end >= start && e.start <= end
   );

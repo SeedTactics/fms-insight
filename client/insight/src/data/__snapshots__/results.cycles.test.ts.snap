@@ -40,7 +40,7 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
           Elapsed Min
         </th>
         <th>
-          Active Min
+          Target Min
         </th>
         <th>
           Median Elapsed Min
@@ -84,10 +84,10 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
           6.0
         </td>
         <td>
-          6.0
+          4.5
         </td>
         <td>
-          0.0
+          2.2
         </td>
       </tr>
       
@@ -158,10 +158,10 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
           3.0
         </td>
         <td>
-          3.0
+          4.5
         </td>
         <td>
-          0.0
+          2.2
         </td>
       </tr>
       
@@ -195,10 +195,10 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
           6.0
         </td>
         <td>
-          6.0
+          4.5
         </td>
         <td>
-          0.0
+          2.2
         </td>
       </tr>
       
@@ -269,10 +269,10 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
           3.0
         </td>
         <td>
-          3.0
+          4.5
         </td>
         <td>
-          0.0
+          2.2
         </td>
       </tr>
       
@@ -306,10 +306,10 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
           6.0
         </td>
         <td>
-          6.0
+          4.5
         </td>
         <td>
-          0.0
+          2.2
         </td>
       </tr>
       
@@ -380,10 +380,10 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
           3.0
         </td>
         <td>
-          3.0
+          4.5
         </td>
         <td>
-          0.0
+          2.2
         </td>
       </tr>
       
@@ -427,7 +427,7 @@ exports[`creates cycles clipboard table: cycle filtered clipboard table 1`] = `
           Elapsed Min
         </th>
         <th>
-          Active Min
+          Target Min
         </th>
         <th>
           Median Elapsed Min
@@ -471,10 +471,10 @@ exports[`creates cycles clipboard table: cycle filtered clipboard table 1`] = `
           6.0
         </td>
         <td>
-          6.0
+          4.5
         </td>
         <td>
-          0.0
+          2.2
         </td>
       </tr>
       
@@ -545,10 +545,10 @@ exports[`creates cycles clipboard table: cycle filtered clipboard table 1`] = `
           3.0
         </td>
         <td>
-          3.0
+          4.5
         </td>
         <td>
-          0.0
+          2.2
         </td>
       </tr>
       

@@ -60,7 +60,9 @@ it("bins actual cycles by day", () => {
     }
   });
 
-  let byDayAndStat = binCyclesByDayAndStat(st.last30.cycles.part_cycles, c => duration(c.active).asMinutes());
+  let byDayAndStat = binCyclesByDayAndStat(st.last30.cycles.part_cycles, c =>
+    duration(c.activeMinsForSingleMat).asMinutes()
+  );
 
   // update day to be in Chicago timezone
   // This is because the snapshot formats the day as a UTC time in Chicago timezone
@@ -90,7 +92,9 @@ it("creates points clipboard table", () => {
     }
   });
 
-  let byDayAndStat = binCyclesByDayAndStat(st.last30.cycles.part_cycles, c => duration(c.active).asMinutes());
+  let byDayAndStat = binCyclesByDayAndStat(st.last30.cycles.part_cycles, c =>
+    duration(c.activeMinsForSingleMat).asMinutes()
+  );
 
   const points = LazySeq.ofIterable(byDayAndStat)
     .map(([dayAndStat, val]) => ({

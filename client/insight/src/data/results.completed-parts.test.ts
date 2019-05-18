@@ -59,7 +59,7 @@ it("bins actual cycles by day", () => {
     }
   });
 
-  let byDayAndPart = binCyclesByDayAndPart(st.last30.cycles.part_cycles, c => (c.completed ? 1 : 0));
+  let byDayAndPart = binCyclesByDayAndPart(st.last30.cycles.part_cycles);
 
   byDayAndPart = byDayAndPart.map((dayAndPart, val) => [dayAndPart.adjustDay(d => addMinutes(d, minOffset)), val]);
 

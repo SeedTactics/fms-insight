@@ -117,7 +117,7 @@ export function stationMinutes(partCycles: Vector<PartCycleData>, cutoff: Date):
     .filter(p => p.x >= cutoff)
     .map(p => ({
       station: stat_name_and_num(p.stationGroup, p.stationNumber),
-      active: p.active
+      active: p.activeMinsForSingleMat
     }))
     .toMap(x => [x.station, x.active] as [string, number], (v1, v2) => v1 + v2);
 }
@@ -135,7 +135,7 @@ export function buildCycleTable(
   let table = "<table>\n<thead><tr>";
   table += "<th>Date</th><th>Part</th><th>Station</th><th>Pallet</th>";
   table += "<th>Serial</th><th>Workorder</th><th>Inspection</th>";
-  table += "<th>Elapsed Min</th><th>Active Min</th>";
+  table += "<th>Elapsed Min</th><th>Target Min</th>";
   if (includeStats) {
     table += "<th>Median Elapsed Min</th><th>Median Deviation</th>";
   }
@@ -156,9 +156,9 @@ export function buildCycleTable(
     table += "<td>" + (cycle.workorder || "") + "</td>";
     table += "<td>" + format_cycle_inspection(cycle) + "</td>";
     table += "<td>" + cycle.y.toFixed(1) + "</td>";
-    table += "<td>" + cycle.active.toFixed(1) + "</td>";
+    table += "<td>" + cycle.targetCycleMinutes.toFixed(1) + "</td>";
     if (includeStats) {
-      table += "<td>" + cycle.medianElapsed.toFixed(1) + "</td>";
+      table += "<td>" + cycle.medianCycleMinutes.toFixed(1) + "</td>";
       table += "<td>" + cycle.MAD_aboveMinutes.toFixed(1) + "</td>";
     }
     table += "</tr>\n";

@@ -58,17 +58,28 @@ class DayAndPart {
   }
 }
 
-export function binCyclesByDayAndPart(
-  cycles: Iterable<PartCycleData>,
-  extractValue: (c: PartCycleData) => number
-): HashMap<DayAndPart, number> {
+export interface PartsCompletedSummary {
+  readonly count: number;
+  readonly activeMachineMins: number;
+}
+
+export function binCyclesByDayAndPart(cycles: Iterable<PartCycleData>): HashMap<DayAndPart, PartsCompletedSummary> {
   return LazySeq.ofIterable(cycles)
     .map(point => ({
       day: startOfDay(point.x),
       part: part_and_proc(point.part, point.process),
-      value: extractValue(point)
+      value: {
+        count: point.completed ? 1 : 0,
+        activeMachineMins: point.completed ? point.activeTotalMachineMinutesForSingleMat : 0
+      }
     }))
-    .toMap(p => [new DayAndPart(p.day, p.part), p.value] as [DayAndPart, number], (v1, v2) => v1 + v2);
+    .toMap(
+      p => [new DayAndPart(p.day, p.part), p.value] as [DayAndPart, PartsCompletedSummary],
+      (v1, v2) => ({
+        count: v1.count + v2.count,
+        activeMachineMins: v1.activeMachineMins + v2.activeMachineMins
+      })
+    );
 }
 
 // --------------------------------------------------------------------------------
@@ -104,7 +115,7 @@ export function buildCompletedPartSeries(
   sim: Iterable<SimProduction>
 ): ReadonlyArray<CompletedPartSeries> {
   const filteredCycles = LazySeq.ofIterable(cycles).filter(e => e.x >= start && e.x <= end);
-  const actualBins = binCyclesByDayAndPart(filteredCycles, c => (c.completed ? 1 : 0));
+  const actualBins = binCyclesByDayAndPart(filteredCycles);
   const filteredStatUse = LazySeq.ofIterable(sim).filter(e => e.start >= start && e.start <= end);
   const plannedBins = binSimProductionByDayAndPart(filteredStatUse);
 
@@ -122,7 +133,7 @@ export function buildCompletedPartSeries(
       const actual = actualBins.get(dAndPart);
       const planned = plannedBins.get(dAndPart);
       days.push({
-        actual: actual.getOrElse(0),
+        actual: actual.map(v => v.count).getOrElse(0),
         planned: planned.getOrElse(0),
         day: d
       });

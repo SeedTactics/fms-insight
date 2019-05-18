@@ -451,7 +451,7 @@ function StationOeeHeatmap(props: HeatmapProps) {
 const stationOeeActualPointsSelector = createSelector(
   (cycles: CycleState) => cycles.part_cycles,
   cycles => {
-    let pts = binCyclesByDayAndStat(cycles, c => c.active);
+    let pts = binCyclesByDayAndStat(cycles, c => c.activeMinsForSingleMat);
     return LazySeq.ofIterable(pts)
       .map(([dayAndStat, val]) => {
         const pct = val / (24 * 60);
@@ -557,14 +557,14 @@ function CompletedCountHeatmap(props: HeatmapProps) {
 const completedActualPointsSelector = createSelector(
   (cycles: CycleState) => cycles.part_cycles,
   cycles => {
-    let pts = binCyclesByDayAndPart(cycles, c => (c.completed ? 1 : 0));
+    let pts = binCyclesByDayAndPart(cycles);
     return LazySeq.ofIterable(pts)
       .map(([dayAndPart, val]) => {
         return {
           x: dayAndPart.day,
           y: dayAndPart.part,
-          color: val,
-          label: val.toFixed(0)
+          color: val.activeMachineMins,
+          label: val.count.toFixed(0) + " (" + (val.activeMachineMins / 60).toFixed(1) + " hours)"
         };
       })
       .toArray()

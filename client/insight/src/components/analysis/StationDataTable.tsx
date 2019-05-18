@@ -112,13 +112,13 @@ const columns: ReadonlyArray<Column<ColumnId, PartCycleData>> = [
     id: ColumnId.ActiveMin,
     numeric: true,
     label: "Target Min",
-    getDisplay: c => c.active.toFixed(1)
+    getDisplay: c => c.targetCycleMinutes.toFixed(1)
   },
   {
     id: ColumnId.MedianElapsed,
     numeric: true,
     label: "Median Elapsed Min",
-    getDisplay: c => c.medianElapsed.toFixed(1)
+    getDisplay: c => c.medianCycleMinutes.toFixed(1)
   },
   {
     id: ColumnId.MedianDeviation,
