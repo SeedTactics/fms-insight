@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { SimProduction } from "./events.simuse";
+import { SimPartCompleted } from "./events.simuse";
 import { startOfDay, addDays } from "date-fns";
 import { HashMap, fieldsHashCode } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
@@ -86,10 +86,19 @@ export function binCyclesByDayAndPart(cycles: Iterable<PartCycleData>): HashMap<
 // Planned
 // --------------------------------------------------------------------------------
 
-export function binSimProductionByDayAndPart(prod: Iterable<SimProduction>): HashMap<DayAndPart, number> {
+export function binSimProductionByDayAndPart(
+  prod: Iterable<SimPartCompleted>
+): HashMap<DayAndPart, PartsCompletedSummary> {
   return LazySeq.ofIterable(prod).toMap(
-    p => [new DayAndPart(startOfDay(p.start), p.part), p.quantity] as [DayAndPart, number],
-    (q1, q2) => q1 + q2
+    p =>
+      [
+        new DayAndPart(startOfDay(p.completeTime), p.part),
+        { count: p.quantity, activeMachineMins: p.expectedMachineMins }
+      ] as [DayAndPart, PartsCompletedSummary],
+    (v1, v2) => ({
+      count: v1.count + v2.count,
+      activeMachineMins: v1.activeMachineMins + v2.activeMachineMins
+    })
   );
 }
 
@@ -112,11 +121,11 @@ export function buildCompletedPartSeries(
   start: Date,
   end: Date,
   cycles: Iterable<PartCycleData>,
-  sim: Iterable<SimProduction>
+  sim: Iterable<SimPartCompleted>
 ): ReadonlyArray<CompletedPartSeries> {
   const filteredCycles = LazySeq.ofIterable(cycles).filter(e => e.x >= start && e.x <= end);
   const actualBins = binCyclesByDayAndPart(filteredCycles);
-  const filteredStatUse = LazySeq.ofIterable(sim).filter(e => e.start >= start && e.start <= end);
+  const filteredStatUse = LazySeq.ofIterable(sim).filter(e => e.completeTime >= start && e.completeTime <= end);
   const plannedBins = binSimProductionByDayAndPart(filteredStatUse);
 
   const series: Array<CompletedPartSeries> = [];
@@ -134,7 +143,7 @@ export function buildCompletedPartSeries(
       const planned = plannedBins.get(dAndPart);
       days.push({
         actual: actual.map(v => v.count).getOrElse(0),
-        planned: planned.getOrElse(0),
+        planned: planned.map(v => v.count).getOrElse(0),
         day: d
       });
     }

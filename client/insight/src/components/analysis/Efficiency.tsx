@@ -588,8 +588,8 @@ const completedPlannedPointsSelector = createSelector(
         return {
           x: dayAndPart.day,
           y: dayAndPart.part,
-          color: val,
-          label: val.toFixed(0)
+          color: val.activeMachineMins,
+          label: val.count.toFixed(0) + " (" + (val.activeMachineMins / 60).toFixed(1) + " hours)"
         };
       })
       .toArray()

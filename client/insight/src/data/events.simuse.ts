@@ -44,15 +44,16 @@ export interface SimStationUse {
   readonly plannedDownTime: number;
 }
 
-export interface SimProduction {
+export interface SimPartCompleted {
   readonly part: string;
-  readonly start: Date;
+  readonly completeTime: Date;
   readonly quantity: number;
+  readonly expectedMachineMins: number; // expected machine minutes to entirely produce quantity
 }
 
 export interface SimUseState {
   readonly station_use: Vector<SimStationUse>;
-  readonly production: Vector<SimProduction>;
+  readonly production: Vector<SimPartCompleted>;
 }
 
 export const initial: SimUseState = {
@@ -85,11 +86,11 @@ export function process_sim_use(
     case ExpireOldDataType.ExpireEarlierThan:
       // check if nothing to expire and no new data
       const minStat = stations.minOn(e => e.end.getTime());
-      const minProd = production.minOn(e => e.start.getTime());
+      const minProd = production.minOn(e => e.completeTime.getTime());
 
       if (
         (minStat.isNone() || minStat.get().start >= expire.d) &&
-        (minProd.isNone() || minProd.get().start >= expire.d) &&
+        (minProd.isNone() || minProd.get().completeTime >= expire.d) &&
         newHistory.stationUse.length === 0 &&
         Object.keys(newHistory.jobs).length === 0
       ) {
@@ -98,7 +99,7 @@ export function process_sim_use(
 
       // filter old events
       stations = stations.filter(e => e.start >= expire.d);
-      production = production.filter(x => x.start >= expire.d);
+      production = production.filter(x => x.completeTime >= expire.d);
 
       break;
 
@@ -117,13 +118,28 @@ export function process_sim_use(
     plannedDownTime: duration(simUse.plannedDownTime).asMinutes()
   }));
 
-  let newProd = LazySeq.ofObject(newHistory.jobs).flatMap(([_, j]) => {
-    const count = j.cyclesOnFirstProcess.reduce((sum, p) => sum + p, 0);
-    return LazySeq.ofRange(1, j.procsAndPaths.length + 1).map(proc => ({
-      part: part_and_proc(j.partName, proc),
-      start: j.routeStartUTC,
-      quantity: count
-    }));
+  let newProd = LazySeq.ofObject(newHistory.jobs).flatMap(function*([_, jParam]: [string, api.JobPlan]) {
+    const j = jParam;
+    for (let proc = 0; proc < j.procsAndPaths.length; proc++) {
+      const procInfo = j.procsAndPaths[proc];
+      for (let path = 0; path < procInfo.paths.length; path++) {
+        const pathInfo = procInfo.paths[path];
+        let machTime = 0;
+        for (let stop of pathInfo.stops) {
+          machTime += duration(stop.expectedCycleTime).asMinutes();
+        }
+        let prevQty = 0;
+        for (let prod of pathInfo.simulatedProduction || []) {
+          yield {
+            part: part_and_proc(j.partName, proc + 1),
+            completeTime: prod.timeUTC,
+            quantity: prod.quantity - prevQty,
+            expectedMachineMins: machTime
+          };
+          prevQty = prod.quantity;
+        }
+      }
+    }
   });
 
   return {
