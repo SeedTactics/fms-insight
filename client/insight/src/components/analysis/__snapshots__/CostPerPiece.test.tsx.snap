@@ -39,6 +39,12 @@ exports[`renders the cost/piece page: calculated costs 1`] = `
         class="MuiTableCell-root-208 MuiTableCell-head-209"
         scope="col"
       >
+        Automation Cost
+      </th>
+      <th
+        class="MuiTableCell-root-208 MuiTableCell-head-209"
+        scope="col"
+      >
         Total
       </th>
     </tr>
@@ -86,7 +92,12 @@ exports[`renders the cost/piece page: calculated costs 1`] = `
       <td
         class="MuiTableCell-root-208 MuiTableCell-body-210"
       >
-        64.3
+        0.1
+      </td>
+      <td
+        class="MuiTableCell-root-208 MuiTableCell-body-210"
+      >
+        64.4
       </td>
     </tr>
     <tr
@@ -129,7 +140,12 @@ exports[`renders the cost/piece page: calculated costs 1`] = `
       <td
         class="MuiTableCell-root-208 MuiTableCell-body-210"
       >
-        24.3
+        0.1
+      </td>
+      <td
+        class="MuiTableCell-root-208 MuiTableCell-body-210"
+      >
+        24.4
       </td>
     </tr>
     <tr
@@ -172,7 +188,12 @@ exports[`renders the cost/piece page: calculated costs 1`] = `
       <td
         class="MuiTableCell-root-208 MuiTableCell-body-210"
       >
-        24.9
+        0.2
+      </td>
+      <td
+        class="MuiTableCell-root-208 MuiTableCell-body-210"
+      >
+        25
       </td>
     </tr>
     <tr
@@ -215,7 +236,12 @@ exports[`renders the cost/piece page: calculated costs 1`] = `
       <td
         class="MuiTableCell-root-208 MuiTableCell-body-210"
       >
-        24.5
+        0.3
+      </td>
+      <td
+        class="MuiTableCell-root-208 MuiTableCell-body-210"
+      >
+        24.8
       </td>
     </tr>
     <tr
@@ -258,7 +284,12 @@ exports[`renders the cost/piece page: calculated costs 1`] = `
       <td
         class="MuiTableCell-root-208 MuiTableCell-body-210"
       >
-        24.8
+        0.1
+      </td>
+      <td
+        class="MuiTableCell-root-208 MuiTableCell-body-210"
+      >
+        24.9
       </td>
     </tr>
     <tr
@@ -301,7 +332,12 @@ exports[`renders the cost/piece page: calculated costs 1`] = `
       <td
         class="MuiTableCell-root-208 MuiTableCell-body-210"
       >
-        26.7
+        0.3
+      </td>
+      <td
+        class="MuiTableCell-root-208 MuiTableCell-body-210"
+      >
+        27
       </td>
     </tr>
   </tbody>

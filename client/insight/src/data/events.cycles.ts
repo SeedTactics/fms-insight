@@ -50,6 +50,7 @@ export interface PartCycleData extends CycleData {
   readonly stationGroup: string;
   readonly stationNumber: number;
   readonly pallet: string;
+  readonly partsPerPallet: number;
   readonly activeMinsForSingleMat: number; // active time in minutes for a single piece of material
   readonly activeTotalMachineMinutesForSingleMat: number;
   readonly targetCycleMinutes: number; // active time in minutes for the entire cycle
@@ -467,6 +468,7 @@ export function process_events(
         MAD_aboveMinutes: stats.map(s => s.MAD_aboveMinutes).getOrElse(0),
         outlier: cycleIsOutlier(part_and_proc(e.mat.part, e.mat.proc), e.cycle, estimatedCycleTimes),
         completed: e.cycle.type === api.LogType.LoadUnloadCycle && e.cycle.result === "UNLOAD",
+        partsPerPallet: e.cycle.material.length,
         part: e.mat.part,
         process: e.mat.proc,
         pallet: e.cycle.pal,

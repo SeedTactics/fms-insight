@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2019, John Lenz
 
 All rights reserved.
 
@@ -182,6 +182,23 @@ it("sets the operator cost per hour", () => {
   });
 });
 
+it("sets the automation cost per year", () => {
+  let s = ccp.reducer(ccp.initial, {
+    type: ccp.ActionType.SetAutomationCost,
+    cost: 123456
+  });
+  expect(s).toEqual({
+    input: {
+      ...ccp.initial.input,
+      automationCostPerYear: 123456
+    }
+  });
+  expect(JSON.parse(localStorage.getItem("cost-per-piece") || "")).toEqual({
+    ...ccp.initial.input,
+    automationCostPerYear: 123456
+  });
+});
+
 it("computes part costs", async () => {
   const data = loadMockData(30 * 24 * 60 * 60);
   const evts = await data.events;
@@ -195,6 +212,7 @@ it("computes part costs", async () => {
       bbb: 19
     },
     numOperators: 2,
+    automationCostPerYear: 10000,
     operatorCostPerHour: 5432
   };
 

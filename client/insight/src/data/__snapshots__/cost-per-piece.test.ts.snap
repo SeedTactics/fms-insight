@@ -3,6 +3,7 @@
 exports[`computes part costs: cost calcs 1`] = `
 Array [
   Object {
+    "automation_cost": 125.68581345873922,
     "labor_cost": 1401615.5267078101,
     "machine_cost": 8.23832397733757,
     "material_cost": 15,
@@ -10,6 +11,7 @@ Array [
     "parts_completed": 838,
   },
   Object {
+    "automation_cost": 143.46097861381705,
     "labor_cost": 1604699.9616939775,
     "machine_cost": 10.534265220277643,
     "material_cost": 19,
@@ -17,6 +19,7 @@ Array [
     "parts_completed": 961,
   },
   Object {
+    "automation_cost": 147.93976038517522,
     "labor_cost": 1628004.7329218984,
     "machine_cost": 24.565572274392604,
     "material_cost": 0,
@@ -24,6 +27,7 @@ Array [
     "parts_completed": 975,
   },
   Object {
+    "automation_cost": 184.18990034710558,
     "labor_cost": 1100318.1272611192,
     "machine_cost": 10.461154749527376,
     "material_cost": 0,
@@ -31,6 +35,7 @@ Array [
     "parts_completed": 658,
   },
   Object {
+    "automation_cost": 118.12786921957228,
     "labor_cost": 1408274.0327729303,
     "machine_cost": 19.16311717802037,
     "material_cost": 0,
@@ -38,6 +43,7 @@ Array [
     "parts_completed": 844,
   },
   Object {
+    "automation_cost": 113.92901130892398,
     "labor_cost": 679167.6186422643,
     "machine_cost": 28.46222413469101,
     "material_cost": 0,

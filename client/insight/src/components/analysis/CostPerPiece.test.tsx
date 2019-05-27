@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2019, John Lenz
 
 All rights reserved.
 
@@ -84,6 +84,9 @@ it("renders the cost/piece page", async () => {
   const costPerOper = result.getByLabelText("Cost per operator per hour") as HTMLInputElement;
   costPerOper.value = "50";
   Simulate.change(costPerOper);
+  const autoCost = result.getByLabelText("Cost for automated handling system per year") as HTMLInputElement;
+  autoCost.value = "10000";
+  Simulate.change(autoCost);
 
   const machRow = within(result.getByTestId("station-cost-table"))
     .getByText("Machine")

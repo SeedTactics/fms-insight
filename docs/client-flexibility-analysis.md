@@ -115,9 +115,9 @@ to help find a part that might be changed to run on the lightly loaded machine.
 The Part Production heatmap shows the distribution of completed parts over
 the month. On the x-axis are the days of the month and on the y-axis are the
 part types. For each part and each day, FMS Insight counts how many parts
-were produced that day. For each grid cell in the chart, the completed count
-is drawn as a color with darker colors higher counts and lighter colors lower
-counts. A grid cell can be moused over to obtain extra information in a
+were produced that day. For each grid cell in the chart, the entry
+is drawn as a color with darker colors higher machine hours and lighter colors lower
+machine hours. A grid cell can be moused over to obtain extra information in a
 tooltip.
 
 The part production OEE heatmap is mainly useful to visualize the part mix as it
@@ -248,3 +248,10 @@ multiplies it by the use percentage. This produces the machining cost of the
 `aaa` part for the month, and finally this cost is divided by the number of
 `aaa` parts produced to obtain a cost/piece. This calculation is repeated for
 each station and for the labor use.
+
+For automation costs, FMS Insight first computes the total number of pallet cycles over the whole month
+(a pallet cycle consists of a pallet leaving the load station, being machined, and returning
+to the load station). Next, for each part, FMS Insight sums up the number of pallet cycles
+for this part. Dividing these two, we obtain a percentage of the pallet cycles used for
+a specific part. The total automation cost is then divided up among the parts based on
+their percentage use of all the pallet cycles.

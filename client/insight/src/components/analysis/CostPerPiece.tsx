@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2019, John Lenz
 
 All rights reserved.
 
@@ -59,6 +59,7 @@ interface CostPerPieceInputProps {
 
   readonly setMachineCost: DispatchAction<ccp.ActionType.SetMachineCostPerYear>;
   readonly setPartMatCost: DispatchAction<ccp.ActionType.SetPartMaterialCost>;
+  readonly setAutomationCost: DispatchAction<ccp.ActionType.SetAutomationCost>;
   readonly setNumOper: DispatchAction<ccp.ActionType.SetNumOperators>;
   readonly setOperCostPerHour: DispatchAction<ccp.ActionType.SetOperatorCostPerHour>;
 }
@@ -99,6 +100,19 @@ function CostPerPieceInput(props: CostPerPieceInputProps) {
               value={props.input.operatorCostPerHour}
               onChange={e => props.setOperCostPerHour({ cost: parseFloat(e.target.value) })}
             />
+          </div>
+          <div style={{ marginTop: "1em", display: "flex", justifyContent: "space-around" }}>
+            <div style={{ width: "20em" }}>
+              <TextField
+                id="auotmation-cost-year"
+                type="number"
+                fullWidth
+                label="Cost for automated handling system per year"
+                inputProps={{ min: 0 }}
+                value={props.input.automationCostPerYear || 0}
+                onChange={e => props.setAutomationCost({ cost: parseFloat(e.target.value) })}
+              />
+            </div>
           </div>
           <Divider style={{ margin: "15px" }} />
           <Table data-testid="station-cost-table">
@@ -146,6 +160,7 @@ const ConnectedCostPerPieceInput = connect(
   }),
   {
     setMachineCost: mkAC(ccp.ActionType.SetMachineCostPerYear),
+    setAutomationCost: mkAC(ccp.ActionType.SetAutomationCost),
     setPartMatCost: mkAC(ccp.ActionType.SetPartMaterialCost),
     setNumOper: mkAC(ccp.ActionType.SetNumOperators),
     setOperCostPerHour: mkAC(ccp.ActionType.SetOperatorCostPerHour)
@@ -181,6 +196,7 @@ function CostPerPieceOutput(props: CostPerPieceOutputProps) {
               <TableCell>Material Cost</TableCell>
               <TableCell>Machine Cost</TableCell>
               <TableCell>Labor Cost</TableCell>
+              <TableCell>Automation Cost</TableCell>
               <TableCell>Total</TableCell>
             </TableRow>
           </TableHead>
@@ -207,11 +223,15 @@ function CostPerPieceOutput(props: CostPerPieceOutputProps) {
                   <TableCell>{c.parts_completed > 0 ? format.format(c.machine_cost / c.parts_completed) : 0}</TableCell>
                   <TableCell>{c.parts_completed > 0 ? format.format(c.labor_cost / c.parts_completed) : 0}</TableCell>
                   <TableCell>
+                    {c.parts_completed > 0 ? format.format(c.automation_cost / c.parts_completed) : 0}
+                  </TableCell>
+                  <TableCell>
                     {c.parts_completed > 0
                       ? format.format(
                           (props.input.partMaterialCost[c.part] || 0) +
                             c.machine_cost / c.parts_completed +
-                            c.labor_cost / c.parts_completed
+                            c.labor_cost / c.parts_completed +
+                            c.automation_cost / c.parts_completed
                         )
                       : format.format(props.input.partMaterialCost[c.part] || 0)}
                   </TableCell>

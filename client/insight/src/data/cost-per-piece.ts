@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2019, John Lenz
 
 All rights reserved.
 
@@ -40,6 +40,7 @@ export interface CostInput {
   // key is machine group name
   readonly machineCostPerYear: { readonly [key: string]: number };
   readonly partMaterialCost: { readonly [key: string]: number };
+  readonly automationCostPerYear?: number;
   readonly numOperators: number;
   readonly operatorCostPerHour: number;
 }
@@ -47,6 +48,7 @@ export interface CostInput {
 export enum ActionType {
   SetMachineCostPerYear = "CostPerPiece_SetMachineCost",
   SetPartMaterialCost = "CostPerPiece_SetPartCost",
+  SetAutomationCost = "CostPerPiece_SetAutomationCost",
   SetNumOperators = "CostPerPiece_SetNumOpers",
   SetOperatorCostPerHour = "CostPerPiece_SetOperatorCost"
 }
@@ -54,6 +56,7 @@ export enum ActionType {
 export type Action =
   | { type: ActionType.SetMachineCostPerYear; group: string; cost: number }
   | { type: ActionType.SetPartMaterialCost; part: string; cost: number }
+  | { type: ActionType.SetAutomationCost; cost: number }
   | { type: ActionType.SetNumOperators; numOpers: number }
   | { type: ActionType.SetOperatorCostPerHour; cost: number };
 
@@ -73,6 +76,7 @@ export const initial: State = (function() {
         machineCostPerYear: {},
         partMaterialCost: {},
         numOperators: 0,
+        automationCostPerYear: 0,
         operatorCostPerHour: 0
       }
     };
@@ -112,6 +116,18 @@ export function reducer(s: State, a: Action): State {
             ...s.input.partMaterialCost,
             [a.part]: a.cost
           }
+        }
+      };
+      break;
+    case ActionType.SetAutomationCost:
+      if (isNaN(a.cost)) {
+        return s;
+      }
+      newSt = {
+        ...s,
+        input: {
+          ...s.input,
+          automationCostPerYear: a.cost
         }
       };
       break;
@@ -156,6 +172,9 @@ export interface PartCost {
   // sum of labor costs over all cycles.  Must be divided by parts_completed to get cost/piece
   readonly labor_cost: number;
 
+  // split of yearly automation cost over all use
+  readonly automation_cost: number;
+
   readonly material_cost: number;
 }
 
@@ -188,6 +207,18 @@ function labor_cost(
   return pctUse * totalLaborCost;
 }
 
+function auto_cost(
+  cycles: LazySeq<PartCycleData>,
+  totalPalletCycles: number,
+  autoCostPerYear: number | undefined
+): number {
+  if (!autoCostPerYear) {
+    return 0;
+  }
+  const pctUse = cycles.sumOn(v => (v.completed ? 1 / v.partsPerPallet : 0)) / totalPalletCycles;
+  return (pctUse * autoCostPerYear) / 12;
+}
+
 export function compute_monthly_cost(
   i: CostInput,
   cycles: Vector<PartCycleData>,
@@ -200,6 +231,8 @@ export function compute_monthly_cost(
     c => [c.stationGroup, c.activeMinsForSingleMat],
     (a1, a2) => a1 + a2
   );
+
+  const totalPalletCycles = LazySeq.ofIterable(cycles).sumOn(v => (v.completed ? 1 / v.partsPerPallet : 0));
 
   return Array.from(
     LazySeq.ofIterable(cycles)
@@ -222,6 +255,7 @@ export function compute_monthly_cost(
             totalStatUseMinutes,
             totalLaborCost
           ),
+          automation_cost: auto_cost(LazySeq.ofIterable(forPart), totalPalletCycles, i.automationCostPerYear),
           material_cost: i.partMaterialCost[partName] || 0
         }
       ])
