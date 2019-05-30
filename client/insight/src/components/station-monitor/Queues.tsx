@@ -549,67 +549,66 @@ interface ChooseSerialOrDirectJobProps {
   readonly onClose: () => void;
 }
 
-interface ChooseSerialOrDirectJobState {
-  readonly serial?: string;
-}
-
-class ChooseSerialOrDirectJob extends React.PureComponent<ChooseSerialOrDirectJobProps, ChooseSerialOrDirectJobState> {
-  state = { serial: undefined };
-
-  render() {
-    return (
-      <Dialog open={this.props.dialog_open} onClose={this.props.onClose} maxWidth="md">
-        <DialogTitle>Lookup Material</DialogTitle>
-        <DialogContent>
-          <div style={{ maxWidth: "25em" }}>
-            <p>
-              To find the details of the material to add, you can either scan a part's serial, lookup a serial, or
-              manually select a job.
-            </p>
-          </div>
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <div
-              style={{
-                borderRight: "1px solid rgba(0,0,0,0.2)",
-                paddingRight: "8px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center"
-              }}
-            >
-              <div style={{ marginBottom: "2em" }}>
-                <TextField
-                  label="Serial"
-                  value={this.state.serial || ""}
-                  onChange={e => this.setState({ serial: e.target.value })}
-                />
-              </div>
-              <div>
-                <Button
-                  variant="contained"
-                  color="secondary"
-                  onClick={() => (this.state.serial ? this.props.lookupSerial(this.state.serial || "") : undefined)}
-                >
-                  Lookup Serial
-                </Button>
-              </div>
+const ChooseSerialOrDirectJob = React.memo(function(props: ChooseSerialOrDirectJobProps) {
+  const [serial, setSerial] = React.useState<string | undefined>(undefined);
+  function lookup() {
+    if (serial && serial !== "") {
+      props.lookupSerial(serial);
+      setSerial(undefined);
+    }
+  }
+  function close() {
+    props.onClose();
+    setSerial(undefined);
+  }
+  function manualSelect() {
+    props.selectJobWithoutSerial();
+    setSerial(undefined);
+  }
+  return (
+    <Dialog open={props.dialog_open} onClose={close} maxWidth="md">
+      <DialogTitle>Lookup Material</DialogTitle>
+      <DialogContent>
+        <div style={{ maxWidth: "25em" }}>
+          <p>
+            To find the details of the material to add, you can either scan a part's serial, lookup a serial, or
+            manually select a job.
+          </p>
+        </div>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <div
+            style={{
+              borderRight: "1px solid rgba(0,0,0,0.2)",
+              paddingRight: "8px",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center"
+            }}
+          >
+            <div style={{ marginBottom: "2em" }}>
+              <TextField label="Serial" value={serial || ""} onChange={e => setSerial(e.target.value)} />
             </div>
-            <div style={{ paddingLeft: "8px" }}>
-              <Button variant="contained" color="secondary" onClick={this.props.selectJobWithoutSerial}>
-                Manually Select Job
+            <div>
+              <Button variant="contained" color="secondary" onClick={lookup}>
+                Lookup Serial
               </Button>
             </div>
           </div>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={this.props.onClose} color="primary">
-            Cancel
-          </Button>
-        </DialogActions>
-      </Dialog>
-    );
-  }
-}
+          <div style={{ paddingLeft: "8px" }}>
+            <Button variant="contained" color="secondary" onClick={manualSelect}>
+              Manually Select Job
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={close} color="primary">
+          Cancel
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+});
 
 const ConnectedChooseSerialOrDirectJobDialog = connect(
   st => ({
