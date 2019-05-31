@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2019, John Lenz
 
 All rights reserved.
 
@@ -59,9 +59,14 @@ export function initBarcodeListener(dispatch: (a: AppActionBeforeMiddleware) => 
     scanActive = false;
 
     let serial = scannedTxt;
-    let commaIdx = serial.indexOf(",");
-    if (commaIdx >= 0) {
+    const commaIdx = serial.indexOf(",");
+    const semiIdx = serial.indexOf(";");
+    if (commaIdx >= 0 && semiIdx >= 0) {
+      serial = serial.substring(0, Math.min(commaIdx, semiIdx));
+    } else if (commaIdx >= 0) {
       serial = serial.substring(0, commaIdx);
+    } else if (semiIdx >= 0) {
+      serial = serial.substring(0, semiIdx);
     }
 
     dispatch([
@@ -85,7 +90,7 @@ export function initBarcodeListener(dispatch: (a: AppActionBeforeMiddleware) => 
       k.stopPropagation();
       k.preventDefault();
     } else if (scanActive && k.key && k.key.length === 1) {
-      if (/[a-zA-Z0-9-_]/.test(k.key)) {
+      if (/[a-zA-Z0-9-_,;]/.test(k.key)) {
         scannedTxt += k.key;
         k.stopPropagation();
         k.preventDefault();

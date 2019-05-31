@@ -26,7 +26,7 @@ keyboard presses. To support this, the FMS Insight website listens for a
 keyboard press of F1, keyboard presses of letters and numbers, followed by
 the Enter key (within 10 seconds). When the Enter key is detected, the
 preceding key presses are taken as the serial. Only the key presses up to
-the first comma are used, which allows the QR-code to contain extra data (for
+the first comma or semi-colon are used, which allows the QR-code to contain extra data (for
 example, the QR-code might contain the serial, then a comma, then the part
 name, then a comma, and even more data).
 
