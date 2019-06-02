@@ -373,6 +373,8 @@ namespace DebugMachineWatchApiServer
       {
         CurrentStatus = Statuses[statusFromEnv];
       }
+      CurrentStatus.QueueSizes["AnotherQueue"] = new QueueSize() { MaxSizeBeforeStopUnloading = null };
+      CurrentStatus.QueueSizes["AnotherQueue2"] = new QueueSize() { MaxSizeBeforeStopUnloading = null };
     }
 
     public static void OffsetJob(JobPlan j, TimeSpan offset)

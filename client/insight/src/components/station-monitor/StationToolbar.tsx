@@ -96,16 +96,6 @@ function StationToolbar(props: StationToolbarProps) {
     props.displayInspection(type === allInspSym ? undefined : type);
   }
 
-  let curLoadQueueCount = props.current_route.load_queues.length;
-  if (curLoadQueueCount > 3) {
-    curLoadQueueCount = 3;
-  }
-
-  let curStandaloneCount = props.current_route.standalone_queues.length;
-  if (curStandaloneCount > 3) {
-    curStandaloneCount = 3;
-  }
-
   // the material-ui type bindings specify `e.target.value` to have type string, but
   // when multiple selects are enabled it is actually a type string[]
   // tslint:disable-next-line:no-any
@@ -114,7 +104,7 @@ function StationToolbar(props: StationToolbarProps) {
     const free = newQueues.includes(freeMaterialSym);
     props.displayLoadStation(
       props.current_route.selected_load_id,
-      newQueues.slice(0, 3).filter(q => q !== freeMaterialSym),
+      newQueues.filter(q => q !== freeMaterialSym).slice(0, 3),
       free
     );
   }
@@ -128,7 +118,7 @@ function StationToolbar(props: StationToolbarProps) {
   function setStandaloneQueues(newQueuesAny: any) {
     const newQueues = newQueuesAny as ReadonlyArray<string>;
     const free = newQueues.includes(freeMaterialSym);
-    props.displayQueues(newQueues.slice(0, 3).filter(q => q !== freeMaterialSym), free);
+    props.displayQueues(newQueues.filter(q => q !== freeMaterialSym), free);
   }
 
   let standalonequeues: string[] = [...props.current_route.standalone_queues];
