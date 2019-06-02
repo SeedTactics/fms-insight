@@ -118,6 +118,7 @@ namespace MazakMachineInterface
       public MazakScheduleRow SchRow { get; set; }
       public string Unique { get; set; }
       public JobPlan Job { get; set; }
+      public bool LowerPriorityScheduleMatchingPartSkipped { get; set; }
       public Dictionary<int, ScheduleWithQueuesProcess> Procs { get; set; }
     }
 
@@ -126,7 +127,8 @@ namespace MazakMachineInterface
       var loadOpers = mazakData.LoadActions;
       var schs = new List<ScheduleWithQueues>();
       var pending = _log.AllPendingLoads();
-      foreach (var schRow in mazakData.Schedules.OrderBy(s => s.DueDate))
+      var skippedParts = new HashSet<string>();
+      foreach (var schRow in mazakData.Schedules.OrderBy(s => s.DueDate).ThenBy(s => s.Priority))
       {
         if (!MazakPart.IsSailPart(schRow.PartName)) continue;
 
@@ -142,6 +144,7 @@ namespace MazakMachineInterface
           if (action.Unique == job.UniqueStr && action.Path == procToPath.PathForProc(action.Process))
           {
             foundJobAtLoad = true;
+            skippedParts.Add(job.PartName);
             log.Debug("Not editing queued material because {uniq} is in the process of being loaded or unload with action {@action}", job.UniqueStr, action);
             break;
           }
@@ -151,8 +154,9 @@ namespace MazakMachineInterface
           var s = pendingLoad.Key.Split(',');
           if (schRow.PartName == s[0])
           {
-            log.Debug("Not editing queued material because found a pending load {@pendingLoad}", pendingLoad);
+            skippedParts.Add(job.PartName);
             foundJobAtLoad = true;
+            log.Debug("Not editing queued material because found a pending load {@pendingLoad}", pendingLoad);
             break;
           }
         }
@@ -164,6 +168,7 @@ namespace MazakMachineInterface
           SchRow = schRow,
           Unique = unique,
           Job = job,
+          LowerPriorityScheduleMatchingPartSkipped = skippedParts.Contains(job.PartName),
           Procs = new Dictionary<int, ScheduleWithQueuesProcess>(),
         };
         bool missingProc = false;
@@ -346,7 +351,7 @@ namespace MazakMachineInterface
     private void AttemptToAllocateCastings(IEnumerable<ScheduleWithQueues> schs, MazakSchedulesAndLoadActions mazakData)
     {
       // go through each job and check for castings in an input queue that have not yet been assigned to a job
-      foreach (var job in schs.GroupBy(s => s.Unique))
+      foreach (var job in schs.Where(s => !s.LowerPriorityScheduleMatchingPartSkipped).OrderBy(s => s.Job.RouteStartingTimeUTC).GroupBy(s => s.Unique))
       {
         var uniqueStr = job.Key;
         var partName = job.First().Job.PartName;

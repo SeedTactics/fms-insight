@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2019, John Lenz
 
 All rights reserved.
 
@@ -820,6 +820,114 @@ namespace MachineWatchTest
 
       var trans = _queues.CalculateScheduleChanges(read.ToData());
       trans.Should().BeNull();
+    }
+
+    [Fact]
+    public void AllocateToMultipleSchedulesByPriority()
+    {
+      var read = new TestMazakData();
+      var schRow1 = AddSchedule(read, schId: 10, unique: "uuu1", part: "pppp", numProc: 1, pri: 10, plan: 15, complete: 0);
+      AddScheduleProcess(schRow1, proc: 1, matQty: 0, exeQty: 0);
+
+      //sch2 has lower priority so should be allocated to first
+      var schRow2 = AddSchedule(read, schId: 11, unique: "uuu2", part: "pppp", numProc: 1, pri: 8, plan: 50, complete: 40);
+      AddScheduleProcess(schRow2, proc: 1, matQty: 0, exeQty: 5);
+
+      var j1 = new JobPlan("uuu1", 1);
+      j1.PartName = "pppp";
+      j1.RouteStartingTimeUTC = DateTime.UtcNow.AddHours(-2);
+      j1.SetInputQueue(1, 1, "thequeue");
+      var j2 = new JobPlan("uuu2", 1);
+      j2.PartName = "pppp";
+      j2.RouteStartingTimeUTC = DateTime.UtcNow.AddHours(-5);
+      j2.SetInputQueue(1, 1, "thequeue");
+      _jobDB.AddJobs(new NewJobs()
+      {
+        Jobs = new List<JobPlan> { j1, j2 }
+      }, null);
+
+
+
+      var mat1 = _logDB.AllocateMaterialIDForCasting("pppp", 1);
+      _logDB.RecordAddMaterialToQueue(mat1, process: 0, queue: "thequeue", position: 0);
+
+
+      _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new[] {
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "", PartName = "pppp", NumProcesses = 1},
+      });
+
+      var trans = _queues.CalculateScheduleChanges(read.ToData());
+
+      _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new[] {
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "uuu2", PartName = "pppp", NumProcesses = 1},
+      });
+
+      trans.Schedules.Count.Should().Be(1);
+      trans.Schedules[0].Id.Should().Be(11);
+      trans.Schedules[0].Processes.Count.Should().Be(1);
+      trans.Schedules[0].Processes[0].ProcessMaterialQuantity.Should().Be(1);
+
+
+      /*
+            //put something else at load station
+            var action = new LoadAction(true, 1, "pppp", MazakPart.CreateComment("uuuu", new[] { 1 }, false), 1, 1);
+            read.LoadActions.Add(action);
+
+            var trans = _queues.CalculateScheduleChanges(read.ToData());
+            trans.Should().BeNull();
+            */
+
+    }
+
+    [Fact]
+    public void AllocateToMultipleSchedulesByPriorityWhenEarlierScheduleHasLoad()
+    {
+      var read = new TestMazakData();
+      var schRow1 = AddSchedule(read, schId: 10, unique: "uuu1", part: "pppp", numProc: 1, pri: 10, plan: 15, complete: 0);
+      AddScheduleProcess(schRow1, proc: 1, matQty: 0, exeQty: 0);
+
+      //sch2 has lower priority so should be allocated to first
+      var schRow2 = AddSchedule(read, schId: 11, unique: "uuu2", part: "pppp", numProc: 1, pri: 8, plan: 50, complete: 40);
+      AddScheduleProcess(schRow2, proc: 1, matQty: 0, exeQty: 5);
+
+      //put something at the load station for uuu2
+      var action = new LoadAction(true, 1, "pppp", MazakPart.CreateComment("uuu2", new[] { 1 }, false), 1, 1);
+      read.LoadActions.Add(action);
+
+
+      var j1 = new JobPlan("uuu1", 1);
+      j1.PartName = "pppp";
+      j1.RouteStartingTimeUTC = DateTime.UtcNow.AddHours(-2);
+      j1.SetInputQueue(1, 1, "thequeue");
+      var j2 = new JobPlan("uuu2", 1);
+      j2.PartName = "pppp";
+      j2.RouteStartingTimeUTC = DateTime.UtcNow.AddHours(-5);
+      j2.SetInputQueue(1, 1, "thequeue");
+      _jobDB.AddJobs(new NewJobs()
+      {
+        Jobs = new List<JobPlan> { j1, j2 }
+      }, null);
+
+      var mat1 = _logDB.AllocateMaterialIDForCasting("pppp", 1);
+      _logDB.RecordAddMaterialToQueue(mat1, process: 0, queue: "thequeue", position: 0);
+
+
+      _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new[] {
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "", PartName = "pppp", NumProcesses = 1},
+      });
+
+      // should allocate no parts and leave schedule unchanged.
+      var trans = _queues.CalculateScheduleChanges(read.ToData());
+
+      _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new[] {
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "", PartName = "pppp", NumProcesses = 1},
+      });
+
+      trans.Schedules.Should().BeEmpty();
     }
 
   }
