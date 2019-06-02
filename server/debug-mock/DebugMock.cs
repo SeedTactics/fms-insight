@@ -187,16 +187,21 @@ namespace DebugMachineWatchApiServer
 
     public void AddUnallocatedCastingToQueue(string part, string queue, int position, string serial)
     {
+      Serilog.Log.Information("AddUnallocatedCastingToQueue: {part} {queue} {position} {serial}", part, queue, position, serial);
     }
 
     public void AddUnprocessedMaterialToQueue(string jobUnique, int lastCompletedProcess, string queue, int position, string serial)
     {
+      Serilog.Log.Information("AddUnprocessedMaterialToQueue: {unique} {lastCompProcess} {queue} {position} {serial}",
+        jobUnique, lastCompletedProcess, queue, position, serial);
     }
     public void SetMaterialInQueue(long materialId, string queue, int position)
     {
+      Serilog.Log.Information("SetMaterialInQueue {matId} {queue} {position}", materialId, queue, position);
     }
     public void RemoveMaterialFromAllQueues(long materialId)
     {
+      Serilog.Log.Information("RemoveMaterialFromAllQueues {matId}", materialId);
     }
 
     public List<JobAndDecrementQuantity> DecrementJobQuantites(string loadDecrementsStrictlyAfterDecrementId)
