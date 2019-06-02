@@ -45,6 +45,19 @@ namespace MazakMachineInterface
     public OpenDatabaseKitTransactionError(string msg) : base(msg) { }
   }
 
+  public class ErrorModifyingParts : Exception
+  {
+    // There is a suspected bug in the mazak software when deleting parts.  Sometimes, open database kit
+    // successfully deletes a part but still outputs an error 7.  This only happens occasionally, but
+    // if we get an error 7 when deleting the part table, check if the part was successfully deleted and
+    // if so ignore the error.
+    public HashSet<string> PartNames { get; }
+    public ErrorModifyingParts(HashSet<string> names) : base("Mazak returned error when modifying parts: " + string.Join(",", names))
+    {
+      PartNames = names;
+    }
+  }
+
 
   public class OpenDatabaseKitDB
   {
@@ -565,33 +578,59 @@ namespace MazakMachineInterface
       public int TransactionStatus { get; set; }
     }
 
+    private class PartCommandStatus : CommandStatus
+    {
+      public string PartName { get; set; }
+    }
+
     private bool CheckTransactionErrors(IDbConnection conn, string prefix)
     {
-      string[] TransactionTables = {
-        "Fixture_t",
-        "Pallet_t",
-        "Part_t",
-        "Schedule_t",
-      };
+      // Once Mazak processes a row, the row in the table is blanked.  If an error occurs, instead
+      // the Command is changed to 9 and an error code is put in the TransactionStatus column.
       var trans = conn.BeginTransaction(IsolationLevel.ReadCommitted);
       bool foundUnprocesssedRow = false;
       var log = new List<string>();
+      var partEditErrors = new HashSet<string>();
       try
       {
-        foreach (var table in TransactionTables)
+        foreach (var table in new[] { "Fixture_t", "Pallet_t", "Schedule_t" })
         {
           var ret = conn.Query<CommandStatus>("SELECT Command, TransactionStatus FROM " + table, transaction: trans);
+          int idx = -1;
           foreach (var row in ret)
           {
+            idx += 1;
             if (!row.Command.HasValue) continue;
             if (row.Command.Value == MazakWriteCommand.Error)
             {
-              log.Add(prefix + " Mazak transaction returned error " + row.TransactionStatus.ToString());
+              log.Add(prefix + " Mazak transaction on table " + table + " at index " + idx.ToString() + " returned error " + row.TransactionStatus.ToString());
             }
             else
             {
               foundUnprocesssedRow = true;
             }
+          }
+        }
+
+        // now the part, with custom checking for error 7
+        var parts = conn.Query<PartCommandStatus>("SELECT Command, TransactionStatus, PartName FROM Part_t", transaction: trans);
+        var partIdx = -1;
+        foreach (var row in parts)
+        {
+          partIdx += 1;
+          if (!row.Command.HasValue) continue;
+          if (row.Command.Value == MazakWriteCommand.Error && row.TransactionStatus == 7 && !string.IsNullOrEmpty(row.PartName))
+          {
+            Log.Debug(prefix + " mazak transaction on table Part_t at index {idx} returned error 7 for part {part}", partIdx, row.PartName);
+            partEditErrors.Add(row.PartName);
+          }
+          else if (row.Command.Value == MazakWriteCommand.Error)
+          {
+            log.Add(prefix + " Mazak transaction on table Part_t at index " + partIdx.ToString() + " returned error " + row.TransactionStatus.ToString());
+          }
+          else
+          {
+            foundUnprocesssedRow = true;
           }
         }
         trans.Commit();
@@ -610,7 +649,18 @@ namespace MazakMachineInterface
         );
       }
 
-      return !foundUnprocesssedRow;
+      if (foundUnprocesssedRow)
+      {
+        return false;
+      }
+      else if (partEditErrors.Count > 0)
+      {
+        throw new ErrorModifyingParts(partEditErrors);
+      }
+      else
+      {
+        return true;
+      }
     }
 
     private void ClearTransactionDatabase(IDbConnection conn, IDbTransaction trans)
@@ -958,6 +1008,15 @@ namespace MazakMachineInterface
         data.LoadActions = _loadOper.CurrentLoadActions();
       }
       return data;
+    }
+
+    public bool CheckPartExists(string partName)
+    {
+      return WithReadDBConnection(conn =>
+      {
+        var cnt = conn.ExecuteScalar<int>("SELECT COUNT(*) FROM Part WHERE PartName = @p", new { p = partName });
+        return cnt > 0;
+      });
     }
 
     public MazakAllData LoadAllData()

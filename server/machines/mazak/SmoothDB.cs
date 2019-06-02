@@ -95,6 +95,11 @@ namespace MazakMachineInterface
       return all;
     }
 
+    public bool CheckPartExists(string partName)
+    {
+      return _openReadDB.CheckPartExists(partName);
+    }
+
     #region LoadActions
     private IEnumerable<LoadAction> CurrentLoadActions()
     {

@@ -337,6 +337,8 @@ namespace MazakMachineInterface
     MazakSchedulesPartsPallets LoadSchedulesPartsPallets();
     MazakAllData LoadAllData();
 
+    bool CheckPartExists(string part);
+
     TResult WithReadDBConnection<TResult>(Func<IDbConnection, TResult> action);
   }
 

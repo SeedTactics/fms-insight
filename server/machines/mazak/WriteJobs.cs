@@ -200,7 +200,22 @@ namespace MazakMachineInterface
       //delete everything
       transSet = mazakJobs.DeleteOldPartPalletRows();
       if (transSet.Parts.Any() || transSet.Pallets.Any())
-        writeDb.Save(transSet, "Delete Parts Pallets");
+      {
+        try
+        {
+          writeDb.Save(transSet, "Delete Parts Pallets");
+        }
+        catch (ErrorModifyingParts e)
+        {
+          foreach (var partName in e.PartNames)
+          {
+            if (readDatabase.CheckPartExists(partName))
+            {
+              throw new Exception("Mazak returned an error when attempting to delete part " + partName);
+            }
+          }
+        }
+      }
 
       //have to delete fixtures after schedule, parts, and pallets are already deleted
       //also, add new fixtures
