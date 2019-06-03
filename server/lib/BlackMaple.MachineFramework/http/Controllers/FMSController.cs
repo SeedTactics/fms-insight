@@ -54,6 +54,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [DataMember] public bool UsingLabelPrinterForSerials { get; set; }
   }
 
+  [ApiController]
   [Route("api/v1/fms")]
   public class fmsController : ControllerBase
   {
@@ -98,6 +99,7 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpPut("settings/{id}"), Authorize]
+    [ProducesResponseType(typeof(void), 200)]
     public void SetSetting(string id, [FromBody] string setting)
     {
       var f = System.IO.Path.Combine(

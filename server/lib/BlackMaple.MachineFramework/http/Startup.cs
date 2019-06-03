@@ -100,7 +100,7 @@ namespace BlackMaple.MachineFramework
           {
             options.ModelBinderProviders.Insert(0, new DateTimeBinderProvider());
           })
-          .SetCompatibilityVersion(CompatibilityVersion.Version_2_1)
+          .SetCompatibilityVersion(CompatibilityVersion.Version_2_2)
           .AddApiExplorer()
           .AddFormatterMappings()
           .AddJsonFormatters()
@@ -111,6 +111,21 @@ namespace BlackMaple.MachineFramework
             options.SerializerSettings.ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver();
             options.SerializerSettings.ConstructorHandling = Newtonsoft.Json.ConstructorHandling.AllowNonPublicDefaultConstructor;
           });
+
+      services.AddSwaggerDocument(cfg =>
+      {
+        cfg.Title = "SeedTactic FMS Insight";
+        cfg.Description = "API for access to FMS Insight for flexible manufacturing system control";
+        cfg.Version = "1.8";
+        var settings = new Newtonsoft.Json.JsonSerializerSettings();
+        settings.Converters.Add(new StringEnumConverter());
+        settings.Converters.Add(new TimespanConverter());
+        settings.ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver();
+        cfg.SerializerSettings = settings;
+        //cfg.DefaultReferenceTypeNullHandling = NJsonSchema.ReferenceTypeNullHandling.NotNull;
+        cfg.DefaultResponseReferenceTypeNullHandling = NJsonSchema.ReferenceTypeNullHandling.NotNull;
+        cfg.RequireParametersWithoutDefault = true;
+      });
 
       if (_serverSt.UseAuthentication)
       {
@@ -238,20 +253,17 @@ namespace BlackMaple.MachineFramework
         }
       });
 
-      app.UseSwaggerUi3(typeof(Startup).Assembly, settings =>
-      {
-        settings.GeneratorSettings.Title = "SeedTactic FMS Insight";
-        settings.GeneratorSettings.Description = "API for access to FMS Insight for flexible manufacturing system control";
-        settings.GeneratorSettings.Version = "1.8";
-        settings.GeneratorSettings.DefaultEnumHandling = NJsonSchema.EnumHandling.String;
-        settings.GeneratorSettings.DefaultPropertyNameHandling = NJsonSchema.PropertyNameHandling.Default;
-        settings.PostProcess = document =>
+      app
+        .UseSwagger(settings =>
         {
-          document.Host = null;
-          document.BasePath = null;
-          document.Schemes = null;
-        };
-      });
+          settings.PostProcess = (doc, req) =>
+          {
+            doc.Host = null;
+            doc.BasePath = null;
+            doc.Schemes = null;
+          };
+        })
+        .UseSwaggerUi3();
 
       app.Run(async context =>
       {

@@ -65,7 +65,9 @@ namespace BlackMaple.MachineFramework.Controllers
     [DataMember(IsRequired = true)] public TimeSpan Active { get; set; }
   }
 
-  [Route("api/v1/[controller]"), Authorize]
+  [ApiController]
+  [Authorize]
+  [Route("api/v1/[controller]")]
   public class logController : ControllerBase
   {
     private ILogDatabase _server;

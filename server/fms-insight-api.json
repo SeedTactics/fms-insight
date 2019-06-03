@@ -1,17 +1,11 @@
 {
-  "x-generator": "NSwag v11.17.21.0 (NJsonSchema v9.10.63.0 (Newtonsoft.Json v11.0.0.0))",
+  "x-generator": "NSwag v12.3.1.0 (NJsonSchema v9.14.1.0 (Newtonsoft.Json v11.0.0.0))",
   "swagger": "2.0",
   "info": {
     "title": "SeedTactic FMS Insight",
     "description": "API for access to FMS Insight for flexible manufacturing system control",
     "version": "1.8"
   },
-  "consumes": [
-    "application/json"
-  ],
-  "produces": [
-    "application/json"
-  ],
   "paths": {
     "/api/v1/fms/fms-information": {
       "get": {
@@ -19,9 +13,14 @@
           "fms"
         ],
         "operationId": "fms_FMSInformation",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
         "responses": {
           "200": {
-            "x-nullable": true,
+            "x-nullable": false,
             "description": "",
             "schema": {
               "$ref": "#/definitions/FMSInfo"
@@ -36,18 +35,23 @@
           "fms"
         ],
         "operationId": "fms_GetSettings",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
         "parameters": [
           {
             "type": "string",
             "name": "id",
             "in": "path",
             "required": true,
-            "x-nullable": false
+            "x-nullable": true
           }
         ],
         "responses": {
           "200": {
-            "x-nullable": true,
+            "x-nullable": false,
             "description": "",
             "schema": {
               "type": "string"
@@ -60,13 +64,19 @@
           "fms"
         ],
         "operationId": "fms_SetSetting",
+        "consumes": [
+          "application/json-patch+json",
+          "application/json",
+          "text/json",
+          "application/*+json"
+        ],
         "parameters": [
           {
             "type": "string",
             "name": "id",
             "in": "path",
             "required": true,
-            "x-nullable": false
+            "x-nullable": true
           },
           {
             "name": "setting",
@@ -75,7 +85,7 @@
             "schema": {
               "type": "string"
             },
-            "x-nullable": true
+            "x-nullable": false
           }
         ],
         "responses": {
@@ -97,7 +107,7 @@
             "name": "part",
             "in": "path",
             "required": true,
-            "x-nullable": false
+            "x-nullable": true
           },
           {
             "type": "string",
@@ -171,6 +181,11 @@
           "jobs"
         ],
         "operationId": "jobs_History",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
         "parameters": [
           {
             "type": "string",
@@ -206,6 +221,11 @@
           "jobs"
         ],
         "operationId": "jobs_Recent",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
         "parameters": [
           {
             "type": "string",
@@ -232,6 +252,11 @@
           "jobs"
         ],
         "operationId": "jobs_LatestSchedule",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
         "responses": {
           "200": {
             "x-nullable": false,
@@ -249,18 +274,23 @@
           "jobs"
         ],
         "operationId": "jobs_MostRecentUnfilledWorkordersForPart",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
         "parameters": [
           {
             "type": "string",
             "name": "part",
             "in": "path",
             "required": true,
-            "x-nullable": false
+            "x-nullable": true
           }
         ],
         "responses": {
           "200": {
-            "x-nullable": true,
+            "x-nullable": false,
             "description": "",
             "schema": {
               "type": "array",
@@ -278,9 +308,14 @@
           "jobs"
         ],
         "operationId": "jobs_CurrentStatus",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
         "responses": {
           "200": {
-            "x-nullable": true,
+            "x-nullable": false,
             "description": "",
             "schema": {
               "$ref": "#/definitions/CurrentStatus"
@@ -295,6 +330,17 @@
           "jobs"
         ],
         "operationId": "jobs_CheckValid",
+        "consumes": [
+          "application/json-patch+json",
+          "application/json",
+          "text/json",
+          "application/*+json"
+        ],
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
         "parameters": [
           {
             "name": "jobs",
@@ -306,12 +352,12 @@
                 "$ref": "#/definitions/JobPlan"
               }
             },
-            "x-nullable": true
+            "x-nullable": false
           }
         ],
         "responses": {
           "200": {
-            "x-nullable": true,
+            "x-nullable": false,
             "description": "",
             "schema": {
               "type": "array",
@@ -329,6 +375,12 @@
           "jobs"
         ],
         "operationId": "jobs_Add",
+        "consumes": [
+          "application/json-patch+json",
+          "application/json",
+          "text/json",
+          "application/*+json"
+        ],
         "parameters": [
           {
             "name": "newJobs",
@@ -337,7 +389,7 @@
             "schema": {
               "$ref": "#/definitions/NewJobs"
             },
-            "x-nullable": true
+            "x-nullable": false
           },
           {
             "type": "string",
@@ -360,13 +412,19 @@
           "jobs"
         ],
         "operationId": "jobs_AddUnallocatedCastingToQueue",
+        "consumes": [
+          "application/json-patch+json",
+          "application/json",
+          "text/json",
+          "application/*+json"
+        ],
         "parameters": [
           {
             "type": "string",
             "name": "partName",
             "in": "path",
             "required": true,
-            "x-nullable": false
+            "x-nullable": true
           },
           {
             "type": "string",
@@ -390,7 +448,7 @@
             "schema": {
               "type": "string"
             },
-            "x-nullable": true
+            "x-nullable": false
           }
         ],
         "responses": {
@@ -406,13 +464,19 @@
           "jobs"
         ],
         "operationId": "jobs_AddUnprocessedMaterialToQueue",
+        "consumes": [
+          "application/json-patch+json",
+          "application/json",
+          "text/json",
+          "application/*+json"
+        ],
         "parameters": [
           {
             "type": "string",
             "name": "jobUnique",
             "in": "path",
             "required": true,
-            "x-nullable": false
+            "x-nullable": true
           },
           {
             "type": "integer",
@@ -444,7 +508,7 @@
             "schema": {
               "type": "string"
             },
-            "x-nullable": true
+            "x-nullable": false
           }
         ],
         "responses": {
@@ -460,6 +524,12 @@
           "jobs"
         ],
         "operationId": "jobs_SetMaterialInQueue",
+        "consumes": [
+          "application/json-patch+json",
+          "application/json",
+          "text/json",
+          "application/*+json"
+        ],
         "parameters": [
           {
             "type": "integer",
@@ -476,7 +546,7 @@
             "schema": {
               "$ref": "#/definitions/QueuePosition"
             },
-            "x-nullable": true
+            "x-nullable": false
           }
         ],
         "responses": {
@@ -513,6 +583,11 @@
           "jobs"
         ],
         "operationId": "jobs_DecrementQuantities",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
         "parameters": [
           {
             "type": "string",
@@ -530,7 +605,7 @@
         ],
         "responses": {
           "200": {
-            "x-nullable": true,
+            "x-nullable": false,
             "description": "",
             "schema": {
               "type": "array",
@@ -548,6 +623,11 @@
           "log"
         ],
         "operationId": "log_Get",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
         "parameters": [
           {
             "type": "string",
@@ -568,7 +648,7 @@
         ],
         "responses": {
           "200": {
-            "x-nullable": true,
+            "x-nullable": false,
             "description": "",
             "schema": {
               "type": "array",
@@ -621,6 +701,11 @@
           "log"
         ],
         "operationId": "log_GetCompletedParts",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
         "parameters": [
           {
             "type": "string",
@@ -641,7 +726,7 @@
         ],
         "responses": {
           "200": {
-            "x-nullable": true,
+            "x-nullable": false,
             "description": "",
             "schema": {
               "type": "array",
@@ -659,6 +744,11 @@
           "log"
         ],
         "operationId": "log_Recent",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
         "parameters": [
           {
             "type": "integer",
@@ -671,7 +761,7 @@
         ],
         "responses": {
           "200": {
-            "x-nullable": true,
+            "x-nullable": false,
             "description": "",
             "schema": {
               "type": "array",
@@ -689,6 +779,11 @@
           "log"
         ],
         "operationId": "log_LogForMaterial",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
         "parameters": [
           {
             "type": "integer",
@@ -701,7 +796,7 @@
         ],
         "responses": {
           "200": {
-            "x-nullable": true,
+            "x-nullable": false,
             "description": "",
             "schema": {
               "type": "array",
@@ -719,18 +814,23 @@
           "log"
         ],
         "operationId": "log_LogForSerial",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
         "parameters": [
           {
             "type": "string",
             "name": "serial",
             "in": "path",
             "required": true,
-            "x-nullable": false
+            "x-nullable": true
           }
         ],
         "responses": {
           "200": {
-            "x-nullable": true,
+            "x-nullable": false,
             "description": "",
             "schema": {
               "type": "array",
@@ -748,18 +848,23 @@
           "log"
         ],
         "operationId": "log_LogForWorkorder",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
         "parameters": [
           {
             "type": "string",
             "name": "workorder",
             "in": "path",
             "required": true,
-            "x-nullable": false
+            "x-nullable": true
           }
         ],
         "responses": {
           "200": {
-            "x-nullable": true,
+            "x-nullable": false,
             "description": "",
             "schema": {
               "type": "array",
@@ -777,6 +882,11 @@
           "log"
         ],
         "operationId": "log_MaterialDetails",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
         "parameters": [
           {
             "type": "integer",
@@ -789,7 +899,7 @@
         ],
         "responses": {
           "200": {
-            "x-nullable": true,
+            "x-nullable": false,
             "description": "",
             "schema": {
               "$ref": "#/definitions/MaterialDetails"
@@ -804,11 +914,17 @@
           "log"
         ],
         "operationId": "log_GetWorkorders",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
         "parameters": [
           {
             "type": "array",
             "name": "ids",
             "in": "query",
+            "required": true,
             "collectionFormat": "multi",
             "x-nullable": true,
             "items": {
@@ -818,7 +934,7 @@
         ],
         "responses": {
           "200": {
-            "x-nullable": true,
+            "x-nullable": false,
             "description": "",
             "schema": {
               "type": "array",
@@ -841,6 +957,7 @@
             "type": "array",
             "name": "ids",
             "in": "query",
+            "required": true,
             "collectionFormat": "multi",
             "x-nullable": true,
             "items": {
@@ -865,6 +982,17 @@
           "log"
         ],
         "operationId": "log_SetSerial",
+        "consumes": [
+          "application/json-patch+json",
+          "application/json",
+          "text/json",
+          "application/*+json"
+        ],
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
         "parameters": [
           {
             "type": "integer",
@@ -881,7 +1009,7 @@
             "schema": {
               "type": "string"
             },
-            "x-nullable": true
+            "x-nullable": false
           },
           {
             "type": "integer",
@@ -894,7 +1022,7 @@
         ],
         "responses": {
           "200": {
-            "x-nullable": true,
+            "x-nullable": false,
             "description": "",
             "schema": {
               "$ref": "#/definitions/LogEntry"
@@ -909,6 +1037,17 @@
           "log"
         ],
         "operationId": "log_SetWorkorder",
+        "consumes": [
+          "application/json-patch+json",
+          "application/json",
+          "text/json",
+          "application/*+json"
+        ],
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
         "parameters": [
           {
             "type": "integer",
@@ -925,7 +1064,7 @@
             "schema": {
               "type": "string"
             },
-            "x-nullable": true
+            "x-nullable": false
           },
           {
             "type": "integer",
@@ -938,7 +1077,7 @@
         ],
         "responses": {
           "200": {
-            "x-nullable": true,
+            "x-nullable": false,
             "description": "",
             "schema": {
               "$ref": "#/definitions/LogEntry"
@@ -953,6 +1092,17 @@
           "log"
         ],
         "operationId": "log_SetInspectionDecision",
+        "consumes": [
+          "application/json-patch+json",
+          "application/json",
+          "text/json",
+          "application/*+json"
+        ],
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
         "parameters": [
           {
             "type": "integer",
@@ -967,7 +1117,7 @@
             "name": "inspType",
             "in": "path",
             "required": true,
-            "x-nullable": false
+            "x-nullable": true
           },
           {
             "name": "inspect",
@@ -989,7 +1139,7 @@
         ],
         "responses": {
           "200": {
-            "x-nullable": true,
+            "x-nullable": false,
             "description": "",
             "schema": {
               "$ref": "#/definitions/LogEntry"
@@ -1004,6 +1154,17 @@
           "log"
         ],
         "operationId": "log_RecordInspectionCompleted",
+        "consumes": [
+          "application/json-patch+json",
+          "application/json",
+          "text/json",
+          "application/*+json"
+        ],
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
         "parameters": [
           {
             "name": "insp",
@@ -1017,7 +1178,7 @@
         ],
         "responses": {
           "200": {
-            "x-nullable": true,
+            "x-nullable": false,
             "description": "",
             "schema": {
               "$ref": "#/definitions/LogEntry"
@@ -1032,6 +1193,17 @@
           "log"
         ],
         "operationId": "log_RecordWashCompleted",
+        "consumes": [
+          "application/json-patch+json",
+          "application/json",
+          "text/json",
+          "application/*+json"
+        ],
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
         "parameters": [
           {
             "name": "insp",
@@ -1045,7 +1217,7 @@
         ],
         "responses": {
           "200": {
-            "x-nullable": true,
+            "x-nullable": false,
             "description": "",
             "schema": {
               "$ref": "#/definitions/LogEntry"
@@ -1060,18 +1232,23 @@
           "log"
         ],
         "operationId": "log_FinalizeWorkorder",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
         "parameters": [
           {
             "type": "string",
             "name": "workorder",
             "in": "path",
             "required": true,
-            "x-nullable": false
+            "x-nullable": true
           }
         ],
         "responses": {
           "200": {
-            "x-nullable": true,
+            "x-nullable": false,
             "description": "",
             "schema": {
               "$ref": "#/definitions/LogEntry"
@@ -1621,26 +1798,28 @@
       }
     },
     "InProcessJob": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "Completed"
-      ],
-      "properties": {
-        "Completed": {
-          "type": "array",
-          "items": {
-            "type": "array",
-            "items": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        }
-      },
       "allOf": [
         {
           "$ref": "#/definitions/JobPlan"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "Completed"
+          ],
+          "properties": {
+            "Completed": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            }
+          }
         }
       ]
     },

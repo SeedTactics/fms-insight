@@ -47,7 +47,9 @@ namespace BlackMaple.MachineFramework.Controllers
     [DataMember(IsRequired = true)] public int Position { get; set; }
   }
 
-  [Route("api/v1/[controller]"), Authorize]
+  [ApiController]
+  [Authorize]
+  [Route("api/v1/[controller]")]
   public class jobsController : ControllerBase
   {
     private IJobDatabase _db;
@@ -100,12 +102,14 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpPost("add")]
+    [ProducesResponseType(typeof(void), 200)]
     public void Add([FromBody]NewJobs newJobs, [FromQuery] string expectedPreviousScheduleId)
     {
       _control.AddJobs(newJobs, expectedPreviousScheduleId);
     }
 
     [HttpPost("part/{partName}/casting")]
+    [ProducesResponseType(typeof(void), 200)]
     public void AddUnallocatedCastingToQueue(string partName, [FromQuery] string queue, [FromQuery] int pos, [FromBody] string serial)
     {
       if (string.IsNullOrEmpty(partName))
@@ -116,6 +120,7 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpPost("job/{jobUnique}/unprocessed-material")]
+    [ProducesResponseType(typeof(void), 200)]
     public void AddUnprocessedMaterialToQueue(string jobUnique, [FromQuery] int lastCompletedProcess, [FromQuery] string queue, [FromQuery] int pos, [FromBody] string serial)
     {
       if (string.IsNullOrEmpty(jobUnique))
@@ -127,6 +132,7 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpPut("material/{materialId}/queue")]
+    [ProducesResponseType(typeof(void), 200)]
     public void SetMaterialInQueue(long materialId, [FromBody] QueuePosition queue)
     {
       if (string.IsNullOrEmpty(queue.Queue))
@@ -135,6 +141,7 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpDelete("material/{materialId}/queue")]
+    [ProducesResponseType(typeof(void), 200)]
     public void RemoveMaterialFromAllQueues(long materialId)
     {
       _control.RemoveMaterialFromAllQueues(materialId);

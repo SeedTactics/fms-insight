@@ -16,12 +16,12 @@
   <Choose>
     <When Condition="$(OS) == 'Windows_NT'">
       <PropertyGroup>
-        <TargetFrameworks>net461;netcoreapp2.1</TargetFrameworks>
+        <TargetFrameworks>net461;netcoreapp2.2</TargetFrameworks>
       </PropertyGroup>
     </When>
     <Otherwise>
       <PropertyGroup>
-        <TargetFramework>netcoreapp2.1</TargetFramework>
+        <TargetFramework>netcoreapp2.2</TargetFramework>
       </PropertyGroup>
     </Otherwise>
   </Choose>
@@ -29,7 +29,7 @@
   <ItemGroup>
     <ProjectReference Include="../../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj" />
     <PackageReference Include="Dapper" Version="1.50.*" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="2.2.1" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="2.2.4" />
   </ItemGroup>
 
   <Choose>
@@ -44,7 +44,7 @@
           </ItemGroup>
       </When>
 
-      <When Condition="$(TargetFramework) == 'netcoreapp2.1'">
+      <When Condition="$(TargetFramework) == 'netcoreapp2.2'">
           <ItemGroup>
             <PackageReference Include="System.Data.SqlClient" Version="4.6.0" />
           </ItemGroup>

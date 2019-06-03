@@ -5424,10 +5424,10 @@ npmlog@^4.0.2:
     gauge "~2.7.3"
     set-blocking "~2.0.0"
 
-nswag@^11.14.0:
-  version "11.20.1"
-  resolved "https://registry.yarnpkg.com/nswag/-/nswag-11.20.1.tgz#dcc2063670be5cc892318d529cb76cdada0e8cb2"
-  integrity sha512-w4iRBBD5Us4vShyY8NKk06A5EiJ7y2W9dV7SM8n1iH4zy4+6tX9NbaeTDOxtGvarZjCNQdDv6BDhQxzltzGzQA==
+nswag@^12.3.1:
+  version "12.3.1"
+  resolved "https://registry.yarnpkg.com/nswag/-/nswag-12.3.1.tgz#35535d5c77c1e67a56bb47d85e4774585de31e85"
+  integrity sha512-opk/mMQSrXkSf5pXyH+d0ED2SVP1tjFw0LbnV8Q5nO+Zhd8bcpMHUKc3UNDwOPOvGFakVJI0GEhEIRcGeFkMqg==
 
 nth-check@^1.0.2:
   version "1.0.2"

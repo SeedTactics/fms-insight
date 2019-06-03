@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>BlackMaple.MachineFramework.DebugMock</PackageId>
     <AssemblyName>BlackMaple.MachineFramework.DebugMock</AssemblyName>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
