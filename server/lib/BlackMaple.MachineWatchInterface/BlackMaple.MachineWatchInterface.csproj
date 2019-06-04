@@ -27,7 +27,6 @@
 
   <ItemGroup>
     <Compile Include="../BlackMaple.MachineFramework/api/*.cs"/>
-    <Compile Include="../BlackMaple.MachineFramework/types/*.cs"/>
   </ItemGroup>
 
   <Choose>
