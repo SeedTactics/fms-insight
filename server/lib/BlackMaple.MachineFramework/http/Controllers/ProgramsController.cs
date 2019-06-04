@@ -53,6 +53,12 @@ namespace BlackMaple.MachineFramework.Controllers
       _m = m;
     }
 
+    [HttpGet("production-programs")]
+    public Task<IEnumerable<ProgramRevision>> GetLatestPrograms()
+    {
+      return _m.GetLatestPrograms();
+    }
+
     [HttpGet("production-program/{programName}/latest")]
     public Task<ProgramRevision> GetLatestProgram(string programName)
     {
@@ -69,6 +75,22 @@ namespace BlackMaple.MachineFramework.Controllers
       return _m.GetProgramHistory(programName, skip, count);
     }
 
+    [HttpGet("production-program/{programName}/{revisionId}/content")]
+    public Task<ProgramContent> GetProgramContent(string programName, string revisionId)
+    {
+      return _m.GetProgramContent(programName, revisionId);
+    }
+
+    [HttpPost("production-program/{programName}")]
+    public Task<ProgramRevision> NewProductionProgram(string programName, [FromBody] ProgramVersion program)
+    {
+      if (program.ProgramName != programName)
+        throw new BadRequestException("Program name from path does not match program body");
+      return _m.NewProductionRevision(program);
+    }
+
+
+
     [HttpGet("branches")]
     public Task<IEnumerable<ProgramFeatureBranch>> GetFeatureBranches()
     {
@@ -82,11 +104,9 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpPost("branch/{branchName}")]
-    public Task<ProgramFeatureBranch> CreateFeatureBranch(string branchName, [FromQuery] string programName)
+    public Task<ProgramFeatureBranch> CreateFeatureBranch(string branchName)
     {
-      if (string.IsNullOrEmpty(programName))
-        throw new BadRequestException("Invalid program name");
-      return _m.CreateFeatureBranch(branchName, programName);
+      return _m.CreateFeatureBranch(branchName);
     }
 
     [HttpDelete("branch/{branchName}")]
@@ -95,14 +115,8 @@ namespace BlackMaple.MachineFramework.Controllers
       return _m.DeleteFeatureBranch(branchName);
     }
 
-    [HttpPost("branch/{branchName}/new-revision")]
-    public Task<ProgramRevision> NewRevisionOnBranch(string branchName, [FromBody] ProgramVersion program)
-    {
-      return _m.NewRevisionOnBranch(branchName, program);
-    }
-
-    [HttpPost("branch/{branchName}/history")]
-    public Task<IEnumerable<ProgramFeatureRevision>> GetBranchHistory(string branchName, [FromQuery] int skip = 0, [FromQuery] int count = 20)
+    [HttpGet("branch/{branchName}/history")]
+    public Task<IEnumerable<ProgramRevision>> GetBranchHistory(string branchName, [FromQuery] int skip = 0, [FromQuery] int count = 20)
     {
       if (skip < 0)
         throw new BadRequestException("Skip must be non-negative");
@@ -111,10 +125,16 @@ namespace BlackMaple.MachineFramework.Controllers
       return _m.GetBranchHistory(branchName, skip, count);
     }
 
-    [HttpPost("branch/{branchName}/commit")]
+    [HttpPut("branch/{branchName}/release-to-production")]
     public Task ReleaseBranchToProduction(string branchName)
     {
       return _m.ReleaseBranchToProduction(branchName);
+    }
+
+    [HttpPost("branch/{branchName}/new-revision")]
+    public Task<ProgramRevision> NewRevisionOnBranch(string branchName, [FromBody] ProgramVersion program)
+    {
+      return _m.NewRevisionOnBranch(branchName, program);
     }
 
   }

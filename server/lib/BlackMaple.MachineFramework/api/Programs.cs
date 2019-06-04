@@ -34,11 +34,23 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Runtime.Serialization;
+#if !NET35
+using System.Threading.Tasks;
+#endif
 
 namespace BlackMaple.MachineWatchInterface
 {
+  [DataContract]
+  public class ProgramContent
+  {
+    [DataMember]
+    public string MainProgramContent { get; set; }
+
+    [DataMember]
+    public Dictionary<string, string> SubPrograms { get; set; }
+  }
+
   [DataContract]
   public class ProgramVersion
   {
@@ -53,26 +65,13 @@ namespace BlackMaple.MachineWatchInterface
 
     [DataMember]
     public DateTime TimeUTC { get; set; }
-
-    [DataMember]
-    public string MainProgramContent { get; set; }
-
-    [DataMember]
-    public Dictionary<string, string> SubPrograms { get; set; }
   }
 
   [DataContract]
   public class ProgramRevision : ProgramVersion
   {
     [DataMember]
-    public string RevisoinId { get; set; }
-  }
-
-  [DataContract]
-  public class ProgramFeatureRevision : ProgramRevision
-  {
-    [DataMember]
-    public string MaterialIds { get; set; }
+    public string RevisionId { get; set; }
   }
 
   [DataContract]
@@ -82,20 +81,28 @@ namespace BlackMaple.MachineWatchInterface
     public string BranchName { get; set; }
 
     [DataMember]
-    public ProgramRevision LatestProgram { get; set; }
+    public IEnumerable<ProgramRevision> ModifiedPrograms { get; set; }
   }
 
+#if !NET35 // don't include in MachineWatchInterface
   public interface IProgramManagement
   {
+    Task<IEnumerable<ProgramRevision>> GetLatestPrograms();
     Task<ProgramRevision> GetLatestProgram(string programName);
     Task<IEnumerable<ProgramRevision>> GetProgramHistory(string programName, int skip, int count);
+    Task<ProgramContent> GetProgramContent(string revisionId, string programName);
 
     Task<IEnumerable<ProgramFeatureBranch>> GetFeatureBranches();
     Task<ProgramFeatureBranch> GetFeatureBranch(string branchName);
-    Task<ProgramFeatureBranch> CreateFeatureBranch(string branchName, string programName);
+    Task<ProgramFeatureBranch> CreateFeatureBranch(string branchName);
     Task DeleteFeatureBranch(string branchName);
-    Task<ProgramRevision> NewRevisionOnBranch(string branchName, ProgramVersion program);
-    Task<IEnumerable<ProgramFeatureRevision>> GetBranchHistory(string branchName, int skip, int count);
+    Task<IEnumerable<ProgramRevision>> GetBranchHistory(string branchName, int skip, int count);
     Task ReleaseBranchToProduction(string branchName);
+
+    // The following are the only potentially destructive updates, since multiple users could
+    // overwrite each other.
+    Task<ProgramRevision> NewRevisionOnBranch(string branchName, ProgramVersion program);
+    Task<ProgramRevision> NewProductionRevision(ProgramVersion program);
   }
+#endif
 }
