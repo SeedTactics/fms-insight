@@ -97,11 +97,19 @@ namespace MachineWatchTest.Cincron
       var log = new BlackMaple.MachineFramework.JobLogDB(logConn);
       log.CreateTables(firstSerialOnEmpty: null);
 
-      var w = new MessageWatcher("../../../cincron/sample-messages", log, new BlackMaple.MachineFramework.FMSSettings());
+      System.IO.File.Copy("../../../cincron/june-sample-messages-partial", "../../../cincron/june-input", overwrite: true);
+
+      var w = new MessageWatcher("../../../cincron/june-input", log, new BlackMaple.MachineFramework.FMSSettings());
       w.CheckMessages(null, null);
 
-      var evts = log.GetLog(0).Where(e => e.Pallet == "27").ToList();
-      System.IO.File.WriteAllText("../../../cincron/sample-events.json", Newtonsoft.Json.JsonConvert.SerializeObject(evts, jsonSettings));
+      var evts = log.GetLog(0).Where(e => e.Pallet == "18").OrderBy(e => e.EndTimeUTC).ToList();
+      System.IO.File.WriteAllText("../../../cincron/june-sample-events-partial.json", Newtonsoft.Json.JsonConvert.SerializeObject(evts, jsonSettings));
+
+      System.IO.File.Copy("../../../cincron/june-sample-messages", "../../../cincron/june-input", overwrite: true);
+      w.CheckMessages(null, null);
+
+      evts = log.GetLog(0).Where(e => e.Pallet == "18").OrderBy(e => e.EndTimeUTC).ToList();
+      System.IO.File.WriteAllText("../../../cincron/june-sample-events-full.json", Newtonsoft.Json.JsonConvert.SerializeObject(evts, jsonSettings));
     }
     */
   }

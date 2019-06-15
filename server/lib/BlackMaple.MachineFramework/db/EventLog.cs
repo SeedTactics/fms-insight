@@ -1963,12 +1963,12 @@ namespace BlackMaple.MachineFramework
     }
 
     public MachineWatchInterface.LogEntry RecordGeneralMessage(
-        EventLogMaterial mat, string program, string result, DateTime? timeUTC = null, string foreignId = null, string originalMessage = null)
+        EventLogMaterial mat, string program, string result, string pallet = "", DateTime? timeUTC = null, string foreignId = null, string originalMessage = null)
     {
       var log = new NewEventLogEntry()
       {
-        Material = new[] { mat },
-        Pallet = "",
+        Material = mat != null ? new[] { mat } : new EventLogMaterial[] { },
+        Pallet = pallet,
         LogType = MachineWatchInterface.LogType.GeneralMessage,
         LocationName = "Message",
         LocationNum = 1,

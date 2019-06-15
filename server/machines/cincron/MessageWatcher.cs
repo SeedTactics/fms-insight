@@ -75,7 +75,6 @@ namespace Cincron
       public CincronMessage LastSeenMessage;
       public SortedList<int, List<CincronMessage.PartCompleted>> PartCompletedMessagesBySetup
           = new SortedList<int, List<CincronMessage.PartCompleted>>(); // key is Setup
-      public PalletLocation LastUnloadStation;
     }
 
     public void CheckMessages(object sender, System.Timers.ElapsedEventArgs e)
@@ -112,13 +111,13 @@ namespace Cincron
           //for now, the next time this runs the events will be re-processed
 
         }
+#if !DEBUG
         catch (Exception ex)
         {
           Log.Error(ex, "Unhandled error in message file watcher");
-#if DEBUG
-          throw ex;
-#endif
         }
+#endif
+        finally { }
       }
     }
 
@@ -237,17 +236,26 @@ namespace Cincron
           && queueChange.CurrentLocation.Location == PalletLocationEnum.LoadUnload
           && queueChange.NewQueuePosition == "10010")
       {
-        state.LastUnloadStation = queueChange.CurrentLocation;
+        _log.RecordGeneralMessage(
+          mat: null,
+          pallet: queueChange.Pallet,
+          program: "PalletMoveToLoad",
+          result: queueChange.CurrentLocation.Num.ToString(),
+          timeUTC: queueChange.TimeUTC,
+          foreignId: ForeignId(msg),
+          originalMessage: msg.LogMessage);
       }
 
       //unload start.  Use the completed parts and last unload station from the state.
       var unloadStart = msg as CincronMessage.PartUnloadStart;
       if (unloadStart != null)
       {
+        var oldEvts = _log.CurrentPalletLog(unloadStart.Pallet);
+        var lul = FindLastLoadStation(oldEvts);
         _log.RecordUnloadStart(
-            mats: CreateUnloadMaterial(state, unloadStart.Pallet),
+            mats: CreateUnloadMaterial(state, unloadStart.Pallet, oldEvts),
             pallet: unloadStart.Pallet,
-            lulNum: state.LastUnloadStation.Num,
+            lulNum: lul,
             timeUTC: unloadStart.TimeUTC,
             foreignId: ForeignId(msg),
             originalMessage: msg.LogMessage
@@ -258,10 +266,12 @@ namespace Cincron
       var loadStart = msg as CincronMessage.PartLoadStart;
       if (loadStart != null)
       {
+        var oldEvts = _log.CurrentPalletLog(loadStart.Pallet);
+        var lul = FindLastLoadStation(oldEvts);
         _log.RecordLoadStart(
             mats: CreateLoadMaterial(loadStart),
             pallet: loadStart.Pallet,
-            lulNum: state.LastUnloadStation.Num,
+            lulNum: lul,
             timeUTC: loadStart.TimeUTC,
             foreignId: ForeignId(msg),
             originalMessage: msg.LogMessage
@@ -340,6 +350,19 @@ namespace Cincron
       return null;
     }
 
+    private int FindLastLoadStation(IReadOnlyList<LogEntry> oldEvents)
+    {
+      int lul = 1;
+      foreach (var c in oldEvents)
+      {
+        if (c.LogType == LogType.GeneralMessage && c.Program == "PalletMoveToLoad")
+        {
+          int.TryParse(c.Result, out lul);
+        }
+      }
+      return lul;
+    }
+
     private LogEntry FindLoadStart(IList<LogEntry> oldEvents)
     {
       foreach (var c in oldEvents)
@@ -370,9 +393,12 @@ namespace Cincron
             };
     }
 
-    private IList<JobLogDB.EventLogMaterial> FindMaterial(string pal)
+    private IList<JobLogDB.EventLogMaterial> FindMaterial(string pal, IReadOnlyList<LogEntry> oldEvts = null)
     {
-      var oldEvts = _log.CurrentPalletLog(pal);
+      if (oldEvts == null)
+      {
+        oldEvts = _log.CurrentPalletLog(pal);
+      }
       for (int i = oldEvts.Count - 1; i >= 0; i--)
       {
         if (oldEvts[i].Material.Count() > 0)
@@ -392,9 +418,9 @@ namespace Cincron
       };
     }
 
-    private IEnumerable<JobLogDB.EventLogMaterial> CreateUnloadMaterial(MessageState state, string pal)
+    private IEnumerable<JobLogDB.EventLogMaterial> CreateUnloadMaterial(MessageState state, string pal, IReadOnlyList<LogEntry> oldEvents = null)
     {
-      var oldMat = FindMaterial(pal)[0];
+      var oldMat = FindMaterial(pal, oldEvents)[0];
       var ret = new List<JobLogDB.EventLogMaterial>();
       string partName = "";
       int count = 1;
