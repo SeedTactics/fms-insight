@@ -45,14 +45,14 @@ namespace MazakMachineInterface
     private BlackMaple.MachineFramework.JobLogDB _log;
     private BlackMaple.MachineFramework.FMSSettings _settings;
     private Action<LogEntry> _onMazakLog;
-    private MazakSchedules _mazakSchedules;
+    private MazakSchedulesAndLoadActions _mazakSchedules;
     private Dictionary<string, JobPlan> _jobs;
 
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LogTranslation>();
 
     public LogTranslation(BlackMaple.MachineFramework.JobDB jDB,
                           BlackMaple.MachineFramework.JobLogDB logDB,
-                          MazakSchedules mazakSch,
+                          MazakSchedulesAndLoadActions mazakSch,
                           BlackMaple.MachineFramework.FMSSettings settings,
                           Action<LogEntry> onMazakLogMessage)
     {
@@ -125,6 +125,8 @@ namespace MazakMachineInterface
             timeUTC: e.TimeUTC,
             foreignId: e.ForeignID);
 
+          Log.Debug("Tools at machine cycle start for machine {machine}: {@tools}", e.StationNumber, _mazakSchedules.Tools.ToList());
+
           break;
 
         case LogCode.MachineCycleEnd:
@@ -153,6 +155,8 @@ namespace MazakMachineInterface
             Log.Warning("Ignoring machine cycle at {time} on pallet {pallet} because it is less than 30 seconds",
               e.TimeUTC, e.Pallet);
           }
+
+          Log.Debug("Tools at machine cycle end on machine {machine}: {@tools}", e.StationNumber, _mazakSchedules.Tools.ToList());
 
           break;
 

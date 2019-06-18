@@ -238,6 +238,32 @@ namespace MazakMachineInterface
     public string AlarmMessage { get; set; }
   }
 
+  public class ToolPocketRow
+  {
+    public int? MachineNumber { get; set; }
+    public int? PocketNumber { get; set; }
+    public int? PocketType { get; set; }
+    public int? ToolID { get; set; }
+    public int? ToolNameCode { get; set; }
+    public int? ToolNumber { get; set; }
+    public bool? IsLengthMeasured { get; set; }
+    public bool? IsToolDataValid { get; set; }
+    public bool? IsToolLifeOver { get; set; }
+    public bool? IsToolLifeBroken { get; set; }
+    public bool? IsDataAccessed { get; set; }
+    public bool? IsBeingUsed { get; set; }
+    public bool? UsableNow { get; set; }
+    public bool? WillBrokenInform { get; set; }
+    public int? InterferenceType { get; set; }
+    public int? LifeSpan { get; set; }
+    public int? LifeUsed { get; set; }
+    public string NominalDiameter { get; set; }
+    public int? SuffixCode { get; set; }
+    public int? ToolDiameter { get; set; }
+    public string GroupNo { get; set; }
+  }
+
+
   public class LoadAction
   {
     public int LoadStation { get; set; }
@@ -305,6 +331,7 @@ namespace MazakMachineInterface
   public class MazakSchedulesAndLoadActions : MazakSchedules
   {
     public IEnumerable<LoadAction> LoadActions { get; set; }
+    public IEnumerable<ToolPocketRow> Tools { get; set; }
   }
 
   public class MazakProgramRow

@@ -51,7 +51,7 @@ namespace MachineWatchTest
     protected List<BlackMaple.MachineWatchInterface.LogEntry> expected = new List<BlackMaple.MachineWatchInterface.LogEntry>();
     protected List<MazakMachineInterface.LogEntry> raisedByEvent = new List<MazakMachineInterface.LogEntry>();
     protected List<MazakMachineInterface.LogEntry> expectedMazakLogEntries = new List<MazakMachineInterface.LogEntry>();
-    protected MazakSchedules mazakData;
+    protected MazakSchedulesAndLoadActions mazakData;
     private List<MazakScheduleRow> _schedules;
 
     protected LogTestBase()
@@ -67,9 +67,11 @@ namespace MachineWatchTest
       jobDB.CreateTables();
 
       _schedules = new List<MazakScheduleRow>();
-      mazakData = new MazakSchedules()
+      mazakData = new MazakSchedulesAndLoadActions()
       {
         Schedules = _schedules,
+        LoadActions = Enumerable.Empty<LoadAction>(),
+        Tools = Enumerable.Empty<ToolPocketRow>()
       };
 
       var settings = new FMSSettings()

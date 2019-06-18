@@ -921,15 +921,8 @@ namespace MazakMachineInterface
         var trans = conn.BeginTransaction();
         try
         {
-
-          var partFixQty = conn.Query<PartProcessFixQty>(_partProcFixQty, transaction: trans);
-          var ret = new MazakSchedules()
-          {
-            Schedules = LoadSchedules(conn, trans, partFixQty)
-          };
-
+          var ret = LoadSchedules(conn, trans);
           trans.Commit();
-
           return ret;
         }
         catch
@@ -940,13 +933,24 @@ namespace MazakMachineInterface
       });
     }
 
+    internal MazakSchedules LoadSchedules(IDbConnection conn, IDbTransaction trans)
+    {
+      var partFixQty = conn.Query<PartProcessFixQty>(_partProcFixQty, transaction: trans);
+      return new MazakSchedules()
+      {
+        Schedules = LoadSchedules(conn, trans, partFixQty)
+      };
+
+    }
+
     public MazakSchedulesAndLoadActions LoadSchedulesAndLoadActions()
     {
       var sch = LoadSchedules();
       return new MazakSchedulesAndLoadActions()
       {
         Schedules = sch.Schedules,
-        LoadActions = _loadOper.CurrentLoadActions()
+        LoadActions = _loadOper.CurrentLoadActions(),
+        Tools = Enumerable.Empty<ToolPocketRow>()
       };
     }
 

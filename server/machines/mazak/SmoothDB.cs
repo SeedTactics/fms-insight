@@ -62,6 +62,7 @@ namespace MazakMachineInterface
     {
       using (var conn = new SqlConnection(_readConnStr))
       {
+        conn.Open();
         return action(conn);
       }
     }
@@ -73,12 +74,26 @@ namespace MazakMachineInterface
 
     public MazakSchedulesAndLoadActions LoadSchedulesAndLoadActions()
     {
-      var sch = _openReadDB.LoadSchedules();
-      return new MazakSchedulesAndLoadActions()
+      return WithReadDBConnection(conn =>
       {
-        Schedules = sch.Schedules,
-        LoadActions = CurrentLoadActions()
-      };
+        var trans = conn.BeginTransaction();
+        try
+        {
+          var ret = new MazakSchedulesAndLoadActions()
+          {
+            Schedules = _openReadDB.LoadSchedules(conn, trans).Schedules,
+            LoadActions = CurrentLoadActions(),
+            Tools = LoadTools(conn, trans)
+          };
+          trans.Commit();
+          return ret;
+        }
+        catch
+        {
+          trans.Rollback();
+          throw;
+        }
+      });
     }
 
     public MazakSchedulesPartsPallets LoadSchedulesPartsPallets()
@@ -99,6 +114,39 @@ namespace MazakMachineInterface
     {
       return _openReadDB.CheckPartExists(partName);
     }
+
+    #region Tools
+
+    public IEnumerable<ToolPocketRow> LoadTools(IDbConnection conn, IDbTransaction trans)
+    {
+      var q = @"SELECT
+          MachineNumber,
+          PocketNumber,
+          PocketType,
+          ToolID,
+          ToolNameCode,
+          ToolNumber,
+          IsLengthMeasured,
+          IsToolDataValid,
+          IsToolLifeOver,
+          IsToolLifeBroken,
+          IsDataAccessed,
+          IsBeingUsed,
+          UsableNow,
+          WillBrokenInform,
+          InterferenceType,
+          LifeSpan,
+          LifeUsed,
+          NominalDiameter,
+          SuffixCode,
+          ToolDiameter,
+          GroupNo
+        FROM ToolPocket
+      ";
+      return conn.Query<ToolPocketRow>(q, transaction: trans);
+    }
+
+    #endregion
 
     #region LoadActions
     private IEnumerable<LoadAction> CurrentLoadActions()

@@ -494,8 +494,15 @@ namespace MazakMachineInterface
 
             int code;
             if (!int.TryParse(s[6], out code))
+            {
+              Log.Debug("Unable to parse code from log message {msg}", s);
               continue;
-            if (!Enum.IsDefined(typeof(LogCode), code)) continue;
+            }
+            if (!Enum.IsDefined(typeof(LogCode), code))
+            {
+              Log.Debug("Unused log message {msg}", s);
+              continue;
+            }
 
             var e = new LogEntry();
 
