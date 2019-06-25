@@ -166,7 +166,7 @@ namespace BlackMaple.MachineFramework
 
         if (!string.IsNullOrEmpty(firstSerialOnEmpty))
         {
-          long matId = ConvertFromBase62(firstSerialOnEmpty) - 1;
+          long matId = ConvertSerialToMaterialID(firstSerialOnEmpty) - 1;
           if (matId > 9007199254740991) // 2^53 - 1, the max size in a javascript 64-bit precision double
             throw new Exception("Serial " + firstSerialOnEmpty + " is too large");
           cmd.CommandText = "INSERT INTO sqlite_sequence(name, seq) VALUES ('matdetails',$v)";
@@ -2692,7 +2692,7 @@ namespace BlackMaple.MachineFramework
                       }
                       if (matID >= 0)
                       {
-                        var serial = ConvertToBase62(matID);
+                        var serial = ConvertMaterialIDToSerial(matID);
                         serial = serial.Substring(0, Math.Min(serLength, serial.Length));
                         serial = serial.PadLeft(serLength, '0');
                         // add the serial
@@ -2737,7 +2737,7 @@ namespace BlackMaple.MachineFramework
                             continue;
                           }
 
-                          var serial = ConvertToBase62(m.MaterialID);
+                          var serial = ConvertMaterialIDToSerial(m.MaterialID);
                           serial = serial.Substring(0, Math.Min(serLength, serial.Length));
                           serial = serial.PadLeft(serLength, '0');
                           if (m.MaterialID < 0) continue;
@@ -2808,9 +2808,19 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    public virtual long ConvertSerialToMaterialID(string serial)
+    {
+      return ConvertFromBase62(serial);
+    }
+
+    public virtual string ConvertMaterialIDToSerial(long matId)
+    {
+      return ConvertToBase62(matId);
+    }
+
     private static string Base62Chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-    public static string ConvertToBase62(long num)
+    private static string ConvertToBase62(long num)
     {
       string res = "";
       long cur = num;
@@ -2827,7 +2837,7 @@ namespace BlackMaple.MachineFramework
       return res;
     }
 
-    public static long ConvertFromBase62(string msg)
+    private static long ConvertFromBase62(string msg)
     {
       long res = 0;
       int len = msg.Length;

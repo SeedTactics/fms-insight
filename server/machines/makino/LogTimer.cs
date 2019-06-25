@@ -193,7 +193,7 @@ namespace Makino
         Log.Debug(
             "Starting load of common values between the times of {start} and {end} on DeviceID {deviceID}." +
             "These values will be attached to part {part} with serial {serial}",
-            m.StartDateTimeLocal, m.EndDateTimeLocal, m.DeviceID, m.PartName, JobLogDB.ConvertToBase62(matID1));
+            m.StartDateTimeLocal, m.EndDateTimeLocal, m.DeviceID, m.PartName, _log.ConvertMaterialIDToSerial(matID1));
 
         foreach (var v in _makinoDB.QueryCommonValues(m))
         {
@@ -393,7 +393,7 @@ namespace Makino
         }
       }
 
-      var serial = JobLogDB.ConvertToBase62(matID);
+      var serial = _log.ConvertMaterialIDToSerial(matID);
 
       //length 10 gets us to 1.5e18 which is not quite 2^64
       //still large enough so we will practically never roll around

@@ -206,7 +206,7 @@ namespace MachineWatchTest
             part: mat.JobPartName,
             numProc: mat.NumProcess,
             face: mat.Face,
-            serial: JobLogDB.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            serial: jobLog.ConvertMaterialIDToSerial(mat.MaterialID).PadLeft(10, '0'),
             workorder: ""
           )),
           pal: mats.First().Pallet.ToString(),
@@ -255,7 +255,7 @@ namespace MachineWatchTest
           part: mat.JobPartName,
           numProc: mat.NumProcess,
           face: mat.Face,
-          serial: JobLogDB.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+          serial: jobLog.ConvertMaterialIDToSerial(mat.MaterialID).PadLeft(10, '0'),
           workorder: ""
         )),
         pal: mats.First().Pallet.ToString(),
@@ -283,7 +283,7 @@ namespace MachineWatchTest
           part: mat.JobPartName,
           numProc: mat.NumProcess,
           face: "",
-          serial: JobLogDB.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+          serial: jobLog.ConvertMaterialIDToSerial(mat.MaterialID).PadLeft(10, '0'),
           workorder: ""
         )},
         pal: "",
@@ -382,7 +382,7 @@ namespace MachineWatchTest
             part: mat.JobPartName,
             numProc: mat.NumProcess,
             face: mat.Face,
-            serial: JobLogDB.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            serial: jobLog.ConvertMaterialIDToSerial(mat.MaterialID).PadLeft(10, '0'),
             workorder: ""
           )),
           pal: mats.First().Pallet.ToString(),
@@ -410,7 +410,7 @@ namespace MachineWatchTest
               part: mat.JobPartName,
               numProc: mat.NumProcess,
               face: mat.Face,
-              serial: JobLogDB.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+              serial: jobLog.ConvertMaterialIDToSerial(mat.MaterialID).PadLeft(10, '0'),
               workorder: ""
             )},
             pal: "",
@@ -420,7 +420,7 @@ namespace MachineWatchTest
             prog: "MARK",
             start: false,
             endTime: mat.EventStartTime.AddMinutes(cycleOffset).AddSeconds(1),
-            result: JobLogDB.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            result: jobLog.ConvertMaterialIDToSerial(mat.MaterialID).PadLeft(10, '0'),
             endOfRoute: false
         ));
       }
@@ -459,7 +459,7 @@ namespace MachineWatchTest
             part: mat.JobPartName,
             numProc: mat.NumProcess,
             face: mat.Face,
-            serial: JobLogDB.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            serial: jobLog.ConvertMaterialIDToSerial(mat.MaterialID).PadLeft(10, '0'),
             workorder: ""
           )),
           pal: mats.First().Pallet.ToString(),
@@ -509,7 +509,7 @@ namespace MachineWatchTest
             part: mat.JobPartName,
             numProc: mat.NumProcess,
             face: mat.Face,
-            serial: JobLogDB.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            serial: jobLog.ConvertMaterialIDToSerial(mat.MaterialID).PadLeft(10, '0'),
             workorder: ""
           )),
           pal: mats.First().Pallet.ToString(),
@@ -580,7 +580,7 @@ namespace MachineWatchTest
               part: mat.JobPartName,
               numProc: mat.NumProcess,
               face: mat.Face,
-              serial: JobLogDB.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+              serial: jobLog.ConvertMaterialIDToSerial(mat.MaterialID).PadLeft(10, '0'),
               workorder: ""
             )},
             pal: "",
@@ -613,7 +613,7 @@ namespace MachineWatchTest
               part: mat.JobPartName,
               numProc: mat.NumProcess,
               face: mat.Face,
-              serial: JobLogDB.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+              serial: jobLog.ConvertMaterialIDToSerial(mat.MaterialID).PadLeft(10, '0'),
               workorder: ""
             )},
             pal: "",

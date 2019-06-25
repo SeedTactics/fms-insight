@@ -440,7 +440,7 @@ namespace Cincron
           _settings.SerialType == BlackMaple.MachineFramework.SerialType.AssignOneSerialPerMaterial
          )
       {
-        _log.RecordSerialForMaterialID(oldMat, JobLogDB.ConvertToBase62(oldMat.MaterialID).PadLeft(_settings.SerialLength, '0'), state.LastSeenMessage.TimeUTC);
+        _log.RecordSerialForMaterialID(oldMat, _log.ConvertMaterialIDToSerial(oldMat.MaterialID).PadLeft(_settings.SerialLength, '0'), state.LastSeenMessage.TimeUTC);
       }
       ret.Add(oldMat);
 
@@ -462,7 +462,7 @@ namespace Cincron
         }
         else if (_settings.SerialType == BlackMaple.MachineFramework.SerialType.AssignOneSerialPerMaterial)
         {
-          _log.RecordSerialForMaterialID(newMat, JobLogDB.ConvertToBase62(newId).PadLeft(_settings.SerialLength, '0'), state.LastSeenMessage.TimeUTC);
+          _log.RecordSerialForMaterialID(newMat, _log.ConvertMaterialIDToSerial(newId).PadLeft(_settings.SerialLength, '0'), state.LastSeenMessage.TimeUTC);
         }
         ret.Add(newMat);
       }

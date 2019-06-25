@@ -587,9 +587,9 @@ namespace MachineWatchTest
       var mat4 = new LogMaterial(
           _jobLog.AllocateMaterialID("unique4", "part4", 4), "unique4", 4, "part4", 4, "themat4serial", "", "face4");
 
-      var serial1 = JobLogDB.ConvertToBase62(mat1.MaterialID).PadLeft(10, '0');
-      var serial2 = JobLogDB.ConvertToBase62(mat2.MaterialID).PadLeft(10, '0');
-      var serial3 = JobLogDB.ConvertToBase62(mat3.MaterialID).PadLeft(10, '0');
+      var serial1 = _jobLog.ConvertMaterialIDToSerial(mat1.MaterialID).PadLeft(10, '0');
+      var serial2 = _jobLog.ConvertMaterialIDToSerial(mat2.MaterialID).PadLeft(10, '0');
+      var serial3 = _jobLog.ConvertMaterialIDToSerial(mat3.MaterialID).PadLeft(10, '0');
 
       var t = DateTime.UtcNow.AddHours(-1);
 
@@ -702,8 +702,8 @@ namespace MachineWatchTest
       var mat4 = new LogMaterial(
           _jobLog.AllocateMaterialID("unique4", "part4", 4), "unique4", 4, "part4", 4, "themat4serial", "", "face4");
 
-      var serial1 = JobLogDB.ConvertToBase62(mat1.MaterialID).PadLeft(10, '0');
-      var serial3 = JobLogDB.ConvertToBase62(mat3.MaterialID).PadLeft(10, '0');
+      var serial1 = _jobLog.ConvertMaterialIDToSerial(mat1.MaterialID).PadLeft(10, '0');
+      var serial3 = _jobLog.ConvertMaterialIDToSerial(mat3.MaterialID).PadLeft(10, '0');
 
       var t = DateTime.UtcNow.AddHours(-1);
 
@@ -1414,7 +1414,7 @@ namespace MachineWatchTest
     {
       var fixture = new Fixture();
       var matId = fixture.Create<long>();
-      JobLogDB.ConvertFromBase62(JobLogDB.ConvertToBase62(matId)).Should().Be(matId);
+      _jobLog.ConvertSerialToMaterialID(_jobLog.ConvertMaterialIDToSerial(matId)).Should().Be(matId);
     }
 
 
