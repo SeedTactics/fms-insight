@@ -179,7 +179,7 @@ namespace MazakMachineInterface
       jobLog.Open(
         System.IO.Path.Combine(st.DataDirectory, "log.db"),
         System.IO.Path.Combine(st.DataDirectory, "insp.db"),
-        firstSerialOnEmpty: st.StartingSerial
+        startingSerial: st.StartingSerial
       );
 
       jobDB = new BlackMaple.MachineFramework.JobDB();

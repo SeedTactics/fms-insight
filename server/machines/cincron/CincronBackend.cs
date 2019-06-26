@@ -70,7 +70,7 @@ namespace Cincron
 
         _log.Open(
             System.IO.Path.Combine(cfg.DataDirectory, "log.db"),
-            firstSerialOnEmpty: cfg.StartingSerial
+            startingSerial: cfg.StartingSerial
         );
         _msgWatcher = new MessageWatcher(msgFile, _log, cfg);
         _msgWatcher.Start();

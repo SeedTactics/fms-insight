@@ -58,13 +58,14 @@ namespace BlackMaple.MachineFramework
       _connection = c;
     }
 
-    public void Open(string filename, string oldInspDbFile = null, string firstSerialOnEmpty = null)
+    public void Open(string filename, string oldInspDbFile = null, string startingSerial = null)
     {
       if (System.IO.File.Exists(filename))
       {
         _connection = new SqliteConnection("Data Source=" + filename);
         _connection.Open();
         UpdateTables(oldInspDbFile);
+        AdjustStartingSerial(startingSerial);
       }
       else
       {
@@ -72,7 +73,7 @@ namespace BlackMaple.MachineFramework
         _connection.Open();
         try
         {
-          CreateTables(firstSerialOnEmpty);
+          CreateTables(firstSerialOnEmpty: startingSerial);
         }
         catch
         {
@@ -177,6 +178,44 @@ namespace BlackMaple.MachineFramework
         }
 
       }
+    }
+
+    public void AdjustStartingSerial(string startingSerial)
+    {
+      if (string.IsNullOrEmpty(startingSerial)) return;
+      long startingMatId = _settings.ConvertSerialToMaterialID(startingSerial) - 1;
+      if (startingMatId > 9007199254740991) // 2^53 - 1, the max size in a javascript 64-bit precision double
+        throw new Exception("Serial " + startingSerial + " is too large");
+
+      using (var cmd = _connection.CreateCommand())
+      {
+        var trans = _connection.BeginTransaction();
+        try
+        {
+          cmd.Transaction = trans;
+          cmd.CommandText = "SELECT seq FROM sqlite_sequence WHERE name == 'matdetails'";
+          var last = cmd.ExecuteScalar();
+          if (last != null && last != DBNull.Value)
+          {
+            var lastId = (long)last;
+            // if starting mat id is moving forward, update it
+            if (lastId + 1000 < startingMatId)
+            {
+              cmd.CommandText = "UPDATE sqlite_sequence SET seq = $v WHERE name == 'matdetails'";
+              cmd.Parameters.Add("v", SqliteType.Integer).Value = startingMatId;
+              cmd.ExecuteNonQuery();
+            }
+          }
+
+          trans.Commit();
+        }
+        catch
+        {
+          trans.Rollback();
+          throw;
+        }
+      }
+
     }
 
     private void UpdateTables(string inspDbFile)

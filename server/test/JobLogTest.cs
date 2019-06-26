@@ -1463,9 +1463,9 @@ namespace MachineWatchTest
       long m1 = _jobLog.AllocateMaterialID("U1", "P1", 52);
       long m2 = _jobLog.AllocateMaterialID("U2", "P2", 66);
       long m3 = _jobLog.AllocateMaterialID("U3", "P3", 566);
-      m1.Should().Be(33152428148);
-      m2.Should().Be(33152428149);
-      m3.Should().Be(33152428150);
+      m1.Should().Be(33_152_428_148);
+      m2.Should().Be(33_152_428_149);
+      m3.Should().Be(33_152_428_150);
 
       _jobLog.GetMaterialDetails(m1).Should().BeEquivalentTo(new MaterialDetails()
       {
@@ -1485,6 +1485,32 @@ namespace MachineWatchTest
       l.Invoking(x => x.CreateTables(firstSerialOnEmpty: "A000000000"))
           .Should().Throw<Exception>().WithMessage("Serial A000000000 is too large");
       l.Close();
+    }
+
+    [Fact]
+    public void AdjustsStartingSerial()
+    {
+      long m1 = _jobLog.AllocateMaterialID("U1", "P1", 52);
+      m1.Should().Be(33_152_428_148);
+
+      _jobLog.AdjustStartingSerial("B3t24s");
+
+      long m2 = _jobLog.AllocateMaterialID("U1", "P1", 2);
+      long m3 = _jobLog.AllocateMaterialID("U2", "P2", 4);
+      m2.Should().Be(33_948_163_268);
+      m3.Should().Be(33_948_163_269);
+    }
+
+    [Fact]
+    public void AvoidsAdjustingSerialBackwards()
+    {
+      long m1 = _jobLog.AllocateMaterialID("U1", "P1", 52);
+      m1.Should().Be(33_152_428_148);
+
+      _jobLog.AdjustStartingSerial("w53122");
+
+      long m2 = _jobLog.AllocateMaterialID("U1", "P1", 2);
+      m2.Should().Be(33_152_428_149);
     }
   }
 }

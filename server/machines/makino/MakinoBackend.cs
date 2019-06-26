@@ -88,7 +88,7 @@ namespace Makino
         _log.Open(
             System.IO.Path.Combine(_dataDirectory, "log.db"),
             System.IO.Path.Combine(_dataDirectory, "inspections.db"),
-            firstSerialOnEmpty: st.StartingSerial
+            startingSerial: st.StartingSerial
         );
 
         _jobDB = new BlackMaple.MachineFramework.JobDB();
