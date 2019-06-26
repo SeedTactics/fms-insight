@@ -84,7 +84,7 @@ namespace Makino
 
         _dataDirectory = st.DataDirectory;
 
-        _log = new JobLogDB();
+        _log = new JobLogDB(st);
         _log.Open(
             System.IO.Path.Combine(_dataDirectory, "log.db"),
             System.IO.Path.Combine(_dataDirectory, "inspections.db"),

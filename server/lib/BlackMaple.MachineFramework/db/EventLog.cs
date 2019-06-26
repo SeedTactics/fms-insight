@@ -44,14 +44,16 @@ namespace BlackMaple.MachineFramework
 
     #region Database Create/Update
     private SqliteConnection _connection;
+    private FMSSettings _settings;
     private object _lock;
     private Random _rand = new Random();
 
-    public JobLogDB()
+    public JobLogDB(FMSSettings s)
     {
       _lock = new object();
+      _settings = s;
     }
-    public JobLogDB(SqliteConnection c) : this()
+    public JobLogDB(FMSSettings s, SqliteConnection c) : this(s)
     {
       _connection = c;
     }
@@ -166,7 +168,7 @@ namespace BlackMaple.MachineFramework
 
         if (!string.IsNullOrEmpty(firstSerialOnEmpty))
         {
-          long matId = ConvertSerialToMaterialID(firstSerialOnEmpty) - 1;
+          long matId = _settings.ConvertSerialToMaterialID(firstSerialOnEmpty) - 1;
           if (matId > 9007199254740991) // 2^53 - 1, the max size in a javascript 64-bit precision double
             throw new Exception("Serial " + firstSerialOnEmpty + " is too large");
           cmd.CommandText = "INSERT INTO sqlite_sequence(name, seq) VALUES ('matdetails',$v)";
@@ -2591,12 +2593,11 @@ namespace BlackMaple.MachineFramework
 
     public void CompletePalletCycle(string pal, DateTime timeUTC, string foreignID)
     {
-      CompletePalletCycle(pal, timeUTC, foreignID, null, SerialType.NoAutomaticSerials, 10);
+      CompletePalletCycle(pal, timeUTC, foreignID, null, generateSerials: false);
     }
 
     public void CompletePalletCycle(string pal, DateTime timeUTC, string foreignID,
-                                    IDictionary<string, IEnumerable<EventLogMaterial>> mat,
-                                    SerialType serialType, int serLength)
+                                    IDictionary<string, IEnumerable<EventLogMaterial>> mat, bool generateSerials)
     {
       lock (_lock)
       {
@@ -2658,7 +2659,7 @@ namespace BlackMaple.MachineFramework
                   var key = reader.GetString(0);
                   if (mat.ContainsKey(key))
                   {
-                    if (serialType == SerialType.AssignOneSerialPerCycle)
+                    if (generateSerials && _settings.SerialType == SerialType.AssignOneSerialPerCycle)
                     {
 
                       // find a material id to use to create the serial
@@ -2692,9 +2693,9 @@ namespace BlackMaple.MachineFramework
                       }
                       if (matID >= 0)
                       {
-                        var serial = ConvertMaterialIDToSerial(matID);
-                        serial = serial.Substring(0, Math.Min(serLength, serial.Length));
-                        serial = serial.PadLeft(serLength, '0');
+                        var serial = _settings.ConvertMaterialIDToSerial(matID);
+                        serial = serial.Substring(0, Math.Min(_settings.SerialLength, serial.Length));
+                        serial = serial.PadLeft(_settings.SerialLength, '0');
                         // add the serial
                         foreach (var m in mat[key])
                         {
@@ -2717,7 +2718,7 @@ namespace BlackMaple.MachineFramework
                       }
 
                     }
-                    else if (serialType == SerialType.AssignOneSerialPerMaterial)
+                    else if (generateSerials && _settings.SerialType == SerialType.AssignOneSerialPerMaterial)
                     {
                       using (var checkConn = _connection.CreateCommand())
                       {
@@ -2737,9 +2738,9 @@ namespace BlackMaple.MachineFramework
                             continue;
                           }
 
-                          var serial = ConvertMaterialIDToSerial(m.MaterialID);
-                          serial = serial.Substring(0, Math.Min(serLength, serial.Length));
-                          serial = serial.PadLeft(serLength, '0');
+                          var serial = _settings.ConvertMaterialIDToSerial(m.MaterialID);
+                          serial = serial.Substring(0, Math.Min(_settings.SerialLength, serial.Length));
+                          serial = serial.PadLeft(_settings.SerialLength, '0');
                           if (m.MaterialID < 0) continue;
                           RecordSerialForMaterialID(trans, m.MaterialID, serial);
                           newEvts.Add(AddLogEntry(trans, new NewEventLogEntry()
@@ -2808,53 +2809,6 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public virtual long ConvertSerialToMaterialID(string serial)
-    {
-      return ConvertFromBase62(serial);
-    }
-
-    public virtual string ConvertMaterialIDToSerial(long matId)
-    {
-      return ConvertToBase62(matId);
-    }
-
-    private static string Base62Chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-    private static string ConvertToBase62(long num)
-    {
-      string res = "";
-      long cur = num;
-
-      while (cur > 0)
-      {
-        long quotient = cur / 62;
-        int remainder = (int)(cur % 62);
-
-        res = Base62Chars[remainder] + res;
-        cur = quotient;
-      }
-
-      return res;
-    }
-
-    private static long ConvertFromBase62(string msg)
-    {
-      long res = 0;
-      int len = msg.Length;
-      long multiplier = 1;
-
-      for (int i = 0; i < len; i++)
-      {
-        char c = msg[len - i - 1];
-        int idx = Base62Chars.IndexOf(c);
-        if (idx < 0)
-          throw new Exception("Serial " + msg + " has an invalid character " + c);
-        res += idx * multiplier;
-        multiplier *= 62;
-      }
-      return res;
-
-    }
     #endregion
 
     #region Inspection Counts

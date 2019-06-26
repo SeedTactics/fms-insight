@@ -50,7 +50,7 @@ namespace MachineWatchTest
     {
       var logConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
       logConn.Open();
-      _insp = new JobLogDB(logConn);
+      _insp = new JobLogDB(new FMSSettings(), logConn);
       _insp.CreateTables(firstSerialOnEmpty: null);
     }
 

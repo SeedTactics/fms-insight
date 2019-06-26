@@ -58,7 +58,7 @@ namespace MachineWatchTest
     {
       var logConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
       logConn.Open();
-      _emptyLog = new JobLogDB(logConn);
+      _emptyLog = new JobLogDB(new FMSSettings(), logConn);
       _emptyLog.CreateTables(firstSerialOnEmpty: null);
 
       var jobConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
@@ -194,7 +194,7 @@ namespace MachineWatchTest
         Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".log.db");
       if (File.Exists(existingLogPath))
       {
-        logDb = new JobLogDB();
+        logDb = new JobLogDB(new FMSSettings());
         logDb.Open(existingLogPath);
         close = true;
       }

@@ -175,7 +175,7 @@ namespace MazakMachineInterface
         "Configured UseStartingOffsetForDueDate = {useStarting}",
         UseStartingOffsetForDueDate);
 
-      jobLog = new BlackMaple.MachineFramework.JobLogDB();
+      jobLog = new BlackMaple.MachineFramework.JobLogDB(st);
       jobLog.Open(
         System.IO.Path.Combine(st.DataDirectory, "log.db"),
         System.IO.Path.Combine(st.DataDirectory, "insp.db"),

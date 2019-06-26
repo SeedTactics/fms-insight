@@ -47,7 +47,7 @@ namespace MachineWatchTest
 
     public EventDBUpgradeSpec()
     {
-      _log = new JobLogDB();
+      _log = new JobLogDB(new FMSSettings());
       _tempFile = System.IO.Path.GetTempFileName();
       System.IO.File.Copy("log.v17.db", _tempFile, overwrite: true);
       _log.Open(_tempFile);

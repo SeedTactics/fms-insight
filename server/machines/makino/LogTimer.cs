@@ -193,7 +193,7 @@ namespace Makino
         Log.Debug(
             "Starting load of common values between the times of {start} and {end} on DeviceID {deviceID}." +
             "These values will be attached to part {part} with serial {serial}",
-            m.StartDateTimeLocal, m.EndDateTimeLocal, m.DeviceID, m.PartName, _log.ConvertMaterialIDToSerial(matID1));
+            m.StartDateTimeLocal, m.EndDateTimeLocal, m.DeviceID, m.PartName, Settings.ConvertMaterialIDToSerial(matID1));
 
         foreach (var v in _makinoDB.QueryCommonValues(m))
         {
@@ -368,14 +368,14 @@ namespace Makino
       foreach (var row in rows)
       {
         if (Settings.SerialType != SerialType.NoAutomaticSerials)
-          CreateSerial(row.MatID, order, part, process, fixturenum.ToString(), _log, Settings.SerialLength);
+          CreateSerial(row.MatID, order, part, process, fixturenum.ToString(), _log);
         ret.Add(new JobLogDB.EventLogMaterial() { MaterialID = row.MatID, Process = process, Face = "" });
       }
       return ret;
     }
 
-    public static void CreateSerial(long matID, string jobUniqe, string partName, int process, string face,
-                                        JobLogDB _log, int serLength)
+    public void CreateSerial(long matID, string jobUniqe, string partName, int process, string face,
+                                        JobLogDB _log)
     {
       foreach (var stat in _log.GetLogForMaterial(matID))
       {
@@ -393,11 +393,11 @@ namespace Makino
         }
       }
 
-      var serial = _log.ConvertMaterialIDToSerial(matID);
+      var serial = Settings.ConvertMaterialIDToSerial(matID);
 
       //length 10 gets us to 1.5e18 which is not quite 2^64
       //still large enough so we will practically never roll around
-      serial = serial.Substring(0, Math.Min(serLength, serial.Length));
+      serial = serial.Substring(0, Math.Min(Settings.SerialLength, serial.Length));
       serial = serial.PadLeft(10, '0');
 
       Log.Debug("Recording serial for matid: {matid} {serial}", matID, serial);

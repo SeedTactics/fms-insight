@@ -316,7 +316,7 @@ namespace Cincron
           mats[stepChange.Pallet] = loadStartCycle.Material.Select(JobLogDB.EventLogMaterial.FromLogMat);
         }
 
-        _log.CompletePalletCycle(stepChange.Pallet, stepChange.TimeUTC, ForeignId(msg), mats, SerialType.NoAutomaticSerials, 10);
+        _log.CompletePalletCycle(stepChange.Pallet, stepChange.TimeUTC, ForeignId(msg), mats, generateSerials: false);
       }
     }
 
@@ -440,7 +440,7 @@ namespace Cincron
           _settings.SerialType == BlackMaple.MachineFramework.SerialType.AssignOneSerialPerMaterial
          )
       {
-        _log.RecordSerialForMaterialID(oldMat, _log.ConvertMaterialIDToSerial(oldMat.MaterialID).PadLeft(_settings.SerialLength, '0'), state.LastSeenMessage.TimeUTC);
+        _log.RecordSerialForMaterialID(oldMat, _settings.ConvertMaterialIDToSerial(oldMat.MaterialID).PadLeft(_settings.SerialLength, '0'), state.LastSeenMessage.TimeUTC);
       }
       ret.Add(oldMat);
 
@@ -462,7 +462,7 @@ namespace Cincron
         }
         else if (_settings.SerialType == BlackMaple.MachineFramework.SerialType.AssignOneSerialPerMaterial)
         {
-          _log.RecordSerialForMaterialID(newMat, _log.ConvertMaterialIDToSerial(newId).PadLeft(_settings.SerialLength, '0'), state.LastSeenMessage.TimeUTC);
+          _log.RecordSerialForMaterialID(newMat, _settings.ConvertMaterialIDToSerial(newId).PadLeft(_settings.SerialLength, '0'), state.LastSeenMessage.TimeUTC);
         }
         ret.Add(newMat);
       }

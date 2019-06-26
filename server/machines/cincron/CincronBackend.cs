@@ -66,7 +66,7 @@ namespace Cincron
           Log.Error("Message file {file} does not exist", msgFile);
         }
 
-        _log = new JobLogDB();
+        _log = new JobLogDB(cfg);
 
         _log.Open(
             System.IO.Path.Combine(cfg.DataDirectory, "log.db"),

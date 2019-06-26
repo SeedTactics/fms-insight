@@ -89,7 +89,7 @@ namespace DebugMachineWatchApiServer
       if (path != null)
       {
         if (System.IO.File.Exists(dbFile("log"))) System.IO.File.Delete(dbFile("log"));
-        LogDB = new JobLogDB();
+        LogDB = new JobLogDB(new FMSSettings());
         LogDB.Open(dbFile("log"), dbFile("insp"));
 
         if (System.IO.File.Exists(dbFile("job"))) System.IO.File.Delete(dbFile("job"));
@@ -100,7 +100,7 @@ namespace DebugMachineWatchApiServer
       {
         var conn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
         conn.Open();
-        LogDB = new JobLogDB(conn);
+        LogDB = new JobLogDB(new FMSSettings(), conn);
         LogDB.CreateTables(firstSerialOnEmpty: null);
 
         conn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");

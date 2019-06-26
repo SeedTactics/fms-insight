@@ -51,7 +51,7 @@ namespace MachineWatchTest
     {
       var connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
       connection.Open();
-      _jobLog = new JobLogDB(connection);
+      _jobLog = new JobLogDB(new FMSSettings(), connection);
       _jobLog.CreateTables(firstSerialOnEmpty: null);
     }
 
@@ -522,7 +522,7 @@ namespace MachineWatchTest
       Assert.Equal("for4", _jobLog.MaxForeignID());
       var mat = new Dictionary<string, IEnumerable<JobLogDB.EventLogMaterial>>();
       mat["k"] = new JobLogDB.EventLogMaterial[] { };
-      _jobLog.CompletePalletCycle("p", DateTime.UtcNow, "for3", mat, SerialType.NoAutomaticSerials, 10);
+      _jobLog.CompletePalletCycle("p", DateTime.UtcNow, "for3", mat, generateSerials: false);
       Assert.Equal("for4", _jobLog.MaxForeignID()); // for4 should be copied
 
       var load1 = _jobLog.StationLogByForeignID("for1");
@@ -570,204 +570,6 @@ namespace MachineWatchTest
 
       Assert.Equal("the original message", _jobLog.OriginalMessageByForeignID("foreign1"));
       Assert.Equal("", _jobLog.OriginalMessageByForeignID("abc"));
-    }
-
-    [Fact]
-    public void PendingLoadOneSerialPerMat()
-    {
-      _jobLog.PendingLoads("pal1").Should().BeEmpty();
-      _jobLog.AllPendingLoads().Should().BeEmpty();
-
-      var mat1 = new LogMaterial(
-          _jobLog.AllocateMaterialID("unique", "part1", 1), "unique", 1, "part1", 1, "0000000001", "", "face1");
-      var mat2 = new LogMaterial(
-          _jobLog.AllocateMaterialID("unique2", "part2", 2), "unique2", 2, "part2", 2, "0000000002", "", "face2");
-      var mat3 = new LogMaterial(
-          _jobLog.AllocateMaterialID("unique3", "part3", 3), "unique3", 3, "part3", 3, "0000000003", "", "face3");
-      var mat4 = new LogMaterial(
-          _jobLog.AllocateMaterialID("unique4", "part4", 4), "unique4", 4, "part4", 4, "themat4serial", "", "face4");
-
-      var serial1 = _jobLog.ConvertMaterialIDToSerial(mat1.MaterialID).PadLeft(10, '0');
-      var serial2 = _jobLog.ConvertMaterialIDToSerial(mat2.MaterialID).PadLeft(10, '0');
-      var serial3 = _jobLog.ConvertMaterialIDToSerial(mat3.MaterialID).PadLeft(10, '0');
-
-      var t = DateTime.UtcNow.AddHours(-1);
-
-      //mat4 already has a serial
-      _jobLog.RecordSerialForMaterialID(JobLogDB.EventLogMaterial.FromLogMat(mat4), "themat4serial", t.AddMinutes(1));
-      var ser4 = new LogEntry(0, new LogMaterial[] { mat4 },
-                            "", LogType.PartMark, "Mark", 1, "MARK", false, t.AddMinutes(1), "themat4serial", false);
-
-      var log1 = new LogEntry(0, new LogMaterial[] { mat1, mat2 },
-                            "pal1", LogType.GeneralMessage, "ABC", 1,
-                            "prog1", false, t, "result1", false, TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(12));
-      var log2 = new LogEntry(0, new LogMaterial[] { mat1, mat2 },
-                            "pal2", LogType.MachineCycle, "MC", 1,
-                            "prog2", false, t.AddMinutes(20), "result2", false, TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(17));
-
-      _jobLog.AddLogEntryFromUnitTest(log1);
-      _jobLog.AddLogEntryFromUnitTest(log2);
-
-      _jobLog.AddPendingLoad("pal1", "key1", 5, TimeSpan.FromMinutes(32), TimeSpan.FromMinutes(38), "for1");
-      _jobLog.AddPendingLoad("pal1", "key2", 7, TimeSpan.FromMinutes(44), TimeSpan.FromMinutes(49), "for2");
-
-      _jobLog.PendingLoads("pal1").Should().BeEquivalentTo(new[] {
-                new JobLogDB.PendingLoad() {
-                    Pallet = "pal1",
-                    Key = "key1",
-                    LoadStation = 5,
-                    Elapsed = TimeSpan.FromMinutes(32),
-                    ForeignID = "for1",
-                    ActiveOperationTime = TimeSpan.FromMinutes(38)
-                },
-                new JobLogDB.PendingLoad() {
-                    Pallet = "pal1",
-                    Key = "key2",
-                    LoadStation = 7,
-                    Elapsed = TimeSpan.FromMinutes(44),
-                    ForeignID = "for2",
-                    ActiveOperationTime = TimeSpan.FromMinutes(49)
-                }
-            });
-      _jobLog.AllPendingLoads().Should().BeEquivalentTo(new[] {
-                new JobLogDB.PendingLoad() {
-                    Pallet = "pal1",
-                    Key = "key1",
-                    LoadStation = 5,
-                    Elapsed = TimeSpan.FromMinutes(32),
-                    ForeignID = "for1",
-                    ActiveOperationTime = TimeSpan.FromMinutes(38)
-                },
-                new JobLogDB.PendingLoad() {
-                    Pallet = "pal1",
-                    Key = "key2",
-                    LoadStation = 7,
-                    Elapsed = TimeSpan.FromMinutes(44),
-                    ForeignID = "for2",
-                    ActiveOperationTime = TimeSpan.FromMinutes(49)
-                }
-            });
-
-      var mat = new Dictionary<string, IEnumerable<JobLogDB.EventLogMaterial>>();
-
-      var palCycle = new LogEntry(0, new LogMaterial[] { }, "pal1",
-        LogType.PalletCycle, "Pallet Cycle", 1, "", false,
-        t.AddMinutes(45), "PalletCycle", false, TimeSpan.Zero, TimeSpan.Zero);
-
-      mat["key1"] = new LogMaterial[] { mat1, mat2 }.Select(JobLogDB.EventLogMaterial.FromLogMat);
-
-      var nLoad1 = new LogEntry(0, new LogMaterial[] { mat1, mat2 },
-                              "pal1", LogType.LoadUnloadCycle, "L/U", 5, "LOAD", false,
-                              t.AddMinutes(45).AddSeconds(1), "LOAD", false, TimeSpan.FromMinutes(32), TimeSpan.FromMinutes(38));
-
-      var ser1 = new LogEntry(0, new LogMaterial[] { mat1 },
-                            "", LogType.PartMark, "Mark", 1, "MARK", false,
-        t.AddMinutes(45).AddSeconds(2), serial1, false);
-
-      var ser2 = new LogEntry(0, new LogMaterial[] { mat2 },
-                            "", LogType.PartMark, "Mark", 1, "MARK", false,
-        t.AddMinutes(45).AddSeconds(2), serial2, false);
-
-      mat["key2"] = new LogMaterial[] { mat3, mat4 }.Select(JobLogDB.EventLogMaterial.FromLogMat);
-
-      var nLoad2 = new LogEntry(0, new LogMaterial[] { mat3, mat4 },
-                              "pal1", LogType.LoadUnloadCycle, "L/U", 7, "LOAD", false,
-                              t.AddMinutes(45).AddSeconds(1), "LOAD", false, TimeSpan.FromMinutes(44), TimeSpan.FromMinutes(49));
-
-      var ser3 = new LogEntry(0, new LogMaterial[] { mat3 },
-                            "", LogType.PartMark, "Mark", 1, "MARK", false,
-        t.AddMinutes(45).AddSeconds(2), serial3, false);
-
-      _jobLog.CompletePalletCycle("pal1", t.AddMinutes(45), "for3", mat, SerialType.AssignOneSerialPerMaterial, 10);
-
-      CheckLog(new LogEntry[] { ser4, log1, log2, palCycle, nLoad1, nLoad2, ser1, ser2, ser3 },
-               _jobLog.GetLogEntries(t.AddMinutes(-10), t.AddHours(1)), t.AddMinutes(-10));
-
-      CheckEqual(nLoad1, _jobLog.StationLogByForeignID("for1")[0]);
-      CheckEqual(nLoad2, _jobLog.StationLogByForeignID("for2")[0]);
-      CheckEqual(palCycle, _jobLog.StationLogByForeignID("for3")[0]);
-
-      _jobLog.PendingLoads("pal1").Should().BeEmpty();
-    }
-
-    [Fact]
-    public void PendingLoadOneSerialPerCycle()
-    {
-      var mat1 = new LogMaterial(
-          _jobLog.AllocateMaterialID("unique", "part1", 1), "unique", 1, "part1", 1, "0000000001", "", "face1");
-      var mat2 = new LogMaterial(
-          _jobLog.AllocateMaterialID("unique2", "part2", 2), "unique2", 2, "part2", 2, "0000000001", "", "face2"); // note mat2 gets same serial as mat1
-      var mat3 = new LogMaterial(
-          _jobLog.AllocateMaterialID("unique3", "part3", 3), "unique3", 3, "part3", 3, "0000000003", "", "face3");
-      var mat4 = new LogMaterial(
-          _jobLog.AllocateMaterialID("unique4", "part4", 4), "unique4", 4, "part4", 4, "themat4serial", "", "face4");
-
-      var serial1 = _jobLog.ConvertMaterialIDToSerial(mat1.MaterialID).PadLeft(10, '0');
-      var serial3 = _jobLog.ConvertMaterialIDToSerial(mat3.MaterialID).PadLeft(10, '0');
-
-      var t = DateTime.UtcNow.AddHours(-1);
-
-      //mat4 already has a serial
-      _jobLog.RecordSerialForMaterialID(JobLogDB.EventLogMaterial.FromLogMat(mat4), "themat4serial", t.AddMinutes(1));
-      var ser4 = new LogEntry(0, new LogMaterial[] { mat4 },
-                            "", LogType.PartMark, "Mark", 1, "MARK", false, t.AddMinutes(1), "themat4serial", false);
-
-      var log1 = new LogEntry(0, new LogMaterial[] { mat1, mat2 },
-                            "pal1", LogType.GeneralMessage, "ABC", 1,
-                            "prog1", false, t, "result1", false, TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(11));
-      var log2 = new LogEntry(0, new LogMaterial[] { mat1, mat2 },
-                            "pal2", LogType.MachineCycle, "MC", 1,
-                            "prog2", false, t.AddMinutes(20), "result2", false, TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(22));
-
-      _jobLog.AddLogEntryFromUnitTest(log1);
-      _jobLog.AddLogEntryFromUnitTest(log2);
-
-      _jobLog.AddPendingLoad("pal1", "key1", 5, TimeSpan.FromMinutes(32), TimeSpan.FromMinutes(38), "for1");
-      _jobLog.AddPendingLoad("pal1", "key2", 7, TimeSpan.FromMinutes(44), TimeSpan.FromMinutes(49), "for2");
-      _jobLog.AddPendingLoad("pal1", "key3", 6, TimeSpan.FromMinutes(55), TimeSpan.FromMinutes(61), "for2.5");
-
-      var mat = new Dictionary<string, IEnumerable<JobLogDB.EventLogMaterial>>();
-
-      var palCycle = new LogEntry(0, new LogMaterial[] { }, "pal1",
-      LogType.PalletCycle, "Pallet Cycle", 1, "", false,
-        t.AddMinutes(45), "PalletCycle", false, TimeSpan.Zero, TimeSpan.Zero);
-
-      mat["key1"] = new LogMaterial[] { mat1, mat2 }.Select(JobLogDB.EventLogMaterial.FromLogMat);
-
-      var nLoad1 = new LogEntry(0, new LogMaterial[] { mat1, mat2 },
-                              "pal1", LogType.LoadUnloadCycle, "L/U", 5, "LOAD", false,
-                              t.AddMinutes(45).AddSeconds(1), "LOAD", false, TimeSpan.FromMinutes(32), TimeSpan.FromMinutes(38));
-
-      var ser1 = new LogEntry(0, new LogMaterial[] { mat1, mat2 },
-                            "", LogType.PartMark, "Mark", 1, "MARK", false,
-        t.AddMinutes(45).AddSeconds(2), serial1, false);
-
-      mat["key2"] = new LogMaterial[] { mat3 }.Select(JobLogDB.EventLogMaterial.FromLogMat);
-
-      var nLoad2 = new LogEntry(0, new LogMaterial[] { mat3 },
-                              "pal1", LogType.LoadUnloadCycle, "L/U", 7, "LOAD", false,
-                              t.AddMinutes(45).AddSeconds(1), "LOAD", false, TimeSpan.FromMinutes(44), TimeSpan.FromMinutes(49));
-
-      var ser3 = new LogEntry(0, new LogMaterial[] { mat3 },
-                            "", LogType.PartMark, "Mark", 1, "MARK", false,
-        t.AddMinutes(45).AddSeconds(2), serial3, false);
-
-      mat["key3"] = new LogMaterial[] { mat4 }.Select(JobLogDB.EventLogMaterial.FromLogMat);
-
-      var nLoad3 = new LogEntry(0, new LogMaterial[] { mat4 },
-                              "pal1", LogType.LoadUnloadCycle, "L/U", 6, "LOAD", false,
-                              t.AddMinutes(45).AddSeconds(1), "LOAD", false, TimeSpan.FromMinutes(55), TimeSpan.FromMinutes(61));
-
-      _jobLog.CompletePalletCycle("pal1", t.AddMinutes(45), "for3", mat, SerialType.AssignOneSerialPerCycle, 10);
-
-      CheckLog(new LogEntry[] { ser4, log1, log2, palCycle, nLoad1, nLoad2, nLoad3, ser1, ser3 },
-               _jobLog.GetLogEntries(t.AddMinutes(-10), t.AddHours(1)), t.AddMinutes(-10));
-
-      CheckEqual(nLoad1, _jobLog.StationLogByForeignID("for1")[0]);
-      CheckEqual(nLoad2, _jobLog.StationLogByForeignID("for2")[0]);
-      CheckEqual(palCycle, _jobLog.StationLogByForeignID("for3")[0]);
-
-      _jobLog.PendingLoads("pal1").Should().BeEmpty();
     }
 
     [Fact]
@@ -1288,7 +1090,7 @@ namespace MachineWatchTest
       return last;
     }
 
-    private long CheckLog(IList<LogEntry> logs, IList<LogEntry> otherLogs, System.DateTime start)
+    public static long CheckLog(IList<LogEntry> logs, IList<LogEntry> otherLogs, System.DateTime start)
     {
       logs.Where(l => l.EndTimeUTC >= start).Should().BeEquivalentTo(otherLogs, options =>
         options.Excluding(l => l.Counter)
@@ -1296,7 +1098,7 @@ namespace MachineWatchTest
       return otherLogs.Select(l => l.Counter).Max();
     }
 
-    private void CheckEqual(LogEntry x, LogEntry y)
+    public static void CheckEqual(LogEntry x, LogEntry y)
     {
       x.Should().BeEquivalentTo(y, options =>
         options.Excluding(l => l.Counter)
@@ -1392,6 +1194,242 @@ namespace MachineWatchTest
     #endregion
   }
 
+  public class LogOneSerialPerMaterialSpec : IDisposable
+  {
+    private JobLogDB _jobLog;
+
+    public LogOneSerialPerMaterialSpec()
+    {
+      var connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
+      connection.Open();
+      _jobLog = new JobLogDB(new FMSSettings() { SerialType = SerialType.AssignOneSerialPerMaterial, SerialLength = 10 }, connection);
+      _jobLog.CreateTables(firstSerialOnEmpty: null);
+    }
+
+    public void Dispose()
+    {
+      _jobLog.Close();
+    }
+
+    [Fact]
+    public void PendingLoadOneSerialPerMat()
+    {
+      _jobLog.PendingLoads("pal1").Should().BeEmpty();
+      _jobLog.AllPendingLoads().Should().BeEmpty();
+
+      var mat1 = new LogMaterial(
+          _jobLog.AllocateMaterialID("unique", "part1", 1), "unique", 1, "part1", 1, "0000000001", "", "face1");
+      var mat2 = new LogMaterial(
+          _jobLog.AllocateMaterialID("unique2", "part2", 2), "unique2", 2, "part2", 2, "0000000002", "", "face2");
+      var mat3 = new LogMaterial(
+          _jobLog.AllocateMaterialID("unique3", "part3", 3), "unique3", 3, "part3", 3, "0000000003", "", "face3");
+      var mat4 = new LogMaterial(
+          _jobLog.AllocateMaterialID("unique4", "part4", 4), "unique4", 4, "part4", 4, "themat4serial", "", "face4");
+
+      var serial1 = FMSSettings.ConvertToBase62(mat1.MaterialID).PadLeft(10, '0');
+      var serial2 = FMSSettings.ConvertToBase62(mat2.MaterialID).PadLeft(10, '0');
+      var serial3 = FMSSettings.ConvertToBase62(mat3.MaterialID).PadLeft(10, '0');
+
+      var t = DateTime.UtcNow.AddHours(-1);
+
+      //mat4 already has a serial
+      _jobLog.RecordSerialForMaterialID(JobLogDB.EventLogMaterial.FromLogMat(mat4), "themat4serial", t.AddMinutes(1));
+      var ser4 = new LogEntry(0, new LogMaterial[] { mat4 },
+                            "", LogType.PartMark, "Mark", 1, "MARK", false, t.AddMinutes(1), "themat4serial", false);
+
+      var log1 = new LogEntry(0, new LogMaterial[] { mat1, mat2 },
+                            "pal1", LogType.GeneralMessage, "ABC", 1,
+                            "prog1", false, t, "result1", false, TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(12));
+      var log2 = new LogEntry(0, new LogMaterial[] { mat1, mat2 },
+                            "pal2", LogType.MachineCycle, "MC", 1,
+                            "prog2", false, t.AddMinutes(20), "result2", false, TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(17));
+
+      _jobLog.AddLogEntryFromUnitTest(log1);
+      _jobLog.AddLogEntryFromUnitTest(log2);
+
+      _jobLog.AddPendingLoad("pal1", "key1", 5, TimeSpan.FromMinutes(32), TimeSpan.FromMinutes(38), "for1");
+      _jobLog.AddPendingLoad("pal1", "key2", 7, TimeSpan.FromMinutes(44), TimeSpan.FromMinutes(49), "for2");
+
+      _jobLog.PendingLoads("pal1").Should().BeEquivalentTo(new[] {
+                new JobLogDB.PendingLoad() {
+                    Pallet = "pal1",
+                    Key = "key1",
+                    LoadStation = 5,
+                    Elapsed = TimeSpan.FromMinutes(32),
+                    ForeignID = "for1",
+                    ActiveOperationTime = TimeSpan.FromMinutes(38)
+                },
+                new JobLogDB.PendingLoad() {
+                    Pallet = "pal1",
+                    Key = "key2",
+                    LoadStation = 7,
+                    Elapsed = TimeSpan.FromMinutes(44),
+                    ForeignID = "for2",
+                    ActiveOperationTime = TimeSpan.FromMinutes(49)
+                }
+            });
+      _jobLog.AllPendingLoads().Should().BeEquivalentTo(new[] {
+                new JobLogDB.PendingLoad() {
+                    Pallet = "pal1",
+                    Key = "key1",
+                    LoadStation = 5,
+                    Elapsed = TimeSpan.FromMinutes(32),
+                    ForeignID = "for1",
+                    ActiveOperationTime = TimeSpan.FromMinutes(38)
+                },
+                new JobLogDB.PendingLoad() {
+                    Pallet = "pal1",
+                    Key = "key2",
+                    LoadStation = 7,
+                    Elapsed = TimeSpan.FromMinutes(44),
+                    ForeignID = "for2",
+                    ActiveOperationTime = TimeSpan.FromMinutes(49)
+                }
+            });
+
+      var mat = new Dictionary<string, IEnumerable<JobLogDB.EventLogMaterial>>();
+
+      var palCycle = new LogEntry(0, new LogMaterial[] { }, "pal1",
+        LogType.PalletCycle, "Pallet Cycle", 1, "", false,
+        t.AddMinutes(45), "PalletCycle", false, TimeSpan.Zero, TimeSpan.Zero);
+
+      mat["key1"] = new LogMaterial[] { mat1, mat2 }.Select(JobLogDB.EventLogMaterial.FromLogMat);
+
+      var nLoad1 = new LogEntry(0, new LogMaterial[] { mat1, mat2 },
+                              "pal1", LogType.LoadUnloadCycle, "L/U", 5, "LOAD", false,
+                              t.AddMinutes(45).AddSeconds(1), "LOAD", false, TimeSpan.FromMinutes(32), TimeSpan.FromMinutes(38));
+
+      var ser1 = new LogEntry(0, new LogMaterial[] { mat1 },
+                            "", LogType.PartMark, "Mark", 1, "MARK", false,
+        t.AddMinutes(45).AddSeconds(2), serial1, false);
+
+      var ser2 = new LogEntry(0, new LogMaterial[] { mat2 },
+                            "", LogType.PartMark, "Mark", 1, "MARK", false,
+        t.AddMinutes(45).AddSeconds(2), serial2, false);
+
+      mat["key2"] = new LogMaterial[] { mat3, mat4 }.Select(JobLogDB.EventLogMaterial.FromLogMat);
+
+      var nLoad2 = new LogEntry(0, new LogMaterial[] { mat3, mat4 },
+                              "pal1", LogType.LoadUnloadCycle, "L/U", 7, "LOAD", false,
+                              t.AddMinutes(45).AddSeconds(1), "LOAD", false, TimeSpan.FromMinutes(44), TimeSpan.FromMinutes(49));
+
+      var ser3 = new LogEntry(0, new LogMaterial[] { mat3 },
+                            "", LogType.PartMark, "Mark", 1, "MARK", false,
+        t.AddMinutes(45).AddSeconds(2), serial3, false);
+
+      _jobLog.CompletePalletCycle("pal1", t.AddMinutes(45), "for3", mat, generateSerials: true);
+
+      JobLogTest.CheckLog(new LogEntry[] { ser4, log1, log2, palCycle, nLoad1, nLoad2, ser1, ser2, ser3 },
+               _jobLog.GetLogEntries(t.AddMinutes(-10), t.AddHours(1)), t.AddMinutes(-10));
+
+      JobLogTest.CheckEqual(nLoad1, _jobLog.StationLogByForeignID("for1")[0]);
+      JobLogTest.CheckEqual(nLoad2, _jobLog.StationLogByForeignID("for2")[0]);
+      JobLogTest.CheckEqual(palCycle, _jobLog.StationLogByForeignID("for3")[0]);
+
+      _jobLog.PendingLoads("pal1").Should().BeEmpty();
+    }
+
+  }
+
+  public class LogOneSerialPerCycleSpec : IDisposable
+  {
+    private JobLogDB _jobLog;
+
+    public LogOneSerialPerCycleSpec()
+    {
+      var connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
+      connection.Open();
+      _jobLog = new JobLogDB(new FMSSettings() { SerialType = SerialType.AssignOneSerialPerCycle, SerialLength = 10 }, connection);
+      _jobLog.CreateTables(firstSerialOnEmpty: null);
+    }
+
+    public void Dispose()
+    {
+      _jobLog.Close();
+    }
+
+    [Fact]
+    public void PendingLoadOneSerialPerCycle()
+    {
+      var mat1 = new LogMaterial(
+          _jobLog.AllocateMaterialID("unique", "part1", 1), "unique", 1, "part1", 1, "0000000001", "", "face1");
+      var mat2 = new LogMaterial(
+          _jobLog.AllocateMaterialID("unique2", "part2", 2), "unique2", 2, "part2", 2, "0000000001", "", "face2"); // note mat2 gets same serial as mat1
+      var mat3 = new LogMaterial(
+          _jobLog.AllocateMaterialID("unique3", "part3", 3), "unique3", 3, "part3", 3, "0000000003", "", "face3");
+      var mat4 = new LogMaterial(
+          _jobLog.AllocateMaterialID("unique4", "part4", 4), "unique4", 4, "part4", 4, "themat4serial", "", "face4");
+
+      var serial1 = FMSSettings.ConvertToBase62(mat1.MaterialID).PadLeft(10, '0');
+      var serial3 = FMSSettings.ConvertToBase62(mat3.MaterialID).PadLeft(10, '0');
+
+      var t = DateTime.UtcNow.AddHours(-1);
+
+      //mat4 already has a serial
+      _jobLog.RecordSerialForMaterialID(JobLogDB.EventLogMaterial.FromLogMat(mat4), "themat4serial", t.AddMinutes(1));
+      var ser4 = new LogEntry(0, new LogMaterial[] { mat4 },
+                            "", LogType.PartMark, "Mark", 1, "MARK", false, t.AddMinutes(1), "themat4serial", false);
+
+      var log1 = new LogEntry(0, new LogMaterial[] { mat1, mat2 },
+                            "pal1", LogType.GeneralMessage, "ABC", 1,
+                            "prog1", false, t, "result1", false, TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(11));
+      var log2 = new LogEntry(0, new LogMaterial[] { mat1, mat2 },
+                            "pal2", LogType.MachineCycle, "MC", 1,
+                            "prog2", false, t.AddMinutes(20), "result2", false, TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(22));
+
+      _jobLog.AddLogEntryFromUnitTest(log1);
+      _jobLog.AddLogEntryFromUnitTest(log2);
+
+      _jobLog.AddPendingLoad("pal1", "key1", 5, TimeSpan.FromMinutes(32), TimeSpan.FromMinutes(38), "for1");
+      _jobLog.AddPendingLoad("pal1", "key2", 7, TimeSpan.FromMinutes(44), TimeSpan.FromMinutes(49), "for2");
+      _jobLog.AddPendingLoad("pal1", "key3", 6, TimeSpan.FromMinutes(55), TimeSpan.FromMinutes(61), "for2.5");
+
+      var mat = new Dictionary<string, IEnumerable<JobLogDB.EventLogMaterial>>();
+
+      var palCycle = new LogEntry(0, new LogMaterial[] { }, "pal1",
+      LogType.PalletCycle, "Pallet Cycle", 1, "", false,
+        t.AddMinutes(45), "PalletCycle", false, TimeSpan.Zero, TimeSpan.Zero);
+
+      mat["key1"] = new LogMaterial[] { mat1, mat2 }.Select(JobLogDB.EventLogMaterial.FromLogMat);
+
+      var nLoad1 = new LogEntry(0, new LogMaterial[] { mat1, mat2 },
+                              "pal1", LogType.LoadUnloadCycle, "L/U", 5, "LOAD", false,
+                              t.AddMinutes(45).AddSeconds(1), "LOAD", false, TimeSpan.FromMinutes(32), TimeSpan.FromMinutes(38));
+
+      var ser1 = new LogEntry(0, new LogMaterial[] { mat1, mat2 },
+                            "", LogType.PartMark, "Mark", 1, "MARK", false,
+        t.AddMinutes(45).AddSeconds(2), serial1, false);
+
+      mat["key2"] = new LogMaterial[] { mat3 }.Select(JobLogDB.EventLogMaterial.FromLogMat);
+
+      var nLoad2 = new LogEntry(0, new LogMaterial[] { mat3 },
+                              "pal1", LogType.LoadUnloadCycle, "L/U", 7, "LOAD", false,
+                              t.AddMinutes(45).AddSeconds(1), "LOAD", false, TimeSpan.FromMinutes(44), TimeSpan.FromMinutes(49));
+
+      var ser3 = new LogEntry(0, new LogMaterial[] { mat3 },
+                            "", LogType.PartMark, "Mark", 1, "MARK", false,
+        t.AddMinutes(45).AddSeconds(2), serial3, false);
+
+      mat["key3"] = new LogMaterial[] { mat4 }.Select(JobLogDB.EventLogMaterial.FromLogMat);
+
+      var nLoad3 = new LogEntry(0, new LogMaterial[] { mat4 },
+                              "pal1", LogType.LoadUnloadCycle, "L/U", 6, "LOAD", false,
+                              t.AddMinutes(45).AddSeconds(1), "LOAD", false, TimeSpan.FromMinutes(55), TimeSpan.FromMinutes(61));
+
+      _jobLog.CompletePalletCycle("pal1", t.AddMinutes(45), "for3", mat, generateSerials: true);
+
+      JobLogTest.CheckLog(new LogEntry[] { ser4, log1, log2, palCycle, nLoad1, nLoad2, nLoad3, ser1, ser3 },
+               _jobLog.GetLogEntries(t.AddMinutes(-10), t.AddHours(1)), t.AddMinutes(-10));
+
+      JobLogTest.CheckEqual(nLoad1, _jobLog.StationLogByForeignID("for1")[0]);
+      JobLogTest.CheckEqual(nLoad2, _jobLog.StationLogByForeignID("for2")[0]);
+      JobLogTest.CheckEqual(palCycle, _jobLog.StationLogByForeignID("for3")[0]);
+
+      _jobLog.PendingLoads("pal1").Should().BeEmpty();
+    }
+  }
+
+
   public class LogStartingMaterialIDSpec : IDisposable
   {
     private JobLogDB _jobLog;
@@ -1400,7 +1438,7 @@ namespace MachineWatchTest
     {
       var connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
       connection.Open();
-      _jobLog = new JobLogDB(connection);
+      _jobLog = new JobLogDB(new FMSSettings(), connection);
       _jobLog.CreateTables(firstSerialOnEmpty: "AbCd12");
     }
 
@@ -1414,7 +1452,8 @@ namespace MachineWatchTest
     {
       var fixture = new Fixture();
       var matId = fixture.Create<long>();
-      _jobLog.ConvertSerialToMaterialID(_jobLog.ConvertMaterialIDToSerial(matId)).Should().Be(matId);
+      var st = new FMSSettings();
+      st.ConvertSerialToMaterialID(st.ConvertMaterialIDToSerial(matId)).Should().Be(matId);
     }
 
 
@@ -1442,7 +1481,7 @@ namespace MachineWatchTest
     {
       var connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
       connection.Open();
-      var l = new JobLogDB(connection);
+      var l = new JobLogDB(new FMSSettings(), connection);
       l.Invoking(x => x.CreateTables(firstSerialOnEmpty: "A000000000"))
           .Should().Throw<Exception>().WithMessage("Serial A000000000 is too large");
       l.Close();

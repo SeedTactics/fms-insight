@@ -484,7 +484,7 @@ namespace MazakMachineInterface
         mat[p.Key] = mats;
       }
 
-      _log.CompletePalletCycle(pallet.ToString(), t, foreignID, mat, _settings.SerialType, _settings.SerialLength);
+      _log.CompletePalletCycle(pallet.ToString(), t, foreignID, mat, generateSerials: true);
 
       if (palletCycle)
         return cycle;
