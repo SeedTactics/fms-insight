@@ -115,6 +115,26 @@ build_script:
       }
 
   - ps: |
+      function ver ($x) { c:\python36\python.exe build/version.py $x }
+      $tag = $(hg id -t -r '.^')
+      dotnet pack `
+          --include-symbols `
+          -c Release `
+          /p:VersionPrefix=$(ver cincron) `
+          --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
+          server/machines/niigata/niigata.csproj
+      if ($tag.StartsWith("niigata")) {
+        dotnet publish `
+            -c Release `
+            -f net461 `
+            /p:VersionPrefix=$(ver niigata) `
+            --version-suffix build.$Env:APPVEYOR_BUILD_NUMBER `
+            server/machines/niigata/niigata.csproj
+
+        ./build/insight-installer-build.ps1 niigata
+      }
+
+  - ps: |
       yarn --cwd client/insight run build-demo
       if ($LastExitCode -ne 0) { $host.SetShouldExit($LastExitCode)  }
       yarn --cwd website install --frozen-lockfile

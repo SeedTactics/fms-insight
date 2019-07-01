@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>BlackMaple.FMSInsight.Niigata</AssemblyName>
+    <PackageId>BlackMaple.FMSInsight.Niigata</PackageId>
+    <OutputType>Exe</OutputType>
+
+    <Title>Niigata backend for FMS Insight</Title>
+    <Company>Black Maple Software, LLC</Company>
+    <Product>SeedTactics</Product>
+    <Copyright>Black Maple Software, LLC</Copyright>
+    <Authors>John Lenz</Authors>
+    <PackageProjectUrl>https://www.seedtactics.com</PackageProjectUrl>
+
+    <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
+  </PropertyGroup>
+
+  <Choose>
+    <When Condition="$(OS) == 'Windows_NT'">
+      <PropertyGroup>
+        <TargetFrameworks>net461;netcoreapp2.2</TargetFrameworks>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <TargetFramework>netcoreapp2.2</TargetFramework>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+
+  <ItemGroup>
+    <ProjectReference Include="../../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj"/>
+  </ItemGroup>
+</Project>
