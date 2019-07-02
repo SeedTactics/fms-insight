@@ -279,7 +279,7 @@ namespace BlackMaple.MachineWatchInterface
     private List<string> _alarms;
 
     [DataMember(Name = "Queues", IsRequired = true)]
-    public Dictionary<string, QueueSize> _queues;
+    private Dictionary<string, QueueSize> _queues;
   }
 
   [Serializable, DataContract]

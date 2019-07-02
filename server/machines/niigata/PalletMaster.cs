@@ -93,14 +93,14 @@ namespace BlackMaple.FMSInsight.Niigata
     public bool Before { get; set; }
   }
 
-  public abstract class PalletLocation { }
+  public abstract class NiigataPalletLocation { }
 
-  public class LoadUnloadLoc : PalletLocation
+  public class LoadUnloadLoc : NiigataPalletLocation
   {
     public int LoadStation { get; set; }
   }
 
-  public class MachineOrWashLoc : PalletLocation
+  public class MachineOrWashLoc : NiigataPalletLocation
   {
     public enum Rotary
     {
@@ -112,9 +112,9 @@ namespace BlackMaple.FMSInsight.Niigata
     public Rotary Position { get; set; }
   }
 
-  public class StockerLoc : PalletLocation { }
+  public class StockerLoc : NiigataPalletLocation { }
 
-  public class CartLoc : PalletLocation { }
+  public class CartLoc : NiigataPalletLocation { }
 
   public class PalletMaster
   {
@@ -123,7 +123,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public int NumFaces { get; set; } = 1; // can be 1, 4, or 8.
     public int RemainingPalletCycles { get; set; } = 0; // 999 indicates run forever
     public int Priority { get; set; } = 0; // 9 is lowest, 1 is highest, 0 is no priority
-    public PalletLocation Loc { get; set; } = new StockerLoc();
+    public NiigataPalletLocation Loc { get; set; } = new StockerLoc();
 
     // When true, no workpiece is loaded.  This gets set when the user presses the "Unload" button
     // at the load station
@@ -137,5 +137,9 @@ namespace BlackMaple.FMSInsight.Niigata
   // as an alternative to controlling via PalletMaster, can use PartMaster but it is just an easier
   // way of entering pallet data, since after assigning a pallet you still control the pallet itself
   // through PalletMaster.
+  public interface ICurrentPallets
+  {
+    Dictionary<string, PalletMaster> LoadPallets();
+  }
 
 }
