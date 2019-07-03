@@ -31,13 +31,19 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
-  public class BuildCurrentStatus
+  public interface IBuildCurrentStatus
+  {
+    CurrentStatus GetCurrentStatus();
+  }
+
+  public class BuildCurrentStatus : IBuildCurrentStatus
   {
     private JobDB _jobs;
     private JobLogDB _log;
@@ -72,7 +78,16 @@ namespace BlackMaple.FMSInsight.Niigata
             {
               if (mat.JobUniqueStr == j.UniqueStr)
               {
-                curJob.AdjustCompleted(mat.Process, path: 1, x => x + 1);
+                int matPath = 1;
+                for (int path = 1; path <= j.GetNumPaths(mat.Process); path++)
+                {
+                  if (j.PlannedPallets(mat.Process, path).Contains(e.Pallet))
+                  {
+                    matPath = path;
+                    break;
+                  }
+                }
+                curJob.AdjustCompleted(mat.Process, matPath, x => x + 1);
               }
             }
           }

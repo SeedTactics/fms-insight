@@ -44,6 +44,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private JobLogDB _log;
     private JobDB _jobs;
+    private NiigataJobs _jobBackend;
 
     public NiigataBackend(IConfigurationSection config, FMSSettings cfg)
     {
@@ -60,6 +61,10 @@ namespace BlackMaple.FMSInsight.Niigata
           System.IO.Path.Combine(cfg.DataDirectory, "jobs.db")
         );
 
+        SyncPallets = new SyncPallets();
+        CurPallets = new LoadPalletMaster();
+        CurrentStatus = new BuildCurrentStatus(_jobs, _log, cfg, CurPallets);
+        _jobBackend = new NiigataJobs(_jobs, _log, cfg, SyncPallets, CurrentStatus);
       }
       catch (Exception ex)
       {
@@ -69,9 +74,11 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public void Dispose()
     {
+      if (SyncPallets != null) SyncPallets.Dispose();
+      SyncPallets = null;
       if (_log != null) _log.Close();
-      if (_jobs != null) _jobs.Close();
       _log = null;
+      if (_jobs != null) _jobs.Close();
       _jobs = null;
     }
 
@@ -99,6 +106,10 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       return _log;
     }
+
+    public SyncPallets SyncPallets { get; private set; }
+    public IBuildCurrentStatus CurrentStatus { get; }
+    public ICurrentPallets CurPallets { get; }
   }
 
   public static class NiigataProgram
