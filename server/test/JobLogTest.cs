@@ -1064,6 +1064,16 @@ namespace MachineWatchTest
         PartName = "part1",
         NumProcesses = 6312,
       });
+
+      _jobLog.MarkCastingsAsUnallocated(new[] { mat1.MaterialID });
+
+      _jobLog.GetMaterialDetails(mat1.MaterialID).Should().BeEquivalentTo(new MaterialDetails()
+      {
+        MaterialID = mat1.MaterialID,
+        JobUnique = null,
+        PartName = "part1",
+        NumProcesses = 6312,
+      });
     }
 
     #region Helpers

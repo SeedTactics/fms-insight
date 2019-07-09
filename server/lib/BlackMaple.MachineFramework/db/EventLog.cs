@@ -2388,6 +2388,38 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    public void MarkCastingsAsUnallocated(IEnumerable<long> matIds)
+    {
+      lock (_lock)
+      {
+        var trans = _connection.BeginTransaction();
+        try
+        {
+          using (var cmd = _connection.CreateCommand())
+          {
+            cmd.Transaction = trans;
+
+            cmd.CommandText = "UPDATE matdetails SET UniqueStr = NULL WHERE MaterialID = $mid";
+            cmd.Parameters.Clear();
+            cmd.Parameters.Add("mid", SqliteType.Integer);
+
+            foreach (var matId in matIds)
+            {
+              cmd.Parameters[0].Value = matId;
+              cmd.ExecuteNonQuery();
+            }
+          }
+          trans.Commit();
+        }
+        catch
+        {
+          trans.Rollback();
+          throw;
+        }
+      }
+
+    }
+
     public struct QueuedMaterial
     {
       public long MaterialID { get; set; }

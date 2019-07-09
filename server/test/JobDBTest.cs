@@ -709,6 +709,15 @@ namespace MachineWatchTest
       Assert.Equal(decs, _jobDB.LoadDecrementQuantitiesAfter(new DateTime(2016, 1, 1)));
       Assert.Equal(new[] { decs[2] }, _jobDB.LoadDecrementQuantitiesAfter(new DateTime(2017, 1, 15)));
       Assert.Empty(_jobDB.LoadDecrementQuantitiesAfter(new DateTime(2017, 2, 1)));
+
+      _jobDB.LoadDecrementsForJob("uniq1").Should().BeEquivalentTo(new[] {
+        new InProcessJobDecrement() {
+          DecrementId = "bbb", TimeUTC = new DateTime(2017, 1, 1), Quantity = 53
+        },
+        new InProcessJobDecrement() {
+          DecrementId = "ddd", TimeUTC = new DateTime(2017, 2, 1), Quantity = 102
+        }
+      });
     }
 
     private void CheckJobs(JobPlan job1, JobPlan job2, JobPlan job3, string schId, Dictionary<string, int> extraParts, IEnumerable<PartWorkorder> works)

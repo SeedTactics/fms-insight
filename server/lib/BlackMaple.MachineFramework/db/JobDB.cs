@@ -86,7 +86,7 @@ namespace BlackMaple.MachineFramework
             _connection.Close();
         }
 
-        private const int Version = 14;
+        private const int Version = 15;
 
         public void CreateTables()
         {
@@ -172,6 +172,9 @@ namespace BlackMaple.MachineFramework
             cmd.CommandText = "CREATE INDEX decrement_snapshot_time ON decrement_snapshots(TimeUTC)";
             cmd.ExecuteNonQuery();
 
+            cmd.CommandText = "CREATE INDEX decrement_snapshot_unique ON decrement_snapshots(JobUnique)";
+            cmd.ExecuteNonQuery();
+
             cmd.CommandText = "CREATE TABLE schedule_debug(ScheduleId TEXT PRIMARY KEY, DebugMessage BLOB)";
             cmd.ExecuteNonQuery();
 
@@ -244,6 +247,7 @@ namespace BlackMaple.MachineFramework
                 if (curVersion < 12) Ver11ToVer12(trans);
                 if (curVersion < 13) Ver12ToVer13(trans);
                 if (curVersion < 14) Ver13ToVer14(trans);
+                if (curVersion < 15) Ver14ToVer15(trans);
 
                 //update the version in the database
                 cmd.Transaction = trans;
@@ -451,6 +455,7 @@ namespace BlackMaple.MachineFramework
         {
             using (IDbCommand cmd = _connection.CreateCommand())
             {
+                cmd.Transaction = transaction;
                 cmd.CommandText = "ALTER TABLE pathdata ADD InputQueue TEXT";
                 cmd.ExecuteNonQuery();
                 cmd.CommandText = "ALTER TABLE pathdata ADD OutputQueue TEXT";
@@ -462,9 +467,20 @@ namespace BlackMaple.MachineFramework
         {
             using (IDbCommand cmd = _connection.CreateCommand())
             {
+                cmd.Transaction = transaction;
                 cmd.CommandText = "ALTER TABLE pathdata ADD LoadTime INTEGER";
                 cmd.ExecuteNonQuery();
                 cmd.CommandText = "ALTER TABLE pathdata ADD UnloadTime INTEGER";
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        private void Ver14ToVer15(IDbTransaction trans)
+        {
+            using (IDbCommand cmd = _connection.CreateCommand())
+            {
+                cmd.Transaction = trans;
+                cmd.CommandText = "CREATE INDEX decrement_snapshot_unique ON decrement_snapshots(JobUnique)";
                 cmd.ExecuteNonQuery();
             }
         }
@@ -2136,6 +2152,30 @@ namespace BlackMaple.MachineFramework
                 {
                     trans.Rollback();
                     throw;
+                }
+            }
+        }
+
+        public List<MachineWatchInterface.InProcessJobDecrement> LoadDecrementsForJob(string unique)
+        {
+            lock (_lock)
+            {
+                using (var cmd = _connection.CreateCommand()) {
+                    cmd.CommandText = "SELECT DecrementId,TimeUTC,Quantity FROM decrement_snapshots WHERE JobUnique = $uniq";
+                    cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
+                    var ret = new List<MachineWatchInterface.InProcessJobDecrement>();
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var j = new MachineWatchInterface.InProcessJobDecrement();
+                            j.DecrementId = reader.GetString(0);
+                            j.TimeUTC = new DateTime(reader.GetInt64(1), DateTimeKind.Utc);
+                            j.Quantity = reader.GetInt32(2);
+                            ret.Add(j);
+                        }
+                        return ret;
+                    }
                 }
             }
         }

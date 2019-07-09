@@ -191,6 +191,14 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember(IsRequired = false, EmitDefaultValue = false)] public decimal? PercentMoveCompleted { get; set; }
   }
 
+  [Serializable, DataContract]
+  public class InProcessJobDecrement
+  {
+    [DataMember(IsRequired = true)] public string DecrementId { get; set; }
+    [DataMember(IsRequired = true)] public DateTime TimeUTC { get; set; }
+    [DataMember(IsRequired = true)] public int Quantity { get; set; }
+  }
+
   [SerializableAttribute, DataContract]
   public class InProcessJob : JobPlan
   {
@@ -228,6 +236,16 @@ namespace BlackMaple.MachineWatchInterface
       }
     }
 
+    public IList<InProcessJobDecrement> Decrements
+    {
+      get
+      {
+        if (_decrements == null)
+          _decrements = new List<InProcessJobDecrement>();
+        return _decrements;
+      }
+    }
+
     public InProcessJob(string unique, int numProc, int[] numPaths = null) : base(unique, numProc, numPaths)
     {
       _completed = new int[base.NumProcesses][];
@@ -244,6 +262,8 @@ namespace BlackMaple.MachineWatchInterface
     private InProcessJob() { } //for json deserialization
 
     [DataMember(Name = "Completed", IsRequired = true)] private int[][] _completed;
+
+    [DataMember(Name = "Decrements", IsRequired = false), OptionalField] private List<InProcessJobDecrement> _decrements;
   }
 
   [SerializableAttribute, DataContract]
