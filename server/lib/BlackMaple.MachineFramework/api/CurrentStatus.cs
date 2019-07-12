@@ -194,7 +194,7 @@ namespace BlackMaple.MachineWatchInterface
   [Serializable, DataContract]
   public class InProcessJobDecrement
   {
-    [DataMember(IsRequired = true)] public string DecrementId { get; set; }
+    [DataMember(IsRequired = true)] public long DecrementId { get; set; }
     [DataMember(IsRequired = true)] public DateTime TimeUTC { get; set; }
     [DataMember(IsRequired = true)] public int Quantity { get; set; }
   }
@@ -305,7 +305,7 @@ namespace BlackMaple.MachineWatchInterface
   [Serializable, DataContract]
   public struct JobAndDecrementQuantity
   {
-    [DataMember(IsRequired = true)] public string DecrementId { get; set; }
+    [DataMember(IsRequired = true)] public long DecrementId { get; set; }
     [DataMember(IsRequired = true)] public string JobUnique { get; set; }
     [DataMember(IsRequired = true)] public DateTime TimeUTC { get; set; }
     [DataMember(IsRequired = true)] public string Part { get; set; }

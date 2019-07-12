@@ -673,49 +673,85 @@ namespace MachineWatchTest
     [Fact]
     public void DecrementQuantities()
     {
-      var decs = new List<JobAndDecrementQuantity>();
+      var time1 = DateTime.UtcNow.AddHours(-2);
+      _jobDB.AddNewDecrement(new[] {
+        new JobDB.NewDecrementQuantity() {
+          JobUnique = "uniq1",
+          Part = "part1",
+          Quantity = 53
+        },
+        new JobDB.NewDecrementQuantity() {
+          JobUnique = "uniq2",
+          Part = "part2",
+          Quantity = 821
+        },
+      }, time1);
 
-      var d = default(JobAndDecrementQuantity);
-      d.DecrementId = "bbb";
-      d.JobUnique = "uniq1";
-      d.Part = "part1";
-      d.TimeUTC = new DateTime(2017, 1, 1);
-      d.Quantity = 53;
-      decs.Add(d);
+      var expected1 = new[] {
+        new JobAndDecrementQuantity() {
+          DecrementId = 0,
+          JobUnique = "uniq1",
+          TimeUTC = time1,
+          Part = "part1",
+          Quantity = 53
+        },
+        new JobAndDecrementQuantity() {
+          DecrementId = 0,
+          JobUnique = "uniq2",
+          TimeUTC = time1,
+          Part = "part2",
+          Quantity = 821
+        }
+      };
 
-      d = default(JobAndDecrementQuantity);
-      d.DecrementId = "bbb";
-      d.JobUnique = "uniq2";
-      d.Part = "part2";
-      d.TimeUTC = new DateTime(2017, 1, 1);
-      d.Quantity = 821;
-      decs.Add(d);
+      _jobDB.LoadDecrementQuantitiesAfter(-1).Should().BeEquivalentTo(expected1);
 
-      d = default(JobAndDecrementQuantity);
-      d.DecrementId = "ddd";
-      d.JobUnique = "uniq1";
-      d.Part = "part1";
-      d.TimeUTC = new DateTime(2017, 2, 1);
-      d.Quantity = 102;
-      decs.Add(d);
+      //now second decrement
+      var time2 = DateTime.UtcNow.AddHours(-1);
+      _jobDB.AddNewDecrement(new[] {
+        new JobDB.NewDecrementQuantity() {
+          JobUnique = "uniq1",
+          Part = "part1",
+          Quantity = 26
+        },
+        new JobDB.NewDecrementQuantity() {
+          JobUnique = "uniq2",
+          Part = "part2",
+          Quantity = 44
+        },
+      }, time2);
 
-      _jobDB.AddNewDecrement(decs);
+      var expected2 = new[] {
+        new JobAndDecrementQuantity() {
+          DecrementId = 1,
+          JobUnique = "uniq1",
+          TimeUTC = time2,
+          Part = "part1",
+          Quantity = 26
+        },
+        new JobAndDecrementQuantity() {
+          DecrementId = 1,
+          JobUnique = "uniq2",
+          TimeUTC = time2,
+          Part = "part2",
+          Quantity = 44
+        }
+      };
 
-      Assert.Equal(decs, _jobDB.LoadDecrementQuantitiesAfter("aaa"));
-      Assert.Equal(new[] { decs[2] }, _jobDB.LoadDecrementQuantitiesAfter("bbb"));
-      Assert.Equal(new[] { decs[2] }, _jobDB.LoadDecrementQuantitiesAfter("ccc"));
-      Assert.Empty(_jobDB.LoadDecrementQuantitiesAfter("ddd"));
+      _jobDB.LoadDecrementQuantitiesAfter(-1).Should().BeEquivalentTo(expected1.Concat(expected2));
+      _jobDB.LoadDecrementQuantitiesAfter(0).Should().BeEquivalentTo(expected2);
+      _jobDB.LoadDecrementQuantitiesAfter(1).Should().BeEmpty();
 
-      Assert.Equal(decs, _jobDB.LoadDecrementQuantitiesAfter(new DateTime(2016, 1, 1)));
-      Assert.Equal(new[] { decs[2] }, _jobDB.LoadDecrementQuantitiesAfter(new DateTime(2017, 1, 15)));
-      Assert.Empty(_jobDB.LoadDecrementQuantitiesAfter(new DateTime(2017, 2, 1)));
+      _jobDB.LoadDecrementQuantitiesAfter(time1.AddHours(-1)).Should().BeEquivalentTo(expected1.Concat(expected2));
+      _jobDB.LoadDecrementQuantitiesAfter(time1.AddMinutes(30)).Should().BeEquivalentTo(expected2);
+      _jobDB.LoadDecrementQuantitiesAfter(time2.AddMinutes(30)).Should().BeEmpty();
 
       _jobDB.LoadDecrementsForJob("uniq1").Should().BeEquivalentTo(new[] {
         new InProcessJobDecrement() {
-          DecrementId = "bbb", TimeUTC = new DateTime(2017, 1, 1), Quantity = 53
+          DecrementId = 0, TimeUTC = time1, Quantity = 53
         },
         new InProcessJobDecrement() {
-          DecrementId = "ddd", TimeUTC = new DateTime(2017, 2, 1), Quantity = 102
+          DecrementId = 1, TimeUTC = time2, Quantity = 26
         }
       });
     }
