@@ -83,7 +83,7 @@ namespace BlackMaple.FMSInsight.Niigata
       RaiseNewCurrentStatus(_curSt.GetCurrentStatus());
     }
 
-    public List<JobAndDecrementQuantity> DecrementJobQuantites(string loadDecrementsStrictlyAfterDecrementId)
+    public List<JobAndDecrementQuantity> DecrementJobQuantites(long loadDecrementsStrictlyAfterDecrementId)
     {
       throw new NotImplementedException();
     }
