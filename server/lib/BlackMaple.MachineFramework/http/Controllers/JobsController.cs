@@ -149,11 +149,11 @@ namespace BlackMaple.MachineFramework.Controllers
 
     [HttpDelete("planned-cycles")]
     public List<JobAndDecrementQuantity> DecrementQuantities(
-        [FromQuery] string loadDecrementsStrictlyAfterDecrementId = null,
+        [FromQuery] long? loadDecrementsStrictlyAfterDecrementId = null,
         [FromQuery] DateTime? loadDecrementsAfterTimeUTC = null)
     {
-      if (!string.IsNullOrEmpty(loadDecrementsStrictlyAfterDecrementId))
-        return _control.DecrementJobQuantites(loadDecrementsStrictlyAfterDecrementId);
+      if (loadDecrementsStrictlyAfterDecrementId != null)
+        return _control.DecrementJobQuantites(loadDecrementsStrictlyAfterDecrementId ?? 0);
       else if (loadDecrementsAfterTimeUTC.HasValue)
         return _control.DecrementJobQuantites(loadDecrementsAfterTimeUTC.Value);
       else

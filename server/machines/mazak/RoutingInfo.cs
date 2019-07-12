@@ -207,7 +207,7 @@ namespace MazakMachineInterface
     #endregion
 
     #region "Decrement Plan Quantity"
-    public List<JobAndDecrementQuantity> DecrementJobQuantites(string loadDecrementsStrictlyAfterDecrementId)
+    public List<JobAndDecrementQuantity> DecrementJobQuantites(long loadDecrementsStrictlyAfterDecrementId)
     {
       return new List<JobAndDecrementQuantity>();
     }

@@ -204,7 +204,7 @@ namespace DebugMachineWatchApiServer
       Serilog.Log.Information("RemoveMaterialFromAllQueues {matId}", materialId);
     }
 
-    public List<JobAndDecrementQuantity> DecrementJobQuantites(string loadDecrementsStrictlyAfterDecrementId)
+    public List<JobAndDecrementQuantity> DecrementJobQuantites(long loadDecrementsStrictlyAfterDecrementId)
     {
       throw new NotImplementedException();
     }

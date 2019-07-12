@@ -36,60 +36,60 @@ using System.Collections.Generic;
 
 namespace BlackMaple.MachineWatchInterface
 {
-    public delegate void NewCurrentStatus(CurrentStatus status);
+  public delegate void NewCurrentStatus(CurrentStatus status);
 
-    public interface IJobControl
-    {
-        ///loads info
-        CurrentStatus GetCurrentStatus();
+  public interface IJobControl
+  {
+    ///loads info
+    CurrentStatus GetCurrentStatus();
 
-        //checks to see if the jobs are valid.  Some machine types might not support all the different
-        //pallet->part->machine->process combinations.
-        //Return value is a list of strings, detailing the problems.
-        //An empty list or nothing signals the jobs are valid.
-        List<string> CheckValidRoutes(IEnumerable<JobPlan> newJobs);
+    //checks to see if the jobs are valid.  Some machine types might not support all the different
+    //pallet->part->machine->process combinations.
+    //Return value is a list of strings, detailing the problems.
+    //An empty list or nothing signals the jobs are valid.
+    List<string> CheckValidRoutes(IEnumerable<JobPlan> newJobs);
 
-        ///Adds new jobs into the cell controller
-        void AddJobs(NewJobs jobs, string expectedPreviousScheduleId);
+    ///Adds new jobs into the cell controller
+    void AddJobs(NewJobs jobs, string expectedPreviousScheduleId);
 
-        //Remove all planned parts from all jobs in the system.
-        //
-        //The function does 2 things:
-        // - Check for planned but not yet machined quantities and if found remove them
-        //   and store locally in the machine watch database with a new DecrementId.
-        // - Load all decremented quantities (including the potentially new quantities)
-        //   strictly after the given decrement ID.
-        //Thus this function can be called multiple times to receive the same data.
-        List<JobAndDecrementQuantity> DecrementJobQuantites(string loadDecrementsStrictlyAfterDecrementId);
-        List<JobAndDecrementQuantity> DecrementJobQuantites(DateTime loadDecrementsAfterTimeUTC);
+    //Remove all planned parts from all jobs in the system.
+    //
+    //The function does 2 things:
+    // - Check for planned but not yet machined quantities and if found remove them
+    //   and store locally in the machine watch database with a new DecrementId.
+    // - Load all decremented quantities (including the potentially new quantities)
+    //   strictly after the given decrement ID.
+    //Thus this function can be called multiple times to receive the same data.
+    List<JobAndDecrementQuantity> DecrementJobQuantites(long loadDecrementsStrictlyAfterDecrementId);
+    List<JobAndDecrementQuantity> DecrementJobQuantites(DateTime loadDecrementsAfterTimeUTC);
 
-        //In-process queues
+    //In-process queues
 
-        /// Add a new casting for a given part.  The casting has not yet been assigned to a specific job,
-        /// and will be assigned to the job with remaining demand and earliest priority.
-        /// The serial is optional and is passed only if the material has already been marked with a serial.
-        void AddUnallocatedCastingToQueue(string part, string queue, int position, string serial);
+    /// Add a new casting for a given part.  The casting has not yet been assigned to a specific job,
+    /// and will be assigned to the job with remaining demand and earliest priority.
+    /// The serial is optional and is passed only if the material has already been marked with a serial.
+    void AddUnallocatedCastingToQueue(string part, string queue, int position, string serial);
 
-        /// Add a new unprocessed piece of material for the given job into the given queue.  The serial is optional
-        /// and is passed only if the material has already been marked with a serial.
-        /// Use -1 or 0 for lastCompletedProcess if the material is a casting.
-        void AddUnprocessedMaterialToQueue(string jobUnique, int lastCompletedProcess, string queue, int position, string serial);
+    /// Add a new unprocessed piece of material for the given job into the given queue.  The serial is optional
+    /// and is passed only if the material has already been marked with a serial.
+    /// Use -1 or 0 for lastCompletedProcess if the material is a casting.
+    void AddUnprocessedMaterialToQueue(string jobUnique, int lastCompletedProcess, string queue, int position, string serial);
 
-        /// Add material into a queue or just into free material if the queue name is the empty string.
-        /// The material will be inserted into the given position, bumping any later material to a
-        /// larger position.  If the material is currently in another queue or a different position,
-        /// it will be removed and placed in the given position.
-        void SetMaterialInQueue(long materialId, string queue, int position);
+    /// Add material into a queue or just into free material if the queue name is the empty string.
+    /// The material will be inserted into the given position, bumping any later material to a
+    /// larger position.  If the material is currently in another queue or a different position,
+    /// it will be removed and placed in the given position.
+    void SetMaterialInQueue(long materialId, string queue, int position);
 
-        void RemoveMaterialFromAllQueues(long materialId);
+    void RemoveMaterialFromAllQueues(long materialId);
 
-        event NewCurrentStatus OnNewCurrentStatus;
-    }
+    event NewCurrentStatus OnNewCurrentStatus;
+  }
 
-    public interface IOldJobDecrement
-    {
-        //The old method of decrementing, which stores only a single decrement until finalize is called.
-        Dictionary<JobAndPath, int> OldDecrementJobQuantites();
-        void OldFinalizeDecrement();
-    }
+  public interface IOldJobDecrement
+  {
+    //The old method of decrementing, which stores only a single decrement until finalize is called.
+    Dictionary<JobAndPath, int> OldDecrementJobQuantites();
+    void OldFinalizeDecrement();
+  }
 }

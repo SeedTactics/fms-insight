@@ -166,13 +166,13 @@ namespace BlackMaple.MachineFramework
             cmd.CommandText = "CREATE TABLE scheduled_parts(ScheduleId TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER, PRIMARY KEY(ScheduleId, Part))";
             cmd.ExecuteNonQuery();
 
-            cmd.CommandText = "CREATE TABLE decrement_snapshots(DecrementId TEXT NOT NULL, JobUnique TEXT NOT NULL, TimeUTC TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER, PRIMARY KEY(DecrementId, JobUnique))";
+            cmd.CommandText = "CREATE TABLE decrements(DecrementId INTEGER NOT NULL, JobUnique TEXT NOT NULL, TimeUTC TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER, PRIMARY KEY(DecrementId, JobUnique))";
             cmd.ExecuteNonQuery();
 
-            cmd.CommandText = "CREATE INDEX decrement_snapshot_time ON decrement_snapshots(TimeUTC)";
+            cmd.CommandText = "CREATE INDEX decrements_time ON decrements(TimeUTC)";
             cmd.ExecuteNonQuery();
 
-            cmd.CommandText = "CREATE INDEX decrement_snapshot_unique ON decrement_snapshots(JobUnique)";
+            cmd.CommandText = "CREATE INDEX decrements_unique ON decrements(JobUnique)";
             cmd.ExecuteNonQuery();
 
             cmd.CommandText = "CREATE TABLE schedule_debug(ScheduleId TEXT PRIMARY KEY, DebugMessage BLOB)";
@@ -480,7 +480,18 @@ namespace BlackMaple.MachineFramework
             using (IDbCommand cmd = _connection.CreateCommand())
             {
                 cmd.Transaction = trans;
-                cmd.CommandText = "CREATE INDEX decrement_snapshot_unique ON decrement_snapshots(JobUnique)";
+                // at the time of conversion, none of the plugins had yet used the decrement snapshot table.
+                // main change is to switch DecrementId from TEXT to INTEGER and add an index
+                cmd.CommandText = "DROP TABLE decrement_snapshots";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "CREATE TABLE decrements(DecrementId INTEGER NOT NULL, JobUnique TEXT NOT NULL, TimeUTC TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER, PRIMARY KEY(DecrementId, JobUnique))";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "CREATE INDEX decrements_time ON decrements(TimeUTC)";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "CREATE INDEX decrements_unique ON decrements(JobUnique)";
                 cmd.ExecuteNonQuery();
             }
         }
@@ -2118,18 +2129,35 @@ namespace BlackMaple.MachineFramework
         #endregion
 
         #region Decrement Counts
-        public void AddNewDecrement(IEnumerable<MachineWatchInterface.JobAndDecrementQuantity> counts)
+        public class NewDecrementQuantity
+        {
+            public string JobUnique { get; set; }
+            public string Part { get; set; }
+            public int Quantity { get; set; }
+        }
+        public void AddNewDecrement(IEnumerable<NewDecrementQuantity> counts, DateTime? nowUTC = null)
         {
             lock (_lock)
             {
+                var now = nowUTC ?? DateTime.UtcNow;
                 var trans = _connection.BeginTransaction();
                 try
                 {
+                    long decrementId = 0;
+                    using (var cmd = _connection.CreateCommand()) {
+                        cmd.Transaction = trans;
+                        cmd.CommandText = "SELECT MAX(DecrementId) FROM decrements";
+                        var lastDecId = cmd.ExecuteScalar();
+                        if (lastDecId != null && lastDecId != DBNull.Value) {
+                            decrementId = Convert.ToInt64(lastDecId) + 1;
+                        }
+                    }
+
                     using (var cmd = _connection.CreateCommand()) {
                     cmd.Transaction = trans;
 
-                    cmd.CommandText = "INSERT INTO decrement_snapshots(DecrementId,JobUnique,TimeUTC,Part,Quantity) VALUES ($id,$uniq,$now,$part,$qty)";
-                    cmd.Parameters.Add("id", SqliteType.Text);
+                    cmd.CommandText = "INSERT INTO decrements(DecrementId,JobUnique,TimeUTC,Part,Quantity) VALUES ($id,$uniq,$now,$part,$qty)";
+                    cmd.Parameters.Add("id", SqliteType.Integer);
                     cmd.Parameters.Add("uniq", SqliteType.Text);
                     cmd.Parameters.Add("now", SqliteType.Integer);
                     cmd.Parameters.Add("part", SqliteType.Text);
@@ -2137,9 +2165,9 @@ namespace BlackMaple.MachineFramework
 
                     foreach (var q in counts)
                     {
-                        cmd.Parameters[0].Value = q.DecrementId;
+                        cmd.Parameters[0].Value = decrementId;
                         cmd.Parameters[1].Value = q.JobUnique;
-                        cmd.Parameters[2].Value = q.TimeUTC.Ticks;
+                        cmd.Parameters[2].Value = now.Ticks;
                         cmd.Parameters[3].Value = q.Part;
                         cmd.Parameters[4].Value = q.Quantity;
                         cmd.ExecuteNonQuery();
@@ -2161,7 +2189,7 @@ namespace BlackMaple.MachineFramework
             lock (_lock)
             {
                 using (var cmd = _connection.CreateCommand()) {
-                    cmd.CommandText = "SELECT DecrementId,TimeUTC,Quantity FROM decrement_snapshots WHERE JobUnique = $uniq";
+                    cmd.CommandText = "SELECT DecrementId,TimeUTC,Quantity FROM decrements WHERE JobUnique = $uniq";
                     cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
                     var ret = new List<MachineWatchInterface.InProcessJobDecrement>();
                     using (var reader = cmd.ExecuteReader())
@@ -2169,7 +2197,7 @@ namespace BlackMaple.MachineFramework
                         while (reader.Read())
                         {
                             var j = new MachineWatchInterface.InProcessJobDecrement();
-                            j.DecrementId = reader.GetString(0);
+                            j.DecrementId = reader.GetInt64(0);
                             j.TimeUTC = new DateTime(reader.GetInt64(1), DateTimeKind.Utc);
                             j.Quantity = reader.GetInt32(2);
                             ret.Add(j);
@@ -2180,13 +2208,13 @@ namespace BlackMaple.MachineFramework
             }
         }
 
-        public List<MachineWatchInterface.JobAndDecrementQuantity> LoadDecrementQuantitiesAfter(string afterId)
+        public List<MachineWatchInterface.JobAndDecrementQuantity> LoadDecrementQuantitiesAfter(long afterId)
         {
             lock (_lock)
             {
                 using (var cmd = _connection.CreateCommand()) {
-                cmd.CommandText = "SELECT DecrementId,JobUnique,TimeUTC,Part,Quantity FROM decrement_snapshots WHERE DecrementId > $after";
-                cmd.Parameters.Add("after", SqliteType.Text).Value = afterId;
+                cmd.CommandText = "SELECT DecrementId,JobUnique,TimeUTC,Part,Quantity FROM decrements WHERE DecrementId > $after";
+                cmd.Parameters.Add("after", SqliteType.Integer).Value = afterId;
                 return LoadDecrementQuantitiesHelper(cmd);
                 }
             }
@@ -2197,7 +2225,7 @@ namespace BlackMaple.MachineFramework
             lock (_lock)
             {
                 using (var cmd = _connection.CreateCommand()) {
-                cmd.CommandText = "SELECT DecrementId,JobUnique,TimeUTC,Part,Quantity FROM decrement_snapshots WHERE TimeUTC > $after";
+                cmd.CommandText = "SELECT DecrementId,JobUnique,TimeUTC,Part,Quantity FROM decrements WHERE TimeUTC > $after";
                 cmd.Parameters.Add("after", SqliteType.Integer).Value = afterUTC.Ticks;
                 return LoadDecrementQuantitiesHelper(cmd);
                 }
@@ -2212,7 +2240,7 @@ namespace BlackMaple.MachineFramework
                 while (reader.Read())
                 {
                     var j = default(MachineWatchInterface.JobAndDecrementQuantity);
-                    j.DecrementId = reader.GetString(0);
+                    j.DecrementId = reader.GetInt64(0);
                     j.JobUnique = reader.GetString(1);
                     j.TimeUTC = new DateTime(reader.GetInt64(2), DateTimeKind.Utc);
                     j.Part = reader.GetString(3);
