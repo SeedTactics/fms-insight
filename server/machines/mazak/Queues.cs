@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.Threading;
 using Serilog;
 using BlackMaple.MachineWatchInterface;
 using BlackMaple.MachineFramework;
@@ -99,6 +98,7 @@ namespace MazakMachineInterface
       var schs = LoadSchedules(mazakData);
       if (!schs.Any()) return null;
 
+      AttemptToUnallocateCastings(schs);
       CalculateTargetMatQty(mazakData, schs);
       AttemptToAllocateCastings(schs, mazakData);
       return UpdateMazakMaterialCounts(schs);
@@ -232,11 +232,11 @@ namespace MazakMachineInterface
       // group the paths for this process by input queue
       var proc1PathsByQueue = job
         .Where(s => s.SchRow.PlanQuantity > CountCompletedOrMachiningStarted(s))
-        .Select(s => s.Procs[1]).GroupBy(p => p.InputQueue);
+        .Select(s => s.Procs[1])
+        .Where(p => !string.IsNullOrEmpty(p.InputQueue))
+        .GroupBy(p => p.InputQueue);
       foreach (var queueGroup in proc1PathsByQueue)
       {
-        if (string.IsNullOrEmpty(queueGroup.Key)) continue;
-
         var matInQueue =
           _log.GetMaterialInQueue(queueGroup.Key)
           .Where(m => m.Unique == uniqueStr && FindNextProcess(m.MaterialID) == 1)
@@ -301,6 +301,16 @@ namespace MazakMachineInterface
           }
         }
       }
+
+      // now deal with the non-input-queue parts. They could have larger material than planned quantity
+      // if the schedule has been decremented
+      foreach (var sch in job)
+      {
+        if (sch.SchRow.PlanQuantity <= CountCompletedOrMachiningStarted(sch) && sch.Procs[1].SchProcRow.ProcessMaterialQuantity > 0)
+        {
+          sch.Procs[1].TargetMaterialCount = 0;
+        }
+      }
     }
 
     private class UnableToFindPathGroup : Exception { }
@@ -344,6 +354,39 @@ namespace MazakMachineInterface
         {
           Log.Warning("Unable to calculate path group for material in queue for {job} process {proc}," +
             " ignoring queue material updates to mazak schedule.", jobPlan.UniqueStr, proc);
+        }
+      }
+    }
+
+    private void AttemptToUnallocateCastings(IEnumerable<ScheduleWithQueues> schedules)
+    {
+      // If a schedule is decremented, there could be more allocated castings than total planned quantity.  In that case, unallocate those
+      // so that they can be assigned to a new schedule
+
+      foreach (var job in schedules.GroupBy(s => s.Unique))
+      {
+        var uniqueStr = job.Key;
+        var proc1PathsByQueue = job
+          .Where(sch => !string.IsNullOrEmpty(sch.Procs[1].InputQueue))
+          .GroupBy(p => p.Procs[1].InputQueue);
+        foreach (var queueGroup in proc1PathsByQueue)
+        {
+          var matInQueue =
+            _log.GetMaterialInQueue(queueGroup.Key)
+            .Where(m => m.Unique == uniqueStr && FindNextProcess(m.MaterialID) == 1)
+            .ToList()
+            ;
+
+          var extra = matInQueue.Count();
+          foreach (var sch in queueGroup)
+          {
+            extra -= sch.SchRow.PlanQuantity - CountCompletedOrMachiningStarted(sch);
+          }
+
+          if (extra > 0)
+          {
+            _log.MarkCastingsAsUnallocated(matInQueue.Take(extra).Select(m => m.MaterialID));
+          }
         }
       }
     }
