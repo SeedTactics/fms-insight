@@ -306,7 +306,10 @@ namespace MazakMachineInterface
       // if the schedule has been decremented
       foreach (var sch in job)
       {
-        if (sch.SchRow.PlanQuantity <= CountCompletedOrMachiningStarted(sch) && sch.Procs[1].SchProcRow.ProcessMaterialQuantity > 0)
+        if (string.IsNullOrEmpty(sch.Procs[1].InputQueue)
+              && sch.SchRow.PlanQuantity <= CountCompletedOrMachiningStarted(sch)
+              && sch.Procs[1].SchProcRow.ProcessMaterialQuantity > 0
+           )
         {
           sch.Procs[1].TargetMaterialCount = 0;
         }
@@ -385,7 +388,7 @@ namespace MazakMachineInterface
 
           if (extra > 0)
           {
-            _log.MarkCastingsAsUnallocated(matInQueue.Take(extra).Select(m => m.MaterialID));
+            _log.MarkCastingsAsUnallocated(matInQueue.TakeLast(extra).Select(m => m.MaterialID));
           }
         }
       }

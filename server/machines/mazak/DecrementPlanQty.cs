@@ -103,8 +103,8 @@ namespace MazakMachineInterface
       foreach (var sch in schedules.Schedules)
       {
         //parse schedule
-        if (MazakPart.IsSailPart(sch.PartName))
-          if (string.IsNullOrEmpty(sch.Comment)) continue;
+        if (!MazakPart.IsSailPart(sch.PartName)) continue;
+        if (string.IsNullOrEmpty(sch.Comment)) continue;
         MazakPart.ParseComment(sch.Comment, out string unique, out var procToPath, out bool manual);
         if (manual) continue;
 
@@ -152,7 +152,6 @@ namespace MazakMachineInterface
           var newSchRow = job.Schedule.Clone();
           newSchRow.Command = MazakWriteCommand.ScheduleSafeEdit;
           newSchRow.PlanQuantity = job.NewPlanQty;
-          newSchRow.HoldMode = 0;
           write.Schedules.Add(newSchRow);
         }
       }
