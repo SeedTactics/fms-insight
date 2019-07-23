@@ -197,7 +197,7 @@ namespace MazakMachineInterface
             InputQueue = job.GetInputQueue(process: proc, path: path)
           });
         }
-        if (!missingProc && sch.Procs.Values.Any(p => !string.IsNullOrEmpty(p.InputQueue)))
+        if (!missingProc)
         {
           schs.Add(sch);
         }
