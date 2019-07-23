@@ -40,7 +40,7 @@ namespace MazakMachineInterface
 {
   public interface IDecrementPlanQty
   {
-    void Decrement();
+    void Decrement(DateTime? now = null);
   }
 
   public class DecrementPlanQty : IDecrementPlanQty
@@ -58,7 +58,7 @@ namespace MazakMachineInterface
       _read = r;
     }
 
-    public void Decrement()
+    public void Decrement(DateTime? now = null)
     {
       // This works in three steps:
       //
@@ -84,7 +84,7 @@ namespace MazakMachineInterface
       if (jobs.Count == 0) return;
 
       ReducePlannedQuantity(jobs);
-      RecordDecrement(jobs);
+      RecordDecrement(jobs, now);
     }
 
 
@@ -120,12 +120,15 @@ namespace MazakMachineInterface
         // check load is in process
         var loadOpers = schedules.LoadActions;
         var loadingQty = 0;
-        foreach (var action in loadOpers)
+        if (loadOpers != null)
         {
-          if (action.Unique == job.UniqueStr && action.Process == 1 && action.LoadEvent && action.Path == procToPath.PathForProc(action.Process))
+          foreach (var action in loadOpers)
           {
-            loadingQty += action.Qty;
-            Log.Debug("Found {uniq} is in the process of being loaded action {@action}", job.UniqueStr, action);
+            if (action.Unique == job.UniqueStr && action.Process == 1 && action.LoadEvent && action.Path == procToPath.PathForProc(action.Process))
+            {
+              loadingQty += action.Qty;
+              Log.Debug("Found {uniq} is in the process of being loaded action {@action}", job.UniqueStr, action);
+            }
           }
         }
 
@@ -162,7 +165,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private void RecordDecrement(List<DecrSchedule> decrs)
+    private void RecordDecrement(List<DecrSchedule> decrs, DateTime? now)
     {
       var decrAmt = new Dictionary<string, int>();
       var partNames = new Dictionary<string, string>();
@@ -190,7 +193,7 @@ namespace MazakMachineInterface
           JobUnique = kv.Key,
           Part = partNames[kv.Key],
           Quantity = kv.Value
-        }));
+        }), now);
       }
     }
 
