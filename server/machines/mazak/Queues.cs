@@ -388,7 +388,8 @@ namespace MazakMachineInterface
 
           if (extra > 0)
           {
-            _log.MarkCastingsAsUnallocated(matInQueue.TakeLast(extra).Select(m => m.MaterialID));
+            // no TakeLast in .NET framework
+            _log.MarkCastingsAsUnallocated(matInQueue.Skip(Math.Max(0, matInQueue.Count() - extra)).Select(m => m.MaterialID));
           }
         }
       }
