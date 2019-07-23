@@ -340,6 +340,12 @@ namespace MazakMachineInterface
         }
       }
 
+      foreach (var j in curStatus.Jobs)
+      {
+        foreach (var d in jobDB.LoadDecrementsForJob(j.Value.UniqueStr))
+          j.Value.Decrements.Add(d);
+      }
+
       return curStatus;
     }
 
