@@ -155,6 +155,7 @@ namespace MazakMachineInterface
           var newSchRow = job.Schedule.Clone();
           newSchRow.Command = MazakWriteCommand.ScheduleSafeEdit;
           newSchRow.PlanQuantity = job.NewPlanQty;
+          newSchRow.Processes.Clear();
           write.Schedules.Add(newSchRow);
         }
       }

@@ -124,7 +124,7 @@ namespace MachineWatchTest
       var sch = _write.Schedules[0];
       sch.Id.Should().Be(15);
       sch.PlanQuantity.Should().Be(35);
-      sch.Processes[0].ProcessMaterialQuantity.Should().Be(15); // not changed by decrement, will be removed by Queue code.
+      sch.Processes.Should().BeEmpty();
 
       _jobDB.LoadDecrementsForJob("uuuu").Should().BeEquivalentTo(new[] {
         new InProcessJobDecrement() {
