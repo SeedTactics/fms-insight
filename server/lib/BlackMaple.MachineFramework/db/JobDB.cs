@@ -86,7 +86,7 @@ namespace BlackMaple.MachineFramework
             _connection.Close();
         }
 
-        private const int Version = 15;
+        private const int Version = 16;
 
         public void CreateTables()
         {
@@ -146,12 +146,6 @@ namespace BlackMaple.MachineFramework
             cmd.ExecuteNonQuery();
 
             cmd.CommandText = "CREATE TABLE simulated_production(UniqueStr TEXT, Process INTEGER, Path INTEGER, TimeUTC INTEGER, Quantity INTEGER, PRIMARY KEY(UniqueStr,Process,Path,TimeUTC))";
-            cmd.ExecuteNonQuery();
-
-            cmd.CommandText = "CREATE TABLE material(UniqueStr TEXT, Process INTEGER, MaterialID INTEGER NOT NULL, PRIMARY KEY(UniqueStr, Process, MaterialID))";
-            cmd.ExecuteNonQuery();
-
-            cmd.CommandText = "CREATE TABLE first_proc_comp(UniqueStr TEXT, Path INTEGER, MaterialID INTEGER NOT NULL, PRIMARY KEY(UniqueStr, Path, MaterialID))";
             cmd.ExecuteNonQuery();
 
             cmd.CommandText = "CREATE TABLE sim_station_use(SimId TEXT, StationGroup TEXT, StationNum INTEGER, StartUTC INTEGER, EndUTC INTEGER, UtilizationTime INTEGER, PlanDownTime INTEGER, PRIMARY KEY(SimId, StationGroup, StationNum, StartUTC, EndUTC))";
@@ -248,6 +242,7 @@ namespace BlackMaple.MachineFramework
                 if (curVersion < 13) Ver12ToVer13(trans);
                 if (curVersion < 14) Ver13ToVer14(trans);
                 if (curVersion < 15) Ver14ToVer15(trans);
+                if (curVersion < 16) Ver15ToVer16(trans);
 
                 //update the version in the database
                 cmd.Transaction = trans;
@@ -492,6 +487,18 @@ namespace BlackMaple.MachineFramework
                 cmd.ExecuteNonQuery();
 
                 cmd.CommandText = "CREATE INDEX decrements_unique ON decrements(JobUnique)";
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        private void Ver15ToVer16(IDbTransaction trans)
+        {
+            using (IDbCommand cmd = _connection.CreateCommand())
+            {
+                cmd.Transaction = trans;
+                cmd.CommandText = "DROP TABLE material";
+                cmd.ExecuteNonQuery();
+                cmd.CommandText = "DROP TABLE first_proc_comp";
                 cmd.ExecuteNonQuery();
             }
         }
@@ -1839,61 +1846,6 @@ namespace BlackMaple.MachineFramework
                 }
             }
         }
-
-        public void ArchiveCompletedJobs()
-        {
-            lock (_lock)
-            {
-                var trans = _connection.BeginTransaction();
-
-                try
-                {
-                    using (var cmd = _connection.CreateCommand()) {
-                    cmd.Transaction = trans;
-                    cmd.CommandText = "SELECT a.UniqueStr, a.PlanQty, " +
-                        "   (SELECT COUNT(*) FROM material b WHERE b.UniqueStr = a.UniqueStr AND b.Process = -1 AND b.MaterialID IN" +
-                        "	   (SELECT c.MaterialID FROM first_proc_comp c WHERE c.UniqueStr = a.UniqueStr AND c.Path = a.Path)" +
-                        "   ) As ActualQty " +
-                        "FROM planqty a";
-
-                    Dictionary<string, bool> uniques = new Dictionary<string, bool>();
-
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            if (!reader.IsDBNull(0))
-                            {
-                                string u = reader.GetString(0);
-                                if (reader.GetInt32(1) > reader.GetInt32(2))
-                                {
-                                    uniques[u] = false;
-                                }
-                                else if (!uniques.ContainsKey(u))
-                                {
-                                    uniques.Add(u, true);
-                                }
-                            }
-                        }
-                    }
-
-                    foreach (string u in uniques.Keys)
-                    {
-                        if (uniques[u])
-                            ArchiveJob(trans, u);
-                    }
-
-                    trans.Commit();
-                    }
-                }
-                catch
-                {
-                    trans.Rollback();
-                    throw;
-                }
-            }
-        }
-
         #endregion
 
         #region "Modification of Jobs"
@@ -1970,159 +1922,6 @@ namespace BlackMaple.MachineFramework
                 {
                     trans.Rollback();
                     throw;
-                }
-            }
-        }
-        #endregion
-
-        #region "Material Tracking"
-        public int GetCompletedCount(string unique, int path)
-        {
-            lock (_lock)
-            {
-                using (var cmd = _connection.CreateCommand()) {
-                cmd.CommandText = "SELECT COUNT(*) FROM material a WHERE a.UniqueStr = $uniq AND a.Process = -1 AND a.MaterialID IN " +
-                    " (SELECT b.MaterialID FROM first_proc_comp b WHERE b.UniqueStr = $uniq AND b.Path = $pth)";
-                cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
-                cmd.Parameters.Add("pth", SqliteType.Integer).Value = path;
-                object val = cmd.ExecuteScalar();
-                if (val is long)
-                {
-                    return (int)(long)val;
-                }
-                else
-                {
-                    return 0;
-                }
-                }
-            }
-        }
-
-        public int GetCompletedOnAnyPath(string unique)
-        {
-            lock (_lock)
-            {
-                using (var cmd = _connection.CreateCommand()) {
-                cmd.CommandText = "SELECT COUNT(*) FROM material a WHERE a.UniqueStr = $uniq AND a.Process = -1";
-                cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
-                object val = cmd.ExecuteScalar();
-                if (val is long)
-                {
-                    return (int)(long)val;
-                }
-                else
-                {
-                    return 0;
-                }
-                }
-            }
-        }
-
-        public IList<long> GetMaterialInProcess(string unique, int proc)
-        {
-            lock (_lock)
-            {
-                List<long> ret = new List<long>();
-
-                using (var cmd = _connection.CreateCommand()) {
-                cmd.CommandText = "SELECT MaterialID FROM material WHERE UniqueStr = $uniq AND Process = $proc";
-                cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
-                cmd.Parameters.Add("proc", SqliteType.Integer).Value = proc;
-
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        if (!reader.IsDBNull(0))
-                        {
-                            ret.Add(reader.GetInt64(0));
-                        }
-                    }
-                }
-
-                return ret;
-                }
-            }
-        }
-
-        public IList<long> GetMaterialCompletedFirstProcess(string unique, int path)
-        {
-            lock (_lock)
-            {
-                List<long> ret = new List<long>();
-
-                using (var cmd = _connection.CreateCommand()) {
-                cmd.CommandText = "SELECT MaterialID FROM first_proc_comp WHERE UniqueStr = $uniq AND Path = $path";
-                cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
-                cmd.Parameters.Add("path", SqliteType.Integer).Value = path;
-
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        if (!reader.IsDBNull(0))
-                        {
-                            ret.Add(reader.GetInt64(0));
-                        }
-                    }
-                }
-                }
-
-                return ret;
-            }
-        }
-
-        public void AddCompletedMaterial(string unique, long matID)
-        {
-            lock (_lock)
-            {
-                using (var cmd = _connection.CreateCommand()) {
-                cmd.CommandText = "INSERT OR REPLACE INTO material(UniqueStr,Process,MaterialID) VALUES ($uniq,-1,$mat)";
-                cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
-                cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
-                cmd.ExecuteNonQuery();
-                }
-            }
-        }
-
-        public void AddCompletedFirstProcess(string unique, int path, long matID)
-        {
-            lock (_lock)
-            {
-                using (var cmd = _connection.CreateCommand()) {
-                cmd.CommandText = "INSERT OR REPLACE INTO first_proc_comp(UniqueStr,Path,MaterialID) VALUES ($uniq,$path,$mat)";
-                cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
-                cmd.Parameters.Add("path", SqliteType.Integer).Value = path;
-                cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
-                cmd.ExecuteNonQuery();
-                }
-            }
-        }
-
-        public void AddMaterialInProcess(string unique, int proc, long matID)
-        {
-            lock (_lock)
-            {
-                using (var cmd = _connection.CreateCommand()) {
-                cmd.CommandText = "INSERT OR REPLACE INTO material(UniqueStr,Process,MaterialID) VALUES ($uniq,$proc,$mat)";
-                cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
-                cmd.Parameters.Add("proc", SqliteType.Integer).Value = proc;
-                cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
-                cmd.ExecuteNonQuery();
-                }
-            }
-        }
-
-        public void RemoveMaterialInProcess(string unique, int proc, long matID)
-        {
-            lock (_lock)
-            {
-                using (var cmd = _connection.CreateCommand()) {
-                cmd.CommandText = "DELETE FROM material WHERE UniqueStr = $uniq AND Process = $proc AND MaterialID = $mat";
-                cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
-                cmd.Parameters.Add("proc", SqliteType.Integer).Value = proc;
-                cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
-                cmd.ExecuteNonQuery();
                 }
             }
         }
