@@ -71,13 +71,24 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public void AddJobs(NewJobs jobs, string expectedPreviousScheduleId)
     {
+      if (jobs.ArchiveCompletedJobs)
+      {
+        var existingJobs = _jobs.LoadUnarchivedJobs();
+        foreach (var j in existingJobs.Jobs)
+        {
+          if (_curSt.IsJobCompleted(j.UniqueStr))
+          {
+            _jobs.ArchiveJob(j.UniqueStr);
+          }
+        }
+        // TODO: archive old jobs
+      }
+
       foreach (var j in jobs.Jobs)
       {
         j.JobCopiedToSystem = true;
       }
       _jobs.AddJobs(jobs, expectedPreviousScheduleId);
-
-      // TODO: archive old jobs
 
       _sync.RecheckPallets();
       RaiseNewCurrentStatus(_curSt.GetCurrentStatus());

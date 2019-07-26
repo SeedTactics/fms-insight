@@ -99,7 +99,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public IJobControl JobControl()
     {
-      return null;
+      return _jobBackend;
     }
 
     public ILogDatabase LogDatabase()

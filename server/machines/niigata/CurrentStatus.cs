@@ -41,6 +41,7 @@ namespace BlackMaple.FMSInsight.Niigata
   public interface IBuildCurrentStatus
   {
     CurrentStatus GetCurrentStatus();
+    bool IsJobCompleted(string unique);
   }
 
   public class BuildCurrentStatus : IBuildCurrentStatus
@@ -112,6 +113,11 @@ namespace BlackMaple.FMSInsight.Niigata
 
 
       return curStatus;
+    }
+
+    public bool IsJobCompleted(string unique)
+    {
+      throw new NotImplementedException();
     }
 
     private static PalletLocation BuildCurrentLocation(PalletMaster p)
