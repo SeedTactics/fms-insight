@@ -132,6 +132,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public bool Alarm { get; set; } = false;
     public bool PerformProgramDownload { get; set; } = false;
     public List<RouteStep> Routes { get; set; } = new List<RouteStep>();
+    public TrackingInfo Tracking { get; set; } = new TrackingInfo();
   }
 
   public interface ICurrentPallets
