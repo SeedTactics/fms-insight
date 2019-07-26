@@ -76,12 +76,11 @@ namespace BlackMaple.FMSInsight.Niigata
         var existingJobs = _jobs.LoadUnarchivedJobs();
         foreach (var j in existingJobs.Jobs)
         {
-          if (_curSt.IsJobCompleted(j.UniqueStr))
+          if (_curSt.IsJobCompleted(j))
           {
             _jobs.ArchiveJob(j.UniqueStr);
           }
         }
-        // TODO: archive old jobs
       }
 
       foreach (var j in jobs.Jobs)
@@ -93,15 +92,16 @@ namespace BlackMaple.FMSInsight.Niigata
       _sync.RecheckPallets();
       RaiseNewCurrentStatus(_curSt.GetCurrentStatus());
     }
-
     public List<JobAndDecrementQuantity> DecrementJobQuantites(long loadDecrementsStrictlyAfterDecrementId)
     {
-      throw new NotImplementedException();
+      _sync.DecrementPlannedButNotStartedQty();
+      return _jobs.LoadDecrementQuantitiesAfter(loadDecrementsStrictlyAfterDecrementId);
     }
 
     public List<JobAndDecrementQuantity> DecrementJobQuantites(DateTime loadDecrementsAfterTimeUTC)
     {
-      throw new NotImplementedException();
+      _sync.DecrementPlannedButNotStartedQty();
+      return _jobs.LoadDecrementQuantitiesAfter(loadDecrementsAfterTimeUTC);
     }
 
     #region Queues

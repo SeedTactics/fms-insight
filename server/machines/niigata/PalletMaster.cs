@@ -134,9 +134,6 @@ namespace BlackMaple.FMSInsight.Niigata
     public List<RouteStep> Routes { get; set; } = new List<RouteStep>();
   }
 
-  // as an alternative to controlling via PalletMaster, can use PartMaster but it is just an easier
-  // way of entering pallet data, since after assigning a pallet you still control the pallet itself
-  // through PalletMaster.
   public interface ICurrentPallets
   {
     Dictionary<string, PalletMaster> LoadPallets();

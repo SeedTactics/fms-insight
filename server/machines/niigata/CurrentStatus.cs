@@ -41,7 +41,8 @@ namespace BlackMaple.FMSInsight.Niigata
   public interface IBuildCurrentStatus
   {
     CurrentStatus GetCurrentStatus();
-    bool IsJobCompleted(string unique);
+    bool IsJobCompleted(JobPlan job);
+    int CountStartedOrInProcess(JobPlan job);
   }
 
   public class BuildCurrentStatus : IBuildCurrentStatus
@@ -115,7 +116,12 @@ namespace BlackMaple.FMSInsight.Niigata
       return curStatus;
     }
 
-    public bool IsJobCompleted(string unique)
+    public bool IsJobCompleted(JobPlan job)
+    {
+      throw new NotImplementedException();
+    }
+
+    public int CountStartedOrInProcess(JobPlan job)
     {
       throw new NotImplementedException();
     }

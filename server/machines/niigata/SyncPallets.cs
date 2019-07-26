@@ -1,4 +1,3 @@
-
 /* Copyright (c) 2019, John Lenz
 
 All rights reserved.
@@ -42,13 +41,55 @@ namespace BlackMaple.FMSInsight.Niigata
   public interface ISyncPallets
   {
     void RecheckPallets();
+    void DecrementPlannedButNotStartedQty();
   }
 
   public class SyncPallets : ISyncPallets, IDisposable
   {
+    private object _lock = new object();
+    private JobDB _jobs;
+    private IBuildCurrentStatus _curSt;
+
+    public SyncPallets(JobDB jobs, IBuildCurrentStatus curSt)
+    {
+      _jobs = jobs;
+      _curSt = curSt;
+    }
+
     public void RecheckPallets()
     {
       // TODO: implement
+    }
+
+    public void DecrementPlannedButNotStartedQty()
+    {
+      // once a decrement is recorded here, the SyncPallets won't start any more new material
+      // need to lock so that between loading jobs and recording the decrement, we dont't start a new material
+      lock (_lock)
+      {
+        var decrs = new List<JobDB.NewDecrementQuantity>();
+        foreach (var j in _jobs.LoadUnarchivedJobs().Jobs)
+        {
+          if (_jobs.LoadDecrementsForJob(j.UniqueStr).Count > 0) continue;
+          var started = _curSt.CountStartedOrInProcess(j);
+          var planned = Enumerable.Range(1, j.GetNumPaths(process: 1)).Sum(path => j.GetPlannedCyclesOnFirstProcess(path));
+          if (started < planned)
+          {
+            decrs.Add(new JobDB.NewDecrementQuantity()
+            {
+              JobUnique = j.UniqueStr,
+              Part = j.PartName,
+              Quantity = planned - started
+            });
+          }
+        }
+
+        if (decrs.Count > 0)
+        {
+          _jobs.AddNewDecrement(decrs);
+        }
+      }
+
     }
 
     public void Dispose() { }
