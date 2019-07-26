@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2019, John Lenz
 
 All rights reserved.
 
@@ -34,353 +34,180 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using BlackMaple.MachineWatchInterface;
+using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
 {
-  public class modDecrementPlanQty
+  public interface IDecrementPlanQty
   {
-    //Because we want to lower the Material count, we have a possible loss of data.
-    //If we update the mazak schedule entries when the pallet is at the load station,
-    //we might overwrite the Mazak system updating those tables.  We would then
-    //lose a part because the mazak would update the Complete field, but we would
-    //overwrite it.  But the mazak does not update any schedule data until the ready signal/switch
-    //is thrown by the operator at the load station, which happens at the end of loading.
-    //
-    //Mazak has provided another schedule edit command, command 8, which updates the material
-    //and bad qtys.  This command will give an error in the following situations:
-    //  * There is any pallet with this schedule at the load station.
-    //  * Any fields beside the material quantities do not match the current database.  Crucially,
-    //    if the execute and complete quantities do not match we get an error.
-    //
-    //This protects agains the following two sequences of events:
-    //
-    //  Issue 1:
-    //     * Pallet travels to the load station with the expectation of loading a new part, 101, on the pallet.
-    //     * Machine Watch loads the read database which has the status before the unload, which has 101 as zero
-    //       execute quantites.
-    //     * Machine watch sets the material quantities of 101 to zero.
-    //
-    //  This is an error because mazak told the operator or robot to load a 101 part and we took all the material off.
-    //  So mazak will generate an error when we try and edit the schedule for 101.  Note, without mazak we
-    //  have no way of knowing that schedule 101 is connected to the pallet at the load station because 101 is
-    //  a new part on the pallet.
-    //
-    //
-    //  Issue 2:
-    //    * Pallet travels to the load station.
-    //    * Machine Watch loads the database which has the status before the unload.
-    //    * Load/Unload finished and the pallet leaves the load station.
-    //    * Machine Watch tries to write the old data, overwritting what was changed by mazak.
-    //
-    //  This problem will be detected when we try and write because either the execute quantites will not match,
-    //  or if the pallet still has the types of parts after the load, the complete quantity will not match.
-    //
-    //
-    //When we get this error from the database, we don't know if it was Issue 1 or Issue 2.  Issue 2
-    //can be solved by reloading the database and retrying right away.  But for Issue 1, we must put the
-    //schedule on hold (to prevent more pallets going to the load station) and wait for the pallet to leave.
-    //Therefore, we sleep a little bit and try again.
+    void Decrement(DateTime? now = null);
+  }
 
-    private const int MaxRetryTimes = 25;
-    private static Serilog.ILogger Log = Serilog.Log.ForContext<modDecrementPlanQty>();
+  public class DecrementPlanQty : IDecrementPlanQty
+  {
+    private JobDB _jobDB;
+    private IWriteData _write;
+    private IReadDataAccess _read;
 
-    internal static Dictionary<JobAndPath, int> DecrementPlanQty(
-      IWriteData writeDb, IReadDataAccess readDb)
+    private static Serilog.ILogger Log = Serilog.Log.ForContext<DecrementPlanQty>();
+
+    public DecrementPlanQty(JobDB jdb, IWriteData w, IReadDataAccess r)
     {
-      var mazakData = readDb.LoadSchedules();
-      var IdsLeftToDecrement = LoadIdsToDecrement(mazakData);
+      _jobDB = jdb;
+      _write = w;
+      _read = r;
+    }
 
-      //If nothing is left, just return the stored decrement values.
-      if (IdsLeftToDecrement.Count == 0)
+    public void Decrement(DateTime? now = null)
+    {
+      // This works in three steps:
+      //
+      // - First, the planned quantity of the schedules are reduced to equal the total number of parts being machined, completed,
+      //   or about to be loaded.
+      // - Next, the quantites that were removed are recorded.
+      // - Finally, the Queues code in Queues.cs will update the material available and remove any allocated castings on
+      //   the schedule.
+      //
+      // We are protected against crashes and failures:
+      // - If the a failure happens before the decrement quantities are recorded, the next decrement will
+      //   resume and continue reducing the mazak planned quantities.  The decrement quantities are then
+      //   calculated by comparing the original job plan quantity with the current mazak schedule quantity, no matter
+      //   when the mazak schedule was reduced.
+      //
+      // - If a failure happens after the decrement quantities are recorded, the job will not be decremented again because
+      //   the code checks if a previous decrement has happended.  The queues code will keep re-trying to sync the material
+      //   quantities with the new scheduled quantities.
+
+      var jobs = JobsToDecrement(_read.LoadSchedulesAndLoadActions());
+      Log.Debug("Found jobs to decrement {@jobs}", jobs);
+
+      if (jobs.Count == 0) return;
+
+      ReducePlannedQuantity(jobs);
+      RecordDecrement(jobs, now);
+    }
+
+
+    private class DecrSchedule
+    {
+      public MazakScheduleRow Schedule { get; set; }
+      public JobPlan Job { get; set; }
+      public int Proc1Path { get; set; }
+      public int NewPlanQty { get; set; }
+    }
+
+    private List<DecrSchedule> JobsToDecrement(MazakSchedulesAndLoadActions schedules)
+    {
+      var jobs = new List<DecrSchedule>();
+
+      foreach (var sch in schedules.Schedules)
       {
-        return LoadDecrementOffsets(mazakData);
+        //parse schedule
+        if (!MazakPart.IsSailPart(sch.PartName)) continue;
+        if (string.IsNullOrEmpty(sch.Comment)) continue;
+        MazakPart.ParseComment(sch.Comment, out string unique, out var procToPath, out bool manual);
+        if (manual) continue;
+
+        //load the job
+        if (string.IsNullOrEmpty(unique)) continue;
+        var job = _jobDB.LoadJob(unique);
+        if (job == null) continue;
+
+        // if already decremented, ignore
+        if (_jobDB.LoadDecrementsForJob(unique).Any()) continue;
+
+
+        // check load is in process
+        var loadOpers = schedules.LoadActions;
+        var loadingQty = 0;
+        if (loadOpers != null)
+        {
+          foreach (var action in loadOpers)
+          {
+            if (action.Unique == job.UniqueStr && action.Process == 1 && action.LoadEvent && action.Path == procToPath.PathForProc(action.Process))
+            {
+              loadingQty += action.Qty;
+              Log.Debug("Found {uniq} is in the process of being loaded action {@action}", job.UniqueStr, action);
+            }
+          }
+        }
+
+        jobs.Add(new DecrSchedule()
+        {
+          Schedule = sch,
+          Job = job,
+          Proc1Path = procToPath.PathForProc(proc: 1),
+          NewPlanQty = CountCompletedOrMachiningStarted(sch) + loadingQty
+        });
       }
 
-      for (int retryCount = 0; retryCount < MaxRetryTimes; retryCount++)
+      return jobs;
+    }
+
+
+    private void ReducePlannedQuantity(ICollection<DecrSchedule> jobs)
+    {
+      var write = new MazakWriteData();
+      foreach (var job in jobs)
       {
-
-        var idsCopy = new List<ScheduleId>(IdsLeftToDecrement);
-        idsCopy.Sort((a, b) =>
+        if (job.Schedule.PlanQuantity > job.NewPlanQty)
         {
-          return a.DownloadAttempts.CompareTo(b.DownloadAttempts);
-        });
+          var newSchRow = job.Schedule.Clone();
+          newSchRow.Command = MazakWriteCommand.ScheduleSafeEdit;
+          newSchRow.PlanQuantity = job.NewPlanQty;
+          newSchRow.Processes.Clear();
+          write.Schedules.Add(newSchRow);
+        }
+      }
 
-        foreach (var schID in idsCopy)
+      if (write.Schedules.Any())
+      {
+        _write.Save(write, "Decrement preventing new parts starting");
+      }
+    }
+
+    private void RecordDecrement(List<DecrSchedule> decrs, DateTime? now)
+    {
+      var decrAmt = new Dictionary<string, int>();
+      var partNames = new Dictionary<string, string>();
+      foreach (var decr in decrs)
+      {
+        var planned = decr.Job.GetPlannedCyclesOnFirstProcess(path: decr.Proc1Path);
+        if (planned > decr.NewPlanQty)
         {
-          if (DecrementSingleSchedule(mazakData, schID.SchId, writeDb))
+          if (decrAmt.ContainsKey(decr.Job.UniqueStr))
           {
-            IdsLeftToDecrement.Remove(schID);
+            decrAmt[decr.Job.UniqueStr] += planned - decr.NewPlanQty;
           }
           else
           {
-            schID.DownloadAttempts += 1;
-          }
-        }
-
-        if (IdsLeftToDecrement.Count == 0)
-          break;
-
-        HoldSchedules(mazakData, IdsLeftToDecrement, writeDb);
-
-        //we run a garbage collection here, so that hopefully it won't be triggered during the decrement.
-        //The further in time we are between the load of the readonly set and the current time, the better
-        //chance we have of hitting one of the issues and getting an error.
-        GC.Collect();
-
-        if (retryCount >= 2)
-        {
-          System.Threading.Thread.Sleep(TimeSpan.FromSeconds(15));
-        }
-
-        mazakData = readDb.LoadSchedules();
-      }
-
-      mazakData = readDb.LoadSchedules();
-      return LoadDecrementOffsets(mazakData);
-    }
-
-    private class ScheduleId
-    {
-      public int SchId;
-      public int DownloadAttempts;
-      public bool PutOnHold;
-
-      public ScheduleId(int s)
-      {
-        SchId = s;
-        DownloadAttempts = 0;
-        PutOnHold = false;
-      }
-    }
-
-    //Load the schedule ids to decrement
-    private static List<ScheduleId> LoadIdsToDecrement(MazakSchedules mazakSet)
-    {
-      //load the list of Schedule IDs that need to be decremented
-      var IdsLeftToDecrement = new List<ScheduleId>();
-
-      foreach (var schRow in mazakSet.Schedules)
-      {
-        //only deal with parts we created
-        if (MazakPart.IsSailPart(schRow.PartName))
-        {
-
-          //Check if the schedule is manually created, since we don't decrement those
-          string unique;
-          bool manual = false;
-          if (!string.IsNullOrEmpty(schRow.Comment))
-            MazakPart.ParseComment(schRow.Comment, out unique, out var paths, out manual);
-
-          if (manual) continue;
-
-          foreach (var schProcRow in schRow.Processes)
-          {
-            if (schProcRow.ProcessNumber == 1 && schProcRow.ProcessMaterialQuantity >= schProcRow.FixQuantity)
-            {
-              IdsLeftToDecrement.Add(new ScheduleId(schRow.Id));
-            }
+            partNames.Add(decr.Job.UniqueStr, decr.Job.PartName);
+            decrAmt.Add(decr.Job.UniqueStr, planned - decr.NewPlanQty);
           }
         }
       }
 
-      return IdsLeftToDecrement;
-    }
-
-    //Try and decrement a single schedule, returning true if we were successful or an unrecoverable error
-    //occured and false if we should retry this decrement again.
-    private static bool DecrementSingleSchedule(MazakSchedules currentSet, int schID, IWriteData database)
-    {
-      //Find the schedule row.
-      MazakScheduleRow schRow = null;
-      foreach (var schRow2 in currentSet.Schedules)
+      if (decrs.Count > 0)
       {
-        if (schRow2.Id == schID)
+        _jobDB.AddNewDecrement(decrAmt.Select(kv => new JobDB.NewDecrementQuantity()
         {
-          schRow = schRow2;
-          break;
-        }
-      }
-
-      if (schRow == null) return true;
-
-      var transSet = new MazakWriteData();
-      var newSchRow = schRow.Clone();
-      newSchRow.Command = MazakWriteCommand.ScheduleMaterialEdit;
-      transSet.Schedules.Add(newSchRow);
-
-      //Clear any holds made from a previous error.
-      newSchRow.HoldMode = 0;
-
-      int numRows = 0;
-
-      foreach (var newSchProcRow in newSchRow.Processes)
-      {
-        newSchProcRow.ProcessBadQuantity = 0;
-
-        if (newSchProcRow.ProcessNumber == 1)
-        {
-          newSchProcRow.ProcessMaterialQuantity = 0;
-        }
-
-        numRows += 1;
-      }
-
-      try {
-        database.Save(transSet, "Decrement");
-        return true;
-      } catch (OpenDatabaseKitTransactionError ex) {
-        if (ex.Message.StartsWith("Mazak transaction returned error 8"))
-        {
-          return false;
-        }
-        else
-        {
-          throw;
-        }
+          JobUnique = kv.Key,
+          Part = partNames[kv.Key],
+          Quantity = kv.Value
+        }), now);
       }
     }
 
-
-    private static void HoldSchedules(MazakSchedules currentSet,
-                                      IList<ScheduleId> schIds,
-                                      IWriteData database)
+    private int CountCompletedOrMachiningStarted(MazakScheduleRow sch)
     {
-      var transSet = new MazakWriteData();
-
-      var schIdsPutOnHold = new List<ScheduleId>();
-
-      foreach (var schId in schIds)
+      var cnt = sch.CompleteQuantity;
+      foreach (var schProcRow in sch.Processes)
       {
-        //If we have tried two or more times, put the schedule on hold.  This is so that
-        //if we get Issue 1 the first time we don't put the schedule on hold.
-        if (schId.DownloadAttempts >= 2 && !schId.PutOnHold)
-        {
-
-          //Find the schedule row.
-          MazakScheduleRow schRow = null;
-          foreach (var schRow2 in currentSet.Schedules)
-          {
-            if (schRow2.Id == schId.SchId)
-            {
-              schRow = schRow2;
-              break;
-            }
-          }
-
-          if (schRow == null) continue;
-
-          if (schRow.HoldMode != (int)HoldPattern.HoldMode.FullHold)
-          {
-            var newSchRow = schRow.Clone();
-            newSchRow.Command = MazakWriteCommand.ScheduleSafeEdit;
-            newSchRow.HoldMode = (int)HoldPattern.HoldMode.FullHold;
-            transSet.Schedules.Add(newSchRow);
-          }
-
-          schIdsPutOnHold.Add(schId);
-        }
+        cnt += schProcRow.ProcessBadQuantity + schProcRow.ProcessExecuteQuantity;
+        if (schProcRow.ProcessNumber > 1)
+          cnt += schProcRow.ProcessMaterialQuantity;
       }
-
-      if (transSet.Schedules.Any())
-      {
-        database.Save(transSet, "Decrement Unhold");
-      }
-
-      foreach (var schId in schIdsPutOnHold)
-        schId.PutOnHold = true;
-    }
-
-    private static Dictionary<JobAndPath, int> LoadDecrementOffsets(MazakSchedules mazakData)
-    {
-      var parts = new Dictionary<JobAndPath, int>();
-
-      foreach (var schRow in mazakData.Schedules)
-      {
-        if (MazakPart.IsSailPart(schRow.PartName))
-        {
-
-          int cnt = schRow.CompleteQuantity;
-          foreach (var schProcRow in schRow.Processes)
-          {
-            cnt += schProcRow.ProcessMaterialQuantity;
-            cnt += schProcRow.ProcessExecuteQuantity;
-            cnt += schProcRow.ProcessBadQuantity;
-          }
-
-          if (cnt < schRow.PlanQuantity)
-          {
-            int numRemove = schRow.PlanQuantity - cnt;
-
-            string jobUnique = "";
-            int proc1path = 1;
-            bool manual = false;
-            if (!string.IsNullOrEmpty(schRow.Comment))
-            {
-              MazakPart.ParseComment(schRow.Comment, out jobUnique, out var procToPath, out manual);
-              proc1path = procToPath.PathForProc(proc: 1);
-            }
-            var decrKey = new JobAndPath(jobUnique, proc1path);
-
-            if (parts.ContainsKey(decrKey))
-            {
-              parts[decrKey] = parts[decrKey] + numRemove;
-            }
-            else
-            {
-              parts.Add(decrKey, numRemove);
-            }
-          }
-
-        }
-      }
-
-      return parts;
-    }
-
-    public static void FinalizeDecement(IWriteData writeDb, IReadDataAccess readDb)
-    {
-      //We  just lower the plan count (which we can do with the SafeEditCommand), so this is much
-      //easier than the above.
-
-      var mazakData = readDb.LoadSchedules();
-      var transSet = new MazakWriteData();
-
-      //now we update all the plan quantites to match
-      foreach (var schRow in mazakData.Schedules)
-      {
-        if (MazakPart.IsSailPart(schRow.PartName))
-        {
-          //only deal with schedules we have created
-          int cnt = CountMaterial(schRow);
-          if (schRow.PlanQuantity != cnt)
-          {
-            var newSchRow = schRow.Clone();
-            newSchRow.Command = MazakWriteCommand.ScheduleSafeEdit;
-            newSchRow.PlanQuantity = cnt;
-            newSchRow.HoldMode = 0;
-            transSet.Schedules.Add(newSchRow);
-          }
-        }
-      }
-
-      if (transSet.Schedules.Any())
-      {
-        writeDb.Save(transSet, "Decrement Finalize");
-      }
-    }
-
-    private static int CountMaterial(MazakScheduleRow schRow)
-    {
-      int cnt = schRow.CompleteQuantity;
-      foreach (var schProcRow in schRow.Processes)
-      {
-        cnt += schProcRow.ProcessMaterialQuantity;
-        cnt += schProcRow.ProcessExecuteQuantity;
-        cnt += schProcRow.ProcessBadQuantity;
-      }
-
       return cnt;
     }
-
   }
 }

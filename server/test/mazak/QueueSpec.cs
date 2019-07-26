@@ -446,6 +446,76 @@ namespace MachineWatchTest
       trans.Schedules[0].Processes[1].ProcessMaterialQuantity.Should().Be(2); // set the material back to 2
     }
 
+    [Fact]
+    public void UnallocateMaterial()
+    {
+      var read = new TestMazakData();
+
+      // this scenario occurs after a decrement.  The decrement sets the planned quantity to equal
+      // the completed and in-process, but some material in the queue might be assigned to this job unique.
+      // The queues code should unallocate the queued material so it can be assigned to a new job.
+      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 46, complete: 43);
+      AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 3);
+
+      var j = new JobPlan("uuuu", 1);
+      j.PartName = "pppp";
+      j.SetInputQueue(1, 1, "thequeue");
+      _jobDB.AddJobs(new NewJobs()
+      {
+        Jobs = new List<JobPlan> { j }
+      }, null);
+
+      // put 2 assigned castings in queue
+      var mat1 = _logDB.AllocateMaterialID("uuuu", "pppp", 1);
+      var mat2 = _logDB.AllocateMaterialID("uuuu", "pppp", 1);
+      _logDB.RecordAddMaterialToQueue(mat1, process: 0, queue: "thequeue", position: 0);
+      _logDB.RecordAddMaterialToQueue(mat2, process: 0, queue: "thequeue", position: 1);
+
+      _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new[] {
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "uuuu", PartName = "pppp", NumProcesses = 1},
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = mat2, Queue = "thequeue", Position = 1, Unique = "uuuu", PartName = "pppp", NumProcesses = 1},
+      });
+
+      // should not touch the schedule but unallocate the two entries
+      var trans = _queues.CalculateScheduleChanges(read.ToData());
+
+      trans.Schedules.Should().BeEmpty();
+
+      _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new[] {
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "", PartName = "pppp", NumProcesses = 1},
+        new JobLogDB.QueuedMaterial() {
+          MaterialID = mat2, Queue = "thequeue", Position = 1, Unique = "", PartName = "pppp", NumProcesses = 1},
+      });
+    }
+
+    [Fact]
+    public void ReduceMaterialOfNonQueue()
+    {
+      var read = new TestMazakData();
+
+      // this scenario comes from a job decrement.  At time of decrement, plan 50, 40 completed, 5 in proc, and 5 material
+      // decrement reduces planned quantity to 45 but leaves material.  Queue code should clear it.
+      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 45, complete: 40);
+      AddScheduleProcess(schRow, proc: 1, matQty: 5, exeQty: 5);
+
+      var j = new JobPlan("uuuu", 1);
+      j.PartName = "pppp";
+      _jobDB.AddJobs(new NewJobs()
+      {
+        Jobs = new List<JobPlan> { j }
+      }, null);
+
+      var trans = _queues.CalculateScheduleChanges(read.ToData());
+
+      trans.Schedules.Count.Should().Be(1);
+      trans.Schedules[0].Id.Should().Be(10);
+      trans.Schedules[0].Processes.Count.Should().Be(1);
+      trans.Schedules[0].Processes[0].ProcessMaterialQuantity.Should().Be(0); // clear the material
+    }
+
     private void CreateMultiPathJob()
     {
       var j = new JobPlan("uuuu", 2, new[] { 2, 2 });

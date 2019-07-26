@@ -25,7 +25,7 @@
       "console": "internalConsole",
       "preLaunchTask": "mazak:build",
       "env": {
-        "Mazak__SQL ConnectionString": "Server=172.16.11.6;User Id=mazakpmc;Password=Fms-978",
+        "Mazak__SQL ConnectionString": "Server=localhost;User Id=mazakpmc;Password=Fms-978",
         "Mazak__Log CSV Path": "../../../logcsv",
         "QUEUE__castings": "-1",
         "QUEUE__transfer": "-1",

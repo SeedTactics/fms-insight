@@ -43,7 +43,17 @@ using AutoFixture;
 
 namespace MachineWatchTest
 {
-  public class JobLogTest : IDisposable
+  public class JobComparisonHelpers
+  {
+    public static void CheckEqual(LogEntry x, LogEntry y)
+    {
+      x.Should().BeEquivalentTo(y, options =>
+        options.Excluding(l => l.Counter)
+      );
+    }
+  }
+
+  public class JobLogTest : JobComparisonHelpers, IDisposable
   {
     private JobLogDB _jobLog;
 
@@ -1106,13 +1116,6 @@ namespace MachineWatchTest
         options.Excluding(l => l.Counter)
       );
       return otherLogs.Select(l => l.Counter).Max();
-    }
-
-    public static void CheckEqual(LogEntry x, LogEntry y)
-    {
-      x.Should().BeEquivalentTo(y, options =>
-        options.Excluding(l => l.Counter)
-      );
     }
 
     private LogEntry AddToQueueExpectedEntry(LogMaterial mat, long cntr, string queue, int position, DateTime timeUTC)

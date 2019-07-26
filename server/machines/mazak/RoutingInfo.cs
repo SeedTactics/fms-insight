@@ -33,8 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Data;
-using System.Diagnostics;
 using BlackMaple.MachineWatchInterface;
 
 namespace MazakMachineInterface
@@ -49,6 +47,7 @@ namespace MazakMachineInterface
     private BlackMaple.MachineFramework.JobDB jobDB;
     private BlackMaple.MachineFramework.JobLogDB log;
     private IWriteJobs _writeJobs;
+    private IDecrementPlanQty _decr;
     private readonly IQueueSyncFault queueFault;
     private System.Timers.Timer _copySchedulesTimer;
     private readonly BlackMaple.MachineFramework.FMSSettings fmsSettings;
@@ -66,6 +65,7 @@ namespace MazakMachineInterface
       BlackMaple.MachineFramework.JobLogDB jLog,
       IWriteJobs wJobs,
       IQueueSyncFault queueSyncFault,
+      IDecrementPlanQty decrement,
       bool check,
       BlackMaple.MachineFramework.FMSSettings settings)
     {
@@ -76,6 +76,7 @@ namespace MazakMachineInterface
       logReader = logR;
       log = jLog;
       _writeJobs = wJobs;
+      _decr = decrement;
       queueFault = queueSyncFault;
       CheckPalletsUsedOnce = check;
 
@@ -209,45 +210,47 @@ namespace MazakMachineInterface
     #region "Decrement Plan Quantity"
     public List<JobAndDecrementQuantity> DecrementJobQuantites(long loadDecrementsStrictlyAfterDecrementId)
     {
-      return new List<JobAndDecrementQuantity>();
+      if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
+      {
+        throw new Exception("Unable to obtain mazak database lock");
+      }
+      try
+      {
+        _decr.Decrement();
+      }
+      finally
+      {
+        OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
+      }
+      logReader.RecheckQueues();
+      return jobDB.LoadDecrementQuantitiesAfter(loadDecrementsStrictlyAfterDecrementId);
     }
     public List<JobAndDecrementQuantity> DecrementJobQuantites(DateTime loadDecrementsAfterTimeUTC)
     {
-      return new List<JobAndDecrementQuantity>();
+      if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
+      {
+        throw new Exception("Unable to obtain mazak database lock");
+      }
+      try
+      {
+        _decr.Decrement();
+      }
+      finally
+      {
+        OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
+      }
+      logReader.RecheckQueues();
+      return jobDB.LoadDecrementQuantitiesAfter(loadDecrementsAfterTimeUTC);
     }
 
     public Dictionary<JobAndPath, int> OldDecrementJobQuantites()
     {
-      if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
-      {
-        throw new Exception("Unable to obtain mazak database lock");
-      }
-
-      try
-      {
-        return modDecrementPlanQty.DecrementPlanQty(writeDb, readDatabase);
-      }
-      finally
-      {
-        OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
-      }
+      throw new NotImplementedException();
     }
 
     public void OldFinalizeDecrement()
     {
-      if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
-      {
-        throw new Exception("Unable to obtain mazak database lock");
-      }
-
-      try
-      {
-        modDecrementPlanQty.FinalizeDecement(writeDb, readDatabase);
-      }
-      finally
-      {
-        OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
-      }
+      throw new NotImplementedException();
     }
     #endregion
 
