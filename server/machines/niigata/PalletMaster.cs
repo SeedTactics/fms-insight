@@ -123,7 +123,6 @@ namespace BlackMaple.FMSInsight.Niigata
     public int NumFaces { get; set; } = 1; // can be 1, 4, or 8.
     public int RemainingPalletCycles { get; set; } = 0; // 999 indicates run forever
     public int Priority { get; set; } = 0; // 9 is lowest, 1 is highest, 0 is no priority
-    public NiigataPalletLocation Loc { get; set; } = new StockerLoc();
 
     // When true, no workpiece is loaded.  This gets set when the user presses the "Unload" button
     // at the load station
@@ -132,12 +131,5 @@ namespace BlackMaple.FMSInsight.Niigata
     public bool Alarm { get; set; } = false;
     public bool PerformProgramDownload { get; set; } = false;
     public List<RouteStep> Routes { get; set; } = new List<RouteStep>();
-    public TrackingInfo Tracking { get; set; } = new TrackingInfo();
   }
-
-  public interface ICurrentPallets
-  {
-    Dictionary<string, PalletMaster> LoadPallets();
-  }
-
 }

@@ -42,21 +42,20 @@ namespace BlackMaple.FMSInsight.Niigata
   {
     CurrentStatus GetCurrentStatus();
     bool IsJobCompleted(JobPlan job);
-    int CountStartedOrInProcess(JobPlan job);
   }
 
   public class BuildCurrentStatus : IBuildCurrentStatus
   {
     private JobDB _jobs;
     private JobLogDB _log;
-    private ICurrentPallets _curPal;
+    private ISyncPallets _sync;
     private FMSSettings fmsSettings;
 
-    public BuildCurrentStatus(JobDB j, JobLogDB l, FMSSettings s, ICurrentPallets c)
+    public BuildCurrentStatus(JobDB j, JobLogDB l, FMSSettings s, ISyncPallets c)
     {
       _jobs = j;
       _log = l;
-      _curPal = c;
+      _sync = c;
       fmsSettings = s;
     }
 
@@ -100,22 +99,22 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       // pallets
-      var palMaster = _curPal.LoadPallets();
-      foreach (var pal in palMaster.Values)
+      var palMaster = _sync.CurrentPallets();
+      foreach (var pal in palMaster)
       {
-        curStatus.Pallets.Add(pal.PalletNum.ToString(), new PalletStatus()
+        curStatus.Pallets.Add(pal.Master.PalletNum.ToString(), new PalletStatus()
         {
-          Pallet = pal.PalletNum.ToString(),
+          Pallet = pal.Master.PalletNum.ToString(),
           FixtureOnPallet = "",
-          OnHold = pal.Skip,
+          OnHold = pal.Master.Skip,
           CurrentPalletLocation = BuildCurrentLocation(pal),
-          NumFaces = pal.NumFaces
+          NumFaces = pal.Master.NumFaces
         });
       }
 
       // material on pallets
       var matsOnPallets = new HashSet<long>();
-      foreach (var pal in palMaster.Values)
+      foreach (var pal in palMaster)
       {
         switch (pal.Tracking.RouteNum)
         {
@@ -132,7 +131,7 @@ namespace BlackMaple.FMSInsight.Niigata
           case 1 when !pal.Tracking.Before:
           case 2 when pal.Tracking.Before:
           case 2 when !pal.Tracking.Before:
-            foreach (var m in MaterialForPallet(pal.PalletNum.ToString()))
+            foreach (var m in MaterialForPallet(pal.Master.PalletNum.ToString()))
             {
               // TODO: get current machine data, change mat to machining
               matsOnPallets.Add(m.MaterialID);
@@ -142,7 +141,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
           // before unload -> mat in unload state
           case 3 when pal.Tracking.Before:
-            foreach (var m in MaterialForPallet(pal.PalletNum.ToString()))
+            foreach (var m in MaterialForPallet(pal.Master.PalletNum.ToString()))
             {
               var job = _jobs.LoadJob(m.JobUnique);
               if (job != null && m.Process < job.NumProcesses)
@@ -157,7 +156,7 @@ namespace BlackMaple.FMSInsight.Niigata
               matsOnPallets.Add(m.MaterialID);
               curStatus.Material.Add(m);
             }
-            if (pal.RemainingPalletCycles > 1)
+            if (pal.Master.RemainingPalletCycles > 1)
             {
               foreach (var m in MaterialLoadingOntoPallet(pal))
               {
@@ -216,11 +215,11 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       //alarms
-      foreach (var pal in palMaster.Values)
+      foreach (var pal in palMaster)
       {
-        if (pal.Alarm)
+        if (pal.Master.Alarm)
         {
-          curStatus.Alarms.Add("Pallet " + pal.PalletNum.ToString() + " has alarm");
+          curStatus.Alarms.Add("Pallet " + pal.Master.PalletNum.ToString() + " has alarm");
         }
       }
 
@@ -249,27 +248,7 @@ namespace BlackMaple.FMSInsight.Niigata
       return completed >= planned;
     }
 
-    public int CountStartedOrInProcess(JobPlan job)
-    {
-      var mats = new HashSet<long>();
-
-      foreach (var e in _log.GetLogForJobUnique(job.UniqueStr))
-      {
-        foreach (var mat in e.Material)
-        {
-          if (mat.JobUniqueStr == job.UniqueStr)
-          {
-            mats.Add(mat.MaterialID);
-          }
-        }
-      }
-
-      //TODO: add material for pallet which is moving to load station to receive new part to load?
-
-      return mats.Count;
-    }
-
-    private List<InProcessMaterial> MaterialLoadingOntoPallet(PalletMaster pal)
+    private List<InProcessMaterial> MaterialLoadingOntoPallet(JobPallet pal)
     {
       // TODO: write me
       return new List<InProcessMaterial>();
@@ -331,9 +310,9 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    private static PalletLocation BuildCurrentLocation(PalletMaster p)
+    private static PalletLocation BuildCurrentLocation(JobPallet pal)
     {
-      switch (p.Loc)
+      switch (pal.Loc)
       {
         case LoadUnloadLoc l:
           return new PalletLocation(PalletLocationEnum.LoadUnload, "L/U", l.LoadStation);
@@ -348,7 +327,7 @@ namespace BlackMaple.FMSInsight.Niigata
           }
           break;
         case StockerLoc s:
-          return new PalletLocation(PalletLocationEnum.Buffer, "Buffer", p.PalletNum);
+          return new PalletLocation(PalletLocationEnum.Buffer, "Buffer", pal.Master.PalletNum);
         case CartLoc c:
           return new PalletLocation(PalletLocationEnum.Cart, "Cart", 1);
       }

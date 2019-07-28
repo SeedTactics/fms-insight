@@ -38,9 +38,18 @@ using BlackMaple.MachineWatchInterface;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
+  public class JobPallet
+  {
+    public PalletMaster Master { get; set; }
+    public TrackingInfo Tracking { get; set; }
+    public NiigataPalletLocation Loc { get; set; } = new StockerLoc();
+
+    // TODO: info about current material
+  }
   public interface ISyncPallets
   {
     void RecheckPallets();
+    IEnumerable<JobPallet> CurrentPallets();
     void DecrementPlannedButNotStartedQty();
   }
 
@@ -48,17 +57,22 @@ namespace BlackMaple.FMSInsight.Niigata
   {
     private object _lock = new object();
     private JobDB _jobs;
-    private IBuildCurrentStatus _curSt;
+    private JobLogDB _log;
 
-    public SyncPallets(JobDB jobs, IBuildCurrentStatus curSt)
+    public SyncPallets(JobDB jobs, JobLogDB log)
     {
       _jobs = jobs;
-      _curSt = curSt;
+      _log = log;
     }
 
     public void RecheckPallets()
     {
-      // TODO: implement
+      throw new NotImplementedException();
+    }
+
+    public IEnumerable<JobPallet> CurrentPallets()
+    {
+      throw new NotImplementedException();
     }
 
     public void DecrementPlannedButNotStartedQty()
@@ -71,7 +85,7 @@ namespace BlackMaple.FMSInsight.Niigata
         foreach (var j in _jobs.LoadUnarchivedJobs().Jobs)
         {
           if (_jobs.LoadDecrementsForJob(j.UniqueStr).Count > 0) continue;
-          var started = _curSt.CountStartedOrInProcess(j);
+          var started = CountStartedOrInProcess(j);
           var planned = Enumerable.Range(1, j.GetNumPaths(process: 1)).Sum(path => j.GetPlannedCyclesOnFirstProcess(path));
           if (started < planned)
           {
@@ -91,6 +105,27 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
     }
+
+    private int CountStartedOrInProcess(JobPlan job)
+    {
+      var mats = new HashSet<long>();
+
+      foreach (var e in _log.GetLogForJobUnique(job.UniqueStr))
+      {
+        foreach (var mat in e.Material)
+        {
+          if (mat.JobUniqueStr == job.UniqueStr)
+          {
+            mats.Add(mat.MaterialID);
+          }
+        }
+      }
+
+      //TODO: add material for pallet which is moving to load station to receive new part to load?
+
+      return mats.Count;
+    }
+
 
     public void Dispose() { }
   }
