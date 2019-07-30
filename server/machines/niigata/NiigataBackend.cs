@@ -104,7 +104,7 @@ namespace BlackMaple.FMSInsight.Niigata
       return _log;
     }
 
-    public NiigataJobs NiigataJobs { get; private set; }
+    public NiigataJobs NiigataJobs { get; }
     public SyncPallets SyncPallets { get; private set; }
   }
 

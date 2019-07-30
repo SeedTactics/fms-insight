@@ -35,6 +35,8 @@ using System.Linq;
 using System.Collections.Generic;
 using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
@@ -47,14 +49,14 @@ namespace BlackMaple.FMSInsight.Niigata
   }
   public interface ISyncPallets
   {
-    void RecheckPallets();
-    IEnumerable<JobPallet> CurrentPallets();
-    void DecrementPlannedButNotStartedQty();
+    Task RecheckPallets();
+    Task<IEnumerable<JobPallet>> CurrentPallets();
+    Task DecrementPlannedButNotStartedQty();
   }
 
   public class SyncPallets : ISyncPallets, IDisposable
   {
-    private object _lock = new object();
+    private static Serilog.ILogger Log = Serilog.Log.ForContext<SyncPallets>();
     private JobDB _jobs;
     private JobLogDB _log;
 
@@ -62,47 +64,188 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       _jobs = jobs;
       _log = log;
+      _thread = new Thread(new ThreadStart(Thread));
+      _thread.Start();
     }
 
-    public void RecheckPallets()
+    #region Thread and Messages
+    private System.Threading.Thread _thread;
+    private AutoResetEvent _shutdown = new AutoResetEvent(false);
+    private Queue<Message> _msgQueue = new Queue<Message>();
+    private AutoResetEvent _newMsg = new AutoResetEvent(false);
+
+    private abstract class Message { }
+
+    private class RecheckPalletsMessage : Message
     {
-      throw new NotImplementedException();
+      public TaskCompletionSource<bool> Comp { get; } = new TaskCompletionSource<bool>();
     }
 
-    public IEnumerable<JobPallet> CurrentPallets()
+    public Task RecheckPallets()
     {
-      throw new NotImplementedException();
-    }
-
-    public void DecrementPlannedButNotStartedQty()
-    {
-      // once a decrement is recorded here, the SyncPallets won't start any more new material
-      // need to lock so that between loading jobs and recording the decrement, we dont't start a new material
-      lock (_lock)
+      var msg = new RecheckPalletsMessage();
+      lock (_msgQueue)
       {
-        var decrs = new List<JobDB.NewDecrementQuantity>();
-        foreach (var j in _jobs.LoadUnarchivedJobs().Jobs)
+        _msgQueue.Enqueue(msg);
+      }
+      _newMsg.Set();
+      return msg.Comp.Task;
+    }
+
+    private class CurrentPalletsMessage : Message
+    {
+      public TaskCompletionSource<IEnumerable<JobPallet>> Comp { get; } = new TaskCompletionSource<IEnumerable<JobPallet>>();
+    }
+
+    public Task<IEnumerable<JobPallet>> CurrentPallets()
+    {
+      var msg = new CurrentPalletsMessage();
+      lock (_msgQueue)
+      {
+        _msgQueue.Enqueue(msg);
+      }
+      return msg.Comp.Task;
+    }
+
+    private class DecrementMessage : Message
+    {
+      public TaskCompletionSource<bool> Comp { get; } = new TaskCompletionSource<bool>();
+    }
+
+    public Task DecrementPlannedButNotStartedQty()
+    {
+      var msg = new DecrementMessage();
+      lock (_msgQueue)
+      {
+        _msgQueue.Enqueue(msg);
+      }
+      return msg.Comp.Task;
+    }
+    public void Dispose()
+    {
+      _shutdown.Set();
+      if (_thread != null && !_thread.Join(TimeSpan.FromSeconds(15)))
+        _thread.Abort();
+    }
+
+    private void Thread()
+    {
+      while (true)
+      {
+        try
         {
-          if (_jobs.LoadDecrementsForJob(j.UniqueStr).Count > 0) continue;
-          var started = CountStartedOrInProcess(j);
-          var planned = Enumerable.Range(1, j.GetNumPaths(process: 1)).Sum(path => j.GetPlannedCyclesOnFirstProcess(path));
-          if (started < planned)
+
+          var sleepTime = TimeSpan.FromMinutes(1);
+          Log.Debug("Sleeping for {mins} minutes", sleepTime.TotalMinutes);
+          var ret = WaitHandle.WaitAny(new WaitHandle[] { _shutdown, _newMsg }, sleepTime, false);
+          if (ret == 0)
           {
-            decrs.Add(new JobDB.NewDecrementQuantity()
+            Log.Debug("Thread shutdown");
+            return;
+          }
+
+          Exception checkError = null;
+          IEnumerable<JobPallet> pallets = Enumerable.Empty<JobPallet>();
+          try
+          {
+            pallets = CheckPalletsMatch();
+          }
+          catch (Exception ex)
+          {
+            ex = checkError;
+            Log.Error(ex, "Error checking pallets");
+          }
+
+          while (true)
+          {
+            Message msg = null;
+            lock (_msgQueue)
             {
-              JobUnique = j.UniqueStr,
-              Part = j.PartName,
-              Quantity = planned - started
-            });
+              if (!_msgQueue.TryDequeue(out msg))
+              {
+                break;
+              }
+            }
+            if (msg == null) break;
+
+            switch (msg)
+            {
+              case RecheckPalletsMessage m:
+                if (checkError == null)
+                {
+                  m.Comp.SetResult(true);
+                }
+                else
+                {
+                  m.Comp.SetException(checkError);
+                }
+                break;
+              case CurrentPalletsMessage m:
+                if (checkError == null)
+                {
+                  m.Comp.SetResult(pallets);
+                }
+                else
+                {
+                  m.Comp.SetException(checkError);
+                }
+                break;
+              case DecrementMessage m:
+                if (checkError == null)
+                {
+                  DecrementHelper();
+                  m.Comp.SetResult(true);
+                }
+                else
+                {
+                  m.Comp.SetException(checkError);
+                }
+                break;
+
+              default:
+                Log.Error("Unknown message {@msg}", msg);
+                break;
+            }
           }
         }
-
-        if (decrs.Count > 0)
+        catch (Exception ex)
         {
-          _jobs.AddNewDecrement(decrs);
+          Log.Error(ex, "Unexpected error during thread processing");
+        }
+      }
+    }
+
+    #endregion
+
+    private IEnumerable<JobPallet> CheckPalletsMatch()
+    {
+      // TODO: write me
+      return Enumerable.Empty<JobPallet>();
+    }
+
+    private void DecrementHelper()
+    {
+      var decrs = new List<JobDB.NewDecrementQuantity>();
+      foreach (var j in _jobs.LoadUnarchivedJobs().Jobs)
+      {
+        if (_jobs.LoadDecrementsForJob(j.UniqueStr).Count > 0) continue;
+        var started = CountStartedOrInProcess(j);
+        var planned = Enumerable.Range(1, j.GetNumPaths(process: 1)).Sum(path => j.GetPlannedCyclesOnFirstProcess(path));
+        if (started < planned)
+        {
+          decrs.Add(new JobDB.NewDecrementQuantity()
+          {
+            JobUnique = j.UniqueStr,
+            Part = j.PartName,
+            Quantity = planned - started
+          });
         }
       }
 
+      if (decrs.Count > 0)
+      {
+        _jobs.AddNewDecrement(decrs);
+      }
     }
 
     private int CountStartedOrInProcess(JobPlan job)
@@ -126,6 +269,5 @@ namespace BlackMaple.FMSInsight.Niigata
     }
 
 
-    public void Dispose() { }
   }
 }
