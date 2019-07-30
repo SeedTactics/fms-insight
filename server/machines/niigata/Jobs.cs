@@ -43,15 +43,13 @@ namespace BlackMaple.FMSInsight.Niigata
     private static Serilog.ILogger Log = Serilog.Log.ForContext<NiigataJobs>();
     private JobDB _jobs;
     private JobLogDB _log;
-    private IBuildCurrentStatus _curSt;
     private FMSSettings _settings;
     private ISyncPallets _sync;
 
-    public NiigataJobs(JobDB j, JobLogDB l, FMSSettings st, ISyncPallets sy, IBuildCurrentStatus curSt)
+    public NiigataJobs(JobDB j, JobLogDB l, FMSSettings st, ISyncPallets sy)
     {
       _jobs = j;
       _log = l;
-      _curSt = curSt;
       _sync = sy;
       _settings = st;
     }
@@ -61,7 +59,123 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public CurrentStatus GetCurrentStatus()
     {
-      return _curSt.GetCurrentStatus();
+      var curStatus = new CurrentStatus();
+      foreach (var k in _settings.Queues) curStatus.QueueSizes[k.Key] = k.Value;
+
+      // jobs
+      var jobs = _jobs.LoadUnarchivedJobs();
+      foreach (var j in jobs.Jobs)
+      {
+        var curJob = new InProcessJob(j);
+        curStatus.Jobs.Add(curJob.UniqueStr, curJob);
+        var evts = _log.GetLogForJobUnique(j.UniqueStr);
+        foreach (var e in evts)
+        {
+          if (e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD")
+          {
+            foreach (var mat in e.Material)
+            {
+              if (mat.JobUniqueStr == j.UniqueStr)
+              {
+                int matPath = 1;
+                for (int path = 1; path <= j.GetNumPaths(mat.Process); path++)
+                {
+                  if (j.PlannedPallets(mat.Process, path).Contains(e.Pallet))
+                  {
+                    matPath = path;
+                    break;
+                  }
+                }
+                curJob.AdjustCompleted(mat.Process, matPath, x => x + 1);
+              }
+            }
+          }
+        }
+
+        foreach (var d in _jobs.LoadDecrementsForJob(j.UniqueStr))
+          curJob.Decrements.Add(d);
+      }
+
+      // pallets
+      var palMaster = _sync.CurrentPallets();
+      foreach (var pal in palMaster)
+      {
+        curStatus.Pallets.Add(pal.Master.PalletNum.ToString(), new PalletStatus()
+        {
+          Pallet = pal.Master.PalletNum.ToString(),
+          FixtureOnPallet = "",
+          OnHold = pal.Master.Skip,
+          CurrentPalletLocation = BuildCurrentLocation(pal),
+          NumFaces = pal.Master.NumFaces
+        });
+      }
+
+      // material on pallets
+      var matsOnPallets = new HashSet<long>();
+      foreach (var pal in palMaster)
+      {
+        foreach (var mat in pal.Material)
+        {
+          matsOnPallets.Add(mat.MaterialID);
+          curStatus.Material.Add(mat);
+        }
+      }
+
+      // queued mats
+      foreach (var mat in _log.GetMaterialInAllQueues())
+      {
+        if (matsOnPallets.Contains(mat.MaterialID)) continue;
+        var matLogs = _log.GetLogForMaterial(mat.MaterialID);
+        int lastProc = 0;
+        foreach (var entry in _log.GetLogForMaterial(mat.MaterialID))
+        {
+          foreach (var entryMat in entry.Material)
+          {
+            if (entryMat.MaterialID == mat.MaterialID)
+            {
+              lastProc = Math.Max(lastProc, entryMat.Process);
+            }
+          }
+        }
+        var matDetails = _log.GetMaterialDetails(mat.MaterialID);
+        curStatus.Material.Add(new InProcessMaterial()
+        {
+          MaterialID = mat.MaterialID,
+          JobUnique = mat.Unique,
+          PartName = mat.PartName,
+          Process = lastProc,
+          Path = 1,
+          Serial = matDetails?.Serial,
+          WorkorderId = matDetails?.Workorder,
+          SignaledInspections =
+                _log.LookupInspectionDecisions(mat.MaterialID)
+                .Where(x => x.Inspect)
+                .Select(x => x.InspType)
+                .Distinct()
+                .ToList(),
+          Location = new InProcessMaterialLocation()
+          {
+            Type = InProcessMaterialLocation.LocType.InQueue,
+            CurrentQueue = mat.Queue,
+            QueuePosition = mat.Position,
+          },
+          Action = new InProcessMaterialAction()
+          {
+            Type = InProcessMaterialAction.ActionType.Waiting
+          }
+        });
+      }
+
+      //alarms
+      foreach (var pal in palMaster)
+      {
+        if (pal.Master.Alarm)
+        {
+          curStatus.Alarms.Add("Pallet " + pal.Master.PalletNum.ToString() + " has alarm");
+        }
+      }
+
+      return curStatus;
     }
 
     public List<string> CheckValidRoutes(IEnumerable<JobPlan> newJobs)
@@ -76,7 +190,7 @@ namespace BlackMaple.FMSInsight.Niigata
         var existingJobs = _jobs.LoadUnarchivedJobs();
         foreach (var j in existingJobs.Jobs)
         {
-          if (_curSt.IsJobCompleted(j))
+          if (IsJobCompleted(j))
           {
             _jobs.ArchiveJob(j.UniqueStr);
           }
@@ -90,8 +204,35 @@ namespace BlackMaple.FMSInsight.Niigata
       _jobs.AddJobs(jobs, expectedPreviousScheduleId);
 
       _sync.RecheckPallets();
-      RaiseNewCurrentStatus(_curSt.GetCurrentStatus());
+      RaiseNewCurrentStatus(GetCurrentStatus());
     }
+
+    private bool IsJobCompleted(JobPlan job)
+    {
+      var planned = Enumerable.Range(1, job.GetNumPaths(process: 1)).Sum(job.GetPlannedCyclesOnFirstProcess);
+      foreach (var decr in _jobs.LoadDecrementsForJob(job.UniqueStr))
+      {
+        planned -= decr.Quantity;
+      }
+
+      var evts = _log.GetLogForJobUnique(job.UniqueStr);
+      var completed = 0;
+      foreach (var e in evts)
+      {
+        if (e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD")
+        {
+          foreach (var mat in e.Material)
+          {
+            if (mat.JobUniqueStr == job.UniqueStr && mat.Process == mat.NumProcesses)
+            {
+              completed += 1;
+            }
+          }
+        }
+      }
+      return completed >= planned;
+    }
+
     public List<JobAndDecrementQuantity> DecrementJobQuantites(long loadDecrementsStrictlyAfterDecrementId)
     {
       _sync.DecrementPlannedButNotStartedQty();
@@ -132,7 +273,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
       _log.RecordAddMaterialToQueue(matId, 0, queue, position);
       _sync.RecheckPallets();
-      RaiseNewCurrentStatus(_curSt.GetCurrentStatus());
+      RaiseNewCurrentStatus(GetCurrentStatus());
     }
 
     public void AddUnprocessedMaterialToQueue(string jobUnique, int process, string queue, int position, string serial)
@@ -162,7 +303,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
       _log.RecordAddMaterialToQueue(matId, process, queue, position);
       _sync.RecheckPallets();
-      RaiseNewCurrentStatus(_curSt.GetCurrentStatus());
+      RaiseNewCurrentStatus(GetCurrentStatus());
     }
 
     public void SetMaterialInQueue(long materialId, string queue, int position)
@@ -183,7 +324,7 @@ namespace BlackMaple.FMSInsight.Niigata
         .Max();
       _log.RecordAddMaterialToQueue(materialId, proc, queue, position);
       _sync.RecheckPallets();
-      RaiseNewCurrentStatus(_curSt.GetCurrentStatus());
+      RaiseNewCurrentStatus(GetCurrentStatus());
     }
 
     public void RemoveMaterialFromAllQueues(long materialId)
@@ -191,8 +332,33 @@ namespace BlackMaple.FMSInsight.Niigata
       Log.Debug("Removing {matId} from all queues", materialId);
       _log.RecordRemoveMaterialFromAllQueues(materialId);
       _sync.RecheckPallets();
-      RaiseNewCurrentStatus(_curSt.GetCurrentStatus());
+      RaiseNewCurrentStatus(GetCurrentStatus());
     }
     #endregion
+
+
+    private static PalletLocation BuildCurrentLocation(JobPallet pal)
+    {
+      switch (pal.Loc)
+      {
+        case LoadUnloadLoc l:
+          return new PalletLocation(PalletLocationEnum.LoadUnload, "L/U", l.LoadStation);
+        case MachineOrWashLoc m:
+          switch (m.Position)
+          {
+            case MachineOrWashLoc.Rotary.Input:
+            case MachineOrWashLoc.Rotary.Output:
+              return new PalletLocation(PalletLocationEnum.MachineQueue, "MC", m.Station);
+            case MachineOrWashLoc.Rotary.Worktable:
+              return new PalletLocation(PalletLocationEnum.Machine, "MC", m.Station);
+          }
+          break;
+        case StockerLoc s:
+          return new PalletLocation(PalletLocationEnum.Buffer, "Buffer", pal.Master.PalletNum);
+        case CartLoc c:
+          return new PalletLocation(PalletLocationEnum.Cart, "Cart", 1);
+      }
+      return new PalletLocation(PalletLocationEnum.Buffer, "Buffer", 0);
+    }
   }
 }

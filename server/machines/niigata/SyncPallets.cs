@@ -43,8 +43,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public PalletMaster Master { get; set; }
     public TrackingInfo Tracking { get; set; }
     public NiigataPalletLocation Loc { get; set; } = new StockerLoc();
-
-    // TODO: info about current material
+    public List<InProcessMaterial> Material { get; set; }
   }
   public interface ISyncPallets
   {

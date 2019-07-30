@@ -48,7 +48,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private JobLogDB _logDB;
     private NiigataJobs _jobs;
     private ISyncPallets _syncMock;
-    private IBuildCurrentStatus _curStMock;
 
     public NiigataJobSpec()
     {
@@ -63,36 +62,216 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _jobDB.CreateTables();
 
       _syncMock = Substitute.For<ISyncPallets>();
-      _curStMock = Substitute.For<IBuildCurrentStatus>();
 
       var settings = new FMSSettings();
       settings.Queues.Add("q1", new QueueSize());
 
-      _jobs = new NiigataJobs(_jobDB, _logDB, settings, _syncMock, _curStMock);
+      _jobs = new NiigataJobs(_jobDB, _logDB, settings, _syncMock);
     }
 
     [Fact]
     public void LoadsCurrentSt()
     {
-      var c = new CurrentStatus();
-      c.Pallets.Add("1", new PalletStatus());
-      _curStMock.GetCurrentStatus().Returns(c);
-      _jobs.GetCurrentStatus().Should().Be(c);
-      _curStMock.Received().GetCurrentStatus();
+      var mat1 = _logDB.AllocateMaterialID("u1", "p1", 1);
+      _logDB.RecordSerialForMaterialID(mat1, 1, "serial1");
+      _logDB.RecordWorkorderForMaterialID(mat1, 1, "work1");
+
+      var mat2 = _logDB.AllocateMaterialID("u1", "p1", 1);
+      _logDB.RecordSerialForMaterialID(mat2, 1, "serial2");
+      _logDB.RecordWorkorderForMaterialID(mat2, 1, "work2");
+      _logDB.ForceInspection(mat2, "insp2");
+
+      var mat3 = _logDB.AllocateMaterialID("u2", "p2", 1);
+      _logDB.RecordSerialForMaterialID(mat3, 2, "serial3");
+
+      var mat4 = _logDB.AllocateMaterialID("u1", "p1", 1);
+      _logDB.RecordSerialForMaterialID(mat4, 1, "serial4");
+      _logDB.RecordWorkorderForMaterialID(mat4, 1, "work4");
+      _logDB.ForceInspection(mat4, "insp4");
+
+
+      //job with 1 completed part
+      var j = new JobPlan("u1", 1);
+      j.PartName = "p1";
+      j.SetPlannedCyclesOnFirstProcess(1, 10);
+      j.AddProcessOnPallet(1, 1, "pal1");
+      j.ScheduleId = "sch1";
+      _logDB.RecordUnloadEnd(
+        mats: new[] { new JobLogDB.EventLogMaterial() {
+          MaterialID = mat1,
+          Process = 1,
+          Face = "f1"
+        }},
+        pallet: "pal1",
+        lulNum: 2,
+        timeUTC: DateTime.UtcNow,
+        elapsed: TimeSpan.FromMinutes(10),
+        active: TimeSpan.Zero
+      );
+      _jobDB.AddJobs(new NewJobs()
+      {
+        Jobs = new List<JobPlan> { j }
+      }, null);
+
+      // two pallets with some material
+      var pal1 = new JobPallet()
+      {
+        Master = new PalletMaster()
+        {
+          PalletNum = 1,
+          Skip = true
+        },
+        Loc = new MachineOrWashLoc()
+        {
+          Station = 3,
+          Position = MachineOrWashLoc.Rotary.Worktable
+        },
+        Material = new List<InProcessMaterial> {
+          new InProcessMaterial() {
+            MaterialID = mat2,
+            JobUnique = "u1",
+            PartName = "p1",
+            Process = 1,
+            Path = 1,
+            Serial = "serial2",
+            WorkorderId = "work2",
+            SignaledInspections = new List<string> {"insp2"},
+            Location = new InProcessMaterialLocation() {
+              Type = InProcessMaterialLocation.LocType.OnPallet,
+              Pallet = "1"
+            },
+            Action = new InProcessMaterialAction() {
+              Type = InProcessMaterialAction.ActionType.Waiting
+            }
+          }
+        }
+      };
+      var pal2 = new JobPallet()
+      {
+        Master = new PalletMaster()
+        {
+          PalletNum = 2,
+          Skip = false,
+          Alarm = true
+        },
+        Loc = new LoadUnloadLoc()
+        {
+          LoadStation = 2,
+        },
+        Material = new List<InProcessMaterial> {
+          new InProcessMaterial() {
+            MaterialID = mat3,
+            JobUnique = "u2",
+            PartName = "p2",
+            Process = 2,
+            Path = 1,
+            Serial = "serial3",
+            WorkorderId = null,
+            SignaledInspections = new List<string>(),
+            Location = new InProcessMaterialLocation() {
+              Type = InProcessMaterialLocation.LocType.OnPallet,
+              Pallet = "2"
+            },
+            Action = new InProcessMaterialAction() {
+              Type = InProcessMaterialAction.ActionType.Loading,
+              LoadOntoFace = 1,
+              LoadOntoPallet = "2",
+              ProcessAfterLoad = 2,
+              PathAfterLoad = 1
+            }
+          }
+        }
+      };
+
+      // two material in queues
+      _logDB.RecordAddMaterialToQueue(new JobLogDB.EventLogMaterial()
+      {
+        MaterialID = mat3,
+        Process = 1,
+        Face = null
+      }, "q1", 0);
+      _logDB.RecordAddMaterialToQueue(new JobLogDB.EventLogMaterial()
+      {
+        MaterialID = mat4,
+        Process = 1,
+        Face = null
+      }, "q1", 1);
+
+      _syncMock.CurrentPallets().Returns(new[] { pal1, pal2 });
+
+      var expectedSt = new CurrentStatus();
+      var expectedJob = new InProcessJob(j);
+      expectedJob.SetCompleted(1, 1, 1);
+      expectedSt.Jobs.Add("u1", expectedJob);
+      expectedSt.Material.Add(pal1.Material[0]);
+      expectedSt.Material.Add(pal2.Material[0]);
+      expectedSt.Material.Add(new InProcessMaterial()
+      {
+        MaterialID = mat4,
+        Process = 1,
+        JobUnique = "u1",
+        PartName = "p1",
+        Path = 1,
+        Serial = "serial4",
+        WorkorderId = "work4",
+        SignaledInspections = new List<string> { "insp4" },
+        Location = new InProcessMaterialLocation()
+        {
+          Type = InProcessMaterialLocation.LocType.InQueue,
+          CurrentQueue = "q1",
+          QueuePosition = 1,
+        },
+        Action = new InProcessMaterialAction()
+        {
+          Type = InProcessMaterialAction.ActionType.Waiting
+        }
+      });
+      expectedSt.Pallets.Add("1", new PalletStatus()
+      {
+        Pallet = "1",
+        FixtureOnPallet = "",
+        OnHold = true,
+        CurrentPalletLocation = new PalletLocation(PalletLocationEnum.Machine, "MC", 3),
+        NumFaces = 1
+      });
+      expectedSt.Pallets.Add("2", new PalletStatus()
+      {
+        Pallet = "2",
+        FixtureOnPallet = "",
+        OnHold = false,
+        CurrentPalletLocation = new PalletLocation(PalletLocationEnum.LoadUnload, "L/U", 2),
+        NumFaces = 1
+      });
+      expectedSt.Alarms.Add("Pallet 2 has alarm");
+      expectedSt.QueueSizes.Add("q1", new QueueSize());
+
+      _jobs.GetCurrentStatus().Should().BeEquivalentTo(expectedSt, config =>
+        config.Excluding(c => c.TimeOfCurrentStatusUTC)
+      );
     }
 
     [Fact]
     public void AddsBasicJobs()
     {
-      var c = new CurrentStatus();
-      c.Pallets.Add("1", new PalletStatus());
-      _curStMock.GetCurrentStatus().Returns(c);
-
       //add a completed job
-      var completedJob = new JobPlan("old", 1);
+      var completedJob = new JobPlan("old", 2);
       completedJob.PartName = "oldpart";
+      completedJob.SetPlannedCyclesOnFirstProcess(1, 3);
+      // record 3 completed parts
+      for (int i = 0; i < 3; i++)
+      {
+        var mat = _logDB.AllocateMaterialID("old", "oldpart", 2);
+        _logDB.RecordSerialForMaterialID(mat, 1, "serial1");
+        _logDB.RecordUnloadEnd(
+          mats: new[] { new JobLogDB.EventLogMaterial() { MaterialID = mat, Process = 2, Face = "1" } },
+          pallet: "p1",
+          lulNum: i,
+          timeUTC: DateTime.UtcNow,
+          elapsed: TimeSpan.FromMinutes(i),
+          active: TimeSpan.FromHours(i)
+        );
+      }
       _jobDB.AddJobs(new NewJobs() { ScheduleId = "old", Jobs = new List<JobPlan> { completedJob } }, null);
-      _curStMock.IsJobCompleted(Arg.Is<JobPlan>(j => j.UniqueStr == "old")).Returns(true);
 
       //some new jobs
       var newJob1 = new JobPlan("uu1", 2);
@@ -118,7 +297,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         _jobDB.LoadJob("old").Archived.Should().BeTrue();
 
         _syncMock.Received().RecheckPallets();
-        monitor.Should().Raise("OnNewCurrentStatus").WithArgs<CurrentStatus>(r => r == c);
+        monitor.Should().Raise("OnNewCurrentStatus").WithArgs<CurrentStatus>(c => c.Jobs.ContainsKey("uu1"));
       }
     }
 
@@ -173,10 +352,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     [Fact]
     public void UnallocatedQueues()
     {
-      var c = new CurrentStatus();
-      c.Pallets.Add("1", new PalletStatus());
-      _curStMock.GetCurrentStatus().Returns(c);
-
       //add a casting
       using (var monitor = _jobs.Monitor())
       {
@@ -195,7 +370,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         });
 
         _syncMock.Received().RecheckPallets();
-        monitor.Should().Raise("OnNewCurrentStatus").WithArgs<CurrentStatus>(r => r == c);
+        monitor.Should().Raise("OnNewCurrentStatus").WithArgs<CurrentStatus>(c =>
+          c.Material.Any(m => m.Location.Type == InProcessMaterialLocation.LocType.InQueue));
         monitor.Clear();
         _syncMock.ClearReceivedCalls();
 
@@ -203,7 +379,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         _logDB.GetMaterialInQueue("q1").Should().BeEmpty();
 
         _syncMock.Received().RecheckPallets();
-        monitor.Should().Raise("OnNewCurrentStatus").WithArgs<CurrentStatus>(r => r == c);
+        monitor.Should().Raise("OnNewCurrentStatus").WithArgs<CurrentStatus>(c =>
+          !c.Material.Any(m => m.Location.Type == InProcessMaterialLocation.LocType.InQueue));
         monitor.Clear();
         _syncMock.ClearReceivedCalls();
       }
@@ -212,10 +389,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     [Fact]
     public void AllocatedQueues()
     {
-      var c = new CurrentStatus();
-      c.Pallets.Add("1", new PalletStatus());
-      _curStMock.GetCurrentStatus().Returns(c);
-
       var job = new JobPlan("uuu1", 2);
       job.PartName = "p1";
       _jobDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = new List<JobPlan> { job } }, null);
@@ -239,7 +412,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         });
 
         _syncMock.Received().RecheckPallets();
-        monitor.Should().Raise("OnNewCurrentStatus").WithArgs<CurrentStatus>(r => r == c);
+        monitor.Should().Raise("OnNewCurrentStatus").WithArgs<CurrentStatus>(c =>
+          c.Material.Any(m => m.Location.Type == InProcessMaterialLocation.LocType.InQueue));
         monitor.Clear();
         _syncMock.ClearReceivedCalls();
 
@@ -248,7 +422,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         _logDB.GetMaterialInQueue("q1").Should().BeEmpty();
 
         _syncMock.Received().RecheckPallets();
-        monitor.Should().Raise("OnNewCurrentStatus").WithArgs<CurrentStatus>(r => r == c);
+        monitor.Should().Raise("OnNewCurrentStatus").WithArgs<CurrentStatus>(c =>
+          !c.Material.Any(m => m.Location.Type == InProcessMaterialLocation.LocType.InQueue));
         monitor.Clear();
         _syncMock.ClearReceivedCalls();
 
@@ -260,7 +435,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         });
 
         _syncMock.Received().RecheckPallets();
-        monitor.Should().Raise("OnNewCurrentStatus").WithArgs<CurrentStatus>(r => r == c);
+        monitor.Should().Raise("OnNewCurrentStatus").WithArgs<CurrentStatus>(c =>
+          c.Material.Any(m => m.Location.Type == InProcessMaterialLocation.LocType.InQueue));
         monitor.Clear();
         _syncMock.ClearReceivedCalls();
       }

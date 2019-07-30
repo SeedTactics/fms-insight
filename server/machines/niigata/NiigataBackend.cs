@@ -44,7 +44,6 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private JobLogDB _log;
     private JobDB _jobs;
-    private NiigataJobs _jobBackend;
 
     public NiigataBackend(IConfigurationSection config, FMSSettings cfg)
     {
@@ -62,8 +61,7 @@ namespace BlackMaple.FMSInsight.Niigata
         );
 
         SyncPallets = new SyncPallets(_jobs, _log);
-        CurrentStatus = new BuildCurrentStatus(_jobs, _log, cfg, SyncPallets);
-        _jobBackend = new NiigataJobs(_jobs, _log, cfg, SyncPallets, CurrentStatus);
+        NiigataJobs = new NiigataJobs(_jobs, _log, cfg, SyncPallets);
       }
       catch (Exception ex)
       {
@@ -98,7 +96,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public IJobControl JobControl()
     {
-      return _jobBackend;
+      return NiigataJobs;
     }
 
     public ILogDatabase LogDatabase()
@@ -106,8 +104,8 @@ namespace BlackMaple.FMSInsight.Niigata
       return _log;
     }
 
+    public NiigataJobs NiigataJobs { get; private set; }
     public SyncPallets SyncPallets { get; private set; }
-    public IBuildCurrentStatus CurrentStatus { get; }
   }
 
   public static class NiigataProgram
