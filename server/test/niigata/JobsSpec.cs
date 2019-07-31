@@ -114,17 +114,20 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       }, null);
 
       // two pallets with some material
-      var pal1 = new JobPallet()
+      var pal1 = new PalletAndMaterial()
       {
-        Master = new PalletMaster()
+        Pallet = new NiigataPallet
         {
-          PalletNum = 1,
-          Skip = true
-        },
-        Loc = new MachineOrWashLoc()
-        {
-          Station = 3,
-          Position = MachineOrWashLoc.Rotary.Worktable
+          Master = new PalletMaster()
+          {
+            PalletNum = 1,
+            Skip = true
+          },
+          Loc = new MachineOrWashLoc()
+          {
+            Station = 3,
+            Position = MachineOrWashLoc.Rotary.Worktable
+          },
         },
         Material = new List<InProcessMaterial> {
           new InProcessMaterial() {
@@ -146,17 +149,20 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           }
         }
       };
-      var pal2 = new JobPallet()
+      var pal2 = new PalletAndMaterial()
       {
-        Master = new PalletMaster()
+        Pallet = new NiigataPallet()
         {
-          PalletNum = 2,
-          Skip = false,
-          Alarm = true
-        },
-        Loc = new LoadUnloadLoc()
-        {
-          LoadStation = 2,
+          Master = new PalletMaster()
+          {
+            PalletNum = 2,
+            Skip = false,
+            Alarm = true
+          },
+          Loc = new LoadUnloadLoc()
+          {
+            LoadStation = 2,
+          },
         },
         Material = new List<InProcessMaterial> {
           new InProcessMaterial() {
@@ -246,7 +252,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       using (var monitor = _jobs.Monitor())
       {
-        _syncMock.OnPalletsChanged += Raise.Event<Action<IList<JobPallet>>>(new List<JobPallet> { pal1, pal2 });
+        _syncMock.OnPalletsChanged += Raise.Event<Action<IList<PalletAndMaterial>>>(new List<PalletAndMaterial> { pal1, pal2 });
 
         _jobs.GetCurrentStatus().Should().BeEquivalentTo(expectedSt, config =>
           config.Excluding(c => c.TimeOfCurrentStatusUTC)

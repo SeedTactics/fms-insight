@@ -74,7 +74,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    private void BuildCurrentStatus(IList<JobPallet> palMaster)
+    private void BuildCurrentStatus(IList<PalletAndMaterial> pals)
     {
       var curStatus = new CurrentStatus();
       foreach (var k in _settings.Queues) curStatus.QueueSizes[k.Key] = k.Value;
@@ -114,21 +114,21 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       // pallets
-      foreach (var pal in palMaster)
+      foreach (var pal in pals)
       {
-        curStatus.Pallets.Add(pal.Master.PalletNum.ToString(), new PalletStatus()
+        curStatus.Pallets.Add(pal.Pallet.Master.PalletNum.ToString(), new PalletStatus()
         {
-          Pallet = pal.Master.PalletNum.ToString(),
+          Pallet = pal.Pallet.Master.PalletNum.ToString(),
           FixtureOnPallet = "",
-          OnHold = pal.Master.Skip,
+          OnHold = pal.Pallet.Master.Skip,
           CurrentPalletLocation = BuildCurrentLocation(pal),
-          NumFaces = pal.Master.NumFaces
+          NumFaces = pal.Pallet.Master.NumFaces
         });
       }
 
       // material on pallets
       var matsOnPallets = new HashSet<long>();
-      foreach (var pal in palMaster)
+      foreach (var pal in pals)
       {
         foreach (var mat in pal.Material)
         {
@@ -183,11 +183,11 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       //alarms
-      foreach (var pal in palMaster)
+      foreach (var pal in pals)
       {
-        if (pal.Master.Alarm)
+        if (pal.Pallet.Master.Alarm)
         {
-          curStatus.Alarms.Add("Pallet " + pal.Master.PalletNum.ToString() + " has alarm");
+          curStatus.Alarms.Add("Pallet " + pal.Pallet.Master.PalletNum.ToString() + " has alarm");
         }
       }
 
@@ -355,9 +355,9 @@ namespace BlackMaple.FMSInsight.Niigata
     #endregion
 
 
-    private static PalletLocation BuildCurrentLocation(JobPallet pal)
+    private static PalletLocation BuildCurrentLocation(PalletAndMaterial pal)
     {
-      switch (pal.Loc)
+      switch (pal.Pallet.Loc)
       {
         case LoadUnloadLoc l:
           return new PalletLocation(PalletLocationEnum.LoadUnload, "L/U", l.LoadStation);
@@ -372,7 +372,7 @@ namespace BlackMaple.FMSInsight.Niigata
           }
           break;
         case StockerLoc s:
-          return new PalletLocation(PalletLocationEnum.Buffer, "Buffer", pal.Master.PalletNum);
+          return new PalletLocation(PalletLocationEnum.Buffer, "Buffer", pal.Pallet.Master.PalletNum);
         case CartLoc c:
           return new PalletLocation(PalletLocationEnum.Cart, "Cart", 1);
       }

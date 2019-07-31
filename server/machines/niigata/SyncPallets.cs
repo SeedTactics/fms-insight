@@ -39,18 +39,16 @@ using System.Threading;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
-  public class JobPallet
+  public class PalletAndMaterial
   {
-    public PalletMaster Master { get; set; }
-    public TrackingInfo Tracking { get; set; }
-    public NiigataPalletLocation Loc { get; set; } = new StockerLoc();
+    public NiigataPallet Pallet { get; set; }
     public List<InProcessMaterial> Material { get; set; }
   }
   public interface ISyncPallets
   {
     void JobsOrQueuesChanged();
     void DecrementPlannedButNotStartedQty();
-    event Action<IList<JobPallet>> OnPalletsChanged;
+    event Action<IList<PalletAndMaterial>> OnPalletsChanged;
   }
 
   public class SyncPallets : ISyncPallets, IDisposable
@@ -122,11 +120,11 @@ namespace BlackMaple.FMSInsight.Niigata
     }
     #endregion
 
-    public event Action<IList<JobPallet>> OnPalletsChanged;
+    public event Action<IList<PalletAndMaterial>> OnPalletsChanged;
 
     private void CheckPalletsMatch(bool raisePalletChanged)
     {
-      var allPals = new List<JobPallet>();
+      var allPals = new List<PalletAndMaterial>();
 
       // TODO: write me
 

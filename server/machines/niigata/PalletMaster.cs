@@ -132,4 +132,16 @@ namespace BlackMaple.FMSInsight.Niigata
     public bool PerformProgramDownload { get; set; } = false;
     public List<RouteStep> Routes { get; set; } = new List<RouteStep>();
   }
+
+  public class NiigataPallet
+  {
+    public PalletMaster Master { get; set; }
+    public TrackingInfo Tracking { get; set; }
+    public NiigataPalletLocation Loc { get; set; } = new StockerLoc();
+  }
+
+  public interface ILoadNiigataPallets
+  {
+    IList<NiigataPallet> LoadPallets();
+  }
 }
