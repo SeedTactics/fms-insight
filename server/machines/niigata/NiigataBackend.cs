@@ -71,7 +71,9 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public void Dispose()
     {
-      if (SyncPallets != null) SyncPallets.Dispose();
+      if (NiigataJobs != null) ((IDisposable)NiigataJobs).Dispose();
+      NiigataJobs = null;
+      if (SyncPallets != null) ((IDisposable)SyncPallets).Dispose();
       SyncPallets = null;
       if (_log != null) _log.Close();
       _log = null;
@@ -104,7 +106,7 @@ namespace BlackMaple.FMSInsight.Niigata
       return _log;
     }
 
-    public NiigataJobs NiigataJobs { get; }
+    public NiigataJobs NiigataJobs { get; private set; }
     public SyncPallets SyncPallets { get; private set; }
   }
 

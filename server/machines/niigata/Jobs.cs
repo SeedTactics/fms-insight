@@ -38,7 +38,7 @@ using BlackMaple.MachineWatchInterface;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
-  public class NiigataJobs : IJobControl
+  public class NiigataJobs : IJobControl, IDisposable
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<NiigataJobs>();
     private JobDB _jobs;
@@ -52,12 +52,29 @@ namespace BlackMaple.FMSInsight.Niigata
       _log = l;
       _sync = sy;
       _settings = st;
+
+      _sync.OnPalletsChanged += BuildCurrentStatus;
     }
 
+    void IDisposable.Dispose()
+    {
+      _sync.OnPalletsChanged -= BuildCurrentStatus;
+    }
+
+    #region Status
     public event NewCurrentStatus OnNewCurrentStatus;
-    public void RaiseNewCurrentStatus(CurrentStatus s) => OnNewCurrentStatus?.Invoke(s);
+    private object _curStLock = new object();
+    private CurrentStatus _lastStatus = new CurrentStatus();
 
     public CurrentStatus GetCurrentStatus()
+    {
+      lock (_curStLock)
+      {
+        return _lastStatus;
+      }
+    }
+
+    private void BuildCurrentStatus(IList<JobPallet> palMaster)
     {
       var curStatus = new CurrentStatus();
       foreach (var k in _settings.Queues) curStatus.QueueSizes[k.Key] = k.Value;
@@ -97,7 +114,6 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       // pallets
-      var palMaster = _sync.CurrentPallets();
       foreach (var pal in palMaster)
       {
         curStatus.Pallets.Add(pal.Master.PalletNum.ToString(), new PalletStatus()
@@ -175,9 +191,15 @@ namespace BlackMaple.FMSInsight.Niigata
         }
       }
 
-      return curStatus;
+      lock (_curStLock)
+      {
+        _lastStatus = curStatus;
+      }
+      OnNewCurrentStatus?.Invoke(curStatus);
     }
+    #endregion
 
+    #region Jobs
     public List<string> CheckValidRoutes(IEnumerable<JobPlan> newJobs)
     {
       return new List<string>();
@@ -203,8 +225,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
       _jobs.AddJobs(jobs, expectedPreviousScheduleId);
 
-      _sync.RecheckPallets();
-      RaiseNewCurrentStatus(GetCurrentStatus());
+      _sync.JobsOrQueuesChanged();
     }
 
     private bool IsJobCompleted(JobPlan job)
@@ -244,6 +265,7 @@ namespace BlackMaple.FMSInsight.Niigata
       _sync.DecrementPlannedButNotStartedQty();
       return _jobs.LoadDecrementQuantitiesAfter(loadDecrementsAfterTimeUTC);
     }
+    #endregion
 
     #region Queues
     public void AddUnallocatedCastingToQueue(string part, string queue, int position, string serial)
@@ -272,8 +294,7 @@ namespace BlackMaple.FMSInsight.Niigata
           serial);
       }
       _log.RecordAddMaterialToQueue(matId, 0, queue, position);
-      _sync.RecheckPallets();
-      RaiseNewCurrentStatus(GetCurrentStatus());
+      _sync.JobsOrQueuesChanged();
     }
 
     public void AddUnprocessedMaterialToQueue(string jobUnique, int process, string queue, int position, string serial)
@@ -302,8 +323,7 @@ namespace BlackMaple.FMSInsight.Niigata
           serial);
       }
       _log.RecordAddMaterialToQueue(matId, process, queue, position);
-      _sync.RecheckPallets();
-      RaiseNewCurrentStatus(GetCurrentStatus());
+      _sync.JobsOrQueuesChanged();
     }
 
     public void SetMaterialInQueue(long materialId, string queue, int position)
@@ -323,16 +343,14 @@ namespace BlackMaple.FMSInsight.Niigata
         .DefaultIfEmpty(0)
         .Max();
       _log.RecordAddMaterialToQueue(materialId, proc, queue, position);
-      _sync.RecheckPallets();
-      RaiseNewCurrentStatus(GetCurrentStatus());
+      _sync.JobsOrQueuesChanged();
     }
 
     public void RemoveMaterialFromAllQueues(long materialId)
     {
       Log.Debug("Removing {matId} from all queues", materialId);
       _log.RecordRemoveMaterialFromAllQueues(materialId);
-      _sync.RecheckPallets();
-      RaiseNewCurrentStatus(GetCurrentStatus());
+      _sync.JobsOrQueuesChanged();
     }
     #endregion
 

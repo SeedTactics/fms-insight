@@ -36,7 +36,6 @@ using System.Collections.Generic;
 using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
@@ -47,11 +46,12 @@ namespace BlackMaple.FMSInsight.Niigata
     public NiigataPalletLocation Loc { get; set; } = new StockerLoc();
     public List<InProcessMaterial> Material { get; set; }
   }
+  public delegate void NewJobPallets(IList<JobPallet> allPallets);
   public interface ISyncPallets
   {
-    Task RecheckPallets();
-    Task<IEnumerable<JobPallet>> CurrentPallets();
-    Task DecrementPlannedButNotStartedQty();
+    void JobsOrQueuesChanged();
+    void DecrementPlannedButNotStartedQty();
+    event NewJobPallets OnPalletsChanged;
   }
 
   public class SyncPallets : ISyncPallets, IDisposable
@@ -71,61 +71,19 @@ namespace BlackMaple.FMSInsight.Niigata
     #region Thread and Messages
     private System.Threading.Thread _thread;
     private AutoResetEvent _shutdown = new AutoResetEvent(false);
-    private Queue<Message> _msgQueue = new Queue<Message>();
-    private AutoResetEvent _newMsg = new AutoResetEvent(false);
+    private AutoResetEvent _recheck = new AutoResetEvent(false);
+    private object _changeLock = new object();
 
-    private abstract class Message { }
-
-    private class RecheckPalletsMessage : Message
-    {
-      public TaskCompletionSource<bool> Comp { get; } = new TaskCompletionSource<bool>();
-    }
-
-    public Task RecheckPallets()
-    {
-      var msg = new RecheckPalletsMessage();
-      lock (_msgQueue)
-      {
-        _msgQueue.Enqueue(msg);
-      }
-      _newMsg.Set();
-      return msg.Comp.Task;
-    }
-
-    private class CurrentPalletsMessage : Message
-    {
-      public TaskCompletionSource<IEnumerable<JobPallet>> Comp { get; } = new TaskCompletionSource<IEnumerable<JobPallet>>();
-    }
-
-    public Task<IEnumerable<JobPallet>> CurrentPallets()
-    {
-      var msg = new CurrentPalletsMessage();
-      lock (_msgQueue)
-      {
-        _msgQueue.Enqueue(msg);
-      }
-      return msg.Comp.Task;
-    }
-
-    private class DecrementMessage : Message
-    {
-      public TaskCompletionSource<bool> Comp { get; } = new TaskCompletionSource<bool>();
-    }
-
-    public Task DecrementPlannedButNotStartedQty()
-    {
-      var msg = new DecrementMessage();
-      lock (_msgQueue)
-      {
-        _msgQueue.Enqueue(msg);
-      }
-      return msg.Comp.Task;
-    }
-    public void Dispose()
+    void IDisposable.Dispose()
     {
       _shutdown.Set();
       if (_thread != null && !_thread.Join(TimeSpan.FromSeconds(15)))
         _thread.Abort();
+    }
+
+    public void JobsOrQueuesChanged()
+    {
+      _recheck.Set();
     }
 
     private void Thread()
@@ -137,76 +95,25 @@ namespace BlackMaple.FMSInsight.Niigata
 
           var sleepTime = TimeSpan.FromMinutes(1);
           Log.Debug("Sleeping for {mins} minutes", sleepTime.TotalMinutes);
-          var ret = WaitHandle.WaitAny(new WaitHandle[] { _shutdown, _newMsg }, sleepTime, false);
+          var ret = WaitHandle.WaitAny(new WaitHandle[] { _shutdown, _recheck }, sleepTime, false);
           if (ret == 0)
           {
             Log.Debug("Thread shutdown");
             return;
           }
 
-          Exception checkError = null;
-          IEnumerable<JobPallet> pallets = Enumerable.Empty<JobPallet>();
           try
           {
-            pallets = CheckPalletsMatch();
+            lock (_changeLock)
+            {
+              CheckPalletsMatch(raiseNewStatus: ret == 1);
+            }
           }
           catch (Exception ex)
           {
-            ex = checkError;
             Log.Error(ex, "Error checking pallets");
           }
 
-          while (true)
-          {
-            Message msg = null;
-            lock (_msgQueue)
-            {
-              if (!_msgQueue.TryDequeue(out msg))
-              {
-                break;
-              }
-            }
-            if (msg == null) break;
-
-            switch (msg)
-            {
-              case RecheckPalletsMessage m:
-                if (checkError == null)
-                {
-                  m.Comp.SetResult(true);
-                }
-                else
-                {
-                  m.Comp.SetException(checkError);
-                }
-                break;
-              case CurrentPalletsMessage m:
-                if (checkError == null)
-                {
-                  m.Comp.SetResult(pallets);
-                }
-                else
-                {
-                  m.Comp.SetException(checkError);
-                }
-                break;
-              case DecrementMessage m:
-                if (checkError == null)
-                {
-                  DecrementHelper();
-                  m.Comp.SetResult(true);
-                }
-                else
-                {
-                  m.Comp.SetException(checkError);
-                }
-                break;
-
-              default:
-                Log.Error("Unknown message {@msg}", msg);
-                break;
-            }
-          }
         }
         catch (Exception ex)
         {
@@ -214,37 +121,49 @@ namespace BlackMaple.FMSInsight.Niigata
         }
       }
     }
-
     #endregion
 
-    private IEnumerable<JobPallet> CheckPalletsMatch()
+    public event NewJobPallets OnPalletsChanged;
+
+    private void CheckPalletsMatch(bool raiseNewStatus)
     {
+      var allPals = new List<JobPallet>();
+
       // TODO: write me
-      return Enumerable.Empty<JobPallet>();
+
+      if (raiseNewStatus)
+      {
+        OnPalletsChanged?.Invoke(allPals);
+      }
     }
 
-    private void DecrementHelper()
+    public void DecrementPlannedButNotStartedQty()
     {
-      var decrs = new List<JobDB.NewDecrementQuantity>();
-      foreach (var j in _jobs.LoadUnarchivedJobs().Jobs)
+      // lock prevents decrement from occuring at the same time as the CheckPalletsMatch function
+      // is deciding what to put onto a pallet
+      lock (_changeLock)
       {
-        if (_jobs.LoadDecrementsForJob(j.UniqueStr).Count > 0) continue;
-        var started = CountStartedOrInProcess(j);
-        var planned = Enumerable.Range(1, j.GetNumPaths(process: 1)).Sum(path => j.GetPlannedCyclesOnFirstProcess(path));
-        if (started < planned)
+        var decrs = new List<JobDB.NewDecrementQuantity>();
+        foreach (var j in _jobs.LoadUnarchivedJobs().Jobs)
         {
-          decrs.Add(new JobDB.NewDecrementQuantity()
+          if (_jobs.LoadDecrementsForJob(j.UniqueStr).Count > 0) continue;
+          var started = CountStartedOrInProcess(j);
+          var planned = Enumerable.Range(1, j.GetNumPaths(process: 1)).Sum(path => j.GetPlannedCyclesOnFirstProcess(path));
+          if (started < planned)
           {
-            JobUnique = j.UniqueStr,
-            Part = j.PartName,
-            Quantity = planned - started
-          });
+            decrs.Add(new JobDB.NewDecrementQuantity()
+            {
+              JobUnique = j.UniqueStr,
+              Part = j.PartName,
+              Quantity = planned - started
+            });
+          }
         }
-      }
 
-      if (decrs.Count > 0)
-      {
-        _jobs.AddNewDecrement(decrs);
+        if (decrs.Count > 0)
+        {
+          _jobs.AddNewDecrement(decrs);
+        }
       }
     }
 

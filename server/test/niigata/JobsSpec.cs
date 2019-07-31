@@ -197,7 +197,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Face = null
       }, "q1", 1);
 
-      _syncMock.CurrentPallets().Returns(new[] { pal1, pal2 });
 
       var expectedSt = new CurrentStatus();
       var expectedJob = new InProcessJob(j);
@@ -245,9 +244,18 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       expectedSt.Alarms.Add("Pallet 2 has alarm");
       expectedSt.QueueSizes.Add("q1", new QueueSize());
 
-      _jobs.GetCurrentStatus().Should().BeEquivalentTo(expectedSt, config =>
-        config.Excluding(c => c.TimeOfCurrentStatusUTC)
-      );
+      using (var monitor = _jobs.Monitor())
+      {
+        _syncMock.OnPalletsChanged += Raise.Event<NewJobPallets>(new List<JobPallet> { pal1, pal2 });
+
+        _jobs.GetCurrentStatus().Should().BeEquivalentTo(expectedSt, config =>
+          config.Excluding(c => c.TimeOfCurrentStatusUTC)
+        );
+
+        monitor.Should().Raise("OnNewCurrentStatus").First().Parameters.First().Should().BeEquivalentTo(expectedSt, config =>
+          config.Excluding(c => c.TimeOfCurrentStatusUTC)
+        );
+      }
     }
 
     [Fact]
@@ -289,16 +297,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       };
 
 
-      using (var monitor = _jobs.Monitor())
-      {
-        _jobs.AddJobs(newJobs, null);
+      _jobs.AddJobs(newJobs, null);
 
-        _jobDB.LoadUnarchivedJobs().Jobs.Should().BeEquivalentTo(new[] { newJob1, newJob2 });
-        _jobDB.LoadJob("old").Archived.Should().BeTrue();
+      _jobDB.LoadUnarchivedJobs().Jobs.Should().BeEquivalentTo(new[] { newJob1, newJob2 });
+      _jobDB.LoadJob("old").Archived.Should().BeTrue();
 
-        _syncMock.Received().RecheckPallets();
-        monitor.Should().Raise("OnNewCurrentStatus").WithArgs<CurrentStatus>(c => c.Jobs.ContainsKey("uu1"));
-      }
+      _syncMock.Received().JobsOrQueuesChanged();
     }
 
     [Fact]
@@ -353,37 +357,28 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     public void UnallocatedQueues()
     {
       //add a casting
-      using (var monitor = _jobs.Monitor())
+      _jobs.AddUnallocatedCastingToQueue("p1", "q1", position: 0, serial: "aaa");
+      _logDB.GetMaterialDetails(1).Should().BeEquivalentTo(new MaterialDetails()
       {
-        _jobs.AddUnallocatedCastingToQueue("p1", "q1", position: 0, serial: "aaa");
-        _logDB.GetMaterialDetails(1).Should().BeEquivalentTo(new MaterialDetails()
-        {
-          MaterialID = 1,
-          PartName = "p1",
-          NumProcesses = 1,
-          Serial = "aaa"
-        });
+        MaterialID = 1,
+        PartName = "p1",
+        NumProcesses = 1,
+        Serial = "aaa"
+      });
 
-        _logDB.GetMaterialInQueue("q1").Should().BeEquivalentTo(new[] {
+      _logDB.GetMaterialInQueue("q1").Should().BeEquivalentTo(new[] {
           new JobLogDB.QueuedMaterial()
           { MaterialID = 1, NumProcesses = 1, PartName = "p1", Position = 0, Queue = "q1", Unique = ""}
         });
 
-        _syncMock.Received().RecheckPallets();
-        monitor.Should().Raise("OnNewCurrentStatus").WithArgs<CurrentStatus>(c =>
-          c.Material.Any(m => m.Location.Type == InProcessMaterialLocation.LocType.InQueue));
-        monitor.Clear();
-        _syncMock.ClearReceivedCalls();
+      _syncMock.Received().JobsOrQueuesChanged();
+      _syncMock.ClearReceivedCalls();
 
-        _jobs.RemoveMaterialFromAllQueues(1);
-        _logDB.GetMaterialInQueue("q1").Should().BeEmpty();
+      _jobs.RemoveMaterialFromAllQueues(1);
+      _logDB.GetMaterialInQueue("q1").Should().BeEmpty();
 
-        _syncMock.Received().RecheckPallets();
-        monitor.Should().Raise("OnNewCurrentStatus").WithArgs<CurrentStatus>(c =>
-          !c.Material.Any(m => m.Location.Type == InProcessMaterialLocation.LocType.InQueue));
-        monitor.Clear();
-        _syncMock.ClearReceivedCalls();
-      }
+      _syncMock.Received().JobsOrQueuesChanged();
+      _syncMock.ClearReceivedCalls();
     }
 
     [Fact]
@@ -394,52 +389,40 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _jobDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = new List<JobPlan> { job } }, null);
 
       //add an allocated material
-      using (var monitor = _jobs.Monitor())
+      _jobs.AddUnprocessedMaterialToQueue("uuu1", 1, "q1", 0, "aaa");
+      _logDB.GetMaterialDetails(1).Should().BeEquivalentTo(new MaterialDetails()
       {
-        _jobs.AddUnprocessedMaterialToQueue("uuu1", 1, "q1", 0, "aaa");
-        _logDB.GetMaterialDetails(1).Should().BeEquivalentTo(new MaterialDetails()
-        {
-          MaterialID = 1,
-          PartName = "p1",
-          NumProcesses = 2,
-          Serial = "aaa",
-          JobUnique = "uuu1"
-        });
+        MaterialID = 1,
+        PartName = "p1",
+        NumProcesses = 2,
+        Serial = "aaa",
+        JobUnique = "uuu1"
+      });
 
-        _logDB.GetMaterialInQueue("q1").Should().BeEquivalentTo(new[] {
+      _logDB.GetMaterialInQueue("q1").Should().BeEquivalentTo(new[] {
           new JobLogDB.QueuedMaterial()
           { MaterialID = 1, NumProcesses = 2, PartName = "p1", Position = 0, Queue = "q1", Unique = "uuu1"}
         });
 
-        _syncMock.Received().RecheckPallets();
-        monitor.Should().Raise("OnNewCurrentStatus").WithArgs<CurrentStatus>(c =>
-          c.Material.Any(m => m.Location.Type == InProcessMaterialLocation.LocType.InQueue));
-        monitor.Clear();
-        _syncMock.ClearReceivedCalls();
+      _syncMock.Received().JobsOrQueuesChanged();
+      _syncMock.ClearReceivedCalls();
 
-        //remove it
-        _jobs.RemoveMaterialFromAllQueues(1);
-        _logDB.GetMaterialInQueue("q1").Should().BeEmpty();
+      //remove it
+      _jobs.RemoveMaterialFromAllQueues(1);
+      _logDB.GetMaterialInQueue("q1").Should().BeEmpty();
 
-        _syncMock.Received().RecheckPallets();
-        monitor.Should().Raise("OnNewCurrentStatus").WithArgs<CurrentStatus>(c =>
-          !c.Material.Any(m => m.Location.Type == InProcessMaterialLocation.LocType.InQueue));
-        monitor.Clear();
-        _syncMock.ClearReceivedCalls();
+      _syncMock.Received().JobsOrQueuesChanged();
+      _syncMock.ClearReceivedCalls();
 
-        //add it back in
-        _jobs.SetMaterialInQueue(1, "q1", 0);
-        _logDB.GetMaterialInQueue("q1").Should().BeEquivalentTo(new[] {
+      //add it back in
+      _jobs.SetMaterialInQueue(1, "q1", 0);
+      _logDB.GetMaterialInQueue("q1").Should().BeEquivalentTo(new[] {
           new JobLogDB.QueuedMaterial()
           { MaterialID = 1, NumProcesses = 2, PartName = "p1", Position = 0, Queue = "q1", Unique = "uuu1"}
         });
 
-        _syncMock.Received().RecheckPallets();
-        monitor.Should().Raise("OnNewCurrentStatus").WithArgs<CurrentStatus>(c =>
-          c.Material.Any(m => m.Location.Type == InProcessMaterialLocation.LocType.InQueue));
-        monitor.Clear();
-        _syncMock.ClearReceivedCalls();
-      }
+      _syncMock.Received().JobsOrQueuesChanged();
+      _syncMock.ClearReceivedCalls();
 
     }
   }
