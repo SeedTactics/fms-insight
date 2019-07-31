@@ -46,12 +46,11 @@ namespace BlackMaple.FMSInsight.Niigata
     public NiigataPalletLocation Loc { get; set; } = new StockerLoc();
     public List<InProcessMaterial> Material { get; set; }
   }
-  public delegate void NewJobPallets(IList<JobPallet> allPallets);
   public interface ISyncPallets
   {
     void JobsOrQueuesChanged();
     void DecrementPlannedButNotStartedQty();
-    event NewJobPallets OnPalletsChanged;
+    event Action<IList<JobPallet>> OnPalletsChanged;
   }
 
   public class SyncPallets : ISyncPallets, IDisposable
@@ -106,7 +105,7 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             lock (_changeLock)
             {
-              CheckPalletsMatch(raiseNewStatus: ret == 1);
+              CheckPalletsMatch(raisePalletChanged: ret == 1);
             }
           }
           catch (Exception ex)
@@ -123,15 +122,15 @@ namespace BlackMaple.FMSInsight.Niigata
     }
     #endregion
 
-    public event NewJobPallets OnPalletsChanged;
+    public event Action<IList<JobPallet>> OnPalletsChanged;
 
-    private void CheckPalletsMatch(bool raiseNewStatus)
+    private void CheckPalletsMatch(bool raisePalletChanged)
     {
       var allPals = new List<JobPallet>();
 
       // TODO: write me
 
-      if (raiseNewStatus)
+      if (raisePalletChanged)
       {
         OnPalletsChanged?.Invoke(allPals);
       }

@@ -246,7 +246,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       using (var monitor = _jobs.Monitor())
       {
-        _syncMock.OnPalletsChanged += Raise.Event<NewJobPallets>(new List<JobPallet> { pal1, pal2 });
+        _syncMock.OnPalletsChanged += Raise.Event<Action<IList<JobPallet>>>(new List<JobPallet> { pal1, pal2 });
 
         _jobs.GetCurrentStatus().Should().BeEquivalentTo(expectedSt, config =>
           config.Excluding(c => c.TimeOfCurrentStatusUTC)
