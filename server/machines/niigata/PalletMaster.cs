@@ -133,15 +133,17 @@ namespace BlackMaple.FMSInsight.Niigata
     public List<RouteStep> Routes { get; set; } = new List<RouteStep>();
   }
 
-  public class NiigataPallet
+  public class PalletStatus
   {
     public PalletMaster Master { get; set; }
     public TrackingInfo Tracking { get; set; }
     public NiigataPalletLocation Loc { get; set; } = new StockerLoc();
   }
 
-  public interface ILoadNiigataPallets
+  public interface INiigataCommunication
   {
-    IList<NiigataPallet> LoadPallets();
+    IList<PalletStatus> LoadPallets();
+    void SetNewMaster(PalletMaster m);
+    void SetRemainingCycles(int pallet, int cycles, bool noWork, bool skip);
   }
 }

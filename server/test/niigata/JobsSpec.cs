@@ -116,7 +116,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       // two pallets with some material
       var pal1 = new PalletAndMaterial()
       {
-        Pallet = new NiigataPallet
+        Pallet = new PalletStatus
         {
           Master = new PalletMaster()
           {
@@ -151,7 +151,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       };
       var pal2 = new PalletAndMaterial()
       {
-        Pallet = new NiigataPallet()
+        Pallet = new PalletStatus()
         {
           Master = new PalletMaster()
           {
@@ -231,7 +231,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           Type = InProcessMaterialAction.ActionType.Waiting
         }
       });
-      expectedSt.Pallets.Add("1", new PalletStatus()
+      expectedSt.Pallets.Add("1", new MachineWatchInterface.PalletStatus()
       {
         Pallet = "1",
         FixtureOnPallet = "",
@@ -239,7 +239,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         CurrentPalletLocation = new PalletLocation(PalletLocationEnum.Machine, "MC", 3),
         NumFaces = 1
       });
-      expectedSt.Pallets.Add("2", new PalletStatus()
+      expectedSt.Pallets.Add("2", new MachineWatchInterface.PalletStatus()
       {
         Pallet = "2",
         FixtureOnPallet = "",

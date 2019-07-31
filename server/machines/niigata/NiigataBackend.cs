@@ -60,7 +60,9 @@ namespace BlackMaple.FMSInsight.Niigata
           System.IO.Path.Combine(cfg.DataDirectory, "jobs.db")
         );
 
-        SyncPallets = new SyncPallets(_jobs, _log);
+        NiigataICC = new NiigataICC();
+        var assign = new AssignPallets(_log);
+        SyncPallets = new SyncPallets(_jobs, _log, NiigataICC, assign);
         NiigataJobs = new NiigataJobs(_jobs, _log, cfg, SyncPallets);
       }
       catch (Exception ex)
@@ -108,6 +110,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public NiigataJobs NiigataJobs { get; private set; }
     public SyncPallets SyncPallets { get; private set; }
+    public NiigataICC NiigataICC { get; }
   }
 
   public static class NiigataProgram

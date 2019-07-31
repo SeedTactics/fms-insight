@@ -41,7 +41,7 @@ namespace BlackMaple.FMSInsight.Niigata
 {
   public class PalletAndMaterial
   {
-    public NiigataPallet Pallet { get; set; }
+    public PalletStatus Pallet { get; set; }
     public List<InProcessMaterial> Material { get; set; }
   }
   public interface ISyncPallets
@@ -56,11 +56,15 @@ namespace BlackMaple.FMSInsight.Niigata
     private static Serilog.ILogger Log = Serilog.Log.ForContext<SyncPallets>();
     private JobDB _jobs;
     private JobLogDB _log;
+    private INiigataCommunication _icc;
+    private IAssignPallets _assign;
 
-    public SyncPallets(JobDB jobs, JobLogDB log)
+    public SyncPallets(JobDB jobs, JobLogDB log, INiigataCommunication icc, IAssignPallets assign)
     {
       _jobs = jobs;
       _log = log;
+      _icc = icc;
+      _assign = assign;
       _thread = new Thread(new ThreadStart(Thread));
       _thread.Start();
     }
@@ -101,14 +105,11 @@ namespace BlackMaple.FMSInsight.Niigata
 
           try
           {
-            lock (_changeLock)
-            {
-              CheckPalletsMatch(raisePalletChanged: ret == 1);
-            }
+            SynchronizePallets(raisePalletChanged: ret == 1);
           }
           catch (Exception ex)
           {
-            Log.Error(ex, "Error checking pallets");
+            Log.Error(ex, "Error syncing pallets");
           }
 
         }
@@ -122,11 +123,48 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public event Action<IList<PalletAndMaterial>> OnPalletsChanged;
 
-    private void CheckPalletsMatch(bool raisePalletChanged)
+    private void SynchronizePallets(bool raisePalletChanged)
     {
-      var allPals = new List<PalletAndMaterial>();
+      List<PalletAndMaterial> allPals;
 
-      // TODO: write me
+      lock (_changeLock)
+      {
+
+        // 1. Load pallet status from Niigata
+        // 2. Load unarchived jobs from DB
+        // 3. Check if new log entries need to be recorded
+        // 4. decide what is currently on each pallet and is currently loaded/unloaded
+        // 5. Decide on any changes to pallet routes or planned quantities.
+
+        PalletChange change = null;
+        do
+        {
+
+          var status = _icc.LoadPallets();
+          var jobs = _jobs.LoadUnarchivedJobs();
+
+          Log.Debug("Loaded pallets {@status} and jobs {@jobs}", status, jobs);
+
+          // TODO check log and update allPals
+          allPals = new List<PalletAndMaterial>();
+
+          change = _assign.NewPalletChange(allPals, jobs);
+
+          if (change != null)
+          {
+            Log.Debug("Changing Niigata pallet to {@change}", change);
+            switch (change)
+            {
+              case NewPalletRoute r:
+                _icc.SetNewMaster(r.NewMaster);
+                break;
+              case UpdatePalletQuantities u:
+                _icc.SetRemainingCycles(pallet: u.Pallet, cycles: u.Cycles, noWork: u.NoWork, skip: u.Skip);
+                break;
+            }
+          }
+        } while (change != null);
+      }
 
       if (raisePalletChanged)
       {
@@ -146,6 +184,7 @@ namespace BlackMaple.FMSInsight.Niigata
           if (_jobs.LoadDecrementsForJob(j.UniqueStr).Count > 0) continue;
           var started = CountStartedOrInProcess(j);
           var planned = Enumerable.Range(1, j.GetNumPaths(process: 1)).Sum(path => j.GetPlannedCyclesOnFirstProcess(path));
+          Log.Debug("Job {unique} part {part} has started {start} of planned {planned}", j.UniqueStr, j.PartName, started, planned);
           if (started < planned)
           {
             decrs.Add(new JobDB.NewDecrementQuantity()

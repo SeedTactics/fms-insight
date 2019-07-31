@@ -116,7 +116,7 @@ namespace BlackMaple.FMSInsight.Niigata
       // pallets
       foreach (var pal in pals)
       {
-        curStatus.Pallets.Add(pal.Pallet.Master.PalletNum.ToString(), new PalletStatus()
+        curStatus.Pallets.Add(pal.Pallet.Master.PalletNum.ToString(), new MachineWatchInterface.PalletStatus()
         {
           Pallet = pal.Pallet.Master.PalletNum.ToString(),
           FixtureOnPallet = "",
