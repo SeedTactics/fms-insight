@@ -56,7 +56,7 @@ namespace BlackMaple.FMSInsight.Niigata
       _sync.OnPalletsChanged += BuildCurrentStatus;
     }
 
-    void IDisposable.Dispose()
+    public void Dispose()
     {
       _sync.OnPalletsChanged -= BuildCurrentStatus;
     }

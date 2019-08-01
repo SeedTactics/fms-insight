@@ -42,7 +42,7 @@ using NSubstitute;
 
 namespace BlackMaple.FMSInsight.Niigata.Tests
 {
-  public class NiigataJobSpec
+  public class NiigataJobSpec : IDisposable
   {
     private JobDB _jobDB;
     private JobLogDB _logDB;
@@ -67,6 +67,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       settings.Queues.Add("q1", new QueueSize());
 
       _jobs = new NiigataJobs(_jobDB, _logDB, settings, _syncMock);
+    }
+
+    void IDisposable.Dispose()
+    {
+      _logDB.Close();
+      _jobDB.Close();
     }
 
     [Fact]

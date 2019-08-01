@@ -61,8 +61,9 @@ namespace BlackMaple.FMSInsight.Niigata
         );
 
         NiigataICC = new NiigataICC();
+        var createLog = new CreateLogEntries(_log);
         var assign = new AssignPallets(_log);
-        SyncPallets = new SyncPallets(_jobs, _log, NiigataICC, assign);
+        SyncPallets = new SyncPallets(_jobs, _log, NiigataICC, assign, createLog);
         NiigataJobs = new NiigataJobs(_jobs, _log, cfg, SyncPallets);
       }
       catch (Exception ex)
@@ -73,9 +74,9 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public void Dispose()
     {
-      if (NiigataJobs != null) ((IDisposable)NiigataJobs).Dispose();
+      if (NiigataJobs != null) NiigataJobs.Dispose();
       NiigataJobs = null;
-      if (SyncPallets != null) ((IDisposable)SyncPallets).Dispose();
+      if (SyncPallets != null) SyncPallets.Dispose();
       SyncPallets = null;
       if (_log != null) _log.Close();
       _log = null;

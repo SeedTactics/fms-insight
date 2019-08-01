@@ -39,11 +39,6 @@ using System.Threading;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
-  public class PalletAndMaterial
-  {
-    public PalletStatus Pallet { get; set; }
-    public List<InProcessMaterial> Material { get; set; }
-  }
   public interface ISyncPallets
   {
     void JobsOrQueuesChanged();
@@ -58,13 +53,15 @@ namespace BlackMaple.FMSInsight.Niigata
     private JobLogDB _log;
     private INiigataCommunication _icc;
     private IAssignPallets _assign;
+    private ICreateLog _createLog;
 
-    public SyncPallets(JobDB jobs, JobLogDB log, INiigataCommunication icc, IAssignPallets assign)
+    public SyncPallets(JobDB jobs, JobLogDB log, INiigataCommunication icc, IAssignPallets assign, ICreateLog create)
     {
       _jobs = jobs;
       _log = log;
       _icc = icc;
       _assign = assign;
+      _createLog = create;
       _thread = new Thread(new ThreadStart(Thread));
       _thread.Start();
     }
@@ -75,7 +72,7 @@ namespace BlackMaple.FMSInsight.Niigata
     private AutoResetEvent _recheck = new AutoResetEvent(false);
     private object _changeLock = new object();
 
-    void IDisposable.Dispose()
+    public void Dispose()
     {
       _shutdown.Set();
       if (_thread != null && !_thread.Join(TimeSpan.FromSeconds(15)))
@@ -145,8 +142,10 @@ namespace BlackMaple.FMSInsight.Niigata
 
           Log.Debug("Loaded pallets {@status} and jobs {@jobs}", status, jobs);
 
-          // TODO check log and update allPals
-          allPals = new List<PalletAndMaterial>();
+          allPals = _createLog.CheckForNewLogEntries(status, jobs, out bool palletStateUpdated);
+          raisePalletChanged = raisePalletChanged || palletStateUpdated;
+
+          Log.Debug("Computed pallets and material {@pals}", allPals);
 
           change = _assign.NewPalletChange(allPals, jobs);
 
@@ -157,9 +156,11 @@ namespace BlackMaple.FMSInsight.Niigata
             {
               case NewPalletRoute r:
                 _icc.SetNewMaster(r.NewMaster);
+                raisePalletChanged = true;
                 break;
               case UpdatePalletQuantities u:
                 _icc.SetRemainingCycles(pallet: u.Pallet, cycles: u.Cycles, noWork: u.NoWork, skip: u.Skip);
+                raisePalletChanged = true;
                 break;
             }
           }
