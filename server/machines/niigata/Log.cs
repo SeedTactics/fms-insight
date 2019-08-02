@@ -42,13 +42,13 @@ namespace BlackMaple.FMSInsight.Niigata
   public class PalletAndMaterial
   {
     public PalletStatus Pallet { get; set; }
-    public List<InProcessMaterial> Material { get; set; }
+    public Dictionary<int, List<InProcessMaterial>> Material { get; set; } // key is the face
     public List<LogEntry> Log { get; set; }
   }
 
   public interface ICreateLog
   {
-    List<PalletAndMaterial> CheckForNewLogEntries(IEnumerable<PalletStatus> pallets, PlannedSchedule sch, out bool palletStateUpdated);
+    List<PalletAndMaterial> CheckForNewLogEntries(NiigataStatus status, PlannedSchedule sch, out bool palletStateUpdated);
   }
 
   public class CreateLogEntries : ICreateLog
@@ -60,7 +60,7 @@ namespace BlackMaple.FMSInsight.Niigata
       _log = l;
     }
 
-    public List<PalletAndMaterial> CheckForNewLogEntries(IEnumerable<PalletStatus> pallets, PlannedSchedule sch, out bool palletStateUpdated)
+    public List<PalletAndMaterial> CheckForNewLogEntries(NiigataStatus status, PlannedSchedule sch, out bool palletStateUpdated)
     {
       palletStateUpdated = false;
       return new List<PalletAndMaterial>();

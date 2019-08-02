@@ -43,7 +43,7 @@ namespace BlackMaple.FMSInsight.Niigata
   {
     void JobsOrQueuesChanged();
     void DecrementPlannedButNotStartedQty();
-    event Action<IList<PalletAndMaterial>> OnPalletsChanged;
+    event Action<NiigataStatus, IList<PalletAndMaterial>> OnPalletsChanged;
   }
 
   public class SyncPallets : ISyncPallets, IDisposable
@@ -118,11 +118,12 @@ namespace BlackMaple.FMSInsight.Niigata
     }
     #endregion
 
-    public event Action<IList<PalletAndMaterial>> OnPalletsChanged;
+    public event Action<NiigataStatus, IList<PalletAndMaterial>> OnPalletsChanged;
 
     private void SynchronizePallets(bool raisePalletChanged)
     {
       List<PalletAndMaterial> allPals;
+      NiigataStatus status;
 
       lock (_changeLock)
       {
@@ -133,11 +134,11 @@ namespace BlackMaple.FMSInsight.Niigata
         // 4. decide what is currently on each pallet and is currently loaded/unloaded
         // 5. Decide on any changes to pallet routes or planned quantities.
 
-        PalletChange change = null;
+        NiigataAction action = null;
         do
         {
 
-          var status = _icc.LoadPallets();
+          status = _icc.LoadStatus();
           var jobs = _jobs.LoadUnarchivedJobs();
 
           Log.Debug("Loaded pallets {@status} and jobs {@jobs}", status, jobs);
@@ -147,29 +148,20 @@ namespace BlackMaple.FMSInsight.Niigata
 
           Log.Debug("Computed pallets and material {@pals}", allPals);
 
-          change = _assign.NewPalletChange(allPals, jobs);
+          action = _assign.NewPalletChange(allPals, jobs);
 
-          if (change != null)
+          if (action != null)
           {
-            Log.Debug("Changing Niigata pallet to {@change}", change);
-            switch (change)
-            {
-              case NewPalletRoute r:
-                _icc.SetNewMaster(r.NewMaster);
-                raisePalletChanged = true;
-                break;
-              case UpdatePalletQuantities u:
-                _icc.SetRemainingCycles(pallet: u.Pallet, cycles: u.Cycles, noWork: u.NoWork, skip: u.Skip);
-                raisePalletChanged = true;
-                break;
-            }
+            Log.Debug("Executing action pallet to {@change}", action);
+            raisePalletChanged = true;
+            _icc.PerformAction(action);
           }
-        } while (change != null);
+        } while (action != null);
       }
 
       if (raisePalletChanged)
       {
-        OnPalletsChanged?.Invoke(allPals);
+        OnPalletsChanged?.Invoke(status, allPals);
       }
     }
 

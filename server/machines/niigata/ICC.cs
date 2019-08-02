@@ -37,17 +37,12 @@ namespace BlackMaple.FMSInsight.Niigata
 {
   public class NiigataICC : INiigataCommunication
   {
-    public IList<PalletStatus> LoadPallets()
+    public NiigataStatus LoadStatus()
     {
       throw new NotImplementedException();
     }
 
-    public void SetNewMaster(PalletMaster m)
-    {
-      throw new NotImplementedException();
-    }
-
-    public void SetRemainingCycles(int pallet, int cycles, bool noWork, bool skip)
+    public void PerformAction(NiigataAction a)
     {
       throw new NotImplementedException();
     }

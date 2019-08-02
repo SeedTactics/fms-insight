@@ -74,7 +74,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    private void BuildCurrentStatus(IList<PalletAndMaterial> pals)
+    private void BuildCurrentStatus(NiigataStatus status, IList<PalletAndMaterial> pals)
     {
       var curStatus = new CurrentStatus();
       foreach (var k in _settings.Queues) curStatus.QueueSizes[k.Key] = k.Value;
@@ -121,8 +121,8 @@ namespace BlackMaple.FMSInsight.Niigata
           Pallet = pal.Pallet.Master.PalletNum.ToString(),
           FixtureOnPallet = "",
           OnHold = pal.Pallet.Master.Skip,
-          CurrentPalletLocation = BuildCurrentLocation(pal),
-          NumFaces = pal.Pallet.Master.NumFaces
+          CurrentPalletLocation = pal.Pallet.CurStation.Location,
+          NumFaces = pal.Material.Max(x => x.Key)
         });
       }
 
@@ -130,7 +130,7 @@ namespace BlackMaple.FMSInsight.Niigata
       var matsOnPallets = new HashSet<long>();
       foreach (var pal in pals)
       {
-        foreach (var mat in pal.Material)
+        foreach (var mat in pal.Material.Values.SelectMany(x => x))
         {
           matsOnPallets.Add(mat.MaterialID);
           curStatus.Material.Add(mat);
@@ -185,10 +185,21 @@ namespace BlackMaple.FMSInsight.Niigata
       //alarms
       foreach (var pal in pals)
       {
-        if (pal.Pallet.Master.Alarm)
+        if (pal.Pallet.Tracking.Alarm)
         {
-          curStatus.Alarms.Add("Pallet " + pal.Pallet.Master.PalletNum.ToString() + " has alarm");
+          curStatus.Alarms.Add("Pallet " + pal.Pallet.Master.PalletNum.ToString() + " has alarm " + pal.Pallet.Tracking.AlarmCode.ToString());
         }
+      }
+      foreach (var mc in status.Machines.Values)
+      {
+        if (mc.Alarm)
+        {
+          curStatus.Alarms.Add("Machine " + mc.MachineNumber.ToString() + " has an alarm");
+        }
+      }
+      if (status.Alarm)
+      {
+        curStatus.Alarms.Add("ICC has an alarm");
       }
 
       lock (_curStLock)
@@ -356,30 +367,5 @@ namespace BlackMaple.FMSInsight.Niigata
       _sync.JobsOrQueuesChanged();
     }
     #endregion
-
-
-    private static PalletLocation BuildCurrentLocation(PalletAndMaterial pal)
-    {
-      switch (pal.Pallet.Loc)
-      {
-        case LoadUnloadLoc l:
-          return new PalletLocation(PalletLocationEnum.LoadUnload, "L/U", l.LoadStation);
-        case MachineOrWashLoc m:
-          switch (m.Position)
-          {
-            case MachineOrWashLoc.Rotary.Input:
-            case MachineOrWashLoc.Rotary.Output:
-              return new PalletLocation(PalletLocationEnum.MachineQueue, "MC", m.Station);
-            case MachineOrWashLoc.Rotary.Worktable:
-              return new PalletLocation(PalletLocationEnum.Machine, "MC", m.Station);
-          }
-          break;
-        case StockerLoc s:
-          return new PalletLocation(PalletLocationEnum.Buffer, "Buffer", pal.Pallet.Master.PalletNum);
-        case CartLoc c:
-          return new PalletLocation(PalletLocationEnum.Cart, "Cart", 1);
-      }
-      return new PalletLocation(PalletLocationEnum.Buffer, "Buffer", 0);
-    }
   }
 }

@@ -39,24 +39,9 @@ using BlackMaple.MachineWatchInterface;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
-  public abstract class PalletChange { }
-
-  public class NewPalletRoute : PalletChange
-  {
-    public PalletMaster NewMaster { get; set; }
-  }
-
-  public class UpdatePalletQuantities : PalletChange
-  {
-    public int Pallet { get; set; }
-    public int Cycles { get; set; }
-    public bool NoWork { get; set; }
-    public bool Skip { get; set; }
-  }
-
   public interface IAssignPallets
   {
-    PalletChange NewPalletChange(IEnumerable<PalletAndMaterial> existingPallets, PlannedSchedule sch);
+    NiigataAction NewPalletChange(IEnumerable<PalletAndMaterial> existingPallets, PlannedSchedule sch);
   }
 
   public class AssignPallets : IAssignPallets
@@ -72,17 +57,19 @@ namespace BlackMaple.FMSInsight.Niigata
     private const int MachineRouteNum = 2;
     private const int UnloadRouteNum = 3;
 
-    public PalletChange NewPalletChange(IEnumerable<PalletAndMaterial> existingPallets, PlannedSchedule sch)
+    public NiigataAction NewPalletChange(IEnumerable<PalletAndMaterial> existingPallets, PlannedSchedule sch)
     {
       // only need to decide on a single change, SyncPallets will call in a loop until no changes are needed.
 
       // first, check if pallet at load station being unloaded needs something loaded
+      /*
       foreach (var pal in existingPallets)
       {
         if (!(pal.Pallet.Loc is LoadUnloadLoc)) continue;
         if (!(pal.Pallet.Tracking.Before && pal.Pallet.Tracking.RouteNum == UnloadRouteNum)) continue;
         if (pal.Material.Any(m => m.Action.Type == InProcessMaterialAction.ActionType.Loading)) continue;
       }
+      */
 
       return null;
     }

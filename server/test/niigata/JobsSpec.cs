@@ -129,30 +129,32 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             PalletNum = 1,
             Skip = true
           },
-          Loc = new MachineOrWashLoc()
+          Tracking = new TrackingInfo()
           {
-            Station = 3,
-            Position = MachineOrWashLoc.Rotary.Worktable
+            Alarm = false
           },
+          CurStation = NiigataStationNum.Machine(3),
         },
-        Material = new List<InProcessMaterial> {
-          new InProcessMaterial() {
-            MaterialID = mat2,
-            JobUnique = "u1",
-            PartName = "p1",
-            Process = 1,
-            Path = 1,
-            Serial = "serial2",
-            WorkorderId = "work2",
-            SignaledInspections = new List<string> {"insp2"},
-            Location = new InProcessMaterialLocation() {
-              Type = InProcessMaterialLocation.LocType.OnPallet,
-              Pallet = "1"
-            },
-            Action = new InProcessMaterialAction() {
-              Type = InProcessMaterialAction.ActionType.Waiting
+        Material = new Dictionary<int, List<InProcessMaterial>> {
+          {1, new List<InProcessMaterial> {
+            new InProcessMaterial() {
+              MaterialID = mat2,
+              JobUnique = "u1",
+              PartName = "p1",
+              Process = 1,
+              Path = 1,
+              Serial = "serial2",
+              WorkorderId = "work2",
+              SignaledInspections = new List<string> {"insp2"},
+              Location = new InProcessMaterialLocation() {
+                Type = InProcessMaterialLocation.LocType.OnPallet,
+                Pallet = "1"
+              },
+              Action = new InProcessMaterialAction() {
+                Type = InProcessMaterialAction.ActionType.Waiting
+              }
             }
-          }
+          }}
         }
       };
       var pal2 = new PalletAndMaterial()
@@ -163,14 +165,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           {
             PalletNum = 2,
             Skip = false,
-            Alarm = true
           },
-          Loc = new LoadUnloadLoc()
+          Tracking = new TrackingInfo()
           {
-            LoadStation = 2,
+            Alarm = true,
+            AlarmCode = 40
           },
+          CurStation = NiigataStationNum.LoadStation(2)
         },
-        Material = new List<InProcessMaterial> {
+        Material = new Dictionary<int, List<InProcessMaterial>> {
+          {1, new List<InProcessMaterial> {
           new InProcessMaterial() {
             MaterialID = mat3,
             JobUnique = "u2",
@@ -192,6 +196,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               PathAfterLoad = 1
             }
           }
+          }}
         }
       };
 
@@ -209,13 +214,24 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Face = null
       }, "q1", 1);
 
+      var status = new NiigataStatus()
+      {
+        Machines = new Dictionary<int, MachineStatus> {
+          {2, new MachineStatus() {
+            MachineNumber = 2,
+            Alarm = true
+          }}
+        },
+        Alarm = true
+      };
+
 
       var expectedSt = new CurrentStatus();
       var expectedJob = new InProcessJob(j);
       expectedJob.SetCompleted(1, 1, 1);
       expectedSt.Jobs.Add("u1", expectedJob);
-      expectedSt.Material.Add(pal1.Material[0]);
-      expectedSt.Material.Add(pal2.Material[0]);
+      expectedSt.Material.Add(pal1.Material[1][0]);
+      expectedSt.Material.Add(pal2.Material[1][0]);
       expectedSt.Material.Add(new InProcessMaterial()
       {
         MaterialID = mat4,
@@ -253,12 +269,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         CurrentPalletLocation = new PalletLocation(PalletLocationEnum.LoadUnload, "L/U", 2),
         NumFaces = 1
       });
-      expectedSt.Alarms.Add("Pallet 2 has alarm");
+      expectedSt.Alarms.Add("Pallet 2 has alarm 40");
+      expectedSt.Alarms.Add("Machine 2 has an alarm");
+      expectedSt.Alarms.Add("ICC has an alarm");
       expectedSt.QueueSizes.Add("q1", new QueueSize());
 
       using (var monitor = _jobs.Monitor())
       {
-        _syncMock.OnPalletsChanged += Raise.Event<Action<IList<PalletAndMaterial>>>(new List<PalletAndMaterial> { pal1, pal2 });
+        _syncMock.OnPalletsChanged += Raise.Event<Action<NiigataStatus, IList<PalletAndMaterial>>>(status, new List<PalletAndMaterial> { pal1, pal2 });
 
         _jobs.GetCurrentStatus().Should().BeEquivalentTo(expectedSt, config =>
           config.Excluding(c => c.TimeOfCurrentStatusUTC)
