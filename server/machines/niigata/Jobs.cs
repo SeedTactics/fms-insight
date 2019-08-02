@@ -202,6 +202,9 @@ namespace BlackMaple.FMSInsight.Niigata
     #region Jobs
     public List<string> CheckValidRoutes(IEnumerable<JobPlan> newJobs)
     {
+      // TODO
+      // - single fixture/face
+      // - processes on different pallets have queue
       return new List<string>();
     }
 
