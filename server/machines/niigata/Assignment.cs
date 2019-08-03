@@ -46,6 +46,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
   public class AssignPallets : IAssignPallets
   {
+    private static Serilog.ILogger Log = Serilog.Log.ForContext<AssignPallets>();
     private JobLogDB _log;
 
     public AssignPallets(JobLogDB l)
@@ -71,7 +72,25 @@ namespace BlackMaple.FMSInsight.Niigata
         var pathsToLoad = FindMaterialToLoad(sch, pal.Pallet.Master.PalletNum, pal.Pallet.CurStation.Location.Num, pal.Material.Values.SelectMany(ms => ms).ToList());
         if (pathsToLoad.Count > 0)
         {
-          // TODO: set new route
+          return SetNewRoute(pal.Pallet, pathsToLoad);
+        }
+      }
+
+      // next, check empty stuff in buffer
+      foreach (var pal in existingPallets)
+      {
+        if (pal.Pallet.CurStation.Location.Location != PalletLocationEnum.Buffer) continue;
+        if (!pal.Pallet.Master.NoWork) continue;
+        if (pal.Material.Any())
+        {
+          Log.Error("State mismatch! no work on pallet but it has material {@pal}", pal);
+          continue;
+        }
+
+        var pathsToLoad = FindMaterialToLoad(sch, pal.Pallet.Master.PalletNum, null, Enumerable.Empty<InProcessMaterial>());
+        if (pathsToLoad.Count > 0)
+        {
+          return SetNewRoute(pal.Pallet, pathsToLoad);
         }
       }
 
@@ -253,6 +272,94 @@ namespace BlackMaple.FMSInsight.Niigata
         }
       }
       return paths;
+    }
+    #endregion
+
+    #region Set New Route
+    private NiigataAction SetNewRoute(PalletStatus oldPallet, IReadOnlyList<JobPath> newPaths)
+    {
+      var newMaster = NewPalletMaster(oldPallet.Master.PalletNum, newPaths);
+      if (SimpleQuantityChange(oldPallet.Master, newMaster))
+      {
+        int remaining = 1;
+        if (oldPallet.CurStation.Location.Location == PalletLocationEnum.LoadUnload && oldPallet.Tracking.CurrentStepNum != LoadStepNum)
+        {
+          remaining = 2;
+        }
+        return new UpdatePalletQuantities()
+        {
+          Pallet = oldPallet.Master.PalletNum,
+          Priority = 0,
+          Cycles = remaining,
+          NoWork = false,
+          Skip = false,
+          ForLongTool = false
+        };
+      }
+      else
+      {
+        return new NewPalletRoute()
+        {
+          NewMaster = newMaster
+        };
+      }
+
+    }
+
+    private PalletMaster NewPalletMaster(int pallet, IReadOnlyList<JobPath> newPaths)
+    {
+      var orderedPaths = newPaths.OrderBy(p => p.Job.UniqueStr).ThenBy(p => p.Process).ThenBy(p => p.Path).ToList();
+      var machineStops = orderedPaths.Select(p => p.Job.GetMachiningStop(p.Process, p.Path).First());
+
+      var firstPath = orderedPaths.First();
+      var firstStop = machineStops.First();
+
+      return new PalletMaster()
+      {
+        PalletNum = pallet,
+        Comment = string.Join(";", newPaths.Select(p => p.Job.PartName + "-" + p.Process.ToString())).Substring(0, 32),
+        RemainingPalletCycles = 1,
+        Priority = 0,
+        NoWork = false,
+        Skip = false,
+        ForLongToolMaintenance = false,
+        Routes = new List<RouteStep>() {
+          new LoadStep() {
+            LoadStations = firstPath.Job.LoadStations(firstPath.Process, firstPath.Path).ToList(),
+          },
+          new MachiningStep() {
+            Machines = firstStop.Stations().ToList(),
+            ProgramNumsToRun = newPaths.Select(p => p.Job.GetMachiningStop(p.Process, p.Path).First().AllPrograms().First().Program).Select(int.Parse).ToList(),
+          },
+          new UnloadStep() {
+            UnloadStations = firstPath.Job.UnloadStations(firstPath.Process, firstPath.Path).ToList(),
+            CompletedPartCount = 1
+          }
+        }
+      };
+    }
+
+    private bool SimpleQuantityChange(PalletMaster existing, PalletMaster newPal)
+    {
+      if (existing.Routes.Count != 3) return false;
+      if (newPal.Routes.Count != 3) return false;
+
+      if (!(existing.Routes[0] is LoadStep)) return false;
+      if (!(newPal.Routes[0] is LoadStep)) return false;
+      if (!((LoadStep)existing.Routes[0]).LoadStations.SequenceEqual(((LoadStep)newPal.Routes[0]).LoadStations)) return false;
+
+      if (!(existing.Routes[1] is MachiningStep)) return false;
+      if (!(newPal.Routes[1] is MachiningStep)) return false;
+      var eM = (MachiningStep)existing.Routes[1];
+      var nM = (MachiningStep)newPal.Routes[1];
+      if (!eM.Machines.SequenceEqual(nM.Machines)) return false;
+      if (!eM.ProgramNumsToRun.SequenceEqual(nM.Machines)) return false;
+
+      if (!(existing.Routes[2] is UnloadStep)) return false;
+      if (!(newPal.Routes[2] is UnloadStep)) return false;
+      if (((UnloadStep)existing.Routes[2]).UnloadStations.SequenceEqual(((UnloadStep)newPal.Routes[2]).UnloadStations)) return false;
+
+      return true;
     }
     #endregion
   }

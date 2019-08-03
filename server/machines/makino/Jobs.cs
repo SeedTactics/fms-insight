@@ -64,6 +64,11 @@ namespace Makino
 
     public List<string> CheckValidRoutes(IEnumerable<JobPlan> newJobs)
     {
+      // programs are numbers
+      // only a single machining stop
+      // same program on all stations
+      // same fixture different faces have same load/unload, machine stations
+      // load/unload stations equal
       return new List<string>();
     }
 
