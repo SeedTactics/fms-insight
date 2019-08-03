@@ -135,7 +135,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           },
           CurStation = NiigataStationNum.Machine(3),
         },
-        Material = new Dictionary<int, List<InProcessMaterial>> {
+        Material = new Dictionary<int, IReadOnlyList<InProcessMaterial>> {
           {1, new List<InProcessMaterial> {
             new InProcessMaterial() {
               MaterialID = mat2,
@@ -173,7 +173,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           },
           CurStation = NiigataStationNum.LoadStation(2)
         },
-        Material = new Dictionary<int, List<InProcessMaterial>> {
+        Material = new Dictionary<int, IReadOnlyList<InProcessMaterial>> {
           {1, new List<InProcessMaterial> {
           new InProcessMaterial() {
             MaterialID = mat3,

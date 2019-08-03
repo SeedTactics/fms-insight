@@ -53,27 +53,32 @@ namespace BlackMaple.FMSInsight.Niigata
       _log = l;
     }
 
-    private const int LoadRouteNum = 1;
-    private const int MachineRouteNum = 2;
-    private const int UnloadRouteNum = 3;
+    private const int LoadStepNum = 1;
+    private const int MachineStepNum = 2;
+    private const int UnloadStepNum = 3;
 
     public NiigataAction NewPalletChange(IReadOnlyList<PalletAndMaterial> existingPallets, PlannedSchedule sch)
     {
       // only need to decide on a single change, SyncPallets will call in a loop until no changes are needed.
 
       // first, check if pallet at load station being unloaded needs something loaded
-      /*
       foreach (var pal in existingPallets)
       {
-        if (!(pal.Pallet.Loc is LoadUnloadLoc)) continue;
-        if (!(pal.Pallet.Tracking.Before && pal.Pallet.Tracking.RouteNum == UnloadRouteNum)) continue;
-        if (pal.Material.Any(m => m.Action.Type == InProcessMaterialAction.ActionType.Loading)) continue;
+        if (pal.Pallet.CurStation.Location.Location != PalletLocationEnum.LoadUnload) continue;
+        if (!(pal.Pallet.Tracking.BeforeCurrentStep && pal.Pallet.Tracking.CurrentStepNum == UnloadStepNum)) continue;
+        if (pal.Material.Values.SelectMany(ms => ms).Any(m => m.Action.Type == InProcessMaterialAction.ActionType.Loading)) continue;
+
+        var pathsToLoad = FindMaterialToLoad(sch, pal.Pallet.Master.PalletNum, pal.Pallet.CurStation.Location.Num, pal.Material.Values.SelectMany(ms => ms).ToList());
+        if (pathsToLoad.Count > 0)
+        {
+          // TODO: set new route
+        }
       }
-      */
 
       return null;
     }
 
+    #region Calculate Paths
     private /* record */ class JobPath
     {
       public JobPlan Job { get; set; }
@@ -81,15 +86,20 @@ namespace BlackMaple.FMSInsight.Niigata
       public int Path { get; set; }
     }
 
-    /*
-    private IList<JobPath> FindPathsForPallet(PlannedSchedule sch, int pallet, int loadStation)
+    private IList<JobPath> FindPathsForPallet(PlannedSchedule sch, int pallet, int? loadStation)
     {
-
-      if (!(potentialNewPath.Job.LoadStations(potentialNewPath.Process, potentialNewPath.Path).Contains(loadStation)))
-        return false;
-
+      return
+        sch.Jobs
+        .SelectMany(job => Enumerable.Range(1, job.NumProcesses).Select(proc => new { job, proc }))
+        .SelectMany(j => Enumerable.Range(1, j.job.GetNumPaths(j.proc)).Select(path => new JobPath { Job = j.job, Process = j.proc, Path = path }))
+        .Where(j => loadStation == null || j.Job.LoadStations(j.Process, j.Path).Contains(loadStation.Value))
+        .Where(j => j.Job.PlannedPallets(j.Process, j.Path).Contains(pallet.ToString()))
+        .OrderBy(j => j.Job.RouteStartingTimeUTC)
+        .ThenByDescending(j => j.Job.Priority)
+        .ThenBy(j => j.Job.GetSimulatedStartingTimeUTC(j.Process, j.Path))
+        .ToList()
+        ;
     }
-    */
 
     private bool PathAllowedOnPallet(IEnumerable<JobPath> alreadyLoading, JobPath potentialNewPath)
     {
@@ -109,12 +119,36 @@ namespace BlackMaple.FMSInsight.Niigata
       return true;
     }
 
-    private int ProcessForMatID(long matID)
+    private (int proc, int path) ProcessAndPathForMatID(long matID, JobPlan job)
     {
-      return _log.GetLogForMaterial(matID)
+      var log = _log.GetLogForMaterial(matID);
+      var proc = log
         .SelectMany(m => m.Material)
         .Where(m => m.MaterialID == matID)
         .Max(m => m.Process);
+
+      var pal =
+        log
+        .Where(e => e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle && e.Material.Any(m => m.MaterialID == matID && m.Process == proc))
+        .Select(e => e.Pallet)
+        .FirstOrDefault();
+
+      if (pal != "")
+      {
+        for (var path = 0; path < job.GetNumPaths(proc); path++)
+        {
+          if (job.PlannedPallets(proc, path).Contains(pal))
+          {
+            return (proc, path);
+          }
+        }
+        return (proc, -1);
+      }
+      else
+      {
+        return (proc, -1);
+
+      }
     }
 
     private (bool, HashSet<long>) CheckMaterialForPathExists(IReadOnlyDictionary<long, InProcessMaterial> unusedMatsOnPal, JobPath path)
@@ -135,7 +169,7 @@ namespace BlackMaple.FMSInsight.Niigata
           _log.GetMaterialInQueue(inputQueue)
           .Where(m => (string.IsNullOrEmpty(m.Unique) && m.PartName == path.Job.PartName)
                    || (!string.IsNullOrEmpty(m.Unique) && m.Unique == path.Job.UniqueStr)
-          ).Where(m => ProcessForMatID(m.MaterialID) == 0)
+          ).Where(m => ProcessAndPathForMatID(m.MaterialID, path.Job).proc == 0)
           .ToList();
 
         if (castings.Count >= path.Job.PartsPerPallet(path.Process, path.Path))
@@ -149,6 +183,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
       else if (path.Process > 1)
       {
+        var countToLoad = path.Job.PartsPerPallet(path.Process, path.Path);
         // first check mat on pal
         var availMatIds = new HashSet<long>();
         foreach (var mat in unusedMatsOnPal.Values)
@@ -159,43 +194,50 @@ namespace BlackMaple.FMSInsight.Niigata
           )
           {
             availMatIds.Add(mat.MaterialID);
+            if (availMatIds.Count == countToLoad)
+            {
+              return (true, availMatIds);
+            }
           }
         }
 
         // now check queue
         if (!string.IsNullOrEmpty(inputQueue))
         {
-          var mats = _log.GetMaterialInQueue(inputQueue)
-            .Where(m =>
+          foreach (var mat in _log.GetMaterialInQueue(inputQueue))
+          {
+            if (mat.Unique != path.Job.UniqueStr) continue;
+            var (mProc, mPath) = ProcessAndPathForMatID(mat.MaterialID, path.Job);
+            if (mProc + 1 != path.Process) continue;
+            if (mPath != -1 && path.Job.GetPathGroup(mProc, mPath) != path.Job.GetPathGroup(path.Process, path.Path))
+              continue;
+
+            availMatIds.Add(mat.MaterialID);
+            if (availMatIds.Count == countToLoad)
             {
-              var mProc = ProcessForMatID(m.MaterialID);
-              return
-                  m.Unique == path.Job.UniqueStr
-                && mProc + 1 == path.Process;
-            });
+              return (true, availMatIds);
+            }
+          }
         }
-        // comes from queue or mat on pal
-
-        // TODO: finish this (check transfer on pallet, load from queue, path groups)
-
       }
 
       return (false, null);
     }
 
-    private IList<JobPath> FindMaterialToLoad(IEnumerable<InProcessMaterial> matCurrentlyOnPal, IEnumerable<JobPath> allPaths)
+    private IReadOnlyList<JobPath> FindMaterialToLoad(PlannedSchedule sch, int pallet, int? loadStation, IEnumerable<InProcessMaterial> matCurrentlyOnPal)
     {
       List<JobPath> paths = null;
+      var allPaths = FindPathsForPallet(sch, pallet, loadStation);
       var unusedMatsOnPal = matCurrentlyOnPal.ToDictionary(m => m.MaterialID);
       foreach (var path in allPaths)
       {
         var (hasMat, usedMatIds) = CheckMaterialForPathExists(unusedMatsOnPal, path);
         if (!hasMat) continue;
-        foreach (var matId in usedMatIds)
-          unusedMatsOnPal.Remove(matId);
 
         if (paths == null)
         {
+          foreach (var matId in usedMatIds)
+            unusedMatsOnPal.Remove(matId);
           // first path with material gets set
           paths = new List<JobPath> { path };
         }
@@ -204,11 +246,14 @@ namespace BlackMaple.FMSInsight.Niigata
           // later paths need to make sure they are compatible.
           if (PathAllowedOnPallet(paths, path))
           {
+            foreach (var matId in usedMatIds)
+              unusedMatsOnPal.Remove(matId);
             paths.Add(path);
           }
         }
       }
       return paths;
     }
+    #endregion
   }
 }
