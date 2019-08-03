@@ -41,7 +41,7 @@ namespace BlackMaple.FMSInsight.Niigata
 {
   public interface IAssignPallets
   {
-    NiigataAction NewPalletChange(IEnumerable<PalletAndMaterial> existingPallets, PlannedSchedule sch);
+    NiigataAction NewPalletChange(IReadOnlyList<PalletAndMaterial> existingPallets, PlannedSchedule sch);
   }
 
   public class AssignPallets : IAssignPallets
@@ -57,7 +57,7 @@ namespace BlackMaple.FMSInsight.Niigata
     private const int MachineRouteNum = 2;
     private const int UnloadRouteNum = 3;
 
-    public NiigataAction NewPalletChange(IEnumerable<PalletAndMaterial> existingPallets, PlannedSchedule sch)
+    public NiigataAction NewPalletChange(IReadOnlyList<PalletAndMaterial> existingPallets, PlannedSchedule sch)
     {
       // only need to decide on a single change, SyncPallets will call in a loop until no changes are needed.
 
@@ -117,7 +117,7 @@ namespace BlackMaple.FMSInsight.Niigata
         .Max(m => m.Process);
     }
 
-    private bool CheckMaterialForPathExists(JobPath path)
+    private (bool, HashSet<long>) CheckMaterialForPathExists(IReadOnlyDictionary<long, InProcessMaterial> unusedMatsOnPal, JobPath path)
     {
       var fixFace = path.Job.PlannedFixtures(path.Process, path.Path).FirstOrDefault();
       int.TryParse(fixFace.Face, out int faceNum);
@@ -126,7 +126,7 @@ namespace BlackMaple.FMSInsight.Niigata
       if (path.Process == 1 && string.IsNullOrEmpty(inputQueue))
       {
         // no input queue, just new parts
-        return true;
+        return (true, new HashSet<long>());
       }
       else if (path.Process == 1 && !string.IsNullOrEmpty(inputQueue))
       {
@@ -136,25 +136,64 @@ namespace BlackMaple.FMSInsight.Niigata
           .Where(m => (string.IsNullOrEmpty(m.Unique) && m.PartName == path.Job.PartName)
                    || (!string.IsNullOrEmpty(m.Unique) && m.Unique == path.Job.UniqueStr)
           ).Where(m => ProcessForMatID(m.MaterialID) == 0)
-          .Count();
+          .ToList();
 
-        return castings >= path.Job.PartsPerPallet(path.Process, path.Path);
+        if (castings.Count >= path.Job.PartsPerPallet(path.Process, path.Path))
+        {
+          return (true, castings.Take(path.Job.PartsPerPallet(path.Process, path.Path)).Select(m => m.MaterialID).ToHashSet());
+        }
+        else
+        {
+          return (false, null);
+        }
       }
       else if (path.Process > 1)
       {
+        // first check mat on pal
+        var availMatIds = new HashSet<long>();
+        foreach (var mat in unusedMatsOnPal.Values)
+        {
+          if (mat.JobUnique == path.Job.UniqueStr
+            && mat.Process + 1 == path.Process
+            && path.Job.GetPathGroup(mat.Process, mat.Path) == path.Job.GetPathGroup(path.Process, path.Path)
+          )
+          {
+            availMatIds.Add(mat.MaterialID);
+          }
+        }
+
+        // now check queue
+        if (!string.IsNullOrEmpty(inputQueue))
+        {
+          var mats = _log.GetMaterialInQueue(inputQueue)
+            .Where(m =>
+            {
+              var mProc = ProcessForMatID(m.MaterialID);
+              return
+                  m.Unique == path.Job.UniqueStr
+                && mProc + 1 == path.Process;
+            });
+        }
+        // comes from queue or mat on pal
+
         // TODO: finish this (check transfer on pallet, load from queue, path groups)
 
       }
 
-      return false;
+      return (false, null);
     }
 
-    private IList<JobPath> FindMaterialToLoad(IEnumerable<JobPath> allPaths)
+    private IList<JobPath> FindMaterialToLoad(IEnumerable<InProcessMaterial> matCurrentlyOnPal, IEnumerable<JobPath> allPaths)
     {
       List<JobPath> paths = null;
+      var unusedMatsOnPal = matCurrentlyOnPal.ToDictionary(m => m.MaterialID);
       foreach (var path in allPaths)
       {
-        if (!CheckMaterialForPathExists(path)) continue;
+        var (hasMat, usedMatIds) = CheckMaterialForPathExists(unusedMatsOnPal, path);
+        if (!hasMat) continue;
+        foreach (var matId in usedMatIds)
+          unusedMatsOnPal.Remove(matId);
+
         if (paths == null)
         {
           // first path with material gets set

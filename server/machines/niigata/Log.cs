@@ -42,8 +42,7 @@ namespace BlackMaple.FMSInsight.Niigata
   public class PalletAndMaterial
   {
     public PalletStatus Pallet { get; set; }
-    public Dictionary<int, List<InProcessMaterial>> Material { get; set; } // key is the face
-    public List<LogEntry> Log { get; set; }
+    public Dictionary<int, IReadOnlyList<InProcessMaterial>> Material { get; set; } // key is the face
   }
 
   public interface ICreateLog
