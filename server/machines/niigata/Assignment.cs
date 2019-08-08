@@ -170,6 +170,13 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
+    private static HashSet<T> ToHashSet<T>(IEnumerable<T> ts)
+    {
+      var s = new HashSet<T>();
+      foreach (var t in ts) s.Add(t);
+      return s;
+    }
+
     private (bool, HashSet<long>) CheckMaterialForPathExists(IReadOnlyDictionary<long, InProcessMaterial> unusedMatsOnPal, JobPath path)
     {
       var fixFace = path.Job.PlannedFixtures(path.Process, path.Path).FirstOrDefault();
@@ -193,7 +200,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
         if (castings.Count >= path.Job.PartsPerPallet(path.Process, path.Path))
         {
-          return (true, castings.Take(path.Job.PartsPerPallet(path.Process, path.Path)).Select(m => m.MaterialID).ToHashSet());
+          return (true, ToHashSet(castings.Take(path.Job.PartsPerPallet(path.Process, path.Path)).Select(m => m.MaterialID)));
         }
         else
         {
