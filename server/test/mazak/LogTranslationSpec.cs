@@ -669,6 +669,17 @@ namespace MachineWatchTest
       UnloadEnd(p, offset: 23, load: 1, elapMin: 1);
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
+
+      jobLog.GetMaterialDetails(p.MaterialID).Should().BeEquivalentTo(new MaterialDetails()
+      {
+        MaterialID = p.MaterialID,
+        JobUnique = "unique",
+        PartName = "part1",
+        NumProcesses = 1,
+        Serial = FMSSettings.ConvertToBase62(p.MaterialID).PadLeft(10, '0'),
+        Workorder = null,
+        Paths = new Dictionary<int, int> { { 1, 1 } }
+      });
     }
 
     [Fact]
