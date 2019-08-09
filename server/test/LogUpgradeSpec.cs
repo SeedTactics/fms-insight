@@ -175,7 +175,8 @@ namespace MachineWatchTest
         PartName = "part1",
         NumProcesses = 2,
         Workorder = "work1",
-        Serial = "serial1"
+        Serial = "serial1",
+        Paths = new System.Collections.Generic.Dictionary<int, int>()
       });
       _log.GetMaterialDetails(2).Should().BeEquivalentTo(new MaterialDetails()
       {
@@ -184,7 +185,8 @@ namespace MachineWatchTest
         PartName = "part1",
         NumProcesses = 2,
         Workorder = null,
-        Serial = "serial2"
+        Serial = "serial2",
+        Paths = new System.Collections.Generic.Dictionary<int, int>()
       });
       _log.GetMaterialDetails(3).Should().BeEquivalentTo(new MaterialDetails()
       {
@@ -193,7 +195,8 @@ namespace MachineWatchTest
         PartName = "part2",
         NumProcesses = 1,
         Workorder = "work3",
-        Serial = null
+        Serial = null,
+        Paths = new System.Collections.Generic.Dictionary<int, int>()
       });
     }
 

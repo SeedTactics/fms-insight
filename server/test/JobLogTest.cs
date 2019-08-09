@@ -80,12 +80,18 @@ namespace MachineWatchTest
       m2.Should().Be(2);
       m3.Should().Be(3);
 
+      _jobLog.RecordPathForProcess(m1, 1, 60);
+      _jobLog.RecordPathForProcess(m1, 2, 88);
+      _jobLog.RecordPathForProcess(m2, 6, 5);
+      _jobLog.RecordPathForProcess(m2, 6, 10);
+
       _jobLog.GetMaterialDetails(m1).Should().BeEquivalentTo(new MaterialDetails()
       {
         MaterialID = m1,
         JobUnique = "U1",
         PartName = "P1",
         NumProcesses = 52,
+        Paths = new Dictionary<int, int> { { 1, 60 }, { 2, 88 } }
       });
 
       _jobLog.GetMaterialDetails(m2).Should().BeEquivalentTo(new MaterialDetails()
@@ -94,6 +100,7 @@ namespace MachineWatchTest
         JobUnique = "U2",
         PartName = "P2",
         NumProcesses = 66,
+        Paths = new Dictionary<int, int> { { 6, 10 } }
       });
 
       _jobLog.GetMaterialDetails(m3).Should().BeEquivalentTo(new MaterialDetails()
@@ -102,6 +109,7 @@ namespace MachineWatchTest
         JobUnique = "U3",
         PartName = "P3",
         NumProcesses = 566,
+        Paths = new Dictionary<int, int>()
       });
 
       long m4 = _jobLog.AllocateMaterialIDForCasting("P4", 44);
@@ -110,6 +118,7 @@ namespace MachineWatchTest
         MaterialID = m4,
         PartName = "P4",
         NumProcesses = 44,
+        Paths = new Dictionary<int, int>()
       });
 
       _jobLog.SetDetailsForMaterialID(m4, "U4", "P4444", 77);
@@ -119,6 +128,7 @@ namespace MachineWatchTest
         JobUnique = "U4",
         PartName = "P4444",
         NumProcesses = 77,
+        Paths = new Dictionary<int, int>()
       });
     }
 
@@ -1065,6 +1075,7 @@ namespace MachineWatchTest
         JobUnique = "uniqAAA",
         PartName = "part1",
         NumProcesses = 6312,
+        Paths = new Dictionary<int, int>()
       });
 
       _jobLog.GetMaterialDetails(mat2.MaterialID).Should().BeEquivalentTo(new MaterialDetails()
@@ -1073,6 +1084,7 @@ namespace MachineWatchTest
         JobUnique = "uniqAAA",
         PartName = "part1",
         NumProcesses = 6312,
+        Paths = new Dictionary<int, int>()
       });
 
       _jobLog.MarkCastingsAsUnallocated(new[] { mat1.MaterialID });
@@ -1083,6 +1095,7 @@ namespace MachineWatchTest
         JobUnique = null,
         PartName = "part1",
         NumProcesses = 6312,
+        Paths = new Dictionary<int, int>()
       });
     }
 
@@ -1486,6 +1499,7 @@ namespace MachineWatchTest
         JobUnique = "U1",
         PartName = "P1",
         NumProcesses = 52,
+        Paths = new Dictionary<int, int>()
       });
     }
 

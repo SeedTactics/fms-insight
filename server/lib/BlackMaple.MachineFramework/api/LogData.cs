@@ -242,6 +242,7 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember] public int NumProcesses { get; set; }
     [DataMember] public string Workorder { get; set; }
     [DataMember] public string Serial { get; set; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public Dictionary<int, int> Paths { get; set; } // key is process, value is path
   }
 
   [DataContract]
