@@ -87,7 +87,7 @@ namespace BlackMaple.FMSInsight.Niigata
           continue;
         }
 
-        var pathsToLoad = FindMaterialToLoad(sch, pal.Pallet.Master.PalletNum, null, Enumerable.Empty<InProcessMaterial>());
+        var pathsToLoad = FindMaterialToLoad(sch, pal.Pallet.Master.PalletNum, loadStation: null, matCurrentlyOnPal: Enumerable.Empty<InProcessMaterial>());
         if (pathsToLoad.Count > 0)
         {
           return SetNewRoute(pal.Pallet, pathsToLoad);
@@ -146,27 +146,14 @@ namespace BlackMaple.FMSInsight.Niigata
         .Where(m => m.MaterialID == matID)
         .Max(m => m.Process);
 
-      var pal =
-        log
-        .Where(e => e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle && e.Material.Any(m => m.MaterialID == matID && m.Process == proc))
-        .Select(e => e.Pallet)
-        .FirstOrDefault();
-
-      if (pal != "")
+      var details = _log.GetMaterialDetails(matID);
+      if (details.Paths != null && details.Paths.ContainsKey(proc))
       {
-        for (var path = 0; path < job.GetNumPaths(proc); path++)
-        {
-          if (job.PlannedPallets(proc, path).Contains(pal))
-          {
-            return (proc, path);
-          }
-        }
-        return (proc, -1);
+        return (proc, details.Paths[proc]);
       }
       else
       {
         return (proc, -1);
-
       }
     }
 

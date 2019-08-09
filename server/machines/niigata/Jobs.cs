@@ -94,15 +94,8 @@ namespace BlackMaple.FMSInsight.Niigata
             {
               if (mat.JobUniqueStr == j.UniqueStr)
               {
-                int matPath = 1;
-                for (int path = 1; path <= j.GetNumPaths(mat.Process); path++)
-                {
-                  if (j.PlannedPallets(mat.Process, path).Contains(e.Pallet))
-                  {
-                    matPath = path;
-                    break;
-                  }
-                }
+                var details = _log.GetMaterialDetails(mat.MaterialID);
+                int matPath = details.Paths != null && details.Paths.ContainsKey(mat.Process) ? details.Paths[mat.Process] : 1;
                 curJob.AdjustCompleted(mat.Process, matPath, x => x + 1);
               }
             }
@@ -160,7 +153,7 @@ namespace BlackMaple.FMSInsight.Niigata
           JobUnique = mat.Unique,
           PartName = mat.PartName,
           Process = lastProc,
-          Path = 1,
+          Path = matDetails?.Paths != null && matDetails.Paths.ContainsKey(lastProc) ? matDetails.Paths[lastProc] : 1,
           Serial = matDetails?.Serial,
           WorkorderId = matDetails?.Workorder,
           SignaledInspections =

@@ -88,6 +88,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _logDB.ForceInspection(mat2, "insp2");
 
       var mat3 = _logDB.AllocateMaterialID("u2", "p2", 1);
+      _logDB.RecordPathForProcess(mat3, 2, 5);
       _logDB.RecordSerialForMaterialID(mat3, 2, "serial3");
 
       var mat4 = _logDB.AllocateMaterialID("u1", "p1", 1);
@@ -180,7 +181,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             JobUnique = "u2",
             PartName = "p2",
             Process = 2,
-            Path = 1,
+            Path = 5,
             Serial = "serial3",
             WorkorderId = null,
             SignaledInspections = new List<string>(),
