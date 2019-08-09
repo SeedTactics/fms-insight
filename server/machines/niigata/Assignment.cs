@@ -300,6 +300,18 @@ namespace BlackMaple.FMSInsight.Niigata
 
     }
 
+    private static string TakeString(string s, int len)
+    {
+      if (s.Length <= len)
+      {
+        return s;
+      }
+      else
+      {
+        return s.Substring(0, len);
+      }
+    }
+
     private PalletMaster NewPalletMaster(int pallet, IReadOnlyList<JobPath> newPaths)
     {
       var orderedPaths = newPaths.OrderBy(p => p.Job.UniqueStr).ThenBy(p => p.Process).ThenBy(p => p.Path).ToList();
@@ -311,7 +323,7 @@ namespace BlackMaple.FMSInsight.Niigata
       return new PalletMaster()
       {
         PalletNum = pallet,
-        Comment = string.Join(";", newPaths.Select(p => p.Job.PartName + "-" + p.Process.ToString())).Substring(0, 32),
+        Comment = TakeString(string.Join(";", newPaths.Select(p => p.Job.PartName + "-" + p.Process.ToString())), 32),
         RemainingPalletCycles = 1,
         Priority = 0,
         NoWork = false,
