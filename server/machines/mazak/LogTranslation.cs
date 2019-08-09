@@ -277,6 +277,11 @@ namespace MazakMachineInterface
         }
       }
 
+      foreach (var m in ret)
+      {
+        _log.RecordPathForProcess(m.Mat.MaterialID, m.Mat.Process, m.Path);
+      }
+
       return ret;
     }
 

@@ -89,7 +89,7 @@ namespace BlackMaple.MachineFramework
       _connection.Close();
     }
 
-    private const int Version = 19;
+    private const int Version = 20;
 
     public void CreateTables(string firstSerialOnEmpty)
     {
@@ -139,6 +139,9 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "CREATE INDEX matdetails_workorder ON matdetails(Workorder) WHERE Workorder IS NOT NULL";
         cmd.ExecuteNonQuery();
         cmd.CommandText = "CREATE INDEX matdetails_uniq ON matdetails(UniqueStr)";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText = "CREATE TABLE mat_path_details(MaterialID INTEGER, Process INTEGER, Path INTEGER, PRIMARY KEY(MaterialID, Process))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE TABLE pendingloads(Pallet TEXT, Key TEXT, LoadStation INTEGER, Elapsed INTEGER, ActiveTime INTEGER, ForeignID TEXT)";
@@ -306,6 +309,8 @@ namespace BlackMaple.MachineFramework
           if (curVersion < 18) Ver17ToVer18(trans);
 
           if (curVersion < 19) Ver18ToVer19(trans);
+
+          if (curVersion < 20) Ver19ToVer20(trans);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -606,6 +611,16 @@ namespace BlackMaple.MachineFramework
         cmd.Transaction = trans;
         cmd.CommandText = "CREATE TABLE station_tools(Counter INTEGER, Tool TEXT, UseInCycle INTEGER, UseAtEndOfCycle INTEGER, ToolLife INTEGER, " +
             "PRIMARY KEY(Counter, Tool))";
+        cmd.ExecuteNonQuery();
+      }
+    }
+
+    private void Ver19ToVer20(IDbTransaction transaction)
+    {
+      using (IDbCommand cmd = _connection.CreateCommand())
+      {
+        cmd.Transaction = transaction;
+        cmd.CommandText = "CREATE TABLE mat_path_details(MaterialID INTEGER, Process INTEGER, Path INTEGER, PRIMARY KEY(MaterialID, Process))";
         cmd.ExecuteNonQuery();
       }
     }
@@ -2099,6 +2114,21 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    public void RecordPathForProcess(long matID, int process, int path)
+    {
+      lock (_lock)
+      {
+        using (var cmd = _connection.CreateCommand())
+        {
+          cmd.CommandText = "INSERT OR REPLACE INTO mat_path_details(MaterialID, Process, Path) VALUES ($mid, $proc, $path)";
+          cmd.Parameters.Add("mid", SqliteType.Integer).Value = matID;
+          cmd.Parameters.Add("proc", SqliteType.Integer).Value = process;
+          cmd.Parameters.Add("path", SqliteType.Integer).Value = path;
+          cmd.ExecuteNonQuery();
+        }
+      }
+    }
+
     public void CreateMaterialID(long matID, string unique, string part, int numProc)
     {
       lock (_lock)
@@ -2141,21 +2171,36 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "SELECT UniqueStr, PartName, NumProcesses, Workorder, Serial FROM matdetails WHERE MaterialID = $mat";
         cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
 
+        MachineWatchInterface.MaterialDetails ret = null;
         using (var reader = cmd.ExecuteReader())
         {
           if (reader.Read())
           {
-            var ret = new MachineWatchInterface.MaterialDetails() { MaterialID = matID };
+            ret = new MachineWatchInterface.MaterialDetails() { MaterialID = matID };
             if (!reader.IsDBNull(0)) ret.JobUnique = reader.GetString(0);
             if (!reader.IsDBNull(1)) ret.PartName = reader.GetString(1);
             if (!reader.IsDBNull(2)) ret.NumProcesses = reader.GetInt32(2);
             if (!reader.IsDBNull(3)) ret.Workorder = reader.GetString(3);
             if (!reader.IsDBNull(4)) ret.Serial = reader.GetString(4);
-            return ret;
           }
         }
 
-        return null;
+        if (ret != null)
+        {
+          ret.Paths = new Dictionary<int, int>();
+          cmd.CommandText = "SELECT Process, Path FROM mat_path_details WHERE MaterialID = $mat";
+          using (var reader = cmd.ExecuteReader())
+          {
+            while (reader.Read())
+            {
+              var proc = reader.GetInt32(0);
+              var path = reader.GetInt32(1);
+              ret.Paths[proc] = path;
+            }
+          }
+        }
+
+        return ret;
       }
     }
 
