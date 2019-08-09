@@ -65,26 +65,28 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     [Fact]
     public void OneJob()
     {
-      var job = OneProcOnePathJob(
-        unique: "uniq1",
-        part: "part1",
-        qty: 3,
-        priority: 5,
-        partsPerPal: 1,
-        pals: new[] { 1, 2 },
-        luls: new[] { 3, 4 },
-        machs: new[] { 5, 6 },
-        prog: 1234,
-        fixture: "fix1",
-        face: 1
-      );
+      var curSch = NewSch(new[] {
+        OneProcOnePathJob(
+          unique: "uniq1",
+          part: "part1",
+          qty: 3,
+          priority: 5,
+          partsPerPal: 1,
+          pals: new[] { 1, 2 },
+          luls: new[] { 3, 4 },
+          machs: new[] { 5, 6 },
+          prog: 1234,
+          fixture: "fix1",
+          face: 1
+        )
+      });
 
       var existingPals = new List<PalletAndMaterial> {
         EmptyPalletInBuffer(pal: 1),
         EmptyPalletInBuffer(pal: 2),
       };
 
-      _assign.NewPalletChange(existingPals, NewSch(job)).Should().BeEquivalentTo<NewPalletRoute>(
+      _assign.NewPalletChange(existingPals, curSch).Should().BeEquivalentTo<NewPalletRoute>(
         NewRoute(
           pal: 1,
           comment: "part1-1",
@@ -173,7 +175,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return j;
     }
 
-    private static PlannedSchedule NewSch(params JobPlan[] jobs)
+    private static PlannedSchedule NewSch(IEnumerable<JobPlan> jobs)
     {
       return new PlannedSchedule()
       {
