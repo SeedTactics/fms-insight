@@ -393,7 +393,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         MaterialID = 1,
         PartName = "p1",
         NumProcesses = 1,
-        Serial = "aaa"
+        Serial = "aaa",
+        Paths = new Dictionary<int, int>()
       });
 
       _logDB.GetMaterialInQueue("q1").Should().BeEquivalentTo(new[] {
@@ -426,7 +427,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         PartName = "p1",
         NumProcesses = 2,
         Serial = "aaa",
-        JobUnique = "uuu1"
+        JobUnique = "uuu1",
+        Paths = new Dictionary<int, int>()
       });
 
       _logDB.GetMaterialInQueue("q1").Should().BeEquivalentTo(new[] {
