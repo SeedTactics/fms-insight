@@ -41,7 +41,7 @@ namespace BlackMaple.FMSInsight.Niigata
 {
   public interface IAssignPallets
   {
-    NiigataAction NewPalletChange(IReadOnlyList<PalletAndMaterial> existingPallets, PlannedSchedule sch);
+    NiigataAction NewPalletChange(IEnumerable<PalletAndMaterial> existingPallets, PlannedSchedule sch);
   }
 
   public class AssignPallets : IAssignPallets
@@ -58,7 +58,7 @@ namespace BlackMaple.FMSInsight.Niigata
     private const int MachineStepNum = 2;
     private const int UnloadStepNum = 3;
 
-    public NiigataAction NewPalletChange(IReadOnlyList<PalletAndMaterial> existingPallets, PlannedSchedule sch)
+    public NiigataAction NewPalletChange(IEnumerable<PalletAndMaterial> existingPallets, PlannedSchedule sch)
     {
       // only need to decide on a single change, SyncPallets will call in a loop until no changes are needed.
 
@@ -88,7 +88,7 @@ namespace BlackMaple.FMSInsight.Niigata
         }
 
         var pathsToLoad = FindMaterialToLoad(sch, pal.Pallet.Master.PalletNum, loadStation: null, matCurrentlyOnPal: Enumerable.Empty<InProcessMaterial>());
-        if (pathsToLoad.Count > 0)
+        if (pathsToLoad != null && pathsToLoad.Count > 0)
         {
           return SetNewRoute(pal.Pallet, pathsToLoad);
         }

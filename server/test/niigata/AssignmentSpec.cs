@@ -44,29 +44,22 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 {
   public class NiigataAssignmentSpec : IDisposable
   {
-    private JobLogDB _logDB;
-    private AssignPallets _assign;
-
+    private FakeIccDsl _dsl;
     public NiigataAssignmentSpec()
     {
-      var logConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-      logConn.Open();
-      _logDB = new JobLogDB(new FMSSettings(), logConn);
-      _logDB.CreateTables(firstSerialOnEmpty: null);
-
-      _assign = new AssignPallets(_logDB);
+      _dsl = new FakeIccDsl();
     }
 
     void IDisposable.Dispose()
     {
-      _logDB.Close();
+      _dsl.Dispose();
     }
 
     [Fact]
     public void OneJob()
     {
-      var curSch = NewSch(new[] {
-        OneProcOnePathJob(
+      _dsl
+        .AddOneProcOnePathJob(
           unique: "uniq1",
           part: "part1",
           qty: 3,
@@ -79,28 +72,75 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           fixture: "fix1",
           face: 1
         )
-      });
-
-      var existingPals = new List<PalletAndMaterial> {
-        EmptyPalletInBuffer(pal: 1),
-        EmptyPalletInBuffer(pal: 2),
-      };
-
-      _assign.NewPalletChange(existingPals, curSch).Should().BeEquivalentTo<NewPalletRoute>(
-        NewRoute(
+        .SetEmptyInBuffer(pal: 1)
+        .SetEmptyInBuffer(pal: 2)
+        .SetEmptyInBuffer(pal: 3)
+        .NextShouldBeNewRoute(
           pal: 1,
           comment: "part1-1",
           luls: new[] { 3, 4 },
           machs: new[] { 5, 6 },
           progs: new[] { 1234 }
         )
-      );
+        .NextShouldBeNewRoute(
+          pal: 2,
+          comment: "part1-1",
+          luls: new[] { 3, 4 },
+          machs: new[] { 5, 6 },
+          progs: new[] { 1234 }
+        )
+        .NextShouldBeNull();
     }
 
-    #region Existing Pallets
-    private static PalletAndMaterial EmptyPalletInBuffer(int pal)
+    [Fact]
+    public void IgnoresPalInMachine()
     {
-      return new PalletAndMaterial()
+      _dsl
+        .AddOneProcOnePathJob(
+          unique: "uniq1",
+          part: "part1",
+          qty: 3,
+          priority: 5,
+          partsPerPal: 1,
+          pals: new[] { 1, 2 },
+          luls: new[] { 3, 4 },
+          machs: new[] { 5, 6 },
+          prog: 1234,
+          fixture: "fix1",
+          face: 1
+        )
+        .SetEmptyInBuffer(pal: 1).MoveToMachine(pal: 1, mach: 3)
+        .NextShouldBeNull();
+
+    }
+  }
+
+  public class FakeIccDsl : IDisposable
+  {
+    private JobLogDB _logDB;
+    private AssignPallets _assign;
+    private PlannedSchedule _sch = new PlannedSchedule() { Jobs = new List<JobPlan>() };
+    private Dictionary<int, PalletAndMaterial> _pals = new Dictionary<int, PalletAndMaterial>();
+
+    public FakeIccDsl()
+    {
+      var logConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
+      logConn.Open();
+      _logDB = new JobLogDB(new FMSSettings(), logConn);
+      _logDB.CreateTables(firstSerialOnEmpty: null);
+
+      _assign = new AssignPallets(_logDB);
+    }
+
+    public void Dispose()
+    {
+      _logDB.Close();
+    }
+
+    #region Pallets
+    public FakeIccDsl SetEmptyInBuffer(int pal)
+    {
+      _pals[pal] = new PalletAndMaterial()
       {
         Pallet = new PalletStatus()
         {
@@ -113,44 +153,19 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         },
         Material = new Dictionary<int, IReadOnlyList<InProcessMaterial>>()
       };
-    }
-    #endregion
 
-    #region Expected actions
-    private static NewPalletRoute NewRoute(int pal, string comment, int[] luls, int[] machs, int[] progs)
+      return this;
+    }
+
+    public FakeIccDsl MoveToMachine(int pal, int mach)
     {
-      return new NewPalletRoute()
-      {
-        NewMaster = new PalletMaster()
-        {
-          PalletNum = pal,
-          Comment = comment,
-          RemainingPalletCycles = 1,
-          Priority = 0,
-          NoWork = false,
-          Skip = false,
-          ForLongToolMaintenance = false,
-          PerformProgramDownload = false,
-          Routes = new List<RouteStep> {
-            new LoadStep() {
-              LoadStations = luls.ToList()
-            },
-            new MachiningStep() {
-              Machines = machs.ToList(),
-              ProgramNumsToRun = progs.ToList()
-            },
-            new UnloadStep() {
-              UnloadStations = luls.ToList()
-            }
-          },
-        }
-
-      };
+      _pals[pal].Pallet.CurStation = NiigataStationNum.Machine(mach);
+      return this;
     }
     #endregion
 
-    #region Job Definitions
-    private static JobPlan OneProcOnePathJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, int prog, string fixture, int face)
+    #region Jobs
+    public FakeIccDsl AddOneProcOnePathJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, int prog, string fixture, int face)
     {
       var j = new JobPlan(unique, 1);
       j.PartName = part;
@@ -172,17 +187,53 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         j.AddProcessOnPallet(1, 1, p.ToString());
       }
       j.AddProcessOnFixture(1, 1, fixture, face.ToString());
-      return j;
+      _sch.Jobs.Add(j);
+
+      return this;
     }
 
-    private static PlannedSchedule NewSch(IEnumerable<JobPlan> jobs)
-    {
-      return new PlannedSchedule()
-      {
-        Jobs = jobs.ToList()
-      };
-    }
     #endregion
 
+    #region Actions
+    public FakeIccDsl NextShouldBeNewRoute(int pal, string comment, int[] luls, int[] machs, int[] progs)
+    {
+      var expectedMaster = new PalletMaster()
+      {
+        PalletNum = pal,
+        Comment = comment,
+        RemainingPalletCycles = 1,
+        Priority = 0,
+        NoWork = false,
+        Skip = false,
+        ForLongToolMaintenance = false,
+        PerformProgramDownload = false,
+        Routes = new List<RouteStep> {
+              new LoadStep() {
+                LoadStations = luls.ToList()
+              },
+              new MachiningStep() {
+                Machines = machs.ToList(),
+                ProgramNumsToRun = progs.ToList()
+              },
+              new UnloadStep() {
+                UnloadStations = luls.ToList()
+              }
+            },
+      };
+      var action = _assign.NewPalletChange(_pals.Values, _sch);
+      action.Should().BeEquivalentTo<NewPalletRoute>(new NewPalletRoute()
+      {
+        NewMaster = expectedMaster
+      });
+      _pals[pal].Pallet.Master = expectedMaster;
+      return this;
+    }
+
+    public FakeIccDsl NextShouldBeNull()
+    {
+      _assign.NewPalletChange(_pals.Values, _sch).Should().BeNull();
+      return this;
+    }
+    #endregion
   }
 }
