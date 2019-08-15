@@ -4,7 +4,7 @@
   "info": {
     "title": "SeedTactic FMS Insight",
     "description": "API for access to FMS Insight for flexible manufacturing system control",
-    "version": "1.8"
+    "version": "1.9"
   },
   "paths": {
     "/api/v1/fms/fms-information": {
@@ -590,9 +590,10 @@
         ],
         "parameters": [
           {
-            "type": "string",
+            "type": "integer",
             "name": "loadDecrementsStrictlyAfterDecrementId",
             "in": "query",
+            "format": "int64",
             "x-nullable": true
           },
           {
@@ -1818,10 +1819,39 @@
                   "format": "int32"
                 }
               }
+            },
+            "Decrements": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/InProcessJobDecrement"
+              }
             }
           }
         }
       ]
+    },
+    "InProcessJobDecrement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "DecrementId",
+        "TimeUTC",
+        "Quantity"
+      ],
+      "properties": {
+        "DecrementId": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "TimeUTC": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "Quantity": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
     },
     "PalletStatus": {
       "type": "object",
@@ -2143,7 +2173,8 @@
       ],
       "properties": {
         "DecrementId": {
-          "type": "string"
+          "type": "integer",
+          "format": "int64"
         },
         "JobUnique": {
           "type": "string"
@@ -2418,6 +2449,13 @@
         },
         "Serial": {
           "type": "string"
+        },
+        "Paths": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "format": "int32"
+          }
         }
       }
     },
