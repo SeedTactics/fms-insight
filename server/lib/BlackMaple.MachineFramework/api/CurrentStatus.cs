@@ -261,7 +261,7 @@ namespace BlackMaple.MachineWatchInterface
 
     private InProcessJob() { } //for json deserialization
 
-    [DataMember(Name = "Completed", IsRequired = true)] private int[][] _completed;
+    [DataMember(Name = "Completed", IsRequired = false)] private int[][] _completed;
 
     [DataMember(Name = "Decrements", IsRequired = false), OptionalField] private List<InProcessJobDecrement> _decrements;
   }
