@@ -61,6 +61,8 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public List<PalletAndMaterial> CheckForNewLogEntries(NiigataStatus status, PlannedSchedule sch, out bool palletStateUpdated)
     {
+      //NOTE: pallets in the buffer or cart moving to load that are empty should still have the material to load on them,
+      //so that material from queues is not duplicate-loaded
       palletStateUpdated = false;
       return new List<PalletAndMaterial>();
     }

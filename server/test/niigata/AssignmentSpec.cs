@@ -111,6 +111,138 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         )
         .SetEmptyInBuffer(pal: 1).MoveToMachine(pal: 1, mach: 3)
         .NextShouldBeNull();
+    }
+
+    [Fact]
+    public void IgnoresPalletWithMaterialInBuffer()
+    {
+      _dsl
+        .AddOneProcOnePathJob(
+          unique: "uniq1",
+          part: "part1",
+          qty: 3,
+          priority: 5,
+          partsPerPal: 1,
+          pals: new[] { 1, 2 },
+          luls: new[] { 3, 4 },
+          machs: new[] { 5, 6 },
+          prog: 1234,
+          fixture: "fix1",
+          face: 1
+        )
+        .SetEmptyInBuffer(pal: 1).AddMaterial(pal: 1, face: 1, matId: 100, jobUnique: "uniq1", part: "part1", process: 1, path: 1)
+        .NextShouldBeNull();
+
+    }
+
+    [Fact]
+    public void ApplysNewQtyAtUnload()
+    {
+      _dsl
+        .AddOneProcOnePathJob(
+          unique: "uniq1",
+          part: "part1",
+          qty: 3,
+          priority: 5,
+          partsPerPal: 1,
+          pals: new[] { 1, 2 },
+          luls: new[] { 3, 4 },
+          machs: new[] { 5, 6 },
+          prog: 1234,
+          fixture: "fix1",
+          face: 1
+        )
+        .SetEmptyInBuffer(pal: 1).MoveToUnload(pal: 1, load: 3)
+        .SetRoute(pal: 1, comment: "abc", luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 1234 })
+        .AddMaterial(pal: 1, face: 1, matId: 100, jobUnique: "uniq1", part: "part1", process: 1, path: 1)
+        .NextShouldBeRouteIncrement(pal: 1)
+
+        //now should set new route if loads, machines, or progs differ
+        .SetRoute(pal: 1, comment: "abc", luls: new[] { 100, 200 }, machs: new[] { 5, 6 }, progs: new[] { 1234 })
+        .NextShouldBeNewRoute(pal: 1, comment: "part1-1", luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 1234 })
+        .SetRoute(pal: 1, comment: "abc", luls: new[] { 3, 4 }, machs: new[] { 500, 600 }, progs: new[] { 1234 })
+        .NextShouldBeNewRoute(pal: 1, comment: "part1-1", luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 1234 })
+        .SetRoute(pal: 1, comment: "abc", luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 12345 })
+        .NextShouldBeNewRoute(pal: 1, comment: "part1-1", luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 1234 });
+    }
+
+    [Fact(Skip = "Pending")]
+    public void CountsCompletedFromLog()
+    {
+
+    }
+
+    [Fact]
+    public void CastingsFromQueue()
+    {
+      _dsl
+        .AddOneProcOnePathJob(
+          unique: "uniq1",
+          part: "part1",
+          qty: 3,
+          priority: 5,
+          partsPerPal: 1,
+          pals: new[] { 1, 2 },
+          luls: new[] { 3, 4 },
+          machs: new[] { 5, 6 },
+          prog: 1234,
+          fixture: "fix1",
+          face: 1,
+          queue: "thequeue"
+        )
+        .SetEmptyInBuffer(pal: 1)
+        .NextShouldBeNull()
+
+        .AddUnallocatedCasting("thequeue", "part4", 1, out long unusedMatId)
+        .NextShouldBeNull()
+
+        .AddUnallocatedCasting("thequeue", "part1", 1, out long matId)
+        .NextShouldBeNewRoute(pal: 1, comment: "part1-1", luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 1234 })
+        .AddLoadingMaterial(pal: 1, face: 1, matId: matId, jobUnique: "uniq1", part: "part1", process: 1, path: 1)
+
+        .SetEmptyInBuffer(pal: 2)
+        .NextShouldBeNull() // already allocated to pallet 1
+
+        .AllocateMaterial("uniq1", "part1", 1, out long mid2)
+        .AddMaterialToQueue("thequeue", mid2)
+        .NextShouldBeNewRoute(pal: 2, comment: "part1-1", luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 1234 })
+        ;
+    }
+
+
+    [Fact(Skip = "Pending")]
+    public void MultipleJobPriority()
+    {
+
+    }
+
+    [Fact(Skip = "Pending")]
+    public void MultipleProcessSeparatePallets()
+    {
+
+    }
+
+    [Fact(Skip = "Pending")]
+    public void MultipleProcessSamePallet()
+    {
+
+    }
+
+    [Fact(Skip = "pending")]
+    public void MultipleFixtures()
+    {
+
+    }
+
+    [Fact(Skip = "Pending")]
+    public void MultpleProcsMultiplePathsSeparatePallets()
+    {
+
+    }
+
+    [Fact(Skip = "Pending")]
+    public void MultipleProcsMultiplePathsSamePallet()
+    {
 
     }
   }
@@ -149,7 +281,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             PalletNum = pal,
             NoWork = true
           },
-          CurStation = NiigataStationNum.Buffer(pal)
+          CurStation = NiigataStationNum.Buffer(pal),
+          Tracking = new TrackingInfo()
         },
         Material = new Dictionary<int, IReadOnlyList<InProcessMaterial>>()
       };
@@ -162,10 +295,46 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _pals[pal].Pallet.CurStation = NiigataStationNum.Machine(mach);
       return this;
     }
+
+    public FakeIccDsl MoveToUnload(int pal, int load)
+    {
+      _pals[pal].Pallet.CurStation = NiigataStationNum.LoadStation(load);
+      _pals[pal].Pallet.Tracking.CurrentControlNum = AssignPallets.UnloadStepNum * 2;
+      _pals[pal].Pallet.Tracking.CurrentStepNum = AssignPallets.UnloadStepNum;
+      return this;
+    }
+
+    public FakeIccDsl SetRoute(int pal, string comment, int[] luls, int[] machs, int[] progs)
+    {
+      _pals[pal].Pallet.Master = new PalletMaster()
+      {
+        PalletNum = pal,
+        Comment = comment,
+        RemainingPalletCycles = 1,
+        Priority = 0,
+        NoWork = false,
+        Skip = false,
+        ForLongToolMaintenance = false,
+        PerformProgramDownload = false,
+        Routes = new List<RouteStep> {
+              new LoadStep() {
+                LoadStations = luls.ToList()
+              },
+              new MachiningStep() {
+                Machines = machs.ToList(),
+                ProgramNumsToRun = progs.ToList()
+              },
+              new UnloadStep() {
+                UnloadStations = luls.ToList()
+              }
+            },
+      };
+      return this;
+    }
     #endregion
 
     #region Jobs
-    public FakeIccDsl AddOneProcOnePathJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, int prog, string fixture, int face)
+    public FakeIccDsl AddOneProcOnePathJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, int prog, string fixture, int face, string queue = null)
     {
       var j = new JobPlan(unique, 1);
       j.PartName = part;
@@ -187,11 +356,107 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         j.AddProcessOnPallet(1, 1, p.ToString());
       }
       j.AddProcessOnFixture(1, 1, fixture, face.ToString());
+      if (!string.IsNullOrEmpty(queue))
+      {
+        j.SetInputQueue(1, 1, queue);
+      }
       _sch.Jobs.Add(j);
 
       return this;
     }
 
+    #endregion
+
+    #region Material
+    public FakeIccDsl AllocateMaterial(string unique, string part, int numProc, out long matId)
+    {
+      matId = _logDB.AllocateMaterialID(unique, part, numProc);
+      return this;
+    }
+
+    public FakeIccDsl AddUnallocatedCasting(string queue, string part, int numProc, out long matId)
+    {
+      matId = _logDB.AllocateMaterialIDForCasting(part, numProc);
+      _logDB.RecordAddMaterialToQueue(new JobLogDB.EventLogMaterial()
+      {
+        MaterialID = matId,
+        Process = 0,
+        Face = ""
+      }, queue, -1);
+      return this;
+    }
+
+    public FakeIccDsl AddMaterialToQueue(string queue, long matId)
+    {
+      _logDB.RecordAddMaterialToQueue(new JobLogDB.EventLogMaterial()
+      {
+        MaterialID = matId,
+        Process = 0,
+        Face = ""
+      }, queue, -1);
+      return this;
+    }
+
+
+    public FakeIccDsl AddMaterial(int pal, int face, long matId, string jobUnique, string part, int process, int path)
+    {
+      var m = new InProcessMaterial()
+      {
+        MaterialID = matId,
+        JobUnique = jobUnique,
+        PartName = part,
+        Process = process,
+        Path = path,
+        Location = new InProcessMaterialLocation()
+        {
+          Type = InProcessMaterialLocation.LocType.OnPallet,
+          Pallet = pal.ToString()
+        },
+        Action = new InProcessMaterialAction()
+        {
+          Type = InProcessMaterialAction.ActionType.Waiting
+        }
+      };
+      if (_pals[pal].Material.ContainsKey(face))
+      {
+        _pals[pal].Material[face] = _pals[pal].Material[face].Append(m).ToList();
+      }
+      else
+      {
+        _pals[pal].Material[face] = new[] { m };
+      }
+      return this;
+    }
+
+    public FakeIccDsl AddLoadingMaterial(int pal, int face, long matId, string jobUnique, string part, int process, int path)
+    {
+      var m = new InProcessMaterial()
+      {
+        MaterialID = matId,
+        JobUnique = jobUnique,
+        PartName = part,
+        Process = process,
+        Path = path,
+        Location = new InProcessMaterialLocation()
+        {
+          Type = InProcessMaterialLocation.LocType.OnPallet,
+          Pallet = pal.ToString()
+        },
+        Action = new InProcessMaterialAction()
+        {
+          Type = InProcessMaterialAction.ActionType.Loading
+        }
+      };
+      if (_pals[pal].Material.ContainsKey(face))
+      {
+        _pals[pal].Material[face] = _pals[pal].Material[face].Append(m).ToList();
+      }
+      else
+      {
+        _pals[pal].Material[face] = new[] { m };
+      }
+      return this;
+    }
     #endregion
 
     #region Actions
@@ -232,6 +497,21 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     public FakeIccDsl NextShouldBeNull()
     {
       _assign.NewPalletChange(_pals.Values, _sch).Should().BeNull();
+      return this;
+    }
+
+    public FakeIccDsl NextShouldBeRouteIncrement(int pal)
+    {
+      _assign.NewPalletChange(_pals.Values, _sch).Should().BeEquivalentTo<UpdatePalletQuantities>(new UpdatePalletQuantities()
+      {
+        Pallet = pal,
+        Priority = _pals[pal].Pallet.Master.Priority,
+        Cycles = 2,
+        NoWork = false,
+        Skip = false,
+        ForLongTool = false
+      });
+      _pals[pal].Pallet.Master.RemainingPalletCycles = 2;
       return this;
     }
     #endregion
