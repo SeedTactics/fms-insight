@@ -123,7 +123,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       // two pallets with some material
       var pal1 = new PalletAndMaterial()
       {
-        Pallet = new PalletStatus
+        Status = new PalletStatus
         {
           Master = new PalletMaster()
           {
@@ -160,7 +160,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       };
       var pal2 = new PalletAndMaterial()
       {
-        Pallet = new PalletStatus()
+        Status = new PalletStatus()
         {
           Master = new PalletMaster()
           {

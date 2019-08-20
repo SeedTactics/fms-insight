@@ -228,6 +228,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
   public class NewPalletRoute : NiigataAction
   {
+    public long PendingID { get; set; }
     public PalletMaster NewMaster { get; set; }
   }
 

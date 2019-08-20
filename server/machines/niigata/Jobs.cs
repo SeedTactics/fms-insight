@@ -109,13 +109,13 @@ namespace BlackMaple.FMSInsight.Niigata
       // pallets
       foreach (var pal in pals)
       {
-        curStatus.Pallets.Add(pal.Pallet.Master.PalletNum.ToString(), new MachineWatchInterface.PalletStatus()
+        curStatus.Pallets.Add(pal.Status.Master.PalletNum.ToString(), new MachineWatchInterface.PalletStatus()
         {
-          Pallet = pal.Pallet.Master.PalletNum.ToString(),
+          Pallet = pal.Status.Master.PalletNum.ToString(),
           FixtureOnPallet = "",
-          OnHold = pal.Pallet.Master.Skip,
-          CurrentPalletLocation = pal.Pallet.CurStation.Location,
-          NumFaces = pal.Material.Max(x => x.Key)
+          OnHold = pal.Status.Master.Skip,
+          CurrentPalletLocation = pal.Status.CurStation.Location,
+          NumFaces = pal.Faces.Max(x => x.Face)
         });
       }
 
@@ -123,7 +123,7 @@ namespace BlackMaple.FMSInsight.Niigata
       var matsOnPallets = new HashSet<long>();
       foreach (var pal in pals)
       {
-        foreach (var mat in pal.Material.Values.SelectMany(x => x))
+        foreach (var mat in pal.Faces.SelectMany(x => x.Material))
         {
           matsOnPallets.Add(mat.MaterialID);
           curStatus.Material.Add(mat);
@@ -178,9 +178,9 @@ namespace BlackMaple.FMSInsight.Niigata
       //alarms
       foreach (var pal in pals)
       {
-        if (pal.Pallet.Tracking.Alarm)
+        if (pal.Status.Tracking.Alarm)
         {
-          curStatus.Alarms.Add("Pallet " + pal.Pallet.Master.PalletNum.ToString() + " has alarm " + pal.Pallet.Tracking.AlarmCode.ToString());
+          curStatus.Alarms.Add("Pallet " + pal.Status.Master.PalletNum.ToString() + " has alarm " + pal.Status.Tracking.AlarmCode.ToString());
         }
       }
       foreach (var mc in status.Machines.Values)

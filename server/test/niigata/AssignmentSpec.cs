@@ -274,7 +274,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       _pals[pal] = new PalletAndMaterial()
       {
-        Pallet = new PalletStatus()
+        Status = new PalletStatus()
         {
           Master = new PalletMaster()
           {
@@ -292,21 +292,21 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public FakeIccDsl MoveToMachine(int pal, int mach)
     {
-      _pals[pal].Pallet.CurStation = NiigataStationNum.Machine(mach);
+      _pals[pal].Status.CurStation = NiigataStationNum.Machine(mach);
       return this;
     }
 
     public FakeIccDsl MoveToUnload(int pal, int load)
     {
-      _pals[pal].Pallet.CurStation = NiigataStationNum.LoadStation(load);
-      _pals[pal].Pallet.Tracking.CurrentControlNum = AssignPallets.UnloadStepNum * 2;
-      _pals[pal].Pallet.Tracking.CurrentStepNum = AssignPallets.UnloadStepNum;
+      _pals[pal].Status.CurStation = NiigataStationNum.LoadStation(load);
+      _pals[pal].Status.Tracking.CurrentControlNum = AssignPallets.UnloadStepNum * 2;
+      _pals[pal].Status.Tracking.CurrentStepNum = AssignPallets.UnloadStepNum;
       return this;
     }
 
     public FakeIccDsl SetRoute(int pal, string comment, int[] luls, int[] machs, int[] progs)
     {
-      _pals[pal].Pallet.Master = new PalletMaster()
+      _pals[pal].Status.Master = new PalletMaster()
       {
         PalletNum = pal,
         Comment = comment,
@@ -490,7 +490,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         NewMaster = expectedMaster
       });
-      _pals[pal].Pallet.Master = expectedMaster;
+      _pals[pal].Status.Master = expectedMaster;
       return this;
     }
 
@@ -505,13 +505,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _assign.NewPalletChange(_pals.Values, _sch).Should().BeEquivalentTo<UpdatePalletQuantities>(new UpdatePalletQuantities()
       {
         Pallet = pal,
-        Priority = _pals[pal].Pallet.Master.Priority,
+        Priority = _pals[pal].Status.Master.Priority,
         Cycles = 2,
         NoWork = false,
         Skip = false,
         ForLongTool = false
       });
-      _pals[pal].Pallet.Master.RemainingPalletCycles = 2;
+      _pals[pal].Status.Master.RemainingPalletCycles = 2;
       return this;
     }
     #endregion
