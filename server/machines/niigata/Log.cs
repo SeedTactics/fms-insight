@@ -51,7 +51,7 @@ namespace BlackMaple.FMSInsight.Niigata
   public class PalletAndMaterial
   {
     public PalletStatus Status { get; set; }
-    public List<PalletFace> Faces { get; set; } // key is the face
+    public List<PalletFace> Faces { get; set; }
   }
 
   public interface ICreateLog
@@ -63,67 +63,91 @@ namespace BlackMaple.FMSInsight.Niigata
   {
     private JobLogDB _log;
     private JobDB _jobs;
+    private FMSSettings _settings;
     private static Serilog.ILogger Log = Serilog.Log.ForContext<CreateLogEntries>();
 
-    public CreateLogEntries(JobLogDB l, JobDB jobs)
+    public CreateLogEntries(JobLogDB l, JobDB jobs, FMSSettings s)
     {
       _log = l;
       _jobs = jobs;
+      _settings = s;
     }
 
     public List<PalletAndMaterial> CheckForNewLogEntries(NiigataStatus status, PlannedSchedule sch, out bool palletStateUpdated, DateTime? nowUtc = null)
     {
       var now = nowUtc ?? DateTime.UtcNow;
       palletStateUpdated = false;
-      var pals = new List<PalletAndMaterial>();
+      var palsWithMat = new List<PalletAndMaterial>();
 
-      foreach (var pal in status.Pallets)
+      // sort pallets by loadBegin so that the assignment of material from queues to pallets is consistent
+      var pals = status.Pallets
+        .Select(pal =>
+        {
+          var log = _log.CurrentPalletLog(pal.Master.PalletNum.ToString());
+          return new { Status = pal, Log = log };
+        })
+        .OrderBy(p =>
+        {
+          var loadBegin = p.Log.FirstOrDefault(e =>
+            e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD" && e.StartOfCycle
+          );
+          return loadBegin?.EndTimeUTC ?? DateTime.MaxValue;
+        })
+        .ToList();
+
+      // first, go through loaded pallets because might need to allocate material from queue
+      var currentlyLoading = new HashSet<long>();
+      foreach (var pal in pals.Where(p => !p.Status.Master.NoWork))
       {
-        var log = _log.CurrentPalletLog(pal.Master.PalletNum.ToString());
-        if (pal.Master.NoWork)
-        {
-          pals.Add(new PalletAndMaterial()
-          {
-            Status = pal,
-            Faces = new List<PalletFace>()
-          });
-        }
-        else if (pal.Tracking.CurrentStepNum == AssignPallets.LoadStepNum && pal.Tracking.BeforeCurrentStep)
-        {
-          // Before load
-          pals.Add(CurrentlyLoadingPallet(pal, log, now, ref palletStateUpdated));
-        }
-        else if (pal.Tracking.CurrentStepNum == AssignPallets.LoadStepNum && !pal.Tracking.BeforeCurrentStep)
+        if (pal.Status.Tracking.CurrentStepNum == AssignPallets.LoadStepNum && !pal.Status.Tracking.BeforeCurrentStep)
         {
           // After load
-          pals.Add(LoadedPallet(pal, log, now, ref palletStateUpdated));
+          palsWithMat.Add(LoadedPallet(pal.Status, pal.Log, now, currentlyLoading, ref palletStateUpdated));
         }
-        else if (pal.Tracking.CurrentStepNum == AssignPallets.MachineStepNum && pal.Tracking.BeforeCurrentStep)
+        else if (pal.Status.Tracking.CurrentStepNum == AssignPallets.UnloadStepNum && !pal.Status.Tracking.BeforeCurrentStep)
+        {
+          // after unload
+          palsWithMat.Add(LoadedPallet(pal.Status, pal.Log, now, currentlyLoading, ref palletStateUpdated));
+        }
+        else if (pal.Status.Tracking.CurrentStepNum == AssignPallets.MachineStepNum && pal.Status.Tracking.BeforeCurrentStep)
         {
           // before machine
-          pals.Add(LoadedPallet(pal, log, now, ref palletStateUpdated));
+          palsWithMat.Add(LoadedPallet(pal.Status, pal.Log, now, currentlyLoading, ref palletStateUpdated));
         }
-        else if (pal.Tracking.CurrentStepNum == AssignPallets.MachineStepNum && !pal.Tracking.BeforeCurrentStep)
+        else if (pal.Status.Tracking.CurrentStepNum == AssignPallets.MachineStepNum && !pal.Status.Tracking.BeforeCurrentStep)
         {
           // after machine
-          var palAndMat = LoadedPallet(pal, log, now, ref palletStateUpdated);
-          EnsureAllMachineEnds(palAndMat, log, now, ref palletStateUpdated);
-          pals.Add(palAndMat);
-        }
-        else if (pal.Tracking.CurrentStepNum == AssignPallets.UnloadStepNum && pal.Tracking.BeforeCurrentStep)
-        {
-          // unload-begin
-          var palAndMat = CurrentlyUnloadingPallet(pal, log, now, ref palletStateUpdated);
-          EnsureAllMachineEnds(palAndMat, log, now, ref palletStateUpdated);
-          pals.Add(palAndMat);
-        }
-        else
-        {
-          Log.Error("Invalid pallet state {@pallet}", pal);
+          EnsureAllMachineEnds(pal.Status, pal.Log, now, ref palletStateUpdated);
+          palsWithMat.Add(LoadedPallet(pal.Status, pal.Log, now, currentlyLoading, ref palletStateUpdated));
         }
       }
 
-      return pals;
+      // next, go through pallets currently being loaded
+      foreach (var pal in pals.Where(p => !p.Status.Master.NoWork))
+      {
+        if (pal.Status.Tracking.CurrentStepNum == AssignPallets.LoadStepNum && pal.Status.Tracking.BeforeCurrentStep)
+        {
+          // Before load
+          palsWithMat.Add(CurrentlyLoadingPallet(pal.Status, pal.Log, now, currentlyLoading, ref palletStateUpdated));
+        }
+        else if (pal.Status.Tracking.CurrentStepNum == AssignPallets.UnloadStepNum && pal.Status.Tracking.BeforeCurrentStep)
+        {
+          // unload-begin
+          EnsureAllMachineEnds(pal.Status, pal.Log, now, ref palletStateUpdated);
+          palsWithMat.Add(CurrentlyLoadingPallet(pal.Status, pal.Log, now, currentlyLoading, ref palletStateUpdated));
+        }
+      }
+
+      foreach (var pal in pals.Where(p => p.Status.Master.NoWork))
+      {
+        palsWithMat.Add(new PalletAndMaterial()
+        {
+          Status = pal.Status,
+          Faces = new List<PalletFace>()
+        });
+      }
+
+      return palsWithMat;
     }
 
     private IDictionary<int, PalletFace> GetFaces(PalletStatus pallet)
@@ -140,54 +164,56 @@ namespace BlackMaple.FMSInsight.Niigata
         });
     }
 
-    private List<InProcessMaterial> MaterialCurrentlyOnFace(PalletStatus pallet, PalletFace face, IEnumerable<LogEntry> log, bool allocateIfMissing)
+    private class InProcessMaterialWithDetails
     {
-      var mats = new List<InProcessMaterial>();
+      public InProcessMaterial InProc { get; set; }
+      public MaterialDetails Details { get; set; }
+    }
 
+    private List<InProcessMaterialWithDetails> MaterialCurrentlyOnPallet(PalletStatus pallet, IEnumerable<LogEntry> log)
+    {
       if (pallet.Master.NoWork)
       {
-        return mats;
+        return new List<InProcessMaterialWithDetails>();
       }
 
-      foreach (var e in log)
-      {
-        if (e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD" && !e.StartOfCycle)
+      return log
+        .Where(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD" && !e.StartOfCycle)
+        .SelectMany(e => e.Material)
+        .Select(m =>
         {
-          foreach (var m in e.Material)
+          var details = _log.GetMaterialDetails(m.MaterialID);
+          return new InProcessMaterialWithDetails()
           {
-            if (m.Face == face.Face.ToString())
+            InProc = new InProcessMaterial()
             {
-              var details = _log.GetMaterialDetails(m.MaterialID);
-              mats.Add(new InProcessMaterial()
+              MaterialID = m.MaterialID,
+              JobUnique = m.JobUniqueStr,
+              PartName = m.PartName,
+              Process = m.Process,
+              Path = details.Paths.ContainsKey(m.Process) ? details.Paths[m.Process] : 1,
+              Serial = details.Serial,
+              WorkorderId = details.Workorder,
+              SignaledInspections =
+              _log.LookupInspectionDecisions(m.MaterialID)
+              .Where(x => x.Inspect)
+              .Select(x => x.InspType)
+              .ToList(),
+              Location = new InProcessMaterialLocation()
               {
-                MaterialID = m.MaterialID,
-                JobUnique = m.JobUniqueStr,
-                PartName = m.PartName,
-                Process = m.Process,
-                Path = details.Paths.ContainsKey(m.Process) ? details.Paths[m.Process] : 1,
-                Serial = details.Serial,
-                WorkorderId = details.Workorder,
-                SignaledInspections =
-                  _log.LookupInspectionDecisions(m.MaterialID)
-                  .Where(x => x.Inspect)
-                  .Select(x => x.InspType)
-                  .ToList(),
-                Location = new InProcessMaterialLocation()
-                {
-                  Type = InProcessMaterialLocation.LocType.OnPallet,
-                  Pallet = pallet.Master.PalletNum.ToString()
-                },
-                Action = new InProcessMaterialAction()
-                {
-                  Type = InProcessMaterialAction.ActionType.Waiting
-                }
-              });
-            }
-          }
-        }
-      }
-
-      return mats;
+                Type = InProcessMaterialLocation.LocType.OnPallet,
+                Pallet = pallet.Master.PalletNum.ToString(),
+                Face = int.Parse(m.Face)
+              },
+              Action = new InProcessMaterialAction()
+              {
+                Type = InProcessMaterialAction.ActionType.Waiting
+              }
+            },
+            Details = details
+          };
+        })
+        .ToList();
     }
 
     private List<InProcessMaterial> MaterialToLoadOnFace(PalletStatus pallet, PalletFace face, bool allocateNew, HashSet<long> currentlyLoading, Dictionary<long, InProcessMaterial> unusedMatsOnPal)
@@ -205,8 +231,10 @@ namespace BlackMaple.FMSInsight.Niigata
           if (allocateNew)
           {
             mid = _log.AllocateMaterialID(face.Job.UniqueStr, face.Job.PartName, face.Job.NumProcesses);
-            _log.RecordPathForProcess(mid, face.Process, face.Path);
-            // TODO: serial
+            if (_settings.SerialType == SerialType.AssignOneSerialPerMaterial)
+            {
+              _log.RecordSerialForMaterialID(mid, face.Process, _settings.ConvertMaterialIDToSerial(mid));
+            }
           }
           else
           {
@@ -236,7 +264,7 @@ namespace BlackMaple.FMSInsight.Niigata
         var castings =
           _log.GetMaterialInQueue(inputQueue)
           .Where(m => (string.IsNullOrEmpty(m.Unique) && m.PartName == face.Job.PartName)
-                    || (!string.IsNullOrEmpty(m.Unique) && m.Unique == face.Job.UniqueStr)
+                   || (!string.IsNullOrEmpty(m.Unique) && m.Unique == face.Job.UniqueStr)
           )
           .Where(m => !currentlyLoading.Contains(m.MaterialID))
           .Where(m => ProcessAndPathForMatID(m.MaterialID, face.Job).proc == 0)
@@ -244,6 +272,10 @@ namespace BlackMaple.FMSInsight.Niigata
 
         foreach (var mat in castings.Take(face.Job.PartsPerPallet(face.Process, face.Path)))
         {
+          if (allocateNew)
+          {
+            _log.SetDetailsForMaterialID(mat.MaterialID, face.Job.UniqueStr, face.Job.PartName, face.Job.NumProcesses);
+          }
           mats.Add(new InProcessMaterial()
           {
             MaterialID = mat.MaterialID,
@@ -269,9 +301,6 @@ namespace BlackMaple.FMSInsight.Niigata
       }
       else
       {
-        // loading in-proc from pallet then queue
-        var countToLoad = face.Job.PartsPerPallet(face.Process, face.Path);
-
         // first check mat on pal
         foreach (var mat in unusedMatsOnPal.Values)
         {
@@ -291,7 +320,8 @@ namespace BlackMaple.FMSInsight.Niigata
               Location = new InProcessMaterialLocation()
               {
                 Type = InProcessMaterialLocation.LocType.OnPallet,
-                Pallet = pallet.Master.PalletNum.ToString()
+                Pallet = pallet.Master.PalletNum.ToString(),
+                Face = face.Face
               },
               Action = new InProcessMaterialAction()
               {
@@ -299,6 +329,7 @@ namespace BlackMaple.FMSInsight.Niigata
               }
             });
             unusedMatsOnPal.Remove(mat.MaterialID);
+            currentlyLoading.Add(mat.MaterialID);
 
             if (mats.Count >= face.Job.PartsPerPallet(face.Process, face.Path))
             {
@@ -339,6 +370,8 @@ namespace BlackMaple.FMSInsight.Niigata
               }
             });
 
+            currentlyLoading.Add(mat.MaterialID);
+
             if (mats.Count >= face.Job.PartsPerPallet(face.Process, face.Path))
             {
               break;
@@ -347,12 +380,48 @@ namespace BlackMaple.FMSInsight.Niigata
         }
       }
 
-      // TODO: if not enough, give error and add/allocate more
+      // if not enough, give error and allocate more
+      if (mats.Count < face.Job.PartsPerPallet(face.Process, face.Path))
+      {
+        Log.Debug("Unable to find enough in-process parts for {@pallet} and {@face} with {@currentlyLoading}", pallet, face, currentlyLoading);
+        if (allocateNew)
+        {
+          Log.Warning("Unable to find enough in-process parts for {@job}-{@proc} on pallet {@pallet}", face.Job.UniqueStr, face.Process, pallet.Master.PalletNum);
+        }
+        for (int i = mats.Count; i < face.Job.PartsPerPallet(face.Process, face.Path); i++)
+        {
+          long mid = -1;
+          if (allocateNew)
+          {
+            mid = _log.AllocateMaterialID(face.Job.UniqueStr, face.Job.PartName, face.Job.NumProcesses);
+            if (_settings.SerialType == SerialType.AssignOneSerialPerMaterial)
+            {
+              _log.RecordSerialForMaterialID(mid, face.Process, _settings.ConvertMaterialIDToSerial(mid));
+            }
+          }
+          mats.Add(new InProcessMaterial()
+          {
+            MaterialID = mid,
+            JobUnique = face.Job.UniqueStr,
+            PartName = face.Job.PartName,
+            Process = face.Process - 1,
+            Path = 1,
+            Location = new InProcessMaterialLocation()
+            {
+              Type = InProcessMaterialLocation.LocType.Free,
+            },
+            Action = new InProcessMaterialAction()
+            {
+              Type = InProcessMaterialAction.ActionType.Waiting
+            }
+          });
+        }
+      }
 
       return mats;
     }
 
-    private PalletAndMaterial CurrentlyLoadingPallet(PalletStatus pallet, IEnumerable<LogEntry> log, DateTime nowUtc, ref bool palletStateUpdated)
+    private PalletAndMaterial CurrentlyLoadingPallet(PalletStatus pallet, IEnumerable<LogEntry> log, DateTime nowUtc, HashSet<long> currentlyLoading, ref bool palletStateUpdated)
     {
       var faces = GetFaces(pallet);
 
@@ -375,16 +444,16 @@ namespace BlackMaple.FMSInsight.Niigata
         }
       }
 
-      // first unloading material
-      var unusedMatsOnPal = new Dictionary<long, InProcessMaterial>();
+      // first find all material being unloaded
+      var matToUnload = MaterialCurrentlyOnPallet(pallet, log);
+      var unusedMatsOnPal = matToUnload.ToDictionary(m => m.InProc.MaterialID, m => m.InProc);
+
+      // now material to load
+      var loadingIds = new HashSet<long>();
       foreach (var face in faces)
       {
-
-      }
-
-      foreach (var face in faces)
-      {
-        var loadMat = MaterialToLoadOnFace(pallet, face.Value, allocateNew: false);
+        // find material to load
+        var loadMat = MaterialToLoadOnFace(pallet, face.Value, allocateNew: false, currentlyLoading: currentlyLoading, unusedMatsOnPal: unusedMatsOnPal);
         faces[face.Key].Material.AddRange(loadMat);
         foreach (var mat in loadMat)
         {
@@ -396,32 +465,39 @@ namespace BlackMaple.FMSInsight.Niigata
             ProcessAfterLoad = face.Value.Process,
             PathAfterLoad = face.Value.Path
           };
+          loadingIds.Add(mat.MaterialID);
         }
-        var loadingIds = new HashSet<long>(loadMat.Select(m => m.MaterialID));
+      }
 
-        var unloadMat = MaterialCurrentlyOnFace(pallet, face.Value, log, allocateIfMissing: false);
-        foreach (var mat in unloadMat)
+      var jobCache =
+        faces.ToDictionary(f => f.Value.Job.UniqueStr, f => f.Value.Job);
+
+      // now material to unload or transfer
+      foreach (var mat in matToUnload)
+      {
+        if (loadingIds.Contains(mat.InProc.MaterialID)) continue; // transfer
+
+        if (mat.InProc.Process == mat.Details.NumProcesses)
         {
-          if (loadingIds.Contains(mat.MaterialID)) continue; // transfer
-
-          if (face.Value.Process == face.Value.Job.NumProcesses)
+          mat.InProc.Action = new InProcessMaterialAction()
           {
-            mat.Action = new InProcessMaterialAction()
-            {
-              Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
-            };
-          }
-          else
-          {
-            mat.Action = new InProcessMaterialAction()
-            {
-              Type = InProcessMaterialAction.ActionType.UnloadToInProcess,
-              UnloadIntoQueue = face.Value.Job.GetOutputQueue(face.Value.Process, face.Value.Path)
-            };
-          }
-
-          faces[face.Key].Material.Add(mat);
+            Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
+          };
         }
+        else
+        {
+          if (!jobCache.ContainsKey(mat.InProc.JobUnique))
+          {
+            jobCache.Add(mat.InProc.JobUnique, _jobs.LoadJob(mat.InProc.JobUnique));
+          }
+          var job = jobCache[mat.InProc.JobUnique];
+          mat.InProc.Action = new InProcessMaterialAction()
+          {
+            Type = InProcessMaterialAction.ActionType.UnloadToInProcess,
+            UnloadIntoQueue = job.GetOutputQueue(mat.InProc.Process, mat.Details.Paths.ContainsKey(mat.InProc.Process) ? mat.Details.Paths[mat.InProc.Process] : 1)
+          };
+        }
+        faces[mat.InProc.Location.Face ?? 1].Material.Add(mat.InProc);
       }
 
       return new PalletAndMaterial()
@@ -431,63 +507,7 @@ namespace BlackMaple.FMSInsight.Niigata
       };
     }
 
-    private PalletAndMaterial CurrentlyUnloadingPallet(PalletStatus pallet, IEnumerable<LogEntry> log, DateTime nowUtc, ref bool palletStateUpdated)
-    {
-      var faces = GetFaces(pallet);
-
-      if (pallet.CurStation.Location.Location == PalletLocationEnum.LoadUnload)
-      {
-        // ensure load-begin so that we know the starting time of load
-        bool seenLoadBegin =
-          log.Any(e =>
-            e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD" && e.StartOfCycle
-          );
-        if (!seenLoadBegin)
-        {
-          palletStateUpdated = true;
-          _log.RecordLoadStart(
-            mats: new JobLogDB.EventLogMaterial[] { },
-            pallet: pallet.Master.PalletNum.ToString(),
-            lulNum: pallet.CurStation.Location.Num,
-            timeUTC: nowUtc
-          );
-        }
-      }
-
-      // now find the material for the pallet
-      foreach (var face in faces)
-      {
-        var unloadMat = MaterialCurrentlyOnFace(pallet, face.Value, log, allocateIfMissing: false);
-        foreach (var mat in unloadMat)
-        {
-          if (face.Value.Process == face.Value.Job.NumProcesses)
-          {
-            mat.Action = new InProcessMaterialAction()
-            {
-              Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
-            };
-          }
-          else
-          {
-            mat.Action = new InProcessMaterialAction()
-            {
-              Type = InProcessMaterialAction.ActionType.UnloadToInProcess,
-              UnloadIntoQueue = face.Value.Job.GetOutputQueue(face.Value.Process, face.Value.Path)
-            };
-          }
-
-          faces[face.Key].Material.Add(mat);
-        }
-      }
-
-      return new PalletAndMaterial()
-      {
-        Status = pallet,
-        Faces = faces.Values.ToList()
-      };
-    }
-
-    private PalletAndMaterial LoadedPallet(PalletStatus pallet, IEnumerable<LogEntry> log, DateTime nowUtc, ref bool palletStateUpdated)
+    private PalletAndMaterial LoadedPallet(PalletStatus pallet, IEnumerable<LogEntry> log, DateTime nowUtc, HashSet<long> currentlyLoading, ref bool palletStateUpdated)
     {
       var faces = GetFaces(pallet);
 
@@ -495,38 +515,56 @@ namespace BlackMaple.FMSInsight.Niigata
         log.FirstOrDefault(e =>
           e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD" && e.StartOfCycle
         );
+      // check if this is the first time seeing loaded-pallet, need to record load and unload end, and create pallet cycle
       if (loadBegin != null)
       {
         palletStateUpdated = true;
 
-        // first time seeing loaded-pallet, need to record load and unload end, and create pallet cycle
-        foreach (var face in faces)
-        {
-          var oldMatOnPal = MaterialCurrentlyOnFace(pallet, face.Value, log, allocateIfMissing: false);
 
+        // record unload-end
+        var oldMatOnPal = MaterialCurrentlyOnPallet(pallet, log);
+        var jobCache = faces.ToDictionary(f => f.Value.Job.UniqueStr, f => f.Value.Job);
+        foreach (var face in oldMatOnPal.ToLookup(m => m.InProc.Location.Face))
+        {
+          // everything on a face shares the job, proc, and path
+          var unique = face.First().InProc.JobUnique;
+          var proc = face.First().InProc.Process;
+          var path = face.First().InProc.Path;
+
+          if (!jobCache.ContainsKey(unique))
+          {
+            jobCache.Add(unique, _jobs.LoadJob(unique));
+          }
+          var job = jobCache[unique];
           var queues = new Dictionary<long, string>();
-          var queue = face.Value.Job.GetOutputQueue(face.Value.Process, face.Value.Path);
+          var queue = job.GetOutputQueue(proc, path);
           if (!string.IsNullOrEmpty(queue))
           {
             foreach (var mat in oldMatOnPal)
             {
-              queues[mat.MaterialID] = queue;
+              queues[mat.InProc.MaterialID] = queue;
             }
           }
 
           _log.RecordUnloadEnd(
-            mats: oldMatOnPal.Select(m => new JobLogDB.EventLogMaterial() { MaterialID = m.MaterialID, Process = m.Process, Face = face.Key.ToString() }),
+            mats: face.Select(m => new JobLogDB.EventLogMaterial() { MaterialID = m.InProc.MaterialID, Process = m.InProc.Process, Face = face.Key.ToString() }),
             pallet: pallet.Master.PalletNum.ToString(),
             lulNum: loadBegin.LocationNum,
             timeUTC: nowUtc,
             elapsed: nowUtc.Subtract(loadBegin.EndTimeUTC),
-            active: face.Value.Job.GetExpectedUnloadTime(face.Value.Process, face.Value.Path),
+            active: job.GetExpectedUnloadTime(proc, path),
             unloadIntoQueues: queues
           );
+        }
 
-          _log.CompletePalletCycle(pallet.Master.PalletNum.ToString(), nowUtc, foreignID: null);
+        // complete the pallet cycle so new cycle starts with the below Load end
+        _log.CompletePalletCycle(pallet.Master.PalletNum.ToString(), nowUtc, foreignID: null);
 
-          var matToLoad = MaterialToLoadOnFace(pallet, face.Value, allocateNew: true);
+        // add load-end for material put onto
+        var unusedMatsOnPal = oldMatOnPal.ToDictionary(m => m.InProc.MaterialID, m => m.InProc);
+        foreach (var face in faces)
+        {
+          var matToLoad = MaterialToLoadOnFace(pallet, face.Value, allocateNew: true, currentlyLoading: currentlyLoading, unusedMatsOnPal: unusedMatsOnPal);
 
           _log.RecordLoadEnd(
             mats: matToLoad.Select(m => new JobLogDB.EventLogMaterial() { MaterialID = m.MaterialID, Process = m.Process, Face = face.Key.ToString() }),
@@ -542,7 +580,8 @@ namespace BlackMaple.FMSInsight.Niigata
             mat.Location = new InProcessMaterialLocation()
             {
               Type = InProcessMaterialLocation.LocType.OnPallet,
-              Pallet = pallet.Master.PalletNum.ToString()
+              Pallet = pallet.Master.PalletNum.ToString(),
+              Face = face.Key
             };
             mat.Action = new InProcessMaterialAction()
             {
@@ -555,9 +594,10 @@ namespace BlackMaple.FMSInsight.Niigata
       }
       else
       {
+        var mats = MaterialCurrentlyOnPallet(pallet, log).ToLookup(m => m.InProc.Location.Face ?? 1);
         foreach (var face in faces)
         {
-          face.Value.Material = MaterialCurrentlyOnFace(pallet, face.Value, log, allocateIfMissing: true);
+          face.Value.Material = mats.Contains(face.Key) ? mats[face.Key].Select(m => m.InProc).ToList() : new List<InProcessMaterial>();
         }
       }
 
@@ -568,20 +608,20 @@ namespace BlackMaple.FMSInsight.Niigata
       };
     }
 
-    private List<JobLogDB.EventLogMaterial> MaterialForProgram(PalletAndMaterial pallet, int program)
+    private List<JobLogDB.EventLogMaterial> MaterialForProgram(PalletStatus pallet, int program, IDictionary<int, PalletFace> faces)
     {
       var mats = new List<JobLogDB.EventLogMaterial>();
-      var machStop = (MachiningStep)(pallet.Status.Master.Routes[1]);
-      foreach (var face in pallet.Faces)
+      var machStop = (MachiningStep)(pallet.Master.Routes[1]);
+      foreach (var face in faces)
       {
-        var faceNum = face.Face;
+        var faceNum = face.Key;
         if (program == machStop.ProgramNumsToRun[faceNum - 1])
         {
-          foreach (var mat in face.Material)
+          foreach (var mat in face.Value.Material)
           {
             if (mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet
-                && mat.Location.Pallet == pallet.Status.Master.PalletNum.ToString()
-                && mat.Process == face.Process)
+                && mat.Location.Pallet == pallet.Master.PalletNum.ToString()
+                && mat.Process == face.Value.Process)
             {
               mats.Add(new JobLogDB.EventLogMaterial()
               {
@@ -593,12 +633,14 @@ namespace BlackMaple.FMSInsight.Niigata
           }
         }
       }
+      // TODO: create new if not enough material found
       return mats;
     }
 
-    private void EnsureMachineStart(PalletAndMaterial pallet, IEnumerable<LogEntry> log, int program, DateTime nowUtc)
+    private void EnsureMachineStart(PalletStatus pallet, IEnumerable<LogEntry> log, int program, DateTime nowUtc)
     {
-      var mats = MaterialForProgram(pallet, program);
+      var faces = GetFaces(pallet);
+      var mats = MaterialForProgram(pallet, program, faces);
       if (!mats.Any())
       {
         return;
@@ -610,7 +652,7 @@ namespace BlackMaple.FMSInsight.Niigata
         if (e.LogType == LogType.MachineCycle && e.StartOfCycle && e.Material.Any(m => matIds.Contains(m.MaterialID)))
         {
           var elapsed = nowUtc.Subtract(e.EndTimeUTC);
-          foreach (var face in pallet.Faces)
+          foreach (var face in faces.Values)
           {
             var machStop = face.Job.GetMachiningStop(face.Process, face.Path).First();
 
@@ -636,17 +678,18 @@ namespace BlackMaple.FMSInsight.Niigata
 
       _log.RecordMachineStart(
         mats: mats,
-        pallet: pallet.Status.Master.PalletNum.ToString(),
-        statName: pallet.Status.CurStation.Location.StationGroup,
-        statNum: pallet.Status.CurStation.Location.Num,
+        pallet: pallet.Master.PalletNum.ToString(),
+        statName: pallet.CurStation.Location.StationGroup,
+        statNum: pallet.CurStation.Location.Num,
         program: program.ToString(),
         timeUTC: nowUtc
       );
     }
 
-    private void EnsureMachineEnd(PalletAndMaterial pallet, IEnumerable<LogEntry> log, int program, DateTime nowUtc, ref bool palletStateUpdated)
+    private void EnsureMachineEnd(PalletStatus pallet, IEnumerable<LogEntry> log, int program, DateTime nowUtc, ref bool palletStateUpdated)
     {
-      var mats = MaterialForProgram(pallet, program);
+      var faces = GetFaces(pallet);
+      var mats = MaterialForProgram(pallet, program, faces);
       if (!mats.Any())
       {
         Log.Debug("EnsureMachineEnd for program {program} did not find any material {@pallet}", program, pallet);
@@ -693,9 +736,9 @@ namespace BlackMaple.FMSInsight.Niigata
 
       _log.RecordMachineEnd(
         mats: mats,
-        pallet: pallet.Status.Master.PalletNum.ToString(),
-        statName: pallet.Status.CurStation.Location.StationGroup,
-        statNum: pallet.Status.CurStation.Location.Num,
+        pallet: pallet.Master.PalletNum.ToString(),
+        statName: pallet.CurStation.Location.StationGroup,
+        statNum: pallet.CurStation.Location.Num,
         program: program.ToString(),
         result: "",
         timeUTC: nowUtc,
@@ -704,9 +747,9 @@ namespace BlackMaple.FMSInsight.Niigata
       );
     }
 
-    private void EnsureAllMachineEnds(PalletAndMaterial pallet, IEnumerable<LogEntry> log, DateTime nowUtc, ref bool palletStateUpdated)
+    private void EnsureAllMachineEnds(PalletStatus pallet, IEnumerable<LogEntry> log, DateTime nowUtc, ref bool palletStateUpdated)
     {
-      var machStop = (MachiningStep)(pallet.Status.Master.Routes[1]);
+      var machStop = (MachiningStep)(pallet.Master.Routes[1]);
       foreach (var prog in machStop.ProgramNumsToRun)
       {
         EnsureMachineEnd(pallet, log, prog, nowUtc, ref palletStateUpdated);
