@@ -42,6 +42,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public NiigataStationNum(int n) => StatNum = n;
     public static NiigataStationNum LoadStation(int i) => new NiigataStationNum(900 + i);
     public static NiigataStationNum Machine(int i) => new NiigataStationNum(800 + i);
+    public static NiigataStationNum MachineQueue(int i) => new NiigataStationNum(830 + i);
     public static NiigataStationNum Buffer(int i) => new NiigataStationNum(i);
     public PalletLocation Location
     {
@@ -157,9 +158,9 @@ namespace BlackMaple.FMSInsight.Niigata
     ///If tracking is LD before, then not allowed to be located at machine
     ///</para>
     ///</summary>
-    public bool BeforeCurrentStep => CurrentControlNum % 2 == 0;
+    public bool BeforeCurrentStep => CurrentControlNum % 2 == 1;
 
-    ///<summary>CurStepNum * 2 + (Before ? 0 : 1)</summary>
+    ///<summary>CurStepNum * 2 - (Before ? 1 : 0)</summary>
     public int CurrentControlNum { get; set; } = 1;
 
     public bool DummyPallet { get; set; } = false;

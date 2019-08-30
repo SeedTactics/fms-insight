@@ -136,26 +136,32 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           },
           CurStation = NiigataStationNum.Machine(3),
         },
-        Material = new Dictionary<int, IReadOnlyList<InProcessMaterial>> {
-          {1, new List<InProcessMaterial> {
-            new InProcessMaterial() {
-              MaterialID = mat2,
-              JobUnique = "u1",
-              PartName = "p1",
-              Process = 1,
-              Path = 1,
-              Serial = "serial2",
-              WorkorderId = "work2",
-              SignaledInspections = new List<string> {"insp2"},
-              Location = new InProcessMaterialLocation() {
-                Type = InProcessMaterialLocation.LocType.OnPallet,
-                Pallet = "1"
-              },
-              Action = new InProcessMaterialAction() {
-                Type = InProcessMaterialAction.ActionType.Waiting
+        Faces = new List<PalletFace> {
+          new PalletFace() {
+            Job = j,
+            Process = 1,
+            Path = 1,
+            Face = 1,
+            Material = new List<InProcessMaterial> {
+              new InProcessMaterial() {
+                MaterialID = mat2,
+                JobUnique = "u1",
+                PartName = "p1",
+                Process = 1,
+                Path = 1,
+                Serial = "serial2",
+                WorkorderId = "work2",
+                SignaledInspections = new List<string> {"insp2"},
+                Location = new InProcessMaterialLocation() {
+                  Type = InProcessMaterialLocation.LocType.OnPallet,
+                  Pallet = "1"
+                },
+                Action = new InProcessMaterialAction() {
+                  Type = InProcessMaterialAction.ActionType.Waiting
+                }
               }
-            }
-          }}
+            },
+          }
         }
       };
       var pal2 = new PalletAndMaterial()
@@ -174,30 +180,36 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           },
           CurStation = NiigataStationNum.LoadStation(2)
         },
-        Material = new Dictionary<int, IReadOnlyList<InProcessMaterial>> {
-          {1, new List<InProcessMaterial> {
-          new InProcessMaterial() {
-            MaterialID = mat3,
-            JobUnique = "u2",
-            PartName = "p2",
+        Faces = new List<PalletFace> {
+          new PalletFace() {
+            Job = j,
             Process = 2,
             Path = 5,
-            Serial = "serial3",
-            WorkorderId = null,
-            SignaledInspections = new List<string>(),
-            Location = new InProcessMaterialLocation() {
-              Type = InProcessMaterialLocation.LocType.OnPallet,
-              Pallet = "2"
+            Face = 1,
+            Material = new List<InProcessMaterial> {
+              new InProcessMaterial() {
+                MaterialID = mat3,
+                JobUnique = "u2",
+                PartName = "p2",
+                Process = 2,
+                Path = 5,
+                Serial = "serial3",
+                WorkorderId = null,
+                SignaledInspections = new List<string>(),
+                Location = new InProcessMaterialLocation() {
+                  Type = InProcessMaterialLocation.LocType.OnPallet,
+                  Pallet = "2"
+                },
+                Action = new InProcessMaterialAction() {
+                  Type = InProcessMaterialAction.ActionType.Loading,
+                  LoadOntoFace = 1,
+                  LoadOntoPallet = "2",
+                  ProcessAfterLoad = 2,
+                  PathAfterLoad = 1
+                }
+              }
             },
-            Action = new InProcessMaterialAction() {
-              Type = InProcessMaterialAction.ActionType.Loading,
-              LoadOntoFace = 1,
-              LoadOntoPallet = "2",
-              ProcessAfterLoad = 2,
-              PathAfterLoad = 1
-            }
           }
-          }}
         }
       };
 
@@ -231,8 +243,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var expectedJob = new InProcessJob(j);
       expectedJob.SetCompleted(1, 1, 1);
       expectedSt.Jobs.Add("u1", expectedJob);
-      expectedSt.Material.Add(pal1.Material[1][0]);
-      expectedSt.Material.Add(pal2.Material[1][0]);
+      expectedSt.Material.Add(pal1.Faces[0].Material[0]);
+      expectedSt.Material.Add(pal2.Faces[0].Material[0]);
       expectedSt.Material.Add(new InProcessMaterial()
       {
         MaterialID = mat4,

@@ -360,7 +360,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
       else
       {
-        long pendingId = 1235; // TODO: allocate pending ID!
+        long pendingId = DateTime.UtcNow.Ticks;
         newMaster.Comment = pendingId.ToString();
         RecordFacesForPallet(newMaster.PalletNum, pendingId.ToString(), newPaths);
         return new NewPalletRoute()

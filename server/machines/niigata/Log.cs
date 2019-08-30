@@ -472,7 +472,7 @@ namespace BlackMaple.FMSInsight.Niigata
           mat.Action = new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Loading,
-            LoadOntoPallet = pallet.Master.ToString(),
+            LoadOntoPallet = pallet.Master.PalletNum.ToString(),
             LoadOntoFace = face.Key,
             ProcessAfterLoad = face.Value.Process,
             PathAfterLoad = face.Value.Path
