@@ -222,6 +222,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public ModeE Mode { get; set; }
     public bool Alarm { get; set; }
     public List<int> PalletsWithUnavailableTools { get; set; } = new List<int>();
+    public DateTime TimeOfStatusUTC { get; set; }
   }
 
   public abstract class NiigataAction { }
