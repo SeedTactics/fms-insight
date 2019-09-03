@@ -78,7 +78,7 @@ namespace BlackMaple.FMSInsight.Niigata
         if (pal.Faces.SelectMany(ms => ms.Material).Any(m => m.Action.Type == InProcessMaterialAction.ActionType.Loading)) continue;
 
         var pathsToLoad = FindMaterialToLoad(sch, pal.Status.Master.PalletNum, pal.Status.CurStation.Location.Num, pal.Faces.SelectMany(ms => ms.Material).ToList(), currentlyLoading: currentlyLoading);
-        if (pathsToLoad.Count > 0)
+        if (pathsToLoad != null && pathsToLoad.Count > 0)
         {
           return SetNewRoute(pal.Status, pathsToLoad);
         }

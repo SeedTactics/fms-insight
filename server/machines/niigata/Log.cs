@@ -470,22 +470,31 @@ namespace BlackMaple.FMSInsight.Niigata
 
       // now material to load
       var loadingIds = new HashSet<long>();
-      foreach (var face in faces)
+      if (pallet.CurStation.Location.Location == PalletLocationEnum.LoadUnload &&
+          (
+               pallet.Tracking.CurrentStepNum == AssignPallets.LoadStepNum
+            ||
+               (pallet.Tracking.CurrentStepNum == AssignPallets.UnloadStepNum && pallet.Master.RemainingPalletCycles > 1)
+          )
+         )
       {
-        // find material to load
-        var loadMat = MaterialToLoadOnFace(pallet, face.Value, allocateNew: false, nowUtc: nowUtc, currentlyLoading: currentlyLoading, unusedMatsOnPal: unusedMatsOnPal);
-        faces[face.Key].Material.AddRange(loadMat);
-        foreach (var mat in loadMat)
+        foreach (var face in faces)
         {
-          mat.Action = new InProcessMaterialAction()
+          // find material to load
+          var loadMat = MaterialToLoadOnFace(pallet, face.Value, allocateNew: false, nowUtc: nowUtc, currentlyLoading: currentlyLoading, unusedMatsOnPal: unusedMatsOnPal);
+          faces[face.Key].Material.AddRange(loadMat);
+          foreach (var mat in loadMat)
           {
-            Type = InProcessMaterialAction.ActionType.Loading,
-            LoadOntoPallet = pallet.Master.PalletNum.ToString(),
-            LoadOntoFace = face.Key,
-            ProcessAfterLoad = face.Value.Process,
-            PathAfterLoad = face.Value.Path
-          };
-          loadingIds.Add(mat.MaterialID);
+            mat.Action = new InProcessMaterialAction()
+            {
+              Type = InProcessMaterialAction.ActionType.Loading,
+              LoadOntoPallet = pallet.Master.PalletNum.ToString(),
+              LoadOntoFace = face.Key,
+              ProcessAfterLoad = face.Value.Process,
+              PathAfterLoad = face.Value.Path
+            };
+            loadingIds.Add(mat.MaterialID);
+          }
         }
       }
 
