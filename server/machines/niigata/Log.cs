@@ -765,7 +765,7 @@ namespace BlackMaple.FMSInsight.Niigata
           .FirstOrDefault()
           ;
 
-        if (machStart == null && machEnd != null)
+        if (machStart != null && machEnd == null)
         {
           // program changed, record end of previous program
           Log.Debug("Recording machine end for {@pallet} from logs {@log} with face {@face}", pallet, log, face);

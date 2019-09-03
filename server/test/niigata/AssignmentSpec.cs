@@ -68,6 +68,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           luls: new[] { 3, 4 },
           machs: new[] { 5, 6 },
           prog: 1234,
+          machMins: 14,
           fixture: "fix1",
           face: 1
         )
@@ -101,7 +102,63 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetExpectedLoadCastings(new[] {
           (uniq: "uniq1", part: "part1", pal: 2, path: 1, face: 1),
          })
-        .ExpectLoadEndEvt(pal: 1, unique: "uniq1", proc: 1, path: 1, face: 1, cnt: 1, lul: 1, elapsedMin: 4, palMins: 0, matIds: out var fstMats)
+        .ExpectLoadEndEvt(pal: 1, unique: "uniq1", proc: 1, path: 1, face: 1, cnt: 1, lul: 1, elapsedMin: 4, palMins: 0, mats: out var fstMats)
+        .MoveToBuffer(pal: 1, buff: 1)
+        .ExpectNoChanges()
+        .MoveToMachineQueue(pal: 1, mach: 3)
+        .AdvanceMinutes(6)
+        .SetBeforeMC(pal: 1)
+        .ExpectNoChanges()
+        .MoveToMachine(pal: 1, mach: 3)
+        .ExpectNoChanges()
+        .StartMachine(mach: 3, program: 1234)
+        .UpdateExpectedMaterial(
+          fstMats.Select(m => m.MaterialID), im =>
+          {
+            im.Action.Type = InProcessMaterialAction.ActionType.Machining;
+            im.Action.Program = "1234";
+            im.Action.ElapsedMachiningTime = TimeSpan.Zero;
+            im.Action.ExpectedRemainingMachiningTime = TimeSpan.FromMinutes(14);
+          }
+        )
+        .ExpectMachineBegin(pal: 1, mach: 3, program: 1234, mats: fstMats)
+        .AdvanceMinutes(10)
+        .UpdateExpectedMaterial(
+          fstMats.Select(m => m.MaterialID), im =>
+          {
+            im.Action.ElapsedMachiningTime = TimeSpan.FromMinutes(10);
+            im.Action.ExpectedRemainingMachiningTime = TimeSpan.FromMinutes(4);
+          }
+        )
+        .ExpectNoChanges()
+        .AdvanceMinutes(5)
+        .EndMachine(mach: 3)
+        .SetAfterMC(pal: 1)
+        .UpdateExpectedMaterial(
+          fstMats.Select(m => m.MaterialID), im =>
+          {
+            im.Action.Type = InProcessMaterialAction.ActionType.Waiting;
+            im.Action.Program = null;
+            im.Action.ElapsedMachiningTime = null;
+            im.Action.ExpectedRemainingMachiningTime = null;
+          }
+        )
+        .ExpectMachineEnd(pal: 1, mach: 3, program: 1234, proc: 1, path: 1, elapsedMin: 15, activeMin: 14, mats: fstMats)
+        .MoveToMachineQueue(pal: 1, mach: 3)
+        .ExpectNoChanges()
+        .MoveToBuffer(pal: 1, buff: 1)
+        .SetBeforeUnload(pal: 1)
+        .SetExpectedLoadCastings(new[] {
+          (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1),
+          (uniq: "uniq1", part: "part1", pal: 2, path: 1, face: 1),
+         })
+         .UpdateExpectedMaterial(
+           fstMats.Select(m => m.MaterialID), im =>
+           {
+             im.Action.Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial;
+           }
+         )
+        .ExpectNoChanges()
         ;
     }
 
@@ -334,9 +391,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     }
 
     #region Niigata Status
-    public FakeIccDsl MoveToBuffer(int pal, int mach)
+    public FakeIccDsl MoveToBuffer(int pal, int buff)
     {
-      _status.Pallets[pal - 1].CurStation = NiigataStationNum.Buffer(mach);
+      _status.Pallets[pal - 1].CurStation = NiigataStationNum.Buffer(buff);
       return this;
     }
     public FakeIccDsl MoveToMachineQueue(int pal, int mach)
@@ -463,6 +520,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return this;
     }
 
+    public FakeIccDsl UpdateExpectedMaterial(IEnumerable<long> matIds, Action<InProcessMaterial> f)
+    {
+      foreach (var matId in matIds)
+        f(_expectedMaterial[matId]);
+      return this;
+    }
+
     public FakeIccDsl RemoveExpectedMaterial(long matId)
     {
       _expectedMaterial.Remove(matId);
@@ -471,7 +535,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     #endregion
 
     #region Jobs
-    public FakeIccDsl AddOneProcOnePathJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, int prog, string fixture, int face, string queue = null)
+    public FakeIccDsl AddOneProcOnePathJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, int prog, int machMins, string fixture, int face, string queue = null)
     {
       var j = new JobPlan(unique, 1);
       j.PartName = part;
@@ -486,6 +550,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       foreach (var m in machs)
       {
         s.AddProgram(m, prog.ToString());
+        s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins);
       }
       j.AddMachiningStop(1, 1, s);
       foreach (var p in pals)
@@ -635,7 +700,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       )});
     }
 
-    public FakeIccDsl ExpectLoadEndEvt(int pal, string unique, int proc, int path, int face, int cnt, int lul, int elapsedMin, int palMins, out HashSet<long> matIds)
+    public FakeIccDsl ExpectLoadEndEvt(int pal, string unique, int proc, int path, int face, int cnt, int lul, int elapsedMin, int palMins, out IEnumerable<LogMaterial> mats)
     {
       var sch = _jobDB.LoadUnarchivedJobs();
 
@@ -652,7 +717,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
         var loadEndLog = evts.First(e => e.LogType == LogType.LoadUnloadCycle);
         loadEndLog.Material.Count().Should().Be(cnt);
-        matIds = new HashSet<long>(loadEndLog.Material.Select(m => m.MaterialID));
+        var matIds = loadEndLog.Material.Select(m => m.MaterialID);
 
         var job = _jobDB.LoadJob(unique);
 
@@ -737,9 +802,48 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           };
         }
 
+        mats = loadEndLog.Material;
       }
 
       return ExpectNoChanges();
+    }
+
+    public FakeIccDsl ExpectMachineBegin(int pal, int mach, int program, IEnumerable<LogMaterial> mats)
+    {
+      return ExpectNewLogs(new[] {
+        new LogEntry(
+          cntr: -1,
+          mat: mats,
+          pal: pal.ToString(),
+          ty: LogType.MachineCycle,
+          locName: "MC",
+          locNum: mach,
+          prog: program.ToString(),
+          start: true,
+          endTime: _status.TimeOfStatusUTC,
+          result: "",
+          endOfRoute: false
+      )});
+    }
+
+    public FakeIccDsl ExpectMachineEnd(int pal, int mach, int program, int proc, int path, int elapsedMin, int activeMin, IEnumerable<LogMaterial> mats)
+    {
+      return ExpectNewLogs(new[] {
+        new LogEntry(
+          cntr: -1,
+          mat: mats,
+          pal: pal.ToString(),
+          ty: LogType.MachineCycle,
+          locName: "MC",
+          locNum: mach,
+          prog: program.ToString(),
+          start: false,
+          endTime: _status.TimeOfStatusUTC,
+          result: "",
+          endOfRoute: false,
+          elapsed: TimeSpan.FromMinutes(elapsedMin),
+          active: TimeSpan.FromMinutes(activeMin)
+      )});
     }
 
     #endregion
