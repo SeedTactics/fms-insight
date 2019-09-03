@@ -68,6 +68,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           luls: new[] { 3, 4 },
           machs: new[] { 5, 6 },
           prog: 1234,
+          loadMins: 8,
+          unloadMins: 9,
           machMins: 14,
           fixture: "fix1",
           face: 1
@@ -97,7 +99,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetAfterLoad(pal: 1)
         .ClearExpectedLoadCastings()
         .ExpectLoadEndEvt(pal: 1, lul: 1, elapsedMin: 4, palMins: 0, expectedEvts: new[] {
-          FakeIccDsl.LoadCastingToFace(face: 1, unique: "uniq1", proc: 1, path: 1, cnt: 1, mats: out var fstMats)
+          FakeIccDsl.LoadCastingToFace(face: 1, unique: "uniq1", proc: 1, path: 1, cnt: 1, activeMins: 8, mats: out var fstMats)
         })
         .MoveToBuffer(pal: 1, buff: 1)
         .ExpectNoChanges()
@@ -163,8 +165,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ClearExpectedLoadCastings()
         .RemoveExpectedMaterial(fstMats.Select(m => m.MaterialID))
         .ExpectLoadEndEvt(pal: 1, lul: 4, elapsedMin: 2, palMins: 30 - 4, expectedEvts: new[] {
-          FakeIccDsl.UnloadFromFace(face: 1, unique: "uniq1", proc: 1, path: 1, mats: fstMats),
-          FakeIccDsl.LoadCastingToFace(face: 1, unique: "uniq1", proc: 1, path: 1, cnt: 1, mats: out var sndMats)
+          FakeIccDsl.UnloadFromFace(face: 1, unique: "uniq1", proc: 1, path: 1, activeMins: 9, mats: fstMats),
+          FakeIccDsl.LoadCastingToFace(face: 1, unique: "uniq1", proc: 1, path: 1, cnt: 1, activeMins: 8, mats: out var sndMats)
         })
       ;
     }
@@ -549,7 +551,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     #endregion
 
     #region Jobs
-    public FakeIccDsl AddOneProcOnePathJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, int prog, int machMins, string fixture, int face, string queue = null)
+    public FakeIccDsl AddOneProcOnePathJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, int prog, int loadMins, int machMins, int unloadMins, string fixture, int face, string queue = null)
     {
       var j = new JobPlan(unique, 1);
       j.PartName = part;
@@ -559,6 +561,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         j.AddLoadStation(1, 1, i);
         j.AddUnloadStation(1, 1, i);
       }
+      j.SetExpectedLoadTime(1, 1, TimeSpan.FromMinutes(loadMins));
+      j.SetExpectedUnloadTime(1, 1, TimeSpan.FromMinutes(unloadMins));
       j.SetPartsPerPallet(1, 1, partsPerPal);
       var s = new JobMachiningStop("MC");
       foreach (var m in machs)
@@ -762,16 +766,17 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public int Face { get; set; }
       public bool Load { get; set; }
       public IEnumerable<LogMaterial> ExpectedMaterial { get; set; }
-
-      // if expected is false, the following are filled in
       public string Unique { get; set; }
       public int Process { get; set; }
       public int Path { get; set; }
+      public int ActiveMins { get; set; }
+
+      //If ExpectedMaterial is null, the following are filled in
       public int CastingCount { get; set; }
       public List<LogMaterial> OutMaterial { get; set; }
     }
 
-    public static ExpectedEndLoadEvt LoadCastingToFace(int face, string unique, int proc, int path, int cnt, out IEnumerable<LogMaterial> mats)
+    public static ExpectedEndLoadEvt LoadCastingToFace(int face, string unique, int proc, int path, int cnt, int activeMins, out IEnumerable<LogMaterial> mats)
     {
       var e = new ExpectedEndLoadEvt()
       {
@@ -780,6 +785,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Unique = unique,
         Process = proc,
         Path = path,
+        ActiveMins = activeMins,
         CastingCount = cnt,
         OutMaterial = new List<LogMaterial>()
       };
@@ -787,7 +793,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return e;
     }
 
-    public static ExpectedEndLoadEvt UnloadFromFace(int face, string unique, int proc, int path, IEnumerable<LogMaterial> mats)
+    public static ExpectedEndLoadEvt UnloadFromFace(int face, string unique, int proc, int path, int activeMins, IEnumerable<LogMaterial> mats)
     {
       return new ExpectedEndLoadEvt()
       {
@@ -796,6 +802,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Unique = unique,
         Process = proc,
         Path = path,
+        ActiveMins = activeMins,
         ExpectedMaterial = mats
       };
     }
@@ -829,10 +836,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
           matIds.Count().Should().Be(expected.CastingCount);
 
-          var job = _jobDB.LoadJob(expected.Unique);
-          expected.ExpectedMaterial = matIds.Select(mid => new LogMaterial(
-            matID: mid, uniq: expected.Unique, proc: expected.Process, part: job.PartName, numProc: job.NumProcesses,
-            serial: _settings.ConvertMaterialIDToSerial(mid), workorder: "", face: expected.Face.ToString())
+          expected.ExpectedMaterial = evt.Material.Select(origMat => new LogMaterial(
+            matID: origMat.MaterialID, uniq: expected.Unique, proc: expected.Process, part: origMat.PartName, numProc: origMat.NumProcesses,
+            serial: _settings.ConvertMaterialIDToSerial(origMat.MaterialID), workorder: "", face: expected.Face.ToString())
           ).ToList();
 
           expected.OutMaterial.AddRange(expected.ExpectedMaterial);
@@ -860,7 +866,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
         foreach (var expected in expectedEvts)
         {
-          var job = _jobDB.LoadJob(expected.Unique);
           expectedLogs.Add(new LogEntry(
             cntr: -1,
             mat: expected.ExpectedMaterial,
@@ -874,7 +879,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             result: expected.Load ? "LOAD" : "UNLOAD",
             endOfRoute: !expected.Load,
             elapsed: TimeSpan.FromMinutes(elapsedMin),
-            active: job.GetExpectedLoadTime(expected.Process, expected.Path)
+            active: TimeSpan.FromMinutes(expected.ActiveMins)
           ));
 
           if (expected.Load && expected.Process == 1)
@@ -905,7 +910,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 JobUnique = m.JobUniqueStr,
                 Process = expected.Process,
                 Path = expected.Path,
-                PartName = job.PartName,
+                PartName = m.PartName,
                 Serial = _settings.ConvertMaterialIDToSerial(m.MaterialID),
                 Location = new InProcessMaterialLocation()
                 {
