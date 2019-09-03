@@ -228,7 +228,7 @@ namespace BlackMaple.FMSInsight.Niigata
         .ToList();
     }
 
-    private List<InProcessMaterial> MaterialToLoadOnFace(PalletStatus pallet, PalletFace face, bool allocateNew, HashSet<long> currentlyLoading, Dictionary<long, InProcessMaterial> unusedMatsOnPal)
+    private List<InProcessMaterial> MaterialToLoadOnFace(PalletStatus pallet, PalletFace face, bool allocateNew, DateTime nowUtc, HashSet<long> currentlyLoading, Dictionary<long, InProcessMaterial> unusedMatsOnPal)
     {
       var mats = new List<InProcessMaterial>();
 
@@ -245,7 +245,11 @@ namespace BlackMaple.FMSInsight.Niigata
             mid = _log.AllocateMaterialID(face.Job.UniqueStr, face.Job.PartName, face.Job.NumProcesses);
             if (_settings.SerialType == SerialType.AssignOneSerialPerMaterial)
             {
-              _log.RecordSerialForMaterialID(mid, face.Process, _settings.ConvertMaterialIDToSerial(mid));
+              _log.RecordSerialForMaterialID(
+                new JobLogDB.EventLogMaterial() { MaterialID = mid, Process = face.Process, Face = "" },
+                _settings.ConvertMaterialIDToSerial(mid),
+                nowUtc
+                );
             }
           }
           else
@@ -408,7 +412,11 @@ namespace BlackMaple.FMSInsight.Niigata
             mid = _log.AllocateMaterialID(face.Job.UniqueStr, face.Job.PartName, face.Job.NumProcesses);
             if (_settings.SerialType == SerialType.AssignOneSerialPerMaterial)
             {
-              _log.RecordSerialForMaterialID(mid, face.Process, _settings.ConvertMaterialIDToSerial(mid));
+              _log.RecordSerialForMaterialID(
+                new JobLogDB.EventLogMaterial() { MaterialID = mid, Process = face.Process, Face = "" },
+                _settings.ConvertMaterialIDToSerial(mid),
+                nowUtc
+                );
             }
           }
           mats.Add(new InProcessMaterial()
@@ -465,7 +473,7 @@ namespace BlackMaple.FMSInsight.Niigata
       foreach (var face in faces)
       {
         // find material to load
-        var loadMat = MaterialToLoadOnFace(pallet, face.Value, allocateNew: false, currentlyLoading: currentlyLoading, unusedMatsOnPal: unusedMatsOnPal);
+        var loadMat = MaterialToLoadOnFace(pallet, face.Value, allocateNew: false, nowUtc: nowUtc, currentlyLoading: currentlyLoading, unusedMatsOnPal: unusedMatsOnPal);
         faces[face.Key].Material.AddRange(loadMat);
         foreach (var mat in loadMat)
         {
@@ -576,10 +584,11 @@ namespace BlackMaple.FMSInsight.Niigata
         var unusedMatsOnPal = oldMatOnPal.ToDictionary(m => m.InProc.MaterialID, m => m.InProc);
         foreach (var face in faces)
         {
-          var matToLoad = MaterialToLoadOnFace(pallet, face.Value, allocateNew: true, currentlyLoading: currentlyLoading, unusedMatsOnPal: unusedMatsOnPal);
+          // add 1 seconds to now so the marking of serials and load end happens after the pallet cycle
+          var matToLoad = MaterialToLoadOnFace(pallet, face.Value, allocateNew: true, nowUtc: nowUtc.AddSeconds(1), currentlyLoading: currentlyLoading, unusedMatsOnPal: unusedMatsOnPal);
 
           _log.RecordLoadEnd(
-            mats: matToLoad.Select(m => new JobLogDB.EventLogMaterial() { MaterialID = m.MaterialID, Process = m.Process, Face = face.Key.ToString() }),
+            mats: matToLoad.Select(m => new JobLogDB.EventLogMaterial() { MaterialID = m.MaterialID, Process = m.Action.ProcessAfterLoad ?? 1, Face = face.Key.ToString() }),
             pallet: pallet.Master.PalletNum.ToString(),
             lulNum: loadBegin.LocationNum,
             timeUTC: nowUtc.AddSeconds(1),
@@ -648,7 +657,11 @@ namespace BlackMaple.FMSInsight.Niigata
             long mid = _log.AllocateMaterialID(face.Job.UniqueStr, face.Job.PartName, face.Job.NumProcesses);
             if (_settings.SerialType == SerialType.AssignOneSerialPerMaterial)
             {
-              _log.RecordSerialForMaterialID(mid, face.Process, _settings.ConvertMaterialIDToSerial(mid));
+              _log.RecordSerialForMaterialID(
+                new JobLogDB.EventLogMaterial() { MaterialID = mid, Process = face.Process, Face = "" },
+                _settings.ConvertMaterialIDToSerial(mid),
+                nowUtc
+                );
             }
             face.Material.Add(new InProcessMaterial()
             {
