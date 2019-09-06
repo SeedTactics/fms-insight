@@ -213,6 +213,28 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         }
       };
 
+      var queuedMat = new InProcessMaterial
+      {
+        MaterialID = mat4,
+        Process = 1,
+        JobUnique = "u1",
+        PartName = "p1",
+        Path = 1,
+        Serial = "serial4",
+        WorkorderId = "work4",
+        SignaledInspections = new List<string> { "insp4" },
+        Location = new InProcessMaterialLocation()
+        {
+          Type = InProcessMaterialLocation.LocType.InQueue,
+          CurrentQueue = "q1",
+          QueuePosition = 1,
+        },
+        Action = new InProcessMaterialAction()
+        {
+          Type = InProcessMaterialAction.ActionType.Waiting
+        }
+      };
+
       // two material in queues
       _logDB.RecordAddMaterialToQueue(new JobLogDB.EventLogMaterial()
       {
@@ -245,27 +267,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       expectedSt.Jobs.Add("u1", expectedJob);
       expectedSt.Material.Add(pal1.Faces[0].Material[0]);
       expectedSt.Material.Add(pal2.Faces[0].Material[0]);
-      expectedSt.Material.Add(new InProcessMaterial()
-      {
-        MaterialID = mat4,
-        Process = 1,
-        JobUnique = "u1",
-        PartName = "p1",
-        Path = 1,
-        Serial = "serial4",
-        WorkorderId = "work4",
-        SignaledInspections = new List<string> { "insp4" },
-        Location = new InProcessMaterialLocation()
-        {
-          Type = InProcessMaterialLocation.LocType.InQueue,
-          CurrentQueue = "q1",
-          QueuePosition = 1,
-        },
-        Action = new InProcessMaterialAction()
-        {
-          Type = InProcessMaterialAction.ActionType.Waiting
-        }
-      });
+      expectedSt.Material.Add(queuedMat);
       expectedSt.Pallets.Add("1", new MachineWatchInterface.PalletStatus()
       {
         Pallet = "1",
@@ -289,7 +291,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       using (var monitor = _jobs.Monitor())
       {
-        _syncMock.OnPalletsChanged += Raise.Event<Action<NiigataStatus, IList<PalletAndMaterial>>>(status, new List<PalletAndMaterial> { pal1, pal2 });
+        _syncMock.OnPalletsChanged += Raise.Event<Action<NiigataMaterialStatus>>(new NiigataMaterialStatus()
+        {
+          Status = status,
+          Pallets = new List<PalletAndMaterial> { pal1, pal2 },
+          QueuedMaterial = new List<InProcessMaterial> { queuedMat }
+        });
 
         _jobs.GetCurrentStatus().Should().BeEquivalentTo(expectedSt, config =>
           config.Excluding(c => c.TimeOfCurrentStatusUTC)

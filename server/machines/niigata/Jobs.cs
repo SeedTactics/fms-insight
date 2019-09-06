@@ -74,7 +74,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    private void BuildCurrentStatus(NiigataStatus status, IList<PalletAndMaterial> pals)
+    private void BuildCurrentStatus(NiigataMaterialStatus status)
     {
       var curStatus = new CurrentStatus();
       foreach (var k in _settings.Queues) curStatus.QueueSizes[k.Key] = k.Value;
@@ -107,7 +107,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       // pallets
-      foreach (var pal in pals)
+      foreach (var pal in status.Pallets)
       {
         curStatus.Pallets.Add(pal.Status.Master.PalletNum.ToString(), new MachineWatchInterface.PalletStatus()
         {
@@ -120,77 +120,33 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       // material on pallets
-      var matsOnPallets = new HashSet<long>();
-      foreach (var pal in pals)
+      foreach (var mat in status.Pallets.SelectMany(p => p.Faces).SelectMany(f => f.Material))
       {
-        foreach (var mat in pal.Faces.SelectMany(x => x.Material))
-        {
-          matsOnPallets.Add(mat.MaterialID);
-          curStatus.Material.Add(mat);
-        }
+        curStatus.Material.Add(mat);
       }
 
       // queued mats
-      foreach (var mat in _log.GetMaterialInAllQueues())
+      foreach (var mat in status.QueuedMaterial)
       {
-        if (matsOnPallets.Contains(mat.MaterialID)) continue;
-        var matLogs = _log.GetLogForMaterial(mat.MaterialID);
-        int lastProc = 0;
-        foreach (var entry in _log.GetLogForMaterial(mat.MaterialID))
-        {
-          foreach (var entryMat in entry.Material)
-          {
-            if (entryMat.MaterialID == mat.MaterialID)
-            {
-              lastProc = Math.Max(lastProc, entryMat.Process);
-            }
-          }
-        }
-        var matDetails = _log.GetMaterialDetails(mat.MaterialID);
-        curStatus.Material.Add(new InProcessMaterial()
-        {
-          MaterialID = mat.MaterialID,
-          JobUnique = mat.Unique,
-          PartName = mat.PartName,
-          Process = lastProc,
-          Path = matDetails?.Paths != null && matDetails.Paths.ContainsKey(lastProc) ? matDetails.Paths[lastProc] : 1,
-          Serial = matDetails?.Serial,
-          WorkorderId = matDetails?.Workorder,
-          SignaledInspections =
-                _log.LookupInspectionDecisions(mat.MaterialID)
-                .Where(x => x.Inspect)
-                .Select(x => x.InspType)
-                .Distinct()
-                .ToList(),
-          Location = new InProcessMaterialLocation()
-          {
-            Type = InProcessMaterialLocation.LocType.InQueue,
-            CurrentQueue = mat.Queue,
-            QueuePosition = mat.Position,
-          },
-          Action = new InProcessMaterialAction()
-          {
-            Type = InProcessMaterialAction.ActionType.Waiting
-          }
-        });
+        curStatus.Material.Add(mat);
       }
 
       //alarms
-      foreach (var pal in pals)
+      foreach (var pal in status.Pallets)
       {
         if (pal.Status.Tracking.Alarm)
         {
           curStatus.Alarms.Add("Pallet " + pal.Status.Master.PalletNum.ToString() + " has alarm " + pal.Status.Tracking.AlarmCode.ToString());
         }
       }
-      foreach (var mc in status.Machines.Values)
+      foreach (var mc in status.Status.Machines.Values)
       {
         if (mc.Alarm)
         {
           curStatus.Alarms.Add("Machine " + mc.MachineNumber.ToString() + " has an alarm");
         }
       }
-      if (status.Alarm)
+      if (status.Status.Alarm)
       {
         curStatus.Alarms.Add("ICC has an alarm");
       }

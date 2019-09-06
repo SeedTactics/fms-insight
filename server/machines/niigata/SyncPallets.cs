@@ -43,7 +43,7 @@ namespace BlackMaple.FMSInsight.Niigata
   {
     void JobsOrQueuesChanged();
     void DecrementPlannedButNotStartedQty();
-    event Action<NiigataStatus, IList<PalletAndMaterial>> OnPalletsChanged;
+    event Action<NiigataMaterialStatus> OnPalletsChanged;
   }
 
   public class SyncPallets : ISyncPallets, IDisposable
@@ -118,12 +118,12 @@ namespace BlackMaple.FMSInsight.Niigata
     }
     #endregion
 
-    public event Action<NiigataStatus, IList<PalletAndMaterial>> OnPalletsChanged;
+    public event Action<NiigataMaterialStatus> OnPalletsChanged;
 
     private void SynchronizePallets(bool raisePalletChanged)
     {
-      List<PalletAndMaterial> allPals;
       NiigataStatus status;
+      NiigataMaterialStatus matStatus;
 
       lock (_changeLock)
       {
@@ -143,12 +143,12 @@ namespace BlackMaple.FMSInsight.Niigata
 
           Log.Debug("Loaded pallets {@status} and jobs {@jobs}", status, jobs);
 
-          allPals = _createLog.CheckForNewLogEntries(status, jobs, out bool palletStateUpdated);
+          matStatus = _createLog.CheckForNewLogEntries(status, jobs, out bool palletStateUpdated);
           raisePalletChanged = raisePalletChanged || palletStateUpdated;
 
-          Log.Debug("Computed pallets and material {@pals}", allPals);
+          Log.Debug("Computed pallets and material {@pals}", matStatus);
 
-          action = _assign.NewPalletChange(allPals, jobs);
+          action = _assign.NewPalletChange(matStatus, jobs);
 
           if (action != null)
           {
@@ -161,7 +161,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
       if (raisePalletChanged)
       {
-        OnPalletsChanged?.Invoke(status, allPals);
+        OnPalletsChanged?.Invoke(matStatus);
       }
     }
 

@@ -175,6 +175,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     /*
       [Fact]
+      public void MultipleAvailablePallets()
+      {
+        //Currently, if multiple pallets can satisfy some queued material, currently don't check
+        //that pallet moving to load station has "acquired" that material.
+      }
+
+      [Fact]
       public void IgnoresPalInMachine()
       {
         _dsl
@@ -361,8 +368,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _jobDB = new JobDB(jobConn);
       _jobDB.CreateTables();
 
-      _assign = new AssignPallets(_logDB);
-      _createLog = new CreateLogEntries(_logDB, _jobDB, _settings);
+      var record = new RecordFacesForPallet(_logDB);
+
+      _assign = new AssignPallets(record);
+      _createLog = new CreateLogEntries(_logDB, _jobDB, record, _settings);
 
       _status = new NiigataStatus();
       _status.TimeOfStatusUTC = DateTime.UtcNow.AddDays(-1);
@@ -618,10 +627,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       using (var logMonitor = _logDB.Monitor())
       {
-        var pals = _createLog.CheckForNewLogEntries(_status, sch, out bool palletStateUpdated);
+        var status = _createLog.CheckForNewLogEntries(_status, sch, out bool palletStateUpdated);
         palletStateUpdated.Should().BeFalse();
-        CheckPals(pals);
-        _assign.NewPalletChange(pals, sch).Should().BeNull();
+        CheckPals(status.Pallets);
+        _assign.NewPalletChange(status, sch).Should().BeNull();
         logMonitor.Should().NotRaise("NewLogEntry");
       }
       return this;
@@ -656,13 +665,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       using (var logMonitor = _logDB.Monitor())
       {
-        var pals = _createLog.CheckForNewLogEntries(_status, sch, out bool palletStateUpdated);
+        var matStatus = _createLog.CheckForNewLogEntries(_status, sch, out bool palletStateUpdated);
         palletStateUpdated.Should().BeFalse();
-        CheckPals(pals);
+        CheckPals(matStatus.Pallets);
 
         logMonitor.Should().NotRaise("NewLogEntry");
 
-        var action = _assign.NewPalletChange(pals, sch);
+        var action = _assign.NewPalletChange(matStatus, sch);
         action.Should().BeEquivalentTo<NewPalletRoute>(new NewPalletRoute()
         {
           NewMaster = expectedMaster
@@ -731,11 +740,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       using (var logMonitor = _logDB.Monitor())
       {
-        var pals = _createLog.CheckForNewLogEntries(_status, sch, out bool palletStateUpdated);
+        var matStatus = _createLog.CheckForNewLogEntries(_status, sch, out bool palletStateUpdated);
         palletStateUpdated.Should().BeTrue();
-        CheckPals(pals);
+        CheckPals(matStatus.Pallets);
 
-        _assign.NewPalletChange(pals, sch).Should().BeNull();
+        _assign.NewPalletChange(matStatus, sch).Should().BeNull();
 
         logMonitor.Should().Raise("NewLogEntry");
 

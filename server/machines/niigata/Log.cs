@@ -54,26 +54,35 @@ namespace BlackMaple.FMSInsight.Niigata
     public List<PalletFace> Faces { get; set; }
   }
 
+  public class NiigataMaterialStatus
+  {
+    public NiigataStatus Status { get; set; }
+    public List<PalletAndMaterial> Pallets { get; set; }
+    public List<InProcessMaterial> QueuedMaterial { get; set; }
+  }
+
   public interface ICreateLog
   {
-    List<PalletAndMaterial> CheckForNewLogEntries(NiigataStatus status, PlannedSchedule sch, out bool palletStateUpdated);
+    NiigataMaterialStatus CheckForNewLogEntries(NiigataStatus status, PlannedSchedule sch, out bool palletStateUpdated);
   }
 
   public class CreateLogEntries : ICreateLog
   {
     private JobLogDB _log;
     private JobDB _jobs;
+    private IRecordFacesForPallet _recordFaces;
     private FMSSettings _settings;
     private static Serilog.ILogger Log = Serilog.Log.ForContext<CreateLogEntries>();
 
-    public CreateLogEntries(JobLogDB l, JobDB jobs, FMSSettings s)
+    public CreateLogEntries(JobLogDB l, JobDB jobs, IRecordFacesForPallet r, FMSSettings s)
     {
       _log = l;
       _jobs = jobs;
+      _recordFaces = r;
       _settings = s;
     }
 
-    public List<PalletAndMaterial> CheckForNewLogEntries(NiigataStatus status, PlannedSchedule sch, out bool palletStateUpdated)
+    public NiigataMaterialStatus CheckForNewLogEntries(NiigataStatus status, PlannedSchedule sch, out bool palletStateUpdated)
     {
       palletStateUpdated = false;
       var palsWithMat = new List<PalletAndMaterial>();
@@ -159,13 +168,18 @@ namespace BlackMaple.FMSInsight.Niigata
         });
       }
 
-      return palsWithMat;
+      return new NiigataMaterialStatus()
+      {
+        Status = status,
+        Pallets = palsWithMat,
+        QueuedMaterial = QueuedMaterial(new HashSet<long>(palsWithMat.SelectMany(p => p.Faces).SelectMany(p => p.Material).Select(m => m.MaterialID)))
+      };
     }
 
     private IDictionary<int, PalletFace> GetFaces(PalletStatus pallet)
     {
       return
-        AssignPallets.AssignedJobAndPathForFace.FacesForPallet(_log, pallet.Master.Comment)
+        _recordFaces.Load(pallet.Master.Comment)
         .ToDictionary(m => m.Face, m => new PalletFace()
         {
           Job = _jobs.LoadJob(m.Unique),
@@ -799,6 +813,51 @@ namespace BlackMaple.FMSInsight.Niigata
 
         }
       }
+    }
+
+    private List<InProcessMaterial> QueuedMaterial(HashSet<long> matsOnPallets)
+    {
+      var mats = new List<InProcessMaterial>();
+
+      foreach (var mat in _log.GetMaterialInAllQueues())
+      {
+        if (matsOnPallets.Contains(mat.MaterialID)) continue;
+
+        var lastProc = _log.GetLogForMaterial(mat.MaterialID)
+          .SelectMany(m => m.Material)
+          .Where(m => m.MaterialID == mat.MaterialID)
+          .Max(m => m.Process);
+
+        var matDetails = _log.GetMaterialDetails(mat.MaterialID);
+        mats.Add(new InProcessMaterial()
+        {
+          MaterialID = mat.MaterialID,
+          JobUnique = mat.Unique,
+          PartName = mat.PartName,
+          Process = lastProc,
+          Path = matDetails?.Paths != null && matDetails.Paths.ContainsKey(lastProc) ? matDetails.Paths[lastProc] : 1,
+          Serial = matDetails?.Serial,
+          WorkorderId = matDetails?.Workorder,
+          SignaledInspections =
+                _log.LookupInspectionDecisions(mat.MaterialID)
+                .Where(x => x.Inspect)
+                .Select(x => x.InspType)
+                .Distinct()
+                .ToList(),
+          Location = new InProcessMaterialLocation()
+          {
+            Type = InProcessMaterialLocation.LocType.InQueue,
+            CurrentQueue = mat.Queue,
+            QueuePosition = mat.Position,
+          },
+          Action = new InProcessMaterialAction()
+          {
+            Type = InProcessMaterialAction.ActionType.Waiting
+          }
+        });
+      }
+
+      return mats;
     }
 
     private (int proc, int path) ProcessAndPathForMatID(long matID, JobPlan job)
