@@ -221,10 +221,10 @@ namespace BlackMaple.FMSInsight.Niigata
               Serial = details.Serial,
               WorkorderId = details.Workorder,
               SignaledInspections =
-              _log.LookupInspectionDecisions(m.MaterialID)
-              .Where(x => x.Inspect)
-              .Select(x => x.InspType)
-              .ToList(),
+                _log.LookupInspectionDecisions(m.MaterialID)
+                .Where(x => x.Inspect)
+                .Select(x => x.InspType)
+                .ToList(),
               Location = new InProcessMaterialLocation()
               {
                 Type = InProcessMaterialLocation.LocType.OnPallet,
@@ -484,12 +484,10 @@ namespace BlackMaple.FMSInsight.Niigata
 
       // now material to load
       var loadingIds = new HashSet<long>();
-      if (pallet.CurStation.Location.Location == PalletLocationEnum.LoadUnload &&
-          (
+      if (
                pallet.Tracking.CurrentStepNum == AssignPallets.LoadStepNum
             ||
                (pallet.Tracking.CurrentStepNum == AssignPallets.UnloadStepNum && pallet.Master.RemainingPalletCycles > 1)
-          )
          )
       {
         foreach (var face in faces)
@@ -563,7 +561,6 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         palletStateUpdated = true;
 
-
         // record unload-end
         var oldMatOnPal = MaterialCurrentlyOnPallet(pallet, log);
         var jobCache = faces.ToDictionary(f => f.Value.Job.UniqueStr, f => f.Value.Job);
@@ -621,6 +618,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
           foreach (var mat in matToLoad)
           {
+            _log.RecordPathForProcess(mat.MaterialID, mat.Process, mat.Path);
             mat.Location = new InProcessMaterialLocation()
             {
               Type = InProcessMaterialLocation.LocType.OnPallet,
@@ -686,6 +684,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 nowUtc
                 );
             }
+            _log.RecordPathForProcess(mid, face.Process, face.Path);
             face.Material.Add(new InProcessMaterial()
             {
               MaterialID = mid,
@@ -752,6 +751,11 @@ namespace BlackMaple.FMSInsight.Niigata
             elapsed: nowUtc.Subtract(machStart.EndTimeUTC),
             active: machStop.ExpectedCycleTime
           );
+
+          foreach (var mat in face.Material)
+          {
+            _log.RecordPathForProcess(mat.MaterialID, mat.Process, mat.Path);
+          }
         }
 
         if (currentlyRunning)
@@ -810,7 +814,10 @@ namespace BlackMaple.FMSInsight.Niigata
             elapsed: nowUtc.Subtract(machStart.EndTimeUTC),
             active: machStop.ExpectedCycleTime
           );
-
+          foreach (var mat in face.Material)
+          {
+            _log.RecordPathForProcess(mat.MaterialID, mat.Process, mat.Path);
+          }
         }
       }
     }

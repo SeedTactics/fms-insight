@@ -63,6 +63,8 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       // only need to decide on a single change, SyncPallets will call in a loop until no changes are needed.
 
+      //TODO: check if pallet in BeforeUnload just needs a simple increment before it reaches the load station?
+
       // first, check if pallet at load station being unloaded needs something loaded
       foreach (var pal in status.Pallets)
       {

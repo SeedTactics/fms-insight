@@ -81,6 +81,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           progs: new[] { 1234 },
           faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) }
         )
+        .SetExpectedLoadCastings(new[] {
+          (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1),
+         })
         .ExpectNewRoute(
           pal: 2,
           luls: new[] { 3, 4 },
@@ -88,16 +91,19 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           progs: new[] { 1234 },
           faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) }
         )
-        .ExpectNoChanges()
-        .MoveToLoad(pal: 1, lul: 1)
         .SetExpectedLoadCastings(new[] {
           (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1),
+          (uniq: "uniq1", part: "part1", pal: 2, path: 1, face: 1),
          })
+        .ExpectNoChanges()
+        .MoveToLoad(pal: 1, lul: 1)
         .ExpectLoadBeginEvt(pal: 1, lul: 1)
         .AdvanceMinutes(4) // =4
         .ExpectNoChanges()
         .SetAfterLoad(pal: 1)
-        .ClearExpectedLoadCastings()
+        .SetExpectedLoadCastings(new[] {
+          (uniq: "uniq1", part: "part1", pal: 2, path: 1, face: 1),
+         })
         .ExpectLoadEndEvt(pal: 1, lul: 1, elapsedMin: 4, palMins: 0, expectedEvts: new[] {
           FakeIccDsl.LoadCastingToFace(face: 1, unique: "uniq1", proc: 1, path: 1, cnt: 1, activeMins: 8, mats: out var fstMats)
         })
@@ -157,12 +163,15 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .MoveToLoad(pal: 1, lul: 4)
         .SetExpectedLoadCastings(new[] {
           (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1),
+          (uniq: "uniq1", part: "part1", pal: 2, path: 1, face: 1),
         })
         .ExpectRouteIncrementAndLoadBegin(pal: 1, lul: 4)
         .AdvanceMinutes(2) // =30
         .ExpectNoChanges()
         .SetAfterLoad(pal: 1)
-        .ClearExpectedLoadCastings()
+        .SetExpectedLoadCastings(new[] {
+          (uniq: "uniq1", part: "part1", pal: 2, path: 1, face: 1),
+        })
         .RemoveExpectedMaterial(fstMats.Select(m => m.MaterialID))
         .ExpectLoadEndEvt(pal: 1, lul: 4, elapsedMin: 2, palMins: 30 - 4, expectedEvts: new[] {
           FakeIccDsl.UnloadFromFace(face: 1, unique: "uniq1", proc: 1, path: 1, activeMins: 9, mats: fstMats),
