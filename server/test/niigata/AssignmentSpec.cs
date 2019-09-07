@@ -182,6 +182,48 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       ;
     }
 
+    [Fact]
+    public void ApplysNewQtyAtUnload()
+    {
+      _dsl
+        .AddOneProcOnePathJob(
+          unique: "uniq1",
+          part: "part1",
+          qty: 3,
+          priority: 5,
+          partsPerPal: 1,
+          pals: new[] { 1 },
+          luls: new[] { 3, 4 },
+          machs: new[] { 5, 6 },
+          prog: 1234,
+          loadMins: 8,
+          unloadMins: 9,
+          machMins: 14,
+          fixture: "fix1",
+          face: 1
+        )
+        .ExpectNewRoute(
+          pal: 1,
+          luls: new[] { 3, 4 },
+          machs: new[] { 5, 6 },
+          progs: new[] { 1234 },
+          faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) }
+        )
+
+        //should set new route if loads, machines, or progs differ
+        .OverrideRoute(pal: 1, comment: "abc", noWork: true, luls: new[] { 100, 200 }, machs: new[] { 5, 6 }, progs: new[] { 1234 })
+        .ExpectNewRoute(pal: 1, luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 1234 }, faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) })
+        .OverrideRoute(pal: 1, comment: "abc", noWork: true, luls: new[] { 3, 4 }, machs: new[] { 500, 600 }, progs: new[] { 1234 })
+        .ExpectNewRoute(pal: 1, luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 1234 }, faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) })
+        .OverrideRoute(pal: 1, comment: "abc", noWork: true, luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 12345 })
+        .ExpectNewRoute(pal: 1, luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 1234 }, faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) })
+
+        // back to correct, just increment
+        .OverrideRoute(pal: 1, comment: "abc", noWork: true, luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 1234 })
+        .ExpectRouteIncrement(pal: 1, newCycleCnt: 1)
+        ;
+    }
+
     /*
       [Fact]
       public void MultipleAvailablePallets()
@@ -509,6 +551,32 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _status.TimeOfStatusUTC = _status.TimeOfStatusUTC.AddMinutes(min);
       return this;
     }
+
+    public FakeIccDsl OverrideRoute(int pal, string comment, bool noWork, IEnumerable<int> luls, IEnumerable<int> machs, IEnumerable<int> progs, IEnumerable<(int face, string unique, int proc, int path)> faces = null)
+    {
+      _status.Pallets[pal - 1].Master = new PalletMaster()
+      {
+        PalletNum = pal,
+        Comment = comment,
+        RemainingPalletCycles = 1,
+        NoWork = noWork,
+        Routes = new List<RouteStep> {
+          new LoadStep() {
+            LoadStations = luls.ToList()
+          },
+          new MachiningStep() {
+            Machines = machs.ToList(),
+            ProgramNumsToRun = progs.ToList()
+          },
+          new UnloadStep() {
+            UnloadStations = luls.ToList()
+          }
+        }
+      };
+      _expectedFaces[pal] = faces == null ? new List<(int face, string unique, int proc, int path)>() : faces.ToList();
+
+      return this;
+    }
     #endregion
 
     #region Material
@@ -698,6 +766,35 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         log.Result.Should().Be("New Niigata Route");
       }
       return this;
+    }
+
+    public FakeIccDsl ExpectRouteIncrement(int pal, int newCycleCnt)
+    {
+      var sch = _jobDB.LoadUnarchivedJobs();
+      using (var logMonitor = _logDB.Monitor())
+      {
+        var pals = _createLog.CheckForNewLogEntries(_status, sch, out bool palletStateUpdated);
+        palletStateUpdated.Should().BeFalse();
+
+        logMonitor.Should().NotRaise("NewLogEntry");
+
+        var action = _assign.NewPalletChange(pals, sch);
+        action.Should().BeEquivalentTo<UpdatePalletQuantities>(new UpdatePalletQuantities()
+        {
+          Pallet = pal,
+          Priority = _status.Pallets[pal - 1].Master.Priority,
+          Cycles = newCycleCnt,
+          NoWork = false,
+          Skip = false,
+          ForLongTool = false
+        });
+        _status.Pallets[pal - 1].Master.NoWork = false;
+        _status.Pallets[pal - 1].Master.RemainingPalletCycles = newCycleCnt;
+        _status.Pallets[pal - 1].Tracking.CurrentControlNum = AssignPallets.LoadStepNum * 2 - 1;
+        _status.Pallets[pal - 1].Tracking.CurrentStepNum = AssignPallets.LoadStepNum;
+      }
+
+      return ExpectNoChanges();
     }
 
     public FakeIccDsl ExpectRouteIncrementAndLoadBegin(int pal, int lul)

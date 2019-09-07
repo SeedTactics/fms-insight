@@ -274,7 +274,7 @@ namespace BlackMaple.FMSInsight.Niigata
       if (SimpleQuantityChange(oldPallet.Master, newMaster))
       {
         int remaining = 1;
-        if (oldPallet.CurStation.Location.Location == PalletLocationEnum.LoadUnload && oldPallet.Tracking.CurrentStepNum != LoadStepNum)
+        if (oldPallet.Tracking.CurrentStepNum == UnloadStepNum)
         {
           remaining = 2;
         }
