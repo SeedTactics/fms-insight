@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using Xunit;
 using FluentAssertions;
 using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
@@ -233,6 +232,50 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     #endregion
 
     #region Material
+    public FakeIccDsl AddUnallocatedCasting(string queue, string part, int numProc, out long matId)
+    {
+      matId = _logDB.AllocateMaterialIDForCasting(part, numProc);
+      if (_settings.SerialType == SerialType.AssignOneSerialPerMaterial)
+      {
+        _logDB.RecordSerialForMaterialID(
+          new JobLogDB.EventLogMaterial() { MaterialID = matId, Process = 0, Face = "" },
+          _settings.ConvertMaterialIDToSerial(matId),
+          _status.TimeOfStatusUTC
+        );
+      }
+      var addLog = _logDB.RecordAddMaterialToQueue(
+        new JobLogDB.EventLogMaterial()
+        {
+          MaterialID = matId,
+          Process = 0,
+          Face = ""
+        },
+        queue,
+        -1,
+        _status.TimeOfStatusUTC
+      );
+      _expectedMaterial[matId] = new InProcessMaterial()
+      {
+        MaterialID = matId,
+        JobUnique = "",
+        PartName = part,
+        Process = 0,
+        Path = 1,
+        Serial = _settings.ConvertMaterialIDToSerial(matId),
+        Action = new InProcessMaterialAction()
+        {
+          Type = InProcessMaterialAction.ActionType.Waiting
+        },
+        Location = new InProcessMaterialLocation()
+        {
+          Type = InProcessMaterialLocation.LocType.InQueue,
+          CurrentQueue = queue,
+          QueuePosition = addLog.First().LocationNum
+        }
+      };
+      return this;
+    }
+
     public FakeIccDsl SetExpectedLoadCastings(IEnumerable<(string unique, string part, int pal, int path, int face)> castings)
     {
       _expectedLoadCastings = castings.Select(c => new InProcessMaterial()
@@ -540,6 +583,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public int Process { get; set; }
       public int Path { get; set; }
       public int ActiveMins { get; set; }
+      public bool ExpectRemoveQueue { get; set; }
 
       //If ExpectedMaterial is null, the following are filled in
       public int CastingCount { get; set; }
@@ -560,6 +604,32 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         OutMaterial = new List<LogMaterial>()
       };
       mats = e.OutMaterial;
+      return e;
+    }
+
+    public ExpectedEndLoadEvt LoadToFace(int face, string unique, string part, int numProc, int proc, int path, int activeMins, bool fromQueue, IEnumerable<long> matIds, out IEnumerable<LogMaterial> mats)
+    {
+      mats = matIds.Select(mid => new LogMaterial(
+          matID: mid,
+          uniq: unique,
+          proc: proc,
+          part: part,
+          numProc: numProc,
+          serial: _settings.ConvertMaterialIDToSerial(mid),
+          workorder: "",
+          face: face.ToString()
+        )).ToList();
+      var e = new ExpectedEndLoadEvt()
+      {
+        Face = face,
+        Load = true,
+        Unique = unique,
+        Process = proc,
+        Path = path,
+        ActiveMins = activeMins,
+        ExpectedMaterial = mats,
+        ExpectRemoveQueue = fromQueue
+      };
       return e;
     }
 
@@ -652,7 +722,26 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             active: TimeSpan.FromMinutes(expected.ActiveMins)
           ));
 
-          if (expected.Load && expected.Process == 1)
+          if (expected.ExpectRemoveQueue)
+          {
+            expectedLogs.AddRange(expected.ExpectedMaterial.Select(m => new LogEntry(
+              cntr: -1,
+              mat: new[] { new LogMaterial(matID: m.MaterialID, uniq: m.JobUniqueStr, proc: m.Process, part: m.PartName,
+                                           numProc: m.NumProcesses, serial: m.Serial, workorder: "", face: expected.Face.ToString()) },
+              pal: "",
+              ty: LogType.RemoveFromQueue,
+              locName: _expectedMaterial[m.MaterialID].Location.CurrentQueue,
+              locNum: _expectedMaterial[m.MaterialID].Location.QueuePosition ?? 1,
+              prog: "",
+              start: false,
+              endTime: _status.TimeOfStatusUTC.AddSeconds(1),
+              result: "",
+              endOfRoute: false
+
+            )));
+          }
+
+          if (expected.Load && expected.Process == 1 && !expected.ExpectRemoveQueue)
           {
             expectedLogs.AddRange(expected.ExpectedMaterial.Select(m => new LogEntry(
               cntr: -1,

@@ -33,10 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Linq;
-using System.Collections.Generic;
 using Xunit;
-using FluentAssertions;
-using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
 
 namespace BlackMaple.FMSInsight.Niigata.Tests
@@ -221,6 +218,69 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         // back to correct, just increment
         .OverrideRoute(pal: 1, comment: "abc", noWork: true, luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 1234 })
         .ExpectRouteIncrement(pal: 1, newCycleCnt: 1)
+        ;
+    }
+
+    [Fact]
+    public void CastingsFromQueue()
+    {
+      _dsl
+        .AddOneProcOnePathJob(
+          unique: "uniq1",
+          part: "part1",
+          qty: 3,
+          priority: 5,
+          partsPerPal: 1,
+          pals: new[] { 1, 2 },
+          luls: new[] { 3, 4 },
+          machs: new[] { 5, 6 },
+          prog: 1234,
+          loadMins: 8,
+          unloadMins: 9,
+          machMins: 14,
+          fixture: "fix1",
+          face: 1,
+          queue: "thequeue"
+        )
+        .ExpectNoChanges()
+
+        .AddUnallocatedCasting(queue: "thequeue", part: "part4", numProc: 1, matId: out long unusedMat)
+        .ExpectNoChanges()
+
+        .AddUnallocatedCasting(queue: "thequeue", part: "part1", numProc: 1, matId: out long matId1)
+        .ExpectNewRoute(pal: 1, luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 1234 }, faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) })
+        .UpdateExpectedMaterial(matId1, m =>
+        {
+          m.JobUnique = "uniq1";
+          m.Action = new InProcessMaterialAction()
+          {
+            Type = InProcessMaterialAction.ActionType.Loading,
+            LoadOntoPallet = 1.ToString(),
+            LoadOntoFace = 1,
+            ProcessAfterLoad = 1,
+            PathAfterLoad = 1
+          };
+        })
+        .ExpectNoChanges() // should not set route on pal 2 since already allocated to pallet 1
+
+        .MoveToLoad(pal: 1, lul: 3)
+        .ExpectLoadBeginEvt(pal: 1, lul: 3)
+        .AdvanceMinutes(3) // =4
+        .ExpectNoChanges()
+        .SetAfterLoad(pal: 1)
+        .ExpectLoadEndEvt(pal: 1, lul: 3, elapsedMin: 3, palMins: 0, expectedEvts: new[] {
+          _dsl.LoadToFace(face: 1, unique: "uniq1", part: "part1", numProc: 1, proc: 1, path: 1, activeMins: 8, fromQueue: true, matIds: new[] {matId1}, mats: out var mat1)
+        })
+        /*
+        .AddLoadingMaterial(pal: 1, face: 1, matId: matId, jobUnique: "uniq1", part: "part1", process: 1, path: 1)
+
+        .SetEmptyInBuffer(pal: 2)
+        .NextShouldBeNull() // already allocated to pallet 1
+
+        .AllocateMaterial("uniq1", "part1", 1, out long mid2)
+        .AddMaterialToQueue("thequeue", mid2)
+        .NextShouldBeNewRoute(pal: 2, comment: "part1-1", luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 1234 })
+        */
         ;
     }
 

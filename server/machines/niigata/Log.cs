@@ -254,14 +254,16 @@ namespace BlackMaple.FMSInsight.Niigata
         for (int i = 1; i <= face.Job.PartsPerPallet(face.Process, face.Path); i++)
         {
           long mid;
+          string serial = null;
           if (allocateNew)
           {
             mid = _log.AllocateMaterialID(face.Job.UniqueStr, face.Job.PartName, face.Job.NumProcesses);
             if (_settings.SerialType == SerialType.AssignOneSerialPerMaterial)
             {
+              serial = _settings.ConvertMaterialIDToSerial(mid);
               _log.RecordSerialForMaterialID(
                 new JobLogDB.EventLogMaterial() { MaterialID = mid, Process = face.Process, Face = "" },
-                _settings.ConvertMaterialIDToSerial(mid),
+                serial,
                 nowUtc
                 );
             }
@@ -277,6 +279,7 @@ namespace BlackMaple.FMSInsight.Niigata
             PartName = face.Job.PartName,
             Process = 0,
             Path = 1,
+            Serial = serial,
             Location = new InProcessMaterialLocation()
             {
               Type = InProcessMaterialLocation.LocType.Free,
@@ -306,6 +309,7 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             _log.SetDetailsForMaterialID(mat.MaterialID, face.Job.UniqueStr, face.Job.PartName, face.Job.NumProcesses);
           }
+          var details = _log.GetMaterialDetails(mat.MaterialID);
           mats.Add(new InProcessMaterial()
           {
             MaterialID = mat.MaterialID,
@@ -313,6 +317,8 @@ namespace BlackMaple.FMSInsight.Niigata
             PartName = face.Job.PartName,
             Process = 0,
             Path = 1,
+            Serial = details?.Serial,
+            WorkorderId = details?.Workorder,
             Location = new InProcessMaterialLocation()
             {
               Type = InProcessMaterialLocation.LocType.InQueue,
@@ -347,6 +353,9 @@ namespace BlackMaple.FMSInsight.Niigata
               PartName = face.Job.PartName,
               Process = mat.Process,
               Path = mat.Path,
+              Serial = mat.Serial,
+              WorkorderId = mat.WorkorderId,
+              SignaledInspections = mat.SignaledInspections,
               Location = new InProcessMaterialLocation()
               {
                 Type = InProcessMaterialLocation.LocType.OnPallet,
@@ -380,7 +389,7 @@ namespace BlackMaple.FMSInsight.Niigata
               continue;
             if (currentlyLoading.Contains(mat.MaterialID)) continue;
 
-
+            var details = _log.GetMaterialDetails(mat.MaterialID);
             mats.Add(new InProcessMaterial()
             {
               MaterialID = mat.MaterialID,
@@ -388,6 +397,8 @@ namespace BlackMaple.FMSInsight.Niigata
               PartName = face.Job.PartName,
               Process = mProc,
               Path = mPath,
+              Serial = details?.Serial,
+              WorkorderId = details?.Workorder,
               Location = new InProcessMaterialLocation()
               {
                 Type = InProcessMaterialLocation.LocType.InQueue,
@@ -421,14 +432,16 @@ namespace BlackMaple.FMSInsight.Niigata
         for (int i = mats.Count; i < face.Job.PartsPerPallet(face.Process, face.Path); i++)
         {
           long mid = -1;
+          string serial = null;
           if (allocateNew)
           {
             mid = _log.AllocateMaterialID(face.Job.UniqueStr, face.Job.PartName, face.Job.NumProcesses);
             if (_settings.SerialType == SerialType.AssignOneSerialPerMaterial)
             {
+              serial = _settings.ConvertMaterialIDToSerial(mid);
               _log.RecordSerialForMaterialID(
                 new JobLogDB.EventLogMaterial() { MaterialID = mid, Process = face.Process, Face = "" },
-                _settings.ConvertMaterialIDToSerial(mid),
+                serial,
                 nowUtc
                 );
             }
@@ -440,6 +453,7 @@ namespace BlackMaple.FMSInsight.Niigata
             PartName = face.Job.PartName,
             Process = face.Process - 1,
             Path = 1,
+            Serial = serial,
             Location = new InProcessMaterialLocation()
             {
               Type = InProcessMaterialLocation.LocType.Free,
