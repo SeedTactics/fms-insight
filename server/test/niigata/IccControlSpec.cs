@@ -265,22 +265,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
         .MoveToLoad(pal: 1, lul: 3)
         .ExpectLoadBeginEvt(pal: 1, lul: 3)
-        .AdvanceMinutes(3) // =4
+        .AdvanceMinutes(3) // = 3min
         .ExpectNoChanges()
         .SetAfterLoad(pal: 1)
         .ExpectLoadEndEvt(pal: 1, lul: 3, elapsedMin: 3, palMins: 0, expectedEvts: new[] {
           _dsl.LoadToFace(face: 1, unique: "uniq1", part: "part1", numProc: 1, proc: 1, path: 1, activeMins: 8, fromQueue: true, matIds: new[] {matId1}, mats: out var mat1)
         })
-        /*
-        .AddLoadingMaterial(pal: 1, face: 1, matId: matId, jobUnique: "uniq1", part: "part1", process: 1, path: 1)
-
-        .SetEmptyInBuffer(pal: 2)
-        .NextShouldBeNull() // already allocated to pallet 1
-
-        .AllocateMaterial("uniq1", "part1", 1, out long mid2)
-        .AddMaterialToQueue("thequeue", mid2)
-        .NextShouldBeNewRoute(pal: 2, comment: "part1-1", luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 1234 })
-        */
         ;
     }
 
