@@ -379,6 +379,50 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       return this;
     }
+
+    public FakeIccDsl AddMultiProcSamePalletJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, int prog1, int prog2, int loadMins1, int machMins1, int unloadMins1, int loadMins2, int machMins2, int unloadMins2, string fixture, int face1, int face2)
+    {
+      var j = new JobPlan(unique, 2);
+      j.PartName = part;
+      j.Priority = priority;
+      foreach (var i in luls)
+      {
+        j.AddLoadStation(1, 1, i);
+        j.AddUnloadStation(1, 1, i);
+        j.AddLoadStation(2, 1, i);
+        j.AddUnloadStation(2, 1, i);
+      }
+      j.SetExpectedLoadTime(1, 1, TimeSpan.FromMinutes(loadMins1));
+      j.SetExpectedUnloadTime(1, 1, TimeSpan.FromMinutes(unloadMins1));
+      j.SetExpectedLoadTime(2, 1, TimeSpan.FromMinutes(loadMins2));
+      j.SetExpectedUnloadTime(2, 1, TimeSpan.FromMinutes(unloadMins2));
+      j.SetPartsPerPallet(1, 1, partsPerPal);
+      j.SetPartsPerPallet(2, 1, partsPerPal);
+      var s = new JobMachiningStop("MC");
+      foreach (var m in machs)
+      {
+        s.AddProgram(m, prog1.ToString());
+        s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins1);
+      }
+      j.AddMachiningStop(1, 1, s);
+      s = new JobMachiningStop("MC");
+      foreach (var m in machs)
+      {
+        s.AddProgram(m, prog2.ToString());
+        s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins2);
+      }
+      j.AddMachiningStop(2, 1, s);
+      foreach (var p in pals)
+      {
+        j.AddProcessOnPallet(1, 1, p.ToString());
+        j.AddProcessOnPallet(2, 1, p.ToString());
+      }
+      j.AddProcessOnFixture(1, 1, fixture, face1.ToString());
+      j.AddProcessOnFixture(2, 1, fixture, face2.ToString());
+      _jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+
+      return this;
+    }
     #endregion
 
     #region Steps
@@ -397,10 +441,18 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             Process = face.proc,
             Path = face.path,
             Face = face.face,
-            Material = _expectedMaterial.Values.Concat(_expectedLoadCastings).Where(
-              m => (m.Location.Type == InProcessMaterialLocation.LocType.OnPallet && m.Location.Pallet == palNum.ToString() && m.Location.Face == face.face)
-                || (m.Action.Type == InProcessMaterialAction.ActionType.Loading && m.Action.LoadOntoPallet == palNum.ToString() && m.Action.LoadOntoFace == face.face)
-            ).ToList()
+            Material = _expectedMaterial.Values.Concat(_expectedLoadCastings).Where(m =>
+            {
+              if (m.Action.Type == InProcessMaterialAction.ActionType.Loading)
+              {
+                return m.Action.LoadOntoPallet == palNum.ToString() && m.Action.LoadOntoFace == face.face;
+              }
+              else if (m.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
+              {
+                return m.Location.Pallet == palNum.ToString() && m.Location.Face == face.face;
+              }
+              return false;
+            }).ToList()
           }
         ));
       }
@@ -457,7 +509,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         var matStatus = _createLog.CheckForNewLogEntries(_status, sch, out bool palletStateUpdated);
         palletStateUpdated.Should().BeFalse();
         CheckStatusMatchesExpected(matStatus);
-
         logMonitor.Should().NotRaise("NewLogEntry");
 
         var action = _assign.NewPalletChange(matStatus, sch);
@@ -477,7 +528,78 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         log.LogType.Should().Be(LogType.GeneralMessage);
         log.Result.Should().Be("New Niigata Route");
       }
+
       return this;
+    }
+    public FakeIccDsl ExpectNewRouteAndLoadBegin(int pal, int[] luls, int[] machs, int[] progs, int lul, IEnumerable<(int face, string unique, int proc, int path)> faces)
+    {
+      var sch = _jobDB.LoadUnarchivedJobs();
+      var expectedMaster = new PalletMaster()
+      {
+        PalletNum = pal,
+        Comment = "",
+        RemainingPalletCycles = 1,
+        Priority = 0,
+        NoWork = false,
+        Skip = false,
+        ForLongToolMaintenance = false,
+        PerformProgramDownload = false,
+        Routes = new List<RouteStep> {
+          new LoadStep() {
+            LoadStations = luls.ToList()
+          },
+          new MachiningStep() {
+            Machines = machs.ToList(),
+            ProgramNumsToRun = progs.ToList()
+          },
+          new UnloadStep() {
+            UnloadStations = luls.ToList(),
+            CompletedPartCount = 1
+          }
+        },
+      };
+
+      using (var logMonitor = _logDB.Monitor())
+      {
+        var matStatus = _createLog.CheckForNewLogEntries(_status, sch, out bool palletStateUpdated);
+
+        palletStateUpdated.Should().BeTrue();
+        logMonitor.Should().Raise("NewLogEntry");
+        logMonitor.OccurredEvents.Select(e => e.Parameters[0]).Should().BeEquivalentTo(new[] {
+          new LogEntry(
+            cntr: -1,
+            mat: Enumerable.Empty<LogMaterial>(),
+            pal: pal.ToString(),
+            ty: LogType.LoadUnloadCycle,
+            locName: "L/U",
+            locNum: lul,
+            prog: "LOAD",
+            start: true,
+            endTime: _status.TimeOfStatusUTC,
+            result: "LOAD",
+            endOfRoute: false
+          )
+        }, options => options.Excluding(e => e.Counter));
+        logMonitor.Clear();
+
+        var action = _assign.NewPalletChange(matStatus, sch);
+        action.Should().BeEquivalentTo<NewPalletRoute>(new NewPalletRoute()
+        {
+          NewMaster = expectedMaster
+        }, options => options.Excluding(e => e.PendingID).Excluding(e => e.NewMaster.Comment));
+        _status.Pallets[pal - 1].Master = ((NewPalletRoute)action).NewMaster;
+        _status.Pallets[pal - 1].Tracking.CurrentControlNum = AssignPallets.LoadStepNum * 2 - 1;
+        _status.Pallets[pal - 1].Tracking.CurrentStepNum = AssignPallets.LoadStepNum;
+        _expectedFaces[pal] = faces.ToList();
+
+        logMonitor.Should().Raise("NewLogEntry");
+
+        logMonitor.OccurredEvents.Length.Should().Be(1);
+        var log = (LogEntry)logMonitor.OccurredEvents[0].Parameters[0];
+        log.LogType.Should().Be(LogType.GeneralMessage);
+        log.Result.Should().Be("New Niigata Route");
+      }
+      return ExpectNoChanges();
     }
 
     public FakeIccDsl ExpectRouteIncrement(int pal, int newCycleCnt)
@@ -611,7 +733,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       )});
     }
 
-    public FakeIccDsl ExpectMachineEnd(int pal, int mach, int program, int proc, int path, int elapsedMin, int activeMin, IEnumerable<LogMaterial> mats)
+    public FakeIccDsl ExpectMachineEnd(int pal, int mach, int program, int elapsedMin, int activeMin, IEnumerable<LogMaterial> mats)
     {
       return ExpectNewLogs(new[] {
         new LogEntry(
@@ -628,6 +750,39 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           endOfRoute: false,
           elapsed: TimeSpan.FromMinutes(elapsedMin),
           active: TimeSpan.FromMinutes(activeMin)
+      )});
+    }
+
+    public FakeIccDsl ExpectMachineBeginAndEnd(int pal, int mach, int endProg, int elapsedMin, int activeMin, int startProg, IEnumerable<LogMaterial> endMats, IEnumerable<LogMaterial> startMats)
+    {
+      return ExpectNewLogs(new[] {
+        new LogEntry(
+          cntr: -1,
+          mat: endMats,
+          pal: pal.ToString(),
+          ty: LogType.MachineCycle,
+          locName: "MC",
+          locNum: mach,
+          prog: endProg.ToString(),
+          start: false,
+          endTime: _status.TimeOfStatusUTC,
+          result: "",
+          endOfRoute: false,
+          elapsed: TimeSpan.FromMinutes(elapsedMin),
+          active: TimeSpan.FromMinutes(activeMin)
+        ),
+        new LogEntry(
+          cntr: -1,
+          mat: startMats,
+          pal: pal.ToString(),
+          ty: LogType.MachineCycle,
+          locName: "MC",
+          locNum: mach,
+          prog: startProg.ToString(),
+          start: true,
+          endTime: _status.TimeOfStatusUTC,
+          result: "",
+          endOfRoute: false
       )});
     }
 

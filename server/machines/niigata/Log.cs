@@ -360,7 +360,7 @@ namespace BlackMaple.FMSInsight.Niigata
               {
                 Type = InProcessMaterialLocation.LocType.OnPallet,
                 Pallet = pallet.Master.PalletNum.ToString(),
-                Face = face.Face
+                Face = mat.Location.Face
               },
               Action = new InProcessMaterialAction()
               {
@@ -524,8 +524,9 @@ namespace BlackMaple.FMSInsight.Niigata
         }
       }
 
-      var jobCache =
-        faces.ToDictionary(f => f.Value.Job.UniqueStr, f => f.Value.Job);
+      var jobCache = new Dictionary<string, JobPlan>();
+      foreach (var f in faces.Values)
+        jobCache[f.Job.UniqueStr] = f.Job;
 
       // now material to unload or transfer
       foreach (var mat in matToUnload)
@@ -577,7 +578,9 @@ namespace BlackMaple.FMSInsight.Niigata
 
         // record unload-end
         var oldMatOnPal = MaterialCurrentlyOnPallet(pallet, log);
-        var jobCache = faces.ToDictionary(f => f.Value.Job.UniqueStr, f => f.Value.Job);
+        var jobCache = new Dictionary<string, JobPlan>();
+        foreach (var face in faces.Values)
+          jobCache[face.Job.UniqueStr] = face.Job;
         foreach (var face in oldMatOnPal.ToLookup(m => m.InProc.Location.Face))
         {
           // everything on a face shares the job, proc, and path
@@ -622,7 +625,7 @@ namespace BlackMaple.FMSInsight.Niigata
           var matToLoad = MaterialToLoadOnFace(pallet, face.Value, allocateNew: true, nowUtc: nowUtc.AddSeconds(1), currentlyLoading: currentlyLoading, unusedMatsOnPal: unusedMatsOnPal);
 
           _log.RecordLoadEnd(
-            mats: matToLoad.Select(m => new JobLogDB.EventLogMaterial() { MaterialID = m.MaterialID, Process = m.Action.ProcessAfterLoad ?? 1, Face = face.Key.ToString() }),
+            mats: matToLoad.Select(m => new JobLogDB.EventLogMaterial() { MaterialID = m.MaterialID, Process = face.Value.Process, Face = face.Key.ToString() }),
             pallet: pallet.Master.PalletNum.ToString(),
             lulNum: loadBegin.LocationNum,
             timeUTC: nowUtc.AddSeconds(1),
@@ -633,6 +636,8 @@ namespace BlackMaple.FMSInsight.Niigata
           foreach (var mat in matToLoad)
           {
             _log.RecordPathForProcess(mat.MaterialID, mat.Process, mat.Path);
+            mat.Process = face.Value.Process;
+            mat.Path = face.Value.Path;
             mat.Location = new InProcessMaterialLocation()
             {
               Type = InProcessMaterialLocation.LocType.OnPallet,
