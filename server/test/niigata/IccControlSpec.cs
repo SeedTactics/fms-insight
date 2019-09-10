@@ -102,7 +102,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           (uniq: "uniq1", part: "part1", pal: 2, path: 1, face: 1),
          })
         .ExpectLoadEndEvt(pal: 1, lul: 1, elapsedMin: 4, palMins: 0, expectedEvts: new[] {
-          FakeIccDsl.LoadCastingToFace(face: 1, unique: "uniq1", proc: 1, path: 1, cnt: 1, activeMins: 8, mats: out var fstMats)
+          FakeIccDsl.LoadCastingToFace(face: 1, unique: "uniq1", path: 1, cnt: 1, activeMins: 8, mats: out var fstMats)
         })
         .MoveToBuffer(pal: 1, buff: 1)
         .ExpectNoChanges()
@@ -171,8 +171,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         })
         .RemoveExpectedMaterial(fstMats.Select(m => m.MaterialID))
         .ExpectLoadEndEvt(pal: 1, lul: 4, elapsedMin: 2, palMins: 30 - 4, expectedEvts: new[] {
-          FakeIccDsl.UnloadFromFace(face: 1, unique: "uniq1", proc: 1, path: 1, activeMins: 9, mats: fstMats),
-          FakeIccDsl.LoadCastingToFace(face: 1, unique: "uniq1", proc: 1, path: 1, cnt: 1, activeMins: 8, mats: out var sndMats)
+          FakeIccDsl.UnloadFromFace(activeMins: 9, toQueue: null, mats: fstMats),
+          FakeIccDsl.LoadCastingToFace(face: 1, unique: "uniq1", path: 1, cnt: 1, activeMins: 8, mats: out var sndMats)
         })
         .MoveToBuffer(pal: 1, buff: 1)
         .ExpectNoChanges()
@@ -244,12 +244,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         )
         .ExpectNoChanges()
 
-        .AddUnallocatedCasting(queue: "thequeue", part: "part4", numProc: 1, matId: out long unusedMat)
+        .AddUnallocatedCasting(queue: "thequeue", part: "part4", numProc: 1, mat: out var unusedMat)
         .ExpectNoChanges()
 
-        .AddUnallocatedCasting(queue: "thequeue", part: "part1", numProc: 1, matId: out long matId1)
+        .AddUnallocatedCasting(queue: "thequeue", part: "part1", numProc: 1, mat: out var queuedMat)
         .ExpectNewRoute(pal: 1, luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 1234 }, faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) })
-        .UpdateExpectedMaterial(matId1, m =>
+        .UpdateExpectedMaterial(queuedMat.MaterialID, m =>
         {
           m.JobUnique = "uniq1";
           m.Action = new InProcessMaterialAction()
@@ -268,8 +268,19 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .AdvanceMinutes(3) // = 3min
         .ExpectNoChanges()
         .SetAfterLoad(pal: 1)
+        .UpdateExpectedMaterial(queuedMat.MaterialID, m =>
+        {
+          m.Process = 1;
+          m.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+          m.Location = new InProcessMaterialLocation()
+          {
+            Type = InProcessMaterialLocation.LocType.OnPallet,
+            Pallet = "1",
+            Face = 1
+          };
+        })
         .ExpectLoadEndEvt(pal: 1, lul: 3, elapsedMin: 3, palMins: 0, expectedEvts: new[] {
-          _dsl.LoadToFace(face: 1, unique: "uniq1", part: "part1", numProc: 1, proc: 1, path: 1, activeMins: 8, fromQueue: true, matIds: new[] {matId1}, mats: out var mat1)
+          _dsl.LoadToFace(face: 1, unique: "uniq1", activeMins: 8, fromQueue: "thequeue", loadingMats: new[] {queuedMat}, loadedMats: out var mat1)
         })
         ;
     }

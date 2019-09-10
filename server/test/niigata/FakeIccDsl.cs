@@ -48,6 +48,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private CreateLogEntries _createLog;
     private NiigataStatus _status;
     private FMSSettings _settings;
+
     private List<InProcessMaterial> _expectedLoadCastings = new List<InProcessMaterial>();
     private Dictionary<long, InProcessMaterial> _expectedMaterial = new Dictionary<long, InProcessMaterial>(); //key is matId
     private Dictionary<int, List<(int face, string unique, int proc, int path)>> _expectedFaces = new Dictionary<int, List<(int face, string unique, int proc, int path)>>(); // key is pallet
@@ -232,9 +233,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     #endregion
 
     #region Material
-    public FakeIccDsl AddUnallocatedCasting(string queue, string part, int numProc, out long matId)
+    public FakeIccDsl AddUnallocatedCasting(string queue, string part, int numProc, out LogMaterial mat)
     {
-      matId = _logDB.AllocateMaterialIDForCasting(part, numProc);
+      var matId = _logDB.AllocateMaterialIDForCasting(part, numProc);
       if (_settings.SerialType == SerialType.AssignOneSerialPerMaterial)
       {
         _logDB.RecordSerialForMaterialID(
@@ -273,6 +274,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           QueuePosition = addLog.First().LocationNum
         }
       };
+      mat = new LogMaterial(
+        matID: matId,
+        uniq: "",
+        proc: 0,
+        part: part,
+        numProc: numProc,
+        serial: _settings.ConvertMaterialIDToSerial(matId),
+        workorder: "",
+        face: ""
+      );
       return this;
     }
 
@@ -431,7 +442,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             ProgramNumsToRun = progs.ToList()
           },
           new UnloadStep() {
-            UnloadStations = luls.ToList()
+            UnloadStations = luls.ToList(),
+            CompletedPartCount = 1
           }
         },
       };
@@ -472,8 +484,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         var pals = _createLog.CheckForNewLogEntries(_status, sch, out bool palletStateUpdated);
         palletStateUpdated.Should().BeFalse();
 
-        logMonitor.Should().NotRaise("NewLogEntry");
-
         var action = _assign.NewPalletChange(pals, sch);
         action.Should().BeEquivalentTo<UpdatePalletQuantities>(new UpdatePalletQuantities()
         {
@@ -488,6 +498,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         _status.Pallets[pal - 1].Master.RemainingPalletCycles = newCycleCnt;
         _status.Pallets[pal - 1].Tracking.CurrentControlNum = AssignPallets.LoadStepNum * 2 - 1;
         _status.Pallets[pal - 1].Tracking.CurrentStepNum = AssignPallets.LoadStepNum;
+
+        logMonitor.Should().NotRaise("NewLogEntry");
       }
 
       return ExpectNoChanges();
@@ -535,6 +547,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       return ExpectNoChanges();
     }
+    #endregion
+
+    #region Logs
 
     private FakeIccDsl ExpectNewLogs(IEnumerable<LogEntry> log)
     {
@@ -572,226 +587,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           result: "LOAD",
           endOfRoute: false
       )});
-    }
-
-    public class ExpectedEndLoadEvt
-    {
-      public int Face { get; set; }
-      public bool Load { get; set; }
-      public IEnumerable<LogMaterial> ExpectedMaterial { get; set; }
-      public string Unique { get; set; }
-      public int Process { get; set; }
-      public int Path { get; set; }
-      public int ActiveMins { get; set; }
-      public bool ExpectRemoveQueue { get; set; }
-
-      //If ExpectedMaterial is null, the following are filled in
-      public int CastingCount { get; set; }
-      public List<LogMaterial> OutMaterial { get; set; }
-    }
-
-    public static ExpectedEndLoadEvt LoadCastingToFace(int face, string unique, int proc, int path, int cnt, int activeMins, out IEnumerable<LogMaterial> mats)
-    {
-      var e = new ExpectedEndLoadEvt()
-      {
-        Face = face,
-        Load = true,
-        Unique = unique,
-        Process = proc,
-        Path = path,
-        ActiveMins = activeMins,
-        CastingCount = cnt,
-        OutMaterial = new List<LogMaterial>()
-      };
-      mats = e.OutMaterial;
-      return e;
-    }
-
-    public ExpectedEndLoadEvt LoadToFace(int face, string unique, string part, int numProc, int proc, int path, int activeMins, bool fromQueue, IEnumerable<long> matIds, out IEnumerable<LogMaterial> mats)
-    {
-      mats = matIds.Select(mid => new LogMaterial(
-          matID: mid,
-          uniq: unique,
-          proc: proc,
-          part: part,
-          numProc: numProc,
-          serial: _settings.ConvertMaterialIDToSerial(mid),
-          workorder: "",
-          face: face.ToString()
-        )).ToList();
-      var e = new ExpectedEndLoadEvt()
-      {
-        Face = face,
-        Load = true,
-        Unique = unique,
-        Process = proc,
-        Path = path,
-        ActiveMins = activeMins,
-        ExpectedMaterial = mats,
-        ExpectRemoveQueue = fromQueue
-      };
-      return e;
-    }
-
-    public static ExpectedEndLoadEvt UnloadFromFace(int face, string unique, int proc, int path, int activeMins, IEnumerable<LogMaterial> mats)
-    {
-      return new ExpectedEndLoadEvt()
-      {
-        Face = face,
-        Load = false,
-        Unique = unique,
-        Process = proc,
-        Path = path,
-        ActiveMins = activeMins,
-        ExpectedMaterial = mats
-      };
-    }
-
-    public FakeIccDsl ExpectLoadEndEvt(int pal, int lul,
-                                       int elapsedMin,
-                                       int palMins,
-                                       IEnumerable<ExpectedEndLoadEvt> expectedEvts
-                                      )
-    {
-      var sch = _jobDB.LoadUnarchivedJobs();
-
-      using (var logMonitor = _logDB.Monitor())
-      {
-        var pals = _createLog.CheckForNewLogEntries(_status, sch, out bool palletStateUpdated);
-        palletStateUpdated.Should().BeTrue();
-
-        _assign.NewPalletChange(pals, sch).Should().BeNull();
-
-        logMonitor.Should().Raise("NewLogEntry");
-        var evts = logMonitor.OccurredEvents.Select(e => e.Parameters[0]).Cast<LogEntry>();
-
-        // first, any unknown materials, extract them
-        foreach (var expected in expectedEvts)
-        {
-          if (expected.ExpectedMaterial != null) continue;
-          var evt = evts.First(
-            e => e.LogType == LogType.LoadUnloadCycle && e.Result == (expected.Load ? "LOAD" : "UNLOAD") && e.Material.Any(m => m.Face == expected.Face.ToString())
-          );
-          var matIds = evt.Material.Select(m => m.MaterialID);
-
-          matIds.Count().Should().Be(expected.CastingCount);
-
-          expected.ExpectedMaterial = evt.Material.Select(origMat => new LogMaterial(
-            matID: origMat.MaterialID, uniq: expected.Unique, proc: expected.Process, part: origMat.PartName, numProc: origMat.NumProcesses,
-            serial: _settings.ConvertMaterialIDToSerial(origMat.MaterialID), workorder: "", face: expected.Face.ToString())
-          ).ToList();
-
-          expected.OutMaterial.AddRange(expected.ExpectedMaterial);
-
-
-        }
-
-        var expectedLogs = new List<LogEntry> {
-          new LogEntry(
-            cntr: -1,
-            mat: Enumerable.Empty<LogMaterial>(),
-            pal: pal.ToString(),
-            ty: LogType.PalletCycle,
-            locName: "Pallet Cycle",
-            locNum: 1,
-            prog: "",
-            start: false,
-            endTime: _status.TimeOfStatusUTC,
-            result: "PalletCycle",
-            endOfRoute: false,
-            elapsed: TimeSpan.FromMinutes(palMins),
-            active: TimeSpan.Zero
-          ),
-        };
-
-        foreach (var expected in expectedEvts)
-        {
-          expectedLogs.Add(new LogEntry(
-            cntr: -1,
-            mat: expected.ExpectedMaterial,
-            pal: pal.ToString(),
-            ty: LogType.LoadUnloadCycle,
-            locName: "L/U",
-            locNum: lul,
-            prog: expected.Load ? "LOAD" : "UNLOAD",
-            start: false,
-            endTime: expected.Load ? _status.TimeOfStatusUTC.AddSeconds(1) : _status.TimeOfStatusUTC,
-            result: expected.Load ? "LOAD" : "UNLOAD",
-            endOfRoute: !expected.Load,
-            elapsed: TimeSpan.FromMinutes(elapsedMin),
-            active: TimeSpan.FromMinutes(expected.ActiveMins)
-          ));
-
-          if (expected.ExpectRemoveQueue)
-          {
-            expectedLogs.AddRange(expected.ExpectedMaterial.Select(m => new LogEntry(
-              cntr: -1,
-              mat: new[] { new LogMaterial(matID: m.MaterialID, uniq: m.JobUniqueStr, proc: m.Process, part: m.PartName,
-                                           numProc: m.NumProcesses, serial: m.Serial, workorder: "", face: expected.Face.ToString()) },
-              pal: "",
-              ty: LogType.RemoveFromQueue,
-              locName: _expectedMaterial[m.MaterialID].Location.CurrentQueue,
-              locNum: _expectedMaterial[m.MaterialID].Location.QueuePosition ?? 1,
-              prog: "",
-              start: false,
-              endTime: _status.TimeOfStatusUTC.AddSeconds(1),
-              result: "",
-              endOfRoute: false
-
-            )));
-          }
-
-          if (expected.Load && expected.Process == 1 && !expected.ExpectRemoveQueue)
-          {
-            expectedLogs.AddRange(expected.ExpectedMaterial.Select(m => new LogEntry(
-              cntr: -1,
-              mat: new[] { new LogMaterial(matID: m.MaterialID, uniq: m.JobUniqueStr, proc: m.Process, part: m.PartName,
-                                           numProc: m.NumProcesses, serial: m.Serial, workorder: "", face: "") },
-              pal: "",
-              ty: LogType.PartMark,
-              locName: "Mark",
-              locNum: 1,
-              prog: "MARK",
-              start: false,
-              endTime: _status.TimeOfStatusUTC.AddSeconds(1),
-              result: _settings.ConvertMaterialIDToSerial(m.MaterialID),
-              endOfRoute: false
-            )));
-          }
-
-          if (expected.Load)
-          {
-            foreach (var m in expected.ExpectedMaterial)
-            {
-              _expectedMaterial[m.MaterialID] = new InProcessMaterial()
-              {
-                MaterialID = m.MaterialID,
-                JobUnique = m.JobUniqueStr,
-                Process = expected.Process,
-                Path = expected.Path,
-                PartName = m.PartName,
-                Serial = _settings.ConvertMaterialIDToSerial(m.MaterialID),
-                Location = new InProcessMaterialLocation()
-                {
-                  Type = InProcessMaterialLocation.LocType.OnPallet,
-                  Pallet = pal.ToString(),
-                  Face = expected.Face
-                },
-                Action = new InProcessMaterialAction()
-                {
-                  Type = InProcessMaterialAction.ActionType.Waiting
-                }
-              };
-            }
-          }
-        }
-
-        evts.Should().BeEquivalentTo(expectedLogs,
-          options => options.Excluding(e => e.Counter)
-        );
-      }
-
-      return ExpectNoChanges();
     }
 
     public FakeIccDsl ExpectMachineBegin(int pal, int mach, int program, IEnumerable<LogMaterial> mats)
@@ -832,6 +627,277 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       )});
     }
 
+    public abstract class ExpectedLoadEndEvt { }
+
+    private class ExpectedLoadCastingEvt : ExpectedLoadEndEvt
+    {
+      public int Face { get; set; }
+      public int Count { get; set; }
+      public string Unique { get; set; }
+      public int Path { get; set; }
+      public int ActiveMins { get; set; }
+      public List<LogMaterial> OutMaterial { get; set; }
+    }
+
+    public static ExpectedLoadEndEvt LoadCastingToFace(int face, string unique, int path, int cnt, int activeMins, out IEnumerable<LogMaterial> mats)
+    {
+      var e = new ExpectedLoadCastingEvt()
+      {
+        Face = face,
+        Count = cnt,
+        Unique = unique,
+        Path = path,
+        ActiveMins = activeMins,
+        OutMaterial = new List<LogMaterial>(),
+      };
+      mats = e.OutMaterial;
+      return e;
+    }
+
+    private class ExpectedLoadMatsEvt : ExpectedLoadEndEvt
+    {
+      public IEnumerable<LogMaterial> Material { get; set; }
+      public int ActiveMins { get; set; }
+      public string FromQueue { get; set; } = null;
+    }
+
+    public ExpectedLoadEndEvt LoadToFace(int face, string unique, int activeMins, string fromQueue, IEnumerable<LogMaterial> loadingMats, out IEnumerable<LogMaterial> loadedMats)
+    {
+      loadedMats = loadingMats.Select(m =>
+        new LogMaterial(
+          matID: m.MaterialID,
+          uniq: unique,
+          proc: m.Process + 1,
+          part: m.PartName,
+          numProc: m.NumProcesses,
+          serial: m.Serial,
+          workorder: m.Workorder,
+          face: face.ToString()
+        )
+      );
+      return new ExpectedLoadMatsEvt()
+      {
+        Material = loadedMats,
+        ActiveMins = activeMins,
+        FromQueue = fromQueue,
+      };
+    }
+
+
+    public class ExpectedUnloadEvt : ExpectedLoadEndEvt
+    {
+      public IEnumerable<LogMaterial> Material { get; set; }
+      public int ActiveMins { get; set; }
+      public string ToQueue { get; set; } = null;
+    }
+
+    public static ExpectedLoadEndEvt UnloadFromFace(int activeMins, string toQueue, IEnumerable<LogMaterial> mats)
+    {
+      return new ExpectedUnloadEvt()
+      {
+        Material = mats,
+        ActiveMins = activeMins,
+        ToQueue = toQueue,
+      };
+    }
+
+    public FakeIccDsl ExpectLoadEndEvt(int pal, int lul, int elapsedMin, int palMins, IEnumerable<ExpectedLoadEndEvt> expectedEvts)
+    {
+      var sch = _jobDB.LoadUnarchivedJobs();
+
+      using (var logMonitor = _logDB.Monitor())
+      {
+        var pals = _createLog.CheckForNewLogEntries(_status, sch, out bool palletStateUpdated);
+        palletStateUpdated.Should().BeTrue();
+
+        _assign.NewPalletChange(pals, sch).Should().BeNull();
+
+        logMonitor.Should().Raise("NewLogEntry");
+        var evts = logMonitor.OccurredEvents.Select(e => e.Parameters[0]).Cast<LogEntry>();
+
+
+        // start computing the expected events
+        var expectedLogs = new List<LogEntry> {
+          new LogEntry(
+            cntr: -1,
+            mat: Enumerable.Empty<LogMaterial>(),
+            pal: pal.ToString(),
+            ty: LogType.PalletCycle,
+            locName: "Pallet Cycle",
+            locNum: 1,
+            prog: "",
+            start: false,
+            endTime: _status.TimeOfStatusUTC,
+            result: "PalletCycle",
+            endOfRoute: false,
+            elapsed: TimeSpan.FromMinutes(palMins),
+            active: TimeSpan.Zero
+          ),
+        };
+
+        foreach (var expected in expectedEvts)
+        {
+          switch (expected)
+          {
+            case ExpectedLoadCastingEvt load:
+
+              // first, extract the newly created material
+              var evt = evts.First(
+                e => e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD" && e.Material.Any(m => m.Face == load.Face.ToString())
+              );
+              var matIds = evt.Material.Select(m => m.MaterialID);
+
+              matIds.Count().Should().Be(load.Count);
+
+              load.OutMaterial.AddRange(evt.Material.Select(origMat => new LogMaterial(
+                matID: origMat.MaterialID, uniq: load.Unique, proc: 1, part: origMat.PartName, numProc: origMat.NumProcesses,
+                serial: _settings.ConvertMaterialIDToSerial(origMat.MaterialID), workorder: "", face: load.Face.ToString())
+              ));
+
+              // now the expected events
+              expectedLogs.Add(new LogEntry(
+                cntr: -1,
+                mat: load.OutMaterial,
+                pal: pal.ToString(),
+                ty: LogType.LoadUnloadCycle,
+                locName: "L/U",
+                locNum: lul,
+                prog: "LOAD",
+                start: false,
+                endTime: _status.TimeOfStatusUTC.AddSeconds(1),
+                result: "LOAD",
+                endOfRoute: false,
+                elapsed: TimeSpan.FromMinutes(elapsedMin),
+                active: TimeSpan.FromMinutes(load.ActiveMins)
+              ));
+              expectedLogs.AddRange(load.OutMaterial.Select(m => new LogEntry(
+                cntr: -1,
+                mat: new[] { new LogMaterial(matID: m.MaterialID, uniq: m.JobUniqueStr, proc: m.Process, part: m.PartName,
+                                            numProc: m.NumProcesses, serial: m.Serial, workorder: "", face: "") },
+                pal: "",
+                ty: LogType.PartMark,
+                locName: "Mark",
+                locNum: 1,
+                prog: "MARK",
+                start: false,
+                endTime: _status.TimeOfStatusUTC.AddSeconds(1),
+                result: _settings.ConvertMaterialIDToSerial(m.MaterialID),
+                endOfRoute: false
+              )));
+
+              // finally, add the material to the expected material
+              foreach (var m in load.OutMaterial)
+              {
+                _expectedMaterial[m.MaterialID] = new InProcessMaterial()
+                {
+                  MaterialID = m.MaterialID,
+                  JobUnique = m.JobUniqueStr,
+                  Process = 1,
+                  Path = load.Path,
+                  PartName = m.PartName,
+                  Serial = _settings.ConvertMaterialIDToSerial(m.MaterialID),
+                  Location = new InProcessMaterialLocation()
+                  {
+                    Type = InProcessMaterialLocation.LocType.OnPallet,
+                    Pallet = pal.ToString(),
+                    Face = load.Face
+                  },
+                  Action = new InProcessMaterialAction()
+                  {
+                    Type = InProcessMaterialAction.ActionType.Waiting
+                  }
+                };
+              }
+
+              break;
+
+
+            case ExpectedLoadMatsEvt load:
+
+              expectedLogs.Add(new LogEntry(
+                cntr: -1,
+                mat: load.Material,
+                pal: pal.ToString(),
+                ty: LogType.LoadUnloadCycle,
+                locName: "L/U",
+                locNum: lul,
+                prog: "LOAD",
+                start: false,
+                endTime: _status.TimeOfStatusUTC.AddSeconds(1),
+                result: "LOAD",
+                endOfRoute: false,
+                elapsed: TimeSpan.FromMinutes(elapsedMin),
+                active: TimeSpan.FromMinutes(load.ActiveMins)
+              ));
+
+              if (load.FromQueue != null)
+              {
+                expectedLogs.AddRange(load.Material.Select(m => new LogEntry(
+                  cntr: -1,
+                  mat: new[] { new LogMaterial(matID: m.MaterialID, uniq: m.JobUniqueStr, proc: m.Process, part: m.PartName,
+                                              numProc: m.NumProcesses, serial: m.Serial, workorder: "", face: m.Face) },
+                  pal: "",
+                  ty: LogType.RemoveFromQueue,
+                  locName: load.FromQueue,
+                  locNum: 1,
+                  prog: "",
+                  start: false,
+                  endTime: _status.TimeOfStatusUTC.AddSeconds(1),
+                  result: "",
+                  endOfRoute: false
+
+                )));
+              }
+              break;
+
+
+            case ExpectedUnloadEvt unload:
+              expectedLogs.Add(new LogEntry(
+                cntr: -1,
+                mat: unload.Material,
+                pal: pal.ToString(),
+                ty: LogType.LoadUnloadCycle,
+                locName: "L/U",
+                locNum: lul,
+                prog: "UNLOAD",
+                start: false,
+                endTime: _status.TimeOfStatusUTC,
+                result: "UNLOAD",
+                endOfRoute: true,
+                elapsed: TimeSpan.FromMinutes(elapsedMin),
+                active: TimeSpan.FromMinutes(unload.ActiveMins)
+              ));
+
+              if (unload.ToQueue != null)
+              {
+                expectedLogs.AddRange(unload.Material.Select(m => new LogEntry(
+                  cntr: -1,
+                  mat: new[] { new LogMaterial(matID: m.MaterialID, uniq: m.JobUniqueStr, proc: m.Process, part: m.PartName,
+                                              numProc: m.NumProcesses, serial: m.Serial, workorder: "", face: m.Face) },
+                  pal: "",
+                  ty: LogType.AddToQueue,
+                  locName: unload.ToQueue,
+                  locNum: 1,
+                  prog: "",
+                  start: false,
+                  endTime: _status.TimeOfStatusUTC,
+                  result: "",
+                  endOfRoute: false
+
+                )));
+              }
+
+              break;
+          }
+        }
+
+        evts.Should().BeEquivalentTo(expectedLogs,
+          options => options.Excluding(e => e.Counter)
+        );
+      }
+
+      return ExpectNoChanges();
+    }
     #endregion
   }
 }
