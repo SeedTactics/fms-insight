@@ -382,12 +382,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     #endregion
 
     #region Steps
-    private void CheckPals(List<PalletAndMaterial> pals)
+    private void CheckStatusMatchesExpected(NiigataMaterialStatus actualStatus)
     {
-      pals.Count.Should().Be(_status.Pallets.Count);
-      for (int palNum = 1; palNum <= pals.Count; palNum++)
+      actualStatus.Status.Should().Be(_status);
+      actualStatus.Pallets.Count.Should().Be(_status.Pallets.Count);
+      for (int palNum = 1; palNum <= actualStatus.Pallets.Count; palNum++)
       {
-        var current = pals[palNum - 1];
+        var current = actualStatus.Pallets[palNum - 1];
         current.Status.Should().Be(_status.Pallets[palNum - 1]);
         current.Faces.Should().BeEquivalentTo(_expectedFaces[palNum].Select(face =>
           new PalletFace()
@@ -403,6 +404,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           }
         ));
       }
+      actualStatus.QueuedMaterial.Should().BeEquivalentTo(_expectedMaterial.Values.Where(
+        m => m.Location.Type == InProcessMaterialLocation.LocType.InQueue && m.Action.Type == InProcessMaterialAction.ActionType.Waiting
+      ));
     }
 
     public FakeIccDsl ExpectNoChanges()
@@ -413,7 +417,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         var status = _createLog.CheckForNewLogEntries(_status, sch, out bool palletStateUpdated);
         palletStateUpdated.Should().BeFalse();
-        CheckPals(status.Pallets);
+        CheckStatusMatchesExpected(status);
         _assign.NewPalletChange(status, sch).Should().BeNull();
         logMonitor.Should().NotRaise("NewLogEntry");
       }
@@ -452,7 +456,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         var matStatus = _createLog.CheckForNewLogEntries(_status, sch, out bool palletStateUpdated);
         palletStateUpdated.Should().BeFalse();
-        CheckPals(matStatus.Pallets);
+        CheckStatusMatchesExpected(matStatus);
 
         logMonitor.Should().NotRaise("NewLogEntry");
 
@@ -559,7 +563,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         var matStatus = _createLog.CheckForNewLogEntries(_status, sch, out bool palletStateUpdated);
         palletStateUpdated.Should().BeTrue();
-        CheckPals(matStatus.Pallets);
+        CheckStatusMatchesExpected(matStatus);
 
         _assign.NewPalletChange(matStatus, sch).Should().BeNull();
 
