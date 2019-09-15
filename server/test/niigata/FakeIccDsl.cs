@@ -331,6 +331,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return this;
     }
 
+    public FakeIccDsl UpdateExpectedMaterial(IEnumerable<LogMaterial> mats, Action<InProcessMaterial> f)
+    {
+      foreach (var mat in mats)
+        f(_expectedMaterial[mat.MaterialID]);
+      return this;
+    }
+
     public FakeIccDsl RemoveExpectedMaterial(long matId)
     {
       _expectedMaterial.Remove(matId);
@@ -419,6 +426,55 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       }
       j.AddProcessOnFixture(1, 1, fixture, face1.ToString());
       j.AddProcessOnFixture(2, 1, fixture, face2.ToString());
+      _jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+
+      return this;
+    }
+    public FakeIccDsl AddMultiProcSeparatePalletJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals1, int[] pals2, int[] luls, int[] machs, int prog1, int prog2, int loadMins1, int machMins1, int unloadMins1, int loadMins2, int machMins2, int unloadMins2, string fixture, string queue)
+    {
+      var j = new JobPlan(unique, 2);
+      j.PartName = part;
+      j.Priority = priority;
+      foreach (var i in luls)
+      {
+        j.AddLoadStation(1, 1, i);
+        j.AddUnloadStation(1, 1, i);
+        j.AddLoadStation(2, 1, i);
+        j.AddUnloadStation(2, 1, i);
+      }
+      j.SetExpectedLoadTime(1, 1, TimeSpan.FromMinutes(loadMins1));
+      j.SetExpectedUnloadTime(1, 1, TimeSpan.FromMinutes(unloadMins1));
+      j.SetExpectedLoadTime(2, 1, TimeSpan.FromMinutes(loadMins2));
+      j.SetExpectedUnloadTime(2, 1, TimeSpan.FromMinutes(unloadMins2));
+      j.SetPartsPerPallet(1, 1, partsPerPal);
+      j.SetPartsPerPallet(2, 1, partsPerPal);
+      var s = new JobMachiningStop("MC");
+      foreach (var m in machs)
+      {
+        s.AddProgram(m, prog1.ToString());
+        s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins1);
+      }
+      j.AddMachiningStop(1, 1, s);
+      s = new JobMachiningStop("MC");
+      foreach (var m in machs)
+      {
+        s.AddProgram(m, prog2.ToString());
+        s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins2);
+      }
+      j.AddMachiningStop(2, 1, s);
+      foreach (var p in pals1)
+      {
+        j.AddProcessOnPallet(1, 1, p.ToString());
+      }
+      foreach (var p in pals2)
+      {
+        j.AddProcessOnPallet(2, 1, p.ToString());
+      }
+      j.AddProcessOnFixture(1, 1, fixture, "1");
+      j.AddProcessOnFixture(2, 1, fixture, "1");
+
+      j.SetOutputQueue(1, 1, queue);
+      j.SetInputQueue(2, 1, queue);
       _jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
 
       return this;

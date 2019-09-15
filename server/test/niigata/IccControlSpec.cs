@@ -493,93 +493,143 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     }
 
-    /*
-      [Fact]
-      public void MultipleAvailablePallets()
+    [Fact]
+    public void MultipleProcessSeparatePallets()
+    {
+      _dsl.AddMultiProcSeparatePalletJob(
+        unique: "uniq1",
+        part: "part1",
+        qty: 3,
+        priority: 5,
+        partsPerPal: 1,
+        pals1: new[] { 1 },
+        pals2: new[] { 2 },
+        luls: new[] { 3, 4 },
+        machs: new[] { 5, 6 },
+        prog1: 1234,
+        prog2: 9876,
+        loadMins1: 8,
+        unloadMins1: 9,
+        machMins1: 14,
+        machMins2: 10,
+        loadMins2: 11,
+        unloadMins2: 12,
+        fixture: "fix1",
+        queue: "qqq"
+      )
+      .ExpectNewRoute(
+        pal: 1,
+        luls: new[] { 3, 4 },
+        machs: new[] { 5, 6 },
+        progs: new[] { 1234 },
+        faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) }
+      )
+      .SetExpectedLoadCastings(new[] {
+        (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1)
+      })
+      .ExpectNoChanges()
+      .MoveToLoad(pal: 1, lul: 3)
+      .ExpectLoadBeginEvt(pal: 1, lul: 3)
+      .AdvanceMinutes(2) // = 2min
+      .ExpectNoChanges()
+      .SetAfterLoad(pal: 1)
+      .ClearExpectedLoadCastings()
+      .ExpectLoadEndEvt(pal: 1, lul: 3, elapsedMin: 2, palMins: 0, expectedEvts: new[] {
+        FakeIccDsl.LoadCastingToFace(face: 1, unique: "uniq1", path: 1, cnt: 1, activeMins: 8, mats: out var AAAproc1)
+      })
+      .MoveToMachineQueue(pal: 1, mach: 6)
+      .ExpectNoChanges()
+      .SetBeforeMC(pal: 1)
+      .MoveToMachine(pal: 1, mach: 6)
+      .StartMachine(mach: 6, program: 1234)
+      .UpdateExpectedMaterial(AAAproc1, im =>
       {
-        //Currently, if multiple pallets can satisfy some queued material, currently don't check
-        //that pallet moving to load station has "acquired" that material.
-      }
-
-      [Fact(Skip = "Pending")]
-      public void CountsCompletedFromLog()
+        im.Action.Type = InProcessMaterialAction.ActionType.Machining;
+        im.Action.Program = "1234";
+        im.Action.ElapsedMachiningTime = TimeSpan.Zero;
+        im.Action.ExpectedRemainingMachiningTime = TimeSpan.FromMinutes(14);
+      })
+      .ExpectMachineBegin(pal: 1, mach: 6, program: 1234, mats: AAAproc1)
+      .AdvanceMinutes(10) // = 12min
+      .EndMachine(mach: 6)
+      .SetAfterMC(pal: 1)
+      .UpdateExpectedMaterial(AAAproc1, im =>
       {
-
-      }
-
-      [Fact]
-      public void CastingsFromQueue()
+        im.Action.Type = InProcessMaterialAction.ActionType.Waiting;
+        im.Action.Program = null;
+        im.Action.ElapsedMachiningTime = null;
+        im.Action.ExpectedRemainingMachiningTime = null;
+      })
+      .ExpectMachineEnd(pal: 1, mach: 6, program: 1234, elapsedMin: 10, activeMin: 14, mats: AAAproc1)
+      .SetBeforeUnload(pal: 1)
+      .MoveToLoad(pal: 1, lul: 4)
+      .SetExpectedLoadCastings(new[] {
+        (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1)
+      })
+      .UpdateExpectedMaterial(AAAproc1, im =>
       {
-        _dsl
-          .AddOneProcOnePathJob(
-            unique: "uniq1",
-            part: "part1",
-            qty: 3,
-            priority: 5,
-            partsPerPal: 1,
-            pals: new[] { 1, 2 },
-            luls: new[] { 3, 4 },
-            machs: new[] { 5, 6 },
-            prog: 1234,
-            fixture: "fix1",
-            face: 1,
-            queue: "thequeue"
-          )
-          .SetEmptyInBuffer(pal: 1)
-          .NextShouldBeNull()
-
-          .AddUnallocatedCasting("thequeue", "part4", 1, out long unusedMatId)
-          .NextShouldBeNull()
-
-          .AddUnallocatedCasting("thequeue", "part1", 1, out long matId)
-          .NextShouldBeNewRoute(pal: 1, comment: "part1-1", luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 1234 })
-          .AddLoadingMaterial(pal: 1, face: 1, matId: matId, jobUnique: "uniq1", part: "part1", process: 1, path: 1)
-
-          .SetEmptyInBuffer(pal: 2)
-          .NextShouldBeNull() // already allocated to pallet 1
-
-          .AllocateMaterial("uniq1", "part1", 1, out long mid2)
-          .AddMaterialToQueue("thequeue", mid2)
-          .NextShouldBeNewRoute(pal: 2, comment: "part1-1", luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 1234 })
-          ;
-      }
-
-
-      [Fact(Skip = "Pending")]
-      public void MultipleJobPriority()
+        im.Action = new InProcessMaterialAction()
+        {
+          Type = InProcessMaterialAction.ActionType.UnloadToInProcess,
+          UnloadIntoQueue = "qqq"
+        };
+      })
+      .ExpectRouteIncrementAndLoadBegin(pal: 1, lul: 4)
+      .AdvanceMinutes(15) // 27min
+      .SetAfterLoad(pal: 1)
+      .ClearExpectedLoadCastings()
+      .UpdateExpectedMaterial(AAAproc1, im =>
       {
+        im.Action = new InProcessMaterialAction()
+        {
+          Type = InProcessMaterialAction.ActionType.Waiting
+        };
+        im.Location = new InProcessMaterialLocation()
+        {
+          Type = InProcessMaterialLocation.LocType.InQueue,
+          CurrentQueue = "qqq",
+          QueuePosition = 1
+        };
+      })
+      /*
+      .ExpectLoadEndEvt(pal: 1, lul: 4, elapsedMin: 15, palMins: 27 - 2, expectedEvts: new[] {
+          FakeIccDsl.UnloadFromFace(activeMins: 9, toQueue: null, mats: AAAproc1),
+          FakeIccDsl.LoadCastingToFace(face: 1, unique: "uniq1", path: 1, cnt: 1, activeMins: 8, mats: out var BBBproc1)
+      })
+      */
+      ;
 
-      }
+    }
 
-      [Fact(Skip = "Pending")]
-      public void MultipleProcessSeparatePallets()
-      {
 
-      }
+    [Fact(Skip = "Pending")]
+    public void MultipleAvailablePallets()
+    {
 
-      [Fact(Skip = "Pending")]
-      public void MultipleProcessSamePallet()
-      {
+    }
 
-      }
+    [Fact(Skip = "Pending")]
+    public void CountsCompletedFromLog()
+    {
 
-      [Fact(Skip = "pending")]
-      public void MultipleFixtures()
-      {
+    }
 
-      }
+    [Fact(Skip = "Pending")]
+    public void JobPriority()
+    {
 
-      [Fact(Skip = "Pending")]
-      public void MultpleProcsMultiplePathsSeparatePallets()
-      {
+    }
 
-      }
+    [Fact(Skip = "Pending")]
+    public void MultpleProcsMultiplePathsSeparatePallets()
+    {
 
-      [Fact(Skip = "Pending")]
-      public void MultipleProcsMultiplePathsSamePallet()
-      {
+    }
 
-      }
-    */
+    [Fact(Skip = "Pending")]
+    public void MultipleProcsMultiplePathsSamePallet()
+    {
+
+    }
   }
 }
