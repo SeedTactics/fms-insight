@@ -54,7 +54,7 @@ namespace BlackMaple.FMSInsight.Niigata
   public interface IRecordFacesForPallet
   {
     IEnumerable<AssignedJobAndPathForFace> Load(string palComment);
-    void Save(int pal, string palComment, IEnumerable<AssignedJobAndPathForFace> newPaths);
+    void Save(int pal, string palComment, DateTime nowUtc, IEnumerable<AssignedJobAndPathForFace> newPaths);
   }
 
   public class RecordFacesForPallet : IRecordFacesForPallet
@@ -81,7 +81,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    public void Save(int pal, string palComment, IEnumerable<AssignedJobAndPathForFace> newPaths)
+    public void Save(int pal, string palComment, DateTime nowUtc, IEnumerable<AssignedJobAndPathForFace> newPaths)
     {
       string json;
       var ser = new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(List<AssignedJobAndPathForFace>));
@@ -109,7 +109,8 @@ namespace BlackMaple.FMSInsight.Niigata
         result: "New Niigata Route",
         pallet: pal.ToString(),
         foreignId: "faces:" + palComment,
-        originalMessage: json
+        originalMessage: json,
+        timeUTC: nowUtc
       );
     }
   }

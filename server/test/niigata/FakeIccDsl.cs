@@ -532,336 +532,40 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return this;
     }
 
-    public FakeIccDsl ExpectNewRoute(int pal, int[] luls, int[] machs, int[] progs, IEnumerable<(int face, string unique, int proc, int path)> faces)
+    public abstract class ExpectedChange { }
+
+    private class ExpectedLoadBegin : ExpectedChange
     {
-      var sch = _jobDB.LoadUnarchivedJobs();
-      var expectedMaster = new PalletMaster()
-      {
-        PalletNum = pal,
-        Comment = "",
-        RemainingPalletCycles = 1,
-        Priority = 0,
-        NoWork = false,
-        Skip = false,
-        ForLongToolMaintenance = false,
-        PerformProgramDownload = false,
-        Routes = new List<RouteStep> {
-          new LoadStep() {
-            LoadStations = luls.ToList()
-          },
-          new MachiningStep() {
-            Machines = machs.ToList(),
-            ProgramNumsToRun = progs.ToList()
-          },
-          new UnloadStep() {
-            UnloadStations = luls.ToList(),
-            CompletedPartCount = 1
-          }
-        },
-      };
-
-      using (var logMonitor = _logDB.Monitor())
-      {
-        var matStatus = _createLog.CheckForNewLogEntries(_status, sch, out bool palletStateUpdated);
-        palletStateUpdated.Should().BeFalse();
-        CheckStatusMatchesExpected(matStatus);
-        logMonitor.Should().NotRaise("NewLogEntry");
-
-        var action = _assign.NewPalletChange(matStatus, sch);
-        action.Should().BeEquivalentTo<NewPalletRoute>(new NewPalletRoute()
-        {
-          NewMaster = expectedMaster
-        }, options => options.Excluding(e => e.PendingID).Excluding(e => e.NewMaster.Comment));
-        _status.Pallets[pal - 1].Master = ((NewPalletRoute)action).NewMaster;
-        _status.Pallets[pal - 1].Tracking.CurrentControlNum = AssignPallets.LoadStepNum * 2 - 1;
-        _status.Pallets[pal - 1].Tracking.CurrentStepNum = AssignPallets.LoadStepNum;
-        _expectedFaces[pal] = faces.ToList();
-
-        logMonitor.Should().Raise("NewLogEntry");
-
-        logMonitor.OccurredEvents.Length.Should().Be(1);
-        var log = (LogEntry)logMonitor.OccurredEvents[0].Parameters[0];
-        log.LogType.Should().Be(LogType.GeneralMessage);
-        log.Result.Should().Be("New Niigata Route");
-      }
-
-      return this;
-    }
-    public FakeIccDsl ExpectNewRouteAndLoadBegin(int pal, int[] luls, int[] machs, int[] progs, int lul, IEnumerable<(int face, string unique, int proc, int path)> faces)
-    {
-      var sch = _jobDB.LoadUnarchivedJobs();
-      var expectedMaster = new PalletMaster()
-      {
-        PalletNum = pal,
-        Comment = "",
-        RemainingPalletCycles = 1,
-        Priority = 0,
-        NoWork = false,
-        Skip = false,
-        ForLongToolMaintenance = false,
-        PerformProgramDownload = false,
-        Routes = new List<RouteStep> {
-          new LoadStep() {
-            LoadStations = luls.ToList()
-          },
-          new MachiningStep() {
-            Machines = machs.ToList(),
-            ProgramNumsToRun = progs.ToList()
-          },
-          new UnloadStep() {
-            UnloadStations = luls.ToList(),
-            CompletedPartCount = 1
-          }
-        },
-      };
-
-      using (var logMonitor = _logDB.Monitor())
-      {
-        var matStatus = _createLog.CheckForNewLogEntries(_status, sch, out bool palletStateUpdated);
-
-        palletStateUpdated.Should().BeTrue();
-        logMonitor.Should().Raise("NewLogEntry");
-        logMonitor.OccurredEvents.Select(e => e.Parameters[0]).Should().BeEquivalentTo(new[] {
-          new LogEntry(
-            cntr: -1,
-            mat: Enumerable.Empty<LogMaterial>(),
-            pal: pal.ToString(),
-            ty: LogType.LoadUnloadCycle,
-            locName: "L/U",
-            locNum: lul,
-            prog: "LOAD",
-            start: true,
-            endTime: _status.TimeOfStatusUTC,
-            result: "LOAD",
-            endOfRoute: false
-          )
-        }, options => options.Excluding(e => e.Counter));
-        logMonitor.Clear();
-
-        var action = _assign.NewPalletChange(matStatus, sch);
-        action.Should().BeEquivalentTo<NewPalletRoute>(new NewPalletRoute()
-        {
-          NewMaster = expectedMaster
-        }, options => options.Excluding(e => e.PendingID).Excluding(e => e.NewMaster.Comment));
-        _status.Pallets[pal - 1].Master = ((NewPalletRoute)action).NewMaster;
-        _status.Pallets[pal - 1].Tracking.CurrentControlNum = AssignPallets.LoadStepNum * 2 - 1;
-        _status.Pallets[pal - 1].Tracking.CurrentStepNum = AssignPallets.LoadStepNum;
-        _expectedFaces[pal] = faces.ToList();
-
-        logMonitor.Should().Raise("NewLogEntry");
-
-        logMonitor.OccurredEvents.Length.Should().Be(1);
-        var log = (LogEntry)logMonitor.OccurredEvents[0].Parameters[0];
-        log.LogType.Should().Be(LogType.GeneralMessage);
-        log.Result.Should().Be("New Niigata Route");
-      }
-      return ExpectNoChanges();
+      public int LoadStation { get; set; }
     }
 
-    public FakeIccDsl ExpectRouteIncrement(int pal, int newCycleCnt)
+    public static ExpectedChange ExpectLoadBegin(int lul)
     {
-      var sch = _jobDB.LoadUnarchivedJobs();
-      using (var logMonitor = _logDB.Monitor())
-      {
-        var pals = _createLog.CheckForNewLogEntries(_status, sch, out bool palletStateUpdated);
-        palletStateUpdated.Should().BeFalse();
-
-        var action = _assign.NewPalletChange(pals, sch);
-        action.Should().BeEquivalentTo<UpdatePalletQuantities>(new UpdatePalletQuantities()
-        {
-          Pallet = pal,
-          Priority = _status.Pallets[pal - 1].Master.Priority,
-          Cycles = newCycleCnt,
-          NoWork = false,
-          Skip = false,
-          ForLongTool = false
-        });
-        _status.Pallets[pal - 1].Master.NoWork = false;
-        _status.Pallets[pal - 1].Master.RemainingPalletCycles = newCycleCnt;
-        _status.Pallets[pal - 1].Tracking.CurrentControlNum = AssignPallets.LoadStepNum * 2 - 1;
-        _status.Pallets[pal - 1].Tracking.CurrentStepNum = AssignPallets.LoadStepNum;
-
-        logMonitor.Should().NotRaise("NewLogEntry");
-      }
-
-      return ExpectNoChanges();
+      return new ExpectedLoadBegin() { LoadStation = lul };
     }
 
-    public FakeIccDsl ExpectRouteIncrementAndLoadBegin(int pal, int lul)
+    private class ExpectedLoadCastingEvt : ExpectedChange
     {
-      var sch = _jobDB.LoadUnarchivedJobs();
-      using (var logMonitor = _logDB.Monitor())
-      {
-        var pals = _createLog.CheckForNewLogEntries(_status, sch, out bool palletStateUpdated);
-        palletStateUpdated.Should().BeTrue();
-
-        logMonitor.Should().Raise("NewLogEntry");
-        logMonitor.OccurredEvents.Select(e => e.Parameters[0]).Should().BeEquivalentTo(new[] {
-          new LogEntry(
-            cntr: -1,
-            mat: Enumerable.Empty<LogMaterial>(),
-            pal: pal.ToString(),
-            ty: LogType.LoadUnloadCycle,
-            locName: "L/U",
-            locNum: lul,
-            prog: "LOAD",
-            start: true,
-            endTime: _status.TimeOfStatusUTC,
-            result: "LOAD",
-            endOfRoute: false
-          )
-        }, options => options.Excluding(e => e.Counter));
-
-        var action = _assign.NewPalletChange(pals, sch);
-        action.Should().BeEquivalentTo<UpdatePalletQuantities>(new UpdatePalletQuantities()
-        {
-          Pallet = pal,
-          Priority = _status.Pallets[pal - 1].Master.Priority,
-          Cycles = 2,
-          NoWork = false,
-          Skip = false,
-          ForLongTool = false
-        });
-        _status.Pallets[pal - 1].Master.RemainingPalletCycles = 2;
-        _status.Pallets[pal - 1].Tracking.CurrentStepNum = AssignPallets.LoadStepNum;
-        _status.Pallets[pal - 1].Tracking.CurrentControlNum = AssignPallets.LoadStepNum * 2 - 1;
-      }
-
-      return ExpectNoChanges();
-    }
-    #endregion
-
-    #region Logs
-
-    private FakeIccDsl ExpectNewLogs(IEnumerable<LogEntry> log)
-    {
-      var sch = _jobDB.LoadUnarchivedJobs();
-
-      using (var logMonitor = _logDB.Monitor())
-      {
-        var matStatus = _createLog.CheckForNewLogEntries(_status, sch, out bool palletStateUpdated);
-        palletStateUpdated.Should().BeTrue();
-        CheckStatusMatchesExpected(matStatus);
-
-        _assign.NewPalletChange(matStatus, sch).Should().BeNull();
-
-        logMonitor.Should().Raise("NewLogEntry");
-
-        logMonitor.OccurredEvents.Select(e => e.Parameters[0]).Should().BeEquivalentTo(log, options => options.Excluding(e => e.Counter));
-      }
-
-      return ExpectNoChanges();
-    }
-
-    public FakeIccDsl ExpectLoadBeginEvt(int pal, int lul)
-    {
-      return ExpectNewLogs(new[] {
-        new LogEntry(
-          cntr: -1,
-          mat: Enumerable.Empty<LogMaterial>(),
-          pal: pal.ToString(),
-          ty: LogType.LoadUnloadCycle,
-          locName: "L/U",
-          locNum: lul,
-          prog: "LOAD",
-          start: true,
-          endTime: _status.TimeOfStatusUTC,
-          result: "LOAD",
-          endOfRoute: false
-      )});
-    }
-
-    public FakeIccDsl ExpectMachineBegin(int pal, int mach, int program, IEnumerable<LogMaterial> mats)
-    {
-      return ExpectNewLogs(new[] {
-        new LogEntry(
-          cntr: -1,
-          mat: mats,
-          pal: pal.ToString(),
-          ty: LogType.MachineCycle,
-          locName: "MC",
-          locNum: mach,
-          prog: program.ToString(),
-          start: true,
-          endTime: _status.TimeOfStatusUTC,
-          result: "",
-          endOfRoute: false
-      )});
-    }
-
-    public FakeIccDsl ExpectMachineEnd(int pal, int mach, int program, int elapsedMin, int activeMin, IEnumerable<LogMaterial> mats)
-    {
-      return ExpectNewLogs(new[] {
-        new LogEntry(
-          cntr: -1,
-          mat: mats,
-          pal: pal.ToString(),
-          ty: LogType.MachineCycle,
-          locName: "MC",
-          locNum: mach,
-          prog: program.ToString(),
-          start: false,
-          endTime: _status.TimeOfStatusUTC,
-          result: "",
-          endOfRoute: false,
-          elapsed: TimeSpan.FromMinutes(elapsedMin),
-          active: TimeSpan.FromMinutes(activeMin)
-      )});
-    }
-
-    public FakeIccDsl ExpectMachineBeginAndEnd(int pal, int mach, int endProg, int elapsedMin, int activeMin, int startProg, IEnumerable<LogMaterial> endMats, IEnumerable<LogMaterial> startMats)
-    {
-      return ExpectNewLogs(new[] {
-        new LogEntry(
-          cntr: -1,
-          mat: endMats,
-          pal: pal.ToString(),
-          ty: LogType.MachineCycle,
-          locName: "MC",
-          locNum: mach,
-          prog: endProg.ToString(),
-          start: false,
-          endTime: _status.TimeOfStatusUTC,
-          result: "",
-          endOfRoute: false,
-          elapsed: TimeSpan.FromMinutes(elapsedMin),
-          active: TimeSpan.FromMinutes(activeMin)
-        ),
-        new LogEntry(
-          cntr: -1,
-          mat: startMats,
-          pal: pal.ToString(),
-          ty: LogType.MachineCycle,
-          locName: "MC",
-          locNum: mach,
-          prog: startProg.ToString(),
-          start: true,
-          endTime: _status.TimeOfStatusUTC,
-          result: "",
-          endOfRoute: false
-      )});
-    }
-
-    public abstract class ExpectedLoadEndEvt { }
-
-    private class ExpectedLoadCastingEvt : ExpectedLoadEndEvt
-    {
+      public int LoadStation { get; set; }
       public int Face { get; set; }
       public int Count { get; set; }
       public string Unique { get; set; }
       public int Path { get; set; }
+      public int ElapsedMin { get; set; }
       public int ActiveMins { get; set; }
       public List<LogMaterial> OutMaterial { get; set; }
     }
 
-    public static ExpectedLoadEndEvt LoadCastingToFace(int face, string unique, int path, int cnt, int activeMins, out IEnumerable<LogMaterial> mats)
+    public static ExpectedChange LoadCastingToFace(int lul, int face, string unique, int path, int cnt, int elapsedMin, int activeMins, out IEnumerable<LogMaterial> mats)
     {
       var e = new ExpectedLoadCastingEvt()
       {
+        LoadStation = lul,
         Face = face,
         Count = cnt,
         Unique = unique,
         Path = path,
+        ElapsedMin = elapsedMin,
         ActiveMins = activeMins,
         OutMaterial = new List<LogMaterial>(),
       };
@@ -869,14 +573,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return e;
     }
 
-    private class ExpectedLoadMatsEvt : ExpectedLoadEndEvt
+    private class ExpectedLoadMatsEvt : ExpectedChange
     {
+      public int LoadStation { get; set; }
       public IEnumerable<LogMaterial> Material { get; set; }
+      public int ElapsedMin { get; set; }
       public int ActiveMins { get; set; }
       public string FromQueue { get; set; } = null;
     }
 
-    public ExpectedLoadEndEvt LoadToFace(int face, string unique, int activeMins, string fromQueue, IEnumerable<LogMaterial> loadingMats, out IEnumerable<LogMaterial> loadedMats)
+    public ExpectedChange LoadToFace(int face, string unique, int lul, int elapsedMin, int activeMins, string fromQueue, IEnumerable<LogMaterial> loadingMats, out IEnumerable<LogMaterial> loadedMats)
     {
       loadedMats = loadingMats.Select(m =>
         new LogMaterial(
@@ -892,68 +598,238 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       );
       return new ExpectedLoadMatsEvt()
       {
+        LoadStation = lul,
         Material = loadedMats,
+        ElapsedMin = elapsedMin,
         ActiveMins = activeMins,
         FromQueue = fromQueue,
       };
     }
 
-
-    public class ExpectedUnloadEvt : ExpectedLoadEndEvt
+    private class ExpectedUnloadEvt : ExpectedChange
     {
+      public int LoadStation { get; set; }
       public IEnumerable<LogMaterial> Material { get; set; }
+      public int ElapsedMin { get; set; }
       public int ActiveMins { get; set; }
       public string ToQueue { get; set; } = null;
     }
 
-    public static ExpectedLoadEndEvt UnloadFromFace(int activeMins, string toQueue, IEnumerable<LogMaterial> mats)
+    public static ExpectedChange UnloadFromFace(int lul, int elapsedMin, int activeMins, string toQueue, IEnumerable<LogMaterial> mats)
     {
       return new ExpectedUnloadEvt()
       {
+        LoadStation = lul,
         Material = mats,
+        ElapsedMin = elapsedMin,
         ActiveMins = activeMins,
         ToQueue = toQueue,
       };
     }
 
-    public FakeIccDsl ExpectLoadEndEvt(int pal, int lul, int elapsedMin, int palMins, IEnumerable<ExpectedLoadEndEvt> expectedEvts)
+    private class ExpectNewRouteChange : ExpectedChange
+    {
+      public PalletMaster ExpectedMaster { get; set; }
+      public IEnumerable<(int face, string unique, int proc, int path)> Faces { get; set; }
+    }
+
+    public static ExpectedChange ExpectNewRoute(int pal, int[] luls, int[] machs, int[] progs, IEnumerable<(int face, string unique, int proc, int path)> faces)
+    {
+      return new ExpectNewRouteChange()
+      {
+        ExpectedMaster = new PalletMaster()
+        {
+          PalletNum = pal,
+          Comment = "",
+          RemainingPalletCycles = 1,
+          Priority = 0,
+          NoWork = false,
+          Skip = false,
+          ForLongToolMaintenance = false,
+          PerformProgramDownload = false,
+          Routes = new List<RouteStep> {
+            new LoadStep() {
+              LoadStations = luls.ToList()
+            },
+            new MachiningStep() {
+              Machines = machs.ToList(),
+              ProgramNumsToRun = progs.ToList()
+            },
+            new UnloadStep() {
+              UnloadStations = luls.ToList(),
+              CompletedPartCount = 1
+            }
+          },
+        },
+        Faces = faces
+      };
+    }
+
+    private class ExpectRouteIncrementChange : ExpectedChange
+    {
+      public int NewCycleCount { get; set; }
+    }
+
+    public static ExpectedChange ExpectRouteIncrement(int newCycleCnt)
+    {
+      return new ExpectRouteIncrementChange() { NewCycleCount = newCycleCnt };
+    }
+
+    private class ExpectMachineBeginEvent : ExpectedChange
+    {
+      public int Machine { get; set; }
+      public int Program { get; set; }
+      public IEnumerable<LogMaterial> Material { get; set; }
+    }
+
+    public static ExpectedChange ExpectMachineBegin(int machine, int program, IEnumerable<LogMaterial> mat)
+    {
+      return new ExpectMachineBeginEvent()
+      {
+        Machine = machine,
+        Program = program,
+        Material = mat
+      };
+    }
+
+    private class ExpectMachineEndEvent : ExpectedChange
+    {
+      public int Machine { get; set; }
+      public int Program { get; set; }
+      public int ElapsedMin { get; set; }
+      public int ActiveMin { get; set; }
+      public IEnumerable<LogMaterial> Material { get; set; }
+    }
+
+    public static ExpectedChange ExpectMachineEnd(int mach, int program, int elapsedMin, int activeMin, IEnumerable<LogMaterial> mats)
+    {
+      return new ExpectMachineEndEvent()
+      {
+        Machine = mach,
+        Program = program,
+        ElapsedMin = elapsedMin,
+        ActiveMin = activeMin,
+        Material = mats
+      };
+    }
+
+    private class ExpectPalletCycleChange : ExpectedChange
+    {
+      public int Minutes { get; set; }
+    }
+
+    public static ExpectedChange ExpectPalletCycle(int mins)
+    {
+      return new ExpectPalletCycleChange()
+      {
+        Minutes = mins
+      };
+    }
+
+    public FakeIccDsl ExpectTransition(int pal, IEnumerable<ExpectedChange> expectedChanges, bool expectedUpdates = true)
     {
       var sch = _jobDB.LoadUnarchivedJobs();
 
       using (var logMonitor = _logDB.Monitor())
       {
         var pals = _createLog.CheckForNewLogEntries(_status, sch, out bool palletStateUpdated);
-        palletStateUpdated.Should().BeTrue();
+        palletStateUpdated.Should().Be(expectedUpdates);
 
-        _assign.NewPalletChange(pals, sch).Should().BeNull();
+        var expectedLogs = new List<LogEntry>();
 
-        logMonitor.Should().Raise("NewLogEntry");
-        var evts = logMonitor.OccurredEvents.Select(e => e.Parameters[0]).Cast<LogEntry>();
+        var expectedNewRoute = (ExpectNewRouteChange)expectedChanges.FirstOrDefault(e => e is ExpectNewRouteChange);
+        var expectIncr = (ExpectRouteIncrementChange)expectedChanges.FirstOrDefault(e => e is ExpectRouteIncrementChange);
+        if (expectedNewRoute != null)
+        {
+          var action = _assign.NewPalletChange(pals, sch);
+          action.Should().BeEquivalentTo<NewPalletRoute>(new NewPalletRoute()
+          {
+            NewMaster = expectedNewRoute.ExpectedMaster
+          }, options => options.Excluding(e => e.PendingID).Excluding(e => e.NewMaster.Comment));
+          _status.Pallets[pal - 1].Master = ((NewPalletRoute)action).NewMaster;
+          _status.Pallets[pal - 1].Tracking.CurrentControlNum = AssignPallets.LoadStepNum * 2 - 1;
+          _status.Pallets[pal - 1].Tracking.CurrentStepNum = AssignPallets.LoadStepNum;
+          _expectedFaces[pal] = expectedNewRoute.Faces.ToList();
 
-
-        // start computing the expected events
-        var expectedLogs = new List<LogEntry> {
-          new LogEntry(
+          expectedLogs.Add(new LogEntry(
             cntr: -1,
             mat: Enumerable.Empty<LogMaterial>(),
             pal: pal.ToString(),
-            ty: LogType.PalletCycle,
-            locName: "Pallet Cycle",
+            ty: LogType.GeneralMessage,
+            locName: "Message",
             locNum: 1,
-            prog: "",
+            prog: "Assign",
             start: false,
             endTime: _status.TimeOfStatusUTC,
-            result: "PalletCycle",
-            endOfRoute: false,
-            elapsed: TimeSpan.FromMinutes(palMins),
-            active: TimeSpan.Zero
-          ),
-        };
+            result: "New Niigata Route",
+            endOfRoute: false
+          ));
+        }
+        else if (expectIncr != null)
+        {
+          var action = _assign.NewPalletChange(pals, sch);
+          action.Should().BeEquivalentTo<UpdatePalletQuantities>(new UpdatePalletQuantities()
+          {
+            Pallet = pal,
+            Priority = _status.Pallets[pal - 1].Master.Priority,
+            Cycles = expectIncr.NewCycleCount,
+            NoWork = false,
+            Skip = false,
+            ForLongTool = false
+          });
+          _status.Pallets[pal - 1].Master.NoWork = false;
+          _status.Pallets[pal - 1].Master.RemainingPalletCycles = expectIncr.NewCycleCount;
+          _status.Pallets[pal - 1].Tracking.CurrentControlNum = AssignPallets.LoadStepNum * 2 - 1;
+          _status.Pallets[pal - 1].Tracking.CurrentStepNum = AssignPallets.LoadStepNum;
+        }
+        else
+        {
+          _assign.NewPalletChange(pals, sch).Should().BeNull();
+        }
 
-        foreach (var expected in expectedEvts)
+        var evts = logMonitor.OccurredEvents.Select(e => e.Parameters[0]).Cast<LogEntry>();
+
+
+
+        foreach (var expected in expectedChanges)
         {
           switch (expected)
           {
+            case ExpectPalletCycleChange palletCycleChange:
+              expectedLogs.Add(new LogEntry(
+                cntr: -1,
+                mat: Enumerable.Empty<LogMaterial>(),
+                pal: pal.ToString(),
+                ty: LogType.PalletCycle,
+                locName: "Pallet Cycle",
+                locNum: 1,
+                prog: "",
+                start: false,
+                endTime: _status.TimeOfStatusUTC,
+                result: "PalletCycle",
+                endOfRoute: false,
+                elapsed: TimeSpan.FromMinutes(palletCycleChange.Minutes),
+                active: TimeSpan.Zero
+              ));
+              break;
+
+            case ExpectedLoadBegin loadBegin:
+              expectedLogs.Add(
+                new LogEntry(
+                  cntr: -1,
+                  mat: Enumerable.Empty<LogMaterial>(),
+                  pal: pal.ToString(),
+                  ty: LogType.LoadUnloadCycle,
+                  locName: "L/U",
+                  locNum: loadBegin.LoadStation,
+                  prog: "LOAD",
+                  start: true,
+                  endTime: _status.TimeOfStatusUTC,
+                  result: "LOAD",
+                  endOfRoute: false
+              ));
+              break;
+
             case ExpectedLoadCastingEvt load:
 
               // first, extract the newly created material
@@ -976,13 +852,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 pal: pal.ToString(),
                 ty: LogType.LoadUnloadCycle,
                 locName: "L/U",
-                locNum: lul,
+                locNum: load.LoadStation,
                 prog: "LOAD",
                 start: false,
                 endTime: _status.TimeOfStatusUTC.AddSeconds(1),
                 result: "LOAD",
                 endOfRoute: false,
-                elapsed: TimeSpan.FromMinutes(elapsedMin),
+                elapsed: TimeSpan.FromMinutes(load.ElapsedMin),
                 active: TimeSpan.FromMinutes(load.ActiveMins)
               ));
               expectedLogs.AddRange(load.OutMaterial.Select(m => new LogEntry(
@@ -1035,13 +911,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 pal: pal.ToString(),
                 ty: LogType.LoadUnloadCycle,
                 locName: "L/U",
-                locNum: lul,
+                locNum: load.LoadStation,
                 prog: "LOAD",
                 start: false,
                 endTime: _status.TimeOfStatusUTC.AddSeconds(1),
                 result: "LOAD",
                 endOfRoute: false,
-                elapsed: TimeSpan.FromMinutes(elapsedMin),
+                elapsed: TimeSpan.FromMinutes(load.ElapsedMin),
                 active: TimeSpan.FromMinutes(load.ActiveMins)
               ));
 
@@ -1073,13 +949,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 pal: pal.ToString(),
                 ty: LogType.LoadUnloadCycle,
                 locName: "L/U",
-                locNum: lul,
+                locNum: unload.LoadStation,
                 prog: "UNLOAD",
                 start: false,
                 endTime: _status.TimeOfStatusUTC,
                 result: "UNLOAD",
                 endOfRoute: true,
-                elapsed: TimeSpan.FromMinutes(elapsedMin),
+                elapsed: TimeSpan.FromMinutes(unload.ElapsedMin),
                 active: TimeSpan.FromMinutes(unload.ActiveMins)
               ));
 
@@ -1101,11 +977,54 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
                 )));
               }
+              break;
 
+            case ExpectMachineBeginEvent machBegin:
+              expectedLogs.Add(
+                new LogEntry(
+                  cntr: -1,
+                  mat: machBegin.Material,
+                  pal: pal.ToString(),
+                  ty: LogType.MachineCycle,
+                  locName: "MC",
+                  locNum: machBegin.Machine,
+                  prog: machBegin.Program.ToString(),
+                  start: true,
+                  endTime: _status.TimeOfStatusUTC,
+                  result: "",
+                  endOfRoute: false
+              ));
+              break;
+
+            case ExpectMachineEndEvent machEnd:
+              expectedLogs.Add(
+                new LogEntry(
+                  cntr: -1,
+                  mat: machEnd.Material,
+                  pal: pal.ToString(),
+                  ty: LogType.MachineCycle,
+                  locName: "MC",
+                  locNum: machEnd.Machine,
+                  prog: machEnd.Program.ToString(),
+                  start: false,
+                  endTime: _status.TimeOfStatusUTC,
+                  result: "",
+                  endOfRoute: false,
+                  elapsed: TimeSpan.FromMinutes(machEnd.ElapsedMin),
+                  active: TimeSpan.FromMinutes(machEnd.ActiveMin)
+              ));
               break;
           }
         }
 
+        if (expectedLogs.Any())
+        {
+          logMonitor.Should().Raise("NewLogEntry");
+        }
+        else
+        {
+          logMonitor.Should().NotRaise("NewLogEntry");
+        }
         evts.Should().BeEquivalentTo(expectedLogs,
           options => options.Excluding(e => e.Counter)
         );

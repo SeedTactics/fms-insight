@@ -75,7 +75,7 @@ namespace BlackMaple.FMSInsight.Niigata
         var pathsToLoad = FindMaterialToLoad(sch, pal.Status.Master.PalletNum, pal.Status.CurStation.Location.Num, pal.Faces.SelectMany(ms => ms.Material).ToList(), queuedMats: status.QueuedMaterial);
         if (pathsToLoad != null && pathsToLoad.Count > 0)
         {
-          return SetNewRoute(pal.Status, pathsToLoad);
+          return SetNewRoute(pal.Status, pathsToLoad, status.Status.TimeOfStatusUTC);
         }
       }
 
@@ -93,7 +93,7 @@ namespace BlackMaple.FMSInsight.Niigata
         var pathsToLoad = FindMaterialToLoad(sch, pal.Status.Master.PalletNum, loadStation: null, matCurrentlyOnPal: Enumerable.Empty<InProcessMaterial>(), queuedMats: status.QueuedMaterial);
         if (pathsToLoad != null && pathsToLoad.Count > 0)
         {
-          return SetNewRoute(pal.Status, pathsToLoad);
+          return SetNewRoute(pal.Status, pathsToLoad, status.Status.TimeOfStatusUTC);
         }
       }
 
@@ -268,7 +268,7 @@ namespace BlackMaple.FMSInsight.Niigata
     #endregion
 
     #region Set New Route
-    private NiigataAction SetNewRoute(PalletStatus oldPallet, IReadOnlyList<JobPath> newPaths)
+    private NiigataAction SetNewRoute(PalletStatus oldPallet, IReadOnlyList<JobPath> newPaths, DateTime nowUtc)
     {
       var newMaster = NewPalletMaster(oldPallet.Master.PalletNum, newPaths);
       if (SimpleQuantityChange(oldPallet.Master, newMaster))
@@ -292,7 +292,7 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         long pendingId = DateTime.UtcNow.Ticks;
         newMaster.Comment = pendingId.ToString();
-        _recordFaces.Save(newMaster.PalletNum, pendingId.ToString(), newPaths.Select((path, idx) =>
+        _recordFaces.Save(newMaster.PalletNum, pendingId.ToString(), nowUtc, newPaths.Select((path, idx) =>
           new AssignedJobAndPathForFace()
           {
             Face = idx + 1,
