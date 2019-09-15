@@ -583,10 +583,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public IEnumerable<LogMaterial> Material { get; set; }
       public int ElapsedMin { get; set; }
       public int ActiveMins { get; set; }
-      public string FromQueue { get; set; } = null;
     }
 
-    public ExpectedChange LoadToFace(int pal, int face, string unique, int lul, int elapsedMin, int activeMins, string fromQueue, IEnumerable<LogMaterial> loadingMats, out IEnumerable<LogMaterial> loadedMats)
+    public ExpectedChange LoadToFace(int pal, int face, string unique, int lul, int elapsedMin, int activeMins, IEnumerable<LogMaterial> loadingMats, out IEnumerable<LogMaterial> loadedMats)
     {
       loadedMats = loadingMats.Select(m =>
         new LogMaterial(
@@ -607,8 +606,19 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Material = loadedMats,
         ElapsedMin = elapsedMin,
         ActiveMins = activeMins,
-        FromQueue = fromQueue,
       };
+    }
+
+    private class ExpectedRemoveFromQueueEvt : ExpectedChange
+    {
+      public IEnumerable<LogMaterial> Material { get; set; }
+      public string FromQueue { get; set; }
+      public int Position { get; set; }
+    }
+
+    public static ExpectedChange RemoveFromQueue(string queue, int pos, IEnumerable<LogMaterial> mat)
+    {
+      return new ExpectedRemoveFromQueueEvt() { Material = mat, FromQueue = queue, Position = pos };
     }
 
     private class ExpectedUnloadEvt : ExpectedChange
@@ -618,10 +628,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public IEnumerable<LogMaterial> Material { get; set; }
       public int ElapsedMin { get; set; }
       public int ActiveMins { get; set; }
-      public string ToQueue { get; set; } = null;
     }
 
-    public static ExpectedChange UnloadFromFace(int pal, int lul, int elapsedMin, int activeMins, string toQueue, IEnumerable<LogMaterial> mats)
+    public static ExpectedChange UnloadFromFace(int pal, int lul, int elapsedMin, int activeMins, IEnumerable<LogMaterial> mats)
     {
       return new ExpectedUnloadEvt()
       {
@@ -630,7 +639,23 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Material = mats,
         ElapsedMin = elapsedMin,
         ActiveMins = activeMins,
-        ToQueue = toQueue,
+      };
+    }
+
+    private class ExpectedAddToQueueEvt : ExpectedChange
+    {
+      public IEnumerable<LogMaterial> Material { get; set; }
+      public string ToQueue { get; set; }
+      public int Position { get; set; }
+    }
+
+    public static ExpectedChange AddToQueue(string queue, int pos, IEnumerable<LogMaterial> mat)
+    {
+      return new ExpectedAddToQueueEvt()
+      {
+        Material = mat,
+        ToQueue = queue,
+        Position = pos
       };
     }
 
@@ -934,25 +959,24 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 elapsed: TimeSpan.FromMinutes(load.ElapsedMin),
                 active: TimeSpan.FromMinutes(load.ActiveMins)
               ));
+              break;
 
-              if (load.FromQueue != null)
-              {
-                expectedLogs.AddRange(load.Material.Select(m => new LogEntry(
-                  cntr: -1,
-                  mat: new[] { new LogMaterial(matID: m.MaterialID, uniq: m.JobUniqueStr, proc: m.Process, part: m.PartName,
-                                              numProc: m.NumProcesses, serial: m.Serial, workorder: "", face: m.Face) },
-                  pal: "",
-                  ty: LogType.RemoveFromQueue,
-                  locName: load.FromQueue,
-                  locNum: 1,
-                  prog: "",
-                  start: false,
-                  endTime: _status.TimeOfStatusUTC.AddSeconds(1),
-                  result: "",
-                  endOfRoute: false
+            case ExpectedRemoveFromQueueEvt removeFromQueueEvt:
+              expectedLogs.AddRange(removeFromQueueEvt.Material.Select(m => new LogEntry(
+                cntr: -1,
+                mat: new[] { new LogMaterial(matID: m.MaterialID, uniq: m.JobUniqueStr, proc: m.Process, part: m.PartName,
+                                            numProc: m.NumProcesses, serial: m.Serial, workorder: "", face: m.Face) },
+                pal: "",
+                ty: LogType.RemoveFromQueue,
+                locName: removeFromQueueEvt.FromQueue,
+                locNum: removeFromQueueEvt.Position,
+                prog: "",
+                start: false,
+                endTime: _status.TimeOfStatusUTC.AddSeconds(1),
+                result: "",
+                endOfRoute: false
 
-                )));
-              }
+              )));
               break;
 
 
@@ -972,25 +996,24 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 elapsed: TimeSpan.FromMinutes(unload.ElapsedMin),
                 active: TimeSpan.FromMinutes(unload.ActiveMins)
               ));
+              break;
 
-              if (unload.ToQueue != null)
-              {
-                expectedLogs.AddRange(unload.Material.Select(m => new LogEntry(
-                  cntr: -1,
-                  mat: new[] { new LogMaterial(matID: m.MaterialID, uniq: m.JobUniqueStr, proc: m.Process, part: m.PartName,
-                                              numProc: m.NumProcesses, serial: m.Serial, workorder: "", face: m.Face) },
-                  pal: "",
-                  ty: LogType.AddToQueue,
-                  locName: unload.ToQueue,
-                  locNum: 1,
-                  prog: "",
-                  start: false,
-                  endTime: _status.TimeOfStatusUTC,
-                  result: "",
-                  endOfRoute: false
+            case ExpectedAddToQueueEvt addToQueueEvt:
+              expectedLogs.AddRange(addToQueueEvt.Material.Select(m => new LogEntry(
+                cntr: -1,
+                mat: new[] { new LogMaterial(matID: m.MaterialID, uniq: m.JobUniqueStr, proc: m.Process, part: m.PartName,
+                                            numProc: m.NumProcesses, serial: m.Serial, workorder: "", face: m.Face) },
+                pal: "",
+                ty: LogType.AddToQueue,
+                locName: addToQueueEvt.ToQueue,
+                locNum: addToQueueEvt.Position,
+                prog: "",
+                start: false,
+                endTime: _status.TimeOfStatusUTC,
+                result: "",
+                endOfRoute: false
 
-                )));
-              }
+              )));
               break;
 
             case ExpectMachineBeginEvent machBegin:
