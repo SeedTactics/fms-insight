@@ -536,16 +536,18 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     private class ExpectedLoadBegin : ExpectedChange
     {
+      public int Pallet { get; set; }
       public int LoadStation { get; set; }
     }
 
-    public static ExpectedChange ExpectLoadBegin(int lul)
+    public static ExpectedChange ExpectLoadBegin(int pal, int lul)
     {
-      return new ExpectedLoadBegin() { LoadStation = lul };
+      return new ExpectedLoadBegin() { Pallet = pal, LoadStation = lul };
     }
 
     private class ExpectedLoadCastingEvt : ExpectedChange
     {
+      public int Pallet { get; set; }
       public int LoadStation { get; set; }
       public int Face { get; set; }
       public int Count { get; set; }
@@ -556,10 +558,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public List<LogMaterial> OutMaterial { get; set; }
     }
 
-    public static ExpectedChange LoadCastingToFace(int lul, int face, string unique, int path, int cnt, int elapsedMin, int activeMins, out IEnumerable<LogMaterial> mats)
+    public static ExpectedChange LoadCastingToFace(int pal, int lul, int face, string unique, int path, int cnt, int elapsedMin, int activeMins, out IEnumerable<LogMaterial> mats)
     {
       var e = new ExpectedLoadCastingEvt()
       {
+        Pallet = pal,
         LoadStation = lul,
         Face = face,
         Count = cnt,
@@ -575,6 +578,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     private class ExpectedLoadMatsEvt : ExpectedChange
     {
+      public int Pallet { get; set; }
       public int LoadStation { get; set; }
       public IEnumerable<LogMaterial> Material { get; set; }
       public int ElapsedMin { get; set; }
@@ -582,7 +586,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public string FromQueue { get; set; } = null;
     }
 
-    public ExpectedChange LoadToFace(int face, string unique, int lul, int elapsedMin, int activeMins, string fromQueue, IEnumerable<LogMaterial> loadingMats, out IEnumerable<LogMaterial> loadedMats)
+    public ExpectedChange LoadToFace(int pal, int face, string unique, int lul, int elapsedMin, int activeMins, string fromQueue, IEnumerable<LogMaterial> loadingMats, out IEnumerable<LogMaterial> loadedMats)
     {
       loadedMats = loadingMats.Select(m =>
         new LogMaterial(
@@ -598,6 +602,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       );
       return new ExpectedLoadMatsEvt()
       {
+        Pallet = pal,
         LoadStation = lul,
         Material = loadedMats,
         ElapsedMin = elapsedMin,
@@ -608,6 +613,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     private class ExpectedUnloadEvt : ExpectedChange
     {
+      public int Pallet { get; set; }
       public int LoadStation { get; set; }
       public IEnumerable<LogMaterial> Material { get; set; }
       public int ElapsedMin { get; set; }
@@ -615,10 +621,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public string ToQueue { get; set; } = null;
     }
 
-    public static ExpectedChange UnloadFromFace(int lul, int elapsedMin, int activeMins, string toQueue, IEnumerable<LogMaterial> mats)
+    public static ExpectedChange UnloadFromFace(int pal, int lul, int elapsedMin, int activeMins, string toQueue, IEnumerable<LogMaterial> mats)
     {
       return new ExpectedUnloadEvt()
       {
+        Pallet = pal,
         LoadStation = lul,
         Material = mats,
         ElapsedMin = elapsedMin,
@@ -667,25 +674,28 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     private class ExpectRouteIncrementChange : ExpectedChange
     {
+      public int Pallet { get; set; }
       public int NewCycleCount { get; set; }
     }
 
-    public static ExpectedChange ExpectRouteIncrement(int newCycleCnt)
+    public static ExpectedChange ExpectRouteIncrement(int pal, int newCycleCnt)
     {
-      return new ExpectRouteIncrementChange() { NewCycleCount = newCycleCnt };
+      return new ExpectRouteIncrementChange() { Pallet = pal, NewCycleCount = newCycleCnt };
     }
 
     private class ExpectMachineBeginEvent : ExpectedChange
     {
+      public int Pallet { get; set; }
       public int Machine { get; set; }
       public int Program { get; set; }
       public IEnumerable<LogMaterial> Material { get; set; }
     }
 
-    public static ExpectedChange ExpectMachineBegin(int machine, int program, IEnumerable<LogMaterial> mat)
+    public static ExpectedChange ExpectMachineBegin(int pal, int machine, int program, IEnumerable<LogMaterial> mat)
     {
       return new ExpectMachineBeginEvent()
       {
+        Pallet = pal,
         Machine = machine,
         Program = program,
         Material = mat
@@ -694,6 +704,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     private class ExpectMachineEndEvent : ExpectedChange
     {
+      public int Pallet { get; set; }
       public int Machine { get; set; }
       public int Program { get; set; }
       public int ElapsedMin { get; set; }
@@ -701,10 +712,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public IEnumerable<LogMaterial> Material { get; set; }
     }
 
-    public static ExpectedChange ExpectMachineEnd(int mach, int program, int elapsedMin, int activeMin, IEnumerable<LogMaterial> mats)
+    public static ExpectedChange ExpectMachineEnd(int pal, int mach, int program, int elapsedMin, int activeMin, IEnumerable<LogMaterial> mats)
     {
       return new ExpectMachineEndEvent()
       {
+        Pallet = pal,
         Machine = mach,
         Program = program,
         ElapsedMin = elapsedMin,
@@ -715,18 +727,20 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     private class ExpectPalletCycleChange : ExpectedChange
     {
+      public int Pallet { get; set; }
       public int Minutes { get; set; }
     }
 
-    public static ExpectedChange ExpectPalletCycle(int mins)
+    public static ExpectedChange ExpectPalletCycle(int pal, int mins)
     {
       return new ExpectPalletCycleChange()
       {
+        Pallet = pal,
         Minutes = mins
       };
     }
 
-    public FakeIccDsl ExpectTransition(int pal, IEnumerable<ExpectedChange> expectedChanges, bool expectedUpdates = true)
+    public FakeIccDsl ExpectTransition(IEnumerable<ExpectedChange> expectedChanges, bool expectedUpdates = true)
     {
       var sch = _jobDB.LoadUnarchivedJobs();
 
@@ -742,6 +756,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         if (expectedNewRoute != null)
         {
           var action = _assign.NewPalletChange(pals, sch);
+          var pal = expectedNewRoute.ExpectedMaster.PalletNum;
           action.Should().BeEquivalentTo<NewPalletRoute>(new NewPalletRoute()
           {
             NewMaster = expectedNewRoute.ExpectedMaster
@@ -768,6 +783,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         else if (expectIncr != null)
         {
           var action = _assign.NewPalletChange(pals, sch);
+          var pal = expectIncr.Pallet;
           action.Should().BeEquivalentTo<UpdatePalletQuantities>(new UpdatePalletQuantities()
           {
             Pallet = pal,
@@ -789,8 +805,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
         var evts = logMonitor.OccurredEvents.Select(e => e.Parameters[0]).Cast<LogEntry>();
 
-
-
         foreach (var expected in expectedChanges)
         {
           switch (expected)
@@ -799,7 +813,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               expectedLogs.Add(new LogEntry(
                 cntr: -1,
                 mat: Enumerable.Empty<LogMaterial>(),
-                pal: pal.ToString(),
+                pal: palletCycleChange.Pallet.ToString(),
                 ty: LogType.PalletCycle,
                 locName: "Pallet Cycle",
                 locNum: 1,
@@ -818,7 +832,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 new LogEntry(
                   cntr: -1,
                   mat: Enumerable.Empty<LogMaterial>(),
-                  pal: pal.ToString(),
+                  pal: loadBegin.Pallet.ToString(),
                   ty: LogType.LoadUnloadCycle,
                   locName: "L/U",
                   locNum: loadBegin.LoadStation,
@@ -849,7 +863,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               expectedLogs.Add(new LogEntry(
                 cntr: -1,
                 mat: load.OutMaterial,
-                pal: pal.ToString(),
+                pal: load.Pallet.ToString(),
                 ty: LogType.LoadUnloadCycle,
                 locName: "L/U",
                 locNum: load.LoadStation,
@@ -890,7 +904,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   Location = new InProcessMaterialLocation()
                   {
                     Type = InProcessMaterialLocation.LocType.OnPallet,
-                    Pallet = pal.ToString(),
+                    Pallet = load.Pallet.ToString(),
                     Face = load.Face
                   },
                   Action = new InProcessMaterialAction()
@@ -908,7 +922,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               expectedLogs.Add(new LogEntry(
                 cntr: -1,
                 mat: load.Material,
-                pal: pal.ToString(),
+                pal: load.Pallet.ToString(),
                 ty: LogType.LoadUnloadCycle,
                 locName: "L/U",
                 locNum: load.LoadStation,
@@ -946,7 +960,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               expectedLogs.Add(new LogEntry(
                 cntr: -1,
                 mat: unload.Material,
-                pal: pal.ToString(),
+                pal: unload.Pallet.ToString(),
                 ty: LogType.LoadUnloadCycle,
                 locName: "L/U",
                 locNum: unload.LoadStation,
@@ -984,7 +998,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 new LogEntry(
                   cntr: -1,
                   mat: machBegin.Material,
-                  pal: pal.ToString(),
+                  pal: machBegin.Pallet.ToString(),
                   ty: LogType.MachineCycle,
                   locName: "MC",
                   locNum: machBegin.Machine,
@@ -1001,7 +1015,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 new LogEntry(
                   cntr: -1,
                   mat: machEnd.Material,
-                  pal: pal.ToString(),
+                  pal: machEnd.Pallet.ToString(),
                   ty: LogType.MachineCycle,
                   locName: "MC",
                   locNum: machEnd.Machine,
