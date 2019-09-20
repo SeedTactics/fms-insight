@@ -88,17 +88,6 @@ namespace BlackMaple.FMSInsight.Niigata
       using (var ms = new System.IO.MemoryStream())
       {
         ser.WriteObject(ms, newPaths.ToList());
-        /*
-          newPaths.Select((path, idx) =>
-            new AssignedJobAndPathForFace()
-            {
-              Face = idx + 1,
-              Unique = path.Job.UniqueStr,
-              Proc = path.Process,
-              Path = path.Path
-            }
-          ).ToList());
-        */
         var bytes = ms.ToArray();
         json = System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length);
       }

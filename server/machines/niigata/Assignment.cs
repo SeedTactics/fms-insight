@@ -110,10 +110,12 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       return
         cellSt.Schedule.Jobs
-        .Where(j =>
-          cellSt.JobQtyStarted[j.UniqueStr] < Enumerable.Range(1, j.GetNumPaths(process: 1)).Sum(path => j.GetPlannedCyclesOnFirstProcess(path))
-        )
         .SelectMany(job => Enumerable.Range(1, job.NumProcesses).Select(proc => new { job, proc }))
+        .Where(j =>
+          j.proc > 1
+          ||
+          (cellSt.JobQtyStarted[j.job.UniqueStr] < Enumerable.Range(1, j.job.GetNumPaths(process: 1)).Sum(path => j.job.GetPlannedCyclesOnFirstProcess(path)))
+        )
         .SelectMany(j => Enumerable.Range(1, j.job.GetNumPaths(j.proc)).Select(path => new JobPath { Job = j.job, Process = j.proc, Path = path }))
         .Where(j => loadStation == null || j.Job.LoadStations(j.Process, j.Path).Contains(loadStation.Value))
         .Where(j => j.Job.PlannedPallets(j.Process, j.Path).Contains(pallet.ToString()))
@@ -293,10 +295,10 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         long pendingId = DateTime.UtcNow.Ticks;
         newMaster.Comment = pendingId.ToString();
-        _recordFaces.Save(newMaster.PalletNum, pendingId.ToString(), nowUtc, newPaths.Select((path, idx) =>
+        _recordFaces.Save(newMaster.PalletNum, pendingId.ToString(), nowUtc, newPaths.Select(path =>
           new AssignedJobAndPathForFace()
           {
-            Face = idx + 1,
+            Face = int.Parse(path.Job.PlannedFixtures(process: path.Process, path: path.Path).First().Face),
             Unique = path.Job.UniqueStr,
             Proc = path.Process,
             Path = path.Path
