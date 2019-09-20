@@ -70,7 +70,7 @@ namespace BlackMaple.FMSInsight.Niigata
         if (!(pal.Status.Tracking.BeforeCurrentStep && pal.Status.Tracking.CurrentStepNum == UnloadStepNum)) continue;
         if (pal.Faces.SelectMany(ms => ms.Material).Any(m => m.Action.Type == InProcessMaterialAction.ActionType.Loading)) continue;
 
-        var pathsToLoad = FindMaterialToLoad(cellSt.Schedule, pal.Status.Master.PalletNum, pal.Status.CurStation.Location.Num, pal.Faces.SelectMany(ms => ms.Material).ToList(), queuedMats: cellSt.QueuedMaterial);
+        var pathsToLoad = FindMaterialToLoad(cellSt, pal.Status.Master.PalletNum, pal.Status.CurStation.Location.Num, pal.Faces.SelectMany(ms => ms.Material).ToList(), queuedMats: cellSt.QueuedMaterial);
         if (pathsToLoad != null && pathsToLoad.Count > 0)
         {
           return SetNewRoute(pal.Status, pathsToLoad, cellSt.Status.TimeOfStatusUTC);
@@ -88,7 +88,7 @@ namespace BlackMaple.FMSInsight.Niigata
           continue;
         }
 
-        var pathsToLoad = FindMaterialToLoad(cellSt.Schedule, pal.Status.Master.PalletNum, loadStation: null, matCurrentlyOnPal: Enumerable.Empty<InProcessMaterial>(), queuedMats: cellSt.QueuedMaterial);
+        var pathsToLoad = FindMaterialToLoad(cellSt, pal.Status.Master.PalletNum, loadStation: null, matCurrentlyOnPal: Enumerable.Empty<InProcessMaterial>(), queuedMats: cellSt.QueuedMaterial);
         if (pathsToLoad != null && pathsToLoad.Count > 0)
         {
           return SetNewRoute(pal.Status, pathsToLoad, cellSt.Status.TimeOfStatusUTC);
@@ -106,10 +106,13 @@ namespace BlackMaple.FMSInsight.Niigata
       public int Path { get; set; }
     }
 
-    private IList<JobPath> FindPathsForPallet(PlannedSchedule sch, int pallet, int? loadStation)
+    private IList<JobPath> FindPathsForPallet(CellState cellSt, int pallet, int? loadStation)
     {
       return
-        sch.Jobs
+        cellSt.Schedule.Jobs
+        .Where(j =>
+          cellSt.JobQtyStarted[j.UniqueStr] < Enumerable.Range(1, j.GetNumPaths(process: 1)).Sum(path => j.GetPlannedCyclesOnFirstProcess(path))
+        )
         .SelectMany(job => Enumerable.Range(1, job.NumProcesses).Select(proc => new { job, proc }))
         .SelectMany(j => Enumerable.Range(1, j.job.GetNumPaths(j.proc)).Select(path => new JobPath { Job = j.job, Process = j.proc, Path = path }))
         .Where(j => loadStation == null || j.Job.LoadStations(j.Process, j.Path).Contains(loadStation.Value))
@@ -226,10 +229,10 @@ namespace BlackMaple.FMSInsight.Niigata
       return (false, null);
     }
 
-    private IReadOnlyList<JobPath> FindMaterialToLoad(PlannedSchedule sch, int pallet, int? loadStation, IEnumerable<InProcessMaterial> matCurrentlyOnPal, IEnumerable<InProcessMaterial> queuedMats)
+    private IReadOnlyList<JobPath> FindMaterialToLoad(CellState cellSt, int pallet, int? loadStation, IEnumerable<InProcessMaterial> matCurrentlyOnPal, IEnumerable<InProcessMaterial> queuedMats)
     {
       List<JobPath> paths = null;
-      var allPaths = FindPathsForPallet(sch, pallet, loadStation);
+      var allPaths = FindPathsForPallet(cellSt, pallet, loadStation);
       var unusedMatsOnPal = matCurrentlyOnPal.ToDictionary(m => m.MaterialID);
       var currentlyLoading = new HashSet<long>();
       foreach (var path in allPaths)

@@ -189,7 +189,51 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         })
         .MoveToBuffer(pal: 1, buff: 1)
         .ExpectNoChanges()
-      ;
+        .SetBeforeMC(pal: 1)
+        .MoveToMachine(pal: 1, mach: 6)
+        .StartMachine(mach: 6, program: 1234)
+        .UpdateExpectedMaterial(sndMats, im =>
+          {
+            im.Action.Type = InProcessMaterialAction.ActionType.Machining;
+            im.Action.Program = "1234";
+            im.Action.ElapsedMachiningTime = TimeSpan.Zero;
+            im.Action.ExpectedRemainingMachiningTime = TimeSpan.FromMinutes(14);
+          }
+        )
+        .ExpectTransition(new[] {
+          FakeIccDsl.ExpectMachineBegin(pal: 1, machine: 6, program: 1234, mat: sndMats)
+        })
+        .AdvanceMinutes(15) // =45
+        .EndMachine(mach: 6)
+        .SetAfterMC(pal: 1)
+        .UpdateExpectedMaterial(sndMats, im =>
+          {
+            im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+          }
+        )
+        .ExpectTransition(new[] {
+          FakeIccDsl.ExpectMachineEnd(pal: 1, mach: 6, program: 1234, elapsedMin: 15, activeMin: 14, mats: sndMats)
+        })
+
+        .MoveToLoad(pal: 1, lul: 3)
+        .SetBeforeUnload(pal: 1)
+        .UpdateExpectedMaterial(sndMats, m =>
+        {
+          m.Action.Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial;
+        })
+        // no load of new, since qty is 3 and have produced 2 on pallet 1 and there is still a pending load assigned to pallet 2
+        .ExpectTransition(new[] {
+          FakeIccDsl.ExpectLoadBegin(pal: 1, lul: 3)
+        })
+        .AdvanceMinutes(5) // = 50 min
+        .SetNoWork(pal: 1)
+        .ExpectTransition(new[] {
+          FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 50 - 30),
+          FakeIccDsl.UnloadFromFace(pal: 1, lul: 3, elapsedMin: 5, activeMins: 9, mats: sndMats),
+         })
+        .MoveToBuffer(pal: 1, buff: 1)
+        .ExpectNoChanges()
+        ;
     }
 
     [Fact]

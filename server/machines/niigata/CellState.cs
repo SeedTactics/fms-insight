@@ -164,13 +164,11 @@ namespace BlackMaple.FMSInsight.Niigata
 
       foreach (var pal in pals.Where(p => p.Status.Master.NoWork))
       {
-        palsWithMat.Add(new PalletAndMaterial()
-        {
-          Status = pal.Status,
-          Faces = new List<PalletFace>()
-        });
+        // need to check if an unload with no load happened and if so record unload end
+        palsWithMat.Add(LoadedPallet(pal.Status, pal.Log, status.TimeOfStatusUTC, currentlyLoading, ref palletStateUpdated));
       }
 
+      palsWithMat.Sort((p1, p2) => p1.Status.Master.PalletNum.CompareTo(p2.Status.Master.PalletNum));
       return new CellState()
       {
         Status = status,
@@ -184,6 +182,11 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private IDictionary<int, PalletFace> GetFaces(PalletStatus pallet)
     {
+      if (pallet.Master.NoWork)
+      {
+        return new Dictionary<int, PalletFace>();
+      }
+
       return
         _recordFaces.Load(pallet.Master.Comment)
         .ToDictionary(m => m.Face, m => new PalletFace()
@@ -204,11 +207,6 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private List<InProcessMaterialWithDetails> MaterialCurrentlyOnPallet(PalletStatus pallet, IEnumerable<LogEntry> log)
     {
-      if (pallet.Master.NoWork)
-      {
-        return new List<InProcessMaterialWithDetails>();
-      }
-
       return log
         .Where(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD" && !e.StartOfCycle)
         .SelectMany(e => e.Material)

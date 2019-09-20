@@ -154,6 +154,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return this;
     }
 
+    public FakeIccDsl SetNoWork(int pal)
+    {
+      var p = _status.Pallets[pal - 1];
+      p.Master.NoWork = true;
+      p.Tracking.CurrentControlNum = AssignPallets.LoadStepNum * 2;
+      p.Tracking.CurrentStepNum = AssignPallets.LoadStepNum;
+      _expectedFaces[pal].Clear();
+      return this;
+    }
+
     public FakeIccDsl SetBeforeMC(int pal)
     {
       var p = _status.Pallets[pal - 1];
@@ -364,6 +374,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var j = new JobPlan(unique, 1);
       j.PartName = part;
       j.Priority = priority;
+      j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: qty);
       foreach (var i in luls)
       {
         j.AddLoadStation(1, 1, i);
@@ -399,6 +410,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var j = new JobPlan(unique, 2);
       j.PartName = part;
       j.Priority = priority;
+      j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: qty);
       foreach (var i in luls)
       {
         j.AddLoadStation(1, 1, i);
@@ -443,6 +455,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var j = new JobPlan(unique, 2);
       j.PartName = part;
       j.Priority = priority;
+      j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: qty);
       foreach (var i in luls)
       {
         j.AddLoadStation(1, 1, i);
@@ -862,6 +875,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 elapsed: TimeSpan.FromMinutes(palletCycleChange.Minutes),
                 active: TimeSpan.Zero
               ));
+              _status.Pallets[palletCycleChange.Pallet - 1].Master.RemainingPalletCycles -= 1;
               break;
 
             case ExpectedLoadBegin loadBegin:
