@@ -74,7 +74,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    private void BuildCurrentStatus(NiigataMaterialStatus status)
+    private void BuildCurrentStatus(CellState status)
     {
       var curStatus = new CurrentStatus();
       foreach (var k in _settings.Queues) curStatus.QueueSizes[k.Key] = k.Value;

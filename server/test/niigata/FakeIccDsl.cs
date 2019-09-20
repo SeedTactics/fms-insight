@@ -45,7 +45,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private JobLogDB _logDB;
     private JobDB _jobDB;
     private AssignPallets _assign;
-    private CreateLogEntries _createLog;
+    private CreateCellState _createLog;
     private NiigataStatus _status;
     private FMSSettings _settings;
 
@@ -75,7 +75,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var record = new RecordFacesForPallet(_logDB);
 
       _assign = new AssignPallets(record);
-      _createLog = new CreateLogEntries(_logDB, _jobDB, record, _settings);
+      _createLog = new CreateCellState(_logDB, _jobDB, record, _settings);
 
       _status = new NiigataStatus();
       _status.TimeOfStatusUTC = DateTime.UtcNow.AddDays(-1);
@@ -482,13 +482,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     #endregion
 
     #region Steps
-    private void CheckStatusMatchesExpected(NiigataMaterialStatus actualStatus)
+    private void CheckCellStMatchesExpected(CellState actualSt)
     {
-      actualStatus.Status.Should().Be(_status);
-      actualStatus.Pallets.Count.Should().Be(_status.Pallets.Count);
-      for (int palNum = 1; palNum <= actualStatus.Pallets.Count; palNum++)
+      actualSt.Status.Should().Be(_status);
+      actualSt.Pallets.Count.Should().Be(_status.Pallets.Count);
+      for (int palNum = 1; palNum <= actualSt.Pallets.Count; palNum++)
       {
-        var current = actualStatus.Pallets[palNum - 1];
+        var current = actualSt.Pallets[palNum - 1];
         current.Status.Should().Be(_status.Pallets[palNum - 1]);
         current.Faces.Should().BeEquivalentTo(_expectedFaces[palNum].Select(face =>
           new PalletFace()
@@ -512,7 +512,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           }
         ));
       }
-      actualStatus.QueuedMaterial.Should().BeEquivalentTo(_expectedMaterial.Values.Where(
+      actualSt.QueuedMaterial.Should().BeEquivalentTo(_expectedMaterial.Values.Where(
         m => m.Location.Type == InProcessMaterialLocation.LocType.InQueue && m.Action.Type == InProcessMaterialAction.ActionType.Waiting
       ));
     }
@@ -523,10 +523,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       using (var logMonitor = _logDB.Monitor())
       {
-        var status = _createLog.CheckForNewLogEntries(_status, sch, out bool palletStateUpdated);
-        palletStateUpdated.Should().BeFalse();
-        CheckStatusMatchesExpected(status);
-        _assign.NewPalletChange(status, sch).Should().BeNull();
+        var cellSt = _createLog.BuildCellState(_status, sch);
+        cellSt.PalletStateUpdated.Should().BeFalse();
+        cellSt.Schedule.Should().Be(sch);
+        CheckCellStMatchesExpected(cellSt);
+        _assign.NewPalletChange(cellSt).Should().BeNull();
         logMonitor.Should().NotRaise("NewLogEntry");
       }
       return this;
@@ -771,8 +772,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       using (var logMonitor = _logDB.Monitor())
       {
-        var pals = _createLog.CheckForNewLogEntries(_status, sch, out bool palletStateUpdated);
-        palletStateUpdated.Should().Be(expectedUpdates);
+        var cellSt = _createLog.BuildCellState(_status, sch);
+        cellSt.PalletStateUpdated.Should().Be(expectedUpdates);
+        cellSt.Schedule.Should().Be(sch);
 
         var expectedLogs = new List<LogEntry>();
 
@@ -780,7 +782,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         var expectIncr = (ExpectRouteIncrementChange)expectedChanges.FirstOrDefault(e => e is ExpectRouteIncrementChange);
         if (expectedNewRoute != null)
         {
-          var action = _assign.NewPalletChange(pals, sch);
+          var action = _assign.NewPalletChange(cellSt);
           var pal = expectedNewRoute.ExpectedMaster.PalletNum;
           action.Should().BeEquivalentTo<NewPalletRoute>(new NewPalletRoute()
           {
@@ -807,7 +809,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         }
         else if (expectIncr != null)
         {
-          var action = _assign.NewPalletChange(pals, sch);
+          var action = _assign.NewPalletChange(cellSt);
           var pal = expectIncr.Pallet;
           action.Should().BeEquivalentTo<UpdatePalletQuantities>(new UpdatePalletQuantities()
           {
@@ -825,7 +827,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         }
         else
         {
-          _assign.NewPalletChange(pals, sch).Should().BeNull();
+          _assign.NewPalletChange(cellSt).Should().BeNull();
         }
 
         var evts = logMonitor.OccurredEvents.Select(e => e.Parameters[0]).Cast<LogEntry>();

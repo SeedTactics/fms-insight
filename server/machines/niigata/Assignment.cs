@@ -33,16 +33,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
 using System.Linq;
-using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
   public interface IAssignPallets
   {
-    NiigataAction NewPalletChange(NiigataMaterialStatus materialStatus, PlannedSchedule sch);
+    NiigataAction NewPalletChange(CellState materialStatus);
   }
 
   public class AssignPallets : IAssignPallets
@@ -59,28 +57,28 @@ namespace BlackMaple.FMSInsight.Niigata
     public const int MachineStepNum = 2;
     public const int UnloadStepNum = 3;
 
-    public NiigataAction NewPalletChange(NiigataMaterialStatus status, PlannedSchedule sch)
+    public NiigataAction NewPalletChange(CellState cellSt)
     {
       // only need to decide on a single change, SyncPallets will call in a loop until no changes are needed.
 
       //TODO: check if pallet in BeforeUnload just needs a simple increment before it reaches the load station?
 
       // first, check if pallet at load station being unloaded needs something loaded
-      foreach (var pal in status.Pallets)
+      foreach (var pal in cellSt.Pallets)
       {
         if (pal.Status.CurStation.Location.Location != PalletLocationEnum.LoadUnload) continue;
         if (!(pal.Status.Tracking.BeforeCurrentStep && pal.Status.Tracking.CurrentStepNum == UnloadStepNum)) continue;
         if (pal.Faces.SelectMany(ms => ms.Material).Any(m => m.Action.Type == InProcessMaterialAction.ActionType.Loading)) continue;
 
-        var pathsToLoad = FindMaterialToLoad(sch, pal.Status.Master.PalletNum, pal.Status.CurStation.Location.Num, pal.Faces.SelectMany(ms => ms.Material).ToList(), queuedMats: status.QueuedMaterial);
+        var pathsToLoad = FindMaterialToLoad(cellSt.Schedule, pal.Status.Master.PalletNum, pal.Status.CurStation.Location.Num, pal.Faces.SelectMany(ms => ms.Material).ToList(), queuedMats: cellSt.QueuedMaterial);
         if (pathsToLoad != null && pathsToLoad.Count > 0)
         {
-          return SetNewRoute(pal.Status, pathsToLoad, status.Status.TimeOfStatusUTC);
+          return SetNewRoute(pal.Status, pathsToLoad, cellSt.Status.TimeOfStatusUTC);
         }
       }
 
       // next, check empty stuff in buffer
-      foreach (var pal in status.Pallets)
+      foreach (var pal in cellSt.Pallets)
       {
         if (pal.Status.CurStation.Location.Location != PalletLocationEnum.Buffer) continue;
         if (!pal.Status.Master.NoWork) continue;
@@ -90,10 +88,10 @@ namespace BlackMaple.FMSInsight.Niigata
           continue;
         }
 
-        var pathsToLoad = FindMaterialToLoad(sch, pal.Status.Master.PalletNum, loadStation: null, matCurrentlyOnPal: Enumerable.Empty<InProcessMaterial>(), queuedMats: status.QueuedMaterial);
+        var pathsToLoad = FindMaterialToLoad(cellSt.Schedule, pal.Status.Master.PalletNum, loadStation: null, matCurrentlyOnPal: Enumerable.Empty<InProcessMaterial>(), queuedMats: cellSt.QueuedMaterial);
         if (pathsToLoad != null && pathsToLoad.Count > 0)
         {
-          return SetNewRoute(pal.Status, pathsToLoad, status.Status.TimeOfStatusUTC);
+          return SetNewRoute(pal.Status, pathsToLoad, cellSt.Status.TimeOfStatusUTC);
         }
       }
 

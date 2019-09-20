@@ -291,7 +291,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       using (var monitor = _jobs.Monitor())
       {
-        _syncMock.OnPalletsChanged += Raise.Event<Action<NiigataMaterialStatus>>(new NiigataMaterialStatus()
+        _syncMock.OnPalletsChanged += Raise.Event<Action<CellState>>(new CellState()
         {
           Status = status,
           Pallets = new List<PalletAndMaterial> { pal1, pal2 },

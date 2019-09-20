@@ -43,7 +43,7 @@ namespace BlackMaple.FMSInsight.Niigata
   {
     void JobsOrQueuesChanged();
     void DecrementPlannedButNotStartedQty();
-    event Action<NiigataMaterialStatus> OnPalletsChanged;
+    event Action<CellState> OnPalletsChanged;
   }
 
   public class SyncPallets : ISyncPallets, IDisposable
@@ -53,9 +53,9 @@ namespace BlackMaple.FMSInsight.Niigata
     private JobLogDB _log;
     private INiigataCommunication _icc;
     private IAssignPallets _assign;
-    private ICreateLog _createLog;
+    private IBuildCellState _createLog;
 
-    public SyncPallets(JobDB jobs, JobLogDB log, INiigataCommunication icc, IAssignPallets assign, ICreateLog create)
+    public SyncPallets(JobDB jobs, JobLogDB log, INiigataCommunication icc, IAssignPallets assign, IBuildCellState create)
     {
       _jobs = jobs;
       _log = log;
@@ -118,12 +118,12 @@ namespace BlackMaple.FMSInsight.Niigata
     }
     #endregion
 
-    public event Action<NiigataMaterialStatus> OnPalletsChanged;
+    public event Action<CellState> OnPalletsChanged;
 
     private void SynchronizePallets(bool raisePalletChanged)
     {
       NiigataStatus status;
-      NiigataMaterialStatus matStatus;
+      CellState cellSt;
 
       lock (_changeLock)
       {
@@ -143,12 +143,12 @@ namespace BlackMaple.FMSInsight.Niigata
 
           Log.Debug("Loaded pallets {@status} and jobs {@jobs}", status, jobs);
 
-          matStatus = _createLog.CheckForNewLogEntries(status, jobs, out bool palletStateUpdated);
-          raisePalletChanged = raisePalletChanged || palletStateUpdated;
+          cellSt = _createLog.BuildCellState(status, jobs);
+          raisePalletChanged = raisePalletChanged || cellSt.PalletStateUpdated;
 
-          Log.Debug("Computed pallets and material {@pals}", matStatus);
+          Log.Debug("Computed cell state {@pals}", cellSt);
 
-          action = _assign.NewPalletChange(matStatus, jobs);
+          action = _assign.NewPalletChange(cellSt);
 
           if (action != null)
           {
@@ -161,7 +161,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
       if (raisePalletChanged)
       {
-        OnPalletsChanged?.Invoke(matStatus);
+        OnPalletsChanged?.Invoke(cellSt);
       }
     }
 

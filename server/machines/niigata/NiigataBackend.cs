@@ -62,7 +62,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
         NiigataICC = new NiigataICC();
         var recordFaces = new RecordFacesForPallet(_log);
-        var createLog = new CreateLogEntries(_log, _jobs, recordFaces, cfg);
+        var createLog = new CreateCellState(_log, _jobs, recordFaces, cfg);
         var assign = new AssignPallets(recordFaces);
         SyncPallets = new SyncPallets(_jobs, _log, NiigataICC, assign, createLog);
         NiigataJobs = new NiigataJobs(_jobs, _log, cfg, SyncPallets);

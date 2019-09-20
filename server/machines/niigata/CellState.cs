@@ -54,27 +54,30 @@ namespace BlackMaple.FMSInsight.Niigata
     public List<PalletFace> Faces { get; set; }
   }
 
-  public class NiigataMaterialStatus
+  public class CellState
   {
     public NiigataStatus Status { get; set; }
+    public PlannedSchedule Schedule { get; set; }
+    public bool PalletStateUpdated { get; set; }
     public List<PalletAndMaterial> Pallets { get; set; }
     public List<InProcessMaterial> QueuedMaterial { get; set; }
+    public Dictionary<string, int> JobQtyStarted { get; set; }
   }
 
-  public interface ICreateLog
+  public interface IBuildCellState
   {
-    NiigataMaterialStatus CheckForNewLogEntries(NiigataStatus status, PlannedSchedule sch, out bool palletStateUpdated);
+    CellState BuildCellState(NiigataStatus status, PlannedSchedule sch);
   }
 
-  public class CreateLogEntries : ICreateLog
+  public class CreateCellState : IBuildCellState
   {
     private JobLogDB _log;
     private JobDB _jobs;
     private IRecordFacesForPallet _recordFaces;
     private FMSSettings _settings;
-    private static Serilog.ILogger Log = Serilog.Log.ForContext<CreateLogEntries>();
+    private static Serilog.ILogger Log = Serilog.Log.ForContext<CreateCellState>();
 
-    public CreateLogEntries(JobLogDB l, JobDB jobs, IRecordFacesForPallet r, FMSSettings s)
+    public CreateCellState(JobLogDB l, JobDB jobs, IRecordFacesForPallet r, FMSSettings s)
     {
       _log = l;
       _jobs = jobs;
@@ -82,9 +85,9 @@ namespace BlackMaple.FMSInsight.Niigata
       _settings = s;
     }
 
-    public NiigataMaterialStatus CheckForNewLogEntries(NiigataStatus status, PlannedSchedule sch, out bool palletStateUpdated)
+    public CellState BuildCellState(NiigataStatus status, PlannedSchedule sch)
     {
-      palletStateUpdated = false;
+      var palletStateUpdated = false;
       var palsWithMat = new List<PalletAndMaterial>();
 
       // sort pallets by loadBegin so that the assignment of material from queues to pallets is consistent
@@ -168,9 +171,11 @@ namespace BlackMaple.FMSInsight.Niigata
         });
       }
 
-      return new NiigataMaterialStatus()
+      return new CellState()
       {
         Status = status,
+        Schedule = sch,
+        PalletStateUpdated = palletStateUpdated,
         Pallets = palsWithMat,
         QueuedMaterial = QueuedMaterial(new HashSet<long>(palsWithMat.SelectMany(p => p.Faces).SelectMany(p => p.Material).Select(m => m.MaterialID)))
       };
