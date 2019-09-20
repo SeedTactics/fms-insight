@@ -361,6 +361,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         _expectedMaterial.Remove(matId);
       return this;
     }
+
+    public FakeIccDsl RemoveExpectedMaterial(IEnumerable<LogMaterial> mats)
+    {
+      foreach (var mat in mats)
+        _expectedMaterial.Remove(mat.MaterialID);
+      return this;
+    }
     #endregion
 
     #region Jobs
@@ -725,11 +732,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       public int Pallet { get; set; }
       public int NewCycleCount { get; set; }
+      public IEnumerable<(int face, string unique, int proc, int path)> Faces { get; set; }
     }
 
-    public static ExpectedChange ExpectRouteIncrement(int pal, int newCycleCnt)
+    public static ExpectedChange ExpectRouteIncrement(int pal, int newCycleCnt, IEnumerable<(int face, string unique, int proc, int path)> faces = null)
     {
-      return new ExpectRouteIncrementChange() { Pallet = pal, NewCycleCount = newCycleCnt };
+      return new ExpectRouteIncrementChange() { Pallet = pal, NewCycleCount = newCycleCnt, Faces = faces };
     }
 
     private class ExpectMachineBeginEvent : ExpectedChange
@@ -847,6 +855,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           _status.Pallets[pal - 1].Master.RemainingPalletCycles = expectIncr.NewCycleCount;
           _status.Pallets[pal - 1].Tracking.CurrentControlNum = AssignPallets.LoadStepNum * 2 - 1;
           _status.Pallets[pal - 1].Tracking.CurrentStepNum = AssignPallets.LoadStepNum;
+          if (expectIncr.Faces != null)
+          {
+            _expectedFaces[pal] = expectIncr.Faces.ToList();
+          }
         }
         else
         {
