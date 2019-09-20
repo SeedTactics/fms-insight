@@ -52,6 +52,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private List<InProcessMaterial> _expectedLoadCastings = new List<InProcessMaterial>();
     private Dictionary<long, InProcessMaterial> _expectedMaterial = new Dictionary<long, InProcessMaterial>(); //key is matId
     private Dictionary<int, List<(int face, string unique, int proc, int path)>> _expectedFaces = new Dictionary<int, List<(int face, string unique, int proc, int path)>>(); // key is pallet
+    private Dictionary<string, int> _expectedJobStartedCount = new Dictionary<string, int>();
 
     public FakeIccDsl(int numPals, int numMachines)
     {
@@ -353,6 +354,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     #endregion
 
     #region Jobs
+    public FakeIccDsl IncrJobStartedCnt(string unique, int cnt = 1)
+    {
+      _expectedJobStartedCount[unique] += cnt;
+      return this;
+    }
     public FakeIccDsl AddOneProcOnePathJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, int prog, int loadMins, int machMins, int unloadMins, string fixture, int face, string queue = null)
     {
       var j = new JobPlan(unique, 1);
@@ -383,6 +389,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         j.SetInputQueue(1, 1, queue);
       }
       _jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+      _expectedJobStartedCount[unique] = 0;
 
       return this;
     }
@@ -427,6 +434,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       j.AddProcessOnFixture(1, 1, fixture, face1.ToString());
       j.AddProcessOnFixture(2, 1, fixture, face2.ToString());
       _jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+      _expectedJobStartedCount[unique] = 0;
 
       return this;
     }
@@ -476,6 +484,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       j.SetOutputQueue(1, 1, queue);
       j.SetInputQueue(2, 1, queue);
       _jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+      _expectedJobStartedCount[unique] = 0;
 
       return this;
     }
@@ -515,6 +524,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       actualSt.QueuedMaterial.Should().BeEquivalentTo(_expectedMaterial.Values.Where(
         m => m.Location.Type == InProcessMaterialLocation.LocType.InQueue && m.Action.Type == InProcessMaterialAction.ActionType.Waiting
       ));
+      actualSt.JobQtyStarted.Should().BeEquivalentTo(_expectedJobStartedCount);
     }
 
     public FakeIccDsl ExpectNoChanges()

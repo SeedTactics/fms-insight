@@ -38,10 +38,10 @@ using BlackMaple.MachineWatchInterface;
 
 namespace BlackMaple.FMSInsight.Niigata.Tests
 {
-  public class NiigataAssignmentSpec : IDisposable
+  public class IccControlSpec : IDisposable
   {
     private FakeIccDsl _dsl;
-    public NiigataAssignmentSpec()
+    public IccControlSpec()
     {
       _dsl = new FakeIccDsl(numPals: 5, numMachines: 6);
     }
@@ -75,6 +75,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetExpectedLoadCastings(new[] {
           (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1),
          })
+        .IncrJobStartedCnt("uniq1")
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
           FakeIccDsl.ExpectNewRoute(
             pal: 1,
@@ -84,6 +85,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) }
         )})
         .MoveToBuffer(pal: 2, buff: 2)
+        .IncrJobStartedCnt("uniq1")
         .SetExpectedLoadCastings(new[] {
           (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1),
           (uniq: "uniq1", part: "part1", pal: 2, path: 1, face: 1),
@@ -164,6 +166,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectNoChanges()
         .AdvanceMinutes(3) //=28
         .MoveToLoad(pal: 1, lul: 4)
+        .IncrJobStartedCnt("uniq1")
         .SetExpectedLoadCastings(new[] {
           (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1),
           (uniq: "uniq1", part: "part1", pal: 2, path: 1, face: 1),
@@ -209,6 +212,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           fixture: "fix1",
           face: 1
         )
+        .IncrJobStartedCnt("uniq1")
         .SetExpectedLoadCastings(new[] {
           (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1),
         })
@@ -238,10 +242,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
         // back to correct, just increment
         .OverrideRoute(pal: 1, comment: "abc", noWork: true, luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 1234 })
+        .IncrJobStartedCnt("uniq1", -1) // the comment abc does not exist, so no material is marked to be loaded
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
           FakeIccDsl.ExpectRouteIncrement(pal: 1, newCycleCnt: 1)
         })
-        ;
+         ;
     }
 
     [Fact]
@@ -283,6 +288,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             PathAfterLoad = 1
           };
         })
+        .IncrJobStartedCnt("uniq1")
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
           FakeIccDsl.ExpectNewRoute(pal: 1, luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 1234 }, faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) })
         })
@@ -342,6 +348,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetExpectedLoadCastings(new[] {
               (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1),
          })
+        .IncrJobStartedCnt("uniq1")
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
           FakeIccDsl.ExpectNewRoute(
             pal: 1,
@@ -397,6 +404,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         // now a cycle with process 1 and 2
         .SetBeforeUnload(pal: 1)
         .MoveToLoad(pal: 1, lul: 4)
+        .IncrJobStartedCnt("uniq1")
         .SetExpectedLoadCastings(new[] {
           (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1),
          })
@@ -486,6 +494,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetExpectedLoadCastings(new[] {
           (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1),
          })
+        .IncrJobStartedCnt("uniq1")
          .UpdateExpectedMaterial(BBBproc1, im =>
          {
            im.Action = new InProcessMaterialAction()
@@ -558,6 +567,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       .SetExpectedLoadCastings(new[] {
             (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1)
       })
+      .IncrJobStartedCnt("uniq1")
       .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
         FakeIccDsl.ExpectNewRoute(
           pal: 1,
@@ -608,6 +618,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       .SetExpectedLoadCastings(new[] {
             (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1)
       })
+      .IncrJobStartedCnt("uniq1")
       .UpdateExpectedMaterial(AAAproc1, im =>
       {
         im.Action = new InProcessMaterialAction()

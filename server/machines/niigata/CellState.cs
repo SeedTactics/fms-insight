@@ -177,7 +177,8 @@ namespace BlackMaple.FMSInsight.Niigata
         Schedule = sch,
         PalletStateUpdated = palletStateUpdated,
         Pallets = palsWithMat,
-        QueuedMaterial = QueuedMaterial(new HashSet<long>(palsWithMat.SelectMany(p => p.Faces).SelectMany(p => p.Material).Select(m => m.MaterialID)))
+        QueuedMaterial = QueuedMaterial(new HashSet<long>(palsWithMat.SelectMany(p => p.Faces).SelectMany(p => p.Material).Select(m => m.MaterialID))),
+        JobQtyStarted = CountStartedMaterial(sch, palsWithMat)
       };
     }
 
@@ -889,6 +890,35 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       return mats;
+    }
+
+    private Dictionary<string, int> CountStartedMaterial(PlannedSchedule schedule, IEnumerable<PalletAndMaterial> pals)
+    {
+      var cnts = new Dictionary<string, int>();
+      foreach (var uniq in schedule.Jobs.Select(j => j.UniqueStr))
+      {
+        var loadedCnt =
+          _log.GetLogForJobUnique(uniq)
+            .Where(e => (e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD") || e.LogType == LogType.MachineCycle)
+            .SelectMany(e => e.Material)
+            .Where(m => m.JobUniqueStr == uniq)
+            .Select(m => m.MaterialID)
+            .Distinct()
+            .Count();
+
+        var castingsCnt =
+          pals
+            .SelectMany(p => p.Faces)
+            .SelectMany(f => f.Material)
+            .Where(m => m.JobUnique == uniq &&
+                        m.Action.Type == InProcessMaterialAction.ActionType.Loading &&
+                        m.Action.ProcessAfterLoad == 1
+            )
+            .Count();
+
+        cnts.Add(uniq, loadedCnt + castingsCnt);
+      }
+      return cnts;
     }
 
     private (int proc, int path) ProcessAndPathForMatID(long matID, JobPlan job)
