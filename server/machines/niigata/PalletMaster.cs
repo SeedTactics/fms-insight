@@ -44,6 +44,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public static NiigataStationNum Machine(int i) => new NiigataStationNum(800 + i);
     public static NiigataStationNum MachineQueue(int i) => new NiigataStationNum(830 + i);
     public static NiigataStationNum Buffer(int i) => new NiigataStationNum(i);
+    public static NiigataStationNum Cart() => new NiigataStationNum(990);
     public PalletLocation Location
     {
       get

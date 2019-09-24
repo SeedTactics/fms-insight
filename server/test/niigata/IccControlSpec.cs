@@ -1193,12 +1193,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     }
 
     [Fact(Skip = "Pending")]
-    public void CountsCompletedFromLog()
-    {
-
-    }
-
-    [Fact(Skip = "Pending")]
     public void JobPriority()
     {
 
