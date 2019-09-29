@@ -398,7 +398,7 @@ namespace Makino
       //length 10 gets us to 1.5e18 which is not quite 2^64
       //still large enough so we will practically never roll around
       serial = serial.Substring(0, Math.Min(Settings.SerialLength, serial.Length));
-      serial = serial.PadLeft(10, '0');
+      serial = serial.PadLeft(Settings.SerialLength, '0');
 
       Log.Debug("Recording serial for matid: {matid} {serial}", matID, serial);
 
