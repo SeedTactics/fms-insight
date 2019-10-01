@@ -1,7 +1,6 @@
-syntax:glob
-bin/
-obj/
-integration.pdf
+**/bin/Debug/
+**/bin/Release/
+**/obj/
 node_modules/
 client/insight/.build/
 client/insight/.cache/
