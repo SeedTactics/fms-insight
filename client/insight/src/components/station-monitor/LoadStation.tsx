@@ -295,12 +295,17 @@ interface LoadMatDialogProps extends MaterialDialogProps {
 }
 
 function instructionType(mat: matDetails.MaterialDetail): string {
-  let openUnload = mat.events.find(e => e.result === "UNLOAD");
-  if (openUnload.isSome() && openUnload.get().startofcycle) {
-    return "unload";
-  } else {
-    return "load";
+  let ty: "load" | "unload" = "load";
+  for (let evt of mat.events) {
+    if (evt.type === api.LogType.LoadUnloadCycle && evt.result === "UNLOAD") {
+      if (evt.startofcycle) {
+        ty = "unload";
+      } else {
+        ty = "load";
+      }
+    }
   }
+  return ty;
 }
 
 function LoadMatDialog(props: LoadMatDialogProps) {
