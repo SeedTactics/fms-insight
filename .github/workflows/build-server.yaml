@@ -1,0 +1,35 @@
+name: build-server
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v1
+
+      - run: dotnet test server/test
+
+      - uses: nuxt/actions-yarn@master
+      - run: yarn --cwd client/insight install --frozen-lockfile
+      - run: yarn --cwd client/insight test
+      - run: yarn --cwd client/insight run build
+
+      - name: Build MachineFramework
+        shell: pwsh
+        run: |
+          $ver = (dotnet gitversion server/lib) | Convert-FromJSON
+          dotnet pack `
+              --include-symbols `
+              -c Release `
+              /p:VersionPrefix=$(ver.SemVer) `
+              /p:VersionSuffix=$(ver.PreReleaseTag) `
+              server/lib/BlackMaple.MachineFramework
+
+      - name: Publish Package
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          nuget sources Add -Name "GPR" -Source "https://nuget.pkg.github.com/SeedTactics/index.json" -UserName SeedTactics -Password $Env.GITHUB_TOKEN
+          nuget push server/lib/BlackMaple.MachineFramework/bin/Release/*.nupkg -Source "GPR"
