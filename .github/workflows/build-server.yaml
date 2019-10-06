@@ -39,4 +39,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           nuget sources Add -Name "GPR" -Source "https://nuget.pkg.github.com/SeedTactics/index.json" -UserName SeedTactics -Password $Env.GITHUB_TOKEN
-          nuget push server/lib/BlackMaple.MachineFramework/bin/Release/*.nupkg -Source "GPR"
+          dotnet nuget push -s GPR server/lib/BlackMaple.MachineFramework
