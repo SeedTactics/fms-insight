@@ -9,13 +9,18 @@ jobs:
     steps:
       - uses: actions/checkout@v1
 
-      - run: dotnet test server/test
+      - name: Server TestSuite
+        run: |
+          tzutil /s "Pacific Standard Time"
+          dotnet test server/test
 
       - uses: nuxt/actions-yarn@master
       - run: yarn --cwd client/insight install --frozen-lockfile
       - run: yarn --cwd client/insight test
       - run: yarn --cwd client/insight run build
 
+      - name: Install GitVersion
+        run: dotnet tool install -g GitVersion.Tool
       - name: Build MachineFramework
         shell: pwsh
         run: |
@@ -24,7 +29,7 @@ jobs:
               --include-symbols `
               -c Release `
               /p:VersionPrefix=$(ver.SemVer) `
-              /p:VersionSuffix=$(ver.PreReleaseTag) `
+              /p:VersionSuffix=$(ver.PreReleaseTag) ` # TODO: fix this on branches
               server/lib/BlackMaple.MachineFramework
 
       - name: Publish Package
