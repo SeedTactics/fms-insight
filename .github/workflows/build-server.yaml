@@ -8,15 +8,18 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: "10.x"
+      - uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: "2.2.108"
 
       - name: Server TestSuite
         run: |
           tzutil /s "Pacific Standard Time"
           dotnet test server/test
 
-      - uses: actions/setup-node@v1
-        with:
-          node-version: "10.x"
       - run: yarn --cwd client/insight install --frozen-lockfile
       - run: yarn --cwd client/insight test
       - run: yarn --cwd client/insight run build
