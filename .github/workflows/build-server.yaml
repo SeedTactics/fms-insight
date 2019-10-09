@@ -31,6 +31,9 @@ jobs:
       - name: Build MachineFramework
         shell: pwsh
         run: |
+          # GitVersion doesn't like detached heads
+          #https://github.com/actions/checkout/issues/6
+          git checkout "${GITHUB_REF:11}"
           dotnet gitversion server/lib
           $ver = (dotnet gitversion server/lib) | ConvertFrom-Json
           dotnet pack `
