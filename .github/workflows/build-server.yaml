@@ -41,8 +41,7 @@ jobs:
           dotnet pack `
               --include-symbols `
               -c Release `
-              /p:VersionPrefix=$ver.SemVer `
-              /p:VersionSuffix="" `
+              /p:Version=$ver.SemVer `
               server/lib/BlackMaple.MachineFramework
 
       - name: Publish Package
