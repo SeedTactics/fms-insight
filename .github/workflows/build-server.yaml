@@ -42,7 +42,7 @@ jobs:
               --include-symbols `
               -c Release `
               /p:VersionPrefix=$ver.SemVer `
-              /p:VersionSuffix="" ` # TODO: fix this on branches
+              /p:VersionSuffix="" `
               server/lib/BlackMaple.MachineFramework
 
       - name: Publish Package
