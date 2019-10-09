@@ -11,9 +11,11 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: "10.x"
-      - uses: actions/setup-dotnet@v1.2.0
-        with:
-          dotnet-version: "3.0.100"
+
+      # https://github.com/actions/setup-dotnet/issues/29
+      #- uses: actions/setup-dotnet@v1.2.0
+      #  with:
+      #    dotnet-version: "3.0.100"
 
       - name: Server TestSuite
         run: |
@@ -42,5 +44,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          nuget sources Add -Name "GPR" -Source "https://nuget.pkg.github.com/SeedTactics/index.json" -UserName SeedTactics -Password $Env.GITHUB_TOKEN
+          nuget sources Add -Name "GPR" -Source "https://nuget.pkg.github.com/SeedTactics/index.json" -UserName SeedTactics -Password $Env:GITHUB_TOKEN
           dotnet nuget push -s GPR server/lib/BlackMaple.MachineFramework
