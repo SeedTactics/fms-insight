@@ -58,5 +58,5 @@ jobs:
                 </GPR>
               </packageSourceCredentials>
             </configuration>
-            "@
+          "@
           dotnet nuget push -s GPR server/lib/BlackMaple.MachineFramework
