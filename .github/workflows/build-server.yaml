@@ -11,6 +11,7 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: "10.x"
+      - uses: warrenbuckley/Setup-Nuget@v1 # https://github.com/NuGet/Home/issues/6045
 
       # https://github.com/actions/setup-dotnet/issues/29
       #- uses: actions/setup-dotnet@v1.2.0
