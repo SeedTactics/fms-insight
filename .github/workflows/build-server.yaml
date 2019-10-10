@@ -59,5 +59,4 @@ jobs:
             </packageSourceCredentials>
           </configuration>
           "@
-          Get-Content nuget.config
-          dotnet nuget push -s GPR server/lib/BlackMaple.MachineFramework/bin/Release/*.nupkg
+          dotnet nuget push -s GPR server\lib\BlackMaple.MachineFramework\bin\Release\*.nupkg
