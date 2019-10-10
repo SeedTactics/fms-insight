@@ -10,9 +10,11 @@
     <Product>SeedTactics</Product>
     <Copyright>Black Maple Software, LLC</Copyright>
     <Authors>John Lenz</Authors>
-    <PackageProjectUrl>https://www.seedtactics.com</PackageProjectUrl>
-
-    <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
+    <PackageLicenseExpression>BSD-3-Clause</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/SeedTactics/fms-insight</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/SeedTactics/fms-insight.git</RepositoryUrl>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
   </PropertyGroup>
 
   <Choose>
@@ -30,5 +32,6 @@
 
   <ItemGroup>
     <ProjectReference Include="../../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj"/>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta2-19367-01" PrivateAssets="All"/>
   </ItemGroup>
 </Project>
