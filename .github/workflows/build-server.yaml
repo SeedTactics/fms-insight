@@ -40,6 +40,7 @@ jobs:
           dotnet pack --include-symbols -c Release /p:Version=$($ver.SemVer) server/lib/BlackMaple.MachineFramework
 
       - name: Publish Package
+        shell: pwsh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
