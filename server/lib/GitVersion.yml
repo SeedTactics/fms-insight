@@ -1,0 +1,6 @@
+mode: Mainline
+tag-prefix: framework-
+major-version-bump-message: '\+semver framework:\s?(breaking|major)'
+minor-version-bump-message: '\+semver framework:\s?(feature|minor)'
+patch-version-bump-message: '\+semver framework:\s?(fix|patch)'
+commit-message-incrementing: Enabled

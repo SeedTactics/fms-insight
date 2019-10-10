@@ -1,7 +1,6 @@
-syntax:glob
-bin/
-obj/
-integration.pdf
+**/bin/Debug/
+**/bin/Release/
+**/obj/
 node_modules/
 client/insight/.build/
 client/insight/.cache/
@@ -17,4 +16,4 @@ website/yarn.lock
 website/node_modules
 website/i18n
 
-server/machines/mazak/logcsv
+server/machines/mazak/log

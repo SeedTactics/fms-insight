@@ -368,14 +368,14 @@ namespace Makino
       foreach (var row in rows)
       {
         if (Settings.SerialType != SerialType.NoAutomaticSerials)
-          CreateSerial(row.MatID, order, part, process, fixturenum.ToString(), _log);
+          CreateSerial(row.MatID, order, part, process, fixturenum.ToString(), _log, Settings);
         ret.Add(new JobLogDB.EventLogMaterial() { MaterialID = row.MatID, Process = process, Face = "" });
       }
       return ret;
     }
 
-    public void CreateSerial(long matID, string jobUniqe, string partName, int process, string face,
-                                        JobLogDB _log)
+    public static void CreateSerial(long matID, string jobUniqe, string partName, int process, string face,
+                                        JobLogDB _log, FMSSettings Settings)
     {
       foreach (var stat in _log.GetLogForMaterial(matID))
       {
@@ -398,7 +398,7 @@ namespace Makino
       //length 10 gets us to 1.5e18 which is not quite 2^64
       //still large enough so we will practically never roll around
       serial = serial.Substring(0, Math.Min(Settings.SerialLength, serial.Length));
-      serial = serial.PadLeft(10, '0');
+      serial = serial.PadLeft(Settings.SerialLength, '0');
 
       Log.Debug("Recording serial for matid: {matid} {serial}", matID, serial);
 

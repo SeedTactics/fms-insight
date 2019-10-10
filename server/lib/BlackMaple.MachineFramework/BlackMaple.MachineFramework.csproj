@@ -3,23 +3,23 @@
   <PropertyGroup>
     <PackageId>BlackMaple.MachineFramework</PackageId>
     <AssemblyName>BlackMaple.MachineFramework</AssemblyName>
-    <VersionPrefix>11.0.0</VersionPrefix>
 
     <Title>SeedTactics Utility Library for FMS Insight Plugins</Title>
     <Company>Black Maple Software, LLC</Company>
     <Product>SeedTactics</Product>
     <Copyright>Black Maple Software, LLC</Copyright>
     <Authors>John Lenz</Authors>
-    <PackageLicenseUrl>https://opensource.org/licenses/BSD-3-Clause</PackageLicenseUrl>
-    <PackageProjectUrl>https://www.seedtactics.com</PackageProjectUrl>
-    <RepositoryUrl>https://bitbucket.org/blackmaple/fms-insight</RepositoryUrl>
-    <RepositoryType>hg</RepositoryType>
+    <PackageLicenseExpression>BSD-3-Clause</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/SeedTactics/fms-insight</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/SeedTactics/fms-insight.git</RepositoryUrl>
     <Description>
       SeedTactic FMS Insight is a generic conduit which allows SeedTactic software to monitor and control the cell.
       For documentation and source code, visit the bitbucket project at https://bitbucket.org/blackmaple/fms-insight
     </Description>
 
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <OutputType>Library</OutputType>
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
   </PropertyGroup>
 
   <ItemGroup>
@@ -67,6 +67,8 @@
     <PackageReference Include="System.Data.Common" Version="4.3.0" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="2.2.4" />
     <PackageReference Include="CsvHelper" Version="12.1.2"/>
+
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta2-19367-01" PrivateAssets="All"/>
   </ItemGroup>
 
   <Choose>
