@@ -45,8 +45,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # https://github.com/NuGet/Home/issues/6045
-          Set-Content -Path nuget.config -Value @"
-            <?xml version="1.0" encoding="utf-8"?>
+          Set-Content -Path nuget.config -Value @"<?xml version="1.0" encoding="utf-8"?>
             <configuration>
               <packageSources>
                 <add key="GPR" value="https://nuget.pkg.github.com/SeedTactics/index.json" />
@@ -59,4 +58,5 @@ jobs:
               </packageSourceCredentials>
             </configuration>
           "@
+          Get-Content nuget.config
           dotnet nuget push -s GPR server/lib/BlackMaple.MachineFramework
