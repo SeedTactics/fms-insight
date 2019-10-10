@@ -187,7 +187,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             // if in the buffer, add transition to put on cart
             else if (beforeStep && !cartInUse && pal.CurStation.Location.Location == PalletLocationEnum.Buffer)
             {
-              var lul = openLoads.FirstOrDefault(lul => load.LoadStations.Contains(lul));
+              var lul = openLoads.FirstOrDefault(load.LoadStations.Contains);
               if (lul > 0)
               {
                 transitions.Add(new NextTransition()
@@ -204,7 +204,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             // if on the cart, add transition to drop off
             else if (beforeStep && pal.CurStation.Location.Location == PalletLocationEnum.Cart)
             {
-              var lul = openLoads.FirstOrDefault(lul => load.LoadStations.Contains(lul));
+              var lul = openLoads.FirstOrDefault(load.LoadStations.Contains);
               if (lul > 0)
               {
                 transitions.Add(new NextTransition()
@@ -377,7 +377,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             else if (!beforeStep && pal.CurStation.Location.Location == PalletLocationEnum.Cart)
             {
               var next = (UnloadStep)pal.Master.Routes[pal.Tracking.CurrentStepNum - 1 + 1];
-              var lul = openLoads.FirstOrDefault(lul => next.UnloadStations.Contains(lul));
+              var lul = openLoads.FirstOrDefault(next.UnloadStations.Contains);
               if (lul > 0)
               {
                 transitions.Add(new NextTransition()
@@ -437,7 +437,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             // if in the buffer, add transition to put on cart
             else if (beforeStep && !cartInUse && pal.CurStation.Location.Location == PalletLocationEnum.Buffer)
             {
-              var lul = openLoads.FirstOrDefault(lul => unload.UnloadStations.Contains(lul));
+              var lul = openLoads.FirstOrDefault(unload.UnloadStations.Contains);
               if (lul > 0)
               {
                 transitions.Add(new NextTransition()
@@ -454,7 +454,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             // if on the cart, add transition to drop off
             else if (beforeStep && pal.CurStation.Location.Location == PalletLocationEnum.Cart)
             {
-              var lul = openLoads.FirstOrDefault(lul => unload.UnloadStations.Contains(lul));
+              var lul = openLoads.FirstOrDefault(unload.UnloadStations.Contains);
               if (lul > 0)
               {
                 transitions.Add(new NextTransition()
