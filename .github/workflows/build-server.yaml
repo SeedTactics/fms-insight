@@ -39,24 +39,10 @@ jobs:
           $ver = (dotnet gitversion server/lib) | ConvertFrom-Json
           dotnet pack --include-symbols -c Release /p:Version=$($ver.SemVer) server/lib/BlackMaple.MachineFramework
 
+      # https://github.com/NuGet/Home/issues/8580
+      - name: Setup Nuget
+        uses: warrenbuckley/Setup-Nuget@v1
+      - name: Add GPR Source
+        run: nuget sources add -name "GPR" -Source "https://nuget.pkg.github.com/SeedTactics/index.json" -Username SeedTactics -Password ${{ secrets.GITHUB_TOKEN }}
       - name: Publish Package
-        shell: pwsh
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # https://github.com/NuGet/Home/issues/6045
-          Set-Content -Path nuget.config -Value @"
-          <?xml version="1.0" encoding="utf-8"?>
-          <configuration>
-            <packageSources>
-              <add key="GPR" value="https://nuget.pkg.github.com/SeedTactics/index.json" />
-            </packageSources>
-            <packageSourceCredentials>
-              <GPR>
-                <add key="Username" value="SeedTactics" />
-                <add key="ClearTextPassword" value="%GITHUB_TOKEN%" />
-              </GPR>
-            </packageSourceCredentials>
-          </configuration>
-          "@
-          dotnet nuget push -s GPR server\lib\BlackMaple.MachineFramework\bin\Release\*.nupkg
+        run: nuget push -Source GPR server\lib\BlackMaple.MachineFramework\bin\Release\*.nupkg
