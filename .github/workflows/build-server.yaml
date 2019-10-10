@@ -35,6 +35,7 @@ jobs:
         run: |
           # GitVersion doesn't like detached heads
           #https://github.com/actions/checkout/issues/6
+          git branch --track master remotes/origin/master
           git checkout ($Env:GITHUB_REF.Substring(11))
           $ver = (dotnet gitversion server/lib) | ConvertFrom-Json
           dotnet pack -c Release /p:Version=$($ver.SemVer) server/lib/BlackMaple.MachineFramework
