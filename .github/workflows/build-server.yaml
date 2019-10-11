@@ -20,21 +20,19 @@ jobs:
       #  with:
       #    dotnet-version: "3.0.100"
 
-      - name: Server TestSuite
-        run: |
-          tzutil /s "Pacific Standard Time"
-          dotnet test server/test
+      #- name: Server TestSuite
+      #  run: |
+      #    tzutil /s "Pacific Standard Time"
+      #    dotnet test server/test
 
-      - run: yarn --cwd client/insight install --frozen-lockfile
-      - run: yarn --cwd client/insight test
-      - run: yarn --cwd client/insight run build
+      #- run: yarn --cwd client/insight install --frozen-lockfile
+      #- run: yarn --cwd client/insight test
+      #- run: yarn --cwd client/insight run build
 
       - name: Install GitVersion
         run: dotnet tool install -g GitVersion.Tool
       - name: Calculate Version
         shell: pwsh
-        env:
-          GITHUB_REF: ${{ github.ref }}
         run: |
           # GitVersion doesn't like detached heads
           #https://github.com/actions/checkout/issues/6
@@ -43,6 +41,8 @@ jobs:
           $ver = (dotnet gitversion server/lib) | ConvertFrom-Json
           Write-Host ("::set-env name=SEMVER::" + $ver.SemVer)
 
+      - name: print semver
+        run: echo $SEMVER
       - name: Build MachineFramework
         run: dotnet pack -c Release /p:Version="$SEMVER" server/lib/BlackMaple.MachineFramework
       - name: Build Mazak
