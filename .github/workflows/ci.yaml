@@ -1,0 +1,45 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  server:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: "3.0.100"
+
+      - name: Server TestSuite
+        run: |
+          tzutil /s "Pacific Standard Time"
+          dotnet test server/test
+
+      - name: API Build
+        run: dotnet build client/csharp-api
+
+      - name: MachineWatchInterface Build
+        run: dotnet build server/lib/BlackMaple.MachineWatchInterface
+
+  client:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: "10.x"
+
+      - name: Install client deps
+        run: yarn --cwd client/insight install --frozen-lockfile
+      - name: Client Test Suite
+        run: yarn --cwd client/insight test
+      - name: Client Main Build
+        run: yarn --cwd client/insight run build
+      - name: Client Demo Build
+        run: yarn --cwd client/insight run build-demo
+
+      - name: Install backup-viewer deps
+        run: yarn --cwd client/backup-viewer install --frozen-lockfile
+      - name: Backup-Viewer Build
+        run: yarn --cwd client/backup-viewer run build
