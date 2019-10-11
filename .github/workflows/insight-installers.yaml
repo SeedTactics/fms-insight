@@ -2,7 +2,7 @@ name: insight-installers
 
 on:
   release:
-    types: [created]
+    types: [published]
 
 jobs:
   build:
@@ -36,6 +36,8 @@ jobs:
       - name: Upload Mazak
         if: startsWith("mazak-", github.event.tag_name)
         uses: actions/upload-release-asset@v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.upload_url }}
           asset_path: installers/FMS Insight Mazak Install.msi
