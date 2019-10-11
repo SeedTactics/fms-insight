@@ -28,7 +28,7 @@ jobs:
 
       - name: Install GitVersion
         run: dotnet tool install -g GitVersion.Tool
-      - name: Build MachineFramework
+      - name: Calculate Version
         shell: pwsh
         env:
           GITHUB_REF: ${{ github.ref }}
@@ -38,7 +38,16 @@ jobs:
           git branch --track master remotes/origin/master
           git checkout ($Env:GITHUB_REF.Substring(11))
           $ver = (dotnet gitversion server/lib) | ConvertFrom-Json
-          dotnet pack -c Release /p:Version=$($ver.SemVer) server/lib/BlackMaple.MachineFramework
+          echo ::set-env name=SEMVER::$($ver.SemVer)
+
+      - name: Build MachineFramework
+        run: dotnet pack -c Release /p:Version=$ENV:SEMVER server/lib/BlackMaple.MachineFramework
+      - name: Build Mazak
+        run: dotnet pack -c Release /p:Version=$ENV:SEMVER server/machines/mazak
+      - name: Build Makino
+        run: dotnet pack -c Release /p:Version=$ENV:SEMVER server/machines/makino
+      - name: Build Cincron
+        run: dotnet pack -c Release /p:Version=$ENV:SEMVER server/machines/cincron
 
       # https://github.com/NuGet/Home/issues/8580
       - name: Setup Nuget

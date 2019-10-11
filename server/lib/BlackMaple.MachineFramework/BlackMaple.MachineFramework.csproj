@@ -3,22 +3,22 @@
   <PropertyGroup>
     <PackageId>BlackMaple.MachineFramework</PackageId>
     <AssemblyName>BlackMaple.MachineFramework</AssemblyName>
+    <OutputType>Library</OutputType>
 
     <Title>SeedTactics Utility Library for FMS Insight Plugins</Title>
     <Company>Black Maple Software, LLC</Company>
     <Product>SeedTactics</Product>
     <Copyright>Black Maple Software, LLC</Copyright>
     <Authors>John Lenz</Authors>
-    <PackageLicenseExpression>BSD-3-Clause</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/SeedTactics/fms-insight</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/SeedTactics/fms-insight.git</RepositoryUrl>
     <Description>
       SeedTactic FMS Insight is a generic conduit which allows SeedTactic software to monitor and control the cell.
       For documentation and source code, visit the bitbucket project at https://bitbucket.org/blackmaple/fms-insight
     </Description>
 
+    <PackageLicenseExpression>BSD-3-Clause</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/SeedTactics/fms-insight</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/SeedTactics/fms-insight.git</RepositoryUrl>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <OutputType>Library</OutputType>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
   </PropertyGroup>
 
