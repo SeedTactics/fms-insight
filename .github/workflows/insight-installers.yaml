@@ -1,45 +1,66 @@
 name: insight-installers
 
-on: [release]
+on:
+  push:
+    tags:
+      - "server-*"
 
 jobs:
   build:
     runs-on: windows-latest
     steps:
-      - run: Write-Host $ENV:PAYLOAD
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: "10.x"
+      - uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: "3.0.100"
+
+      - name: Server TestSuite
+        run: |
+          tzutil /s "Pacific Standard Time"
+          dotnet test server/test
+
+      - run: yarn --cwd client/insight install --frozen-lockfile
+      - run: yarn --cwd client/insight test
+      - run: yarn --cwd client/insight run build
+
+      - name: Build Mazak
         shell: pwsh
+        run: ./build/insight-installer-build.ps1 mazak $ENV:GITHUB_REF.Substring(7)
+
+      - name: Build Makino
+        shell: pwsh
+        run: ./build/insight-installer-build.ps1 makino $ENV:GITHUB_REF.Substring(7)
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@master
         env:
-          PAYLOAD: ${{ toJSON(github.event) }}
-      #- uses: actions/setup-node@v1
-      #  with:
-      #    node-version: "10.x"
-      #- uses: actions/setup-dotnet@v1.2.0
-      #  with:
-      #    dotnet-version: "3.0.100"
-#
-#      - name: Server TestSuite
-#        run: |
-#          tzutil /s "Pacific Standard Time"
-#          dotnet test server/test
-#
-#      - run: yarn --cwd client/insight install --frozen-lockfile
-#      - run: yarn --cwd client/insight test
-#      - run: yarn --cwd client/insight run build
-#
-#      - name: Build Mazak
-#        if: startsWith('mazak-', github.event.tag_name)
-#        shell: pwsh
-#        env:
-#          RELEASE_TAG: ${{ github.event.tag_name }}
-#        run: ./build/insight-installer-build.ps1 mazak $ENV:RELEASE_TAG.Substring("mazak-".Length)
-#
-#      - name: Upload Mazak
-#        if: startsWith('mazak-', github.event.tag_name)
-#        uses: actions/upload-release-asset@v1.0.0
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#        with:
-#          upload_url: ${{ github.event.upload_url }}
-#          asset_path: installers/FMS Insight Mazak Install.msi
-#          asset_name: FMS Insight Mazak Install.msi
-#          asset_content_type: application/octet-stream
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: FMS Insight ${{ github.ref }}
+          draft: true
+          prerelease: false
+
+      - name: Upload Mazak
+        uses: actions/upload-release-asset@v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: installers/FMS Insight Mazak Install.msi
+          asset_name: FMS Insight Mazak Install.msi
+          asset_content_type: application/octet-stream
+
+      - name: Upload Makino
+        uses: actions/upload-release-asset@v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: installers/FMS Insight Makino Install.msi
+          asset_name: FMS Insight Makino Install.msi
+          asset_content_type: application/octet-stream
