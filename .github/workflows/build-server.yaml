@@ -41,13 +41,13 @@ jobs:
           echo ::set-env name=SEMVER::$($ver.SemVer)
 
       - name: Build MachineFramework
-        run: dotnet pack -c Release /p:Version=$ENV:SEMVER server/lib/BlackMaple.MachineFramework
+        run: dotnet pack -c Release /p:Version=$SEMVER server/lib/BlackMaple.MachineFramework
       - name: Build Mazak
-        run: dotnet pack -c Release /p:Version=$ENV:SEMVER server/machines/mazak
+        run: dotnet pack -c Release /p:Version=$SEMVER server/machines/mazak
       - name: Build Makino
-        run: dotnet pack -c Release /p:Version=$ENV:SEMVER server/machines/makino
+        run: dotnet pack -c Release /p:Version=$SEMVER server/machines/makino
       - name: Build Cincron
-        run: dotnet pack -c Release /p:Version=$ENV:SEMVER server/machines/cincron
+        run: dotnet pack -c Release /p:Version=$SEMVER server/machines/cincron
 
       # https://github.com/NuGet/Home/issues/8580
       - name: Setup Nuget
