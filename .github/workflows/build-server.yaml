@@ -1,6 +1,9 @@
 name: build-server
 
-on: [push]
+on:
+  push:
+    branches:
+      - master
 
 jobs:
   build:
@@ -41,18 +44,23 @@ jobs:
           echo ::set-env name=SEMVER::$($ver.SemVer)
 
       - name: Build MachineFramework
-        run: dotnet pack -c Release /p:Version=$SEMVER server/lib/BlackMaple.MachineFramework
+        run: dotnet pack -c Release /p:Version="$SEMVER" server/lib/BlackMaple.MachineFramework
       - name: Build Mazak
-        run: dotnet pack -c Release /p:Version=$SEMVER server/machines/mazak
+        run: dotnet pack -c Release /p:Version="$SEMVER" server/machines/mazak
       - name: Build Makino
-        run: dotnet pack -c Release /p:Version=$SEMVER server/machines/makino
+        run: dotnet pack -c Release /p:Version="$SEMVER" server/machines/makino
       - name: Build Cincron
-        run: dotnet pack -c Release /p:Version=$SEMVER server/machines/cincron
+        run: dotnet pack -c Release /p:Version="$SEMVER" server/machines/cincron
 
       # https://github.com/NuGet/Home/issues/8580
       - name: Setup Nuget
         uses: warrenbuckley/Setup-Nuget@v1
       - name: Add GPR Source
         run: nuget sources add -name "GPR" -Source "https://nuget.pkg.github.com/SeedTactics/index.json" -Username SeedTactics -Password ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish Package
+
+      - name: Publish MachineFramework
         run: nuget push -Source GPR server\lib\BlackMaple.MachineFramework\bin\Release\*.nupkg
+      - name: Publish Mazak
+        run: nuget push -Source GPR server\machines\mazak\bin\Release\*.nupkg
+      - name: Publish Makino
+        run: nuget push -Source GPR server\machines\makino\bin\Release\*.nupkg
