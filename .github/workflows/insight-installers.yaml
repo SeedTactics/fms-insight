@@ -1,4 +1,4 @@
-name: build-server
+name: insight-installers
 
 on:
   release:
