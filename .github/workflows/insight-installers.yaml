@@ -28,11 +28,15 @@ jobs:
 
       - name: Build Mazak
         shell: pwsh
-        run: ./build/insight-installer-build.ps1 mazak $ENV:GITHUB_REF.Substring(11)
+        env:
+          VERSION: ${{ github.ref }}
+        run: ./build/insight-installer-build.ps1 mazak $ENV:VERSION
 
       - name: Build Makino
         shell: pwsh
-        run: ./build/insight-installer-build.ps1 makino $ENV:GITHUB_REF.Substring(11)
+        env:
+          VERSION: ${{ github.ref }}
+        run: ./build/insight-installer-build.ps1 makino $ENV:VERSION
 
       - name: Create Release
         id: create_release
@@ -46,7 +50,7 @@ jobs:
           prerelease: false
 
       - name: Upload Mazak
-        uses: actions/upload-release-asset@v1.0.0
+        uses: actions/upload-release-asset@v1.0.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -56,7 +60,7 @@ jobs:
           asset_content_type: application/octet-stream
 
       - name: Upload Makino
-        uses: actions/upload-release-asset@v1.0.0
+        uses: actions/upload-release-asset@v1.0.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
