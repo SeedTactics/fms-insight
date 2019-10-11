@@ -3,7 +3,7 @@ name: insight-installers
 on:
   push:
     tags:
-      - "server-*"
+      - "v*"
 
 jobs:
   build:
@@ -28,11 +28,11 @@ jobs:
 
       - name: Build Mazak
         shell: pwsh
-        run: ./build/insight-installer-build.ps1 mazak $ENV:GITHUB_REF.Substring(7)
+        run: ./build/insight-installer-build.ps1 mazak $ENV:GITHUB_REF.Substring(11)
 
       - name: Build Makino
         shell: pwsh
-        run: ./build/insight-installer-build.ps1 makino $ENV:GITHUB_REF.Substring(7)
+        run: ./build/insight-installer-build.ps1 makino $ENV:GITHUB_REF.Substring(11)
 
       - name: Create Release
         id: create_release
