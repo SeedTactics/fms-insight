@@ -1,0 +1,26 @@
+name: build-server
+
+on:
+  push:
+    branches:
+      #- master
+      - features/website-builds-*
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: "10.x"
+
+      - name: Install website deps
+        run: yarn --cwd website install
+
+      - name: Build Website
+        run: yarn --cwd website run build
+
+      - name: Deploy Website
+        run: yarn --cwd website run publish-gh-pages
