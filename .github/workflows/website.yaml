@@ -24,7 +24,7 @@ jobs:
 
       - name: Copy demo to website build output
         shell: pwsh
-        run: Copy-Item "client\insight\demo" -Destination "website\static\demo" -Recurse -Force
+        run: Copy-Item "client\insight\demo" -Destination "website\static\demo" -Recurse -Force -Verbose
 
       - name: Install website deps
         run: yarn --cwd website install
