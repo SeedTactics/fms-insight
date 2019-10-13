@@ -22,15 +22,12 @@ jobs:
       - name: Build demo site
         run: yarn --cwd client/insight run build-demo
 
-      - name: Install website deps
-        run: yarn --cwd website install
-
-      - name: Build Website
-        run: yarn --cwd website run build
-
       - name: Copy demo to website build output
         shell: pwsh
-        run: Copy-Item "client\insight\demo" -Destination "website\build\fms-insight\demo" -Recurse -Force
+        run: Copy-Item "client\insight\demo" -Destination "website\static\demo" -Recurse -Force
+
+      - name: Install website deps
+        run: yarn --cwd website install
 
       - name: Deploy Website
         env:
