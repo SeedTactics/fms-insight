@@ -21,8 +21,8 @@ must be installed first.
 The following are links to the latest installers for FMS Insight for each supported cell controller.
 The installers will also upgrade an existing install to the latest version.
 
-- [FMS Insight Mazak Install.msi](/installers/FMS%20Insight%20Mazak%20Install.msi)
-- [FMS Insight Makino Install.msi](/installers/FMS%20Insight%20Makino%20Install.msi)
+- [FMS Insight Mazak Install.msi](https://github.com/SeedTactics/fms-insight/releases/latest/download/FMS.Insight.Mazak.Install.msi)
+- [FMS Insight Makino Install.msi](https://github.com/SeedTactics/fms-insight/releases/latest/download/FMS.Insight.Makino.Install.msi)
 
 ## Install the server
 
