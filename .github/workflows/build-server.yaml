@@ -54,15 +54,9 @@ jobs:
         shell: pwsh
         run: dotnet pack -c Release /p:Version="$ENV:SEMVER" server/machines/cincron
 
-      # https://github.com/NuGet/Home/issues/8580
-      - name: Setup Nuget
-        uses: warrenbuckley/Setup-Nuget@v1
-      - name: Add GPR Source
-        run: nuget sources add -name "GPR" -Source "https://nuget.pkg.github.com/SeedTactics/index.json" -Username SeedTactics -Password ${{ secrets.GITHUB_TOKEN }}
-
       - name: Publish MachineFramework
-        run: nuget push -Source GPR server\lib\BlackMaple.MachineFramework\bin\Release\*.nupkg
+        run: dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json server\lib\BlackMaple.MachineFramework\bin\Release\*.nupkg
       - name: Publish Mazak
-        run: nuget push -Source GPR server\machines\mazak\bin\Release\*.nupkg
+        run: dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json server\machines\mazak\bin\Release\*.nupkg
       - name: Publish Makino
-        run: nuget push -Source GPR server\machines\makino\bin\Release\*.nupkg
+        run: dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json server\machines\makino\bin\Release\*.nupkg

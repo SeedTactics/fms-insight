@@ -9,18 +9,17 @@
     <Product>SeedTactics</Product>
     <Copyright>Black Maple Software, LLC</Copyright>
     <Authors>John Lenz</Authors>
-    <PackageLicenseUrl>https://opensource.org/licenses/BSD-3-Clause</PackageLicenseUrl>
-    <PackageProjectUrl>https://www.seedtactics.com</PackageProjectUrl>
-    <RepositoryUrl>https://bitbucket.org/blackmaple/fms-insight</RepositoryUrl>
-    <RepositoryType>hg</RepositoryType>
     <Description>
       FMS Insight is a generic service which allows access to monitor and control
       a flexible manufacturing system cell. This package contains the API generated
       from the swagger API description.
-
-      For documentation and source code, visit the bitbucket project at
-      https://bitbucket.org/blackmaple/fms-insight
     </Description>
+
+    <PackageLicenseExpression>BSD-3-Clause</PackageLicenseExpression>
+    <PackageProjectUrl>https://fms-insight.seedtactics.com</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/SeedTactics/fms-insight.git</RepositoryUrl>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
 
     <OutputType>Library</OutputType>
   </PropertyGroup>
