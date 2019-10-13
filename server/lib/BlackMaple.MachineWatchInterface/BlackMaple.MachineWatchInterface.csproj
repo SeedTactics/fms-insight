@@ -10,16 +10,13 @@
     <Copyright>Black Maple Software, LLC</Copyright>
     <Authors>John Lenz</Authors>
     <Description>
-      FMS Insight is a generic conduit which allows SeedTactic software to monitor and control the cell.
-      This package contains the API and data structures, and should be used from clients which
-      wish to communicate with either MachineWatch or FMS Insight (they share the same API).
+      FMS Insight is a generic conduit which allows SeedTactic software to monitor and control the cell. This package contains the API and data structures, and should be used from clients which wish to communicate with either MachineWatch or FMS Insight (they share the same API).
     </Description>
 
     <PackageLicenseExpression>BSD-3-Clause</PackageLicenseExpression>
     <PackageProjectUrl>https://fms-insight.seedtactics.com</PackageProjectUrl>
     <RepositoryUrl>https://github.com/SeedTactics/fms-insight.git</RepositoryUrl>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
 
     <OutputType>Library</OutputType>
   </PropertyGroup>

@@ -10,16 +10,13 @@
     <Copyright>Black Maple Software, LLC</Copyright>
     <Authors>John Lenz</Authors>
     <Description>
-      FMS Insight is a generic service which allows access to monitor and control
-      a flexible manufacturing system cell. This package contains the API generated
-      from the swagger API description.
+      FMS Insight is a generic service which allows access to monitor and control a flexible manufacturing system cell. This package contains the API generated from the swagger API description.
     </Description>
 
     <PackageLicenseExpression>BSD-3-Clause</PackageLicenseExpression>
     <PackageProjectUrl>https://fms-insight.seedtactics.com</PackageProjectUrl>
     <RepositoryUrl>https://github.com/SeedTactics/fms-insight.git</RepositoryUrl>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
 
     <OutputType>Library</OutputType>
   </PropertyGroup>

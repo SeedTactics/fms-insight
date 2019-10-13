@@ -43,16 +43,16 @@ jobs:
 
       - name: Build MachineFramework
         shell: pwsh
-        run: dotnet pack -c Release /p:Version="$ENV:SEMVER" server/lib/BlackMaple.MachineFramework
+        run: dotnet pack -c Release --include-symbols /p:Version="$ENV:SEMVER" server/lib/BlackMaple.MachineFramework
       - name: Build Mazak
         shell: pwsh
-        run: dotnet pack -c Release /p:Version="$ENV:SEMVER" server/machines/mazak
+        run: dotnet pack -c Release --include-symbols /p:Version="$ENV:SEMVER" server/machines/mazak
       - name: Build Makino
         shell: pwsh
-        run: dotnet pack -c Release /p:Version="$ENV:SEMVER" server/machines/makino
+        run: dotnet pack -c Release --include-symbols /p:Version="$ENV:SEMVER" server/machines/makino
       - name: Build Cincron
         shell: pwsh
-        run: dotnet pack -c Release /p:Version="$ENV:SEMVER" server/machines/cincron
+        run: dotnet pack -c Release --include-symbols /p:Version="$ENV:SEMVER" server/machines/cincron
 
       - name: Publish MachineFramework
         run: dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json server\lib\BlackMaple.MachineFramework\bin\Release\*.nupkg
