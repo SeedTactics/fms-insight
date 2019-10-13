@@ -66,7 +66,7 @@ special tool or via a label-printer at the load station.
 You can [contact us](https://www.seedtactics.com/contact) to obtain a quote
 for us to develop a customized part-marking plugin. Alternatively, you can
 develop the plugin yourself; the [FMS Insight source
-code](https://bitbucket.org/blackmaple/fms-insight/src) contains some
+code](https://github.com/SeedTactics/fms-insight) contains some
 documentation on building plugins.
 
 Once part-marking is being used, the [station monitor

@@ -113,7 +113,7 @@ const siteConfig = {
   headerLinks: [
     { doc: "overview", label: "Docs" },
     {
-      href: "https://bitbucket.org/blackmaple/fms-insight",
+      href: "https://github.com/SeedTactics/fms-insight",
       label: "Source Code"
     },
     { href: "/demo/demo.html", label: "Demo" }
