@@ -34,14 +34,6 @@ jobs:
         shell: pwsh
         run: ./build/insight-installer-build.ps1 makino $ENV:GITHUB_REF.Substring(11)
 
-      - name: Install Backup Viewer Deps
-        run: yarn --cwd client/backup-viewer install --frozen-lockfile
-      - name: Update Backup Viewer Version
-        shell: pwsh
-        run: yarn --cwd client/backup-viewer version --no-git-tag-version --new-version $ENV:GITHUB_REF.Substring(11)
-      - name: Build Backup Viewer
-        run: yarn --cwd client/backup-viewer run dist
-
       - name: Create Release
         id: create_release
         uses: actions/create-release@master
