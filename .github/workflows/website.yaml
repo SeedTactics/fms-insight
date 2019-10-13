@@ -34,5 +34,8 @@ jobs:
 
       - name: Deploy Website
         env:
-          GIT_USER: x-access-token:${{ secrets.GITHUB_TOKEN }}
-        run: yarn --cwd website run publish-gh-pages
+          GIT_USER: ${{ secrets.WEBSITE_DEPLOY_GITHUB_PAT }}
+        run: |
+          git config --global user.email "<seedtactics@users.noreply.github.com>"
+          git config --global user.name "Github Action"
+          yarn --cwd website run publish-gh-pages
