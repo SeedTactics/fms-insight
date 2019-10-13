@@ -1,4 +1,4 @@
-name: build-server
+name: website
 
 on:
   push:
@@ -16,11 +16,21 @@ jobs:
         with:
           node-version: "10.x"
 
+      - name: Install demo deps
+        run: yarn --cwd client/insight install --frozen-lockfile
+
+      - name: Build demo site
+        run: yarn --cwd client/insight run build-demo
+
       - name: Install website deps
         run: yarn --cwd website install
 
       - name: Build Website
         run: yarn --cwd website run build
+
+      - name: Copy demo to website build output
+        shell: pwsh
+        run: Copy-Item "client\insight\demo" -Destination "website\build\fms-insight\demo" -Recurse -Force
 
       - name: Deploy Website
         run: yarn --cwd website run publish-gh-pages
