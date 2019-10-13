@@ -3,8 +3,7 @@ name: website
 on:
   push:
     branches:
-      #- master
-      - features/website-builds-*
+      - master
 
 jobs:
   build:
