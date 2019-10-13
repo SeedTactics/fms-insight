@@ -19,6 +19,7 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
 
     <OutputType>Library</OutputType>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>

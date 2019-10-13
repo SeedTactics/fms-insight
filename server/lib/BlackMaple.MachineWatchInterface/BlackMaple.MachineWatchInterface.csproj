@@ -17,6 +17,7 @@
     <PackageProjectUrl>https://fms-insight.seedtactics.com</PackageProjectUrl>
     <RepositoryUrl>https://github.com/SeedTactics/fms-insight.git</RepositoryUrl>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
 
     <OutputType>Library</OutputType>
   </PropertyGroup>
