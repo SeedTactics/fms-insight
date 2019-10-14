@@ -179,7 +179,7 @@ function Inspection(props: InspectionProps) {
   return (
     <DocumentTitle title={title}>
       <main data-testid="stationmonitor-inspection" style={{ padding: "8px" }}>
-        <Grid container spacing={16}>
+        <Grid container spacing={2}>
           <Grid item xs={12} md={6}>
             <WhiteboardRegion label="Parts to Inspect" borderRight borderBottom>
               {props.recent_inspections.waiting_to_inspect.map((m, idx) => (

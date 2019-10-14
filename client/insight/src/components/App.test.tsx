@@ -61,6 +61,14 @@ import { registerMockBackend } from "../data/backend";
 import * as events from "../data/events";
 
 it("renders the app shell", async () => {
+  window.matchMedia = query =>
+    ({
+      matches: query === "(min-width:600px)", // true for Hidden smDown screens
+      addListener: () => undefined,
+      removeListener: () => undefined
+      // tslint:disable-next-line:no-any
+    } as any);
+
   const store = initStore({ useRouter: false });
   registerMockBackend();
   store.dispatch(events.loadLast30Days());
