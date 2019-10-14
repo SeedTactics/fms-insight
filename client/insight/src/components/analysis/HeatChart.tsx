@@ -72,8 +72,13 @@ const formatHint = (yTitle: string, labelTitle: string) => (p: HeatChartPoint) =
   ];
 };
 
-function tick_format(d: Date): string {
-  return format(d, "ddd MMM D");
+function tick_format(d: Date | string): string {
+  if (typeof d === "string") {
+    const ddd = new Date(d);
+    return format(ddd, "iii MMM d");
+  } else {
+    return format(d, "iii MMM d");
+  }
 }
 
 class HeatChart extends React.PureComponent<HeatChartProps, HeatChartState> {

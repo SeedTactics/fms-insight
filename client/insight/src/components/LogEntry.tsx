@@ -276,10 +276,10 @@ export const LogEntry = React.memo(
       <>
         <TableRow>
           <TableCell size="small">
-            <DateTimeDisplay date={props.entry.endUTC} formatStr={"MMM D, YY"} />
+            <DateTimeDisplay date={props.entry.endUTC} formatStr={"MMM d, yy"} />
           </TableCell>
           <TableCell size="small">
-            <DateTimeDisplay date={props.entry.endUTC} formatStr={"hh:mm A"} />
+            <DateTimeDisplay date={props.entry.endUTC} formatStr={"hh:mm aa"} />
           </TableCell>
           <TableCell size="small">{logType(props.entry)}</TableCell>
           <TableCell size="small">{display(props)}</TableCell>

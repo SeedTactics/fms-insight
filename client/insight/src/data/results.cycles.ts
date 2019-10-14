@@ -148,7 +148,7 @@ export function buildCycleTable(
     .sort((a, b) => a.x.getTime() - b.x.getTime());
   for (let cycle of filteredCycles) {
     table += "<tr>";
-    table += "<td>" + format(cycle.x, "MMM D, YYYY, H:mm a") + "</td>";
+    table += "<td>" + format(cycle.x, "MMM d, yyyy, h:mm aa") + "</td>";
     table += "<td>" + cycle.part + "-" + cycle.process.toString() + "</td>";
     table += "<td>" + stat_name_and_num(cycle.stationGroup, cycle.stationNumber) + "</td>";
     table += "<td>" + cycle.pallet + "</td>";
@@ -237,7 +237,7 @@ export function buildLogEntriesTable(cycles: Iterable<Readonly<api.ILogEntry>>):
     }
     for (let mat of cycle.material) {
       table += "<tr>";
-      table += "<td>" + format(cycle.endUTC, "MMM D, YYYY, H:mm a") + "</td>";
+      table += "<td>" + format(cycle.endUTC, "MMM d, yyyy, h:mm aa") + "</td>";
       table += "<td>" + mat.part + "-" + mat.proc.toString() + "</td>";
       table += "<td>" + stat_name(cycle) + "</td>";
       table += "<td>" + cycle.pal + "</td>";
