@@ -105,7 +105,7 @@ async function loadInfo(): Promise<LoadReturn> {
     }
   }
 
-  let user: User | undefined;
+  let user: User | null = null;
   if (fmsInfo.openIDConnectAuthority && fmsInfo.openIDConnectClientId) {
     userManager = new UserManager({
       authority: fmsInfo.openIDConnectAuthority,
@@ -120,7 +120,7 @@ async function loadInfo(): Promise<LoadReturn> {
       try {
         user = await userManager.signinRedirectCallback();
       } catch {
-        user = undefined;
+        user = null;
       }
       window.history.replaceState({}, "", "/");
     }
@@ -133,7 +133,7 @@ async function loadInfo(): Promise<LoadReturn> {
     openWebsocket(user);
   }
 
-  return { fmsInfo, latestVersion, user };
+  return { fmsInfo, latestVersion, user: user === null ? undefined : user };
 }
 
 export function loadServerSettings(): ActionBeforeMiddleware<Action> {

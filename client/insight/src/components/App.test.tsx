@@ -32,9 +32,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { wait, render, cleanup } from "react-testing-library";
+import { wait, render, cleanup } from "@testing-library/react";
 afterEach(cleanup);
-import "jest-dom/extend-expect";
+import "@testing-library/jest-dom/extend-expect";
 import { differenceInSeconds, addDays } from "date-fns";
 
 import { mockComponent } from "../test-util";
@@ -61,6 +61,14 @@ import { registerMockBackend } from "../data/backend";
 import * as events from "../data/events";
 
 it("renders the app shell", async () => {
+  window.matchMedia = query =>
+    ({
+      matches: query === "(min-width:600px)", // true for Hidden smDown screens
+      addListener: () => undefined,
+      removeListener: () => undefined
+      // tslint:disable-next-line:no-any
+    } as any);
+
   const store = initStore({ useRouter: false });
   registerMockBackend();
   store.dispatch(events.loadLast30Days());

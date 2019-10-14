@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { PartCycleData } from "./events.cycles";
 import { getDaysInMonth } from "date-fns";
-import { HashMap, Vector } from "prelude-ts";
+import { HashMap, Vector, HasEquals } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 
 export interface CostInput {
@@ -238,7 +238,7 @@ export function compute_monthly_cost(
     LazySeq.ofIterable(cycles)
       .groupBy(c => c.part)
       .map((partName, forPart) => [
-        partName,
+        partName as string & HasEquals,
         {
           part: partName,
           parts_completed: LazySeq.ofIterable(forPart)

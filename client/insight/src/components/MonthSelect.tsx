@@ -63,7 +63,7 @@ export default React.memo(function MonthSelect(props: MonthSelectProps) {
     <>
       <Input
         type="text"
-        value={format(tempDialogCurMonth || props.curMonth, "MMMM YYYY")}
+        value={format(tempDialogCurMonth || props.curMonth, "LLLL yyyy")}
         readOnly
         endAdornment={
           <InputAdornment position="end">
@@ -97,7 +97,7 @@ export default React.memo(function MonthSelect(props: MonthSelectProps) {
             </IconButton>
             <div style={{ flexGrow: 1 }}>
               <Typography variant="h5" align="center" data-testid="select-month-dialog-current-year">
-                {format(tempDialogCurMonth || props.curMonth, "YYYY")}
+                {format(tempDialogCurMonth || props.curMonth, "yyyy")}
               </Typography>
             </div>
             <IconButton onClick={() => setTempDialogCurMonth(addYears(tempDialogCurMonth || props.curMonth, 1))}>

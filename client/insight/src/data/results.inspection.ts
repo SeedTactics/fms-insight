@@ -182,7 +182,7 @@ export function buildInspectionTable(
     for (let mat of data.material) {
       table += "<tr>";
       table += "<td>" + path + "</td>";
-      table += "<td>" + format(mat.time, "MMM D, YYYY, H:mm a") + "</td>";
+      table += "<td>" + format(mat.time, "MMM d, yyyy, h:mm aa") + "</td>";
       table += "<td>" + part + "</td>";
       table += "<td>" + inspType + "</td>";
       table += "<td>" + (mat.serial || "") + "</td>";

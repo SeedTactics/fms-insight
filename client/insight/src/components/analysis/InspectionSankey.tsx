@@ -218,7 +218,7 @@ export class InspectionSankey extends React.Component<InspectionSankeyProps, Ins
                 displayEmpty
                 style={{ marginRight: "1em", marginLeft: "1em" }}
                 value={this.state.selectedInspectType || ""}
-                onChange={e => this.setState({ selectedInspectType: e.target.value })}
+                onChange={e => this.setState({ selectedInspectType: e.target.value as string })}
               >
                 {this.state.selectedInspectType ? (
                   undefined
@@ -239,7 +239,7 @@ export class InspectionSankey extends React.Component<InspectionSankeyProps, Ins
                   autoWidth
                   displayEmpty
                   value={this.state.selectedPart || ""}
-                  onChange={e => this.setState({ selectedPart: e.target.value })}
+                  onChange={e => this.setState({ selectedPart: e.target.value as string })}
                 >
                   {this.state.selectedPart ? (
                     undefined

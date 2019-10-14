@@ -37,7 +37,7 @@ import "typeface-roboto";
 import CssBaseline from "@material-ui/core/CssBaseline";
 import green from "@material-ui/core/colors/green";
 import brown from "@material-ui/core/colors/brown";
-import MuiThemeProvider from "@material-ui/core/styles/MuiThemeProvider";
+import { ThemeProvider } from "@material-ui/core/styles";
 import createMuiTheme from "@material-ui/core/styles/createMuiTheme";
 import "react-vis/dist/style.css";
 
@@ -49,21 +49,18 @@ export function render<A, S>(props: AppProps, store: Store<A, S>, elem: HTMLElem
     palette: {
       primary: green,
       secondary: brown
-    },
-    typography: {
-      useNextVariants: true
     }
   });
 
   ReactDOM.render(
-    <MuiThemeProvider theme={theme}>
+    <ThemeProvider theme={theme}>
       <CssBaseline />
       <store.Provider>
         {/* <React.StrictMode> */}
         <App {...props} />
         {/* </React.StrictMode> */}
       </store.Provider>
-    </MuiThemeProvider>,
+    </ThemeProvider>,
     elem
   );
 }

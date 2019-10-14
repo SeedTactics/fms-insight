@@ -78,7 +78,7 @@ export function configureWebsocket(d: (a: any) => void, ges: () => events.State)
   getEvtState = ges;
 }
 
-export function openWebsocket(user: User | undefined) {
+export function openWebsocket(user: User | null) {
   if (!storeDispatch || !getEvtState) {
     return;
   }

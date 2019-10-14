@@ -76,7 +76,7 @@ function FillViewportDashboard() {
 function ScrollableDashboard() {
   return (
     <main style={{ padding: "8px" }}>
-      <Grid container spacing={16}>
+      <Grid container spacing={2}>
         <Grid item xs={12} sm={6}>
           <Card>
             <CardContent>

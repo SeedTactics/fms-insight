@@ -265,7 +265,7 @@ export function DataTableActions(props: DataTableActionsProps) {
         SelectDisplayProps={{ style: { color: "rgba(0, 0, 0, 0.54)" } }}
         input={<InputBase />}
         onChange={evt => {
-          const rpp = parseInt(evt.target.value, 10);
+          const rpp = parseInt(evt.target.value as string, 10);
           props.setRowsPerPage(rpp);
           const maxPage = Math.ceil(props.count / rpp) - 1;
           if (props.page > maxPage) {

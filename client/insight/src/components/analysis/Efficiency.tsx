@@ -358,7 +358,7 @@ function PalletCycleChart(props: PalletCycleChartProps) {
               autoWidth
               displayEmpty
               value={props.selected || ""}
-              onChange={e => props.setSelected(e.target.value)}
+              onChange={e => props.setSelected(e.target.value as string)}
             >
               {props.selected ? (
                 undefined

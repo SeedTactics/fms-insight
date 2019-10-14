@@ -15,13 +15,28 @@
     "jsx-no-multiline-js": false,
     "jsx-boolean-value": false,
     "jsx-curly-spacing": false,
+    "jsx-wrap-multiline": false,
     "label-position": true,
     "max-line-length": [true, 120],
-    "member-ordering": [true, "public-before-private", "static-before-instance", "variables-before-functions"],
+    "member-ordering": [
+      true,
+      "public-before-private",
+      "static-before-instance",
+      "variables-before-functions"
+    ],
     "no-any": true,
     "no-arg": true,
     "no-bitwise": true,
-    "no-console": [true, "log", "error", "debug", "info", "time", "timeEnd", "trace"],
+    "no-console": [
+      true,
+      "log",
+      "error",
+      "debug",
+      "info",
+      "time",
+      "timeEnd",
+      "trace"
+    ],
     "no-consecutive-blank-lines": true,
     "no-construct": true,
     "no-debugger": true,
@@ -34,7 +49,13 @@
     "no-trailing-whitespace": false,
     "no-unused-expression": true,
     "no-use-before-declare": true,
-    "one-line": [true, "check-catch", "check-else", "check-open-brace", "check-whitespace"],
+    "one-line": [
+      true,
+      "check-catch",
+      "check-else",
+      "check-open-brace",
+      "check-whitespace"
+    ],
     "radix": true,
     "switch-default": false,
 
@@ -52,7 +73,13 @@
         "variable-declaration": "nospace"
       }
     ],
-    "variable-name": [true, "ban-keywords", "check-format", "allow-leading-underscore", "allow-pascal-case"],
+    "variable-name": [
+      true,
+      "ban-keywords",
+      "check-format",
+      "allow-leading-underscore",
+      "allow-pascal-case"
+    ],
     "whitespace": [
       true,
       "check-branch",

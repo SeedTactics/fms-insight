@@ -32,14 +32,22 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { render, cleanup } from "react-testing-library";
+import { render, cleanup, waitForElement } from "@testing-library/react";
 afterEach(cleanup);
-import "jest-dom/extend-expect";
+import "@testing-library/jest-dom/extend-expect";
 
 import Dashboard from "./Dashboard";
 import { createTestStore } from "../../test-util";
 
 it("renders the dashboard", async () => {
+  window.matchMedia = query =>
+    ({
+      matches: query === "(min-width:600px)", // true for Hidden smDown screens
+      addListener: () => undefined,
+      removeListener: () => undefined
+      // tslint:disable-next-line:no-any
+    } as any);
+
   const store = await createTestStore();
 
   const result = render(
@@ -48,6 +56,7 @@ it("renders the dashboard", async () => {
     </store.Provider>
   );
 
+  await waitForElement(() => result.container.querySelector("div.rv-xy-plot svg"));
   expect(result.container.querySelector("div.rv-xy-plot")).toMatchSnapshot("current jobs plot");
   expect(result.getByTestId("stationoee-container")).toMatchSnapshot("station oee");
 });
