@@ -32,10 +32,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { render, cleanup, fireEvent, wait, within } from "react-testing-library";
+import { render, cleanup, fireEvent, wait, within } from "@testing-library/react";
 afterEach(cleanup);
 import { Simulate } from "react-dom/test-utils";
-import "jest-dom/extend-expect";
+import "@testing-library/jest-dom/extend-expect";
 
 import CostPerPiece from "./CostPerPiece";
 import { createTestStore } from "../../test-util";

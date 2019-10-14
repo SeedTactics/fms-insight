@@ -32,9 +32,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { wait, render, cleanup } from "react-testing-library";
+import { wait, render, cleanup } from "@testing-library/react";
 afterEach(cleanup);
-import "jest-dom/extend-expect";
+import "@testing-library/jest-dom/extend-expect";
 import { differenceInSeconds, addDays } from "date-fns";
 
 import { mockComponent } from "../test-util";
