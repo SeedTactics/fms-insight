@@ -1,4 +1,4 @@
-name: build-insight-api
+name: release-insight-api
 
 on:
   push:

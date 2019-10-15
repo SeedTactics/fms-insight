@@ -1,4 +1,4 @@
-name: build-mwi-api
+name: release-mwi-api
 
 on:
   push:

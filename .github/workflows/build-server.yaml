@@ -10,6 +10,10 @@ jobs:
     runs-on: windows-latest
 
     steps:
+      # ----------------------------------------------------------
+      # Setup
+      # ----------------------------------------------------------
+
       - uses: actions/checkout@v1
       - uses: actions/setup-node@v1
         with:
@@ -19,15 +23,6 @@ jobs:
       #- uses: actions/setup-dotnet@v1.2.0
       #  with:
       #    dotnet-version: "3.0.100"
-
-      - name: Server TestSuite
-        run: |
-          tzutil /s "Pacific Standard Time"
-          dotnet test server/test
-
-      - run: yarn --cwd client/insight install --frozen-lockfile
-      - run: yarn --cwd client/insight test
-      - run: yarn --cwd client/insight run build
 
       - name: Install GitVersion
         run: dotnet tool install -g GitVersion.Tool
@@ -41,6 +36,19 @@ jobs:
           $ver = (dotnet gitversion server) | ConvertFrom-Json
           Write-Host ("::set-env name=SEMVER::" + $ver.SemVer)
 
+      # ----------------------------------------------------------
+      # Test and Build
+      # ----------------------------------------------------------
+
+      - name: Server TestSuite
+        run: |
+          tzutil /s "Pacific Standard Time"
+          dotnet test server/test
+
+      - run: yarn --cwd client/insight install --frozen-lockfile
+      - run: yarn --cwd client/insight test
+      - run: yarn --cwd client/insight run build
+
       - name: Build MachineFramework
         shell: pwsh
         run: dotnet pack -c Release --include-symbols /p:Version="$ENV:SEMVER" server/lib/BlackMaple.MachineFramework
@@ -53,6 +61,10 @@ jobs:
       - name: Build Cincron
         shell: pwsh
         run: dotnet pack -c Release --include-symbols /p:Version="$ENV:SEMVER" server/machines/cincron
+
+      # ----------------------------------------------------------
+      # Publish
+      # ----------------------------------------------------------
 
       - name: Publish MachineFramework
         run: dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json server\lib\BlackMaple.MachineFramework\bin\Release\*.nupkg
