@@ -43,14 +43,8 @@ export enum ActionType {
   Logout = "ServerSettings_Logout"
 }
 
-export interface LatestInstaller {
-  readonly version: string;
-  readonly date: Date;
-}
-
 export interface LoadReturn {
   readonly fmsInfo: Readonly<api.IFMSInfo>;
-  readonly latestVersion?: LatestInstaller;
   readonly user?: User;
 }
 
@@ -61,7 +55,6 @@ export type Action =
 
 export interface State {
   readonly fmsInfo?: Readonly<api.IFMSInfo>;
-  readonly latestInstaller?: LatestInstaller;
   readonly loadError?: Error;
   readonly user?: User;
 }
@@ -75,34 +68,6 @@ async function loadInfo(): Promise<LoadReturn> {
 
   if (fmsInfo.additionalLogServers && fmsInfo.additionalLogServers.length > 0) {
     setOtherLogBackends(fmsInfo.additionalLogServers);
-  }
-
-  let url: string | undefined;
-  let latestVersion: LatestInstaller | undefined;
-  if (fmsInfo.name === "mock") {
-    url = undefined;
-  } else if (fmsInfo.name === "SimulationLab") {
-    url = undefined;
-  } else if (fmsInfo.name === "FMS Insight Backup Viewer") {
-    url = undefined;
-  } else if (fmsInfo.name) {
-    url = "https://fms-insight.seedtactics.com/installers/" + fmsInfo.name + "-latest.json";
-  }
-  if (url) {
-    try {
-      const res = await fetch(url);
-      if (res && res.ok) {
-        const data = await res.json();
-        latestVersion = {
-          version: data.version,
-          date: new Date(Date.parse(data.date))
-        };
-      }
-    } catch (e) {
-      latestVersion = undefined;
-      // tslint:disable-next-line:no-console
-      console.error(e);
-    }
   }
 
   let user: User | null = null;
@@ -133,7 +98,7 @@ async function loadInfo(): Promise<LoadReturn> {
     openWebsocket(user);
   }
 
-  return { fmsInfo, latestVersion, user: user === null ? undefined : user };
+  return { fmsInfo, user: user === null ? undefined : user };
 }
 
 export function loadServerSettings(): ActionBeforeMiddleware<Action> {
@@ -155,7 +120,6 @@ export function reducer(s: State, a: Action): State {
         case PledgeStatus.Completed:
           return {
             fmsInfo: a.pledge.result.fmsInfo,
-            latestInstaller: a.pledge.result.latestVersion,
             user: a.pledge.result.user
           };
         case PledgeStatus.Error:

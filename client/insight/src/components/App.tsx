@@ -357,7 +357,6 @@ interface HeaderProps {
 
   routeState: routes.State;
   fmsInfo: Readonly<api.IFMSInfo> | null;
-  latestVersion: serverSettings.LatestInstaller | null;
   alarms: ReadonlyArray<string> | null;
   setRoute: (arg: { ty: routes.RouteLocation; curSt: routes.State }) => void;
   onLogout: () => void;
@@ -413,15 +412,7 @@ function Header(p: HeaderProps) {
   );
 
   let tooltip: JSX.Element | string = "";
-  if (p.fmsInfo && p.latestVersion) {
-    tooltip = (
-      <div>
-        {(p.fmsInfo.name || "") + " " + (p.fmsInfo.version || "")}
-        <br />
-        Latest version {p.latestVersion.version} ({p.latestVersion.date.toDateString()})
-      </div>
-    );
-  } else if (p.fmsInfo) {
+  if (p.fmsInfo) {
     tooltip = (p.fmsInfo.name || "") + " " + (p.fmsInfo.version || "");
   }
 
@@ -511,7 +502,6 @@ interface AppConnectedProps extends AppProps {
   fmsInfo: Readonly<api.IFMSInfo> | null;
   user: User | null;
   backupFileOpened: boolean;
-  latestVersion: serverSettings.LatestInstaller | null;
   alarms: ReadonlyArray<string> | null;
   setRoute: (arg: { ty: routes.RouteLocation; curSt: routes.State }) => void;
   onLogin: () => void;
@@ -668,7 +658,6 @@ class App extends React.PureComponent<AppConnectedProps> {
         <Header
           routeState={this.props.route}
           fmsInfo={this.props.fmsInfo}
-          latestVersion={this.props.latestVersion}
           demo={this.props.demo}
           showAlarms={showAlarms}
           showSearch={showSearch}
@@ -715,7 +704,6 @@ export default connect(
     route: s.Route,
     fmsInfo: s.ServerSettings.fmsInfo || null,
     user: s.ServerSettings.user || null,
-    latestVersion: s.ServerSettings.latestInstaller || null,
     backupFileOpened: s.Gui.backup_file_opened,
     alarms: emptyToNull(s.Current.current_status.alarms)
   }),
