@@ -85,4 +85,4 @@ jobs:
           asset_content_type: application/octet-stream
 
       - name: Build and Upload Backup Viewer
-        run: yarn --cwd client/backup-viewer run dist
+        run: yarn --cwd client/backup-viewer run dist --publish=always
