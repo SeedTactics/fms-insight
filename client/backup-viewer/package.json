@@ -4,7 +4,7 @@
   "description": "View FMS Insight Log Data directly from the SQLite file",
   "repository": {
     "type": "git",
-    "url": "https://github.org/SeedTactics/fms-insight.git"
+    "url": "https://github.com/SeedTactics/fms-insight.git"
   },
   "author": "John Lenz",
   "license": "BSD-3-Clause",
