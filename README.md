@@ -1,7 +1,5 @@
 # FMS Insight
 
-[![Build status](https://ci.appveyor.com/api/projects/status/qfbp2wstg3if04t4?svg=true)](https://ci.appveyor.com/project/wuzzeb/fms-insight)
-
 [Project Website](https://fms-insight.seedtactics.com)
 
 FMS Insight is a client and server which runs on an flexible machining system (FMS)
