@@ -110,17 +110,17 @@ namespace BlackMaple.FMSInsight.Niigata
       var currentlyLoading = new HashSet<long>();
       foreach (var pal in pals.Where(p => !p.Status.Master.NoWork))
       {
-        if (pal.Status.Tracking.CurrentStepNum == AssignPallets.LoadStepNum && !pal.Status.Tracking.BeforeCurrentStep)
+        if (pal.Status.CurrentStep is LoadStep && !pal.Status.Tracking.BeforeCurrentStep)
         {
           // After load
           palsWithMat.Add(LoadedPallet(pal.Status, pal.Log, status.TimeOfStatusUTC, currentlyLoading, ref palletStateUpdated));
         }
-        else if (pal.Status.Tracking.CurrentStepNum == AssignPallets.UnloadStepNum && !pal.Status.Tracking.BeforeCurrentStep)
+        else if (pal.Status.CurrentStep is UnloadStep && !pal.Status.Tracking.BeforeCurrentStep)
         {
           // after unload
           palsWithMat.Add(LoadedPallet(pal.Status, pal.Log, status.TimeOfStatusUTC, currentlyLoading, ref palletStateUpdated));
         }
-        else if (pal.Status.Tracking.CurrentStepNum == AssignPallets.MachineStepNum && pal.Status.Tracking.BeforeCurrentStep)
+        else if (pal.Status.CurrentStep is MachiningStep && pal.Status.Tracking.BeforeCurrentStep)
         {
           // before machine
           var palAndMat = LoadedPallet(pal.Status, pal.Log, status.TimeOfStatusUTC, currentlyLoading, ref palletStateUpdated);
@@ -136,7 +136,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
           palsWithMat.Add(palAndMat);
         }
-        else if (pal.Status.Tracking.CurrentStepNum == AssignPallets.MachineStepNum && !pal.Status.Tracking.BeforeCurrentStep)
+        else if (pal.Status.CurrentStep is MachiningStep && !pal.Status.Tracking.BeforeCurrentStep)
         {
           // after machine
           var palAndMat = LoadedPallet(pal.Status, pal.Log, status.TimeOfStatusUTC, currentlyLoading, ref palletStateUpdated);
@@ -148,12 +148,12 @@ namespace BlackMaple.FMSInsight.Niigata
       // next, go through pallets currently being loaded
       foreach (var pal in pals.Where(p => !p.Status.Master.NoWork))
       {
-        if (pal.Status.Tracking.CurrentStepNum == AssignPallets.LoadStepNum && pal.Status.Tracking.BeforeCurrentStep)
+        if (pal.Status.CurrentStep is LoadStep && pal.Status.Tracking.BeforeCurrentStep)
         {
           // Before load
           palsWithMat.Add(CurrentlyLoadingPallet(pal.Status, pal.Log, status.TimeOfStatusUTC, currentlyLoading, ref palletStateUpdated));
         }
-        else if (pal.Status.Tracking.CurrentStepNum == AssignPallets.UnloadStepNum && pal.Status.Tracking.BeforeCurrentStep)
+        else if (pal.Status.CurrentStep is UnloadStep && pal.Status.Tracking.BeforeCurrentStep)
         {
           // unload-begin
           var palAndMat = CurrentlyLoadingPallet(pal.Status, pal.Log, status.TimeOfStatusUTC, currentlyLoading, ref palletStateUpdated);
@@ -503,9 +503,9 @@ namespace BlackMaple.FMSInsight.Niigata
       // now material to load
       var loadingIds = new HashSet<long>();
       if (
-               pallet.Tracking.CurrentStepNum == AssignPallets.LoadStepNum
+               pallet.CurrentStep is LoadStep
             ||
-               (pallet.Tracking.CurrentStepNum == AssignPallets.UnloadStepNum && pallet.Master.RemainingPalletCycles > 1)
+               (pallet.CurrentStep is UnloadStep && pallet.Master.RemainingPalletCycles > 1)
          )
       {
         foreach (var face in faces)

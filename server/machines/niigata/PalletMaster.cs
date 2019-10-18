@@ -179,6 +179,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public PalletMaster Master { get; set; }
     public TrackingInfo Tracking { get; set; }
     public NiigataStationNum CurStation { get; set; }
+    public RouteStep CurrentStep => Master.Routes[Tracking.CurrentStepNum - 1];
   }
 
   ///<summary>The ICC maintains the collection of programs</summary>

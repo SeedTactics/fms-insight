@@ -141,16 +141,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     public FakeIccDsl SetBeforeLoad(int pal)
     {
       var p = _status.Pallets[pal - 1];
-      p.Tracking.CurrentControlNum = AssignPallets.LoadStepNum * 2 - 1;
-      p.Tracking.CurrentStepNum = AssignPallets.LoadStepNum;
+      p.Tracking.CurrentStepNum = 1;
+      p.Tracking.CurrentControlNum = 1;
       return this;
     }
 
     public FakeIccDsl SetAfterLoad(int pal)
     {
       var p = _status.Pallets[pal - 1];
-      p.Tracking.CurrentControlNum = AssignPallets.LoadStepNum * 2;
-      p.Tracking.CurrentStepNum = AssignPallets.LoadStepNum;
+      p.Tracking.CurrentStepNum = 1;
+      p.Tracking.CurrentControlNum = 2;
       return this;
     }
 
@@ -158,41 +158,77 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       var p = _status.Pallets[pal - 1];
       p.Master.NoWork = true;
-      p.Tracking.CurrentControlNum = AssignPallets.LoadStepNum * 2;
-      p.Tracking.CurrentStepNum = AssignPallets.LoadStepNum;
+      p.Tracking.CurrentStepNum = 1;
+      p.Tracking.CurrentControlNum = 2;
       _expectedFaces[pal].Clear();
       return this;
     }
 
-    public FakeIccDsl SetBeforeMC(int pal)
+    public FakeIccDsl SetBeforeMC(int pal, int machStepOffset = 0)
     {
       var p = _status.Pallets[pal - 1];
-      p.Tracking.CurrentControlNum = AssignPallets.MachineStepNum * 2 - 1;
-      p.Tracking.CurrentStepNum = AssignPallets.MachineStepNum;
+      var step = 1;
+      foreach (var s in p.Master.Routes)
+      {
+        if (s is MachiningStep)
+        {
+          if (machStepOffset == 0)
+          {
+            break;
+          }
+          else
+          {
+            machStepOffset -= 1;
+          }
+        }
+        step += 1;
+      }
+      p.Tracking.CurrentStepNum = step;
+      p.Tracking.CurrentControlNum = step * 2 - 1;
       return this;
     }
 
-    public FakeIccDsl SetAfterMC(int pal)
+    public FakeIccDsl SetAfterMC(int pal, int machStepOffset = 0)
     {
       var p = _status.Pallets[pal - 1];
-      p.Tracking.CurrentControlNum = AssignPallets.MachineStepNum * 2;
-      p.Tracking.CurrentStepNum = AssignPallets.MachineStepNum;
+      var step = 1;
+      foreach (var s in p.Master.Routes)
+      {
+        if (s is MachiningStep)
+        {
+          if (machStepOffset == 0)
+          {
+            break;
+          }
+          else
+          {
+            machStepOffset -= 1;
+          }
+        }
+        step += 1;
+      }
+      p.Tracking.CurrentStepNum = step;
+      p.Tracking.CurrentControlNum = step * 2;
       return this;
     }
 
     public FakeIccDsl SetBeforeUnload(int pal)
     {
       var p = _status.Pallets[pal - 1];
-      p.Tracking.CurrentControlNum = AssignPallets.UnloadStepNum * 2 - 1;
-      p.Tracking.CurrentStepNum = AssignPallets.UnloadStepNum;
+      var stepIdx = p.Master.Routes.FindIndex(r => r is UnloadStep);
+      var unloadStep = stepIdx + 1;
+      p.Tracking.CurrentStepNum = unloadStep;
+      p.Tracking.CurrentControlNum = unloadStep * 2 - 1;
       return this;
     }
 
     public FakeIccDsl SetAfterUnload(int pal)
     {
       var p = _status.Pallets[pal - 1];
-      p.Tracking.CurrentControlNum = AssignPallets.UnloadStepNum * 2;
-      p.Tracking.CurrentStepNum = AssignPallets.UnloadStepNum;
+      var stepIdx = p.Master.Routes.FindIndex(r => r is UnloadStep);
+      var unloadStep = stepIdx + 1;
+      p.Tracking.CurrentStepNum = unloadStep;
+      p.Tracking.CurrentControlNum = unloadStep * 2;
       return this;
     }
 
@@ -833,8 +869,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               .RespectingRuntimeTypes()
           );
           _status.Pallets[pal - 1].Master = ((NewPalletRoute)action).NewMaster;
-          _status.Pallets[pal - 1].Tracking.CurrentControlNum = AssignPallets.LoadStepNum * 2 - 1;
-          _status.Pallets[pal - 1].Tracking.CurrentStepNum = AssignPallets.LoadStepNum;
+          _status.Pallets[pal - 1].Tracking.CurrentControlNum = 1;
+          _status.Pallets[pal - 1].Tracking.CurrentStepNum = 1;
           _expectedFaces[pal] = expectedNewRoute.Faces.ToList();
 
           expectedLogs.Add(new LogEntry(
@@ -866,8 +902,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           });
           _status.Pallets[pal - 1].Master.NoWork = false;
           _status.Pallets[pal - 1].Master.RemainingPalletCycles = expectIncr.NewCycleCount;
-          _status.Pallets[pal - 1].Tracking.CurrentControlNum = AssignPallets.LoadStepNum * 2 - 1;
-          _status.Pallets[pal - 1].Tracking.CurrentStepNum = AssignPallets.LoadStepNum;
+          _status.Pallets[pal - 1].Tracking.CurrentControlNum = 1;
+          _status.Pallets[pal - 1].Tracking.CurrentStepNum = 1;
           if (expectIncr.Faces != null)
           {
             _expectedFaces[pal] = expectIncr.Faces.ToList();

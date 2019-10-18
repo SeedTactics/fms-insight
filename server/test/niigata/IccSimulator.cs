@@ -169,7 +169,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         bool beforeStep = pal.Tracking.BeforeCurrentStep;
 
         // switch on current step
-        switch (pal.Master.Routes[pal.Tracking.CurrentStepNum - 1])
+        switch (pal.CurrentStep)
         {
           // ---------------------------------------- Load Step ---------------------------------
           case LoadStep load:
