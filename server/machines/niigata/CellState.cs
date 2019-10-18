@@ -140,7 +140,8 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           // after machine
           var palAndMat = LoadedPallet(pal.Status, pal.Log, status.TimeOfStatusUTC, currentlyLoading, ref palletStateUpdated);
-          EnsureAllMachineEnds(palAndMat, pal.Log, status.TimeOfStatusUTC, ref palletStateUpdated);
+          var step = (MachiningStep)pal.Status.CurrentStep;
+          EnsureAllMachineEnds(palAndMat, step.ProgramNumsToRun, pal.Log, status.TimeOfStatusUTC, ref palletStateUpdated);
           palsWithMat.Add(palAndMat);
         }
       }
@@ -157,7 +158,17 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           // unload-begin
           var palAndMat = CurrentlyLoadingPallet(pal.Status, pal.Log, status.TimeOfStatusUTC, currentlyLoading, ref palletStateUpdated);
-          EnsureAllMachineEnds(palAndMat, pal.Log, status.TimeOfStatusUTC, ref palletStateUpdated);
+          var allProgs = pal.Status.Master.Routes.SelectMany(r =>
+          {
+            switch (r)
+            {
+              case MachiningStep step:
+                return step.ProgramNumsToRun;
+              default:
+                return Enumerable.Empty<int>();
+            }
+          });
+          EnsureAllMachineEnds(palAndMat, allProgs, pal.Log, status.TimeOfStatusUTC, ref palletStateUpdated);
           palsWithMat.Add(palAndMat);
         }
       }
@@ -677,66 +688,67 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       foreach (var face in pallet.Faces)
       {
-        var machStop = face.Job.GetMachiningStop(face.Process, face.Path).FirstOrDefault();
-        bool currentlyRunning = machStop.AllPrograms().Any(p => p.Program == program.ToString());
+        var currentlyRunningStop = face.Job.GetMachiningStop(face.Process, face.Path).FirstOrDefault(stop => stop.AllPrograms().Any(p => p.Program == program.ToString()));
 
         var matIds = new HashSet<long>(face.Material.Select(m => m.MaterialID));
-        var machStart = log
+        var machStarts = log
           .Where(e => e.LogType == LogType.MachineCycle && e.StartOfCycle && e.Material.Any(m => matIds.Contains(m.MaterialID)))
-          .FirstOrDefault()
+          .ToList()
           ;
-        var machEnd = log
+        var machEnds = log
           .Where(e => e.LogType == LogType.MachineCycle && !e.StartOfCycle && e.Material.Any(m => matIds.Contains(m.MaterialID)))
-          .FirstOrDefault()
+          .ToList()
           ;
 
-        if (currentlyRunning && machStart == null && face.Material.Count == 0)
+        // first, check if there is a machine-start for the currently running program
+        if (currentlyRunningStop != null && !machStarts.Any(e => e.Program == program.ToString()))
         {
-          // we must have missed the load, recreate material here as a backup
-          Log.Warning("Detected program {program} without a cooresponding load event, creating new material!", program);
-          Log.Debug("Program {program} on pallet {@pallet} and log {@log} run without a seen load event, creating material", program, pallet, log);
 
-          for (int i = 1; i <= face.Job.PartsPerPallet(face.Process, face.Path); i++)
+          if (face.Material.Count == 0)
           {
-            long mid = _log.AllocateMaterialID(face.Job.UniqueStr, face.Job.PartName, face.Job.NumProcesses);
-            if (_settings.SerialType == SerialType.AssignOneSerialPerMaterial)
-            {
-              _log.RecordSerialForMaterialID(
-                new JobLogDB.EventLogMaterial() { MaterialID = mid, Process = face.Process, Face = "" },
-                _settings.ConvertMaterialIDToSerial(mid),
-                nowUtc
-                );
-            }
-            _log.RecordPathForProcess(mid, face.Process, face.Path);
-            face.Material.Add(new InProcessMaterial()
-            {
-              MaterialID = mid,
-              JobUnique = face.Job.UniqueStr,
-              PartName = face.Job.PartName,
-              Process = face.Process,
-              Path = face.Path,
-              Location = new InProcessMaterialLocation()
-              {
-                Type = InProcessMaterialLocation.LocType.OnPallet,
-                Pallet = pallet.Status.Master.PalletNum.ToString(),
-                Face = face.Face,
-              },
-              Action = new InProcessMaterialAction()
-              {
-                Type = InProcessMaterialAction.ActionType.Waiting
-              }
-            });
-          }
-        }
+            // we must have missed the load, recreate material here as a backup
+            Log.Warning("Detected program {program} without a cooresponding load event, creating new material!", program);
+            Log.Debug("Program {program} on pallet {@pallet} and log {@log} run without a seen load event, creating material", program, pallet, log);
 
-        if (currentlyRunning && machStart == null)
-        {
+            for (int i = 1; i <= face.Job.PartsPerPallet(face.Process, face.Path); i++)
+            {
+              long mid = _log.AllocateMaterialID(face.Job.UniqueStr, face.Job.PartName, face.Job.NumProcesses);
+              if (_settings.SerialType == SerialType.AssignOneSerialPerMaterial)
+              {
+                _log.RecordSerialForMaterialID(
+                  new JobLogDB.EventLogMaterial() { MaterialID = mid, Process = face.Process, Face = "" },
+                  _settings.ConvertMaterialIDToSerial(mid),
+                  nowUtc
+                  );
+              }
+              _log.RecordPathForProcess(mid, face.Process, face.Path);
+              face.Material.Add(new InProcessMaterial()
+              {
+                MaterialID = mid,
+                JobUnique = face.Job.UniqueStr,
+                PartName = face.Job.PartName,
+                Process = face.Process,
+                Path = face.Path,
+                Location = new InProcessMaterialLocation()
+                {
+                  Type = InProcessMaterialLocation.LocType.OnPallet,
+                  Pallet = pallet.Status.Master.PalletNum.ToString(),
+                  Face = face.Face,
+                },
+                Action = new InProcessMaterialAction()
+                {
+                  Type = InProcessMaterialAction.ActionType.Waiting
+                }
+              });
+            }
+          }
+
           // record start of new cycle
           Log.Debug("Recording machine start for {@pallet} from logs {@log} and {program} with face {@face}", pallet, log, program, face);
 
           palletStateUpdated = true;
 
-          machStart = _log.RecordMachineStart(
+          machStarts.Add(_log.RecordMachineStart(
             mats: face.Material.Select(m => new JobLogDB.EventLogMaterial()
             {
               MaterialID = m.MaterialID,
@@ -748,13 +760,22 @@ namespace BlackMaple.FMSInsight.Niigata
             statNum: pallet.Status.CurStation.Location.Num,
             program: program.ToString(),
             timeUTC: nowUtc
-          );
+          ));
         }
 
-        if (!currentlyRunning && machStart != null && machEnd == null)
+        // ensure machine-ends for everything not currently running
+        foreach (var machStart in machStarts)
         {
-          // program changed, record end of previous program
-          Log.Debug("Program changed, recording machine end for {@pallet} from start {@machStart} and {program} with face {@face}", pallet, machStart, program, face);
+          if (currentlyRunningStop != null && machStart.Program == program.ToString()) continue;
+          if (machEnds.Any(e => e.Program == machStart.Program)) continue;
+          var machStop = face.Job.GetMachiningStop(face.Process, face.Path).FirstOrDefault(stop => stop.AllPrograms().Any(p => p.Program == machStart.Program));
+          if (machStop == null)
+          {
+            Log.Warning("Unable to find machining stop for machine cycle {@machStart} on {@face}", machStart, face);
+            continue;
+          }
+
+          Log.Debug("Program changed, recording machine end for {@pallet} from start {@machStart} and {@stop} with face {@face}", pallet, machStart, machStop, face);
 
           palletStateUpdated = true;
 
@@ -781,8 +802,9 @@ namespace BlackMaple.FMSInsight.Niigata
           }
         }
 
-        if (currentlyRunning)
+        if (currentlyRunningStop != null)
         {
+          var machStart = machStarts.First(e => e.Program == program.ToString());
           var elapsed = nowUtc.Subtract(machStart.EndTimeUTC);
           foreach (var mat in face.Material)
           {
@@ -791,7 +813,7 @@ namespace BlackMaple.FMSInsight.Niigata
               Type = InProcessMaterialAction.ActionType.Machining,
               Program = program.ToString(),
               ElapsedMachiningTime = elapsed,
-              ExpectedRemainingMachiningTime = machStop.ExpectedCycleTime.Subtract(elapsed)
+              ExpectedRemainingMachiningTime = currentlyRunningStop.ExpectedCycleTime.Subtract(elapsed)
             };
           }
         }
@@ -800,46 +822,57 @@ namespace BlackMaple.FMSInsight.Niigata
 
     }
 
-    private void EnsureAllMachineEnds(PalletAndMaterial pallet, IEnumerable<LogEntry> log, DateTime nowUtc, ref bool palletStateUpdated)
+    private void EnsureAllMachineEnds(PalletAndMaterial pallet, IEnumerable<int> programs, IEnumerable<LogEntry> log, DateTime nowUtc, ref bool palletStateUpdated)
     {
+      var progsToCheck = new HashSet<string>(programs.Select(p => p.ToString()));
       foreach (var face in pallet.Faces)
       {
-        var machStop = face.Job.GetMachiningStop(face.Process, face.Path).FirstOrDefault();
-        var matIds = new HashSet<long>(face.Material.Select(m => m.MaterialID));
-        var machStart = log
-          .Where(e => e.LogType == LogType.MachineCycle && e.StartOfCycle && e.Material.Any(m => matIds.Contains(m.MaterialID)))
-          .FirstOrDefault()
-          ;
-        var machEnd = log
-          .Where(e => e.LogType == LogType.MachineCycle && !e.StartOfCycle && e.Material.Any(m => matIds.Contains(m.MaterialID)))
-          .FirstOrDefault()
-          ;
-
-        if (machStart != null && machEnd == null)
+        foreach (var machStop in face.Job.GetMachiningStop(face.Process, face.Path))
         {
-          // program changed, record end of previous program
-          Log.Debug("Recording machine end for {@pallet} from logs {@log} with face {@face}", pallet, log, face);
-          palletStateUpdated = true;
+          var machProg = machStop.AllPrograms().First().Program;
+          if (!progsToCheck.Contains(machProg)) continue;
 
-          _log.RecordMachineEnd(
-            mats: face.Material.Select(m => new JobLogDB.EventLogMaterial()
-            {
-              MaterialID = m.MaterialID,
-              Process = m.Process,
-              Face = face.Face.ToString()
-            }),
-            pallet: pallet.Status.Master.PalletNum.ToString(),
-            statName: pallet.Status.CurStation.Location.StationGroup,
-            statNum: pallet.Status.CurStation.Location.Num,
-            program: machStart.Program,
-            result: "",
-            timeUTC: nowUtc,
-            elapsed: nowUtc.Subtract(machStart.EndTimeUTC),
-            active: machStop.ExpectedCycleTime
-          );
-          foreach (var mat in face.Material)
+          var matIds = new HashSet<long>(face.Material.Select(m => m.MaterialID));
+          var machStart = log
+            .Where(e => e.LogType == LogType.MachineCycle && e.StartOfCycle && e.Program == machProg && e.Material.Any(m => matIds.Contains(m.MaterialID)))
+            .FirstOrDefault()
+            ;
+          var machEnd = log
+            .Where(e => e.LogType == LogType.MachineCycle && !e.StartOfCycle && e.Program == machProg && e.Material.Any(m => matIds.Contains(m.MaterialID)))
+            .FirstOrDefault()
+            ;
+
+          if (machStart != null && machEnd == null)
           {
-            _log.RecordPathForProcess(mat.MaterialID, mat.Process, mat.Path);
+            // program changed, record end of previous program
+            Log.Debug("Recording machine end for {@pallet} from logs {@log} with face {@face}", pallet, log, face);
+            palletStateUpdated = true;
+
+            _log.RecordMachineEnd(
+              mats: face.Material.Select(m => new JobLogDB.EventLogMaterial()
+              {
+                MaterialID = m.MaterialID,
+                Process = m.Process,
+                Face = face.Face.ToString()
+              }),
+              pallet: pallet.Status.Master.PalletNum.ToString(),
+              statName: pallet.Status.CurStation.Location.StationGroup,
+              statNum: pallet.Status.CurStation.Location.Num,
+              program: machStart.Program,
+              result: "",
+              timeUTC: nowUtc,
+              elapsed: nowUtc.Subtract(machStart.EndTimeUTC),
+              active: machStop.ExpectedCycleTime
+            );
+            foreach (var mat in face.Material)
+            {
+              _log.RecordPathForProcess(mat.MaterialID, mat.Process, mat.Path);
+            }
+          }
+          else if (machStart == null && machEnd == null)
+          {
+            Log.Warning("Missed machine cycle for {part} process {process} on machines {@machs} with program {prog}",
+              face.Job.PartName, face.Process, machStop.Stations(), machProg);
           }
         }
       }
