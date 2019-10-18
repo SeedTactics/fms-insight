@@ -32,14 +32,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { BackgroundResponse } from "./ipc";
-import { ipcRenderer, IpcMessageEvent } from "electron";
+import { ipcRenderer, IpcRendererEvent } from "electron";
 import * as sqlite from "sqlite";
 import { ILogEntry, LogType, IToolUse } from "../../insight/.build/data/api";
 import { duration } from "moment";
 
 let dbP: Promise<sqlite.Database> = Promise.reject("No opened file yet");
 
-ipcRenderer.on("open-file", (_: IpcMessageEvent, path: string) => {
+ipcRenderer.on("open-file", (_: IpcRendererEvent, path: string) => {
   dbP = (async function() {
     let db: sqlite.Database | undefined;
     try {
@@ -53,7 +53,7 @@ ipcRenderer.on("open-file", (_: IpcMessageEvent, path: string) => {
     } catch {
       throw "The file is not a FMS Insight database.";
     }
-    if (verRow.ver !== 19) {
+    if (verRow.ver < 19) {
       throw "The FMS Insight database is from a newer version of FMS Insight.  Please update BackupViewer to the latest version.";
     }
     try {

@@ -1,0 +1,24 @@
+name: release-mwi-api
+
+on:
+  push:
+    tags:
+      - mwi-*
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Build MWI API
+        shell: pwsh
+        env:
+          GITHUB_REF: ${{ github.ref }}
+        run: |
+          $VER = $ENV:GITHUB_REF.Substring(14) # Remove refs/tags/mwi-
+          dotnet pack -c Release --include-symbols /p:Version="$VER" server/lib/BlackMaple.MachineWatchInterface
+
+      - name: Publish MWI API
+        run: dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json server\lib\BlackMaple.MachineWatchInterface\bin\Release\*.nupkg

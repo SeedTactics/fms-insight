@@ -4,8 +4,6 @@ title: FMS Insight Backup Viewer
 sidebar_label: Backup Viewer
 ---
 
-[FMS Insight Backup Viewer Install.exe](/installers/FMS%20Insight%20Backup%20Viewer%20Install.exe)
-
 FMS Insight stores data in a SQLite database local to the cell controller
 (path is set in the [configuration](server-config.md)). FMS Insight is
 resilient to the loss of the databases; if the databases are deleted or lost,

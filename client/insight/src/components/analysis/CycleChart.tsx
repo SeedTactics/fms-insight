@@ -260,7 +260,7 @@ export const CycleChart = withStyles(cycleChartStyles)(
 
     formatHint = (tip: CycleChartTooltip) => {
       return [
-        { title: "Time", value: format(tip.x, "MMM D, YYYY, H:mm a") },
+        { title: "Time", value: format(tip.x, "MMM d, yyyy, h:mm aaaa") },
         { title: this.props.series_label, value: tip.series },
         { title: "Cycle Time", value: tip.y.toFixed(1) + " minutes" },
         ...tip.extra.map(e => ({

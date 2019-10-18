@@ -67,7 +67,7 @@ class Footer extends React.Component {
           </div>
           <div>
             <h5>More</h5>
-            <a href="https://bitbucket.org/blackmaple/fms-insight">BitBucket</a>
+            <a href="https://github.com/SeedTactics/fms-insight">GitHub</a>
             <a href="https://www.seedtactics.com">SeedTactics</a>
             <a href={this.docUrl("getting-started.html#downloads")}>
               Downloads

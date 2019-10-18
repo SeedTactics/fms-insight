@@ -754,11 +754,11 @@ exports[`renders the dashboard: current jobs plot 1`] = `
 
 exports[`renders the dashboard: station oee 1`] = `
 <div
-  class="MuiGrid-container-1 MuiGrid-justify-xs-space-around-21"
+  class="MuiGrid-root MuiGrid-container MuiGrid-justify-xs-space-around"
   data-testid="stationoee-container"
 >
   <div
-    class="MuiGrid-item-2 MuiGrid-grid-xs-12-41 MuiGrid-grid-sm-6-49 MuiGrid-grid-md-4-61 MuiGrid-grid-lg-3-74"
+    class="MuiGrid-root MuiGrid-item MuiGrid-grid-xs-12 MuiGrid-grid-sm-6 MuiGrid-grid-md-4 MuiGrid-grid-lg-3"
   >
     <svg
       class=""
@@ -796,7 +796,7 @@ exports[`renders the dashboard: station oee 1`] = `
     </svg>
   </div>
   <div
-    class="MuiGrid-item-2 MuiGrid-grid-xs-12-41 MuiGrid-grid-sm-6-49 MuiGrid-grid-md-4-61 MuiGrid-grid-lg-3-74"
+    class="MuiGrid-root MuiGrid-item MuiGrid-grid-xs-12 MuiGrid-grid-sm-6 MuiGrid-grid-md-4 MuiGrid-grid-lg-3"
   >
     <svg
       class=""
@@ -847,7 +847,7 @@ exports[`renders the dashboard: station oee 1`] = `
     </svg>
   </div>
   <div
-    class="MuiGrid-item-2 MuiGrid-grid-xs-12-41 MuiGrid-grid-sm-6-49 MuiGrid-grid-md-4-61 MuiGrid-grid-lg-3-74"
+    class="MuiGrid-root MuiGrid-item MuiGrid-grid-xs-12 MuiGrid-grid-sm-6 MuiGrid-grid-md-4 MuiGrid-grid-lg-3"
   >
     <svg
       class=""
@@ -885,7 +885,7 @@ exports[`renders the dashboard: station oee 1`] = `
     </svg>
   </div>
   <div
-    class="MuiGrid-item-2 MuiGrid-grid-xs-12-41 MuiGrid-grid-sm-6-49 MuiGrid-grid-md-4-61 MuiGrid-grid-lg-3-74"
+    class="MuiGrid-root MuiGrid-item MuiGrid-grid-xs-12 MuiGrid-grid-sm-6 MuiGrid-grid-md-4 MuiGrid-grid-lg-3"
   >
     <svg
       class=""
@@ -923,7 +923,7 @@ exports[`renders the dashboard: station oee 1`] = `
     </svg>
   </div>
   <div
-    class="MuiGrid-item-2 MuiGrid-grid-xs-12-41 MuiGrid-grid-sm-6-49 MuiGrid-grid-md-4-61 MuiGrid-grid-lg-3-74"
+    class="MuiGrid-root MuiGrid-item MuiGrid-grid-xs-12 MuiGrid-grid-sm-6 MuiGrid-grid-md-4 MuiGrid-grid-lg-3"
   >
     <svg
       class=""

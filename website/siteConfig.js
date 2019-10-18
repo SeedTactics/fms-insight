@@ -98,22 +98,17 @@ const siteConfig = {
   url: "https://fms-insight.seedtactics.com" /* your website url */,
   baseUrl: "/" /* base url for your project */,
   cleanUrl: false,
-  // For github.io type URLs, you would set the url and baseUrl like:
-  //   url: 'https://facebook.github.io',
-  //   baseUrl: '/test-site/',
 
   // Used for publishing and more
-  projectName: "fms-insight",
-  organizationName: "blackmaple",
-  // For top-level user or org sites, the organization is still the same.
-  // e.g., for the https://JoelMarcey.github.io site, it would be set like...
-  //   organizationName: 'JoelMarcey'
+  projectName: "seedtactics.github.io",
+  organizationName: "SeedTactics",
+  cname: "fms-insight.seedtactics.com",
 
   // For no header links in the top nav bar -> headerLinks: [],
   headerLinks: [
     { doc: "overview", label: "Docs" },
     {
-      href: "https://bitbucket.org/blackmaple/fms-insight",
+      href: "https://github.com/SeedTactics/fms-insight",
       label: "Source Code"
     },
     { href: "/demo/demo.html", label: "Demo" }
@@ -161,11 +156,13 @@ const siteConfig = {
   stylesheets: [],
 
   /* On page navigation for the current documentation page */
-  onPageNav: "separate"
+  onPageNav: "separate",
 
   // You may provide arbitrary config keys to be used as needed by your
   // template. For example, if you need your repo's URL...
   //   repoUrl: 'https://github.com/facebook/test-site',
+
+  separateCss: ["static/demo"]
 };
 
 module.exports = siteConfig;

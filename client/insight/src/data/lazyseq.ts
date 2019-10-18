@@ -142,7 +142,7 @@ export class LazySeq<T> {
 
   isEmpty(): boolean {
     const first = this.iter[Symbol.iterator]().next();
-    return first.done;
+    return first.done === true;
   }
 
   filter(f: (x: T) => boolean): LazySeq<T> {

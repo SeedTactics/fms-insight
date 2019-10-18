@@ -1,0 +1,37 @@
+name: website
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: "10.x"
+
+      - name: Install demo deps
+        run: yarn --cwd client/insight install --frozen-lockfile
+
+      - name: Build demo site
+        run: yarn --cwd client/insight run build-demo
+
+      - name: Copy demo to website build output
+        shell: pwsh
+        run: Copy-Item "client\insight\demo" -Destination "website\static\demo" -Recurse -Force -Verbose
+
+      - name: Install website deps
+        run: yarn --cwd website install
+
+      - name: Deploy Website
+        env:
+          GIT_USER: ${{ secrets.WEBSITE_DEPLOY_GITHUB_PAT }}
+        run: |
+          git config --global user.email "<seedtactics@users.noreply.github.com>"
+          git config --global user.name "Github Action"
+          yarn --cwd website run publish-gh-pages

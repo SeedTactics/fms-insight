@@ -1,17 +1,9 @@
 Param(
-  [string]$name
+  [string]$name,
+  [string]$version
 )
 $nameUpper = (Get-Culture).TextInfo.ToTitleCase($name)
 
-function ver ($x) { c:\python36\python.exe build/version.py $x }
-$tag = $(hg id -t -r '.^')
-if ($tag.StartsWith($name)) {
-    $version = $(ver $name)
-    Set-AppveyorBuildVariable $("BMS_INSTALLER_" + $name + "_RELEASE") "true"
-} else {
-    # WiX doesn't support semver, so don't increment
-    $version = $(ver $name --no-increment) + "." + $Env:APPVEYOR_BUILD_NUMBER
-}
 Write-Host "Building installer for " $name " version " $version
 
 Push-Location
@@ -20,6 +12,8 @@ Set-Location ".."
 If (!(Test-Path tmp)) {
   New-Item -ItemType Directory -Force -Path tmp
 }
+
+dotnet publish -c Release -f net461 /p:Version="$version" server/machines/$name/$name.csproj
 
 $heat = "C:\Program Files (x86)\WiX Toolset v3.11\bin\heat.exe"
 $candle = "C:\Program Files (x86)\WiX Toolset v3.11\bin\candle.exe"

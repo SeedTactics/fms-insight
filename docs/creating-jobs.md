@@ -26,5 +26,5 @@ the parts and jobs are described using a JSON document which is then posted
 to `http://<ip address or name of server>:5000/api/v1/jobs/add`.
 
 The specific JSON format for the jobs is described in the
-[swagger document](http://petstore.swagger.io/?url=https%3A%2F%2Fbitbucket.org%2Fblackmaple%2Ffms-insight%2Fraw%2Fdefault%2Fserver%2Ffms-insight-api.json), in particular the `NewJobs` model. For more details,
-see the [source code](https://bitbucket.org/blackmaple/fms-insight).
+[swagger document](http://petstore.swagger.io/?url=https%3A%2F%2Fraw.githubusercontent.com%2FSeedTactics%2Ffms-insight%2Fmaster%2Fserver%2Ffms-insight-api.json), in particular the `NewJobs` model. For more details,
+see the [source code](https://github.com/SeedTactics/fms-insight).

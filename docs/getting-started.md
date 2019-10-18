@@ -21,8 +21,8 @@ must be installed first.
 The following are links to the latest installers for FMS Insight for each supported cell controller.
 The installers will also upgrade an existing install to the latest version.
 
-- [FMS Insight Mazak Install.msi](/installers/FMS%20Insight%20Mazak%20Install.msi)
-- [FMS Insight Makino Install.msi](/installers/FMS%20Insight%20Makino%20Install.msi)
+- [FMS Insight Mazak Install.msi](https://github.com/SeedTactics/fms-insight/releases/latest/download/FMS.Insight.Mazak.Install.msi)
+- [FMS Insight Makino Install.msi](https://github.com/SeedTactics/fms-insight/releases/latest/download/FMS.Insight.Makino.Install.msi)
 
 ## Install the server
 
@@ -66,7 +66,7 @@ special tool or via a label-printer at the load station.
 You can [contact us](https://www.seedtactics.com/contact) to obtain a quote
 for us to develop a customized part-marking plugin. Alternatively, you can
 develop the plugin yourself; the [FMS Insight source
-code](https://bitbucket.org/blackmaple/fms-insight/src) contains some
+code](https://github.com/SeedTactics/fms-insight) contains some
 documentation on building plugins.
 
 Once part-marking is being used, the [station monitor

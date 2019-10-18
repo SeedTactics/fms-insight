@@ -55,11 +55,11 @@ interface CSVLogExportState {
 
 class CSVLogExport extends React.PureComponent<{}, CSVLogExportState> {
   state: CSVLogExportState = {
-    exportDate: df.format(df.addDays(new Date(), -1), "YYYY-MM-DD")
+    exportDate: df.format(df.addDays(new Date(), -1), "yyyy-MM-dd")
   };
 
   render() {
-    const startDate = df.parse(this.state.exportDate);
+    const startDate = df.parseISO(this.state.exportDate);
     const endDate = df.addDays(startDate, 1);
     const startEndQuery = queryString.stringify({
       startUTC: startDate.toISOString(),

@@ -1,14 +1,12 @@
 # FMS Insight
 
-[![Build status](https://ci.appveyor.com/api/projects/status/qfbp2wstg3if04t4?svg=true)](https://ci.appveyor.com/project/wuzzeb/fms-insight)
-
 [Project Website](https://fms-insight.seedtactics.com)
 
 FMS Insight is a client and server which runs on an flexible machining system (FMS)
 cell controller which provides:
 
 - A server which stores a log of all events and stores a log of planned jobs.
-- A server which translates incomming planned jobs into jobs in the cell controller.
+- A server which translates incoming planned jobs into jobs in the cell controller.
 - A REST-like HTTP API which allows other programs to view the events and create planned jobs.
 - An HTML client which displays a dashboard, station monitor, and data analysis
   based on the log of events, planned jobs, and current cell status.
@@ -19,7 +17,7 @@ The server is written in C# and uses ASP.NET Core to expose a HTTP-based JSON
 and REST-like API. The server uses two local SQLite databases to store the
 log and job data which for historical reasons use a custom ORM instead of
 Entity Framework or Dapper (the code has been developed for over 10 years).
-The [server/lib/BlackMaple.MachineFramework](https://bitbucket.org/blackmaple/fms-insight/src/default/server/lib/BlackMaple.MachineFramework)
+The [server/lib/BlackMaple.MachineFramework](server/lib/BlackMaple.MachineFramework)
 directory contains the common server code, which includes data definitions,
 database code, and ASP.NET Core controllers.
 
@@ -28,7 +26,7 @@ there is an executable project which is what is installed by the user.
 This per-manufacturer project references the common code in `BlackMaple.MachineFramework`
 to provide the data storage and HTTP api. The per-manufacturer project
 also implements the custom interop for logging and jobs. The code lives
-in [server/machines](https://bitbucket.org/blackmaple/fms-insight/src/default/server/machines/).
+in [server/machines](server/machines/).
 
 The server focuses on providing an immutable log of events and planned jobs.
 This provides a great base to drive decisions and analysis of the cell. The design
@@ -41,11 +39,12 @@ possible to provide a stable immutable API for cell controllers.
 
 ### Swagger
 
-[![NuGet Stats](https://img.shields.io/nuget/v/BlackMaple.FMSInsight.API.svg)](https://www.nuget.org/packages/BlackMaple.FMSInsight.API/) [![Swagger](https://img.shields.io/swagger/valid/2.0/https/bitbucket.org/blackmaple/fms-insight/raw/tip/server/fms-insight-api.json.svg)](http://petstore.swagger.io/?url=https%3A%2F%2Fbitbucket.org%2Fblackmaple%2Ffms-insight%2Fraw%2Fdefault%2Fserver%2Ffms-insight-api.json)
+[![NuGet Stats](https://img.shields.io/nuget/v/BlackMaple.FMSInsight.API.svg)](https://www.nuget.org/packages/BlackMaple.FMSInsight.API/) [![Swagger](https://img.shields.io/swagger/valid/2.0/https/raw.githubusercontent.com/SeedTactics/fms-insight/master/server/fms-insight-api.json.svg)](http://petstore.swagger.io/?url=https%3A%2F%2Fraw.githubusercontent.com%2FSeedTactics%2Ffms-insight%2Fmaster%2Fserver%2Ffms-insight-api.json)
 
 The server generates a Swagger file and serves SwaggerUI using [NSwag](https://github.com/RSuter/NSwag).
-The latest swagger file can be obtained by running the server and then accessing `http://localhost:5000/swagger/v1/swagger.json`
-or [browsed online](http://petstore.swagger.io/?url=https%3A%2F%2Fbitbucket.org%2Fblackmaple%2Ffms-insight%2Fraw%2Fdefault%2Fserver%2Ffms-insight-api.json). The swagger file is then used to generate two
+The latest swagger file can be obtained by running the server and then accessing `http://localhost:5000/swagger/v1/swagger.json` or
+[browsed online](http://petstore.swagger.io/?url=https%3A%2F%2Fraw.githubusercontent.com%2FSeedTactics%2Ffms-insight%2Fmaster%2Fserver%2Ffms-insight-api.json).
+The swagger file is then used to generate two
 clients: one in typescript for use in the HTTP client and one in C#. The C# client is published on
 nuget as [BlackMaple.FMSInsight.API](https://www.nuget.org/packages/BlackMaple.FMSInsight.API/).
 
@@ -54,13 +53,13 @@ nuget as [BlackMaple.FMSInsight.API](https://www.nuget.org/packages/BlackMaple.F
 The client is written using React, Redux, Typescript, and MaterialUI. The
 client is compiled using parcel and the resulting
 HTML and Javascript is included in the server builds. The code lives in
-[client/insight](https://bitbucket.org/blackmaple/fms-insight/src/default/client/insight/).
+[client/insight](client/insight/).
 
 I use VSCode as an editor and there are VSCode tasks for launching parcel in
 development/watch mode and a debug configuration for launching Chrome. There
 is also a mock server which I use while developing the client. The mock
 server lives in
-[server/debug-mock](https://bitbucket.org/blackmaple/fms-insight/src/default/server/debug-mock/).
+[server/debug-mock](server/debug-mock/).
 There is a VSCode task for launching the debug mock server.
 
 # Custom Plugins
@@ -68,30 +67,14 @@ There is a VSCode task for launching the debug mock server.
 FMS Insight supports customized plugins. Actually, FMS Insight itself is a library so the "plugin"
 is an executable project which sets up any customization and then calls into the FMS Insight library.
 
+[![NuGet Stats](https://img.shields.io/nuget/v/BlackMaple.MachineFramework.svg)](https://www.nuget.org/packages/BlackMaple.MachineFramework/)
+
 #### Project Structure
 
 To create a plugin, start a new executable C# project and
-reference the `BlackMaple.MachineFramework` nuget package from [AppVeyor](https://ci.appveyor.com/project/wuzzeb/fms-insight).
-To do so, create a file called `NuGet.config` with the following contents
-
-```
-<?xml version="1.0" encoding="utf-8"?>
-<configuration>
-  <packageSources>
-    <add key="Appveyor" value="https://ci.appveyor.com/nuget/fms-insight-xlcclvt7hpwp" />
-  </packageSources>
-</configuration>
-```
-
-Then in the `.csproj` file, add references for
-
-```
-<PackageReference Include="BlackMaple.MachineFramework" Version="####" />
-<PackageReference Include="BlackMaple.FMSInsight.Mazak" Version="####" />
-```
-
-Where the `####` are filled in with the latest version from the Appveyor build (on the Appveyor page, click on
-the artifacts tab to see the nuget versions).
+reference the [BlackMaple.MachineFramework](https://www.nuget.org/packages/BlackMaple.MachineFramework/) nuget package
+and then one of [BlackMaple.FMSInsight.Mazak](https://www.nuget.org/packages/BlackMaple.FMSInsight.Mazak/) or
+[BlackMaple.FMSInsight.Makino](https://www.nuget.org/packages/BlackMaple.FMSInsight.Makino/).
 
 #### Project Code
 
@@ -122,7 +105,7 @@ namespace MyCompanyName.Insight
 }
 ```
 
-The `FMSImplementation` data structure is defined in [BackendInterfaces.cs](https://bitbucket.org/blackmaple/fms-insight/src/default/server/lib/BlackMaple.MachineFramework/BackendInterfaces.cs). It contains properties and settings that can be overridden to add customized
+The `FMSImplementation` data structure is defined in [BackendInterfaces.cs](server/lib/BlackMaple.MachineFramework/BackendInterfaces.cs). It contains properties and settings that can be overridden to add customized
 behavior to FMS Insight. Also, the `MazakBackend` contains events that can be registered to respond to various events.
 
 For example, to implement customized part marking, a class can be implemented which attaches to the events in the `IMazakLogReader` interface.
@@ -131,7 +114,7 @@ in the FMS Insight Log.
 
 # Data and API
 
-The data and API is diveded into two main sections: event log data and jobs.
+The data and API is divided into two main sections: event log data and jobs.
 
 The event log data is a log of all events on the cell, including machine cycle
 start, machine cycle end, load start, load end, pallet movements,
@@ -361,7 +344,7 @@ On
 typical projects, planned jobs are created by analyzing incoming orders. To
 do so, we develop a custom algorithm for each project to translate orders
 from the ERP into to planned jobs. The
-[seedscheduling](https://bitbucket.org/blackmaple/seedscheduling) repository
+[seedscheduling](https://github.com/SeedTactics/scheduling) repository
 contains some framework code and jupyter notebooks to translate orders into
 planned jobs. Typically during development I use the jupter notebook to
 create and send planned jobs to FMS Insight, and during production OrderLink

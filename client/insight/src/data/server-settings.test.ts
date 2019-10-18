@@ -42,7 +42,6 @@ it("creates the initial state", () => {
 });
 
 it("loads data", () => {
-  const now = new Date();
   let s = ss.reducer(ss.initial, {
     type: ss.ActionType.Load,
     pledge: {
@@ -55,10 +54,6 @@ it("loads data", () => {
           requireWorkorderBeforeAllowWashComplete: true,
           additionalLogServers: ["aaa"],
           usingLabelPrinterForSerials: false
-        },
-        latestVersion: {
-          version: "hello",
-          date: now
         }
       }
     }
@@ -72,10 +67,6 @@ it("loads data", () => {
       requireWorkorderBeforeAllowWashComplete: true,
       additionalLogServers: ["aaa"],
       usingLabelPrinterForSerials: false
-    },
-    latestInstaller: {
-      version: "hello",
-      date: now
     }
   });
 });

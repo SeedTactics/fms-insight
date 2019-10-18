@@ -57,7 +57,7 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 9:05 am
+          Mar 4, 2018, 9:05 AM
         </td>
         <td>
           partk-3
@@ -94,7 +94,7 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 9:23 am
+          Mar 4, 2018, 9:23 AM
         </td>
         <td>
           partk-3
@@ -131,7 +131,7 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 9:33 am
+          Mar 4, 2018, 9:33 AM
         </td>
         <td>
           partk-3
@@ -168,7 +168,7 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 21:05 pm
+          Mar 4, 2018, 9:05 PM
         </td>
         <td>
           partm-2
@@ -205,7 +205,7 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 21:28 pm
+          Mar 4, 2018, 9:28 PM
         </td>
         <td>
           partm-2
@@ -242,7 +242,7 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 21:38 pm
+          Mar 4, 2018, 9:38 PM
         </td>
         <td>
           partm-2
@@ -279,7 +279,7 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 5, 2018, 0:05 am
+          Mar 5, 2018, 12:05 AM
         </td>
         <td>
           part4-1
@@ -316,7 +316,7 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 5, 2018, 0:38 am
+          Mar 5, 2018, 12:38 AM
         </td>
         <td>
           part4-1
@@ -353,7 +353,7 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 5, 2018, 0:48 am
+          Mar 5, 2018, 12:48 AM
         </td>
         <td>
           part4-1
@@ -444,7 +444,7 @@ exports[`creates cycles clipboard table: cycle filtered clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 21:05 pm
+          Mar 4, 2018, 9:05 PM
         </td>
         <td>
           partm-2
@@ -481,7 +481,7 @@ exports[`creates cycles clipboard table: cycle filtered clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 21:28 pm
+          Mar 4, 2018, 9:28 PM
         </td>
         <td>
           partm-2
@@ -518,7 +518,7 @@ exports[`creates cycles clipboard table: cycle filtered clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 21:38 pm
+          Mar 4, 2018, 9:38 PM
         </td>
         <td>
           partm-2
@@ -603,7 +603,7 @@ exports[`creates log entries clipboard table: events clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 5, 2018, 0:05 am
+          Mar 5, 2018, 12:05 AM
         </td>
         <td>
           parti-3
@@ -634,7 +634,7 @@ exports[`creates log entries clipboard table: events clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 5, 2018, 0:38 am
+          Mar 5, 2018, 12:38 AM
         </td>
         <td>
           parti-3
@@ -665,7 +665,7 @@ exports[`creates log entries clipboard table: events clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 5, 2018, 0:48 am
+          Mar 5, 2018, 12:48 AM
         </td>
         <td>
           parti-3
@@ -696,7 +696,7 @@ exports[`creates log entries clipboard table: events clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 5, 2018, 0:53 am
+          Mar 5, 2018, 12:53 AM
         </td>
         <td>
           parti-3
@@ -725,7 +725,7 @@ exports[`creates log entries clipboard table: events clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 5, 2018, 0:53 am
+          Mar 5, 2018, 12:53 AM
         </td>
         <td>
           parti-3
@@ -754,7 +754,7 @@ exports[`creates log entries clipboard table: events clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 5, 2018, 1:00 am
+          Mar 5, 2018, 1:00 AM
         </td>
         <td>
           parti-3
@@ -783,7 +783,7 @@ exports[`creates log entries clipboard table: events clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 21:05 pm
+          Mar 4, 2018, 9:05 PM
         </td>
         <td>
           partl-1
@@ -814,7 +814,7 @@ exports[`creates log entries clipboard table: events clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 21:28 pm
+          Mar 4, 2018, 9:28 PM
         </td>
         <td>
           partl-1
@@ -845,7 +845,7 @@ exports[`creates log entries clipboard table: events clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 21:38 pm
+          Mar 4, 2018, 9:38 PM
         </td>
         <td>
           partl-1
@@ -876,7 +876,7 @@ exports[`creates log entries clipboard table: events clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 21:43 pm
+          Mar 4, 2018, 9:43 PM
         </td>
         <td>
           partl-1
@@ -905,7 +905,7 @@ exports[`creates log entries clipboard table: events clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 21:50 pm
+          Mar 4, 2018, 9:50 PM
         </td>
         <td>
           partl-1
@@ -934,7 +934,7 @@ exports[`creates log entries clipboard table: events clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 9:05 am
+          Mar 4, 2018, 9:05 AM
         </td>
         <td>
           partr-4
@@ -965,7 +965,7 @@ exports[`creates log entries clipboard table: events clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 9:23 am
+          Mar 4, 2018, 9:23 AM
         </td>
         <td>
           partr-4
@@ -996,7 +996,7 @@ exports[`creates log entries clipboard table: events clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 9:33 am
+          Mar 4, 2018, 9:33 AM
         </td>
         <td>
           partr-4
@@ -1027,7 +1027,7 @@ exports[`creates log entries clipboard table: events clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 9:38 am
+          Mar 4, 2018, 9:38 AM
         </td>
         <td>
           partr-4
@@ -1056,7 +1056,7 @@ exports[`creates log entries clipboard table: events clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 9:45 am
+          Mar 4, 2018, 9:45 AM
         </td>
         <td>
           partr-4
