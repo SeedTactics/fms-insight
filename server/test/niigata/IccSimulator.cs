@@ -150,6 +150,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       foreach (var pal in _status.Pallets)
       {
+        if (pal.Master.Routes.Count == 0) continue;
+        if (pal.Master.Skip) continue;
         bool beforeStep = pal.Tracking.BeforeCurrentStep;
 
         // switch on current step

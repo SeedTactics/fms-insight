@@ -36,6 +36,8 @@ using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
 using Microsoft.Extensions.Configuration;
 
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("BlackMaple.MachineFramework.Tests")]
+
 namespace BlackMaple.FMSInsight.Niigata
 {
   public class NiigataBackend : IFMSBackend, IDisposable

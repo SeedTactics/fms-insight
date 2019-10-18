@@ -55,15 +55,18 @@ namespace BlackMaple.FMSInsight.Niigata
     private IAssignPallets _assign;
     private IBuildCellState _createLog;
 
-    public SyncPallets(JobDB jobs, JobLogDB log, INiigataCommunication icc, IAssignPallets assign, IBuildCellState create)
+    public SyncPallets(JobDB jobs, JobLogDB log, INiigataCommunication icc, IAssignPallets assign, IBuildCellState create, bool startThread = true)
     {
       _jobs = jobs;
       _log = log;
       _icc = icc;
       _assign = assign;
       _createLog = create;
-      _thread = new Thread(new ThreadStart(Thread));
-      _thread.Start();
+      if (startThread)
+      {
+        _thread = new Thread(new ThreadStart(Thread));
+        _thread.Start();
+      }
     }
 
     #region Thread and Messages
@@ -120,7 +123,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public event Action<CellState> OnPalletsChanged;
 
-    private void SynchronizePallets(bool raisePalletChanged)
+    internal void SynchronizePallets(bool raisePalletChanged)
     {
       NiigataStatus status;
       CellState cellSt;

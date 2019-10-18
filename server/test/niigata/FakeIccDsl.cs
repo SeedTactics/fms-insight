@@ -412,7 +412,18 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _expectedJobStartedCount[unique] += cnt;
       return this;
     }
-    public FakeIccDsl AddOneProcOnePathJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, int prog, int loadMins, int machMins, int unloadMins, string fixture, int face, string queue = null)
+    public FakeIccDsl AddJobs(IEnumerable<JobPlan> jobs)
+    {
+      _jobDB.AddJobs(new NewJobs() { Jobs = jobs.ToList() }, null);
+      foreach (var j in jobs)
+      {
+        _expectedJobStartedCount[j.UniqueStr] = 0;
+      }
+      return this;
+
+    }
+
+    public static JobPlan CreateOneProcOnePathJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, int prog, int loadMins, int machMins, int unloadMins, string fixture, int face, string queue = null)
     {
       var j = new JobPlan(unique, 1);
       j.PartName = part;
@@ -442,13 +453,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         j.SetInputQueue(1, 1, queue);
       }
-      _jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
-      _expectedJobStartedCount[unique] = 0;
-
-      return this;
+      return j;
     }
 
-    public FakeIccDsl AddOneProcOnePathMultiStepJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs1, int prog1, int[] machs2, int prog2, int loadMins, int machMins1, int machMins2, int unloadMins, string fixture, int face, string queue = null)
+    public static JobPlan CreateOneProcOnePathMultiStepJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs1, int prog1, int[] machs2, int prog2, int loadMins, int machMins1, int machMins2, int unloadMins, string fixture, int face, string queue = null)
     {
       var j = new JobPlan(unique, 1);
       j.PartName = part;
@@ -488,13 +496,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         j.SetInputQueue(1, 1, queue);
       }
-      _jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
-      _expectedJobStartedCount[unique] = 0;
-
-      return this;
+      return j;
     }
 
-    public FakeIccDsl AddMultiProcSamePalletJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, int prog1, int prog2, int loadMins1, int machMins1, int unloadMins1, int loadMins2, int machMins2, int unloadMins2, string fixture, int face1, int face2)
+    public static JobPlan CreateMultiProcSamePalletJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, int prog1, int prog2, int loadMins1, int machMins1, int unloadMins1, int loadMins2, int machMins2, int unloadMins2, string fixture, int face1, int face2)
     {
       var j = new JobPlan(unique, 2);
       j.PartName = part;
@@ -534,12 +539,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       }
       j.AddProcessOnFixture(1, 1, fixture, face1.ToString());
       j.AddProcessOnFixture(2, 1, fixture, face2.ToString());
-      _jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
-      _expectedJobStartedCount[unique] = 0;
-
-      return this;
+      return j;
     }
-    public FakeIccDsl AddMultiProcSeparatePalletJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals1, int[] pals2, int[] load1, int[] load2, int[] unload1, int[] unload2, int[] machs, int prog1, int prog2, int loadMins1, int machMins1, int unloadMins1, int loadMins2, int machMins2, int unloadMins2, string fixture, string queue)
+
+    public static JobPlan CreateMultiProcSeparatePalletJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals1, int[] pals2, int[] load1, int[] load2, int[] unload1, int[] unload2, int[] machs, int prog1, int prog2, int loadMins1, int machMins1, int unloadMins1, int loadMins2, int machMins2, int unloadMins2, string fixture, string queue)
     {
       var j = new JobPlan(unique, 2);
       j.PartName = part;
@@ -594,10 +597,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       j.SetOutputQueue(1, 1, queue);
       j.SetInputQueue(2, 1, queue);
-      _jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
-      _expectedJobStartedCount[unique] = 0;
-
-      return this;
+      return j;
     }
     #endregion
 

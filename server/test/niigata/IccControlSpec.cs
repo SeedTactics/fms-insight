@@ -55,21 +55,23 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     public void OneProcOnePath()
     {
       _dsl
-        .AddOneProcOnePathJob(
-          unique: "uniq1",
-          part: "part1",
-          qty: 3,
-          priority: 5,
-          partsPerPal: 1,
-          pals: new[] { 1, 2 },
-          luls: new[] { 3, 4 },
-          machs: new[] { 5, 6 },
-          prog: 1234,
-          loadMins: 8,
-          unloadMins: 9,
-          machMins: 14,
-          fixture: "fix1",
-          face: 1
+        .AddJobs(new[] {
+          FakeIccDsl.CreateOneProcOnePathJob(
+            unique: "uniq1",
+            part: "part1",
+            qty: 3,
+            priority: 5,
+            partsPerPal: 1,
+            pals: new[] { 1, 2 },
+            luls: new[] { 3, 4 },
+            machs: new[] { 5, 6 },
+            prog: 1234,
+            loadMins: 8,
+            unloadMins: 9,
+            machMins: 14,
+            fixture: "fix1",
+            face: 1
+          )}
         )
         .MoveToMachineQueue(pal: 2, mach: 3)
         .SetExpectedLoadCastings(new[] {
@@ -240,21 +242,23 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     public void ApplysNewQtyAtUnload()
     {
       _dsl
-        .AddOneProcOnePathJob(
-          unique: "uniq1",
-          part: "part1",
-          qty: 3,
-          priority: 5,
-          partsPerPal: 1,
-          pals: new[] { 1 },
-          luls: new[] { 3, 4 },
-          machs: new[] { 5, 6 },
-          prog: 1234,
-          loadMins: 8,
-          unloadMins: 9,
-          machMins: 14,
-          fixture: "fix1",
-          face: 1
+        .AddJobs(new[] {
+          FakeIccDsl.CreateOneProcOnePathJob(
+            unique: "uniq1",
+            part: "part1",
+            qty: 3,
+            priority: 5,
+            partsPerPal: 1,
+            pals: new[] { 1 },
+            luls: new[] { 3, 4 },
+            machs: new[] { 5, 6 },
+            prog: 1234,
+            loadMins: 8,
+            unloadMins: 9,
+            machMins: 14,
+            fixture: "fix1",
+            face: 1
+          )}
         )
         .IncrJobStartedCnt("uniq1")
         .SetExpectedLoadCastings(new[] {
@@ -297,22 +301,24 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     public void CastingsFromQueue()
     {
       _dsl
-        .AddOneProcOnePathJob(
-          unique: "uniq1",
-          part: "part1",
-          qty: 3,
-          priority: 5,
-          partsPerPal: 1,
-          pals: new[] { 1, 2 },
-          luls: new[] { 3, 4 },
-          machs: new[] { 5, 6 },
-          prog: 1234,
-          loadMins: 8,
-          unloadMins: 9,
-          machMins: 14,
-          fixture: "fix1",
-          face: 1,
-          queue: "thequeue"
+        .AddJobs(new[] {
+          FakeIccDsl.CreateOneProcOnePathJob(
+            unique: "uniq1",
+            part: "part1",
+            qty: 3,
+            priority: 5,
+            partsPerPal: 1,
+            pals: new[] { 1, 2 },
+            luls: new[] { 3, 4 },
+            machs: new[] { 5, 6 },
+            prog: 1234,
+            loadMins: 8,
+            unloadMins: 9,
+            machMins: 14,
+            fixture: "fix1",
+            face: 1,
+            queue: "thequeue"
+          )}
         )
         .ExpectNoChanges()
 
@@ -366,26 +372,28 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     public void MultiProcSamePallet()
     {
       _dsl
-        .AddMultiProcSamePalletJob(
-          unique: "uniq1",
-          part: "part1",
-          qty: 3,
-          priority: 5,
-          partsPerPal: 1,
-          pals: new[] { 1 },
-          luls: new[] { 3, 4 },
-          machs: new[] { 5, 6 },
-          prog1: 1234,
-          prog2: 9876,
-          loadMins1: 8,
-          unloadMins1: 9,
-          machMins1: 14,
-          loadMins2: 10,
-          unloadMins2: 11,
-          machMins2: 15,
-          fixture: "fix1",
-          face1: 1,
-          face2: 2
+        .AddJobs(new[] {
+          FakeIccDsl.CreateMultiProcSamePalletJob(
+            unique: "uniq1",
+            part: "part1",
+            qty: 3,
+            priority: 5,
+            partsPerPal: 1,
+            pals: new[] { 1 },
+            luls: new[] { 3, 4 },
+            machs: new[] { 5, 6 },
+            prog1: 1234,
+            prog2: 9876,
+            loadMins1: 8,
+            unloadMins1: 9,
+            machMins1: 14,
+            loadMins2: 10,
+            unloadMins2: 11,
+            machMins2: 15,
+            fixture: "fix1",
+            face1: 1,
+            face2: 2
+          )}
         )
 
         // process 1 only cycle
@@ -728,29 +736,32 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     [Fact]
     public void MultipleProcessSeparatePallets()
     {
-      _dsl.AddMultiProcSeparatePalletJob(
-        unique: "uniq1",
-        part: "part1",
-        qty: 3,
-        priority: 5,
-        partsPerPal: 1,
-        pals1: new[] { 1 },
-        pals2: new[] { 2 },
-        load1: new[] { 3, 4 },
-        unload1: new[] { 3, 4 },
-        load2: new[] { 3, 4 },
-        unload2: new[] { 3, 4 },
-        machs: new[] { 5, 6 },
-        prog1: 1234,
-        prog2: 9876,
-        loadMins1: 8,
-        unloadMins1: 9,
-        machMins1: 14,
-        machMins2: 10,
-        loadMins2: 11,
-        unloadMins2: 12,
-        fixture: "fix1",
-        queue: "qqq"
+      _dsl
+      .AddJobs(new[] {
+        FakeIccDsl.CreateMultiProcSeparatePalletJob(
+          unique: "uniq1",
+          part: "part1",
+          qty: 3,
+          priority: 5,
+          partsPerPal: 1,
+          pals1: new[] { 1 },
+          pals2: new[] { 2 },
+          load1: new[] { 3, 4 },
+          unload1: new[] { 3, 4 },
+          load2: new[] { 3, 4 },
+          unload2: new[] { 3, 4 },
+          machs: new[] { 5, 6 },
+          prog1: 1234,
+          prog2: 9876,
+          loadMins1: 8,
+          unloadMins1: 9,
+          machMins1: 14,
+          machMins2: 10,
+          loadMins2: 11,
+          unloadMins2: 12,
+          fixture: "fix1",
+          queue: "qqq"
+        )}
       )
       .SetExpectedLoadCastings(new[] {
             (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1)
@@ -1198,31 +1209,34 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     [Fact]
     public void SeparateLoadUnloadStations()
     {
-      _dsl.AddMultiProcSeparatePalletJob(
-        unique: "uniq1",
-        part: "part1",
-        qty: 3,
-        priority: 5,
-        partsPerPal: 1,
-        pals1: new[] { 1 },
-        load1: new[] { 3 },
-        unload1: new[] { 4 },
+      _dsl
+      .AddJobs(new[] {
+        FakeIccDsl.CreateMultiProcSeparatePalletJob(
+          unique: "uniq1",
+          part: "part1",
+          qty: 3,
+          priority: 5,
+          partsPerPal: 1,
+          pals1: new[] { 1 },
+          load1: new[] { 3 },
+          unload1: new[] { 4 },
 
-        pals2: new[] { 2 },
-        load2: new[] { 4 },
-        unload2: new[] { 5 },
+          pals2: new[] { 2 },
+          load2: new[] { 4 },
+          unload2: new[] { 5 },
 
-        machs: new[] { 5, 6 },
-        prog1: 1234,
-        prog2: 9876,
-        loadMins1: 8,
-        unloadMins1: 9,
-        machMins1: 14,
-        machMins2: 10,
-        loadMins2: 11,
-        unloadMins2: 12,
-        fixture: "fix1",
-        queue: "qqq"
+          machs: new[] { 5, 6 },
+          prog1: 1234,
+          prog2: 9876,
+          loadMins1: 8,
+          unloadMins1: 9,
+          machMins1: 14,
+          machMins2: 10,
+          loadMins2: 11,
+          unloadMins2: 12,
+          fixture: "fix1",
+          queue: "qqq"
+        )}
       )
       .SetExpectedLoadCastings(new[] {
             (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1)
@@ -1375,24 +1389,26 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     public void MultipleMachineStops()
     {
       _dsl
-        .AddOneProcOnePathMultiStepJob(
-          unique: "uniq1",
-          part: "part1",
-          qty: 3,
-          priority: 5,
-          partsPerPal: 1,
-          pals: new[] { 1 },
-          luls: new[] { 3, 4 },
-          machs1: new[] { 5, 6 },
-          prog1: 1234,
-          machs2: new[] { 1, 2 },
-          prog2: 9876,
-          loadMins: 8,
-          unloadMins: 9,
-          machMins1: 14,
-          machMins2: 15,
-          fixture: "fix1",
-          face: 1
+        .AddJobs(new[] {
+          FakeIccDsl.CreateOneProcOnePathMultiStepJob(
+            unique: "uniq1",
+            part: "part1",
+            qty: 3,
+            priority: 5,
+            partsPerPal: 1,
+            pals: new[] { 1 },
+            luls: new[] { 3, 4 },
+            machs1: new[] { 5, 6 },
+            prog1: 1234,
+            machs2: new[] { 1, 2 },
+            prog2: 9876,
+            loadMins: 8,
+            unloadMins: 9,
+            machMins1: 14,
+            machMins2: 15,
+            fixture: "fix1",
+            face: 1
+          )}
         )
         .SetExpectedLoadCastings(new[] {
           (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1),
