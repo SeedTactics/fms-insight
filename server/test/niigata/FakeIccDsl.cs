@@ -457,17 +457,26 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       return this;
     }
-    public FakeIccDsl AddMultiProcSeparatePalletJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals1, int[] pals2, int[] luls, int[] machs, int prog1, int prog2, int loadMins1, int machMins1, int unloadMins1, int loadMins2, int machMins2, int unloadMins2, string fixture, string queue)
+    public FakeIccDsl AddMultiProcSeparatePalletJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals1, int[] pals2, int[] load1, int[] load2, int[] unload1, int[] unload2, int[] machs, int prog1, int prog2, int loadMins1, int machMins1, int unloadMins1, int loadMins2, int machMins2, int unloadMins2, string fixture, string queue)
     {
       var j = new JobPlan(unique, 2);
       j.PartName = part;
       j.Priority = priority;
       j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: qty);
-      foreach (var i in luls)
+      foreach (var i in load1)
       {
         j.AddLoadStation(1, 1, i);
+      }
+      foreach (var i in unload1)
+      {
         j.AddUnloadStation(1, 1, i);
+      }
+      foreach (var i in load2)
+      {
         j.AddLoadStation(2, 1, i);
+      }
+      foreach (var i in unload2)
+      {
         j.AddUnloadStation(2, 1, i);
       }
       j.SetExpectedLoadTime(1, 1, TimeSpan.FromMinutes(loadMins1));
@@ -696,7 +705,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public IEnumerable<(int face, string unique, int proc, int path)> Faces { get; set; }
     }
 
-    public static ExpectedChange ExpectNewRoute(int pal, int[] luls, int[] machs, int[] progs, IEnumerable<(int face, string unique, int proc, int path)> faces)
+    public static ExpectedChange ExpectNewRoute(int pal, int[] luls, int[] machs, int[] progs, IEnumerable<(int face, string unique, int proc, int path)> faces, int[] unloads = null)
     {
       return new ExpectNewRouteChange()
       {
@@ -719,7 +728,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               ProgramNumsToRun = progs.ToList()
             },
             new UnloadStep() {
-              UnloadStations = luls.ToList(),
+              UnloadStations = (unloads ?? luls).ToList(),
               CompletedPartCount = 1
             }
           },
@@ -818,7 +827,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           action.Should().BeEquivalentTo<NewPalletRoute>(new NewPalletRoute()
           {
             NewMaster = expectedNewRoute.ExpectedMaster
-          }, options => options.Excluding(e => e.PendingID).Excluding(e => e.NewMaster.Comment));
+          }, options => options
+              .Excluding(e => e.PendingID)
+              .Excluding(e => e.NewMaster.Comment)
+              .RespectingRuntimeTypes()
+          );
           _status.Pallets[pal - 1].Master = ((NewPalletRoute)action).NewMaster;
           _status.Pallets[pal - 1].Tracking.CurrentControlNum = AssignPallets.LoadStepNum * 2 - 1;
           _status.Pallets[pal - 1].Tracking.CurrentStepNum = AssignPallets.LoadStepNum;
