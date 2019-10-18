@@ -448,6 +448,52 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return this;
     }
 
+    public FakeIccDsl AddOneProcOnePathMultiStepJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs1, int prog1, int[] machs2, int prog2, int loadMins, int machMins1, int machMins2, int unloadMins, string fixture, int face, string queue = null)
+    {
+      var j = new JobPlan(unique, 1);
+      j.PartName = part;
+      j.Priority = priority;
+      j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: qty);
+      foreach (var i in luls)
+      {
+        j.AddLoadStation(1, 1, i);
+        j.AddUnloadStation(1, 1, i);
+      }
+      j.SetExpectedLoadTime(1, 1, TimeSpan.FromMinutes(loadMins));
+      j.SetExpectedUnloadTime(1, 1, TimeSpan.FromMinutes(unloadMins));
+      j.SetPartsPerPallet(1, 1, partsPerPal);
+
+      var s = new JobMachiningStop("MC");
+      foreach (var m in machs1)
+      {
+        s.AddProgram(m, prog1.ToString());
+        s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins1);
+      }
+      j.AddMachiningStop(1, 1, s);
+
+      s = new JobMachiningStop("MC");
+      foreach (var m in machs2)
+      {
+        s.AddProgram(m, prog2.ToString());
+        s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins2);
+      }
+      j.AddMachiningStop(1, 1, s);
+
+      foreach (var p in pals)
+      {
+        j.AddProcessOnPallet(1, 1, p.ToString());
+      }
+      j.AddProcessOnFixture(1, 1, fixture, face.ToString());
+      if (!string.IsNullOrEmpty(queue))
+      {
+        j.SetInputQueue(1, 1, queue);
+      }
+      _jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+      _expectedJobStartedCount[unique] = 0;
+
+      return this;
+    }
+
     public FakeIccDsl AddMultiProcSamePalletJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, int prog1, int prog2, int loadMins1, int machMins1, int unloadMins1, int loadMins2, int machMins2, int unloadMins2, string fixture, int face1, int face2)
     {
       var j = new JobPlan(unique, 2);
@@ -765,6 +811,42 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             },
             new UnloadStep() {
               UnloadStations = (unloads ?? luls).ToList(),
+              CompletedPartCount = 1
+            }
+          },
+        },
+        Faces = faces
+      };
+    }
+
+    public static ExpectedChange ExpectNewRoute(int pal, int[] loads, int[] machs1, int[] progs1, int[] machs2, int[] progs2, int[] unloads, IEnumerable<(int face, string unique, int proc, int path)> faces)
+    {
+      return new ExpectNewRouteChange()
+      {
+        ExpectedMaster = new PalletMaster()
+        {
+          PalletNum = pal,
+          Comment = "",
+          RemainingPalletCycles = 1,
+          Priority = 0,
+          NoWork = false,
+          Skip = false,
+          ForLongToolMaintenance = false,
+          PerformProgramDownload = false,
+          Routes = new List<RouteStep> {
+            new LoadStep() {
+              LoadStations = loads.ToList()
+            },
+            new MachiningStep() {
+              Machines = machs1.ToList(),
+              ProgramNumsToRun = progs1.ToList()
+            },
+            new MachiningStep() {
+              Machines = machs2.ToList(),
+              ProgramNumsToRun = progs2.ToList()
+            },
+            new UnloadStep() {
+              UnloadStations = unloads.ToList(),
               CompletedPartCount = 1
             }
           },
