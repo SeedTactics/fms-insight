@@ -129,22 +129,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       var transitions = new List<NextTransition>();
 
-      foreach (var mach in _status.Machines)
-      {
-        if (mach.Value.Machining)
-        {
-          transitions.Add(new NextTransition()
-          {
-            Time = _lastMachineTransition[mach.Key].Add(_programTimes[mach.Value.CurrentlyExecutingProgram]),
-            UpdateStatus = now =>
-            {
-              _lastMachineTransition[mach.Key] = now;
-              _status.Machines[mach.Key].Machining = false;
-            }
-          });
-        }
-      }
-
       bool cartInUse = _status.Pallets.FirstOrDefault(x => x.CurStation.Location.Location == PalletLocationEnum.Cart) != null;
       IEnumerable<int> openLoads =
         _status.LoadStations.Values
@@ -274,6 +258,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 });
               }
             }
+            else
+            {
+              throw new Exception("Invalid LoadStep state");
+            }
             break;
 
           // ---------------------------------------- Machining Step ---------------------------------
@@ -320,47 +308,92 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             // if on rotary queue, consider swap
             else if (beforeStep && pal.CurStation.Location.Location == PalletLocationEnum.MachineQueue)
             {
-              //TODO: rotary swap
+              var mc = pal.CurStation.Location.Num;
+              var palInsideMachine = _status.Pallets.FirstOrDefault(p =>
+                p.CurStation.Location.Location == PalletLocationEnum.Machine && p.CurStation.Location.Num == mc
+              );
+              if (!_status.Machines[mc].Machining)
+              {
+                transitions.Add(new NextTransition()
+                {
+                  Time = _status.TimeOfStatusUTC.Add(RotarySwapTime),
+                  UpdateStatus = now =>
+                  {
+                    _lastPalTransition[pal.Master.PalletNum] = now;
+                    pal.CurStation = NiigataStationNum.Machine(mc);
+                    _lastMachineTransition[mc] = now;
+                    _programsRunOnMachine[mc].Clear();
+                    _status.Machines[mc].Machining = true;
+                    _status.Machines[mc].CurrentlyExecutingProgram = mach.ProgramNumsToRun.First();
+                    if (palInsideMachine != null)
+                    {
+                      _lastPalTransition[palInsideMachine.Master.PalletNum] = now;
+                      palInsideMachine.CurStation = NiigataStationNum.MachineQueue(mc);
+                    }
+                  }
+                });
+              }
             }
-            // if on the machine, consider starting machine or setting after-MC
+            // if on the machine, consider starting next program or setting after-MC
             else if (beforeStep && pal.CurStation.Location.Location == PalletLocationEnum.Machine)
             {
               var mc = pal.CurStation.Location.Num;
               if (!_status.Machines[mc].Machining)
               {
-                var prog = mach.ProgramNumsToRun.Where(p => !_programsRunOnMachine[mc].Contains(p)).FirstOrDefault();
-                if (prog > 0)
-                {
-                  transitions.Add(new NextTransition()
-                  {
-                    Time = _status.TimeOfStatusUTC,
-                    UpdateStatus = now =>
-                    {
-                      _lastMachineTransition[mc] = now;
-                      _status.Machines[mc].Machining = true;
-                      _status.Machines[mc].CurrentlyExecutingProgram = prog;
-                    }
-                  });
-                }
-                else
-                {
-                  //nothing more to run, set After-Mc
-                  transitions.Add(new NextTransition()
-                  {
-                    Time = _status.TimeOfStatusUTC,
-                    UpdateStatus = now =>
-                    {
-                      _lastPalTransition[pal.Master.PalletNum] = now;
-                      pal.Tracking.CurrentControlNum += 1;
-                    }
-                  });
-                }
+                throw new Exception("Pallet in Before-MC but not machining");
               }
+              var curProg = _status.Machines[mc].CurrentlyExecutingProgram;
+              transitions.Add(new NextTransition()
+              {
+                Time = _lastMachineTransition[mc].Add(_programTimes[curProg]),
+                UpdateStatus = now =>
+                {
+                  _lastMachineTransition[mc] = now;
+                  _programsRunOnMachine[mc].Add(curProg);
+                  // either go to After-MC or next program
+                  var nextProg = mach.ProgramNumsToRun.Where(p => !_programsRunOnMachine[mc].Contains(p)).FirstOrDefault();
+                  if (nextProg > 0)
+                  {
+                    _status.Machines[mc].CurrentlyExecutingProgram = nextProg;
+                  }
+                  else
+                  {
+                    _lastPalTransition[pal.Master.PalletNum] = now;
+                    pal.Tracking.CurrentControlNum += 1;
+                    _status.Machines[mc].Machining = false;
+                  }
+                }
+              });
             }
             //if After-MC and still in machine, consider swap
             else if (!beforeStep && pal.CurStation.Location.Location == PalletLocationEnum.Machine)
             {
-              //TODO: swap
+              var mc = pal.CurStation.Location.Num;
+              var palOnQueue = _status.Pallets.FirstOrDefault(p =>
+                p.CurStation.Location.Location == PalletLocationEnum.MachineQueue && p.CurStation.Location.Num == mc
+              );
+              if (!_status.Machines[mc].Machining && palOnQueue.CurrentStep is MachiningStep && palOnQueue.Tracking.BeforeCurrentStep)
+              {
+                var palOnQueueMach = (MachiningStep)palOnQueue.CurrentStep;
+                transitions.Add(new NextTransition()
+                {
+                  Time = _status.TimeOfStatusUTC.Add(RotarySwapTime),
+                  UpdateStatus = now =>
+                  {
+                    _lastPalTransition[pal.Master.PalletNum] = now;
+                    pal.CurStation = NiigataStationNum.MachineQueue(mc);
+                    if (palOnQueue != null)
+                    {
+                      _lastMachineTransition[mc] = now;
+                      _programsRunOnMachine[mc].Clear();
+                      _status.Machines[mc].Machining = true;
+                      _status.Machines[mc].CurrentlyExecutingProgram = palOnQueueMach.ProgramNumsToRun.First();
+                      _lastPalTransition[palOnQueue.Master.PalletNum] = now;
+                      palOnQueue.CurStation = NiigataStationNum.Machine(mc);
+                    }
+                  }
+                });
+              }
             }
             // if after-mc and cart not in use, move to cart
             else if (!beforeStep && !cartInUse && pal.CurStation.Location.Location == PalletLocationEnum.MachineQueue)
@@ -378,9 +411,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             // if after-mc and on cart, move to load or buffer
             else if (!beforeStep && pal.CurStation.Location.Location == PalletLocationEnum.Cart)
             {
-              var next = (UnloadStep)pal.Master.Routes[pal.Tracking.CurrentStepNum - 1 + 1];
-              var lul = openLoads.FirstOrDefault(next.UnloadStations.Contains);
-              if (lul > 0)
+              int toLoad = 0;
+              var next = pal.Master.Routes[pal.Tracking.CurrentStepNum - 1 + 1];
+              if (next is UnloadStep)
+              {
+                toLoad = openLoads.FirstOrDefault(((UnloadStep)next).UnloadStations.Contains);
+              }
+              if (toLoad > 0)
               {
                 transitions.Add(new NextTransition()
                 {
@@ -388,7 +425,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   UpdateStatus = now =>
                   {
                     _lastPalTransition[pal.Master.PalletNum] = now;
-                    pal.CurStation = NiigataStationNum.LoadStation(lul);
+                    pal.CurStation = NiigataStationNum.LoadStation(toLoad);
                     pal.Tracking.CurrentStepNum += 1;
                     pal.Tracking.CurrentControlNum += 1;
                   }
@@ -409,6 +446,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 });
 
               }
+            }
+            else
+            {
+              throw new Exception("Invalid MachiningStep state");
             }
             break;
 
@@ -474,6 +515,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               {
                 throw new Exception("Before-UL pallet put on cart without open load");
               }
+            }
+            else
+            {
+              throw new Exception("Invalid UnloadStep state");
             }
             break;
         }
