@@ -312,10 +312,35 @@ namespace BlackMaple.FMSInsight.Niigata
     private PalletMaster NewPalletMaster(int pallet, IReadOnlyList<JobPath> newPaths)
     {
       var orderedPaths = newPaths.OrderBy(p => p.Job.UniqueStr).ThenBy(p => p.Process).ThenBy(p => p.Path).ToList();
-      var machineStops = orderedPaths.Select(p => p.Job.GetMachiningStop(p.Process, p.Path).First());
+
+      var machiningSteps = new List<MachiningStep>();
+      foreach (var path in orderedPaths)
+      {
+        // add all stops from machineStops tp machiningSteps
+        foreach (var stop in path.Job.GetMachiningStop(path.Process, path.Path))
+        {
+          // check existing step
+          foreach (var existingStep in machiningSteps)
+          {
+            if (existingStep.Machines.SequenceEqual(stop.Stations()))
+            {
+              existingStep.ProgramNumsToRun.Add(int.Parse(stop.AllPrograms().First().Program));
+              goto foundExisting;
+            }
+          }
+          // no existing step, add a new one
+          machiningSteps.Add(new MachiningStep()
+          {
+            Machines = stop.Stations().ToList(),
+            ProgramNumsToRun = new List<int> { int.Parse(stop.AllPrograms().First().Program) }
+          });
+
+        foundExisting:;
+
+        }
+      }
 
       var firstPath = orderedPaths.First();
-      var firstStop = machineStops.First();
 
       return new PalletMaster()
       {
@@ -326,19 +351,17 @@ namespace BlackMaple.FMSInsight.Niigata
         NoWork = false,
         Skip = false,
         ForLongToolMaintenance = false,
-        Routes = new List<RouteStep>() {
-          new LoadStep() {
-            LoadStations = firstPath.Job.LoadStations(firstPath.Process, firstPath.Path).ToList(),
-          },
-          new MachiningStep() {
-            Machines = firstStop.Stations().ToList(),
-            ProgramNumsToRun = newPaths.Select(p => p.Job.GetMachiningStop(p.Process, p.Path).First().AllPrograms().First().Program).Select(int.Parse).ToList(),
-          },
-          new UnloadStep() {
-            UnloadStations = firstPath.Job.UnloadStations(firstPath.Process, firstPath.Path).ToList(),
-            CompletedPartCount = 1
-          }
-        }
+        Routes =
+          (new RouteStep[] { new LoadStep() { LoadStations = firstPath.Job.LoadStations(firstPath.Process, firstPath.Path).ToList() } })
+          .Concat(machiningSteps)
+          .Append(
+            new UnloadStep()
+            {
+              UnloadStations = firstPath.Job.UnloadStations(firstPath.Process, firstPath.Path).ToList(),
+              CompletedPartCount = 1
+            }
+          )
+          .ToList()
       };
     }
 
