@@ -59,6 +59,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         case NewPalletRoute route:
           _status.Pallets[route.NewMaster.PalletNum - 1].Master = route.NewMaster;
+          _status.Pallets[route.NewMaster.PalletNum - 1].Tracking.CurrentStepNum = 1;
+          _status.Pallets[route.NewMaster.PalletNum - 1].Tracking.CurrentControlNum = 1;
           break;
 
         case UpdatePalletQuantities update:
