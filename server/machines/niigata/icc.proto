@@ -1,0 +1,151 @@
+syntax = "proto3";
+package ICC;
+
+//------------------------------------------------------------------------------
+// Status
+//------------------------------------------------------------------------------
+
+message LoadStep {
+  repeated int32 LoadStations = 1;
+}
+
+message ReclampStep {
+  repeated int32 ReclampStations = 1;
+}
+
+message UnloadStep {
+  repeated int32 UnloadStations = 1;
+  int32 CompletedPartCount = 2;
+}
+
+message MachiningStep {
+  repeated int32 Machines = 1;
+  repeated int32 ProgramsToRun = 2;
+}
+
+message WashStep {
+  repeated int32 WashStations = 1;
+  int32 WashingPattern = 2;
+}
+
+message RouteStep {
+  oneof step {
+    LoadStep Load = 1;
+    ReclampStep Reclamp = 2;
+    UnloadStep Unload = 3;
+    MachiningStep Mach = 4;
+    WashStep Wash = 5;
+  }
+}
+
+message PalletMaster {
+  int32 PalletNum = 1;
+  string Comment = 2;
+  int32 RemainingPalletCycles = 3; // 0-999
+  int32 Priority = 4; // 0-9, with 1 highest and 9 lowest
+  bool NoWork = 5;
+  bool Skip = 6;
+  bool ForLongToolMaintenance = 7;
+  bool PerformProgramDownload = 8;
+  repeated RouteStep Steps = 9;
+}
+
+message TrackingInfo {
+  bool RouteInvalid = 1;
+  int32 CurrentStepNum = 2;
+  int32 CurrentControlNum = 3;
+  bool DummyPallet = 4;
+  bool Alarm = 5;
+  int32 AlarmCode = 6;
+  repeated int32 ExecutedStationNumber = 7;
+}
+
+message PalletStatus {
+  PalletMaster master = 1;
+  TrackingInfo tracking = 2;
+  int32 CurrentStationNum = 3;
+}
+
+message ProgramEntry {
+  int32 ProgramNum = 1;
+  string Comment = 2;
+  int32 CycleTimeMinutes = 3;
+  repeated int32 Tools = 4;
+}
+
+message MachineStatus {
+  int32 MachineNumber = 1;
+  bool Power = 2;
+  bool FMSLinkMode = 3;
+  bool Machining = 4;
+  int32 CurrentlyExecutingProgram = 5;
+  bool Alarm = 6;
+}
+
+message LoadStatus {
+  int32 LoadNumber = 1;
+  bool PalletExists = 2;
+}
+
+enum Mode {
+  READY = 0;
+  MANUAL = 1;
+  AUTO = 2;
+  CYCLE = 3;
+}
+
+message Status {
+  Mode Mode = 1;
+  repeated PalletStatus Pallets = 2;
+  repeated ProgramEntry Programs = 3;
+  repeated MachineStatus Machines = 4;
+  repeated LoadStatus Loads = 5;
+  bool Alarm = 6;
+  repeated int32 PalletsWithUnavailableTools = 7;
+}
+
+//------------------------------------------------------------------------------
+// Operations
+//------------------------------------------------------------------------------
+
+message UpdatePallet {
+  int32 Pallet = 1;
+  int32 Priority = 2;
+  int32 Cycles = 3;
+  bool NoWork = 4;
+  bool Skip = 5;
+  bool ForLongTool = 6;
+}
+
+message ClearPallet {
+  int32 Pallet = 1;
+}
+
+message SetProgram {
+  ProgramEntry Program = 1;
+  string ProgramFile = 2;
+  bool Overwrite = 3;
+}
+
+message RemoveProgram {
+  int32 ProgramNumber = 1;
+}
+
+message ChangeICCResponse {
+  bool Success = 1;
+  string ErrorMessage = 2;
+  Status NewStatus = 3;
+}
+
+message ReceiveStatusChangesRequest {}
+
+service ICC {
+  rpc StatusChanges(ReceiveStatusChangesRequest) returns (stream Status) {}
+
+  rpc SetPalletRoute(PalletMaster) returns (ChangeICCResponse) {}
+  rpc UpdatePalletRoute(UpdatePallet) returns (ChangeICCResponse) {}
+  rpc DeletePalletRoute(ClearPallet) returns (ChangeICCResponse) {}
+
+  rpc UpdateProgram(SetProgram) returns (ChangeICCResponse) {}
+  rpc DeleteProgram(RemoveProgram) returns (ChangeICCResponse) {}
+}
