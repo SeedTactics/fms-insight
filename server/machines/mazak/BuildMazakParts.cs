@@ -212,7 +212,7 @@ namespace MazakMachineInterface
     }
 
     public abstract IEnumerable<string> Pallets();
-    public abstract IEnumerable<JobPlan.FixtureFace> Fixtures();
+    public abstract (string fixture, int face) FixtureFace();
 
     public abstract void CreateDatabaseRow(MazakPartRow newPart, string fixture, MazakDbType mazakTy);
 
@@ -242,9 +242,9 @@ namespace MazakMachineInterface
       return Job.PlannedPallets(ProcessNumber, Path) ?? Enumerable.Empty<string>();
     }
 
-    public override IEnumerable<JobPlan.FixtureFace> Fixtures()
+    public override (string fixture, int face) FixtureFace()
     {
-      return Job.PlannedFixtures(ProcessNumber, Path) ?? Enumerable.Empty<JobPlan.FixtureFace>();
+      return Job.PlannedFixture(ProcessNumber, Path);
     }
 
     public override void CreateDatabaseRow(MazakPartRow newPart, string fixture, MazakDbType mazakTy)
@@ -318,7 +318,7 @@ namespace MazakMachineInterface
       return Job.PlannedPallets(1, Path);
     }
 
-    public override IEnumerable<JobPlan.FixtureFace> Fixtures() => Enumerable.Empty<JobPlan.FixtureFace>();
+    public override (string fixture, int face) FixtureFace() => (null, 0);
 
     public override void CreateDatabaseRow(MazakPartRow newPart, string fixture, MazakDbType mazakTy)
     {
@@ -834,15 +834,9 @@ namespace MazakMachineInterface
       {
         return "pals:" + string.Join(",", pals.OrderBy(p => p));
       }
-      string jobFixtureToFixGroup(MazakProcess proc, IEnumerable<JobPlan.FixtureFace> fixs, IEnumerable<string> pals)
+      string jobFixtureToFixGroup(MazakProcess proc, string fix, IEnumerable<string> pals)
       {
-        if (fixs.Count() > 1)
-        {
-          throw new BlackMaple.MachineFramework.BadRequestException(
-            "Invalid fixtures for " + proc.Job.PartName + "-" + proc.ProcessNumber.ToString() +
-            ".  There can be at most one fixture and face for the part.");
-        }
-        return "fix:" + string.Join(",", pals.OrderBy(p => p)) + ":" + fixs.First().Fixture;
+        return "fix:" + string.Join(",", pals.OrderBy(p => p)) + ":" + fix;
       }
 
       // compute all fixture groups
@@ -854,10 +848,10 @@ namespace MazakMachineInterface
         {
 
           string fixGroup;
-          var plannedFixs = proc.Fixtures();
-          if (plannedFixs.Any())
+          var (plannedFixture, plannedFace) = proc.FixtureFace();
+          if (!string.IsNullOrEmpty(plannedFixture))
           {
-            fixGroup = jobFixtureToFixGroup(proc, plannedFixs, proc.Pallets());
+            fixGroup = jobFixtureToFixGroup(proc, plannedFixture, proc.Pallets());
           }
           else
           {
@@ -902,17 +896,17 @@ namespace MazakMachineInterface
         foreach (var proc in allParts.SelectMany(p => p.Processes))
         {
 
-          var plannedFixes = proc.Fixtures();
+          var (plannedFixture, plannedFace) = proc.FixtureFace();
 
           string face;
           string baseFixtureName;
-          if (plannedFixes.Any())
+          if (!string.IsNullOrEmpty(plannedFixture))
           {
             //check if correct fixture group
-            if (fixGroup != jobFixtureToFixGroup(proc, plannedFixes, proc.Pallets()))
+            if (fixGroup != jobFixtureToFixGroup(proc, plannedFixture, proc.Pallets()))
               continue;
-            face = plannedFixes.First().Face;
-            baseFixtureName = plannedFixes.First().Fixture + ":" + proc.Pallets().First();
+            face = plannedFace.ToString();
+            baseFixtureName = plannedFixture + ":" + proc.Pallets().First();
           }
           else
           {

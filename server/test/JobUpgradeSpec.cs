@@ -136,16 +136,11 @@ namespace MachineWatchTest
       job1.AddProcessOnPallet(2, 3, "Pal5");
       job1.AddProcessOnPallet(2, 3, "OMG");
 
-      job1.AddProcessOnFixture(1, 1, "Fix1", "Face1");
-      job1.AddProcessOnFixture(1, 1, "Fix2", "Face2");
-      job1.AddProcessOnFixture(1, 2, "Fixxx", "Face3");
-      job1.AddProcessOnFixture(1, 2, "ABC", "Face4");
-      job1.AddProcessOnFixture(2, 1, "Fix5", "Face5");
-      job1.AddProcessOnFixture(2, 1, "Fix123", "Face6");
-      job1.AddProcessOnFixture(2, 2, "Bye", "erhh");
-      job1.AddProcessOnFixture(2, 2, "Fix22", "Face122");
-      job1.AddProcessOnFixture(2, 3, "Fix17", "Fac7");
-      job1.AddProcessOnFixture(2, 3, "Yeeeee", "Fa7753");
+      job1.SetFixtureFace(1, 1, "Fix1", 1);
+      job1.SetFixtureFace(1, 2, "ABC", 4);
+      job1.SetFixtureFace(2, 1, "Fix123", 6);
+      // 2, 2 has non-integer face, so should be ignored
+      job1.SetFixtureFace(2, 3, "Fix17", 7);
 
       job1.AddLoadStation(1, 1, 35);
       job1.AddLoadStation(1, 1, 64);

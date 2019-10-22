@@ -116,10 +116,10 @@ namespace MachineWatchTest
       job1.SetSimulatedStartingTimeUTC(1, 2, new DateTime(2018, 1, 2, 3, 4, 5, DateTimeKind.Local).ToUniversalTime());
       job1.SetPlannedCyclesOnFirstProcess(1, 51);
       job1.SetPlannedCyclesOnFirstProcess(2, 41);
-      job1.AddProcessOnFixture(1, 1, "fixA", "face1");
-      job1.AddProcessOnFixture(1, 2, "fixA", "face1");
-      job1.AddProcessOnFixture(2, 1, "fixA", "face2");
-      job1.AddProcessOnFixture(2, 2, "fixA", "face2");
+      job1.SetFixtureFace(1, 1, "fixA", 1);
+      job1.SetFixtureFace(1, 2, "fixA", 1);
+      job1.SetFixtureFace(2, 1, "fixA", 2);
+      job1.SetFixtureFace(2, 2, "fixA", 2);
 
       //one with an input queue
       var job2 = new JobPlan("uniq2", 2, new int[] { 2, 2 });
@@ -134,8 +134,8 @@ namespace MachineWatchTest
       job2.SetPlannedCyclesOnFirstProcess(2, 42);
       job2.SetInputQueue(1, 1, "aaa");
       job2.SetInputQueue(1, 2, "bbb");
-      job2.AddProcessOnFixture(1, 1, "fixA", "face2"); // conflicts with both job1 paths
-      job2.AddProcessOnFixture(2, 2, "fixB", "face2"); // no conflicts
+      job2.SetFixtureFace(1, 1, "fixA", 2); // conflicts with both job1 paths
+      job2.SetFixtureFace(2, 2, "fixB", 2); // no conflicts
 
       //a schedule which already exists
       var job3 = new JobPlan("uniq3", 2, new int[] { 1, 1 });

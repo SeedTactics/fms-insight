@@ -610,19 +610,18 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
-    public void AddProcessOnFixture(int process, int path, string fixture, string face)
+    public void SetFixtureFace(int process, int path, string fixture, int face)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
       {
-        var f = default(FixtureFace);
-        f.Fixture = fixture;
-        f.Face = face;
-        _procPath[process - 1][path - 1].Fixtures.Add(f);
+        _procPath[process - 1].Paths[path - 1].Fixture = fixture;
+        _procPath[process - 1].Paths[path - 1].Face = face;
       }
       else
       {
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
+
     }
     public IEnumerable<string> PlannedPallets(int process, int path)
     {
@@ -635,11 +634,11 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
-    public IEnumerable<FixtureFace> PlannedFixtures(int process, int path)
+    public (string fixture, int face) PlannedFixture(int process, int path)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
       {
-        return _procPath[process - 1][path - 1].Fixtures;
+        return (fixture: _procPath[process - 1][path - 1].Fixture, face: _procPath[process - 1][path - 1].Face);
       }
       else
       {
@@ -673,23 +672,6 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
-    public bool HasFixture(int process, int path, string fixture, string face)
-    {
-      if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
-      {
-        foreach (var f in _procPath[process - 1][path - 1].Fixtures)
-        {
-          if (f.Fixture == fixture && f.Face == face)
-            return true;
-        }
-        return false;
-      }
-      else
-      {
-        throw new IndexOutOfRangeException("Invalid process or path number");
-      }
-    }
-    /* PartsPerPallet is here for situations when the fixture/face info in CellConfiguration is not used */
     public int PartsPerPallet(int process, int path)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -1075,7 +1057,7 @@ namespace BlackMaple.MachineWatchInterface
     private int[] _pCycles;
 
     [Serializable, DataContract]
-    public struct FixtureFace : IComparable<FixtureFace>
+    private struct FixtureFace : IComparable<FixtureFace>
     {
       [DataMember(IsRequired = true)] public string Fixture;
       [DataMember(IsRequired = true)] public string Face;
@@ -1120,7 +1102,25 @@ namespace BlackMaple.MachineWatchInterface
       public IList<string> Pallets;
 
       [DataMember(IsRequired = false, EmitDefaultValue = false)]
-      public IList<FixtureFace> Fixtures;
+      private IList<FixtureFace> Fixtures
+      {
+        set
+        {
+          if (value.Count > 0)
+          {
+            var f = value[0];
+            Fixture = f.Fixture;
+            int.TryParse(f.Face, out Face);
+          }
+
+        }
+      }
+
+      [DataMember(IsRequired = false)]
+      public string Fixture;
+
+      [DataMember(IsRequired = false)]
+      public int Face;
 
       [DataMember(IsRequired = true)]
       public IList<int> Load;
@@ -1167,7 +1167,8 @@ namespace BlackMaple.MachineWatchInterface
         {
           PathGroup = 0;
           Pallets = new List<string>();
-          Fixtures = new List<FixtureFace>();
+          Fixture = null;
+          Face = 0;
           Load = new List<int>();
           ExpectedLoadTime = TimeSpan.Zero;
           Unload = new List<int>();
@@ -1186,7 +1187,8 @@ namespace BlackMaple.MachineWatchInterface
         {
           PathGroup = other.PathGroup;
           Pallets = new List<string>(other.Pallets);
-          Fixtures = new List<FixtureFace>(other.Fixtures);
+          Fixture = other.Fixture;
+          Face = other.Face;
           Load = new List<int>(other.Load);
           ExpectedLoadTime = other.ExpectedLoadTime;
           Unload = new List<int>(other.Unload);

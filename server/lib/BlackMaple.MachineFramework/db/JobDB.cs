@@ -115,13 +115,10 @@ namespace BlackMaple.MachineFramework
             cmd.CommandText = "CREATE TABLE planqty(UniqueStr TEXT, Path INTEGER, PlanQty INTEGER NOT NULL, PRIMARY KEY(UniqueStr, Path))";
             cmd.ExecuteNonQuery();
 
-            cmd.CommandText = "CREATE TABLE pathdata(UniqueStr TEXT, Process INTEGER, Path INTEGER, StartingUTC INTEGER, PartsPerPallet INTEGER, PathGroup INTEGER, SimAverageFlowTime INTEGER, InputQueue TEXT, OutputQueue TEXT, LoadTime INTEGER, UnloadTime INTEGER, PRIMARY KEY(UniqueStr,Process,Path))";
+            cmd.CommandText = "CREATE TABLE pathdata(UniqueStr TEXT, Process INTEGER, Path INTEGER, StartingUTC INTEGER, PartsPerPallet INTEGER, PathGroup INTEGER, SimAverageFlowTime INTEGER, InputQueue TEXT, OutputQueue TEXT, LoadTime INTEGER, UnloadTime INTEGER, Fixture TEXT, Face INTEGER, PRIMARY KEY(UniqueStr,Process,Path))";
             cmd.ExecuteNonQuery();
 
             cmd.CommandText = "CREATE TABLE pallets(UniqueStr TEXT, Process INTEGER, Path INTEGER, Pallet TEXT, PRIMARY KEY(UniqueStr,Process,Path,Pallet))";
-            cmd.ExecuteNonQuery();
-
-            cmd.CommandText = "CREATE TABLE fixtures(UniqueStr TEXT, Process INTEGER, Path INTEGER, Fixture TEXT, Face TEXT, PRIMARY KEY(UniqueStr,Process,Path,Fixture,Face))";
             cmd.ExecuteNonQuery();
 
             cmd.CommandText = "CREATE TABLE stops(UniqueStr TEXT, Process INTEGER, Path INTEGER, RouteNum INTEGER, StatGroup STRING, ExpectedCycleTime INTEGER, Program TEXT, ProgramRevision INTEGER, PRIMARY KEY(UniqueStr, Process, Path, RouteNum))";
@@ -534,6 +531,24 @@ namespace BlackMaple.MachineFramework
 
                 cmd.CommandText = "DROP TABLE programs";
                 cmd.ExecuteNonQuery();
+
+                // now fixture/face
+                cmd.CommandText = "ALTER TABLE pathdata ADD Fixture TEXT";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "ALTER TABLE pathdata ADD Face INTEGER";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText =
+                    "UPDATE pathdata SET " +
+                    "  Fixture = (SELECT fixtures.Fixture FROM fixtures WHERE " +
+                    "   fixtures.UniqueStr = pathdata.UniqueStr AND fixtures.Process = pathdata.Process AND fixtures.Path = pathdata.Path ORDER BY fixtures.Fixture ASC LIMIT 1)," +
+                    "  Face = (SELECT fixtures.Face FROM fixtures WHERE " +
+                    "   fixtures.UniqueStr = pathdata.UniqueStr AND fixtures.Process = pathdata.Process AND fixtures.Path = pathdata.Path ORDER BY fixtures.Fixture ASC LIMIT 1)";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "DROP TABLE fixtures";
+                cmd.ExecuteNonQuery();
             }
 
         }
@@ -605,16 +620,6 @@ namespace BlackMaple.MachineFramework
                 job.SetSimulatedProduction(entry.Key.Process, entry.Key.Path, entry.Value);
             }
 
-            //read fixtures
-            cmd.CommandText = "SELECT Process, Path, Fixture, Face FROM fixtures WHERE UniqueStr = $uniq";
-            using (IDataReader reader = cmd.ExecuteReader())
-            {
-                while (reader.Read())
-                {
-                    job.AddProcessOnFixture(reader.GetInt32(0), reader.GetInt32(1), reader.GetString(2), reader.GetString(3));
-                }
-            }
-
             //scheduled bookings
             cmd.CommandText = "SELECT BookingId FROM scheduled_bookings WHERE UniqueStr = $uniq";
             using (IDataReader reader = cmd.ExecuteReader())
@@ -626,7 +631,7 @@ namespace BlackMaple.MachineFramework
             }
 
             //path data
-            cmd.CommandText = "SELECT Process, Path, StartingUTC, PartsPerPallet, PathGroup, SimAverageFlowTime, InputQueue, OutputQueue, LoadTime, UnloadTime FROM pathdata WHERE UniqueStr = $uniq";
+            cmd.CommandText = "SELECT Process, Path, StartingUTC, PartsPerPallet, PathGroup, SimAverageFlowTime, InputQueue, OutputQueue, LoadTime, UnloadTime, Fixture, Face FROM pathdata WHERE UniqueStr = $uniq";
             using (var reader = cmd.ExecuteReader())
             {
                 while (reader.Read())
@@ -650,6 +655,17 @@ namespace BlackMaple.MachineFramework
                         job.SetExpectedLoadTime(proc, path, TimeSpan.FromTicks(reader.GetInt64(8)));
                     if (!reader.IsDBNull(9))
                         job.SetExpectedUnloadTime(proc, path, TimeSpan.FromTicks(reader.GetInt64(9)));
+
+                    if (!reader.IsDBNull(10) && !reader.IsDBNull(11)) {
+                        var faceTy = reader.GetFieldType(11);
+                        if (faceTy == typeof(string)) {
+                            if (int.TryParse(reader.GetString(11), out int face)) {
+                                job.SetFixtureFace(proc, path, reader.GetString(10), face);
+                            }
+                        } else {
+                            job.SetFixtureFace(proc, path, reader.GetString(10), reader.GetInt32(11));
+                        }
+                    }
                 }
             }
 
@@ -1497,32 +1513,8 @@ namespace BlackMaple.MachineFramework
                 }
             }
 
-            cmd.CommandText = "INSERT INTO fixtures(UniqueStr, Process, Path, Fixture,Face) VALUES ($uniq,$proc,$path,$fix,$face)";
-            cmd.Parameters.Clear();
-            cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
-            cmd.Parameters.Add("proc", SqliteType.Integer);
-            cmd.Parameters.Add("path", SqliteType.Integer);
-            cmd.Parameters.Add("fix", SqliteType.Text);
-            cmd.Parameters.Add("face", SqliteType.Text);
-
-            for (int i = 1; i <= job.NumProcesses; i++)
-            {
-                for (int j = 1; j <= job.GetNumPaths(i); j++)
-                {
-                    if (job.PlannedFixtures(i, j) == null) continue;
-                    foreach (var fix in job.PlannedFixtures(i, j))
-                    {
-                        cmd.Parameters[1].Value = i;
-                        cmd.Parameters[2].Value = j;
-                        cmd.Parameters[3].Value = fix.Fixture;
-                        cmd.Parameters[4].Value = fix.Face;
-                        cmd.ExecuteNonQuery();
-                    }
-                }
-            }
-
-            cmd.CommandText = "INSERT INTO pathdata(UniqueStr, Process, Path, StartingUTC, PartsPerPallet, PathGroup,SimAverageFlowTime,InputQueue,OutputQueue,LoadTime,UnloadTime) " +
-          "VALUES ($uniq,$proc,$path,$start,$ppp,$group,$flow,$iq,$oq,$lt,$ul)";
+            cmd.CommandText = "INSERT INTO pathdata(UniqueStr, Process, Path, StartingUTC, PartsPerPallet, PathGroup,SimAverageFlowTime,InputQueue,OutputQueue,LoadTime,UnloadTime,Fixture,Face) " +
+          "VALUES ($uniq,$proc,$path,$start,$ppp,$group,$flow,$iq,$oq,$lt,$ul,$fix,$face)";
             cmd.Parameters.Clear();
             cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
             cmd.Parameters.Add("proc", SqliteType.Integer);
@@ -1535,6 +1527,8 @@ namespace BlackMaple.MachineFramework
             cmd.Parameters.Add("oq", SqliteType.Text);
             cmd.Parameters.Add("lt", SqliteType.Integer);
             cmd.Parameters.Add("ul", SqliteType.Integer);
+            cmd.Parameters.Add("fix", SqliteType.Text);
+            cmd.Parameters.Add("face", SqliteType.Integer);
             for (int i = 1; i <= job.NumProcesses; i++)
             {
                 for (int j = 1; j <= job.GetNumPaths(i); j++)
@@ -1557,6 +1551,9 @@ namespace BlackMaple.MachineFramework
                         cmd.Parameters[8].Value = oq;
                     cmd.Parameters[9].Value = job.GetExpectedLoadTime(i, j).Ticks;
                     cmd.Parameters[10].Value = job.GetExpectedUnloadTime(i, j).Ticks;
+                    var (fix, face) = job.PlannedFixture(i, j);
+                    cmd.Parameters[11].Value = string.IsNullOrEmpty(fix) ? DBNull.Value : (object)fix;
+                    cmd.Parameters[12].Value = face;
                     cmd.ExecuteNonQuery();
                 }
             }

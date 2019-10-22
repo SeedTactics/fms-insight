@@ -131,16 +131,11 @@ namespace MachineWatchTest
       job1.AddProcessOnPallet(2, 3, "Pal5");
       job1.AddProcessOnPallet(2, 3, "OMG");
 
-      job1.AddProcessOnFixture(1, 1, "Fix1", "Face1");
-      job1.AddProcessOnFixture(1, 1, "Fix2", "Face2");
-      job1.AddProcessOnFixture(1, 2, "Fixxx", "Face3");
-      job1.AddProcessOnFixture(1, 2, "ABC", "Face4");
-      job1.AddProcessOnFixture(2, 1, "Fix5", "Face5");
-      job1.AddProcessOnFixture(2, 1, "Fix123", "Face6");
-      job1.AddProcessOnFixture(2, 2, "Bye", "erhh");
-      job1.AddProcessOnFixture(2, 2, "Fix22", "Face122");
-      job1.AddProcessOnFixture(2, 3, "Fix17", "Fac7");
-      job1.AddProcessOnFixture(2, 3, "Yeeeee", "Fa7753");
+      job1.SetFixtureFace(1, 1, "Fix1", 1);
+      job1.SetFixtureFace(1, 2, "Fixxx", 3);
+      job1.SetFixtureFace(2, 1, "Fix5", 5);
+      job1.SetFixtureFace(2, 2, "Bye", 12);
+      // don't set 2, 3 to check null works
 
       job1.AddLoadStation(1, 1, 35);
       job1.AddLoadStation(1, 1, 64);
@@ -305,11 +300,10 @@ namespace MachineWatchTest
       job2.AddProcessOnPallet(3, 1, "ehe");
       job2.AddProcessOnPallet(3, 1, "awger");
 
-      job2.AddProcessOnFixture(1, 1, "Fix6", "asg43");
-      job2.AddProcessOnFixture(1, 1, "h343", "werg");
-      job2.AddProcessOnFixture(2, 1, "a235sg", "awef");
-      job2.AddProcessOnFixture(3, 1, "erte34", "htr");
-      job2.AddProcessOnFixture(3, 1, "35aert", "aweh33");
+      job2.SetFixtureFace(1, 1, "Fix6", 62);
+      job2.SetFixtureFace(2, 1, "a235sg", 52);
+      job2.SetFixtureFace(3, 1, "erte34", 2);
+      job2.SetFixtureFace(3, 1, "35aert", 33);
 
       job2.AddLoadStation(1, 1, 375);
       job2.AddLoadStation(2, 1, 86);
@@ -849,7 +843,7 @@ namespace MachineWatchTest
           EqualSort(job1.UnloadStations(proc, path), job2.UnloadStations(proc, path));
           EqualSort(job1.PlannedPallets(proc, path), job2.PlannedPallets(proc, path));
 
-          EqualSort(job1.PlannedFixtures(proc, path), job2.PlannedFixtures(proc, path));
+          Assert.Equal(job1.PlannedFixture(proc, path), job2.PlannedFixture(proc, path));
 
           if (checkHolds)
           {
