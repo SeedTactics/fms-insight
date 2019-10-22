@@ -267,10 +267,10 @@ namespace MazakMachineInterface
       string program = "";
       foreach (var routeEntry in Job.GetMachiningStop(ProcessNumber, Path))
       {
-        foreach (int statNum in routeEntry.Stations())
+        program = routeEntry.ProgramName;
+        foreach (int statNum in routeEntry.Stations)
         {
           Cut[statNum - 1] = statNum.ToString()[0];
-          program = routeEntry.Program(statNum);
         }
       }
 
@@ -328,7 +328,7 @@ namespace MazakMachineInterface
 
       foreach (var routeEntry in Job.GetMachiningStop(1, Path))
       {
-        foreach (int statNum in routeEntry.Stations())
+        foreach (int statNum in routeEntry.Stations)
         {
           Cut[statNum - 1] = statNum.ToString()[0];
         }
@@ -742,37 +742,32 @@ namespace MazakMachineInterface
             foreach (var stop in job.GetMachiningStop(proc, path))
             {
               has1Stop = true;
-              var lst = new List<JobMachiningStop.ProgramEntry>(stop.AllPrograms());
-
-              if (lst.Count == 0)
+              if (stop.Stations.Count == 0)
               {
                 ErrorDuringCreate = "Part " + job.PartName + " has no stations assigned.";
                 return;
               }
 
-              foreach (var p in lst)
+              if (stop.ProgramName == null || stop.ProgramName == "")
               {
-                if (p.Program == null || p.Program == "")
+                ErrorDuringCreate = "Part " + job.PartName + " has no programs.";
+                return;
+              }
+              if (mazakTy == MazakDbType.MazakVersionE)
+              {
+                int progNum;
+                if (!int.TryParse(stop.ProgramName, out progNum))
                 {
-                  ErrorDuringCreate = "Part " + job.PartName + " has no programs.";
+                  ErrorDuringCreate = "Part " + job.PartName + " program " + stop.ProgramName +
+                      " is not an integer.";
                   return;
                 }
-                if (mazakTy == MazakDbType.MazakVersionE)
-                {
-                  int progNum;
-                  if (!int.TryParse(p.Program, out progNum))
-                  {
-                    ErrorDuringCreate = "Part " + job.PartName + " program " + p.Program +
-                        " is not an integer.";
-                    return;
-                  }
-                }
-                if (!mazakData.MainPrograms.Any(mp => mp.MainProgram == p.Program))
-                {
-                  ErrorDuringCreate = "Part " + job.PartName + " program " + p.Program +
-                      " does not exist in the cell controller.";
-                  return;
-                }
+              }
+              if (!mazakData.MainPrograms.Any(mp => mp.MainProgram == stop.ProgramName))
+              {
+                ErrorDuringCreate = "Part " + job.PartName + " program " + stop.ProgramName +
+                    " does not exist in the cell controller.";
+                return;
               }
             }
 

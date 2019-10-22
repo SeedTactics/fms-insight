@@ -86,7 +86,7 @@ namespace BlackMaple.MachineFramework
             _connection.Close();
         }
 
-        private const int Version = 16;
+        private const int Version = 17;
 
         public void CreateTables()
         {
@@ -124,10 +124,10 @@ namespace BlackMaple.MachineFramework
             cmd.CommandText = "CREATE TABLE fixtures(UniqueStr TEXT, Process INTEGER, Path INTEGER, Fixture TEXT, Face TEXT, PRIMARY KEY(UniqueStr,Process,Path,Fixture,Face))";
             cmd.ExecuteNonQuery();
 
-            cmd.CommandText = "CREATE TABLE stops(UniqueStr TEXT, Process INTEGER, Path INTEGER, RouteNum INTEGER, StatGroup STRING, ExpectedCycleTime INTEGER, PRIMARY KEY(UniqueStr, Process, Path, RouteNum))";
+            cmd.CommandText = "CREATE TABLE stops(UniqueStr TEXT, Process INTEGER, Path INTEGER, RouteNum INTEGER, StatGroup STRING, ExpectedCycleTime INTEGER, Program TEXT, ProgramRevision INTEGER, PRIMARY KEY(UniqueStr, Process, Path, RouteNum))";
             cmd.ExecuteNonQuery();
 
-            cmd.CommandText = "CREATE TABLE programs(UniqueStr TEXT, Process INTEGER, Path INTEGER, RouteNum INTEGER, StatNum INTEGER, Program TEXT NOT NULL, PRIMARY KEY(UniqueStr, Process, Path, RouteNum, StatNum))";
+            cmd.CommandText = "CREATE TABLE stops_stations(UniqueStr TEXT, Process INTEGER, Path INTEGER, RouteNum INTEGER, StatNum INTEGER, PRIMARY KEY(UniqueStr, Process, Path, RouteNum, StatNum))";
             cmd.ExecuteNonQuery();
 
             cmd.CommandText = "CREATE TABLE tools(UniqueStr TEXT, Process INTEGER, Path INTEGER, RouteNum INTEGER, Tool STRING, ExpectedUse INTEGER, PRIMARY KEY(UniqueStr,Process,Path,RouteNum,Tool))";
@@ -243,6 +243,7 @@ namespace BlackMaple.MachineFramework
                 if (curVersion < 14) Ver13ToVer14(trans);
                 if (curVersion < 15) Ver14ToVer15(trans);
                 if (curVersion < 16) Ver15ToVer16(trans);
+                if (curVersion < 17) Ver16ToVer17(trans);
 
                 //update the version in the database
                 cmd.Transaction = trans;
@@ -502,6 +503,40 @@ namespace BlackMaple.MachineFramework
                 cmd.ExecuteNonQuery();
             }
         }
+
+        private void Ver16ToVer17(IDbTransaction trans)
+        {
+            using (IDbCommand cmd = _connection.CreateCommand())
+            {
+                cmd.CommandText = "CREATE TABLE stops_stations(UniqueStr TEXT, Process INTEGER, Path INTEGER, RouteNum INTEGER, StatNum INTEGER, PRIMARY KEY(UniqueStr, Process, Path, RouteNum, StatNum))";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "INSERT INTO stops_stations(UniqueStr, Process, Path, RouteNum, StatNum) SELECT UniqueStr, Process, Path, RouteNum, StatNum FROM programs";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "ALTER TABLE stops ADD Program TEXT";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "ALTER TABLE stops ADD ProgramRevision INTEGER";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText =
+                    "UPDATE stops SET Program = " +
+                    " (SELECT programs.Program FROM programs WHERE " +
+                    "  programs.UniqueStr = stops.UniqueStr AND " +
+                    "  programs.Process = stops.Process AND " +
+                    "  programs.Path = stops.Path AND " +
+                    "  programs.RouteNum = stops.RouteNum " +
+                    "  ORDER BY programs.StatNum ASC " +
+                    "  LIMIT 1 " +
+                    " )";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "DROP TABLE programs";
+                cmd.ExecuteNonQuery();
+            }
+
+        }
         #endregion
 
         #region "Loading Jobs"
@@ -621,7 +656,7 @@ namespace BlackMaple.MachineFramework
             var routes = new Dictionary<JobPath, SortedList<int, MachineWatchInterface.JobMachiningStop>>();
 
             //now add routes
-            cmd.CommandText = "SELECT Process, Path, RouteNum, StatGroup, ExpectedCycleTime FROM stops WHERE UniqueStr = $uniq";
+            cmd.CommandText = "SELECT Process, Path, RouteNum, StatGroup, ExpectedCycleTime, Program, ProgramRevision FROM stops WHERE UniqueStr = $uniq";
             using (IDataReader reader = cmd.ExecuteReader())
             {
                 while (reader.Read())
@@ -646,6 +681,12 @@ namespace BlackMaple.MachineFramework
                     var stop = new MachineWatchInterface.JobMachiningStop(reader.GetString(3));
                     if (!reader.IsDBNull(4))
                         stop.ExpectedCycleTime = TimeSpan.FromTicks(reader.GetInt64(4));
+
+                    if (!reader.IsDBNull(5))
+                        stop.ProgramName = reader.GetString(5);
+                    if (!reader.IsDBNull(6))
+                        stop.ProgramRevision = reader.GetInt64(6);
+
                     rList[routeNum] = stop;
                 }
             }
@@ -659,7 +700,7 @@ namespace BlackMaple.MachineFramework
             }
 
             //programs for routes
-            cmd.CommandText = "SELECT Process, Path, RouteNum, StatNum, Program FROM programs WHERE UniqueStr = $uniq";
+            cmd.CommandText = "SELECT Process, Path, RouteNum, StatNum FROM stops_stations WHERE UniqueStr = $uniq";
             using (IDataReader reader = cmd.ExecuteReader())
             {
                 while (reader.Read())
@@ -674,7 +715,7 @@ namespace BlackMaple.MachineFramework
                         var stops = routes[key];
                         if (stops.ContainsKey(routeNum))
                         {
-                            stops[routeNum].AddProgram(reader.GetInt32(3), reader.GetString(4));
+                            stops[routeNum].Stations.Add(reader.GetInt32(3));
                         }
                     }
                 }
@@ -1520,8 +1561,8 @@ namespace BlackMaple.MachineFramework
                 }
             }
 
-            cmd.CommandText = "INSERT INTO stops(UniqueStr, Process, Path, RouteNum, StatGroup, ExpectedCycleTime) " +
-          "VALUES ($uniq,$proc,$path,$route,$group,$cycle)";
+            cmd.CommandText = "INSERT INTO stops(UniqueStr, Process, Path, RouteNum, StatGroup, ExpectedCycleTime, Program, ProgramRevision) " +
+          "VALUES ($uniq,$proc,$path,$route,$group,$cycle,$prog,$rev)";
             cmd.Parameters.Clear();
             cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
             cmd.Parameters.Add("proc", SqliteType.Integer);
@@ -1529,6 +1570,9 @@ namespace BlackMaple.MachineFramework
             cmd.Parameters.Add("route", SqliteType.Integer);
             cmd.Parameters.Add("group", SqliteType.Text);
             cmd.Parameters.Add("cycle", SqliteType.Integer);
+            cmd.Parameters.Add("prog", SqliteType.Text);
+            cmd.Parameters.Add("rev", SqliteType.Integer);
+
 
             for (int i = 1; i <= job.NumProcesses; i++)
             {
@@ -1542,21 +1586,22 @@ namespace BlackMaple.MachineFramework
                         cmd.Parameters[3].Value = routeNum;
                         cmd.Parameters[4].Value = entry.StationGroup;
                         cmd.Parameters[5].Value = entry.ExpectedCycleTime.Ticks;
+                        cmd.Parameters[6].Value = string.IsNullOrEmpty(entry.ProgramName) ? DBNull.Value : (object)entry.ProgramName;
+                        cmd.Parameters[7].Value = entry.ProgramRevision;
                         cmd.ExecuteNonQuery();
                         routeNum += 1;
                     }
                 }
             }
 
-            cmd.CommandText = "INSERT INTO programs(UniqueStr, Process, Path, RouteNum, StatNum, Program) " +
-          "VALUES ($uniq,$proc,$path,$route,$num,$prog)";
+            cmd.CommandText = "INSERT INTO stops_stations(UniqueStr, Process, Path, RouteNum, StatNum) " +
+          "VALUES ($uniq,$proc,$path,$route,$num)";
             cmd.Parameters.Clear();
             cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
             cmd.Parameters.Add("proc", SqliteType.Integer);
             cmd.Parameters.Add("path", SqliteType.Integer);
             cmd.Parameters.Add("route", SqliteType.Integer);
             cmd.Parameters.Add("num", SqliteType.Integer);
-            cmd.Parameters.Add("prog", SqliteType.Text);
 
             for (int i = 1; i <= job.NumProcesses; i++)
             {
@@ -1565,13 +1610,12 @@ namespace BlackMaple.MachineFramework
                     int routeNum = 0;
                     foreach (var entry in job.GetMachiningStop(i, j))
                     {
-                        foreach (var prog in entry.AllPrograms())
+                        foreach (var stat in entry.Stations)
                         {
                             cmd.Parameters[1].Value = i;
                             cmd.Parameters[2].Value = j;
                             cmd.Parameters[3].Value = routeNum;
-                            cmd.Parameters[4].Value = prog.StationNum;
-                            cmd.Parameters[5].Value = prog.Program;
+                            cmd.Parameters[4].Value = stat;
 
                             cmd.ExecuteNonQuery();
                         }

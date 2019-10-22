@@ -64,11 +64,11 @@ namespace MachineWatchTest
       job1.AddUnloadStation(1, 1, 4);
       job1.AddUnloadStation(1, 2, 3);
       var stop = new JobMachiningStop("machine");
-      stop.AddProgram(1, "");
+      stop.Stations.Add(1);
       job1.AddMachiningStop(1, 1, stop);
       stop = new JobMachiningStop("machine");
-      stop.AddProgram(3, "");
-      stop.AddProgram(4, "");
+      stop.Stations.Add(3);
+      stop.Stations.Add(4);
       job1.AddMachiningStop(1, 2, stop);
 
       var job2 = new JobPlan("Job2", 1, new int[] { 2 });
@@ -1083,7 +1083,8 @@ namespace MachineWatchTest
           job.AddLoadStation(proc, path, 1);
           job.AddUnloadStation(proc, path, 1);
           var stop = new JobMachiningStop("machine");
-          stop.AddProgram(1, "1234");
+          stop.Stations.Add(1);
+          stop.ProgramName = "1234";
           job.AddMachiningStop(proc, path, stop);
         }
       }

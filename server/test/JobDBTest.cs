@@ -173,42 +173,49 @@ namespace MachineWatchTest
       job1.SetExpectedUnloadTime(2, 3, TimeSpan.FromSeconds(532));
 
       var route = new JobMachiningStop("Machine");
-      route.AddProgram(23, "Hello");
-      route.AddProgram(12, "Emily");
+      route.Stations.Add(23);
+      route.Stations.Add(12);
+      route.ProgramName = "Hello";
+      route.ProgramRevision = 522;
       route.ExpectedCycleTime = TimeSpan.FromHours(1.2);
       route.Tools["tool1"] = TimeSpan.FromMinutes(30);
       route.Tools["tool2"] = TimeSpan.FromMinutes(35);
       job1.AddMachiningStop(1, 1, route);
 
       route = new JobMachiningStop("Other Machine");
-      route.AddProgram(23, "agw");
-      route.AddProgram(12, "awef");
+      route.Stations.Add(23);
+      route.Stations.Add(12);
+      route.ProgramName = "agw";
       route.ExpectedCycleTime = TimeSpan.FromHours(2.8);
       route.Tools["tool1"] = TimeSpan.FromMinutes(9);
       route.Tools["tool33"] = TimeSpan.FromMinutes(42);
       job1.AddMachiningStop(1, 2, route);
 
       route = new JobMachiningStop("Test");
-      route.AddProgram(64, "Goodbye");
-      route.AddProgram(323, "Whee");
+      route.Stations.Add(64);
+      route.Stations.Add(323);
+      route.ProgramName = "Whee";
       route.ExpectedCycleTime = TimeSpan.FromHours(6.3);
       route.Tools["tool2"] = TimeSpan.FromMinutes(12);
       route.Tools["tool44"] = TimeSpan.FromMinutes(99);
       job1.AddMachiningStop(2, 1, route);
 
       route = new JobMachiningStop("Test");
-      route.AddProgram(64, "agwe");
-      route.AddProgram(32, "wefq");
+      route.Stations.Add(64);
+      route.Stations.Add(32);
+      route.ProgramName = "agwe";
       job1.AddMachiningStop(2, 2, route);
 
       route = new JobMachiningStop("Test");
-      route.AddProgram(245, "oh my");
-      route.AddProgram(36, "dduuude");
+      route.Stations.Add(245);
+      route.Stations.Add(36);
+      route.ProgramName = "oh my";
       job1.AddMachiningStop(2, 1, route);
 
       route = new JobMachiningStop("Test");
-      route.AddProgram(23, "so cool");
-      route.AddProgram(53, "so cool");
+      route.Stations.Add(23);
+      route.Stations.Add(53);
+      route.ProgramName = "so cool";
       job1.AddMachiningStop(2, 2, route);
 
       job1.AddInspection(new JobInspectionData("Insp1", "counter1", 53, TimeSpan.FromMinutes(100), 12));
@@ -314,21 +321,25 @@ namespace MachineWatchTest
       job2.AddUnloadStation(3, 1, 786);
 
       var route = new JobMachiningStop("Abc");
-      route.AddProgram(12, "fgaserg");
+      route.Stations.Add(12);
+      route.ProgramName = "agoiuhewg";
       job2.AddMachiningStop(1, 1, route);
 
       route = new JobMachiningStop("gwerwer");
-      route.AddProgram(23, "awga");
+      route.Stations.Add(23);
+      route.ProgramName = "awga";
       job2.AddMachiningStop(2, 1, route);
 
       route = new JobMachiningStop("agreer");
-      route.AddProgram(75, "ahtt");
-      route.AddProgram(365, "awreer");
+      route.Stations.Add(75);
+      route.Stations.Add(365);
+      route.ProgramName = "ahtt";
       job2.AddMachiningStop(3, 1, route);
 
       route = new JobMachiningStop("duude");
-      route.AddProgram(643, "awgouihag");
-      route.AddProgram(7458, "agoouerherg");
+      route.Stations.Add(643);
+      route.Stations.Add(7458);
+      route.ProgramName = "awgouihag";
       job2.AddMachiningStop(3, 1, route);
 
     }
@@ -868,7 +879,9 @@ namespace MachineWatchTest
             {
               Assert.NotNull(route2);
               Assert.Equal(route1.ExpectedCycleTime, route2.ExpectedCycleTime);
-              EqualSort(route1.AllPrograms(), route2.AllPrograms());
+              EqualSort(route1.Stations, route2.Stations);
+              Assert.Equal(route1.ProgramName, route2.ProgramName);
+              Assert.Equal(route1.ProgramRevision, route2.ProgramRevision);
               Assert.Equal(route1.Tools, route2.Tools);
             }
           }
@@ -876,7 +889,7 @@ namespace MachineWatchTest
       }
     }
 
-    private static void CheckJobEqual(JobPlan job1, JobPlan job2, bool checkHolds)
+    public static void CheckJobEqual(JobPlan job1, JobPlan job2, bool checkHolds)
     {
       CheckPlanEqual(job1, job2, checkHolds);
     }
