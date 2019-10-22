@@ -1059,8 +1059,10 @@ namespace BlackMaple.MachineWatchInterface
     [Serializable, DataContract]
     private struct FixtureFace : IComparable<FixtureFace>
     {
+#pragma warning disable CS0649
       [DataMember(IsRequired = true)] public string Fixture;
       [DataMember(IsRequired = true)] public string Face;
+#pragma warning restore CS0649
 
       public int CompareTo(FixtureFace o)
       {
@@ -1259,6 +1261,14 @@ namespace BlackMaple.MachineWatchInterface
   }
 
   [Serializable, DataContract]
+  public class ProgramEntry
+  {
+    [DataMember(IsRequired = true)] public string ProgramName { get; set; }
+    [DataMember(IsRequired = true)] public long ProgramRevision { get; set; }
+    [DataMember(IsRequired = true)] public string ProgramContent { get; set; }
+  }
+
+  [Serializable, DataContract]
   public class NewJobs
   {
     [DataMember(IsRequired = true)] public string ScheduleId { get; set; }
@@ -1281,6 +1291,9 @@ namespace BlackMaple.MachineWatchInterface
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public Dictionary<string, QueueSize> QueueSizes { get; set; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public List<ProgramEntry> Programs { get; set; }
   }
 
   [Serializable, DataContract]
