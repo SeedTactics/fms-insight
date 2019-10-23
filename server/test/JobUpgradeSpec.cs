@@ -77,7 +77,7 @@ namespace MachineWatchTest
       job1.PartName = "Job1";
       job1.SetPlannedCyclesOnFirstProcess(1, 125);
       job1.SetPlannedCyclesOnFirstProcess(2, 53);
-      job1.RouteStartingTimeUTC = DateTime.Parse("2019-10-22 15:24").ToUniversalTime();
+      job1.RouteStartingTimeUTC = DateTime.Parse("2019-10-22 20:24 GMT").ToUniversalTime();
       job1.RouteEndingTimeUTC = job1.RouteStartingTimeUTC.AddHours(100);
       job1.Archived = false;
       job1.JobCopiedToSystem = true;
