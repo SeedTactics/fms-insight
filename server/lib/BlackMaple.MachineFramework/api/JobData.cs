@@ -1280,7 +1280,8 @@ namespace BlackMaple.MachineWatchInterface
   public class ProgramEntry
   {
     [DataMember(IsRequired = true)] public string ProgramName { get; set; }
-    [DataMember(IsRequired = true)] public long ProgramRevision { get; set; }
+    [DataMember(IsRequired = true)] public long Revision { get; set; }
+    [DataMember(IsRequired = true)] public string Comment { get; set; }
     [DataMember(IsRequired = true)] public string ProgramContent { get; set; }
   }
 

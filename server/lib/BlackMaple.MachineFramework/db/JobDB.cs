@@ -90,7 +90,7 @@ namespace BlackMaple.MachineFramework
 
         public void CreateTables()
         {
-            using (var cmd = _connection.CreateCommand()) {
+          using (var cmd = _connection.CreateCommand()) {
 
             cmd.CommandText = "CREATE TABLE version(ver INTEGER)";
             cmd.ExecuteNonQuery();
@@ -171,7 +171,13 @@ namespace BlackMaple.MachineFramework
 
             cmd.CommandText = "CREATE TABLE unfilled_workorders(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER NOT NULL, DueDate INTEGER NOT NULL, Priority INTEGER NOT NULL, PRIMARY KEY(ScheduleId, Part, Workorder))";
             cmd.ExecuteNonQuery();
-            }
+
+            cmd.CommandText = "CREATE TABLE program_revisions(ProgramName TEXT NOT NULL, ProgramRevision INTEGER NOT NULL, CellControllerProgramName TEXT, RevisionTimeUTC INTEGER NOT NULL, RevisionComment TEXT, ProgramContent TEXT, PRIMARY KEY(ProgramName, ProgramRevision))";
+            cmd.ExecuteNonQuery();
+
+            cmd.CommandText = "CREATE INDEX program_rev_cell_prog_name ON program_revisions(CellControllerProgramName, ProgramRevision) WHERE CellControllerProgramName IS NOT NULL";
+            cmd.ExecuteNonQuery();
+          }
         }
 
 
@@ -548,6 +554,12 @@ namespace BlackMaple.MachineFramework
                 cmd.ExecuteNonQuery();
 
                 cmd.CommandText = "DROP TABLE fixtures";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "CREATE TABLE program_revisions(ProgramName TEXT NOT NULL, ProgramRevision INTEGER NOT NULL, CellControllerProgramName TEXT, RevisionTimeUTC INTEGER NOT NULL, RevisionComment TEXT, ProgramContent TEXT, PRIMARY KEY(ProgramName, ProgramRevision))";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "CREATE INDEX program_rev_cell_prog_name ON program_revisions(CellControllerProgramName, ProgramRevision) WHERE CellControllerProgramName IS NOT NULL";
                 cmd.ExecuteNonQuery();
             }
 
@@ -1383,12 +1395,19 @@ namespace BlackMaple.MachineFramework
                     {
                         using (var cmd = _connection.CreateCommand())
                         {
+                            cmd.Transaction = trans;
                             cmd.CommandText = "INSERT OR REPLACE INTO schedule_debug(ScheduleId, DebugMessage) VALUES ($sid,$debug)";
                             cmd.Parameters.Add("sid", SqliteType.Text).Value = newJobs.ScheduleId;
                             cmd.Parameters.Add("debug", SqliteType.Blob).Value = newJobs.DebugMessage;
                             cmd.ExecuteNonQuery();
                         }
                     }
+
+                    var startingUtc = DateTime.UtcNow;
+                    if (newJobs.Jobs.Any()) {
+                      startingUtc = newJobs.Jobs[0].RouteStartingTimeUTC;
+                    }
+                    AddPrograms(trans, newJobs.Programs, startingUtc);
 
                     trans.Commit();
                 }
@@ -2090,6 +2109,208 @@ namespace BlackMaple.MachineFramework
                 return ret;
             }
         }
+        #endregion
+
+        #region Programs
+        private void AddPrograms(IDbTransaction transaction, IEnumerable<MachineWatchInterface.ProgramEntry> programs, DateTime nowUtc)
+        {
+          if (programs == null || !programs.Any()) return;
+
+          using (var checkCmd = _connection.CreateCommand())
+          using (var haveRevCmd = _connection.CreateCommand())
+          using (var needRevCmd = _connection.CreateCommand())
+          {
+            ((IDbCommand)checkCmd).Transaction = transaction;
+            checkCmd.CommandText = "SELECT ProgramContent FROM program_revisions WHERE ProgramName = $name AND ProgramRevision = $rev";
+            checkCmd.Parameters.Add("name", SqliteType.Text);
+            checkCmd.Parameters.Add("rev", SqliteType.Integer);
+
+            ((IDbCommand)haveRevCmd).Transaction = transaction;
+            haveRevCmd.CommandText = "INSERT INTO program_revisions(ProgramName, ProgramRevision, RevisionTimeUTC, RevisionComment, ProgramContent) " +
+                                " VALUES($name,$rev,$time,$comment,$prog)";
+            haveRevCmd.Parameters.Add("name", SqliteType.Text);
+            haveRevCmd.Parameters.Add("rev", SqliteType.Integer);
+            haveRevCmd.Parameters.Add("time", SqliteType.Integer).Value = nowUtc.Ticks;
+            haveRevCmd.Parameters.Add("comment", SqliteType.Text);
+            haveRevCmd.Parameters.Add("prog", SqliteType.Text);
+
+            ((IDbCommand)needRevCmd).Transaction = transaction;
+            needRevCmd.CommandText = "INSERT INTO program_revisions(ProgramName, ProgramRevision, RevisionTimeUTC, RevisionComment, ProgramContent) " +
+                                " VALUES($name,COALESCE((SELECT MAX(ProgramRevision) + 1 FROM program_revisions WHERE ProgramName = $name2), 1),$time,$comment,$prog)";
+            needRevCmd.Parameters.Add("name", SqliteType.Text);
+            needRevCmd.Parameters.Add("name2", SqliteType.Text);
+            needRevCmd.Parameters.Add("time", SqliteType.Integer).Value = nowUtc.Ticks;
+            needRevCmd.Parameters.Add("comment", SqliteType.Text);
+            needRevCmd.Parameters.Add("prog", SqliteType.Text);
+
+            foreach (var prog in programs)
+            {
+              if (prog.Revision > 0) {
+                checkCmd.Parameters[0].Value = prog.ProgramName;
+                checkCmd.Parameters[1].Value = prog.Revision;
+                var content = checkCmd.ExecuteScalar();
+                if (content != null && content != DBNull.Value) {
+                  if ((string)content != prog.ProgramContent)
+                  {
+                    throw new BadRequestException("Program " + prog.ProgramName + " rev" + prog.Revision.ToString() + " has already been used and the program contents do not match.");
+                  }
+                  // if match, do nothing
+                } else {
+                  haveRevCmd.Parameters[0].Value = prog.ProgramName;
+                  haveRevCmd.Parameters[1].Value = prog.Revision;
+                  haveRevCmd.Parameters[3].Value = string.IsNullOrEmpty(prog.Comment) ? DBNull.Value : (object)prog.Comment;
+                  haveRevCmd.Parameters[4].Value = string.IsNullOrEmpty(prog.ProgramContent) ? DBNull.Value : (object)prog.ProgramContent;
+                  haveRevCmd.ExecuteNonQuery();
+                }
+              } else {
+                needRevCmd.Parameters[0].Value = prog.ProgramName;
+                needRevCmd.Parameters[1].Value = prog.ProgramName;
+                needRevCmd.Parameters[3].Value = string.IsNullOrEmpty(prog.Comment) ? DBNull.Value : (object)prog.Comment;
+                needRevCmd.Parameters[4].Value = string.IsNullOrEmpty(prog.ProgramContent) ? DBNull.Value : (object)prog.ProgramContent;
+                needRevCmd.ExecuteNonQuery();
+              }
+            }
+          }
+        }
+
+        public class ProgramRevision
+        {
+          public string ProgramName { get; set; }
+          public long Revision { get; set; }
+          public string Comment { get; set; }
+          public string ProgramContent { get; set; }
+          public string CellControllerProgramName { get; set; }
+        }
+
+        public ProgramRevision ProgramFromCellControllerProgram(string cellCtProgName)
+        {
+          lock (_lock) {
+            var trans = _connection.BeginTransaction();
+            try {
+              ProgramRevision prog = null;
+              using (var cmd = _connection.CreateCommand()) {
+                cmd.Transaction = trans;
+                cmd.CommandText = "SELECT ProgramName, ProgramRevision, RevisionComment, ProgramContent FROM program_revisions WHERE CellControllerProgramName = $prog LIMIT 1";
+                cmd.Parameters.Add("prog", SqliteType.Text).Value = cellCtProgName;
+                using (var reader = cmd.ExecuteReader()) {
+                  while (reader.Read()) {
+                    prog = new ProgramRevision {
+                      ProgramName = reader.GetString(0),
+                      Revision = reader.GetInt64(1),
+                      Comment = reader.IsDBNull(2) ? null : reader.GetString(2),
+                      ProgramContent = reader.IsDBNull(3) ? null : reader.GetString(3),
+                      CellControllerProgramName = cellCtProgName
+                    };
+                    break;
+                  }
+                }
+              }
+              trans.Commit();
+              return prog;
+            } catch {
+              trans.Rollback();
+              throw;
+            }
+          }
+        }
+
+        public ProgramRevision LoadProgram(string program, long revision)
+        {
+          lock (_lock) {
+            var trans = _connection.BeginTransaction();
+            try {
+              ProgramRevision prog = null;
+              using (var cmd = _connection.CreateCommand()) {
+                cmd.Transaction = trans;
+                cmd.CommandText = "SELECT RevisionComment, ProgramContent, CellControllerProgramName FROM program_revisions WHERE ProgramName = $prog AND ProgramRevision = $rev";
+                cmd.Parameters.Add("prog", SqliteType.Text).Value = program;
+                cmd.Parameters.Add("rev", SqliteType.Text).Value = revision;
+                using (var reader = cmd.ExecuteReader()) {
+                  while (reader.Read()) {
+                    prog = new ProgramRevision {
+                      ProgramName = program,
+                      Revision = revision,
+                      Comment = reader.IsDBNull(0) ? null : reader.GetString(0),
+                      ProgramContent = reader.IsDBNull(1) ? null : reader.GetString(1),
+                      CellControllerProgramName = reader.IsDBNull(2) ? null : reader.GetString(2)
+                    };
+                    break;
+                  }
+                }
+              }
+              trans.Commit();
+              return prog;
+            } catch {
+              trans.Rollback();
+              throw;
+            }
+          }
+        }
+
+        public ProgramRevision LoadMostRecentProgram(string program)
+        {
+          lock (_lock) {
+            var trans = _connection.BeginTransaction();
+            try {
+              ProgramRevision prog = null;
+              using (var cmd = _connection.CreateCommand()) {
+                cmd.Transaction = trans;
+                cmd.CommandText = "SELECT ProgramRevision, RevisionComment, ProgramContent, CellControllerProgramName FROM program_revisions WHERE ProgramName = $prog ORDER BY ProgramRevision DESC LIMIT 1";
+                cmd.Parameters.Add("prog", SqliteType.Text).Value = program;
+                using (var reader = cmd.ExecuteReader()) {
+                  while (reader.Read()) {
+                    prog = new ProgramRevision {
+                      ProgramName = program,
+                      Revision = reader.GetInt64(0),
+                      Comment = reader.IsDBNull(1) ? null : reader.GetString(1),
+                      ProgramContent = reader.IsDBNull(2) ? null : reader.GetString(2),
+                      CellControllerProgramName = reader.IsDBNull(3) ? null : reader.GetString(3)
+                    };
+                    break;
+                  }
+                }
+              }
+              trans.Commit();
+              return prog;
+            } catch {
+              trans.Rollback();
+              throw;
+            }
+          }
+        }
+
+        public void SetCellControllerProgramForProgram(string program, long revision, string cellCtProgName)
+        {
+          lock (_lock) {
+            var trans = _connection.BeginTransaction();
+            try {
+              using (var cmd = _connection.CreateCommand())
+              using (var checkCmd = _connection.CreateCommand())
+              {
+                if (!string.IsNullOrEmpty(cellCtProgName)) {
+                  checkCmd.Transaction = trans;
+                  checkCmd.CommandText = "SELECT COUNT(*) FROM program_revisions WHERE CellControllerProgramName = $cell";
+                  checkCmd.Parameters.Add("cell", SqliteType.Text).Value = cellCtProgName;
+                  if ((long)checkCmd.ExecuteScalar() > 0) {
+                    throw new Exception("Cell program name " + cellCtProgName + " already in use");
+                  }
+                }
+
+                cmd.Transaction = trans;
+                cmd.CommandText = "UPDATE program_revisions SET CellControllerProgramName = $cell WHERE ProgramName = $name AND ProgramRevision = $rev";
+                cmd.Parameters.Add("cell", SqliteType.Text).Value = string.IsNullOrEmpty(cellCtProgName) ? DBNull.Value : (object)cellCtProgName;
+                cmd.Parameters.Add("name", SqliteType.Text).Value = program;
+                cmd.Parameters.Add("rev", SqliteType.Text).Value = revision;
+                cmd.ExecuteNonQuery();
+              }
+              trans.Commit();
+            } catch {
+              trans.Rollback();
+              throw;
+            }
+          }
+        }
+
         #endregion
     }
 }

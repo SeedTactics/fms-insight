@@ -68,7 +68,7 @@ namespace MachineWatchTest
       var expected = CreateJob();
       var actual = _jobs.LoadJob("Unique1");
 
-      JobDBTest.CheckJobEqual(expected, actual, true);
+      JobEqualityChecks.CheckJobEqual(expected, actual, true);
     }
 
     private JobPlan CreateJob()

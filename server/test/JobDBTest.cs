@@ -42,7 +42,7 @@ using FluentAssertions;
 
 namespace MachineWatchTest
 {
-  public class JobDBTest : IDisposable
+  public class JobDBTest : JobEqualityChecks, IDisposable
   {
     private SqliteConnection _jobConn;
     private JobDB _jobDB;
@@ -624,6 +624,194 @@ namespace MachineWatchTest
       });
     }
 
+    [Fact]
+    public void Programs()
+    {
+      var job1 = new JobPlan("uniq", 2, new int[] { 2, 3 });
+      SetJob1Data(job1);
+
+      _jobDB.AddJobs(new NewJobs
+      {
+        Jobs = new List<JobPlan> { job1 },
+        Programs = new List<ProgramEntry> {
+            new ProgramEntry() {
+              ProgramName = "aaa",
+              Revision = 0, // auto assign
+              Comment = "aaa comment",
+              ProgramContent = "aaa program content"
+            },
+            new ProgramEntry() {
+              ProgramName = "bbb",
+              Revision = 6, // new revision
+              Comment = "bbb comment",
+              ProgramContent = "bbb program content"
+            },
+          }
+      }, null);
+
+      _jobDB.LoadProgram("aaa", 1).Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "aaa",
+        Revision = 1,
+        Comment = "aaa comment",
+        ProgramContent = "aaa program content"
+      });
+      _jobDB.LoadMostRecentProgram("aaa").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "aaa",
+        Revision = 1,
+        Comment = "aaa comment",
+        ProgramContent = "aaa program content"
+      });
+      _jobDB.LoadProgram("bbb", 6).Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "bbb",
+        Revision = 6,
+        Comment = "bbb comment",
+        ProgramContent = "bbb program content"
+      });
+      _jobDB.LoadMostRecentProgram("bbb").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "bbb",
+        Revision = 6,
+        Comment = "bbb comment",
+        ProgramContent = "bbb program content"
+      });
+      _jobDB.LoadProgram("aaa", 2).Should().BeNull();
+      _jobDB.LoadProgram("ccc", 1).Should().BeNull();
+
+      // error on program content mismatch
+      _jobDB.Invoking(j => j.AddJobs(new NewJobs
+      {
+        Jobs = new List<JobPlan> { },
+        Programs = new List<ProgramEntry> {
+              new ProgramEntry() {
+                ProgramName = "aaa",
+                Revision = 0, // auto assign
+                Comment = "aaa comment rev 2",
+                ProgramContent = "aaa program content rev 2"
+              },
+              new ProgramEntry() {
+                ProgramName = "bbb",
+                Revision = 6, // existing revision
+                Comment = "bbb comment",
+                ProgramContent = "awofguhweoguhweg"
+              },
+            }
+      }, null)
+      ).Should().Throw<BadRequestException>().WithMessage("Program bbb rev6 has already been used and the program contents do not match.");
+
+      _jobDB.LoadProgram("aaa", 2).Should().BeNull();
+      _jobDB.LoadMostRecentProgram("aaa").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "aaa",
+        Revision = 1,
+        Comment = "aaa comment",
+        ProgramContent = "aaa program content"
+      });
+      _jobDB.LoadMostRecentProgram("bbb").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "bbb",
+        Revision = 6,
+        Comment = "bbb comment",
+        ProgramContent = "bbb program content"
+      });
+
+      // now should ignore when program content matches
+      _jobDB.AddJobs(new NewJobs
+      {
+        Jobs = new List<JobPlan> { },
+        Programs = new List<ProgramEntry> {
+              new ProgramEntry() {
+                ProgramName = "aaa",
+                Revision = 0, // auto assign
+                Comment = "aaa comment rev 2",
+                ProgramContent = "aaa program content rev 2"
+              },
+              new ProgramEntry() {
+                ProgramName = "bbb",
+                Revision = 6, // existing revision
+                Comment = "bbb comment",
+                ProgramContent = "bbb program content"
+              },
+            }
+      }, null);
+
+      _jobDB.LoadProgram("aaa", 2).Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "aaa",
+        Revision = 2,
+        Comment = "aaa comment rev 2",
+        ProgramContent = "aaa program content rev 2"
+      });
+      _jobDB.LoadMostRecentProgram("aaa").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "aaa",
+        Revision = 2,
+        Comment = "aaa comment rev 2",
+        ProgramContent = "aaa program content rev 2"
+      });
+      _jobDB.LoadMostRecentProgram("bbb").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "bbb",
+        Revision = 6,
+        Comment = "bbb comment",
+        ProgramContent = "bbb program content"
+      });
+
+      //now set cell controller names
+      _jobDB.SetCellControllerProgramForProgram("aaa", 1, "aaa-1");
+      _jobDB.SetCellControllerProgramForProgram("bbb", 6, "bbb-6");
+
+      _jobDB.ProgramFromCellControllerProgram("aaa-1").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "aaa",
+        Revision = 1,
+        Comment = "aaa comment",
+        ProgramContent = "aaa program content",
+        CellControllerProgramName = "aaa-1"
+      });
+      _jobDB.LoadProgram("aaa", 1).Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "aaa",
+        Revision = 1,
+        Comment = "aaa comment",
+        ProgramContent = "aaa program content",
+        CellControllerProgramName = "aaa-1"
+      });
+      _jobDB.ProgramFromCellControllerProgram("bbb-6").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "bbb",
+        Revision = 6,
+        Comment = "bbb comment",
+        ProgramContent = "bbb program content",
+        CellControllerProgramName = "bbb-6"
+      });
+      _jobDB.LoadMostRecentProgram("bbb").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "bbb",
+        Revision = 6,
+        Comment = "bbb comment",
+        ProgramContent = "bbb program content",
+        CellControllerProgramName = "bbb-6"
+      });
+      _jobDB.ProgramFromCellControllerProgram("aagaiouhgi").Should().BeNull();
+
+      _jobDB.SetCellControllerProgramForProgram("aaa", 1, null);
+
+      _jobDB.ProgramFromCellControllerProgram("aaa-1").Should().BeNull();
+      _jobDB.LoadProgram("aaa", 1).Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "aaa",
+        Revision = 1,
+        Comment = "aaa comment",
+        ProgramContent = "aaa program content"
+      });
+
+      _jobDB.Invoking(j => j.SetCellControllerProgramForProgram("aaa", 2, "bbb-6"))
+        .Should().Throw<Exception>().WithMessage("Cell program name bbb-6 already in use");
+    }
+
     private void CheckJobs(JobPlan job1, JobPlan job2, JobPlan job3, string schId, Dictionary<string, int> extraParts, IEnumerable<PartWorkorder> works)
     {
       CheckJobEqual(job1, _jobDB.LoadJob(job1.UniqueStr), true);
@@ -766,6 +954,44 @@ namespace MachineWatchTest
       return ret;
     }
 
+    private static void CheckWorkordersEqual(IEnumerable<PartWorkorder> expected, IEnumerable<PartWorkorder> actual)
+    {
+      var expectedWorks = expected.OrderBy(w => (w.WorkorderId, w.Part)).ToList();
+      var actualWorks = actual.OrderBy(w => (w.WorkorderId, w.Part)).ToList();
+      Assert.Equal(expectedWorks.Count, actualWorks.Count);
+      for (int i = 0; i < expectedWorks.Count; i++)
+        CheckWorkorderEqual(expectedWorks[i], actualWorks[i]);
+    }
+
+    private static void CheckWorkorderEqual(PartWorkorder w1, PartWorkorder w2)
+    {
+      Assert.Equal(w1.WorkorderId, w2.WorkorderId);
+      Assert.Equal(w1.Part, w2.Part);
+      Assert.Equal(w1.Quantity, w2.Quantity);
+      Assert.Equal(w1.DueDate, w2.DueDate);
+      Assert.Equal(w1.Priority, w2.Priority);
+    }
+
+    private byte[] LoadDebugData(string schId)
+    {
+      var cmd = _jobConn.CreateCommand();
+      cmd.CommandText = "SELECT DebugMessage FROM schedule_debug WHERE ScheduleId = @sch";
+      cmd.Parameters.Add("sch", SqliteType.Text).Value = schId;
+      return (byte[])cmd.ExecuteScalar();
+    }
+  }
+
+  public class JobEqualityChecks
+  {
+    protected static void EqualSort<T>(IEnumerable<T> e1, IEnumerable<T> e2)
+    {
+      var lst1 = new List<T>(e1);
+      lst1.Sort();
+      var lst2 = new List<T>(e2);
+      lst2.Sort();
+      Assert.Equal(lst1, lst2);
+    }
+
     private static void CheckHoldEqual(JobHoldPattern h1, JobHoldPattern h2)
     {
 
@@ -785,7 +1011,7 @@ namespace MachineWatchTest
       }
     }
 
-    private static void CheckPlanEqual(JobPlan job1, JobPlan job2, bool checkHolds)
+    public static void CheckPlanEqual(JobPlan job1, JobPlan job2, bool checkHolds)
     {
       Assert.NotNull(job1);
       Assert.NotNull(job2);
@@ -918,39 +1144,5 @@ namespace MachineWatchTest
       }
     }
 
-    private static void CheckWorkordersEqual(IEnumerable<PartWorkorder> expected, IEnumerable<PartWorkorder> actual)
-    {
-      var expectedWorks = expected.OrderBy(w => (w.WorkorderId, w.Part)).ToList();
-      var actualWorks = actual.OrderBy(w => (w.WorkorderId, w.Part)).ToList();
-      Assert.Equal(expectedWorks.Count, actualWorks.Count);
-      for (int i = 0; i < expectedWorks.Count; i++)
-        CheckWorkorderEqual(expectedWorks[i], actualWorks[i]);
-    }
-
-    private static void CheckWorkorderEqual(PartWorkorder w1, PartWorkorder w2)
-    {
-      Assert.Equal(w1.WorkorderId, w2.WorkorderId);
-      Assert.Equal(w1.Part, w2.Part);
-      Assert.Equal(w1.Quantity, w2.Quantity);
-      Assert.Equal(w1.DueDate, w2.DueDate);
-      Assert.Equal(w1.Priority, w2.Priority);
-    }
-
-    private static void EqualSort<T>(IEnumerable<T> e1, IEnumerable<T> e2)
-    {
-      var lst1 = new List<T>(e1);
-      lst1.Sort();
-      var lst2 = new List<T>(e2);
-      lst2.Sort();
-      Assert.Equal(lst1, lst2);
-    }
-
-    private byte[] LoadDebugData(string schId)
-    {
-      var cmd = _jobConn.CreateCommand();
-      cmd.CommandText = "SELECT DebugMessage FROM schedule_debug WHERE ScheduleId = @sch";
-      cmd.Parameters.Add("sch", SqliteType.Text).Value = schId;
-      return (byte[])cmd.ExecuteScalar();
-    }
   }
 }
