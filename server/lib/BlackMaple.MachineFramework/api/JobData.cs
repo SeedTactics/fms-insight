@@ -634,6 +634,21 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+#if NET35
+    // tuples don't work in net3.5
+    public void PlannedFixture(int process, int path, out string fixture, out int face)
+    {
+      if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
+      {
+        fixture = _procPath[process - 1][path - 1].Fixture;
+        face = _procPath[process - 1][path - 1].Face;
+      }
+      else
+      {
+        throw new IndexOutOfRangeException("Invalid process or path number");
+      }
+    }
+#else
     public (string fixture, int face) PlannedFixture(int process, int path)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -645,6 +660,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+#endif
     public IEnumerable<string> AllPlannedPallets()
     {
       var ret = new List<string>();
