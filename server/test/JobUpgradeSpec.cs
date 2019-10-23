@@ -113,11 +113,11 @@ namespace MachineWatchTest
       job1.SetInputQueue(2, 1, "in21");
       job1.SetOutputQueue(2, 3, "out23");
 
-      job1.SetSimulatedStartingTimeUTC(1, 1, DateTime.Parse("1/6/2011 5:34 AM GMT"));
-      job1.SetSimulatedStartingTimeUTC(1, 2, DateTime.Parse("2/10/2011 6:45 AM GMT"));
-      job1.SetSimulatedStartingTimeUTC(2, 1, DateTime.Parse("3/14/2011 7:03 AM GMT"));
-      job1.SetSimulatedStartingTimeUTC(2, 2, DateTime.Parse("4/20/2011 8:22 PM GMT"));
-      job1.SetSimulatedStartingTimeUTC(2, 3, DateTime.Parse("5/22/2011 9:18 AM GMT"));
+      job1.SetSimulatedStartingTimeUTC(1, 1, DateTime.Parse("1/5/2011 11:34 PM GMT").ToUniversalTime());
+      job1.SetSimulatedStartingTimeUTC(1, 2, DateTime.Parse("2/10/2011 12:45 AM GMT").ToUniversalTime());
+      job1.SetSimulatedStartingTimeUTC(2, 1, DateTime.Parse("3/14/2011 2:03 AM GMT").ToUniversalTime());
+      job1.SetSimulatedStartingTimeUTC(2, 2, DateTime.Parse("4/20/2011 3:22 PM GMT").ToUniversalTime());
+      job1.SetSimulatedStartingTimeUTC(2, 3, DateTime.Parse("5/22/2011 4:18 AM GMT").ToUniversalTime());
 
       job1.SetSimulatedAverageFlowTime(1, 1, TimeSpan.FromMinutes(0.5));
       job1.SetSimulatedAverageFlowTime(1, 2, TimeSpan.FromMinutes(1.5));
