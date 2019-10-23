@@ -655,7 +655,7 @@ export class JobsClient {
         return Promise.resolve<void>(<any>null);
     }
 
-    decrementQuantities(loadDecrementsStrictlyAfterDecrementId: string | null | undefined, loadDecrementsAfterTimeUTC: Date | null | undefined): Promise<JobAndDecrementQuantity[]> {
+    decrementQuantities(loadDecrementsStrictlyAfterDecrementId: number | null | undefined, loadDecrementsAfterTimeUTC: Date | null | undefined): Promise<JobAndDecrementQuantity[]> {
         let url_ = this.baseUrl + "/api/v1/jobs/planned-cycles?";
         if (loadDecrementsStrictlyAfterDecrementId !== undefined)
             url_ += "loadDecrementsStrictlyAfterDecrementId=" + encodeURIComponent("" + loadDecrementsStrictlyAfterDecrementId) + "&"; 
@@ -1809,7 +1809,8 @@ export interface IProcessInfo {
 export class ProcPathInfo implements IProcPathInfo {
     pathGroup!: number;
     pallets!: string[];
-    fixtures?: FixtureFace[] | undefined;
+    fixture?: string | undefined;
+    face?: number | undefined;
     load!: number[];
     expectedLoadTime!: string;
     unload!: number[];
@@ -1847,11 +1848,8 @@ export class ProcPathInfo implements IProcPathInfo {
                 for (let item of data["Pallets"])
                     this.pallets!.push(item);
             }
-            if (data["Fixtures"] && data["Fixtures"].constructor === Array) {
-                this.fixtures = [] as any;
-                for (let item of data["Fixtures"])
-                    this.fixtures!.push(FixtureFace.fromJS(item));
-            }
+            this.fixture = data["Fixture"];
+            this.face = data["Face"];
             if (data["Load"] && data["Load"].constructor === Array) {
                 this.load = [] as any;
                 for (let item of data["Load"])
@@ -1899,11 +1897,8 @@ export class ProcPathInfo implements IProcPathInfo {
             for (let item of this.pallets)
                 data["Pallets"].push(item);
         }
-        if (this.fixtures && this.fixtures.constructor === Array) {
-            data["Fixtures"] = [];
-            for (let item of this.fixtures)
-                data["Fixtures"].push(item.toJSON());
-        }
+        data["Fixture"] = this.fixture;
+        data["Face"] = this.face;
         if (this.load && this.load.constructor === Array) {
             data["Load"] = [];
             for (let item of this.load)
@@ -1940,7 +1935,8 @@ export class ProcPathInfo implements IProcPathInfo {
 export interface IProcPathInfo {
     pathGroup: number;
     pallets: string[];
-    fixtures?: FixtureFace[] | undefined;
+    fixture?: string | undefined;
+    face?: number | undefined;
     load: number[];
     expectedLoadTime: string;
     unload: number[];
@@ -1956,48 +1952,10 @@ export interface IProcPathInfo {
     outputQueue?: string | undefined;
 }
 
-export class FixtureFace implements IFixtureFace {
-    fixture!: string;
-    face!: string;
-
-    constructor(data?: IFixtureFace) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            this.fixture = data["Fixture"];
-            this.face = data["Face"];
-        }
-    }
-
-    static fromJS(data: any): FixtureFace {
-        data = typeof data === 'object' ? data : {};
-        let result = new FixtureFace();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["Fixture"] = this.fixture;
-        data["Face"] = this.face;
-        return data; 
-    }
-}
-
-export interface IFixtureFace {
-    fixture: string;
-    face: string;
-}
-
 export class JobMachiningStop implements IJobMachiningStop {
-    stations!: { [key: string] : string; };
+    stationNums?: number[] | undefined;
+    program?: string | undefined;
+    programRevision?: number | undefined;
     tools!: { [key: string] : string; };
     stationGroup!: string;
     expectedCycleTime!: string;
@@ -2010,20 +1968,19 @@ export class JobMachiningStop implements IJobMachiningStop {
             }
         }
         if (!data) {
-            this.stations = {};
             this.tools = {};
         }
     }
 
     init(data?: any) {
         if (data) {
-            if (data["Stations"]) {
-                this.stations = {} as any;
-                for (let key in data["Stations"]) {
-                    if (data["Stations"].hasOwnProperty(key))
-                        this.stations![key] = data["Stations"][key];
-                }
+            if (data["StationNums"] && data["StationNums"].constructor === Array) {
+                this.stationNums = [] as any;
+                for (let item of data["StationNums"])
+                    this.stationNums!.push(item);
             }
+            this.program = data["Program"];
+            this.programRevision = data["ProgramRevision"];
             if (data["Tools"]) {
                 this.tools = {} as any;
                 for (let key in data["Tools"]) {
@@ -2045,13 +2002,13 @@ export class JobMachiningStop implements IJobMachiningStop {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        if (this.stations) {
-            data["Stations"] = {};
-            for (let key in this.stations) {
-                if (this.stations.hasOwnProperty(key))
-                    data["Stations"][key] = this.stations[key];
-            }
+        if (this.stationNums && this.stationNums.constructor === Array) {
+            data["StationNums"] = [];
+            for (let item of this.stationNums)
+                data["StationNums"].push(item);
         }
+        data["Program"] = this.program;
+        data["ProgramRevision"] = this.programRevision;
         if (this.tools) {
             data["Tools"] = {};
             for (let key in this.tools) {
@@ -2066,7 +2023,9 @@ export class JobMachiningStop implements IJobMachiningStop {
 }
 
 export interface IJobMachiningStop {
-    stations: { [key: string] : string; };
+    stationNums?: number[] | undefined;
+    program?: string | undefined;
+    programRevision?: number | undefined;
     tools: { [key: string] : string; };
     stationGroup: string;
     expectedCycleTime: string;
@@ -2420,13 +2379,11 @@ export interface ICurrentStatus {
 }
 
 export class InProcessJob extends JobPlan implements IInProcessJob {
-    completed!: number[][];
+    completed?: number[][] | undefined;
+    decrements?: InProcessJobDecrement[] | undefined;
 
     constructor(data?: IInProcessJob) {
         super(data);
-        if (!data) {
-            this.completed = [];
-        }
     }
 
     init(data?: any) {
@@ -2436,6 +2393,11 @@ export class InProcessJob extends JobPlan implements IInProcessJob {
                 this.completed = [] as any;
                 for (let item of data["Completed"])
                     this.completed!.push(item);
+            }
+            if (data["Decrements"] && data["Decrements"].constructor === Array) {
+                this.decrements = [] as any;
+                for (let item of data["Decrements"])
+                    this.decrements!.push(InProcessJobDecrement.fromJS(item));
             }
         }
     }
@@ -2454,13 +2416,63 @@ export class InProcessJob extends JobPlan implements IInProcessJob {
             for (let item of this.completed)
                 data["Completed"].push(item);
         }
+        if (this.decrements && this.decrements.constructor === Array) {
+            data["Decrements"] = [];
+            for (let item of this.decrements)
+                data["Decrements"].push(item.toJSON());
+        }
         super.toJSON(data);
         return data; 
     }
 }
 
 export interface IInProcessJob extends IJobPlan {
-    completed: number[][];
+    completed?: number[][] | undefined;
+    decrements?: InProcessJobDecrement[] | undefined;
+}
+
+export class InProcessJobDecrement implements IInProcessJobDecrement {
+    decrementId!: number;
+    timeUTC!: Date;
+    quantity!: number;
+
+    constructor(data?: IInProcessJobDecrement) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.decrementId = data["DecrementId"];
+            this.timeUTC = data["TimeUTC"] ? new Date(data["TimeUTC"].toString()) : <any>undefined;
+            this.quantity = data["Quantity"];
+        }
+    }
+
+    static fromJS(data: any): InProcessJobDecrement {
+        data = typeof data === 'object' ? data : {};
+        let result = new InProcessJobDecrement();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["DecrementId"] = this.decrementId;
+        data["TimeUTC"] = this.timeUTC ? this.timeUTC.toISOString() : <any>undefined;
+        data["Quantity"] = this.quantity;
+        return data; 
+    }
+}
+
+export interface IInProcessJobDecrement {
+    decrementId: number;
+    timeUTC: Date;
+    quantity: number;
 }
 
 export class PalletStatus implements IPalletStatus {
@@ -2846,6 +2858,7 @@ export class NewJobs implements INewJobs {
     debugMessage?: string | undefined;
     currentUnfilledWorkorders?: PartWorkorder[] | undefined;
     queueSizes?: { [key: string] : QueueSize; } | undefined;
+    programs?: ProgramEntry[] | undefined;
 
     constructor(data?: INewJobs) {
         if (data) {
@@ -2893,6 +2906,11 @@ export class NewJobs implements INewJobs {
                         this.queueSizes![key] = data["QueueSizes"][key] ? QueueSize.fromJS(data["QueueSizes"][key]) : new QueueSize();
                 }
             }
+            if (data["Programs"] && data["Programs"].constructor === Array) {
+                this.programs = [] as any;
+                for (let item of data["Programs"])
+                    this.programs!.push(ProgramEntry.fromJS(item));
+            }
         }
     }
 
@@ -2937,6 +2955,11 @@ export class NewJobs implements INewJobs {
                     data["QueueSizes"][key] = this.queueSizes[key] ? this.queueSizes[key].toJSON() : <any>undefined;
             }
         }
+        if (this.programs && this.programs.constructor === Array) {
+            data["Programs"] = [];
+            for (let item of this.programs)
+                data["Programs"].push(item.toJSON());
+        }
         return data; 
     }
 }
@@ -2950,6 +2973,55 @@ export interface INewJobs {
     debugMessage?: string | undefined;
     currentUnfilledWorkorders?: PartWorkorder[] | undefined;
     queueSizes?: { [key: string] : QueueSize; } | undefined;
+    programs?: ProgramEntry[] | undefined;
+}
+
+export class ProgramEntry implements IProgramEntry {
+    programName!: string;
+    revision!: number;
+    comment!: string;
+    programContent!: string;
+
+    constructor(data?: IProgramEntry) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.programName = data["ProgramName"];
+            this.revision = data["Revision"];
+            this.comment = data["Comment"];
+            this.programContent = data["ProgramContent"];
+        }
+    }
+
+    static fromJS(data: any): ProgramEntry {
+        data = typeof data === 'object' ? data : {};
+        let result = new ProgramEntry();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["ProgramName"] = this.programName;
+        data["Revision"] = this.revision;
+        data["Comment"] = this.comment;
+        data["ProgramContent"] = this.programContent;
+        return data; 
+    }
+}
+
+export interface IProgramEntry {
+    programName: string;
+    revision: number;
+    comment: string;
+    programContent: string;
 }
 
 export class QueuePosition implements IQueuePosition {
@@ -2993,7 +3065,7 @@ export interface IQueuePosition {
 }
 
 export class JobAndDecrementQuantity implements IJobAndDecrementQuantity {
-    decrementId!: string;
+    decrementId!: number;
     jobUnique!: string;
     timeUTC!: Date;
     part!: string;
@@ -3037,7 +3109,7 @@ export class JobAndDecrementQuantity implements IJobAndDecrementQuantity {
 }
 
 export interface IJobAndDecrementQuantity {
-    decrementId: string;
+    decrementId: number;
     jobUnique: string;
     timeUTC: Date;
     part: string;
@@ -3405,6 +3477,7 @@ export class MaterialDetails implements IMaterialDetails {
     numProcesses!: number;
     workorder?: string | undefined;
     serial?: string | undefined;
+    paths?: { [key: string] : number; } | undefined;
 
     constructor(data?: IMaterialDetails) {
         if (data) {
@@ -3423,6 +3496,13 @@ export class MaterialDetails implements IMaterialDetails {
             this.numProcesses = data["NumProcesses"];
             this.workorder = data["Workorder"];
             this.serial = data["Serial"];
+            if (data["Paths"]) {
+                this.paths = {} as any;
+                for (let key in data["Paths"]) {
+                    if (data["Paths"].hasOwnProperty(key))
+                        this.paths![key] = data["Paths"][key];
+                }
+            }
         }
     }
 
@@ -3441,6 +3521,13 @@ export class MaterialDetails implements IMaterialDetails {
         data["NumProcesses"] = this.numProcesses;
         data["Workorder"] = this.workorder;
         data["Serial"] = this.serial;
+        if (this.paths) {
+            data["Paths"] = {};
+            for (let key in this.paths) {
+                if (this.paths.hasOwnProperty(key))
+                    data["Paths"][key] = this.paths[key];
+            }
+        }
         return data; 
     }
 }
@@ -3452,6 +3539,7 @@ export interface IMaterialDetails {
     numProcesses: number;
     workorder?: string | undefined;
     serial?: string | undefined;
+    paths?: { [key: string] : number; } | undefined;
 }
 
 export class WorkorderSummary implements IWorkorderSummary {
