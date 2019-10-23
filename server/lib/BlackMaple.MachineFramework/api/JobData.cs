@@ -57,7 +57,7 @@ namespace BlackMaple.MachineWatchInterface
 
     public string ProgramName { get => _program; set => _program = value; }
 
-    public long ProgramRevision { get => _programRevision; set => _programRevision = value; }
+    public long? ProgramRevision { get => _programRevision; set => _programRevision = value; }
 
     public IList<int> Stations
     {
@@ -100,7 +100,7 @@ namespace BlackMaple.MachineWatchInterface
     private string _program;
 
     [DataMember(Name = "ProgramRevision")]
-    private long _programRevision;
+    private long? _programRevision;
 
     [DataMember(Name = "Tools", IsRequired = true)]
     private Dictionary<string, TimeSpan> _tools; //key is tool, value is expected cutting time
@@ -113,10 +113,20 @@ namespace BlackMaple.MachineWatchInterface
 
     private JobMachiningStop() { } //for json deserialization
 
-    // for deserializing old stations format
-    [DataMember(Name = "Stations", IsRequired = false)]
+    // include old stations format for backwards compatibility
+    [DataMember(Name = "Stations", IsRequired = false), Obsolete]
     private Dictionary<int, string> OldPrograms
     {
+      get
+      {
+        if (_stations == null) return null;
+        var d = new Dictionary<int, string>();
+        foreach (var s in _stations)
+        {
+          d[s] = _program;
+        }
+        return d;
+      }
       set
       {
         _stations = value.Keys.ToList();
@@ -641,7 +651,7 @@ namespace BlackMaple.MachineWatchInterface
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
       {
         fixture = _procPath[process - 1][path - 1].Fixture;
-        face = _procPath[process - 1][path - 1].Face;
+        face = _procPath[process - 1][path - 1].Face ?? 1;
       }
       else
       {
@@ -653,7 +663,7 @@ namespace BlackMaple.MachineWatchInterface
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
       {
-        return (fixture: _procPath[process - 1][path - 1].Fixture, face: _procPath[process - 1][path - 1].Face);
+        return (fixture: _procPath[process - 1][path - 1].Fixture, face: _procPath[process - 1][path - 1].Face ?? 1);
       }
       else
       {
@@ -1119,7 +1129,7 @@ namespace BlackMaple.MachineWatchInterface
       [DataMember(IsRequired = true)]
       public IList<string> Pallets;
 
-      [DataMember(IsRequired = false, EmitDefaultValue = false)]
+      [DataMember(IsRequired = false, EmitDefaultValue = false), Obsolete]
       private IList<FixtureFace> Fixtures
       {
         set
@@ -1128,7 +1138,10 @@ namespace BlackMaple.MachineWatchInterface
           {
             var f = value[0];
             Fixture = f.Fixture;
-            int.TryParse(f.Face, out Face);
+            if (int.TryParse(f.Face, out var fNum))
+            {
+              Face = fNum;
+            }
           }
 
         }
@@ -1138,7 +1151,7 @@ namespace BlackMaple.MachineWatchInterface
       public string Fixture;
 
       [DataMember(IsRequired = false)]
-      public int Face;
+      public int? Face;
 
       [DataMember(IsRequired = true)]
       public IList<int> Load;
