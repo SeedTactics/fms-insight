@@ -1603,7 +1603,7 @@ namespace BlackMaple.MachineFramework
                         cmd.Parameters[4].Value = entry.StationGroup;
                         cmd.Parameters[5].Value = entry.ExpectedCycleTime.Ticks;
                         cmd.Parameters[6].Value = string.IsNullOrEmpty(entry.ProgramName) ? DBNull.Value : (object)entry.ProgramName;
-                        cmd.Parameters[7].Value = entry.ProgramRevision;
+                        cmd.Parameters[7].Value = entry.ProgramRevision.HasValue ? (object)entry.ProgramRevision.Value : DBNull.Value;
                         cmd.ExecuteNonQuery();
                         routeNum += 1;
                     }
