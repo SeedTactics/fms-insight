@@ -66,7 +66,8 @@ it("converts events to points", () => {
               unload: [2],
               stops: [
                 new api.JobMachiningStop({
-                  stations: { "1": "progabc" },
+                  stationNums: [1],
+                  program: "progabc",
                   tools: {},
                   stationGroup: "MC",
                   expectedCycleTime: "01:15:00"
@@ -87,7 +88,8 @@ it("converts events to points", () => {
               unload: [2],
               stops: [
                 new api.JobMachiningStop({
-                  stations: { "1": "progabc" },
+                  stationNums: [1],
+                  program: "progabc",
                   tools: {},
                   stationGroup: "MC",
                   expectedCycleTime: "01:15:00"
@@ -110,7 +112,8 @@ it("converts events to points", () => {
               pallets: ["pal1"],
               stops: [
                 new api.JobMachiningStop({
-                  stations: { "1": "progabc" },
+                  stationNums: [1],
+                  program: "progabc",
                   tools: {},
                   stationGroup: "MC",
                   expectedCycleTime: "00:45:00"

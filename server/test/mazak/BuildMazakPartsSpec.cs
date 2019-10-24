@@ -64,11 +64,11 @@ namespace MachineWatchTest
       job1.AddUnloadStation(1, 1, 4);
       job1.AddUnloadStation(1, 2, 3);
       var stop = new JobMachiningStop("machine");
-      stop.AddProgram(1, "");
+      stop.Stations.Add(1);
       job1.AddMachiningStop(1, 1, stop);
       stop = new JobMachiningStop("machine");
-      stop.AddProgram(3, "");
-      stop.AddProgram(4, "");
+      stop.Stations.Add(3);
+      stop.Stations.Add(4);
       job1.AddMachiningStop(1, 2, stop);
 
       var job2 = new JobPlan("Job2", 1, new int[] { 2 });
@@ -746,10 +746,10 @@ namespace MachineWatchTest
       job1.AddProcessOnPallet(2, 2, "12");
 
       //each process uses different faces
-      job1.AddProcessOnFixture(1, 1, "fixAA", "f1");
-      job1.AddProcessOnFixture(2, 1, "fixAA", "f2");
-      job1.AddProcessOnFixture(1, 2, "fixBB", "f1");
-      job1.AddProcessOnFixture(2, 2, "fixBB", "f2");
+      job1.SetFixtureFace(1, 1, "fixAA", 1);
+      job1.SetFixtureFace(2, 1, "fixAA", 2);
+      job1.SetFixtureFace(1, 2, "fixBB", 1);
+      job1.SetFixtureFace(2, 2, "fixBB", 2);
 
       AddBasicStopsWithProg(job1);
 
@@ -775,10 +775,10 @@ namespace MachineWatchTest
       job2.AddProcessOnPallet(2, 1, "12");
 
       //each process uses different faces
-      job2.AddProcessOnFixture(1, 1, "fixAA", "f1");
-      job2.AddProcessOnFixture(2, 2, "fixAA", "f2");
-      job2.AddProcessOnFixture(1, 2, "fixBB", "f1");
-      job2.AddProcessOnFixture(2, 1, "fixBB", "f2");
+      job2.SetFixtureFace(1, 1, "fixAA", 1);
+      job2.SetFixtureFace(2, 2, "fixAA", 2);
+      job2.SetFixtureFace(1, 2, "fixBB", 1);
+      job2.SetFixtureFace(2, 1, "fixBB", 2);
 
       AddBasicStopsWithProg(job2);
 
@@ -790,8 +790,8 @@ namespace MachineWatchTest
       job3.AddProcessOnPallet(1, 2, "31");
 
       //job3 uses separate fixture than job 4, but same fixture and face for both procs
-      job3.AddProcessOnFixture(1, 1, "fix3", "f1");
-      job3.AddProcessOnFixture(1, 2, "fix3", "f1");
+      job3.SetFixtureFace(1, 1, "fix3", 1);
+      job3.SetFixtureFace(1, 2, "fix3", 1);
 
       AddBasicStopsWithProg(job3);
 
@@ -803,8 +803,8 @@ namespace MachineWatchTest
       job4.AddProcessOnPallet(1, 2, "31");
 
       //job3 uses separate fixture than job 4
-      job4.AddProcessOnFixture(1, 1, "fix4", "f1");
-      job4.AddProcessOnFixture(1, 2, "fix4", "f1");
+      job4.SetFixtureFace(1, 1, "fix4", 1);
+      job4.SetFixtureFace(1, 2, "fix4", 1);
 
       AddBasicStopsWithProg(job4);
 
@@ -826,52 +826,52 @@ namespace MachineWatchTest
       if (log.Count > 0) Assert.True(false, log[0]);
 
       CheckNewFixtures(pMap, new string[] {
-        "F:3:fixAA:4:f1",
-        "F:3:fixAA:4:f2",
-        "F:3:fixBB:10:f1",
-        "F:3:fixBB:10:f2",
-        "F:3:fix3:20:f1",
-        "F:3:fix3:30:f1",
-        "F:3:fix4:20:f1",
-        "F:3:fix4:30:f1",
+        "F:3:fixAA:4:1",
+        "F:3:fixAA:4:2",
+        "F:3:fixBB:10:1",
+        "F:3:fixBB:10:2",
+        "F:3:fix3:20:1",
+        "F:3:fix3:30:1",
+        "F:3:fix4:20:1",
+        "F:3:fix4:30:1",
       }, new[] { "Test" });
 
       var trans = pMap.CreatePartPalletDatabaseRows();
 
-      CheckPartProcessFromJob(trans, "Part1:3:1", 1, "F:3:fixAA:4:f1");
-      CheckPartProcessFromJob(trans, "Part1:3:1", 2, "F:3:fixAA:4:f2");
+      CheckPartProcessFromJob(trans, "Part1:3:1", 1, "F:3:fixAA:4:1");
+      CheckPartProcessFromJob(trans, "Part1:3:1", 2, "F:3:fixAA:4:2");
       CheckPart(trans, "Part1:3:1", "Job1-Path1-1-0");
 
-      CheckPartProcessFromJob(trans, "Part1:3:2", 1, "F:3:fixBB:10:f1");
-      CheckPartProcessFromJob(trans, "Part1:3:2", 2, "F:3:fixBB:10:f2");
+      CheckPartProcessFromJob(trans, "Part1:3:2", 1, "F:3:fixBB:10:1");
+      CheckPartProcessFromJob(trans, "Part1:3:2", 2, "F:3:fixBB:10:2");
       CheckPart(trans, "Part1:3:2", "Job1-Path2-2-0");
 
-      CheckPartProcessFromJob(trans, "Part2:3:1", 1, "F:3:fixAA:4:f1");
-      CheckPartProcessFromJob(trans, "Part2:3:1", 2, "F:3:fixAA:4:f2");
+      CheckPartProcessFromJob(trans, "Part2:3:1", 1, "F:3:fixAA:4:1");
+      CheckPartProcessFromJob(trans, "Part2:3:1", 2, "F:3:fixAA:4:2");
       CheckPart(trans, "Part2:3:1", "Job2-Path1-2-0");
 
-      CheckPartProcessFromJob(trans, "Part2:3:2", 1, "F:3:fixBB:10:f1");
-      CheckPartProcessFromJob(trans, "Part2:3:2", 2, "F:3:fixBB:10:f2");
+      CheckPartProcessFromJob(trans, "Part2:3:2", 1, "F:3:fixBB:10:1");
+      CheckPartProcessFromJob(trans, "Part2:3:2", 2, "F:3:fixBB:10:2");
       CheckPart(trans, "Part2:3:2", "Job2-Path2-1-0");
 
-      CheckPartProcessFromJob(trans, "Part3:3:1", 1, "F:3:fix3:20:f1");
+      CheckPartProcessFromJob(trans, "Part3:3:1", 1, "F:3:fix3:20:1");
       CheckPart(trans, "Part3:3:1", "Job3-Path1-0");
 
-      CheckPartProcessFromJob(trans, "Part3:3:2", 1, "F:3:fix3:30:f1");
+      CheckPartProcessFromJob(trans, "Part3:3:2", 1, "F:3:fix3:30:1");
       CheckPart(trans, "Part3:3:2", "Job3-Path2-0");
 
-      CheckPartProcessFromJob(trans, "Part4:3:1", 1, "F:3:fix4:20:f1");
+      CheckPartProcessFromJob(trans, "Part4:3:1", 1, "F:3:fix4:20:1");
       CheckPart(trans, "Part4:3:1", "Job4-Path1-0");
 
-      CheckPartProcessFromJob(trans, "Part4:3:2", 1, "F:3:fix4:30:f1");
+      CheckPartProcessFromJob(trans, "Part4:3:2", 1, "F:3:fix4:30:1");
       CheckPart(trans, "Part4:3:2", "Job4-Path2-0");
 
-      CheckPalletGroup(trans, 31, new[] { "F:3:fixAA:4:f1", "F:3:fixAA:4:f2" }, new int[] { 4, 5 });
-      CheckPalletGroup(trans, 32, new[] { "F:3:fixBB:10:f1", "F:3:fixBB:10:f2" }, new int[] { 10, 11, 12 });
-      CheckPalletGroup(trans, 33, new[] { "F:3:fix3:20:f1" }, new int[] { 20, 21 });
-      CheckPalletGroup(trans, 34, new[] { "F:3:fix3:30:f1" }, new int[] { 30, 31 });
-      CheckPalletGroup(trans, 35, new[] { "F:3:fix4:20:f1" }, new int[] { 20, 21 });
-      CheckPalletGroup(trans, 36, new[] { "F:3:fix4:30:f1" }, new int[] { 30, 31 });
+      CheckPalletGroup(trans, 31, new[] { "F:3:fixAA:4:1", "F:3:fixAA:4:2" }, new int[] { 4, 5 });
+      CheckPalletGroup(trans, 32, new[] { "F:3:fixBB:10:1", "F:3:fixBB:10:2" }, new int[] { 10, 11, 12 });
+      CheckPalletGroup(trans, 33, new[] { "F:3:fix3:20:1" }, new int[] { 20, 21 });
+      CheckPalletGroup(trans, 34, new[] { "F:3:fix3:30:1" }, new int[] { 30, 31 });
+      CheckPalletGroup(trans, 35, new[] { "F:3:fix4:20:1" }, new int[] { 20, 21 });
+      CheckPalletGroup(trans, 36, new[] { "F:3:fix4:30:1" }, new int[] { 30, 31 });
 
       AssertPartsPalletsDeleted(trans);
     }
@@ -987,7 +987,7 @@ namespace MachineWatchTest
       job1.PartName = "Part1";
       job1.SetPathGroup(1, 1, 1);
       job1.AddProcessOnPallet(1, 1, "4");
-      job1.AddProcessOnFixture(1, 1, "aaaaaaaaaaaaaaaaa", "1");
+      job1.SetFixtureFace(1, 1, "aaaaaaaaaaaaaaaaa", 1);
 
       AddBasicStopsWithProg(job1);
 
@@ -1083,7 +1083,8 @@ namespace MachineWatchTest
           job.AddLoadStation(proc, path, 1);
           job.AddUnloadStation(proc, path, 1);
           var stop = new JobMachiningStop("machine");
-          stop.AddProgram(1, "1234");
+          stop.Stations.Add(1);
+          stop.ProgramName = "1234";
           job.AddMachiningStop(proc, path, stop);
         }
       }

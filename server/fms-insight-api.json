@@ -4,7 +4,7 @@
   "info": {
     "title": "SeedTactic FMS Insight",
     "description": "API for access to FMS Insight for flexible manufacturing system control",
-    "version": "1.10"
+    "version": "1.11"
   },
   "paths": {
     "/api/v1/fms/fms-information": {
@@ -1513,11 +1513,12 @@
             "type": "string"
           }
         },
-        "Fixtures": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/FixtureFace"
-          }
+        "Fixture": {
+          "type": "string"
+        },
+        "Face": {
+          "type": "integer",
+          "format": "int32"
         },
         "Load": {
           "type": "array",
@@ -1579,37 +1580,28 @@
         }
       }
     },
-    "FixtureFace": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "Fixture",
-        "Face"
-      ],
-      "properties": {
-        "Fixture": {
-          "type": "string"
-        },
-        "Face": {
-          "type": "string"
-        }
-      }
-    },
     "JobMachiningStop": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "Stations",
         "Tools",
         "StationGroup",
         "ExpectedCycleTime"
       ],
       "properties": {
-        "Stations": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
+        "StationNums": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int32"
           }
+        },
+        "Program": {
+          "type": "string"
+        },
+        "ProgramRevision": {
+          "type": "integer",
+          "format": "int64"
         },
         "Tools": {
           "type": "object",
@@ -2138,6 +2130,37 @@
           "additionalProperties": {
             "$ref": "#/definitions/QueueSize"
           }
+        },
+        "Programs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ProgramEntry"
+          }
+        }
+      }
+    },
+    "ProgramEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ProgramName",
+        "Revision",
+        "Comment",
+        "ProgramContent"
+      ],
+      "properties": {
+        "ProgramName": {
+          "type": "string"
+        },
+        "Revision": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "Comment": {
+          "type": "string"
+        },
+        "ProgramContent": {
+          "type": "string"
         }
       }
     },
