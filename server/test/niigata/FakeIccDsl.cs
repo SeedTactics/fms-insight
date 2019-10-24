@@ -438,17 +438,18 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       j.SetExpectedUnloadTime(1, 1, TimeSpan.FromMinutes(unloadMins));
       j.SetPartsPerPallet(1, 1, partsPerPal);
       var s = new JobMachiningStop("MC");
+      s.ProgramName = prog.ToString();
+      s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins);
       foreach (var m in machs)
       {
-        s.AddProgram(m, prog.ToString());
-        s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins);
+        s.Stations.Add(m);
       }
       j.AddMachiningStop(1, 1, s);
       foreach (var p in pals)
       {
         j.AddProcessOnPallet(1, 1, p.ToString());
       }
-      j.AddProcessOnFixture(1, 1, fixture, face.ToString());
+      j.SetFixtureFace(1, 1, fixture, face);
       if (!string.IsNullOrEmpty(queue))
       {
         j.SetInputQueue(1, 1, queue);
@@ -472,18 +473,20 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       j.SetPartsPerPallet(1, 1, partsPerPal);
 
       var s = new JobMachiningStop("MC");
+      s.ProgramName = prog1.ToString();
+      s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins1);
       foreach (var m in machs1)
       {
-        s.AddProgram(m, prog1.ToString());
-        s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins1);
+        s.Stations.Add(m);
       }
       j.AddMachiningStop(1, 1, s);
 
       s = new JobMachiningStop("MC");
+      s.ProgramName = prog2.ToString();
+      s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins2);
       foreach (var m in machs2)
       {
-        s.AddProgram(m, prog2.ToString());
-        s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins2);
+        s.Stations.Add(m);
       }
       j.AddMachiningStop(1, 1, s);
 
@@ -491,7 +494,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         j.AddProcessOnPallet(1, 1, p.ToString());
       }
-      j.AddProcessOnFixture(1, 1, fixture, face.ToString());
+      j.SetFixtureFace(1, 1, fixture, face);
       if (!string.IsNullOrEmpty(queue))
       {
         j.SetInputQueue(1, 1, queue);
@@ -519,17 +522,19 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       j.SetPartsPerPallet(1, 1, partsPerPal);
       j.SetPartsPerPallet(2, 1, partsPerPal);
       var s = new JobMachiningStop("MC");
+      s.ProgramName = prog1.ToString();
+      s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins1);
       foreach (var m in machs)
       {
-        s.AddProgram(m, prog1.ToString());
-        s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins1);
+        s.Stations.Add(m);
       }
       j.AddMachiningStop(1, 1, s);
       s = new JobMachiningStop("MC");
+      s.ProgramName = prog2.ToString();
+      s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins2);
       foreach (var m in machs)
       {
-        s.AddProgram(m, prog2.ToString());
-        s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins2);
+        s.Stations.Add(m);
       }
       j.AddMachiningStop(2, 1, s);
       foreach (var p in pals)
@@ -537,8 +542,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         j.AddProcessOnPallet(1, 1, p.ToString());
         j.AddProcessOnPallet(2, 1, p.ToString());
       }
-      j.AddProcessOnFixture(1, 1, fixture, face1.ToString());
-      j.AddProcessOnFixture(2, 1, fixture, face2.ToString());
+      j.SetFixtureFace(1, 1, fixture, face1);
+      j.SetFixtureFace(2, 1, fixture, face2);
       return j;
     }
 
@@ -571,17 +576,19 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       j.SetPartsPerPallet(1, 1, partsPerPal);
       j.SetPartsPerPallet(2, 1, partsPerPal);
       var s = new JobMachiningStop("MC");
+      s.ProgramName = prog1.ToString();
+      s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins1);
       foreach (var m in machs)
       {
-        s.AddProgram(m, prog1.ToString());
-        s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins1);
+        s.Stations.Add(m);
       }
       j.AddMachiningStop(1, 1, s);
       s = new JobMachiningStop("MC");
+      s.ProgramName = prog2.ToString();
+      s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins2);
       foreach (var m in machs)
       {
-        s.AddProgram(m, prog2.ToString());
-        s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins2);
+        s.Stations.Add(m);
       }
       j.AddMachiningStop(2, 1, s);
       foreach (var p in pals1)
@@ -592,8 +599,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         j.AddProcessOnPallet(2, 1, p.ToString());
       }
-      j.AddProcessOnFixture(1, 1, fixture, "1");
-      j.AddProcessOnFixture(2, 1, fixture, "1");
+      j.SetFixtureFace(1, 1, fixture, 1);
+      j.SetFixtureFace(2, 1, fixture, 1);
 
       j.SetOutputQueue(1, 1, queue);
       j.SetInputQueue(2, 1, queue);

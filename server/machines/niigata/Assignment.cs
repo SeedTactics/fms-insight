@@ -124,17 +124,17 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private bool PathAllowedOnPallet(IEnumerable<JobPath> alreadyLoading, JobPath potentialNewPath)
     {
-      var seenFaces = new HashSet<string>();
-      var newFixture = potentialNewPath.Job.PlannedFixtures(potentialNewPath.Process, potentialNewPath.Path).FirstOrDefault();
+      var seenFaces = new HashSet<int>();
+      var (newFixture, newFace) = potentialNewPath.Job.PlannedFixture(potentialNewPath.Process, potentialNewPath.Path);
       foreach (var otherPath in alreadyLoading)
       {
-        var otherFixFace = otherPath.Job.PlannedFixtures(otherPath.Process, otherPath.Path).FirstOrDefault();
-        if (!string.IsNullOrEmpty(newFixture.Fixture) && newFixture.Fixture != otherFixFace.Fixture)
+        var (otherFix, otherFace) = otherPath.Job.PlannedFixture(otherPath.Process, otherPath.Path);
+        if (!string.IsNullOrEmpty(newFixture) && newFixture != otherFix)
           return false;
-        seenFaces.Add(otherFixFace.Face);
+        seenFaces.Add(otherFace);
       }
 
-      if (seenFaces.Contains(newFixture.Face))
+      if (seenFaces.Contains(newFace))
         return false;
 
       return true;
@@ -149,8 +149,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private (bool, HashSet<long>) CheckMaterialForPathExists(HashSet<long> currentlyLoading, IReadOnlyDictionary<long, InProcessMaterial> unusedMatsOnPal, JobPath path, IEnumerable<InProcessMaterial> queuedMats)
     {
-      var fixFace = path.Job.PlannedFixtures(path.Process, path.Path).FirstOrDefault();
-      int.TryParse(fixFace.Face, out int faceNum);
+      var (fixture, faceNum) = path.Job.PlannedFixture(path.Process, path.Path);
 
       var inputQueue = path.Job.GetInputQueue(path.Process, path.Path);
       if (path.Process == 1 && string.IsNullOrEmpty(inputQueue))
@@ -294,7 +293,7 @@ namespace BlackMaple.FMSInsight.Niigata
         _recordFaces.Save(newMaster.PalletNum, pendingId.ToString(), nowUtc, newPaths.Select(path =>
           new AssignedJobAndPathForFace()
           {
-            Face = int.Parse(path.Job.PlannedFixtures(process: path.Process, path: path.Path).First().Face),
+            Face = path.Job.PlannedFixture(process: path.Process, path: path.Path).face,
             Unique = path.Job.UniqueStr,
             Proc = path.Process,
             Path = path.Path
@@ -322,17 +321,17 @@ namespace BlackMaple.FMSInsight.Niigata
           // check existing step
           foreach (var existingStep in machiningSteps)
           {
-            if (existingStep.Machines.SequenceEqual(stop.Stations()))
+            if (existingStep.Machines.SequenceEqual(stop.Stations))
             {
-              existingStep.ProgramNumsToRun.Add(int.Parse(stop.AllPrograms().First().Program));
+              existingStep.ProgramNumsToRun.Add(int.Parse(stop.ProgramName));
               goto foundExisting;
             }
           }
           // no existing step, add a new one
           machiningSteps.Add(new MachiningStep()
           {
-            Machines = stop.Stations().ToList(),
-            ProgramNumsToRun = new List<int> { int.Parse(stop.AllPrograms().First().Program) }
+            Machines = stop.Stations.ToList(),
+            ProgramNumsToRun = new List<int> { int.Parse(stop.ProgramName) }
           });
 
         foundExisting:;

@@ -688,7 +688,7 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       foreach (var face in pallet.Faces)
       {
-        var currentlyRunningStop = face.Job.GetMachiningStop(face.Process, face.Path).FirstOrDefault(stop => stop.AllPrograms().Any(p => p.Program == program.ToString()));
+        var currentlyRunningStop = face.Job.GetMachiningStop(face.Process, face.Path).FirstOrDefault(stop => stop.ProgramName == program.ToString());
 
         var matIds = new HashSet<long>(face.Material.Select(m => m.MaterialID));
         var machStarts = log
@@ -768,7 +768,7 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           if (currentlyRunningStop != null && machStart.Program == program.ToString()) continue;
           if (machEnds.Any(e => e.Program == machStart.Program)) continue;
-          var machStop = face.Job.GetMachiningStop(face.Process, face.Path).FirstOrDefault(stop => stop.AllPrograms().Any(p => p.Program == machStart.Program));
+          var machStop = face.Job.GetMachiningStop(face.Process, face.Path).FirstOrDefault(stop => stop.ProgramName == machStart.Program);
           if (machStop == null)
           {
             Log.Warning("Unable to find machining stop for machine cycle {@machStart} on {@face}", machStart, face);
@@ -829,7 +829,7 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         foreach (var machStop in face.Job.GetMachiningStop(face.Process, face.Path))
         {
-          var machProg = machStop.AllPrograms().First().Program;
+          var machProg = machStop.ProgramName;
           if (!progsToCheck.Contains(machProg)) continue;
 
           var matIds = new HashSet<long>(face.Material.Select(m => m.MaterialID));
@@ -872,7 +872,7 @@ namespace BlackMaple.FMSInsight.Niigata
           else if (machStart == null && machEnd == null)
           {
             Log.Warning("Missed machine cycle for {part} process {process} on machines {@machs} with program {prog}",
-              face.Job.PartName, face.Process, machStop.Stations(), machProg);
+              face.Job.PartName, face.Process, machStop.Stations, machProg);
           }
         }
       }
