@@ -212,7 +212,7 @@ namespace MazakMachineInterface
     }
 
     public abstract IEnumerable<string> Pallets();
-    public abstract IEnumerable<JobPlan.FixtureFace> Fixtures();
+    public abstract (string fixture, int face) FixtureFace();
 
     public abstract void CreateDatabaseRow(MazakPartRow newPart, string fixture, MazakDbType mazakTy);
 
@@ -242,9 +242,9 @@ namespace MazakMachineInterface
       return Job.PlannedPallets(ProcessNumber, Path) ?? Enumerable.Empty<string>();
     }
 
-    public override IEnumerable<JobPlan.FixtureFace> Fixtures()
+    public override (string fixture, int face) FixtureFace()
     {
-      return Job.PlannedFixtures(ProcessNumber, Path) ?? Enumerable.Empty<JobPlan.FixtureFace>();
+      return Job.PlannedFixture(ProcessNumber, Path);
     }
 
     public override void CreateDatabaseRow(MazakPartRow newPart, string fixture, MazakDbType mazakTy)
@@ -267,10 +267,10 @@ namespace MazakMachineInterface
       string program = "";
       foreach (var routeEntry in Job.GetMachiningStop(ProcessNumber, Path))
       {
-        foreach (int statNum in routeEntry.Stations())
+        program = routeEntry.ProgramName;
+        foreach (int statNum in routeEntry.Stations)
         {
           Cut[statNum - 1] = statNum.ToString()[0];
-          program = routeEntry.Program(statNum);
         }
       }
 
@@ -318,7 +318,7 @@ namespace MazakMachineInterface
       return Job.PlannedPallets(1, Path);
     }
 
-    public override IEnumerable<JobPlan.FixtureFace> Fixtures() => Enumerable.Empty<JobPlan.FixtureFace>();
+    public override (string fixture, int face) FixtureFace() => (null, 0);
 
     public override void CreateDatabaseRow(MazakPartRow newPart, string fixture, MazakDbType mazakTy)
     {
@@ -328,7 +328,7 @@ namespace MazakMachineInterface
 
       foreach (var routeEntry in Job.GetMachiningStop(1, Path))
       {
-        foreach (int statNum in routeEntry.Stations())
+        foreach (int statNum in routeEntry.Stations)
         {
           Cut[statNum - 1] = statNum.ToString()[0];
         }
@@ -742,37 +742,32 @@ namespace MazakMachineInterface
             foreach (var stop in job.GetMachiningStop(proc, path))
             {
               has1Stop = true;
-              var lst = new List<JobMachiningStop.ProgramEntry>(stop.AllPrograms());
-
-              if (lst.Count == 0)
+              if (stop.Stations.Count == 0)
               {
                 ErrorDuringCreate = "Part " + job.PartName + " has no stations assigned.";
                 return;
               }
 
-              foreach (var p in lst)
+              if (stop.ProgramName == null || stop.ProgramName == "")
               {
-                if (p.Program == null || p.Program == "")
+                ErrorDuringCreate = "Part " + job.PartName + " has no programs.";
+                return;
+              }
+              if (mazakTy == MazakDbType.MazakVersionE)
+              {
+                int progNum;
+                if (!int.TryParse(stop.ProgramName, out progNum))
                 {
-                  ErrorDuringCreate = "Part " + job.PartName + " has no programs.";
+                  ErrorDuringCreate = "Part " + job.PartName + " program " + stop.ProgramName +
+                      " is not an integer.";
                   return;
                 }
-                if (mazakTy == MazakDbType.MazakVersionE)
-                {
-                  int progNum;
-                  if (!int.TryParse(p.Program, out progNum))
-                  {
-                    ErrorDuringCreate = "Part " + job.PartName + " program " + p.Program +
-                        " is not an integer.";
-                    return;
-                  }
-                }
-                if (!mazakData.MainPrograms.Any(mp => mp.MainProgram == p.Program))
-                {
-                  ErrorDuringCreate = "Part " + job.PartName + " program " + p.Program +
-                      " does not exist in the cell controller.";
-                  return;
-                }
+              }
+              if (!mazakData.MainPrograms.Any(mp => mp.MainProgram == stop.ProgramName))
+              {
+                ErrorDuringCreate = "Part " + job.PartName + " program " + stop.ProgramName +
+                    " does not exist in the cell controller.";
+                return;
               }
             }
 
@@ -839,15 +834,9 @@ namespace MazakMachineInterface
       {
         return "pals:" + string.Join(",", pals.OrderBy(p => p));
       }
-      string jobFixtureToFixGroup(MazakProcess proc, IEnumerable<JobPlan.FixtureFace> fixs, IEnumerable<string> pals)
+      string jobFixtureToFixGroup(MazakProcess proc, string fix, IEnumerable<string> pals)
       {
-        if (fixs.Count() > 1)
-        {
-          throw new BlackMaple.MachineFramework.BadRequestException(
-            "Invalid fixtures for " + proc.Job.PartName + "-" + proc.ProcessNumber.ToString() +
-            ".  There can be at most one fixture and face for the part.");
-        }
-        return "fix:" + string.Join(",", pals.OrderBy(p => p)) + ":" + fixs.First().Fixture;
+        return "fix:" + string.Join(",", pals.OrderBy(p => p)) + ":" + fix;
       }
 
       // compute all fixture groups
@@ -859,10 +848,10 @@ namespace MazakMachineInterface
         {
 
           string fixGroup;
-          var plannedFixs = proc.Fixtures();
-          if (plannedFixs.Any())
+          var (plannedFixture, plannedFace) = proc.FixtureFace();
+          if (!string.IsNullOrEmpty(plannedFixture))
           {
-            fixGroup = jobFixtureToFixGroup(proc, plannedFixs, proc.Pallets());
+            fixGroup = jobFixtureToFixGroup(proc, plannedFixture, proc.Pallets());
           }
           else
           {
@@ -907,17 +896,17 @@ namespace MazakMachineInterface
         foreach (var proc in allParts.SelectMany(p => p.Processes))
         {
 
-          var plannedFixes = proc.Fixtures();
+          var (plannedFixture, plannedFace) = proc.FixtureFace();
 
           string face;
           string baseFixtureName;
-          if (plannedFixes.Any())
+          if (!string.IsNullOrEmpty(plannedFixture))
           {
             //check if correct fixture group
-            if (fixGroup != jobFixtureToFixGroup(proc, plannedFixes, proc.Pallets()))
+            if (fixGroup != jobFixtureToFixGroup(proc, plannedFixture, proc.Pallets()))
               continue;
-            face = plannedFixes.First().Face;
-            baseFixtureName = plannedFixes.First().Fixture + ":" + proc.Pallets().First();
+            face = plannedFace.ToString();
+            baseFixtureName = plannedFixture + ":" + proc.Pallets().First();
           }
           else
           {

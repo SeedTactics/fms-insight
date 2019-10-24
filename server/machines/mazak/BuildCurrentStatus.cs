@@ -429,8 +429,13 @@ namespace MazakMachineInterface
               routeStop = new JobMachiningStop("MC");
               job.AddMachiningStop(partProcRow.ProcessNumber, path, routeStop);
             }
-            routeStop.AddProgram(int.Parse(c.ToString()), partProcRow.MainProgram);
+            routeStop.Stations.Add(int.Parse(c.ToString()));
           }
+        }
+
+        if (routeStop != null)
+        {
+          routeStop.ProgramName = partProcRow.MainProgram;
         }
 
         //Planned Pallets

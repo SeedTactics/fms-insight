@@ -86,11 +86,11 @@ namespace BlackMaple.MachineFramework
             _connection.Close();
         }
 
-        private const int Version = 16;
+        private const int Version = 17;
 
         public void CreateTables()
         {
-            using (var cmd = _connection.CreateCommand()) {
+          using (var cmd = _connection.CreateCommand()) {
 
             cmd.CommandText = "CREATE TABLE version(ver INTEGER)";
             cmd.ExecuteNonQuery();
@@ -115,19 +115,16 @@ namespace BlackMaple.MachineFramework
             cmd.CommandText = "CREATE TABLE planqty(UniqueStr TEXT, Path INTEGER, PlanQty INTEGER NOT NULL, PRIMARY KEY(UniqueStr, Path))";
             cmd.ExecuteNonQuery();
 
-            cmd.CommandText = "CREATE TABLE pathdata(UniqueStr TEXT, Process INTEGER, Path INTEGER, StartingUTC INTEGER, PartsPerPallet INTEGER, PathGroup INTEGER, SimAverageFlowTime INTEGER, InputQueue TEXT, OutputQueue TEXT, LoadTime INTEGER, UnloadTime INTEGER, PRIMARY KEY(UniqueStr,Process,Path))";
+            cmd.CommandText = "CREATE TABLE pathdata(UniqueStr TEXT, Process INTEGER, Path INTEGER, StartingUTC INTEGER, PartsPerPallet INTEGER, PathGroup INTEGER, SimAverageFlowTime INTEGER, InputQueue TEXT, OutputQueue TEXT, LoadTime INTEGER, UnloadTime INTEGER, Fixture TEXT, Face INTEGER, PRIMARY KEY(UniqueStr,Process,Path))";
             cmd.ExecuteNonQuery();
 
             cmd.CommandText = "CREATE TABLE pallets(UniqueStr TEXT, Process INTEGER, Path INTEGER, Pallet TEXT, PRIMARY KEY(UniqueStr,Process,Path,Pallet))";
             cmd.ExecuteNonQuery();
 
-            cmd.CommandText = "CREATE TABLE fixtures(UniqueStr TEXT, Process INTEGER, Path INTEGER, Fixture TEXT, Face TEXT, PRIMARY KEY(UniqueStr,Process,Path,Fixture,Face))";
+            cmd.CommandText = "CREATE TABLE stops(UniqueStr TEXT, Process INTEGER, Path INTEGER, RouteNum INTEGER, StatGroup STRING, ExpectedCycleTime INTEGER, Program TEXT, ProgramRevision INTEGER, PRIMARY KEY(UniqueStr, Process, Path, RouteNum))";
             cmd.ExecuteNonQuery();
 
-            cmd.CommandText = "CREATE TABLE stops(UniqueStr TEXT, Process INTEGER, Path INTEGER, RouteNum INTEGER, StatGroup STRING, ExpectedCycleTime INTEGER, PRIMARY KEY(UniqueStr, Process, Path, RouteNum))";
-            cmd.ExecuteNonQuery();
-
-            cmd.CommandText = "CREATE TABLE programs(UniqueStr TEXT, Process INTEGER, Path INTEGER, RouteNum INTEGER, StatNum INTEGER, Program TEXT NOT NULL, PRIMARY KEY(UniqueStr, Process, Path, RouteNum, StatNum))";
+            cmd.CommandText = "CREATE TABLE stops_stations(UniqueStr TEXT, Process INTEGER, Path INTEGER, RouteNum INTEGER, StatNum INTEGER, PRIMARY KEY(UniqueStr, Process, Path, RouteNum, StatNum))";
             cmd.ExecuteNonQuery();
 
             cmd.CommandText = "CREATE TABLE tools(UniqueStr TEXT, Process INTEGER, Path INTEGER, RouteNum INTEGER, Tool STRING, ExpectedUse INTEGER, PRIMARY KEY(UniqueStr,Process,Path,RouteNum,Tool))";
@@ -174,7 +171,13 @@ namespace BlackMaple.MachineFramework
 
             cmd.CommandText = "CREATE TABLE unfilled_workorders(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER NOT NULL, DueDate INTEGER NOT NULL, Priority INTEGER NOT NULL, PRIMARY KEY(ScheduleId, Part, Workorder))";
             cmd.ExecuteNonQuery();
-            }
+
+            cmd.CommandText = "CREATE TABLE program_revisions(ProgramName TEXT NOT NULL, ProgramRevision INTEGER NOT NULL, CellControllerProgramName TEXT, RevisionTimeUTC INTEGER NOT NULL, RevisionComment TEXT, ProgramContent TEXT, PRIMARY KEY(ProgramName, ProgramRevision))";
+            cmd.ExecuteNonQuery();
+
+            cmd.CommandText = "CREATE INDEX program_rev_cell_prog_name ON program_revisions(CellControllerProgramName, ProgramRevision) WHERE CellControllerProgramName IS NOT NULL";
+            cmd.ExecuteNonQuery();
+          }
         }
 
 
@@ -243,6 +246,7 @@ namespace BlackMaple.MachineFramework
                 if (curVersion < 14) Ver13ToVer14(trans);
                 if (curVersion < 15) Ver14ToVer15(trans);
                 if (curVersion < 16) Ver15ToVer16(trans);
+                if (curVersion < 17) Ver16ToVer17(trans);
 
                 //update the version in the database
                 cmd.Transaction = trans;
@@ -502,6 +506,64 @@ namespace BlackMaple.MachineFramework
                 cmd.ExecuteNonQuery();
             }
         }
+
+        private void Ver16ToVer17(IDbTransaction trans)
+        {
+            using (IDbCommand cmd = _connection.CreateCommand())
+            {
+                cmd.CommandText = "CREATE TABLE stops_stations(UniqueStr TEXT, Process INTEGER, Path INTEGER, RouteNum INTEGER, StatNum INTEGER, PRIMARY KEY(UniqueStr, Process, Path, RouteNum, StatNum))";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "INSERT INTO stops_stations(UniqueStr, Process, Path, RouteNum, StatNum) SELECT UniqueStr, Process, Path, RouteNum, StatNum FROM programs";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "ALTER TABLE stops ADD Program TEXT";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "ALTER TABLE stops ADD ProgramRevision INTEGER";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText =
+                    "UPDATE stops SET Program = " +
+                    " (SELECT programs.Program FROM programs WHERE " +
+                    "  programs.UniqueStr = stops.UniqueStr AND " +
+                    "  programs.Process = stops.Process AND " +
+                    "  programs.Path = stops.Path AND " +
+                    "  programs.RouteNum = stops.RouteNum " +
+                    "  ORDER BY programs.StatNum ASC " +
+                    "  LIMIT 1 " +
+                    " )";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "DROP TABLE programs";
+                cmd.ExecuteNonQuery();
+
+                // now fixture/face
+                cmd.CommandText = "ALTER TABLE pathdata ADD Fixture TEXT";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "ALTER TABLE pathdata ADD Face INTEGER";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText =
+                    "UPDATE pathdata SET " +
+                    "  Fixture = (SELECT fixtures.Fixture FROM fixtures WHERE " +
+                    "   fixtures.UniqueStr = pathdata.UniqueStr AND fixtures.Process = pathdata.Process AND fixtures.Path = pathdata.Path ORDER BY fixtures.Fixture ASC LIMIT 1)," +
+                    "  Face = (SELECT fixtures.Face FROM fixtures WHERE " +
+                    "   fixtures.UniqueStr = pathdata.UniqueStr AND fixtures.Process = pathdata.Process AND fixtures.Path = pathdata.Path ORDER BY fixtures.Fixture ASC LIMIT 1)";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "DROP TABLE fixtures";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "CREATE TABLE program_revisions(ProgramName TEXT NOT NULL, ProgramRevision INTEGER NOT NULL, CellControllerProgramName TEXT, RevisionTimeUTC INTEGER NOT NULL, RevisionComment TEXT, ProgramContent TEXT, PRIMARY KEY(ProgramName, ProgramRevision))";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "CREATE INDEX program_rev_cell_prog_name ON program_revisions(CellControllerProgramName, ProgramRevision) WHERE CellControllerProgramName IS NOT NULL";
+                cmd.ExecuteNonQuery();
+            }
+
+        }
         #endregion
 
         #region "Loading Jobs"
@@ -570,16 +632,6 @@ namespace BlackMaple.MachineFramework
                 job.SetSimulatedProduction(entry.Key.Process, entry.Key.Path, entry.Value);
             }
 
-            //read fixtures
-            cmd.CommandText = "SELECT Process, Path, Fixture, Face FROM fixtures WHERE UniqueStr = $uniq";
-            using (IDataReader reader = cmd.ExecuteReader())
-            {
-                while (reader.Read())
-                {
-                    job.AddProcessOnFixture(reader.GetInt32(0), reader.GetInt32(1), reader.GetString(2), reader.GetString(3));
-                }
-            }
-
             //scheduled bookings
             cmd.CommandText = "SELECT BookingId FROM scheduled_bookings WHERE UniqueStr = $uniq";
             using (IDataReader reader = cmd.ExecuteReader())
@@ -591,7 +643,7 @@ namespace BlackMaple.MachineFramework
             }
 
             //path data
-            cmd.CommandText = "SELECT Process, Path, StartingUTC, PartsPerPallet, PathGroup, SimAverageFlowTime, InputQueue, OutputQueue, LoadTime, UnloadTime FROM pathdata WHERE UniqueStr = $uniq";
+            cmd.CommandText = "SELECT Process, Path, StartingUTC, PartsPerPallet, PathGroup, SimAverageFlowTime, InputQueue, OutputQueue, LoadTime, UnloadTime, Fixture, Face FROM pathdata WHERE UniqueStr = $uniq";
             using (var reader = cmd.ExecuteReader())
             {
                 while (reader.Read())
@@ -615,13 +667,24 @@ namespace BlackMaple.MachineFramework
                         job.SetExpectedLoadTime(proc, path, TimeSpan.FromTicks(reader.GetInt64(8)));
                     if (!reader.IsDBNull(9))
                         job.SetExpectedUnloadTime(proc, path, TimeSpan.FromTicks(reader.GetInt64(9)));
+
+                    if (!reader.IsDBNull(10) && !reader.IsDBNull(11)) {
+                        var faceTy = reader.GetFieldType(11);
+                        if (faceTy == typeof(string)) {
+                            if (int.TryParse(reader.GetString(11), out int face)) {
+                                job.SetFixtureFace(proc, path, reader.GetString(10), face);
+                            }
+                        } else {
+                            job.SetFixtureFace(proc, path, reader.GetString(10), reader.GetInt32(11));
+                        }
+                    }
                 }
             }
 
             var routes = new Dictionary<JobPath, SortedList<int, MachineWatchInterface.JobMachiningStop>>();
 
             //now add routes
-            cmd.CommandText = "SELECT Process, Path, RouteNum, StatGroup, ExpectedCycleTime FROM stops WHERE UniqueStr = $uniq";
+            cmd.CommandText = "SELECT Process, Path, RouteNum, StatGroup, ExpectedCycleTime, Program, ProgramRevision FROM stops WHERE UniqueStr = $uniq";
             using (IDataReader reader = cmd.ExecuteReader())
             {
                 while (reader.Read())
@@ -646,6 +709,12 @@ namespace BlackMaple.MachineFramework
                     var stop = new MachineWatchInterface.JobMachiningStop(reader.GetString(3));
                     if (!reader.IsDBNull(4))
                         stop.ExpectedCycleTime = TimeSpan.FromTicks(reader.GetInt64(4));
+
+                    if (!reader.IsDBNull(5))
+                        stop.ProgramName = reader.GetString(5);
+                    if (!reader.IsDBNull(6))
+                        stop.ProgramRevision = reader.GetInt64(6);
+
                     rList[routeNum] = stop;
                 }
             }
@@ -659,7 +728,7 @@ namespace BlackMaple.MachineFramework
             }
 
             //programs for routes
-            cmd.CommandText = "SELECT Process, Path, RouteNum, StatNum, Program FROM programs WHERE UniqueStr = $uniq";
+            cmd.CommandText = "SELECT Process, Path, RouteNum, StatNum FROM stops_stations WHERE UniqueStr = $uniq";
             using (IDataReader reader = cmd.ExecuteReader())
             {
                 while (reader.Read())
@@ -674,7 +743,7 @@ namespace BlackMaple.MachineFramework
                         var stops = routes[key];
                         if (stops.ContainsKey(routeNum))
                         {
-                            stops[routeNum].AddProgram(reader.GetInt32(3), reader.GetString(4));
+                            stops[routeNum].Stations.Add(reader.GetInt32(3));
                         }
                     }
                 }
@@ -1326,12 +1395,19 @@ namespace BlackMaple.MachineFramework
                     {
                         using (var cmd = _connection.CreateCommand())
                         {
+                            cmd.Transaction = trans;
                             cmd.CommandText = "INSERT OR REPLACE INTO schedule_debug(ScheduleId, DebugMessage) VALUES ($sid,$debug)";
                             cmd.Parameters.Add("sid", SqliteType.Text).Value = newJobs.ScheduleId;
                             cmd.Parameters.Add("debug", SqliteType.Blob).Value = newJobs.DebugMessage;
                             cmd.ExecuteNonQuery();
                         }
                     }
+
+                    var startingUtc = DateTime.UtcNow;
+                    if (newJobs.Jobs.Any()) {
+                      startingUtc = newJobs.Jobs[0].RouteStartingTimeUTC;
+                    }
+                    AddPrograms(trans, newJobs.Programs, startingUtc);
 
                     trans.Commit();
                 }
@@ -1456,32 +1532,8 @@ namespace BlackMaple.MachineFramework
                 }
             }
 
-            cmd.CommandText = "INSERT INTO fixtures(UniqueStr, Process, Path, Fixture,Face) VALUES ($uniq,$proc,$path,$fix,$face)";
-            cmd.Parameters.Clear();
-            cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
-            cmd.Parameters.Add("proc", SqliteType.Integer);
-            cmd.Parameters.Add("path", SqliteType.Integer);
-            cmd.Parameters.Add("fix", SqliteType.Text);
-            cmd.Parameters.Add("face", SqliteType.Text);
-
-            for (int i = 1; i <= job.NumProcesses; i++)
-            {
-                for (int j = 1; j <= job.GetNumPaths(i); j++)
-                {
-                    if (job.PlannedFixtures(i, j) == null) continue;
-                    foreach (var fix in job.PlannedFixtures(i, j))
-                    {
-                        cmd.Parameters[1].Value = i;
-                        cmd.Parameters[2].Value = j;
-                        cmd.Parameters[3].Value = fix.Fixture;
-                        cmd.Parameters[4].Value = fix.Face;
-                        cmd.ExecuteNonQuery();
-                    }
-                }
-            }
-
-            cmd.CommandText = "INSERT INTO pathdata(UniqueStr, Process, Path, StartingUTC, PartsPerPallet, PathGroup,SimAverageFlowTime,InputQueue,OutputQueue,LoadTime,UnloadTime) " +
-          "VALUES ($uniq,$proc,$path,$start,$ppp,$group,$flow,$iq,$oq,$lt,$ul)";
+            cmd.CommandText = "INSERT INTO pathdata(UniqueStr, Process, Path, StartingUTC, PartsPerPallet, PathGroup,SimAverageFlowTime,InputQueue,OutputQueue,LoadTime,UnloadTime,Fixture,Face) " +
+          "VALUES ($uniq,$proc,$path,$start,$ppp,$group,$flow,$iq,$oq,$lt,$ul,$fix,$face)";
             cmd.Parameters.Clear();
             cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
             cmd.Parameters.Add("proc", SqliteType.Integer);
@@ -1494,6 +1546,8 @@ namespace BlackMaple.MachineFramework
             cmd.Parameters.Add("oq", SqliteType.Text);
             cmd.Parameters.Add("lt", SqliteType.Integer);
             cmd.Parameters.Add("ul", SqliteType.Integer);
+            cmd.Parameters.Add("fix", SqliteType.Text);
+            cmd.Parameters.Add("face", SqliteType.Integer);
             for (int i = 1; i <= job.NumProcesses; i++)
             {
                 for (int j = 1; j <= job.GetNumPaths(i); j++)
@@ -1516,12 +1570,15 @@ namespace BlackMaple.MachineFramework
                         cmd.Parameters[8].Value = oq;
                     cmd.Parameters[9].Value = job.GetExpectedLoadTime(i, j).Ticks;
                     cmd.Parameters[10].Value = job.GetExpectedUnloadTime(i, j).Ticks;
+                    var (fix, face) = job.PlannedFixture(i, j);
+                    cmd.Parameters[11].Value = string.IsNullOrEmpty(fix) ? DBNull.Value : (object)fix;
+                    cmd.Parameters[12].Value = face;
                     cmd.ExecuteNonQuery();
                 }
             }
 
-            cmd.CommandText = "INSERT INTO stops(UniqueStr, Process, Path, RouteNum, StatGroup, ExpectedCycleTime) " +
-          "VALUES ($uniq,$proc,$path,$route,$group,$cycle)";
+            cmd.CommandText = "INSERT INTO stops(UniqueStr, Process, Path, RouteNum, StatGroup, ExpectedCycleTime, Program, ProgramRevision) " +
+          "VALUES ($uniq,$proc,$path,$route,$group,$cycle,$prog,$rev)";
             cmd.Parameters.Clear();
             cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
             cmd.Parameters.Add("proc", SqliteType.Integer);
@@ -1529,6 +1586,9 @@ namespace BlackMaple.MachineFramework
             cmd.Parameters.Add("route", SqliteType.Integer);
             cmd.Parameters.Add("group", SqliteType.Text);
             cmd.Parameters.Add("cycle", SqliteType.Integer);
+            cmd.Parameters.Add("prog", SqliteType.Text);
+            cmd.Parameters.Add("rev", SqliteType.Integer);
+
 
             for (int i = 1; i <= job.NumProcesses; i++)
             {
@@ -1542,21 +1602,22 @@ namespace BlackMaple.MachineFramework
                         cmd.Parameters[3].Value = routeNum;
                         cmd.Parameters[4].Value = entry.StationGroup;
                         cmd.Parameters[5].Value = entry.ExpectedCycleTime.Ticks;
+                        cmd.Parameters[6].Value = string.IsNullOrEmpty(entry.ProgramName) ? DBNull.Value : (object)entry.ProgramName;
+                        cmd.Parameters[7].Value = entry.ProgramRevision.HasValue ? (object)entry.ProgramRevision.Value : DBNull.Value;
                         cmd.ExecuteNonQuery();
                         routeNum += 1;
                     }
                 }
             }
 
-            cmd.CommandText = "INSERT INTO programs(UniqueStr, Process, Path, RouteNum, StatNum, Program) " +
-          "VALUES ($uniq,$proc,$path,$route,$num,$prog)";
+            cmd.CommandText = "INSERT INTO stops_stations(UniqueStr, Process, Path, RouteNum, StatNum) " +
+          "VALUES ($uniq,$proc,$path,$route,$num)";
             cmd.Parameters.Clear();
             cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
             cmd.Parameters.Add("proc", SqliteType.Integer);
             cmd.Parameters.Add("path", SqliteType.Integer);
             cmd.Parameters.Add("route", SqliteType.Integer);
             cmd.Parameters.Add("num", SqliteType.Integer);
-            cmd.Parameters.Add("prog", SqliteType.Text);
 
             for (int i = 1; i <= job.NumProcesses; i++)
             {
@@ -1565,13 +1626,12 @@ namespace BlackMaple.MachineFramework
                     int routeNum = 0;
                     foreach (var entry in job.GetMachiningStop(i, j))
                     {
-                        foreach (var prog in entry.AllPrograms())
+                        foreach (var stat in entry.Stations)
                         {
                             cmd.Parameters[1].Value = i;
                             cmd.Parameters[2].Value = j;
                             cmd.Parameters[3].Value = routeNum;
-                            cmd.Parameters[4].Value = prog.StationNum;
-                            cmd.Parameters[5].Value = prog.Program;
+                            cmd.Parameters[4].Value = stat;
 
                             cmd.ExecuteNonQuery();
                         }
@@ -2049,6 +2109,208 @@ namespace BlackMaple.MachineFramework
                 return ret;
             }
         }
+        #endregion
+
+        #region Programs
+        private void AddPrograms(IDbTransaction transaction, IEnumerable<MachineWatchInterface.ProgramEntry> programs, DateTime nowUtc)
+        {
+          if (programs == null || !programs.Any()) return;
+
+          using (var checkCmd = _connection.CreateCommand())
+          using (var haveRevCmd = _connection.CreateCommand())
+          using (var needRevCmd = _connection.CreateCommand())
+          {
+            ((IDbCommand)checkCmd).Transaction = transaction;
+            checkCmd.CommandText = "SELECT ProgramContent FROM program_revisions WHERE ProgramName = $name AND ProgramRevision = $rev";
+            checkCmd.Parameters.Add("name", SqliteType.Text);
+            checkCmd.Parameters.Add("rev", SqliteType.Integer);
+
+            ((IDbCommand)haveRevCmd).Transaction = transaction;
+            haveRevCmd.CommandText = "INSERT INTO program_revisions(ProgramName, ProgramRevision, RevisionTimeUTC, RevisionComment, ProgramContent) " +
+                                " VALUES($name,$rev,$time,$comment,$prog)";
+            haveRevCmd.Parameters.Add("name", SqliteType.Text);
+            haveRevCmd.Parameters.Add("rev", SqliteType.Integer);
+            haveRevCmd.Parameters.Add("time", SqliteType.Integer).Value = nowUtc.Ticks;
+            haveRevCmd.Parameters.Add("comment", SqliteType.Text);
+            haveRevCmd.Parameters.Add("prog", SqliteType.Text);
+
+            ((IDbCommand)needRevCmd).Transaction = transaction;
+            needRevCmd.CommandText = "INSERT INTO program_revisions(ProgramName, ProgramRevision, RevisionTimeUTC, RevisionComment, ProgramContent) " +
+                                " VALUES($name,COALESCE((SELECT MAX(ProgramRevision) + 1 FROM program_revisions WHERE ProgramName = $name2), 1),$time,$comment,$prog)";
+            needRevCmd.Parameters.Add("name", SqliteType.Text);
+            needRevCmd.Parameters.Add("name2", SqliteType.Text);
+            needRevCmd.Parameters.Add("time", SqliteType.Integer).Value = nowUtc.Ticks;
+            needRevCmd.Parameters.Add("comment", SqliteType.Text);
+            needRevCmd.Parameters.Add("prog", SqliteType.Text);
+
+            foreach (var prog in programs)
+            {
+              if (prog.Revision > 0) {
+                checkCmd.Parameters[0].Value = prog.ProgramName;
+                checkCmd.Parameters[1].Value = prog.Revision;
+                var content = checkCmd.ExecuteScalar();
+                if (content != null && content != DBNull.Value) {
+                  if ((string)content != prog.ProgramContent)
+                  {
+                    throw new BadRequestException("Program " + prog.ProgramName + " rev" + prog.Revision.ToString() + " has already been used and the program contents do not match.");
+                  }
+                  // if match, do nothing
+                } else {
+                  haveRevCmd.Parameters[0].Value = prog.ProgramName;
+                  haveRevCmd.Parameters[1].Value = prog.Revision;
+                  haveRevCmd.Parameters[3].Value = string.IsNullOrEmpty(prog.Comment) ? DBNull.Value : (object)prog.Comment;
+                  haveRevCmd.Parameters[4].Value = string.IsNullOrEmpty(prog.ProgramContent) ? DBNull.Value : (object)prog.ProgramContent;
+                  haveRevCmd.ExecuteNonQuery();
+                }
+              } else {
+                needRevCmd.Parameters[0].Value = prog.ProgramName;
+                needRevCmd.Parameters[1].Value = prog.ProgramName;
+                needRevCmd.Parameters[3].Value = string.IsNullOrEmpty(prog.Comment) ? DBNull.Value : (object)prog.Comment;
+                needRevCmd.Parameters[4].Value = string.IsNullOrEmpty(prog.ProgramContent) ? DBNull.Value : (object)prog.ProgramContent;
+                needRevCmd.ExecuteNonQuery();
+              }
+            }
+          }
+        }
+
+        public class ProgramRevision
+        {
+          public string ProgramName { get; set; }
+          public long Revision { get; set; }
+          public string Comment { get; set; }
+          public string ProgramContent { get; set; }
+          public string CellControllerProgramName { get; set; }
+        }
+
+        public ProgramRevision ProgramFromCellControllerProgram(string cellCtProgName)
+        {
+          lock (_lock) {
+            var trans = _connection.BeginTransaction();
+            try {
+              ProgramRevision prog = null;
+              using (var cmd = _connection.CreateCommand()) {
+                cmd.Transaction = trans;
+                cmd.CommandText = "SELECT ProgramName, ProgramRevision, RevisionComment, ProgramContent FROM program_revisions WHERE CellControllerProgramName = $prog LIMIT 1";
+                cmd.Parameters.Add("prog", SqliteType.Text).Value = cellCtProgName;
+                using (var reader = cmd.ExecuteReader()) {
+                  while (reader.Read()) {
+                    prog = new ProgramRevision {
+                      ProgramName = reader.GetString(0),
+                      Revision = reader.GetInt64(1),
+                      Comment = reader.IsDBNull(2) ? null : reader.GetString(2),
+                      ProgramContent = reader.IsDBNull(3) ? null : reader.GetString(3),
+                      CellControllerProgramName = cellCtProgName
+                    };
+                    break;
+                  }
+                }
+              }
+              trans.Commit();
+              return prog;
+            } catch {
+              trans.Rollback();
+              throw;
+            }
+          }
+        }
+
+        public ProgramRevision LoadProgram(string program, long revision)
+        {
+          lock (_lock) {
+            var trans = _connection.BeginTransaction();
+            try {
+              ProgramRevision prog = null;
+              using (var cmd = _connection.CreateCommand()) {
+                cmd.Transaction = trans;
+                cmd.CommandText = "SELECT RevisionComment, ProgramContent, CellControllerProgramName FROM program_revisions WHERE ProgramName = $prog AND ProgramRevision = $rev";
+                cmd.Parameters.Add("prog", SqliteType.Text).Value = program;
+                cmd.Parameters.Add("rev", SqliteType.Text).Value = revision;
+                using (var reader = cmd.ExecuteReader()) {
+                  while (reader.Read()) {
+                    prog = new ProgramRevision {
+                      ProgramName = program,
+                      Revision = revision,
+                      Comment = reader.IsDBNull(0) ? null : reader.GetString(0),
+                      ProgramContent = reader.IsDBNull(1) ? null : reader.GetString(1),
+                      CellControllerProgramName = reader.IsDBNull(2) ? null : reader.GetString(2)
+                    };
+                    break;
+                  }
+                }
+              }
+              trans.Commit();
+              return prog;
+            } catch {
+              trans.Rollback();
+              throw;
+            }
+          }
+        }
+
+        public ProgramRevision LoadMostRecentProgram(string program)
+        {
+          lock (_lock) {
+            var trans = _connection.BeginTransaction();
+            try {
+              ProgramRevision prog = null;
+              using (var cmd = _connection.CreateCommand()) {
+                cmd.Transaction = trans;
+                cmd.CommandText = "SELECT ProgramRevision, RevisionComment, ProgramContent, CellControllerProgramName FROM program_revisions WHERE ProgramName = $prog ORDER BY ProgramRevision DESC LIMIT 1";
+                cmd.Parameters.Add("prog", SqliteType.Text).Value = program;
+                using (var reader = cmd.ExecuteReader()) {
+                  while (reader.Read()) {
+                    prog = new ProgramRevision {
+                      ProgramName = program,
+                      Revision = reader.GetInt64(0),
+                      Comment = reader.IsDBNull(1) ? null : reader.GetString(1),
+                      ProgramContent = reader.IsDBNull(2) ? null : reader.GetString(2),
+                      CellControllerProgramName = reader.IsDBNull(3) ? null : reader.GetString(3)
+                    };
+                    break;
+                  }
+                }
+              }
+              trans.Commit();
+              return prog;
+            } catch {
+              trans.Rollback();
+              throw;
+            }
+          }
+        }
+
+        public void SetCellControllerProgramForProgram(string program, long revision, string cellCtProgName)
+        {
+          lock (_lock) {
+            var trans = _connection.BeginTransaction();
+            try {
+              using (var cmd = _connection.CreateCommand())
+              using (var checkCmd = _connection.CreateCommand())
+              {
+                if (!string.IsNullOrEmpty(cellCtProgName)) {
+                  checkCmd.Transaction = trans;
+                  checkCmd.CommandText = "SELECT COUNT(*) FROM program_revisions WHERE CellControllerProgramName = $cell";
+                  checkCmd.Parameters.Add("cell", SqliteType.Text).Value = cellCtProgName;
+                  if ((long)checkCmd.ExecuteScalar() > 0) {
+                    throw new Exception("Cell program name " + cellCtProgName + " already in use");
+                  }
+                }
+
+                cmd.Transaction = trans;
+                cmd.CommandText = "UPDATE program_revisions SET CellControllerProgramName = $cell WHERE ProgramName = $name AND ProgramRevision = $rev";
+                cmd.Parameters.Add("cell", SqliteType.Text).Value = string.IsNullOrEmpty(cellCtProgName) ? DBNull.Value : (object)cellCtProgName;
+                cmd.Parameters.Add("name", SqliteType.Text).Value = program;
+                cmd.Parameters.Add("rev", SqliteType.Text).Value = revision;
+                cmd.ExecuteNonQuery();
+              }
+              trans.Commit();
+            } catch {
+              trans.Rollback();
+              throw;
+            }
+          }
+        }
+
         #endregion
     }
 }

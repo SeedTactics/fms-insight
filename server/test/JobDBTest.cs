@@ -42,7 +42,7 @@ using FluentAssertions;
 
 namespace MachineWatchTest
 {
-  public class JobDBTest : IDisposable
+  public class JobDBTest : JobEqualityChecks, IDisposable
   {
     private SqliteConnection _jobConn;
     private JobDB _jobDB;
@@ -131,16 +131,11 @@ namespace MachineWatchTest
       job1.AddProcessOnPallet(2, 3, "Pal5");
       job1.AddProcessOnPallet(2, 3, "OMG");
 
-      job1.AddProcessOnFixture(1, 1, "Fix1", "Face1");
-      job1.AddProcessOnFixture(1, 1, "Fix2", "Face2");
-      job1.AddProcessOnFixture(1, 2, "Fixxx", "Face3");
-      job1.AddProcessOnFixture(1, 2, "ABC", "Face4");
-      job1.AddProcessOnFixture(2, 1, "Fix5", "Face5");
-      job1.AddProcessOnFixture(2, 1, "Fix123", "Face6");
-      job1.AddProcessOnFixture(2, 2, "Bye", "erhh");
-      job1.AddProcessOnFixture(2, 2, "Fix22", "Face122");
-      job1.AddProcessOnFixture(2, 3, "Fix17", "Fac7");
-      job1.AddProcessOnFixture(2, 3, "Yeeeee", "Fa7753");
+      job1.SetFixtureFace(1, 1, "Fix1", 1);
+      job1.SetFixtureFace(1, 2, "Fixxx", 3);
+      job1.SetFixtureFace(2, 1, "Fix5", 5);
+      job1.SetFixtureFace(2, 2, "Bye", 12);
+      // don't set 2, 3 to check null works
 
       job1.AddLoadStation(1, 1, 35);
       job1.AddLoadStation(1, 1, 64);
@@ -173,42 +168,49 @@ namespace MachineWatchTest
       job1.SetExpectedUnloadTime(2, 3, TimeSpan.FromSeconds(532));
 
       var route = new JobMachiningStop("Machine");
-      route.AddProgram(23, "Hello");
-      route.AddProgram(12, "Emily");
+      route.Stations.Add(23);
+      route.Stations.Add(12);
+      route.ProgramName = "Hello";
+      route.ProgramRevision = 522;
       route.ExpectedCycleTime = TimeSpan.FromHours(1.2);
       route.Tools["tool1"] = TimeSpan.FromMinutes(30);
       route.Tools["tool2"] = TimeSpan.FromMinutes(35);
       job1.AddMachiningStop(1, 1, route);
 
       route = new JobMachiningStop("Other Machine");
-      route.AddProgram(23, "agw");
-      route.AddProgram(12, "awef");
+      route.Stations.Add(23);
+      route.Stations.Add(12);
+      route.ProgramName = "agw";
       route.ExpectedCycleTime = TimeSpan.FromHours(2.8);
       route.Tools["tool1"] = TimeSpan.FromMinutes(9);
       route.Tools["tool33"] = TimeSpan.FromMinutes(42);
       job1.AddMachiningStop(1, 2, route);
 
       route = new JobMachiningStop("Test");
-      route.AddProgram(64, "Goodbye");
-      route.AddProgram(323, "Whee");
+      route.Stations.Add(64);
+      route.Stations.Add(323);
+      route.ProgramName = "Whee";
       route.ExpectedCycleTime = TimeSpan.FromHours(6.3);
       route.Tools["tool2"] = TimeSpan.FromMinutes(12);
       route.Tools["tool44"] = TimeSpan.FromMinutes(99);
       job1.AddMachiningStop(2, 1, route);
 
       route = new JobMachiningStop("Test");
-      route.AddProgram(64, "agwe");
-      route.AddProgram(32, "wefq");
+      route.Stations.Add(64);
+      route.Stations.Add(32);
+      route.ProgramName = "agwe";
       job1.AddMachiningStop(2, 2, route);
 
       route = new JobMachiningStop("Test");
-      route.AddProgram(245, "oh my");
-      route.AddProgram(36, "dduuude");
+      route.Stations.Add(245);
+      route.Stations.Add(36);
+      route.ProgramName = "oh my";
       job1.AddMachiningStop(2, 1, route);
 
       route = new JobMachiningStop("Test");
-      route.AddProgram(23, "so cool");
-      route.AddProgram(53, "so cool");
+      route.Stations.Add(23);
+      route.Stations.Add(53);
+      route.ProgramName = "so cool";
       job1.AddMachiningStop(2, 2, route);
 
       job1.AddInspection(new JobInspectionData("Insp1", "counter1", 53, TimeSpan.FromMinutes(100), 12));
@@ -298,11 +300,10 @@ namespace MachineWatchTest
       job2.AddProcessOnPallet(3, 1, "ehe");
       job2.AddProcessOnPallet(3, 1, "awger");
 
-      job2.AddProcessOnFixture(1, 1, "Fix6", "asg43");
-      job2.AddProcessOnFixture(1, 1, "h343", "werg");
-      job2.AddProcessOnFixture(2, 1, "a235sg", "awef");
-      job2.AddProcessOnFixture(3, 1, "erte34", "htr");
-      job2.AddProcessOnFixture(3, 1, "35aert", "aweh33");
+      job2.SetFixtureFace(1, 1, "Fix6", 62);
+      job2.SetFixtureFace(2, 1, "a235sg", 52);
+      job2.SetFixtureFace(3, 1, "erte34", 2);
+      job2.SetFixtureFace(3, 1, "35aert", 33);
 
       job2.AddLoadStation(1, 1, 375);
       job2.AddLoadStation(2, 1, 86);
@@ -314,21 +315,25 @@ namespace MachineWatchTest
       job2.AddUnloadStation(3, 1, 786);
 
       var route = new JobMachiningStop("Abc");
-      route.AddProgram(12, "fgaserg");
+      route.Stations.Add(12);
+      route.ProgramName = "agoiuhewg";
       job2.AddMachiningStop(1, 1, route);
 
       route = new JobMachiningStop("gwerwer");
-      route.AddProgram(23, "awga");
+      route.Stations.Add(23);
+      route.ProgramName = "awga";
       job2.AddMachiningStop(2, 1, route);
 
       route = new JobMachiningStop("agreer");
-      route.AddProgram(75, "ahtt");
-      route.AddProgram(365, "awreer");
+      route.Stations.Add(75);
+      route.Stations.Add(365);
+      route.ProgramName = "ahtt";
       job2.AddMachiningStop(3, 1, route);
 
       route = new JobMachiningStop("duude");
-      route.AddProgram(643, "awgouihag");
-      route.AddProgram(7458, "agoouerherg");
+      route.Stations.Add(643);
+      route.Stations.Add(7458);
+      route.ProgramName = "awgouihag";
       job2.AddMachiningStop(3, 1, route);
 
     }
@@ -619,6 +624,194 @@ namespace MachineWatchTest
       });
     }
 
+    [Fact]
+    public void Programs()
+    {
+      var job1 = new JobPlan("uniq", 2, new int[] { 2, 3 });
+      SetJob1Data(job1);
+
+      _jobDB.AddJobs(new NewJobs
+      {
+        Jobs = new List<JobPlan> { job1 },
+        Programs = new List<ProgramEntry> {
+            new ProgramEntry() {
+              ProgramName = "aaa",
+              Revision = 0, // auto assign
+              Comment = "aaa comment",
+              ProgramContent = "aaa program content"
+            },
+            new ProgramEntry() {
+              ProgramName = "bbb",
+              Revision = 6, // new revision
+              Comment = "bbb comment",
+              ProgramContent = "bbb program content"
+            },
+          }
+      }, null);
+
+      _jobDB.LoadProgram("aaa", 1).Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "aaa",
+        Revision = 1,
+        Comment = "aaa comment",
+        ProgramContent = "aaa program content"
+      });
+      _jobDB.LoadMostRecentProgram("aaa").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "aaa",
+        Revision = 1,
+        Comment = "aaa comment",
+        ProgramContent = "aaa program content"
+      });
+      _jobDB.LoadProgram("bbb", 6).Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "bbb",
+        Revision = 6,
+        Comment = "bbb comment",
+        ProgramContent = "bbb program content"
+      });
+      _jobDB.LoadMostRecentProgram("bbb").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "bbb",
+        Revision = 6,
+        Comment = "bbb comment",
+        ProgramContent = "bbb program content"
+      });
+      _jobDB.LoadProgram("aaa", 2).Should().BeNull();
+      _jobDB.LoadProgram("ccc", 1).Should().BeNull();
+
+      // error on program content mismatch
+      _jobDB.Invoking(j => j.AddJobs(new NewJobs
+      {
+        Jobs = new List<JobPlan> { },
+        Programs = new List<ProgramEntry> {
+              new ProgramEntry() {
+                ProgramName = "aaa",
+                Revision = 0, // auto assign
+                Comment = "aaa comment rev 2",
+                ProgramContent = "aaa program content rev 2"
+              },
+              new ProgramEntry() {
+                ProgramName = "bbb",
+                Revision = 6, // existing revision
+                Comment = "bbb comment",
+                ProgramContent = "awofguhweoguhweg"
+              },
+            }
+      }, null)
+      ).Should().Throw<BadRequestException>().WithMessage("Program bbb rev6 has already been used and the program contents do not match.");
+
+      _jobDB.LoadProgram("aaa", 2).Should().BeNull();
+      _jobDB.LoadMostRecentProgram("aaa").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "aaa",
+        Revision = 1,
+        Comment = "aaa comment",
+        ProgramContent = "aaa program content"
+      });
+      _jobDB.LoadMostRecentProgram("bbb").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "bbb",
+        Revision = 6,
+        Comment = "bbb comment",
+        ProgramContent = "bbb program content"
+      });
+
+      // now should ignore when program content matches
+      _jobDB.AddJobs(new NewJobs
+      {
+        Jobs = new List<JobPlan> { },
+        Programs = new List<ProgramEntry> {
+              new ProgramEntry() {
+                ProgramName = "aaa",
+                Revision = 0, // auto assign
+                Comment = "aaa comment rev 2",
+                ProgramContent = "aaa program content rev 2"
+              },
+              new ProgramEntry() {
+                ProgramName = "bbb",
+                Revision = 6, // existing revision
+                Comment = "bbb comment",
+                ProgramContent = "bbb program content"
+              },
+            }
+      }, null);
+
+      _jobDB.LoadProgram("aaa", 2).Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "aaa",
+        Revision = 2,
+        Comment = "aaa comment rev 2",
+        ProgramContent = "aaa program content rev 2"
+      });
+      _jobDB.LoadMostRecentProgram("aaa").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "aaa",
+        Revision = 2,
+        Comment = "aaa comment rev 2",
+        ProgramContent = "aaa program content rev 2"
+      });
+      _jobDB.LoadMostRecentProgram("bbb").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "bbb",
+        Revision = 6,
+        Comment = "bbb comment",
+        ProgramContent = "bbb program content"
+      });
+
+      //now set cell controller names
+      _jobDB.SetCellControllerProgramForProgram("aaa", 1, "aaa-1");
+      _jobDB.SetCellControllerProgramForProgram("bbb", 6, "bbb-6");
+
+      _jobDB.ProgramFromCellControllerProgram("aaa-1").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "aaa",
+        Revision = 1,
+        Comment = "aaa comment",
+        ProgramContent = "aaa program content",
+        CellControllerProgramName = "aaa-1"
+      });
+      _jobDB.LoadProgram("aaa", 1).Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "aaa",
+        Revision = 1,
+        Comment = "aaa comment",
+        ProgramContent = "aaa program content",
+        CellControllerProgramName = "aaa-1"
+      });
+      _jobDB.ProgramFromCellControllerProgram("bbb-6").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "bbb",
+        Revision = 6,
+        Comment = "bbb comment",
+        ProgramContent = "bbb program content",
+        CellControllerProgramName = "bbb-6"
+      });
+      _jobDB.LoadMostRecentProgram("bbb").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "bbb",
+        Revision = 6,
+        Comment = "bbb comment",
+        ProgramContent = "bbb program content",
+        CellControllerProgramName = "bbb-6"
+      });
+      _jobDB.ProgramFromCellControllerProgram("aagaiouhgi").Should().BeNull();
+
+      _jobDB.SetCellControllerProgramForProgram("aaa", 1, null);
+
+      _jobDB.ProgramFromCellControllerProgram("aaa-1").Should().BeNull();
+      _jobDB.LoadProgram("aaa", 1).Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "aaa",
+        Revision = 1,
+        Comment = "aaa comment",
+        ProgramContent = "aaa program content"
+      });
+
+      _jobDB.Invoking(j => j.SetCellControllerProgramForProgram("aaa", 2, "bbb-6"))
+        .Should().Throw<Exception>().WithMessage("Cell program name bbb-6 already in use");
+    }
+
     private void CheckJobs(JobPlan job1, JobPlan job2, JobPlan job3, string schId, Dictionary<string, int> extraParts, IEnumerable<PartWorkorder> works)
     {
       CheckJobEqual(job1, _jobDB.LoadJob(job1.UniqueStr), true);
@@ -761,6 +954,44 @@ namespace MachineWatchTest
       return ret;
     }
 
+    private static void CheckWorkordersEqual(IEnumerable<PartWorkorder> expected, IEnumerable<PartWorkorder> actual)
+    {
+      var expectedWorks = expected.OrderBy(w => (w.WorkorderId, w.Part)).ToList();
+      var actualWorks = actual.OrderBy(w => (w.WorkorderId, w.Part)).ToList();
+      Assert.Equal(expectedWorks.Count, actualWorks.Count);
+      for (int i = 0; i < expectedWorks.Count; i++)
+        CheckWorkorderEqual(expectedWorks[i], actualWorks[i]);
+    }
+
+    private static void CheckWorkorderEqual(PartWorkorder w1, PartWorkorder w2)
+    {
+      Assert.Equal(w1.WorkorderId, w2.WorkorderId);
+      Assert.Equal(w1.Part, w2.Part);
+      Assert.Equal(w1.Quantity, w2.Quantity);
+      Assert.Equal(w1.DueDate, w2.DueDate);
+      Assert.Equal(w1.Priority, w2.Priority);
+    }
+
+    private byte[] LoadDebugData(string schId)
+    {
+      var cmd = _jobConn.CreateCommand();
+      cmd.CommandText = "SELECT DebugMessage FROM schedule_debug WHERE ScheduleId = @sch";
+      cmd.Parameters.Add("sch", SqliteType.Text).Value = schId;
+      return (byte[])cmd.ExecuteScalar();
+    }
+  }
+
+  public class JobEqualityChecks
+  {
+    protected static void EqualSort<T>(IEnumerable<T> e1, IEnumerable<T> e2)
+    {
+      var lst1 = new List<T>(e1);
+      lst1.Sort();
+      var lst2 = new List<T>(e2);
+      lst2.Sort();
+      Assert.Equal(lst1, lst2);
+    }
+
     private static void CheckHoldEqual(JobHoldPattern h1, JobHoldPattern h2)
     {
 
@@ -780,7 +1011,7 @@ namespace MachineWatchTest
       }
     }
 
-    private static void CheckPlanEqual(JobPlan job1, JobPlan job2, bool checkHolds)
+    public static void CheckPlanEqual(JobPlan job1, JobPlan job2, bool checkHolds)
     {
       Assert.NotNull(job1);
       Assert.NotNull(job2);
@@ -838,7 +1069,7 @@ namespace MachineWatchTest
           EqualSort(job1.UnloadStations(proc, path), job2.UnloadStations(proc, path));
           EqualSort(job1.PlannedPallets(proc, path), job2.PlannedPallets(proc, path));
 
-          EqualSort(job1.PlannedFixtures(proc, path), job2.PlannedFixtures(proc, path));
+          Assert.Equal(job1.PlannedFixture(proc, path), job2.PlannedFixture(proc, path));
 
           if (checkHolds)
           {
@@ -868,7 +1099,9 @@ namespace MachineWatchTest
             {
               Assert.NotNull(route2);
               Assert.Equal(route1.ExpectedCycleTime, route2.ExpectedCycleTime);
-              EqualSort(route1.AllPrograms(), route2.AllPrograms());
+              EqualSort(route1.Stations, route2.Stations);
+              Assert.Equal(route1.ProgramName, route2.ProgramName);
+              Assert.Equal(route1.ProgramRevision, route2.ProgramRevision);
               Assert.Equal(route1.Tools, route2.Tools);
             }
           }
@@ -876,7 +1109,7 @@ namespace MachineWatchTest
       }
     }
 
-    private static void CheckJobEqual(JobPlan job1, JobPlan job2, bool checkHolds)
+    public static void CheckJobEqual(JobPlan job1, JobPlan job2, bool checkHolds)
     {
       CheckPlanEqual(job1, job2, checkHolds);
     }
@@ -911,39 +1144,5 @@ namespace MachineWatchTest
       }
     }
 
-    private static void CheckWorkordersEqual(IEnumerable<PartWorkorder> expected, IEnumerable<PartWorkorder> actual)
-    {
-      var expectedWorks = expected.OrderBy(w => (w.WorkorderId, w.Part)).ToList();
-      var actualWorks = actual.OrderBy(w => (w.WorkorderId, w.Part)).ToList();
-      Assert.Equal(expectedWorks.Count, actualWorks.Count);
-      for (int i = 0; i < expectedWorks.Count; i++)
-        CheckWorkorderEqual(expectedWorks[i], actualWorks[i]);
-    }
-
-    private static void CheckWorkorderEqual(PartWorkorder w1, PartWorkorder w2)
-    {
-      Assert.Equal(w1.WorkorderId, w2.WorkorderId);
-      Assert.Equal(w1.Part, w2.Part);
-      Assert.Equal(w1.Quantity, w2.Quantity);
-      Assert.Equal(w1.DueDate, w2.DueDate);
-      Assert.Equal(w1.Priority, w2.Priority);
-    }
-
-    private static void EqualSort<T>(IEnumerable<T> e1, IEnumerable<T> e2)
-    {
-      var lst1 = new List<T>(e1);
-      lst1.Sort();
-      var lst2 = new List<T>(e2);
-      lst2.Sort();
-      Assert.Equal(lst1, lst2);
-    }
-
-    private byte[] LoadDebugData(string schId)
-    {
-      var cmd = _jobConn.CreateCommand();
-      cmd.CommandText = "SELECT DebugMessage FROM schedule_debug WHERE ScheduleId = @sch";
-      cmd.Parameters.Add("sch", SqliteType.Text).Value = schId;
-      return (byte[])cmd.ExecuteScalar();
-    }
   }
 }

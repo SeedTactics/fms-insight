@@ -37,9 +37,9 @@ using System.Linq;
 
 namespace Makino
 {
-	internal class MakinoToJobMap
-	{
-		/*Maps we have:
+  internal class MakinoToJobMap
+  {
+    /*Maps we have:
 		 *
 		 * part id => JobPlan
 		 *
@@ -58,188 +58,196 @@ namespace Makino
 		 * fixture id => list of process ids
 		 *
 		 */
-		private Dictionary<int, JobPlan> _byPartID = new Dictionary<int, JobPlan>();
-		private Dictionary<int, int> _procIDToProcNum = new Dictionary<int, int>();
-		private Dictionary<int, int> _procIDToPartID = new Dictionary<int, int>();
-		private Dictionary<int, int> _jobIDToNum = new Dictionary<int, int>();
-		private Dictionary<int, int> _jobIDToProcID = new Dictionary<int, int>();
-		private Dictionary<int, List<string> > _programs = new Dictionary<int, List<string> >();
-		private Dictionary<int, JobMachiningStop > _stops = new Dictionary<int, JobMachiningStop>();
-		private Dictionary<int, InProcessJob> _byOrderID = new Dictionary<int, InProcessJob>();
+    private Dictionary<int, JobPlan> _byPartID = new Dictionary<int, JobPlan>();
+    private Dictionary<int, int> _procIDToProcNum = new Dictionary<int, int>();
+    private Dictionary<int, int> _procIDToPartID = new Dictionary<int, int>();
+    private Dictionary<int, int> _jobIDToNum = new Dictionary<int, int>();
+    private Dictionary<int, int> _jobIDToProcID = new Dictionary<int, int>();
+    private Dictionary<int, string> _programs = new Dictionary<int, string>();
+    private Dictionary<int, JobMachiningStop> _stops = new Dictionary<int, JobMachiningStop>();
+    private Dictionary<int, InProcessJob> _byOrderID = new Dictionary<int, InProcessJob>();
 
-        private BlackMaple.MachineFramework.JobLogDB _logDb;
+    private BlackMaple.MachineFramework.JobLogDB _logDb;
 
-        public MakinoToJobMap(BlackMaple.MachineFramework.JobLogDB log)
+    public MakinoToJobMap(BlackMaple.MachineFramework.JobLogDB log)
+    {
+      _logDb = log;
+    }
+
+    public IEnumerable<InProcessJob> Jobs
+    {
+      get { return _byOrderID.Values; }
+    }
+
+    public void AddProcess(int partID, int processNum, int processID)
+    {
+      _procIDToProcNum.Add(processID, processNum);
+      _procIDToPartID.Add(processID, partID);
+    }
+
+    public JobPlan CreateJob(string unique, int partID)
+    {
+      int numProc = 1;
+      foreach (var p in _procIDToPartID)
+      {
+        if (p.Value == partID)
         {
-            _logDb = log;
+          numProc = Math.Max(numProc, _procIDToProcNum[p.Key]);
+        }
+      }
+      var job = new JobPlan(unique, numProc);
+
+      _byPartID.Add(partID, job);
+
+      return job;
+    }
+
+    public void AddJobToProcess(int processID, int jobNumber, int jobID)
+    {
+      _jobIDToNum.Add(jobID, jobNumber);
+      _jobIDToProcID.Add(jobID, processID);
+    }
+
+    public void AddProgramToJob(int jobID, string program)
+    {
+      _programs[jobID] = program;
+    }
+
+    public void AddAllowedStationToJob(int jobID, PalletLocation loc)
+    {
+      if (loc.Location == PalletLocationEnum.LoadUnload)
+      {
+        var jobNum = _jobIDToNum[jobID];
+        var proc = _procIDToProcNum[_jobIDToProcID[jobID]];
+        var job = _byPartID[_procIDToPartID[_jobIDToProcID[jobID]]];
+
+        if (jobNum == 1)
+          job.AddLoadStation(proc, 1, loc.Num);
+        else
+          job.AddUnloadStation(proc, 1, loc.Num);
+
+      }
+      else
+      {
+        if (!_stops.ContainsKey(jobID))
+        {
+          _stops.Add(jobID, new JobMachiningStop("MC"));
+          if (_programs.ContainsKey(jobID))
+          {
+            _stops[jobID].ProgramName = _programs[jobID];
+          }
+
+        }
+        _stops[jobID].Stations.Add(loc.Num);
+
+      }
+    }
+
+    public void CompleteStations()
+    {
+      foreach (var proc in _procIDToPartID)
+      {
+
+        var procNum = _procIDToProcNum[proc.Key];
+        var job = _byPartID[proc.Value];
+
+        var stops = new SortedList<int, JobMachiningStop>();
+
+        foreach (var jobStop in _stops)
+        {
+          if (_jobIDToProcID[jobStop.Key] == proc.Key)
+          { //Filter only the jobs on this processID
+            stops.Add(_jobIDToNum[jobStop.Key], jobStop.Value);
+          }
         }
 
-        public IEnumerable<InProcessJob> Jobs
-		{
-			get { return _byOrderID.Values; }
-		}
+        if (stops.Count > 0)
+          job.AddMachiningStops(procNum, 1, stops.Values);
+      }
+    }
 
-		public void AddProcess(int partID, int processNum, int processID)
-		{
-			_procIDToProcNum.Add(processID, processNum);
-			_procIDToPartID.Add(processID, partID);
-		}
+    public void AddFixtureToProcess(int processID, int fixtureID, IEnumerable<int> pals)
+    {
+      var procNum = _procIDToProcNum[processID];
+      var job = _byPartID[_procIDToPartID[processID]];
 
-		public JobPlan CreateJob(string unique, int partID)
-		{
-			int numProc = 1;
-			foreach (var p in _procIDToPartID) {
-				if (p.Value == partID) {
-					numProc = Math.Max(numProc, _procIDToProcNum[p.Key]);
-				}
-			}
-			var job = new JobPlan(unique, numProc);
+      if (pals == null) return;
 
-			_byPartID.Add(partID, job);
+      foreach (var pal in pals)
+        job.AddProcessOnPallet(procNum, 1, pal.ToString());
+    }
 
-			return job;
-		}
+    public InProcessJob DuplicateForOrder(int orderID, string order, int partID)
+    {
+      var job = _byPartID[partID];
+      var newJob = new InProcessJob(new JobPlan(job, order));
+      _byOrderID.Add(orderID, newJob);
+      return newJob;
+    }
 
-		public void AddJobToProcess(int processID, int jobNumber, int jobID)
-		{
-			_jobIDToNum.Add(jobID, jobNumber);
-			_jobIDToProcID.Add(jobID, processID);
-		}
+    public void AddQuantityToProcess(int orderID, int processID, int completed)
+    {
+      var job = _byOrderID[orderID];
+      var procNum = _procIDToProcNum[processID];
 
-		public void AddProgramToJob(int jobID, string program)
-		{
-			if (!_programs.ContainsKey(jobID))
-				_programs.Add(jobID, new List<string>());
-			_programs[jobID].Add(program);
-		}
+      job.SetCompleted(procNum, 1, completed);
+    }
 
-		public void AddAllowedStationToJob(int jobID, PalletLocation loc)
-		{
-			if (loc.Location == PalletLocationEnum.LoadUnload) {
-				var jobNum = _jobIDToNum[jobID];
-				var proc = _procIDToProcNum[_jobIDToProcID[jobID]];
-				var job = _byPartID[_procIDToPartID[_jobIDToProcID[jobID]]];
+    public InProcessMaterial CreateMaterial(int orderID, int processID, int jobID, int palletNum, int face, long matID)
+    {
+      var job = _byOrderID[orderID];
+      var program = "";
+      if (_programs.ContainsKey(jobID))
+        program = _programs[jobID];
 
-				if (jobNum == 1)
-					job.AddLoadStation(proc, 1, loc.Num);
-				else
-					job.AddUnloadStation(proc, 1, loc.Num);
+      var matDetails = _logDb.GetMaterialDetails(matID);
+      return new InProcessMaterial()
+      {
+        MaterialID = matID,
+        JobUnique = job.UniqueStr,
+        Process = _procIDToProcNum[processID],
+        Path = 1,
+        PartName = job.PartName,
+        Serial = matDetails?.Serial,
+        WorkorderId = matDetails?.Workorder,
+        SignaledInspections =
+              _logDb.LookupInspectionDecisions(matID)
+                  .Where(x => x.Inspect)
+                  .Select(x => x.InspType)
+      .Distinct()
+                  .ToList(),
+        Action = new InProcessMaterialAction()
+        {
+          Type = InProcessMaterialAction.ActionType.Waiting,
+          Program = program
+        },
+        Location = new InProcessMaterialLocation()
+        {
+          Type = InProcessMaterialLocation.LocType.OnPallet,
+          Pallet = palletNum.ToString(),
+          Face = face
+        }
+      };
+    }
 
-			} else {
-				if (!_stops.ContainsKey(jobID)) {
-					_stops.Add(jobID, new JobMachiningStop("MC"));
-				}
+    public InProcessJob JobForOrder(int orderID)
+    {
+      if (_byOrderID.ContainsKey(orderID))
+        return _byOrderID[orderID];
+      else
+        return null;
+    }
 
-				if (_programs.ContainsKey(jobID)) {
-					foreach (var prog in _programs[jobID]) {
-						_stops[jobID].AddProgram(loc.Num, prog);
-					}
-				}
-			}
-		}
+    public int ProcessForJobID(int jobID)
+    {
+      var procID = _jobIDToProcID[jobID];
+      return _procIDToProcNum[procID];
+    }
+  }
 
-		public void CompleteStations()
-		{
-			foreach (var proc in _procIDToPartID) {
-
-				var procNum = _procIDToProcNum[proc.Key];
-				var job = _byPartID[proc.Value];
-
-				var stops = new SortedList<int, JobMachiningStop>();
-
-				foreach (var jobStop in _stops) {
-					if (_jobIDToProcID[jobStop.Key] == proc.Key) { //Filter only the jobs on this processID
-						stops.Add(_jobIDToNum[jobStop.Key], jobStop.Value);
-					}
-				}
-
-				if (stops.Count > 0)
-					job.AddMachiningStops(procNum, 1, stops.Values);
-			}
-		}
-
-		public void AddFixtureToProcess(int processID, int fixtureID, IEnumerable<int> pals)
-		{
-			var procNum = _procIDToProcNum[processID];
-			var job = _byPartID[_procIDToPartID[processID]];
-
-			if (pals == null) return;
-
-			foreach (var pal in pals)
-				job.AddProcessOnPallet(procNum, 1, pal.ToString());
-		}
-
-		public InProcessJob DuplicateForOrder(int orderID, string order, int partID)
-		{
-			var job = _byPartID[partID];
-			var newJob = new InProcessJob(new JobPlan(job, order));
-			_byOrderID.Add(orderID, newJob);
-			return newJob;
-		}
-
-		public void AddQuantityToProcess(int orderID, int processID, int completed)
-		{
-			var job = _byOrderID[orderID];
-			var procNum = _procIDToProcNum[processID];
-
-            job.SetCompleted(procNum, 1, completed);
-		}
-
-		public InProcessMaterial CreateMaterial(int orderID, int processID, int jobID, int palletNum, int face, long matID)
-		{
-			var job = _byOrderID[orderID];
-			var program = "";
-			if (_programs.ContainsKey(jobID) && _programs[jobID].Count > 0)
-				program = _programs[jobID][0];
-
-			var matDetails = _logDb.GetMaterialDetails(matID);
-            return new InProcessMaterial()
-            {
-                MaterialID = matID,
-                JobUnique = job.UniqueStr,
-                Process = _procIDToProcNum[processID],
-                Path = 1,
-                PartName = job.PartName,
-                Serial = matDetails?.Serial,
-                WorkorderId = matDetails?.Workorder,
-                SignaledInspections =
-                    _logDb.LookupInspectionDecisions(matID)
-                        .Where(x => x.Inspect)
-                        .Select(x => x.InspType)
-						.Distinct()
-                        .ToList(),
-                Action = new InProcessMaterialAction()
-                {
-                    Type = InProcessMaterialAction.ActionType.Waiting,
-                    Program = program
-                },
-                Location = new InProcessMaterialLocation()
-                {
-                    Type = InProcessMaterialLocation.LocType.OnPallet,
-                    Pallet = palletNum.ToString(),
-                    Face = face
-                }
-            };
-		}
-
-		public InProcessJob JobForOrder(int orderID)
-		{
-			if (_byOrderID.ContainsKey(orderID))
-				return _byOrderID[orderID];
-			else
-				return null;
-		}
-
-		public int ProcessForJobID(int jobID)
-		{
-			var procID = _jobIDToProcID[jobID];
-			return _procIDToProcNum[procID];
-		}
-	}
-
-	internal class MakinoToPalletMap
-	{
-		/* Maps
+  internal class MakinoToPalletMap
+  {
+    /* Maps
 		 *
 		 * fixturePalletId => index/fixture num on the pallet
 		 *
@@ -254,148 +262,148 @@ namespace Makino
 		 * pallet => PalletStatus
 		 */
 
-		private Dictionary<int, int> _fixPalIDToFixNum = new Dictionary<int, int>();
-		private Dictionary<int, int> _fixPalIDToFixID = new Dictionary<int, int>();
-		private Dictionary<int, int> _fixPalIDToPalNum = new Dictionary<int, int>();
-        private Dictionary<int, List<InProcessMaterial>> _fixPalIDToMaterial = new Dictionary<int, List<InProcessMaterial>>();
-		private Dictionary<int, List<int> > _fixIDToPallets = new Dictionary<int, List<int>>();
-		private Dictionary<string, PalletStatus> _pallets = new Dictionary<string, PalletStatus>();
+    private Dictionary<int, int> _fixPalIDToFixNum = new Dictionary<int, int>();
+    private Dictionary<int, int> _fixPalIDToFixID = new Dictionary<int, int>();
+    private Dictionary<int, int> _fixPalIDToPalNum = new Dictionary<int, int>();
+    private Dictionary<int, List<InProcessMaterial>> _fixPalIDToMaterial = new Dictionary<int, List<InProcessMaterial>>();
+    private Dictionary<int, List<int>> _fixIDToPallets = new Dictionary<int, List<int>>();
+    private Dictionary<string, PalletStatus> _pallets = new Dictionary<string, PalletStatus>();
 
-		public IDictionary<string, PalletStatus> Pallets
-		{
-			get { return _pallets; }
-		}
+    public IDictionary<string, PalletStatus> Pallets
+    {
+      get { return _pallets; }
+    }
 
-        public IEnumerable<InProcessMaterial> Material
+    public IEnumerable<InProcessMaterial> Material
+    {
+      get { return _fixPalIDToMaterial.SelectMany(x => x.Value); }
+    }
+
+    public void AddPalletInfo(int fixutrePalletID, int fixtureNum, int fixtureID, int palletNum, PalletLocation loc)
+    {
+      _fixPalIDToFixNum.Add(fixutrePalletID, fixtureNum);
+      _fixPalIDToFixID.Add(fixutrePalletID, fixtureID);
+      _fixPalIDToPalNum.Add(fixutrePalletID, palletNum);
+      if (!_fixIDToPallets.ContainsKey(fixtureID))
+        _fixIDToPallets.Add(fixtureID, new List<int>());
+      _fixIDToPallets[fixtureID].Add(palletNum);
+
+      if (_pallets.ContainsKey(palletNum.ToString()))
+      {
+        var p = _pallets[palletNum.ToString()];
+        p.NumFaces = Math.Max(p.NumFaces, fixtureNum);
+        return;
+      }
+
+      PalletStatus pal;
+
+      pal = new PalletStatus()
+      {
+        Pallet = palletNum.ToString(),
+        CurrentPalletLocation = loc,
+        NumFaces = fixtureNum,
+        OnHold = false,
+      };
+
+      _pallets.Add(palletNum.ToString(), pal);
+    }
+
+    public IEnumerable<int> PalletsForFixture(int fixtureID)
+    {
+      if (_fixIDToPallets.ContainsKey(fixtureID))
+        return _fixIDToPallets[fixtureID];
+      else
+        return new int[] { };
+    }
+
+    public void PalletLocInfo(int fixturePalletID, out int palletNum, out int fixNum)
+    {
+      palletNum = _fixPalIDToPalNum[fixturePalletID];
+      fixNum = _fixPalIDToFixNum[fixturePalletID];
+    }
+
+    public void AddMaterial(int fixturePalletID, InProcessMaterial mat)
+    {
+      List<InProcessMaterial> ms;
+      if (_fixPalIDToMaterial.ContainsKey(fixturePalletID))
+        ms = _fixPalIDToMaterial[fixturePalletID];
+      else
+      {
+        ms = new List<InProcessMaterial>();
+        _fixPalIDToMaterial.Add(fixturePalletID, ms);
+      }
+      ms.Add(mat);
+
+      var palletNum = _fixPalIDToPalNum[fixturePalletID];
+      var pal = _pallets[palletNum.ToString()];
+
+      if (pal.CurrentPalletLocation.Location == PalletLocationEnum.Machine && mat.Action.Program != "")
+      {
+        mat.Action.Type = InProcessMaterialAction.ActionType.Machining;
+      }
+      else
+      {
+        mat.Action.Program = "";
+      }
+    }
+
+    public void SetMaterialAsUnload(int fixturePalletID, bool completed)
+    {
+      var palletNum = _fixPalIDToPalNum[fixturePalletID];
+      var pal = _pallets[palletNum.ToString()];
+      var face = _fixPalIDToFixNum[fixturePalletID].ToString();
+
+      if (_fixPalIDToMaterial.ContainsKey(fixturePalletID))
+      {
+        foreach (var mat in _fixPalIDToMaterial[fixturePalletID])
         {
-            get { return _fixPalIDToMaterial.SelectMany(x => x.Value); }
+          mat.Action = new InProcessMaterialAction()
+          {
+            Type = completed
+                  ? InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
+                  : InProcessMaterialAction.ActionType.UnloadToInProcess
+          };
         }
+      }
+    }
 
-		public void AddPalletInfo(int fixutrePalletID, int fixtureNum, int fixtureID, int palletNum, PalletLocation loc)
-		{
-			_fixPalIDToFixNum.Add(fixutrePalletID, fixtureNum);
-			_fixPalIDToFixID.Add(fixutrePalletID, fixtureID);
-			_fixPalIDToPalNum.Add(fixutrePalletID, palletNum);
-			if (!_fixIDToPallets.ContainsKey(fixtureID))
-				_fixIDToPallets.Add(fixtureID, new List<int>());
-			_fixIDToPallets[fixtureID].Add(palletNum);
+    public void AddMaterialToLoad(int fixturePalletID, string unique, string partName, int procNum, int qty)
+    {
+      var palletNum = _fixPalIDToPalNum[fixturePalletID];
+      var pal = _pallets[palletNum.ToString()];
+      var face = _fixPalIDToFixNum[fixturePalletID];
 
-			if (_pallets.ContainsKey(palletNum.ToString()))
-            {
-                var p = _pallets[palletNum.ToString()];
-                p.NumFaces = Math.Max(p.NumFaces, fixtureNum);
-                return;
-            }
+      List<InProcessMaterial> ms;
+      if (_fixPalIDToMaterial.ContainsKey(fixturePalletID))
+        ms = _fixPalIDToMaterial[fixturePalletID];
+      else
+      {
+        ms = new List<InProcessMaterial>();
+        _fixPalIDToMaterial.Add(fixturePalletID, ms);
+      }
 
-			PalletStatus pal;
+      var mat = new InProcessMaterial()
+      {
+        MaterialID = -1,
+        JobUnique = unique,
+        PartName = partName,
+        Process = procNum,
+        Path = 1,
+        Location = new InProcessMaterialLocation()
+        {
+          Type = InProcessMaterialLocation.LocType.Free,
+        },
+        Action = new InProcessMaterialAction()
+        {
+          Type = InProcessMaterialAction.ActionType.Loading,
+          ProcessAfterLoad = procNum,
+          PathAfterLoad = 1,
+          LoadOntoFace = face,
+          LoadOntoPallet = pal.Pallet
+        }
+      };
 
-            pal = new PalletStatus()
-            {
-                Pallet = palletNum.ToString(),
-                CurrentPalletLocation = loc,
-                NumFaces = fixtureNum,
-                OnHold = false,
-            };
-
-			_pallets.Add(palletNum.ToString(), pal);
-		}
-
-		public IEnumerable<int> PalletsForFixture(int fixtureID)
-		{
-			if (_fixIDToPallets.ContainsKey(fixtureID))
-				return _fixIDToPallets[fixtureID];
-			else
-				return new int[] {};
-		}
-
-		public void PalletLocInfo(int fixturePalletID, out int palletNum, out int fixNum)
-		{
-			palletNum = _fixPalIDToPalNum[fixturePalletID];
-			fixNum = _fixPalIDToFixNum[fixturePalletID];
-		}
-
-		public void AddMaterial(int fixturePalletID, InProcessMaterial mat)
-		{
-            List<InProcessMaterial> ms;
-            if (_fixPalIDToMaterial.ContainsKey(fixturePalletID))
-                ms = _fixPalIDToMaterial[fixturePalletID];
-            else
-            {
-                ms = new List<InProcessMaterial>();
-                _fixPalIDToMaterial.Add(fixturePalletID, ms);
-            }
-            ms.Add(mat);
-
-			var palletNum = _fixPalIDToPalNum[fixturePalletID];
-			var pal = _pallets[palletNum.ToString()];
-
-            if (pal.CurrentPalletLocation.Location == PalletLocationEnum.Machine && mat.Action.Program != "")
-            {
-                mat.Action.Type = InProcessMaterialAction.ActionType.Machining;
-            }
-            else
-            {
-                mat.Action.Program = "";
-            }
-		}
-
-		public void SetMaterialAsUnload(int fixturePalletID, bool completed)
-		{
-			var palletNum = _fixPalIDToPalNum[fixturePalletID];
-			var pal = _pallets[palletNum.ToString()];
-			var face = _fixPalIDToFixNum[fixturePalletID].ToString();
-
-            if (_fixPalIDToMaterial.ContainsKey(fixturePalletID))
-            {
-                foreach (var mat in _fixPalIDToMaterial[fixturePalletID])
-                {
-                    mat.Action = new InProcessMaterialAction()
-                    {
-                        Type = completed
-                            ? InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
-                            : InProcessMaterialAction.ActionType.UnloadToInProcess
-                    };
-                }
-            }
-		}
-
-		public void AddMaterialToLoad(int fixturePalletID, string unique, string partName, int procNum, int qty)
-		{
-			var palletNum = _fixPalIDToPalNum[fixturePalletID];
-			var pal = _pallets[palletNum.ToString()];
-			var face = _fixPalIDToFixNum[fixturePalletID];
-
-            List<InProcessMaterial> ms;
-            if (_fixPalIDToMaterial.ContainsKey(fixturePalletID))
-                ms = _fixPalIDToMaterial[fixturePalletID];
-            else
-            {
-                ms = new List<InProcessMaterial>();
-                _fixPalIDToMaterial.Add(fixturePalletID, ms);
-            }
-
-            var mat = new InProcessMaterial()
-            {
-                MaterialID = -1,
-                JobUnique = unique,
-                PartName = partName,
-                Process = procNum,
-                Path = 1,
-                Location = new InProcessMaterialLocation()
-                {
-                    Type = InProcessMaterialLocation.LocType.Free,
-                },
-                Action = new InProcessMaterialAction()
-                {
-                    Type = InProcessMaterialAction.ActionType.Loading,
-                    ProcessAfterLoad = procNum,
-                    PathAfterLoad = 1,
-                    LoadOntoFace = face,
-                    LoadOntoPallet = pal.Pallet
-                }
-            };
-
-            ms.Add(mat);
-		}
-	}
+      ms.Add(mat);
+    }
+  }
 }

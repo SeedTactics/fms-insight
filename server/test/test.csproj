@@ -12,6 +12,7 @@
     <ProjectReference Include="../machines/niigata/niigata.csproj" />
     <ProjectReference Include="../machines/cincron/cincron.csproj" />
     <None Update="log.v17.db" CopyToOutputDirectory="Always"/>
+    <None Update="job.v16.db" CopyToOutputDirectory="Always"/>
   </ItemGroup>
 
   <ItemGroup>
