@@ -86,7 +86,10 @@ namespace BlackMaple.MachineWatchInterface
     public JobMachiningStop(JobMachiningStop stop)
     {
       _statGroup = stop._statGroup;
-      _stations = new List<int>(_stations);
+      if (_stations == null)
+        _stations = new List<int>();
+      else
+        _stations = new List<int>(_stations);
       _program = stop._program;
       _programRevision = stop._programRevision;
       _expectedCycleTime = stop._expectedCycleTime;

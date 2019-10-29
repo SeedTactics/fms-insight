@@ -115,7 +115,7 @@ namespace BlackMaple.FMSInsight.Niigata
           FixtureOnPallet = "",
           OnHold = pal.Status.Master.Skip,
           CurrentPalletLocation = pal.Status.CurStation.Location,
-          NumFaces = pal.Faces.Max(x => x.Face)
+          NumFaces = pal.Faces.Count > 0 ? pal.Faces.Max(x => x.Face) : 0
         });
       }
 

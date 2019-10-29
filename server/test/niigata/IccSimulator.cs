@@ -573,5 +573,53 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       }
     }
 
+    public string DebugPrintStatus()
+    {
+      var output = new System.Text.StringBuilder();
+
+      output.AppendLine(_status.TimeOfStatusUTC.ToString());
+
+      foreach (var p in _status.Pallets)
+      {
+        output.AppendFormat("Pal {0} - {1} {2} - [cycles: {3}, pri: {4}, nowork: {5}, skip: {6}] - ",
+          p.Master.PalletNum, p.CurStation.Location.Location, p.CurStation.Location.Num,
+          p.Master.RemainingPalletCycles, p.Master.Priority, p.Master.NoWork, p.Master.Skip
+        );
+        output.AppendJoin(" -> ", p.Master.Routes.Select(r =>
+        {
+          string before = r == p.CurrentStep && p.Tracking.BeforeCurrentStep ? "*" : "";
+          string after = r == p.CurrentStep && !p.Tracking.BeforeCurrentStep ? "*" : "";
+          switch (r)
+          {
+            case LoadStep load:
+              return before + "LD[" + string.Join(',', load.LoadStations) + "]" + after;
+            case UnloadStep load:
+              return before + "UL[" + string.Join(',', load.UnloadStations) + "]" + after;
+            case MachiningStep mach:
+              return before + "MC[" + string.Join(',', mach.Machines) + "][" + string.Join(',', mach.ProgramNumsToRun) + "]" + after;
+            default:
+              return before + "ZZ" + after;
+          }
+        }));
+        output.AppendLine();
+        output.AppendLine();
+      }
+
+      foreach (var m in _status.Machines.Keys.OrderBy(x => x))
+      {
+        if (_status.Machines[m].Machining)
+        {
+          output.AppendFormat("Mach {0} {1}", m, _status.Machines[m].CurrentlyExecutingProgram);
+          output.AppendLine();
+        }
+        else
+        {
+          output.AppendFormat("Mach {0} off", m);
+          output.AppendLine();
+        }
+      }
+
+      return output.ToString();
+    }
   }
 }
