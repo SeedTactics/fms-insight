@@ -122,7 +122,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private class NextTransition
     {
       public DateTime Time { get; set; }
-      public Action<DateTime> UpdateStatus { get; set; }
+      public Action UpdateStatus { get; set; }
     }
 
     public void Step()
@@ -165,25 +165,25 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               transitions.Add(new NextTransition()
               {
                 Time = _lastPalTransition[pal.Master.PalletNum].Add(LoadTime),
-                UpdateStatus = now =>
+                UpdateStatus = () =>
                 {
-                  _lastPalTransition[pal.Master.PalletNum] = now;
+                  _lastPalTransition[pal.Master.PalletNum] = _lastPalTransition[pal.Master.PalletNum].Add(LoadTime);
                   pal.Tracking.CurrentControlNum += 1;
                 }
               });
             }
             // if in the buffer, add transition to put on cart
-            else if (beforeStep && !cartInUse && pal.CurStation.Location.Location == PalletLocationEnum.Buffer)
+            else if (beforeStep && pal.CurStation.Location.Location == PalletLocationEnum.Buffer)
             {
               var lul = openLoads.FirstOrDefault(load.LoadStations.Contains);
-              if (lul > 0)
+              if (!cartInUse && lul > 0)
               {
                 transitions.Add(new NextTransition()
                 {
                   Time = _status.TimeOfStatusUTC,
-                  UpdateStatus = now =>
+                  UpdateStatus = () =>
                   {
-                    _lastPalTransition[pal.Master.PalletNum] = now;
+                    _lastPalTransition[pal.Master.PalletNum] = _status.TimeOfStatusUTC;
                     pal.CurStation = NiigataStationNum.Cart();
                   }
                 });
@@ -198,9 +198,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 transitions.Add(new NextTransition()
                 {
                   Time = _lastPalTransition[pal.Master.PalletNum].Add(CartTravelTime),
-                  UpdateStatus = now =>
+                  UpdateStatus = () =>
                   {
-                    _lastPalTransition[pal.Master.PalletNum] = now;
+                    _lastPalTransition[pal.Master.PalletNum] = _lastPalTransition[pal.Master.PalletNum].Add(CartTravelTime);
                     pal.CurStation = NiigataStationNum.LoadStation(lul);
                     _status.LoadStations[lul].PalletExists = true;
                   }
@@ -212,18 +212,21 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               }
             }
             //after load, if currently at load move to cart
-            else if (!beforeStep && !cartInUse && pal.CurStation.Location.Location == PalletLocationEnum.LoadUnload)
+            else if (!beforeStep && pal.CurStation.Location.Location == PalletLocationEnum.LoadUnload)
             {
-              transitions.Add(new NextTransition()
+              if (!cartInUse)
               {
-                Time = _status.TimeOfStatusUTC,
-                UpdateStatus = now =>
+                transitions.Add(new NextTransition()
                 {
-                  _lastPalTransition[pal.Master.PalletNum] = now;
-                  pal.CurStation = NiigataStationNum.Cart();
-                  _status.LoadStations[pal.CurStation.Location.Num].PalletExists = false;
-                }
-              });
+                  Time = _status.TimeOfStatusUTC,
+                  UpdateStatus = () =>
+                  {
+                    _lastPalTransition[pal.Master.PalletNum] = _status.TimeOfStatusUTC;
+                    pal.CurStation = NiigataStationNum.Cart();
+                    _status.LoadStations[pal.CurStation.Location.Num].PalletExists = false;
+                  }
+                });
+              }
 
             }
             //if on cart, move to machine or buffer
@@ -236,9 +239,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 transitions.Add(new NextTransition()
                 {
                   Time = _lastPalTransition[pal.Master.PalletNum].Add(CartTravelTime),
-                  UpdateStatus = now =>
+                  UpdateStatus = () =>
                   {
-                    _lastPalTransition[pal.Master.PalletNum] = now;
+                    _lastPalTransition[pal.Master.PalletNum] = _lastPalTransition[pal.Master.PalletNum].Add(CartTravelTime);
                     pal.CurStation = NiigataStationNum.MachineQueue(mach);
                     pal.Tracking.CurrentControlNum += 1;
                     pal.Tracking.CurrentStepNum += 1;
@@ -250,9 +253,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 transitions.Add(new NextTransition()
                 {
                   Time = _lastPalTransition[pal.Master.PalletNum].Add(CartTravelTime),
-                  UpdateStatus = now =>
+                  UpdateStatus = () =>
                   {
-                    _lastPalTransition[pal.Master.PalletNum] = now;
+                    _lastPalTransition[pal.Master.PalletNum] = _lastPalTransition[pal.Master.PalletNum].Add(CartTravelTime);
                     pal.CurStation = NiigataStationNum.Buffer(pal.Master.PalletNum);
                     pal.Tracking.CurrentControlNum += 1;
                     pal.Tracking.CurrentStepNum += 1;
@@ -278,9 +281,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 transitions.Add(new NextTransition()
                 {
                   Time = _status.TimeOfStatusUTC,
-                  UpdateStatus = now =>
+                  UpdateStatus = () =>
                   {
-                    _lastPalTransition[pal.Master.PalletNum] = now;
+                    _lastPalTransition[pal.Master.PalletNum] = _status.TimeOfStatusUTC;
                     pal.CurStation = NiigataStationNum.Cart();
                   }
                 });
@@ -295,9 +298,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 transitions.Add(new NextTransition()
                 {
                   Time = _lastPalTransition[pal.Master.PalletNum].Add(CartTravelTime),
-                  UpdateStatus = now =>
+                  UpdateStatus = () =>
                   {
-                    _lastPalTransition[pal.Master.PalletNum] = now;
+                    _lastPalTransition[pal.Master.PalletNum] = _lastPalTransition[pal.Master.PalletNum].Add(CartTravelTime);
                     pal.CurStation = NiigataStationNum.MachineQueue(mc);
                   }
                 });
@@ -318,18 +321,18 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               {
                 transitions.Add(new NextTransition()
                 {
-                  Time = _status.TimeOfStatusUTC.Add(RotarySwapTime),
-                  UpdateStatus = now =>
+                  Time = _lastPalTransition[pal.Master.PalletNum].Add(RotarySwapTime),
+                  UpdateStatus = () =>
                   {
-                    _lastPalTransition[pal.Master.PalletNum] = now;
+                    _lastPalTransition[pal.Master.PalletNum] = _lastPalTransition[pal.Master.PalletNum].Add(RotarySwapTime);
                     pal.CurStation = NiigataStationNum.Machine(mc);
-                    _lastMachineTransition[mc] = now;
+                    _lastMachineTransition[mc] = _lastPalTransition[pal.Master.PalletNum].Add(RotarySwapTime);
                     _programsRunOnMachine[mc].Clear();
                     _status.Machines[mc].Machining = true;
                     _status.Machines[mc].CurrentlyExecutingProgram = mach.ProgramNumsToRun.First();
                     if (palInsideMachine != null)
                     {
-                      _lastPalTransition[palInsideMachine.Master.PalletNum] = now;
+                      _lastPalTransition[palInsideMachine.Master.PalletNum] = _lastPalTransition[pal.Master.PalletNum].Add(RotarySwapTime);
                       palInsideMachine.CurStation = NiigataStationNum.MachineQueue(mc);
                     }
                   }
@@ -345,12 +348,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 throw new Exception("Pallet in Before-MC but not machining");
               }
               var curProg = _status.Machines[mc].CurrentlyExecutingProgram;
+              var time = _programTimes.ContainsKey(curProg) ? _programTimes[curProg] : TimeSpan.FromMinutes(10);
               transitions.Add(new NextTransition()
               {
-                Time = _lastMachineTransition[mc].Add(_programTimes[curProg]),
-                UpdateStatus = now =>
+                Time = _lastMachineTransition[mc].Add(time),
+                UpdateStatus = () =>
                 {
-                  _lastMachineTransition[mc] = now;
+                  _lastMachineTransition[mc] = _lastMachineTransition[mc].Add(time);
                   _programsRunOnMachine[mc].Add(curProg);
                   // either go to After-MC or next program
                   var nextProg = mach.ProgramNumsToRun.Where(p => !_programsRunOnMachine[mc].Contains(p)).FirstOrDefault();
@@ -360,7 +364,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   }
                   else
                   {
-                    _lastPalTransition[pal.Master.PalletNum] = now;
+                    _lastPalTransition[pal.Master.PalletNum] = _lastMachineTransition[mc].Add(time);
                     pal.Tracking.CurrentControlNum += 1;
                     _status.Machines[mc].Machining = false;
                   }
@@ -374,23 +378,23 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               var palOnQueue = _status.Pallets.FirstOrDefault(p =>
                 p.CurStation.Location.Location == PalletLocationEnum.MachineQueue && p.CurStation.Location.Num == mc
               );
-              if (!_status.Machines[mc].Machining && palOnQueue.CurrentStep is MachiningStep && palOnQueue.Tracking.BeforeCurrentStep)
+              if (!_status.Machines[mc].Machining && (palOnQueue == null || (palOnQueue.CurrentStep is MachiningStep && palOnQueue.Tracking.BeforeCurrentStep)))
               {
-                var palOnQueueMach = (MachiningStep)palOnQueue.CurrentStep;
                 transitions.Add(new NextTransition()
                 {
-                  Time = _status.TimeOfStatusUTC.Add(RotarySwapTime),
-                  UpdateStatus = now =>
+                  Time = _lastPalTransition[pal.Master.PalletNum].Add(RotarySwapTime),
+                  UpdateStatus = () =>
                   {
-                    _lastPalTransition[pal.Master.PalletNum] = now;
+                    _lastPalTransition[pal.Master.PalletNum] = _lastPalTransition[pal.Master.PalletNum].Add(RotarySwapTime);
                     pal.CurStation = NiigataStationNum.MachineQueue(mc);
                     if (palOnQueue != null)
                     {
-                      _lastMachineTransition[mc] = now;
+                      var palOnQueueMach = (MachiningStep)palOnQueue.CurrentStep;
+                      _lastMachineTransition[mc] = _lastPalTransition[pal.Master.PalletNum].Add(RotarySwapTime);
                       _programsRunOnMachine[mc].Clear();
                       _status.Machines[mc].Machining = true;
                       _status.Machines[mc].CurrentlyExecutingProgram = palOnQueueMach.ProgramNumsToRun.First();
-                      _lastPalTransition[palOnQueue.Master.PalletNum] = now;
+                      _lastPalTransition[palOnQueue.Master.PalletNum] = _lastPalTransition[pal.Master.PalletNum].Add(RotarySwapTime);
                       palOnQueue.CurStation = NiigataStationNum.Machine(mc);
                     }
                   }
@@ -398,17 +402,20 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               }
             }
             // if after-mc and cart not in use, move to cart
-            else if (!beforeStep && !cartInUse && pal.CurStation.Location.Location == PalletLocationEnum.MachineQueue)
+            else if (!beforeStep && pal.CurStation.Location.Location == PalletLocationEnum.MachineQueue)
             {
-              transitions.Add(new NextTransition()
+              if (!cartInUse)
               {
-                Time = _status.TimeOfStatusUTC,
-                UpdateStatus = now =>
+                transitions.Add(new NextTransition()
                 {
-                  _lastPalTransition[pal.Master.PalletNum] = now;
-                  pal.CurStation = NiigataStationNum.Cart();
-                }
-              });
+                  Time = _status.TimeOfStatusUTC,
+                  UpdateStatus = () =>
+                  {
+                    _lastPalTransition[pal.Master.PalletNum] = _status.TimeOfStatusUTC;
+                    pal.CurStation = NiigataStationNum.Cart();
+                  }
+                });
+              }
             }
             // if after-mc and on cart, move to load or buffer
             else if (!beforeStep && pal.CurStation.Location.Location == PalletLocationEnum.Cart)
@@ -424,9 +431,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 transitions.Add(new NextTransition()
                 {
                   Time = _lastPalTransition[pal.Master.PalletNum].Add(CartTravelTime),
-                  UpdateStatus = now =>
+                  UpdateStatus = () =>
                   {
-                    _lastPalTransition[pal.Master.PalletNum] = now;
+                    _lastPalTransition[pal.Master.PalletNum] = _lastPalTransition[pal.Master.PalletNum].Add(CartTravelTime);
                     pal.CurStation = NiigataStationNum.LoadStation(toLoad);
                     pal.Tracking.CurrentStepNum += 1;
                     pal.Tracking.CurrentControlNum += 1;
@@ -438,9 +445,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 transitions.Add(new NextTransition()
                 {
                   Time = _lastPalTransition[pal.Master.PalletNum].Add(CartTravelTime),
-                  UpdateStatus = now =>
+                  UpdateStatus = () =>
                   {
-                    _lastPalTransition[pal.Master.PalletNum] = now;
+                    _lastPalTransition[pal.Master.PalletNum] = _lastPalTransition[pal.Master.PalletNum].Add(CartTravelTime);
                     pal.CurStation = NiigataStationNum.Buffer(pal.Master.PalletNum);
                     pal.Tracking.CurrentStepNum += 1;
                     pal.Tracking.CurrentControlNum += 1;
@@ -463,34 +470,35 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               transitions.Add(new NextTransition()
               {
                 Time = _lastPalTransition[pal.Master.PalletNum].Add(LoadTime),
-                UpdateStatus = now =>
+                UpdateStatus = () =>
                 {
-                  _lastPalTransition[pal.Master.PalletNum] = now;
-                  pal.Tracking.CurrentStepNum = 1;
-                  pal.Tracking.CurrentControlNum = 2;
-                  if (pal.Master.RemainingPalletCycles > 1)
+                  _lastPalTransition[pal.Master.PalletNum] = _lastPalTransition[pal.Master.PalletNum].Add(LoadTime);
+                  pal.Master.RemainingPalletCycles -= 1;
+                  if (pal.Master.RemainingPalletCycles == 0)
                   {
-                    pal.Master.RemainingPalletCycles -= 1;
+                    pal.Master.NoWork = true;
+                    pal.Tracking.CurrentControlNum += 1;
                   }
                   else
                   {
-                    pal.Master.NoWork = true;
+                    pal.Tracking.CurrentStepNum = 1;
+                    pal.Tracking.CurrentControlNum = 2;
                   }
                 }
               });
             }
             // if in the buffer, add transition to put on cart
-            else if (beforeStep && !cartInUse && pal.CurStation.Location.Location == PalletLocationEnum.Buffer)
+            else if (beforeStep && pal.CurStation.Location.Location == PalletLocationEnum.Buffer)
             {
               var lul = openLoads.FirstOrDefault(unload.UnloadStations.Contains);
-              if (lul > 0)
+              if (!cartInUse && lul > 0)
               {
                 transitions.Add(new NextTransition()
                 {
                   Time = _status.TimeOfStatusUTC,
-                  UpdateStatus = now =>
+                  UpdateStatus = () =>
                   {
-                    _lastPalTransition[pal.Master.PalletNum] = now;
+                    _lastPalTransition[pal.Master.PalletNum] = _status.TimeOfStatusUTC;
                     pal.CurStation = NiigataStationNum.Cart();
                   }
                 });
@@ -505,9 +513,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 transitions.Add(new NextTransition()
                 {
                   Time = _lastPalTransition[pal.Master.PalletNum].Add(CartTravelTime),
-                  UpdateStatus = now =>
+                  UpdateStatus = () =>
                   {
-                    _lastPalTransition[pal.Master.PalletNum] = now;
+                    _lastPalTransition[pal.Master.PalletNum] = _lastPalTransition[pal.Master.PalletNum].Add(CartTravelTime);
                     pal.CurStation = NiigataStationNum.LoadStation(lul);
                     _status.LoadStations[lul].PalletExists = true;
                   }
@@ -518,12 +526,50 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 throw new Exception("Before-UL pallet put on cart without open load");
               }
             }
+            else if (!beforeStep && pal.Master.NoWork && pal.CurStation.Location.Location == PalletLocationEnum.LoadUnload)
+            {
+              if (!cartInUse)
+              {
+                transitions.Add(new NextTransition()
+                {
+                  Time = _status.TimeOfStatusUTC,
+                  UpdateStatus = () =>
+                  {
+                    _lastPalTransition[pal.Master.PalletNum] = _status.TimeOfStatusUTC;
+                    pal.CurStation = NiigataStationNum.Cart();
+                  }
+                });
+              }
+            }
+            else if (!beforeStep && pal.Master.NoWork && pal.CurStation.Location.Location == PalletLocationEnum.Cart)
+            {
+              transitions.Add(new NextTransition()
+              {
+                Time = _lastPalTransition[pal.Master.PalletNum].Add(CartTravelTime),
+                UpdateStatus = () =>
+                {
+                  _lastPalTransition[pal.Master.PalletNum] = _lastPalTransition[pal.Master.PalletNum].Add(CartTravelTime);
+                  pal.CurStation = NiigataStationNum.Buffer(pal.Master.PalletNum);
+                }
+              });
+            }
+            else if (!beforeStep && pal.Master.NoWork && pal.CurStation.Location.Location == PalletLocationEnum.Buffer)
+            {
+              // do nothing
+            }
             else
             {
               throw new Exception("Invalid UnloadStep state");
             }
             break;
         }
+      }
+
+      if (transitions.Any())
+      {
+        var t = transitions.OrderBy(e => e.Time).First();
+        _status.TimeOfStatusUTC = t.Time;
+        t.UpdateStatus();
       }
     }
 
