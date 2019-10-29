@@ -57,9 +57,18 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       // only need to decide on a single change, SyncPallets will call in a loop until no changes are needed.
 
+      // first, check if any programs are needed
+      foreach (var prog in cellSt.ProgramNums)
+      {
+        if (string.IsNullOrEmpty(prog.Value.CellControllerProgramName))
+        {
+          return AddProgram(cellSt.Status.Programs, prog.Value);
+        }
+      }
+
       //TODO: check if pallet in BeforeUnload just needs a simple increment before it reaches the load station?
 
-      // first, check if pallet at load station being unloaded needs something loaded
+      // next, check if pallet at load station being unloaded needs something loaded
       foreach (var pal in cellSt.Pallets)
       {
         if (pal.Status.CurStation.Location.Location != PalletLocationEnum.LoadUnload) continue;
@@ -69,7 +78,7 @@ namespace BlackMaple.FMSInsight.Niigata
         var pathsToLoad = FindMaterialToLoad(cellSt, pal.Status.Master.PalletNum, pal.Status.CurStation.Location.Num, pal.Faces.SelectMany(ms => ms.Material).ToList(), queuedMats: cellSt.QueuedMaterial);
         if (pathsToLoad != null && pathsToLoad.Count > 0)
         {
-          return SetNewRoute(pal.Status, pathsToLoad, cellSt.Status.TimeOfStatusUTC);
+          return SetNewRoute(pal.Status, pathsToLoad, cellSt.Status.TimeOfStatusUTC, cellSt.ProgramNums);
         }
       }
 
@@ -87,7 +96,7 @@ namespace BlackMaple.FMSInsight.Niigata
         var pathsToLoad = FindMaterialToLoad(cellSt, pal.Status.Master.PalletNum, loadStation: null, matCurrentlyOnPal: Enumerable.Empty<InProcessMaterial>(), queuedMats: cellSt.QueuedMaterial);
         if (pathsToLoad != null && pathsToLoad.Count > 0)
         {
-          return SetNewRoute(pal.Status, pathsToLoad, cellSt.Status.TimeOfStatusUTC);
+          return SetNewRoute(pal.Status, pathsToLoad, cellSt.Status.TimeOfStatusUTC, cellSt.ProgramNums);
         }
       }
 
@@ -266,9 +275,9 @@ namespace BlackMaple.FMSInsight.Niigata
     #endregion
 
     #region Set New Route
-    private NiigataAction SetNewRoute(PalletStatus oldPallet, IReadOnlyList<JobPath> newPaths, DateTime nowUtc)
+    private NiigataAction SetNewRoute(PalletStatus oldPallet, IReadOnlyList<JobPath> newPaths, DateTime nowUtc, IReadOnlyDictionary<(string progName, long? revision), MachineFramework.JobDB.ProgramRevision> progs)
     {
-      var newMaster = NewPalletMaster(oldPallet.Master.PalletNum, newPaths);
+      var newMaster = NewPalletMaster(oldPallet.Master.PalletNum, newPaths, progs);
       if (SimpleQuantityChange(oldPallet.Master, newMaster))
       {
         int remaining = 1;
@@ -308,7 +317,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     }
 
-    private PalletMaster NewPalletMaster(int pallet, IReadOnlyList<JobPath> newPaths)
+    private PalletMaster NewPalletMaster(int pallet, IReadOnlyList<JobPath> newPaths, IReadOnlyDictionary<(string progNum, long? revision), MachineFramework.JobDB.ProgramRevision> progs)
     {
       var orderedPaths = newPaths.OrderBy(p => p.Job.UniqueStr).ThenBy(p => p.Process).ThenBy(p => p.Path).ToList();
 
@@ -318,12 +327,13 @@ namespace BlackMaple.FMSInsight.Niigata
         // add all stops from machineStops tp machiningSteps
         foreach (var stop in path.Job.GetMachiningStop(path.Process, path.Path))
         {
+          var prog = progs[(stop.ProgramName, stop.ProgramRevision)];
           // check existing step
           foreach (var existingStep in machiningSteps)
           {
             if (existingStep.Machines.SequenceEqual(stop.Stations))
             {
-              existingStep.ProgramNumsToRun.Add(int.Parse(stop.ProgramName));
+              existingStep.ProgramNumsToRun.Add(int.Parse(prog.CellControllerProgramName));
               goto foundExisting;
             }
           }
@@ -331,7 +341,7 @@ namespace BlackMaple.FMSInsight.Niigata
           machiningSteps.Add(new MachiningStep()
           {
             Machines = stop.Stations.ToList(),
-            ProgramNumsToRun = new List<int> { int.Parse(stop.ProgramName) }
+            ProgramNumsToRun = new List<int> { int.Parse(prog.CellControllerProgramName) }
           });
 
         foundExisting:;
@@ -392,6 +402,20 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       return true;
+    }
+    #endregion
+
+    #region Programs
+    private NewProgram AddProgram(IReadOnlyDictionary<int, ProgramEntry> existing, MachineFramework.JobDB.ProgramRevision prog)
+    {
+      int progNum = Enumerable.Range(1000, 9999 - 1000).FirstOrDefault(p => !existing.ContainsKey(p));
+      return new NewProgram()
+      {
+        ProgramNum = progNum,
+        ProgramName = prog.ProgramName,
+        ProgramRevision = prog.Revision,
+        ProgramContent = prog.ProgramContent
+      };
     }
     #endregion
   }

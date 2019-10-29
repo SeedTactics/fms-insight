@@ -80,6 +80,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       _sim = new IccSimulator(numPals: 10, numMachines: 6, numLoads: 2);
       _sync = new SyncPallets(_jobDB, _logDB, _sim, _assign, _createLog);
+
+      _sim.OnNewProgram += (newprog) =>
+        _jobDB.SetCellControllerProgramForProgram(newprog.ProgramName, newprog.ProgramRevision, newprog.ProgramNum.ToString());
     }
 
     public void Dispose()
@@ -127,9 +130,21 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return logs;
     }
 
-    private void AddJobs(IEnumerable<JobPlan> jobs)
+    private void AddJobs(IEnumerable<JobPlan> jobs, IEnumerable<(string prog, long rev)> progs)
     {
-      _jobDB.AddJobs(new NewJobs() { Jobs = jobs.ToList() }, null);
+      _jobDB.AddJobs(new NewJobs()
+      {
+        Jobs = jobs.ToList(),
+        Programs =
+            progs.Select(p =>
+            new MachineWatchInterface.ProgramEntry()
+            {
+              ProgramName = p.prog,
+              Revision = p.rev,
+              Comment = "Comment " + p.prog + " rev" + p.rev.ToString(),
+              ProgramContent = "ProgramCt " + p.prog + " rev" + p.rev.ToString()
+            }).ToList()
+      }, null);
       using (var logMonitor = _logDB.Monitor())
       {
         _sync.SynchronizePallets(false);
@@ -200,13 +215,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             pals: new[] { 1, 2 },
             luls: new[] { 1, 2 },
             machs: new[] { 5, 6 },
-            prog: 1234,
+            prog: "prog111",
+            progRev: null,
             loadMins: 8,
             unloadMins: 9,
             machMins: 14,
             fixture: "fix1",
             face: 1
         )
+      }, new[] {
+        (prog: "prog111", rev: 5L)
       });
 
       var logs = Run();

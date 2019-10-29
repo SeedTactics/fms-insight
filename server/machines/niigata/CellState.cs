@@ -62,6 +62,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public List<PalletAndMaterial> Pallets { get; set; }
     public List<InProcessMaterial> QueuedMaterial { get; set; }
     public Dictionary<string, int> JobQtyStarted { get; set; }
+    public Dictionary<(string progName, long? revision), JobDB.ProgramRevision> ProgramNums { get; set; }
   }
 
   public interface IBuildCellState
@@ -187,7 +188,8 @@ namespace BlackMaple.FMSInsight.Niigata
         PalletStateUpdated = palletStateUpdated,
         Pallets = palsWithMat,
         QueuedMaterial = QueuedMaterial(new HashSet<long>(palsWithMat.SelectMany(p => p.Faces).SelectMany(p => p.Material).Select(m => m.MaterialID))),
-        JobQtyStarted = CountStartedMaterial(sch, palsWithMat)
+        JobQtyStarted = CountStartedMaterial(sch, palsWithMat),
+        ProgramNums = FindProgramNums(sch)
       };
     }
 
@@ -684,11 +686,18 @@ namespace BlackMaple.FMSInsight.Niigata
       };
     }
 
-    private void MarkProgramRunning(PalletAndMaterial pallet, IEnumerable<LogEntry> log, int program, ref bool palletStateUpdated, DateTime nowUtc)
+    private void MarkProgramRunning(PalletAndMaterial pallet, IEnumerable<LogEntry> log, int iccProgram, ref bool palletStateUpdated, DateTime nowUtc)
     {
+      var jobProgram = _jobs.ProgramFromCellControllerProgram(iccProgram.ToString());
+      if (jobProgram == null)
+      {
+        Log.Error("Detected program {program} run on ICC, but Insight has no knowlede of this program", iccProgram);
+        return;
+      }
+
       foreach (var face in pallet.Faces)
       {
-        var currentlyRunningStop = face.Job.GetMachiningStop(face.Process, face.Path).FirstOrDefault(stop => stop.ProgramName == program.ToString());
+        var currentlyRunningStop = face.Job.GetMachiningStop(face.Process, face.Path).FirstOrDefault(stop => stop.ProgramName == jobProgram.ProgramName);
 
         var matIds = new HashSet<long>(face.Material.Select(m => m.MaterialID));
         var machStarts = log
@@ -701,14 +710,14 @@ namespace BlackMaple.FMSInsight.Niigata
           ;
 
         // first, check if there is a machine-start for the currently running program
-        if (currentlyRunningStop != null && !machStarts.Any(e => e.Program == program.ToString()))
+        if (currentlyRunningStop != null && !machStarts.Any(e => e.Program == jobProgram.ProgramName))
         {
 
           if (face.Material.Count == 0)
           {
             // we must have missed the load, recreate material here as a backup
-            Log.Warning("Detected program {program} without a cooresponding load event, creating new material!", program);
-            Log.Debug("Program {program} on pallet {@pallet} and log {@log} run without a seen load event, creating material", program, pallet, log);
+            Log.Warning("Detected program {program} without a cooresponding load event, creating new material!", jobProgram.ProgramName);
+            Log.Debug("Program {program} on pallet {@pallet} and log {@log} run without a seen load event, creating material", jobProgram.ProgramName, pallet, log);
 
             for (int i = 1; i <= face.Job.PartsPerPallet(face.Process, face.Path); i++)
             {
@@ -744,7 +753,7 @@ namespace BlackMaple.FMSInsight.Niigata
           }
 
           // record start of new cycle
-          Log.Debug("Recording machine start for {@pallet} from logs {@log} and {program} with face {@face}", pallet, log, program, face);
+          Log.Debug("Recording machine start for {@pallet} from logs {@log} and {program} with face {@face}", pallet, log, jobProgram.ProgramName, face);
 
           palletStateUpdated = true;
 
@@ -758,15 +767,18 @@ namespace BlackMaple.FMSInsight.Niigata
             pallet: pallet.Status.Master.PalletNum.ToString(),
             statName: pallet.Status.CurStation.Location.StationGroup,
             statNum: pallet.Status.CurStation.Location.Num,
-            program: program.ToString(),
-            timeUTC: nowUtc
+            program: jobProgram.ProgramName,
+            timeUTC: nowUtc,
+            extraData: new Dictionary<string, string> {
+              {"ProgramRevision", jobProgram.Revision.ToString()}
+            }
           ));
         }
 
         // ensure machine-ends for everything not currently running
         foreach (var machStart in machStarts)
         {
-          if (currentlyRunningStop != null && machStart.Program == program.ToString()) continue;
+          if (currentlyRunningStop != null && machStart.Program == jobProgram.ProgramName) continue;
           if (machEnds.Any(e => e.Program == machStart.Program)) continue;
           var machStop = face.Job.GetMachiningStop(face.Process, face.Path).FirstOrDefault(stop => stop.ProgramName == machStart.Program);
           if (machStop == null)
@@ -793,7 +805,10 @@ namespace BlackMaple.FMSInsight.Niigata
             result: "",
             timeUTC: nowUtc,
             elapsed: nowUtc.Subtract(machStart.EndTimeUTC),
-            active: machStop.ExpectedCycleTime
+            active: machStop.ExpectedCycleTime,
+            extraData: new Dictionary<string, string> {
+              {"ProgramRevision", machStart.ProgramDetails["ProgramRevision"] }
+            }
           );
 
           foreach (var mat in face.Material)
@@ -804,14 +819,14 @@ namespace BlackMaple.FMSInsight.Niigata
 
         if (currentlyRunningStop != null)
         {
-          var machStart = machStarts.First(e => e.Program == program.ToString());
+          var machStart = machStarts.First(e => e.Program == jobProgram.ProgramName);
           var elapsed = nowUtc.Subtract(machStart.EndTimeUTC);
           foreach (var mat in face.Material)
           {
             mat.Action = new InProcessMaterialAction()
             {
               Type = InProcessMaterialAction.ActionType.Machining,
-              Program = program.ToString(),
+              Program = jobProgram.ProgramName + " rev" + jobProgram.Revision.ToString(),
               ElapsedMachiningTime = elapsed,
               ExpectedRemainingMachiningTime = currentlyRunningStop.ExpectedCycleTime.Subtract(elapsed)
             };
@@ -822,15 +837,23 @@ namespace BlackMaple.FMSInsight.Niigata
 
     }
 
-    private void EnsureAllMachineEnds(PalletAndMaterial pallet, IEnumerable<int> programs, IEnumerable<LogEntry> log, DateTime nowUtc, ref bool palletStateUpdated)
+    private void EnsureAllMachineEnds(PalletAndMaterial pallet, IEnumerable<int> iccPrograms, IEnumerable<LogEntry> log, DateTime nowUtc, ref bool palletStateUpdated)
     {
-      var progsToCheck = new HashSet<string>(programs.Select(p => p.ToString()));
+      var progsToCheck = new Dictionary<string, JobDB.ProgramRevision>();
+      foreach (var iccProg in iccPrograms)
+      {
+        var jobProgram = _jobs.ProgramFromCellControllerProgram(iccProg.ToString());
+        if (jobProgram != null)
+        {
+          progsToCheck[jobProgram.ProgramName] = jobProgram;
+        }
+      }
       foreach (var face in pallet.Faces)
       {
         foreach (var machStop in face.Job.GetMachiningStop(face.Process, face.Path))
         {
           var machProg = machStop.ProgramName;
-          if (!progsToCheck.Contains(machProg)) continue;
+          if (!progsToCheck.ContainsKey(machProg)) continue;
 
           var matIds = new HashSet<long>(face.Material.Select(m => m.MaterialID));
           var machStart = log
@@ -862,7 +885,10 @@ namespace BlackMaple.FMSInsight.Niigata
               result: "",
               timeUTC: nowUtc,
               elapsed: nowUtc.Subtract(machStart.EndTimeUTC),
-              active: machStop.ExpectedCycleTime
+              active: machStop.ExpectedCycleTime,
+              extraData: new Dictionary<string, string> {
+                {"ProgramRevision", progsToCheck[machProg].Revision.ToString()}
+              }
             );
             foreach (var mat in face.Material)
             {
@@ -969,6 +995,32 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         return (proc, -1);
       }
+    }
+
+    private Dictionary<(string progName, long? revision), JobDB.ProgramRevision> FindProgramNums(PlannedSchedule schedule)
+    {
+      var stops =
+        schedule.Jobs
+          .SelectMany(j => Enumerable.Range(1, j.NumProcesses).SelectMany(proc =>
+            Enumerable.Range(1, j.GetNumPaths(proc)).SelectMany(path =>
+              j.GetMachiningStop(proc, path)
+            )
+          ));
+
+      var progs = new Dictionary<(string progName, long? revision), JobDB.ProgramRevision>();
+      foreach (var stop in stops)
+      {
+        if (progs.ContainsKey((stop.ProgramName, stop.ProgramRevision))) continue;
+        if (stop.ProgramRevision.HasValue)
+        {
+          progs[(stop.ProgramName, stop.ProgramRevision)] = _jobs.LoadProgram(stop.ProgramName, stop.ProgramRevision.Value);
+        }
+        else
+        {
+          progs[(stop.ProgramName, null)] = _jobs.LoadMostRecentProgram(stop.ProgramName);
+        }
+      }
+      return progs;
     }
   }
 }

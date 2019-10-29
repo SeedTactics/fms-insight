@@ -53,6 +53,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public NiigataStatus LoadStatus() => _status;
 
+    public event Action<NewProgram> OnNewProgram;
+
     public void PerformAction(NiigataAction a)
     {
       switch (a)
@@ -69,6 +71,17 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           _status.Pallets[update.Pallet - 1].Master.Skip = update.Skip;
           _status.Pallets[update.Pallet - 1].Master.RemainingPalletCycles = update.Cycles;
           break;
+
+        case NewProgram newprog:
+          OnNewProgram?.Invoke(newprog);
+          _status.Programs[newprog.ProgramNum] = new ProgramEntry()
+          {
+            ProgramNum = newprog.ProgramNum,
+            Comment = "Comment " + newprog.ProgramName + " rev" + newprog.ProgramRevision.ToString(),
+            CycleTime = TimeSpan.FromMinutes(newprog.ProgramRevision),
+            Tools = new List<int>()
+          };
+          break;
       }
     }
 
@@ -76,6 +89,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       _status = new NiigataStatus();
       _status.TimeOfStatusUTC = DateTime.UtcNow.AddDays(-1);
+      _status.Programs = new Dictionary<int, ProgramEntry>();
 
       _status.Machines = new Dictionary<int, MachineStatus>();
       for (int mach = 1; mach <= numMachines; mach++)

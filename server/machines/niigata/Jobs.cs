@@ -165,6 +165,7 @@ namespace BlackMaple.FMSInsight.Niigata
       // TODO
       // - single fixture/face
       // - processes on different pallets have queue
+      // - program revision on stop non-null means > 0
       return new List<string>();
     }
 

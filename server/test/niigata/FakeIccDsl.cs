@@ -80,6 +80,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       _status = new NiigataStatus();
       _status.TimeOfStatusUTC = DateTime.UtcNow.AddDays(-1);
+      _status.Programs = new Dictionary<int, ProgramEntry>();
 
       _status.Machines = new Dictionary<int, MachineStatus>();
       for (int mach = 1; mach <= numMachines; mach++)
@@ -412,9 +413,23 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _expectedJobStartedCount[unique] += cnt;
       return this;
     }
-    public FakeIccDsl AddJobs(IEnumerable<JobPlan> jobs)
+    public FakeIccDsl AddJobs(IEnumerable<JobPlan> jobs, IEnumerable<(string prog, long rev)> progs = null)
     {
-      _jobDB.AddJobs(new NewJobs() { Jobs = jobs.ToList() }, null);
+      if (progs == null)
+        progs = Enumerable.Empty<(string prog, long rev)>();
+      _jobDB.AddJobs(new NewJobs()
+      {
+        Jobs = jobs.ToList(),
+        Programs =
+            progs.Select(p =>
+            new MachineWatchInterface.ProgramEntry()
+            {
+              ProgramName = p.prog,
+              Revision = p.rev,
+              Comment = "Comment " + p.prog + " rev" + p.rev.ToString(),
+              ProgramContent = "ProgramCt " + p.prog + " rev" + p.rev.ToString()
+            }).ToList()
+      }, null);
       foreach (var j in jobs)
       {
         _expectedJobStartedCount[j.UniqueStr] = 0;
@@ -423,7 +438,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     }
 
-    public static JobPlan CreateOneProcOnePathJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, int prog, int loadMins, int machMins, int unloadMins, string fixture, int face, string queue = null)
+    public static JobPlan CreateOneProcOnePathJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, string prog, long? progRev, int loadMins, int machMins, int unloadMins, string fixture, int face, string queue = null)
     {
       var j = new JobPlan(unique, 1);
       j.PartName = part;
@@ -438,7 +453,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       j.SetExpectedUnloadTime(1, 1, TimeSpan.FromMinutes(unloadMins));
       j.SetPartsPerPallet(1, 1, partsPerPal);
       var s = new JobMachiningStop("MC");
-      s.ProgramName = prog.ToString();
+      s.ProgramName = prog;
+      s.ProgramRevision = progRev;
       s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins);
       foreach (var m in machs)
       {
@@ -457,7 +473,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return j;
     }
 
-    public static JobPlan CreateOneProcOnePathMultiStepJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs1, int prog1, int[] machs2, int prog2, int loadMins, int machMins1, int machMins2, int unloadMins, string fixture, int face, string queue = null)
+    public static JobPlan CreateOneProcOnePathMultiStepJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs1, string prog1, long? prog1Rev, int[] machs2, string prog2, long? prog2Rev, int loadMins, int machMins1, int machMins2, int unloadMins, string fixture, int face, string queue = null)
     {
       var j = new JobPlan(unique, 1);
       j.PartName = part;
@@ -473,7 +489,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       j.SetPartsPerPallet(1, 1, partsPerPal);
 
       var s = new JobMachiningStop("MC");
-      s.ProgramName = prog1.ToString();
+      s.ProgramName = prog1;
+      s.ProgramRevision = prog1Rev;
       s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins1);
       foreach (var m in machs1)
       {
@@ -482,7 +499,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       j.AddMachiningStop(1, 1, s);
 
       s = new JobMachiningStop("MC");
-      s.ProgramName = prog2.ToString();
+      s.ProgramName = prog2;
+      s.ProgramRevision = prog2Rev;
       s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins2);
       foreach (var m in machs2)
       {
@@ -502,7 +520,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return j;
     }
 
-    public static JobPlan CreateMultiProcSamePalletJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, int prog1, int prog2, int loadMins1, int machMins1, int unloadMins1, int loadMins2, int machMins2, int unloadMins2, string fixture, int face1, int face2)
+    public static JobPlan CreateMultiProcSamePalletJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, string prog1, long? prog1Rev, string prog2, long? prog2Rev, int loadMins1, int machMins1, int unloadMins1, int loadMins2, int machMins2, int unloadMins2, string fixture, int face1, int face2)
     {
       var j = new JobPlan(unique, 2);
       j.PartName = part;
@@ -522,7 +540,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       j.SetPartsPerPallet(1, 1, partsPerPal);
       j.SetPartsPerPallet(2, 1, partsPerPal);
       var s = new JobMachiningStop("MC");
-      s.ProgramName = prog1.ToString();
+      s.ProgramName = prog1;
+      s.ProgramRevision = prog1Rev;
       s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins1);
       foreach (var m in machs)
       {
@@ -530,7 +549,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       }
       j.AddMachiningStop(1, 1, s);
       s = new JobMachiningStop("MC");
-      s.ProgramName = prog2.ToString();
+      s.ProgramName = prog2;
+      s.ProgramRevision = prog2Rev;
       s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins2);
       foreach (var m in machs)
       {
@@ -547,7 +567,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return j;
     }
 
-    public static JobPlan CreateMultiProcSeparatePalletJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals1, int[] pals2, int[] load1, int[] load2, int[] unload1, int[] unload2, int[] machs, int prog1, int prog2, int loadMins1, int machMins1, int unloadMins1, int loadMins2, int machMins2, int unloadMins2, string fixture, string queue)
+    public static JobPlan CreateMultiProcSeparatePalletJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals1, int[] pals2, int[] load1, int[] load2, int[] unload1, int[] unload2, int[] machs, string prog1, long? prog1Rev, string prog2, long? prog2Rev, int loadMins1, int machMins1, int unloadMins1, int loadMins2, int machMins2, int unloadMins2, string fixture, string queue)
     {
       var j = new JobPlan(unique, 2);
       j.PartName = part;
@@ -576,7 +596,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       j.SetPartsPerPallet(1, 1, partsPerPal);
       j.SetPartsPerPallet(2, 1, partsPerPal);
       var s = new JobMachiningStop("MC");
-      s.ProgramName = prog1.ToString();
+      s.ProgramName = prog1;
+      s.ProgramRevision = prog1Rev;
       s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins1);
       foreach (var m in machs)
       {
@@ -584,7 +605,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       }
       j.AddMachiningStop(1, 1, s);
       s = new JobMachiningStop("MC");
-      s.ProgramName = prog2.ToString();
+      s.ProgramName = prog2;
+      s.ProgramRevision = prog2Rev;
       s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins2);
       foreach (var m in machs)
       {
@@ -878,17 +900,19 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       public int Pallet { get; set; }
       public int Machine { get; set; }
-      public int Program { get; set; }
+      public string Program { get; set; }
+      public long Revision { get; set; }
       public IEnumerable<LogMaterial> Material { get; set; }
     }
 
-    public static ExpectedChange ExpectMachineBegin(int pal, int machine, int program, IEnumerable<LogMaterial> mat)
+    public static ExpectedChange ExpectMachineBegin(int pal, int machine, string program, long rev, IEnumerable<LogMaterial> mat)
     {
       return new ExpectMachineBeginEvent()
       {
         Pallet = pal,
         Machine = machine,
         Program = program,
+        Revision = rev,
         Material = mat
       };
     }
@@ -897,19 +921,21 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       public int Pallet { get; set; }
       public int Machine { get; set; }
-      public int Program { get; set; }
+      public string Program { get; set; }
+      public long Revision { get; set; }
       public int ElapsedMin { get; set; }
       public int ActiveMin { get; set; }
       public IEnumerable<LogMaterial> Material { get; set; }
     }
 
-    public static ExpectedChange ExpectMachineEnd(int pal, int mach, int program, int elapsedMin, int activeMin, IEnumerable<LogMaterial> mats)
+    public static ExpectedChange ExpectMachineEnd(int pal, int mach, string program, long rev, int elapsedMin, int activeMin, IEnumerable<LogMaterial> mats)
     {
       return new ExpectMachineEndEvent()
       {
         Pallet = pal,
         Machine = mach,
         Program = program,
+        Revision = rev,
         ElapsedMin = elapsedMin,
         ActiveMin = activeMin,
         Material = mats
@@ -931,6 +957,25 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       };
     }
 
+    private class ExpectAddProgram : ExpectedChange
+    {
+      public NewProgram Expected { get; set; }
+    }
+
+    public static ExpectedChange ExpectAddNewProgram(int progNum, string name, long rev, string ct)
+    {
+      return new ExpectAddProgram()
+      {
+        Expected = new NewProgram()
+        {
+          ProgramNum = progNum,
+          ProgramName = name,
+          ProgramRevision = rev,
+          ProgramContent = ct
+        }
+      };
+    }
+
     public FakeIccDsl ExpectTransition(IEnumerable<ExpectedChange> expectedChanges, bool expectedUpdates = true)
     {
       var sch = _jobDB.LoadUnarchivedJobs();
@@ -943,8 +988,29 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
         var expectedLogs = new List<LogEntry>();
 
+        // deal with new programs
+        foreach (var expectAdd in expectedChanges.Where(e => e is ExpectAddProgram).Cast<ExpectAddProgram>())
+        {
+          var action = _assign.NewPalletChange(cellSt);
+          action.Should().BeEquivalentTo<NewProgram>(expectAdd.Expected);
+          _jobDB.SetCellControllerProgramForProgram(expectAdd.Expected.ProgramName, expectAdd.Expected.ProgramRevision, expectAdd.Expected.ProgramNum.ToString());
+          _status.Programs[expectAdd.Expected.ProgramNum] = new ProgramEntry()
+          {
+            ProgramNum = expectAdd.Expected.ProgramNum,
+            Comment = "Comment " + expectAdd.Expected.ProgramName + " rev" + expectAdd.Expected.ProgramRevision.ToString(),
+            CycleTime = TimeSpan.FromMinutes(expectAdd.Expected.ProgramRevision),
+            Tools = new List<int>()
+          };
+
+          // reload cell state
+          cellSt = _createLog.BuildCellState(_status, sch);
+          cellSt.PalletStateUpdated.Should().Be(expectedUpdates);
+          cellSt.Schedule.Should().Be(sch);
+        }
+
         var expectedNewRoute = (ExpectNewRouteChange)expectedChanges.FirstOrDefault(e => e is ExpectNewRouteChange);
         var expectIncr = (ExpectRouteIncrementChange)expectedChanges.FirstOrDefault(e => e is ExpectRouteIncrementChange);
+
         if (expectedNewRoute != null)
         {
           var action = _assign.NewPalletChange(cellSt);
@@ -1193,39 +1259,45 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               break;
 
             case ExpectMachineBeginEvent machBegin:
-              expectedLogs.Add(
-                new LogEntry(
-                  cntr: -1,
-                  mat: machBegin.Material,
-                  pal: machBegin.Pallet.ToString(),
-                  ty: LogType.MachineCycle,
-                  locName: "MC",
-                  locNum: machBegin.Machine,
-                  prog: machBegin.Program.ToString(),
-                  start: true,
-                  endTime: _status.TimeOfStatusUTC,
-                  result: "",
-                  endOfRoute: false
-              ));
+              {
+                var newLog = new LogEntry(
+                    cntr: -1,
+                    mat: machBegin.Material,
+                    pal: machBegin.Pallet.ToString(),
+                    ty: LogType.MachineCycle,
+                    locName: "MC",
+                    locNum: machBegin.Machine,
+                    prog: machBegin.Program,
+                    start: true,
+                    endTime: _status.TimeOfStatusUTC,
+                    result: "",
+                    endOfRoute: false
+                );
+                newLog.ProgramDetails["ProgramRevision"] = machBegin.Revision.ToString();
+                expectedLogs.Add(newLog);
+              }
               break;
 
             case ExpectMachineEndEvent machEnd:
-              expectedLogs.Add(
-                new LogEntry(
+              {
+                var newLog = new LogEntry(
                   cntr: -1,
                   mat: machEnd.Material,
                   pal: machEnd.Pallet.ToString(),
                   ty: LogType.MachineCycle,
                   locName: "MC",
                   locNum: machEnd.Machine,
-                  prog: machEnd.Program.ToString(),
+                  prog: machEnd.Program,
                   start: false,
                   endTime: _status.TimeOfStatusUTC,
                   result: "",
                   endOfRoute: false,
                   elapsed: TimeSpan.FromMinutes(machEnd.ElapsedMin),
                   active: TimeSpan.FromMinutes(machEnd.ActiveMin)
-              ));
+                );
+                newLog.ProgramDetails["ProgramRevision"] = machEnd.Revision.ToString();
+                expectedLogs.Add(newLog);
+              }
               break;
           }
         }

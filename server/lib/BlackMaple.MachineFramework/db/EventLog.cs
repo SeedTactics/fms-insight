@@ -1724,6 +1724,7 @@ namespace BlackMaple.MachineFramework
         int statNum,
         string program,
         DateTime timeUTC,
+        IDictionary<string, string> extraData = null,
         string foreignId = null,
         string originalMessage = null
     )
@@ -1741,6 +1742,11 @@ namespace BlackMaple.MachineFramework
         Result = "",
         EndOfRoute = false
       };
+      if (extraData != null)
+      {
+        foreach (var k in extraData)
+          log.ProgramDetails[k.Key] = k.Value;
+      }
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
     }
 
