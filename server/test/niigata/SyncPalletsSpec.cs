@@ -89,26 +89,108 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _jobDB.Close();
     }
 
-    private (CellState newSt, IEnumerable<LogEntry> newLogs) Step()
+    private IEnumerable<LogEntry> Step()
     {
-      _sim.Step();
+      if (!_sim.Step())
+      {
+        return null;
+      }
       using (var syncMonitor = _sync.Monitor())
       using (var logMonitor = _logDB.Monitor())
       {
         _sync.SynchronizePallets(false);
-        syncMonitor.Should().Raise("OnPalletsChanged");
-        var cellSt = (CellState)syncMonitor.OccurredEvents.First().Parameters[0];
         var evts = logMonitor.OccurredEvents.Where(e => e.EventName == "NewLogEntry").Select(e => e.Parameters[0]).Cast<LogEntry>();
-        return (cellSt, evts);
+        if (evts.Any())
+        {
+          syncMonitor.Should().Raise("OnPalletsChanged");
+        }
+        return evts;
       }
     }
 
-    [Fact]
-    public void TestName()
+    private IEnumerable<LogEntry> Run()
     {
-      _jobDB.AddJobs(new NewJobs()
+      var logs = new List<LogEntry>();
+      while (true)
       {
-        Jobs = new List<JobPlan> {
+        var newLogs = Step();
+        if (newLogs != null)
+        {
+          logs.AddRange(newLogs);
+        }
+        else
+        {
+          break;
+        }
+        //_output.WriteLine(_sim.DebugPrintStatus());
+      }
+      return logs;
+    }
+
+    private void AddJobs(IEnumerable<JobPlan> jobs)
+    {
+      _jobDB.AddJobs(new NewJobs() { Jobs = jobs.ToList() }, null);
+      using (var logMonitor = _logDB.Monitor())
+      {
+        _sync.SynchronizePallets(false);
+        var evts = logMonitor.OccurredEvents.Where(e => e.EventName == "NewLogEntry").Select(e => e.Parameters[0]).Cast<LogEntry>();
+        evts.Count(e => e.Result == "New Niigata Route").Should().BePositive();
+      }
+    }
+
+    private void CheckSingleMaterial(IEnumerable<LogEntry> logs, long matId, string uniq, string part, int numProc)
+    {
+      logs.Should().BeInAscendingOrder(e => e.EndTimeUTC);
+
+      var expected = new List<Action<LogEntry>>();
+      for (int proc = 1; proc <= numProc; proc++)
+      {
+        if (proc == 1)
+        {
+          expected.Add(mark =>
+          {
+            mark.LogType.Should().Be(LogType.PartMark);
+            mark.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
+            mark.Result.Should().Be(_settings.ConvertMaterialIDToSerial(matId));
+          }
+          );
+        }
+
+        expected.Add(e =>
+        {
+          e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
+          e.LogType.Should().Be(LogType.LoadUnloadCycle);
+          e.StartOfCycle.Should().BeFalse();
+          e.Result.Should().Be("LOAD");
+        });
+        expected.Add(e =>
+        {
+          e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
+          e.LogType.Should().Be(LogType.MachineCycle);
+          e.StartOfCycle.Should().BeTrue();
+        });
+        expected.Add(e =>
+        {
+          e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
+          e.LogType.Should().Be(LogType.MachineCycle);
+          e.StartOfCycle.Should().BeFalse();
+        });
+        expected.Add(e =>
+        {
+          e.LogType.Should().Be(LogType.LoadUnloadCycle);
+          e.StartOfCycle.Should().BeFalse();
+          e.Result.Should().Be("UNLOAD");
+        });
+      }
+
+      logs.Should().SatisfyRespectively(expected);
+    }
+
+
+    [Fact]
+    public void OneProcJob()
+    {
+      AddJobs(new[] {
         FakeIccDsl.CreateOneProcOnePathJob(
             unique: "uniq1",
             part: "part1",
@@ -116,7 +198,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             priority: 5,
             partsPerPal: 1,
             pals: new[] { 1, 2 },
-            luls: new[] { 3, 4 },
+            luls: new[] { 1, 2 },
             machs: new[] { 5, 6 },
             prog: 1234,
             loadMins: 8,
@@ -125,15 +207,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             fixture: "fix1",
             face: 1
         )
+      });
+
+      var logs = Run();
+      var byMat = logs.Where(e => e.Material.Any()).ToLookup(e => e.Material.First().MaterialID);
+
+      byMat.Count.Should().Be(3);
+      foreach (var m in byMat)
+      {
+        CheckSingleMaterial(m, m.Key, "uniq1", "part1", 1);
       }
-      }, null);
-
-      var (cellSt, logs) = Step();
-
-      _output.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(
-        new { CellSt = cellSt, Logs = logs },
-        Newtonsoft.Json.Formatting.Indented
-      ));
     }
   }
 }
