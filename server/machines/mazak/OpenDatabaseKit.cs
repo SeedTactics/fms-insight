@@ -570,6 +570,50 @@ namespace MazakMachineInterface
           transaction: trans
         );
       }
+
+      if (MazakType == MazakDbType.MazakSmooth)
+      {
+        conn.Execute(
+          @"INSERT INTO MainProgram_t(
+            Command,
+            Comment,
+            Count,
+            CreateToolList_PMC,
+            CutTime,
+            CutTimeFlag,
+            FileStatus,
+            MainProgram,
+            MainProgram_1,
+            MainProgram_2,
+            MainProgram_3,
+            MainProgram_4,
+            MainProgram_5,
+            SingleBlockStep,
+            TransactionStatus
+          ) VALUES (
+            @Command,
+            @Comment,
+            0,
+            0,
+            0,
+            1,
+            0,
+            @MainProgram,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          )",
+          data.Programs,
+          transaction: trans
+        );
+      }
+      else
+      {
+        throw new Exception("Downloading programs only supported on Smooth-PMC");
+      }
     }
 
     private class CommandStatus

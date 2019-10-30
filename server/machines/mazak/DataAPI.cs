@@ -338,6 +338,8 @@ namespace MazakMachineInterface
   {
     public string MainProgram { get; set; }
     public string Comment { get; set; }
+    public MazakWriteCommand Command { get; set; } // only for transaction DB
+    public MazakProgramRow Clone() => (MazakProgramRow)MemberwiseClone();
   }
 
   public class MazakSchedulesPartsPallets : MazakSchedules
@@ -375,6 +377,7 @@ namespace MazakMachineInterface
     public IList<MazakPartRow> Parts { get; set; } = new List<MazakPartRow>();
     public IList<MazakPalletRow> Pallets { get; set; } = new List<MazakPalletRow>();
     public IList<MazakFixtureRow> Fixtures { get; set; } = new List<MazakFixtureRow>();
+    public IList<MazakProgramRow> Programs { get; set; } = new List<MazakProgramRow>();
   }
 
   public interface IWriteData
