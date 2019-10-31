@@ -841,7 +841,7 @@ namespace MachineWatchTest
       _jobDB.AddPrograms(new[] {
         new ProgramEntry() {
           ProgramName = "aaa",
-          Revision = 2, // should be ignored
+          Revision = 0, // should be ignored because content matches
           Comment = "aaa comment rev 2",
           ProgramContent = "aaa program content rev 2"
         },

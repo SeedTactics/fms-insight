@@ -2145,6 +2145,7 @@ namespace BlackMaple.MachineFramework
           if (programs == null || !programs.Any()) return;
 
           using (var checkCmd = _connection.CreateCommand())
+          using (var checkMaxCmd = _connection.CreateCommand())
           using (var haveRevCmd = _connection.CreateCommand())
           using (var needRevCmd = _connection.CreateCommand())
           {
@@ -2152,6 +2153,10 @@ namespace BlackMaple.MachineFramework
             checkCmd.CommandText = "SELECT ProgramContent FROM program_revisions WHERE ProgramName = $name AND ProgramRevision = $rev";
             checkCmd.Parameters.Add("name", SqliteType.Text);
             checkCmd.Parameters.Add("rev", SqliteType.Integer);
+
+            ((IDbCommand)checkMaxCmd).Transaction = transaction;
+            checkMaxCmd.CommandText = "SELECT ProgramContent FROM program_revisions WHERE ProgramName = $prog ORDER BY ProgramRevision DESC LIMIT 1";
+            checkMaxCmd.Parameters.Add("prog", SqliteType.Text);
 
             ((IDbCommand)haveRevCmd).Transaction = transaction;
             haveRevCmd.CommandText = "INSERT INTO program_revisions(ProgramName, ProgramRevision, RevisionTimeUTC, RevisionComment, ProgramContent) " +
@@ -2191,6 +2196,13 @@ namespace BlackMaple.MachineFramework
                   haveRevCmd.ExecuteNonQuery();
                 }
               } else {
+                checkMaxCmd.Parameters[0].Value = prog.ProgramName;
+                var content = checkMaxCmd.ExecuteScalar();
+                if (content != null && content != DBNull.Value) {
+                  if ((string)content == prog.ProgramContent) {
+                    continue;
+                  }
+                }
                 needRevCmd.Parameters[0].Value = prog.ProgramName;
                 needRevCmd.Parameters[1].Value = prog.ProgramName;
                 needRevCmd.Parameters[3].Value = string.IsNullOrEmpty(prog.Comment) ? DBNull.Value : (object)prog.Comment;
