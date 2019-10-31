@@ -1425,6 +1425,25 @@ namespace BlackMaple.MachineFramework
                 OnNewJobs(newJobs);
             }
         }
+
+        public void AddPrograms(IEnumerable<MachineWatchInterface.ProgramEntry> programs, DateTime startingUtc)
+        {
+            lock (_lock)
+            {
+                var trans = _connection.BeginTransaction();
+                try
+                {
+                    AddPrograms(trans, programs, startingUtc);
+                    trans.Commit();
+                }
+                catch
+                {
+                    trans.Rollback();
+                    throw;
+                }
+            }
+        }
+
         private void AddJob(IDbTransaction trans, MachineWatchInterface.JobPlan job)
         {
             using (var cmd = _connection.CreateCommand()) {
