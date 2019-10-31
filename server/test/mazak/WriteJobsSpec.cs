@@ -224,7 +224,8 @@ namespace MachineWatchTest
         _logDB,
         _settings,
         check: false,
-        useStarting: true);
+        useStarting: true,
+        progDir: "C:\\NCProgs");
 
       jsonSettings = new JsonSerializerSettings();
       jsonSettings.Converters.Add(new BlackMaple.MachineFramework.TimespanConverter());

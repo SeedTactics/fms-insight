@@ -177,9 +177,17 @@ namespace MazakMachineInterface
     {
       CheckReadyForConnect();
 
-      int checkInterval = data.Schedules.Count() + data.Pallets.Count() + data.Parts.Count() + data.Fixtures.Count();
+      int checkInterval = data.Schedules.Count() + data.Pallets.Count() + data.Parts.Count() + data.Fixtures.Count() + data.Programs.Count();
 
       Log.Debug("Writing {@data} to transaction db", data);
+
+      foreach (var prog in data.Programs)
+      {
+        if (prog.Command == MazakWriteCommand.Add)
+        {
+          System.IO.File.WriteAllText(prog.MainProgram, prog.ProgramContent);
+        }
+      }
 
       try
       {

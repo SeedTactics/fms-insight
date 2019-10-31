@@ -57,6 +57,7 @@ namespace MazakMachineInterface
 
     private bool UseStartingOffsetForDueDate;
     private bool CheckPalletsUsedOnce;
+    private string ProgramDirectory;
 
     public const int JobLookbackHours = 2 * 24;
 
@@ -68,7 +69,8 @@ namespace MazakMachineInterface
       BlackMaple.MachineFramework.JobLogDB jLog,
       FMSSettings settings,
       bool check,
-      bool useStarting
+      bool useStarting,
+      string progDir
     )
     {
       writeDb = d;
@@ -79,6 +81,7 @@ namespace MazakMachineInterface
       CheckPalletsUsedOnce = check;
       UseStartingOffsetForDueDate = useStarting;
       fmsSettings = settings;
+      ProgramDirectory = progDir;
     }
 
     public void AddJobs(NewJobs newJ, string expectedPreviousScheduleId)
@@ -105,6 +108,9 @@ namespace MazakMachineInterface
 
         AddSchedules(oldJobs.Jobs);
       }
+
+      // add programs here first so that they exist in the database when looking up most recent revision for use in parts
+      jobDB.AddPrograms(newJ.Programs, DateTime.UtcNow);
 
       //add fixtures, pallets, parts.  If this fails, just throw an exception,
       //they will be deleted during the next download.
@@ -139,6 +145,17 @@ namespace MazakMachineInterface
       hold.SignalNewSchedules();
     }
 
+    private JobDB.ProgramRevision LookupProgram(string program, long? rev)
+    {
+      if (rev.HasValue)
+      {
+        return jobDB.LoadProgram(program, rev.Value);
+      }
+      else
+      {
+        return jobDB.LoadMostRecentProgram(program);
+      }
+    }
 
     private void AddFixturesPalletsParts(NewJobs newJ)
     {
@@ -189,6 +206,7 @@ namespace MazakMachineInterface
         writeDb.MazakType,
         CheckPalletsUsedOnce,
         fmsSettings,
+        LookupProgram,
         jobErrs);
       if (jobErrs.Any())
       {
@@ -219,7 +237,7 @@ namespace MazakMachineInterface
 
       //have to delete fixtures after schedule, parts, and pallets are already deleted
       //also, add new fixtures
-      transSet = mazakJobs.CreateDeleteFixtureDatabaseRows();
+      transSet = mazakJobs.CreateDeleteFixtureAndProgramDatabaseRows(jobDB.LoadProgramContent, ProgramDirectory);
       writeDb.Save(transSet, "Fixtures");
 
       //now save the pallets and parts

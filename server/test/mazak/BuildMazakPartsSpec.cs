@@ -106,6 +106,7 @@ namespace MachineWatchTest
         MazakDbType.MazakVersionE,
         checkPalletsUsedOnce: false,
         fmsSettings: new FMSSettings(),
+        lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
       );
       if (log.Count > 0) Assert.True(false, log[0]);
@@ -228,6 +229,7 @@ namespace MachineWatchTest
         MazakDbType.MazakVersionE,
         checkPalletsUsedOnce: false,
         fmsSettings: new FMSSettings(),
+        lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
       );
       if (log.Count > 0) Assert.True(false, log[0]);
@@ -314,6 +316,7 @@ namespace MachineWatchTest
         MazakDbType.MazakVersionE,
         checkPalletsUsedOnce: false,
         fmsSettings: new FMSSettings(),
+        lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
       );
       if (log.Count > 0) Assert.True(false, log[0]);
@@ -419,6 +422,7 @@ namespace MachineWatchTest
         MazakDbType.MazakVersionE,
         checkPalletsUsedOnce: checkPalletUsedOnce,
         fmsSettings: new FMSSettings(),
+        lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
       );
       if (log.Count > 0) Assert.True(false, log[0]);
@@ -538,6 +542,7 @@ namespace MachineWatchTest
         MazakDbType.MazakVersionE,
         checkPalletsUsedOnce: false,
         fmsSettings: new FMSSettings(),
+        lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
       );
       if (log.Count > 0) Assert.True(false, log[0]);
@@ -674,6 +679,7 @@ namespace MachineWatchTest
         MazakDbType.MazakVersionE,
         checkPalletsUsedOnce: false,
         fmsSettings: new FMSSettings(),
+        lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
       );
       if (log.Count > 0) Assert.True(false, log[0]);
@@ -821,6 +827,7 @@ namespace MachineWatchTest
         MazakDbType.MazakVersionE,
         checkPalletsUsedOnce: false,
         fmsSettings: new FMSSettings(),
+        lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
       );
       if (log.Count > 0) Assert.True(false, log[0]);
@@ -917,6 +924,7 @@ namespace MachineWatchTest
         MazakDbType.MazakVersionE,
         checkPalletsUsedOnce: false,
         fmsSettings: new FMSSettings(),
+        lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
       );
       if (log.Count > 0) Assert.True(false, log[0]);
@@ -969,6 +977,17 @@ namespace MachineWatchTest
         MazakDbType.MazakVersionE,
         checkPalletsUsedOnce: false,
         fmsSettings: new FMSSettings(),
+        lookupProgram: (p, r) =>
+        {
+          if (p == "1234" && r == null)
+          {
+            return null;
+          }
+          else
+          {
+            throw new Exception("Unexpected program lookup");
+          }
+        },
         errors: log
       );
 
@@ -1004,6 +1023,7 @@ namespace MachineWatchTest
           MazakDbType.MazakVersionE,
           checkPalletsUsedOnce: false,
           fmsSettings: new FMSSettings(),
+          lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
           errors: log
         );
       act
@@ -1106,11 +1126,12 @@ namespace MachineWatchTest
           Comment = "Insight",
           Command = MazakWriteCommand.Delete
         });
-      var actions = map.CreateDeleteFixtureDatabaseRows();
+      var actions = map.CreateDeleteFixtureAndProgramDatabaseRows((p, r) => throw new Exception("Unexpected program lookup"), "C:\\NCProgs");
       actions.Fixtures.Should().BeEquivalentTo(add.Concat(del));
       actions.Schedules.Should().BeEmpty();
       actions.Parts.Should().BeEmpty();
       actions.Pallets.Should().BeEmpty();
+      actions.Programs.Should().BeEmpty();
     }
 
     private void CheckPartProcess(MazakWriteData dset, string part, int proc, string fixture)
