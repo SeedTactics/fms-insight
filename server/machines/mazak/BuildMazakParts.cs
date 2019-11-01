@@ -539,6 +539,7 @@ namespace MazakMachineInterface
                 Comment = MazakProcess.CreateMainProgramComment(proc.PartProgram.ProgramName, proc.PartProgram.Revision),
                 ProgramContent = getProgramContent(proc.PartProgram.ProgramName, proc.PartProgram.Revision)
               };
+              newProgs[(newProg.ProgramName, newProg.ProgramRevision)] = newProg;
             }
             proc.PartProgram.CellControllerProgramName = newProg.MainProgram;
           }

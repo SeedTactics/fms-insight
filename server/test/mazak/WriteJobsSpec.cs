@@ -193,9 +193,15 @@ namespace MachineWatchTest
         PalletSubStatuses = Enumerable.Empty<MazakPalletSubStatusRow>(),
         PalletPositions = Enumerable.Empty<MazakPalletPositionRow>(),
         LoadActions = Enumerable.Empty<LoadAction>(),
-        MainPrograms = (new[] {
-          "1001", "1002", "1003", "1004", "1005"
-        }).Select(p => new MazakProgramRow() { MainProgram = p, Comment = "" }),
+        MainPrograms =
+          Enumerable.Append(
+            (new[] { "1001", "1002", "1003", "1004", "1005" }).Select(p => new MazakProgramRow() { MainProgram = p, Comment = "" }),
+            new MazakProgramRow()
+            {
+              MainProgram = System.IO.Path.Combine("theprogdir", "prog-bbb-1_rev3.EIA"),
+              Comment = "Insight:3:prog-bbb-1"
+            }
+          )
       });
       _readMock.LoadSchedulesPartsPallets().Returns(x => new MazakSchedulesPartsPallets()
       {
@@ -216,6 +222,7 @@ namespace MachineWatchTest
       _settings.Queues["queueBBB"] = new QueueSize();
       _settings.Queues["queueCCC"] = new QueueSize();
 
+
       _writeJobs = new WriteJobs(
         _writeMock,
         _readMock,
@@ -225,7 +232,7 @@ namespace MachineWatchTest
         _settings,
         check: false,
         useStarting: true,
-        progDir: "C:\\NCProgs");
+        progDir: "theprogdir");
 
       jsonSettings = new JsonSerializerSettings();
       jsonSettings.Converters.Add(new BlackMaple.MachineFramework.TimespanConverter());
@@ -317,6 +324,44 @@ namespace MachineWatchTest
       ShouldMatchSnapshot(_writeMock.Fixtures, "path-groups-fixtures.json");
       ShouldMatchSnapshot(_writeMock.AddParts, "path-groups-parts.json");
       ShouldMatchSnapshot(_writeMock.AddSchedules, "path-groups-schedules.json");
+    }
+
+    [Fact]
+    public void CreatesPrograms()
+    {
+      //aaa-1  has prog prog-aaa-1 rev null
+      //aaa-2 has prog prog-aaa-2 rev 4
+      //bbb-1 has prog prog-bbb-1 rev 3
+      //bbb-2 has prog prog-bbb-2 rev null
+
+      //ccc is same as aaa
+
+      var newJobs = JsonConvert.DeserializeObject<NewJobs>(
+        File.ReadAllText(
+          Path.Combine("..", "..", "..", "sample-newjobs", "managed-progs.json")),
+        jsonSettings
+      );
+
+      _jobDB.AddPrograms(new[] {
+        new ProgramEntry() {
+          ProgramName = "prog-aaa-1",
+          Revision = 7,
+          ProgramContent = "prog-aaa-1 content rev 7"
+        },
+        new ProgramEntry() {
+          ProgramName = "prog-bbb-1",
+          Revision = 3,
+          ProgramContent = "prog-bbb-1 content rev 3"
+        }
+      }, newJobs.Jobs.First().RouteStartingTimeUTC);
+
+      _writeJobs.AddJobs(newJobs, null);
+
+      ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
+      ShouldMatchSnapshot(_writeMock.DeletePartsPals, "fixtures-queues-delparts.json");
+      ShouldMatchSnapshot(_writeMock.Fixtures, "managed-progs-fixtures.json");
+      ShouldMatchSnapshot(_writeMock.AddParts, "managed-progs-parts.json");
+      ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
     }
 
     [Fact]

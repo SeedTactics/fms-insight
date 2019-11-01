@@ -38,6 +38,7 @@ using System.Data;
 using System.Linq;
 using MazakMachineInterface;
 using Xunit;
+using NSubstitute;
 using FluentAssertions;
 
 namespace MachineWatchTest
@@ -1034,6 +1035,141 @@ namespace MachineWatchTest
       );
     }
 
+    [Fact]
+    public void CreatesPrograms()
+    {
+      var job1 = new JobPlan("Job1", 4);
+      job1.PartName = "Part1";
+      job1.AddProcessOnPallet(1, 1, "4");
+      job1.AddProcessOnPallet(2, 1, "10");
+      job1.AddProcessOnPallet(3, 1, "10");
+      job1.AddProcessOnPallet(4, 1, "3");
+
+      AddBasicStopsWithProg(job1);
+      job1.GetMachiningStop(1, 1).First().ProgramName = "aaa";
+      job1.GetMachiningStop(1, 1).First().ProgramRevision = null;
+      job1.GetMachiningStop(2, 1).First().ProgramName = "bbb";
+      job1.GetMachiningStop(2, 1).First().ProgramRevision = 7;
+      job1.GetMachiningStop(3, 1).First().ProgramName = "ccc";
+      job1.GetMachiningStop(3, 1).First().ProgramRevision = 9;
+      job1.GetMachiningStop(4, 1).First().ProgramName = "aaa"; // repeat program to check if only adds once
+      job1.GetMachiningStop(4, 1).First().ProgramRevision = null;
+
+      var log = new List<string>();
+      var dset = new MazakTestData();
+
+      CreateProgram(dset, System.IO.Path.Combine("theprogdir", "ccc_rev9.EIA"), "Insight:9:ccc");
+
+      var lookupProgram = Substitute.For<Func<string, long?, JobDB.ProgramRevision>>();
+      lookupProgram("aaa", null).Returns(new JobDB.ProgramRevision()
+      {
+        ProgramName = "aaa",
+        Revision = 3,
+      });
+      lookupProgram("bbb", 7).Returns(new JobDB.ProgramRevision()
+      {
+        ProgramName = "bbb",
+        Revision = 7,
+      });
+      lookupProgram("ccc", 9).Returns(new JobDB.ProgramRevision()
+      {
+        ProgramName = "ccc",
+        Revision = 9
+      });
+
+      var pMap = ConvertJobsToMazakParts.JobsToMazak(
+        new JobPlan[] { job1 },
+        3,
+        dset,
+        new HashSet<string>(),
+        MazakDbType.MazakSmooth,
+        checkPalletsUsedOnce: false,
+        fmsSettings: new FMSSettings(),
+        lookupProgram: lookupProgram,
+        errors: log
+      );
+      if (log.Count > 0) Assert.True(false, log[0]);
+
+      var getProgramCt = Substitute.For<Func<string, long, string>>();
+      getProgramCt("aaa", 3).Returns("aaa 3 ct");
+      getProgramCt("bbb", 7).Returns("bbb 7 ct");
+
+      var progTrans = pMap.CreateDeleteFixtureAndProgramDatabaseRows(getProgramCt, "theprogdir");
+      progTrans.Programs.Should().BeEquivalentTo(new[] {
+        new NewMazakProgram() {
+          Command = MazakWriteCommand.Add,
+          MainProgram = System.IO.Path.Combine("theprogdir", "aaa_rev3.EIA"),
+          Comment = "Insight:3:aaa",
+          ProgramName = "aaa",
+          ProgramRevision = 3,
+          ProgramContent = "aaa 3 ct"
+        },
+        new NewMazakProgram() {
+          Command = MazakWriteCommand.Add,
+          MainProgram = System.IO.Path.Combine("theprogdir", "bbb_rev7.EIA"),
+          Comment = "Insight:7:bbb",
+          ProgramName = "bbb",
+          ProgramRevision = 7,
+          ProgramContent = "bbb 7 ct"
+        }
+        // ccc rev9 already exists, should not be added
+      });
+
+      var trans = pMap.CreatePartPalletDatabaseRows();
+
+      trans.Parts.First().Processes.Select(p => (proc: p.ProcessNumber, prog: p.MainProgram)).Should().BeEquivalentTo(new[] {
+        (1, System.IO.Path.Combine("theprogdir", "aaa_rev3.EIA")),
+        (2, System.IO.Path.Combine("theprogdir", "bbb_rev7.EIA")),
+        (3, System.IO.Path.Combine("theprogdir", "ccc_rev9.EIA")),
+        (4, System.IO.Path.Combine("theprogdir", "aaa_rev3.EIA")),
+      });
+    }
+
+    [Fact]
+    public void ErrorsOnMissingManagedProgram()
+    {
+      var job1 = new JobPlan("Job1", 2);
+      job1.PartName = "Part1";
+      job1.AddProcessOnPallet(1, 1, "4");
+      job1.AddProcessOnPallet(2, 1, "10");
+
+      AddBasicStopsWithProg(job1);
+      job1.GetMachiningStop(1, 1).First().ProgramName = "aaa";
+      job1.GetMachiningStop(1, 1).First().ProgramRevision = null;
+      job1.GetMachiningStop(2, 1).First().ProgramName = "bbb";
+      job1.GetMachiningStop(2, 1).First().ProgramRevision = 7;
+
+      var log = new List<string>();
+      var dset = new MazakTestData();
+
+      // create bbb with older revision
+      CreateProgram(dset, System.IO.Path.Combine("theprogdir", "bbb_rev6.EIA"), "Insight:6:bbb");
+
+      var lookupProgram = Substitute.For<Func<string, long?, JobDB.ProgramRevision>>();
+      lookupProgram("aaa", null).Returns(new JobDB.ProgramRevision()
+      {
+        ProgramName = "aaa",
+        Revision = 3,
+      });
+      lookupProgram("bbb", 7).Returns((JobDB.ProgramRevision)null);
+
+      var pMap = ConvertJobsToMazakParts.JobsToMazak(
+        new JobPlan[] { job1 },
+        3,
+        dset,
+        new HashSet<string>(),
+        MazakDbType.MazakSmooth,
+        checkPalletsUsedOnce: false,
+        fmsSettings: new FMSSettings(),
+        lookupProgram: lookupProgram,
+        errors: log
+      );
+
+      log.Should().BeEquivalentTo(new[] {
+        "Part Part1 program bbb rev7 does not exist in the cell controller.",
+      });
+    }
+
     #region Checking
     private class MazakTestData : MazakAllData
     {
@@ -1089,9 +1225,9 @@ namespace MachineWatchTest
       }
     }
 
-    private void CreateProgram(MazakTestData dset, string program)
+    private void CreateProgram(MazakTestData dset, string program, string comment = "")
     {
-      dset.TestPrograms.Add(new MazakProgramRow() { MainProgram = program, Comment = "" });
+      dset.TestPrograms.Add(new MazakProgramRow() { MainProgram = program, Comment = comment });
     }
 
     private void AddBasicStopsWithProg(JobPlan job)
