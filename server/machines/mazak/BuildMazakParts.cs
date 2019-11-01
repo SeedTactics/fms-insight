@@ -474,6 +474,9 @@ namespace MazakMachineInterface
     //will be deleted and fixtures appearing in this list but not yet in Mazak will be added.
     public ISet<string> UsedFixtures { get; set; }
 
+    //main programs used by either existing or new parts
+    public ISet<string> UsedMainProgramComments { get; set; }
+
     public MazakWriteData CreateDeleteFixtureAndProgramDatabaseRows(Func<string, long, string> getProgramContent, string programDir)
     {
       var ret = new MazakWriteData();
@@ -510,6 +513,19 @@ namespace MazakMachineInterface
         newFixRow.Comment = "Insight";
         ret.Fixtures.Add(newFixRow);
       found:;
+      }
+
+      // delete old programs
+      foreach (var prog in OldMazakData.MainPrograms)
+      {
+        if (!MazakProcess.IsInsightMainProgram(prog.Comment)) continue;
+        if (UsedMainProgramComments.Contains(prog.Comment)) continue;
+        ret.Programs.Add(new NewMazakProgram()
+        {
+          Command = MazakWriteCommand.Delete,
+          MainProgram = prog.MainProgram,
+          Comment = prog.Comment
+        });
       }
 
       // add programs
@@ -638,6 +654,7 @@ namespace MazakMachineInterface
       var groups = GroupProcessesIntoFixtures(allParts, checkPalletsUsedOnce, errors);
 
       var usedFixtures = AssignMazakFixtures(groups, downloadUID, mazakData, savedParts, errors);
+      var usedProgs = CalculateUsedPrograms(mazakData, allParts);
 
       return new MazakJobs()
       {
@@ -647,7 +664,8 @@ namespace MazakMachineInterface
         SavedParts = savedParts,
         AllParts = allParts,
         Fixtures = groups,
-        UsedFixtures = usedFixtures
+        UsedFixtures = usedFixtures,
+        UsedMainProgramComments = usedProgs
       };
     }
 
@@ -924,6 +942,39 @@ namespace MazakMachineInterface
       {
         mazak.Processes.Add(new MazakProcessFromTemplate(mazak, pRow, proc1path));
       }
+    }
+
+    private static ISet<string> CalculateUsedPrograms(MazakAllData oldData, IEnumerable<MazakPart> newParts)
+    {
+      var progsToComment =
+        oldData.MainPrograms
+          .Where(p => MazakProcess.IsInsightMainProgram(p.Comment))
+          .ToDictionary(p => p.MainProgram, p => p.Comment);
+
+
+      var used = new HashSet<string>();
+      foreach (var part in oldData.Parts)
+      {
+        foreach (var proc in part.Processes)
+        {
+          if (!string.IsNullOrEmpty(proc.MainProgram) && progsToComment.ContainsKey(proc.MainProgram))
+          {
+            used.Add(progsToComment[proc.MainProgram]);
+          }
+        }
+      }
+      foreach (var part in newParts)
+      {
+        foreach (var proc in part.Processes)
+        {
+          if (!string.IsNullOrEmpty(proc.PartProgram.ProgramName))
+          {
+            used.Add(MazakProcess.CreateMainProgramComment(proc.PartProgram.ProgramName, proc.PartProgram.Revision));
+          }
+        }
+      }
+
+      return used;
     }
     #endregion
 

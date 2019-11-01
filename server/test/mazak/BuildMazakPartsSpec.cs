@@ -1058,7 +1058,11 @@ namespace MachineWatchTest
       var log = new List<string>();
       var dset = new MazakTestData();
 
-      CreateProgram(dset, System.IO.Path.Combine("theprogdir", "ccc_rev9.EIA"), "Insight:9:ccc");
+      CreatePart(dset, "OldJob", "Part1", 1, "fix", System.IO.Path.Combine("theprogdir", "ccc_rev7.EIA"));
+
+      CreateProgram(dset, System.IO.Path.Combine("theprogdir", "ccc_rev7.EIA"), "Insight:7:ccc"); // 7 is used by OldJob part
+      CreateProgram(dset, System.IO.Path.Combine("theprogdir", "ccc_rev8.EIA"), "Insight:8:ccc"); // 8 is not used, should be deleted
+      CreateProgram(dset, System.IO.Path.Combine("theprogdir", "ccc_rev9.EIA"), "Insight:9:ccc"); // 9 is used by new job, should not be deleted
 
       var lookupProgram = Substitute.For<Func<string, long?, JobDB.ProgramRevision>>();
       lookupProgram("aaa", null).Returns(new JobDB.ProgramRevision()
@@ -1111,6 +1115,11 @@ namespace MachineWatchTest
           ProgramName = "bbb",
           ProgramRevision = 7,
           ProgramContent = "bbb 7 ct"
+        },
+        new NewMazakProgram() {
+          Command = MazakWriteCommand.Delete,
+          MainProgram = System.IO.Path.Combine("theprogdir", "ccc_rev8.EIA"),
+          Comment = "Insight:8:ccc"
         }
         // ccc rev9 already exists, should not be added
       });
@@ -1196,7 +1205,7 @@ namespace MachineWatchTest
       return dset;
     }
 
-    private void CreatePart(MazakTestData dset, string unique, string name, int numProc, string fix)
+    private void CreatePart(MazakTestData dset, string unique, string name, int numProc, string fix, string program = null)
     {
       var pRow = new MazakPartRow() { Comment = "comment", PartName = name };
       dset.TestParts.Add(pRow);
@@ -1208,6 +1217,7 @@ namespace MachineWatchTest
           ProcessNumber = proc,
           Fixture = fix + ":" + proc.ToString(),
           PartName = name,
+          MainProgram = program
         });
       }
     }
