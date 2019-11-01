@@ -278,6 +278,18 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       return this;
     }
+
+    public FakeIccDsl SetIccProgram(int iccProg, string comment)
+    {
+      _status.Programs[iccProg] = new ProgramEntry()
+      {
+        ProgramNum = iccProg,
+        Comment = comment,
+        CycleTime = TimeSpan.Zero,
+        Tools = new List<int>()
+      };
+      return this;
+    }
     #endregion
 
     #region Material
@@ -971,6 +983,25 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           ProgramNum = progNum,
           ProgramName = name,
           ProgramRevision = rev,
+          IccProgramComment = "Insight:" + rev.ToString() + ":" + name
+        }
+      };
+    }
+
+    private class ExpectedDeleteProgram : ExpectedChange
+    {
+      public DeleteProgram Expected { get; set; }
+    }
+
+    public static ExpectedChange ExpectDeleteProgram(int progNum, string name, long rev)
+    {
+      return new ExpectedDeleteProgram()
+      {
+        Expected = new DeleteProgram()
+        {
+          ProgramNum = progNum,
+          ProgramName = name,
+          ProgramRevision = rev,
         }
       };
     }
@@ -996,7 +1027,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           _status.Programs[expectAdd.Expected.ProgramNum] = new ProgramEntry()
           {
             ProgramNum = expectAdd.Expected.ProgramNum,
-            Comment = "Comment " + expectAdd.Expected.ProgramName + " rev" + expectAdd.Expected.ProgramRevision.ToString(),
+            Comment = expectAdd.Expected.IccProgramComment,
             CycleTime = TimeSpan.FromMinutes(expectAdd.Expected.ProgramRevision),
             Tools = new List<int>()
           };
@@ -1009,6 +1040,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
         var expectedNewRoute = (ExpectNewRouteChange)expectedChanges.FirstOrDefault(e => e is ExpectNewRouteChange);
         var expectIncr = (ExpectRouteIncrementChange)expectedChanges.FirstOrDefault(e => e is ExpectRouteIncrementChange);
+        var expectDelete = (ExpectedDeleteProgram)expectedChanges.FirstOrDefault(e => e is ExpectedDeleteProgram);
 
         if (expectedNewRoute != null)
         {
@@ -1062,6 +1094,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           {
             _expectedFaces[pal] = expectIncr.Faces.ToList();
           }
+        }
+        else if (expectDelete != null)
+        {
+          var action = _assign.NewPalletChange(cellSt);
+          action.Should().BeEquivalentTo<DeleteProgram>(expectDelete.Expected);
+          _status.Programs.Remove(expectDelete.Expected.ProgramNum);
         }
         else
         {

@@ -100,7 +100,8 @@ namespace BlackMaple.FMSInsight.Niigata
         }
       }
 
-      return null;
+      // delete old programs
+      return CheckForOldPrograms(cellSt);
     }
 
     #region Calculate Paths
@@ -406,15 +407,78 @@ namespace BlackMaple.FMSInsight.Niigata
     #endregion
 
     #region Programs
+    public static string CreateProgramComment(string program, long revision)
+    {
+      return "Insight:" + revision.ToString() + ":" + program;
+    }
+    public static bool IsInsightProgram(ProgramEntry prog)
+    {
+      return prog.Comment.StartsWith("Insight:");
+    }
+    public static bool TryParseProgramComment(ProgramEntry prog, out string program, out long rev)
+    {
+      var comment = prog.Comment;
+      if (comment.StartsWith("Insight:"))
+      {
+        comment = comment.Substring(8);
+        var idx = comment.IndexOf(':');
+        if (idx > 0)
+        {
+          if (long.TryParse(comment.Substring(0, idx), out rev))
+          {
+            program = comment.Substring(idx + 1);
+            return true;
+          }
+        }
+      }
+
+      program = null;
+      rev = 0;
+      return false;
+    }
+
     private NewProgram AddProgram(IReadOnlyDictionary<int, ProgramEntry> existing, MachineFramework.JobDB.ProgramRevision prog)
     {
       int progNum = Enumerable.Range(1000, 9999 - 1000).FirstOrDefault(p => !existing.ContainsKey(p));
       return new NewProgram()
       {
         ProgramNum = progNum,
+        IccProgramComment = CreateProgramComment(prog.ProgramName, prog.Revision),
         ProgramName = prog.ProgramName,
         ProgramRevision = prog.Revision,
       };
+    }
+
+    private DeleteProgram CheckForOldPrograms(CellState cellSt)
+    {
+      // the icc program numbers currently used by schedules
+      var usedIccProgs = new HashSet<string>(cellSt.ProgramNums.Values.Select(p => p.CellControllerProgramName));
+
+      // we want to keep around the latest revision for each program just so that we don't delete it as soon as a schedule
+      // completes in anticipation of a new schedule being downloaded.
+      var maxRevForProg =
+        cellSt.Status.Programs
+          .Select(p => TryParseProgramComment(p.Value, out string pName, out long rev) ? new { pName, rev } : null)
+          .Where(p => p != null)
+          .ToLookup(p => p.pName, p => p.rev)
+          .ToDictionary(ps => ps.Key, ps => ps.Max());
+
+      foreach (var prog in cellSt.Status.Programs)
+      {
+        if (!IsInsightProgram(prog.Value)) continue;
+        if (usedIccProgs.Contains(prog.Key.ToString())) continue;
+        if (!TryParseProgramComment(prog.Value, out string pName, out long rev)) continue;
+        if (rev >= maxRevForProg[pName]) continue;
+
+        return new DeleteProgram()
+        {
+          ProgramNum = prog.Key,
+          ProgramName = pName,
+          ProgramRevision = rev
+        };
+      }
+
+      return null;
     }
     #endregion
   }

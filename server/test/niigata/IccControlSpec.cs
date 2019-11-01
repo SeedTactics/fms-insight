@@ -1573,6 +1573,67 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     }
 
+    [Fact]
+    public void DeletePrograms()
+    {
+      _dsl
+        .AddJobs(new[] {
+          FakeIccDsl.CreateMultiProcSamePalletJob(
+            unique: "uniq1",
+            part: "part1",
+            qty: 3,
+            priority: 5,
+            partsPerPal: 1,
+            pals: new[] { 1 },
+            luls: new[] { 3, 4 },
+            machs: new[] { 5, 6 },
+            prog1: "prog111",
+            prog1Rev: null,
+            prog2: "prog222",
+            prog2Rev: 6L,
+            loadMins1: 8,
+            unloadMins1: 9,
+            machMins1: 14,
+            loadMins2: 10,
+            unloadMins2: 11,
+            machMins2: 15,
+            fixture: "fix1",
+            face1: 1,
+            face2: 2
+          )},
+          new[] {
+            (prog: "prog111", rev: 4L),
+            (prog: "prog111", rev: 5L),
+            (prog: "prog222", rev: 6L),
+            (prog: "prog222", rev: 7L),
+          }
+        )
+
+        // process 1 only cycle
+        .SetExpectedLoadCastings(new[] {
+              (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1),
+         })
+        .IncrJobStartedCnt("uniq1")
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectAddNewProgram(progNum: 1000, name: "prog111", rev: 5),
+          FakeIccDsl.ExpectAddNewProgram(progNum: 1001, name: "prog222", rev: 6),
+          FakeIccDsl.ExpectNewRoute(
+            pal: 1,
+            luls: new[] { 3, 4 },
+            machs: new[] { 5, 6 },
+            progs: new[] { 1000 },
+            faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) }
+          )
+        })
+        .SetIccProgram(4000, "non-insight")
+        .SetIccProgram(4001, "Insight:4:prog111") // has newer revision 5, should be deleted
+        .SetIccProgram(4002, "Insight:7:prog222") // shouldn't be deleted since latest revision, even though not used
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectDeleteProgram(4001, "prog111", 4)
+        })
+        ;
+    }
+
     [Fact(Skip = "Pending")]
     public void JobPriority()
     {

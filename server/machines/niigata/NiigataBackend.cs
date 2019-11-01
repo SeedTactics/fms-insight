@@ -62,7 +62,13 @@ namespace BlackMaple.FMSInsight.Niigata
           System.IO.Path.Combine(cfg.DataDirectory, "jobs.db")
         );
 
-        NiigataICC = new NiigataICC();
+        var programDir = config.GetValue<string>("Program Directory");
+        if (!System.IO.Directory.Exists(programDir))
+        {
+          Log.Error("Program directory {dir} does not exist", programDir);
+        }
+
+        NiigataICC = new NiigataICC(_jobs, programDir);
         var recordFaces = new RecordFacesForPallet(_log);
         var createLog = new CreateCellState(_log, _jobs, recordFaces, cfg);
         var assign = new AssignPallets(recordFaces);

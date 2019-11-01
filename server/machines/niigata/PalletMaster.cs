@@ -252,10 +252,17 @@ namespace BlackMaple.FMSInsight.Niigata
   public class NewProgram : NiigataAction
   {
     public int ProgramNum { get; set; } // num sent into cell controller
+    public string IccProgramComment { get; set; } // comment in the cell controller
     public string ProgramName { get; set; } // name inside Insight Job database
     public long ProgramRevision { get; set; } // revision inside Insight Job Database
   }
 
+  public class DeleteProgram : NiigataAction
+  {
+    public int ProgramNum { get; set; }
+    public string ProgramName { get; set; } // name inside Insight Job database
+    public long ProgramRevision { get; set; } // revision inside Insight Job Database
+  }
 
   public interface INiigataCommunication
   {
