@@ -247,7 +247,7 @@ namespace MachineWatchTest
       _jobDB.Close();
     }
 
-    private void ShouldMatchSnapshot<T>(T val, string snapshot)
+    private void ShouldMatchSnapshot<T>(T val, string snapshot, Action<T> adjust = null)
     {
       /*
       File.WriteAllText(
@@ -261,7 +261,32 @@ namespace MachineWatchTest
           jsonSettings
       );
 
+      if (adjust != null)
+        adjust(expected);
+
       val.Should().BeEquivalentTo(expected);
+    }
+
+    private static void AdjustProgramPath(MazakWriteData w)
+    {
+      // snapshots contain forward slash since they were made on linux
+      if (System.IO.Path.DirectorySeparatorChar == '/') return;
+
+      foreach (var part in w.Parts)
+      {
+        foreach (var proc in part.Processes)
+        {
+          if (!proc.MainProgram.Contains('/')) continue;
+          var path = proc.MainProgram.Split('/');
+          proc.MainProgram = System.IO.Path.Combine(path);
+        }
+      }
+      foreach (var prog in w.Programs)
+      {
+        if (!prog.MainProgram.Contains('/')) continue;
+        var path = prog.MainProgram.Split('/');
+        prog.MainProgram = System.IO.Path.Combine(path);
+      }
     }
 
     [Fact]
@@ -300,7 +325,7 @@ namespace MachineWatchTest
 
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
       ShouldMatchSnapshot(_writeMock.DeletePartsPals, "fixtures-queues-delparts.json");
-      ShouldMatchSnapshot(_writeMock.Fixtures, "fixtures-queues-fixtures.json");
+      ShouldMatchSnapshot(_writeMock.Fixtures, "fixtures-queues-fixtures.json", AdjustProgramPath);
       ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
       ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
 
@@ -321,7 +346,7 @@ namespace MachineWatchTest
 
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "path-groups-updatesch.json");
       ShouldMatchSnapshot(_writeMock.DeletePartsPals, "path-groups-delparts.json");
-      ShouldMatchSnapshot(_writeMock.Fixtures, "path-groups-fixtures.json");
+      ShouldMatchSnapshot(_writeMock.Fixtures, "path-groups-fixtures.json", AdjustProgramPath);
       ShouldMatchSnapshot(_writeMock.AddParts, "path-groups-parts.json");
       ShouldMatchSnapshot(_writeMock.AddSchedules, "path-groups-schedules.json");
     }
@@ -359,8 +384,8 @@ namespace MachineWatchTest
 
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
       ShouldMatchSnapshot(_writeMock.DeletePartsPals, "fixtures-queues-delparts.json");
-      ShouldMatchSnapshot(_writeMock.Fixtures, "managed-progs-fixtures.json");
-      ShouldMatchSnapshot(_writeMock.AddParts, "managed-progs-parts.json");
+      ShouldMatchSnapshot(_writeMock.Fixtures, "managed-progs-fixtures.json", AdjustProgramPath);
+      ShouldMatchSnapshot(_writeMock.AddParts, "managed-progs-parts.json", AdjustProgramPath);
       ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
     }
 
@@ -381,7 +406,7 @@ namespace MachineWatchTest
 
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
       ShouldMatchSnapshot(_writeMock.DeletePartsPals, "fixtures-queues-delparts.json");
-      ShouldMatchSnapshot(_writeMock.Fixtures, "fixtures-queues-fixtures.json");
+      ShouldMatchSnapshot(_writeMock.Fixtures, "fixtures-queues-fixtures.json", AdjustProgramPath);
       ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
       _writeMock.AddSchedules.Should().BeNull();
 
@@ -406,7 +431,7 @@ namespace MachineWatchTest
 
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
       ShouldMatchSnapshot(_writeMock.DeletePartsPals, "fixtures-queues-delparts.json");
-      ShouldMatchSnapshot(_writeMock.Fixtures, "fixtures-queues-fixtures.json");
+      ShouldMatchSnapshot(_writeMock.Fixtures, "fixtures-queues-fixtures.json", AdjustProgramPath);
       ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
       ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
 
