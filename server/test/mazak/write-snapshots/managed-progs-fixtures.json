@@ -52,6 +52,11 @@
       "ProgramContent": "prog-aaa-2 content rev 4"
     },
     {
+      "Command": "Delete",
+      "MainProgram": "theprogdir/prog-bbb-1_rev2.EIA",
+      "Comment": "Insight:2:prog-bbb-1"
+    },
+    {
       "ProgramName": "prog-bbb-2",
       "ProgramRevision": 5,
       "MainProgram": "theprogdir/prog-bbb-2_rev5.EIA",
