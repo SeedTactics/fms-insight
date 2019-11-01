@@ -1374,6 +1374,15 @@ namespace BlackMaple.MachineFramework
                             throw new BadRequestException(string.Format("Mismatch in previous schedule: expected '{0}' but got '{1}'", expectedPreviousScheduleId, last));
                         }
                     }
+
+                    // add programs first so that the lookup of latest program revision will use newest programs
+                    var startingUtc = DateTime.UtcNow;
+                    if (newJobs.Jobs.Any()) {
+                      startingUtc = newJobs.Jobs[0].RouteStartingTimeUTC;
+                    }
+
+                    AddPrograms(trans, newJobs.Programs, startingUtc);
+
                     foreach (var job in newJobs.Jobs)
                     {
                         AddJob(trans, job);
@@ -1403,12 +1412,6 @@ namespace BlackMaple.MachineFramework
                         }
                     }
 
-                    var startingUtc = DateTime.UtcNow;
-                    if (newJobs.Jobs.Any()) {
-                      startingUtc = newJobs.Jobs[0].RouteStartingTimeUTC;
-                    }
-                    AddPrograms(trans, newJobs.Programs, startingUtc);
-
                     trans.Commit();
                 }
                 catch
@@ -1422,6 +1425,25 @@ namespace BlackMaple.MachineFramework
                 OnNewJobs(newJobs);
             }
         }
+
+        public void AddPrograms(IEnumerable<MachineWatchInterface.ProgramEntry> programs, DateTime startingUtc)
+        {
+            lock (_lock)
+            {
+                var trans = _connection.BeginTransaction();
+                try
+                {
+                    AddPrograms(trans, programs, startingUtc);
+                    trans.Commit();
+                }
+                catch
+                {
+                    trans.Rollback();
+                    throw;
+                }
+            }
+        }
+
         private void AddJob(IDbTransaction trans, MachineWatchInterface.JobPlan job)
         {
             using (var cmd = _connection.CreateCommand()) {
@@ -1597,15 +1619,21 @@ namespace BlackMaple.MachineFramework
                     int routeNum = 0;
                     foreach (var entry in job.GetMachiningStop(i, j))
                     {
-                        cmd.Parameters[1].Value = i;
-                        cmd.Parameters[2].Value = j;
-                        cmd.Parameters[3].Value = routeNum;
-                        cmd.Parameters[4].Value = entry.StationGroup;
-                        cmd.Parameters[5].Value = entry.ExpectedCycleTime.Ticks;
-                        cmd.Parameters[6].Value = string.IsNullOrEmpty(entry.ProgramName) ? DBNull.Value : (object)entry.ProgramName;
-                        cmd.Parameters[7].Value = entry.ProgramRevision.HasValue ? (object)entry.ProgramRevision.Value : DBNull.Value;
-                        cmd.ExecuteNonQuery();
-                        routeNum += 1;
+                      long? rev = null;
+                      if (entry.ProgramRevision.HasValue) {
+                        rev = entry.ProgramRevision;
+                      } else if (!string.IsNullOrEmpty(entry.ProgramName)) {
+                        rev = LatestRevisionForProgram(trans, entry.ProgramName);
+                      }
+                      cmd.Parameters[1].Value = i;
+                      cmd.Parameters[2].Value = j;
+                      cmd.Parameters[3].Value = routeNum;
+                      cmd.Parameters[4].Value = entry.StationGroup;
+                      cmd.Parameters[5].Value = entry.ExpectedCycleTime.Ticks;
+                      cmd.Parameters[6].Value = string.IsNullOrEmpty(entry.ProgramName) ? DBNull.Value : (object)entry.ProgramName;
+                      cmd.Parameters[7].Value = rev != null ? (object)rev : DBNull.Value;
+                      cmd.ExecuteNonQuery();
+                      routeNum += 1;
                     }
                 }
             }
@@ -2117,6 +2145,7 @@ namespace BlackMaple.MachineFramework
           if (programs == null || !programs.Any()) return;
 
           using (var checkCmd = _connection.CreateCommand())
+          using (var checkMaxCmd = _connection.CreateCommand())
           using (var haveRevCmd = _connection.CreateCommand())
           using (var needRevCmd = _connection.CreateCommand())
           {
@@ -2124,6 +2153,10 @@ namespace BlackMaple.MachineFramework
             checkCmd.CommandText = "SELECT ProgramContent FROM program_revisions WHERE ProgramName = $name AND ProgramRevision = $rev";
             checkCmd.Parameters.Add("name", SqliteType.Text);
             checkCmd.Parameters.Add("rev", SqliteType.Integer);
+
+            ((IDbCommand)checkMaxCmd).Transaction = transaction;
+            checkMaxCmd.CommandText = "SELECT ProgramContent FROM program_revisions WHERE ProgramName = $prog ORDER BY ProgramRevision DESC LIMIT 1";
+            checkMaxCmd.Parameters.Add("prog", SqliteType.Text);
 
             ((IDbCommand)haveRevCmd).Transaction = transaction;
             haveRevCmd.CommandText = "INSERT INTO program_revisions(ProgramName, ProgramRevision, RevisionTimeUTC, RevisionComment, ProgramContent) " +
@@ -2163,6 +2196,13 @@ namespace BlackMaple.MachineFramework
                   haveRevCmd.ExecuteNonQuery();
                 }
               } else {
+                checkMaxCmd.Parameters[0].Value = prog.ProgramName;
+                var content = checkMaxCmd.ExecuteScalar();
+                if (content != null && content != DBNull.Value) {
+                  if ((string)content == prog.ProgramContent) {
+                    continue;
+                  }
+                }
                 needRevCmd.Parameters[0].Value = prog.ProgramName;
                 needRevCmd.Parameters[1].Value = prog.ProgramName;
                 needRevCmd.Parameters[3].Value = string.IsNullOrEmpty(prog.Comment) ? DBNull.Value : (object)prog.Comment;
@@ -2173,12 +2213,27 @@ namespace BlackMaple.MachineFramework
           }
         }
 
+        private long? LatestRevisionForProgram(IDbTransaction trans, string program)
+        {
+          using (var cmd = _connection.CreateCommand())
+          {
+            ((IDbCommand)cmd).Transaction = trans;
+            cmd.CommandText = "SELECT MAX(ProgramRevision) FROM program_revisions WHERE ProgramName = $prog";
+            cmd.Parameters.Add("prog", SqliteType.Text).Value = program;
+            var rev = cmd.ExecuteScalar();
+            if (rev == null || rev == DBNull.Value) {
+              return null;
+            } else {
+              return (long)rev;
+            }
+          }
+        }
+
         public class ProgramRevision
         {
           public string ProgramName { get; set; }
           public long Revision { get; set; }
           public string Comment { get; set; }
-          public string ProgramContent { get; set; }
           public string CellControllerProgramName { get; set; }
         }
 
@@ -2190,7 +2245,7 @@ namespace BlackMaple.MachineFramework
               ProgramRevision prog = null;
               using (var cmd = _connection.CreateCommand()) {
                 cmd.Transaction = trans;
-                cmd.CommandText = "SELECT ProgramName, ProgramRevision, RevisionComment, ProgramContent FROM program_revisions WHERE CellControllerProgramName = $prog LIMIT 1";
+                cmd.CommandText = "SELECT ProgramName, ProgramRevision, RevisionComment FROM program_revisions WHERE CellControllerProgramName = $prog LIMIT 1";
                 cmd.Parameters.Add("prog", SqliteType.Text).Value = cellCtProgName;
                 using (var reader = cmd.ExecuteReader()) {
                   while (reader.Read()) {
@@ -2198,7 +2253,6 @@ namespace BlackMaple.MachineFramework
                       ProgramName = reader.GetString(0),
                       Revision = reader.GetInt64(1),
                       Comment = reader.IsDBNull(2) ? null : reader.GetString(2),
-                      ProgramContent = reader.IsDBNull(3) ? null : reader.GetString(3),
                       CellControllerProgramName = cellCtProgName
                     };
                     break;
@@ -2222,17 +2276,16 @@ namespace BlackMaple.MachineFramework
               ProgramRevision prog = null;
               using (var cmd = _connection.CreateCommand()) {
                 cmd.Transaction = trans;
-                cmd.CommandText = "SELECT RevisionComment, ProgramContent, CellControllerProgramName FROM program_revisions WHERE ProgramName = $prog AND ProgramRevision = $rev";
+                cmd.CommandText = "SELECT RevisionComment, CellControllerProgramName FROM program_revisions WHERE ProgramName = $prog AND ProgramRevision = $rev";
                 cmd.Parameters.Add("prog", SqliteType.Text).Value = program;
-                cmd.Parameters.Add("rev", SqliteType.Text).Value = revision;
+                cmd.Parameters.Add("rev", SqliteType.Integer).Value = revision;
                 using (var reader = cmd.ExecuteReader()) {
                   while (reader.Read()) {
                     prog = new ProgramRevision {
                       ProgramName = program,
                       Revision = revision,
                       Comment = reader.IsDBNull(0) ? null : reader.GetString(0),
-                      ProgramContent = reader.IsDBNull(1) ? null : reader.GetString(1),
-                      CellControllerProgramName = reader.IsDBNull(2) ? null : reader.GetString(2)
+                      CellControllerProgramName = reader.IsDBNull(1) ? null : reader.GetString(1)
                     };
                     break;
                   }
@@ -2255,7 +2308,7 @@ namespace BlackMaple.MachineFramework
               ProgramRevision prog = null;
               using (var cmd = _connection.CreateCommand()) {
                 cmd.Transaction = trans;
-                cmd.CommandText = "SELECT ProgramRevision, RevisionComment, ProgramContent, CellControllerProgramName FROM program_revisions WHERE ProgramName = $prog ORDER BY ProgramRevision DESC LIMIT 1";
+                cmd.CommandText = "SELECT ProgramRevision, RevisionComment, CellControllerProgramName FROM program_revisions WHERE ProgramName = $prog ORDER BY ProgramRevision DESC LIMIT 1";
                 cmd.Parameters.Add("prog", SqliteType.Text).Value = program;
                 using (var reader = cmd.ExecuteReader()) {
                   while (reader.Read()) {
@@ -2263,8 +2316,7 @@ namespace BlackMaple.MachineFramework
                       ProgramName = program,
                       Revision = reader.GetInt64(0),
                       Comment = reader.IsDBNull(1) ? null : reader.GetString(1),
-                      ProgramContent = reader.IsDBNull(2) ? null : reader.GetString(2),
-                      CellControllerProgramName = reader.IsDBNull(3) ? null : reader.GetString(3)
+                      CellControllerProgramName = reader.IsDBNull(2) ? null : reader.GetString(2)
                     };
                     break;
                   }
@@ -2272,6 +2324,35 @@ namespace BlackMaple.MachineFramework
               }
               trans.Commit();
               return prog;
+            } catch {
+              trans.Rollback();
+              throw;
+            }
+          }
+        }
+
+        public string LoadProgramContent(string program, long revision)
+        {
+          lock (_lock) {
+            var trans = _connection.BeginTransaction();
+            try {
+              string content = null;
+              using (var cmd = _connection.CreateCommand()) {
+                cmd.Transaction = trans;
+                cmd.CommandText = "SELECT ProgramContent FROM program_revisions WHERE ProgramName = $prog AND ProgramRevision = $rev";
+                cmd.Parameters.Add("prog", SqliteType.Text).Value = program;
+                cmd.Parameters.Add("rev", SqliteType.Integer).Value = revision;
+                using (var reader = cmd.ExecuteReader()) {
+                  while (reader.Read()) {
+                    if (!reader.IsDBNull(0)) {
+                      content = reader.GetString(0);
+                    }
+                    break;
+                  }
+                }
+              }
+              trans.Commit();
+              return content;
             } catch {
               trans.Rollback();
               throw;

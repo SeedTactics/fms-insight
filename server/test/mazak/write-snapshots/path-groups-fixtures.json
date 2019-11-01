@@ -48,5 +48,12 @@
       "Comment": "Insight",
       "Command": "Add"
     }
+  ],
+  "Programs": [
+    {
+      "Command": "Delete",
+      "MainProgram": "theprogdir/prog-bbb-1_rev3.EIA",
+      "Comment": "Insight:3:prog-bbb-1"
+    }
   ]
 }

@@ -61,6 +61,7 @@ namespace MazakMachineInterface
     public MazakDbType MazakType;
     public bool UseStartingOffsetForDueDate;
     public bool CheckPalletsUsedOnce;
+    public string ProgramDirectory { get; set; }
 
     public IWriteData WriteDB
     {
@@ -158,6 +159,11 @@ namespace MazakMachineInterface
       //which causes pallet positions to go empty.
       CheckPalletsUsedOnce = !UseStartingOffsetForDueDate;
 
+      ProgramDirectory = cfg.GetValue<string>("Program Directory");
+      if (string.IsNullOrEmpty(ProgramDirectory))
+      {
+        ProgramDirectory = "C:\\NCProgs";
+      }
 
       // serial settings
       string serialPerMaterial = cfg.GetValue<string>("Assign Serial Per Material");
@@ -219,7 +225,7 @@ namespace MazakMachineInterface
       }
 
       hold = new HoldPattern(_writeDB, _readDB, jobDB, true);
-      var writeJobs = new WriteJobs(_writeDB, _readDB, hold, jobDB, jobLog, st, CheckPalletsUsedOnce, UseStartingOffsetForDueDate);
+      var writeJobs = new WriteJobs(_writeDB, _readDB, hold, jobDB, jobLog, st, CheckPalletsUsedOnce, UseStartingOffsetForDueDate, ProgramDirectory);
       var decr = new DecrementPlanQty(jobDB, _writeDB, _readDB);
       routing = new RoutingInfo(_writeDB, _readDB, logDataLoader, jobDB, jobLog, writeJobs, queues, decr,
                                 CheckPalletsUsedOnce, st);

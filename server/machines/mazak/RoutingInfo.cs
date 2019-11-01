@@ -136,6 +136,17 @@ namespace MazakMachineInterface
       {
         Log.Debug("Check valid routing info");
 
+        BlackMaple.MachineFramework.JobDB.ProgramRevision lookupProg(string prog, long? rev)
+        {
+          if (rev.HasValue)
+          {
+            return jobDB.LoadProgram(prog, rev.Value);
+          }
+          else
+          {
+            return jobDB.LoadMostRecentProgram(prog);
+          }
+        }
 
         //The reason we create the clsPalletPartMapping is to see if it throws any exceptions.  We therefore
         //need to ignore the warning that palletPartMap is not used.
@@ -148,6 +159,7 @@ namespace MazakMachineInterface
           writeDb.MazakType,
           CheckPalletsUsedOnce,
           fmsSettings,
+          lookupProg,
           logMessages);
 #pragma warning restore 168, 219
 
