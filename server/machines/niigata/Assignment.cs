@@ -275,7 +275,7 @@ namespace BlackMaple.FMSInsight.Niigata
     #endregion
 
     #region Set New Route
-    private NiigataAction SetNewRoute(PalletStatus oldPallet, IReadOnlyList<JobPath> newPaths, DateTime nowUtc, IReadOnlyDictionary<(string progName, long? revision), MachineFramework.JobDB.ProgramRevision> progs)
+    private NiigataAction SetNewRoute(PalletStatus oldPallet, IReadOnlyList<JobPath> newPaths, DateTime nowUtc, IReadOnlyDictionary<(string progName, long revision), MachineFramework.JobDB.ProgramRevision> progs)
     {
       var newMaster = NewPalletMaster(oldPallet.Master.PalletNum, newPaths, progs);
       if (SimpleQuantityChange(oldPallet.Master, newMaster))
@@ -317,7 +317,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     }
 
-    private PalletMaster NewPalletMaster(int pallet, IReadOnlyList<JobPath> newPaths, IReadOnlyDictionary<(string progNum, long? revision), MachineFramework.JobDB.ProgramRevision> progs)
+    private PalletMaster NewPalletMaster(int pallet, IReadOnlyList<JobPath> newPaths, IReadOnlyDictionary<(string progNum, long revision), MachineFramework.JobDB.ProgramRevision> progs)
     {
       var orderedPaths = newPaths.OrderBy(p => p.Job.UniqueStr).ThenBy(p => p.Process).ThenBy(p => p.Path).ToList();
 
@@ -327,7 +327,7 @@ namespace BlackMaple.FMSInsight.Niigata
         // add all stops from machineStops tp machiningSteps
         foreach (var stop in path.Job.GetMachiningStop(path.Process, path.Path))
         {
-          var prog = progs[(stop.ProgramName, stop.ProgramRevision)];
+          var prog = progs[(stop.ProgramName, stop.ProgramRevision.Value)];
           // check existing step
           foreach (var existingStep in machiningSteps)
           {
@@ -414,7 +414,6 @@ namespace BlackMaple.FMSInsight.Niigata
         ProgramNum = progNum,
         ProgramName = prog.ProgramName,
         ProgramRevision = prog.Revision,
-        ProgramContent = prog.ProgramContent
       };
     }
     #endregion

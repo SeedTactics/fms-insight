@@ -254,7 +254,6 @@ namespace BlackMaple.FMSInsight.Niigata
     public int ProgramNum { get; set; } // num sent into cell controller
     public string ProgramName { get; set; } // name inside Insight Job database
     public long ProgramRevision { get; set; } // revision inside Insight Job Database
-    public string ProgramContent { get; set; }
   }
 
 

@@ -81,7 +81,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
          })
         .IncrJobStartedCnt("uniq1")
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-          FakeIccDsl.ExpectAddNewProgram(progNum: 1000, name: "prog111", rev: 5, ct: "ProgramCt prog111 rev5"),
+          FakeIccDsl.ExpectAddNewProgram(progNum: 1000, name: "prog111", rev: 5),
           FakeIccDsl.ExpectNewRoute(
             pal: 1,
             luls: new[] { 3, 4 },
@@ -270,7 +270,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1),
         })
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-          FakeIccDsl.ExpectAddNewProgram(progNum: 1000, name: "prog111", rev: 6, ct: "ProgramCt prog111 rev6"),
+          FakeIccDsl.ExpectAddNewProgram(progNum: 1000, name: "prog111", rev: 6),
           FakeIccDsl.ExpectNewRoute(
             pal: 1,
             luls: new[] { 3, 4 },
@@ -329,7 +329,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           new[] { (prog: "prog111", rev: 6L) }
         )
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-          FakeIccDsl.ExpectAddNewProgram(progNum: 1000, name: "prog111", rev: 6, ct: "ProgramCt prog111 rev6")
+          FakeIccDsl.ExpectAddNewProgram(progNum: 1000, name: "prog111", rev: 6)
         })
 
         .AddUnallocatedCasting(queue: "thequeue", part: "part4", numProc: 1, mat: out var unusedMat)
@@ -420,8 +420,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
          })
         .IncrJobStartedCnt("uniq1")
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-          FakeIccDsl.ExpectAddNewProgram(progNum: 1000, name: "prog111", rev: 5, ct: "ProgramCt prog111 rev5"),
-          FakeIccDsl.ExpectAddNewProgram(progNum: 1001, name: "prog222", rev: 6, ct: "ProgramCt prog222 rev6"),
+          FakeIccDsl.ExpectAddNewProgram(progNum: 1000, name: "prog111", rev: 5),
+          FakeIccDsl.ExpectAddNewProgram(progNum: 1001, name: "prog222", rev: 6),
           FakeIccDsl.ExpectNewRoute(
             pal: 1,
             luls: new[] { 3, 4 },
@@ -794,8 +794,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       })
       .IncrJobStartedCnt("uniq1")
       .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-        FakeIccDsl.ExpectAddNewProgram(progNum: 1000, name: "prog111", rev: 5, ct: "ProgramCt prog111 rev5"),
-        FakeIccDsl.ExpectAddNewProgram(progNum: 1001, name: "prog222", rev: 6, ct: "ProgramCt prog222 rev6"),
+        FakeIccDsl.ExpectAddNewProgram(progNum: 1000, name: "prog111", rev: 5),
+        FakeIccDsl.ExpectAddNewProgram(progNum: 1001, name: "prog222", rev: 6),
         FakeIccDsl.ExpectNewRoute(
           pal: 1,
           luls: new[] { 3, 4 },
@@ -1277,8 +1277,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       })
       .IncrJobStartedCnt("uniq1")
       .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-        FakeIccDsl.ExpectAddNewProgram(progNum: 1000, name: "prog111", rev: 5, ct: "ProgramCt prog111 rev5"),
-        FakeIccDsl.ExpectAddNewProgram(progNum: 1001, name: "prog222", rev: 6, ct: "ProgramCt prog222 rev6"),
+        FakeIccDsl.ExpectAddNewProgram(progNum: 1000, name: "prog111", rev: 5),
+        FakeIccDsl.ExpectAddNewProgram(progNum: 1001, name: "prog222", rev: 6),
         FakeIccDsl.ExpectNewRoute(
           pal: 1,
           luls: new[] { 3 },
@@ -1457,8 +1457,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
          })
         .IncrJobStartedCnt("uniq1")
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-          FakeIccDsl.ExpectAddNewProgram(progNum: 1000, name: "prog111", rev: 5, ct: "ProgramCt prog111 rev5"),
-          FakeIccDsl.ExpectAddNewProgram(progNum: 1001, name: "prog222", rev: 6, ct: "ProgramCt prog222 rev6"),
+          FakeIccDsl.ExpectAddNewProgram(progNum: 1000, name: "prog111", rev: 5),
+          FakeIccDsl.ExpectAddNewProgram(progNum: 1001, name: "prog222", rev: 6),
           FakeIccDsl.ExpectNewRoute(
             pal: 1,
             loads: new[] { 3, 4 },

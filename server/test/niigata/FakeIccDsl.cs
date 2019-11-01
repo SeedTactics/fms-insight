@@ -962,7 +962,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public NewProgram Expected { get; set; }
     }
 
-    public static ExpectedChange ExpectAddNewProgram(int progNum, string name, long rev, string ct)
+    public static ExpectedChange ExpectAddNewProgram(int progNum, string name, long rev)
     {
       return new ExpectAddProgram()
       {
@@ -971,7 +971,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           ProgramNum = progNum,
           ProgramName = name,
           ProgramRevision = rev,
-          ProgramContent = ct
         }
       };
     }

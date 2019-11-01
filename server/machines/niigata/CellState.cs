@@ -62,7 +62,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public List<PalletAndMaterial> Pallets { get; set; }
     public List<InProcessMaterial> QueuedMaterial { get; set; }
     public Dictionary<string, int> JobQtyStarted { get; set; }
-    public Dictionary<(string progName, long? revision), JobDB.ProgramRevision> ProgramNums { get; set; }
+    public Dictionary<(string progName, long revision), JobDB.ProgramRevision> ProgramNums { get; set; }
   }
 
   public interface IBuildCellState
@@ -997,7 +997,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    private Dictionary<(string progName, long? revision), JobDB.ProgramRevision> FindProgramNums(PlannedSchedule schedule)
+    private Dictionary<(string progName, long revision), JobDB.ProgramRevision> FindProgramNums(PlannedSchedule schedule)
     {
       var stops =
         schedule.Jobs
@@ -1007,17 +1007,16 @@ namespace BlackMaple.FMSInsight.Niigata
             )
           ));
 
-      var progs = new Dictionary<(string progName, long? revision), JobDB.ProgramRevision>();
+      var progs = new Dictionary<(string progName, long revision), JobDB.ProgramRevision>();
       foreach (var stop in stops)
       {
-        if (progs.ContainsKey((stop.ProgramName, stop.ProgramRevision))) continue;
         if (stop.ProgramRevision.HasValue)
         {
-          progs[(stop.ProgramName, stop.ProgramRevision)] = _jobs.LoadProgram(stop.ProgramName, stop.ProgramRevision.Value);
+          progs[(stop.ProgramName, stop.ProgramRevision.Value)] = _jobs.LoadProgram(stop.ProgramName, stop.ProgramRevision.Value);
         }
         else
         {
-          progs[(stop.ProgramName, null)] = _jobs.LoadMostRecentProgram(stop.ProgramName);
+          Log.Error("Job stop {@stop} does not have a program revision!", stop);
         }
       }
       return progs;
