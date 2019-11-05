@@ -612,6 +612,7 @@ namespace MazakMachineInterface
             0,
             0,
             0,
+            0,
             0
           )",
           data.Programs,
