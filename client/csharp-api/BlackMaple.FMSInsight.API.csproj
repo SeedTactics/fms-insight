@@ -3,6 +3,7 @@
   <PropertyGroup>
     <AssemblyName>BlackMaple.FMSInsight.API</AssemblyName>
     <PackageId>BlackMaple.FMSInsight.API</PackageId>
+    <OutputType>Library</OutputType>
 
     <Title>Client API to SeedTactics FMS Insight</Title>
     <Company>Black Maple Software, LLC</Company>
@@ -17,17 +18,18 @@
     <PackageProjectUrl>https://fms-insight.seedtactics.com</PackageProjectUrl>
     <RepositoryUrl>https://github.com/SeedTactics/fms-insight.git</RepositoryUrl>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
-
-    <OutputType>Library</OutputType>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2"/>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta2-19367-01" PrivateAssets="All"/>
   </ItemGroup>
+
   <ItemGroup Condition="$(TargetFramework) == 'netstandard2.0'">
     <PackageReference Include="System.ComponentModel.Annotations" Version="4.4.1"/>
   </ItemGroup>
+
   <ItemGroup Condition="$(TargetFramework) == 'net461'">
     <Reference Include="System.Net.HTTP"/>
     <Reference Include="System.ComponentModel.DataAnnotations"/>
