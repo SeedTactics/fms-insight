@@ -177,7 +177,7 @@ namespace MazakMachineInterface
     {
       CheckReadyForConnect();
 
-      int checkInterval = data.Schedules.Count() + data.Pallets.Count() + data.Parts.Count() + data.Fixtures.Count() + data.Programs.Count();
+      int checkInterval = data.Schedules.Count() + data.Pallets.Count() + 2 * data.Parts.Count() + data.Fixtures.Count() + data.Programs.Count();
 
       Log.Debug("Writing {@data} to transaction db", data);
 
@@ -596,7 +596,7 @@ namespace MazakMachineInterface
             MainProgram_3,
             MainProgram_4,
             MainProgram_5,
-            SingleBlockStep,
+            SingleBlockStop,
             TransactionStatus
           ) VALUES (
             @Command,
