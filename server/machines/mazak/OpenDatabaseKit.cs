@@ -661,6 +661,7 @@ namespace MazakMachineInterface
             else
             {
               foundUnprocesssedRow = true;
+              Log.Debug("Unprocessed row for table {table} at index {idx} with {@row}", table, idx, row);
             }
           }
         }
@@ -684,6 +685,7 @@ namespace MazakMachineInterface
           else
           {
             foundUnprocesssedRow = true;
+            Log.Debug("Unprocessed Part_t row for part {part} with row {@row}", row.PartName, row);
           }
         }
         trans.Commit();
