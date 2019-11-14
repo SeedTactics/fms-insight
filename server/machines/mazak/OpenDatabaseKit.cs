@@ -177,9 +177,17 @@ namespace MazakMachineInterface
     {
       CheckReadyForConnect();
 
-      int checkInterval = data.Schedules.Count() + data.Pallets.Count() + data.Parts.Count() + data.Fixtures.Count();
+      int checkInterval = data.Schedules.Count() + data.Pallets.Count() + 2 * data.Parts.Count() + data.Fixtures.Count() + data.Programs.Count();
 
       Log.Debug("Writing {@data} to transaction db", data);
+
+      foreach (var prog in data.Programs)
+      {
+        if (prog.Command == MazakWriteCommand.Add)
+        {
+          System.IO.File.WriteAllText(prog.MainProgram, prog.ProgramContent);
+        }
+      }
 
       try
       {
@@ -570,6 +578,51 @@ namespace MazakMachineInterface
           transaction: trans
         );
       }
+
+      if (MazakType == MazakDbType.MazakSmooth)
+      {
+        conn.Execute(
+          @"INSERT INTO MainProgram_t(
+            Command,
+            Comment,
+            Count,
+            CreateToolList_PMC,
+            CutTime,
+            CutTimeFlag,
+            FileStatus,
+            MainProgram,
+            MainProgram_1,
+            MainProgram_2,
+            MainProgram_3,
+            MainProgram_4,
+            MainProgram_5,
+            SingleBlockStop,
+            TransactionStatus
+          ) VALUES (
+            @Command,
+            @Comment,
+            0,
+            0,
+            0,
+            1,
+            0,
+            @MainProgram,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          )",
+          data.Programs,
+          transaction: trans
+        );
+      }
+      else
+      {
+        throw new Exception("Downloading programs only supported on Smooth-PMC");
+      }
     }
 
     private class CommandStatus
@@ -608,6 +661,7 @@ namespace MazakMachineInterface
             else
             {
               foundUnprocesssedRow = true;
+              Log.Debug("Unprocessed row for table {table} at index {idx} with {@row}", table, idx, row);
             }
           }
         }
@@ -631,6 +685,7 @@ namespace MazakMachineInterface
           else
           {
             foundUnprocesssedRow = true;
+            Log.Debug("Unprocessed Part_t row for part {part} with row {@row}", row.PartName, row);
           }
         }
         trans.Commit();

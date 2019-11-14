@@ -195,6 +195,36 @@ namespace MazakMachineInterface
 
   public abstract class MazakProcess
   {
+    public static string CreateMainProgramComment(string program, long revision)
+    {
+      return "Insight:" + revision.ToString() + ":" + program;
+    }
+    public static bool IsInsightMainProgram(string mainProgramComment)
+    {
+      return mainProgramComment.StartsWith("Insight:");
+    }
+    public static bool TryParseMainProgramComment(string mainProgramComment, out string program, out long rev)
+    {
+      if (mainProgramComment.StartsWith("Insight:"))
+      {
+        mainProgramComment = mainProgramComment.Substring(8);
+        var idx = mainProgramComment.IndexOf(':');
+        if (idx > 0)
+        {
+          if (long.TryParse(mainProgramComment.Substring(0, idx), out rev))
+          {
+            program = mainProgramComment.Substring(idx + 1);
+            return true;
+          }
+        }
+      }
+
+      program = null;
+      rev = 0;
+      return false;
+    }
+
+
     public readonly MazakPart Part;
     public readonly int ProcessNumber;
     public readonly int Path;
@@ -213,6 +243,7 @@ namespace MazakMachineInterface
 
     public abstract IEnumerable<string> Pallets();
     public abstract (string fixture, int face) FixtureFace();
+    public abstract BlackMaple.MachineFramework.JobDB.ProgramRevision PartProgram { get; }
 
     public abstract void CreateDatabaseRow(MazakPartRow newPart, string fixture, MazakDbType mazakTy);
 
@@ -232,9 +263,12 @@ namespace MazakMachineInterface
 
   public class MazakProcessFromJob : MazakProcess
   {
-    public MazakProcessFromJob(MazakPart parent, int process, int pth)
+    public override BlackMaple.MachineFramework.JobDB.ProgramRevision PartProgram { get; }
+
+    public MazakProcessFromJob(MazakPart parent, int process, int pth, BlackMaple.MachineFramework.JobDB.ProgramRevision prog)
       : base(parent, process, pth)
     {
+      PartProgram = prog;
     }
 
     public override IEnumerable<string> Pallets()
@@ -264,10 +298,8 @@ namespace MazakMachineInterface
       char[] UnfixLDS = { '0', '0', '0', '0', '0', '0', '0', '0', '0', '0' };
       char[] Cut = { '0', '0', '0', '0', '0', '0', '0', '0' };
 
-      string program = "";
       foreach (var routeEntry in Job.GetMachiningStop(ProcessNumber, Path))
       {
-        program = routeEntry.ProgramName;
         foreach (int statNum in routeEntry.Stations)
         {
           Cut[statNum - 1] = statNum.ToString()[0];
@@ -280,7 +312,7 @@ namespace MazakMachineInterface
       foreach (int statNum in Job.UnloadStations(ProcessNumber, Path))
         UnfixLDS[statNum - 1] = statNum.ToString()[0];
 
-      newPartProcRow.MainProgram = program;
+      newPartProcRow.MainProgram = PartProgram.CellControllerProgramName;
       newPartProcRow.FixLDS = new string(FixLDS);
       newPartProcRow.RemoveLDS = new string(UnfixLDS);
       newPartProcRow.CutMc = new string(Cut);
@@ -304,6 +336,8 @@ namespace MazakMachineInterface
 
   public class MazakProcessFromTemplate : MazakProcess
   {
+    public override BlackMaple.MachineFramework.JobDB.ProgramRevision PartProgram { get; }
+
     //Here, jobs have only one process.  The number of processes are copied from the template.
     public readonly MazakPartProcessRow TemplateProcessRow;
 
@@ -311,6 +345,10 @@ namespace MazakMachineInterface
       : base(parent, template.ProcessNumber, path)
     {
       TemplateProcessRow = template;
+      PartProgram = new BlackMaple.MachineFramework.JobDB.ProgramRevision()
+      {
+        CellControllerProgramName = template.MainProgram
+      };
     }
 
     public override IEnumerable<string> Pallets()
@@ -436,7 +474,10 @@ namespace MazakMachineInterface
     //will be deleted and fixtures appearing in this list but not yet in Mazak will be added.
     public ISet<string> UsedFixtures { get; set; }
 
-    public MazakWriteData CreateDeleteFixtureDatabaseRows()
+    //main programs used by either existing or new parts
+    public ISet<string> UsedMainProgramComments { get; set; }
+
+    public MazakWriteData CreateDeleteFixtureAndProgramDatabaseRows(Func<string, long, string> getProgramContent, string programDir)
     {
       var ret = new MazakWriteData();
 
@@ -473,6 +514,65 @@ namespace MazakMachineInterface
         ret.Fixtures.Add(newFixRow);
       found:;
       }
+
+      // delete old programs, but only if there is a newer revision for this program
+      var maxRevForProg =
+        OldMazakData.MainPrograms
+          .Select(p => MazakProcess.TryParseMainProgramComment(p.Comment, out string pName, out long rev) ? new { pName, rev } : null)
+          .Where(p => p != null)
+          .ToLookup(p => p.pName, p => p.rev)
+          .ToDictionary(ps => ps.Key, ps => ps.Max());
+
+      foreach (var prog in OldMazakData.MainPrograms)
+      {
+        if (!MazakProcess.IsInsightMainProgram(prog.Comment)) continue;
+        if (UsedMainProgramComments.Contains(prog.Comment)) continue;
+        if (!MazakProcess.TryParseMainProgramComment(prog.Comment, out string pName, out long rev)) continue;
+        if (rev >= maxRevForProg[pName]) continue;
+
+        ret.Programs.Add(new NewMazakProgram()
+        {
+          Command = MazakWriteCommand.Delete,
+          MainProgram = prog.MainProgram,
+          Comment = prog.Comment
+        });
+      }
+
+      // add programs
+      var newProgs = new Dictionary<(string name, long rev), NewMazakProgram>();
+      foreach (var part in AllParts)
+      {
+        foreach (var proc in part.Processes)
+        {
+          if (string.IsNullOrEmpty(proc.PartProgram.CellControllerProgramName) && !string.IsNullOrEmpty(proc.PartProgram.ProgramName))
+          {
+            NewMazakProgram newProg;
+            if (newProgs.ContainsKey((proc.PartProgram.ProgramName, proc.PartProgram.Revision)))
+            {
+              newProg = newProgs[(proc.PartProgram.ProgramName, proc.PartProgram.Revision)];
+            }
+            else
+            {
+              newProg = new NewMazakProgram()
+              {
+                Command = MazakWriteCommand.Add,
+                ProgramName = proc.PartProgram.ProgramName,
+                ProgramRevision = proc.PartProgram.Revision,
+                MainProgram = System.IO.Path.Combine(
+                  programDir,
+                  proc.PartProgram.ProgramName + "_rev" + proc.PartProgram.Revision.ToString() + ".EIA"
+                ),
+                Comment = MazakProcess.CreateMainProgramComment(proc.PartProgram.ProgramName, proc.PartProgram.Revision),
+                ProgramContent = getProgramContent(proc.PartProgram.ProgramName, proc.PartProgram.Revision)
+              };
+              newProgs[(newProg.ProgramName, newProg.ProgramRevision)] = newProg;
+            }
+            proc.PartProgram.CellControllerProgramName = newProg.MainProgram;
+          }
+        }
+      }
+      foreach (var n in newProgs.Values)
+        ret.Programs.Add(n);
 
       return ret;
     }
@@ -544,9 +644,9 @@ namespace MazakMachineInterface
     private static Serilog.ILogger Log = Serilog.Log.ForContext<MazakJobs>();
 
     //Allows plugins to customize the process creation
-    public delegate MazakProcess ProcessFromJobDelegate(MazakPart parent, int process, int pth);
+    public delegate MazakProcess ProcessFromJobDelegate(MazakPart parent, int process, int pth, BlackMaple.MachineFramework.JobDB.ProgramRevision prog);
     public static ProcessFromJobDelegate ProcessFromJob
-      = (parent, process, pth) => new MazakProcessFromJob(parent, process, pth);
+      = (parent, process, pth, prog) => new MazakProcessFromJob(parent, process, pth, prog);
 
     public static MazakJobs JobsToMazak(
       IEnumerable<JobPlan> jobs,
@@ -556,13 +656,15 @@ namespace MazakMachineInterface
       MazakDbType MazakType,
       bool checkPalletsUsedOnce,
       BlackMaple.MachineFramework.FMSSettings fmsSettings,
+      Func<string, long?, BlackMaple.MachineFramework.JobDB.ProgramRevision> lookupProgram,
       IList<string> errors)
     {
       Validate(jobs, fmsSettings, errors);
-      var allParts = BuildMazakParts(jobs, downloadUID, mazakData, MazakType, errors);
+      var allParts = BuildMazakParts(jobs, downloadUID, mazakData, MazakType, errors, lookupProgram);
       var groups = GroupProcessesIntoFixtures(allParts, checkPalletsUsedOnce, errors);
 
       var usedFixtures = AssignMazakFixtures(groups, downloadUID, mazakData, savedParts, errors);
+      var usedProgs = CalculateUsedPrograms(mazakData, allParts);
 
       return new MazakJobs()
       {
@@ -572,7 +674,8 @@ namespace MazakMachineInterface
         SavedParts = savedParts,
         AllParts = allParts,
         Fixtures = groups,
-        UsedFixtures = usedFixtures
+        UsedFixtures = usedFixtures,
+        UsedMainProgramComments = usedProgs
       };
     }
 
@@ -631,7 +734,8 @@ namespace MazakMachineInterface
 
     #region Parts
     private static List<MazakPart> BuildMazakParts(IEnumerable<JobPlan> jobs, int downloadID, MazakSchedulesPartsPallets mazakData, MazakDbType mazakTy,
-                                                  IList<string> log)
+                                                  IList<string> log,
+                                                  Func<string, long?, BlackMaple.MachineFramework.JobDB.ProgramRevision> lookupProgram)
     {
       var ret = new List<MazakPart>();
 
@@ -646,7 +750,7 @@ namespace MazakMachineInterface
             var mazakPart = new MazakPart(job, downloadID);
 
             string error;
-            BuildProcFromJobWithOneProc(job, path, mazakPart, mazakTy, mazakData, out error);
+            BuildProcFromJobWithOneProc(job, path, mazakPart, mazakTy, mazakData, lookupProgram, out error);
             if (error == null || error == "")
               ret.Add(mazakPart);
             else
@@ -706,7 +810,7 @@ namespace MazakMachineInterface
             var mazakPart = new MazakPart(job, downloadID);
             string error;
             BuildProcFromPathGroup(job, mazakPart, out error, mazakTy, mazakData,
-                 (proc, path) => grp.Value == job.GetPathGroup(proc, path));
+                 (proc, path) => grp.Value == job.GetPathGroup(proc, path), lookupProgram);
 
             if (error == null || error == "")
               ret.Add(mazakPart);
@@ -726,7 +830,8 @@ namespace MazakMachineInterface
     private delegate bool MatchFunc(int proc, int path);
 
     private static void BuildProcFromPathGroup(JobPlan job, MazakPart mazak, out string ErrorDuringCreate, MazakDbType mazakTy,
-                                                   MazakSchedulesPartsPallets mazakData, MatchFunc matchPath)
+                                                   MazakSchedulesPartsPallets mazakData, MatchFunc matchPath,
+                                                   Func<string, long?, BlackMaple.MachineFramework.JobDB.ProgramRevision> lookupProgram)
     {
       ErrorDuringCreate = null;
 
@@ -739,6 +844,7 @@ namespace MazakMachineInterface
 
             //Check this proc and path has a program
             bool has1Stop = false;
+            BlackMaple.MachineFramework.JobDB.ProgramRevision prog = null;
             foreach (var stop in job.GetMachiningStop(proc, path))
             {
               has1Stop = true;
@@ -763,11 +869,35 @@ namespace MazakMachineInterface
                   return;
                 }
               }
-              if (!mazakData.MainPrograms.Any(mp => mp.MainProgram == stop.ProgramName))
+              if (mazakData.MainPrograms.Any(mp => mp.MainProgram == stop.ProgramName))
               {
-                ErrorDuringCreate = "Part " + job.PartName + " program " + stop.ProgramName +
+                prog = new BlackMaple.MachineFramework.JobDB.ProgramRevision()
+                {
+                  CellControllerProgramName = stop.ProgramName
+                };
+              }
+              else
+              {
+                prog = lookupProgram(stop.ProgramName, stop.ProgramRevision);
+                if (prog == null)
+                {
+                  ErrorDuringCreate = "Part " + job.PartName + " program " + stop.ProgramName +
+                    (stop.ProgramRevision.HasValue ? " rev" + stop.ProgramRevision.Value.ToString() : "") +
                     " does not exist in the cell controller.";
-                return;
+                  return;
+                }
+                // check if program already exists
+                foreach (var mp in mazakData.MainPrograms)
+                {
+                  if (MazakProcess.TryParseMainProgramComment(mp.Comment, out string mpProg, out long mpRev))
+                  {
+                    if (mpProg == prog.ProgramName && mpRev == prog.Revision)
+                    {
+                      prog.CellControllerProgramName = mp.MainProgram;
+                      break;
+                    }
+                  }
+                }
               }
             }
 
@@ -777,21 +907,23 @@ namespace MazakMachineInterface
               return;
             }
 
-            mazak.Processes.Add(ProcessFromJob(mazak, proc, path));
+            mazak.Processes.Add(ProcessFromJob(mazak, proc, path, prog));
           }
         }
       }
     }
 
     private static void BuildProcFromJobWithOneProc(JobPlan job, int proc1path, MazakPart mazak, MazakDbType mazakTy,
-                                                    MazakSchedulesPartsPallets mazakData, out string ErrorDuringCreate)
+                                                    MazakSchedulesPartsPallets mazakData,
+                                                    Func<string, long?, BlackMaple.MachineFramework.JobDB.ProgramRevision> lookupProgram,
+                                                    out string ErrorDuringCreate)
     {
       ErrorDuringCreate = null;
 
       // first try building from the job
       string FromJobError;
       BuildProcFromPathGroup(job, mazak, out FromJobError, mazakTy, mazakData,
-            (proc, path) => path == proc1path);  // proc will always equal 1.
+            (proc, path) => path == proc1path, lookupProgram);  // proc will always equal 1.
 
       if (FromJobError == null || FromJobError == "")
         return; //Success
@@ -820,6 +952,39 @@ namespace MazakMachineInterface
       {
         mazak.Processes.Add(new MazakProcessFromTemplate(mazak, pRow, proc1path));
       }
+    }
+
+    private static ISet<string> CalculateUsedPrograms(MazakAllData oldData, IEnumerable<MazakPart> newParts)
+    {
+      var progsToComment =
+        oldData.MainPrograms
+          .Where(p => MazakProcess.IsInsightMainProgram(p.Comment))
+          .ToDictionary(p => p.MainProgram, p => p.Comment);
+
+
+      var used = new HashSet<string>();
+      foreach (var part in oldData.Parts)
+      {
+        foreach (var proc in part.Processes)
+        {
+          if (!string.IsNullOrEmpty(proc.MainProgram) && progsToComment.ContainsKey(proc.MainProgram))
+          {
+            used.Add(progsToComment[proc.MainProgram]);
+          }
+        }
+      }
+      foreach (var part in newParts)
+      {
+        foreach (var proc in part.Processes)
+        {
+          if (!string.IsNullOrEmpty(proc.PartProgram.ProgramName))
+          {
+            used.Add(MazakProcess.CreateMainProgramComment(proc.PartProgram.ProgramName, proc.PartProgram.Revision));
+          }
+        }
+      }
+
+      return used;
     }
     #endregion
 

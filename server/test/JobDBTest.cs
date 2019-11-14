@@ -630,6 +630,18 @@ namespace MachineWatchTest
       var job1 = new JobPlan("uniq", 2, new int[] { 2, 3 });
       SetJob1Data(job1);
 
+      job1.GetMachiningStop(1, 1).First().ProgramName = "aaa";
+      job1.GetMachiningStop(1, 1).First().ProgramRevision = null;
+
+      job1.GetMachiningStop(1, 2).First().ProgramName = "aaa";
+      job1.GetMachiningStop(1, 2).First().ProgramRevision = 1;
+
+      job1.GetMachiningStop(2, 1).First().ProgramName = "bbb";
+      job1.GetMachiningStop(2, 1).First().ProgramRevision = null;
+
+      job1.GetMachiningStop(2, 2).First().ProgramName = "bbb";
+      job1.GetMachiningStop(2, 2).First().ProgramRevision = 6;
+
       _jobDB.AddJobs(new NewJobs
       {
         Jobs = new List<JobPlan> { job1 },
@@ -649,36 +661,42 @@ namespace MachineWatchTest
           }
       }, null);
 
+      job1.GetMachiningStop(1, 1).First().ProgramRevision = 1; // should lookup latest revision to 1
+      job1.GetMachiningStop(2, 1).First().ProgramRevision = 6; // should lookup latest revision to 6
+
+      CheckJobEqual(job1, _jobDB.LoadJob(job1.UniqueStr), true);
+
       _jobDB.LoadProgram("aaa", 1).Should().BeEquivalentTo(new JobDB.ProgramRevision()
       {
         ProgramName = "aaa",
         Revision = 1,
         Comment = "aaa comment",
-        ProgramContent = "aaa program content"
       });
       _jobDB.LoadMostRecentProgram("aaa").Should().BeEquivalentTo(new JobDB.ProgramRevision()
       {
         ProgramName = "aaa",
         Revision = 1,
         Comment = "aaa comment",
-        ProgramContent = "aaa program content"
       });
       _jobDB.LoadProgram("bbb", 6).Should().BeEquivalentTo(new JobDB.ProgramRevision()
       {
         ProgramName = "bbb",
         Revision = 6,
         Comment = "bbb comment",
-        ProgramContent = "bbb program content"
       });
       _jobDB.LoadMostRecentProgram("bbb").Should().BeEquivalentTo(new JobDB.ProgramRevision()
       {
         ProgramName = "bbb",
         Revision = 6,
         Comment = "bbb comment",
-        ProgramContent = "bbb program content"
       });
       _jobDB.LoadProgram("aaa", 2).Should().BeNull();
       _jobDB.LoadProgram("ccc", 1).Should().BeNull();
+
+      _jobDB.LoadProgramContent("aaa", 1).Should().Be("aaa program content");
+      _jobDB.LoadProgramContent("bbb", 6).Should().Be("bbb program content");
+      _jobDB.LoadProgramContent("aaa", 2).Should().BeNull();
+      _jobDB.LoadProgramContent("ccc", 1).Should().BeNull();
 
       // error on program content mismatch
       _jobDB.Invoking(j => j.AddJobs(new NewJobs
@@ -701,21 +719,37 @@ namespace MachineWatchTest
       }, null)
       ).Should().Throw<BadRequestException>().WithMessage("Program bbb rev6 has already been used and the program contents do not match.");
 
+      _jobDB.Invoking(j => j.AddPrograms(new List<ProgramEntry> {
+              new ProgramEntry() {
+                ProgramName = "aaa",
+                Revision = 0, // auto assign
+                Comment = "aaa comment rev 2",
+                ProgramContent = "aaa program content rev 2"
+              },
+              new ProgramEntry() {
+                ProgramName = "bbb",
+                Revision = 6, // existing revision
+                Comment = "bbb comment",
+                ProgramContent = "awofguhweoguhweg"
+              },
+      }, DateTime.Parse("2019-09-14T03:52:12Z")))
+      .Should().Throw<BadRequestException>().WithMessage("Program bbb rev6 has already been used and the program contents do not match.");
+
       _jobDB.LoadProgram("aaa", 2).Should().BeNull();
       _jobDB.LoadMostRecentProgram("aaa").Should().BeEquivalentTo(new JobDB.ProgramRevision()
       {
         ProgramName = "aaa",
         Revision = 1,
         Comment = "aaa comment",
-        ProgramContent = "aaa program content"
       });
       _jobDB.LoadMostRecentProgram("bbb").Should().BeEquivalentTo(new JobDB.ProgramRevision()
       {
         ProgramName = "bbb",
         Revision = 6,
         Comment = "bbb comment",
-        ProgramContent = "bbb program content"
       });
+      _jobDB.LoadProgramContent("aaa", 1).Should().Be("aaa program content");
+      _jobDB.LoadProgramContent("aaa", 2).Should().BeNull();
 
       // now should ignore when program content matches
       _jobDB.AddJobs(new NewJobs
@@ -742,22 +776,20 @@ namespace MachineWatchTest
         ProgramName = "aaa",
         Revision = 2,
         Comment = "aaa comment rev 2",
-        ProgramContent = "aaa program content rev 2"
       });
       _jobDB.LoadMostRecentProgram("aaa").Should().BeEquivalentTo(new JobDB.ProgramRevision()
       {
         ProgramName = "aaa",
         Revision = 2,
         Comment = "aaa comment rev 2",
-        ProgramContent = "aaa program content rev 2"
       });
       _jobDB.LoadMostRecentProgram("bbb").Should().BeEquivalentTo(new JobDB.ProgramRevision()
       {
         ProgramName = "bbb",
         Revision = 6,
         Comment = "bbb comment",
-        ProgramContent = "bbb program content"
       });
+      _jobDB.LoadProgramContent("aaa", 2).Should().Be("aaa program content rev 2");
 
       //now set cell controller names
       _jobDB.SetCellControllerProgramForProgram("aaa", 1, "aaa-1");
@@ -768,7 +800,6 @@ namespace MachineWatchTest
         ProgramName = "aaa",
         Revision = 1,
         Comment = "aaa comment",
-        ProgramContent = "aaa program content",
         CellControllerProgramName = "aaa-1"
       });
       _jobDB.LoadProgram("aaa", 1).Should().BeEquivalentTo(new JobDB.ProgramRevision()
@@ -776,7 +807,6 @@ namespace MachineWatchTest
         ProgramName = "aaa",
         Revision = 1,
         Comment = "aaa comment",
-        ProgramContent = "aaa program content",
         CellControllerProgramName = "aaa-1"
       });
       _jobDB.ProgramFromCellControllerProgram("bbb-6").Should().BeEquivalentTo(new JobDB.ProgramRevision()
@@ -784,7 +814,6 @@ namespace MachineWatchTest
         ProgramName = "bbb",
         Revision = 6,
         Comment = "bbb comment",
-        ProgramContent = "bbb program content",
         CellControllerProgramName = "bbb-6"
       });
       _jobDB.LoadMostRecentProgram("bbb").Should().BeEquivalentTo(new JobDB.ProgramRevision()
@@ -792,7 +821,6 @@ namespace MachineWatchTest
         ProgramName = "bbb",
         Revision = 6,
         Comment = "bbb comment",
-        ProgramContent = "bbb program content",
         CellControllerProgramName = "bbb-6"
       });
       _jobDB.ProgramFromCellControllerProgram("aagaiouhgi").Should().BeNull();
@@ -805,11 +833,45 @@ namespace MachineWatchTest
         ProgramName = "aaa",
         Revision = 1,
         Comment = "aaa comment",
-        ProgramContent = "aaa program content"
       });
 
       _jobDB.Invoking(j => j.SetCellControllerProgramForProgram("aaa", 2, "bbb-6"))
         .Should().Throw<Exception>().WithMessage("Cell program name bbb-6 already in use");
+
+      _jobDB.AddPrograms(new[] {
+        new ProgramEntry() {
+          ProgramName = "aaa",
+          Revision = 0, // should be ignored because content matches
+          Comment = "aaa comment rev 2",
+          ProgramContent = "aaa program content rev 2"
+        },
+        new ProgramEntry() {
+          ProgramName = "bbb",
+          Revision = 0, // allocate new
+          Comment = "bbb comment rev7",
+          ProgramContent = "bbb program content rev7"
+        },
+      }, job1.RouteStartingTimeUTC);
+
+      _jobDB.LoadProgram("aaa", 2).Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "aaa",
+        Revision = 2,
+        Comment = "aaa comment rev 2",
+      });
+      _jobDB.LoadMostRecentProgram("aaa").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "aaa",
+        Revision = 2,
+        Comment = "aaa comment rev 2",
+      });
+      _jobDB.LoadMostRecentProgram("bbb").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      {
+        ProgramName = "bbb",
+        Revision = 7,
+        Comment = "bbb comment rev7",
+      });
+      _jobDB.LoadProgramContent("bbb", 7).Should().Be("bbb program content rev7");
     }
 
     private void CheckJobs(JobPlan job1, JobPlan job2, JobPlan job3, string schId, Dictionary<string, int> extraParts, IEnumerable<PartWorkorder> works)

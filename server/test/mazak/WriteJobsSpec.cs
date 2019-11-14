@@ -193,9 +193,22 @@ namespace MachineWatchTest
         PalletSubStatuses = Enumerable.Empty<MazakPalletSubStatusRow>(),
         PalletPositions = Enumerable.Empty<MazakPalletPositionRow>(),
         LoadActions = Enumerable.Empty<LoadAction>(),
-        MainPrograms = (new[] {
-          "1001", "1002", "1003", "1004", "1005"
-        }).Select(p => new MazakProgramRow() { MainProgram = p, Comment = "" }),
+        MainPrograms =
+          Enumerable.Concat(
+            (new[] { "1001", "1002", "1003", "1004", "1005" }).Select(p => new MazakProgramRow() { MainProgram = p, Comment = "" }),
+            new[] {
+              new MazakProgramRow()
+              {
+                MainProgram = System.IO.Path.Combine("theprogdir", "prog-bbb-1_rev2.EIA"),
+                Comment = "Insight:2:prog-bbb-1"
+              },
+              new MazakProgramRow()
+              {
+                MainProgram = System.IO.Path.Combine("theprogdir", "prog-bbb-1_rev3.EIA"),
+                Comment = "Insight:3:prog-bbb-1"
+              }
+            }
+          )
       });
       _readMock.LoadSchedulesPartsPallets().Returns(x => new MazakSchedulesPartsPallets()
       {
@@ -216,6 +229,7 @@ namespace MachineWatchTest
       _settings.Queues["queueBBB"] = new QueueSize();
       _settings.Queues["queueCCC"] = new QueueSize();
 
+
       _writeJobs = new WriteJobs(
         _writeMock,
         _readMock,
@@ -224,7 +238,8 @@ namespace MachineWatchTest
         _logDB,
         _settings,
         check: false,
-        useStarting: true);
+        useStarting: true,
+        progDir: "theprogdir");
 
       jsonSettings = new JsonSerializerSettings();
       jsonSettings.Converters.Add(new BlackMaple.MachineFramework.TimespanConverter());
@@ -239,7 +254,7 @@ namespace MachineWatchTest
       _jobDB.Close();
     }
 
-    private void ShouldMatchSnapshot<T>(T val, string snapshot)
+    private void ShouldMatchSnapshot<T>(T val, string snapshot, Action<T> adjust = null)
     {
       /*
       File.WriteAllText(
@@ -253,7 +268,32 @@ namespace MachineWatchTest
           jsonSettings
       );
 
+      if (adjust != null)
+        adjust(expected);
+
       val.Should().BeEquivalentTo(expected);
+    }
+
+    private static void AdjustProgramPath(MazakWriteData w)
+    {
+      // snapshots contain forward slash since they were made on linux
+      if (System.IO.Path.DirectorySeparatorChar == '/') return;
+
+      foreach (var part in w.Parts)
+      {
+        foreach (var proc in part.Processes)
+        {
+          if (!proc.MainProgram.Contains('/')) continue;
+          var path = proc.MainProgram.Split('/');
+          proc.MainProgram = System.IO.Path.Combine(path);
+        }
+      }
+      foreach (var prog in w.Programs)
+      {
+        if (!prog.MainProgram.Contains('/')) continue;
+        var path = prog.MainProgram.Split('/');
+        prog.MainProgram = System.IO.Path.Combine(path);
+      }
     }
 
     [Fact]
@@ -292,7 +332,7 @@ namespace MachineWatchTest
 
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
       ShouldMatchSnapshot(_writeMock.DeletePartsPals, "fixtures-queues-delparts.json");
-      ShouldMatchSnapshot(_writeMock.Fixtures, "fixtures-queues-fixtures.json");
+      ShouldMatchSnapshot(_writeMock.Fixtures, "fixtures-queues-fixtures.json", AdjustProgramPath);
       ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
       ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
 
@@ -313,9 +353,47 @@ namespace MachineWatchTest
 
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "path-groups-updatesch.json");
       ShouldMatchSnapshot(_writeMock.DeletePartsPals, "path-groups-delparts.json");
-      ShouldMatchSnapshot(_writeMock.Fixtures, "path-groups-fixtures.json");
+      ShouldMatchSnapshot(_writeMock.Fixtures, "path-groups-fixtures.json", AdjustProgramPath);
       ShouldMatchSnapshot(_writeMock.AddParts, "path-groups-parts.json");
       ShouldMatchSnapshot(_writeMock.AddSchedules, "path-groups-schedules.json");
+    }
+
+    [Fact]
+    public void CreatesPrograms()
+    {
+      //aaa-1  has prog prog-aaa-1 rev null
+      //aaa-2 has prog prog-aaa-2 rev 4
+      //bbb-1 has prog prog-bbb-1 rev 3
+      //bbb-2 has prog prog-bbb-2 rev null
+
+      //ccc is same as aaa
+
+      var newJobs = JsonConvert.DeserializeObject<NewJobs>(
+        File.ReadAllText(
+          Path.Combine("..", "..", "..", "sample-newjobs", "managed-progs.json")),
+        jsonSettings
+      );
+
+      _jobDB.AddPrograms(new[] {
+        new ProgramEntry() {
+          ProgramName = "prog-aaa-1",
+          Revision = 7,
+          ProgramContent = "prog-aaa-1 content rev 7"
+        },
+        new ProgramEntry() {
+          ProgramName = "prog-bbb-1",
+          Revision = 3,
+          ProgramContent = "prog-bbb-1 content rev 3"
+        }
+      }, newJobs.Jobs.First().RouteStartingTimeUTC);
+
+      _writeJobs.AddJobs(newJobs, null);
+
+      ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
+      ShouldMatchSnapshot(_writeMock.DeletePartsPals, "fixtures-queues-delparts.json");
+      ShouldMatchSnapshot(_writeMock.Fixtures, "managed-progs-fixtures.json", AdjustProgramPath);
+      ShouldMatchSnapshot(_writeMock.AddParts, "managed-progs-parts.json", AdjustProgramPath);
+      ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
     }
 
     [Fact]
@@ -335,7 +413,7 @@ namespace MachineWatchTest
 
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
       ShouldMatchSnapshot(_writeMock.DeletePartsPals, "fixtures-queues-delparts.json");
-      ShouldMatchSnapshot(_writeMock.Fixtures, "fixtures-queues-fixtures.json");
+      ShouldMatchSnapshot(_writeMock.Fixtures, "fixtures-queues-fixtures.json", AdjustProgramPath);
       ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
       _writeMock.AddSchedules.Should().BeNull();
 
@@ -360,7 +438,7 @@ namespace MachineWatchTest
 
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
       ShouldMatchSnapshot(_writeMock.DeletePartsPals, "fixtures-queues-delparts.json");
-      ShouldMatchSnapshot(_writeMock.Fixtures, "fixtures-queues-fixtures.json");
+      ShouldMatchSnapshot(_writeMock.Fixtures, "fixtures-queues-fixtures.json", AdjustProgramPath);
       ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
       ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
 
