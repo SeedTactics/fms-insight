@@ -194,12 +194,19 @@ namespace MachineWatchTest
         PalletPositions = Enumerable.Empty<MazakPalletPositionRow>(),
         LoadActions = Enumerable.Empty<LoadAction>(),
         MainPrograms =
-          Enumerable.Append(
+          Enumerable.Concat(
             (new[] { "1001", "1002", "1003", "1004", "1005" }).Select(p => new MazakProgramRow() { MainProgram = p, Comment = "" }),
-            new MazakProgramRow()
-            {
-              MainProgram = System.IO.Path.Combine("theprogdir", "prog-bbb-1_rev3.EIA"),
-              Comment = "Insight:3:prog-bbb-1"
+            new[] {
+              new MazakProgramRow()
+              {
+                MainProgram = System.IO.Path.Combine("theprogdir", "prog-bbb-1_rev2.EIA"),
+                Comment = "Insight:2:prog-bbb-1"
+              },
+              new MazakProgramRow()
+              {
+                MainProgram = System.IO.Path.Combine("theprogdir", "prog-bbb-1_rev3.EIA"),
+                Comment = "Insight:3:prog-bbb-1"
+              }
             }
           )
       });

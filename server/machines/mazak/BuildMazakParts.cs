@@ -515,11 +515,21 @@ namespace MazakMachineInterface
       found:;
       }
 
-      // delete old programs
+      // delete old programs, but only if there is a newer revision for this program
+      var maxRevForProg =
+        OldMazakData.MainPrograms
+          .Select(p => MazakProcess.TryParseMainProgramComment(p.Comment, out string pName, out long rev) ? new { pName, rev } : null)
+          .Where(p => p != null)
+          .ToLookup(p => p.pName, p => p.rev)
+          .ToDictionary(ps => ps.Key, ps => ps.Max());
+
       foreach (var prog in OldMazakData.MainPrograms)
       {
         if (!MazakProcess.IsInsightMainProgram(prog.Comment)) continue;
         if (UsedMainProgramComments.Contains(prog.Comment)) continue;
+        if (!MazakProcess.TryParseMainProgramComment(prog.Comment, out string pName, out long rev)) continue;
+        if (rev >= maxRevForProg[pName]) continue;
+
         ret.Programs.Add(new NewMazakProgram()
         {
           Command = MazakWriteCommand.Delete,

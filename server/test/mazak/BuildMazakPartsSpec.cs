@@ -1063,6 +1063,7 @@ namespace MachineWatchTest
       CreateProgram(dset, System.IO.Path.Combine("theprogdir", "ccc_rev7.EIA"), "Insight:7:ccc"); // 7 is used by OldJob part
       CreateProgram(dset, System.IO.Path.Combine("theprogdir", "ccc_rev8.EIA"), "Insight:8:ccc"); // 8 is not used, should be deleted
       CreateProgram(dset, System.IO.Path.Combine("theprogdir", "ccc_rev9.EIA"), "Insight:9:ccc"); // 9 is used by new job, should not be deleted
+      CreateProgram(dset, System.IO.Path.Combine("theprogdir", "ddd_rev7.EIA"), "Insight:7:ddd"); // latest revision of unused program, should be kept
 
       var lookupProgram = Substitute.For<Func<string, long?, JobDB.ProgramRevision>>();
       lookupProgram("aaa", null).Returns(new JobDB.ProgramRevision()

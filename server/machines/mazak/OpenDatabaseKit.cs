@@ -177,7 +177,7 @@ namespace MazakMachineInterface
     {
       CheckReadyForConnect();
 
-      int checkInterval = data.Schedules.Count() + data.Pallets.Count() + data.Parts.Count() + data.Fixtures.Count() + data.Programs.Count();
+      int checkInterval = data.Schedules.Count() + data.Pallets.Count() + 2 * data.Parts.Count() + data.Fixtures.Count() + data.Programs.Count();
 
       Log.Debug("Writing {@data} to transaction db", data);
 
@@ -596,7 +596,7 @@ namespace MazakMachineInterface
             MainProgram_3,
             MainProgram_4,
             MainProgram_5,
-            SingleBlockStep,
+            SingleBlockStop,
             TransactionStatus
           ) VALUES (
             @Command,
@@ -607,6 +607,7 @@ namespace MazakMachineInterface
             1,
             0,
             @MainProgram,
+            0,
             0,
             0,
             0,
@@ -660,6 +661,7 @@ namespace MazakMachineInterface
             else
             {
               foundUnprocesssedRow = true;
+              Log.Debug("Unprocessed row for table {table} at index {idx} with {@row}", table, idx, row);
             }
           }
         }
@@ -683,6 +685,7 @@ namespace MazakMachineInterface
           else
           {
             foundUnprocesssedRow = true;
+            Log.Debug("Unprocessed Part_t row for part {part} with row {@row}", row.PartName, row);
           }
         }
         trans.Commit();

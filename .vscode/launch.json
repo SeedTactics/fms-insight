@@ -27,6 +27,7 @@
       "env": {
         "Mazak__SQL ConnectionString": "Server=localhost;User Id=mazakpmc;Password=Fms-978",
         "Mazak__Log CSV Path": "../../../log",
+        "Mazak__Program Directory": ".",
         "QUEUE__castings": "-1",
         "QUEUE__transfer": "-1",
         "FMS__AutomaticSerials": "true",

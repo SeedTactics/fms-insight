@@ -2959,8 +2959,11 @@ namespace BlackMaple.FMSInsight.API
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.ICollection<string> Pallets { get; set; } = new System.Collections.ObjectModel.Collection<string>();
     
-        [Newtonsoft.Json.JsonProperty("Fixtures", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public System.Collections.Generic.ICollection<FixtureFace> Fixtures { get; set; }
+        [Newtonsoft.Json.JsonProperty("Fixture", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public string Fixture { get; set; }
+    
+        [Newtonsoft.Json.JsonProperty("Face", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public int? Face { get; set; }
     
         [Newtonsoft.Json.JsonProperty("Load", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
@@ -3021,34 +3024,16 @@ namespace BlackMaple.FMSInsight.API
     }
     
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v10.0.0.0)")]
-    public partial class FixtureFace 
-    {
-        [Newtonsoft.Json.JsonProperty("Fixture", Required = Newtonsoft.Json.Required.Always)]
-        [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
-        public string Fixture { get; set; }
-    
-        [Newtonsoft.Json.JsonProperty("Face", Required = Newtonsoft.Json.Required.Always)]
-        [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
-        public string Face { get; set; }
-    
-        public string ToJson() 
-        {
-            return Newtonsoft.Json.JsonConvert.SerializeObject(this);
-        }
-    
-        public static FixtureFace FromJson(string data)
-        {
-            return Newtonsoft.Json.JsonConvert.DeserializeObject<FixtureFace>(data);
-        }
-    
-    }
-    
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v10.0.0.0)")]
     public partial class JobMachiningStop 
     {
-        [Newtonsoft.Json.JsonProperty("Stations", Required = Newtonsoft.Json.Required.Always)]
-        [System.ComponentModel.DataAnnotations.Required]
-        public System.Collections.Generic.IDictionary<string, string> Stations { get; set; } = new System.Collections.Generic.Dictionary<string, string>();
+        [Newtonsoft.Json.JsonProperty("StationNums", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public System.Collections.Generic.ICollection<int> StationNums { get; set; }
+    
+        [Newtonsoft.Json.JsonProperty("Program", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public string Program { get; set; }
+    
+        [Newtonsoft.Json.JsonProperty("ProgramRevision", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public long? ProgramRevision { get; set; }
     
         [Newtonsoft.Json.JsonProperty("Tools", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
@@ -3582,6 +3567,9 @@ namespace BlackMaple.FMSInsight.API
         [Newtonsoft.Json.JsonProperty("QueueSizes", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.IDictionary<string, QueueSize> QueueSizes { get; set; }
     
+        [Newtonsoft.Json.JsonProperty("Programs", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public System.Collections.Generic.ICollection<ProgramEntry> Programs { get; set; }
+    
         public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
@@ -3590,6 +3578,36 @@ namespace BlackMaple.FMSInsight.API
         public static NewJobs FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<NewJobs>(data);
+        }
+    
+    }
+    
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v10.0.0.0)")]
+    public partial class ProgramEntry 
+    {
+        [Newtonsoft.Json.JsonProperty("ProgramName", Required = Newtonsoft.Json.Required.Always)]
+        [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
+        public string ProgramName { get; set; }
+    
+        [Newtonsoft.Json.JsonProperty("Revision", Required = Newtonsoft.Json.Required.Always)]
+        public long Revision { get; set; }
+    
+        [Newtonsoft.Json.JsonProperty("Comment", Required = Newtonsoft.Json.Required.Always)]
+        [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
+        public string Comment { get; set; }
+    
+        [Newtonsoft.Json.JsonProperty("ProgramContent", Required = Newtonsoft.Json.Required.Always)]
+        [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
+        public string ProgramContent { get; set; }
+    
+        public string ToJson() 
+        {
+            return Newtonsoft.Json.JsonConvert.SerializeObject(this);
+        }
+    
+        public static ProgramEntry FromJson(string data)
+        {
+            return Newtonsoft.Json.JsonConvert.DeserializeObject<ProgramEntry>(data);
         }
     
     }
