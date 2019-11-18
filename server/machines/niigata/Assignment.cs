@@ -152,6 +152,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private static HashSet<T> ToHashSet<T>(IEnumerable<T> ts)
     {
+      // constructor with parameter doesn't exist in NET461
       var s = new HashSet<T>();
       foreach (var t in ts) s.Add(t);
       return s;

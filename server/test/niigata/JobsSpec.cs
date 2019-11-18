@@ -335,9 +335,20 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var newJob1 = new JobPlan("uu1", 2);
       newJob1.PartName = "p1";
       newJob1.SetPlannedCyclesOnFirstProcess(1, 10);
+      newJob1.AddLoadStation(1, 1, 1);
+      newJob1.AddLoadStation(2, 1, 1);
+      newJob1.AddUnloadStation(1, 1, 2);
+      newJob1.AddUnloadStation(2, 1, 1);
+      newJob1.AddProcessOnPallet(1, 1, "5");
+      newJob1.AddProcessOnPallet(2, 1, "6");
+      newJob1.SetFixtureFace(1, 1, "fix1", 2);
+      newJob1.SetFixtureFace(2, 1, "fix1", 2);
       var newJob2 = new JobPlan("uu2", 1);
       newJob2.PartName = "p2";
       newJob2.AddProcessOnPallet(process: 1, path: 1, pallet: "4");
+      newJob2.AddLoadStation(1, 1, 1);
+      newJob2.AddUnloadStation(1, 1, 2);
+      newJob2.SetFixtureFace(1, 1, "fix1", 2);
 
       var newJobs = new NewJobs()
       {

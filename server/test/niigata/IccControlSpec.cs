@@ -1635,12 +1635,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     }
 
     [Fact(Skip = "Pending")]
-    public void JobPriority()
-    {
-
-    }
-
-    [Fact(Skip = "Pending")]
     public void MultpleProcsMultiplePathsSeparatePallets()
     {
 

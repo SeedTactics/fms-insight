@@ -162,15 +162,99 @@ namespace BlackMaple.FMSInsight.Niigata
     #region Jobs
     public List<string> CheckValidRoutes(IEnumerable<JobPlan> newJobs)
     {
-      // TODO
-      // - single fixture/face
-      // - processes on different pallets have queue
-      // - program revision on stop non-null means > 0
-      return new List<string>();
+      return CheckJobs(new NewJobs()
+      {
+        Jobs = newJobs.ToList()
+      }, _jobs, _settings);
+    }
+
+    public static List<string> CheckJobs(NewJobs jobs, JobDB jobDB, FMSSettings fmsSettings)
+    {
+      var errors = new List<string>();
+
+      foreach (var j in jobs.Jobs)
+      {
+        for (var proc = 1; proc <= j.NumProcesses; proc++)
+        {
+          for (var path = 1; path <= j.GetNumPaths(proc); path++)
+          {
+            if (!j.LoadStations(proc, path).Any())
+            {
+              errors.Add("Part " + j.PartName + " does not have any assigned load stations");
+            }
+            if (!j.UnloadStations(proc, path).Any())
+            {
+              errors.Add("Part " + j.PartName + " does not have any assigned load stations");
+            }
+            if (string.IsNullOrEmpty(j.PlannedFixture(proc, path).fixture))
+            {
+              errors.Add("Part " + j.PartName + " does not have an assigned fixture");
+            }
+            if (!j.PlannedPallets(proc, path).Any())
+            {
+              errors.Add("Part " + j.PartName + " does not have any pallets");
+            }
+            foreach (var pal in j.PlannedPallets(proc, path))
+            {
+              if (!int.TryParse(pal, out var p))
+              {
+                errors.Add("Part " + j.PartName + " has non-integer pallets");
+              }
+            }
+            if (!string.IsNullOrEmpty(j.GetInputQueue(proc, path)) && !fmsSettings.Queues.ContainsKey(j.GetInputQueue(proc, path)))
+            {
+              errors.Add(" Part " + j.PartName + " has an input queue " + j.GetInputQueue(proc, path) + " which is not configured as a local queue in FMS Insight.");
+            }
+            if (!string.IsNullOrEmpty(j.GetOutputQueue(proc, path)) && !fmsSettings.Queues.ContainsKey(j.GetOutputQueue(proc, path)))
+            {
+              errors.Add(" Part " + j.PartName + " has an output queue " + j.GetOutputQueue(proc, path) + " which is not configured as a queue in FMS Insight.");
+            }
+
+            foreach (var stop in j.GetMachiningStop(proc, path))
+            {
+              if (string.IsNullOrEmpty(stop.ProgramName))
+              {
+                errors.Add("Part " + j.PartName + " has no assigned program");
+              }
+              if (stop.ProgramRevision.HasValue && stop.ProgramRevision.Value < 0)
+              {
+                errors.Add("Part " + j.PartName + " is not allowed to have negative revision");
+              }
+              if (stop.ProgramRevision.HasValue && stop.ProgramRevision.Value > 0)
+              {
+                var existing = jobDB.LoadProgram(stop.ProgramName, stop.ProgramRevision.Value) != null;
+                var newProg = jobs.Programs != null && jobs.Programs.Any(p => p.ProgramName == stop.ProgramName && p.Revision == stop.ProgramRevision);
+                if (!existing && !newProg)
+                {
+                  errors.Add("Part " + j.PartName + " program " + stop.ProgramName + " rev" + stop.ProgramRevision.Value.ToString() + " is not found");
+                }
+
+              }
+              else
+              {
+                var existing = jobDB.LoadMostRecentProgram(stop.ProgramName) != null;
+                var newProg = jobs.Programs != null && jobs.Programs.Any(p => p.ProgramName == stop.ProgramName);
+                if (!existing && !newProg)
+                {
+                  errors.Add("Part " + j.PartName + " program " + stop.ProgramName + " is not found");
+                }
+              }
+
+            }
+          }
+        }
+      }
+      return errors;
     }
 
     public void AddJobs(NewJobs jobs, string expectedPreviousScheduleId)
     {
+      var errors = CheckJobs(jobs, _jobs, _settings);
+      if (errors.Any())
+      {
+        throw new BadRequestException(string.Join(Environment.NewLine, errors));
+      }
+
       if (jobs.ArchiveCompletedJobs)
       {
         var existingJobs = _jobs.LoadUnarchivedJobs();

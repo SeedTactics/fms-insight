@@ -60,8 +60,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         SerialType = SerialType.AssignOneSerialPerMaterial,
         ConvertMaterialIDToSerial = FMSSettings.ConvertToBase62,
-        ConvertSerialToMaterialID = FMSSettings.ConvertFromBase62
+        ConvertSerialToMaterialID = FMSSettings.ConvertFromBase62,
       };
+      _settings.Queues.Add("thequeue", new MachineWatchInterface.QueueSize());
+      _settings.Queues.Add("qqq", new MachineWatchInterface.QueueSize());
 
       var logConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
       logConn.Open();
@@ -429,7 +431,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       if (progs == null)
         progs = Enumerable.Empty<(string prog, long rev)>();
-      _jobDB.AddJobs(new NewJobs()
+      var newJ = new NewJobs()
       {
         Jobs = jobs.ToList(),
         Programs =
@@ -441,7 +443,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               Comment = "Comment " + p.prog + " rev" + p.rev.ToString(),
               ProgramContent = "ProgramCt " + p.prog + " rev" + p.rev.ToString()
             }).ToList()
-      }, null);
+      };
+      NiigataJobs.CheckJobs(newJ, _jobDB, _settings).Should().BeEmpty();
+      _jobDB.AddJobs(newJ, null);
       foreach (var j in jobs)
       {
         _expectedJobStartedCount[j.UniqueStr] = 0;
