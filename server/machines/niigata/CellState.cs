@@ -815,6 +815,7 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             _log.RecordPathForProcess(mat.MaterialID, mat.Process, mat.Path);
           }
+          MakeInspectionDecisions(face, nowUtc);
         }
 
         if (currentlyRunningStop != null)
@@ -894,6 +895,7 @@ namespace BlackMaple.FMSInsight.Niigata
             {
               _log.RecordPathForProcess(mat.MaterialID, mat.Process, mat.Path);
             }
+            MakeInspectionDecisions(face, nowUtc);
           }
           else if (machStart == null && machEnd == null)
           {
@@ -947,6 +949,46 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       return mats;
+    }
+
+    private void MakeInspectionDecisions(PalletFace face, DateTime timeUTC)
+    {
+      foreach (var mat in face.Material)
+      {
+        var inspections = new List<JobInspectionData>();
+        foreach (var i in face.Job.GetInspections())
+        {
+          if (i.InspectSingleProcess <= 0 && mat.Process != face.Job.NumProcesses)
+          {
+            Log.Debug("Skipping inspection for material " + mat.MaterialID.ToString() +
+                      " inspection type " + i.InspectionType +
+                      " completed at time " + timeUTC.ToLocalTime().ToString() +
+                      " part " + mat.PartName +
+                      " because the process is not the maximum process");
+
+            continue;
+          }
+          if (i.InspectSingleProcess >= 1 && mat.Process != i.InspectSingleProcess)
+          {
+            Log.Debug("Skipping inspection for material " + mat.MaterialID.ToString() +
+                      " inspection type " + i.InspectionType +
+                      " completed at time " + timeUTC.ToLocalTime().ToString() +
+                      " part " + mat.PartName +
+                      " process " + mat.Process.ToString() +
+                      " because the inspection is only on process " +
+                      i.InspectSingleProcess.ToString());
+
+            continue;
+          }
+
+          inspections.Add(i);
+        }
+
+        _log.MakeInspectionDecisions(mat.MaterialID, mat.Process, inspections, timeUTC);
+        Log.Debug("Making inspection decision for " + string.Join(",", inspections.Select(x => x.InspectionType)) + " material " + mat.MaterialID.ToString() +
+                  " completed at time " + timeUTC.ToLocalTime().ToString() +
+                  " part " + mat.PartName);
+      }
     }
 
     private Dictionary<string, int> CountStartedMaterial(PlannedSchedule schedule, IEnumerable<PalletAndMaterial> pals)

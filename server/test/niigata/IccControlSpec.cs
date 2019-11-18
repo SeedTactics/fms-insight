@@ -35,6 +35,7 @@ using System;
 using System.Linq;
 using Xunit;
 using BlackMaple.MachineWatchInterface;
+using System.Collections.Generic;
 
 namespace BlackMaple.FMSInsight.Niigata.Tests
 {
@@ -72,7 +73,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             machMins: 14,
             fixture: "fix1",
             face: 1
-          )},
+          )
+          .AddInsp(inspTy: "InspTy", cntr: "Thecounter", max: 2)
+          },
           new[] { (prog: "prog111", rev: 5L) }
         )
         .MoveToMachineQueue(pal: 2, mach: 3)
@@ -157,7 +160,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           }
         )
         .ExpectTransition(new[] {
-          FakeIccDsl.ExpectMachineEnd(pal: 1, mach: 3, program: "prog111", rev: 5, elapsedMin: 15, activeMin: 14, mats: fstMats)
+          FakeIccDsl.ExpectMachineEnd(pal: 1, mach: 3, program: "prog111", rev: 5, elapsedMin: 15, activeMin: 14, mats: fstMats),
+          FakeIccDsl.ExpectInspection(mat: fstMats, cntr: "Thecounter", inspTy: "InspTy", inspect: false, path: new[] {
+            new MaterialProcessActualPath() {
+              Process = 1, Pallet = "1", LoadStation = 1, UnloadStation = -1, Stops = new List<MaterialProcessActualPath.Stop> {
+                new MaterialProcessActualPath.Stop() {
+                  StationName = "MC", StationNum = 3
+                }
+              }
+            }
+          })
         })
         .MoveToMachineQueue(pal: 1, mach: 3)
         .ExpectNoChanges()
@@ -214,10 +226,20 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .UpdateExpectedMaterial(sndMats, im =>
           {
             im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+            im.SignaledInspections.Add("InspTy");
           }
         )
         .ExpectTransition(new[] {
-          FakeIccDsl.ExpectMachineEnd(pal: 1, mach: 6, program: "prog111", rev: 5, elapsedMin: 15, activeMin: 14, mats: sndMats)
+          FakeIccDsl.ExpectMachineEnd(pal: 1, mach: 6, program: "prog111", rev: 5, elapsedMin: 15, activeMin: 14, mats: sndMats),
+          FakeIccDsl.ExpectInspection(mat: sndMats, cntr: "Thecounter", inspTy: "InspTy", inspect: true, path: new[] {
+            new MaterialProcessActualPath() {
+              Process = 1, Pallet = "1", LoadStation = 4, UnloadStation = -1, Stops = new List<MaterialProcessActualPath.Stop> {
+                new MaterialProcessActualPath.Stop() {
+                  StationName = "MC", StationNum = 6
+                }
+              }
+            }
+          })
         })
 
         .MoveToLoad(pal: 1, lul: 3)

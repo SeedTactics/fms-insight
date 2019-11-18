@@ -958,6 +958,27 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       };
     }
 
+    private class ExpectInspectionDecision : ExpectedChange
+    {
+      public IEnumerable<LogMaterial> Material { get; set; }
+      public string Counter { get; set; }
+      public bool Inspect { get; set; }
+      public string InspType { get; set; }
+      public IEnumerable<MaterialProcessActualPath> Path { get; set; }
+    }
+
+    public static ExpectedChange ExpectInspection(IEnumerable<LogMaterial> mat, string cntr, string inspTy, bool inspect, IEnumerable<MaterialProcessActualPath> path)
+    {
+      return new ExpectInspectionDecision()
+      {
+        Material = mat,
+        Counter = cntr,
+        InspType = inspTy,
+        Inspect = inspect,
+        Path = path
+      };
+    }
+
     private class ExpectPalletCycleChange : ExpectedChange
     {
       public int Pallet { get; set; }
@@ -1340,6 +1361,31 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 expectedLogs.Add(newLog);
               }
               break;
+
+            case ExpectInspectionDecision insp:
+              foreach (var mat in insp.Material)
+              {
+                var newLog = new LogEntry(
+                  cntr: -1,
+                  mat: new[] { new LogMaterial(matID: mat.MaterialID, uniq: mat.JobUniqueStr, proc: mat.Process, part: mat.PartName, numProc: mat.NumProcesses, serial: mat.Serial, workorder: mat.Workorder, face: "") },
+                  pal: "",
+                  ty: LogType.Inspection,
+                  locName: "Inspect",
+                  locNum: 1,
+                  prog: insp.Counter,
+                  start: false,
+                  endTime: _status.TimeOfStatusUTC,
+                  result: insp.Inspect.ToString(),
+                  endOfRoute: false
+                );
+                newLog.ProgramDetails["InspectionType"] = insp.InspType;
+                newLog.ProgramDetails["ActualPath"] = Newtonsoft.Json.JsonConvert.SerializeObject(
+                  insp.Path.Select(p => { p.MaterialID = mat.MaterialID; return p; })
+                );
+                expectedLogs.Add(newLog);
+              }
+
+              break;
           }
         }
 
@@ -1359,5 +1405,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return ExpectNoChanges();
     }
     #endregion
+  }
+
+  public static class FakeIccDslJobHelpers
+  {
+    public static JobPlan AddInsp(this JobPlan job, string inspTy, string cntr, int max, int inspSingleProc = -1)
+    {
+      job.AddInspection(new JobInspectionData(inspTy, cntr, max, TimeSpan.Zero, inspSingleProc));
+      return job;
+    }
   }
 }
