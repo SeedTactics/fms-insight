@@ -214,8 +214,6 @@ namespace BlackMaple.FMSInsight.Niigata
         }
       }
 
-      //TODO: add material for pallet which is moving to load station to receive new part to load?
-
       return mats.Count;
     }
 
