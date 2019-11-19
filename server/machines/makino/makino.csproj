@@ -30,12 +30,12 @@
   <Choose>
     <When Condition="$(OS) == 'Windows_NT'">
       <PropertyGroup>
-        <TargetFrameworks>net461;netcoreapp2.2</TargetFrameworks>
+        <TargetFrameworks>net461;netcoreapp2.1</TargetFrameworks>
       </PropertyGroup>
     </When>
     <Otherwise>
       <PropertyGroup>
-        <TargetFramework>netcoreapp2.2</TargetFramework>
+        <TargetFramework>netcoreapp2.1</TargetFramework>
       </PropertyGroup>
     </Otherwise>
   </Choose>
@@ -54,7 +54,7 @@
           </ItemGroup>
       </When>
 
-      <When Condition="$(TargetFramework) == 'netcoreapp2.2'">
+      <When Condition="$(TargetFramework) == 'netcoreapp2.1'">
           <ItemGroup>
             <PackageReference Include="System.Data.SqlClient" Version="4.6.0"/>
             <PackageReference Include="System.IO.FileSystem.AccessControl" Version="4.5.0"/>

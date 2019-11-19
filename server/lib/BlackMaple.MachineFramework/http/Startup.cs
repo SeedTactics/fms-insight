@@ -100,7 +100,6 @@ namespace BlackMaple.MachineFramework
           {
             options.ModelBinderProviders.Insert(0, new DateTimeBinderProvider());
           })
-          .SetCompatibilityVersion(CompatibilityVersion.Version_2_2)
           .AddApiExplorer()
           .AddFormatterMappings()
           .AddJsonFormatters()
