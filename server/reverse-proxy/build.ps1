@@ -13,6 +13,6 @@ dotnet publish -r win10-x64 --self-contained -c Release /p:Version=$version /p:P
 Get-ChildItem -Recurse bin/Release/netcoreapp3.1
 
 & 7z a reverse-proxy.zip * -xr!bin -xr!obj -xr!build-output
-& 7z a reverse-proxy.zip bin/Release/netcoreapp3.1/win10-x64/publish/reverse-proxy.exe
+& 7z a reverse-proxy.zip ./bin/Release/netcoreapp3.1/win10-x64/publish/reverse-proxy.exe
 
 Pop-Location
