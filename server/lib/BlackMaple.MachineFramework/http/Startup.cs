@@ -233,7 +233,7 @@ namespace BlackMaple.MachineFramework
             if (_serverSt.UseAuthentication)
             {
               var res = await context.AuthenticateAsync();
-              if (res.Failure != null)
+              if (!res.Succeeded)
               {
                 context.Response.StatusCode = 401;
                 return;
