@@ -337,10 +337,12 @@ export class MaterialDetailContent extends React.PureComponent<MaterialDetailPro
 
 export function InstructionButton({
   material,
-  type
+  type,
+  operator
 }: {
   readonly material: matDetails.MaterialDetail;
   readonly type: string;
+  readonly operator: string | null;
 }) {
   const maxProc = LazySeq.ofIterable(material.events)
     .flatMap(e => e.material)
@@ -351,7 +353,8 @@ export function InstructionButton({
     "?type=" +
     encodeURIComponent(type) +
     ("&materialID=" + material.materialID.toString()) +
-    (maxProc !== undefined ? "&process=" + maxProc.getOrElse(1).toString() : "");
+    (maxProc !== undefined ? "&process=" + maxProc.getOrElse(1).toString() : "") +
+    (operator !== null ? "&operatorName=" + encodeURIComponent(operator) : "");
   return (
     <Button
       href={"/api/v1/fms/find-instructions/" + encodeURIComponent(material.partName) + instrQuery}

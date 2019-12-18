@@ -291,6 +291,7 @@ interface LoadMatDialogProps extends MaterialDialogProps {
   readonly openSetSerial: () => void;
   readonly openForceInspection: () => void;
   readonly usingLabelPrinter: boolean;
+  readonly operator?: string;
   readonly printLabel: (matId: number) => void;
 }
 
@@ -323,7 +324,11 @@ function LoadMatDialog(props: LoadMatDialogProps) {
       buttons={
         <>
           {props.display_material && props.display_material.partName !== "" ? (
-            <InstructionButton material={props.display_material} type={instructionType(props.display_material)} />
+            <InstructionButton
+              material={props.display_material}
+              type={instructionType(props.display_material)}
+              operator={props.operator || null}
+            />
           ) : (
             undefined
           )}
@@ -352,7 +357,10 @@ function LoadMatDialog(props: LoadMatDialogProps) {
 const ConnectedMaterialDialog = connect(
   st => ({
     display_material: st.MaterialDetails.material,
-    usingLabelPrinter: st.ServerSettings.fmsInfo ? st.ServerSettings.fmsInfo.usingLabelPrinterForSerials : false
+    usingLabelPrinter: st.ServerSettings.fmsInfo ? st.ServerSettings.fmsInfo.usingLabelPrinterForSerials : false,
+    operator: st.ServerSettings.user
+      ? st.ServerSettings.user.profile.name || st.ServerSettings.user.profile.sub
+      : st.Operators.current
   }),
   {
     onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),

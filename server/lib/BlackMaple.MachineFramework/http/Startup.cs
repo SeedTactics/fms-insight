@@ -115,7 +115,7 @@ namespace BlackMaple.MachineFramework
       {
         cfg.Title = "SeedTactic FMS Insight";
         cfg.Description = "API for access to FMS Insight for flexible manufacturing system control";
-        cfg.Version = "1.11";
+        cfg.Version = "1.12";
         var settings = new Newtonsoft.Json.JsonSerializerSettings();
         settings.Converters.Add(new StringEnumConverter());
         settings.Converters.Add(new TimespanConverter());

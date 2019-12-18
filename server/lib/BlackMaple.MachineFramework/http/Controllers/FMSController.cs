@@ -124,13 +124,17 @@ namespace BlackMaple.MachineFramework.Controllers
     [ProducesResponseType(302)]
     [ProducesResponseType(404)]
     [Authorize]
-    public IActionResult FindInstructions(string part, [FromQuery] string type, [FromQuery] int? process = null, [FromQuery] long? materialID = null)
+    public IActionResult FindInstructions(string part,
+                                         [FromQuery] string type,
+                                         [FromQuery] int? process = null,
+                                         [FromQuery] long? materialID = null,
+                                         [FromQuery] string operatorName = null)
     {
       try
       {
         if (_impl != null && _impl.InstructionPath != null)
         {
-          var path = _impl.InstructionPath(part, process, type, materialID);
+          var path = _impl.InstructionPath(part, process, type, materialID, operatorName);
           if (string.IsNullOrEmpty(path))
           {
             return NotFound(
