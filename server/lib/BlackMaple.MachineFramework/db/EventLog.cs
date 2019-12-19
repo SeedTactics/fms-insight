@@ -2019,7 +2019,10 @@ namespace BlackMaple.MachineFramework
     }
 
     public MachineWatchInterface.LogEntry RecordGeneralMessage(
-        EventLogMaterial mat, string program, string result, string pallet = "", DateTime? timeUTC = null, string foreignId = null, string originalMessage = null)
+        EventLogMaterial mat, string program, string result, string pallet = "", DateTime? timeUTC = null, string foreignId = null,
+        string originalMessage = null,
+        IDictionary<string, string> extraData = null
+        )
     {
       var log = new NewEventLogEntry()
       {
@@ -2034,7 +2037,32 @@ namespace BlackMaple.MachineFramework
         Result = result,
         EndOfRoute = false
       };
+      if (extraData != null)
+      {
+        foreach (var x in extraData) log.ProgramDetails.Add(x.Key, x.Value);
+      }
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
+    }
+
+    public MachineWatchInterface.LogEntry RecordOperatorNotes(long materialId, int process, string notes, string operatorName)
+    {
+      return RecordOperatorNotes(materialId, process, notes, operatorName, null);
+    }
+    public MachineWatchInterface.LogEntry RecordOperatorNotes(long materialId, int process, string notes, string operatorName, DateTime? timeUtc)
+    {
+      var extra = new Dictionary<string, string>();
+      extra["note"] = notes;
+      if (!string.IsNullOrEmpty(operatorName))
+      {
+        extra["operator"] = operatorName;
+      }
+      return RecordGeneralMessage(
+        mat: new EventLogMaterial() { MaterialID = materialId, Process = process, Face = "" },
+        program: "OperatorNotes",
+        result: "Operator Notes",
+        timeUTC: timeUtc,
+        extraData: extra
+      );
     }
     #endregion
 

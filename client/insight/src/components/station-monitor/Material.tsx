@@ -42,6 +42,7 @@ import SearchIcon from "@material-ui/icons/Search";
 import Avatar from "@material-ui/core/Avatar";
 import Paper from "@material-ui/core/Paper";
 import CircularProgress from "@material-ui/core/CircularProgress";
+import TextField from "@material-ui/core/TextField";
 import TimeAgo from "react-timeago";
 import Dialog from "@material-ui/core/Dialog";
 import DialogActions from "@material-ui/core/DialogActions";
@@ -266,6 +267,7 @@ export class MaterialDetailTitle extends React.PureComponent<{
   partName: string;
   serial?: string;
   subtitle?: string;
+  notes?: boolean;
 }> {
   render() {
     let title;
@@ -274,9 +276,17 @@ export class MaterialDetailTitle extends React.PureComponent<{
     } else if (this.props.partName === "") {
       title = "Loading " + this.props.serial;
     } else if (this.props.serial === undefined || this.props.serial === "") {
-      title = this.props.partName;
+      if (this.props.notes) {
+        title = "Add note for " + this.props.partName;
+      } else {
+        title = this.props.partName;
+      }
     } else {
-      title = this.props.partName + " - " + this.props.serial;
+      if (this.props.notes) {
+        title = "Add note for " + this.props.serial;
+      } else {
+        title = this.props.partName + " - " + this.props.serial;
+      }
     }
 
     return (
@@ -366,17 +376,84 @@ export function InstructionButton({
   );
 }
 
+interface NotesDialogBodyProps {
+  mat: matDetails.MaterialDetail;
+  operator?: string;
+  setNotesOpen: (o: boolean) => void;
+  addNote: (matId: number, process: number, operator: string | null, notes: string) => void;
+}
+
+function NotesDialogBody(props: NotesDialogBodyProps) {
+  const [curNote, setCurNote] = React.useState<string>("");
+
+  return (
+    <>
+      <DialogTitle disableTypography>
+        <MaterialDetailTitle notes partName={props.mat.partName} serial={props.mat.serial} />
+      </DialogTitle>
+      <DialogContent>
+        <TextField
+          multiline
+          label="Notes"
+          autoFocus
+          variant="outlined"
+          value={curNote}
+          onChange={e => setCurNote(e.target.value)}
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button
+          onClick={() => {
+            props.addNote(props.mat.materialID, 0, props.operator || null, curNote);
+            props.setNotesOpen(false);
+            setCurNote("");
+          }}
+          disabled={curNote === ""}
+          color="secondary"
+        >
+          Save
+        </Button>
+        <Button
+          onClick={() => {
+            props.setNotesOpen(false);
+            setCurNote("");
+          }}
+          color="secondary"
+        >
+          Cancel
+        </Button>
+      </DialogActions>
+    </>
+  );
+}
+
+const ConnectedNotesDialogBody = connect(
+  st => ({
+    operator: st.ServerSettings.user
+      ? st.ServerSettings.user.profile.name || st.ServerSettings.user.profile.sub
+      : st.Operators.current
+  }),
+  {
+    addNote: matDetails.addNote
+  }
+)(NotesDialogBody);
+
 export interface MaterialDialogProps {
   display_material: matDetails.MaterialDetail | null;
   buttons?: JSX.Element;
   onClose: () => void;
+  allowNote?: boolean;
   extraDialogElements?: JSX.Element;
 }
 
 export function MaterialDialog(props: MaterialDialogProps) {
+  const [notesOpen, setNotesOpen] = React.useState<boolean>(false);
+
   let body: JSX.Element | undefined;
+  let notesBody: JSX.Element | undefined;
   if (props.display_material === null) {
     body = <p>None</p>;
+    notesBody = <p>None</p>;
   } else {
     const mat = props.display_material;
     body = (
@@ -389,6 +466,13 @@ export function MaterialDialog(props: MaterialDialogProps) {
         </DialogContent>
         {props.extraDialogElements}
         <DialogActions>
+          {props.allowNote ? (
+            <Button onClick={() => setNotesOpen(true)} color="primary">
+              Add Note
+            </Button>
+          ) : (
+            undefined
+          )}
           {props.buttons}
           <Button onClick={props.onClose} color="secondary">
             Close
@@ -396,11 +480,23 @@ export function MaterialDialog(props: MaterialDialogProps) {
         </DialogActions>
       </>
     );
+    if (props.allowNote) {
+      notesBody = <ConnectedNotesDialogBody mat={mat} setNotesOpen={setNotesOpen} />;
+    }
   }
   return (
-    <Dialog open={props.display_material !== null} onClose={props.onClose} maxWidth="md">
-      {body}
-    </Dialog>
+    <>
+      <Dialog open={props.display_material !== null} onClose={props.onClose} maxWidth="md">
+        {body}
+      </Dialog>
+      {props.allowNote ? (
+        <Dialog open={notesOpen} onClose={() => setNotesOpen(false)} maxWidth="md">
+          {notesBody}
+        </Dialog>
+      ) : (
+        undefined
+      )}
+    </>
   );
 }
 

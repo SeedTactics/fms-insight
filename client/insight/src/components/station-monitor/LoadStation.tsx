@@ -321,6 +321,7 @@ function LoadMatDialog(props: LoadMatDialogProps) {
     <MaterialDialog
       display_material={props.display_material}
       onClose={props.onClose}
+      allowNote
       buttons={
         <>
           {props.display_material && props.display_material.partName !== "" ? (

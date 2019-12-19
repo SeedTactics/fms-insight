@@ -265,6 +265,12 @@ function detailsForEntry(e: api.ILogEntry): ReadonlyArray<LogDetail> {
       value: e.details.operator
     });
   }
+  if (e.details && e.details.note) {
+    details.push({
+      name: "Note",
+      value: e.details.note
+    });
+  }
   return details;
 }
 

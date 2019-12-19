@@ -192,6 +192,13 @@ namespace BlackMaple.MachineFramework.Controllers
       return _server.ForceInspection(materialID, process, inspType, inspect);
     }
 
+    [HttpPost("material-details/{materialID}/notes")]
+    public LogEntry RecordOperatorNotes(long materialID, [FromBody] string notes, [FromQuery] int process = 1, [FromQuery] string operatorName = null)
+    {
+      return _server.RecordOperatorNotes(materialID, process, notes, operatorName);
+    }
+
+
     [HttpPost("events/inspection-result")]
     public LogEntry RecordInspectionCompleted([FromBody] NewInspectionCompleted insp)
     {

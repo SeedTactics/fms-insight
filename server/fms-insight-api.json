@@ -1155,6 +1155,67 @@
         }
       }
     },
+    "/api/v1/log/material-details/{materialID}/notes": {
+      "post": {
+        "tags": [
+          "log"
+        ],
+        "operationId": "log_RecordOperatorNotes",
+        "consumes": [
+          "application/json-patch+json",
+          "application/json",
+          "text/json",
+          "application/*+json"
+        ],
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "materialID",
+            "in": "path",
+            "required": true,
+            "format": "int64",
+            "x-nullable": false
+          },
+          {
+            "name": "notes",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-nullable": false
+          },
+          {
+            "type": "integer",
+            "name": "process",
+            "in": "query",
+            "format": "int32",
+            "default": 1,
+            "x-nullable": false
+          },
+          {
+            "type": "string",
+            "name": "operatorName",
+            "in": "query",
+            "x-nullable": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/LogEntry"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/log/events/inspection-result": {
       "post": {
         "tags": [

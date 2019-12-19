@@ -93,6 +93,12 @@ export interface LogAPI {
     jobUnique?: string,
     partName?: string
   ): Promise<Readonly<api.ILogEntry>>;
+  recordOperatorNotes(
+    materialID: number,
+    notes: string,
+    process: number,
+    operatorName: string | null
+  ): Promise<Readonly<api.ILogEntry>>;
 }
 
 export const BackendHost = process.env.NODE_ENV === "production" ? undefined : "localhost:5000";
@@ -391,6 +397,40 @@ function initMockBackend(data: Promise<MockData>) {
         program: "",
         elapsed: "00:00:00",
         active: "00:00:00"
+      };
+      return data.then(d =>
+        d.events.then(evts => {
+          evts.push(evt);
+          return evt;
+        })
+      );
+    },
+    recordOperatorNotes(materialID: number, notes: string, process: number, operatorName: string | null) {
+      const mat = new api.LogMaterial({
+        id: materialID,
+        uniq: "",
+        part: "",
+        proc: process,
+        numproc: 1,
+        face: ""
+      });
+      const evt: api.ILogEntry = {
+        counter: 0,
+        material: [mat],
+        pal: "",
+        type: api.LogType.GeneralMessage,
+        startofcycle: false,
+        endUTC: new Date(),
+        loc: "Message",
+        locnum: 1,
+        result: "Operator Notes",
+        program: "OperatorNotes",
+        elapsed: "00:00:00",
+        active: "00:00:00",
+        details: {
+          operator: operatorName || "",
+          note: notes
+        }
       };
       return data.then(d =>
         d.events.then(evts => {

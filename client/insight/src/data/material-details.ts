@@ -332,6 +332,18 @@ export function assignSerial({ mat, serial }: AssignSerialData): PledgeToPromise
   };
 }
 
+export function addNote(
+  matId: number,
+  process: number,
+  operator: string | null,
+  notes: string
+): PledgeToPromise<Action> {
+  return {
+    type: ActionType.UpdateMaterial,
+    pledge: LogBackend.recordOperatorNotes(matId, notes, process, operator)
+  };
+}
+
 export function computeWorkorders(
   partName: string,
   workorders: ReadonlyArray<api.IPartWorkorder>,

@@ -90,10 +90,11 @@ function WashDialog(props: WashDialogProps) {
     <MaterialDialog
       display_material={props.display_material}
       onClose={props.onClose}
+      allowNote
       buttons={
         <>
           {props.display_material && props.display_material.partName !== "" ? (
-            <InstructionButton material={props.display_material} type="wash" />
+            <InstructionButton material={props.display_material} type="wash" operator={props.operator || null} />
           ) : (
             undefined
           )}

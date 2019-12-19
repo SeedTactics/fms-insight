@@ -110,6 +110,7 @@ function InspDialog(props: InspDialogProps) {
   return (
     <MaterialDialog
       display_material={props.display_material}
+      allowNote
       onClose={props.onClose}
       extraDialogElements={
         !displayMat || !multipleInspTypes ? (
