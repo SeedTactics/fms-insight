@@ -66,7 +66,7 @@ it("renders the app shell", async () => {
       matches: query === "(min-width:600px)", // true for Hidden smDown screens
       addListener: () => undefined,
       removeListener: () => undefined
-      // tslint:disable-next-line:no-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
   const store = initStore({ useRouter: false });
@@ -103,7 +103,7 @@ it("renders the app shell", async () => {
   const jan18 = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
   const offsetSeconds = differenceInSeconds(addDays(new Date(Date.UTC(2018, 7, 6, 15, 39, 0)), -28), jan18);
 
-  // tslint:disable-next-line:no-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (window as any).FMS_INSIGHT_RESOLVE_MOCK_DATA(loadMockData(offsetSeconds));
 
   await wait(() => expect(result.queryByTestId("loading-icon")).not.toBeInTheDocument());

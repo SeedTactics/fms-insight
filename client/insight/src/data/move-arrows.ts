@@ -111,11 +111,11 @@ function buildMatByKind(data: MoveMaterialArrowData<ClientRect>): MoveMaterialBy
       material: Vector.empty<[ClientRect, Readonly<api.IInProcessMaterialAction>]>()
     } as MoveMaterialByKind,
     (acc, [key, kind]) => {
-      let nodeM = data.nodes.get(key);
+      const nodeM = data.nodes.get(key);
       if (nodeM.isNone()) {
         return acc;
       }
-      let node = nodeM.get();
+      const node = nodeM.get();
       switch (kind.type) {
         case MoveMaterialNodeKindType.FreeMaterialZone:
           return { ...acc, freeMaterial: node };
@@ -162,7 +162,7 @@ export function computeArrows(data: MoveMaterialArrowData<ClientRect>): Readonly
               : container.bottom - 10,
             curveDirection: 1
           } as MoveMaterialArrow;
-        case api.ActionType.UnloadToInProcess:
+        case api.ActionType.UnloadToInProcess: {
           let dest: Option<ClientRect>;
           if (action.unloadIntoQueue) {
             dest = byKind.queues.get(action.unloadIntoQueue);
@@ -176,6 +176,7 @@ export function computeArrows(data: MoveMaterialArrowData<ClientRect>): Readonly
             toY: dest.isSome() ? dest.get().top + dest.get().height / 2 : rect.top + rect.height / 2,
             curveDirection: 1
           } as MoveMaterialArrow;
+        }
         case api.ActionType.Loading:
           if (action.loadOntoFace) {
             const face = byKind.faces.get(action.loadOntoFace);

@@ -44,6 +44,7 @@ import DialogActions from "@material-ui/core/DialogActions";
 import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
 import TextField from "@material-ui/core/TextField";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 import { SortEnd } from "react-sortable-hoc";
 
@@ -502,7 +503,7 @@ const selectMatCurrentlyInQueue = createSelector(
     if (mat.materialID < 0) {
       return false;
     }
-    for (let inProcMat of allMats) {
+    for (const inProcMat of allMats) {
       if (inProcMat.materialID === mat.materialID) {
         return inProcMat.location.type === api.LocType.InQueue;
       }
@@ -549,7 +550,7 @@ interface ChooseSerialOrDirectJobProps {
   readonly onClose: () => void;
 }
 
-const ChooseSerialOrDirectJob = React.memo(function(props: ChooseSerialOrDirectJobProps) {
+const ChooseSerialOrDirectJob = React.memo(function ChooseSerialOrJob(props: ChooseSerialOrDirectJobProps) {
   const [serial, setSerial] = React.useState<string | undefined>(undefined);
   function lookup() {
     if (serial && serial !== "") {
@@ -571,7 +572,7 @@ const ChooseSerialOrDirectJob = React.memo(function(props: ChooseSerialOrDirectJ
       <DialogContent>
         <div style={{ maxWidth: "25em" }}>
           <p>
-            To find the details of the material to add, you can either scan a part's serial, lookup a serial, or
+            To find the details of the material to add, you can either scan a part&apos;s serial, lookup a serial, or
             manually select a job.
           </p>
         </div>
@@ -657,9 +658,9 @@ interface QueueProps {
 }
 
 const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof queueStyles>) => {
-  let queues = props.data.queues
+  const queues = props.data.queues
     .toVector()
-    .sortOn(([q, mats]) => q)
+    .sortOn(([q, _]) => q)
     .map(([q, mats]) => ({
       label: q,
       free: false,

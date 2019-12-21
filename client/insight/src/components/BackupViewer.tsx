@@ -35,7 +35,10 @@ import Button from "@material-ui/core/Button";
 
 import { connect } from "../store/store";
 
-const InitialPage = React.memo(function(props: { onRequestOpenFile: () => void; loading_error: Error | undefined }) {
+const InitialPage = React.memo(function BackupViewer(props: {
+  onRequestOpenFile: () => void;
+  loading_error: Error | undefined;
+}) {
   return (
     <div style={{ textAlign: "center" }}>
       <h1 style={{ marginTop: "2em" }}>FMS Insight Backup Viewer</h1>

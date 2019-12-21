@@ -15,8 +15,8 @@ export class LazySeq<T> {
 
   static ofObject<V>(obj: { [k: string]: V }): LazySeq<[string, V]> {
     return LazySeq.ofIterator(function*() {
-      for (let k in obj) {
-        if (obj.hasOwnProperty(k)) {
+      for (const k in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, k)) {
           yield [k, obj[k]] as [string, V];
         }
       }
@@ -37,7 +37,7 @@ export class LazySeq<T> {
   }
 
   allMatch(f: (x: T) => boolean): boolean {
-    for (let x of this.iter) {
+    for (const x of this.iter) {
       if (!f(x)) {
         return false;
       }
@@ -46,7 +46,7 @@ export class LazySeq<T> {
   }
 
   anyMatch(f: (x: T) => boolean): boolean {
-    for (let x of this.iter) {
+    for (const x of this.iter) {
       if (f(x)) {
         return true;
       }
@@ -72,7 +72,7 @@ export class LazySeq<T> {
 
   arrangeBy<K>(f: (x: T) => K & WithEquality): Option<HashMap<K, T>> {
     let m = HashMap.empty<K, T>();
-    for (let x of this.iter) {
+    for (const x of this.iter) {
       const k = f(x);
       if (m.containsKey(k)) {
         return Option.none();
@@ -87,7 +87,7 @@ export class LazySeq<T> {
     const iter = this.iter;
     return LazySeq.ofIterator(function*() {
       let chunk = Vector.empty<T>();
-      for (let x of iter) {
+      for (const x of iter) {
         chunk = chunk.append(x);
         if (chunk.length() === size) {
           yield chunk;
@@ -101,7 +101,7 @@ export class LazySeq<T> {
   }
 
   contains(v: T & WithEquality): boolean {
-    for (let x of this.iter) {
+    for (const x of this.iter) {
       if (areEqual(x, v)) {
         return true;
       }
@@ -113,7 +113,7 @@ export class LazySeq<T> {
     const iter = this.iter;
     return LazySeq.ofIterator(function*() {
       let cnt = 0;
-      for (let x of iter) {
+      for (const x of iter) {
         if (cnt >= n) {
           yield x;
         } else {
@@ -127,7 +127,7 @@ export class LazySeq<T> {
     const iter = this.iter;
     return LazySeq.ofIterator(function*() {
       let dropping = true;
-      for (let x of iter) {
+      for (const x of iter) {
         if (dropping) {
           if (!f(x)) {
             dropping = false;
@@ -148,7 +148,7 @@ export class LazySeq<T> {
   filter(f: (x: T) => boolean): LazySeq<T> {
     const iter = this.iter;
     return LazySeq.ofIterator(function*() {
-      for (let x of iter) {
+      for (const x of iter) {
         if (f(x)) {
           yield x;
         }
@@ -157,7 +157,7 @@ export class LazySeq<T> {
   }
 
   find(f: (v: T) => boolean): Option<T> {
-    for (let x of this.iter) {
+    for (const x of this.iter) {
       if (f(x)) {
         return Option.of(x);
       }
@@ -168,7 +168,7 @@ export class LazySeq<T> {
   flatMap<S>(f: (x: T) => Iterable<S>): LazySeq<S> {
     const iter = this.iter;
     return LazySeq.ofIterator(function*() {
-      for (let x of iter) {
+      for (const x of iter) {
         yield* f(x);
       }
     });
@@ -176,7 +176,7 @@ export class LazySeq<T> {
 
   foldLeft<S>(zero: S, f: (soFar: S, cur: T) => S): S {
     let soFar = zero;
-    for (let x of this.iter) {
+    for (const x of this.iter) {
       soFar = f(soFar, x);
     }
     return soFar;
@@ -200,7 +200,8 @@ export class LazySeq<T> {
 
   length(): number {
     let cnt = 0;
-    for (let _ of this.iter) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    for (const _ of this.iter) {
       cnt += 1;
     }
     return cnt;
@@ -210,7 +211,7 @@ export class LazySeq<T> {
     const iter = this.iter;
     return LazySeq.ofIterator(function*() {
       let idx = 0;
-      for (let x of iter) {
+      for (const x of iter) {
         yield f(x, idx);
         idx += 1;
       }
@@ -220,7 +221,7 @@ export class LazySeq<T> {
   mapOption<S>(f: (x: T) => Option<S>): LazySeq<S> {
     const iter = this.iter;
     return LazySeq.ofIterator(function*() {
-      for (let x of iter) {
+      for (const x of iter) {
         const y = f(x);
         if (y.isSome()) {
           yield y.get();
@@ -236,7 +237,7 @@ export class LazySeq<T> {
   maxOn(getOrderable: ToOrderable<T>): Option<T> {
     let ret = Option.none<T>();
     let maxVal: number | string | boolean | undefined;
-    for (let x of this.iter) {
+    for (const x of this.iter) {
       if (ret.isNone()) {
         ret = Option.of(x);
         maxVal = getOrderable(x);
@@ -258,7 +259,7 @@ export class LazySeq<T> {
   minOn(getOrderable: ToOrderable<T>): Option<T> {
     let ret = Option.none<T>();
     let minVal: number | string | boolean | undefined;
-    for (let x of this.iter) {
+    for (const x of this.iter) {
       if (ret.isNone()) {
         ret = Option.of(x);
         minVal = getOrderable(x);
@@ -291,7 +292,7 @@ export class LazySeq<T> {
 
   reduce(f: (x1: T, x2: T) => T): Option<T> {
     let ret = Option.none<T>();
-    for (let x of this.iter) {
+    for (const x of this.iter) {
       if (ret.isNone()) {
         ret = Option.of(x);
       } else {
@@ -320,7 +321,7 @@ export class LazySeq<T> {
 
   sumOn(getNumber: (v: T) => number): number {
     let sum = 0;
-    for (let x of this.iter) {
+    for (const x of this.iter) {
       sum += getNumber(x);
     }
     return sum;
@@ -330,7 +331,7 @@ export class LazySeq<T> {
     const iter = this.iter;
     return LazySeq.ofIterator(function*() {
       let seenFirst = false;
-      for (let x of iter) {
+      for (const x of iter) {
         if (seenFirst) {
           yield x;
         } else {
@@ -344,7 +345,7 @@ export class LazySeq<T> {
     const iter = this.iter;
     return LazySeq.ofIterator(function*() {
       let cnt = 0;
-      for (let x of iter) {
+      for (const x of iter) {
         if (cnt >= n) {
           return;
         }
@@ -357,7 +358,7 @@ export class LazySeq<T> {
   takeWhile(f: (x: T) => boolean): LazySeq<T> {
     const iter = this.iter;
     return LazySeq.ofIterator(function*() {
-      for (let x of iter) {
+      for (const x of iter) {
         if (f(x)) {
           yield x;
         } else {
@@ -373,7 +374,7 @@ export class LazySeq<T> {
 
   toMap<K, S>(f: (x: T) => [K & WithEquality, S], merge: (v1: S, v2: S) => S): HashMap<K, S> {
     let m = HashMap.empty<K, S>();
-    for (let x of this.iter) {
+    for (const x of this.iter) {
       const [k, s] = f(x);
       m = m.putWithMerge(k, s, merge);
     }
@@ -384,7 +385,7 @@ export class LazySeq<T> {
     const iter = this.iter;
     return HashSet.ofIterable({
       *[Symbol.iterator]() {
-        for (let x of iter) {
+        for (const x of iter) {
           yield converter(x);
         }
       }

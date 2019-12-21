@@ -121,7 +121,7 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
 
   let sortOn: ToOrderable<TriggeredInspectionEntry> | { desc: ToOrderable<TriggeredInspectionEntry> } =
     columns[0].getForSort || columns[0].getDisplay;
-  for (let col of columns) {
+  for (const col of columns) {
     if (col.id === orderBy && order === "asc") {
       sortOn = col.getForSort || col.getDisplay;
     } else if (col.id === orderBy) {

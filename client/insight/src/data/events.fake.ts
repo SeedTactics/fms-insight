@@ -87,9 +87,9 @@ export function fakeInProcMaterial(matId: number, queue?: string, queuePos?: num
 }
 
 function addStartAndEnd(es: ILogEntry[], e: ILogEntry): void {
-  let elapsed = duration(e.elapsed);
-  let startTime = addSeconds(e.endUTC, -elapsed.asSeconds());
-  let start = {
+  const elapsed = duration(e.elapsed);
+  const startTime = addSeconds(e.endUTC, -elapsed.asSeconds());
+  const start = {
     ...e,
     counter: e.counter - 1,
     startofcycle: true,
@@ -99,6 +99,90 @@ function addStartAndEnd(es: ILogEntry[], e: ILogEntry): void {
   };
   es.push(start);
   es.push(e);
+}
+
+export function fakeInspSignal(mat?: LogMaterial, inspType?: string, now?: Date, counter?: number): ILogEntry {
+  mat = mat || fakeMaterial();
+  inspType = inspType || "MyInspType";
+  now = now || new Date(2017, 9, 5);
+  counter = counter || 100;
+  const path = [
+    new MaterialProcessActualPath({
+      materialID: mat.id,
+      process: 1,
+      pallet: "6",
+      loadStation: 1,
+      stops: [new Stop({ stationName: "MC", stationNum: 4 })],
+      unloadStation: 2
+    }).toJSON()
+  ];
+  return {
+    counter: counter,
+    material: [mat],
+    pal: "",
+    type: LogType.Inspection,
+    startofcycle: false,
+    endUTC: now,
+    loc: "Inspection",
+    locnum: 1,
+    result: "True",
+    program: "theprogramshouldbeignored",
+    elapsed: "00:00:00",
+    active: "00:00:00",
+    details: {
+      InspectionType: inspType,
+      ActualPath: JSON.stringify(path)
+    }
+  };
+}
+
+export function fakeInspForce(mat?: LogMaterial, inspType?: string, now?: Date, counter?: number): ILogEntry {
+  mat = mat || fakeMaterial();
+  inspType = inspType || "MyInspType";
+  now = now || new Date(2017, 9, 5);
+  counter = counter || 100;
+  return {
+    counter: counter,
+    material: [mat],
+    pal: "",
+    type: LogType.InspectionForce,
+    startofcycle: false,
+    endUTC: now,
+    loc: "Inspection",
+    locnum: 1,
+    result: "True",
+    program: inspType,
+    elapsed: "00:00:00",
+    active: "00:00:00"
+  };
+}
+
+export function fakeInspComplete(
+  mat?: LogMaterial,
+  inspType?: string,
+  now?: Date,
+  success?: boolean,
+  counter?: number
+): ILogEntry {
+  mat = mat || fakeMaterial();
+  inspType = inspType || "MyInspType";
+  now = now || new Date(2017, 9, 5);
+  success = success || true;
+  counter = counter || 100;
+  return {
+    counter,
+    material: [mat],
+    pal: "",
+    type: LogType.InspectionResult,
+    startofcycle: false,
+    endUTC: now,
+    loc: "InspectionComplete",
+    locnum: 1,
+    result: success.toString(),
+    program: inspType,
+    elapsed: "00:00:00",
+    active: "00:00:00"
+  };
 }
 
 export function fakeCycle(
@@ -115,7 +199,7 @@ export function fakeCycle(
   let counter = 1;
   time = addMinutes(time, 5);
 
-  let es: ILogEntry[] = [];
+  const es: ILogEntry[] = [];
 
   addStartAndEnd(es, {
     counter,
@@ -218,90 +302,6 @@ export function fakeSerial(mat?: LogMaterial, serial?: string): ILogEntry {
     locnum: 1,
     result: serial,
     program: "",
-    elapsed: "00:00:00",
-    active: "00:00:00"
-  };
-}
-
-export function fakeInspSignal(mat?: LogMaterial, inspType?: string, now?: Date, counter?: number): ILogEntry {
-  mat = mat || fakeMaterial();
-  inspType = inspType || "MyInspType";
-  now = now || new Date(2017, 9, 5);
-  counter = counter || 100;
-  const path = [
-    new MaterialProcessActualPath({
-      materialID: mat.id,
-      process: 1,
-      pallet: "6",
-      loadStation: 1,
-      stops: [new Stop({ stationName: "MC", stationNum: 4 })],
-      unloadStation: 2
-    }).toJSON()
-  ];
-  return {
-    counter: counter,
-    material: [mat],
-    pal: "",
-    type: LogType.Inspection,
-    startofcycle: false,
-    endUTC: now,
-    loc: "Inspection",
-    locnum: 1,
-    result: "True",
-    program: "theprogramshouldbeignored",
-    elapsed: "00:00:00",
-    active: "00:00:00",
-    details: {
-      InspectionType: inspType,
-      ActualPath: JSON.stringify(path)
-    }
-  };
-}
-
-export function fakeInspForce(mat?: LogMaterial, inspType?: string, now?: Date, counter?: number): ILogEntry {
-  mat = mat || fakeMaterial();
-  inspType = inspType || "MyInspType";
-  now = now || new Date(2017, 9, 5);
-  counter = counter || 100;
-  return {
-    counter: counter,
-    material: [mat],
-    pal: "",
-    type: LogType.InspectionForce,
-    startofcycle: false,
-    endUTC: now,
-    loc: "Inspection",
-    locnum: 1,
-    result: "True",
-    program: inspType,
-    elapsed: "00:00:00",
-    active: "00:00:00"
-  };
-}
-
-export function fakeInspComplete(
-  mat?: LogMaterial,
-  inspType?: string,
-  now?: Date,
-  success?: boolean,
-  counter?: number
-): ILogEntry {
-  mat = mat || fakeMaterial();
-  inspType = inspType || "MyInspType";
-  now = now || new Date(2017, 9, 5);
-  success = success || true;
-  counter = counter || 100;
-  return {
-    counter,
-    material: [mat],
-    pal: "",
-    type: LogType.InspectionResult,
-    startofcycle: false,
-    endUTC: now,
-    loc: "InspectionComplete",
-    locnum: 1,
-    result: success.toString(),
-    program: inspType,
     elapsed: "00:00:00",
     active: "00:00:00"
   };

@@ -65,7 +65,7 @@ function describeArc(cx: number, cy: number, radius: number, startAngle: number,
 
   const largeArcFlag = endAngle - startAngle <= Math.PI ? "0" : "1";
 
-  var d = ["M", start.x, start.y, "A", radius, radius, Math.PI / 2, largeArcFlag, "0", end.x, end.y].join(" ");
+  const d = ["M", start.x, start.y, "A", radius, radius, Math.PI / 2, largeArcFlag, "0", end.x, end.y].join(" ");
 
   return d;
 }
@@ -98,9 +98,9 @@ function palletMaterial(
   dateOfCurrentStatus: Date | undefined,
   material: Iterable<Readonly<api.IInProcessMaterial>>
 ): { title: string; value: JSX.Element }[] {
-  let entries: { title: string; value: JSX.Element }[] = [];
+  const entries: { title: string; value: JSX.Element }[] = [];
 
-  for (let mat of material) {
+  for (const mat of material) {
     const name = mat.partName + "-" + mat.process.toString();
 
     let matStatus = "";
@@ -138,7 +138,7 @@ function palletMaterial(
 }
 
 function computeTooltip(p: StationOEEProps): JSX.Element {
-  let entries: { title: string; value: JSX.Element }[] = [];
+  const entries: { title: string; value: JSX.Element }[] = [];
 
   entries.push({
     title: "OEE",
@@ -180,7 +180,7 @@ function isMaterialOverdue(dateOfCurrentStatus: Date | undefined, p: PalletData)
   if (!dateOfCurrentStatus) {
     return false;
   }
-  for (let mat of p.material) {
+  for (const mat of p.material) {
     if (mat.action.expectedRemainingMachiningTime) {
       const seconds = duration(mat.action.expectedRemainingMachiningTime).asSeconds();
       if (seconds < 0) {

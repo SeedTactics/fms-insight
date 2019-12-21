@@ -50,6 +50,8 @@ import { middleware } from "./middleware";
 import { connectRoutes, LocationState } from "redux-first-router";
 import * as queryString from "query-string";
 
+/* eslint-disable @typescript-eslint/no-use-before-define */
+
 type InitToStore<I> = I extends (a: { useRouter: boolean }) => infer S ? S : never;
 export type Store = StoreState<InitToStore<typeof initStore>>;
 export type AppActionBeforeMiddleware = StoreActions<InitToStore<typeof initStore>>;
@@ -65,12 +67,12 @@ export function initStore({ useRouter }: { useRouter: boolean }) {
       })
     : undefined;
 
-  /* tslint:disable */
+  /* eslint-disable @typescript-eslint/no-explicit-any */
   const composeEnhancers =
     typeof window === "object" && (window as any)["__REDUX_DEVTOOLS_EXTENSION_COMPOSE__"]
       ? (window as any)["__REDUX_DEVTOOLS_EXTENSION_COMPOSE__"]
       : compose;
-  /* tslint:enable */
+  /* eslint-enable @typescript-eslint/no-explicit-any */
 
   const store = createStore(
     {
@@ -84,7 +86,7 @@ export function initStore({ useRouter }: { useRouter: boolean }) {
       Operators: operators.reducer,
       ServerSettings: serverSettings.reducer,
       CostPerPiece: ccp.reducer,
-      location: router ? router.reducer : (s: LocationState<string>, a: object) => s || {}
+      location: router ? router.reducer : (s: LocationState<string>, _: object) => s || {}
     },
     middleware,
     router
@@ -92,7 +94,7 @@ export function initStore({ useRouter }: { useRouter: boolean }) {
       : m => composeEnhancers(applyMiddleware(m))
   );
 
-  initBarcodeListener(store.dispatch);
+  initBarcodeListener(store.dispatch.bind(store));
 
   const operatorOnStateChange = operators.createOnStateChange();
   store.subscribe(() => operatorOnStateChange(store.getState().Operators));

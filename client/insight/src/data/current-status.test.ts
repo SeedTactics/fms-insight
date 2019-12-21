@@ -44,9 +44,8 @@ import {
 } from "./events.fake";
 
 it("creates initial state", () => {
-  // tslint:disable no-any
-  let s = cs.reducer(undefined as any, undefined as any);
-  // tslint:enable no-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const s = cs.reducer(undefined as any, undefined as any);
   expect(s).toBe(cs.initial);
 });
 

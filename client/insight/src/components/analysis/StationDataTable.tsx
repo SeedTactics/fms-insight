@@ -146,7 +146,7 @@ function extractData(
   order: "asc" | "desc"
 ): ReadonlyArray<PartCycleData> {
   let getData: ToOrderable<PartCycleData> | undefined;
-  for (let col of columns) {
+  for (const col of columns) {
     if (col.id === orderBy) {
       getData = col.getForSort || col.getDisplay;
     }

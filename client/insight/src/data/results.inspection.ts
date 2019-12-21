@@ -36,6 +36,7 @@ import { InspectionLogEntry, InspectionLogResultType } from "./events.inspection
 import { LazySeq } from "./lazyseq";
 import { format } from "date-fns";
 import { MaterialDetail } from "./material-details";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const copy = require("copy-to-clipboard");
 
 export interface TriggeredInspectionEntry {
@@ -50,8 +51,8 @@ export interface TriggeredInspectionEntry {
 
 export function buildPathString(procs: ReadonlyArray<Readonly<api.IMaterialProcessActualPath>>) {
   const pathStrs = [];
-  for (let proc of procs) {
-    for (let stop of proc.stops) {
+  for (const proc of procs) {
+    for (const stop of proc.stops) {
       pathStrs.push("P" + proc.pallet.toString() + "," + "M" + stop.stationNum.toString());
     }
   }
@@ -145,7 +146,7 @@ export function extractFailedInspections(
 // --------------------------------------------------------------------------------
 
 export function extractPath(mat: MaterialDetail): ReadonlyArray<Readonly<api.IMaterialProcessActualPath>> {
-  for (let e of mat.events) {
+  for (const e of mat.events) {
     if (e.type === api.LogType.Inspection) {
       const pathsJson: ReadonlyArray<object> = JSON.parse((e.details || {}).ActualPath || "[]");
       const paths: Array<Readonly<api.IMaterialProcessActualPath>> = [];
@@ -177,9 +178,9 @@ export function buildInspectionTable(
   const groups = groupInspectionsByPath(entries, undefined, e => e.time.getTime());
   const paths = groups.keySet().toArray({ sortOn: x => x });
 
-  for (let path of paths) {
+  for (const path of paths) {
     const data = groups.get(path).getOrThrow();
-    for (let mat of data.material) {
+    for (const mat of data.material) {
       table += "<tr>";
       table += "<td>" + path + "</td>";
       table += "<td>" + format(mat.time, "MMM d, yyyy, h:mm aa") + "</td>";

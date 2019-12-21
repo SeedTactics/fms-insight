@@ -45,7 +45,7 @@ it("renders the dashboard", async () => {
       matches: query === "(min-width:600px)", // true for Hidden smDown screens
       addListener: () => undefined,
       removeListener: () => undefined
-      // tslint:disable-next-line:no-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
   const store = await createTestStore();

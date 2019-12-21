@@ -37,9 +37,8 @@ import * as operators from "./operators";
 import { HashSet } from "prelude-ts";
 
 it("creates the initial state", () => {
-  // tslint:disable no-any
-  let s = operators.reducer(undefined as any, undefined as any);
-  // tslint:enable no-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const s = operators.reducer(undefined as any, undefined as any);
   expect(s).toBe(operators.initial);
   expect(operators.initial.operators.toArray()).toEqual(["initial1"]);
   expect(operators.initial.current).toEqual("initialoper");

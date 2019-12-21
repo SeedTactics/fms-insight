@@ -154,21 +154,6 @@ export const initial: State = {
   standalone_free_material: false
 };
 
-export function displayPage(ty: RouteLocation, oldSt: State): Action {
-  switch (ty) {
-    case RouteLocation.Station_LoadMonitor:
-      return displayLoadStation(oldSt.selected_load_id, oldSt.load_queues, oldSt.load_free_material);
-    case RouteLocation.ChooseMode:
-      return { type: NOT_FOUND };
-    case RouteLocation.Station_InspectionMonitor:
-      return displayInspectionType(oldSt.selected_insp_type);
-    case RouteLocation.Station_Queues:
-      return displayQueues(oldSt.standalone_queues, oldSt.standalone_free_material);
-    default:
-      return { type: ty } as Action;
-  }
-}
-
 export function displayLoadStation(num: number, queues: ReadonlyArray<string>, freeMaterial: boolean): Action {
   return {
     type: RouteLocation.Station_LoadMonitor,
@@ -207,12 +192,27 @@ export function displayQueues(queues: ReadonlyArray<string>, freeMaterial: boole
   };
 }
 
+export function displayPage(ty: RouteLocation, oldSt: State): Action {
+  switch (ty) {
+    case RouteLocation.Station_LoadMonitor:
+      return displayLoadStation(oldSt.selected_load_id, oldSt.load_queues, oldSt.load_free_material);
+    case RouteLocation.ChooseMode:
+      return { type: NOT_FOUND };
+    case RouteLocation.Station_InspectionMonitor:
+      return displayInspectionType(oldSt.selected_insp_type);
+    case RouteLocation.Station_Queues:
+      return displayQueues(oldSt.standalone_queues, oldSt.standalone_free_material);
+    default:
+      return { type: ty } as Action;
+  }
+}
+
 export function reducer(s: State, a: Action): State {
   if (s === undefined) {
     return initial;
   }
   switch (a.type) {
-    case RouteLocation.Station_LoadMonitor:
+    case RouteLocation.Station_LoadMonitor: {
       const query = (a.meta || {}).query || {};
       let loadqueues: ReadonlyArray<string> = [];
       if (query.queue) {
@@ -229,19 +229,21 @@ export function reducer(s: State, a: Action): State {
         load_queues: loadqueues.slice(0, 3),
         load_free_material: query.free === null ? true : false
       };
-    case RouteLocation.Station_InspectionMonitor:
-      var iquery = (a.meta || {}).query || {};
+    }
+    case RouteLocation.Station_InspectionMonitor: {
+      const iquery = (a.meta || {}).query || {};
       return {
         ...s,
         current: RouteLocation.Station_InspectionMonitor,
         selected_insp_type: iquery.type
       };
+    }
     case RouteLocation.Station_WashMonitor:
       return {
         ...s,
         current: RouteLocation.Station_WashMonitor
       };
-    case RouteLocation.Station_Queues:
+    case RouteLocation.Station_Queues: {
       const standalonequery = (a.meta || {}).query || {};
       let queues: ReadonlyArray<string> = [];
       if (standalonequery.queue) {
@@ -257,6 +259,7 @@ export function reducer(s: State, a: Action): State {
         standalone_queues: queues,
         standalone_free_material: standalonequery.free === null ? true : false
       };
+    }
 
     case RouteLocation.Operations_Dashboard:
     case RouteLocation.Operations_AllMaterial:

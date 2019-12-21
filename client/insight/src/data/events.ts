@@ -155,8 +155,8 @@ export type Action =
 type ABF = ActionBeforeMiddleware<Action>;
 
 export function loadLast30Days(): ABF {
-  var now = new Date();
-  var thirtyDaysAgo = addDays(now, -30);
+  const now = new Date();
+  const thirtyDaysAgo = addDays(now, -30);
   return [
     {
       type: ActionType.LoadRecentLogEntries,
@@ -172,7 +172,7 @@ export function loadLast30Days(): ABF {
 }
 
 export function refreshLogEntries(lastCounter: number): ABF {
-  var now = new Date();
+  const now = new Date();
   return {
     type: ActionType.LoadRecentLogEntries,
     now: now,
@@ -208,7 +208,7 @@ export function analyzeLast30Days(): ABF {
 }
 
 export function analyzeSpecificMonth(month: Date): ReadonlyArray<PledgeToPromise<Action>> {
-  var startOfNextMonth = addMonths(month, 1);
+  const startOfNextMonth = addMonths(month, 1);
   return [
     {
       type: ActionType.LoadSpecificMonthLogEntries,
@@ -231,9 +231,9 @@ export function setAnalysisMonth(month: Date): ABF {
 }
 
 function safeAssign<T extends R, R>(o: T, n: R): T {
-  let allMatch: boolean = true;
-  for (let k of Object.keys(n)) {
-    // tslint:disable-next-line:no-any
+  let allMatch = true;
+  for (const k of Object.keys(n)) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if ((o as any)[k] !== (n as any)[k]) {
       allMatch = false;
       break;
@@ -250,7 +250,7 @@ function processRecentLogEntries(now: Date, evts: ReadonlyArray<Readonly<api.ILo
   const thirtyDaysAgo = addDays(now, -30);
   const initialLoad = s.latest_log_counter === undefined;
   let lastCounter = s.latest_log_counter;
-  let lastNewEvent = LazySeq.ofIterable(evts).maxOn(e => e.counter);
+  const lastNewEvent = LazySeq.ofIterable(evts).maxOn(e => e.counter);
   let last10Evts = s.most_recent_10_events;
   if (lastNewEvent.isSome()) {
     if (lastCounter === undefined || lastCounter < lastNewEvent.get().counter) {

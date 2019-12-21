@@ -109,7 +109,7 @@ it("computes station oee", () => {
     }
   });
 
-  let statMins = stationMinutes(st.last30.cycles.part_cycles, addDays(now, -7));
+  const statMins = stationMinutes(st.last30.cycles.part_cycles, addDays(now, -7));
 
   expect(statMins).toMatchSnapshot("station minutes for last week");
 });

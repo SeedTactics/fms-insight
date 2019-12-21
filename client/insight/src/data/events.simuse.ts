@@ -83,7 +83,7 @@ export function process_sim_use(
   let production = st.production;
 
   switch (expire.type) {
-    case ExpireOldDataType.ExpireEarlierThan:
+    case ExpireOldDataType.ExpireEarlierThan: {
       // check if nothing to expire and no new data
       const minStat = stations.minOn(e => e.end.getTime());
       const minProd = production.minOn(e => e.completeTime.getTime());
@@ -102,6 +102,7 @@ export function process_sim_use(
       production = production.filter(x => x.completeTime >= expire.d);
 
       break;
+    }
 
     case ExpireOldDataType.NoExpire:
       if (newHistory.stationUse.length === 0 && Object.keys(newHistory.jobs).length === 0) {
@@ -110,7 +111,7 @@ export function process_sim_use(
       break;
   }
 
-  var newStationUse = LazySeq.ofIterable(newHistory.stationUse).map(simUse => ({
+  const newStationUse = LazySeq.ofIterable(newHistory.stationUse).map(simUse => ({
     station: stat_name(simUse),
     start: simUse.startUTC,
     end: simUse.endUTC,
@@ -118,18 +119,18 @@ export function process_sim_use(
     plannedDownTime: duration(simUse.plannedDownTime).asMinutes()
   }));
 
-  let newProd = LazySeq.ofObject(newHistory.jobs).flatMap(function*([_, jParam]: [string, api.JobPlan]) {
+  const newProd = LazySeq.ofObject(newHistory.jobs).flatMap(function*([_, jParam]: [string, api.JobPlan]) {
     const j = jParam;
     for (let proc = 0; proc < j.procsAndPaths.length; proc++) {
       const procInfo = j.procsAndPaths[proc];
       for (let path = 0; path < procInfo.paths.length; path++) {
         const pathInfo = procInfo.paths[path];
         let machTime = 0;
-        for (let stop of pathInfo.stops) {
+        for (const stop of pathInfo.stops) {
           machTime += duration(stop.expectedCycleTime).asMinutes();
         }
         let prevQty = 0;
-        for (let prod of pathInfo.simulatedProduction || []) {
+        for (const prod of pathInfo.simulatedProduction || []) {
           yield {
             part: part_and_proc(j.partName, proc + 1),
             completeTime: prod.timeUTC,

@@ -81,7 +81,7 @@ export class PartIdenticon extends React.PureComponent<{
 }> {
   render() {
     const iconSize = this.props.size || 50;
-    // tslint:disable-next-line:no-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const icon = (jdenticon as any).toSvg(this.props.part, iconSize);
 
     return <div style={{ width: iconSize, height: iconSize }} dangerouslySetInnerHTML={{ __html: icon }} />;
@@ -309,7 +309,7 @@ export class MaterialDetailContent extends React.PureComponent<MaterialDetailPro
   render() {
     const mat = this.props.mat;
     function colorForInspType(type: string): string {
-      if (mat.completedInspections && mat.completedInspections.indexOf(type) >= 0) {
+      if (mat.completedInspections && mat.completedInspections.includes(type)) {
         return "black";
       } else {
         return "red";
@@ -561,7 +561,7 @@ const WhiteboardRegionWithStyle = withStyles(whiteboardRegionStyle)(
     } else if (props.flexStart) {
       justifyContent = "flex-start";
     }
-    let mainClasses = [props.classes.container];
+    const mainClasses = [props.classes.container];
     if (props.borderLeft) {
       mainClasses.push(props.classes.borderLeft);
     }

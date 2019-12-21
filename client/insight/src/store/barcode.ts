@@ -37,8 +37,8 @@ import * as guiState from "../data/gui-state";
 
 export function initBarcodeListener(dispatch: (a: AppActionBeforeMiddleware) => void): void {
   let timeout: number | undefined;
-  let scanActive: boolean = false;
-  let scannedTxt: string = "";
+  let scanActive = false;
+  let scannedTxt = "";
 
   function cancelDetection() {
     scannedTxt = "";

@@ -514,11 +514,11 @@ class App extends React.PureComponent<AppConnectedProps> {
   render() {
     let page: JSX.Element;
     let navigation: ((p: HeaderNavProps) => JSX.Element) | undefined = undefined;
-    let showAlarms: boolean = true;
-    let showLogout: boolean = !!this.props.user;
-    let showSearch: boolean = true;
-    let showOperator: boolean = false;
-    let addBasicMaterialDialog: boolean = true;
+    let showAlarms = true;
+    const showLogout = !!this.props.user;
+    let showSearch = true;
+    let showOperator = false;
+    let addBasicMaterialDialog = true;
     if (this.props.backupViewerOnRequestOpenFile) {
       if (this.props.backupFileOpened) {
         if (this.props.route.current === routes.RouteLocation.Quality_Serials) {

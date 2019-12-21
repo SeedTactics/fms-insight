@@ -37,6 +37,7 @@ import { LazySeq } from "./lazyseq";
 import * as api from "./api";
 import { format } from "date-fns";
 import { duration } from "moment";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const copy = require("copy-to-clipboard");
 
 export interface FilteredStationCycles {
@@ -119,7 +120,10 @@ export function stationMinutes(partCycles: Vector<PartCycleData>, cutoff: Date):
       station: stat_name_and_num(p.stationGroup, p.stationNumber),
       active: p.activeMinsForSingleMat
     }))
-    .toMap(x => [x.station, x.active] as [string, number], (v1, v2) => v1 + v2);
+    .toMap(
+      x => [x.station, x.active] as [string, number],
+      (v1, v2) => v1 + v2
+    );
 }
 
 // --------------------------------------------------------------------------------
@@ -141,12 +145,12 @@ export function buildCycleTable(
   }
   table += "</tr></thead>\n<tbody>\n";
 
-  let filteredCycles = LazySeq.ofIterable(cycles.data)
+  const filteredCycles = LazySeq.ofIterable(cycles.data)
     .flatMap(([_, c]) => c)
     .filter(p => (!startD || p.x >= startD) && (!endD || p.x < endD))
     .toArray()
     .sort((a, b) => a.x.getTime() - b.x.getTime());
-  for (let cycle of filteredCycles) {
+  for (const cycle of filteredCycles) {
     table += "<tr>";
     table += "<td>" + format(cycle.x, "MMM d, yyyy, h:mm aa") + "</td>";
     table += "<td>" + cycle.part + "-" + cycle.process.toString() + "</td>";
@@ -189,9 +193,10 @@ function stat_name(e: Readonly<api.ILogEntry>): string {
       return "Workorder";
     case api.LogType.Wash:
       return "Wash";
-    case api.LogType.Inspection:
+    case api.LogType.Inspection: {
       const inspName = (e.details || {}).InspectionType || "";
       return "Signal " + inspName;
+    }
     case api.LogType.InspectionForce:
       return "Signal " + e.program;
     case api.LogType.InspectionResult:
@@ -231,11 +236,11 @@ export function buildLogEntriesTable(cycles: Iterable<Readonly<api.ILogEntry>>):
   table += "<th>Date</th><th>Part</th><th>Station</th><th>Pallet</th>";
   table += "<th>Serial</th><th>Workorder</th><th>Result</th><th>Elapsed Min</th><th>Active Min</th>";
   table += "</tr></thead>\n<tbody>\n";
-  for (let cycle of cycles) {
+  for (const cycle of cycles) {
     if (cycle.startofcycle) {
       continue;
     }
-    for (let mat of cycle.material) {
+    for (const mat of cycle.material) {
       table += "<tr>";
       table += "<td>" + format(cycle.endUTC, "MMM d, yyyy, h:mm aa") + "</td>";
       table += "<td>" + mat.part + "-" + mat.proc.toString() + "</td>";

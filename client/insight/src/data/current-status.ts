@@ -118,13 +118,13 @@ function process_new_events(entry: Readonly<api.ILogEntry>, s: State): State {
 
   switch (entry.type) {
     case api.LogType.PartMark:
-      for (let m of entry.material) {
+      for (const m of entry.material) {
         adjustMat(m.id, inmat => ({ ...inmat, serial: entry.result }));
       }
       break;
 
     case api.LogType.OrderAssignment:
-      for (let m of entry.material) {
+      for (const m of entry.material) {
         adjustMat(m.id, inmat => ({ ...inmat, workorderId: entry.result }));
       }
       break;
@@ -139,7 +139,7 @@ function process_new_events(entry: Readonly<api.ILogEntry>, s: State): State {
           inspType = (entry.details || {}).InspectionType;
         }
         if (inspType) {
-          for (let m of entry.material) {
+          for (const m of entry.material) {
             adjustMat(m.id, inmat => ({
               ...inmat,
               signaledInspections: [...inmat.signaledInspections, inspType]

@@ -46,6 +46,7 @@ import CardContent from "@material-ui/core/CardContent";
 import Tooltip from "@material-ui/core/Tooltip";
 import IconButton from "@material-ui/core/IconButton";
 import ImportExport from "@material-ui/icons/ImportExport";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
 import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
@@ -451,7 +452,7 @@ function StationOeeHeatmap(props: HeatmapProps) {
 const stationOeeActualPointsSelector = createSelector(
   (cycles: CycleState) => cycles.part_cycles,
   cycles => {
-    let pts = binCyclesByDayAndStat(cycles, c => c.activeMinsForSingleMat);
+    const pts = binCyclesByDayAndStat(cycles, c => c.activeMinsForSingleMat);
     return LazySeq.ofIterable(pts)
       .map(([dayAndStat, val]) => {
         const pct = val / (24 * 60);
@@ -477,7 +478,7 @@ const stationOeeActualPointsSelector = createSelector(
 const stationOeePlannedPointsSelector = createSelector(
   (sim: SimUseState) => sim.station_use,
   statUse => {
-    let pts = binSimStationUseByDayAndStat(statUse, c => c.utilizationTime - c.plannedDownTime);
+    const pts = binSimStationUseByDayAndStat(statUse, c => c.utilizationTime - c.plannedDownTime);
     return LazySeq.ofIterable(pts)
       .map(([dayAndStat, val]) => {
         const pct = val / (24 * 60);
@@ -557,7 +558,7 @@ function CompletedCountHeatmap(props: HeatmapProps) {
 const completedActualPointsSelector = createSelector(
   (cycles: CycleState) => cycles.part_cycles,
   cycles => {
-    let pts = binCyclesByDayAndPart(cycles);
+    const pts = binCyclesByDayAndPart(cycles);
     return LazySeq.ofIterable(pts)
       .map(([dayAndPart, val]) => {
         return {
@@ -582,7 +583,7 @@ const completedActualPointsSelector = createSelector(
 const completedPlannedPointsSelector = createSelector(
   (simUse: SimUseState) => simUse.production,
   production => {
-    let pts = binSimProductionByDayAndPart(production);
+    const pts = binSimProductionByDayAndPart(production);
     return LazySeq.ofIterable(pts)
       .map(([dayAndPart, val]) => {
         return {

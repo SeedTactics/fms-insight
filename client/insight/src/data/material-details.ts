@@ -363,13 +363,16 @@ export function computeWorkorders(
       }
     }
   }
-  return Vector.ofIterable(workMap.values()).sortOn(w => w.plan.dueDate.getTime(), w => -w.plan.priority);
+  return Vector.ofIterable(workMap.values()).sortOn(
+    w => w.plan.dueDate.getTime(),
+    w => -w.plan.priority
+  );
 }
 
 async function loadWorkordersForPart(part: string): Promise<Vector<WorkorderPlanAndSummary>> {
   const works = await JobsBackend.mostRecentUnfilledWorkordersForPart(part);
   const summaries: api.IWorkorderSummary[] = [];
-  for (let ws of LazySeq.ofIterable(works).chunk(16)) {
+  for (const ws of LazySeq.ofIterable(works).chunk(16)) {
     summaries.push(...(await LogBackend.getWorkorders(ws.map(w => w.workorderId).toArray())));
   }
   return computeWorkorders(part, works, summaries);
@@ -491,7 +494,10 @@ function processEvents(evts: ReadonlyArray<Readonly<api.ILogEntry>>, mat: Materi
     }
   });
 
-  var allEvents = mat.events.appendAll(evts).sortOn(e => e.endUTC.getTime(), e => e.counter);
+  const allEvents = mat.events.appendAll(evts).sortOn(
+    e => e.endUTC.getTime(),
+    e => e.counter
+  );
 
   return {
     ...mat,
@@ -540,7 +546,10 @@ export function reducer(s: State, a: Action): State {
             ...s,
             material: {
               ...s.material,
-              events: s.material.events.appendAll(a.pledge.result).sortOn(e => e.endUTC.getTime(), e => e.counter)
+              events: s.material.events.appendAll(a.pledge.result).sortOn(
+                e => e.endUTC.getTime(),
+                e => e.counter
+              )
             }
           };
         } else {
@@ -570,7 +579,7 @@ export function reducer(s: State, a: Action): State {
             },
             update_error: undefined
           };
-        case PledgeStatus.Completed:
+        case PledgeStatus.Completed: {
           const oldMatEnd = s.material;
           return {
             ...s,
@@ -588,6 +597,7 @@ export function reducer(s: State, a: Action): State {
               updating_material: false
             }
           };
+        }
 
         case PledgeStatus.Error:
           return {

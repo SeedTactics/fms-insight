@@ -41,17 +41,19 @@ import * as currentStatus from "./data/current-status";
 import * as serverSettings from "./data/server-settings";
 
 export function mockComponent(name: string): (props: { [key: string]: object }) => JSX.Element {
-  return props => (
-    <div data-testid={"mock-component-" + name}>
-      {Object.getOwnPropertyNames(props)
-        .sort()
-        .map((p, idx) => (
-          <span key={idx} data-prop={p}>
-            {JSON.stringify(props[p], null, 2)}
-          </span>
-        ))}
-    </div>
-  );
+  return function MockedComponent(props) {
+    return (
+      <div data-testid={"mock-component-" + name}>
+        {Object.getOwnPropertyNames(props)
+          .sort()
+          .map((p, idx) => (
+            <span key={idx} data-prop={p}>
+              {JSON.stringify(props[p], null, 2)}
+            </span>
+          ))}
+      </div>
+    );
+  };
 }
 
 export async function createTestStore() {
@@ -70,7 +72,7 @@ export async function createTestStore() {
 
   await mockD.events;
 
-  // tslint:disable-next-line:no-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (window as any).FMS_INSIGHT_RESOLVE_MOCK_DATA(mockD);
 
   return store;

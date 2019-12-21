@@ -43,7 +43,7 @@ import { HashMap } from "prelude-ts";
 
 class MoveMaterialArrows extends React.PureComponent<MoveMaterialArrowData<Element>> {
   static elementToRect(e: Element): ClientRect {
-    var r = e.getBoundingClientRect();
+    const r = e.getBoundingClientRect();
     return {
       left: r.left + window.scrollX,
       top: r.top + window.scrollY,

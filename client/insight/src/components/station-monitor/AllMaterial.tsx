@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
 import { Store, connect } from "../../store/store";
@@ -69,10 +70,7 @@ function AllMats(props: AllMatProps) {
   );
 }
 
-const extractMaterialRegions = createSelector(
-  (st: Store) => st.Current.current_status,
-  selectAllMaterialIntoBins
-);
+const extractMaterialRegions = createSelector((st: Store) => st.Current.current_status, selectAllMaterialIntoBins);
 
 export default connect(
   (st: Store) => ({

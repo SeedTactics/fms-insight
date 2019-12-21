@@ -85,7 +85,7 @@ function edgesForPath(
 ): Edge[] {
   let path = "";
   let prevNode = new NodeR("", "raw");
-  let edges: Edge[] = [];
+  const edges: Edge[] = [];
   for (const proc of actualPath) {
     for (const stop of proc.stops) {
       const cur = "P" + proc.pallet + ",M" + stop.stationNum;
@@ -146,11 +146,17 @@ export function inspectionDataToSankey(d: ReadonlyArray<InspectionLogEntry>): Sa
     .toArray();
 
   // create a map from NodeR to index
-  const nodesToIdx = nodes.toMap(n => [n.node, n.idx], (i1, i2) => i1);
+  const nodesToIdx = nodes.toMap(
+    n => [n.node, n.idx],
+    (i1, _) => i1
+  );
 
   // create the sankey links to return by counting Edges between nodes
   const sankeyLinks = edges
-    .toMap(e => [e, 1], (c1, c2) => c1 + c2)
+    .toMap(
+      e => [e, 1],
+      (c1, c2) => c1 + c2
+    )
     .transform(LazySeq.ofIterable)
     .map(([link, value]) => ({
       source: nodesToIdx.get(link.from).getOrThrow(),

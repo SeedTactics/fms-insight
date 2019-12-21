@@ -53,7 +53,7 @@ class ManualScan extends React.PureComponent<ManualScanProps, ManualScanState> {
   render() {
     return (
       <Dialog open={this.props.dialogOpen} onClose={this.props.onClose} maxWidth="md">
-        <DialogTitle>Enter a part's serial</DialogTitle>
+        <DialogTitle>Enter a part&apos;s serial</DialogTitle>
         <DialogContent>
           <div style={{ minWidth: "20em" }}>
             <TextField

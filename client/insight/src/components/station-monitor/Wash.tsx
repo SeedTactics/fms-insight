@@ -36,6 +36,7 @@ import { addHours } from "date-fns";
 import Grid from "@material-ui/core/Grid";
 import Button from "@material-ui/core/Button";
 import { createSelector } from "reselect";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
 import { Store, connect, mkAC } from "../../store/store";

@@ -74,7 +74,7 @@ export class OperatorSelect extends React.PureComponent<OperatorSelectProps> {
           <div style={{ position: "relative" }}>
             <TextField
               InputProps={{
-                // tslint:disable-next-line:no-any
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 ...(ds.getInputProps({ placeholder: "Operator" }) as any),
                 onKeyUp: k => {
                   if (k.keyCode === 13 && ds.inputValue && ds.inputValue.length > 0) {

@@ -182,9 +182,9 @@ function display(props: LogEntryProps): JSX.Element {
     case api.LogType.PalletCycle:
       return <span>Pallet {entry.pal} completed route</span>;
 
-    case api.LogType.Inspection:
+    case api.LogType.Inspection: {
       const inspName = (entry.details || {}).InspectionType || "";
-      let inspected = entry.result.toLowerCase() === "true" || entry.result === "1";
+      const inspected = entry.result.toLowerCase() === "true" || entry.result === "1";
       if (inspected) {
         return (
           <span>
@@ -200,10 +200,11 @@ function display(props: LogEntryProps): JSX.Element {
           </span>
         );
       }
+    }
 
-    case api.LogType.InspectionForce:
+    case api.LogType.InspectionForce: {
       const forceInspName = entry.program;
-      let forced = entry.result.toLowerCase() === "true" || entry.result === "1";
+      const forced = entry.result.toLowerCase() === "true" || entry.result === "1";
       if (forced) {
         return (
           <span>
@@ -219,6 +220,7 @@ function display(props: LogEntryProps): JSX.Element {
           </span>
         );
       }
+    }
 
     case api.LogType.FinalizeWorkorder:
       return <span>Finalize workorder {entry.result}</span>;
@@ -276,7 +278,7 @@ function detailsForEntry(e: api.ILogEntry): ReadonlyArray<LogDetail> {
 
 export const LogEntry = React.memo(
   withStyles(logStyles)((props: LogEntryProps) => {
-    let details = detailsForEntry(props.entry);
+    const details = detailsForEntry(props.entry);
 
     return (
       <>

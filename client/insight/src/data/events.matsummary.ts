@@ -93,14 +93,14 @@ export function process_events(now: Date, newEvts: ReadonlyArray<api.ILogEntry>,
 
   let mats = st.matsById.filter((_, e) => e.last_event >= oneWeekAgo);
 
-  let inspTypes = new Map<string, boolean>();
+  const inspTypes = new Map<string, boolean>();
 
   newEvts.forEach(e => {
     if (e.startofcycle || e.material.length === 0) {
       return;
     }
-    for (let logMat of e.material) {
-      let oldMat = mats.get(logMat.id);
+    for (const logMat of e.material) {
+      const oldMat = mats.get(logMat.id);
       let mat: MaterialSummaryFromEvents;
       if (oldMat.isSome()) {
         mat = { ...oldMat.get(), last_event: e.endUTC };
@@ -189,8 +189,8 @@ export function process_events(now: Date, newEvts: ReadonlyArray<api.ILogEntry>,
     }
   });
 
-  var inspTypesSet = st.inspTypes;
-  var newInspTypes = Vector.ofIterable(inspTypes.keys()).filter(i => !inspTypesSet.contains(i));
+  let inspTypesSet = st.inspTypes;
+  const newInspTypes = Vector.ofIterable(inspTypes.keys()).filter(i => !inspTypesSet.contains(i));
 
   if (!newInspTypes.isEmpty()) {
     inspTypesSet = inspTypesSet.addAll(newInspTypes);

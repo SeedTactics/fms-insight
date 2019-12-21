@@ -43,7 +43,7 @@ export function buildPallets(
   st: Readonly<api.ICurrentStatus>
 ): HashMap<string, { pal?: PalletData; queued?: PalletData }> {
   const matByPallet = new Map<string, api.IInProcessMaterial[]>();
-  for (let mat of st.material) {
+  for (const mat of st.material) {
     if (mat.location.type === api.LocType.OnPallet && mat.location.pallet !== undefined) {
       const mats = matByPallet.get(mat.location.pallet) || [];
       mats.push(mat);
@@ -52,10 +52,10 @@ export function buildPallets(
   }
 
   const m = new Map<string, { pal?: PalletData; queued?: PalletData }>();
-  for (let pal of Object.values(st.pallets)) {
+  for (const pal of Object.values(st.pallets)) {
     switch (pal.currentPalletLocation.loc) {
       case api.PalletLocationEnum.LoadUnload:
-      case api.PalletLocationEnum.Machine:
+      case api.PalletLocationEnum.Machine: {
         const stat = pal.currentPalletLocation.group + " #" + pal.currentPalletLocation.num.toString();
         m.set(stat, {
           ...(m.get(stat) || {}),
@@ -65,8 +65,9 @@ export function buildPallets(
           }
         });
         break;
+      }
 
-      case api.PalletLocationEnum.MachineQueue:
+      case api.PalletLocationEnum.MachineQueue: {
         const stat2 = pal.currentPalletLocation.group + " #" + pal.currentPalletLocation.num.toString();
         m.set(stat2, {
           ...(m.get(stat2) || {}),
@@ -76,6 +77,7 @@ export function buildPallets(
           }
         });
         break;
+      }
 
       // TODO: buffer and cart
     }
@@ -104,7 +106,7 @@ export function selectLoadStationAndQueueProps(
 ): LoadStationAndQueueData {
   let pal: Readonly<api.IPalletStatus> | undefined;
   if (loadNum >= 0) {
-    for (let p of Object.values(curSt.pallets)) {
+    for (const p of Object.values(curSt.pallets)) {
       if (
         p.currentPalletLocation.loc === api.PalletLocationEnum.LoadUnload &&
         p.currentPalletLocation.num === loadNum

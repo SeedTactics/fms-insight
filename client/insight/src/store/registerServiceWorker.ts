@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-let windowRefreshing: boolean = false;
+let windowRefreshing = false;
 
 export function register() {
   if (process.env.NODE_ENV === "production" && "serviceWorker" in navigator) {

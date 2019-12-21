@@ -49,6 +49,7 @@ function offsetJob(j: api.JobPlan, offsetSeconds: number) {
 }
 
 async function loadEventsJson(offsetSeconds: number): Promise<Readonly<api.ILogEntry>[]> {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const evtJson: string = require("./events-json.txt");
   let evtsSeq: LazySeq<object>;
   if (evtJson.startsWith("[")) {
@@ -71,7 +72,7 @@ async function loadEventsJson(offsetSeconds: number): Promise<Readonly<api.ILogE
       if (e.type === api.LogType.InspectionResult) {
         // filter out a couple inspection results so they are uninspected
         // and display as uninspected on the station monitor screen
-        var mid = e.material[0].id;
+        const mid = e.material[0].id;
         if (mid === 2993 || mid === 2974) {
           return false;
         } else {
@@ -82,11 +83,15 @@ async function loadEventsJson(offsetSeconds: number): Promise<Readonly<api.ILogE
       }
     })
     .toVector()
-    .sortOn(e => e.endUTC.getTime(), e => e.counter)
+    .sortOn(
+      e => e.endUTC.getTime(),
+      e => e.counter
+    )
     .toArray();
 }
 
 function loadNewJobs(): ReadonlyArray<api.NewJobs> {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const newJobs = require("./newjobs.json");
   return newJobs.map(api.NewJobs.fromJS);
 }
@@ -99,6 +104,7 @@ export interface MockData {
 }
 
 export function loadMockData(offsetSeconds: number): MockData {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const status = api.CurrentStatus.fromJS(require("./status-mock.json"));
   status.timeOfCurrentStatusUTC = addSeconds(status.timeOfCurrentStatusUTC, offsetSeconds);
   for (const j of Object.values(status.jobs)) {
@@ -111,7 +117,7 @@ export function loadMockData(offsetSeconds: number): MockData {
       m.location.pallet = m.location.pallet.toString();
     }
     if (m.location.face) {
-      // tslint:disable-next-line:no-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       m.location.face = parseInt(m.location.face as any, 10);
     }
   }

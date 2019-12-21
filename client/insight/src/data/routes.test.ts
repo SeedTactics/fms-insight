@@ -34,8 +34,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as routes from "./routes";
 
 it("has the initial state", () => {
-  // tslint:disable-next-line:no-any
-  let s = routes.reducer(undefined as any, undefined as any);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const s = routes.reducer(undefined as any, undefined as any);
   expect(s).toBe(routes.initial);
 });
 
@@ -166,9 +166,9 @@ it("transitions to the cost/piece, dashboard, and efficiency pages", () => {
     standalone_queues: [],
     standalone_free_material: false
   };
-  for (var page of pages) {
-    // tslint:disable-next-line:no-any
-    let st = routes.reducer(initialSt, { type: page as any });
+  for (const page of pages) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const st = routes.reducer(initialSt, { type: page as any });
     expect(st).toEqual({ ...initialSt, current: page });
   }
 });

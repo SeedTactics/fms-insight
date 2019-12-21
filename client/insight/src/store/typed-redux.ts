@@ -24,12 +24,14 @@ export function composeMiddleware<A1, A2, A3>(m1: Middleware<A1, A2>, m2: Middle
 // }
 // ReducerFnsToActions will translate this to a union type FooAction | BarAction
 type ReducerFnsToState<Reducers> = {
-  readonly [K in keyof Reducers]: Reducers[K] extends ((s: infer S, a: infer A) => infer S)
-    ? (S extends (infer S2 | undefined) ? S2 : S)
-    : never
+  readonly [K in keyof Reducers]: Reducers[K] extends (s: infer S, a: infer A) => infer S
+    ? S extends infer S2 | undefined
+      ? S2
+      : S
+    : never;
 };
 type ReducerFnsToActions<Reducers> = {
-  [K in keyof Reducers]: Reducers[K] extends ((s: infer S, a: infer A) => infer S) ? A : never
+  [K in keyof Reducers]: Reducers[K] extends (s: infer S, a: infer A) => infer S ? A : never;
 }[keyof Reducers];
 
 // A typed version of react-redux's connect which requires each action creator function to produce
@@ -37,8 +39,10 @@ type ReducerFnsToActions<Reducers> = {
 // makes sure the react component's props match the arguments to the action creator.
 type ActionCreatorToDispatch<A, Creators> = {
   [P in keyof Creators]: Creators[P] extends (args: infer Args) => A
-    ? ({} extends Args ? () => void : (args: Args) => void)
-    : never
+    ? {} extends Args
+      ? () => void
+      : (args: Args) => void
+    : never;
 };
 interface Connect<ActionBeforeMiddleware, State> {
   <P, TOwnProps = {}>(getProps: (s: State) => P): reactRedux.InferableComponentEnhancerWithProps<P, TOwnProps>;
@@ -75,7 +79,7 @@ export function mkACF<AppActionBeforeMiddleware>(): ActionCreatorFactory<AppActi
   // any is needed for payload since typescript can't guarantee that ActionPayload<A, T> is
   // an object.  ActionPayload<A, T> will be an object exactly when the action type T appears
   // exactly once in the action sum type, which should always be the case.
-  // tslint:disable-next-line:no-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return ty => (payload: any) => {
     if (payload) {
       return { ...payload, type: ty };
@@ -104,7 +108,7 @@ export function createStore<Reducers, ActionBeforeMiddleware>(
   middleware: Middleware<ActionBeforeMiddleware, ReducerFnsToActions<Reducers>>,
   middlewareToEnhancer?: (m: redux.Middleware) => redux.StoreEnhancer
 ): Store<ActionBeforeMiddleware, ReducerFnsToState<Reducers>> {
-  // tslint:disable-next-line:no-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const reduxMiddleware = (_store: any) => middleware as any;
   const st = redux.createStore(
     redux.combineReducers(reducers),
@@ -113,12 +117,13 @@ export function createStore<Reducers, ActionBeforeMiddleware>(
   return {
     connect: reactRedux.connect,
     mkAC: mkACF(),
-    // tslint:disable-next-line:no-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     dispatch: st.dispatch as any,
-    // tslint:disable-next-line:no-any
-    getState: st.getState as any,
-    subscribe: st.subscribe,
-    Provider: ({ children }: { children: React.ReactNode }) =>
-      React.createElement(reactRedux.Provider, { store: st }, children)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    getState: st.getState.bind(st) as any,
+    subscribe: st.subscribe.bind(st),
+    Provider: function StoreProvider({ children }: { children: React.ReactNode }) {
+      return React.createElement(reactRedux.Provider, { store: st }, children);
+    }
   };
 }

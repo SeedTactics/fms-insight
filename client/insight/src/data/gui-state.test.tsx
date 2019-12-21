@@ -35,14 +35,13 @@ import * as gui from "./gui-state";
 import { addHours } from "date-fns";
 
 it("creates initial state", () => {
-  // tslint:disable no-any
-  let s = gui.reducer(undefined as any, undefined as any);
-  // tslint:enable no-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const s = gui.reducer(undefined as any, undefined as any);
   expect(s).toBe(gui.initial);
 });
 
 it("selects a part and pal for the station cycle", () => {
-  let s = gui.reducer(
+  const s = gui.reducer(
     {
       ...gui.initial,
       station_cycle_selected_part: "origpart",
@@ -61,7 +60,7 @@ it("selects a part and pal for the station cycle", () => {
 });
 
 it("selects a pallet and station for the station cycle", () => {
-  let s = gui.reducer(
+  const s = gui.reducer(
     {
       ...gui.initial,
       station_cycle_selected_part: "origpart",
@@ -80,7 +79,7 @@ it("selects a pallet and station for the station cycle", () => {
 });
 
 it("selects a station for the station cycle", () => {
-  let s = gui.reducer(
+  const s = gui.reducer(
     {
       ...gui.initial,
       station_cycle_selected_part: "origpart",
@@ -113,7 +112,7 @@ it("sets the station zoom range", () => {
 });
 
 it("selects a pallet for the pallet cycle chart", () => {
-  let s = gui.reducer(gui.initial, {
+  const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetSelectedPalletCycle,
     pallet: "pal555"
   });
@@ -136,7 +135,7 @@ it("sets the pallet zoom range", () => {
 });
 
 it("sets the station oee heatmap type", () => {
-  let s = gui.reducer(gui.initial, {
+  const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetStationOeeHeatmapType,
     ty: gui.PlannedOrActual.PlannedMinusActual
   });
@@ -144,7 +143,7 @@ it("sets the station oee heatmap type", () => {
 });
 
 it("sets the completed count heatmap type", () => {
-  let s = gui.reducer(gui.initial, {
+  const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetCompletedCountHeatmapType,
     ty: gui.PlannedOrActual.Planned
   });
@@ -152,7 +151,7 @@ it("sets the completed count heatmap type", () => {
 });
 
 it("opens the workorder dialog", () => {
-  let s = gui.reducer(gui.initial, {
+  const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetWorkorderDialogOpen,
     open: true
   });
@@ -160,7 +159,7 @@ it("opens the workorder dialog", () => {
 });
 
 it("closes the workorder dialog", () => {
-  let s = gui.reducer(gui.initial, {
+  const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetWorkorderDialogOpen,
     open: false
   });
@@ -168,7 +167,7 @@ it("closes the workorder dialog", () => {
 });
 
 it("opens the insp type dialog", () => {
-  let s = gui.reducer(gui.initial, {
+  const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetInspTypeDialogOpen,
     open: true
   });
@@ -176,7 +175,7 @@ it("opens the insp type dialog", () => {
 });
 
 it("closes the insp type dialog", () => {
-  let s = gui.reducer(gui.initial, {
+  const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetInspTypeDialogOpen,
     open: false
   });
@@ -184,7 +183,7 @@ it("closes the insp type dialog", () => {
 });
 
 it("opens the serial dialog", () => {
-  let s = gui.reducer(gui.initial, {
+  const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetSerialDialogOpen,
     open: true
   });
@@ -192,7 +191,7 @@ it("opens the serial dialog", () => {
 });
 
 it("closes the serial dialog", () => {
-  let s = gui.reducer(gui.initial, {
+  const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetSerialDialogOpen,
     open: false
   });
@@ -200,7 +199,7 @@ it("closes the serial dialog", () => {
 });
 
 it("opens the qr code scan dialog", () => {
-  let s = gui.reducer(gui.initial, {
+  const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetScanQrCodeDialog,
     open: true
   });
@@ -208,7 +207,7 @@ it("opens the qr code scan dialog", () => {
 });
 
 it("closes the qr code scan dialog", () => {
-  let s = gui.reducer(gui.initial, {
+  const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetScanQrCodeDialog,
     open: false
   });
@@ -216,7 +215,7 @@ it("closes the qr code scan dialog", () => {
 });
 
 it("sets the add mat dialog state", () => {
-  let s = gui.reducer(gui.initial, {
+  const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetAddMatToQueueModeDialogOpen,
     open: true
   });
@@ -224,7 +223,7 @@ it("sets the add mat dialog state", () => {
 });
 
 it("sets the add mat queue name", () => {
-  let s = gui.reducer(gui.initial, {
+  const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetAddMatToQueueName,
     queue: "aaaa"
   });
@@ -232,7 +231,7 @@ it("sets the add mat queue name", () => {
 });
 
 it("opens the manual serial entry dialog", () => {
-  let s = gui.reducer(gui.initial, {
+  const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetManualSerialEntryDialog,
     open: true
   });
@@ -240,7 +239,7 @@ it("opens the manual serial entry dialog", () => {
 });
 
 it("closes the manual serial entry dialog", () => {
-  let s = gui.reducer(gui.initial, {
+  const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetManualSerialEntryDialog,
     open: false
   });

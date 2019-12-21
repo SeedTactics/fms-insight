@@ -45,9 +45,8 @@ import {
 import { Vector } from "prelude-ts";
 
 it("creates initial state", () => {
-  // tslint:disable no-any
-  let s = mat.reducer(undefined as any, undefined as any);
-  // tslint:enable no-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const s = mat.reducer(undefined as any, undefined as any);
   expect(s).toBe(mat.initial);
 });
 
@@ -73,7 +72,7 @@ it("starts an open", () => {
     initial: m,
     pledge: { status: PledgeStatus.Starting }
   };
-  let s = mat.reducer({ ...mat.initial, load_error: new Error("a") }, action);
+  const s = mat.reducer({ ...mat.initial, load_error: new Error("a") }, action);
   expect(s.material).toEqual(m);
   expect(s.load_error).toBeUndefined();
 });
@@ -89,7 +88,7 @@ it("finishes material open", () => {
     material: { ...m, loading_events: true },
     add_mat_in_progress: false
   };
-  let s = mat.reducer(initialSt, action);
+  const s = mat.reducer(initialSt, action);
   expect(s.material).toEqual({ ...m, loading_events: false, events: Vector.ofIterable(evts) });
 });
 
@@ -106,7 +105,7 @@ it("handles material error", () => {
     material: { ...m, loading_events: true },
     add_mat_in_progress: false
   };
-  let s = mat.reducer(initialSt, action);
+  const s = mat.reducer(initialSt, action);
   expect(s.material).toEqual({ ...m, loading_events: false, events: Vector.empty() });
   expect(s.load_error).toEqual(new Error("aaaa"));
 });
@@ -120,7 +119,7 @@ it("opens without loading", () => {
     material: null,
     add_mat_in_progress: false
   };
-  let s = mat.reducer(initialSt, action);
+  const s = mat.reducer(initialSt, action);
   expect(s.material).toEqual(m);
 });
 
@@ -344,7 +343,10 @@ it("successfully processes events", () => {
     fakeSerial(logmat, "theserial"),
     fakeWorkorderAssign(logmat, "work1234")
   ];
-  const sortedEvts = Vector.ofIterable(evts).sortOn(e => e.endUTC.getTime(), e => e.counter);
+  const sortedEvts = Vector.ofIterable(evts).sortOn(
+    e => e.endUTC.getTime(),
+    e => e.counter
+  );
 
   const initial: mat.MaterialDetail = {
     materialID: -1,
@@ -383,7 +385,7 @@ it("successfully processes events", () => {
     material: { ...initial, loading_events: true },
     add_mat_in_progress: false
   };
-  let s = mat.reducer(initialSt, action);
+  const s = mat.reducer(initialSt, action);
   expect(s.material).toEqual(after);
 });
 
@@ -451,7 +453,10 @@ it("adds extra logs", () => {
     ...initial,
     events: Vector.ofIterable(evts1)
       .appendAll(evts2)
-      .sortOn(e => e.endUTC.getTime(), e => e.counter)
+      .sortOn(
+        e => e.endUTC.getTime(),
+        e => e.counter
+      )
   };
 
   const action: mat.Action = {
@@ -462,6 +467,6 @@ it("adds extra logs", () => {
     material: initial,
     add_mat_in_progress: false
   };
-  let s = mat.reducer(initialSt, action);
+  const s = mat.reducer(initialSt, action);
   expect(s.material).toEqual(after);
 });

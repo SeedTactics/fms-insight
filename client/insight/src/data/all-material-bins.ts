@@ -49,12 +49,13 @@ export function selectAllMaterialIntoBins(curSt: Readonly<api.ICurrentStatus>): 
       switch (mat.location.type) {
         case api.LocType.InQueue:
           return { region: mat.location.currentQueue || "Queue", mat };
-        case api.LocType.OnPallet:
+        case api.LocType.OnPallet: {
           let region = "Pallet";
           if (mat.location.pallet) {
             region = "Pallet " + mat.location.pallet.toString() + palLoc.get(mat.location.pallet).getOrElse("");
           }
           return { region, mat };
+        }
         case api.LocType.Free:
         default:
           switch (mat.action.type) {

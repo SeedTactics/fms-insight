@@ -49,7 +49,7 @@ function SerialScanner(props: QrScanProps) {
     if (serial === undefined || serial == null) {
       return;
     }
-    let commaIdx = serial.indexOf(",");
+    const commaIdx = serial.indexOf(",");
     if (commaIdx >= 0) {
       serial = serial.substring(0, commaIdx);
     }
@@ -61,7 +61,7 @@ function SerialScanner(props: QrScanProps) {
   }
   return (
     <Dialog open={props.dialogOpen} onClose={props.onClose} maxWidth="md">
-      <DialogTitle>Scan a part's serial</DialogTitle>
+      <DialogTitle>Scan a part&apos;s serial</DialogTitle>
       <DialogContent>
         <div style={{ minWidth: "20em" }}>
           {props.dialogOpen ? <QrReader onScan={onScan} onError={() => 0} /> : undefined}
