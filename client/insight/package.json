@@ -55,7 +55,6 @@
     "@types/react-document-title": "^2.0.0",
     "@types/react-dom": "^16.8.0",
     "@types/react-redux": "^7.0.0",
-    "@types/react-sortable-hoc": "^0.6.4",
     "@types/redux-first-router": "^2.1.0",
     "faker": "^4.1.0",
     "hoist-non-react-statics": "^3.3.0",
@@ -66,8 +65,6 @@
     "prettier": "^1.14.2",
     "source-map-explorer": "^2.1.0",
     "ts-jest": "^24.0.0",
-    "tslint": "^5.11.0",
-    "tslint-react": "^4.0.0",
     "typescript": "^3.0.0"
   },
   "jest": {
