@@ -111,7 +111,8 @@ export function createStore<Reducers, ActionBeforeMiddleware>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const reduxMiddleware = (_store: any) => middleware as any;
   const st = redux.createStore(
-    redux.combineReducers(reducers),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    redux.combineReducers(reducers as any),
     (middlewareToEnhancer || redux.applyMiddleware)(reduxMiddleware)
   );
   return {
@@ -123,7 +124,8 @@ export function createStore<Reducers, ActionBeforeMiddleware>(
     getState: st.getState.bind(st) as any,
     subscribe: st.subscribe.bind(st),
     Provider: function StoreProvider({ children }: { children: React.ReactNode }) {
-      return React.createElement(reactRedux.Provider, { store: st }, children);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return React.createElement(reactRedux.Provider, { store: st as any }, children);
     }
   };
 }
