@@ -1430,6 +1430,7 @@ export class FMSInfo implements IFMSInfo {
     openIDConnectAuthority?: string | undefined;
     openIDConnectClientId?: string | undefined;
     usingLabelPrinterForSerials!: boolean;
+    quarantineQueue?: string | undefined;
 
     constructor(data?: IFMSInfo) {
         if (data) {
@@ -1454,6 +1455,7 @@ export class FMSInfo implements IFMSInfo {
             this.openIDConnectAuthority = data["OpenIDConnectAuthority"];
             this.openIDConnectClientId = data["OpenIDConnectClientId"];
             this.usingLabelPrinterForSerials = data["UsingLabelPrinterForSerials"];
+            this.quarantineQueue = data["QuarantineQueue"];
         }
     }
 
@@ -1478,6 +1480,7 @@ export class FMSInfo implements IFMSInfo {
         data["OpenIDConnectAuthority"] = this.openIDConnectAuthority;
         data["OpenIDConnectClientId"] = this.openIDConnectClientId;
         data["UsingLabelPrinterForSerials"] = this.usingLabelPrinterForSerials;
+        data["QuarantineQueue"] = this.quarantineQueue;
         return data; 
     }
 }
@@ -1491,6 +1494,7 @@ export interface IFMSInfo {
     openIDConnectAuthority?: string | undefined;
     openIDConnectClientId?: string | undefined;
     usingLabelPrinterForSerials: boolean;
+    quarantineQueue?: string | undefined;
 }
 
 export class HistoricData implements IHistoricData {

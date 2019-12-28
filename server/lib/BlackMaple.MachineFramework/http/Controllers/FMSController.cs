@@ -52,6 +52,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [DataMember] public string OpenIDConnectAuthority { get; set; }
     [DataMember] public string OpenIDConnectClientId { get; set; }
     [DataMember] public bool UsingLabelPrinterForSerials { get; set; }
+    [DataMember] public string QuarantineQueue { get; set; }
   }
 
   [ApiController]
@@ -81,7 +82,8 @@ namespace BlackMaple.MachineFramework.Controllers
         AdditionalLogServers = _cfg.AdditionalLogServers,
         OpenIDConnectAuthority = _serverSt.OpenIDConnectAuthority,
         OpenIDConnectClientId = _serverSt.OpenIDConnectClientId,
-        UsingLabelPrinterForSerials = _impl.UsingLabelPrinterForSerials
+        UsingLabelPrinterForSerials = _impl.UsingLabelPrinterForSerials,
+        QuarantineQueue = _cfg.QuarantineQueue
       };
     }
 

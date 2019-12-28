@@ -66,14 +66,18 @@ import { LazySeq } from "../../data/lazyseq";
 import { MaterialSummary } from "../../data/events.matsummary";
 import { HashSet } from "prelude-ts";
 import { strip_proc } from "../../data/events.cycles";
+import { Tooltip } from "@material-ui/core";
 
 interface ExistingMatInQueueDialogBodyProps {
   readonly display_material: matDetails.MaterialDetail;
+  readonly quarantineQueue: string | null;
   readonly onClose: () => void;
   readonly removeFromQueue: (mat: matDetails.MaterialDetail) => void;
+  readonly addExistingMat: (d: matDetails.AddExistingMaterialToQueueData) => void;
 }
 
 function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) {
+  const quarantineQueue = props.quarantineQueue;
   return (
     <>
       <DialogTitle disableTypography>
@@ -83,9 +87,26 @@ function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) 
         <MaterialDetailContent mat={props.display_material} />
       </DialogContent>
       <DialogActions>
-        <Button color="primary" onClick={() => props.removeFromQueue(props.display_material)}>
-          Remove From Queue
-        </Button>
+        {quarantineQueue === null ? (
+          <Button color="primary" onClick={() => props.removeFromQueue(props.display_material)}>
+            Remove From System
+          </Button>
+        ) : (
+          <Tooltip title={"Move to " + quarantineQueue}>
+            <Button
+              color="primary"
+              onClick={() =>
+                props.addExistingMat({
+                  materialId: props.display_material.materialID,
+                  queue: quarantineQueue,
+                  queuePosition: 0
+                })
+              }
+            >
+              Quarantine Material
+            </Button>
+          </Tooltip>
+        )}
         <Button onClick={props.onClose} color="primary">
           Close
         </Button>
@@ -442,6 +463,7 @@ interface QueueMatDialogProps {
   readonly material_currently_in_queue: boolean;
   readonly addMatQueue?: string;
   readonly queueNames: ReadonlyArray<string>;
+  readonly quarantineQueue: string | null;
 
   readonly onClose: () => void;
   readonly removeFromQueue: (mat: matDetails.MaterialDetail) => void;
@@ -460,7 +482,9 @@ function QueueMatDialog(props: QueueMatDialogProps) {
         <ExistingMatInQueueDialogBody
           display_material={props.display_material}
           onClose={props.onClose}
+          quarantineQueue={props.quarantineQueue}
           removeFromQueue={props.removeFromQueue}
+          addExistingMat={props.addExistingMat}
         />
       );
     } else if (props.display_material.materialID >= 0 || props.display_material.loading_events) {
@@ -517,7 +541,8 @@ const ConnectedMaterialDialog = connect(
     display_material: st.MaterialDetails.material,
     material_currently_in_queue: selectMatCurrentlyInQueue(st),
     addMatQueue: st.Gui.add_mat_to_queue,
-    queueNames: st.Route.standalone_queues
+    queueNames: st.Route.standalone_queues,
+    quarantineQueue: st.ServerSettings.fmsInfo?.quarantineQueue || null
   }),
   {
     onClose: () => [
