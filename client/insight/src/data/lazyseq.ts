@@ -319,6 +319,11 @@ export class LazySeq<T> {
     }
   }
 
+  sortBy(compare: (v1: T, v2: T) => Ordering): LazySeq<T> {
+    const arr = this.toArray().sort(compare);
+    return LazySeq.ofIterable(arr);
+  }
+
   sumOn(getNumber: (v: T) => number): number {
     let sum = 0;
     for (const x of this.iter) {

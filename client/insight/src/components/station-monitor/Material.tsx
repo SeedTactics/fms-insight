@@ -50,8 +50,10 @@ import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
 import AddIcon from "@material-ui/icons/AddBox";
 import IconButton from "@material-ui/core/IconButton";
+import DragIndicator from "@material-ui/icons/DragIndicator";
 import { WithStyles, createStyles, withStyles } from "@material-ui/core/styles";
 import { SortableElement, SortableContainer } from "react-sortable-hoc";
+import { DraggableProvided } from "react-beautiful-dnd";
 
 import * as api from "../../data/api";
 import * as matDetails from "../../data/material-details";
@@ -152,6 +154,9 @@ export interface MaterialSummaryProps {
   readonly action?: string;
   readonly focusInspectionType?: string;
   readonly hideInspectionIcon?: boolean;
+  readonly draggableProvided?: DraggableProvided;
+  readonly hideAvatar?: boolean;
+  readonly isDragging?: boolean;
   onOpen: (m: Readonly<MaterialSummary>) => void;
 }
 
@@ -183,8 +188,26 @@ const MatSummaryWithStyles = withStyles(matStyles)((props: MaterialSummaryProps 
     );
   }
 
+  const dragHandleProps = props.draggableProvided?.dragHandleProps;
+
   return (
-    <Paper elevation={4} className={props.classes.paper}>
+    <Paper
+      ref={props.draggableProvided?.innerRef}
+      elevation={4}
+      className={props.classes.paper}
+      {...props.draggableProvided?.draggableProps}
+      style={{
+        display: "flex",
+        ...props.draggableProvided?.draggableProps.style
+      }}
+    >
+      {dragHandleProps ? (
+        <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }} {...dragHandleProps}>
+          <DragIndicator fontSize="large" color={props.isDragging ? "primary" : "action"} />
+        </div>
+      ) : (
+        undefined
+      )}
       <ButtonBase focusRipple onClick={() => props.onOpen(props.mat)}>
         <div className={props.classes.container}>
           <PartIdenticon part={props.mat.partName} />
@@ -210,7 +233,7 @@ const MatSummaryWithStyles = withStyles(matStyles)((props: MaterialSummaryProps 
             {completedMsg}
           </div>
           <div className={props.classes.rightContent}>
-            {props.mat.serial && props.mat.serial.length >= 1 ? (
+            {props.mat.serial && props.mat.serial.length >= 1 && !props.hideAvatar ? (
               <div>
                 <Avatar className={props.classes.avatar}>
                   {props.mat.serial.substr(props.mat.serial.length - 1, 1)}
@@ -246,6 +269,9 @@ export class MatSummary extends React.PureComponent<MaterialSummaryProps> {
 export interface InProcMaterialProps {
   readonly mat: Readonly<api.IInProcessMaterial>; // TODO: deep readonly
   readonly displaySinglePallet?: string;
+  readonly draggableProvided?: DraggableProvided;
+  readonly hideAvatar?: boolean;
+  readonly isDragging?: boolean;
   onOpen: (m: Readonly<MaterialSummary>) => void;
 }
 
@@ -256,6 +282,9 @@ export class InProcMaterial extends React.PureComponent<InProcMaterialProps> {
         mat={inproc_mat_to_summary(this.props.mat)}
         action={materialAction(this.props.mat, this.props.displaySinglePallet)}
         onOpen={this.props.onOpen}
+        draggableProvided={this.props.draggableProvided}
+        hideAvatar={this.props.hideAvatar}
+        isDragging={this.props.isDragging}
       />
     );
   }

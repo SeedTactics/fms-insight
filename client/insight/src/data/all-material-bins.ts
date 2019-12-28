@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2019, John Lenz
 
 All rights reserved.
 
@@ -33,53 +33,77 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as api from "./api";
 import { HashMap } from "prelude-ts";
-import { LazySeq } from "./lazyseq";
 
 export type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
 
-export type AllMaterialBins = HashMap<string, MaterialList>;
+export interface MaterialBins {
+  readonly loadStations: HashMap<number, MaterialList>;
+  readonly pallets: HashMap<string, MaterialList>;
+  readonly queues: HashMap<string, MaterialList>;
+}
 
-export function selectAllMaterialIntoBins(curSt: Readonly<api.ICurrentStatus>): AllMaterialBins {
+function addToMap<T>(m: Map<T, Array<Readonly<api.IInProcessMaterial>>>, k: T, mat: Readonly<api.IInProcessMaterial>) {
+  const mats = m.get(k);
+  if (mats) {
+    mats.push(mat);
+  } else {
+    m.set(k, [mat]);
+  }
+}
+
+export function selectAllMaterialIntoBins(curSt: Readonly<api.ICurrentStatus>): MaterialBins {
+  const loadStations = new Map<number, Array<Readonly<api.IInProcessMaterial>>>();
+  const pallets = new Map<string, Array<Readonly<api.IInProcessMaterial>>>();
+  const queues = new Map<string, Array<Readonly<api.IInProcessMaterial>>>();
+
   const palLoc = HashMap.ofObjectDictionary(curSt.pallets).mapValues(
     st => " (" + st.currentPalletLocation.group + " #" + st.currentPalletLocation.num.toString() + ")"
   );
 
-  return LazySeq.ofIterable(curSt.material)
-    .map(mat => {
-      switch (mat.location.type) {
-        case api.LocType.InQueue:
-          return { region: mat.location.currentQueue || "Queue", mat };
-        case api.LocType.OnPallet: {
-          let region = "Pallet";
-          if (mat.location.pallet) {
-            region = "Pallet " + mat.location.pallet.toString() + palLoc.get(mat.location.pallet).getOrElse("");
-          }
-          return { region, mat };
+  for (const mat of curSt.material) {
+    switch (mat.location.type) {
+      case api.LocType.InQueue:
+        if (mat.action.type === api.ActionType.Loading) {
+          const lul = curSt.pallets[mat.action.loadOntoPallet ?? ""]?.currentPalletLocation.num;
+          addToMap(loadStations, lul, mat);
+        } else {
+          addToMap(queues, mat.location.currentQueue || "Queue", mat);
         }
-        case api.LocType.Free:
-        default:
-          switch (mat.action.type) {
-            case api.ActionType.Loading:
-              return { region: "Raw Material", mat };
-            default:
-              return { region: "Free Material", mat };
+        break;
+
+      case api.LocType.OnPallet:
+        if (mat.location.pallet) {
+          const palSt = curSt.pallets[mat.location.pallet];
+          if (palSt.currentPalletLocation.loc === api.PalletLocationEnum.LoadUnload) {
+            addToMap(loadStations, palSt.currentPalletLocation.num, mat);
+          } else {
+            const loc = palLoc.get(mat.location.pallet).getOrElse("");
+            addToMap(pallets, mat.location.pallet + loc, mat);
           }
-      }
-    })
-    .groupBy(x => x.region)
-    .mapValues(group =>
-      group
-        .map(x => x.mat)
-        .sortOn(mat => {
-          switch (mat.location.type) {
-            case api.LocType.OnPallet:
-              return mat.location.face || 1;
-            case api.LocType.InQueue:
-            case api.LocType.Free:
-            default:
-              return mat.location.queuePosition || 1;
-          }
-        })
-        .toArray()
-    );
+        } else {
+          addToMap(pallets, "Pallet", mat);
+        }
+        break;
+
+      case api.LocType.Free:
+        switch (mat.action.type) {
+          case api.ActionType.Loading:
+            const lul = curSt.pallets[mat.action.loadOntoPallet ?? ""]?.currentPalletLocation.num;
+            addToMap(loadStations, lul, mat);
+            break;
+          default:
+            addToMap(queues, "Free Material", mat);
+            break;
+        }
+        break;
+    }
+  }
+
+  return {
+    loadStations: HashMap.ofIterable(loadStations),
+    pallets: HashMap.ofIterable(pallets),
+    queues: HashMap.ofIterable(queues).mapValues(arr =>
+      arr.sort((m1, m2) => (m1.location.queuePosition ?? 0) - (m2.location.queuePosition ?? 0))
+    )
+  };
 }

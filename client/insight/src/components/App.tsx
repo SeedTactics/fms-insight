@@ -90,6 +90,7 @@ import ManualScan from "./ManualScan";
 import ChooseOperator from "./ChooseOperator";
 import { BasicMaterialDialog } from "./station-monitor/Material";
 import { CompletedParts } from "./operations/CompletedParts";
+import AllMaterial from "./operations/AllMaterial";
 import { FailedPartLookup } from "./quality/FailedPartLookup";
 import { QualityPaths } from "./quality/QualityPaths";
 import { QualityDashboard } from "./quality/RecentFailedInspections";
@@ -97,7 +98,6 @@ import LoadStation from "./station-monitor/LoadStation";
 import Inspection from "./station-monitor/Inspection";
 import Wash from "./station-monitor/Wash";
 import Queues from "./station-monitor/Queues";
-import AllMaterial from "./station-monitor/AllMaterial";
 
 const tabsStyle = {
   alignSelf: "flex-end" as "flex-end",
