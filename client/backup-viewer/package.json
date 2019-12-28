@@ -35,15 +35,15 @@
   "dependencies": {
     "moment": "^2.24.0",
     "sqlite": "^3.0.3",
-    "sqlite3": "4.1.0"
+    "sqlite3": "4.1.1"
   },
   "devDependencies": {
     "@types/sqlite3": "^3.1.4",
-    "electron": "6.0.12",
+    "@types/node": "12.*",
+    "electron": "7.1.7",
     "electron-builder": "^21.2.0",
     "parcel": "^1.11.0",
     "rimraf": "^3.0.0",
-    "tslint": "^5.20.0",
-    "typescript": "^3.6.0"
+    "typescript": "^3.7.0"
   }
 }
