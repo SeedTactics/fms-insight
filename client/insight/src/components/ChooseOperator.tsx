@@ -32,17 +32,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import TextField from "@material-ui/core/TextField";
-import Downshift from "downshift";
-import Paper from "@material-ui/core/Paper";
-import ArrowDropDownIcon from "@material-ui/icons/ArrowDropDown";
-import List from "@material-ui/core/List";
-import ListItem from "@material-ui/core/ListItem";
+import Select from "@material-ui/core/Select";
+import MenuItem from "@material-ui/core/MenuItem";
 import ListItemText from "@material-ui/core/ListItemText";
 import ListItemSecondaryAction from "@material-ui/core/ListItemSecondaryAction";
 import IconButton from "@material-ui/core/IconButton";
 import DeleteIcon from "@material-ui/icons/Delete";
-import Typography from "@material-ui/core/Typography";
+import Dialog from "@material-ui/core/Dialog";
+import DialogTitle from "@material-ui/core/DialogTitle";
+import TextField from "@material-ui/core/TextField";
+import DialogContent from "@material-ui/core/DialogContent";
+import DialogActions from "@material-ui/core/DialogActions";
+import Button from "@material-ui/core/Button";
 import { User } from "oidc-client";
 import { HashSet } from "prelude-ts";
 
@@ -57,72 +58,89 @@ interface OperatorSelectProps {
   readonly removeOperator: DispatchAction<operators.ActionType.RemoveOperator>;
 }
 
-export class OperatorSelect extends React.PureComponent<OperatorSelectProps> {
-  render() {
-    if (this.props.currentUser) {
-      return <div>{this.props.currentUser.profile.name || this.props.currentUser.profile.sub}</div>;
+const NewOper = "__FMS_INSIGHT_NEW_OPERATOR__" as const;
+
+export const OperatorSelect = React.memo(function OperatorSelectF(props: OperatorSelectProps) {
+  const [newOperOpen, setNewOperOpen] = React.useState(false);
+  const [newOperName, setNewOperName] = React.useState("");
+
+  function changeOper(evt: React.ChangeEvent<{ value: unknown }>) {
+    if (evt.target.value === NewOper) {
+      setNewOperOpen(true);
+    } else {
+      props.setOperator({ operator: evt.target.value });
     }
-    const opers = this.props.operators.toArray({ sortOn: x => x });
-    return (
-      <Downshift
-        selectedItem={this.props.currentOperator}
-        onChange={o => {
-          this.props.setOperator({ operator: o });
+  }
+
+  if (props.currentUser) {
+    return <div>{props.currentUser.profile.name || props.currentUser.profile.sub}</div>;
+  }
+  return (
+    <>
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+      <Select value={props.currentOperator} onChange={changeOper} renderValue={((x: any) => x) as any}>
+        {props.operators.toArray({ sortOn: x => x }).map((oper, idx) => (
+          <MenuItem key={idx} value={oper}>
+            <ListItemText primary={oper} />
+            <ListItemSecondaryAction>
+              <IconButton edge="end" onClick={() => props.removeOperator({ operator: oper })}>
+                <DeleteIcon />
+              </IconButton>
+            </ListItemSecondaryAction>
+          </MenuItem>
+        ))}
+        <MenuItem key="new" value={NewOper}>
+          <em>Create New Operator</em>
+        </MenuItem>
+      </Select>
+      <Dialog
+        open={newOperOpen}
+        onClose={() => {
+          setNewOperOpen(false);
+          setNewOperName("");
         }}
       >
-        {ds => (
-          <div style={{ position: "relative" }}>
-            <TextField
-              InputProps={{
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                ...(ds.getInputProps({ placeholder: "Operator" }) as any),
-                onKeyUp: k => {
-                  if (k.keyCode === 13 && ds.inputValue && ds.inputValue.length > 0) {
-                    this.props.setOperator({ operator: ds.inputValue });
-                    ds.closeMenu();
-                  }
-                },
-                endAdornment: <ArrowDropDownIcon onClick={() => ds.openMenu()} />
-              }}
-            />
-            {ds.isOpen ? (
-              <Paper
-                style={{
-                  position: "absolute",
-                  zIndex: 1,
-                  left: 0,
-                  right: 0
-                }}
-              >
-                {ds.inputValue && ds.inputValue.length > 0 && !this.props.operators.contains(ds.inputValue) ? (
-                  <Typography variant="caption" align="center">
-                    Press enter to add new
-                  </Typography>
-                ) : (
-                  undefined
-                )}
-                <List>
-                  {opers.map((o, idx) => (
-                    <ListItem key={idx} button {...ds.getItemProps({ item: o })}>
-                      <ListItemText primary={o} />
-                      <ListItemSecondaryAction>
-                        <IconButton onClick={() => this.props.removeOperator({ operator: o })}>
-                          <DeleteIcon />
-                        </IconButton>
-                      </ListItemSecondaryAction>
-                    </ListItem>
-                  ))}
-                </List>
-              </Paper>
-            ) : (
-              undefined
-            )}
-          </div>
-        )}
-      </Downshift>
-    );
-  }
-}
+        <DialogTitle>Create New Operator</DialogTitle>
+        <DialogContent>
+          <TextField
+            value={newOperName}
+            onChange={evt => setNewOperName(evt.target.value)}
+            label="New Name"
+            variant="outlined"
+            autoFocus
+            onKeyUp={evt => {
+              if (evt.keyCode === 13) {
+                props.setOperator({ operator: newOperName });
+                setNewOperName("");
+                setNewOperOpen(false);
+              }
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button
+            disabled={newOperName === ""}
+            onClick={() => {
+              props.setOperator({ operator: newOperName });
+              setNewOperName("");
+              setNewOperOpen(false);
+            }}
+          >
+            Create {newOperName}
+          </Button>
+          <Button
+            onClick={() => {
+              setNewOperName("");
+              setNewOperOpen(false);
+            }}
+          >
+            Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+});
 
 export default connect(
   st => ({

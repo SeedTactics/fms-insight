@@ -20,7 +20,6 @@
     "@material-ui/icons": "^4.0.0",
     "copy-to-clipboard": "^3.0.0",
     "date-fns": "^2.0.0",
-    "downshift": "^3.1.0",
     "jdenticon": "^2.0.0",
     "moment": "^2.20.0",
     "oidc-client": "^1.5.3-beta.1",
