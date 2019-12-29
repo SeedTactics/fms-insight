@@ -145,6 +145,7 @@ function QualityTabs(p: HeaderNavProps) {
       <Tab label="Quality" value={routes.RouteLocation.Quality_Dashboard} />
       <Tab label="Failed Part Lookup" value={routes.RouteLocation.Quality_Serials} />
       <Tab label="Paths" value={routes.RouteLocation.Quality_Paths} />
+      <Tab label="Quarantine Material" value={routes.RouteLocation.Quality_Quarantine} />
     </Tabs>
   );
 }
@@ -335,6 +336,7 @@ function helpUrl(r: routes.RouteLocation): string {
     case routes.RouteLocation.Quality_Dashboard:
     case routes.RouteLocation.Quality_Serials:
     case routes.RouteLocation.Quality_Paths:
+    case routes.RouteLocation.Quality_Quarantine:
       return "https://fms-insight.seedtactics.com/docs/client-quality.html";
 
     case routes.RouteLocation.Tools_Dashboard:
@@ -588,7 +590,7 @@ class App extends React.PureComponent<AppConnectedProps> {
           navigation = OperationsTabs;
           break;
         case routes.RouteLocation.Operations_AllMaterial:
-          page = <AllMaterial />;
+          page = <AllMaterial displaySystemBins />;
           navigation = OperationsTabs;
           addBasicMaterialDialog = false;
           break;
@@ -617,6 +619,13 @@ class App extends React.PureComponent<AppConnectedProps> {
           page = <QualityPaths />;
           navigation = QualityTabs;
           showAlarms = false;
+          break;
+
+        case routes.RouteLocation.Quality_Quarantine:
+          page = <AllMaterial displaySystemBins={false} />;
+          navigation = QualityTabs;
+          showAlarms = false;
+          addBasicMaterialDialog = false;
           break;
 
         case routes.RouteLocation.Tools_Dashboard:

@@ -247,7 +247,8 @@ const ConnectedAllMatDialog = connect(st => ({}), {
 })(AllMatDialog);
 
 interface AllMaterialProps {
-  readonly allMat: ReadonlyArray<MaterialBin>;
+  readonly displaySystemBins: boolean;
+  readonly allBins: ReadonlyArray<MaterialBin>;
   readonly display_material: matDetails.MaterialDetail | null;
   readonly openMat: (mat: MaterialSummary) => void;
   readonly moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
@@ -255,6 +256,10 @@ interface AllMaterialProps {
 }
 
 function AllMaterial(props: AllMaterialProps) {
+  const curBins = props.displaySystemBins
+    ? props.allBins
+    : props.allBins.filter(bin => bin.type === MaterialBinType.QuarantineQueues);
+
   const onDragEnd = (result: DropResult): void => {
     if (!result.destination) return;
     if (result.reason === "CANCEL") return;
@@ -266,7 +271,7 @@ function AllMaterial(props: AllMaterialProps) {
       props.moveMaterialInQueue({ materialId, queue, queuePosition });
     } else if (result.type === DragType.Queue) {
       props.moveMaterialBin(
-        props.allMat.map(b => b.binId),
+        curBins.map(b => b.binId),
         result.source.index,
         result.destination.index
       );
@@ -275,7 +280,7 @@ function AllMaterial(props: AllMaterialProps) {
 
   const curDisplayQuarantine =
     props.display_material !== null &&
-    props.allMat.findIndex(
+    curBins.findIndex(
       bin =>
         bin.type === MaterialBinType.QuarantineQueues &&
         bin.material.findIndex(mat => mat.materialID === props.display_material?.materialID) >= 0
@@ -287,7 +292,7 @@ function AllMaterial(props: AllMaterialProps) {
         <Droppable droppableId="Board" type={DragType.Queue} direction="horizontal">
           {provided => (
             <div ref={provided.innerRef} style={{ display: "flex", flexWrap: "nowrap" }}>
-              {props.allMat.map((matBin, idx) => {
+              {curBins.map((matBin, idx) => {
                 switch (matBin.type) {
                   case MaterialBinType.LoadStations:
                     return (
@@ -358,7 +363,7 @@ const extractMaterialRegions = createSelector(
 
 export default connect(
   st => ({
-    allMat: extractMaterialRegions(st),
+    allBins: extractMaterialRegions(st),
     display_material: st.MaterialDetails.material
   }),
   {

@@ -151,6 +151,7 @@ it("transitions to the cost/piece, dashboard, and efficiency pages", () => {
     routes.RouteLocation.Quality_Dashboard,
     routes.RouteLocation.Quality_Serials,
     routes.RouteLocation.Quality_Paths,
+    routes.RouteLocation.Quality_Quarantine,
 
     routes.RouteLocation.Tools_Dashboard,
 
