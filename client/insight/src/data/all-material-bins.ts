@@ -33,13 +33,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as api from "./api";
 import { HashMap } from "prelude-ts";
+import { LazySeq } from "./lazyseq";
 
 export type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
 
 export enum MaterialBinType {
   LoadStations = "Bin_LoadStations",
   Pallets = "Bin_Pallets",
-  Queue = "Bin_Queue"
+  ActiveQueues = "Bin_ActiveQueues",
+  QuarantineQueues = "Bin_Quarantine"
 }
 
 export type MaterialBin =
@@ -54,7 +56,12 @@ export type MaterialBin =
       readonly byPallet: HashMap<string, MaterialList>;
     }
   | {
-      readonly type: MaterialBinType.Queue;
+      readonly type: MaterialBinType.ActiveQueues;
+      readonly binId: MaterialBinId;
+      readonly byQueue: HashMap<string, MaterialList>;
+    }
+  | {
+      readonly type: MaterialBinType.QuarantineQueues;
       readonly binId: MaterialBinId;
       readonly queueName: string;
       readonly material: MaterialList;
@@ -67,6 +74,7 @@ export enum MaterialBinActionType {
 export type MaterialBinId = string;
 export const LoadStationBinId: MaterialBinId = "__FMS_INSIGHT_LOAD_STATION_BIN__";
 export const PalletsBinId: MaterialBinId = "__FMS_INSIGHT_PALLETS_BIN__";
+export const ActiveQueuesBinId: MaterialBinId = "__FMS_INSIGHT_ACTIVE_QUEUE_BIN__";
 
 export type MaterialBinAction = {
   readonly type: MaterialBinActionType.Move;
@@ -152,14 +160,33 @@ export function selectAllMaterialIntoBins(
     }
   }
 
-  const bins = curBinOrder.filter(b => b === LoadStationBinId || b === PalletsBinId || b in curSt.queues);
-  if (bins.indexOf(LoadStationBinId) < 0) {
-    bins.unshift(LoadStationBinId);
+  const activeQueues = LazySeq.ofObject(curSt.jobs)
+    .flatMap(([_, job]) => job.procsAndPaths)
+    .flatMap(proc => proc.paths)
+    .flatMap(path => {
+      const q: string[] = [];
+      if (path.inputQueue !== undefined) q.push(path.inputQueue);
+      if (path.outputQueue !== undefined) q.push(path.outputQueue);
+      return q;
+    })
+    .toSet(x => x);
+  const quarantineQueues = LazySeq.ofObject(curSt.queues)
+    .filter(([qname, _]) => !activeQueues.contains(qname))
+    .toSet(([qname, _]) => qname);
+
+  const bins = curBinOrder.filter(
+    b => b === LoadStationBinId || b === PalletsBinId || b === ActiveQueuesBinId || quarantineQueues.contains(b)
+  );
+  if (bins.indexOf(ActiveQueuesBinId) < 0) {
+    bins.unshift(ActiveQueuesBinId);
   }
   if (bins.indexOf(PalletsBinId) < 0) {
     bins.unshift(PalletsBinId);
   }
-  for (const queue of Object.keys(curSt.queues)) {
+  if (bins.indexOf(LoadStationBinId) < 0) {
+    bins.unshift(LoadStationBinId);
+  }
+  for (const queue of quarantineQueues.toArray({ sortOn: x => x })) {
     if (bins.indexOf(queue) < 0) {
       bins.push(queue);
     }
@@ -170,24 +197,31 @@ export function selectAllMaterialIntoBins(
       return { type: MaterialBinType.LoadStations, binId: LoadStationBinId, byLul: HashMap.ofIterable(loadStations) };
     } else if (binId === PalletsBinId) {
       return { type: MaterialBinType.Pallets, binId: PalletsBinId, byPallet: HashMap.ofIterable(pallets) };
+    } else if (binId === ActiveQueuesBinId) {
+      return {
+        type: MaterialBinType.ActiveQueues,
+        binId: ActiveQueuesBinId,
+        byQueue: LazySeq.ofIterable(activeQueues)
+          .map(queueName => {
+            const mat = queues.get(queueName) ?? [];
+            mat.sort((m1, m2) => (m1.location.queuePosition ?? 0) - (m2.location.queuePosition ?? 0));
+            return [queueName, mat] as [string, MaterialList];
+          })
+          .toMap(
+            ([queueName, mat]) => [queueName, mat],
+            (ms1, ms2) => ms1.concat(ms2)
+          )
+      };
     } else {
       const queueName = binId;
-      const mat = queues.get(queueName);
-      if (mat) {
-        return {
-          type: MaterialBinType.Queue as const,
-          binId: queueName as MaterialBinId,
-          queueName,
-          material: mat.sort((m1, m2) => (m1.location.queuePosition ?? 0) - (m2.location.queuePosition ?? 0))
-        };
-      } else {
-        return {
-          type: MaterialBinType.Queue as const,
-          binId: queueName as MaterialBinId,
-          queueName,
-          material: []
-        };
-      }
+      const mat = queues.get(queueName) ?? [];
+      mat.sort((m1, m2) => (m1.location.queuePosition ?? 0) - (m2.location.queuePosition ?? 0));
+      return {
+        type: MaterialBinType.QuarantineQueues as const,
+        binId: queueName as MaterialBinId,
+        queueName,
+        material: mat
+      };
     }
   });
 }

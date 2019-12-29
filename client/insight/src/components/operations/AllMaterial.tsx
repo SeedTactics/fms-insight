@@ -160,6 +160,14 @@ function comparePal(p1: string, p2: string) {
   }
 }
 
+function renderQueue(queue: string) {
+  return queue;
+}
+
+function compareQueue(q1: string, q2: string) {
+  return q1.localeCompare(q2);
+}
+
 class SystemMaterial<T extends string | number> extends React.PureComponent<SystemMaterialProps<T>> {
   render() {
     return (
@@ -258,7 +266,20 @@ function AllMaterial(props: AllMaterialProps) {
                         openMat={props.openMat}
                       />
                     );
-                  case MaterialBinType.Queue:
+                  case MaterialBinType.ActiveQueues:
+                    return (
+                      <SystemMaterial
+                        name="Queues"
+                        draggableId={matBin.binId}
+                        key={matBin.binId}
+                        idx={idx}
+                        renderLabel={renderQueue}
+                        compareLabel={compareQueue}
+                        material={matBin.byQueue}
+                        openMat={props.openMat}
+                      />
+                    );
+                  case MaterialBinType.QuarantineQueues:
                     return (
                       <MaterialQueue
                         key={matBin.binId}

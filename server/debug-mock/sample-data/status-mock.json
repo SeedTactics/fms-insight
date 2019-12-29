@@ -46,6 +46,7 @@
               ],
               "Load": [1, 2],
               "Unload": [1, 2],
+              "InputQueue": "Queue1",
               "Stops": [
                 {
                   "Stations": { "1": "100", "2": "100" },
