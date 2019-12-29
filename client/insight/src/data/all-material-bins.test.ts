@@ -36,5 +36,5 @@ import { selectAllMaterialIntoBins } from "./all-material-bins";
 
 it("creates all material", () => {
   const data = loadMockData(30 * 24 * 60 * 60);
-  expect(selectAllMaterialIntoBins(data.curSt)).toMatchSnapshot("all material bins");
+  expect(selectAllMaterialIntoBins(data.curSt, [])).toMatchSnapshot("all material bins");
 });
