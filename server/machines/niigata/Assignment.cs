@@ -365,13 +365,13 @@ namespace BlackMaple.FMSInsight.Niigata
         Routes =
           (new RouteStep[] { new LoadStep() { LoadStations = firstPath.Job.LoadStations(firstPath.Process, firstPath.Path).ToList() } })
           .Concat(machiningSteps)
-          .Append(
+          .Concat(new[] {
             new UnloadStep()
             {
               UnloadStations = firstPath.Job.UnloadStations(firstPath.Process, firstPath.Path).ToList(),
               CompletedPartCount = 1
             }
-          )
+          })
           .ToList()
       };
     }
