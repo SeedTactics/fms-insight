@@ -590,6 +590,7 @@ class App extends React.PureComponent<AppConnectedProps> {
         case routes.RouteLocation.Operations_AllMaterial:
           page = <AllMaterial />;
           navigation = OperationsTabs;
+          addBasicMaterialDialog = false;
           break;
         case routes.RouteLocation.Operations_CompletedParts:
           page = <CompletedParts />;

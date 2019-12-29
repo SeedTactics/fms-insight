@@ -41,13 +41,14 @@ import {
   MaterialBinId
 } from "../../data/all-material-bins";
 import { MaterialSummary } from "../../data/events.matsummary";
-import { connect, Store } from "../../store/store";
+import { connect, Store, AppActionBeforeMiddleware, mkAC } from "../../store/store";
 import * as matDetails from "../../data/material-details";
 import * as currentSt from "../../data/current-status";
+import * as guiState from "../../data/gui-state";
 import { createSelector } from "reselect";
-import { Paper, Typography } from "@material-ui/core";
+import { Paper, Typography, Button } from "@material-ui/core";
 import { LazySeq } from "../../data/lazyseq";
-import { InProcMaterial } from "../station-monitor/Material";
+import { InProcMaterial, MaterialDialog } from "../station-monitor/Material";
 import { IInProcessMaterial } from "../../data/api";
 import { HashMap, Ordering } from "prelude-ts";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -206,8 +207,48 @@ class SystemMaterial<T extends string | number> extends React.PureComponent<Syst
   }
 }
 
+interface AllMatDialogProps {
+  readonly display_material: matDetails.MaterialDetail | null;
+  readonly quarantineQueue: boolean;
+  readonly removeFromQueue: (mat: matDetails.MaterialDetail) => void;
+  readonly onClose: () => void;
+}
+
+function AllMatDialog(props: AllMatDialogProps) {
+  const displayMat = props.display_material;
+  return (
+    <MaterialDialog
+      display_material={props.display_material}
+      onClose={props.onClose}
+      allowNote={props.quarantineQueue}
+      buttons={
+        <>
+          {displayMat && props.quarantineQueue ? (
+            <Button color="primary" onClick={() => props.removeFromQueue(displayMat)}>
+              Remove From System
+            </Button>
+          ) : (
+            undefined
+          )}
+        </>
+      }
+    />
+  );
+}
+
+const ConnectedAllMatDialog = connect(st => ({}), {
+  onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
+  removeFromQueue: (mat: matDetails.MaterialDetail) =>
+    [
+      matDetails.removeFromQueue(mat),
+      { type: matDetails.ActionType.CloseMaterialDialog },
+      { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined }
+    ] as AppActionBeforeMiddleware
+})(AllMatDialog);
+
 interface AllMaterialProps {
   readonly allMat: ReadonlyArray<MaterialBin>;
+  readonly display_material: matDetails.MaterialDetail | null;
   readonly openMat: (mat: MaterialSummary) => void;
   readonly moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
   readonly moveMaterialBin: (curBinOrder: ReadonlyArray<MaterialBinId>, oldIdx: number, newIdx: number) => void;
@@ -231,6 +272,14 @@ function AllMaterial(props: AllMaterialProps) {
       );
     }
   };
+
+  const curDisplayQuarantine =
+    props.display_material !== null &&
+    props.allMat.findIndex(
+      bin =>
+        bin.type === MaterialBinType.QuarantineQueues &&
+        bin.material.findIndex(mat => mat.materialID === props.display_material?.materialID) >= 0
+    ) >= 0;
 
   return (
     <DocumentTitle title="All Material - FMS Insight">
@@ -295,6 +344,7 @@ function AllMaterial(props: AllMaterialProps) {
             </div>
           )}
         </Droppable>
+        <ConnectedAllMatDialog display_material={props.display_material} quarantineQueue={curDisplayQuarantine} />
       </DragDropContext>
     </DocumentTitle>
   );
@@ -308,7 +358,8 @@ const extractMaterialRegions = createSelector(
 
 export default connect(
   st => ({
-    allMat: extractMaterialRegions(st)
+    allMat: extractMaterialRegions(st),
+    display_material: st.MaterialDetails.material
   }),
   {
     openMat: matDetails.openMaterialDialog,
