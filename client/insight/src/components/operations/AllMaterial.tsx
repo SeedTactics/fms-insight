@@ -33,7 +33,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from "react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
-import { selectAllMaterialIntoBins, MaterialBins } from "../../data/all-material-bins";
+import {
+  selectAllMaterialIntoBins,
+  MaterialBin,
+  MaterialBinType,
+  moveMaterialBin,
+  MaterialBinId
+} from "../../data/all-material-bins";
 import { MaterialSummary } from "../../data/events.matsummary";
 import { connect, Store } from "../../store/store";
 import * as matDetails from "../../data/material-details";
@@ -47,11 +53,15 @@ import { HashMap, Ordering } from "prelude-ts";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
+enum DragType {
+  Material = "DRAG_MATERIAL",
+  Queue = "DRAG_QUEUE"
+}
+
 function getQueueStyle(isDraggingOver: boolean, draggingFromThisWith: string | undefined): React.CSSProperties {
   return {
     display: "flex",
     flexDirection: "column",
-    margin: "0.75em",
     flexWrap: "nowrap",
     width: "18em",
     minHeight: "20em",
@@ -61,38 +71,67 @@ function getQueueStyle(isDraggingOver: boolean, draggingFromThisWith: string | u
 
 interface MaterialQueueProps {
   readonly queue: string;
+  readonly idx: number;
   readonly material: ReadonlyArray<Readonly<IInProcessMaterial>>;
   readonly openMat: (mat: MaterialSummary) => void;
 }
 
 const MaterialQueue = React.memo(function DraggableMaterialQueueF(props: MaterialQueueProps) {
   return (
-    <Droppable droppableId={props.queue}>
+    <Draggable draggableId={props.queue} index={props.idx} type={DragType.Queue}>
       {(provided, snapshot) => (
-        <Paper ref={provided.innerRef} style={getQueueStyle(snapshot.isDraggingOver, snapshot.draggingFromThisWith)}>
-          <Typography variant="h4">{props.queue}</Typography>
-          {props.material.map((mat, idx) => (
-            <Draggable key={mat.materialID} draggableId={mat.materialID.toString()} index={idx}>
-              {(provided, snapshot) => (
-                <InProcMaterial
-                  mat={mat}
-                  onOpen={props.openMat}
-                  draggableProvided={provided}
-                  hideAvatar
-                  isDragging={snapshot.isDragging}
-                />
-              )}
-            </Draggable>
-          ))}
-          {provided.placeholder}
+        <Paper
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          style={{ ...provided.draggableProps.style, margin: "0.75em" }}
+        >
+          <div {...provided.dragHandleProps}>
+            <Typography
+              variant="h4"
+              {...provided.dragHandleProps}
+              color={snapshot.isDragging ? "primary" : "textPrimary"}
+            >
+              {props.queue}
+            </Typography>
+          </div>
+          <Droppable droppableId={props.queue} type={DragType.Material}>
+            {(provided, snapshot) => (
+              <div
+                ref={provided.innerRef}
+                style={getQueueStyle(snapshot.isDraggingOver, snapshot.draggingFromThisWith)}
+              >
+                {props.material.map((mat, idx) => (
+                  <Draggable
+                    key={mat.materialID}
+                    draggableId={mat.materialID.toString()}
+                    index={idx}
+                    type={DragType.Material}
+                  >
+                    {(provided, snapshot) => (
+                      <InProcMaterial
+                        mat={mat}
+                        onOpen={props.openMat}
+                        draggableProvided={provided}
+                        hideAvatar
+                        isDragging={snapshot.isDragging}
+                      />
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
         </Paper>
       )}
-    </Droppable>
+    </Draggable>
   );
 });
 
 interface SystemMaterialProps<T> {
   readonly name: string;
+  readonly draggableId: string;
+  readonly idx: number;
   readonly material: HashMap<T, ReadonlyArray<Readonly<IInProcessMaterial>>>;
   readonly renderLabel: (label: T) => string;
   readonly compareLabel: (l1: T, l2: T) => Ordering;
@@ -124,70 +163,127 @@ function comparePal(p1: string, p2: string) {
 class SystemMaterial<T extends string | number> extends React.PureComponent<SystemMaterialProps<T>> {
   render() {
     return (
-      <Paper style={getQueueStyle(false, undefined)}>
-        <Typography variant="h4">{this.props.name}</Typography>
-        {LazySeq.ofIterable(this.props.material)
-          .sortBy(([l1, _m1], [l2, _m2]) => this.props.compareLabel(l1, l2))
-          .map(([label, material], idx) => (
-            <div key={idx}>
-              <Typography variant="caption">{this.props.renderLabel(label)}</Typography>
-              {material.map((mat, idx) => (
-                <InProcMaterial key={idx} mat={mat} onOpen={this.props.openMat} hideAvatar />
-              ))}
+      <Draggable draggableId={this.props.draggableId} index={this.props.idx} type={DragType.Queue}>
+        {(provided, snapshot) => (
+          <Paper
+            ref={provided.innerRef}
+            {...provided.draggableProps}
+            style={{ ...provided.draggableProps.style, margin: "0.75em" }}
+          >
+            <div {...provided.dragHandleProps}>
+              <Typography
+                variant="h4"
+                {...provided.dragHandleProps}
+                color={snapshot.isDragging ? "primary" : "textPrimary"}
+              >
+                {this.props.name}
+              </Typography>
             </div>
-          ))}
-      </Paper>
+            <div style={getQueueStyle(false, undefined)}>
+              {LazySeq.ofIterable(this.props.material)
+                .sortBy(([l1, _m1], [l2, _m2]) => this.props.compareLabel(l1, l2))
+                .map(([label, material], idx) => (
+                  <div key={idx}>
+                    <Typography variant="caption">{this.props.renderLabel(label)}</Typography>
+                    {material.map((mat, idx) => (
+                      <InProcMaterial key={idx} mat={mat} onOpen={this.props.openMat} hideAvatar />
+                    ))}
+                  </div>
+                ))}
+            </div>
+          </Paper>
+        )}
+      </Draggable>
     );
   }
 }
 
 interface AllMaterialProps {
-  readonly allMat: MaterialBins;
+  readonly allMat: ReadonlyArray<MaterialBin>;
   readonly openMat: (mat: MaterialSummary) => void;
   readonly moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
+  readonly moveMaterialBin: (curBinOrder: ReadonlyArray<MaterialBinId>, oldIdx: number, newIdx: number) => void;
 }
 
 function AllMaterial(props: AllMaterialProps) {
-  const onDragEnd = React.useCallback(
-    (result: DropResult): void => {
-      if (!result.destination) return;
-      if (result.reason === "CANCEL") return;
+  const onDragEnd = (result: DropResult): void => {
+    if (!result.destination) return;
+    if (result.reason === "CANCEL") return;
+
+    if (result.type === DragType.Material) {
       const queue = result.destination.droppableId;
       const materialId = parseInt(result.draggableId);
       const queuePosition = result.destination.index;
       props.moveMaterialInQueue({ materialId, queue, queuePosition });
-    },
-    [props.moveMaterialInQueue]
-  );
+    } else if (result.type === DragType.Queue) {
+      props.moveMaterialBin(
+        props.allMat.map(b => b.binId),
+        result.source.index,
+        result.destination.index
+      );
+    }
+  };
 
   return (
     <DocumentTitle title="All Material - FMS Insight">
       <DragDropContext onDragEnd={onDragEnd}>
-        <div style={{ display: "flex", flexWrap: "nowrap" }}>
-          <SystemMaterial
-            name="Load Stations"
-            renderLabel={renderLul}
-            compareLabel={compareLul}
-            material={props.allMat.loadStations}
-            openMat={props.openMat}
-          />
-          <SystemMaterial
-            name="Pallets"
-            renderLabel={renderPal}
-            compareLabel={comparePal}
-            material={props.allMat.pallets}
-            openMat={props.openMat}
-          />
-          {LazySeq.ofIterable(props.allMat.queues).map(([queueName, material], idx) => (
-            <MaterialQueue key={idx} queue={queueName} material={material} openMat={props.openMat} />
-          ))}
-        </div>
+        <Droppable droppableId="Board" type={DragType.Queue} direction="horizontal">
+          {provided => (
+            <div ref={provided.innerRef} style={{ display: "flex", flexWrap: "nowrap" }}>
+              {props.allMat.map((matBin, idx) => {
+                switch (matBin.type) {
+                  case MaterialBinType.LoadStations:
+                    return (
+                      <SystemMaterial
+                        name="Load Stations"
+                        draggableId={matBin.binId}
+                        key={matBin.binId}
+                        idx={idx}
+                        renderLabel={renderLul}
+                        compareLabel={compareLul}
+                        material={matBin.byLul}
+                        openMat={props.openMat}
+                      />
+                    );
+                  case MaterialBinType.Pallets:
+                    return (
+                      <SystemMaterial
+                        name="Pallets"
+                        draggableId={matBin.binId}
+                        key={matBin.binId}
+                        idx={idx}
+                        renderLabel={renderPal}
+                        compareLabel={comparePal}
+                        material={matBin.byPallet}
+                        openMat={props.openMat}
+                      />
+                    );
+                  case MaterialBinType.Queue:
+                    return (
+                      <MaterialQueue
+                        key={matBin.binId}
+                        idx={idx}
+                        queue={matBin.queueName}
+                        material={matBin.material}
+                        openMat={props.openMat}
+                      />
+                    );
+                }
+              })}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
       </DragDropContext>
     </DocumentTitle>
   );
 }
 
-const extractMaterialRegions = createSelector((st: Store) => st.Current.current_status, selectAllMaterialIntoBins);
+const extractMaterialRegions = createSelector(
+  (st: Store) => st.Current.current_status,
+  (st: Store) => st.AllMatBins.curBinOrder,
+  selectAllMaterialIntoBins
+);
 
 export default connect(
   st => ({
@@ -203,6 +299,7 @@ export default connect(
         newIdx: d.queuePosition
       },
       matDetails.addExistingMaterialToQueue(d)
-    ]
+    ],
+    moveMaterialBin: moveMaterialBin
   }
 )(AllMaterial);

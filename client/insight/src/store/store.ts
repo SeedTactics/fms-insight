@@ -38,6 +38,7 @@ import * as mat from "../data/material-details";
 import * as operators from "../data/operators";
 import * as paths from "../data/path-lookup";
 import * as serverSettings from "../data/server-settings";
+import * as allMatBins from "../data/all-material-bins";
 import * as ccp from "../data/cost-per-piece";
 import * as websocket from "./websocket";
 import { initBarcodeListener } from "./barcode";
@@ -81,6 +82,7 @@ export function initStore({ useRouter }: { useRouter: boolean }) {
       Gui: gui.reducer,
       MaterialDetails: mat.reducer,
       PathLookup: paths.reducer,
+      AllMatBins: allMatBins.reducer,
       Route: routes.reducer,
       Websocket: websocket.reducer,
       Operators: operators.reducer,
@@ -97,7 +99,11 @@ export function initStore({ useRouter }: { useRouter: boolean }) {
   initBarcodeListener(store.dispatch.bind(store));
 
   const operatorOnStateChange = operators.createOnStateChange();
-  store.subscribe(() => operatorOnStateChange(store.getState().Operators));
+  const matBinsOnStateChange = allMatBins.createOnStateChange();
+  store.subscribe(() => {
+    operatorOnStateChange(store.getState().Operators);
+    matBinsOnStateChange(store.getState().AllMatBins);
+  });
 
   return store;
 }
