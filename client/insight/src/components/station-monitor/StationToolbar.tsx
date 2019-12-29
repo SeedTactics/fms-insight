@@ -98,7 +98,7 @@ function StationToolbar(props: StationToolbarProps) {
 
   // the material-ui type bindings specify `e.target.value` to have type string, but
   // when multiple selects are enabled it is actually a type string[]
-  // tslint:disable-next-line:no-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function setLoadQueues(newQueuesAny: any) {
     const newQueues = newQueuesAny as ReadonlyArray<string>;
     const free = newQueues.includes(freeMaterialSym);
@@ -109,19 +109,22 @@ function StationToolbar(props: StationToolbarProps) {
     );
   }
 
-  let loadqueues: string[] = [...props.current_route.load_queues];
+  const loadqueues: string[] = [...props.current_route.load_queues];
   if (props.current_route.load_free_material) {
     loadqueues.push(freeMaterialSym);
   }
 
-  // tslint:disable-next-line:no-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function setStandaloneQueues(newQueuesAny: any) {
     const newQueues = newQueuesAny as ReadonlyArray<string>;
     const free = newQueues.includes(freeMaterialSym);
-    props.displayQueues(newQueues.filter(q => q !== freeMaterialSym), free);
+    props.displayQueues(
+      newQueues.filter(q => q !== freeMaterialSym),
+      free
+    );
   }
 
-  let standalonequeues: string[] = [...props.current_route.standalone_queues];
+  const standalonequeues: string[] = [...props.current_route.standalone_queues];
   if (props.current_route.standalone_free_material) {
     standalonequeues.push(freeMaterialSym);
   }

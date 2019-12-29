@@ -52,6 +52,7 @@ export enum RouteLocation {
   Quality_Dashboard = "ROUTE_Quality_Dashboard",
   Quality_Serials = "ROUTE_Quality_Serials",
   Quality_Paths = "ROUTE_Quality_Paths",
+  Quality_Quarantine = "ROUTE_Quality_Quarantine",
 
   Tools_Dashboard = "ROUTE_Tools_Dashboard",
 
@@ -79,6 +80,7 @@ export const routeMap = {
   [RouteLocation.Quality_Dashboard]: "/quality",
   [RouteLocation.Quality_Serials]: "/quality/serials",
   [RouteLocation.Quality_Paths]: "/quality/paths",
+  [RouteLocation.Quality_Quarantine]: "/quality/quarantine",
 
   [RouteLocation.Tools_Dashboard]: "/tools",
 
@@ -128,6 +130,7 @@ export type Action =
   | { type: RouteLocation.Quality_Dashboard }
   | { type: RouteLocation.Quality_Serials }
   | { type: RouteLocation.Quality_Paths }
+  | { type: RouteLocation.Quality_Quarantine }
   | { type: RouteLocation.Tools_Dashboard }
   | { type: RouteLocation.Analysis_Efficiency }
   | { type: RouteLocation.Analysis_CostPerPiece }
@@ -153,21 +156,6 @@ export const initial: State = {
   standalone_queues: [],
   standalone_free_material: false
 };
-
-export function displayPage(ty: RouteLocation, oldSt: State): Action {
-  switch (ty) {
-    case RouteLocation.Station_LoadMonitor:
-      return displayLoadStation(oldSt.selected_load_id, oldSt.load_queues, oldSt.load_free_material);
-    case RouteLocation.ChooseMode:
-      return { type: NOT_FOUND };
-    case RouteLocation.Station_InspectionMonitor:
-      return displayInspectionType(oldSt.selected_insp_type);
-    case RouteLocation.Station_Queues:
-      return displayQueues(oldSt.standalone_queues, oldSt.standalone_free_material);
-    default:
-      return { type: ty } as Action;
-  }
-}
 
 export function displayLoadStation(num: number, queues: ReadonlyArray<string>, freeMaterial: boolean): Action {
   return {
@@ -207,12 +195,27 @@ export function displayQueues(queues: ReadonlyArray<string>, freeMaterial: boole
   };
 }
 
+export function displayPage(ty: RouteLocation, oldSt: State): Action {
+  switch (ty) {
+    case RouteLocation.Station_LoadMonitor:
+      return displayLoadStation(oldSt.selected_load_id, oldSt.load_queues, oldSt.load_free_material);
+    case RouteLocation.ChooseMode:
+      return { type: NOT_FOUND };
+    case RouteLocation.Station_InspectionMonitor:
+      return displayInspectionType(oldSt.selected_insp_type);
+    case RouteLocation.Station_Queues:
+      return displayQueues(oldSt.standalone_queues, oldSt.standalone_free_material);
+    default:
+      return { type: ty } as Action;
+  }
+}
+
 export function reducer(s: State, a: Action): State {
   if (s === undefined) {
     return initial;
   }
   switch (a.type) {
-    case RouteLocation.Station_LoadMonitor:
+    case RouteLocation.Station_LoadMonitor: {
       const query = (a.meta || {}).query || {};
       let loadqueues: ReadonlyArray<string> = [];
       if (query.queue) {
@@ -229,19 +232,21 @@ export function reducer(s: State, a: Action): State {
         load_queues: loadqueues.slice(0, 3),
         load_free_material: query.free === null ? true : false
       };
-    case RouteLocation.Station_InspectionMonitor:
-      var iquery = (a.meta || {}).query || {};
+    }
+    case RouteLocation.Station_InspectionMonitor: {
+      const iquery = (a.meta || {}).query || {};
       return {
         ...s,
         current: RouteLocation.Station_InspectionMonitor,
         selected_insp_type: iquery.type
       };
+    }
     case RouteLocation.Station_WashMonitor:
       return {
         ...s,
         current: RouteLocation.Station_WashMonitor
       };
-    case RouteLocation.Station_Queues:
+    case RouteLocation.Station_Queues: {
       const standalonequery = (a.meta || {}).query || {};
       let queues: ReadonlyArray<string> = [];
       if (standalonequery.queue) {
@@ -257,6 +262,7 @@ export function reducer(s: State, a: Action): State {
         standalone_queues: queues,
         standalone_free_material: standalonequery.free === null ? true : false
       };
+    }
 
     case RouteLocation.Operations_Dashboard:
     case RouteLocation.Operations_AllMaterial:
@@ -267,6 +273,7 @@ export function reducer(s: State, a: Action): State {
     case RouteLocation.Quality_Dashboard:
     case RouteLocation.Quality_Serials:
     case RouteLocation.Quality_Paths:
+    case RouteLocation.Quality_Quarantine:
     case RouteLocation.Tools_Dashboard:
     case RouteLocation.Analysis_CostPerPiece:
     case RouteLocation.Analysis_Efficiency:

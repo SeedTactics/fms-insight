@@ -39,6 +39,7 @@ import { Last30Days } from "../../data/events";
 import { HashMap } from "prelude-ts";
 import { createSelector } from "reselect";
 import { PartAndInspType, InspectionLogEntry } from "../../data/events.inspection";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
 const filterLogSelector = createSelector(

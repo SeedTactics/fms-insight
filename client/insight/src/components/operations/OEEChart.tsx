@@ -175,7 +175,7 @@ function dataForTable(
   order: "asc" | "desc"
 ): ReadonlyArray<OEEBarPoint> {
   let getData: ToOrderable<OEEBarPoint> | undefined;
-  for (let col of columns) {
+  for (const col of columns) {
     if (col.id === orderBy) {
       getData = col.getForSort || col.getDisplay;
     }

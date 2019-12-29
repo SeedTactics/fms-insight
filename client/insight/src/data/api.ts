@@ -125,7 +125,7 @@ export class FmsClient {
         return Promise.resolve<void>(<any>null);
     }
 
-    findInstructions(part: string | null, type: string | null, process: number | null | undefined, materialID: number | null | undefined): Promise<void> {
+    findInstructions(part: string | null, type: string | null, process: number | null | undefined, materialID: number | null | undefined, operatorName: string | null | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/fms/find-instructions/{part}?";
         if (part === undefined || part === null)
             throw new Error("The parameter 'part' must be defined.");
@@ -138,6 +138,8 @@ export class FmsClient {
             url_ += "process=" + encodeURIComponent("" + process) + "&"; 
         if (materialID !== undefined)
             url_ += "materialID=" + encodeURIComponent("" + materialID) + "&"; 
+        if (operatorName !== undefined)
+            url_ += "operatorName=" + encodeURIComponent("" + operatorName) + "&"; 
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
@@ -1258,6 +1260,53 @@ export class LogClient {
         return Promise.resolve<LogEntry>(<any>null);
     }
 
+    recordOperatorNotes(materialID: number, notes: string, process: number | undefined, operatorName: string | null | undefined): Promise<LogEntry> {
+        let url_ = this.baseUrl + "/api/v1/log/material-details/{materialID}/notes?";
+        if (materialID === undefined || materialID === null)
+            throw new Error("The parameter 'materialID' must be defined.");
+        url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID)); 
+        if (process === null)
+            throw new Error("The parameter 'process' cannot be null.");
+        else if (process !== undefined)
+            url_ += "process=" + encodeURIComponent("" + process) + "&"; 
+        if (operatorName !== undefined)
+            url_ += "operatorName=" + encodeURIComponent("" + operatorName) + "&"; 
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(notes);
+
+        let options_ = <RequestInit>{
+            body: content_,
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json", 
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processRecordOperatorNotes(_response);
+        });
+    }
+
+    protected processRecordOperatorNotes(response: Response): Promise<LogEntry> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = resultData200 ? LogEntry.fromJS(resultData200) : new LogEntry();
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<LogEntry>(<any>null);
+    }
+
     recordInspectionCompleted(insp: NewInspectionCompleted): Promise<LogEntry> {
         let url_ = this.baseUrl + "/api/v1/log/events/inspection-result";
         url_ = url_.replace(/[?&]$/, "");
@@ -1381,6 +1430,7 @@ export class FMSInfo implements IFMSInfo {
     openIDConnectAuthority?: string | undefined;
     openIDConnectClientId?: string | undefined;
     usingLabelPrinterForSerials!: boolean;
+    quarantineQueue?: string | undefined;
 
     constructor(data?: IFMSInfo) {
         if (data) {
@@ -1405,6 +1455,7 @@ export class FMSInfo implements IFMSInfo {
             this.openIDConnectAuthority = data["OpenIDConnectAuthority"];
             this.openIDConnectClientId = data["OpenIDConnectClientId"];
             this.usingLabelPrinterForSerials = data["UsingLabelPrinterForSerials"];
+            this.quarantineQueue = data["QuarantineQueue"];
         }
     }
 
@@ -1429,6 +1480,7 @@ export class FMSInfo implements IFMSInfo {
         data["OpenIDConnectAuthority"] = this.openIDConnectAuthority;
         data["OpenIDConnectClientId"] = this.openIDConnectClientId;
         data["UsingLabelPrinterForSerials"] = this.usingLabelPrinterForSerials;
+        data["QuarantineQueue"] = this.quarantineQueue;
         return data; 
     }
 }
@@ -1442,6 +1494,7 @@ export interface IFMSInfo {
     openIDConnectAuthority?: string | undefined;
     openIDConnectClientId?: string | undefined;
     usingLabelPrinterForSerials: boolean;
+    quarantineQueue?: string | undefined;
 }
 
 export class HistoricData implements IHistoricData {

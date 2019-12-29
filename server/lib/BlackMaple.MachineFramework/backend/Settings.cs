@@ -106,6 +106,7 @@ namespace BlackMaple.MachineFramework
     public string InstructionFilePath { get; set; }
     public bool RequireScanAtWash { get; set; }
     public bool RequireWorkorderBeforeAllowWashComplete { get; set; }
+    public string QuarantineQueue { get; set; }
 
     public Dictionary<string, MachineWatchInterface.QueueSize> Queues { get; }
       = new Dictionary<string, MachineWatchInterface.QueueSize>();
@@ -135,6 +136,7 @@ namespace BlackMaple.MachineFramework
       StartingSerial = fmsSection.GetValue<string>("StartingSerial", null);
       RequireScanAtWash = fmsSection.GetValue<bool>("RequireScanAtWash", false);
       RequireWorkorderBeforeAllowWashComplete = fmsSection.GetValue<bool>("RequireWorkorderBeforeAllowWashComplete", false);
+      QuarantineQueue = fmsSection.GetValue<string>("QuarantineQueue", null);
       AdditionalLogServers =
         fmsSection.GetValue<string>("AdditionalServersForLogs", "")
         .Split(',')
@@ -171,6 +173,11 @@ namespace BlackMaple.MachineFramework
         {
           ExternalQueues[key] = q.Value;
         }
+      }
+
+      if (!string.IsNullOrEmpty(QuarantineQueue) && !Queues.ContainsKey(QuarantineQueue) && !ExternalQueues.ContainsKey(QuarantineQueue))
+      {
+        Serilog.Log.Error("QuarantineQueue {queue} is not configured as a queue or external queue", QuarantineQueue);
       }
     }
 

@@ -49,6 +49,7 @@ import { HashMap } from "prelude-ts";
 import { PartAndInspType, InspectionLogEntry } from "../../data/events.inspection";
 import { InspectionSankey } from "../analysis/InspectionSankey";
 import { DataTableActionZoomType } from "../analysis/DataTable";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
 interface SerialLookupProps {
@@ -86,7 +87,7 @@ function lastMachineTime(mat: matDetails.MaterialDetail) {
     return startOfToday();
   }
   let lastEnd = first.get().endUTC;
-  for (let e of mat.events) {
+  for (const e of mat.events) {
     if (e.type === LogType.MachineCycle) {
       lastEnd = e.endUTC;
     }
@@ -134,7 +135,8 @@ interface PartLookupStepperProps {
 }
 
 function PartLookupStepper(props: PartLookupStepperProps) {
-  let [step, setStep] = React.useState(0);
+  const [origStep, setStep] = React.useState(0);
+  let step = origStep;
   if (step === 0 && props.mat) {
     step = 1;
   }

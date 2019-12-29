@@ -44,9 +44,8 @@ import {
 } from "./events.fake";
 
 it("creates initial state", () => {
-  // tslint:disable no-any
-  let s = cs.reducer(undefined as any, undefined as any);
-  // tslint:enable no-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const s = cs.reducer(undefined as any, undefined as any);
   expect(s).toBe(cs.initial);
 });
 
@@ -133,11 +132,12 @@ it("ignores other cycles", () => {
   expect(st).toBe(statusWithMat);
 });
 
-function adjPos(m: api.InProcessMaterial, newPos: number): api.InProcessMaterial {
+function adjPos(m: api.InProcessMaterial, newPos: number, newQueue?: string): api.InProcessMaterial {
   return new api.InProcessMaterial({
     ...m,
     location: {
       ...m.location,
+      currentQueue: newQueue || m.location.currentQueue,
       queuePosition: newPos
     }
   } as api.IInProcessMaterial);
@@ -205,7 +205,7 @@ it("reorders in-process material forwards", () => {
   ]);
 });
 
-it("ignores wrong material queue", () => {
+it("moves between queue", () => {
   const mats = [
     fakeInProcMaterial(0, "abc", 0),
     fakeInProcMaterial(1, "abc", 1),
@@ -213,16 +213,29 @@ it("ignores wrong material queue", () => {
     fakeInProcMaterial(3, "abc", 3),
     fakeInProcMaterial(4, "abc", 4),
     fakeInProcMaterial(5, "other", 0),
-    fakeInProcMaterial(6),
-    fakeInProcMaterial(7)
+    fakeInProcMaterial(6, "other", 1),
+    fakeInProcMaterial(7, "other", 2),
+    fakeInProcMaterial(8),
+    fakeInProcMaterial(9)
   ];
   const initialSt = { ...cs.initial, current_status: { ...cs.initial.current_status, material: mats } };
   const st = cs.reducer(initialSt, {
     type: cs.ActionType.ReorderQueuedMaterial,
     queue: "abc",
-    materialId: 5,
+    materialId: 6,
     newIdx: 1
   });
 
-  expect(st.current_status.material).toBe(mats);
+  expect(st.current_status.material).toEqual([
+    mats[0],
+    adjPos(mats[1], 2), // 1 -> 2
+    adjPos(mats[2], 3), // 2 -> 3
+    adjPos(mats[3], 4), // 3 -> 4
+    adjPos(mats[4], 5), // 4 -> 5
+    mats[5],
+    adjPos(mats[6], 1, "abc"), // change queue
+    adjPos(mats[7], 1), // 2 -> 1,
+    mats[8],
+    mats[9]
+  ]);
 });

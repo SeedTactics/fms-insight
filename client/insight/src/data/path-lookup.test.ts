@@ -39,8 +39,8 @@ import { loadMockData } from "../mock-data/load";
 import { differenceInSeconds, addDays } from "date-fns";
 
 it("has the initial state", () => {
-  // tslint:disable-next-line:no-any
-  let s = reducer(undefined as any, undefined as any);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const s = reducer(undefined as any, undefined as any);
   expect(s).toBe(initial);
 });
 

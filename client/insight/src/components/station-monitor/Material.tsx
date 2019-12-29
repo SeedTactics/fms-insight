@@ -42,6 +42,7 @@ import SearchIcon from "@material-ui/icons/Search";
 import Avatar from "@material-ui/core/Avatar";
 import Paper from "@material-ui/core/Paper";
 import CircularProgress from "@material-ui/core/CircularProgress";
+import TextField from "@material-ui/core/TextField";
 import TimeAgo from "react-timeago";
 import Dialog from "@material-ui/core/Dialog";
 import DialogActions from "@material-ui/core/DialogActions";
@@ -49,8 +50,10 @@ import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
 import AddIcon from "@material-ui/icons/AddBox";
 import IconButton from "@material-ui/core/IconButton";
+import DragIndicator from "@material-ui/icons/DragIndicator";
 import { WithStyles, createStyles, withStyles } from "@material-ui/core/styles";
 import { SortableElement, SortableContainer } from "react-sortable-hoc";
+import { DraggableProvided } from "react-beautiful-dnd";
 
 import * as api from "../../data/api";
 import * as matDetails from "../../data/material-details";
@@ -80,7 +83,7 @@ export class PartIdenticon extends React.PureComponent<{
 }> {
   render() {
     const iconSize = this.props.size || 50;
-    // tslint:disable-next-line:no-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const icon = (jdenticon as any).toSvg(this.props.part, iconSize);
 
     return <div style={{ width: iconSize, height: iconSize }} dangerouslySetInnerHTML={{ __html: icon }} />;
@@ -151,6 +154,9 @@ export interface MaterialSummaryProps {
   readonly action?: string;
   readonly focusInspectionType?: string;
   readonly hideInspectionIcon?: boolean;
+  readonly draggableProvided?: DraggableProvided;
+  readonly hideAvatar?: boolean;
+  readonly isDragging?: boolean;
   onOpen: (m: Readonly<MaterialSummary>) => void;
 }
 
@@ -182,8 +188,26 @@ const MatSummaryWithStyles = withStyles(matStyles)((props: MaterialSummaryProps 
     );
   }
 
+  const dragHandleProps = props.draggableProvided?.dragHandleProps;
+
   return (
-    <Paper elevation={4} className={props.classes.paper}>
+    <Paper
+      ref={props.draggableProvided?.innerRef}
+      elevation={4}
+      className={props.classes.paper}
+      {...props.draggableProvided?.draggableProps}
+      style={{
+        display: "flex",
+        ...props.draggableProvided?.draggableProps.style
+      }}
+    >
+      {dragHandleProps ? (
+        <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }} {...dragHandleProps}>
+          <DragIndicator fontSize="large" color={props.isDragging ? "primary" : "action"} />
+        </div>
+      ) : (
+        undefined
+      )}
       <ButtonBase focusRipple onClick={() => props.onOpen(props.mat)}>
         <div className={props.classes.container}>
           <PartIdenticon part={props.mat.partName} />
@@ -209,7 +233,7 @@ const MatSummaryWithStyles = withStyles(matStyles)((props: MaterialSummaryProps 
             {completedMsg}
           </div>
           <div className={props.classes.rightContent}>
-            {props.mat.serial && props.mat.serial.length >= 1 ? (
+            {props.mat.serial && props.mat.serial.length >= 1 && !props.hideAvatar ? (
               <div>
                 <Avatar className={props.classes.avatar}>
                   {props.mat.serial.substr(props.mat.serial.length - 1, 1)}
@@ -245,6 +269,9 @@ export class MatSummary extends React.PureComponent<MaterialSummaryProps> {
 export interface InProcMaterialProps {
   readonly mat: Readonly<api.IInProcessMaterial>; // TODO: deep readonly
   readonly displaySinglePallet?: string;
+  readonly draggableProvided?: DraggableProvided;
+  readonly hideAvatar?: boolean;
+  readonly isDragging?: boolean;
   onOpen: (m: Readonly<MaterialSummary>) => void;
 }
 
@@ -255,6 +282,9 @@ export class InProcMaterial extends React.PureComponent<InProcMaterialProps> {
         mat={inproc_mat_to_summary(this.props.mat)}
         action={materialAction(this.props.mat, this.props.displaySinglePallet)}
         onOpen={this.props.onOpen}
+        draggableProvided={this.props.draggableProvided}
+        hideAvatar={this.props.hideAvatar}
+        isDragging={this.props.isDragging}
       />
     );
   }
@@ -266,6 +296,7 @@ export class MaterialDetailTitle extends React.PureComponent<{
   partName: string;
   serial?: string;
   subtitle?: string;
+  notes?: boolean;
 }> {
   render() {
     let title;
@@ -274,9 +305,17 @@ export class MaterialDetailTitle extends React.PureComponent<{
     } else if (this.props.partName === "") {
       title = "Loading " + this.props.serial;
     } else if (this.props.serial === undefined || this.props.serial === "") {
-      title = this.props.partName;
+      if (this.props.notes) {
+        title = "Add note for " + this.props.partName;
+      } else {
+        title = this.props.partName;
+      }
     } else {
-      title = this.props.partName + " - " + this.props.serial;
+      if (this.props.notes) {
+        title = "Add note for " + this.props.serial;
+      } else {
+        title = this.props.partName + " - " + this.props.serial;
+      }
     }
 
     return (
@@ -299,7 +338,7 @@ export class MaterialDetailContent extends React.PureComponent<MaterialDetailPro
   render() {
     const mat = this.props.mat;
     function colorForInspType(type: string): string {
-      if (mat.completedInspections && mat.completedInspections.indexOf(type) >= 0) {
+      if (mat.completedInspections && mat.completedInspections.includes(type)) {
         return "black";
       } else {
         return "red";
@@ -337,10 +376,12 @@ export class MaterialDetailContent extends React.PureComponent<MaterialDetailPro
 
 export function InstructionButton({
   material,
-  type
+  type,
+  operator
 }: {
   readonly material: matDetails.MaterialDetail;
   readonly type: string;
+  readonly operator: string | null;
 }) {
   const maxProc = LazySeq.ofIterable(material.events)
     .flatMap(e => e.material)
@@ -351,7 +392,8 @@ export function InstructionButton({
     "?type=" +
     encodeURIComponent(type) +
     ("&materialID=" + material.materialID.toString()) +
-    (maxProc !== undefined ? "&process=" + maxProc.getOrElse(1).toString() : "");
+    (maxProc !== undefined ? "&process=" + maxProc.getOrElse(1).toString() : "") +
+    (operator !== null ? "&operatorName=" + encodeURIComponent(operator) : "");
   return (
     <Button
       href={"/api/v1/fms/find-instructions/" + encodeURIComponent(material.partName) + instrQuery}
@@ -363,17 +405,84 @@ export function InstructionButton({
   );
 }
 
+interface NotesDialogBodyProps {
+  mat: matDetails.MaterialDetail;
+  operator?: string;
+  setNotesOpen: (o: boolean) => void;
+  addNote: (matId: number, process: number, operator: string | null, notes: string) => void;
+}
+
+function NotesDialogBody(props: NotesDialogBodyProps) {
+  const [curNote, setCurNote] = React.useState<string>("");
+
+  return (
+    <>
+      <DialogTitle disableTypography>
+        <MaterialDetailTitle notes partName={props.mat.partName} serial={props.mat.serial} />
+      </DialogTitle>
+      <DialogContent>
+        <TextField
+          multiline
+          label="Notes"
+          autoFocus
+          variant="outlined"
+          value={curNote}
+          onChange={e => setCurNote(e.target.value)}
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button
+          onClick={() => {
+            props.addNote(props.mat.materialID, 0, props.operator || null, curNote);
+            props.setNotesOpen(false);
+            setCurNote("");
+          }}
+          disabled={curNote === ""}
+          color="secondary"
+        >
+          Save
+        </Button>
+        <Button
+          onClick={() => {
+            props.setNotesOpen(false);
+            setCurNote("");
+          }}
+          color="secondary"
+        >
+          Cancel
+        </Button>
+      </DialogActions>
+    </>
+  );
+}
+
+const ConnectedNotesDialogBody = connect(
+  st => ({
+    operator: st.ServerSettings.user
+      ? st.ServerSettings.user.profile.name || st.ServerSettings.user.profile.sub
+      : st.Operators.current
+  }),
+  {
+    addNote: matDetails.addNote
+  }
+)(NotesDialogBody);
+
 export interface MaterialDialogProps {
   display_material: matDetails.MaterialDetail | null;
   buttons?: JSX.Element;
   onClose: () => void;
+  allowNote?: boolean;
   extraDialogElements?: JSX.Element;
 }
 
 export function MaterialDialog(props: MaterialDialogProps) {
+  const [notesOpen, setNotesOpen] = React.useState<boolean>(false);
+
   let body: JSX.Element | undefined;
+  let notesBody: JSX.Element | undefined;
   if (props.display_material === null) {
     body = <p>None</p>;
+    notesBody = <p>None</p>;
   } else {
     const mat = props.display_material;
     body = (
@@ -386,6 +495,13 @@ export function MaterialDialog(props: MaterialDialogProps) {
         </DialogContent>
         {props.extraDialogElements}
         <DialogActions>
+          {props.allowNote ? (
+            <Button onClick={() => setNotesOpen(true)} color="primary">
+              Add Note
+            </Button>
+          ) : (
+            undefined
+          )}
           {props.buttons}
           <Button onClick={props.onClose} color="secondary">
             Close
@@ -393,11 +509,23 @@ export function MaterialDialog(props: MaterialDialogProps) {
         </DialogActions>
       </>
     );
+    if (props.allowNote) {
+      notesBody = <ConnectedNotesDialogBody mat={mat} setNotesOpen={setNotesOpen} />;
+    }
   }
   return (
-    <Dialog open={props.display_material !== null} onClose={props.onClose} maxWidth="md">
-      {body}
-    </Dialog>
+    <>
+      <Dialog open={props.display_material !== null} onClose={props.onClose} maxWidth="md">
+        {body}
+      </Dialog>
+      {props.allowNote ? (
+        <Dialog open={notesOpen} onClose={() => setNotesOpen(false)} maxWidth="md">
+          {notesBody}
+        </Dialog>
+      ) : (
+        undefined
+      )}
+    </>
   );
 }
 
@@ -462,7 +590,7 @@ const WhiteboardRegionWithStyle = withStyles(whiteboardRegionStyle)(
     } else if (props.flexStart) {
       justifyContent = "flex-start";
     }
-    let mainClasses = [props.classes.container];
+    const mainClasses = [props.classes.container];
     if (props.borderLeft) {
       mainClasses.push(props.classes.borderLeft);
     }

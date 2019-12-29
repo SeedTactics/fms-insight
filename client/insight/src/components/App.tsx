@@ -90,6 +90,7 @@ import ManualScan from "./ManualScan";
 import ChooseOperator from "./ChooseOperator";
 import { BasicMaterialDialog } from "./station-monitor/Material";
 import { CompletedParts } from "./operations/CompletedParts";
+import AllMaterial from "./operations/AllMaterial";
 import { FailedPartLookup } from "./quality/FailedPartLookup";
 import { QualityPaths } from "./quality/QualityPaths";
 import { QualityDashboard } from "./quality/RecentFailedInspections";
@@ -97,7 +98,6 @@ import LoadStation from "./station-monitor/LoadStation";
 import Inspection from "./station-monitor/Inspection";
 import Wash from "./station-monitor/Wash";
 import Queues from "./station-monitor/Queues";
-import AllMaterial from "./station-monitor/AllMaterial";
 
 const tabsStyle = {
   alignSelf: "flex-end" as "flex-end",
@@ -145,6 +145,7 @@ function QualityTabs(p: HeaderNavProps) {
       <Tab label="Quality" value={routes.RouteLocation.Quality_Dashboard} />
       <Tab label="Failed Part Lookup" value={routes.RouteLocation.Quality_Serials} />
       <Tab label="Paths" value={routes.RouteLocation.Quality_Paths} />
+      <Tab label="Quarantine Material" value={routes.RouteLocation.Quality_Quarantine} />
     </Tabs>
   );
 }
@@ -335,6 +336,7 @@ function helpUrl(r: routes.RouteLocation): string {
     case routes.RouteLocation.Quality_Dashboard:
     case routes.RouteLocation.Quality_Serials:
     case routes.RouteLocation.Quality_Paths:
+    case routes.RouteLocation.Quality_Quarantine:
       return "https://fms-insight.seedtactics.com/docs/client-quality.html";
 
     case routes.RouteLocation.Tools_Dashboard:
@@ -514,11 +516,11 @@ class App extends React.PureComponent<AppConnectedProps> {
   render() {
     let page: JSX.Element;
     let navigation: ((p: HeaderNavProps) => JSX.Element) | undefined = undefined;
-    let showAlarms: boolean = true;
-    let showLogout: boolean = !!this.props.user;
-    let showSearch: boolean = true;
-    let showOperator: boolean = false;
-    let addBasicMaterialDialog: boolean = true;
+    let showAlarms = true;
+    const showLogout = !!this.props.user;
+    let showSearch = true;
+    let showOperator = false;
+    let addBasicMaterialDialog = true;
     if (this.props.backupViewerOnRequestOpenFile) {
       if (this.props.backupFileOpened) {
         if (this.props.route.current === routes.RouteLocation.Quality_Serials) {
@@ -588,8 +590,9 @@ class App extends React.PureComponent<AppConnectedProps> {
           navigation = OperationsTabs;
           break;
         case routes.RouteLocation.Operations_AllMaterial:
-          page = <AllMaterial />;
+          page = <AllMaterial displaySystemBins />;
           navigation = OperationsTabs;
+          addBasicMaterialDialog = false;
           break;
         case routes.RouteLocation.Operations_CompletedParts:
           page = <CompletedParts />;
@@ -616,6 +619,13 @@ class App extends React.PureComponent<AppConnectedProps> {
           page = <QualityPaths />;
           navigation = QualityTabs;
           showAlarms = false;
+          break;
+
+        case routes.RouteLocation.Quality_Quarantine:
+          page = <AllMaterial displaySystemBins={false} />;
+          navigation = QualityTabs;
+          showAlarms = false;
+          addBasicMaterialDialog = false;
           break;
 
         case routes.RouteLocation.Tools_Dashboard:

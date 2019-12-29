@@ -37,6 +37,7 @@ import Grid from "@material-ui/core/Grid";
 import Button from "@material-ui/core/Button";
 import { DialogActions } from "@material-ui/core";
 import { createSelector } from "reselect";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
 import { Store, connect, mkAC, AppActionBeforeMiddleware } from "../../store/store";
@@ -70,7 +71,11 @@ function InspButtons(props: InspButtonsProps) {
   return (
     <>
       {props.display_material && props.display_material.partName !== "" ? (
-        <InstructionButton material={props.display_material} type={props.inspection_type} />
+        <InstructionButton
+          material={props.display_material}
+          type={props.inspection_type}
+          operator={props.operator || null}
+        />
       ) : (
         undefined
       )}
@@ -106,6 +111,7 @@ function InspDialog(props: InspDialogProps) {
   return (
     <MaterialDialog
       display_material={props.display_material}
+      allowNote
       onClose={props.onClose}
       extraDialogElements={
         !displayMat || !multipleInspTypes ? (
@@ -239,7 +245,7 @@ const extractRecentInspections = createSelector(
             m =>
               m.last_unload_time !== undefined &&
               m.last_unload_time >= uninspectedCutoff &&
-              m.signaledInspections.indexOf(inspType) >= 0 &&
+              m.signaledInspections.includes(inspType) &&
               (m.completedInspections || {})[inspType] === undefined
           )
     );
@@ -261,7 +267,7 @@ const extractRecentInspections = createSelector(
             m =>
               m.completed_inspect_time !== undefined &&
               m.completed_inspect_time >= inspectedCutoff &&
-              m.signaledInspections.indexOf(inspType) >= 0 &&
+              m.signaledInspections.includes(inspType) &&
               (m.completedInspections || {})[inspType] !== undefined
           )
     );

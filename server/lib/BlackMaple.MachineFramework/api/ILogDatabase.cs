@@ -53,6 +53,7 @@ namespace BlackMaple.MachineWatchInterface
     LogEntry RecordWorkorderForMaterialID(long materialID, int process, string workorder);
     LogEntry RecordFinalizedWorkorder(string workorder);
     LogEntry ForceInspection(long materialID, int process, string inspType, bool inspect);
+    LogEntry RecordOperatorNotes(long materialID, int process, string notes, string operatorName = null);
 
     LogEntry RecordInspectionCompleted(
       long materialID,

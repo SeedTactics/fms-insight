@@ -16,7 +16,10 @@ it("loads a lazyseq from an iterable", () => {
 });
 
 it("loads a lazyseq from an object", () => {
-  seqShouldBe(LazySeq.ofObject({ a: 1, b: 2 }), [["a", 1], ["b", 2]]);
+  seqShouldBe(LazySeq.ofObject({ a: 1, b: 2 }), [
+    ["a", 1],
+    ["b", 2]
+  ]);
 });
 
 it("loads a lazyseq range", () => {
@@ -67,7 +70,10 @@ it("drops", () => {
 });
 
 it("dropWhile", () => {
-  seqShouldBe(oddSeq.dropWhile(x => x < 6), [7, 9]);
+  seqShouldBe(
+    oddSeq.dropWhile(x => x < 6),
+    [7, 9]
+  );
 });
 
 it("isEmpty", () => {
@@ -76,7 +82,10 @@ it("isEmpty", () => {
 });
 
 it("filter", () => {
-  seqShouldBe(oddSeq.filter(x => x === 3 || x === 7), [3, 7]);
+  seqShouldBe(
+    oddSeq.filter(x => x === 3 || x === 7),
+    [3, 7]
+  );
 });
 
 it("find", () => {
@@ -85,7 +94,10 @@ it("find", () => {
 });
 
 it("flatMap", () => {
-  seqShouldBe(oddSeq.flatMap(x => [x, x + 1]), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  seqShouldBe(
+    oddSeq.flatMap(x => [x, x + 1]),
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  );
 });
 
 it("groupBy", () => {
@@ -107,16 +119,17 @@ it("length", () => {
 });
 
 it("map", () => {
-  seqShouldBe(oddSeq.map(x => x.toString()), ["1", "3", "5", "7", "9"]);
+  seqShouldBe(
+    oddSeq.map(x => x.toString()),
+    ["1", "3", "5", "7", "9"]
+  );
 });
 
 it("mapOption", () => {
-  seqShouldBe(oddSeq.mapOption(x => (x === 5 ? Option.none<string>() : Option.some(x.toString()))), [
-    "1",
-    "3",
-    "7",
-    "9"
-  ]);
+  seqShouldBe(
+    oddSeq.mapOption(x => (x === 5 ? Option.none<string>() : Option.some(x.toString()))),
+    ["1", "3", "7", "9"]
+  );
 });
 
 it("maxBy", () => {
@@ -196,6 +209,13 @@ it("single", () => {
   ).toBe(1);
 });
 
+it("sortBy", () => {
+  seqShouldBe(
+    LazySeq.ofIterable([9, 8, 7, 6]).sortBy((v1, v2) => v1 - v2),
+    [6, 7, 8, 9]
+  );
+});
+
 it("sumOn", () => {
   expect(oddSeq.sumOn(x => x + 1)).toBe(2 + 4 + 6 + 8 + 10);
 });
@@ -211,7 +231,10 @@ it("take", () => {
 });
 
 it("takeWhile", () => {
-  seqShouldBe(oddSeq.takeWhile(x => x < 6), [1, 3, 5]);
+  seqShouldBe(
+    oddSeq.takeWhile(x => x < 6),
+    [1, 3, 5]
+  );
 });
 
 it("toArray", () => {
@@ -219,7 +242,10 @@ it("toArray", () => {
 });
 
 it("toMap", () => {
-  const m = oddSeq.toMap(x => (x < 6 ? ["low", x] : ["high", x]), (v1, v2) => v1 + v2);
+  const m = oddSeq.toMap(
+    x => (x < 6 ? ["low", x] : ["high", x]),
+    (v1, v2) => v1 + v2
+  );
   const expected = HashMap.of(["low", 1 + 3 + 5], ["high", 7 + 9]);
   expect(m.equals(expected)).toBe(true);
 });
@@ -237,6 +263,16 @@ it("transform", () => {
 });
 
 it("zip", () => {
-  seqShouldBe(oddSeq.zip([2, 4, 6]), [[1, 2], [3, 4], [5, 6]]);
-  seqShouldBe(oddSeq.zip([2, 4, 6, 8, 10, 12]), [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]]);
+  seqShouldBe(oddSeq.zip([2, 4, 6]), [
+    [1, 2],
+    [3, 4],
+    [5, 6]
+  ]);
+  seqShouldBe(oddSeq.zip([2, 4, 6, 8, 10, 12]), [
+    [1, 2],
+    [3, 4],
+    [5, 6],
+    [7, 8],
+    [9, 10]
+  ]);
 });

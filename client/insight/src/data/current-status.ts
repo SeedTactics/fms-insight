@@ -118,13 +118,13 @@ function process_new_events(entry: Readonly<api.ILogEntry>, s: State): State {
 
   switch (entry.type) {
     case api.LogType.PartMark:
-      for (let m of entry.material) {
+      for (const m of entry.material) {
         adjustMat(m.id, inmat => ({ ...inmat, serial: entry.result }));
       }
       break;
 
     case api.LogType.OrderAssignment:
-      for (let m of entry.material) {
+      for (const m of entry.material) {
         adjustMat(m.id, inmat => ({ ...inmat, workorderId: entry.result }));
       }
       break;
@@ -139,7 +139,7 @@ function process_new_events(entry: Readonly<api.ILogEntry>, s: State): State {
           inspType = (entry.details || {}).InspectionType;
         }
         if (inspType) {
-          for (let m of entry.material) {
+          for (const m of entry.material) {
             adjustMat(m.id, inmat => ({
               ...inmat,
               signaledInspections: [...inmat.signaledInspections, inspType]
@@ -170,43 +170,53 @@ function reorder_queued_mat(
   oldMats: InProcessMaterial[]
 ): InProcessMaterial[] {
   const oldMat = oldMats.find(i => i.materialID === matId);
-  if (
-    !oldMat ||
-    oldMat.location.type !== api.LocType.InQueue ||
-    oldMat.location.currentQueue !== queue ||
-    oldMat.location.queuePosition === newIdx
-  ) {
+  if (!oldMat || oldMat.location.type !== api.LocType.InQueue) {
     return oldMats;
   }
+  if (oldMat.location.currentQueue === queue && oldMat.location.queuePosition === newIdx) {
+    return oldMats;
+  }
+
+  const oldQueue = oldMat.location.currentQueue;
   const oldIdx = oldMat.location.queuePosition;
-  if (oldIdx === undefined) {
+  if (oldIdx === undefined || oldQueue === undefined) {
     return oldMats;
   }
 
   return oldMats.map(m => {
-    if (m.location.type === api.LocType.InQueue && m.location.currentQueue === queue) {
-      let idx = m.location.queuePosition;
-      if (idx === undefined) {
-        return m;
-      }
-      if (m.materialID === matId) {
-        idx = newIdx;
-      } else {
-        if (idx > oldIdx) {
-          idx -= 1;
-        }
-        if (idx >= newIdx) {
-          idx += 1;
-        }
-      }
-      if (idx !== m.location.queuePosition) {
-        return new InProcessMaterial({
-          ...m,
-          location: { ...m.location, queuePosition: idx }
-        } as api.IInProcessMaterial);
-      }
+    if (
+      m.location.type !== api.LocType.InQueue ||
+      m.location.queuePosition === undefined ||
+      m.location.currentQueue === undefined
+    ) {
+      return m;
     }
-    return m;
+
+    if (m.materialID === matId) {
+      return new InProcessMaterial({
+        ...m,
+        location: { type: api.LocType.InQueue, currentQueue: queue, queuePosition: newIdx }
+      } as api.IInProcessMaterial);
+    }
+
+    let idx = m.location.queuePosition;
+    // old queue material is moved down
+    if (m.location.currentQueue === oldQueue && m.location.queuePosition > oldIdx) {
+      idx -= 1;
+    }
+    // new queue material is moved up to make room
+    if (m.location.currentQueue === queue && idx >= newIdx) {
+      idx += 1;
+    }
+
+    if (idx !== m.location.queuePosition) {
+      return new InProcessMaterial({
+        ...m,
+        location: { ...m.location, queuePosition: idx }
+      } as api.IInProcessMaterial);
+    } else {
+      return m;
+    }
   });
 }
 

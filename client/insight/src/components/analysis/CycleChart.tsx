@@ -87,7 +87,7 @@ interface CycleChartState {
 }
 
 function memoize<A, R>(f: (x: A) => R): (x: A) => R {
-  let memo = new Map<A, R>();
+  const memo = new Map<A, R>();
   return x => {
     let ret = memo.get(x);
     if (!ret) {
@@ -249,7 +249,7 @@ export const CycleChart = withStyles(cycleChartStyles)(
     };
 
     toggleSeries = (series: { title: string }) => {
-      const newState = !!!this.state.disabled_series[series.title];
+      const newState = !this.state.disabled_series[series.title];
       this.setState({
         disabled_series: {
           ...this.state.disabled_series,

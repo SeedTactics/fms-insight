@@ -36,9 +36,8 @@ import * as cycles from "./events.cycles";
 import { loadMockData } from "../mock-data/load";
 
 it("loads the initial state", () => {
-  // tslint:disable no-any
-  let s = ccp.reducer(undefined as any, undefined as any);
-  // tslint:enable no-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const s = ccp.reducer(undefined as any, undefined as any);
   expect(s).toBe(ccp.initial);
 });
 
@@ -149,7 +148,7 @@ it("sets part material cost", () => {
 });
 
 it("sets the number of operators", () => {
-  let s = ccp.reducer(ccp.initial, {
+  const s = ccp.reducer(ccp.initial, {
     type: ccp.ActionType.SetNumOperators,
     numOpers: 12
   });
@@ -166,7 +165,7 @@ it("sets the number of operators", () => {
 });
 
 it("sets the operator cost per hour", () => {
-  let s = ccp.reducer(ccp.initial, {
+  const s = ccp.reducer(ccp.initial, {
     type: ccp.ActionType.SetOperatorCostPerHour,
     cost: 67
   });
@@ -183,7 +182,7 @@ it("sets the operator cost per hour", () => {
 });
 
 it("sets the automation cost per year", () => {
-  let s = ccp.reducer(ccp.initial, {
+  const s = ccp.reducer(ccp.initial, {
     type: ccp.ActionType.SetAutomationCost,
     cost: 123456
   });

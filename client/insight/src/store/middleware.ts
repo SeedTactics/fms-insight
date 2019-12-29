@@ -42,13 +42,13 @@ export type Pledge<T> =
   | { status: PledgeStatus.Error; error: Error };
 
 export type PledgeToPromise<AP> = {
-  [P in keyof AP]: "pledge" extends P ? (AP[P] extends Pledge<infer R> ? Promise<R> : AP[P]) : AP[P]
+  [P in keyof AP]: "pledge" extends P ? (AP[P] extends Pledge<infer R> ? Promise<R> : AP[P]) : AP[P];
 };
 
 interface WithPromise<R> {
   pledge: Promise<R>;
 }
-// tslint:disable-next-line:no-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function hasPledge<R>(obj: any): obj is WithPromise<R> {
   return "pledge" in obj && obj.pledge && obj.pledge instanceof Promise;
 }
@@ -56,7 +56,7 @@ function hasPledge<R>(obj: any): obj is WithPromise<R> {
 function pledgeMiddleware<A>(dispatch: (a: A) => void): (action: PledgeToPromise<A>) => void {
   return action => {
     if (hasPledge(action)) {
-      // tslint:disable-next-line:no-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const anyAction: any = action;
       dispatch({ ...anyAction, pledge: { status: PledgeStatus.Starting } });
       action.pledge
@@ -73,7 +73,7 @@ function pledgeMiddleware<A>(dispatch: (a: A) => void): (action: PledgeToPromise
           });
         });
     } else {
-      // tslint:disable-next-line:no-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return dispatch(action as any);
     }
   };

@@ -35,6 +35,7 @@ import * as React from "react";
 import Divider from "@material-ui/core/Divider";
 import { WithStyles, createStyles, withStyles } from "@material-ui/core/styles";
 import { createSelector } from "reselect";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 import Button from "@material-ui/core/Button";
 import Hidden from "@material-ui/core/Hidden";
@@ -120,7 +121,7 @@ const StationStatus = withStyles(stationStatusStyles)((props: StationStatusProps
     <dl className={props.classes.defList}>
       {props.byStation
         .toVector()
-        .sortOn(([s, p]) => s)
+        .sortOn(([s, _]) => s)
         .map(([stat, pals]) => (
           <React.Fragment key={stat}>
             {pals.pal ? (
@@ -232,7 +233,7 @@ const PalletColumn = withStyles(palletStyles)((props: LoadStationDisplayProps & 
       <div className={props.classes.faceContainer}>
         {props.data.face
           .toVector()
-          .sortOn(([face, data]) => face)
+          .sortOn(([face, _]) => face)
           .map(([face, data]) => (
             <div key={face}>
               <MoveMaterialArrowNode type={MoveMaterialNodeKindType.PalletFaceZone} face={face}>
@@ -291,12 +292,13 @@ interface LoadMatDialogProps extends MaterialDialogProps {
   readonly openSetSerial: () => void;
   readonly openForceInspection: () => void;
   readonly usingLabelPrinter: boolean;
+  readonly operator?: string;
   readonly printLabel: (matId: number) => void;
 }
 
 function instructionType(mat: matDetails.MaterialDetail): string {
   let ty: "load" | "unload" = "load";
-  for (let evt of mat.events) {
+  for (const evt of mat.events) {
     if (evt.type === api.LogType.LoadUnloadCycle && evt.result === "UNLOAD") {
       if (evt.startofcycle) {
         ty = "unload";
@@ -320,10 +322,15 @@ function LoadMatDialog(props: LoadMatDialogProps) {
     <MaterialDialog
       display_material={props.display_material}
       onClose={props.onClose}
+      allowNote
       buttons={
         <>
           {props.display_material && props.display_material.partName !== "" ? (
-            <InstructionButton material={props.display_material} type={instructionType(props.display_material)} />
+            <InstructionButton
+              material={props.display_material}
+              type={instructionType(props.display_material)}
+              operator={props.operator || null}
+            />
           ) : (
             undefined
           )}
@@ -352,7 +359,10 @@ function LoadMatDialog(props: LoadMatDialogProps) {
 const ConnectedMaterialDialog = connect(
   st => ({
     display_material: st.MaterialDetails.material,
-    usingLabelPrinter: st.ServerSettings.fmsInfo ? st.ServerSettings.fmsInfo.usingLabelPrinterForSerials : false
+    usingLabelPrinter: st.ServerSettings.fmsInfo ? st.ServerSettings.fmsInfo.usingLabelPrinterForSerials : false,
+    operator: st.ServerSettings.user
+      ? st.ServerSettings.user.profile.name || st.ServerSettings.user.profile.sub
+      : st.Operators.current
   }),
   {
     onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
@@ -416,9 +426,9 @@ interface LoadStationDisplayProps extends LoadStationProps {
 const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & WithStyles<typeof loadStyles>) => {
   const palProps = { ...props, classes: undefined };
 
-  let queues = props.data.queues
+  const queues = props.data.queues
     .toVector()
-    .sortOn(([q, mats]) => q)
+    .sortOn(([q, _]) => q)
     .map(([q, mats]) => ({
       label: q,
       material: mats,

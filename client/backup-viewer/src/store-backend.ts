@@ -195,5 +195,13 @@ export const LogBackend = {
     partName?: string
   ): Promise<Readonly<api.ILogEntry>> {
     return Promise.reject("Not implemented");
+  },
+  recordOperatorNotes(
+    materialID: number,
+    notes: string,
+    process: number,
+    operatorName: string | null
+  ): Promise<Readonly<api.ILogEntry>> {
+    return Promise.reject("Not implemented");
   }
 };

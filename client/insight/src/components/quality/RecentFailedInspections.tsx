@@ -53,6 +53,7 @@ import { connect } from "../../store/store";
 import { DataTableHead, DataTableBody, DataTableActions, Column } from "../analysis/DataTable";
 import { openMaterialById } from "../../data/material-details";
 import { RouteLocation } from "../../data/routes";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
 interface RecentFailedInspectionsProps {
@@ -105,7 +106,7 @@ const columns: ReadonlyArray<Column<ColumnId, FailedInspectionEntry>> = [
 function RecentFailedTable(props: RecentFailedInspectionsProps) {
   const [orderBy, setOrderBy] = React.useState(ColumnId.Date);
   const [order, setOrder] = React.useState<"asc" | "desc">("desc");
-  let [curPage, setPage] = React.useState<number>(0);
+  const [origCurPage, setPage] = React.useState<number>(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(50);
 
   function handleRequestSort(property: ColumnId) {
@@ -119,7 +120,7 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
 
   let sortOn: ToOrderable<FailedInspectionEntry> | { desc: ToOrderable<FailedInspectionEntry> } =
     columns[0].getForSort || columns[0].getDisplay;
-  for (let col of columns) {
+  for (const col of columns) {
     if (col.id === orderBy && order === "asc") {
       sortOn = col.getForSort || col.getDisplay;
     } else if (col.id === orderBy) {
@@ -127,7 +128,7 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
     }
   }
 
-  curPage = Math.min(curPage, Math.ceil(props.failed.length() / rowsPerPage));
+  const curPage = Math.min(origCurPage, Math.ceil(props.failed.length() / rowsPerPage));
   const points = props.failed.sortOn(sortOn);
 
   return (
@@ -189,7 +190,7 @@ const failedReducer = createSelector(
   (st: InspectionState, _: Date) => st.by_part,
   (_: InspectionState, today: Date) => today,
   (byPart, today) => {
-    let allEvts = LazySeq.ofIterable(byPart).flatMap(([_, evts]) => evts);
+    const allEvts = LazySeq.ofIterable(byPart).flatMap(([_, evts]) => evts);
     return extractFailedInspections(allEvts, addDays(today, -4), addDays(today, 1));
   }
 );

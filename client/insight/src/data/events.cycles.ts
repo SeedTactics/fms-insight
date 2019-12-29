@@ -151,9 +151,9 @@ export function stat_name_and_num(stationGroup: string, stationNumber: number): 
 }
 
 export function format_cycle_inspection(c: PartCycleData): string {
-  let ret = [];
+  const ret = [];
   const names = c.signaledInspections.addAll(c.completedInspections.keySet());
-  for (var name of names.toArray({ sortOn: x => x })) {
+  for (const name of names.toArray({ sortOn: x => x })) {
     const completed = c.completedInspections.get(name);
     if (completed.isSome()) {
       const success = completed.get();
@@ -238,7 +238,7 @@ function estimateCycleTimes(cycles: Vector<number>): StatisticalCycleTime {
   };
 
   // filter to only inliers
-  var inliers = cycles.filter(x => !isOutlier(statCycleTime, x)).toArray();
+  const inliers = cycles.filter(x => !isOutlier(statCycleTime, x)).toArray();
   // compute average of inliers
   const expectedCycleMinutesForSingleMat = inliers.reduce((sum, x) => sum + x, 0) / inliers.length;
 
@@ -340,7 +340,7 @@ function newInspectionData(newEvts: ReadonlyArray<Readonly<api.ILogEntry>>): Ins
   const result: { [materialId: number]: HashMap<string, boolean> } = {};
   for (const evt of newEvts) {
     switch (evt.type) {
-      case api.LogType.Inspection:
+      case api.LogType.Inspection: {
         const inspName = (evt.details || {}).InspectionType;
         const inspected = evt.result.toLowerCase() === "true" || evt.result === "1";
         if (inspected && inspName) {
@@ -349,18 +349,20 @@ function newInspectionData(newEvts: ReadonlyArray<Readonly<api.ILogEntry>>): Ins
           }
         }
         break;
+      }
 
-      case api.LogType.InspectionForce:
+      case api.LogType.InspectionForce: {
         const forceInspName = evt.program;
-        let forced = evt.result.toLowerCase() === "true" || evt.result === "1";
+        const forced = evt.result.toLowerCase() === "true" || evt.result === "1";
         if (forceInspName && forced) {
           for (const m of evt.material) {
             signaled[m.id] = (signaled[m.id] || HashSet.empty()).add(forceInspName);
           }
         }
         break;
+      }
 
-      case api.LogType.InspectionResult:
+      case api.LogType.InspectionResult: {
         const resultInspName = evt.program;
         const succeeded = evt.result.toLowerCase() !== "false";
         if (resultInspName) {
@@ -369,6 +371,7 @@ function newInspectionData(newEvts: ReadonlyArray<Readonly<api.ILogEntry>>): Ins
           }
         }
         break;
+      }
     }
   }
   return { signaled, result };
@@ -391,7 +394,7 @@ export function process_events(
   }
 
   switch (expire.type) {
-    case ExpireOldDataType.ExpireEarlierThan:
+    case ExpireOldDataType.ExpireEarlierThan: {
       // check if nothing to expire and no new data
       const partEntries = LazySeq.ofIterable(allPartCycles);
       const palEntries = LazySeq.ofIterable(pals.valueIterable()).flatMap(cs => cs);
@@ -406,6 +409,7 @@ export function process_events(
       pals = pals.mapValues(es => es.filter(e => e.x >= expire.d)).filter(es => es.length > 0);
 
       break;
+    }
 
     case ExpireOldDataType.NoExpire:
       if (newEvts.length === 0) {
@@ -419,8 +423,8 @@ export function process_events(
   let machineGroups = st.machine_groups;
   let statGroups = st.station_groups;
   let palNames = st.pallet_names;
-  for (let e of newEvts) {
-    for (let m of e.material) {
+  for (const e of newEvts) {
+    for (const m of e.material) {
       const p = part_and_proc(m.part, m.proc);
       if (!partNames.contains(p)) {
         partNames = partNames.add(p);
@@ -448,7 +452,7 @@ export function process_events(
     }
   }
 
-  var newCycles: LazySeq<PartCycleData> = LazySeq.ofIterable(newEvts)
+  const newCycles: LazySeq<PartCycleData> = LazySeq.ofIterable(newEvts)
     .filter(c => !c.startofcycle && (c.type === api.LogType.LoadUnloadCycle || c.type === api.LogType.MachineCycle))
     .flatMap(c => c.material.map(m => ({ cycle: c, mat: m })))
     .map(e => {
@@ -485,7 +489,7 @@ export function process_events(
     })
     .filter(c => c.stationGroup !== "");
 
-  var newPalCycles = LazySeq.ofIterable(newEvts)
+  const newPalCycles = LazySeq.ofIterable(newEvts)
     .filter(c => !c.startofcycle && c.type === api.LogType.PalletCycle && c.pal !== "")
     .groupBy(c => c.pal)
     .mapValues(cyclesForPal =>

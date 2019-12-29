@@ -45,6 +45,7 @@ import Select from "@material-ui/core/Select";
 import ImportExport from "@material-ui/icons/ImportExport";
 import MenuItem from "@material-ui/core/MenuItem";
 import HourglassIcon from "@material-ui/icons/HourglassFull";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
 import StationDataTable from "../analysis/StationDataTable";

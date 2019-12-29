@@ -1,3 +1,4 @@
 {
-  "jest.pathToJest": "yarn test --cwd client/insight --"
+  "jest.pathToJest": "yarn test --cwd client/insight --",
+  "eslint.workingDirectories": ["./client/insight"]
 }

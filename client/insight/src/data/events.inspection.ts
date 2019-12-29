@@ -104,7 +104,7 @@ export function process_events(
   let parts = st.by_part;
 
   switch (expire.type) {
-    case ExpireOldDataType.ExpireEarlierThan:
+    case ExpireOldDataType.ExpireEarlierThan: {
       let eventsFiltered = false;
       parts = parts.mapValues(entries => {
         // check if expire is needed
@@ -120,6 +120,7 @@ export function process_events(
       }
 
       break;
+    }
 
     case ExpireOldDataType.NoExpire:
       if (newEvts.length === 0) {
@@ -128,7 +129,7 @@ export function process_events(
       break;
   }
 
-  var newPartCycles = LazySeq.ofIterable(newEvts)
+  const newPartCycles = LazySeq.ofIterable(newEvts)
     .filter(
       c =>
         c.type === api.LogType.Inspection ||

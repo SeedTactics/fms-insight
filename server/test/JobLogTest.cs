@@ -355,11 +355,21 @@ namespace MachineWatchTest
       expectedWashLog.ProgramDetails.Add("y", "yyy");
       logsForMat1.Add(expectedWashLog);
 
-      var generalLog = _jobLog.RecordGeneralMessage(JobLogDB.EventLogMaterial.FromLogMat(mat1), "The program msg", "The result msg");
+      var generalLog = _jobLog.RecordGeneralMessage(JobLogDB.EventLogMaterial.FromLogMat(mat1), "The program msg", "The result msg",
+                                                    extraData: new Dictionary<string, string> { { "extra1", "value1" } });
       var expectedGeneralLog = new LogEntry(-1, new LogMaterial[] { mat1 }, "",
           LogType.GeneralMessage, "Message", 1, "The program msg", false, generalLog.EndTimeUTC, "The result msg", false
       );
+      expectedGeneralLog.ProgramDetails["extra1"] = "value1";
       logsForMat1.Add(expectedGeneralLog);
+
+      var notesLog = _jobLog.RecordOperatorNotes(mat1.MaterialID, mat1.Process, "The notes content", "Opername");
+      var expectedNotesLog = new LogEntry(-1, new LogMaterial[] {
+                                                new LogMaterial(mat1.MaterialID, mat1.JobUniqueStr, mat1.Process, mat1.PartName, mat1.NumProcesses, mat1.Serial, mat1.Workorder, "") },
+                                           "", LogType.GeneralMessage, "Message", 1, "OperatorNotes", false, notesLog.EndTimeUTC, "Operator Notes", false);
+      expectedNotesLog.ProgramDetails["note"] = "The notes content";
+      expectedNotesLog.ProgramDetails["operator"] = "Opername";
+      logsForMat1.Add(expectedNotesLog);
 
       CheckLog(logsForMat1, _jobLog.GetLogForJobUnique(mat1.JobUniqueStr), start);
     }

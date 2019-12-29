@@ -35,14 +35,13 @@ import * as ss from "./server-settings";
 import { PledgeStatus } from "../store/middleware";
 
 it("creates the initial state", () => {
-  // tslint:disable no-any
-  let s = ss.reducer(undefined as any, undefined as any);
-  // tslint:enable no-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const s = ss.reducer(undefined as any, undefined as any);
   expect(s).toBe(ss.initial);
 });
 
 it("loads data", () => {
-  let s = ss.reducer(ss.initial, {
+  const s = ss.reducer(ss.initial, {
     type: ss.ActionType.Load,
     pledge: {
       status: PledgeStatus.Completed,
@@ -72,7 +71,7 @@ it("loads data", () => {
 });
 
 it("responds to error", () => {
-  let s = ss.reducer(ss.initial, {
+  const s = ss.reducer(ss.initial, {
     type: ss.ActionType.Load,
     pledge: {
       status: PledgeStatus.Error,

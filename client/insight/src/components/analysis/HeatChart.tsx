@@ -130,7 +130,7 @@ export interface SelectableHeatChartProps {
 }
 
 // https://github.com/uber/react-vis/issues/1092
-// tslint:disable-next-line:no-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (LabelSeries as any).propTypes = {};
 
 export function SelectableHeatChart(props: SelectableHeatChartProps) {

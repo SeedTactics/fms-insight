@@ -68,11 +68,11 @@ export function reducer(s: State, a: Action): State {
   }
 }
 
-// tslint:disable-next-line:no-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let storeDispatch: ((a: any) => void) | undefined;
 let getEvtState: (() => events.State) | undefined;
 
-// tslint:disable-next-line:no-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function configureWebsocket(d: (a: any) => void, ges: () => events.State) {
   storeDispatch = d;
   getEvtState = ges;
@@ -123,7 +123,7 @@ export function openWebsocket(user: User | null) {
     if (!storeDispatch) {
       return;
     }
-    var json = JSON.parse(evt.data);
+    const json = JSON.parse(evt.data);
     if (json.LogEntry) {
       const entry = LogEntry.fromJS(json.LogEntry);
       storeDispatch(events.receiveNewEvents([entry]));

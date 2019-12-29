@@ -92,7 +92,7 @@ it("creates points clipboard table", () => {
     }
   });
 
-  let byDayAndStat = binCyclesByDayAndStat(st.last30.cycles.part_cycles, c =>
+  const byDayAndStat = binCyclesByDayAndStat(st.last30.cycles.part_cycles, c =>
     duration(c.activeMinsForSingleMat).asMinutes()
   );
 

@@ -93,6 +93,12 @@ export interface LogAPI {
     jobUnique?: string,
     partName?: string
   ): Promise<Readonly<api.ILogEntry>>;
+  recordOperatorNotes(
+    materialID: number,
+    notes: string,
+    process: number,
+    operatorName: string | null
+  ): Promise<Readonly<api.ILogEntry>>;
 }
 
 export const BackendHost = process.env.NODE_ENV === "production" ? undefined : "localhost:5000";
@@ -150,7 +156,7 @@ function initMockBackend(data: Promise<MockData>) {
   };
 
   JobsBackend = {
-    history(startUTC: Date, endUTC: Date): Promise<Readonly<api.IHistoricData>> {
+    history(_startUTC: Date, _endUTC: Date): Promise<Readonly<api.IHistoricData>> {
       return data.then(d => d.jobs);
     },
     currentStatus(): Promise<Readonly<api.ICurrentStatus>> {
@@ -160,25 +166,25 @@ function initMockBackend(data: Promise<MockData>) {
       return data.then(d => d.workorders.get(part) || []);
     },
 
-    removeMaterialFromAllQueues(materialId: number): Promise<void> {
+    removeMaterialFromAllQueues(_materialId: number): Promise<void> {
       // do nothing
       return Promise.resolve();
     },
-    setMaterialInQueue(materialId: number, queue: api.QueuePosition): Promise<void> {
+    setMaterialInQueue(_materialId: number, _queue: api.QueuePosition): Promise<void> {
       // do nothing
       return Promise.resolve();
     },
     addUnprocessedMaterialToQueue(
-      jobUnique: string,
-      lastCompletedProcess: number,
-      queue: string,
-      pos: number,
-      serial: string
+      _jobUnique: string,
+      _lastCompletedProcess: number,
+      _queue: string,
+      _pos: number,
+      _serial: string
     ): Promise<void> {
       // do nothing
       return Promise.resolve();
     },
-    addUnallocatedCastingToQueue(partName: string, queue: string, pos: number, serial: string): Promise<void> {
+    addUnallocatedCastingToQueue(_partName: string, _queue: string, _pos: number, _serial: string): Promise<void> {
       // do nothing
       return Promise.resolve();
     }
@@ -189,7 +195,10 @@ function initMockBackend(data: Promise<MockData>) {
       LazySeq.ofIterable(evts)
         .filter(e => e.type === api.LogType.PartMark)
         .flatMap(e => e.material.map(m => [e.result, m.id] as [string, number]))
-        .toMap(x => x, (id1, id2) => id2)
+        .toMap(
+          x => x,
+          (id1, id2) => id2
+        )
     )
   );
 
@@ -197,7 +206,7 @@ function initMockBackend(data: Promise<MockData>) {
     get(startUTC: Date, endUTC: Date): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
       return data.then(d => d.events.then(evts => evts.filter(e => e.endUTC >= startUTC && e.endUTC <= endUTC)));
     },
-    recent(lastSeenCounter: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
+    recent(_lastSeenCounter: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
       // no recent events, everything is static
       return Promise.resolve([]);
     },
@@ -208,7 +217,7 @@ function initMockBackend(data: Promise<MockData>) {
     },
     logForSerial(serial: string): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
       return serialsToMatId.then(s => {
-        var mId = s.get(serial);
+        const mId = s.get(serial);
         if (mId.isSome()) {
           return this.logForMaterial(mId.get());
         } else {
@@ -216,7 +225,7 @@ function initMockBackend(data: Promise<MockData>) {
         }
       });
     },
-    getWorkorders(ids: string[]): Promise<ReadonlyArray<Readonly<api.IWorkorderSummary>>> {
+    getWorkorders(_ids: string[]): Promise<ReadonlyArray<Readonly<api.IWorkorderSummary>>> {
       // no workorder summaries
       return Promise.resolve([]);
     },
@@ -398,13 +407,47 @@ function initMockBackend(data: Promise<MockData>) {
           return evt;
         })
       );
+    },
+    recordOperatorNotes(materialID: number, notes: string, process: number, operatorName: string | null) {
+      const mat = new api.LogMaterial({
+        id: materialID,
+        uniq: "",
+        part: "",
+        proc: process,
+        numproc: 1,
+        face: ""
+      });
+      const evt: api.ILogEntry = {
+        counter: 0,
+        material: [mat],
+        pal: "",
+        type: api.LogType.GeneralMessage,
+        startofcycle: false,
+        endUTC: new Date(),
+        loc: "Message",
+        locnum: 1,
+        result: "Operator Notes",
+        program: "OperatorNotes",
+        elapsed: "00:00:00",
+        active: "00:00:00",
+        details: {
+          operator: operatorName || "",
+          note: notes
+        }
+      };
+      return data.then(d =>
+        d.events.then(evts => {
+          evts.push(evt);
+          return evt;
+        })
+      );
     }
   };
 }
 
 export function registerMockBackend() {
   const mockDataPromise = new Promise<MockData>(function(resolve: (d: MockData) => void) {
-    // tslint:disable-next-line:no-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).FMS_INSIGHT_RESOLVE_MOCK_DATA = resolve;
   });
   initMockBackend(mockDataPromise);

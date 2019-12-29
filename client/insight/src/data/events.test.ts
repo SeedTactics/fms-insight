@@ -42,14 +42,13 @@ import { fakeCycle } from "./events.fake";
 import { ILogEntry } from "./api";
 
 it("creates initial state", () => {
-  // tslint:disable no-any
-  let s = events.reducer(undefined as any, undefined as any);
-  // tslint:enable no-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const s = events.reducer(undefined as any, undefined as any);
   expect(s).toBe(events.initial);
 });
 
 it("responds to loading", () => {
-  let st = events.reducer(
+  const st = events.reducer(
     { ...events.initial, loading_error: new Error("hello") },
     {
       type: events.ActionType.LoadRecentLogEntries,
@@ -67,7 +66,7 @@ it("responds to loading", () => {
 });
 
 it("responds to loading for jobs", () => {
-  let st = events.reducer(
+  const st = events.reducer(
     { ...events.initial, loading_error: new Error("hello") },
     {
       type: events.ActionType.LoadRecentJobHistory,
@@ -85,7 +84,7 @@ it("responds to loading for jobs", () => {
 });
 
 it("responds to error", () => {
-  let st = events.reducer(
+  const st = events.reducer(
     { ...events.initial, loading_log_entries: true },
     {
       type: events.ActionType.LoadRecentLogEntries,
@@ -104,7 +103,7 @@ it("responds to error", () => {
 });
 
 it("responds to error for jobs", () => {
-  let st = events.reducer(
+  const st = events.reducer(
     { ...events.initial, loading_job_history: true },
     {
       type: events.ActionType.LoadRecentJobHistory,
@@ -123,13 +122,13 @@ it("responds to error for jobs", () => {
 });
 
 function procNewEvents(evtsToAction: (now: Date, newEvts: ReadonlyArray<ILogEntry>) => events.Action) {
-  var now = new Date(Date.UTC(2018, 1, 2, 9, 4, 5));
+  const now = new Date(Date.UTC(2018, 1, 2, 9, 4, 5));
 
   // start with cycles from 27 days ago, 2 days ago, and today
   const todayCycle = fakeCycle(now, 30, "part111", 1, "palbb");
-  var twoDaysAgo = addDays(now, -2);
+  const twoDaysAgo = addDays(now, -2);
   const twoDaysAgoCycle = fakeCycle(twoDaysAgo, 24, "part222", 1, "palbb");
-  var twentySevenDaysAgo = addDays(now, -27);
+  const twentySevenDaysAgo = addDays(now, -27);
   const twentySevenCycle = fakeCycle(twentySevenDaysAgo, 18, "part222", 2, "palaa");
   let st = events.reducer(events.initial, {
     type: events.ActionType.LoadRecentLogEntries,
@@ -143,7 +142,7 @@ function procNewEvents(evtsToAction: (now: Date, newEvts: ReadonlyArray<ILogEntr
 
   // Now add again 6 days from now, so that the twoDaysAgo cycle is removed from hours (which processes only 7 days)
   // and twenty seven is removed from processing 30 days
-  var sixDays = addDays(now, 6);
+  const sixDays = addDays(now, 6);
   const sixDaysCycle = fakeCycle(sixDays, 12, "part111", 1, "palcc");
   st = events.reducer(st, evtsToAction(sixDays, sixDaysCycle));
 
@@ -152,7 +151,7 @@ function procNewEvents(evtsToAction: (now: Date, newEvts: ReadonlyArray<ILogEntr
   expect(st.last30).toMatchSnapshot("last30 with 2 days ago, today, and 6 days from now");
 
   // empty list should keep lists unchanged and the same object
-  let newSt = events.reducer(st, {
+  const newSt = events.reducer(st, {
     type: events.ActionType.LoadRecentLogEntries,
     now: sixDays,
     pledge: {
@@ -183,7 +182,7 @@ it("refreshes new events into last30", () => {
 });
 
 it("starts loading a specific month for analysis", () => {
-  let st = events.reducer(
+  const st = events.reducer(
     { ...events.initial },
     {
       type: events.ActionType.LoadSpecificMonthLogEntries,
@@ -201,7 +200,7 @@ it("starts loading a specific month for analysis", () => {
 });
 
 it("starts loading a specific month jobs for analysis", () => {
-  let st = events.reducer(
+  const st = events.reducer(
     { ...events.initial },
     {
       type: events.ActionType.LoadSpecificMonthJobHistory,
@@ -223,7 +222,7 @@ it("loads 30 days for analysis", () => {
     stationCycles.initial
   );
 
-  let st = events.reducer(
+  const st = events.reducer(
     {
       ...events.initial,
       analysis_period: events.AnalysisPeriod.SpecificMonth,
@@ -242,16 +241,16 @@ it("loads 30 days for analysis", () => {
 });
 
 it("loads a specific month for analysis", () => {
-  var now = new Date(Date.UTC(2018, 1, 2, 9, 4, 5));
+  const now = new Date(Date.UTC(2018, 1, 2, 9, 4, 5));
 
   // start with cycles from 27 days ago, 2 days ago, and today
   const todayCycle = fakeCycle(now, 30, "partAAA", 1, "palss");
-  var twoDaysAgo = addDays(now, -2);
+  const twoDaysAgo = addDays(now, -2);
   const twoDaysAgoCycle = fakeCycle(twoDaysAgo, 24, "partBBB", 2, "paltt");
-  var twentySevenDaysAgo = addDays(now, -27);
+  const twentySevenDaysAgo = addDays(now, -27);
   const twentySevenCycle = fakeCycle(twentySevenDaysAgo, 18, "partCCC", 3, "paltt");
 
-  let st = events.reducer(
+  const st = events.reducer(
     {
       ...events.initial,
       loading_analysis_month_log: true,

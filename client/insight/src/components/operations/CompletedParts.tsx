@@ -52,6 +52,7 @@ import { connect } from "../../store/store";
 import { createSelector } from "reselect";
 import { Last30Days } from "../../data/events";
 import { addDays, startOfToday } from "date-fns";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
 interface CompletedPartsTableProps {

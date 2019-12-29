@@ -37,6 +37,7 @@ import { HashMap, fieldsHashCode } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 import { CycleData } from "./events.cycles";
 import { PartCycleData, stat_name_and_num } from "./events.cycles";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const copy = require("copy-to-clipboard");
 
 // --------------------------------------------------------------------------------
@@ -97,7 +98,10 @@ export function binCyclesByDayAndStat(
         isLabor: point.isLabor
       }))
     )
-    .toMap(p => [new DayAndStation(p.day, p.station), p.value] as [DayAndStation, number], (v1, v2) => v1 + v2);
+    .toMap(
+      p => [new DayAndStation(p.day, p.station), p.value] as [DayAndStation, number],
+      (v1, v2) => v1 + v2
+    );
 }
 
 // --------------------------------------------------------------------------------
@@ -147,7 +151,10 @@ export function binSimStationUseByDayAndStat(
 ): HashMap<DayAndStation, number> {
   return LazySeq.ofIterable(simUses)
     .flatMap(s => splitElapsedToDays(s, extractValue))
-    .toMap(s => [new DayAndStation(s.day, s.station), s.value] as [DayAndStation, number], (v1, v2) => v1 + v2);
+    .toMap(
+      s => [new DayAndStation(s.day, s.station), s.value] as [DayAndStation, number],
+      (v1, v2) => v1 + v2
+    );
 }
 
 // --------------------------------------------------------------------------------
@@ -188,7 +195,7 @@ export function buildOeeSeries(
     .map(e => e.station)
     .toArray({ sortOn: x => x });
 
-  for (let stat of statNames) {
+  for (const stat of statNames) {
     const points: Array<OEEBarPoint> = [];
     for (let d = start; d < end; d = addDays(d, 1)) {
       const dAndStat = new DayAndStation(d, stat);
@@ -246,13 +253,13 @@ export function buildHeatmapTable(yTitle: string, points: ReadonlyArray<HeatmapC
     .toArray({ sortOn: x => x });
 
   let table = "<table>\n<thead><tr><th>" + yTitle + "</th>";
-  for (let x of days) {
+  for (const x of days) {
     table += "<th>" + new Date(x).toDateString() + "</th>";
   }
   table += "</tr></thead>\n<tbody>\n";
-  for (let y of rows) {
+  for (const y of rows) {
     table += "<tr><th>" + y + "</th>";
-    for (let x of days) {
+    for (const x of days) {
       const cell = cells.get(new HeatmapClipboardCell(x, y));
       if (cell.isSome()) {
         table += "<td>" + cell.get().label + "</td>";
@@ -275,8 +282,8 @@ export function buildOeeTable(series: Iterable<OEEBarSeries>) {
   table += "<th>Day</th><th>Station</th><th>Actual Hours</th><th>Planned Hours</th>";
   table += "</tr></thead>\n<tbody>\n";
 
-  for (let s of series) {
-    for (let pt of s.points) {
+  for (const s of series) {
+    for (const pt of s.points) {
       table += "<tr>";
       table += "<td>" + pt.day.toLocaleDateString() + "</td>";
       table += "<td>" + pt.station + "</td>";
