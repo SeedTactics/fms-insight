@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { DragDropContext, Droppable, Draggable, DropResult, ResponderProvided } from "react-beautiful-dnd";
+import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 import { selectAllMaterialIntoBins, MaterialBins } from "../../data/all-material-bins";
 import { MaterialSummary } from "../../data/events.matsummary";
 import { connect, Store } from "../../store/store";
@@ -149,8 +149,9 @@ interface AllMaterialProps {
 
 function AllMaterial(props: AllMaterialProps) {
   const onDragEnd = React.useCallback(
-    (result: DropResult, provided: ResponderProvided): void => {
+    (result: DropResult): void => {
       if (!result.destination) return;
+      if (result.reason === "CANCEL") return;
       const queue = result.destination.droppableId;
       const materialId = parseInt(result.draggableId);
       const queuePosition = result.destination.index;
