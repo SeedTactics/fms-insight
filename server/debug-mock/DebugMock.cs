@@ -198,10 +198,62 @@ namespace DebugMachineWatchApiServer
     public void SetMaterialInQueue(long materialId, string queue, int position)
     {
       Serilog.Log.Information("SetMaterialInQueue {matId} {queue} {position}", materialId, queue, position);
+
+      var toMove = CurrentStatus.Material.FirstOrDefault(m => m.MaterialID == materialId && m.Location.Type == InProcessMaterialLocation.LocType.InQueue);
+      if (toMove == null) return;
+
+      // shift old downward
+      foreach (var m in CurrentStatus.Material)
+      {
+        if (m.Location.Type == InProcessMaterialLocation.LocType.InQueue
+            && m.Location.CurrentQueue == toMove.Location.CurrentQueue
+            && m.Location.QueuePosition > toMove.Location.QueuePosition)
+        {
+          m.Location.QueuePosition -= 1;
+        }
+      }
+
+      // shift new upward
+      foreach (var m in CurrentStatus.Material)
+      {
+        if (m.Location.Type == InProcessMaterialLocation.LocType.InQueue
+            && m.Location.CurrentQueue == queue
+            && m.Location.QueuePosition >= position)
+        {
+          m.Location.QueuePosition += 1;
+        }
+      }
+
+      toMove.Location = new InProcessMaterialLocation()
+      {
+        Type = InProcessMaterialLocation.LocType.InQueue,
+        CurrentQueue = queue,
+        QueuePosition = position
+      };
+
+      OnNewStatus(CurrentStatus);
     }
     public void RemoveMaterialFromAllQueues(long materialId)
     {
       Serilog.Log.Information("RemoveMaterialFromAllQueues {matId}", materialId);
+
+      var toRemove = CurrentStatus.Material.FirstOrDefault(m => m.MaterialID == materialId && m.Location.Type == InProcessMaterialLocation.LocType.InQueue);
+      if (toRemove == null) return;
+
+      // shift downward
+      foreach (var m in CurrentStatus.Material)
+      {
+        if (m.Location.Type == InProcessMaterialLocation.LocType.InQueue
+            && m.Location.CurrentQueue == toRemove.Location.CurrentQueue
+            && m.Location.QueuePosition < toRemove.Location.QueuePosition)
+        {
+          m.Location.QueuePosition -= 1;
+        }
+      }
+
+      CurrentStatus.Material.Remove(toRemove);
+
+      OnNewStatus(CurrentStatus);
     }
 
     public List<JobAndDecrementQuantity> DecrementJobQuantites(long loadDecrementsStrictlyAfterDecrementId)

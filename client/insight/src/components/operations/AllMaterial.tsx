@@ -32,11 +32,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import { DragDropContext, Droppable, Draggable, DropResult, ResponderProvided } from "react-beautiful-dnd";
 import { selectAllMaterialIntoBins, MaterialBins } from "../../data/all-material-bins";
 import { MaterialSummary } from "../../data/events.matsummary";
 import { connect, Store } from "../../store/store";
 import * as matDetails from "../../data/material-details";
+import * as currentSt from "../../data/current-status";
 import { createSelector } from "reselect";
 import { Paper, Typography } from "@material-ui/core";
 import { LazySeq } from "../../data/lazyseq";
@@ -143,12 +144,24 @@ class SystemMaterial<T extends string | number> extends React.PureComponent<Syst
 interface AllMaterialProps {
   readonly allMat: MaterialBins;
   readonly openMat: (mat: MaterialSummary) => void;
+  readonly moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
 }
 
 function AllMaterial(props: AllMaterialProps) {
+  const onDragEnd = React.useCallback(
+    (result: DropResult, provided: ResponderProvided): void => {
+      if (!result.destination) return;
+      const queue = result.destination.droppableId;
+      const materialId = parseInt(result.draggableId);
+      const queuePosition = result.destination.index;
+      props.moveMaterialInQueue({ materialId, queue, queuePosition });
+    },
+    [props.moveMaterialInQueue]
+  );
+
   return (
     <DocumentTitle title="All Material - FMS Insight">
-      <DragDropContext onDragEnd={() => 0}>
+      <DragDropContext onDragEnd={onDragEnd}>
         <div style={{ display: "flex", flexWrap: "nowrap" }}>
           <SystemMaterial
             name="Load Stations"
@@ -180,6 +193,15 @@ export default connect(
     allMat: extractMaterialRegions(st)
   }),
   {
-    openMat: matDetails.openMaterialDialog
+    openMat: matDetails.openMaterialDialog,
+    moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => [
+      {
+        type: currentSt.ActionType.ReorderQueuedMaterial,
+        queue: d.queue,
+        materialId: d.materialId,
+        newIdx: d.queuePosition
+      },
+      matDetails.addExistingMaterialToQueue(d)
+    ]
   }
 )(AllMaterial);
