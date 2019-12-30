@@ -169,6 +169,14 @@
             "format": "int32",
             "default": 1,
             "x-nullable": false
+          },
+          {
+            "type": "integer",
+            "name": "loadStation",
+            "in": "query",
+            "format": "int32",
+            "default": 1,
+            "x-nullable": false
           }
         ],
         "responses": {
