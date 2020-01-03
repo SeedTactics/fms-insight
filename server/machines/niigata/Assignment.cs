@@ -294,14 +294,14 @@ namespace BlackMaple.FMSInsight.Niigata
           Cycles = remaining,
           NoWork = false,
           Skip = false,
-          ForLongTool = false
+          LongToolMachine = 0
         };
       }
       else
       {
-        long pendingId = DateTime.UtcNow.Ticks;
-        newMaster.Comment = pendingId.ToString();
-        _recordFaces.Save(newMaster.PalletNum, pendingId.ToString(), nowUtc, newPaths.Select(path =>
+        long proposalId = DateTime.UtcNow.Ticks;
+        newMaster.Comment = proposalId.ToString();
+        _recordFaces.Save(newMaster.PalletNum, proposalId.ToString(), nowUtc, newPaths.Select(path =>
           new AssignedJobAndPathForFace()
           {
             Face = path.Job.PlannedFixture(process: path.Process, path: path.Path).face,
@@ -312,7 +312,7 @@ namespace BlackMaple.FMSInsight.Niigata
         ));
         return new NewPalletRoute()
         {
-          PendingID = pendingId,
+          ProposalID = proposalId,
           NewMaster = newMaster
         };
       }

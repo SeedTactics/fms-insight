@@ -1075,7 +1075,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           {
             NewMaster = expectedNewRoute.ExpectedMaster
           }, options => options
-              .Excluding(e => e.PendingID)
+              .Excluding(e => e.ProposalID)
               .Excluding(e => e.NewMaster.Comment)
               .RespectingRuntimeTypes()
           );
@@ -1109,7 +1109,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             Cycles = expectIncr.NewCycleCount,
             NoWork = false,
             Skip = false,
-            ForLongTool = false
+            LongToolMachine = 0
           });
           _status.Pallets[pal - 1].Master.NoWork = false;
           _status.Pallets[pal - 1].Master.RemainingPalletCycles = expectIncr.NewCycleCount;

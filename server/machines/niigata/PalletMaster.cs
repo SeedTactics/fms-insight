@@ -239,7 +239,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
   public class NewPalletRoute : NiigataAction
   {
-    public long PendingID { get; set; }
+    public long ProposalID { get; set; }
     public PalletMaster NewMaster { get; set; }
   }
 
@@ -250,7 +250,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public int Cycles { get; set; }
     public bool NoWork { get; set; }
     public bool Skip { get; set; }
-    public bool ForLongTool { get; set; }
+    public int LongToolMachine { get; set; }
   }
 
   public class NewProgram : NiigataAction
@@ -259,6 +259,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public string IccProgramComment { get; set; } // comment in the cell controller
     public string ProgramName { get; set; } // name inside Insight Job database
     public long ProgramRevision { get; set; } // revision inside Insight Job Database
+    public List<int> Tools = new List<int>();
   }
 
   public class DeleteProgram : NiigataAction

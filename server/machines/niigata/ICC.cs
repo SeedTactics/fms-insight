@@ -39,6 +39,13 @@ using Dapper;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
+
+  // NOTES:
+  //   - no program delete? only overwrite?
+  //   - change_request_palette_route has a value long_tool_replacement_mc, is that
+  //     supposed to be the specific mc that needs replacmenet?
+
+
   public class NiigataICC : INiigataCommunication
   {
     private JobDB _jobs;
@@ -291,16 +298,244 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
+    private IEnumerable<int> StepToStations(RouteStep step)
+    {
+      switch (step)
+      {
+        case LoadStep load:
+          return load.LoadStations;
+        case UnloadStep unload:
+          return unload.UnloadStations;
+        case ReclampStep reclamp:
+          return reclamp.Reclamp;
+        case WashStep wash:
+          return wash.WashStations;
+        case MachiningStep machining:
+          return machining.Machines;
+        default:
+          throw new Exception("Invalid route step type");
+      }
+    }
+
+    private IEnumerable<int> StepToPrograms(RouteStep step)
+    {
+      switch (step)
+      {
+        case MachiningStep machining:
+          return machining.ProgramNumsToRun;
+        default:
+          return Enumerable.Empty<int>();
+      }
+    }
+
     public void PerformAction(NiigataAction a)
     {
       switch (a)
       {
         case NewPalletRoute newRoute:
-          // TODO: send to icc
+          using (var conn = new NpgsqlConnection(_connStr))
+          {
+            conn.Open();
+            using (var trans = conn.BeginTransaction())
+            {
+
+              var palParams = new DynamicParameters();
+              palParams.Add("ProposalId", newRoute.ProposalID);
+              palParams.Add("Delete", false);
+              palParams.AddDynamicParams(newRoute.NewMaster);
+
+              conn.Execute(
+                $@"INSERT INTO proposal_pallet_route(
+                    proposal_id,
+                    pallet_no,
+                    comment,
+                    remaining_palette_cycle,
+                    priority,
+                    no_work,
+                    pallet_skip,
+                    program_download,
+                    for_long_tool_maintenance,
+                    delete
+                  ) VALUES (
+                    @ProposalId,
+                    @{nameof(PalletMaster.PalletNum)},
+                    @{nameof(PalletMaster.Comment)},
+                    @{nameof(PalletMaster.RemainingPalletCycles)},
+                    @{nameof(PalletMaster.Priority)},
+                    @{nameof(PalletMaster.NoWork)},
+                    @{nameof(PalletMaster.Skip)},
+                    @{nameof(PalletMaster.PerformProgramDownload)},
+                    @{nameof(PalletMaster.ForLongToolMaintenance)},
+                    @Delete
+                  )
+                ",
+                param: palParams,
+                transaction: trans
+              );
+
+              conn.Execute(
+                $@"INSERT INTO proposal_pallet_route_step(
+                    proposal_id,
+                    route_no,
+                    route_type,
+                    completed_part_count,
+                    washing_pattern
+                  ) VALUES (
+                    ProposalId,
+                    RouteNo,
+                    RouteType,
+                    CompletedCount,
+                    WashingPattern
+                  )",
+                  transaction: trans,
+                  param: newRoute.NewMaster.Routes.Select((step, idx) =>
+                  {
+                    switch (step)
+                    {
+                      case LoadStep load:
+                        return new
+                        {
+                          ProposalId = newRoute.ProposalID,
+                          RouteNo = idx + 1,
+                          RouteType = StatusRouteStep.RouteTypeE.Load,
+                          CompletedCount = 0,
+                          WashingPattern = 0
+                        };
+                      case UnloadStep unload:
+                        return new
+                        {
+                          ProposalId = newRoute.ProposalID,
+                          RouteNo = idx + 1,
+                          RouteType = StatusRouteStep.RouteTypeE.Unload,
+                          CompletedCount = unload.CompletedPartCount,
+                          WashingPattern = 0
+                        };
+                      case ReclampStep reclamp:
+                        return new
+                        {
+                          ProposalId = newRoute.ProposalID,
+                          RouteNo = idx + 1,
+                          RouteType = StatusRouteStep.RouteTypeE.Reclamp,
+                          CompletedCount = 0,
+                          WashingPattern = 0
+                        };
+                      case MachiningStep machine:
+                        return new
+                        {
+                          ProposalId = newRoute.ProposalID,
+                          RouteNo = idx + 1,
+                          RouteType = StatusRouteStep.RouteTypeE.Machine,
+                          CompletedCount = 0,
+                          WashingPattern = 0
+                        };
+                      case WashStep wash:
+                        return new
+                        {
+                          ProposalId = newRoute.ProposalID,
+                          RouteNo = idx + 1,
+                          RouteType = StatusRouteStep.RouteTypeE.Machine,
+                          CompletedCount = 0,
+                          WashingPattern = wash.WashingPattern
+                        };
+                      default:
+                        throw new Exception("Unknown route step");
+                    }
+                  })
+              );
+
+              conn.Execute(
+                $@"INSERT INTO proposal_route_step_station(
+                    proposal_id,
+                    route_no,
+                    station_no
+                  ) VALUES (
+                    @ProposalId,
+                    @RouteNo,
+                    @StationNo
+                  )
+                ",
+                transaction: trans,
+                param:
+                  newRoute.NewMaster.Routes
+                  .SelectMany((step, idx) =>
+                    StepToStations(step)
+                    .Select(stat => new
+                    {
+                      PropsoalId = newRoute.ProposalID,
+                      RouteNo = idx + 1,
+                      StationNo = stat
+                    })
+                  )
+              );
+
+              conn.Execute(
+                $@"INSERT INTO proposal_route_step_program(
+                    proposal_id,
+                    route_no,
+                    program_order,
+                    o_no
+                  ) VALUES (
+                    @ProposalId,
+                    @RouteNo,
+                    @ProgramOrder,
+                    @ProgramNum
+                  )
+                ",
+                transaction: trans,
+                param:
+                  newRoute.NewMaster.Routes
+                  .SelectMany((step, stepIdx) =>
+                    StepToPrograms(step)
+                    .Select((prog, progIdx) => new
+                    {
+                      PropsoalId = newRoute.ProposalID,
+                      RouteNo = stepIdx + 1,
+                      ProgramOrder = progIdx + 1,
+                      ProgramNum = prog
+                    })
+                  )
+              );
+
+              trans.Commit();
+            }
+          }
           break;
 
         case UpdatePalletQuantities update:
-          // TODO: send to icc
+          using (var conn = new NpgsqlConnection(_connStr))
+          {
+            conn.Open();
+            using (var trans = conn.BeginTransaction())
+            {
+              var updateParams = new DynamicParameters();
+              updateParams.Add("ChangeId", 10000); // TODO: fix me
+              updateParams.AddDynamicParams(update);
+
+              conn.Execute(
+                $@"INSERT INTO change_request_palette_route(
+                    change_id,
+                    pallet_no,
+                    remaining_palette_cycle,
+                    priority,
+                    no_work,
+                    pallet_skip,
+                    long_tool_replacement_mc,
+                  ) VALUES (
+                    @ChangeId,
+                    @{nameof(UpdatePalletQuantities.Pallet)},
+                    @{nameof(UpdatePalletQuantities.Cycles)},
+                    @{nameof(UpdatePalletQuantities.Priority)},
+                    @{nameof(UpdatePalletQuantities.NoWork)},
+                    @{nameof(UpdatePalletQuantities.Skip)},
+                    @{nameof(UpdatePalletQuantities.LongToolMachine)}
+                  )
+                ",
+                param: updateParams,
+                transaction: trans
+              );
+              trans.Commit();
+            }
+          }
           break;
 
         case NewProgram add:
@@ -315,9 +550,63 @@ namespace BlackMaple.FMSInsight.Niigata
 
           // write (or overwrite) the file to disk
           var progCt = _jobs.LoadProgramContent(add.ProgramName, add.ProgramRevision);
-          System.IO.File.WriteAllText(System.IO.Path.Combine(_programDir, add.ProgramName + "_rev" + add.ProgramRevision.ToString() + ".EIA"), progCt);
+          var fullPath = System.IO.Path.Combine(_programDir, add.ProgramName + "_rev" + add.ProgramRevision.ToString() + ".EIA");
+          System.IO.File.WriteAllText(fullPath, progCt);
 
-          // TODO: send to icc
+          using (var conn = new NpgsqlConnection(_connStr))
+          {
+            conn.Open();
+            using (var trans = conn.BeginTransaction())
+            {
+              conn.Execute(
+                $@"INSERT INTO register_program(
+                    registration_id,
+                    file_name,
+                    o_no,
+                    comment,
+                    work_base_time,
+                    overwrite
+                  ) VALUES (
+                    @RegId,
+                    @FileName,
+                    @ProgNum,
+                    @Comment,
+                    @WorkTime,
+                    @Overwrite
+                  )
+                  ",
+                param: new
+                {
+                  RegId = 100,
+                  FileName = fullPath,
+                  ProgNum = add.ProgramNum,
+                  Comment = add.IccProgramComment,
+                  WorkTime = 0,
+                  Overwrite = true
+                },
+                transaction: trans
+              );
+
+              conn.Execute(
+                $@"INSERT INTO register_program_tool(
+                    registration_id,
+                    tool_no
+                  ) VALUES (
+                    @RegId,
+                    @ToolNo
+                  )
+                ",
+                param: add.Tools.Select(t => new
+                {
+                  RegId = 100,
+                  ToolNo = t
+                }),
+                transaction: trans
+              );
+
+              trans.Commit();
+            }
+          }
 
           // if we crash at this point, the icc will have the program but it won't be recorded into the job database.  The next time
           // Insight starts, it will add another program with a new ICC number (but identical file).  The old program will eventually be
