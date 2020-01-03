@@ -52,7 +52,7 @@ namespace BlackMaple.MachineFramework
   }
 
   public delegate string CustomizeInstructionPath(string part, int? process, string type, long? materialID, string operatorName);
-  public delegate void PrintLabelForMaterial(long materialId, int process);
+  public delegate void PrintLabelForMaterial(long materialId, int process, int loadStation);
 
   public class FMSImplementation
   {

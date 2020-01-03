@@ -207,11 +207,11 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpPost("print-label/{materialId}"), Authorize]
     [ProducesResponseType(200)]
     [ProducesResponseType(400)]
-    public IActionResult PrintLabel(long materialId, [FromQuery] int process = 1)
+    public IActionResult PrintLabel(long materialId, [FromQuery] int process = 1, [FromQuery] int loadStation = 1)
     {
       if (_impl != null && _impl.PrintLabel != null)
       {
-        _impl.PrintLabel(materialId, process);
+        _impl.PrintLabel(materialId, process, loadStation);
         return Ok();
       }
       else

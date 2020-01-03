@@ -67,6 +67,7 @@ import { MoveMaterialNodeKindType } from "../../data/move-arrows";
 import { SortEnd } from "react-sortable-hoc";
 import { HashMap } from "prelude-ts";
 import { MaterialSummary } from "../../data/events.matsummary";
+import { LazySeq } from "../../data/lazyseq";
 
 function stationPalMaterialStatus(mat: Readonly<api.IInProcessMaterial>, dateOfCurrentStatus: Date): JSX.Element {
   const name = mat.partName + "-" + mat.process.toString();
@@ -288,12 +289,13 @@ const PalletColumn = withStyles(palletStyles)((props: LoadStationDisplayProps & 
 });
 
 interface LoadMatDialogProps extends MaterialDialogProps {
+  readonly loadNum: number;
   readonly openSelectWorkorder: (mat: matDetails.MaterialDetail) => void;
   readonly openSetSerial: () => void;
   readonly openForceInspection: () => void;
   readonly usingLabelPrinter: boolean;
   readonly operator?: string;
-  readonly printLabel: (matId: number) => void;
+  readonly printLabel: (matId: number, proc: number, loadStation: number) => void;
 }
 
 function instructionType(mat: matDetails.MaterialDetail): string {
@@ -338,7 +340,21 @@ function LoadMatDialog(props: LoadMatDialogProps) {
             {props.display_material && props.display_material.serial ? "Change Serial" : "Assign Serial"}
           </Button>
           {displayMat && props.usingLabelPrinter ? (
-            <Button color="primary" onClick={() => props.printLabel(displayMat.materialID)}>
+            <Button
+              color="primary"
+              onClick={() =>
+                props.printLabel(
+                  displayMat.materialID,
+                  LazySeq.ofIterable(displayMat.events)
+                    .flatMap(e => e.material)
+                    .filter(e => e.id === displayMat.materialID)
+                    .maxOn(e => e.proc)
+                    .map(e => e.proc)
+                    .getOrElse(1),
+                  props.loadNum
+                )
+              }
+            >
               Print Label
             </Button>
           ) : (
@@ -556,7 +572,7 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
           <SelectWorkorderDialog />
           <SetSerialDialog />
           <SelectInspTypeDialog />
-          <ConnectedMaterialDialog />
+          <ConnectedMaterialDialog loadNum={props.data.loadNum} />
         </main>
       </MoveMaterialArrowContainer>
     </DocumentTitle>
