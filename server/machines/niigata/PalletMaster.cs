@@ -61,7 +61,7 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           return new PalletLocation(PalletLocationEnum.MachineQueue, "MC", StatNum - 830);
         }
-        else if (StatNum >= 861 && StatNum <= 891)
+        else if (StatNum >= 861 && StatNum <= 881)
         {
           return new PalletLocation(PalletLocationEnum.MachineQueue, "MC", StatNum - 860);
         }
@@ -170,7 +170,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public int AlarmCode { get; set; }
 
     ///<summary>Actual station visisted at each route step in the current cycle.</summary>
-    public List<int> ExecutedStationNumber { get; set; }
+    public List<int> ExecutedStationNumber { get; set; } = new List<int>();
   }
 
   ///<summary>Everything about the current status of a pallet</summary>
@@ -190,8 +190,13 @@ namespace BlackMaple.FMSInsight.Niigata
   {
     public int ProgramNum { get; set; }
     public string Comment { get; set; }
-    public TimeSpan CycleTime { get; set; }
-    public List<int> Tools { get; set; }
+    public TimeSpan CycleTime
+    {
+      get => TimeSpan.FromSeconds(WorkBaseTimeSeconds);
+      set => WorkBaseTimeSeconds = (int)Math.Round(value.TotalSeconds);
+    }
+    public List<int> Tools { get; set; } = new List<int>();
+    public int WorkBaseTimeSeconds { get; set; }
   }
 
   ///<summary>The current status of each machine</summary>
@@ -227,7 +232,6 @@ namespace BlackMaple.FMSInsight.Niigata
     }
     public ModeE Mode { get; set; }
     public bool Alarm { get; set; }
-    public List<int> PalletsWithUnavailableTools { get; set; } = new List<int>();
     public DateTime TimeOfStatusUTC { get; set; }
   }
 
@@ -266,7 +270,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
   public interface INiigataCommunication
   {
-    NiigataStatus LoadStatus();
+    NiigataStatus LoadNiigataStatus();
     void PerformAction(NiigataAction a);
   }
 }

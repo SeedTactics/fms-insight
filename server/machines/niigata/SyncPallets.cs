@@ -141,7 +141,7 @@ namespace BlackMaple.FMSInsight.Niigata
         do
         {
 
-          status = _icc.LoadStatus();
+          status = _icc.LoadNiigataStatus();
           var jobs = _jobs.LoadUnarchivedJobs();
 
           Log.Debug("Loaded pallets {@status} and jobs {@jobs}", status, jobs);

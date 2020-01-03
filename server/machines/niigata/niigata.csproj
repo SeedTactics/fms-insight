@@ -20,18 +20,20 @@
   <Choose>
     <When Condition="$(OS) == 'Windows_NT'">
       <PropertyGroup>
-        <TargetFrameworks>net461;netcoreapp2.2</TargetFrameworks>
+        <TargetFrameworks>net461;netcoreapp2.1</TargetFrameworks>
       </PropertyGroup>
     </When>
     <Otherwise>
       <PropertyGroup>
-        <TargetFramework>netcoreapp2.2</TargetFramework>
+        <TargetFramework>netcoreapp2.1</TargetFramework>
       </PropertyGroup>
     </Otherwise>
   </Choose>
 
   <ItemGroup>
-    <ProjectReference Include="../../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj"/>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta2-19367-01" PrivateAssets="All"/>
+    <PackageReference Include="Dapper" Version="2.0.30" />
+    <PackageReference Include="Npgsql" Version="4.1.2" />
+    <ProjectReference Include="../../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta2-19367-01" PrivateAssets="All" />
   </ItemGroup>
 </Project>

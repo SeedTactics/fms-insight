@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -31,8 +31,11 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using BlackMaple.MachineFramework;
+using Npgsql;
+using Dapper;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
@@ -40,16 +43,252 @@ namespace BlackMaple.FMSInsight.Niigata
   {
     private JobDB _jobs;
     private string _programDir;
+    private string _connStr;
 
-    public NiigataICC(JobDB j, string progDir)
+    public NiigataICC(JobDB j, string progDir, string connectionStr)
     {
       _jobs = j;
       _programDir = progDir;
+      _connStr = connectionStr;
     }
 
-    public NiigataStatus LoadStatus()
+    private class StatusIcc
     {
-      throw new NotImplementedException();
+      public int Mode { get; set; }
+      public bool Alarm { get; set; }
+    }
+
+    private class CurrentStationNum
+    {
+      public int? StationNum { get; set; }
+    }
+
+    private class StatusRouteStep
+    {
+      public enum RouteTypeE
+      {
+        Load = 1,
+        Unload = 2,
+        Reclamp = 3,
+        Machine = 4,
+        Wash = 5
+      }
+      public int PalletNum { get; set; }
+      public int RouteNum { get; set; }
+      public RouteTypeE RouteType { get; set; }
+      public int CompletedPartCount { get; set; }
+      public int WashingPattern { get; set; }
+      public int ExecutedStationNum { get; set; }
+    }
+
+    private class RouteStepStation
+    {
+      public int PalletNum { get; set; }
+      public int RouteNum { get; set; }
+      public int StationNum { get; set; }
+    }
+
+    private class RouteStepPrograms
+    {
+      public int PalletNum { get; set; }
+      public int RouteNum { get; set; }
+      public int ProgramNumber { get; set; }
+    }
+
+    public NiigataStatus LoadNiigataStatus()
+    {
+      using (var conn = new NpgsqlConnection(_connStr))
+      {
+        conn.Open();
+        using (var trans = conn.BeginTransaction())
+        {
+
+          var status = conn.QueryFirst<NiigataStatus>(
+            $@"SELECT mode AS {nameof(NiigataStatus.Mode)},
+                      alarm AS {nameof(NiigataStatus.Alarm)}
+                FROM status_icc
+            ",
+            transaction: trans
+          );
+          status.TimeOfStatusUTC = DateTime.UtcNow;
+
+          status.LoadStations =
+            conn.Query<LoadStatus>(
+              $@"SELECT lul_no AS {nameof(LoadStatus.LoadNumber)},
+                        pallet_exist AS {nameof(LoadStatus.PalletExists)}
+                  FROM status_load_station",
+              transaction: trans
+            )
+            .ToDictionary(l => l.LoadNumber);
+
+          status.Machines =
+            conn.Query<MachineStatus>(
+              $@"SELECT mc_no AS {nameof(MachineStatus.MachineNumber)},
+                        power AS {nameof(MachineStatus.Power)},
+                        link_mode AS {nameof(MachineStatus.FMSLinkMode)},
+                        working AS {nameof(MachineStatus.Machining)},
+                        o_no AS {nameof(MachineStatus.CurrentlyExecutingProgram)},
+                        alarm AS {nameof(MachineStatus.Alarm)}
+                  FROM status_mc",
+              transaction: trans
+            )
+            .ToDictionary(k => k.MachineNumber);
+
+          var pallets =
+            conn.Query<PalletMaster, TrackingInfo, CurrentStationNum, PalletStatus>(
+                $@"SELECT status_pallet_route.pallet_no AS {nameof(PalletMaster.PalletNum)},
+                          comment AS {nameof(PalletMaster.Comment)},
+                          remaining_pallet_cycle AS {nameof(PalletMaster.RemainingPalletCycles)},
+                          priority AS {nameof(PalletMaster.Priority)},
+                          no_work AS {nameof(PalletMaster.NoWork)},
+                          pallet_skip AS {nameof(PalletMaster.Skip)},
+                          program_download AS {nameof(PalletMaster.PerformProgramDownload)},
+                          for_long_tool_maintenance AS {nameof(PalletMaster.ForLongToolMaintenance)},
+                          route_invalid AS {nameof(TrackingInfo.RouteInvalid)},
+                          dummy_pallet AS {nameof(TrackingInfo.DummyPallet)},
+                          alarm AS {nameof(TrackingInfo.Alarm)},
+                          alarm_code AS {nameof(TrackingInfo.AlarmCode)},
+                          current_step_no AS {nameof(TrackingInfo.CurrentStepNum)},
+                          current_control_no AS {nameof(TrackingInfo.CurrentControlNum)},
+                          station_no AS {nameof(CurrentStationNum.StationNum)}
+                    FROM status_pallet_route
+                    LEFT OUTER JOIN tracking ON status_pallet_route.pallet_no = tracking.pallet_no
+                ",
+                (master, tracking, curStat) => new PalletStatus()
+                {
+                  Master = master,
+                  Tracking = tracking,
+                  CurStation = new NiigataStationNum(curStat.StationNum ?? 1)
+                },
+                splitOn: $"{nameof(TrackingInfo.RouteInvalid)},{nameof(CurrentStationNum.StationNum)}",
+                transaction: trans
+              )
+              .ToDictionary(p => p.Master.PalletNum);
+
+          var routeStations =
+            conn.Query<RouteStepStation>(
+              $@"SELECT pallet_no as {nameof(RouteStepStation.PalletNum)},
+                        route_no AS {nameof(RouteStepStation.RouteNum)},
+                        station_no AS {nameof(RouteStepStation.StationNum)}
+                  FROM status_pallet_route_step_station
+              ",
+              transaction: trans
+            )
+            .ToLookup(r => (pal: r.PalletNum, step: r.RouteNum), r => r.StationNum);
+
+          var routePrograms =
+            conn.Query<RouteStepPrograms>(
+              $@"SELECT pallet_no AS {nameof(RouteStepPrograms.PalletNum)},
+                        route_no AS {nameof(RouteStepPrograms.RouteNum)},
+                        o_no AS {nameof(RouteStepPrograms.ProgramNumber)}
+                  FROM status_pallet_route_step_program
+                  ORDER BY program_order
+              ",
+              transaction: trans
+            )
+            .ToLookup(
+              p => (pal: p.PalletNum, step: p.RouteNum),
+              p => p.ProgramNumber
+            );
+
+          foreach (var step in
+            conn.Query<StatusRouteStep>(
+              $@"SELECT pallet_no AS {nameof(StatusRouteStep.PalletNum)},
+                        route_no AS {nameof(StatusRouteStep.RouteNum)},
+                        route_type AS {nameof(StatusRouteStep.RouteType)},
+                        completed_part_count AS {nameof(StatusRouteStep.CompletedPartCount)},
+                        washing_pattern AS {nameof(StatusRouteStep.WashingPattern)},
+                        executed_station_no AS {nameof(StatusRouteStep.ExecutedStationNum)}
+                  FROM status_pallet_route_step
+                  ORDER BY pallet_no,route_no
+                ",
+              transaction: trans
+            ))
+          {
+
+            if (!pallets.ContainsKey(step.PalletNum)) continue;
+            var palAndStep = (pal: step.PalletNum, step: step.RouteNum);
+            var stats = routeStations.Contains(palAndStep) ? routeStations[palAndStep] : Enumerable.Empty<int>();
+            RouteStep route;
+            switch (step.RouteType)
+            {
+              case StatusRouteStep.RouteTypeE.Load:
+                route = new LoadStep()
+                {
+                  LoadStations = stats.ToList()
+                };
+                break;
+
+              case StatusRouteStep.RouteTypeE.Unload:
+                route = new UnloadStep()
+                {
+                  UnloadStations = stats.ToList(),
+                  CompletedPartCount = step.CompletedPartCount
+                };
+                break;
+
+              case StatusRouteStep.RouteTypeE.Reclamp:
+                route = new ReclampStep()
+                {
+                  Reclamp = stats.ToList()
+                };
+                break;
+
+              case StatusRouteStep.RouteTypeE.Machine:
+                var progs = routePrograms.Contains(palAndStep) ? routePrograms[palAndStep] : Enumerable.Empty<int>();
+                route = new MachiningStep()
+                {
+                  Machines = stats.ToList(),
+                  ProgramNumsToRun = progs.ToList()
+                };
+                break;
+
+              case StatusRouteStep.RouteTypeE.Wash:
+                route = new WashStep()
+                {
+                  WashStations = stats.ToList(),
+                  WashingPattern = step.WashingPattern
+                };
+                break;
+
+              default:
+                route = null;
+                break;
+            }
+
+            var pal = pallets[step.PalletNum];
+            pal.Master.Routes.Add(route);
+            pal.Tracking.ExecutedStationNumber.Add(step.ExecutedStationNum);
+          }
+
+          status.Pallets = pallets.Values.ToList();
+
+          status.Programs = conn.Query<ProgramEntry>(
+            $@"SELECT o_no AS {nameof(ProgramEntry.ProgramNum)},
+                      comment AS {nameof(ProgramEntry.Comment)},
+                      work_base_time AS {nameof(ProgramEntry.WorkBaseTimeSeconds)}
+                FROM status_program
+            ",
+            transaction: trans
+          )
+          .ToDictionary(p => p.ProgramNum);
+
+          foreach (var tool in
+            conn.Query<(int o_no, int tool_no)>(
+              "SELECT o_no, tool_no FROM status_program_tool",
+              transaction: trans
+            )
+          )
+          {
+            if (!status.Programs.ContainsKey(tool.o_no)) continue;
+            status.Programs[tool.o_no].Tools.Add(tool.tool_no);
+          }
+
+          trans.Commit();
+
+          return status;
+        }
+      }
     }
 
     public void PerformAction(NiigataAction a)
