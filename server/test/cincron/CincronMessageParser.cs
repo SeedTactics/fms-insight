@@ -63,19 +63,36 @@ namespace MachineWatchTest.Cincron
       }
     }
 
+    private DateTime SetCurYear(DateTime d)
+    {
+      return new DateTime(DateTime.Now.Year, d.Month, d.Day, d.Hour, d.Minute, d.Second, DateTimeKind.Utc);
+    }
+
+    private List<CincronMessage> LoadExpected()
+    {
+      return
+        Newtonsoft.Json.JsonConvert.DeserializeObject<List<CincronMessage>>(System.IO.File.ReadAllText("../../../cincron/sample-messages.json"), jsonSettings)
+        .Select(m =>
+        {
+          m.TimeUTC = SetCurYear(m.TimeUTC);
+          m.TimeOfFirstEntryInLogFileUTC = SetCurYear(m.TimeOfFirstEntryInLogFileUTC);
+          return m;
+        })
+        .ToList();
+    }
+
     [Fact]
     public void ParseAllMessages()
     {
       var msg = MessageParser.ExtractMessages("../../../cincron/sample-messages", 0, "", centralZone);
-      var expected = Newtonsoft.Json.JsonConvert.DeserializeObject<List<CincronMessage>>(System.IO.File.ReadAllText("../../../cincron/sample-messages.json"), jsonSettings);
-      msg.Should().BeEquivalentTo(expected);
+      msg.Should().BeEquivalentTo(LoadExpected());
     }
 
     [Fact]
     public void ParseMiddle()
     {
       var msg = MessageParser.ExtractMessages("../../../cincron/sample-messages", 363143, "Jan 25 01:13:12 ABCDEF CINCRON[5889]: stn002--I10402:Control Data for Work Unit 22 Updated   [STEP_NO = 2]", centralZone);
-      var expected = Newtonsoft.Json.JsonConvert.DeserializeObject<List<CincronMessage>>(System.IO.File.ReadAllText("../../../cincron/sample-messages.json"), jsonSettings);
+      var expected = LoadExpected();
       msg.Should().BeEquivalentTo(expected.GetRange(2533, 2233));
     }
 
@@ -83,7 +100,7 @@ namespace MachineWatchTest.Cincron
     public void Rollover()
     {
       var msg = MessageParser.ExtractMessages("../../../cincron/sample-messages", 363143, "bad match", centralZone);
-      var expected = Newtonsoft.Json.JsonConvert.DeserializeObject<List<CincronMessage>>(System.IO.File.ReadAllText("../../../cincron/sample-messages.json"), jsonSettings);
+      var expected = LoadExpected();
       // since offset doesn't match, should load everything from beginning
       msg.Should().BeEquivalentTo(expected);
     }
