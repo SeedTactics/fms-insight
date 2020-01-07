@@ -41,12 +41,21 @@ import {
   MaterialBinId
 } from "../../data/all-material-bins";
 import { MaterialSummary } from "../../data/events.matsummary";
-import { connect, Store, AppActionBeforeMiddleware, mkAC } from "../../store/store";
+import { connect, Store, AppActionBeforeMiddleware, mkAC, DispatchAction } from "../../store/store";
 import * as matDetails from "../../data/material-details";
 import * as currentSt from "../../data/current-status";
 import * as guiState from "../../data/gui-state";
 import { createSelector } from "reselect";
-import { Paper, Typography, Button } from "@material-ui/core";
+import {
+  Paper,
+  Typography,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  DialogContentText
+} from "@material-ui/core";
 import { LazySeq } from "../../data/lazyseq";
 import { InProcMaterial, MaterialDialog } from "../station-monitor/Material";
 import { IInProcessMaterial } from "../../data/api";
@@ -70,14 +79,14 @@ function getQueueStyle(isDraggingOver: boolean, draggingFromThisWith: string | u
   };
 }
 
-interface MaterialQueueProps {
+interface QuarantineQueueProps {
   readonly queue: string;
   readonly idx: number;
   readonly material: ReadonlyArray<Readonly<IInProcessMaterial>>;
   readonly openMat: (mat: MaterialSummary) => void;
 }
 
-const MaterialQueue = React.memo(function DraggableMaterialQueueF(props: MaterialQueueProps) {
+const MaterialQueue = React.memo(function DraggableQuarantineQueueF(props: QuarantineQueueProps) {
   return (
     <Draggable draggableId={props.queue} index={props.idx} type={DragType.Queue}>
       {(provided, snapshot) => (
@@ -114,6 +123,7 @@ const MaterialQueue = React.memo(function DraggableMaterialQueueF(props: Materia
                         onOpen={props.openMat}
                         draggableProvided={provided}
                         hideAvatar
+                        showDragHandle
                         isDragging={snapshot.isDragging}
                       />
                     )}
@@ -123,6 +133,74 @@ const MaterialQueue = React.memo(function DraggableMaterialQueueF(props: Materia
               </div>
             )}
           </Droppable>
+        </Paper>
+      )}
+    </Draggable>
+  );
+});
+
+interface ActiveQueuesProps {
+  readonly draggableId: string;
+  readonly idx: number;
+  readonly material: HashMap<string, ReadonlyArray<Readonly<IInProcessMaterial>>>;
+  readonly openMat: (mat: MaterialSummary) => void;
+}
+
+const ActiveQueues = React.memo(function ActiveQueuesF(props: ActiveQueuesProps) {
+  return (
+    <Draggable draggableId={props.draggableId} index={props.idx} type={DragType.Queue}>
+      {(provided, snapshot) => (
+        <Paper
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          style={{ ...provided.draggableProps.style, margin: "0.75em" }}
+        >
+          <div {...provided.dragHandleProps}>
+            <Typography
+              variant="h4"
+              {...provided.dragHandleProps}
+              color={snapshot.isDragging ? "primary" : "textPrimary"}
+            >
+              Active Queues
+            </Typography>
+          </div>
+          <div style={getQueueStyle(false, undefined)}>
+            {LazySeq.ofIterable(props.material)
+              .sortBy(([q1, _m1], [q2, _m2]) => q1.localeCompare(q2))
+              .map(([queue, material], idx) => (
+                <div key={idx}>
+                  <Typography variant="caption">{queue}</Typography>
+                  <Droppable droppableId={queue} type={DragType.Material}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        style={getQueueStyle(snapshot.isDraggingOver, snapshot.draggingFromThisWith)}
+                      >
+                        {material.map((mat, idx) => (
+                          <Draggable
+                            key={mat.materialID}
+                            draggableId={mat.materialID.toString()}
+                            isDragDisabled={true}
+                            index={idx}
+                            type={DragType.Material}
+                          >
+                            {(provided, snapshot) => (
+                              <InProcMaterial
+                                draggableProvided={provided}
+                                mat={mat}
+                                onOpen={props.openMat}
+                                hideAvatar
+                              />
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </div>
+              ))}
+          </div>
         </Paper>
       )}
     </Draggable>
@@ -159,14 +237,6 @@ function comparePal(p1: string, p2: string) {
   } else {
     return n1 - n2;
   }
-}
-
-function renderQueue(queue: string) {
-  return queue;
-}
-
-function compareQueue(q1: string, q2: string) {
-  return q1.localeCompare(q2);
 }
 
 class SystemMaterial<T extends string | number> extends React.PureComponent<SystemMaterialProps<T>> {
@@ -246,6 +316,64 @@ const ConnectedAllMatDialog = connect(st => ({}), {
     ] as AppActionBeforeMiddleware
 })(AllMatDialog);
 
+interface ConfirmMoveToActive {
+  readonly destQueue: string;
+  readonly destQueuePos: number;
+  readonly sourceQueue: string;
+  readonly sourceQueuePos: number;
+  readonly materialId: number;
+  readonly serial: string;
+}
+
+interface ConfirmMoveActiveDialogProps {
+  readonly move: ConfirmMoveToActive | null;
+  readonly moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
+  readonly setMoveActive: (m: ConfirmMoveToActive | null) => void;
+  readonly reorderMatInQueue: DispatchAction<currentSt.ActionType.ReorderQueuedMaterial>;
+}
+
+function ConfirmMoveActiveDialog(props: ConfirmMoveActiveDialogProps) {
+  function cancel() {
+    if (props.move) {
+      props.reorderMatInQueue({
+        materialId: props.move.materialId,
+        queue: props.move.sourceQueue,
+        newIdx: props.move.sourceQueuePos
+      });
+      props.setMoveActive(null);
+    }
+  }
+  function confirmMove() {
+    if (props.move) {
+      props.moveMaterialInQueue({
+        materialId: props.move.materialId,
+        queue: props.move.destQueue,
+        queuePosition: props.move.destQueuePos
+      });
+      props.setMoveActive(null);
+    }
+  }
+  return (
+    <Dialog open={props.move !== null} onClose={cancel}>
+      <DialogTitle>Move to {props.move?.destQueue}</DialogTitle>
+      <DialogContent>
+        <DialogContentText>
+          Moving the material with serial {props.move?.serial} back into the active queue {props.move?.destQueue} will
+          make it immediately available for machining operations. Are you sure?
+        </DialogContentText>
+      </DialogContent>
+      <DialogActions>
+        <Button color="primary" onClick={confirmMove}>
+          Move to {props.move?.destQueue}
+        </Button>
+        <Button color="primary" onClick={cancel}>
+          Cancel
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 interface AllMaterialProps {
   readonly displaySystemBins: boolean;
   readonly allBins: ReadonlyArray<MaterialBin>;
@@ -253,12 +381,17 @@ interface AllMaterialProps {
   readonly openMat: (mat: MaterialSummary) => void;
   readonly moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
   readonly moveMaterialBin: (curBinOrder: ReadonlyArray<MaterialBinId>, oldIdx: number, newIdx: number) => void;
+  readonly reorderMatInQueue: DispatchAction<currentSt.ActionType.ReorderQueuedMaterial>;
 }
 
 function AllMaterial(props: AllMaterialProps) {
+  const [confirmMove, setConfirmMove] = React.useState<ConfirmMoveToActive | null>(null);
+
   const curBins = props.displaySystemBins
     ? props.allBins
-    : props.allBins.filter(bin => bin.type === MaterialBinType.QuarantineQueues);
+    : props.allBins.filter(
+        bin => bin.type === MaterialBinType.QuarantineQueues || bin.type === MaterialBinType.ActiveQueues
+      );
 
   const onDragEnd = (result: DropResult): void => {
     if (!result.destination) return;
@@ -268,7 +401,33 @@ function AllMaterial(props: AllMaterialProps) {
       const queue = result.destination.droppableId;
       const materialId = parseInt(result.draggableId);
       const queuePosition = result.destination.index;
-      props.moveMaterialInQueue({ materialId, queue, queuePosition });
+      if (curBins.findIndex(bin => bin.type === MaterialBinType.ActiveQueues && bin.byQueue.containsKey(queue)) >= 0) {
+        // confirm first.  Visual only reorder and open dialog
+        props.reorderMatInQueue({
+          materialId: materialId,
+          queue: queue,
+          newIdx: queuePosition
+        });
+        let material: Readonly<IInProcessMaterial> | undefined = undefined;
+        for (const bin of curBins) {
+          if (bin.type === MaterialBinType.QuarantineQueues) {
+            material = bin.material.find(m => m.materialID === materialId);
+            if (material) {
+              break;
+            }
+          }
+        }
+        setConfirmMove({
+          materialId: materialId,
+          destQueue: queue,
+          destQueuePos: queuePosition,
+          sourceQueue: result.source.droppableId,
+          sourceQueuePos: result.source.index,
+          serial: material?.serial || ""
+        });
+      } else {
+        props.moveMaterialInQueue({ materialId, queue, queuePosition });
+      }
     } else if (result.type === DragType.Queue) {
       props.moveMaterialBin(
         curBins.map(b => b.binId),
@@ -322,13 +481,10 @@ function AllMaterial(props: AllMaterialProps) {
                     );
                   case MaterialBinType.ActiveQueues:
                     return (
-                      <SystemMaterial
-                        name="Queues"
+                      <ActiveQueues
                         draggableId={matBin.binId}
                         key={matBin.binId}
                         idx={idx}
-                        renderLabel={renderQueue}
-                        compareLabel={compareQueue}
                         material={matBin.byQueue}
                         openMat={props.openMat}
                       />
@@ -350,6 +506,12 @@ function AllMaterial(props: AllMaterialProps) {
           )}
         </Droppable>
         <ConnectedAllMatDialog display_material={props.display_material} quarantineQueue={curDisplayQuarantine} />
+        <ConfirmMoveActiveDialog
+          move={confirmMove}
+          setMoveActive={setConfirmMove}
+          moveMaterialInQueue={props.moveMaterialInQueue}
+          reorderMatInQueue={props.reorderMatInQueue}
+        />
       </DragDropContext>
     </DocumentTitle>
   );
@@ -377,6 +539,7 @@ export default connect(
       },
       matDetails.addExistingMaterialToQueue(d)
     ],
+    reorderMatInQueue: mkAC(currentSt.ActionType.ReorderQueuedMaterial),
     moveMaterialBin: moveMaterialBin
   }
 )(AllMaterial);
