@@ -35,6 +35,7 @@ import * as React from "react";
 import { addDays } from "date-fns";
 import Grid from "@material-ui/core/Grid";
 import Button from "@material-ui/core/Button";
+import Tooltip from "@material-ui/core/Tooltip";
 import { DialogActions } from "@material-ui/core";
 import { createSelector } from "reselect";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -51,7 +52,9 @@ interface InspButtonsProps {
   readonly display_material: matDetails.MaterialDetail;
   readonly operator?: string;
   readonly inspection_type: string;
+  readonly quarantineQueue: string | null;
   readonly completeInspection: (comp: matDetails.CompleteInspectionData) => void;
+  readonly moveToQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
 }
 
 function InspButtons(props: InspButtonsProps) {
@@ -79,6 +82,26 @@ function InspButtons(props: InspButtonsProps) {
       ) : (
         undefined
       )}
+      {props.display_material && props.quarantineQueue !== null ? (
+        <Tooltip title={"Move to " + props.quarantineQueue}>
+          <Button
+            color="primary"
+            onClick={() =>
+              props.display_material && props.quarantineQueue
+                ? props.moveToQueue({
+                    materialId: props.display_material.materialID,
+                    queue: props.quarantineQueue,
+                    queuePosition: 0
+                  })
+                : undefined
+            }
+          >
+            Quarantine Material
+          </Button>
+        </Tooltip>
+      ) : (
+        undefined
+      )}
       <Button color="primary" onClick={() => markInspComplete(true)}>
         Mark {props.inspection_type} Success
       </Button>
@@ -92,7 +115,9 @@ function InspButtons(props: InspButtonsProps) {
 interface InspDialogProps extends MaterialDialogProps {
   readonly operator?: string;
   readonly focusInspectionType: string;
+  readonly quarantineQueue: string | null;
   readonly completeInspection: (comp: matDetails.CompleteInspectionData) => void;
+  readonly moveToQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
 }
 
 function InspDialog(props: InspDialogProps) {
@@ -125,6 +150,8 @@ function InspDialog(props: InspDialogProps) {
                   operator={props.operator}
                   inspection_type={i}
                   completeInspection={props.completeInspection}
+                  quarantineQueue={props.quarantineQueue}
+                  moveToQueue={props.moveToQueue}
                 />
               </DialogActions>
             ))}
@@ -140,6 +167,8 @@ function InspDialog(props: InspDialogProps) {
             operator={props.operator}
             inspection_type={singleInspectionType}
             completeInspection={props.completeInspection}
+            quarantineQueue={props.quarantineQueue}
+            moveToQueue={props.moveToQueue}
           />
         )
       }
@@ -153,7 +182,8 @@ const ConnectedInspDialog = connect(
     focusInspectionType: st.Route.selected_insp_type || "",
     operator: st.ServerSettings.user
       ? st.ServerSettings.user.profile.name || st.ServerSettings.user.profile.sub
-      : st.Operators.current
+      : st.Operators.current,
+    quarantineQueue: st.ServerSettings.fmsInfo?.quarantineQueue || null
   }),
   {
     onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
@@ -161,7 +191,8 @@ const ConnectedInspDialog = connect(
       [
         matDetails.completeInspection(data),
         { type: matDetails.ActionType.CloseMaterialDialog }
-      ] as AppActionBeforeMiddleware
+      ] as AppActionBeforeMiddleware,
+    moveToQueue: (d: matDetails.AddExistingMaterialToQueueData) => matDetails.addExistingMaterialToQueue(d)
   }
 )(InspDialog);
 

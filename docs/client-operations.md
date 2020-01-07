@@ -120,10 +120,11 @@ In each table cell, the actual parts are listed first followed by a slash and th
 
 ![Screenshot of Completed Parts](assets/insight-completed-parts.png)
 
-# All Material
+# Material
 
-The All Material screen displays all [virtual whiteboard regions](material-tracking.md). This includes the regions for all pallets
-and all configured in-process queues. This is primarily intended to help visualize the current state
-of the whole cell.
+The Material screen displays all [virtual whiteboard regions](material-tracking.md). This includes the regions for all pallets
+and all configured in-process queues. If [quarantined material](material-quarantine.md) is enabled (as seen in the
+screenshot below), material can be moved between the various quarantine queues by clicking and dragging on the vertical dots
+on the material card. In addition, notes can be added to each piece of material by opening the material card.
 
-![Screenshot of All Material screen](assets/insight-all-material.png)
+![Screenshot of Material screen](assets/insight-operations-material.png)
