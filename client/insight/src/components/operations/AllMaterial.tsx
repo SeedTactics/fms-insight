@@ -174,7 +174,10 @@ const ActiveQueues = React.memo(function ActiveQueuesF(props: ActiveQueuesProps)
                     {(provided, snapshot) => (
                       <div
                         ref={provided.innerRef}
-                        style={getQueueStyle(snapshot.isDraggingOver, snapshot.draggingFromThisWith)}
+                        style={{
+                          ...getQueueStyle(snapshot.isDraggingOver, snapshot.draggingFromThisWith),
+                          minHeight: "5em"
+                        }}
                       >
                         {material.map((mat, idx) => (
                           <Draggable

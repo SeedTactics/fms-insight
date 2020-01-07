@@ -46,7 +46,8 @@
               ],
               "Load": [1, 2],
               "Unload": [1, 2],
-              "InputQueue": "Queue1",
+              "InputQueue": "TransferStand",
+              "OutputQueue": "Conveyor",
               "Stops": [
                 {
                   "Stations": { "1": "100", "2": "100" },
@@ -748,7 +749,7 @@
       "SignaledInspections": [],
       "Location": {
         "Type": "InQueue",
-        "CurrentQueue": "Queue1",
+        "CurrentQueue": "TransferStand",
         "QueuePosition": 2
       },
       "Action": {
@@ -823,7 +824,7 @@
       "SignaledInspections": [],
       "Location": {
         "Type": "InQueue",
-        "CurrentQueue": "Queue1",
+        "CurrentQueue": "TransferStand",
         "QueuePosition": 0
       },
       "Action": { "Type": "Waiting" }
@@ -838,7 +839,7 @@
       "SignaledInspections": [],
       "Location": {
         "Type": "InQueue",
-        "CurrentQueue": "Queue1",
+        "CurrentQueue": "TransferStand",
         "QueuePosition": 1
       },
       "Action": { "Type": "Waiting" }
@@ -853,7 +854,7 @@
       "SignaledInspections": [],
       "Location": {
         "Type": "InQueue",
-        "CurrentQueue": "Queue2",
+        "CurrentQueue": "Conveyor",
         "QueuePosition": 0
       },
       "Action": { "Type": "Waiting" }
@@ -868,12 +869,63 @@
       "SignaledInspections": [],
       "Location": {
         "Type": "InQueue",
-        "CurrentQueue": "Queue2",
+        "CurrentQueue": "Conveyor",
         "QueuePosition": 1
+      },
+      "Action": { "Type": "Waiting" }
+    },
+    {
+      "MaterialID": 3293,
+      "JobUnique": "zzz-offline-2018-01-30",
+      "PartName": "zzz",
+      "Process": 1,
+      "Path": 1,
+      "Serial": "00000000R7",
+      "SignaledInspections": [],
+      "Location": {
+        "Type": "InQueue",
+        "CurrentQueue": "Remachine",
+        "QueuePosition": 0
+      },
+      "Action": { "Type": "Waiting" }
+    },
+    {
+      "MaterialID": 3286,
+      "JobUnique": "yyy-offline-2018-01-30",
+      "PartName": "yyy",
+      "Process": 1,
+      "Path": 1,
+      "Serial": "00000000R0",
+      "SignaledInspections": [],
+      "Location": {
+        "Type": "InQueue",
+        "CurrentQueue": "Remachine",
+        "QueuePosition": 1
+      },
+      "Action": { "Type": "Waiting" }
+    },
+    {
+      "MaterialID": 3292,
+      "JobUnique": "zzz-offline-2018-01-30",
+      "PartName": "zzz",
+      "Process": 1,
+      "Path": 1,
+      "Serial": "00000000R6",
+      "SignaledInspections": [],
+      "Location": {
+        "Type": "InQueue",
+        "CurrentQueue": "Sent to Foundry",
+        "QueuePosition": 0
       },
       "Action": { "Type": "Waiting" }
     }
   ],
   "Alarms": [],
-  "Queues": { "Queue1": {}, "Queue2": {} }
+  "Queues": {
+    "TransferStand": {},
+    "Conveyor": {},
+    "Initial Quarantine": {},
+    "Remachine": {},
+    "Sent to Foundry": {}
+  }
 }

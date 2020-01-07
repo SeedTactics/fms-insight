@@ -55,6 +55,7 @@ interface WashDialogProps extends MaterialDialogProps {
   readonly fmsInfo?: Readonly<api.IFMSInfo>;
   readonly completeWash: (mat: matDetails.CompleteWashData) => void;
   readonly openSelectWorkorder: (mat: matDetails.MaterialDetail) => void;
+  readonly moveToQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
 }
 
 function WashDialog(props: WashDialogProps) {
@@ -87,6 +88,8 @@ function WashDialog(props: WashDialogProps) {
     }
   }
 
+  const quarantineQueue = props.fmsInfo?.quarantineQueue || null;
+
   return (
     <MaterialDialog
       display_material={props.display_material}
@@ -96,6 +99,26 @@ function WashDialog(props: WashDialogProps) {
         <>
           {props.display_material && props.display_material.partName !== "" ? (
             <InstructionButton material={props.display_material} type="wash" operator={props.operator || null} />
+          ) : (
+            undefined
+          )}
+          {props.display_material && quarantineQueue !== null ? (
+            <Tooltip title={"Move to " + quarantineQueue}>
+              <Button
+                color="primary"
+                onClick={() =>
+                  props.display_material
+                    ? props.moveToQueue({
+                        materialId: props.display_material.materialID,
+                        queue: quarantineQueue,
+                        queuePosition: 0
+                      })
+                    : undefined
+                }
+              >
+                Quarantine Material
+              </Button>
+            </Tooltip>
           ) : (
             undefined
           )}
@@ -141,6 +164,7 @@ const ConnectedWashDialog = connect(
       },
       matDetails.loadWorkorders(mat)
     ],
+    moveToQueue: (d: matDetails.AddExistingMaterialToQueueData) => matDetails.addExistingMaterialToQueue(d),
     onClose: mkAC(matDetails.ActionType.CloseMaterialDialog)
   }
 )(WashDialog);
