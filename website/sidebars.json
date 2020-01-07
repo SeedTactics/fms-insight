@@ -12,7 +12,8 @@
       "security",
       "creating-jobs",
       "workorder-report",
-      "part-instructions"
+      "part-instructions",
+      "material-quarantine"
     ],
     "Client": [
       "client-launch",
