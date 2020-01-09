@@ -144,7 +144,7 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
         <DataTableBody
           columns={columns}
           pageData={points.drop(curPage * rowsPerPage).take(rowsPerPage)}
-          onClickDetails={row => props.openDetails(row.materialID)}
+          onClickDetails={(_, row) => props.openDetails(row.materialID)}
         />
       </Table>
       <DataTableActions

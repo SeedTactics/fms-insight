@@ -71,7 +71,7 @@ export function binCyclesByDayAndPart(cycles: Iterable<PartCycleData>): HashMap<
       part: part_and_proc(point.part, point.process),
       value: {
         count: point.completed ? 1 : 0,
-        activeMachineMins: point.completed ? point.activeTotalMachineMinutesForSingleMat : 0
+        activeMachineMins: point.completed ? point.activeTotalMachineMinutes : 0
       }
     }))
     .toMap(

@@ -251,17 +251,11 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
   function extraStationCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
     const partC = point as PartCycleData;
     const ret = [];
-    if (partC.serial) {
+    for (const mat of partC.material) {
       ret.push({
-        title: "Serial",
-        value: partC.serial
-      });
-    }
-    if (partC.matId >= 0) {
-      ret.push({
-        title: "Material",
+        title: mat.serial ? mat.serial : "Material",
         value: "Open Card",
-        link: () => props.openMaterial(partC.matId)
+        link: () => props.openMaterial(mat.id)
       });
     }
     return ret;

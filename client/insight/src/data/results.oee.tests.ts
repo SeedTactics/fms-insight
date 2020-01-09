@@ -61,7 +61,7 @@ it("bins actual cycles by day", () => {
   });
 
   let byDayAndStat = binCyclesByDayAndStat(st.last30.cycles.part_cycles, c =>
-    duration(c.activeMinsForSingleMat).asMinutes()
+    duration(c.targetCycleMinutes).asMinutes()
   );
 
   // update day to be in Chicago timezone
@@ -93,7 +93,7 @@ it("creates points clipboard table", () => {
   });
 
   const byDayAndStat = binCyclesByDayAndStat(st.last30.cycles.part_cycles, c =>
-    duration(c.activeMinsForSingleMat).asMinutes()
+    duration(c.targetCycleMinutes).asMinutes()
   );
 
   const points = LazySeq.ofIterable(byDayAndStat)

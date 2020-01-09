@@ -193,7 +193,7 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
                   <DataTableBody
                     columns={columns}
                     pageData={points.material.drop(page * rowsPerPage).take(rowsPerPage)}
-                    onClickDetails={openDetails ? row => openDetails(row.materialID) : undefined}
+                    onClickDetails={openDetails ? (_, row) => openDetails(row.materialID) : undefined}
                   />
                 </Table>
                 <DataTableActions

@@ -118,7 +118,7 @@ export function stationMinutes(partCycles: Vector<PartCycleData>, cutoff: Date):
     .filter(p => p.x >= cutoff)
     .map(p => ({
       station: stat_name_and_num(p.stationGroup, p.stationNumber),
-      active: p.activeMinsForSingleMat
+      active: p.targetCycleMinutes
     }))
     .toMap(
       x => [x.station, x.active] as [string, number],
@@ -156,8 +156,20 @@ export function buildCycleTable(
     table += "<td>" + cycle.part + "-" + cycle.process.toString() + "</td>";
     table += "<td>" + stat_name_and_num(cycle.stationGroup, cycle.stationNumber) + "</td>";
     table += "<td>" + cycle.pallet + "</td>";
-    table += "<td>" + (cycle.serial || "") + "</td>";
-    table += "<td>" + (cycle.workorder || "") + "</td>";
+    table +=
+      "<td>" +
+      cycle.material
+        .filter(m => m.serial)
+        .map(m => m.serial)
+        .join(",") +
+      "</td>";
+    table +=
+      "<td>" +
+      cycle.material
+        .filter(m => m.workorder)
+        .map(m => m.workorder)
+        .join(",") +
+      "</td>";
     table += "<td>" + format_cycle_inspection(cycle) + "</td>";
     table += "<td>" + cycle.y.toFixed(1) + "</td>";
     table += "<td>" + cycle.targetCycleMinutes.toFixed(1) + "</td>";
