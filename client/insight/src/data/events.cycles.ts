@@ -50,8 +50,9 @@ export interface PartCycleData extends CycleData {
   readonly stationGroup: string;
   readonly stationNumber: number;
   readonly pallet: string;
-  readonly targetCycleMinutes: number; // active time in minutes for the entire cycle
-  readonly medianCycleMinutes: number; // median time in minutes for the cycle time
+  readonly targetCycleMinutes: number; // active time in minutes
+  readonly medianCycleMinutes: number;
+  readonly activeTotalMachineMinutesForSingleMat: number; // active time for all machines in entire route
   readonly MAD_aboveMinutes: number;
   readonly outlier: boolean;
   readonly isLabor: boolean;
@@ -309,6 +310,21 @@ function activeMinutes(cycle: Readonly<api.ILogEntry>, stats: Option<Statistical
     return cMins;
   }
 }
+function activeTotalMachineMinutesForSingleMat(
+  partAndProc: string,
+  machineGroups: HashSet<string>,
+  estimated: HashMap<string, HashMap<string, StatisticalCycleTime>>
+): number {
+  const mbyStat = estimated.get(partAndProc);
+  if (mbyStat.isSome()) {
+    const byStat = mbyStat.get();
+    return LazySeq.ofIterable(machineGroups)
+      .mapOption(m => byStat.get(m))
+      .sumOn(t => t.expectedCycleMinutesForSingleMat);
+  } else {
+    return 0;
+  }
+}
 
 interface InspectionData {
   readonly signaled: { [materialId: number]: HashSet<string> };
@@ -444,6 +460,11 @@ export function process_events(
         targetCycleMinutes: activeMinutes(cycle, stats),
         medianCycleMinutes: stats.map(s => s.medianMinutesForSingleMat).getOrElse(0) * cycle.material.length,
         MAD_aboveMinutes: stats.map(s => s.MAD_aboveMinutes).getOrElse(0),
+        activeTotalMachineMinutesForSingleMat: activeTotalMachineMinutesForSingleMat(
+          part_and_proc(part, proc),
+          machineGroups,
+          estimatedCycleTimes
+        ),
         outlier: cycleIsOutlier(part_and_proc(part, proc), cycle, estimatedCycleTimes),
         completed: cycle.type === api.LogType.LoadUnloadCycle && cycle.result === "UNLOAD",
         part: part,

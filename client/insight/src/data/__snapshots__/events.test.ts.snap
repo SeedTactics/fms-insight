@@ -36,8 +36,8 @@ Object {
           "medianMinutesForSingleMat": 4.5,
         },
         "MC" => Object {
-          "MAD_aboveMinutes": 0.01,
-          "MAD_belowMinutes": 0.01,
+          "MAD_aboveMinutes": 0.25,
+          "MAD_belowMinutes": 0.25,
           "expectedCycleMinutesForSingleMat": 30,
           "medianMinutesForSingleMat": 30,
         },
@@ -50,8 +50,8 @@ Object {
           "medianMinutesForSingleMat": 4.5,
         },
         "MC" => Object {
-          "MAD_aboveMinutes": 0.01,
-          "MAD_belowMinutes": 0.01,
+          "MAD_aboveMinutes": 0.25,
+          "MAD_belowMinutes": 0.25,
           "expectedCycleMinutesForSingleMat": 24,
           "medianMinutesForSingleMat": 24,
         },
@@ -64,8 +64,8 @@ Object {
           "medianMinutesForSingleMat": 4.5,
         },
         "MC" => Object {
-          "MAD_aboveMinutes": 0.01,
-          "MAD_belowMinutes": 0.01,
+          "MAD_aboveMinutes": 0.25,
+          "MAD_belowMinutes": 0.25,
           "expectedCycleMinutesForSingleMat": 18,
           "medianMinutesForSingleMat": 18,
         },
@@ -86,6 +86,7 @@ Object {
     "part_cycles": Array [
       Object {
         "MAD_aboveMinutes": 2.2239,
+        "activeTotalMachineMinutesForSingleMat": 18,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -119,7 +120,8 @@ Object {
         "y": 6,
       },
       Object {
-        "MAD_aboveMinutes": 0.01,
+        "MAD_aboveMinutes": 0.25,
+        "activeTotalMachineMinutesForSingleMat": 18,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -154,6 +156,7 @@ Object {
       },
       Object {
         "MAD_aboveMinutes": 2.2239,
+        "activeTotalMachineMinutesForSingleMat": 18,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -188,6 +191,7 @@ Object {
       },
       Object {
         "MAD_aboveMinutes": 2.2239,
+        "activeTotalMachineMinutesForSingleMat": 24,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -221,7 +225,8 @@ Object {
         "y": 6,
       },
       Object {
-        "MAD_aboveMinutes": 0.01,
+        "MAD_aboveMinutes": 0.25,
+        "activeTotalMachineMinutesForSingleMat": 24,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -256,6 +261,7 @@ Object {
       },
       Object {
         "MAD_aboveMinutes": 2.2239,
+        "activeTotalMachineMinutesForSingleMat": 24,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -290,6 +296,7 @@ Object {
       },
       Object {
         "MAD_aboveMinutes": 2.2239,
+        "activeTotalMachineMinutesForSingleMat": 30,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -323,7 +330,8 @@ Object {
         "y": 6,
       },
       Object {
-        "MAD_aboveMinutes": 0.01,
+        "MAD_aboveMinutes": 0.25,
+        "activeTotalMachineMinutesForSingleMat": 30,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -358,6 +366,7 @@ Object {
       },
       Object {
         "MAD_aboveMinutes": 2.2239,
+        "activeTotalMachineMinutesForSingleMat": 30,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -605,8 +614,8 @@ Object {
           "medianMinutesForSingleMat": 4.5,
         },
         "MC" => Object {
-          "MAD_aboveMinutes": 0.01,
-          "MAD_belowMinutes": 0.01,
+          "MAD_aboveMinutes": 0.25,
+          "MAD_belowMinutes": 0.25,
           "expectedCycleMinutesForSingleMat": 30,
           "medianMinutesForSingleMat": 30,
         },
@@ -619,8 +628,8 @@ Object {
           "medianMinutesForSingleMat": 4.5,
         },
         "MC" => Object {
-          "MAD_aboveMinutes": 0.01,
-          "MAD_belowMinutes": 0.01,
+          "MAD_aboveMinutes": 0.25,
+          "MAD_belowMinutes": 0.25,
           "expectedCycleMinutesForSingleMat": 24,
           "medianMinutesForSingleMat": 24,
         },
@@ -633,8 +642,8 @@ Object {
           "medianMinutesForSingleMat": 4.5,
         },
         "MC" => Object {
-          "MAD_aboveMinutes": 0.01,
-          "MAD_belowMinutes": 0.01,
+          "MAD_aboveMinutes": 0.25,
+          "MAD_belowMinutes": 0.25,
           "expectedCycleMinutesForSingleMat": 18,
           "medianMinutesForSingleMat": 18,
         },
@@ -656,6 +665,7 @@ Object {
     "part_cycles": Array [
       Object {
         "MAD_aboveMinutes": 2.2239,
+        "activeTotalMachineMinutesForSingleMat": 24,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -689,7 +699,8 @@ Object {
         "y": 6,
       },
       Object {
-        "MAD_aboveMinutes": 0.01,
+        "MAD_aboveMinutes": 0.25,
+        "activeTotalMachineMinutesForSingleMat": 24,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -724,6 +735,7 @@ Object {
       },
       Object {
         "MAD_aboveMinutes": 2.2239,
+        "activeTotalMachineMinutesForSingleMat": 24,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -758,6 +770,7 @@ Object {
       },
       Object {
         "MAD_aboveMinutes": 2.2239,
+        "activeTotalMachineMinutesForSingleMat": 30,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -791,7 +804,8 @@ Object {
         "y": 6,
       },
       Object {
-        "MAD_aboveMinutes": 0.01,
+        "MAD_aboveMinutes": 0.25,
+        "activeTotalMachineMinutesForSingleMat": 30,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -826,6 +840,7 @@ Object {
       },
       Object {
         "MAD_aboveMinutes": 2.2239,
+        "activeTotalMachineMinutesForSingleMat": 30,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -860,6 +875,7 @@ Object {
       },
       Object {
         "MAD_aboveMinutes": 2.2239,
+        "activeTotalMachineMinutesForSingleMat": 30,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -893,7 +909,8 @@ Object {
         "y": 6,
       },
       Object {
-        "MAD_aboveMinutes": 0.01,
+        "MAD_aboveMinutes": 0.25,
+        "activeTotalMachineMinutesForSingleMat": 30,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -928,6 +945,7 @@ Object {
       },
       Object {
         "MAD_aboveMinutes": 2.2239,
+        "activeTotalMachineMinutesForSingleMat": 30,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -1458,8 +1476,8 @@ Object {
           "medianMinutesForSingleMat": 4.5,
         },
         "MC" => Object {
-          "MAD_aboveMinutes": 0.01,
-          "MAD_belowMinutes": 0.01,
+          "MAD_aboveMinutes": 0.25,
+          "MAD_belowMinutes": 0.25,
           "expectedCycleMinutesForSingleMat": 30,
           "medianMinutesForSingleMat": 30,
         },
@@ -1472,8 +1490,8 @@ Object {
           "medianMinutesForSingleMat": 4.5,
         },
         "MC" => Object {
-          "MAD_aboveMinutes": 0.01,
-          "MAD_belowMinutes": 0.01,
+          "MAD_aboveMinutes": 0.25,
+          "MAD_belowMinutes": 0.25,
           "expectedCycleMinutesForSingleMat": 24,
           "medianMinutesForSingleMat": 24,
         },
@@ -1486,8 +1504,8 @@ Object {
           "medianMinutesForSingleMat": 4.5,
         },
         "MC" => Object {
-          "MAD_aboveMinutes": 0.01,
-          "MAD_belowMinutes": 0.01,
+          "MAD_aboveMinutes": 0.25,
+          "MAD_belowMinutes": 0.25,
           "expectedCycleMinutesForSingleMat": 18,
           "medianMinutesForSingleMat": 18,
         },
@@ -1508,6 +1526,7 @@ Object {
     "part_cycles": Array [
       Object {
         "MAD_aboveMinutes": 2.2239,
+        "activeTotalMachineMinutesForSingleMat": 18,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -1541,7 +1560,8 @@ Object {
         "y": 6,
       },
       Object {
-        "MAD_aboveMinutes": 0.01,
+        "MAD_aboveMinutes": 0.25,
+        "activeTotalMachineMinutesForSingleMat": 18,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -1576,6 +1596,7 @@ Object {
       },
       Object {
         "MAD_aboveMinutes": 2.2239,
+        "activeTotalMachineMinutesForSingleMat": 18,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -1610,6 +1631,7 @@ Object {
       },
       Object {
         "MAD_aboveMinutes": 2.2239,
+        "activeTotalMachineMinutesForSingleMat": 24,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -1643,7 +1665,8 @@ Object {
         "y": 6,
       },
       Object {
-        "MAD_aboveMinutes": 0.01,
+        "MAD_aboveMinutes": 0.25,
+        "activeTotalMachineMinutesForSingleMat": 24,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -1678,6 +1701,7 @@ Object {
       },
       Object {
         "MAD_aboveMinutes": 2.2239,
+        "activeTotalMachineMinutesForSingleMat": 24,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -1712,6 +1736,7 @@ Object {
       },
       Object {
         "MAD_aboveMinutes": 2.2239,
+        "activeTotalMachineMinutesForSingleMat": 30,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -1745,7 +1770,8 @@ Object {
         "y": 6,
       },
       Object {
-        "MAD_aboveMinutes": 0.01,
+        "MAD_aboveMinutes": 0.25,
+        "activeTotalMachineMinutesForSingleMat": 30,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -1780,6 +1806,7 @@ Object {
       },
       Object {
         "MAD_aboveMinutes": 2.2239,
+        "activeTotalMachineMinutesForSingleMat": 30,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -2331,8 +2358,8 @@ Object {
           "medianMinutesForSingleMat": 4.5,
         },
         "MC" => Object {
-          "MAD_aboveMinutes": 0.01,
-          "MAD_belowMinutes": 0.01,
+          "MAD_aboveMinutes": 0.25,
+          "MAD_belowMinutes": 0.25,
           "expectedCycleMinutesForSingleMat": 30,
           "medianMinutesForSingleMat": 30,
         },
@@ -2345,8 +2372,8 @@ Object {
           "medianMinutesForSingleMat": 4.5,
         },
         "MC" => Object {
-          "MAD_aboveMinutes": 0.01,
-          "MAD_belowMinutes": 0.01,
+          "MAD_aboveMinutes": 0.25,
+          "MAD_belowMinutes": 0.25,
           "expectedCycleMinutesForSingleMat": 24,
           "medianMinutesForSingleMat": 24,
         },
@@ -2359,8 +2386,8 @@ Object {
           "medianMinutesForSingleMat": 4.5,
         },
         "MC" => Object {
-          "MAD_aboveMinutes": 0.01,
-          "MAD_belowMinutes": 0.01,
+          "MAD_aboveMinutes": 0.25,
+          "MAD_belowMinutes": 0.25,
           "expectedCycleMinutesForSingleMat": 18,
           "medianMinutesForSingleMat": 18,
         },
@@ -2382,6 +2409,7 @@ Object {
     "part_cycles": Array [
       Object {
         "MAD_aboveMinutes": 2.2239,
+        "activeTotalMachineMinutesForSingleMat": 24,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -2415,7 +2443,8 @@ Object {
         "y": 6,
       },
       Object {
-        "MAD_aboveMinutes": 0.01,
+        "MAD_aboveMinutes": 0.25,
+        "activeTotalMachineMinutesForSingleMat": 24,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -2450,6 +2479,7 @@ Object {
       },
       Object {
         "MAD_aboveMinutes": 2.2239,
+        "activeTotalMachineMinutesForSingleMat": 24,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -2484,6 +2514,7 @@ Object {
       },
       Object {
         "MAD_aboveMinutes": 2.2239,
+        "activeTotalMachineMinutesForSingleMat": 30,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -2517,7 +2548,8 @@ Object {
         "y": 6,
       },
       Object {
-        "MAD_aboveMinutes": 0.01,
+        "MAD_aboveMinutes": 0.25,
+        "activeTotalMachineMinutesForSingleMat": 30,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -2552,6 +2584,7 @@ Object {
       },
       Object {
         "MAD_aboveMinutes": 2.2239,
+        "activeTotalMachineMinutesForSingleMat": 30,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -2586,6 +2619,7 @@ Object {
       },
       Object {
         "MAD_aboveMinutes": 2.2239,
+        "activeTotalMachineMinutesForSingleMat": 30,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -2619,7 +2653,8 @@ Object {
         "y": 6,
       },
       Object {
-        "MAD_aboveMinutes": 0.01,
+        "MAD_aboveMinutes": 0.25,
+        "activeTotalMachineMinutesForSingleMat": 30,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -2654,6 +2689,7 @@ Object {
       },
       Object {
         "MAD_aboveMinutes": 2.2239,
+        "activeTotalMachineMinutesForSingleMat": 30,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -3184,8 +3220,8 @@ Object {
           "medianMinutesForSingleMat": 4.5,
         },
         "MC" => Object {
-          "MAD_aboveMinutes": 0.01,
-          "MAD_belowMinutes": 0.01,
+          "MAD_aboveMinutes": 0.25,
+          "MAD_belowMinutes": 0.25,
           "expectedCycleMinutesForSingleMat": 30,
           "medianMinutesForSingleMat": 30,
         },
@@ -3198,8 +3234,8 @@ Object {
           "medianMinutesForSingleMat": 4.5,
         },
         "MC" => Object {
-          "MAD_aboveMinutes": 0.01,
-          "MAD_belowMinutes": 0.01,
+          "MAD_aboveMinutes": 0.25,
+          "MAD_belowMinutes": 0.25,
           "expectedCycleMinutesForSingleMat": 24,
           "medianMinutesForSingleMat": 24,
         },
@@ -3212,8 +3248,8 @@ Object {
           "medianMinutesForSingleMat": 4.5,
         },
         "MC" => Object {
-          "MAD_aboveMinutes": 0.01,
-          "MAD_belowMinutes": 0.01,
+          "MAD_aboveMinutes": 0.25,
+          "MAD_belowMinutes": 0.25,
           "expectedCycleMinutesForSingleMat": 18,
           "medianMinutesForSingleMat": 18,
         },
@@ -3234,6 +3270,7 @@ Object {
     "part_cycles": Array [
       Object {
         "MAD_aboveMinutes": 2.2239,
+        "activeTotalMachineMinutesForSingleMat": 18,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -3267,7 +3304,8 @@ Object {
         "y": 6,
       },
       Object {
-        "MAD_aboveMinutes": 0.01,
+        "MAD_aboveMinutes": 0.25,
+        "activeTotalMachineMinutesForSingleMat": 18,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -3302,6 +3340,7 @@ Object {
       },
       Object {
         "MAD_aboveMinutes": 2.2239,
+        "activeTotalMachineMinutesForSingleMat": 18,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -3336,6 +3375,7 @@ Object {
       },
       Object {
         "MAD_aboveMinutes": 2.2239,
+        "activeTotalMachineMinutesForSingleMat": 24,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -3369,7 +3409,8 @@ Object {
         "y": 6,
       },
       Object {
-        "MAD_aboveMinutes": 0.01,
+        "MAD_aboveMinutes": 0.25,
+        "activeTotalMachineMinutesForSingleMat": 24,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -3404,6 +3445,7 @@ Object {
       },
       Object {
         "MAD_aboveMinutes": 2.2239,
+        "activeTotalMachineMinutesForSingleMat": 24,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -3438,6 +3480,7 @@ Object {
       },
       Object {
         "MAD_aboveMinutes": 2.2239,
+        "activeTotalMachineMinutesForSingleMat": 30,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -3471,7 +3514,8 @@ Object {
         "y": 6,
       },
       Object {
-        "MAD_aboveMinutes": 0.01,
+        "MAD_aboveMinutes": 0.25,
+        "activeTotalMachineMinutesForSingleMat": 30,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -3506,6 +3550,7 @@ Object {
       },
       Object {
         "MAD_aboveMinutes": 2.2239,
+        "activeTotalMachineMinutesForSingleMat": 30,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
