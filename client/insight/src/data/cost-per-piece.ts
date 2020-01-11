@@ -249,7 +249,7 @@ export function compute_monthly_cost(
           part: partName,
           parts_completed: LazySeq.ofIterable(forPart)
             .filter(c => c.completed)
-            .length(),
+            .sumOn(c => c.material.length),
           machine_cost: machine_cost(
             LazySeq.ofIterable(forPart).filter(c => !c.isLabor),
             totalStatUseMinutes,

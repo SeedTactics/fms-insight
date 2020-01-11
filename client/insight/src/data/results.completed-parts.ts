@@ -61,7 +61,6 @@ class DayAndPart {
 
 export interface PartsCompletedSummary {
   readonly count: number;
-  readonly activeMachineMins: number;
 }
 
 export function binCyclesByDayAndPart(cycles: Iterable<PartCycleData>): HashMap<DayAndPart, PartsCompletedSummary> {
@@ -70,15 +69,13 @@ export function binCyclesByDayAndPart(cycles: Iterable<PartCycleData>): HashMap<
       day: startOfDay(point.x),
       part: part_and_proc(point.part, point.process),
       value: {
-        count: point.completed ? 1 : 0,
-        activeMachineMins: point.completed ? point.activeTotalMachineMinutes : 0
+        count: point.completed ? point.material.length : 0
       }
     }))
     .toMap(
       p => [new DayAndPart(p.day, p.part), p.value] as [DayAndPart, PartsCompletedSummary],
       (v1, v2) => ({
-        count: v1.count + v2.count,
-        activeMachineMins: v1.activeMachineMins + v2.activeMachineMins
+        count: v1.count + v2.count
       })
     );
 }
@@ -92,13 +89,12 @@ export function binSimProductionByDayAndPart(
 ): HashMap<DayAndPart, PartsCompletedSummary> {
   return LazySeq.ofIterable(prod).toMap(
     p =>
-      [
-        new DayAndPart(startOfDay(p.completeTime), p.part),
-        { count: p.quantity, activeMachineMins: p.expectedMachineMins }
-      ] as [DayAndPart, PartsCompletedSummary],
+      [new DayAndPart(startOfDay(p.completeTime), p.part), { count: p.quantity }] as [
+        DayAndPart,
+        PartsCompletedSummary
+      ],
     (v1, v2) => ({
-      count: v1.count + v2.count,
-      activeMachineMins: v1.activeMachineMins + v2.activeMachineMins
+      count: v1.count + v2.count
     })
   );
 }

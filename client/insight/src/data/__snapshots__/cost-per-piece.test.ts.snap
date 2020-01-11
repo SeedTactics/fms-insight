@@ -3,28 +3,28 @@
 exports[`computes part costs: cost calcs 1`] = `
 Array [
   Object {
-    "automation_cost": 125.68581345873922,
-    "labor_cost": 1401615.5267078101,
+    "automation_cost": 125.40588959802933,
+    "labor_cost": 1398286.2736752501,
     "machine_cost": 8.23832397733757,
     "material_cost": 15,
     "part": "aaa",
-    "parts_completed": 838,
+    "parts_completed": 836,
   },
   Object {
-    "automation_cost": 143.46097861381705,
-    "labor_cost": 1604699.9616939775,
+    "automation_cost": 143.600940544172,
+    "labor_cost": 1606364.5882102575,
     "machine_cost": 10.534265220277643,
     "material_cost": 19,
     "part": "bbb",
-    "parts_completed": 961,
+    "parts_completed": 962,
   },
   Object {
-    "automation_cost": 147.93976038517522,
-    "labor_cost": 1628004.7329218984,
+    "automation_cost": 148.07972231553018,
+    "labor_cost": 1629669.3594381784,
     "machine_cost": 24.565572274392604,
     "material_cost": 0,
     "part": "ccc",
-    "parts_completed": 975,
+    "parts_completed": 976,
   },
   Object {
     "automation_cost": 184.18990034710558,

@@ -52,7 +52,6 @@ export interface PartCycleData extends CycleData {
   readonly pallet: string;
   readonly targetCycleMinutes: number; // active time in minutes for the entire cycle
   readonly medianCycleMinutes: number; // median time in minutes for the cycle time
-  readonly activeTotalMachineMinutes: number;
   readonly MAD_aboveMinutes: number;
   readonly outlier: boolean;
   readonly isLabor: boolean;
@@ -211,8 +210,9 @@ function estimateCycleTimes(cycles: Vector<number>): StatisticalCycleTime {
         .filter(x => x <= medianMinutes)
         .map(x => medianMinutes - x)
     );
-  if (madBelowMinutes < 0.01) {
-    madBelowMinutes = 0.01;
+  // clamp at 15 seconds
+  if (madBelowMinutes < 0.25) {
+    madBelowMinutes = 0.25;
   }
 
   let madAboveMinutes =
@@ -222,8 +222,9 @@ function estimateCycleTimes(cycles: Vector<number>): StatisticalCycleTime {
         .filter(x => x >= medianMinutes)
         .map(x => x - medianMinutes)
     );
-  if (madAboveMinutes < 0.01) {
-    madAboveMinutes = 0.01;
+  // clamp at 15 seconds
+  if (madAboveMinutes < 0.25) {
+    madAboveMinutes = 0.25;
   }
 
   const statCycleTime = {
@@ -306,22 +307,6 @@ function activeMinutes(cycle: Readonly<api.ILogEntry>, stats: Option<Statistical
     return stats.map(s => s.expectedCycleMinutesForSingleMat).getOrElse(0) * cycle.material.length;
   } else {
     return cMins;
-  }
-}
-
-function activeTotalMachineMinutesForSingleMat(
-  partAndProc: string,
-  machineGroups: HashSet<string>,
-  estimated: HashMap<string, HashMap<string, StatisticalCycleTime>>
-): number {
-  const mbyStat = estimated.get(partAndProc);
-  if (mbyStat.isSome()) {
-    const byStat = mbyStat.get();
-    return LazySeq.ofIterable(machineGroups)
-      .mapOption(m => byStat.get(m))
-      .sumOn(t => t.expectedCycleMinutesForSingleMat);
-  } else {
-    return 0;
   }
 }
 
@@ -461,10 +446,6 @@ export function process_events(
         MAD_aboveMinutes: stats.map(s => s.MAD_aboveMinutes).getOrElse(0),
         outlier: cycleIsOutlier(part_and_proc(part, proc), cycle, estimatedCycleTimes),
         completed: cycle.type === api.LogType.LoadUnloadCycle && cycle.result === "UNLOAD",
-        activeTotalMachineMinutes:
-          activeTotalMachineMinutesForSingleMat(part_and_proc(part, proc), machineGroups, estimatedCycleTimes) *
-          cycle.material.length,
-        partsPerPallet: cycle.material.length,
         part: part,
         process: proc,
         pallet: cycle.pal,
