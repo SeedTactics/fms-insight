@@ -155,7 +155,6 @@ export interface MaterialSummaryProps {
   readonly focusInspectionType?: string;
   readonly hideInspectionIcon?: boolean;
   readonly draggableProvided?: DraggableProvided;
-  readonly showDragHandle?: boolean;
   readonly hideAvatar?: boolean;
   readonly isDragging?: boolean;
   onOpen: (m: Readonly<MaterialSummary>) => void;
@@ -202,7 +201,7 @@ const MatSummaryWithStyles = withStyles(matStyles)((props: MaterialSummaryProps 
         ...props.draggableProvided?.draggableProps.style
       }}
     >
-      {dragHandleProps && props.showDragHandle ? (
+      {dragHandleProps ? (
         <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }} {...dragHandleProps}>
           <DragIndicator fontSize="large" color={props.isDragging ? "primary" : "action"} />
         </div>
@@ -273,7 +272,6 @@ export interface InProcMaterialProps {
   readonly draggableProvided?: DraggableProvided;
   readonly hideAvatar?: boolean;
   readonly isDragging?: boolean;
-  readonly showDragHandle?: boolean;
   onOpen: (m: Readonly<MaterialSummary>) => void;
 }
 
@@ -287,7 +285,6 @@ export class InProcMaterial extends React.PureComponent<InProcMaterialProps> {
         draggableProvided={this.props.draggableProvided}
         hideAvatar={this.props.hideAvatar}
         isDragging={this.props.isDragging}
-        showDragHandle={this.props.showDragHandle}
       />
     );
   }
