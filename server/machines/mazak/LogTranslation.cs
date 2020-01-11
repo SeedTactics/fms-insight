@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -105,7 +105,7 @@ namespace MazakMachineInterface
         case LogCode.LoadEnd:
 
           _log.AddPendingLoad(e.Pallet.ToString(), PendingLoadKey(e), e.StationNumber,
-                              CalculateElapsed(e, cycle, LogType.LoadUnloadCycle, e.StationNumber),
+                              LoadUnloadElapsedTime(e, cycle, e.StationNumber),
                               CalculateActiveLoadTime(e),
                               e.ForeignID);
           break;
@@ -131,7 +131,7 @@ namespace MazakMachineInterface
 
         case LogCode.MachineCycleEnd:
 
-          var elapsed = CalculateElapsed(e, cycle, LogType.MachineCycle, e.StationNumber);
+          var elapsed = MachineElapsedTime(e, cycle, e.StationNumber);
 
           if (elapsed > TimeSpan.FromSeconds(30))
           {
@@ -174,7 +174,7 @@ namespace MazakMachineInterface
         case LogCode.UnloadEnd:
 
           //TODO: test for rework
-          var loadElapsed = CalculateElapsed(e, cycle, LogType.LoadUnloadCycle, e.StationNumber);
+          var loadElapsed = LoadUnloadElapsedTime(e, cycle, e.StationNumber);
 
           var mats = GetMaterialOnPallet(e, cycle);
           var queues = FindUnloadQueues(mats);
@@ -214,7 +214,10 @@ namespace MazakMachineInterface
       _mazakSchedules.FindSchedule(e.FullPartName, e.Process, out string unique, out int path, out int numProc);
 
       var ret = new List<JobLogDB.EventLogMaterial>();
-      ret.Add(new JobLogDB.EventLogMaterial() { MaterialID = -1, Process = e.Process, Face = "" });
+      for (int i = 1; i <= e.FixedQuantity; i++)
+      {
+        ret.Add(new JobLogDB.EventLogMaterial() { MaterialID = -i, Process = e.Process, Face = "" });
+      }
       return ret;
     }
 
@@ -545,37 +548,51 @@ namespace MazakMachineInterface
     #endregion
 
     #region Elapsed
-    private static TimeSpan CalculateElapsed(LogEntry e, IList<MWI.LogEntry> oldEvents, LogType ty, int statNum)
+    private static TimeSpan MachineElapsedTime(LogEntry e, IList<MWI.LogEntry> oldEvents, int statNum)
     {
       for (int i = oldEvents.Count - 1; i >= 0; i -= 1)
       {
-        if (oldEvents[i].LogType == ty && oldEvents[i].LocationNum == statNum)
+        if (oldEvents[i].LogType == LogType.MachineCycle && oldEvents[i].LocationNum == statNum && oldEvents[i].StartOfCycle)
         {
-          var ev = oldEvents[i];
-
-          switch (e.Code)
-          {
-            case LogCode.LoadEnd:
-              if (ev.StartOfCycle == true && ev.Result == "LOAD")
-                return e.TimeUTC.Subtract(ev.EndTimeUTC);
-              break;
-
-            case LogCode.MachineCycleEnd:
-              if (ev.StartOfCycle)
-                return e.TimeUTC.Subtract(ev.EndTimeUTC);
-              break;
-
-            case LogCode.UnloadEnd:
-              if (ev.StartOfCycle == true && ev.Result == "UNLOAD")
-                return e.TimeUTC.Subtract(ev.EndTimeUTC);
-              break;
-
-          }
+          return e.TimeUTC.Subtract(oldEvents[i].EndTimeUTC);
         }
       }
 
       Log.Debug("Calculating elapsed time for {@entry} did not find a previous cycle event", e);
 
+      return TimeSpan.Zero;
+    }
+
+    private static TimeSpan LoadUnloadElapsedTime(LogEntry entry, IList<MWI.LogEntry> oldEvents, int statNum)
+    {
+      // first, compute total number of parts being loaded or unloaded
+      int numMaterial = 0;
+      foreach (var e in oldEvents)
+      {
+        if (e.LogType == LogType.LoadUnloadCycle && e.StartOfCycle && e.LocationNum == statNum)
+        {
+          numMaterial += e.Material.Count();
+        }
+      }
+      numMaterial = Math.Max(numMaterial, 1);
+
+      //now total elapsed time
+      for (int i = oldEvents.Count - 1; i >= 0; i -= 1)
+      {
+        var oldEvt = oldEvents[i];
+        if (oldEvt.LogType != LogType.LoadUnloadCycle) continue;
+        if (oldEvt.LocationNum != statNum) continue;
+        if (!oldEvt.StartOfCycle) continue;
+        if (entry.Code == LogCode.LoadEnd && oldEvt.Result != "LOAD") continue;
+        if (entry.Code == LogCode.UnloadEnd && oldEvt.Result != "UNLOAD") continue;
+
+
+        var totalTime = entry.TimeUTC.Subtract(oldEvt.EndTimeUTC);
+        // scale totalTime based on number of material relative to total number of material
+        return TimeSpan.FromTicks(totalTime.Ticks * entry.FixedQuantity / numMaterial);
+      }
+
+      Log.Debug("Calculating elapsed time for {@entry} did not find a previous cycle event", entry);
       return TimeSpan.Zero;
     }
 
