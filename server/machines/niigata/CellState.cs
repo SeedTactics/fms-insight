@@ -626,7 +626,7 @@ namespace BlackMaple.FMSInsight.Niigata
             lulNum: loadBegin.LocationNum,
             timeUTC: nowUtc,
             elapsed: nowUtc.Subtract(loadBegin.EndTimeUTC),
-            active: job.GetExpectedUnloadTime(proc, path),
+            active: job.GetExpectedUnloadTime(proc, path) * face.Count(),
             unloadIntoQueues: queues
           );
         }
@@ -647,7 +647,7 @@ namespace BlackMaple.FMSInsight.Niigata
             lulNum: loadBegin.LocationNum,
             timeUTC: nowUtc.AddSeconds(1),
             elapsed: nowUtc.Subtract(loadBegin.EndTimeUTC),
-            active: face.Value.Job.GetExpectedLoadTime(face.Value.Process, face.Value.Path)
+            active: face.Value.Job.GetExpectedLoadTime(face.Value.Process, face.Value.Path) * matToLoad.Count
           );
 
           foreach (var mat in matToLoad)
