@@ -122,7 +122,7 @@ const columns: ReadonlyArray<Column<ColumnId, PartCycleData>> = [
     id: ColumnId.ActiveMin,
     numeric: true,
     label: "Target Min",
-    getDisplay: c => c.targetCycleMinutes.toFixed(1)
+    getDisplay: c => c.activeMinutes.toFixed(1)
   },
   {
     id: ColumnId.MedianElapsed,

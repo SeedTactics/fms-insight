@@ -51,10 +51,11 @@ const DocumentTitle = require("react-document-title"); // https://github.com/gae
 import StationDataTable from "../analysis/StationDataTable";
 import { connect, Store, DispatchAction, mkAC } from "../../store/store";
 import { PartIdenticon } from "../station-monitor/Material";
-import { PartCycleData } from "../../data/events.cycles";
+import { PartCycleData, EstimatedCycleTimes } from "../../data/events.cycles";
 import {
   filterStationCycles,
-  outlierCycles,
+  outlierMachineCycles,
+  outlierLoadCycles,
   FilteredStationCycles,
   FilterAnyMachineKey,
   FilterAnyLoadKey,
@@ -118,19 +119,28 @@ function OutlierCycles(props: OutlierCycleProps) {
   );
 }
 
-const outlierPointsSelector = createSelector(
+const outlierLaborPointsSelector = createSelector(
   (st: Store, _: boolean, _t: Date) => st.Events.last30.cycles.part_cycles,
-  (_: Store, showLabor: boolean, _t: Date) => showLabor,
+  (st: Store, _: boolean, _t: Date) => st.Events.last30.cycles.estimatedCycleTimes,
   (_: Store, _l: boolean, today: Date) => today,
-  (cycles: Vector<PartCycleData>, showLabor: boolean, today: Date) => {
-    return outlierCycles(cycles, showLabor, addDays(today, -2), addDays(today, 1));
+  (cycles: Vector<PartCycleData>, estimated: EstimatedCycleTimes, today: Date) => {
+    return outlierLoadCycles(cycles, addDays(today, -2), addDays(today, 1), estimated);
+  }
+);
+
+const outlierMachinePointsSelector = createSelector(
+  (st: Store, _: boolean, _t: Date) => st.Events.last30.cycles.part_cycles,
+  (st: Store, _: boolean, _t: Date) => st.Events.last30.cycles.estimatedCycleTimes,
+  (_: Store, _l: boolean, today: Date) => today,
+  (cycles: Vector<PartCycleData>, estimated: EstimatedCycleTimes, today: Date) => {
+    return outlierMachineCycles(cycles, addDays(today, -2), addDays(today, 1), estimated);
   }
 );
 
 const ConnectedOutlierLabor = connect(
   st => ({
     showLabor: true,
-    points: outlierPointsSelector(st, true, startOfToday()),
+    points: outlierLaborPointsSelector(st, true, startOfToday()),
     default_date_range: [addDays(startOfToday(), -2), addDays(startOfToday(), 1)]
   }),
   {
@@ -141,7 +151,7 @@ const ConnectedOutlierLabor = connect(
 const ConnectedOutlierMachines = connect(
   st => ({
     showLabor: false,
-    points: outlierPointsSelector(st, false, startOfToday()),
+    points: outlierMachinePointsSelector(st, false, startOfToday()),
     default_date_range: [addDays(startOfToday(), -2), addDays(startOfToday(), 1)]
   }),
   {

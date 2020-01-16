@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -34,6 +34,7 @@ import * as api from "./api";
 import { duration } from "moment";
 import { HashMap, HashSet, Vector, Option } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
+import { differenceInSeconds } from "date-fns";
 
 export interface CycleData {
   readonly x: Date;
@@ -50,11 +51,10 @@ export interface PartCycleData extends CycleData {
   readonly stationGroup: string;
   readonly stationNumber: number;
   readonly pallet: string;
-  readonly targetCycleMinutes: number; // active time in minutes
+  readonly activeMinutes: number; // active time in minutes
   readonly medianCycleMinutes: number;
   readonly activeTotalMachineMinutesForSingleMat: number; // active time for all machines in entire route
   readonly MAD_aboveMinutes: number;
-  readonly outlier: boolean;
   readonly isLabor: boolean;
   readonly material: ReadonlyArray<Readonly<api.ILogMaterial>>;
   readonly completed: boolean; // did this cycle result in a completed part
@@ -70,6 +70,8 @@ export interface StatisticalCycleTime {
   readonly expectedCycleMinutesForSingleMat: number;
 }
 
+export type EstimatedCycleTimes = HashMap<string, HashMap<string, StatisticalCycleTime>>;
+
 export interface CycleState {
   readonly part_cycles: Vector<PartCycleData>;
   readonly by_pallet: HashMap<string, ReadonlyArray<PalletCycleData>>;
@@ -79,7 +81,7 @@ export interface CycleState {
   readonly station_groups: HashSet<string>;
   readonly station_names: HashSet<string>;
   readonly pallet_names: HashSet<string>;
-  readonly estimatedCycleTimes: HashMap<string, HashMap<string, StatisticalCycleTime>>;
+  readonly estimatedCycleTimes: EstimatedCycleTimes;
 }
 
 export const initial: CycleState = {
@@ -161,6 +163,20 @@ export function format_cycle_inspection(c: PartCycleData): string {
   return ret.join(", ");
 }
 
+export function statistical_times_for_cycle(
+  part: string,
+  process: number,
+  statGroup: string,
+  estimated: EstimatedCycleTimes
+): Option<StatisticalCycleTime> {
+  const byStat = estimated.get(part_and_proc(part, process));
+  if (byStat.isSome()) {
+    return byStat.get().get(statGroup);
+  } else {
+    return Option.none();
+  }
+}
+
 // Assume: samples come from two distributions:
 //  - the program runs without interruption, giving a guassian iid around the cycle time.
 //  - the program is interrupted or stopped, which adds a random amount to the program
@@ -169,7 +185,7 @@ export function format_cycle_inspection(c: PartCycleData): string {
 // We use median absolute deviation to detect outliers, remove the outliers,
 // then compute average to find cycle time.
 
-function isOutlier(s: StatisticalCycleTime, mins: number): boolean {
+export function isOutlier(s: StatisticalCycleTime, mins: number): boolean {
   if (s.medianMinutesForSingleMat === 0) {
     return false;
   }
@@ -243,12 +259,78 @@ function estimateCycleTimes(cycles: Vector<number>): StatisticalCycleTime {
   return { ...statCycleTime, expectedCycleMinutesForSingleMat };
 }
 
-function estimateCycleTimesOfParts(
-  cycles: Iterable<api.ILogEntry>
-): HashMap<string, HashMap<string, StatisticalCycleTime>> {
-  const ret = LazySeq.ofIterable(cycles)
-    .filter(c => (c.type === api.LogType.MachineCycle || c.type === api.LogType.LoadUnloadCycle) && !c.startofcycle)
-    .groupBy(e => (e.material.length > 0 ? part_and_proc(e.material[0].part, e.material[0].proc) : ""))
+function chunkCyclesWithSimilarEndTime<T>(cycles: Vector<T>, getTime: (c: T) => Date): Vector<ReadonlyArray<T>> {
+  const sorted = cycles.sortOn(c => getTime(c).getTime());
+  return Vector.ofIterable(
+    LazySeq.ofIterator(function*() {
+      let chunk: Array<T> = [];
+      for (const c of sorted) {
+        if (chunk.length === 0) {
+          chunk = [c];
+        } else if (differenceInSeconds(getTime(c), getTime(chunk[chunk.length - 1])) < 10) {
+          chunk.push(c);
+        } else {
+          yield chunk;
+          chunk = [c];
+        }
+      }
+      if (chunk.length > 0) {
+        yield chunk;
+      }
+    })
+  );
+}
+
+interface LogEntryWithSplitElapsed<T> {
+  readonly cycle: T;
+  readonly elapsedForSingleMaterialMinutes: number;
+}
+
+function splitElapsedTimeAmongChunk<T extends { material: ReadonlyArray<unknown> }>(
+  chunk: ReadonlyArray<T>,
+  getElapsedMins: (c: T) => number,
+  getActiveMins: (c: T) => number
+): ReadonlyArray<LogEntryWithSplitElapsed<T>> {
+  let totalActiveMins = 0;
+  let totalMatCount = 0;
+  let allEventsHaveActive = true;
+  for (const cycle of chunk) {
+    if (getActiveMins(cycle) < 0) {
+      allEventsHaveActive = false;
+    }
+    totalMatCount += cycle.material.length;
+    totalActiveMins += getActiveMins(cycle);
+  }
+
+  if (allEventsHaveActive && totalActiveMins > 0) {
+    //split by active.  First multiply by (active/totalActive) ratio to get fraction of elapsed
+    //for this cycle, then by material count to get per-material
+    return chunk.map(cycle => ({
+      cycle,
+      elapsedForSingleMaterialMinutes:
+        (getElapsedMins(cycle) * getActiveMins(cycle)) / totalActiveMins / cycle.material.length
+    }));
+  }
+
+  // split equally among all material
+  if (totalMatCount > 0) {
+    return chunk.map(cycle => ({
+      cycle,
+      elapsedForSingleMaterialMinutes: getElapsedMins(cycle) / totalMatCount
+    }));
+  }
+
+  // only when no events have material, which should never happen
+  return chunk.map(cycle => ({
+    cycle,
+    elapsedForSingleMaterialMinutes: getElapsedMins(cycle)
+  }));
+}
+
+function estimateCycleTimesOfParts(cycles: Iterable<Readonly<api.ILogEntry>>): EstimatedCycleTimes {
+  const machines = LazySeq.ofIterable(cycles)
+    .filter(c => c.type === api.LogType.MachineCycle && !c.startofcycle && c.material.length > 0)
+    .groupBy(e => part_and_proc(e.material[0].part, e.material[0].proc))
     .mapValues(cyclesForPart =>
       LazySeq.ofIterable(cyclesForPart)
         .groupBy(stat_group)
@@ -258,45 +340,51 @@ function estimateCycleTimesOfParts(
           )
         )
     );
-  return ret;
+
+  const loadEventsByLUL = LazySeq.ofIterable(cycles)
+    .filter(c => c.type === api.LogType.LoadUnloadCycle && !c.startofcycle && c.material.length > 0)
+    .groupBy(c => c.locnum)
+    .mapValues(cs => chunkCyclesWithSimilarEndTime(cs, c => c.endUTC));
+
+  const loads = LazySeq.ofIterable(loadEventsByLUL.valueIterable())
+    .flatMap(cycles => cycles) // ignore LUL, just need chunks
+    .map(cs =>
+      splitElapsedTimeAmongChunk(
+        cs,
+        c => duration(c.elapsed).asMinutes(),
+        c => (c.active === "" ? -1 : duration(c.active).asMinutes())
+      )
+    ) // divide elapsed time for each chunk
+    .flatMap(chunk => chunk) // no need for chunks anymore
+    .groupBy(c => part_and_proc(c.cycle.material[0].part, c.cycle.material[0].proc))
+    .mapValues(cyclesForPart =>
+      LazySeq.ofIterable(cyclesForPart)
+        .groupBy(c => stat_group(c.cycle))
+        .mapValues(cyclesForPartAndStat =>
+          estimateCycleTimes(cyclesForPartAndStat.map(c => c.elapsedForSingleMaterialMinutes))
+        )
+    );
+
+  return machines.mergeWith(loads, (byStat1, byStat2) => byStat1.mergeWith(byStat2, (s1, _s2) => s1));
 }
 
-function statisticalCycleTime(
-  partAndProc: string,
-  cycle: Readonly<api.ILogEntry>,
-  estimated: HashMap<string, HashMap<string, StatisticalCycleTime>>
-): Option<StatisticalCycleTime> {
-  const byStat = estimated.get(partAndProc);
-  if (byStat.isSome()) {
-    return byStat.get().get(stat_group(cycle));
-  } else {
-    return Option.none();
-  }
-}
+export function splitElapsedLoadTimeAmongCycles(
+  cycles: Iterable<PartCycleData>
+): LazySeq<LogEntryWithSplitElapsed<PartCycleData>> {
+  const loadEventsByLUL = LazySeq.ofIterable(cycles)
+    .groupBy(c => c.stationNumber)
+    .mapValues(cs => chunkCyclesWithSimilarEndTime(cs, c => c.x));
 
-function cycleIsOutlier(
-  partAndProc: string,
-  cycle: Readonly<api.ILogEntry>,
-  estimated: HashMap<string, HashMap<string, StatisticalCycleTime>>
-): boolean {
-  const elapsed = duration(cycle.elapsed).asMinutes();
-  const active = duration(cycle.active).asMinutes();
-
-  const byStat = estimated.get(partAndProc);
-  if (byStat.isSome()) {
-    const e = byStat.get().get(stat_group(cycle));
-    if (e.isSome()) {
-      if (isOutlier(e.get(), elapsed / cycle.material.length)) {
-        return true;
-      }
-      if (cycle.active !== "" && active >= 0) {
-        if (isOutlier(e.get(), active / cycle.material.length)) {
-          return true;
-        }
-      }
-    }
-  }
-  return false;
+  return LazySeq.ofIterable(loadEventsByLUL.valueIterable())
+    .flatMap(cycles => cycles)
+    .map(cs =>
+      splitElapsedTimeAmongChunk(
+        cs,
+        c => c.y,
+        c => c.activeMinutes
+      )
+    )
+    .flatMap(chunk => chunk);
 }
 
 function activeMinutes(cycle: Readonly<api.ILogEntry>, stats: Option<StatisticalCycleTime>) {
@@ -310,10 +398,11 @@ function activeMinutes(cycle: Readonly<api.ILogEntry>, stats: Option<Statistical
     return cMins;
   }
 }
+
 function activeTotalMachineMinutesForSingleMat(
   partAndProc: string,
   machineGroups: HashSet<string>,
-  estimated: HashMap<string, HashMap<string, StatisticalCycleTime>>
+  estimated: EstimatedCycleTimes
 ): number {
   const mbyStat = estimated.get(partAndProc);
   if (mbyStat.isSome()) {
@@ -382,7 +471,7 @@ export function process_events(
   let allPartCycles = st.part_cycles;
   let pals = st.by_pallet;
 
-  let estimatedCycleTimes: HashMap<string, HashMap<string, StatisticalCycleTime>>;
+  let estimatedCycleTimes: EstimatedCycleTimes;
   if (initialLoad) {
     estimatedCycleTimes = estimateCycleTimesOfParts(newEvts);
   } else {
@@ -453,11 +542,12 @@ export function process_events(
     .map(cycle => {
       const part = cycle.material.length > 0 ? cycle.material[0].part : "";
       const proc = cycle.material.length > 0 ? cycle.material[0].proc : 1;
-      const stats = statisticalCycleTime(part_and_proc(part, proc), cycle, estimatedCycleTimes);
+      const statGroup = stat_group(cycle);
+      const stats = statistical_times_for_cycle(part, proc, statGroup, estimatedCycleTimes);
       return {
         x: cycle.endUTC,
         y: duration(cycle.elapsed).asMinutes(),
-        targetCycleMinutes: activeMinutes(cycle, stats),
+        activeMinutes: activeMinutes(cycle, stats),
         medianCycleMinutes: stats.map(s => s.medianMinutesForSingleMat).getOrElse(0) * cycle.material.length,
         MAD_aboveMinutes: stats.map(s => s.MAD_aboveMinutes).getOrElse(0),
         activeTotalMachineMinutesForSingleMat: activeTotalMachineMinutesForSingleMat(
@@ -465,14 +555,13 @@ export function process_events(
           machineGroups,
           estimatedCycleTimes
         ),
-        outlier: cycleIsOutlier(part_and_proc(part, proc), cycle, estimatedCycleTimes),
         completed: cycle.type === api.LogType.LoadUnloadCycle && cycle.result === "UNLOAD",
         part: part,
         process: proc,
         pallet: cycle.pal,
         material: cycle.material,
         isLabor: cycle.type === api.LogType.LoadUnloadCycle,
-        stationGroup: stat_group(cycle),
+        stationGroup: statGroup,
         stationNumber: cycle.locnum,
         signaledInspections: HashSet.empty<string>(),
         completedInspections: HashMap.empty<string, boolean>(),
