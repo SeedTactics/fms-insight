@@ -216,6 +216,13 @@ it("sortBy", () => {
   );
 });
 
+it("sortOn", () => {
+  seqShouldBe(
+    LazySeq.ofIterable([{ a: 5 }, { a: 4 }, { a: 10 }, { a: 7 }]).sortOn(x => x.a),
+    [{ a: 4 }, { a: 5 }, { a: 7 }, { a: 10 }]
+  );
+});
+
 it("sumOn", () => {
   expect(oddSeq.sumOn(x => x + 1)).toBe(2 + 4 + 6 + 8 + 10);
 });
