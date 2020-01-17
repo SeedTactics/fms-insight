@@ -324,6 +324,29 @@ export class LazySeq<T> {
     return LazySeq.ofIterable(arr);
   }
 
+  sortOn(...getKeys: Array<ToOrderable<T> | { desc: ToOrderable<T> }>): LazySeq<T> {
+    return this.sortBy((x, y) => {
+      for (const getKey of getKeys) {
+        if ((<any>getKey).desc) {
+          const a = (<ToOrderable<T>>(<any>getKey).desc)(x);
+          const b = (<ToOrderable<T>>(<any>getKey).desc)(y);
+          if (a === b) {
+            continue;
+          }
+          return a < b ? Ordering.GT : Ordering.LT;
+        } else {
+          const a = (<ToOrderable<T>>getKey)(x);
+          const b = (<ToOrderable<T>>getKey)(y);
+          if (a === b) {
+            continue;
+          }
+          return a > b ? Ordering.GT : Ordering.LT;
+        }
+      }
+      return Ordering.EQ;
+    });
+  }
+
   sumOn(getNumber: (v: T) => number): number {
     let sum = 0;
     for (const x of this.iter) {

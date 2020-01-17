@@ -78,6 +78,12 @@ const users = [
     pinned: true
   },
   {
+    caption: "Hoerbiger",
+    image: "/img/users/hoerbiger.svg",
+    infoLink: "https://www.hoerbiger.com/",
+    pinned: true
+  },
+  {
     caption: "John Deere",
     image: "/img/users/deere.png",
     infoLink: "https://www.deere.com",

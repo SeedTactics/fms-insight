@@ -185,7 +185,10 @@ function machine_cost(
   days: number
 ): number {
   return cycles
-    .toMap(c => [c.stationGroup, c.activeMinsForSingleMat], (a1, a2) => a1 + a2)
+    .toMap(
+      c => [c.stationGroup, c.activeMinutes],
+      (a1, a2) => a1 + a2
+    )
     .foldLeft(0, (x: number, [statGroup, minutes]: [string, number]) => {
       const totalUse = totalStatUseMinutes.get(statGroup).getOrElse(1);
       const totalMachineCost = ((machineCostPerYear[statGroup] || 0) * days) / 365;
@@ -199,7 +202,10 @@ function labor_cost(
   totalLaborCost: number
 ): number {
   const pctUse = cycles
-    .toMap(c => [c.stationGroup, c.activeMinsForSingleMat], (a1, a2) => a1 + a2)
+    .toMap(
+      c => [c.stationGroup, c.activeMinutes],
+      (a1, a2) => a1 + a2
+    )
     .foldLeft(0, (x: number, [statGroup, minutes]: [string, number]) => {
       const total = totalStatUseMinutes.get(statGroup).getOrElse(1);
       return x + minutes / total;
@@ -215,7 +221,7 @@ function auto_cost(
   if (!autoCostPerYear) {
     return 0;
   }
-  const pctUse = cycles.sumOn(v => (v.completed ? 1 / v.partsPerPallet : 0)) / totalPalletCycles;
+  const pctUse = cycles.sumOn(v => (v.completed ? 1 : 0)) / totalPalletCycles;
   return (pctUse * autoCostPerYear) / 12;
 }
 
@@ -228,11 +234,11 @@ export function compute_monthly_cost(
   const totalLaborCost = days * 24 * i.operatorCostPerHour * i.numOperators;
 
   const totalStatUseMinutes: HashMap<string, number> = LazySeq.ofIterable(cycles).toMap(
-    c => [c.stationGroup, c.activeMinsForSingleMat],
+    c => [c.stationGroup, c.activeMinutes],
     (a1, a2) => a1 + a2
   );
 
-  const totalPalletCycles = LazySeq.ofIterable(cycles).sumOn(v => (v.completed ? 1 / v.partsPerPallet : 0));
+  const totalPalletCycles = LazySeq.ofIterable(cycles).sumOn(v => (v.completed ? 1 : 0));
 
   return Array.from(
     LazySeq.ofIterable(cycles)
@@ -243,7 +249,7 @@ export function compute_monthly_cost(
           part: partName,
           parts_completed: LazySeq.ofIterable(forPart)
             .filter(c => c.completed)
-            .length(),
+            .sumOn(c => c.material.length),
           machine_cost: machine_cost(
             LazySeq.ofIterable(forPart).filter(c => !c.isLabor),
             totalStatUseMinutes,

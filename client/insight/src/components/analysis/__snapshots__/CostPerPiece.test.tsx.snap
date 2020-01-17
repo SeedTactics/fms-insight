@@ -92,7 +92,7 @@ exports[`renders the cost/piece page: calculated costs 1`] = `
       <td
         class="MuiTableCell-root MuiTableCell-body"
       >
-        0.1
+        0.2
       </td>
       <td
         class="MuiTableCell-root MuiTableCell-body"

@@ -45,6 +45,8 @@ import {
   DataTableActionZoomType
 } from "./DataTable";
 import { addDays, addHours } from "date-fns";
+import * as api from "../../data/api";
+import { Menu, MenuItem } from "@material-ui/core";
 
 enum ColumnId {
   Date,
@@ -85,13 +87,21 @@ const columns: ReadonlyArray<Column<ColumnId, PartCycleData>> = [
     id: ColumnId.Serial,
     numeric: false,
     label: "Serial",
-    getDisplay: c => c.serial || ""
+    getDisplay: c =>
+      c.material
+        .filter(m => m.serial)
+        .map(m => m.serial)
+        .join(", ")
   },
   {
     id: ColumnId.Workorder,
     numeric: false,
     label: "Workorder",
-    getDisplay: c => c.workorder || ""
+    getDisplay: c =>
+      c.material
+        .filter(m => m.workorder)
+        .map(m => m.workorder)
+        .join(", ")
   },
   {
     id: ColumnId.Inspection,
@@ -112,7 +122,7 @@ const columns: ReadonlyArray<Column<ColumnId, PartCycleData>> = [
     id: ColumnId.ActiveMin,
     numeric: true,
     label: "Target Min",
-    getDisplay: c => c.targetCycleMinutes.toFixed(1)
+    getDisplay: c => c.activeMinutes.toFixed(1)
   },
   {
     id: ColumnId.MedianElapsed,
@@ -180,11 +190,17 @@ function extractData(
   });
 }
 
+interface DetailMenuData {
+  readonly anchorEl: Element;
+  readonly material: ReadonlyArray<Readonly<api.ILogMaterial>>;
+}
+
 export default React.memo(function StationDataTable(props: StationDataTableProps) {
   const [orderBy, setOrderBy] = React.useState(ColumnId.Date);
   const [order, setOrder] = React.useState<"asc" | "desc">("asc");
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
+  const [detailMenu, setDetailMenu] = React.useState<DetailMenuData | null>(null);
 
   function handleRequestSort(property: ColumnId) {
     if (orderBy === property) {
@@ -249,7 +265,14 @@ export default React.memo(function StationDataTable(props: StationDataTableProps
         <DataTableBody
           columns={filteredColumns}
           pageData={pageData}
-          onClickDetails={row => props.openDetails(row.matId)}
+          onClickDetails={(e, row) => {
+            if (row.material.length === 0) return;
+            if (row.material.length === 1) {
+              props.openDetails(row.material[0].id);
+            } else {
+              setDetailMenu({ anchorEl: e.currentTarget, material: row.material });
+            }
+          }}
         />
       </Table>
       <DataTableActions
@@ -260,6 +283,21 @@ export default React.memo(function StationDataTable(props: StationDataTableProps
         setRowsPerPage={setRowsPerPage}
         zoom={zoom}
       />
+      <Menu anchorEl={detailMenu?.anchorEl} keepMounted open={detailMenu !== null} onClose={() => setDetailMenu(null)}>
+        {detailMenu != null
+          ? detailMenu.material.map((mat, idx) => (
+              <MenuItem
+                key={idx}
+                onClick={() => {
+                  props.openDetails(mat.id);
+                  setDetailMenu(null);
+                }}
+              >
+                {mat.serial || "Material"}
+              </MenuItem>
+            ))
+          : undefined}
+      </Menu>
     </div>
   );
 });

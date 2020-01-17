@@ -41,7 +41,8 @@ import {
   filterStationCycles,
   buildCycleTable,
   buildLogEntriesTable,
-  outlierCycles
+  outlierLoadCycles,
+  outlierMachineCycles
 } from "./results.cycles";
 
 it("creates cycles clipboard table", () => {
@@ -87,9 +88,21 @@ it("loads outlier cycles", () => {
     }
   });
 
-  const outliers = outlierCycles(st.last30.cycles.part_cycles, true, new Date(2018, 0, 1), new Date(2018, 11, 1));
+  const loadOutliers = outlierLoadCycles(
+    st.last30.cycles.part_cycles,
+    new Date(2018, 0, 1),
+    new Date(2018, 11, 1),
+    st.last30.cycles.estimatedCycleTimes
+  );
+  expect(loadOutliers.data.length()).toBe(0);
 
-  expect(outliers.data.length()).toBe(0);
+  const machineOutliers = outlierMachineCycles(
+    st.last30.cycles.part_cycles,
+    new Date(2018, 0, 1),
+    new Date(2018, 11, 1),
+    st.last30.cycles.estimatedCycleTimes
+  );
+  expect(machineOutliers.data.length()).toBe(0);
 });
 
 it("computes station oee", () => {
@@ -110,7 +123,6 @@ it("computes station oee", () => {
   });
 
   const statMins = stationMinutes(st.last30.cycles.part_cycles, addDays(now, -7));
-
   expect(statMins).toMatchSnapshot("station minutes for last week");
 });
 

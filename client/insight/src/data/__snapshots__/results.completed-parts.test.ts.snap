@@ -84,25 +84,13 @@ exports[`build completed series: clipboard table 1`] = `
           aaa-1
         </td>
         <td>
-          13
+          22
         </td>
         <td>
           0
         </td>
         <td>
-          13
-        </td>
-        <td>
-          0
-        </td>
-        <td>
-          12
-        </td>
-        <td>
-          0
-        </td>
-        <td>
-          15
+          24
         </td>
         <td>
           0
@@ -114,7 +102,19 @@ exports[`build completed series: clipboard table 1`] = `
           0
         </td>
         <td>
-          15
+          28
+        </td>
+        <td>
+          0
+        </td>
+        <td>
+          38
+        </td>
+        <td>
+          0
+        </td>
+        <td>
+          28
         </td>
         <td>
           0
@@ -127,37 +127,37 @@ exports[`build completed series: clipboard table 1`] = `
           aaa-2
         </td>
         <td>
-          13
+          2
         </td>
         <td>
           0
         </td>
         <td>
-          13
+          4
         </td>
         <td>
           0
         </td>
         <td>
-          12
+          2
         </td>
         <td>
           0
         </td>
         <td>
-          15
+          4
         </td>
         <td>
           0
         </td>
         <td>
-          20
+          4
         </td>
         <td>
           0
         </td>
         <td>
-          15
+          2
         </td>
         <td>
           0
@@ -170,31 +170,31 @@ exports[`build completed series: clipboard table 1`] = `
           bbb-1
         </td>
         <td>
-          18
+          34
         </td>
         <td>
           0
         </td>
         <td>
-          19
+          34
         </td>
         <td>
           0
         </td>
         <td>
-          24
+          46
         </td>
         <td>
           0
         </td>
         <td>
-          21
+          36
         </td>
         <td>
           0
         </td>
         <td>
-          18
+          32
         </td>
         <td>
           0
@@ -213,31 +213,31 @@ exports[`build completed series: clipboard table 1`] = `
           bbb-2
         </td>
         <td>
-          18
+          4
         </td>
         <td>
           0
         </td>
         <td>
-          19
+          2
         </td>
         <td>
           0
         </td>
         <td>
-          24
+          4
         </td>
         <td>
           0
         </td>
         <td>
-          21
+          3
         </td>
         <td>
           0
         </td>
         <td>
-          18
+          2
         </td>
         <td>
           0
@@ -256,31 +256,31 @@ exports[`build completed series: clipboard table 1`] = `
           ccc-1
         </td>
         <td>
-          19
+          36
         </td>
         <td>
           0
         </td>
         <td>
-          20
+          38
         </td>
         <td>
           0
         </td>
         <td>
-          21
+          40
         </td>
         <td>
           0
         </td>
         <td>
-          18
+          34
         </td>
         <td>
           0
         </td>
         <td>
-          16
+          30
         </td>
         <td>
           0
@@ -299,31 +299,31 @@ exports[`build completed series: clipboard table 1`] = `
           ccc-2
         </td>
         <td>
-          19
+          2
         </td>
         <td>
           0
         </td>
         <td>
-          20
+          2
         </td>
         <td>
           0
         </td>
         <td>
-          20
+          1
         </td>
         <td>
           0
         </td>
         <td>
-          19
+          4
         </td>
         <td>
           0
         </td>
         <td>
-          16
+          2
         </td>
         <td>
           0
@@ -478,32 +478,32 @@ Array [
   Object {
     "days": Array [
       Object {
-        "actual": 13,
+        "actual": 22,
         "day": 2018-07-31T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 13,
+        "actual": 24,
         "day": 2018-08-01T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 12,
+        "actual": 20,
         "day": 2018-08-02T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 15,
+        "actual": 28,
         "day": 2018-08-03T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 20,
+        "actual": 38,
         "day": 2018-08-04T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 15,
+        "actual": 28,
         "day": 2018-08-05T05:00:00.000Z,
         "planned": 0,
       },
@@ -513,32 +513,32 @@ Array [
   Object {
     "days": Array [
       Object {
-        "actual": 13,
+        "actual": 2,
         "day": 2018-07-31T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 13,
+        "actual": 4,
         "day": 2018-08-01T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 12,
+        "actual": 2,
         "day": 2018-08-02T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 15,
+        "actual": 4,
         "day": 2018-08-03T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 20,
+        "actual": 4,
         "day": 2018-08-04T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 15,
+        "actual": 2,
         "day": 2018-08-05T05:00:00.000Z,
         "planned": 0,
       },
@@ -548,27 +548,27 @@ Array [
   Object {
     "days": Array [
       Object {
-        "actual": 18,
+        "actual": 34,
         "day": 2018-07-31T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 19,
+        "actual": 34,
         "day": 2018-08-01T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 24,
+        "actual": 46,
         "day": 2018-08-02T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 21,
+        "actual": 36,
         "day": 2018-08-03T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 18,
+        "actual": 32,
         "day": 2018-08-04T05:00:00.000Z,
         "planned": 0,
       },
@@ -583,27 +583,27 @@ Array [
   Object {
     "days": Array [
       Object {
-        "actual": 18,
+        "actual": 4,
         "day": 2018-07-31T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 19,
+        "actual": 2,
         "day": 2018-08-01T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 24,
+        "actual": 4,
         "day": 2018-08-02T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 21,
+        "actual": 3,
         "day": 2018-08-03T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 18,
+        "actual": 2,
         "day": 2018-08-04T05:00:00.000Z,
         "planned": 0,
       },
@@ -618,27 +618,27 @@ Array [
   Object {
     "days": Array [
       Object {
-        "actual": 19,
+        "actual": 36,
         "day": 2018-07-31T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 20,
+        "actual": 38,
         "day": 2018-08-01T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 21,
+        "actual": 40,
         "day": 2018-08-02T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 18,
+        "actual": 34,
         "day": 2018-08-03T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 16,
+        "actual": 30,
         "day": 2018-08-04T05:00:00.000Z,
         "planned": 0,
       },
@@ -653,27 +653,27 @@ Array [
   Object {
     "days": Array [
       Object {
-        "actual": 19,
+        "actual": 2,
         "day": 2018-07-31T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 20,
+        "actual": 2,
         "day": 2018-08-01T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 20,
+        "actual": 1,
         "day": 2018-08-02T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 19,
+        "actual": 4,
         "day": 2018-08-03T05:00:00.000Z,
         "planned": 0,
       },
       Object {
-        "actual": 16,
+        "actual": 2,
         "day": 2018-08-04T05:00:00.000Z,
         "planned": 0,
       },

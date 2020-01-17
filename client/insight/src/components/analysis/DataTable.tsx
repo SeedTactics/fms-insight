@@ -320,7 +320,7 @@ export function DataTableActions(props: DataTableActionsProps) {
 export interface DataTableBodyProps<Id, Row> {
   readonly pageData: Iterable<Row>;
   readonly columns: ReadonlyArray<Column<Id, Row>>;
-  readonly onClickDetails?: (r: Row) => void;
+  readonly onClickDetails?: (event: React.MouseEvent, r: Row) => void;
 }
 
 export class DataTableBody<Id extends string | number, Row> extends React.PureComponent<DataTableBodyProps<Id, Row>> {
@@ -337,7 +337,7 @@ export class DataTableBody<Id extends string | number, Row> extends React.PureCo
             ))}
             {onClickDetails ? (
               <TableCell padding="checkbox">
-                <IconButton onClick={() => onClickDetails(row)}>
+                <IconButton onClick={e => onClickDetails(e, row)}>
                   <MoreHoriz />
                 </IconButton>
               </TableCell>

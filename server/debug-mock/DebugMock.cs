@@ -54,6 +54,7 @@ namespace DebugMachineWatchApiServer
           System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
           "../../../sample-instructions/"
       ));
+      System.Environment.SetEnvironmentVariable("FMS__QuarantineQueue", "Initial Quarantine");
       BlackMaple.MachineFramework.Program.Run(false, (cfg, st) =>
       {
         var backend = new MockServerBackend();
@@ -425,8 +426,6 @@ namespace DebugMachineWatchApiServer
       {
         CurrentStatus = Statuses[statusFromEnv];
       }
-      CurrentStatus.QueueSizes["AnotherQueue"] = new QueueSize() { MaxSizeBeforeStopUnloading = null };
-      CurrentStatus.QueueSizes["AnotherQueue2"] = new QueueSize() { MaxSizeBeforeStopUnloading = null };
     }
 
     public static void OffsetJob(JobPlan j, TimeSpan offset)

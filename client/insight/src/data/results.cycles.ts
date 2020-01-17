@@ -32,10 +32,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { HashMap, Vector } from "prelude-ts";
-import { PartCycleData, stat_name_and_num, part_and_proc, format_cycle_inspection } from "./events.cycles";
+import {
+  PartCycleData,
+  stat_name_and_num,
+  part_and_proc,
+  format_cycle_inspection,
+  statistical_times_for_cycle,
+  isOutlier,
+  EstimatedCycleTimes,
+  splitElapsedLoadTimeAmongCycles
+} from "./events.cycles";
 import { LazySeq } from "./lazyseq";
 import * as api from "./api";
-import { format } from "date-fns";
+import { format, differenceInSeconds } from "date-fns";
 import { duration } from "moment";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const copy = require("copy-to-clipboard");
@@ -98,17 +107,53 @@ export function filterStationCycles(
   };
 }
 
-export function outlierCycles(
+export function outlierMachineCycles(
   allCycles: Vector<PartCycleData>,
-  onlyLabor: boolean,
   start: Date,
-  end: Date
-): FilteredStationCycles {
+  end: Date,
+  estimated: EstimatedCycleTimes
+) {
   return {
     seriesLabel: "Part",
     data: LazySeq.ofIterable(allCycles)
-      .filter(e => onlyLabor === e.isLabor && e.outlier && e.x >= start && e.x <= end)
+      .filter(e => !e.isLabor && e.x >= start && e.x <= end)
+      .filter(cycle => {
+        if (cycle.material.length === 0) return false;
+        const stats = statistical_times_for_cycle(cycle.part, cycle.process, cycle.stationGroup, estimated);
+        return stats.isSome() && isOutlier(stats.get(), cycle.y / cycle.material.length);
+      })
       .groupBy(e => part_and_proc(e.part, e.process))
+      .mapValues(e => e.toArray())
+  };
+}
+
+export function outlierLoadCycles(
+  allCycles: Vector<PartCycleData>,
+  start: Date,
+  end: Date,
+  estimated: EstimatedCycleTimes
+): FilteredStationCycles {
+  const loadCycles = LazySeq.ofIterable(allCycles).filter(e => e.isLabor && e.x >= start && e.x <= end);
+  const now = new Date();
+  return {
+    seriesLabel: "Part",
+    data: splitElapsedLoadTimeAmongCycles(loadCycles)
+      .filter(e => {
+        if (e.cycle.material.length === 0) return false;
+        // if it is too close to the start (or end) we might have cut off and only seen half of the events
+        if (differenceInSeconds(e.cycle.x, start) < 20 || differenceInSeconds(end, e.cycle.x) < 20) return false;
+
+        // if the cycle is within 15 seconds of now, don't display it yet.  We might only have received some
+        // of the events for the load and the others are in-flight about to be received.
+        // Technically, using now is wrong since the result of outlierLoadCycles is cached, but as soon as
+        // another cycle arrives it will be recaluclated.  Thus showing stale data isn't a huge problem.
+        if (Math.abs(differenceInSeconds(now, e.cycle.x)) < 15) return false;
+
+        const stats = statistical_times_for_cycle(e.cycle.part, e.cycle.process, e.cycle.stationGroup, estimated);
+        return stats.isSome() && isOutlier(stats.get(), e.elapsedForSingleMaterialMinutes);
+      })
+      .map(e => e.cycle)
+      .groupBy(c => part_and_proc(c.part, c.process))
       .mapValues(e => e.toArray())
   };
 }
@@ -118,7 +163,7 @@ export function stationMinutes(partCycles: Vector<PartCycleData>, cutoff: Date):
     .filter(p => p.x >= cutoff)
     .map(p => ({
       station: stat_name_and_num(p.stationGroup, p.stationNumber),
-      active: p.activeMinsForSingleMat
+      active: p.activeMinutes
     }))
     .toMap(
       x => [x.station, x.active] as [string, number],
@@ -156,11 +201,23 @@ export function buildCycleTable(
     table += "<td>" + cycle.part + "-" + cycle.process.toString() + "</td>";
     table += "<td>" + stat_name_and_num(cycle.stationGroup, cycle.stationNumber) + "</td>";
     table += "<td>" + cycle.pallet + "</td>";
-    table += "<td>" + (cycle.serial || "") + "</td>";
-    table += "<td>" + (cycle.workorder || "") + "</td>";
+    table +=
+      "<td>" +
+      cycle.material
+        .filter(m => m.serial)
+        .map(m => m.serial)
+        .join(",") +
+      "</td>";
+    table +=
+      "<td>" +
+      cycle.material
+        .filter(m => m.workorder)
+        .map(m => m.workorder)
+        .join(",") +
+      "</td>";
     table += "<td>" + format_cycle_inspection(cycle) + "</td>";
     table += "<td>" + cycle.y.toFixed(1) + "</td>";
-    table += "<td>" + cycle.targetCycleMinutes.toFixed(1) + "</td>";
+    table += "<td>" + cycle.activeMinutes.toFixed(1) + "</td>";
     if (includeStats) {
       table += "<td>" + cycle.medianCycleMinutes.toFixed(1) + "</td>";
       table += "<td>" + cycle.MAD_aboveMinutes.toFixed(1) + "</td>";

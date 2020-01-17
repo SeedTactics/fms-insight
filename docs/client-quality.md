@@ -56,3 +56,11 @@ days is available as part of the [monthly review](improve-fms.md) on the
 [flexibility analysis page](client-flexibility-analysis.md).
 
 ![Screenshot of path sankey](assets/insight-quality-recent-sankey.png)
+
+# Quarantine Material
+
+If [quarantined material](material-quarantine.md) is enabled, this page displays all the quarantined material queues.
+Material can be moved between the various quarantine queues by clicking and dragging on the vertical dots
+on the material card. In addition, notes can be added to each piece of material by opening the material card.
+
+![Screenshot of Material screen](assets/insight-quality-quarantine.png)
