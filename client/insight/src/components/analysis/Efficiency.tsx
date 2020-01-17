@@ -446,7 +446,7 @@ function StationOeeHeatmap(props: HeatmapProps) {
 const stationOeeActualPointsSelector = createSelector(
   (cycles: CycleState) => cycles.part_cycles,
   cycles => {
-    const pts = binCyclesByDayAndStat(cycles, c => c.targetCycleMinutes);
+    const pts = binCyclesByDayAndStat(cycles, c => c.activeMinutes);
     return LazySeq.ofIterable(pts)
       .map(([dayAndStat, val]) => {
         const pct = val / (24 * 60);

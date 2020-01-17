@@ -186,7 +186,7 @@ function machine_cost(
 ): number {
   return cycles
     .toMap(
-      c => [c.stationGroup, c.targetCycleMinutes],
+      c => [c.stationGroup, c.activeMinutes],
       (a1, a2) => a1 + a2
     )
     .foldLeft(0, (x: number, [statGroup, minutes]: [string, number]) => {
@@ -203,7 +203,7 @@ function labor_cost(
 ): number {
   const pctUse = cycles
     .toMap(
-      c => [c.stationGroup, c.targetCycleMinutes],
+      c => [c.stationGroup, c.activeMinutes],
       (a1, a2) => a1 + a2
     )
     .foldLeft(0, (x: number, [statGroup, minutes]: [string, number]) => {
@@ -234,7 +234,7 @@ export function compute_monthly_cost(
   const totalLaborCost = days * 24 * i.operatorCostPerHour * i.numOperators;
 
   const totalStatUseMinutes: HashMap<string, number> = LazySeq.ofIterable(cycles).toMap(
-    c => [c.stationGroup, c.targetCycleMinutes],
+    c => [c.stationGroup, c.activeMinutes],
     (a1, a2) => a1 + a2
   );
 
