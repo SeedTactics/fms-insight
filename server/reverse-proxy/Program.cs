@@ -60,33 +60,36 @@ namespace BlackMaple.FMSInsight.ReverseProxy
         .AddHttpClient()
         ;
 
-      services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-      .AddJwtBearer(options =>
+      if (!string.IsNullOrEmpty(ProxyConfig.OpenIDConnectAuthority))
       {
-        options.Authority = ProxyConfig.OpenIDConnectAuthority;
-        options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
+        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
         {
-          ValidateIssuer = true,
-          ValidateAudience = true,
-          ValidateLifetime = true,
-          ValidAudiences = ProxyConfig.AuthTokenAudiences
-        };
-#if DEBUG
-        options.RequireHttpsMetadata = false;
-#endif
-        options.Events = new JwtBearerEvents
-        {
-          OnMessageReceived = context =>
+          options.Authority = ProxyConfig.OpenIDConnectAuthority;
+          options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
           {
-            var token = context.Request.Query["token"];
-            if (context.Request.Path == "/api/v1/events" && !string.IsNullOrEmpty(token))
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidAudiences = ProxyConfig.AuthTokenAudiences
+          };
+#if DEBUG
+          options.RequireHttpsMetadata = false;
+#endif
+          options.Events = new JwtBearerEvents
+          {
+            OnMessageReceived = context =>
             {
-              context.Token = token;
+              var token = context.Request.Query["token"];
+              if (context.Request.Path == "/api/v1/events" && !string.IsNullOrEmpty(token))
+              {
+                context.Token = token;
+              }
+              return System.Threading.Tasks.Task.CompletedTask;
             }
-            return System.Threading.Tasks.Task.CompletedTask;
-          }
-        };
-      });
+          };
+        });
+      }
     }
 
     private readonly HashSet<string> ValidResponseHeaders = new HashSet<string>(new[] {
@@ -104,32 +107,35 @@ namespace BlackMaple.FMSInsight.ReverseProxy
       app.UseWebSockets();
 
       // authentication
-      app.Use(async (context, next) =>
+      if (!string.IsNullOrEmpty(ProxyConfig.OpenIDConnectAuthority))
       {
-        // the fms-information path is unauthorized, everything else requires auth
-        if (context.Request.Path == "/api/v1/fms/fms-information")
+        app.Use(async (context, next) =>
         {
-          await next.Invoke();
-        }
-        else if (context.Request.Path.StartsWithSegments("/api"))
-        {
-          var authResponse = await context.AuthenticateAsync();
-          if (!authResponse.Succeeded)
-          {
-            context.Response.StatusCode = 401;
-            return;
-          }
-          else
+          // the fms-information path is unauthorized, everything else requires auth
+          if (context.Request.Path == "/api/v1/fms/fms-information")
           {
             await next.Invoke();
           }
-        }
-        else
-        {
-          // loading static pages
-          await next.Invoke();
-        }
-      });
+          else if (context.Request.Path.StartsWithSegments("/api"))
+          {
+            var authResponse = await context.AuthenticateAsync();
+            if (!authResponse.Succeeded)
+            {
+              context.Response.StatusCode = 401;
+              return;
+            }
+            else
+            {
+              await next.Invoke();
+            }
+          }
+          else
+          {
+            // loading static pages
+            await next.Invoke();
+          }
+        });
+      }
 
       // websocket proxy
       app.Use(async (context, next) =>
@@ -202,7 +208,7 @@ namespace BlackMaple.FMSInsight.ReverseProxy
         }
         foreach (var h in context.Request.Headers)
         {
-          msg.Content?.Headers.TryAddWithoutValidation(h.Key, h.Value.ToArray());
+          msg.Headers.TryAddWithoutValidation(h.Key, h.Value.ToArray());
         }
         msg.Headers.Host = msg.RequestUri.Host;
         var client = httpFactory.CreateClient();
