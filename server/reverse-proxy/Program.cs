@@ -92,10 +92,18 @@ namespace BlackMaple.FMSInsight.ReverseProxy
       }
     }
 
-    private readonly HashSet<string> ValidResponseHeaders = new HashSet<string>(new[] {
-      "content-type",
-      "etag",
-      "last-modified"
+    private readonly HashSet<string> IgnoreRequestHeaders = new HashSet<string>(new[] {
+      "host",
+      "connection",
+      "keep-alive",
+      "transfer-encoding",
+      "upgrade",
+    });
+
+    private readonly HashSet<string> IgnoreResponseHeaders = new HashSet<string>(new[] {
+      "date",
+      "server",
+      "transfer-encoding",
     });
 
     public void Configure(IApplicationBuilder app, IHttpClientFactory httpFactory, ILogger<Startup> logger)
@@ -175,7 +183,15 @@ namespace BlackMaple.FMSInsight.ReverseProxy
           }
           catch (WebSocketException ex) when (ex.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely)
           {
-            //do nothing
+            //do nothing, client closed connection
+          }
+          catch (System.Threading.Tasks.TaskCanceledException)
+          {
+            // also do nothing, client closed connection
+          }
+          catch (System.OperationCanceledException)
+          {
+            // a third possibility when the client closed connection
           }
           catch (Exception ex)
           {
@@ -183,7 +199,14 @@ namespace BlackMaple.FMSInsight.ReverseProxy
           }
           finally
           {
-            await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Server is closing", context.RequestAborted);
+            try
+            {
+              await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Server is closing", context.RequestAborted);
+            }
+            catch (System.OperationCanceledException)
+            {
+              // ignore if request is being canceled
+            }
           }
         }
       });
@@ -206,9 +229,21 @@ namespace BlackMaple.FMSInsight.ReverseProxy
         {
           msg.Content = new StreamContent(context.Request.Body);
         }
+        HashSet<string> connHeader = new HashSet<string>();
+        if (context.Request.Headers.TryGetValue("Connection", out var vals))
+        {
+          connHeader = new HashSet<string>(vals.SelectMany(s => s.Split(",")).Select(s => s.Trim().ToLower()));
+        }
         foreach (var h in context.Request.Headers)
         {
-          msg.Headers.TryAddWithoutValidation(h.Key, h.Value.ToArray());
+          if (!connHeader.Contains(h.Key.ToLower()) && !IgnoreRequestHeaders.Contains(h.Key.ToLower()))
+          {
+            var ok = msg.Headers.TryAddWithoutValidation(h.Key, h.Value.ToArray());
+            if (!ok)
+            {
+              ok = msg.Content?.Headers.TryAddWithoutValidation(h.Key, h.Value.ToArray()) ?? false;
+            }
+          }
         }
         msg.Headers.Host = msg.RequestUri.Host;
         var client = httpFactory.CreateClient();
@@ -217,7 +252,7 @@ namespace BlackMaple.FMSInsight.ReverseProxy
           context.Response.StatusCode = (int)resp.StatusCode;
           foreach (var h in resp.Headers.Concat(resp.Content.Headers))
           {
-            if (ValidResponseHeaders.Contains(h.Key.ToLower()))
+            if (!IgnoreResponseHeaders.Contains(h.Key.ToLower()))
             {
               context.Response.Headers[h.Key] = h.Value.ToArray();
             }
