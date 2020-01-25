@@ -37,8 +37,8 @@ namespace BlackMaple.FMSInsight.ReverseProxy
   {
     public class InsightProxyConfig
     {
-      public string NiigataInsightHost { get; set; }
-      public int NiigataInsightPort { get; set; }
+      public string InsightHost { get; set; }
+      public int InsightPort { get; set; }
       public string OpenIDConnectAuthority { get; set; }
       public List<string> AuthTokenAudiences { get; set; }
     }
@@ -167,8 +167,8 @@ namespace BlackMaple.FMSInsight.ReverseProxy
           var uriB = new UriBuilder()
           {
             Scheme = "ws",
-            Host = ProxyConfig.NiigataInsightHost,
-            Port = ProxyConfig.NiigataInsightPort,
+            Host = ProxyConfig.InsightHost,
+            Port = ProxyConfig.InsightPort,
             Path = "/api/v1/events"
           };
           try
@@ -217,8 +217,8 @@ namespace BlackMaple.FMSInsight.ReverseProxy
         var uriB = new UriBuilder()
         {
           Scheme = "http",
-          Host = ProxyConfig.NiigataInsightHost,
-          Port = ProxyConfig.NiigataInsightPort,
+          Host = ProxyConfig.InsightHost,
+          Port = ProxyConfig.InsightPort,
           Path = context.Request.Path,
           Query = context.Request.QueryString.ToUriComponent()
         };
