@@ -426,6 +426,15 @@ namespace MachineWatchTest
       var simStationUse = RandSimStationUse();
       var theExtraParts = RandExtraParts();
       var unfilledWorks = RandUnfilledWorkorders();
+      var rnd = new Random();
+      unfilledWorks.Add(new PartWorkorder()
+      {
+        WorkorderId = "work" + rnd.Next(0, 10000).ToString(),
+        Part = "Job1",
+        Quantity = rnd.Next(10000),
+        DueDate = new DateTime(2018, rnd.Next(1, 12), rnd.Next(1, 20)),
+        Priority = rnd.Next(10000)
+      });
 
       var newJob2 = new NewJobs()
       {
@@ -464,6 +473,10 @@ namespace MachineWatchTest
       CheckWorkordersEqual(
           new[] { unfilledWorks[0] },
           _jobDB.MostRecentUnfilledWorkordersForPart(unfilledWorks[0].Part)
+      );
+      CheckWorkordersEqual(
+          new[] { unfilledWorks.Last() },
+          _jobDB.UnfilledWorkordersForJob("Unique2")
       );
 
       recent = _jobDB.LoadMostRecentSchedule();

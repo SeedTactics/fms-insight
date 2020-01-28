@@ -77,6 +77,10 @@ namespace MazakMachineInterface
     {
       get { return jobLog; }
     }
+    public JobDB JobDB
+    {
+      get { return jobDB; }
+    }
 
     public IMazakLogReader LogTranslation
     {
@@ -333,7 +337,7 @@ namespace MazakMachineInterface
 #if DEBUG
       var useService = false;
 #else
-			var useService = true;
+      var useService = true;
 #endif
       Program.Run(useService, (cfg, st) =>
         new FMSImplementation()
