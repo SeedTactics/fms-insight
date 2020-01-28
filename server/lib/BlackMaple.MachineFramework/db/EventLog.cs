@@ -2232,6 +2232,53 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    public IEnumerable<MachineWatchInterface.MaterialDetails> GetMaterialForWorkorder(string workorder)
+    {
+      using (var trans = _connection.BeginTransaction())
+      using (var cmd = _connection.CreateCommand())
+      using (var pathCmd = _connection.CreateCommand())
+      {
+        cmd.Transaction = trans;
+        cmd.CommandText = "SELECT MaterialID, UniqueStr, PartName, NumProcesses, Serial FROM matdetails WHERE Workorder IS NOT NULL AND Workorder = $work";
+        cmd.Parameters.Add("work", SqliteType.Text).Value = workorder;
+
+        var ret = new List<MachineWatchInterface.MaterialDetails>();
+        using (var reader = cmd.ExecuteReader())
+        {
+          while (reader.Read())
+          {
+            var mat = new MachineWatchInterface.MaterialDetails() { MaterialID = reader.GetInt64(0), Workorder = workorder };
+            if (!reader.IsDBNull(0)) mat.JobUnique = reader.GetString(1);
+            if (!reader.IsDBNull(1)) mat.PartName = reader.GetString(2);
+            if (!reader.IsDBNull(2)) mat.NumProcesses = reader.GetInt32(3);
+            if (!reader.IsDBNull(4)) mat.Serial = reader.GetString(4);
+            ret.Add(mat);
+          }
+        }
+
+        pathCmd.CommandText = "SELECT Process, Path FROM mat_path_details WHERE MaterialID = $mat";
+        pathCmd.Transaction = trans;
+        var param = pathCmd.Parameters.Add("mat", SqliteType.Integer);
+        foreach (var mat in ret)
+        {
+          mat.Paths = new Dictionary<int, int>();
+          param.Value = mat.MaterialID;
+          using (var reader = pathCmd.ExecuteReader())
+          {
+            while (reader.Read())
+            {
+              var proc = reader.GetInt32(0);
+              var path = reader.GetInt32(1);
+              mat.Paths[proc] = path;
+            }
+          }
+        }
+
+        trans.Commit();
+        return ret;
+      }
+    }
+
     private void RecordSerialForMaterialID(IDbTransaction trans, long matID, string serial)
     {
       using (var cmd = _connection.CreateCommand())

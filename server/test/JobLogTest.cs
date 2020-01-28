@@ -130,6 +130,30 @@ namespace MachineWatchTest
         NumProcesses = 77,
         Paths = new Dictionary<int, int>()
       });
+
+      _jobLog.RecordWorkorderForMaterialID(m1, 1, "work1");
+      _jobLog.RecordWorkorderForMaterialID(m2, 1, "work2");
+      _jobLog.RecordWorkorderForMaterialID(m3, 1, "work1");
+
+      _jobLog.GetMaterialForWorkorder("work1").Should().BeEquivalentTo(new[] {
+        new MaterialDetails
+        {
+          MaterialID = m1,
+          JobUnique = "U1",
+          PartName = "P1",
+          NumProcesses = 52,
+          Workorder = "work1",
+          Paths = new Dictionary<int, int> { { 1, 60 }, { 2, 88 } }
+        },
+        new MaterialDetails() {
+          MaterialID = m3,
+          JobUnique = "U3",
+          PartName = "P3",
+          NumProcesses = 566,
+          Workorder = "work1",
+          Paths = new Dictionary<int, int>()
+        }
+      });
     }
 
     [Fact]
