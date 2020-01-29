@@ -442,7 +442,6 @@ namespace MachineWatchTest
         Jobs = new List<JobPlan> { job2 },
         StationUse = simStationUse.ToList(),
         ExtraParts = theExtraParts,
-        ArchiveCompletedJobs = true,
         CurrentUnfilledWorkorders = unfilledWorks
       };
       try

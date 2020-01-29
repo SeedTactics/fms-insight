@@ -1301,20 +1301,17 @@ namespace BlackMaple.MachineWatchInterface
   [Serializable, DataContract]
   public class NewJobs
   {
-    [DataMember(IsRequired = true)] public string ScheduleId { get; set; }
+    [DataMember(IsRequired = true)]
+    public string ScheduleId { get; set; }
 
-    [DataMember(IsRequired = true)] public bool ArchiveCompletedJobs { get; set; }
-
-    [DataMember(IsRequired = true)] public List<JobPlan> Jobs { get; set; }
+    [DataMember(IsRequired = true)]
+    public List<JobPlan> Jobs { get; set; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public List<SimulatedStationUtilization> StationUse { get; set; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public Dictionary<string, int> ExtraParts { get; set; }
-
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public byte[] DebugMessage { get; set; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public List<PartWorkorder> CurrentUnfilledWorkorders { get; set; }
@@ -1324,6 +1321,9 @@ namespace BlackMaple.MachineWatchInterface
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public List<ProgramEntry> Programs { get; set; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public byte[] DebugMessage { get; set; }
   }
 
   [Serializable, DataContract]
