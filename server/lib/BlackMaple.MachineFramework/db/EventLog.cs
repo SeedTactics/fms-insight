@@ -937,8 +937,12 @@ namespace BlackMaple.MachineFramework
         using (var cmd = _connection.CreateCommand())
         {
           cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-              " FROM stations WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.Workorder = $work) ORDER BY Counter ASC";
+              " FROM stations " +
+              " WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.Workorder = $work) " +
+              "    OR (Pallet = '' AND Result = $work AND StationLoc = $workloc) " +
+              " ORDER BY Counter ASC";
           cmd.Parameters.Add("work", SqliteType.Text).Value = workorder;
+          cmd.Parameters.Add("workloc", SqliteType.Integer).Value = (int)MachineWatchInterface.LogType.FinalizeWorkorder;
 
           using (var reader = cmd.ExecuteReader())
           {

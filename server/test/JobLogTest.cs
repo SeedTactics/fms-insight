@@ -352,7 +352,8 @@ namespace MachineWatchTest
       logsForMat1 = logsForMat1.Select(TransformLog(mat1.MaterialID, SetWorkorderInMat("work1"))).ToList();
       logs = logs.Select(TransformLog(mat1.MaterialID, SetWorkorderInMat("work1"))).ToList();
       mat1 = SetWorkorderInMat("work1")(mat1);
-      CheckLog(logsForMat1, _jobLog.GetLogForWorkorder("work1"), start);
+      var finalize = _jobLog.RecordFinalizedWorkorder("work1");
+      CheckLog(logsForMat1.Append(finalize).ToList(), _jobLog.GetLogForWorkorder("work1"), start);
       _jobLog.GetLogForWorkorder("work2").Should().BeEmpty();
 
       CheckLog(logsForMat1, _jobLog.GetLogForJobUnique(mat1.JobUniqueStr), start);
