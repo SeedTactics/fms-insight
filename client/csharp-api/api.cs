@@ -3646,9 +3646,6 @@ namespace BlackMaple.FMSInsight.API
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string ScheduleId { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("ArchiveCompletedJobs", Required = Newtonsoft.Json.Required.Always)]
-        public bool ArchiveCompletedJobs { get; set; }
-    
         [Newtonsoft.Json.JsonProperty("Jobs", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.ICollection<JobPlan> Jobs { get; set; } = new System.Collections.ObjectModel.Collection<JobPlan>();
@@ -3659,9 +3656,6 @@ namespace BlackMaple.FMSInsight.API
         [Newtonsoft.Json.JsonProperty("ExtraParts", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.IDictionary<string, int> ExtraParts { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("DebugMessage", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public byte[] DebugMessage { get; set; }
-    
         [Newtonsoft.Json.JsonProperty("CurrentUnfilledWorkorders", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.ICollection<PartWorkorder> CurrentUnfilledWorkorders { get; set; }
     
@@ -3670,6 +3664,9 @@ namespace BlackMaple.FMSInsight.API
     
         [Newtonsoft.Json.JsonProperty("Programs", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.ICollection<ProgramEntry> Programs { get; set; }
+    
+        [Newtonsoft.Json.JsonProperty("DebugMessage", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public byte[] DebugMessage { get; set; }
     
         public string ToJson() 
         {

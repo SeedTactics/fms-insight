@@ -29,18 +29,37 @@ namespace BlackMaple.FMSInsight.API
 
     public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
     {
-      if (value == null) {
+      if (value == null)
+      {
         writer.WriteNull();
-      } else {
+      }
+      else
+      {
         var duration = (TimeSpan)value;
         writer.WriteValue(System.Xml.XmlConvert.ToString(duration));
       }
     }
   }
 
+  public static class JsonSettings
+  {
+    public static JsonSerializerSettings MkSettings(bool indent = false)
+    {
+      var settings = new JsonSerializerSettings();
+      settings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
+      settings.Converters.Add(new TimespanConverter());
+      settings.DateTimeZoneHandling = Newtonsoft.Json.DateTimeZoneHandling.Utc;
+      if (indent)
+      {
+        settings.Formatting = Newtonsoft.Json.Formatting.Indented;
+      }
+      return settings;
+    }
+  }
+
   public partial class JobsClient
   {
-    partial void UpdateJsonSerializerSettings(Newtonsoft.Json.JsonSerializerSettings settings)
+    partial void UpdateJsonSerializerSettings(JsonSerializerSettings settings)
     {
       settings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
       settings.Converters.Add(new TimespanConverter());
@@ -49,7 +68,7 @@ namespace BlackMaple.FMSInsight.API
 
   public partial class LogClient
   {
-    partial void UpdateJsonSerializerSettings(Newtonsoft.Json.JsonSerializerSettings settings)
+    partial void UpdateJsonSerializerSettings(JsonSerializerSettings settings)
     {
       settings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
       settings.Converters.Add(new TimespanConverter());
@@ -58,7 +77,7 @@ namespace BlackMaple.FMSInsight.API
 
   public partial class FmsClient
   {
-    partial void UpdateJsonSerializerSettings(Newtonsoft.Json.JsonSerializerSettings settings)
+    partial void UpdateJsonSerializerSettings(JsonSerializerSettings settings)
     {
       settings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
       settings.Converters.Add(new TimespanConverter());

@@ -2164,15 +2164,11 @@
       "additionalProperties": false,
       "required": [
         "ScheduleId",
-        "ArchiveCompletedJobs",
         "Jobs"
       ],
       "properties": {
         "ScheduleId": {
           "type": "string"
-        },
-        "ArchiveCompletedJobs": {
-          "type": "boolean"
         },
         "Jobs": {
           "type": "array",
@@ -2193,10 +2189,6 @@
             "format": "int32"
           }
         },
-        "DebugMessage": {
-          "type": "string",
-          "format": "byte"
-        },
         "CurrentUnfilledWorkorders": {
           "type": "array",
           "items": {
@@ -2214,6 +2206,10 @@
           "items": {
             "$ref": "#/definitions/ProgramEntry"
           }
+        },
+        "DebugMessage": {
+          "type": "string",
+          "format": "byte"
         }
       }
     },
