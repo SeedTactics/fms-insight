@@ -1324,6 +1324,9 @@ namespace BlackMaple.MachineWatchInterface
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public byte[] DebugMessage { get; set; }
+
+    [DataMember(IsRequired = false), Obsolete]
+    private bool ArchiveCompletedJobs { get; set; } = true;
   }
 
   [Serializable, DataContract]
