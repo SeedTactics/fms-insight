@@ -3668,6 +3668,9 @@ namespace BlackMaple.FMSInsight.API
         [Newtonsoft.Json.JsonProperty("DebugMessage", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public byte[] DebugMessage { get; set; }
     
+        [Newtonsoft.Json.JsonProperty("ArchiveCompletedJobs", Required = Newtonsoft.Json.Required.Always)]
+        public bool ArchiveCompletedJobs { get; set; }
+    
         public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);

@@ -2164,7 +2164,8 @@
       "additionalProperties": false,
       "required": [
         "ScheduleId",
-        "Jobs"
+        "Jobs",
+        "ArchiveCompletedJobs"
       ],
       "properties": {
         "ScheduleId": {
@@ -2210,6 +2211,9 @@
         "DebugMessage": {
           "type": "string",
           "format": "byte"
+        },
+        "ArchiveCompletedJobs": {
+          "type": "boolean"
         }
       }
     },
