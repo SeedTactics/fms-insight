@@ -111,6 +111,10 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember(IsRequired = false, EmitDefaultValue = false)] public string WorkorderId { get; set; }
     [DataMember(IsRequired = true)] public List<string> SignaledInspections { get; set; } = new List<string>();
 
+    // 0-based index into the JobPlan.MachiningStops array for the last completed stop.  Null or negative values
+    // indicate no machining stops have yet completed.
+    [DataMember(IsRequired = false)] public int? LastCompletedMachiningRouteStopIndex { get; set; }
+
     // Where is the material?
     [DataMember(IsRequired = true)] public InProcessMaterialLocation Location { get; set; }
 

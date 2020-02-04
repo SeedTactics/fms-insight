@@ -829,6 +829,7 @@
       "Path": 1,
       "Serial": "000000abcf",
       "SignaledInspections": [],
+      "LastCompletedMachiningRouteStopIndex": 0,
       "Location": {
         "Type": "OnPallet",
         "Pallet": "5",
@@ -847,6 +848,7 @@
       "Path": 1,
       "Serial": "000000abcg",
       "SignaledInspections": [],
+      "LastCompletedMachiningRouteStopIndex": 0,
       "Location": {
         "Type": "OnPallet",
         "Pallet": "5",

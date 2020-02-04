@@ -208,6 +208,14 @@ namespace MazakMachineInterface
                       .Select(x => x.InspType)
                       .Distinct()
                       .ToList(),
+                LastCompletedMachiningRouteStopIndex =
+                  oldCycles.Any(
+                      c => c.LogType == LogType.MachineCycle
+                      && !c.StartOfCycle
+                      && c.Material.Any(m => m.MaterialID == matID && m.Process == palSub.PartProcessNumber)
+                    )
+                    ? (int?)0
+                    : null,
                 Location = new InProcessMaterialLocation()
                 {
                   Type = InProcessMaterialLocation.LocType.OnPallet,
