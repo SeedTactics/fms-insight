@@ -255,15 +255,12 @@ namespace BlackMaple.FMSInsight.Niigata
         throw new BadRequestException(string.Join(Environment.NewLine, errors));
       }
 
-      if (jobs.ArchiveCompletedJobs)
+      var existingJobs = _jobs.LoadUnarchivedJobs();
+      foreach (var j in existingJobs.Jobs)
       {
-        var existingJobs = _jobs.LoadUnarchivedJobs();
-        foreach (var j in existingJobs.Jobs)
+        if (IsJobCompleted(j))
         {
-          if (IsJobCompleted(j))
-          {
-            _jobs.ArchiveJob(j.UniqueStr);
-          }
+          _jobs.ArchiveJob(j.UniqueStr);
         }
       }
 

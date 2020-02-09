@@ -353,7 +353,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var newJobs = new NewJobs()
       {
         ScheduleId = "abcd",
-        ArchiveCompletedJobs = true,
         Jobs = new List<JobPlan> { newJob1, newJob2 }
       };
 
