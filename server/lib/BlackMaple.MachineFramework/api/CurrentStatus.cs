@@ -65,6 +65,9 @@ namespace BlackMaple.MachineWatchInterface
     //If Type = UnloadToInProcess
     [DataMember(IsRequired = false, EmitDefaultValue = false)] public string UnloadIntoQueue { get; set; }
 
+    //If Type = Loading or UnloadToInProcess or UnloadToCompletedMaterial
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public TimeSpan? ElapsedLoadUnloadTime { get; set; }
+
     // If Type = Machining
     [DataMember(IsRequired = false, EmitDefaultValue = false)] public string Program { get; set; }
     [DataMember(IsRequired = false, EmitDefaultValue = false)] public TimeSpan? ElapsedMachiningTime { get; set; }
@@ -110,6 +113,10 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember(IsRequired = false, EmitDefaultValue = false)] public string Serial { get; set; }
     [DataMember(IsRequired = false, EmitDefaultValue = false)] public string WorkorderId { get; set; }
     [DataMember(IsRequired = true)] public List<string> SignaledInspections { get; set; } = new List<string>();
+
+    // 0-based index into the JobPlan.MachiningStops array for the last completed stop.  Null or negative values
+    // indicate no machining stops have yet completed.
+    [DataMember(IsRequired = false)] public int? LastCompletedMachiningRouteStopIndex { get; set; }
 
     // Where is the material?
     [DataMember(IsRequired = true)] public InProcessMaterialLocation Location { get; set; }

@@ -208,6 +208,14 @@ namespace MazakMachineInterface
                       .Select(x => x.InspType)
                       .Distinct()
                       .ToList(),
+                LastCompletedMachiningRouteStopIndex =
+                  oldCycles.Any(
+                      c => c.LogType == LogType.MachineCycle
+                      && !c.StartOfCycle
+                      && c.Material.Any(m => m.MaterialID == matID && m.Process == palSub.PartProcessNumber)
+                    )
+                    ? (int?)0
+                    : null,
                 Location = new InProcessMaterialLocation()
                 {
                   Type = InProcessMaterialLocation.LocType.OnPallet,
@@ -227,6 +235,7 @@ namespace MazakMachineInterface
 
               if (loadNext != null)
               {
+                var start = FindLoadStartFromOldCycles(oldCycles, matID);
                 inProcMat.Action = new InProcessMaterialAction()
                 {
                   Type = InProcessMaterialAction.ActionType.Loading,
@@ -234,10 +243,12 @@ namespace MazakMachineInterface
                   LoadOntoPallet = status.Pallet,
                   ProcessAfterLoad = palSub.PartProcessNumber + 1,
                   PathAfterLoad = procToPath.PathForProc(palSub.PartProcessNumber + 1),
+                  ElapsedLoadUnloadTime = start != null ? (TimeSpan?)utcNow.Subtract(start.EndTimeUTC) : null
                 };
               }
               else if (unload != null)
               {
+                var start = FindLoadStartFromOldCycles(oldCycles, matID);
                 inProcMat.Action = new InProcessMaterialAction()
                 {
                   Type =
@@ -247,6 +258,7 @@ namespace MazakMachineInterface
                   UnloadIntoQueue = job.GetOutputQueue(
                     process: palSub.PartProcessNumber,
                     path: procToPath.PathForProc(palSub.PartProcessNumber)),
+                  ElapsedLoadUnloadTime = start != null ? (TimeSpan?)utcNow.Subtract(start.EndTimeUTC) : null
                 };
               }
               else
@@ -271,8 +283,10 @@ namespace MazakMachineInterface
 
           if (palLoc.Location == PalletLocationEnum.LoadUnload)
           {
-            AddLoads(log, currentLoads, status.Pallet, palLoc, curStatus);
-            AddUnloads(log, currentLoads, status, oldCycles, curStatus);
+            var start = FindLoadStartFromOldCycles(oldCycles);
+            var elapsedLoad = start != null ? (TimeSpan?)utcNow.Subtract(start.EndTimeUTC) : null;
+            AddLoads(log, currentLoads, status.Pallet, palLoc, elapsedLoad, curStatus);
+            AddUnloads(log, currentLoads, status, elapsedLoad, oldCycles, curStatus);
           }
         }
       }
@@ -573,7 +587,7 @@ namespace MazakMachineInterface
       return null;
     }
 
-    private static void AddLoads(JobLogDB log, IEnumerable<LoadAction> currentLoads, string pallet, PalletLocation palLoc, CurrentStatus curStatus)
+    private static void AddLoads(JobLogDB log, IEnumerable<LoadAction> currentLoads, string pallet, PalletLocation palLoc, TimeSpan? elapsedLoadTime, CurrentStatus curStatus)
     {
       var queuedMats = new Dictionary<string, List<BlackMaple.MachineFramework.JobLogDB.QueuedMaterial>>();
       //process remaining loads/unloads (already processed ones have been removed from currentLoads)
@@ -643,7 +657,8 @@ namespace MazakMachineInterface
               LoadOntoPallet = pallet,
               LoadOntoFace = operation.Process,
               ProcessAfterLoad = operation.Process,
-              PathAfterLoad = operation.Path
+              PathAfterLoad = operation.Path,
+              ElapsedLoadUnloadTime = elapsedLoadTime
             }
           };
           curStatus.Material.Add(inProcMat);
@@ -651,7 +666,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private static void AddUnloads(JobLogDB log, IEnumerable<LoadAction> currentActions, PalletStatus pallet, List<BlackMaple.MachineWatchInterface.LogEntry> oldCycles, CurrentStatus status)
+    private static void AddUnloads(JobLogDB log, IEnumerable<LoadAction> currentActions, PalletStatus pallet, TimeSpan? elapsedLoadTime, List<BlackMaple.MachineWatchInterface.LogEntry> oldCycles, CurrentStatus status)
     {
       // For some reason, sometimes parts to unload don't show up in PalletSubStatus table.
       // So create them here if that happens
@@ -696,7 +711,8 @@ namespace MazakMachineInterface
             },
             Action = new InProcessMaterialAction()
             {
-              Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
+              Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
+              ElapsedLoadUnloadTime = elapsedLoadTime
             }
           };
           if (job != null)
@@ -739,6 +755,33 @@ namespace MazakMachineInterface
       foreach (var s in oldCycles.Where(e => e.Material.Any(m => m.MaterialID == matId)))
       {
         if (s.LogType == LogType.MachineCycle)
+        {
+          if (s.StartOfCycle)
+          {
+            start = s;
+          }
+          else
+          {
+            start = null; // clear when completed
+          }
+        }
+      }
+
+      return start;
+    }
+
+    private static BlackMaple.MachineWatchInterface.LogEntry FindLoadStartFromOldCycles(IEnumerable<BlackMaple.MachineWatchInterface.LogEntry> oldCycles, long? matId = null)
+    {
+      BlackMaple.MachineWatchInterface.LogEntry start = null;
+
+      var cyclesToSearch =
+        matId != null
+          ? oldCycles.Where(e => e.Material.Any(m => m.MaterialID == matId))
+          : oldCycles;
+
+      foreach (var s in cyclesToSearch)
+      {
+        if (s.LogType == LogType.LoadUnloadCycle)
         {
           if (s.StartOfCycle)
           {

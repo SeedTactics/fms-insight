@@ -2660,6 +2660,7 @@ export class InProcessMaterial implements IInProcessMaterial {
     serial?: string | undefined;
     workorderId?: string | undefined;
     signaledInspections!: string[];
+    lastCompletedMachiningRouteStopIndex?: number | undefined;
     location!: InProcessMaterialLocation;
     action!: InProcessMaterialAction;
 
@@ -2691,6 +2692,7 @@ export class InProcessMaterial implements IInProcessMaterial {
                 for (let item of data["SignaledInspections"])
                     this.signaledInspections!.push(item);
             }
+            this.lastCompletedMachiningRouteStopIndex = data["LastCompletedMachiningRouteStopIndex"];
             this.location = data["Location"] ? InProcessMaterialLocation.fromJS(data["Location"]) : new InProcessMaterialLocation();
             this.action = data["Action"] ? InProcessMaterialAction.fromJS(data["Action"]) : new InProcessMaterialAction();
         }
@@ -2717,6 +2719,7 @@ export class InProcessMaterial implements IInProcessMaterial {
             for (let item of this.signaledInspections)
                 data["SignaledInspections"].push(item);
         }
+        data["LastCompletedMachiningRouteStopIndex"] = this.lastCompletedMachiningRouteStopIndex;
         data["Location"] = this.location ? this.location.toJSON() : <any>undefined;
         data["Action"] = this.action ? this.action.toJSON() : <any>undefined;
         return data; 
@@ -2732,6 +2735,7 @@ export interface IInProcessMaterial {
     serial?: string | undefined;
     workorderId?: string | undefined;
     signaledInspections: string[];
+    lastCompletedMachiningRouteStopIndex?: number | undefined;
     location: InProcessMaterialLocation;
     action: InProcessMaterialAction;
 }
@@ -2801,6 +2805,7 @@ export class InProcessMaterialAction implements IInProcessMaterialAction {
     processAfterLoad?: number | undefined;
     pathAfterLoad?: number | undefined;
     unloadIntoQueue?: string | undefined;
+    elapsedLoadUnloadTime?: string | undefined;
     program?: string | undefined;
     elapsedMachiningTime?: string | undefined;
     expectedRemainingMachiningTime?: string | undefined;
@@ -2822,6 +2827,7 @@ export class InProcessMaterialAction implements IInProcessMaterialAction {
             this.processAfterLoad = data["ProcessAfterLoad"];
             this.pathAfterLoad = data["PathAfterLoad"];
             this.unloadIntoQueue = data["UnloadIntoQueue"];
+            this.elapsedLoadUnloadTime = data["ElapsedLoadUnloadTime"];
             this.program = data["Program"];
             this.elapsedMachiningTime = data["ElapsedMachiningTime"];
             this.expectedRemainingMachiningTime = data["ExpectedRemainingMachiningTime"];
@@ -2843,6 +2849,7 @@ export class InProcessMaterialAction implements IInProcessMaterialAction {
         data["ProcessAfterLoad"] = this.processAfterLoad;
         data["PathAfterLoad"] = this.pathAfterLoad;
         data["UnloadIntoQueue"] = this.unloadIntoQueue;
+        data["ElapsedLoadUnloadTime"] = this.elapsedLoadUnloadTime;
         data["Program"] = this.program;
         data["ElapsedMachiningTime"] = this.elapsedMachiningTime;
         data["ExpectedRemainingMachiningTime"] = this.expectedRemainingMachiningTime;
@@ -2857,6 +2864,7 @@ export interface IInProcessMaterialAction {
     processAfterLoad?: number | undefined;
     pathAfterLoad?: number | undefined;
     unloadIntoQueue?: string | undefined;
+    elapsedLoadUnloadTime?: string | undefined;
     program?: string | undefined;
     elapsedMachiningTime?: string | undefined;
     expectedRemainingMachiningTime?: string | undefined;
@@ -2908,14 +2916,14 @@ export interface IQueueSize {
 
 export class NewJobs implements INewJobs {
     scheduleId!: string;
-    archiveCompletedJobs!: boolean;
     jobs!: JobPlan[];
     stationUse?: SimulatedStationUtilization[] | undefined;
     extraParts?: { [key: string] : number; } | undefined;
-    debugMessage?: string | undefined;
     currentUnfilledWorkorders?: PartWorkorder[] | undefined;
     queueSizes?: { [key: string] : QueueSize; } | undefined;
     programs?: ProgramEntry[] | undefined;
+    debugMessage?: string | undefined;
+    archiveCompletedJobs!: boolean;
 
     constructor(data?: INewJobs) {
         if (data) {
@@ -2932,7 +2940,6 @@ export class NewJobs implements INewJobs {
     init(data?: any) {
         if (data) {
             this.scheduleId = data["ScheduleId"];
-            this.archiveCompletedJobs = data["ArchiveCompletedJobs"];
             if (data["Jobs"] && data["Jobs"].constructor === Array) {
                 this.jobs = [] as any;
                 for (let item of data["Jobs"])
@@ -2950,7 +2957,6 @@ export class NewJobs implements INewJobs {
                         this.extraParts![key] = data["ExtraParts"][key];
                 }
             }
-            this.debugMessage = data["DebugMessage"];
             if (data["CurrentUnfilledWorkorders"] && data["CurrentUnfilledWorkorders"].constructor === Array) {
                 this.currentUnfilledWorkorders = [] as any;
                 for (let item of data["CurrentUnfilledWorkorders"])
@@ -2968,6 +2974,8 @@ export class NewJobs implements INewJobs {
                 for (let item of data["Programs"])
                     this.programs!.push(ProgramEntry.fromJS(item));
             }
+            this.debugMessage = data["DebugMessage"];
+            this.archiveCompletedJobs = data["ArchiveCompletedJobs"];
         }
     }
 
@@ -2981,7 +2989,6 @@ export class NewJobs implements INewJobs {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         data["ScheduleId"] = this.scheduleId;
-        data["ArchiveCompletedJobs"] = this.archiveCompletedJobs;
         if (this.jobs && this.jobs.constructor === Array) {
             data["Jobs"] = [];
             for (let item of this.jobs)
@@ -2999,7 +3006,6 @@ export class NewJobs implements INewJobs {
                     data["ExtraParts"][key] = this.extraParts[key];
             }
         }
-        data["DebugMessage"] = this.debugMessage;
         if (this.currentUnfilledWorkorders && this.currentUnfilledWorkorders.constructor === Array) {
             data["CurrentUnfilledWorkorders"] = [];
             for (let item of this.currentUnfilledWorkorders)
@@ -3017,20 +3023,22 @@ export class NewJobs implements INewJobs {
             for (let item of this.programs)
                 data["Programs"].push(item.toJSON());
         }
+        data["DebugMessage"] = this.debugMessage;
+        data["ArchiveCompletedJobs"] = this.archiveCompletedJobs;
         return data; 
     }
 }
 
 export interface INewJobs {
     scheduleId: string;
-    archiveCompletedJobs: boolean;
     jobs: JobPlan[];
     stationUse?: SimulatedStationUtilization[] | undefined;
     extraParts?: { [key: string] : number; } | undefined;
-    debugMessage?: string | undefined;
     currentUnfilledWorkorders?: PartWorkorder[] | undefined;
     queueSizes?: { [key: string] : QueueSize; } | undefined;
     programs?: ProgramEntry[] | undefined;
+    debugMessage?: string | undefined;
+    archiveCompletedJobs: boolean;
 }
 
 export class ProgramEntry implements IProgramEntry {

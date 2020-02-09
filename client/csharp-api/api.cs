@@ -3491,6 +3491,9 @@ namespace BlackMaple.FMSInsight.API
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.ICollection<string> SignaledInspections { get; set; } = new System.Collections.ObjectModel.Collection<string>();
     
+        [Newtonsoft.Json.JsonProperty("LastCompletedMachiningRouteStopIndex", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public int? LastCompletedMachiningRouteStopIndex { get; set; }
+    
         [Newtonsoft.Json.JsonProperty("Location", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public InProcessMaterialLocation Location { get; set; } = new InProcessMaterialLocation();
@@ -3579,6 +3582,9 @@ namespace BlackMaple.FMSInsight.API
     
         [Newtonsoft.Json.JsonProperty("UnloadIntoQueue", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string UnloadIntoQueue { get; set; }
+    
+        [Newtonsoft.Json.JsonProperty("ElapsedLoadUnloadTime", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public System.TimeSpan? ElapsedLoadUnloadTime { get; set; }
     
         [Newtonsoft.Json.JsonProperty("Program", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string Program { get; set; }
