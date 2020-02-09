@@ -937,8 +937,12 @@ namespace BlackMaple.MachineFramework
         using (var cmd = _connection.CreateCommand())
         {
           cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-              " FROM stations WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.Workorder = $work) ORDER BY Counter ASC";
+              " FROM stations " +
+              " WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.Workorder = $work) " +
+              "    OR (Pallet = '' AND Result = $work AND StationLoc = $workloc) " +
+              " ORDER BY Counter ASC";
           cmd.Parameters.Add("work", SqliteType.Text).Value = workorder;
+          cmd.Parameters.Add("workloc", SqliteType.Integer).Value = (int)MachineWatchInterface.LogType.FinalizeWorkorder;
 
           using (var reader = cmd.ExecuteReader())
           {
@@ -2234,6 +2238,53 @@ namespace BlackMaple.MachineFramework
           }
         }
 
+        return ret;
+      }
+    }
+
+    public IEnumerable<MachineWatchInterface.MaterialDetails> GetMaterialForWorkorder(string workorder)
+    {
+      using (var trans = _connection.BeginTransaction())
+      using (var cmd = _connection.CreateCommand())
+      using (var pathCmd = _connection.CreateCommand())
+      {
+        cmd.Transaction = trans;
+        cmd.CommandText = "SELECT MaterialID, UniqueStr, PartName, NumProcesses, Serial FROM matdetails WHERE Workorder IS NOT NULL AND Workorder = $work";
+        cmd.Parameters.Add("work", SqliteType.Text).Value = workorder;
+
+        var ret = new List<MachineWatchInterface.MaterialDetails>();
+        using (var reader = cmd.ExecuteReader())
+        {
+          while (reader.Read())
+          {
+            var mat = new MachineWatchInterface.MaterialDetails() { MaterialID = reader.GetInt64(0), Workorder = workorder };
+            if (!reader.IsDBNull(0)) mat.JobUnique = reader.GetString(1);
+            if (!reader.IsDBNull(1)) mat.PartName = reader.GetString(2);
+            if (!reader.IsDBNull(2)) mat.NumProcesses = reader.GetInt32(3);
+            if (!reader.IsDBNull(4)) mat.Serial = reader.GetString(4);
+            ret.Add(mat);
+          }
+        }
+
+        pathCmd.CommandText = "SELECT Process, Path FROM mat_path_details WHERE MaterialID = $mat";
+        pathCmd.Transaction = trans;
+        var param = pathCmd.Parameters.Add("mat", SqliteType.Integer);
+        foreach (var mat in ret)
+        {
+          mat.Paths = new Dictionary<int, int>();
+          param.Value = mat.MaterialID;
+          using (var reader = pathCmd.ExecuteReader())
+          {
+            while (reader.Read())
+            {
+              var proc = reader.GetInt32(0);
+              var path = reader.GetInt32(1);
+              mat.Paths[proc] = path;
+            }
+          }
+        }
+
+        trans.Commit();
         return ret;
       }
     }

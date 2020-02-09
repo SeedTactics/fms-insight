@@ -130,6 +130,30 @@ namespace MachineWatchTest
         NumProcesses = 77,
         Paths = new Dictionary<int, int>()
       });
+
+      _jobLog.RecordWorkorderForMaterialID(m1, 1, "work1");
+      _jobLog.RecordWorkorderForMaterialID(m2, 1, "work2");
+      _jobLog.RecordWorkorderForMaterialID(m3, 1, "work1");
+
+      _jobLog.GetMaterialForWorkorder("work1").Should().BeEquivalentTo(new[] {
+        new MaterialDetails
+        {
+          MaterialID = m1,
+          JobUnique = "U1",
+          PartName = "P1",
+          NumProcesses = 52,
+          Workorder = "work1",
+          Paths = new Dictionary<int, int> { { 1, 60 }, { 2, 88 } }
+        },
+        new MaterialDetails() {
+          MaterialID = m3,
+          JobUnique = "U3",
+          PartName = "P3",
+          NumProcesses = 566,
+          Workorder = "work1",
+          Paths = new Dictionary<int, int>()
+        }
+      });
     }
 
     [Fact]
@@ -328,7 +352,8 @@ namespace MachineWatchTest
       logsForMat1 = logsForMat1.Select(TransformLog(mat1.MaterialID, SetWorkorderInMat("work1"))).ToList();
       logs = logs.Select(TransformLog(mat1.MaterialID, SetWorkorderInMat("work1"))).ToList();
       mat1 = SetWorkorderInMat("work1")(mat1);
-      CheckLog(logsForMat1, _jobLog.GetLogForWorkorder("work1"), start);
+      var finalize = _jobLog.RecordFinalizedWorkorder("work1");
+      CheckLog(logsForMat1.Append(finalize).ToList(), _jobLog.GetLogForWorkorder("work1"), start);
       _jobLog.GetLogForWorkorder("work2").Should().BeEmpty();
 
       CheckLog(logsForMat1, _jobLog.GetLogForJobUnique(mat1.JobUniqueStr), start);

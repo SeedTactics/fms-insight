@@ -4,6 +4,7 @@
     <AssemblyName>BlackMaple.FMSInsight.API</AssemblyName>
     <PackageId>BlackMaple.FMSInsight.API</PackageId>
     <OutputType>Library</OutputType>
+    <TargetFramework>netstandard2.0</TargetFramework>
 
     <Title>Client API to SeedTactics FMS Insight</Title>
     <Company>Black Maple Software, LLC</Company>
@@ -22,29 +23,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="11.0.2"/>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta2-19367-01" PrivateAssets="All"/>
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3"/>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
+    <PackageReference Include="System.ComponentModel.Annotations" Version="4.7.0"/>
   </ItemGroup>
 
-  <ItemGroup Condition="$(TargetFramework) == 'netstandard2.0'">
-    <PackageReference Include="System.ComponentModel.Annotations" Version="4.4.1"/>
-  </ItemGroup>
-
-  <ItemGroup Condition="$(TargetFramework) == 'net461'">
-    <Reference Include="System.Net.HTTP"/>
-    <Reference Include="System.ComponentModel.DataAnnotations"/>
-  </ItemGroup>
-
-  <Choose>
-      <When Condition="$(OS) == 'Unix'">
-          <PropertyGroup>
-              <TargetFramework>netstandard2.0</TargetFramework>
-          </PropertyGroup>
-      </When>
-      <When Condition="$(OS) == 'Windows_NT'">
-          <PropertyGroup>
-              <TargetFrameworks>net461;netstandard2.0</TargetFrameworks>
-          </PropertyGroup>
-      </When>
-  </Choose>
 </Project>

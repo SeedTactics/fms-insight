@@ -1160,6 +1160,37 @@ namespace BlackMaple.MachineFramework
             }
         }
 
+        public List<MachineWatchInterface.PartWorkorder> UnfilledWorkordersForJob(string unique)
+        {
+            lock (_lock)
+            {
+                using (var cmd = _connection.CreateCommand()) {
+
+                var ret = new List<MachineWatchInterface.PartWorkorder>();
+                cmd.CommandText = "SELECT a.Workorder, a.Part, a.Quantity, a.DueDate, a.Priority " +
+                                   " FROM unfilled_workorders a INNER JOIN jobs b ON a.ScheduleId = b.ScheduleId AND a.Part = b.Part" +
+                                   " WHERE b.UniqueStr = $uniq";
+                cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
+
+                using (IDataReader reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        ret.Add(new MachineWatchInterface.PartWorkorder() {
+                            WorkorderId = reader.GetString(0),
+                            Part = reader.GetString(1),
+                            Quantity = reader.GetInt32(2),
+                            DueDate = new DateTime(reader.GetInt64(3)),
+                            Priority = reader.GetInt32(4)
+                        });
+                    }
+                }
+                return ret;
+                }
+            }
+
+        }
+
         public BlackMaple.MachineWatchInterface.PlannedSchedule LoadMostRecentSchedule()
         {
             using (var cmd = _connection.CreateCommand()) {

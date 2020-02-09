@@ -1,1 +1,1 @@
-../insight/node_modules/nswag/bin/nswag.js swagger2csclient /runtime:NetCore20 /input:../../server/fms-insight-api.json /namespace:BlackMaple.FMSInsight.API /output:api.cs
+../insight/node_modules/nswag/bin/nswag.js swagger2csclient /ParameterDateTimeFormat:'yyyy-MM-ddTHH:mm:ssZ' /runtime:NetCore21 /input:../../server/fms-insight-api.json /namespace:BlackMaple.FMSInsight.API /output:api.cs

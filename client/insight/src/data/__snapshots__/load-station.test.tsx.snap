@@ -5,6 +5,7 @@ Object {
   "castings": Array [
     Object {
       "Action": Object {
+        "ElapsedLoadUnloadTime": undefined,
         "ElapsedMachiningTime": undefined,
         "ExpectedRemainingMachiningTime": undefined,
         "LoadOntoFace": 1,
@@ -16,6 +17,7 @@ Object {
         "UnloadIntoQueue": undefined,
       },
       "JobUnique": "aaa-offline-2018-01-01",
+      "LastCompletedMachiningRouteStopIndex": undefined,
       "Location": Object {
         "CurrentQueue": undefined,
         "Face": undefined,
@@ -36,6 +38,7 @@ Object {
     "1" => Array [
       Object {
         "Action": Object {
+          "ElapsedLoadUnloadTime": undefined,
           "ElapsedMachiningTime": undefined,
           "ExpectedRemainingMachiningTime": undefined,
           "LoadOntoFace": 2,
@@ -47,6 +50,7 @@ Object {
           "UnloadIntoQueue": undefined,
         },
         "JobUnique": "aaa-offline-2018-01-01",
+        "LastCompletedMachiningRouteStopIndex": undefined,
         "Location": Object {
           "CurrentQueue": undefined,
           "Face": 1,
@@ -66,6 +70,7 @@ Object {
     "2" => Array [
       Object {
         "Action": Object {
+          "ElapsedLoadUnloadTime": undefined,
           "ElapsedMachiningTime": undefined,
           "ExpectedRemainingMachiningTime": undefined,
           "LoadOntoFace": undefined,
@@ -77,6 +82,7 @@ Object {
           "UnloadIntoQueue": undefined,
         },
         "JobUnique": "aaa-offline-2018-01-01",
+        "LastCompletedMachiningRouteStopIndex": undefined,
         "Location": Object {
           "CurrentQueue": undefined,
           "Face": 2,
@@ -122,6 +128,7 @@ Object {
     "1" => Array [
       Object {
         "Action": Object {
+          "ElapsedLoadUnloadTime": undefined,
           "ElapsedMachiningTime": undefined,
           "ExpectedRemainingMachiningTime": undefined,
           "LoadOntoFace": undefined,
@@ -133,6 +140,7 @@ Object {
           "UnloadIntoQueue": undefined,
         },
         "JobUnique": "xxx-offline-2018-01-01",
+        "LastCompletedMachiningRouteStopIndex": undefined,
         "Location": Object {
           "CurrentQueue": undefined,
           "Face": 1,
@@ -170,6 +178,7 @@ Object {
     "Queue1" => Array [
       Object {
         "Action": Object {
+          "ElapsedLoadUnloadTime": undefined,
           "ElapsedMachiningTime": undefined,
           "ExpectedRemainingMachiningTime": undefined,
           "LoadOntoFace": undefined,
@@ -181,6 +190,7 @@ Object {
           "UnloadIntoQueue": undefined,
         },
         "JobUnique": "aaa-offline-2018-01-01",
+        "LastCompletedMachiningRouteStopIndex": undefined,
         "Location": Object {
           "CurrentQueue": "Queue1",
           "Face": undefined,
@@ -198,6 +208,7 @@ Object {
       },
       Object {
         "Action": Object {
+          "ElapsedLoadUnloadTime": undefined,
           "ElapsedMachiningTime": undefined,
           "ExpectedRemainingMachiningTime": undefined,
           "LoadOntoFace": undefined,
@@ -209,6 +220,7 @@ Object {
           "UnloadIntoQueue": undefined,
         },
         "JobUnique": "xxx-offline-2018-01-01",
+        "LastCompletedMachiningRouteStopIndex": undefined,
         "Location": Object {
           "CurrentQueue": "Queue1",
           "Face": undefined,
@@ -226,6 +238,7 @@ Object {
       },
       Object {
         "Action": Object {
+          "ElapsedLoadUnloadTime": undefined,
           "ElapsedMachiningTime": undefined,
           "ExpectedRemainingMachiningTime": undefined,
           "LoadOntoFace": 1,
@@ -237,6 +250,7 @@ Object {
           "UnloadIntoQueue": undefined,
         },
         "JobUnique": "zzz-offline-2018-01-01",
+        "LastCompletedMachiningRouteStopIndex": undefined,
         "Location": Object {
           "CurrentQueue": "Queue1",
           "Face": undefined,
@@ -269,6 +283,7 @@ Object {
     "Queue2" => Array [
       Object {
         "Action": Object {
+          "ElapsedLoadUnloadTime": undefined,
           "ElapsedMachiningTime": undefined,
           "ExpectedRemainingMachiningTime": undefined,
           "LoadOntoFace": undefined,
@@ -280,6 +295,7 @@ Object {
           "UnloadIntoQueue": undefined,
         },
         "JobUnique": "ccc-offline-2018-01-01",
+        "LastCompletedMachiningRouteStopIndex": undefined,
         "Location": Object {
           "CurrentQueue": "Queue2",
           "Face": undefined,
@@ -297,6 +313,7 @@ Object {
       },
       Object {
         "Action": Object {
+          "ElapsedLoadUnloadTime": undefined,
           "ElapsedMachiningTime": undefined,
           "ExpectedRemainingMachiningTime": undefined,
           "LoadOntoFace": undefined,
@@ -308,6 +325,7 @@ Object {
           "UnloadIntoQueue": undefined,
         },
         "JobUnique": "zzz-offline-2018-01-01",
+        "LastCompletedMachiningRouteStopIndex": undefined,
         "Location": Object {
           "CurrentQueue": "Queue2",
           "Face": undefined,
@@ -331,6 +349,7 @@ Object {
         "material": Array [
           Object {
             "Action": Object {
+              "ElapsedLoadUnloadTime": undefined,
               "ElapsedMachiningTime": "PT10M",
               "ExpectedRemainingMachiningTime": "PT20M",
               "LoadOntoFace": undefined,
@@ -342,6 +361,7 @@ Object {
               "UnloadIntoQueue": undefined,
             },
             "JobUnique": "ccc-offline-2018-01-01",
+            "LastCompletedMachiningRouteStopIndex": undefined,
             "Location": Object {
               "CurrentQueue": undefined,
               "Face": 2,
@@ -359,6 +379,7 @@ Object {
           },
           Object {
             "Action": Object {
+              "ElapsedLoadUnloadTime": undefined,
               "ElapsedMachiningTime": undefined,
               "ExpectedRemainingMachiningTime": undefined,
               "LoadOntoFace": undefined,
@@ -370,6 +391,7 @@ Object {
               "UnloadIntoQueue": undefined,
             },
             "JobUnique": "ccc-offline-2018-01-01",
+            "LastCompletedMachiningRouteStopIndex": undefined,
             "Location": Object {
               "CurrentQueue": undefined,
               "Face": 1,
@@ -407,6 +429,7 @@ Object {
         "material": Array [
           Object {
             "Action": Object {
+              "ElapsedLoadUnloadTime": undefined,
               "ElapsedMachiningTime": "PT10M",
               "ExpectedRemainingMachiningTime": "PT50M",
               "LoadOntoFace": undefined,
@@ -418,6 +441,7 @@ Object {
               "UnloadIntoQueue": undefined,
             },
             "JobUnique": "zzz-offline-2018-01-01",
+            "LastCompletedMachiningRouteStopIndex": undefined,
             "Location": Object {
               "CurrentQueue": undefined,
               "Face": 1,
@@ -453,6 +477,7 @@ Object {
         "material": Array [
           Object {
             "Action": Object {
+              "ElapsedLoadUnloadTime": undefined,
               "ElapsedMachiningTime": undefined,
               "ExpectedRemainingMachiningTime": undefined,
               "LoadOntoFace": undefined,
@@ -464,6 +489,7 @@ Object {
               "UnloadIntoQueue": undefined,
             },
             "JobUnique": "yyy-offline-2018-01-01",
+            "LastCompletedMachiningRouteStopIndex": undefined,
             "Location": Object {
               "CurrentQueue": undefined,
               "Face": 1,
@@ -481,6 +507,7 @@ Object {
           },
           Object {
             "Action": Object {
+              "ElapsedLoadUnloadTime": undefined,
               "ElapsedMachiningTime": undefined,
               "ExpectedRemainingMachiningTime": undefined,
               "LoadOntoFace": undefined,
@@ -492,6 +519,7 @@ Object {
               "UnloadIntoQueue": undefined,
             },
             "JobUnique": "yyy-offline-2018-01-01",
+            "LastCompletedMachiningRouteStopIndex": undefined,
             "Location": Object {
               "CurrentQueue": undefined,
               "Face": 1,
@@ -529,6 +557,7 @@ Object {
         "material": Array [
           Object {
             "Action": Object {
+              "ElapsedLoadUnloadTime": undefined,
               "ElapsedMachiningTime": "PT10M",
               "ExpectedRemainingMachiningTime": "PT45M",
               "LoadOntoFace": undefined,
@@ -540,6 +569,7 @@ Object {
               "UnloadIntoQueue": undefined,
             },
             "JobUnique": "xxx-offline-2018-01-01",
+            "LastCompletedMachiningRouteStopIndex": undefined,
             "Location": Object {
               "CurrentQueue": undefined,
               "Face": 1,
@@ -577,6 +607,7 @@ Object {
         "material": Array [
           Object {
             "Action": Object {
+              "ElapsedLoadUnloadTime": undefined,
               "ElapsedMachiningTime": undefined,
               "ExpectedRemainingMachiningTime": undefined,
               "LoadOntoFace": undefined,
@@ -588,6 +619,7 @@ Object {
               "UnloadIntoQueue": undefined,
             },
             "JobUnique": "aaa-offline-2018-01-01",
+            "LastCompletedMachiningRouteStopIndex": undefined,
             "Location": Object {
               "CurrentQueue": undefined,
               "Face": 2,
@@ -605,6 +637,7 @@ Object {
           },
           Object {
             "Action": Object {
+              "ElapsedLoadUnloadTime": undefined,
               "ElapsedMachiningTime": undefined,
               "ExpectedRemainingMachiningTime": undefined,
               "LoadOntoFace": 2,
@@ -616,6 +649,7 @@ Object {
               "UnloadIntoQueue": undefined,
             },
             "JobUnique": "aaa-offline-2018-01-01",
+            "LastCompletedMachiningRouteStopIndex": undefined,
             "Location": Object {
               "CurrentQueue": undefined,
               "Face": 1,
@@ -653,6 +687,7 @@ Object {
         "material": Array [
           Object {
             "Action": Object {
+              "ElapsedLoadUnloadTime": undefined,
               "ElapsedMachiningTime": undefined,
               "ExpectedRemainingMachiningTime": undefined,
               "LoadOntoFace": undefined,
@@ -664,6 +699,7 @@ Object {
               "UnloadIntoQueue": undefined,
             },
             "JobUnique": "xxx-offline-2018-01-01",
+            "LastCompletedMachiningRouteStopIndex": undefined,
             "Location": Object {
               "CurrentQueue": undefined,
               "Face": 1,
