@@ -856,7 +856,8 @@
         "LoadOntoPallet": "6",
         "LoadOntoFace": 2,
         "ProcessAfterLoad": 2,
-        "PathAfterLoad": 1
+        "PathAfterLoad": 1,
+        "ElapsedLoadUnloadTime": "PT35M37S"
       }
     },
     {
@@ -877,7 +878,8 @@
         "LoadOntoPallet": "6",
         "LoadOntoFace": 2,
         "ProcessAfterLoad": 2,
-        "PathAfterLoad": 1
+        "PathAfterLoad": 1,
+        "ElapsedLoadUnloadTime": "PT35M37S"
       }
     },
     {

@@ -837,7 +837,8 @@
       },
       "Action": {
         "Type": "UnloadToInProcess",
-        "UnloadIntoQueue": "queueCCC"
+        "UnloadIntoQueue": "queueCCC",
+        "ElapsedLoadUnloadTime": "PT47S"
       }
     },
     {
@@ -856,7 +857,8 @@
       },
       "Action": {
         "Type": "UnloadToInProcess",
-        "UnloadIntoQueue": "queueCCC"
+        "UnloadIntoQueue": "queueCCC",
+        "ElapsedLoadUnloadTime": "PT47S"
       }
     },
     {
@@ -874,7 +876,8 @@
         "LoadOntoPallet": "5",
         "LoadOntoFace": 1,
         "ProcessAfterLoad": 1,
-        "PathAfterLoad": 1
+        "PathAfterLoad": 1,
+        "ElapsedLoadUnloadTime": "PT47S"
       }
     },
     {
@@ -892,7 +895,8 @@
         "LoadOntoPallet": "5",
         "LoadOntoFace": 1,
         "ProcessAfterLoad": 1,
-        "PathAfterLoad": 1
+        "PathAfterLoad": 1,
+        "ElapsedLoadUnloadTime": "PT47S"
       }
     },
     {

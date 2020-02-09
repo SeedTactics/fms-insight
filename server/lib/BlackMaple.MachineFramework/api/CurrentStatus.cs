@@ -65,6 +65,9 @@ namespace BlackMaple.MachineWatchInterface
     //If Type = UnloadToInProcess
     [DataMember(IsRequired = false, EmitDefaultValue = false)] public string UnloadIntoQueue { get; set; }
 
+    //If Type = Loading or UnloadToInProcess or UnloadToCompletedMaterial
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public TimeSpan? ElapsedLoadUnloadTime { get; set; }
+
     // If Type = Machining
     [DataMember(IsRequired = false, EmitDefaultValue = false)] public string Program { get; set; }
     [DataMember(IsRequired = false, EmitDefaultValue = false)] public TimeSpan? ElapsedMachiningTime { get; set; }
