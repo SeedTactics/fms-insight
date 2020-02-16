@@ -38,13 +38,18 @@ using BlackMaple.MachineWatchInterface;
 
 namespace MazakMachineInterface
 {
+  public interface IMachineGroupName
+  {
+    string MachineGroupName { get; }
+  }
+
   public interface IWriteJobs
   {
     void AddJobs(NewJobs newJ, string expectedPreviousScheduleId);
     void RecopyJobsToMazak(DateTime? nowUtc = null);
   }
 
-  public class WriteJobs : IWriteJobs
+  public class WriteJobs : IWriteJobs, IMachineGroupName
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<WriteJobs>();
 
@@ -60,6 +65,8 @@ namespace MazakMachineInterface
     private string ProgramDirectory;
 
     public const int JobLookbackHours = 2 * 24;
+
+    public string MachineGroupName => "MC";
 
     public WriteJobs(
       IWriteData d,

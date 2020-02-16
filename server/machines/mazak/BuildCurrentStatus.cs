@@ -43,7 +43,7 @@ namespace MazakMachineInterface
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<BuildCurrentStatus>();
 
-    public static CurrentStatus Build(JobDB jobDB, JobLogDB log, FMSSettings fmsSettings, IQueueSyncFault queueSyncFault, MazakDbType dbType, MazakAllData mazakData, DateTime utcNow)
+    public static CurrentStatus Build(JobDB jobDB, JobLogDB log, FMSSettings fmsSettings, IMachineGroupName machineGroupName, IQueueSyncFault queueSyncFault, MazakDbType dbType, MazakAllData mazakData, DateTime utcNow)
     {
       //Load process and path numbers
       Dictionary<string, int> uniqueToMaxPath;
@@ -134,7 +134,7 @@ namespace MazakMachineInterface
         else
           job.HoldEntireJob.UserHold = false;
 
-        AddRoutingToJob(mazakData, partRow, job, procToPath, dbType);
+        AddRoutingToJob(mazakData, partRow, job, machineGroupName, procToPath, dbType);
       }
 
       var loadedJobs = new HashSet<string>();
@@ -153,7 +153,7 @@ namespace MazakMachineInterface
         {
 
           var palName = palRow.PalletNumber.ToString();
-          var palLoc = FindPalletLocation(mazakData, dbType, palRow.PalletNumber);
+          var palLoc = FindPalletLocation(machineGroupName, mazakData, dbType, palRow.PalletNumber);
 
           //Create the pallet
           PalletStatus status = new PalletStatus()
@@ -403,7 +403,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private static void AddRoutingToJob(MazakSchedulesPartsPallets mazakData, MazakPartRow partRow, JobPlan job, MazakPart.IProcToPath procToPath, MazakDbType mazakTy)
+    private static void AddRoutingToJob(MazakSchedulesPartsPallets mazakData, MazakPartRow partRow, JobPlan job, IMachineGroupName machineGroupName, MazakPart.IProcToPath procToPath, MazakDbType mazakTy)
     {
       //Add routing and pallets
       foreach (var partProcRow in partRow.Processes)
@@ -440,7 +440,7 @@ namespace MazakMachineInterface
           {
             if (routeStop == null)
             {
-              routeStop = new JobMachiningStop("MC");
+              routeStop = new JobMachiningStop(machineGroupName.MachineGroupName);
               job.AddMachiningStop(partProcRow.ProcessNumber, path, routeStop);
             }
             routeStop.Stations.Add(int.Parse(c.ToString()));
@@ -797,7 +797,7 @@ namespace MazakMachineInterface
       return start;
     }
 
-    private static PalletLocation FindPalletLocation(MazakSchedulesPartsPallets mazakData, MazakDbType dbType, int palletNum)
+    private static PalletLocation FindPalletLocation(IMachineGroupName machName, MazakSchedulesPartsPallets mazakData, MazakDbType dbType, int palletNum)
     {
       foreach (var palLocRow in mazakData.PalletPositions)
       {
@@ -805,11 +805,11 @@ namespace MazakMachineInterface
         {
           if (dbType != MazakDbType.MazakVersionE)
           {
-            return ParseStatNameWeb(palLocRow.PalletPosition);
+            return ParseStatNameWeb(machName, palLocRow.PalletPosition);
           }
           else
           {
-            return ParseStatNameVerE(palLocRow.PalletPosition);
+            return ParseStatNameVerE(machName, palLocRow.PalletPosition);
           }
         }
       }
@@ -817,7 +817,7 @@ namespace MazakMachineInterface
       return new PalletLocation(PalletLocationEnum.Buffer, "Buffer", 0);
     }
 
-    private static PalletLocation ParseStatNameVerE(string pos)
+    private static PalletLocation ParseStatNameVerE(IMachineGroupName machName, string pos)
     {
       PalletLocation ret = new PalletLocation();
       ret.Location = PalletLocationEnum.Buffer;
@@ -844,7 +844,7 @@ namespace MazakMachineInterface
         {
           ret.Location = PalletLocationEnum.MachineQueue;
         }
-        ret.StationGroup = "MC";
+        ret.StationGroup = machName.MachineGroupName;
         ret.Num = Convert.ToInt32(pos[1].ToString());
       }
 
@@ -868,7 +868,7 @@ namespace MazakMachineInterface
 
     }
 
-    private static PalletLocation ParseStatNameWeb(string pos)
+    private static PalletLocation ParseStatNameWeb(IMachineGroupName machName, string pos)
     {
       PalletLocation ret = new PalletLocation();
       ret.Location = PalletLocationEnum.Buffer;
@@ -895,7 +895,7 @@ namespace MazakMachineInterface
         {
           ret.Location = PalletLocationEnum.MachineQueue;
         }
-        ret.StationGroup = "MC";
+        ret.StationGroup = machName.MachineGroupName;
         ret.Num = Convert.ToInt32(pos[2].ToString());
       }
 
