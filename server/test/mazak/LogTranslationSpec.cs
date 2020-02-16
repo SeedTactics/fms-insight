@@ -35,6 +35,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using Xunit;
+using NSubstitute;
 using FluentAssertions;
 using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
@@ -82,7 +83,10 @@ namespace MachineWatchTest
         Tools = Enumerable.Empty<ToolPocketRow>()
       };
 
-      log = new LogTranslation(jobDB, jobLog, mazakData, settings,
+      var machGroupName = Substitute.For<IMachineGroupName>();
+      machGroupName.MachineGroupName.Returns("machinespec");
+
+      log = new LogTranslation(jobDB, jobLog, mazakData, machGroupName, settings,
         e => raisedByEvent.Add(e)
       );
     }
@@ -211,7 +215,7 @@ namespace MachineWatchTest
           )),
           pal: mats.First().Pallet.ToString(),
           ty: BlackMaple.MachineWatchInterface.LogType.MachineCycle,
-          locName: "MC",
+          locName: "machinespec",
           locNum: e2.StationNumber,
           prog: prog,
           start: true,
@@ -260,7 +264,7 @@ namespace MachineWatchTest
         )),
         pal: mats.First().Pallet.ToString(),
         ty: BlackMaple.MachineWatchInterface.LogType.MachineCycle,
-        locName: "MC",
+        locName: "machinespec",
         locNum: e2.StationNumber,
         prog: prog,
         start: false,
@@ -814,11 +818,11 @@ namespace MachineWatchTest
       j.SetExpectedUnloadTime(process: 1, path: 2, t: TimeSpan.FromMinutes(712));
       j.SetExpectedUnloadTime(process: 2, path: 1, t: TimeSpan.FromMinutes(721));
       j.SetExpectedUnloadTime(process: 2, path: 2, t: TimeSpan.FromMinutes(722));
-      var stop1 = new JobMachiningStop("MC");
+      var stop1 = new JobMachiningStop("machinespec");
       stop1.ExpectedCycleTime = TimeSpan.FromMinutes(33);
       j.AddMachiningStop(process: 1, path: 1, r: stop1);
       j.AddMachiningStop(process: 1, path: 2, r: stop1);
-      var stop2 = new JobMachiningStop("MC");
+      var stop2 = new JobMachiningStop("machinespec");
       stop2.ExpectedCycleTime = TimeSpan.FromMinutes(44);
       j.AddMachiningStop(process: 2, path: 1, r: stop2);
       j.AddMachiningStop(process: 2, path: 2, r: stop2);
@@ -1042,7 +1046,7 @@ namespace MachineWatchTest
             Pallet = "2",
             LoadStation = 6,
             Stops = new List<MaterialProcessActualPath.Stop> {
-              new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 4}
+              new MaterialProcessActualPath.Stop() {StationName = "machinespec", StationNum = 4}
             },
             UnloadStation = -1
           }
@@ -1066,7 +1070,7 @@ namespace MachineWatchTest
             Pallet = "2",
             LoadStation = 6,
             Stops = new List<MaterialProcessActualPath.Stop> {
-              new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 4}
+              new MaterialProcessActualPath.Stop() {StationName = "machinespec", StationNum = 4}
             },
             UnloadStation = 1
           },
@@ -1076,7 +1080,7 @@ namespace MachineWatchTest
             Pallet = "2",
             LoadStation = 1,
             Stops = new List<MaterialProcessActualPath.Stop> {
-              new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 7}
+              new MaterialProcessActualPath.Stop() {StationName = "machinespec", StationNum = 7}
             },
             UnloadStation = -1
           }

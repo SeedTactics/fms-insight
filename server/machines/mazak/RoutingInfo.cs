@@ -47,6 +47,7 @@ namespace MazakMachineInterface
     private BlackMaple.MachineFramework.JobDB jobDB;
     private BlackMaple.MachineFramework.JobLogDB log;
     private IWriteJobs _writeJobs;
+    private IMachineGroupName _machineGroupName;
     private IDecrementPlanQty _decr;
     private readonly IQueueSyncFault queueFault;
     private System.Timers.Timer _copySchedulesTimer;
@@ -59,6 +60,7 @@ namespace MazakMachineInterface
 
     public RoutingInfo(
       IWriteData d,
+      IMachineGroupName machineGroupName,
       IReadDataAccess readDb,
       IMazakLogReader logR,
       BlackMaple.MachineFramework.JobDB jDB,
@@ -77,6 +79,7 @@ namespace MazakMachineInterface
       log = jLog;
       _writeJobs = wJobs;
       _decr = decrement;
+      _machineGroupName = machineGroupName;
       queueFault = queueSyncFault;
       CheckPalletsUsedOnce = check;
 
@@ -107,7 +110,7 @@ namespace MazakMachineInterface
         OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
       }
 
-      return BuildCurrentStatus.Build(jobDB, log, fmsSettings, queueFault, readDatabase.MazakType, mazakData, DateTime.UtcNow);
+      return BuildCurrentStatus.Build(jobDB, log, fmsSettings, _machineGroupName, queueFault, readDatabase.MazakType, mazakData, DateTime.UtcNow);
     }
 
     #endregion

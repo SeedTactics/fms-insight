@@ -44,6 +44,7 @@ namespace MazakMachineInterface
     private BlackMaple.MachineFramework.JobDB _jobDB;
     private BlackMaple.MachineFramework.JobLogDB _log;
     private BlackMaple.MachineFramework.FMSSettings _settings;
+    private IMachineGroupName _machGroupName;
     private Action<LogEntry> _onMazakLog;
     private MazakSchedulesAndLoadActions _mazakSchedules;
     private Dictionary<string, JobPlan> _jobs;
@@ -53,11 +54,13 @@ namespace MazakMachineInterface
     public LogTranslation(BlackMaple.MachineFramework.JobDB jDB,
                           BlackMaple.MachineFramework.JobLogDB logDB,
                           MazakSchedulesAndLoadActions mazakSch,
+                          IMachineGroupName machineGroupName,
                           BlackMaple.MachineFramework.FMSSettings settings,
                           Action<LogEntry> onMazakLogMessage)
     {
       _jobDB = jDB;
       _log = logDB;
+      _machGroupName = machineGroupName;
       _mazakSchedules = mazakSch;
       _settings = settings;
       _onMazakLog = onMazakLogMessage;
@@ -119,7 +122,7 @@ namespace MazakMachineInterface
           _log.RecordMachineStart(
             mats: GetMaterialOnPallet(e, cycle).Select(m => m.Mat),
             pallet: e.Pallet.ToString(),
-            statName: "MC",
+            statName: _machGroupName.MachineGroupName,
             statNum: e.StationNumber,
             program: e.Program,
             timeUTC: e.TimeUTC,
@@ -139,7 +142,7 @@ namespace MazakMachineInterface
             var s = _log.RecordMachineEnd(
               mats: machineMats.Select(m => m.Mat),
               pallet: e.Pallet.ToString(),
-              statName: "MC",
+              statName: _machGroupName.MachineGroupName,
               statNum: e.StationNumber,
               program: e.Program,
               timeUTC: e.TimeUTC,
