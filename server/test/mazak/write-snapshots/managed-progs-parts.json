@@ -61,7 +61,7 @@
       "Command": "Add"
     },
     {
-      "PartName": "bbb:0:1",
+      "PartName": "bbb:0:2",
       "Comment": "bbb-schId1234-Path1-1-0",
       "Price": 0.0,
       "TotalProcess": 2,
@@ -75,7 +75,7 @@
       "ProductCount": 0,
       "Processes": [
         {
-          "PartName": "bbb:0:1",
+          "PartName": "bbb:0:2",
           "ProcessNumber": 1,
           "FixQuantity": 1,
           "ContinueCut": 0,
@@ -96,7 +96,7 @@
           "CreateToolList_RA": 0
         },
         {
-          "PartName": "bbb:0:1",
+          "PartName": "bbb:0:2",
           "ProcessNumber": 2,
           "FixQuantity": 1,
           "ContinueCut": 0,
@@ -120,7 +120,7 @@
       "Command": "Add"
     },
     {
-      "PartName": "ccc:0:1",
+      "PartName": "ccc:0:3",
       "Comment": "ccc-schId1234-Path1-1-0",
       "Price": 0.0,
       "TotalProcess": 2,
@@ -134,7 +134,7 @@
       "ProductCount": 0,
       "Processes": [
         {
-          "PartName": "ccc:0:1",
+          "PartName": "ccc:0:3",
           "ProcessNumber": 1,
           "FixQuantity": 2,
           "ContinueCut": 0,
@@ -155,7 +155,7 @@
           "CreateToolList_RA": 0
         },
         {
-          "PartName": "ccc:0:1",
+          "PartName": "ccc:0:3",
           "ProcessNumber": 2,
           "FixQuantity": 2,
           "ContinueCut": 0,

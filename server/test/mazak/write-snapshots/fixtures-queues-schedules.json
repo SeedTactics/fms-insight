@@ -3,7 +3,7 @@
     {
       "Id": 2,
       "Comment": "bbb-schId1234-Path1-1-0",
-      "PartName": "bbb:0:1",
+      "PartName": "bbb:0:2",
       "PlanQuantity": 20,
       "CompleteQuantity": 0,
       "Priority": 91,
@@ -125,7 +125,7 @@
     {
       "Id": 3,
       "Comment": "ccc-schId1234-Path1-1-0",
-      "PartName": "ccc:0:1",
+      "PartName": "ccc:0:3",
       "PlanQuantity": 38,
       "CompleteQuantity": 0,
       "Priority": 91,
