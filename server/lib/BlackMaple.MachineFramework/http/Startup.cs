@@ -133,7 +133,7 @@ namespace BlackMaple.MachineFramework
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
-          options.Authority = _serverSt.OpenIDConnectAuthority;
+          options.Authority = _serverSt.AuthAuthority;
           options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
           {
             ValidateIssuer = true,

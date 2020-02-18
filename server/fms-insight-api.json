@@ -1365,6 +1365,9 @@
         "OpenIDConnectAuthority": {
           "type": "string"
         },
+        "LocalhostOpenIDConnectAuthority": {
+          "type": "string"
+        },
         "OpenIDConnectClientId": {
           "type": "string"
         },

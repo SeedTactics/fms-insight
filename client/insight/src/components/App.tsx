@@ -534,7 +534,7 @@ class App extends React.PureComponent<AppConnectedProps> {
         page = <BackupViewer onRequestOpenFile={this.props.backupViewerOnRequestOpenFile} />;
       }
       showAlarms = false;
-    } else if (this.props.fmsInfo && (!this.props.fmsInfo.openIDConnectAuthority || this.props.user)) {
+    } else if (this.props.fmsInfo && (!serverSettings.requireLogin(this.props.fmsInfo) || this.props.user)) {
       switch (this.props.route.current) {
         case routes.RouteLocation.Station_LoadMonitor:
           page = <LoadStation />;
@@ -642,7 +642,7 @@ class App extends React.PureComponent<AppConnectedProps> {
             showAlarms = false;
           }
       }
-    } else if (this.props.fmsInfo && this.props.fmsInfo.openIDConnectAuthority) {
+    } else if (this.props.fmsInfo && serverSettings.requireLogin(this.props.fmsInfo)) {
       page = (
         <div style={{ textAlign: "center", marginTop: "4em" }}>
           <h3>Please Login</h3>
