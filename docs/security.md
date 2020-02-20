@@ -38,7 +38,7 @@ Finally, most identity providers allow the administrator to restrict an
 application to a set of users (e.g. Azure Active Directory allows assigning specific users
 or groups to the application).
 
-Once the client has been created, there are four settings in the [config.ini](server-config.ini).
+Once the client has been created, there are four settings in the [config.ini](server-config.md).
 
 - `OpenIDConnectAuthority`: This setting is the path to the well-known configuration document for the identity provider.
   For example, for AzureAD, this is `https://login.microsoftonline.com/{tenant}/v2.0` where `{tenant}` is your tenant GUID.
@@ -85,7 +85,7 @@ should require OpenID Connect authentication for all routes starting with `/api`
 Our small C# reverse-proxy implements OpenID Connect authentication and has been tested with AzureAD, Okta,
 and Keycloak. Alternatively, Nginx+ or IIS can be configured to require authentication.
 
-In this scenario, two settings are needed in FMS Insight's [config.ini](server-config.ini):
+In this scenario, two settings are needed in FMS Insight's [config.ini](server-config.md):
 
 - `OpenIDConnectAuthority`: This setting is the path to the well-known configuration document for the identity provider.
   For example, for AzureAD, this is `https://login.microsoftonline.com/{tenant}/v2.0` where `{tenant}` is your tenant GUID.
@@ -113,7 +113,7 @@ configured to first proxy all connections from the factory network to FMS Insigh
 is then also configured to proxy the request from FMS Insight to the OpenID Connect configuration document to
 the real identity provider.
 
-The configuration in FMS Insight's [config.ini](server-config.ini) are as follows:
+The configuration in FMS Insight's [config.ini](server-config.md) are as follows:
 
 - `OpenIDConnectAuthority`: The real identity-provided authority URL.
   For example, for AzureAD, this is `https://login.microsoftonline.com/{tenant}/v2.0` where `{tenant}` is your tenant GUID.
