@@ -64,55 +64,6 @@ The simulation lab is also great for training before the machines are even
 installed, testing out new scheduling or inspection signaling techniques, or
 training new operators and managers.
 
-## Avoid the cell controller on your factory network
-
-Mazak does not recommend that you enable Windows updates, and Mazak cell
-controllers run on Windows XP and Windows 8 which no longer receive support
-and security updates from Microsoft. In addition, the FMS Insight server
-requires Windows 7 or later so can't be installed on Version E cell controllers
-using Windows XP. To avoid putting the cell controller on your factory network
-directly, we suggest the following setup:
-
-- Obtain a Windows 10 computer to be placed on the factory floor nearby the
-  cell controller. (Windows 7 also works but Microsoft is ending support for
-  Windows 7 in 2020.) Call this computer the FMS Insight Server. This
-  computer will run only the FMS Insight server software. The FMS Insight
-  server software is very lightweight and will run on any relatively recent
-  computer; any modern Intel or AMD CPU, 1 GB of RAM, and 10 GB of disk space
-  are more than enough (the cheapest computer you can buy will have much more
-  than this). The main requirement is that this Windows 10 computer have two
-  network cards. The only pre-installed software required is Microsoft's .NET
-  Framework version 4.6.1, which comes pre-installed on Windows 10.
-
-- Connect one network card in the FMS Insight Server to your factory network.
-  Connect it to your domain using your usual security policies and
-  enterprise domain control. Automatic Windows Updates can be enabled.
-
-- Connect the second network card in a point-to-point connection (perhaps with a
-  crossover cable) to the Mazak Cell Controller using static IPs
-  for both sides of the connection. On the FMS Insight Server, you can set up
-  a firewall to disallow all network traffic between the factory network and
-  the cell controller. The only computer that needs direct communication with
-  the Mazak cell controller is the FMS Insight Server. All other computers
-  and software in the factory will connect to the FMS Insight Server over the
-  factory network.
-
-- (Version E And Web) For Mazak Web or Mazak Version E, on the Mazak cell controller
-  create a network share of the `c:\Mazak\NFMS\DB`
-  directory. On the FMS Insight server computer, edit
-  [config.ini](server-config.md) and change two settings in the Mazak section. First, set
-  `VersionE = true` and then set `Database Path = \\<ip address of cell controller>\DBshare`
-  (or whatever share name you chose).
-
-- (Web and Smooth PMC) For Mazak Web or Mazak Smooth PMC, on the Mazak cell controller
-  create a network share of the `c:\Mazak\FMS\Log` directory. On the FMS Insight server computer, edit
-  [config.ini](server-config.md) and set `Log CSV Path = \\<ip address of cell controller\MazakLog`
-  (or whatever share name you chose).
-
-- (Smooth PMC) Mazak Smooth PMC uses SQL Server which FMS Insight can access over the network.
-  Edit the [config.ini](server-config.md) file and set the `SQL ConnectionString` setting
-  to a SQL Server connection string which uses the IP address of the Mazak cell controller.
-
 ## Starting Offset and Decrement Priority
 
 The Mazak [config.ini](server-config.md) contains a setting `Use Starting Offset`

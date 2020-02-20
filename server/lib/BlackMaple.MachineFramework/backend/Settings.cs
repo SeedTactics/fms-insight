@@ -71,12 +71,14 @@ namespace BlackMaple.MachineFramework
     public bool EnableSailAPI { get; set; } = false;
     public string OpenIDConnectAuthority { get; set; } = null;
     public string OpenIDConnectClientId { get; set; } = null;
+    public string AuthAuthority { get; set; } = null;
     public string AuthTokenAudiences { get; set; } = null;
 
     public bool UseAuthentication =>
-         !string.IsNullOrEmpty(AuthTokenAudiences)
+         !string.IsNullOrEmpty(OpenIDConnectClientId)
       && !string.IsNullOrEmpty(OpenIDConnectAuthority)
-      && !string.IsNullOrEmpty(OpenIDConnectClientId);
+      && !string.IsNullOrEmpty(AuthAuthority)
+      && !string.IsNullOrEmpty(AuthTokenAudiences);
 
     public static ServerSettings Load(IConfiguration config)
     {

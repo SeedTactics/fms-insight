@@ -63,6 +63,15 @@ export const initial: State = {};
 
 let userManager: UserManager | undefined;
 
+export function requireLogin(fmsInfo: Readonly<api.IFMSInfo>): boolean {
+  if (!fmsInfo.openIDConnectClientId) return false;
+  if (location.hostname === "localhost") {
+    return !!fmsInfo.localhostOpenIDConnectAuthority;
+  } else {
+    return !!fmsInfo.openIDConnectAuthority;
+  }
+}
+
 async function loadInfo(): Promise<LoadReturn> {
   const fmsInfo = await FmsServerBackend.fMSInformation();
 
@@ -71,9 +80,10 @@ async function loadInfo(): Promise<LoadReturn> {
   }
 
   let user: User | null = null;
-  if (fmsInfo.openIDConnectAuthority && fmsInfo.openIDConnectClientId) {
+  if (requireLogin(fmsInfo)) {
     userManager = new UserManager({
-      authority: fmsInfo.openIDConnectAuthority,
+      authority:
+        location.hostname === "localhost" ? fmsInfo.localhostOpenIDConnectAuthority : fmsInfo.openIDConnectAuthority,
       client_id: fmsInfo.openIDConnectClientId,
       redirect_uri: window.location.protocol + "//" + window.location.host + "/",
       post_logout_redirect_uri: window.location.protocol + "//" + window.location.host + "/",

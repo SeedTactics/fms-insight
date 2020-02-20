@@ -1432,6 +1432,7 @@ export class FMSInfo implements IFMSInfo {
     requireWorkorderBeforeAllowWashComplete!: boolean;
     additionalLogServers?: string[] | undefined;
     openIDConnectAuthority?: string | undefined;
+    localhostOpenIDConnectAuthority?: string | undefined;
     openIDConnectClientId?: string | undefined;
     usingLabelPrinterForSerials!: boolean;
     quarantineQueue?: string | undefined;
@@ -1457,6 +1458,7 @@ export class FMSInfo implements IFMSInfo {
                     this.additionalLogServers!.push(item);
             }
             this.openIDConnectAuthority = data["OpenIDConnectAuthority"];
+            this.localhostOpenIDConnectAuthority = data["LocalhostOpenIDConnectAuthority"];
             this.openIDConnectClientId = data["OpenIDConnectClientId"];
             this.usingLabelPrinterForSerials = data["UsingLabelPrinterForSerials"];
             this.quarantineQueue = data["QuarantineQueue"];
@@ -1482,6 +1484,7 @@ export class FMSInfo implements IFMSInfo {
                 data["AdditionalLogServers"].push(item);
         }
         data["OpenIDConnectAuthority"] = this.openIDConnectAuthority;
+        data["LocalhostOpenIDConnectAuthority"] = this.localhostOpenIDConnectAuthority;
         data["OpenIDConnectClientId"] = this.openIDConnectClientId;
         data["UsingLabelPrinterForSerials"] = this.usingLabelPrinterForSerials;
         data["QuarantineQueue"] = this.quarantineQueue;
@@ -1496,6 +1499,7 @@ export interface IFMSInfo {
     requireWorkorderBeforeAllowWashComplete: boolean;
     additionalLogServers?: string[] | undefined;
     openIDConnectAuthority?: string | undefined;
+    localhostOpenIDConnectAuthority?: string | undefined;
     openIDConnectClientId?: string | undefined;
     usingLabelPrinterForSerials: boolean;
     quarantineQueue?: string | undefined;
