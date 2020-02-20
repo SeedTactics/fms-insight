@@ -38,17 +38,15 @@ Finally, most identity providers allow the administrator to restrict an
 application to a set of users (e.g. Azure Active Directory allows assigning specific users
 or groups to the application).
 
-Once the client has been created, there are three settings in the [config.ini](server-config.ini).
+Once the client has been created, there are four settings in the [config.ini](server-config.ini).
 
 - `OpenIDConnectAuthority`: This setting is the path to the well-known configuration document for the identity provider.
   For example, for AzureAD, this is `https://login.microsoftonline.com/{tenant}/v2.0` where `{tenant}` is your tenant GUID.
-  From this document, FMS Insight obtains the signing keys and login URLs.
 - `OpenIDConnectClientID`: This should be the ClientID for the implicit grant flow client. This ClientID is passed
   to the FMS Insight webpage which then performs the implicit flow grant to obtain a token.
-- `AuthAuthority`: This should be identical to the `OpenIDConnectAuthority`.
+- `AuthAuthority`: This must be identical to the `OpenIDConnectAuthority`.
 - `AuthTokenAudiences`: This is a list of audiences which the server uses to validate the identity tokens. In almost all
-  cases, the audience matches the ClientID. Multiple audiences are separated by semi-colons. Thus this setting should
-  be all the ClientIDs created separated by semi-colons.
+  cases, the audience matches the ClientID. Multiple audiences are separated by semi-colons.
 
 ## Cell-Local Private Network With Proxy
 
