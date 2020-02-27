@@ -1380,6 +1380,8 @@ namespace BlackMaple.MachineFramework
 
       public static IDictionary<string, MachineWatchInterface.ToolUse> DiffSnapshots(IEnumerable<ToolPocketSnapshot> start, IEnumerable<ToolPocketSnapshot> end)
       {
+        if (start == null) start = Enumerable.Empty<ToolPocketSnapshot>();
+        if (end == null) end = Enumerable.Empty<ToolPocketSnapshot>();
         var endPockets = end.ToDictionary(s => s.PocketNumber);
 
         var tools = new Dictionary<string, MachineWatchInterface.ToolUse>();

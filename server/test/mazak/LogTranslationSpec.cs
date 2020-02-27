@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -225,11 +225,11 @@ namespace MachineWatchTest
       ));
     }
 
-    protected void MachEnd(TestMaterial mat, int offset, int mach, int elapMin, int activeMin = 0)
+    protected void MachEnd(TestMaterial mat, int offset, int mach, int elapMin, int activeMin = 0, IReadOnlyDictionary<string, ToolUse> tools = null)
     {
-      MachEnd(new[] { mat }, offset, mach, elapMin, activeMin);
+      MachEnd(new[] { mat }, offset, mach, elapMin, activeMin, tools);
     }
-    protected void MachEnd(IEnumerable<TestMaterial> mats, int offset, int mach, int elapMin, int activeMin = 0)
+    protected void MachEnd(IEnumerable<TestMaterial> mats, int offset, int mach, int elapMin, int activeMin = 0, IReadOnlyDictionary<string, ToolUse> tools = null)
     {
       string prog = "program-" + mats.First().MaterialID.ToString();
       var e2 = new MazakMachineInterface.LogEntry()
@@ -250,7 +250,7 @@ namespace MachineWatchTest
 
       HandleEvent(e2);
 
-      expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
+      var newEntry = new BlackMaple.MachineWatchInterface.LogEntry(
         cntr: -1,
         mat: mats.Select(mat => new BlackMaple.MachineWatchInterface.LogMaterial(
           matID: mat.MaterialID,
@@ -273,7 +273,15 @@ namespace MachineWatchTest
         endOfRoute: false,
         elapsed: TimeSpan.FromMinutes(elapMin),
         active: TimeSpan.FromMinutes(activeMin)
-      ));
+      );
+      if (tools != null)
+      {
+        foreach (var t in tools)
+        {
+          newEntry.Tools[t.Key] = t.Value;
+        }
+      }
+      expected.Add(newEntry);
     }
 
     protected void ExpectInspection(TestMaterial mat, string inspTy, string counter, bool result, IEnumerable<MaterialProcessActualPath> path)
@@ -1252,6 +1260,60 @@ namespace MachineWatchTest
           Serial = "0000000003"
         },
       });
+    }
+
+    [Fact]
+    public void Tools()
+    {
+      var t = DateTime.UtcNow.AddHours(-5);
+
+      AddTestPart(unique: "unique", part: "part1", proc: 1, numProc: 1, path: 1);
+
+      var p = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, face: "1", numProc: 1, matID: 1);
+
+      LoadStart(p, offset: 0, load: 5);
+      LoadEnd(p, offset: 2, load: 5, cycleOffset: 3, elapMin: 2);
+      MovePallet(t, offset: 3, load: 1, pal: 3, elapMin: 0);
+
+
+      // some basic snapshots.  More complicated scenarios are tested as part of the JobLogDB spec
+
+      mazakData.Tools = new[] {
+        new ToolPocketRow() { MachineNumber = 1, PocketNumber = 10, GroupNo = "ignored", IsToolDataValid = true, LifeUsed = 20, LifeSpan = 101},
+        new ToolPocketRow() { MachineNumber = 2, PocketNumber = 10, GroupNo = "tool1", IsToolDataValid = true, LifeUsed = 30, LifeSpan = 102},
+        new ToolPocketRow() { MachineNumber = 2, PocketNumber = 20, GroupNo = "tool2", IsToolDataValid = true, LifeUsed = 40, LifeSpan = 103},
+        new ToolPocketRow() { MachineNumber = 2, PocketNumber = 30, GroupNo = "ignored", IsToolDataValid = false, LifeUsed = 50, LifeSpan = 104},
+        new ToolPocketRow() { MachineNumber = 2, PocketNumber = 40, GroupNo = null, IsToolDataValid = false, LifeUsed = 60, LifeSpan = 105},
+        new ToolPocketRow() { MachineNumber = 2, PocketNumber = null, GroupNo = "ignored", IsToolDataValid = false, LifeUsed = 70, LifeSpan = 106}
+      };
+      MachStart(p, offset: 4, mach: 2);
+
+      mazakData.Tools = new[] {
+        new ToolPocketRow() { MachineNumber = 1, PocketNumber = 10, GroupNo = "ignored", IsToolDataValid = true, LifeUsed = 22, LifeSpan = 101},
+        new ToolPocketRow() { MachineNumber = 2, PocketNumber = 10, GroupNo = "tool1", IsToolDataValid = true, LifeUsed = 33, LifeSpan = 102},
+        new ToolPocketRow() { MachineNumber = 2, PocketNumber = 20, GroupNo = "tool2", IsToolDataValid = true, LifeUsed = 44, LifeSpan = 103},
+        new ToolPocketRow() { MachineNumber = 2, PocketNumber = 30, GroupNo = "ignored", IsToolDataValid = false, LifeUsed = 55, LifeSpan = 104},
+        new ToolPocketRow() { MachineNumber = 2, PocketNumber = 40, GroupNo = null, IsToolDataValid = false, LifeUsed = 66, LifeSpan = 105},
+        new ToolPocketRow() { MachineNumber = 2, PocketNumber = null, GroupNo = "ignored", IsToolDataValid = false, LifeUsed = 77, LifeSpan = 106}
+      };
+      MachEnd(p, offset: 20, mach: 2, elapMin: 16, tools: new Dictionary<string, ToolUse>() {
+        { "tool1",
+          new ToolUse() {
+            ToolUseDuringCycle = TimeSpan.FromSeconds(33 - 30),
+            TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(33),
+            ConfiguredToolLife = TimeSpan.FromSeconds(102)
+          }
+        },
+        { "tool2",
+          new ToolUse() {
+            ToolUseDuringCycle = TimeSpan.FromSeconds(44 - 40),
+            TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(44),
+            ConfiguredToolLife = TimeSpan.FromSeconds(103)
+          }
+        },
+      });
+
+      CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
   }
 
