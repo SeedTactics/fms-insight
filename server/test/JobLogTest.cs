@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -35,7 +35,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
-using Microsoft.Data.Sqlite;
 using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
 using FluentAssertions;
@@ -207,13 +206,23 @@ namespace MachineWatchTest
                     TimeSpan.FromMinutes(52), TimeSpan.FromMinutes(25))
             });
       logs.Add(loadEndActualCycle.First());
+      _jobLog.ToolPocketSnapshotForCycle(loadEndActualCycle.First().Counter).Should().BeEmpty();
 
+      var machineStartPockets = new List<JobLogDB.ToolPocketSnapshot> {
+        new JobLogDB.ToolPocketSnapshot() {
+          PocketNumber = 10, Tool = "tool1", CurrentUse = TimeSpan.FromSeconds(10), ToolLife = TimeSpan.FromMinutes(20)
+        },
+        new JobLogDB.ToolPocketSnapshot() {
+          PocketNumber = 20, Tool = "tool2", CurrentUse = TimeSpan.FromSeconds(20), ToolLife = TimeSpan.FromMinutes(40)
+        }
+      };
       var machineStartActualCycle = _jobLog.RecordMachineStart(
           mats: new[] { mat15 }.Select(JobLogDB.EventLogMaterial.FromLogMat),
           pallet: "rrrr",
           statName: "ssssss",
           statNum: 152,
           program: "progggg",
+          pockets: machineStartPockets,
           timeUTC: start.AddHours(5).AddMinutes(10)
       );
       machineStartActualCycle.Should().BeEquivalentTo(
@@ -223,6 +232,7 @@ namespace MachineWatchTest
               "progggg", true, start.AddHours(5).AddMinutes(10), "", false)
       );
       logs.Add(machineStartActualCycle);
+      _jobLog.ToolPocketSnapshotForCycle(machineStartActualCycle.Counter).Should().BeEquivalentTo(machineStartPockets);
 
       var machineEndActualCycle = _jobLog.RecordMachineEnd(
           mats: new[] { mat2 }.Select(JobLogDB.EventLogMaterial.FromLogMat),
