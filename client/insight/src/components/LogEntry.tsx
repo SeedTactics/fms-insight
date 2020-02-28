@@ -45,6 +45,7 @@ import ChevronRightIcon from "@material-ui/icons/ChevronRight";
 import ImportExport from "@material-ui/icons/ImportExport";
 import { createStyles, withStyles, WithStyles } from "@material-ui/core/styles";
 import { copyLogEntriesToClipboard } from "../data/results.cycles";
+import { duration } from "moment";
 
 const logStyles = createStyles({
   machine: {
@@ -272,6 +273,35 @@ function detailsForEntry(e: api.ILogEntry): ReadonlyArray<LogDetail> {
       name: "Note",
       value: e.details.note
     });
+  }
+  if (e.tools) {
+    for (const [toolName, use] of LazySeq.ofObject(e.tools)) {
+      if (use.toolUseDuringCycle && use.toolUseDuringCycle !== "") {
+        let msg =
+          duration(use.toolUseDuringCycle)
+            .asMinutes()
+            .toFixed(1) + " min used during cycle.";
+
+        if (
+          use.totalToolUseAtEndOfCycle &&
+          use.configuredToolLife &&
+          use.totalToolUseAtEndOfCycle !== "" &&
+          use.configuredToolLife !== ""
+        ) {
+          const total = duration(use.totalToolUseAtEndOfCycle);
+          const life = duration(use.configuredToolLife);
+          const pct = total.asSeconds() / life.asSeconds();
+          msg += ` Total use at end of cycle: ${total.asMinutes().toFixed(1)}/${life.asMinutes().toFixed(1)} min (${(
+            pct * 100
+          ).toFixed(0)}%).`;
+        }
+
+        details.push({
+          name: toolName,
+          value: msg
+        });
+      }
+    }
   }
   return details;
 }
