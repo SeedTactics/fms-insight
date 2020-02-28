@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -89,7 +89,7 @@ namespace BlackMaple.MachineFramework
       _connection.Close();
     }
 
-    private const int Version = 20;
+    private const int Version = 21;
 
     public void CreateTables(string firstSerialOnEmpty)
     {
@@ -168,6 +168,10 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "CREATE TABLE queues(MaterialID INTEGER, Queue TEXT, Position INTEGER, PRIMARY KEY(MaterialID, Queue))";
         cmd.ExecuteNonQuery();
         cmd.CommandText = "CREATE INDEX queues_idx ON queues(Queue, Position)";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText = "CREATE TABLE tool_snapshots(Counter INTEGER, PocketNumber INTEGER, Tool TEXT, CurrentUse INTEGER, ToolLife INTEGER, " +
+            "PRIMARY KEY(Counter, PocketNumber))";
         cmd.ExecuteNonQuery();
 
         if (!string.IsNullOrEmpty(firstSerialOnEmpty))
@@ -311,6 +315,8 @@ namespace BlackMaple.MachineFramework
           if (curVersion < 19) Ver18ToVer19(trans);
 
           if (curVersion < 20) Ver19ToVer20(trans);
+
+          if (curVersion < 21) Ver20ToVer21(trans);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -621,6 +627,17 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = transaction;
         cmd.CommandText = "CREATE TABLE mat_path_details(MaterialID INTEGER, Process INTEGER, Path INTEGER, PRIMARY KEY(MaterialID, Process))";
+        cmd.ExecuteNonQuery();
+      }
+    }
+
+    private void Ver20ToVer21(IDbTransaction transaction)
+    {
+      using (IDbCommand cmd = _connection.CreateCommand())
+      {
+        cmd.Transaction = transaction;
+        cmd.CommandText = "CREATE TABLE tool_snapshots(Counter INTEGER, PocketNumber INTEGER, Tool TEXT, CurrentUse INTEGER, ToolLife INTEGER, " +
+            "PRIMARY KEY(Counter, PocketNumber))";
         cmd.ExecuteNonQuery();
       }
     }
@@ -1053,6 +1070,34 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    public IEnumerable<ToolPocketSnapshot> ToolPocketSnapshotForCycle(long counter)
+    {
+      lock (_lock)
+      {
+        using (var cmd = _connection.CreateCommand())
+        {
+          cmd.CommandText = "SELECT PocketNumber, Tool, CurrentUse, ToolLife FROM tool_snapshots WHERE Counter = $cntr";
+          cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
+
+          using (var reader = cmd.ExecuteReader())
+          {
+            var ret = new List<ToolPocketSnapshot>();
+            while (reader.Read())
+            {
+              ret.Add(new ToolPocketSnapshot()
+              {
+                PocketNumber = reader.GetInt32(0),
+                Tool = reader.GetString(1),
+                CurrentUse = TimeSpan.FromTicks(reader.GetInt64(2)),
+                ToolLife = TimeSpan.FromTicks(reader.GetInt64(3))
+              });
+            }
+            return ret;
+          }
+        }
+      }
+    }
+
     public System.DateTime MaxLogDate()
     {
       lock (_lock)
@@ -1326,6 +1371,122 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    public class ToolPocketSnapshot
+    {
+      public int PocketNumber { get; set; }
+      public string Tool { get; set; }
+      public TimeSpan CurrentUse { get; set; }
+      public TimeSpan ToolLife { get; set; }
+
+      public static IDictionary<string, MachineWatchInterface.ToolUse> DiffSnapshots(IEnumerable<ToolPocketSnapshot> start, IEnumerable<ToolPocketSnapshot> end)
+      {
+        if (start == null) start = Enumerable.Empty<ToolPocketSnapshot>();
+        if (end == null) end = Enumerable.Empty<ToolPocketSnapshot>();
+        var endPockets = end.ToDictionary(s => s.PocketNumber);
+
+        var tools = new Dictionary<string, MachineWatchInterface.ToolUse>();
+        void addUse(string tool, MachineWatchInterface.ToolUse use)
+        {
+          if (tools.TryGetValue(tool, out var existingUse))
+          {
+            existingUse.ToolUseDuringCycle += use.ToolUseDuringCycle;
+            existingUse.ConfiguredToolLife += use.ConfiguredToolLife;
+            existingUse.TotalToolUseAtEndOfCycle += use.TotalToolUseAtEndOfCycle;
+          }
+          else
+          {
+            tools[tool] = use;
+          }
+        }
+
+        foreach (var startPocket in start)
+        {
+          if (endPockets.TryGetValue(startPocket.PocketNumber, out var endPocket))
+          {
+            endPockets.Remove(startPocket.PocketNumber);
+
+            if (startPocket.Tool == endPocket.Tool)
+            {
+              // tool was unchanged or changed to the same tool
+              if (startPocket.CurrentUse < endPocket.CurrentUse)
+              {
+                addUse(startPocket.Tool, new MachineWatchInterface.ToolUse()
+                {
+                  ToolUseDuringCycle = endPocket.CurrentUse - startPocket.CurrentUse,
+                  TotalToolUseAtEndOfCycle = endPocket.CurrentUse,
+                  ConfiguredToolLife = endPocket.ToolLife
+                });
+              }
+              else if (endPocket.CurrentUse < startPocket.CurrentUse)
+              {
+                // there was a tool change to the same tool during the cycle
+                addUse(startPocket.Tool, new MachineWatchInterface.ToolUse()
+                {
+                  ToolUseDuringCycle = (startPocket.ToolLife - startPocket.CurrentUse) + endPocket.CurrentUse,
+                  TotalToolUseAtEndOfCycle = endPocket.CurrentUse,
+                  ConfiguredToolLife = endPocket.ToolLife
+                });
+              }
+              else
+              {
+                // tool was not used, use same at beginning and end
+              }
+            }
+            else
+            {
+              // tool was changed to a different tool
+
+              // assume start tool was used until life
+              addUse(startPocket.Tool, new MachineWatchInterface.ToolUse()
+              {
+                ToolUseDuringCycle = startPocket.ToolLife - startPocket.CurrentUse,
+                TotalToolUseAtEndOfCycle = TimeSpan.Zero,
+                ConfiguredToolLife = TimeSpan.Zero
+              });
+
+              // and new tool was used from 0 to current use
+              if (endPocket.CurrentUse.Ticks > 0)
+              {
+                addUse(endPocket.Tool, new MachineWatchInterface.ToolUse()
+                {
+                  ToolUseDuringCycle = endPocket.CurrentUse,
+                  TotalToolUseAtEndOfCycle = endPocket.CurrentUse,
+                  ConfiguredToolLife = endPocket.ToolLife
+                });
+              }
+            }
+          }
+          else
+          {
+            // no matching tool at end
+            // assume start tool was used until life
+            addUse(startPocket.Tool, new MachineWatchInterface.ToolUse()
+            {
+              ToolUseDuringCycle = startPocket.ToolLife - startPocket.CurrentUse,
+              TotalToolUseAtEndOfCycle = TimeSpan.Zero,
+              ConfiguredToolLife = TimeSpan.Zero
+            });
+          }
+        }
+
+        // now any new tools which appeared
+        foreach (var endPocket in endPockets.Values)
+        {
+          if (endPocket.CurrentUse.Ticks > 0)
+          {
+            addUse(endPocket.Tool, new MachineWatchInterface.ToolUse()
+            {
+              ToolUseDuringCycle = endPocket.CurrentUse,
+              TotalToolUseAtEndOfCycle = endPocket.CurrentUse,
+              ConfiguredToolLife = endPocket.ToolLife
+            });
+          }
+        }
+
+        return tools;
+      }
+    }
+
     public class NewEventLogEntry
     {
       public IEnumerable<EventLogMaterial> Material { get; set; }
@@ -1344,6 +1505,7 @@ namespace BlackMaple.MachineFramework
       public IDictionary<string, string> ProgramDetails { get { return _details; } }
       private Dictionary<string, MachineWatchInterface.ToolUse> _tools = new Dictionary<string, MachineWatchInterface.ToolUse>();
       public IDictionary<string, MachineWatchInterface.ToolUse> Tools => _tools;
+      public IEnumerable<ToolPocketSnapshot> ToolPockets { get; set; }
 
       internal MachineWatchInterface.LogEntry ToLogEntry(long newCntr, Func<long, MachineWatchInterface.MaterialDetails> getDetails)
       {
@@ -1469,6 +1631,7 @@ namespace BlackMaple.MachineFramework
         AddMaterial(ctr, log.Material, trans);
         AddProgramDetail(ctr, log.ProgramDetails, trans);
         AddToolUse(ctr, log.Tools, trans);
+        AddToolSnapshots(ctr, log.ToolPockets, trans);
 
         return log.ToLogEntry(ctr, m => this.GetMaterialDetails(m, trans));
       }
@@ -1536,6 +1699,32 @@ namespace BlackMaple.MachineFramework
           cmd.Parameters[2].Value = pair.Value.ToolUseDuringCycle.Ticks;
           cmd.Parameters[3].Value = pair.Value.TotalToolUseAtEndOfCycle.Ticks;
           cmd.Parameters[4].Value = pair.Value.ConfiguredToolLife.Ticks;
+          cmd.ExecuteNonQuery();
+        }
+      }
+    }
+
+    private void AddToolSnapshots(long counter, IEnumerable<ToolPocketSnapshot> pockets, IDbTransaction trans)
+    {
+      if (pockets == null || !pockets.Any()) return;
+
+      using (var cmd = _connection.CreateCommand())
+      {
+        ((IDbCommand)cmd).Transaction = trans;
+
+        cmd.CommandText = "INSERT INTO tool_snapshots(Counter, PocketNumber, Tool, CurrentUse, ToolLife) VALUES ($cntr,$pocket,$tool,$use,$life)";
+        cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
+        cmd.Parameters.Add("pocket", SqliteType.Integer);
+        cmd.Parameters.Add("tool", SqliteType.Text);
+        cmd.Parameters.Add("use", SqliteType.Integer);
+        cmd.Parameters.Add("life", SqliteType.Integer);
+
+        foreach (var pocket in pockets)
+        {
+          cmd.Parameters[1].Value = pocket.PocketNumber;
+          cmd.Parameters[2].Value = pocket.Tool;
+          cmd.Parameters[3].Value = pocket.CurrentUse.Ticks;
+          cmd.Parameters[4].Value = pocket.ToolLife.Ticks;
           cmd.ExecuteNonQuery();
         }
       }
@@ -1728,6 +1917,7 @@ namespace BlackMaple.MachineFramework
         int statNum,
         string program,
         DateTime timeUTC,
+        IEnumerable<ToolPocketSnapshot> pockets = null,
         string foreignId = null,
         string originalMessage = null
     )
@@ -1743,7 +1933,8 @@ namespace BlackMaple.MachineFramework
         StartOfCycle = true,
         EndTimeUTC = timeUTC,
         Result = "",
-        EndOfRoute = false
+        EndOfRoute = false,
+        ToolPockets = pockets
       };
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
     }
@@ -1760,6 +1951,7 @@ namespace BlackMaple.MachineFramework
         TimeSpan active,
         IDictionary<string, string> extraData = null,
         IDictionary<string, MachineWatchInterface.ToolUse> tools = null,
+        IEnumerable<ToolPocketSnapshot> pockets = null,
         string foreignId = null,
         string originalMessage = null
     )
@@ -1777,7 +1969,8 @@ namespace BlackMaple.MachineFramework
         Result = result,
         ElapsedTime = elapsed,
         ActiveOperationTime = active,
-        EndOfRoute = false
+        EndOfRoute = false,
+        ToolPockets = pockets
       };
       if (extraData != null)
       {

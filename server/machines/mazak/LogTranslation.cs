@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -126,15 +126,28 @@ namespace MazakMachineInterface
             statNum: e.StationNumber,
             program: e.Program,
             timeUTC: e.TimeUTC,
+            pockets: ToolsToSnapshot(e.StationNumber, _mazakSchedules.Tools),
             foreignId: e.ForeignID);
-
-          Log.Debug("Tools at machine cycle start for machine {machine}: {@tools}", e.StationNumber, _mazakSchedules.Tools.ToList());
 
           break;
 
         case LogCode.MachineCycleEnd:
 
-          var elapsed = CalculateElapsed(e, cycle, LogType.MachineCycle, e.StationNumber);
+          var machStart = FindMachineStart(e, cycle, e.StationNumber);
+          TimeSpan elapsed;
+          IEnumerable<JobLogDB.ToolPocketSnapshot> toolsAtStart;
+          if (machStart != null)
+          {
+            elapsed = e.TimeUTC.Subtract(machStart.EndTimeUTC);
+            toolsAtStart = _log.ToolPocketSnapshotForCycle(machStart.Counter);
+          }
+          else
+          {
+            Log.Debug("Calculating elapsed time for {@entry} did not find a previous cycle event", e);
+            elapsed = TimeSpan.Zero;
+            toolsAtStart = Enumerable.Empty<JobLogDB.ToolPocketSnapshot>();
+          }
+          var toolsAtEnd = ToolsToSnapshot(e.StationNumber, _mazakSchedules.Tools);
 
           if (elapsed > TimeSpan.FromSeconds(30))
           {
@@ -149,6 +162,8 @@ namespace MazakMachineInterface
               result: "",
               elapsed: elapsed,
               active: CalculateActiveMachining(machineMats),
+              tools: JobLogDB.ToolPocketSnapshot.DiffSnapshots(toolsAtStart, toolsAtEnd),
+              pockets: toolsAtEnd,
               foreignId: e.ForeignID);
             HandleMachiningCompleted(s);
           }
@@ -158,8 +173,6 @@ namespace MazakMachineInterface
             Log.Warning("Ignoring machine cycle at {time} on pallet {pallet} because it is less than 30 seconds",
               e.TimeUTC, e.Pallet);
           }
-
-          Log.Debug("Tools at machine cycle end on machine {machine}: {@tools}", e.StationNumber, _mazakSchedules.Tools.ToList());
 
           break;
 
@@ -548,6 +561,10 @@ namespace MazakMachineInterface
     #endregion
 
     #region Elapsed
+    private static MWI.LogEntry FindMachineStart(LogEntry e, IList<MWI.LogEntry> oldEvents, int statNum)
+    {
+      return oldEvents.LastOrDefault(old => old.LogType == LogType.MachineCycle && old.StartOfCycle && old.LocationNum == statNum);
+    }
     private static TimeSpan CalculateElapsed(LogEntry e, IList<MWI.LogEntry> oldEvents, LogType ty, int statNum)
     {
       for (int i = oldEvents.Count - 1; i >= 0; i -= 1)
@@ -674,6 +691,24 @@ namespace MazakMachineInterface
                   " part " + mat.PartName);
       }
     }
+    #endregion
+
+    #region Tools
+    private static IEnumerable<JobLogDB.ToolPocketSnapshot> ToolsToSnapshot(int machine, IEnumerable<ToolPocketRow> tools)
+    {
+      if (tools == null) return null;
+      return tools
+        .Where(t => t.MachineNumber == machine && (t.IsToolDataValid ?? false) && t.PocketNumber.HasValue && !string.IsNullOrEmpty(t.GroupNo))
+        .Select(t => new JobLogDB.ToolPocketSnapshot()
+        {
+          PocketNumber = t.PocketNumber ?? -1,
+          Tool = t.GroupNo,
+          CurrentUse = TimeSpan.FromSeconds(t.LifeUsed ?? 0),
+          ToolLife = TimeSpan.FromSeconds(t.LifeSpan ?? 0)
+        })
+        .ToList();
+    }
+
     #endregion
   }
 }

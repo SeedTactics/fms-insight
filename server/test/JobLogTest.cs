@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -35,7 +35,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
-using Microsoft.Data.Sqlite;
 using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
 using FluentAssertions;
@@ -207,13 +206,23 @@ namespace MachineWatchTest
                     TimeSpan.FromMinutes(52), TimeSpan.FromMinutes(25))
             });
       logs.Add(loadEndActualCycle.First());
+      _jobLog.ToolPocketSnapshotForCycle(loadEndActualCycle.First().Counter).Should().BeEmpty();
 
+      var machineStartPockets = new List<JobLogDB.ToolPocketSnapshot> {
+        new JobLogDB.ToolPocketSnapshot() {
+          PocketNumber = 10, Tool = "tool1", CurrentUse = TimeSpan.FromSeconds(10), ToolLife = TimeSpan.FromMinutes(20)
+        },
+        new JobLogDB.ToolPocketSnapshot() {
+          PocketNumber = 20, Tool = "tool2", CurrentUse = TimeSpan.FromSeconds(20), ToolLife = TimeSpan.FromMinutes(40)
+        }
+      };
       var machineStartActualCycle = _jobLog.RecordMachineStart(
           mats: new[] { mat15 }.Select(JobLogDB.EventLogMaterial.FromLogMat),
           pallet: "rrrr",
           statName: "ssssss",
           statNum: 152,
           program: "progggg",
+          pockets: machineStartPockets,
           timeUTC: start.AddHours(5).AddMinutes(10)
       );
       machineStartActualCycle.Should().BeEquivalentTo(
@@ -223,6 +232,7 @@ namespace MachineWatchTest
               "progggg", true, start.AddHours(5).AddMinutes(10), "", false)
       );
       logs.Add(machineStartActualCycle);
+      _jobLog.ToolPocketSnapshotForCycle(machineStartActualCycle.Counter).Should().BeEquivalentTo(machineStartPockets);
 
       var machineEndActualCycle = _jobLog.RecordMachineEnd(
           mats: new[] { mat2 }.Select(JobLogDB.EventLogMaterial.FromLogMat),
@@ -1132,6 +1142,118 @@ namespace MachineWatchTest
         NumProcesses = 6312,
         Paths = new Dictionary<int, int>()
       });
+    }
+
+    [Fact]
+    public void ToolSnapshotDiff()
+    {
+      var start = new List<JobLogDB.ToolPocketSnapshot>();
+      var end = new List<JobLogDB.ToolPocketSnapshot>();
+      var expectedUse = new Dictionary<string, TimeSpan>();
+      var expectedTotalUse = new Dictionary<string, TimeSpan>();
+      var expectedLife = new Dictionary<string, TimeSpan>();
+
+      // first a normal use
+      start.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 0, Tool = "tool1", CurrentUse = TimeSpan.FromSeconds(10), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+      end.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 0, Tool = "tool1", CurrentUse = TimeSpan.FromSeconds(50), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+      expectedUse["tool1"] = TimeSpan.FromSeconds(50 - 10);
+      expectedTotalUse["tool1"] = TimeSpan.FromSeconds(50);
+      expectedLife["tool1"] = TimeSpan.FromSeconds(100);
+
+      // now an unused tool
+      start.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 1, Tool = "tool2", CurrentUse = TimeSpan.FromSeconds(10), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+      end.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 1, Tool = "tool2", CurrentUse = TimeSpan.FromSeconds(10), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+
+      // now a tool which is replaced and used
+      start.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 2, Tool = "tool3", CurrentUse = TimeSpan.FromSeconds(70), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+      end.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 2, Tool = "tool3", CurrentUse = TimeSpan.FromSeconds(20), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+      expectedUse["tool3"] = TimeSpan.FromSeconds(100 - 70 + 20);
+      expectedTotalUse["tool3"] = TimeSpan.FromSeconds(20);
+      expectedLife["tool3"] = TimeSpan.FromSeconds(100);
+
+      // now a tool which is replaced with a different tool and not used
+      start.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 3, Tool = "tool4", CurrentUse = TimeSpan.FromSeconds(60), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+      end.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 3, Tool = "tool5", CurrentUse = TimeSpan.FromSeconds(0), ToolLife = TimeSpan.FromSeconds(120) }
+      );
+      expectedUse["tool4"] = TimeSpan.FromSeconds(100 - 60);
+      expectedTotalUse["tool4"] = TimeSpan.Zero;
+      expectedLife["tool4"] = TimeSpan.Zero;
+
+      // now a tool which is replaced with a different tool and that tool is used
+      start.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 4, Tool = "tool6", CurrentUse = TimeSpan.FromSeconds(65), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+      end.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 4, Tool = "tool7", CurrentUse = TimeSpan.FromSeconds(30), ToolLife = TimeSpan.FromSeconds(120) }
+      );
+      expectedUse["tool6"] = TimeSpan.FromSeconds(100 - 65);
+      expectedTotalUse["tool6"] = TimeSpan.Zero;
+      expectedLife["tool6"] = TimeSpan.Zero;
+      expectedUse["tool7"] = TimeSpan.FromSeconds(30);
+      expectedTotalUse["tool7"] = TimeSpan.FromSeconds(30);
+      expectedLife["tool7"] = TimeSpan.FromSeconds(120);
+
+      // now a tool which is removed and nothing added
+      start.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 5, Tool = "tool8", CurrentUse = TimeSpan.FromSeconds(80), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+      expectedUse["tool8"] = TimeSpan.FromSeconds(100 - 80);
+      expectedTotalUse["tool8"] = TimeSpan.Zero;
+      expectedLife["tool8"] = TimeSpan.Zero;
+
+      // now a new tool which is appears
+      end.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 6, Tool = "tool9", CurrentUse = TimeSpan.FromSeconds(15), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+      expectedUse["tool9"] = TimeSpan.FromSeconds(15);
+      expectedTotalUse["tool9"] = TimeSpan.FromSeconds(15);
+      expectedLife["tool9"] = TimeSpan.FromSeconds(100);
+
+      // a new unused tool
+      end.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 7, Tool = "tool10", CurrentUse = TimeSpan.FromSeconds(0), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+
+      // same tools in separate pockets are accumulated
+      start.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 8, Tool = "tool11", CurrentUse = TimeSpan.FromSeconds(50), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+      end.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 8, Tool = "tool11", CurrentUse = TimeSpan.FromSeconds(77), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+      start.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 9, Tool = "tool11", CurrentUse = TimeSpan.FromSeconds(80), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+      end.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 9, Tool = "tool11", CurrentUse = TimeSpan.FromSeconds(13), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+      expectedUse["tool11"] = TimeSpan.FromSeconds((77 - 50) + (100 - 80) + 13);
+      expectedTotalUse["tool11"] = TimeSpan.FromSeconds(77 + 13);
+      expectedLife["tool11"] = TimeSpan.FromSeconds(100 + 100);
+
+      JobLogDB.ToolPocketSnapshot.DiffSnapshots(start, end).Should().BeEquivalentTo(
+        expectedUse.Select(x => new
+        {
+          Tool = x.Key,
+          Use = new ToolUse() { ToolUseDuringCycle = x.Value, TotalToolUseAtEndOfCycle = expectedTotalUse[x.Key], ConfiguredToolLife = expectedLife[x.Key] }
+        })
+        .ToDictionary(x => x.Tool, x => x.Use)
+      );
     }
 
     #region Helpers

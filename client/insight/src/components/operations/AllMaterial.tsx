@@ -79,7 +79,7 @@ interface MaterialQueueProps {
 
 const MaterialQueue = React.memo(function DraggableMaterialQueueF(props: MaterialQueueProps) {
   return (
-    <Draggable draggableId={props.queue} index={props.idx} type={DragType.Queue}>
+    <Draggable draggableId={props.queue} index={props.idx}>
       {(provided, snapshot) => (
         <Paper
           ref={provided.innerRef}
@@ -102,12 +102,7 @@ const MaterialQueue = React.memo(function DraggableMaterialQueueF(props: Materia
                 style={getQueueStyle(snapshot.isDraggingOver, snapshot.draggingFromThisWith)}
               >
                 {props.material.map((mat, idx) => (
-                  <Draggable
-                    key={mat.materialID}
-                    draggableId={mat.materialID.toString()}
-                    index={idx}
-                    type={DragType.Material}
-                  >
+                  <Draggable key={mat.materialID} draggableId={mat.materialID.toString()} index={idx}>
                     {(provided, snapshot) => (
                       <InProcMaterial
                         mat={mat}
@@ -172,7 +167,7 @@ function compareQueue(q1: string, q2: string) {
 class SystemMaterial<T extends string | number> extends React.PureComponent<SystemMaterialProps<T>> {
   render() {
     return (
-      <Draggable draggableId={this.props.draggableId} index={this.props.idx} type={DragType.Queue}>
+      <Draggable draggableId={this.props.draggableId} index={this.props.idx}>
         {(provided, snapshot) => (
           <Paper
             ref={provided.innerRef}

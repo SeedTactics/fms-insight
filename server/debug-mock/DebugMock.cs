@@ -360,6 +360,11 @@ namespace DebugMachineWatchApiServer
             foreach (var x in e.ProgramDetails)
               e2.ProgramDetails.Add(x.Key, x.Value);
           }
+          if (e.Tools != null)
+          {
+            foreach (var x in e.Tools)
+              e2.Tools[x.Key] = x.Value;
+          }
           LogDB.AddLogEntryFromUnitTest(e2);
         }
       }
