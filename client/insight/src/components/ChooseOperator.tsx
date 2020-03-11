@@ -78,7 +78,7 @@ export const OperatorSelect = React.memo(function OperatorSelectF(props: Operato
   return (
     <>
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-      <Select value={props.currentOperator} onChange={changeOper} renderValue={((x: any) => x) as any}>
+      <Select value={props.currentOperator || ""} onChange={changeOper} renderValue={((x: any) => x) as any}>
         {props.operators.toArray({ sortOn: x => x }).map((oper, idx) => (
           <MenuItem key={idx} value={oper}>
             <ListItemText primary={oper} />
