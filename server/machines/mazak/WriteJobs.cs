@@ -130,7 +130,7 @@ namespace MazakMachineInterface
       }
 
       //check for an old schedule that has not yet been copied
-      var oldJobs = jobDB.LoadJobsNotCopiedToSystem(DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddHours(1));
+      var oldJobs = jobDB.LoadJobsNotCopiedToSystem(DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddHours(1), includeDecremented: false);
       if (oldJobs.Jobs.Count > 0)
       {
         //there are jobs to copy
@@ -162,7 +162,7 @@ namespace MazakMachineInterface
     public void RecopyJobsToMazak(DateTime? nowUtc = null)
     {
       var now = nowUtc ?? DateTime.UtcNow;
-      var jobs = jobDB.LoadJobsNotCopiedToSystem(now.AddHours(-JobLookbackHours), now.AddHours(1));
+      var jobs = jobDB.LoadJobsNotCopiedToSystem(now.AddHours(-JobLookbackHours), now.AddHours(1), includeDecremented: false);
       if (jobs.Jobs.Count == 0) return;
 
       //there are jobs to copy

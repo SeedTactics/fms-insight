@@ -451,6 +451,102 @@ namespace MachineWatchTest
       });
     }
 
+    [Fact]
+    public void IncludesNotCopiedJobs()
+    {
+      // uuuu plan 50, completed 30, 5 in proc and 15 not yet started
+      // vvvv not copied so not returned from LoadSchedulesAndLoadActions
+      _read.LoadSchedulesAndLoadActions().Returns(new MazakSchedulesAndLoadActions()
+      {
+        Schedules = new[] {
+          new MazakScheduleRow()
+          {
+            Id = 15,
+            Comment = MazakPart.CreateComment("uuuu", new[] {1}, false),
+            PartName = "pppp:1",
+            PlanQuantity = 50,
+            CompleteQuantity = 30,
+            Processes = new List<MazakScheduleProcessRow> {
+              new MazakScheduleProcessRow() {
+                MazakScheduleRowId = 15,
+                FixQuantity = 1,
+                ProcessNumber = 1,
+                ProcessMaterialQuantity = 15,
+                ProcessExecuteQuantity = 5
+              }
+            }
+          }
+        }
+      });
+
+      var now = DateTime.UtcNow;
+
+      var uuuu = new JobPlan("uuuu", 1);
+      uuuu.PartName = "pppp";
+      uuuu.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 50);
+      uuuu.RouteStartingTimeUTC = now.AddHours(-12);
+      uuuu.RouteEndingTimeUTC = now.AddHours(12);
+      uuuu.JobCopiedToSystem = true;
+      var vvvv = new JobPlan("vvvv", 1, new[] { 2 });
+      vvvv.PartName = "oooo";
+      vvvv.JobCopiedToSystem = false;
+      vvvv.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 4);
+      vvvv.SetPlannedCyclesOnFirstProcess(path: 2, numCycles: 7);
+      vvvv.RouteStartingTimeUTC = now.AddHours(-12);
+      vvvv.RouteEndingTimeUTC = now.AddHours(12);
+      _jobDB.AddJobs(new NewJobs()
+      {
+        Jobs = new List<JobPlan> { uuuu, vvvv }
+      }, null);
+
+      _jobDB.LoadJobsNotCopiedToSystem(now.AddHours(-12), now.AddHours(12), includeDecremented: false).Jobs.Select(j => j.UniqueStr)
+        .Should().BeEquivalentTo(new[] { "vvvv" });
+
+      _decr.Decrement(now);
+
+      _write.Schedules.Count.Should().Be(1);
+      var sch = _write.Schedules[0];
+      sch.Id.Should().Be(15);
+      sch.PlanQuantity.Should().Be(35);
+      sch.Processes.Should().BeEmpty();
+
+      _jobDB.LoadDecrementsForJob("uuuu").Should().BeEquivalentTo(new[] {
+        new InProcessJobDecrement() {
+          DecrementId = 0,
+          TimeUTC = now,
+          Quantity = 50 - 35
+        }
+      });
+      _jobDB.LoadDecrementsForJob("vvvv").Should().BeEquivalentTo(new[] {
+        new InProcessJobDecrement() {
+          DecrementId = 0,
+          TimeUTC = now,
+          Quantity = 4 + 7
+        }
+      });
+
+      _jobDB.LoadDecrementQuantitiesAfter(now.AddHours(-12)).Should().BeEquivalentTo(new[] {
+        new JobAndDecrementQuantity() {
+          DecrementId = 0,
+          JobUnique = "uuuu",
+          Part = "pppp",
+          Quantity = 50 - 35,
+          TimeUTC = now
+        },
+        new JobAndDecrementQuantity() {
+          DecrementId = 0,
+          JobUnique = "vvvv",
+          Part = "oooo",
+          Quantity = 4 + 7,
+          TimeUTC = now
+        }
+      });
+
+      _jobDB.LoadJobsNotCopiedToSystem(now.AddHours(-12), now.AddHours(12), includeDecremented: false).Jobs
+        .Should().BeEmpty();
+
+    }
+
   }
 
 }

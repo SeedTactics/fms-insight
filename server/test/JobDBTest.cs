@@ -553,6 +553,24 @@ namespace MachineWatchTest
     [Fact]
     public void DecrementQuantities()
     {
+      var dtime = new DateTime(2020, 03, 11, 14, 08, 00);
+      var uniq1 = new JobPlan("uniq1", 1);
+      uniq1.JobCopiedToSystem = false;
+      uniq1.RouteStartingTimeUTC = dtime.AddHours(-12);
+      uniq1.RouteEndingTimeUTC = dtime.AddHours(12);
+      var uniq2 = new JobPlan("uniq2", 1);
+      uniq2.JobCopiedToSystem = true;
+      uniq2.RouteStartingTimeUTC = dtime.AddHours(-12);
+      uniq2.RouteEndingTimeUTC = dtime.AddHours(12);
+
+      _jobDB.AddJobs(new NewJobs() { Jobs = (new[] { uniq1, uniq2 }).ToList() }, null);
+
+      _jobDB.LoadJobsNotCopiedToSystem(dtime, dtime, includeDecremented: true).Jobs.Select(j => j.UniqueStr)
+        .Should().BeEquivalentTo(new[] { "uniq1" });
+      _jobDB.LoadJobsNotCopiedToSystem(dtime, dtime, includeDecremented: false).Jobs.Select(j => j.UniqueStr)
+        .Should().BeEquivalentTo(new[] { "uniq1" });
+
+
       var time1 = DateTime.UtcNow.AddHours(-2);
       _jobDB.AddNewDecrement(new[] {
         new JobDB.NewDecrementQuantity() {
@@ -585,6 +603,11 @@ namespace MachineWatchTest
       };
 
       _jobDB.LoadDecrementQuantitiesAfter(-1).Should().BeEquivalentTo(expected1);
+
+      _jobDB.LoadJobsNotCopiedToSystem(dtime, dtime, includeDecremented: true).Jobs.Select(j => j.UniqueStr)
+        .Should().BeEquivalentTo(new[] { "uniq1" });
+      _jobDB.LoadJobsNotCopiedToSystem(dtime, dtime, includeDecremented: false).Jobs
+        .Should().BeEmpty();
 
       //now second decrement
       var time2 = DateTime.UtcNow.AddHours(-1);
@@ -634,6 +657,11 @@ namespace MachineWatchTest
           DecrementId = 1, TimeUTC = time2, Quantity = 26
         }
       });
+
+      _jobDB.LoadJobsNotCopiedToSystem(dtime, dtime, includeDecremented: true).Jobs.Select(j => j.UniqueStr)
+        .Should().BeEquivalentTo(new[] { "uniq1" });
+      _jobDB.LoadJobsNotCopiedToSystem(dtime, dtime, includeDecremented: false).Jobs
+        .Should().BeEmpty();
     }
 
     [Fact]
