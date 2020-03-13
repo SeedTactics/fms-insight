@@ -240,7 +240,7 @@ class HeatmapClipboardCell {
   }
 }
 
-export function buildHeatmapTable(yTitle: string, points: ReadonlyArray<HeatmapClipboardPoint>): string {
+export function buildOeeHeatmapTable(yTitle: string, points: ReadonlyArray<HeatmapClipboardPoint>): string {
   const cells = LazySeq.ofIterable(points).toMap(
     p => [new HeatmapClipboardCell(p.x.getTime(), p.y), p],
     (_, c) => c // cells should be unique, but just in case take the second
@@ -273,8 +273,8 @@ export function buildHeatmapTable(yTitle: string, points: ReadonlyArray<HeatmapC
   return table;
 }
 
-export function copyHeatmapToClipboard(yTitle: string, points: ReadonlyArray<HeatmapClipboardPoint>): void {
-  copy(buildHeatmapTable(yTitle, points));
+export function copyOeeHeatmapToClipboard(yTitle: string, points: ReadonlyArray<HeatmapClipboardPoint>): void {
+  copy(buildOeeHeatmapTable(yTitle, points));
 }
 
 export function buildOeeTable(series: Iterable<OEEBarSeries>) {

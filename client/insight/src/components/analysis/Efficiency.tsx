@@ -68,8 +68,13 @@ import { PartIdenticon } from "../station-monitor/Material";
 import { LazySeq } from "../../data/lazyseq";
 import StationDataTable from "./StationDataTable";
 import { AnalysisPeriod } from "../../data/events";
-import { binCyclesByDayAndStat, binSimStationUseByDayAndStat } from "../../data/results.oee";
-import { binCyclesByDayAndPart, binSimProductionByDayAndPart } from "../../data/results.completed-parts";
+import { binCyclesByDayAndStat, binSimStationUseByDayAndStat, copyOeeHeatmapToClipboard } from "../../data/results.oee";
+import {
+  binCyclesByDayAndPart,
+  binSimProductionByDayAndPart,
+  PartsCompletedSummary,
+  copyCompletedPartsHeatmapToClipboard
+} from "../../data/results.completed-parts";
 import { SimUseState } from "../../data/events.simuse";
 import { DataTableActionZoomType } from "./DataTable";
 
@@ -438,6 +443,7 @@ function StationOeeHeatmap(props: HeatmapProps) {
       icon={<HourglassIcon style={{ color: "#6D4C41" }} />}
       planned_or_actual={props.planned_or_actual}
       points={props.points}
+      onExport={() => copyOeeHeatmapToClipboard("Station", props.points)}
       setType={props.allowSetType ? props.setType : undefined}
     />
   );
@@ -535,7 +541,14 @@ const ConnectedStationOeeHeatmap = connect(
 // Completed Heatmap
 // --------------------------------------------------------------------------------
 
-function CompletedCountHeatmap(props: HeatmapProps) {
+interface CompletedHeatmapProps {
+  readonly planned_or_actual: guiState.PlannedOrActual;
+  readonly setType: (p: guiState.PlannedOrActual) => void;
+  readonly points: ReadonlyArray<HeatChartPoint & PartsCompletedSummary>;
+  readonly allowSetType: boolean;
+}
+
+function CompletedCountHeatmap(props: CompletedHeatmapProps) {
   return (
     <SelectableHeatChart
       card_label="Part Production"
@@ -544,6 +557,7 @@ function CompletedCountHeatmap(props: HeatmapProps) {
       icon={<ExtensionIcon style={{ color: "#6D4C41" }} />}
       planned_or_actual={props.planned_or_actual}
       points={props.points}
+      onExport={() => copyCompletedPartsHeatmapToClipboard(props.points)}
       setType={props.allowSetType ? props.setType : undefined}
     />
   );
@@ -559,7 +573,9 @@ const completedActualPointsSelector = createSelector(
           x: dayAndPart.day,
           y: dayAndPart.part,
           color: val.activeMachineMins,
-          label: val.count.toFixed(0) + " (" + (val.activeMachineMins / 60).toFixed(1) + " hours)"
+          label: val.count.toFixed(0) + " (" + (val.activeMachineMins / 60).toFixed(1) + " hours)",
+          count: val.count,
+          activeMachineMins: val.activeMachineMins
         };
       })
       .toArray()
@@ -584,7 +600,9 @@ const completedPlannedPointsSelector = createSelector(
           x: dayAndPart.day,
           y: dayAndPart.part,
           color: val.activeMachineMins,
-          label: val.count.toFixed(0) + " (" + (val.activeMachineMins / 60).toFixed(1) + " hours)"
+          label: val.count.toFixed(0) + " (" + (val.activeMachineMins / 60).toFixed(1) + " hours)",
+          count: val.count,
+          activeMachineMins: val.activeMachineMins
         };
       })
       .toArray()

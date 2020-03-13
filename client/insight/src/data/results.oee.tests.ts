@@ -39,7 +39,7 @@ import * as events from "./events";
 import { fakeCycle } from "./events.fake";
 import { ILogEntry } from "./api";
 import { LazySeq } from "./lazyseq";
-import { binCyclesByDayAndStat, buildHeatmapTable } from "./results.oee";
+import { binCyclesByDayAndStat, buildOeeHeatmapTable } from "./results.oee";
 
 it("bins actual cycles by day", () => {
   const now = new Date(2018, 2, 5); // midnight in local time
@@ -101,7 +101,7 @@ it("creates points clipboard table", () => {
     .toArray();
 
   const table = document.createElement("div");
-  table.innerHTML = buildHeatmapTable("Station", points);
+  table.innerHTML = buildOeeHeatmapTable("Station", points);
   expect(table).toMatchSnapshot("clipboard table");
 });
 
