@@ -37,8 +37,14 @@ import { PledgeStatus } from "../store/middleware";
 import * as events from "./events";
 import { fakeCycle } from "./events.fake";
 import { ILogEntry } from "./api";
-import { binCyclesByDayAndPart, buildCompletedPartsTable, buildCompletedPartSeries } from "./results.completed-parts";
+import {
+  binCyclesByDayAndPart,
+  buildCompletedPartsTable,
+  buildCompletedPartSeries,
+  buildCompletedPartsHeatmapTable
+} from "./results.completed-parts";
 import { loadMockData } from "../mock-data/load";
+import { LazySeq } from "./lazyseq";
 
 it("bins actual cycles by day", () => {
   const now = new Date(2018, 2, 5); // midnight in local time
@@ -64,6 +70,20 @@ it("bins actual cycles by day", () => {
   byDayAndPart = byDayAndPart.map((dayAndPart, val) => [dayAndPart.adjustDay(d => addMinutes(d, minOffset)), val]);
 
   expect(byDayAndPart).toMatchSnapshot("cycles binned by day and part");
+
+  const points = LazySeq.ofIterable(byDayAndPart)
+    .map(([dayAndPart, val]) => ({
+      x: dayAndPart.day,
+      y: dayAndPart.part,
+      label: "Unused",
+      count: val.count,
+      activeMachineMins: val.activeMachineMins
+    }))
+    .toArray();
+
+  const heattable = document.createElement("div");
+  heattable.innerHTML = buildCompletedPartsHeatmapTable(points);
+  expect(heattable).toMatchSnapshot("heatmap clipboard table");
 });
 
 it("build completed series", async () => {

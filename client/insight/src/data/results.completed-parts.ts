@@ -160,6 +160,71 @@ export function buildCompletedPartSeries(
 // Clipboard
 // --------------------------------------------------------------------------------
 
+interface HeatmapClipboardPoint {
+  readonly x: Date;
+  readonly y: string;
+}
+
+class HeatmapClipboardCell {
+  public constructor(public readonly x: number, public readonly y: string) {}
+  equals(other: HeatmapClipboardCell): boolean {
+    return this.x === other.x && this.y === other.y;
+  }
+  hashCode(): number {
+    return fieldsHashCode(this.x, this.y);
+  }
+  toString(): string {
+    return `{x: ${new Date(this.x).toISOString()}, y: ${this.y}}`;
+  }
+}
+
+export function buildCompletedPartsHeatmapTable(
+  points: ReadonlyArray<HeatmapClipboardPoint & PartsCompletedSummary>
+): string {
+  const cells = LazySeq.ofIterable(points).toMap(
+    p => [new HeatmapClipboardCell(p.x.getTime(), p.y), p],
+    (_, c) => c // cells should be unique, but just in case take the second
+  );
+  const days = LazySeq.ofIterable(points)
+    .toSet(p => p.x.getTime())
+    .toArray({ sortOn: x => x });
+  const rows = LazySeq.ofIterable(points)
+    .toMap(
+      p => [p.y, p.activeMachineMins / p.count],
+      (first, snd) => (isNaN(first) ? snd : first)
+    )
+    .toVector()
+    .sortOn(([name, _cycleMins]) => name);
+
+  let table = "<table>\n<thead><tr><th>Part</th><th>Expected Cycle Mins</th>";
+  for (const x of days) {
+    table += "<th>" + new Date(x).toDateString() + " Completed</th>";
+    table += "<th>" + new Date(x).toDateString() + " Std. Hours</th>";
+  }
+  table += "</tr></thead>\n<tbody>\n";
+  for (const [partName, cycleMins] of rows) {
+    table += "<tr><th>" + partName + "</th><th>" + cycleMins.toFixed(1) + "</th>";
+    for (const x of days) {
+      const cell = cells.get(new HeatmapClipboardCell(x, partName));
+      if (cell.isSome()) {
+        table += "<td>" + cell.get().count.toFixed(0) + "</td>";
+        table += "<td>" + (cell.get().activeMachineMins / 60).toFixed(1) + "</td>";
+      } else {
+        table += "<td></td>";
+        table += "<td></td>";
+      }
+    }
+    table += "</tr>\n";
+  }
+  table += "</tbody>\n</table>";
+  return table;
+}
+
+export function copyCompletedPartsHeatmapToClipboard(
+  points: ReadonlyArray<HeatmapClipboardPoint & PartsCompletedSummary>
+): void {
+  copy(buildCompletedPartsHeatmapTable(points));
+}
 export function buildCompletedPartsTable(series: ReadonlyArray<CompletedPartSeries>) {
   const days = series.length > 0 ? series[0].days.map(p => p.day) : [];
 
