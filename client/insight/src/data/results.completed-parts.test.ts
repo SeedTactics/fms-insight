@@ -48,8 +48,6 @@ import { LazySeq } from "./lazyseq";
 
 it("bins actual cycles by day", () => {
   const now = new Date(2018, 2, 5); // midnight in local time
-  const nowChicago = new Date(Date.UTC(2018, 2, 5, 6, 0, 0)); // America/Chicago time
-  const minOffset = differenceInMinutes(nowChicago, now);
 
   const evts = ([] as ILogEntry[]).concat(
     fakeCycle(now, 30),
@@ -66,8 +64,6 @@ it("bins actual cycles by day", () => {
   });
 
   let byDayAndPart = binCyclesByDayAndPart(st.last30.cycles.part_cycles);
-
-  byDayAndPart = byDayAndPart.map((dayAndPart, val) => [dayAndPart.adjustDay(d => addMinutes(d, minOffset)), val]);
 
   expect(byDayAndPart).toMatchSnapshot("cycles binned by day and part");
 
