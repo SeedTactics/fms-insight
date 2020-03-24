@@ -1029,10 +1029,11 @@ namespace MachineWatchTest
 
       var j = new JobPlan("uuuu", 2);
       j.PartName = "pppp";
-      j.AddInspection(new JobInspectionData(
-        "insp_proc1", "counter1", 10, TimeSpan.FromMinutes(1000), inspSingleProc: 1));
-      j.AddInspection(new JobInspectionData(
-        "insp_whole", "counter2", 15, TimeSpan.FromMinutes(1500), inspSingleProc: -1));
+      j.PathInspections(1, 1).Add(
+        new PathInspection() { InspectionType = "insp_proc1", Counter = "counter1", MaxVal = 10, TimeInterval = TimeSpan.FromMinutes(1000) });
+      j.PathInspections(j.NumProcesses, 1).Add(
+        new PathInspection() { InspectionType = "insp_whole", Counter = "counter2", MaxVal = 15, TimeInterval = TimeSpan.FromMinutes(1500) }
+      );
       var newJobs = new NewJobs()
       {
         Jobs = new List<JobPlan> { j }

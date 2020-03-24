@@ -217,11 +217,25 @@ namespace MachineWatchTest
       route.ProgramName = "so cool";
       job1.AddMachiningStop(2, 2, route);
 
-      job1.AddInspection(new JobInspectionData("Insp1", "counter1", 53, TimeSpan.FromMinutes(100), 12));
-      job1.AddInspection(new JobInspectionData("Insp2", "counter1", 12, TimeSpan.FromMinutes(64)));
-      job1.AddInspection(new JobInspectionData("Insp3", "abcdef", 175, TimeSpan.FromMinutes(121), 2));
-      job1.AddInspection(new JobInspectionData("Insp4", "counter2", 16.12, TimeSpan.FromMinutes(33)));
-      job1.AddInspection(new JobInspectionData("Insp5", "counter3", 0.544, TimeSpan.FromMinutes(44)));
+      // insp1 is on process 1, all paths
+      var insp1 = new PathInspection() { InspectionType = "Insp1", Counter = "counter1", MaxVal = 53, RandomFreq = -1, TimeInterval = TimeSpan.FromMinutes(100) };
+      for (int path = 1; path <= job1.GetNumPaths(1); path++) job1.PathInspections(1, path).Add(insp1);
+
+      // insp2 has no InspProc so is final process 2.
+      var insp2 = new PathInspection() { InspectionType = "Insp2", Counter = "counter1", MaxVal = 12, RandomFreq = -1, TimeInterval = TimeSpan.FromMinutes(64) };
+      for (int path = 1; path <= job1.GetNumPaths(2); path++) job1.PathInspections(2, path).Add(insp2);
+
+      // insp3 on first process
+      var insp3 = new PathInspection() { InspectionType = "Insp3", Counter = "abcdef", MaxVal = 175, RandomFreq = -1, TimeInterval = TimeSpan.FromMinutes(121) };
+      for (int path = 1; path <= job1.GetNumPaths(1); path++) job1.PathInspections(1, path).Add(insp3);
+
+      // insp4 on final proc
+      var insp4 = new PathInspection() { InspectionType = "Insp4", Counter = "counter2", RandomFreq = 16.12, MaxVal = -1, TimeInterval = TimeSpan.FromMinutes(33) };
+      for (int path = 1; path <= job1.GetNumPaths(2); path++) job1.PathInspections(2, path).Add(insp4);
+
+      // insp5 on final proc
+      var insp5 = new PathInspection() { InspectionType = "Insp5", Counter = "counter3", RandomFreq = 0.544, MaxVal = -1, TimeInterval = TimeSpan.FromMinutes(44) };
+      for (int path = 1; path <= job1.GetNumPaths(2); path++) job1.PathInspections(2, path).Add(insp5);
 
       job1.HoldMachining(1, 1).UserHold = false;
       job1.HoldMachining(1, 1).ReasonForUserHold = "reason for user hold";

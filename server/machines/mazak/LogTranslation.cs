@@ -165,7 +165,7 @@ namespace MazakMachineInterface
               tools: JobLogDB.ToolPocketSnapshot.DiffSnapshots(toolsAtStart, toolsAtEnd),
               pockets: toolsAtEnd,
               foreignId: e.ForeignID);
-            HandleMachiningCompleted(s);
+            HandleMachiningCompleted(s, machineMats);
           }
           else
           {
@@ -637,57 +637,28 @@ namespace MazakMachineInterface
     #endregion
 
     #region Inspections
-    private void HandleMachiningCompleted(BlackMaple.MachineWatchInterface.LogEntry cycle)
+    private void HandleMachiningCompleted(BlackMaple.MachineWatchInterface.LogEntry cycle, IEnumerable<LogMaterialAndPath> mats)
     {
-      foreach (LogMaterial mat in cycle.Material)
+      foreach (LogMaterialAndPath mat in mats)
       {
-        if (mat.MaterialID < 0 || mat.JobUniqueStr == null || mat.JobUniqueStr == "")
+        if (mat.Mat.MaterialID < 0 || mat.Unique == null || mat.Unique == "")
         {
-          Log.Debug("HandleMachiningCompleted: Skipping material id " + mat.MaterialID.ToString() +
+          Log.Debug("HandleMachiningCompleted: Skipping material id " + mat.Mat.MaterialID.ToString() +
                     " part " + mat.PartName +
                     " because the job unique string is empty");
           continue;
         }
 
-        var inspections = new List<JobInspectionData>();
-        var job = GetJob(mat.JobUniqueStr);
+        var job = GetJob(mat.Unique);
         if (job == null)
         {
-          Log.Debug("Couldn't find job for material {uniq}", mat.JobUniqueStr);
+          Log.Debug("Couldn't find job for material {uniq}", mat.Unique);
           continue;
         }
 
-        foreach (var i in job.GetInspections())
-        {
-          if (i.InspectSingleProcess <= 0 && mat.Process != mat.NumProcesses)
-          {
-            Log.Debug("Skipping inspection for material " + mat.MaterialID.ToString() +
-                      " inspection type " + i.InspectionType +
-                      " completed at time " + cycle.EndTimeUTC.ToLocalTime().ToString() + " on pallet " + cycle.Pallet.ToString() +
-                      " part " + mat.PartName +
-                      " because the process is not the maximum process");
-
-            continue;
-          }
-          if (i.InspectSingleProcess >= 1 && mat.Process != i.InspectSingleProcess)
-          {
-            Log.Debug("Skipping inspection for material " + mat.MaterialID.ToString() +
-                      " inspection type " + i.InspectionType +
-                      " completed at time " + cycle.EndTimeUTC.ToLocalTime().ToString() + " on pallet " + cycle.Pallet.ToString() +
-                      " part " + mat.PartName +
-                      " process " + mat.Process.ToString() +
-                      " because the inspection is only on process " +
-                      i.InspectSingleProcess.ToString());
-
-            continue;
-          }
-
-          inspections.Add(i);
-        }
-
-        _log.MakeInspectionDecisions(mat.MaterialID, mat.Process, inspections);
-        Log.Debug("Making inspection decision for " + string.Join(",", inspections.Select(x => x.InspectionType)) + " material " + mat.MaterialID.ToString() +
-                  " completed at time " + cycle.EndTimeUTC.ToLocalTime().ToString() + " on pallet " + cycle.Pallet.ToString() +
+        _log.MakeInspectionDecisions(mat.Mat.MaterialID, mat.Mat.Process, job.PathInspections(mat.Mat.Process, mat.Path));
+        Log.Debug("Making inspection decision for " + string.Join(",", job.PathInspections(mat.Mat.Process, mat.Path).Select(x => x.InspectionType)) + " material " + mat.Mat.MaterialID.ToString() +
+                  " proc " + mat.Mat.Process.ToString() + " path " + mat.Path.ToString() + " completed at time " + cycle.EndTimeUTC.ToLocalTime().ToString() + " on pallet " + cycle.Pallet.ToString() +
                   " part " + mat.PartName);
       }
     }

@@ -3536,7 +3536,7 @@ namespace BlackMaple.MachineFramework
     public void MakeInspectionDecisions(
         long matID,
         int process,
-        IEnumerable<MachineWatchInterface.JobInspectionData> inspections,
+        IEnumerable<MachineWatchInterface.PathInspection> inspections,
         DateTime? mutcNow = null)
     {
       AddEntryInTransaction(trans =>
@@ -3548,7 +3548,7 @@ namespace BlackMaple.MachineFramework
         IDbTransaction trans,
         long matID,
         int process,
-        IEnumerable<MachineWatchInterface.JobInspectionData> inspections,
+        IEnumerable<MachineWatchInterface.PathInspection> inspections,
         DateTime? mutcNow)
     {
       var utcNow = mutcNow ?? DateTime.UtcNow;
@@ -3560,9 +3560,9 @@ namespace BlackMaple.MachineFramework
           LookupInspectionDecisions(trans, matID)
           .ToLookup(d => d.InspType, d => d);
 
-      Dictionary<string, MachineWatchInterface.JobInspectionData> insps;
+      Dictionary<string, MachineWatchInterface.PathInspection> insps;
       if (inspections == null)
-        insps = new Dictionary<string, MachineWatchInterface.JobInspectionData>();
+        insps = new Dictionary<string, MachineWatchInterface.PathInspection>();
       else
         insps = inspections.ToDictionary(x => x.InspectionType, x => x);
 
@@ -3574,7 +3574,7 @@ namespace BlackMaple.MachineFramework
         string counter = "";
         bool alreadyRecorded = false;
 
-        MachineWatchInterface.JobInspectionData iProg = null;
+        MachineWatchInterface.PathInspection iProg = null;
         if (insps.ContainsKey(inspType))
         {
           iProg = insps[inspType];

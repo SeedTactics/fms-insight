@@ -86,7 +86,7 @@ namespace BlackMaple.MachineFramework
       _connection.Close();
     }
 
-    private const int Version = 17;
+    private const int Version = 18;
 
     public void CreateTables()
     {
@@ -134,7 +134,7 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "CREATE TABLE loadunload(UniqueStr TEXT, Process INTEGER, Path INTEGER, StatNum INTEGER, Load INTEGER, PRIMARY KEY(UniqueStr,Process,Path,StatNum,Load))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE inspections(UniqueStr TEXT, InspType STRING, Counter STRING, MaxVal INTEGER, TimeInterval INTEGER, RandomFreq NUMERIC, InspProc INTEGER, PRIMARY KEY (UniqueStr, InspType))";
+        cmd.CommandText = "CREATE TABLE path_inspections(UniqueStr TEXT, Process INTEGER, Path INTEGER, InspType STRING, Counter STRING, MaxVal INTEGER, TimeInterval INTEGER, RandomFreq NUMERIC, ExpectedTime INTEGER, PRIMARY KEY (UniqueStr, Process, Path, InspType))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE TABLE holds(UniqueStr TEXT, Process INTEGER, Path INTEGER, LoadUnload INTEGER, UserHold INTEGER, UserHoldReason TEXT, HoldPatternStartUTC INTEGER, HoldPatternRepeats INTEGER, PRIMARY KEY(UniqueStr, Process, Path, LoadUnload))";
@@ -249,6 +249,7 @@ namespace BlackMaple.MachineFramework
           if (curVersion < 15) Ver14ToVer15(trans);
           if (curVersion < 16) Ver15ToVer16(trans);
           if (curVersion < 17) Ver16ToVer17(trans);
+          if (curVersion < 18) Ver17ToVer18(trans);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -566,6 +567,27 @@ namespace BlackMaple.MachineFramework
       }
 
     }
+
+    public void Ver17ToVer18(IDbTransaction trans)
+    {
+      using (IDbCommand cmd = _connection.CreateCommand())
+      {
+        cmd.Transaction = trans;
+        cmd.CommandText = "CREATE TABLE path_inspections(UniqueStr TEXT, Process INTEGER, Path INTEGER, InspType STRING, Counter STRING, MaxVal INTEGER, TimeInterval INTEGER, RandomFreq NUMERIC, ExpectedTime INTEGER, PRIMARY KEY (UniqueStr, Process, Path, InspType))";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText =
+          "INSERT INTO path_inspections(UniqueStr, Process, Path, InspType, Counter, MaxVal, TimeInterval, RandomFreq) " +
+          "  SELECT inspections.UniqueStr, " +
+          "          COALESCE(CASE WHEN InspProc < 0 THEN NULL ELSE InspProc END, NumProcess), " +
+          "         -1, InspType, Counter, MaxVal, TimeInterval, RandomFreq " +
+          "   FROM inspections, jobs where inspections.UniqueStr = jobs.UniqueStr";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText = "DROP TABLE inspections";
+        cmd.ExecuteNonQuery();
+      }
+    }
     #endregion
 
     #region "Loading Jobs"
@@ -797,34 +819,37 @@ namespace BlackMaple.MachineFramework
         }
 
         //now inspections
-        cmd.CommandText = "SELECT InspType, Counter, MaxVal, TimeInterval, RandomFreq, InspProc FROM inspections WHERE UniqueStr = $uniq";
+        cmd.CommandText = "SELECT Process, Path, InspType, Counter, MaxVal, TimeInterval, RandomFreq, ExpectedTime FROM path_inspections WHERE UniqueStr = $uniq";
         using (var reader = cmd.ExecuteReader())
         {
           while (reader.Read())
           {
-            MachineWatchInterface.JobInspectionData insp;
-            int inspProc = -1;
-            if (!reader.IsDBNull(5))
+            var insp = new MachineWatchInterface.PathInspection()
             {
-              inspProc = reader.GetInt32(5);
-            }
-            if (reader.IsDBNull(4) || reader.GetInt32(2) >= 0)
+              InspectionType = reader.GetString(2),
+              Counter = reader.GetString(3),
+              MaxVal = reader.IsDBNull(4) ? 0 : reader.GetInt32(4),
+              TimeInterval = reader.IsDBNull(5) ? TimeSpan.Zero : TimeSpan.FromTicks(reader.GetInt64(5)),
+              RandomFreq = reader.IsDBNull(6) ? 0 : reader.GetDouble(6),
+              ExpectedInspectionTime = reader.IsDBNull(7) ? null : (TimeSpan?)TimeSpan.FromTicks(reader.GetInt64(7))
+            };
+
+            var proc = reader.GetInt32(0);
+            var path = reader.GetInt32(1);
+
+            if (path < 1)
             {
-              insp = new MachineWatchInterface.JobInspectionData(reader.GetString(0),
-                                                                reader.GetString(1),
-                                                                reader.GetInt32(2),
-                                                                TimeSpan.FromTicks(reader.GetInt64(3)),
-                                                                inspProc);
+              // all paths
+              for (path = 1; path <= job.GetNumPaths(proc); path++)
+              {
+                job.PathInspections(proc, path).Add(insp);
+              }
             }
             else
             {
-              insp = new MachineWatchInterface.JobInspectionData(reader.GetString(0),
-                                                                 reader.GetString(1),
-                                                                 reader.GetDouble(4),
-                                                                 TimeSpan.FromTicks(reader.GetInt64(3)),
-                                                                 inspProc);
+              // single path
+              job.PathInspections(proc, path).Add(insp);
             }
-            job.AddInspection(insp);
           }
         }
 
@@ -1351,66 +1376,6 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public IList<MachineWatchInterface.JobInspectionData> LoadInspections(string unique)
-    {
-      var ret = new List<MachineWatchInterface.JobInspectionData>();
-
-      lock (_lock)
-      {
-        var trans = _connection.BeginTransaction();
-        try
-        {
-          using (var cmd = _connection.CreateCommand())
-          {
-            ((IDbCommand)cmd).Transaction = trans;
-            cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
-            cmd.CommandText = "SELECT InspType, Counter, MaxVal, TimeInterval, RandomFreq, InspProc FROM inspections WHERE UniqueStr = $uniq";
-
-            using (var reader = cmd.ExecuteReader())
-            {
-              while (reader.Read())
-              {
-                MachineWatchInterface.JobInspectionData insp;
-                int inspProc = -1;
-                if (!reader.IsDBNull(5))
-                {
-                  inspProc = reader.GetInt32(5);
-                }
-                if (reader.IsDBNull(4) || reader.GetInt32(2) >= 0)
-                {
-                  insp = new MachineWatchInterface.JobInspectionData(
-                          reader.GetString(0),
-                          reader.GetString(1),
-                          reader.GetInt32(2),
-                          TimeSpan.FromTicks(reader.GetInt64(3)),
-                          inspProc);
-                }
-                else
-                {
-                  insp = new MachineWatchInterface.JobInspectionData(
-                          reader.GetString(0),
-                          reader.GetString(1),
-                          reader.GetDouble(4),
-                          TimeSpan.FromTicks(reader.GetInt64(3)),
-                          inspProc);
-                }
-                ret.Add(insp);
-              }
-            }
-
-            trans.Commit();
-          }
-        }
-        catch
-        {
-          trans.Rollback();
-          throw;
-        }
-      }
-
-      return ret;
-    }
-
     #endregion
 
     #region "Adding and deleting"
@@ -1795,6 +1760,52 @@ namespace BlackMaple.MachineFramework
             }
           }
         }
+
+
+        cmd.CommandText = "INSERT INTO path_inspections(UniqueStr,Process,Path,InspType,Counter,MaxVal,TimeInterval,RandomFreq,ExpectedTime) "
+          + "VALUES ($uniq,$proc,$path,$insp,$cnt,$max,$time,$freq,$expected)";
+        cmd.Parameters.Clear();
+        cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
+        cmd.Parameters.Add("proc", SqliteType.Integer);
+        cmd.Parameters.Add("path", SqliteType.Integer);
+        cmd.Parameters.Add("insp", SqliteType.Text);
+        cmd.Parameters.Add("cnt", SqliteType.Text);
+        cmd.Parameters.Add("max", SqliteType.Integer);
+        cmd.Parameters.Add("time", SqliteType.Integer);
+        cmd.Parameters.Add("freq", SqliteType.Real);
+        cmd.Parameters.Add("expected", SqliteType.Integer);
+        for (int proc = 1; proc <= job.NumProcesses; proc++)
+        {
+          for (int path = 1; path <= job.GetNumPaths(proc); path++)
+          {
+            cmd.Parameters[1].Value = proc;
+            cmd.Parameters[2].Value = path;
+
+            foreach (var insp in job.PathInspections(proc, path))
+            {
+              cmd.Parameters[3].Value = insp.InspectionType;
+              cmd.Parameters[4].Value = insp.Counter;
+              cmd.Parameters[5].Value = insp.MaxVal > 0 ? (object)insp.MaxVal : DBNull.Value;
+              cmd.Parameters[6].Value = insp.TimeInterval.Ticks > 0 ? (object)insp.TimeInterval.Ticks : DBNull.Value;
+              cmd.Parameters[7].Value = insp.RandomFreq > 0 ? (object)insp.RandomFreq : DBNull.Value;
+              cmd.Parameters[8].Value = insp.ExpectedInspectionTime.HasValue && insp.ExpectedInspectionTime.Value.Ticks > 0 ?
+                (object)insp.ExpectedInspectionTime.Value.Ticks : DBNull.Value;
+              cmd.ExecuteNonQuery();
+            }
+          }
+        }
+        foreach (var insp in job.GetOldObsoleteInspections() ?? Enumerable.Empty<MachineWatchInterface.JobInspectionData>())
+        {
+          cmd.Parameters[1].Value = insp.InspectSingleProcess > 0 ? insp.InspectSingleProcess : job.NumProcesses;
+          cmd.Parameters[2].Value = -1; // Path = -1 is loaded above for all paths
+          cmd.Parameters[3].Value = insp.InspectionType;
+          cmd.Parameters[4].Value = insp.Counter;
+          cmd.Parameters[5].Value = insp.MaxVal > 0 ? (object)insp.MaxVal : DBNull.Value;
+          cmd.Parameters[6].Value = insp.TimeInterval.Ticks > 0 ? (object)insp.TimeInterval.Ticks : DBNull.Value;
+          cmd.Parameters[7].Value = insp.RandomFreq > 0 ? (object)insp.RandomFreq : DBNull.Value;
+          cmd.Parameters[8].Value = DBNull.Value;
+          cmd.ExecuteNonQuery();
+        }
       }
 
       InsertHold(job.UniqueStr, -1, -1, false, job.HoldEntireJob, trans);
@@ -1804,39 +1815,6 @@ namespace BlackMaple.MachineFramework
         {
           InsertHold(job.UniqueStr, proc, path, true, job.HoldLoadUnload(proc, path), trans);
           InsertHold(job.UniqueStr, proc, path, false, job.HoldMachining(proc, path), trans);
-        }
-      }
-
-      AddJobInspection(trans, job);
-    }
-
-    private void AddJobInspection(IDbTransaction trans, MachineWatchInterface.JobPlan job)
-    {
-      if (job.GetInspections() == null) return;
-
-      using (var cmd = _connection.CreateCommand())
-      {
-        ((IDbCommand)cmd).Transaction = trans;
-
-        cmd.CommandText = "INSERT OR REPLACE INTO inspections(UniqueStr,InspType,Counter,MaxVal,TimeInterval,RandomFreq,InspProc) "
-      + "VALUES ($uniq,$insp,$cnt,$max,$time,$freq,$proc)";
-        cmd.Parameters.Clear();
-        cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
-        cmd.Parameters.Add("insp", SqliteType.Text);
-        cmd.Parameters.Add("cnt", SqliteType.Text);
-        cmd.Parameters.Add("max", SqliteType.Integer);
-        cmd.Parameters.Add("time", SqliteType.Integer);
-        cmd.Parameters.Add("freq", SqliteType.Real);
-        cmd.Parameters.Add("proc", SqliteType.Integer);
-        foreach (var insp in job.GetInspections())
-        {
-          cmd.Parameters[1].Value = insp.InspectionType;
-          cmd.Parameters[2].Value = insp.Counter;
-          cmd.Parameters[3].Value = insp.MaxVal;
-          cmd.Parameters[4].Value = insp.TimeInterval.Ticks;
-          cmd.Parameters[5].Value = insp.RandomFreq;
-          cmd.Parameters[6].Value = insp.InspectSingleProcess;
-          cmd.ExecuteNonQuery();
         }
       }
     }
