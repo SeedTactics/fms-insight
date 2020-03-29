@@ -213,12 +213,39 @@ namespace MachineWatchTest
       route.ProgramName = "so cool";
       job1.AddMachiningStop(2, 2, route);
 
-      job1.AddInspection(new JobInspectionData("Insp1", "counter1", 53, TimeSpan.FromMinutes(100), 12));
-      job1.AddInspection(new JobInspectionData("Insp2", "counter1", 12, TimeSpan.FromMinutes(64)));
-      job1.AddInspection(new JobInspectionData("Insp3", "abcdef", 175, TimeSpan.FromMinutes(121), 2));
-      job1.AddInspection(new JobInspectionData("Insp4", "counter2", 16.12, TimeSpan.FromMinutes(33)));
-      job1.AddInspection(new JobInspectionData("Insp5", "counter3", 0.544, TimeSpan.FromMinutes(44)));
-
+      job1.PathInspections(1, 1).Add(new PathInspection()
+      {
+        InspectionType = "Insp1",
+        Counter = "counter1",
+        MaxVal = 53,
+        TimeInterval = TimeSpan.FromMinutes(100),
+        ExpectedInspectionTime = TimeSpan.FromMinutes(200)
+      });
+      job1.PathInspections(1, 1).Add(new PathInspection()
+      {
+        InspectionType = "Insp2",
+        Counter = "counter2",
+        MaxVal = 44,
+        TimeInterval = TimeSpan.FromMinutes(102),
+        ExpectedInspectionTime = TimeSpan.FromMinutes(210)
+      });
+      job1.PathInspections(2, 1).Add(new PathInspection()
+      {
+        InspectionType = "Insp1",
+        Counter = "counter3",
+        RandomFreq = 0.4,
+        TimeInterval = TimeSpan.FromMinutes(104),
+        ExpectedInspectionTime = TimeSpan.FromMinutes(204)
+      });
+      job1.PathInspections(2, 2).Add(new PathInspection()
+      {
+        InspectionType = "Insp1",
+        Counter = "counter4",
+        MaxVal = 10,
+        RandomFreq = 0.2,
+        TimeInterval = TimeSpan.FromMinutes(124),
+        ExpectedInspectionTime = TimeSpan.FromMinutes(274)
+      });
       job1.HoldMachining(1, 1).UserHold = false;
       job1.HoldMachining(1, 1).ReasonForUserHold = "reason for user hold";
       job1.HoldMachining(1, 1).HoldUnholdPatternRepeats = false;
@@ -260,6 +287,36 @@ namespace MachineWatchTest
       job1.HoldLoadUnload(2, 3).HoldUnholdPatternStartUTC = DateTime.Parse("2010/11/5 9:30 AM").ToUniversalTime();
       job1.HoldLoadUnload(2, 3).HoldUnholdPattern.Add(TimeSpan.FromMinutes(32));
       job1.HoldLoadUnload(2, 3).HoldUnholdPattern.Add(TimeSpan.FromMinutes(64));
+    }
+
+    private static void AddObsoleteInspData(JobPlan job)
+    {
+      // check obsolete saves properly
+      job.GetType().GetField("_inspections", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(job,
+        new List<JobInspectionData>() {
+          new JobInspectionData("OldInsp1", "counter1", 53, TimeSpan.FromMinutes(22)),
+          new JobInspectionData("OldInsp2", "counter2", 12.8, TimeSpan.FromMinutes(33), 1)
+        }
+      );
+    }
+    private static void AddExpectedPathDataFromObsoleteInspections(JobPlan job)
+    {
+      // OldInsp1 is null InspProc so should be final process
+      var oldInsp1 = new PathInspection() { InspectionType = "OldInsp1", Counter = "counter1", MaxVal = 53, TimeInterval = TimeSpan.FromMinutes(22) };
+      for (int path = 1; path <= job.GetNumPaths(job.NumProcesses); path++)
+      {
+        job.PathInspections(job.NumProcesses, path).Add(oldInsp1);
+      }
+
+      // OldInsp2 is InspProc 1 so should be first process
+      var oldInsp2 = new PathInspection() { InspectionType = "OldInsp2", Counter = "counter2", RandomFreq = 12.8, TimeInterval = TimeSpan.FromMinutes(33) };
+      for (int path = 1; path <= job.GetNumPaths(1); path++)
+      {
+        job.PathInspections(1, path).Add(oldInsp2);
+      }
+
+      // clear old inspection data
+      job.GetType().GetField("_inspections", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(job, null);
     }
 
     private static void SetJob2Data(JobPlan job2)
@@ -411,8 +468,11 @@ namespace MachineWatchTest
     {
       var job1 = new JobPlan("Unique1", 2, new int[] { 2, 3 });
       SetJob1Data(job1);
+      AddObsoleteInspData(job1);
 
       _jobDB.AddJobs(new NewJobs { Jobs = new List<JobPlan> { job1 } }, null);
+
+      AddExpectedPathDataFromObsoleteInspections(job1);
 
       CheckJobs(job1, null, null, job1.ScheduleId, null, null);
       var recent = _jobDB.LoadMostRecentSchedule();
@@ -1130,7 +1190,6 @@ namespace MachineWatchTest
       EqualSort(job1.ScheduledBookingIds, job2.ScheduledBookingIds);
       Assert.Equal(job1.ScheduleId, job2.ScheduleId);
 
-      CheckInspEqual(job1.GetInspections(), job2.GetInspections());
 
       if (checkHolds)
         CheckHoldEqual(job1.HoldEntireJob, job2.HoldEntireJob);
@@ -1172,6 +1231,8 @@ namespace MachineWatchTest
           EqualSort(job1.PlannedPallets(proc, path), job2.PlannedPallets(proc, path));
 
           Assert.Equal(job1.PlannedFixture(proc, path), job2.PlannedFixture(proc, path));
+
+          CheckInspEqual(job1.PathInspections(proc, path), job2.PathInspections(proc, path));
 
           if (checkHolds)
           {
@@ -1216,9 +1277,9 @@ namespace MachineWatchTest
       CheckPlanEqual(job1, job2, checkHolds);
     }
 
-    private static void CheckInspEqual(IEnumerable<JobInspectionData> i1, IEnumerable<JobInspectionData> i2)
+    private static void CheckInspEqual(IEnumerable<PathInspection> i1, IEnumerable<PathInspection> i2)
     {
-      var i2Copy = new List<JobInspectionData>(i2);
+      var i2Copy = new List<PathInspection>(i2);
       foreach (var j1 in i1)
       {
         foreach (var j2 in i2Copy)
@@ -1228,7 +1289,7 @@ namespace MachineWatchTest
               && j1.MaxVal == j2.MaxVal
               && j1.TimeInterval == j2.TimeInterval
               && j1.RandomFreq == j2.RandomFreq
-              && j1.InspectSingleProcess == j2.InspectSingleProcess)
+              && j1.ExpectedInspectionTime == j2.ExpectedInspectionTime)
           {
             i2Copy.Remove(j2);
             goto found;

@@ -497,7 +497,6 @@ namespace MazakMachineInterface
       jobFromMazak.RouteStartingTimeUTC = jobFromDb.RouteStartingTimeUTC;
       jobFromMazak.RouteEndingTimeUTC = jobFromDb.RouteEndingTimeUTC;
       jobFromMazak.ScheduleId = jobFromDb.ScheduleId;
-      jobFromMazak.AddInspections(jobFromDb.GetInspections());
       jobFromMazak.HoldEntireJob = jobFromDb.HoldEntireJob;
       foreach (var b in jobFromDb.ScheduledBookingIds)
         jobFromMazak.ScheduledBookingIds.Add(b);
@@ -508,6 +507,8 @@ namespace MazakMachineInterface
           if (proc > jobFromDb.NumProcesses || path > jobFromDb.GetNumPaths(proc))
             continue;
 
+          foreach (var insp in jobFromDb.PathInspections(proc, path))
+            jobFromMazak.PathInspections(proc, path).Add(insp);
           jobFromMazak.SetSimulatedStartingTimeUTC(proc, path,
             jobFromDb.GetSimulatedStartingTimeUTC(proc, path));
           jobFromMazak.SetSimulatedAverageFlowTime(proc, path,
