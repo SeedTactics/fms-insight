@@ -102,6 +102,9 @@ namespace MachineWatchTest
       job1.SetInputQueue(2, 1, "in21");
       job1.SetOutputQueue(2, 3, "out23");
 
+      job1.SetCasting(1, "cast1");
+      job1.SetCasting(2, "cast2");
+
       job1.SetSimulatedStartingTimeUTC(1, 1, DateTime.Parse("1/6/2011 5:34 AM GMT"));
       job1.SetSimulatedStartingTimeUTC(1, 2, DateTime.Parse("2/10/2011 6:45 AM GMT"));
       job1.SetSimulatedStartingTimeUTC(2, 1, DateTime.Parse("3/14/2011 7:03 AM GMT"));
@@ -1219,6 +1222,11 @@ namespace MachineWatchTest
 
           Assert.Equal(job1.GetInputQueue(proc, path), job2.GetInputQueue(proc, path));
           Assert.Equal(job1.GetOutputQueue(proc, path), job2.GetOutputQueue(proc, path));
+
+          if (proc == 1)
+          {
+            Assert.Equal(job1.GetCasting(path), job2.GetCasting(path));
+          }
 
           Assert.Equal(job1.GetSimulatedProduction(proc, path), job2.GetSimulatedProduction(proc, path));
           Assert.Equal(job1.GetSimulatedAverageFlowTime(proc, path), job2.GetSimulatedAverageFlowTime(proc, path));
