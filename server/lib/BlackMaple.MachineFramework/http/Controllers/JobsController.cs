@@ -110,25 +110,38 @@ namespace BlackMaple.MachineFramework.Controllers
 
     [HttpPost("part/{partName}/casting")]
     [ProducesResponseType(typeof(void), 200)]
-    public void AddUnallocatedCastingToQueue(string partName, [FromQuery] string queue, [FromQuery] int pos, [FromBody] string serial)
+    public void AddUnallocatedCastingToQueueByPart(string partName, [FromQuery] string queue, [FromQuery] int pos, [FromBody] string serial)
     {
       if (string.IsNullOrEmpty(partName))
         throw new BadRequestException("Part name must be non-empty");
       if (string.IsNullOrEmpty(queue))
         throw new BadRequestException("Queue must be non-empty");
+      // TODO: lookup casting for part?  This assumes part has no separate casting
       _control.AddUnallocatedCastingToQueue(partName, queue, pos, serial);
+    }
+
+    [HttpPost("casting/{castingName}")]
+    [ProducesResponseType(typeof(void), 200)]
+    public void AddUnallocatedCastingToQueue(string castingName, [FromQuery] string queue, [FromQuery] int pos, [FromBody] string serial)
+    {
+      if (string.IsNullOrEmpty(castingName))
+        throw new BadRequestException("Casting name must be non-empty");
+      if (string.IsNullOrEmpty(queue))
+        throw new BadRequestException("Queue must be non-empty");
+      _control.AddUnallocatedCastingToQueue(castingName, queue, pos, serial);
     }
 
     [HttpPost("job/{jobUnique}/unprocessed-material")]
     [ProducesResponseType(typeof(void), 200)]
-    public void AddUnprocessedMaterialToQueue(string jobUnique, [FromQuery] int lastCompletedProcess, [FromQuery] string queue, [FromQuery] int pos, [FromBody] string serial)
+    public void AddUnprocessedMaterialToQueue(string jobUnique, [FromQuery] int lastCompletedProcess, [FromQuery] int pathGroup, [FromQuery] string queue, [FromQuery] int pos, [FromBody] string serial)
     {
       if (string.IsNullOrEmpty(jobUnique))
         throw new BadRequestException("Job unique must be non-empty");
       if (string.IsNullOrEmpty(queue))
         throw new BadRequestException("Queue must be non-empty");
       if (lastCompletedProcess < 0) lastCompletedProcess = 0;
-      _control.AddUnprocessedMaterialToQueue(jobUnique, lastCompletedProcess, queue, pos, serial);
+      if (pathGroup < 1) pathGroup = 1;
+      _control.AddUnprocessedMaterialToQueue(jobUnique, lastCompletedProcess, pathGroup, queue, pos, serial);
     }
 
     [HttpPut("material/{materialId}/queue")]

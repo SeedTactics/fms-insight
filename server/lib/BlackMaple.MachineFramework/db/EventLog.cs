@@ -2294,7 +2294,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public long AllocateMaterialIDForCasting(string part, int numProc)
+    public long AllocateMaterialIDForCasting(string casting)
     {
       lock (_lock)
       {
@@ -2304,9 +2304,8 @@ namespace BlackMaple.MachineFramework
           cmd.Transaction = trans;
           try
           {
-            cmd.CommandText = "INSERT INTO matdetails(PartName, NumProcesses) VALUES ($part,$numproc)";
-            cmd.Parameters.Add("part", SqliteType.Text).Value = part;
-            cmd.Parameters.Add("numproc", SqliteType.Integer).Value = numProc;
+            cmd.CommandText = "INSERT INTO matdetails(PartName, NumProcesses) VALUES ($casting,1)";
+            cmd.Parameters.Add("casting", SqliteType.Text).Value = casting;
             cmd.ExecuteNonQuery();
             cmd.CommandText = "SELECT last_insert_rowid()";
             cmd.Parameters.Clear();
@@ -2657,7 +2656,7 @@ namespace BlackMaple.MachineFramework
     }
 
     /// Find parts without an assigned unique in the queue, and assign them to the given unique
-    public IReadOnlyList<long> AllocateCastingsInQueue(string queue, string part, string unique, int numProcesses, int maxCount)
+    public IReadOnlyList<long> AllocateCastingsInQueue(string queue, string casting, string unique, string part, int proc1Path, int numProcesses, int count)
     {
       lock (_lock)
       {
@@ -2671,26 +2670,43 @@ namespace BlackMaple.MachineFramework
 
             cmd.CommandText = "SELECT queues.MaterialID FROM queues " +
                 " INNER JOIN matdetails ON queues.MaterialID = matdetails.MaterialID " +
-                " WHERE Queue = $q AND matdetails.PartName = $p AND matdetails.UniqueStr IS NULL " +
+                " WHERE Queue = $q AND matdetails.PartName = $c AND matdetails.UniqueStr IS NULL " +
                 " ORDER BY Position ASC" +
                 " LIMIT $cnt ";
             cmd.Parameters.Add("q", SqliteType.Text).Value = queue;
-            cmd.Parameters.Add("p", SqliteType.Text).Value = part;
-            cmd.Parameters.Add("cnt", SqliteType.Integer).Value = maxCount;
+            cmd.Parameters.Add("c", SqliteType.Text).Value = casting;
+            cmd.Parameters.Add("cnt", SqliteType.Integer).Value = count;
             using (var reader = cmd.ExecuteReader())
             {
               while (reader.Read()) matIds.Add(reader.GetInt64(0));
             }
 
-            cmd.CommandText = "UPDATE matdetails SET UniqueStr = $uniq, NumProcesses = $numproc WHERE MaterialID = $mid";
+            if (matIds.Count != count)
+            {
+              trans.Rollback();
+              return new List<long>();
+            }
+
+            cmd.CommandText = "UPDATE matdetails SET UniqueStr = $uniq, PartName = $p, NumProcesses = $numproc WHERE MaterialID = $mid";
             cmd.Parameters.Clear();
             cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
+            cmd.Parameters.Add("p", SqliteType.Text).Value = part;
             cmd.Parameters.Add("numproc", SqliteType.Integer).Value = numProcesses;
             cmd.Parameters.Add("mid", SqliteType.Integer);
 
             foreach (var matId in matIds)
             {
-              cmd.Parameters[2].Value = matId;
+              cmd.Parameters[3].Value = matId;
+              cmd.ExecuteNonQuery();
+            }
+
+            cmd.CommandText = "INSERT OR REPLACE INTO mat_path_details(MaterialID, Process, Path) VALUES ($mid, 1, $path)";
+            cmd.Parameters.Clear();
+            cmd.Parameters.Add("mid", SqliteType.Integer);
+            cmd.Parameters.Add("path", SqliteType.Integer).Value = proc1Path;
+            foreach (var matId in matIds)
+            {
+              cmd.Parameters[0].Value = matId;
               cmd.ExecuteNonQuery();
             }
           }
@@ -2705,7 +2721,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public void MarkCastingsAsUnallocated(IEnumerable<long> matIds)
+    public void MarkCastingsAsUnallocated(IEnumerable<long> matIds, string casting)
     {
       lock (_lock)
       {
@@ -2716,7 +2732,18 @@ namespace BlackMaple.MachineFramework
           {
             cmd.Transaction = trans;
 
-            cmd.CommandText = "UPDATE matdetails SET UniqueStr = NULL WHERE MaterialID = $mid";
+            cmd.CommandText = "UPDATE matdetails SET UniqueStr = NULL, PartName = $c WHERE MaterialID = $mid";
+            cmd.Parameters.Clear();
+            cmd.Parameters.Add("mid", SqliteType.Integer);
+            cmd.Parameters.Add("c", SqliteType.Text).Value = casting;
+
+            foreach (var matId in matIds)
+            {
+              cmd.Parameters[0].Value = matId;
+              cmd.ExecuteNonQuery();
+            }
+
+            cmd.CommandText = "DELETE FROM mat_path_details WHERE MaterialID = $mid";
             cmd.Parameters.Clear();
             cmd.Parameters.Add("mid", SqliteType.Integer);
 
@@ -2743,7 +2770,7 @@ namespace BlackMaple.MachineFramework
       public string Queue { get; set; }
       public int Position { get; set; }
       public string Unique { get; set; }
-      public string PartName { get; set; }
+      public string PartNameOrCasting { get; set; }
       public int NumProcesses { get; set; }
     }
 
@@ -2774,7 +2801,7 @@ namespace BlackMaple.MachineFramework
                   Queue = queue,
                   Position = reader.GetInt32(1),
                   Unique = reader.IsDBNull(2) ? "" : reader.GetString(2),
-                  PartName = reader.IsDBNull(3) ? "" : reader.GetString(3),
+                  PartNameOrCasting = reader.IsDBNull(3) ? "" : reader.GetString(3),
                   NumProcesses = reader.IsDBNull(4) ? 1 : reader.GetInt32(4),
                 });
               }
@@ -2816,7 +2843,7 @@ namespace BlackMaple.MachineFramework
                   Queue = reader.GetString(1),
                   Position = reader.GetInt32(2),
                   Unique = reader.IsDBNull(3) ? "" : reader.GetString(3),
-                  PartName = reader.IsDBNull(4) ? "" : reader.GetString(4),
+                  PartNameOrCasting = reader.IsDBNull(4) ? "" : reader.GetString(4),
                   NumProcesses = reader.IsDBNull(5) ? 1 : reader.GetInt32(5),
                 });
               }

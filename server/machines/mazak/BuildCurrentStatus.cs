@@ -314,7 +314,7 @@ namespace MazakMachineInterface
         {
           MaterialID = mat.MaterialID,
           JobUnique = mat.Unique,
-          PartName = mat.PartName,
+          PartName = mat.PartNameOrCasting,
           Process = lastProc,
           Path = 1,
           Serial = matDetails?.Serial,

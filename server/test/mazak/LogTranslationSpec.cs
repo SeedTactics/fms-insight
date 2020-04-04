@@ -609,11 +609,11 @@ namespace MachineWatchTest
       }
     }
 
-    protected void ExpectRemoveFromQueue(TestMaterial mat, int offset, string queue)
+    protected void ExpectRemoveFromQueue(TestMaterial mat, int offset, string queue, int startingPos)
     {
-      ExpectRemoveFromQueue(new[] { mat }, offset, queue);
+      ExpectRemoveFromQueue(new[] { mat }, offset, queue, startingPos);
     }
-    protected void ExpectRemoveFromQueue(IEnumerable<TestMaterial> mats, int offset, string queue)
+    protected void ExpectRemoveFromQueue(IEnumerable<TestMaterial> mats, int offset, string queue, int startingPos)
     {
       foreach (var mat in mats)
         expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
@@ -631,7 +631,7 @@ namespace MachineWatchTest
             pal: "",
             ty: BlackMaple.MachineWatchInterface.LogType.RemoveFromQueue,
             locName: queue,
-            locNum: 0,
+            locNum: startingPos,
             prog: "",
             start: false,
             endTime: mat.EventStartTime.AddMinutes(offset).AddSeconds(1),
@@ -1142,7 +1142,7 @@ namespace MachineWatchTest
       LoadStart(proc2, offset: 28, load: 1);
       LoadEnd(proc2, offset: 29, cycleOffset: 30, load: 1, elapMin: 1);
       MovePallet(t, pal: 9, offset: 30, load: 1, elapMin: 0);
-      ExpectRemoveFromQueue(proc2, offset: 30, queue: "thequeue");
+      ExpectRemoveFromQueue(proc2, offset: 30, queue: "thequeue", startingPos: 0);
 
       MachStart(proc2, offset: 30, mach: 6);
       MachStart(proc1snd, offset: 35, mach: 3);
@@ -1157,64 +1157,88 @@ namespace MachineWatchTest
     [Fact]
     public void QueuesFirstInFirstOut()
     {
-      // run multiple process 1s.  Also have multiple parts on a face.
+      // run multiple process 1s on multiple paths.  Also have multiple parts on a face.
 
       var t = DateTime.UtcNow.AddHours(-5);
       AddTestPart(unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1);
+      AddTestPart(unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 2);
       AddTestPart(unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1);
+      AddTestPart(unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 2);
 
-      var proc1 = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matIDs: new long[] { 1, 2, 3 });
-      var proc1snd = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matIDs: new long[] { 4, 5, 6 });
-      var proc1thrd = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matIDs: new long[] { 7, 8, 9 });
+      var proc1path1 = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matIDs: new long[] { 1, 2, 3 });
+      var proc2path1 = BuildMaterial(t, pal: 5, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1, face: "2", matIDs: new long[] { 1, 2, 3 });
 
-      var proc2 = BuildMaterial(t, pal: 5, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1, face: "2", matIDs: new long[] { 1, 2, 3 });
-      var proc2snd = BuildMaterial(t, pal: 5, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1, face: "2", matIDs: new long[] { 4, 5, 6 });
+      var proc1path2 = BuildMaterial(t, pal: 6, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 2, face: "1", matIDs: new long[] { 4, 5, 6 });
+      var proc2path2 = BuildMaterial(t, pal: 7, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 2, face: "2", matIDs: new long[] { 4, 5, 6 });
 
-      var j = new JobPlan("uuuu", 2);
+      var proc1path1snd = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matIDs: new long[] { 7, 8, 9 });
+      var proc2path1snd = BuildMaterial(t, pal: 5, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1, face: "2", matIDs: new long[] { 7, 8, 9 });
+
+      var proc1path1thrd = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matIDs: new long[] { 10, 11, 12 });
+
+      var j = new JobPlan("uuuu", 2, new[] { 2, 2 });
       j.PartName = "pppp";
       j.SetOutputQueue(1, 1, "thequeue");
+      j.SetOutputQueue(1, 2, "thequeue");
       j.SetInputQueue(2, 1, "thequeue");
+      j.SetInputQueue(2, 2, "thequeue");
       j.SetOutputQueue(2, 1, "externalq");
+      j.SetOutputQueue(2, 2, "externalq");
+      j.SetPathGroup(1, 1, 1);
+      j.SetPathGroup(2, 1, 1);
+      j.SetPathGroup(1, 2, 2);
+      j.SetPathGroup(2, 2, 2);
       var newJobs = new NewJobs()
       {
         Jobs = new List<JobPlan> { j }
       };
       jobDB.AddJobs(newJobs, null);
 
-      LoadStart(proc1, offset: 0, load: 10);
-      LoadEnd(proc1, offset: 2, cycleOffset: 3, load: 10, elapMin: 2);
+      LoadStart(proc1path1, offset: 0, load: 10);
+      LoadEnd(proc1path1, offset: 2, cycleOffset: 3, load: 10, elapMin: 2);
       MovePallet(t, offset: 3, pal: 4, load: 10, elapMin: 0);
 
-      MachStart(proc1, offset: 5, mach: 7);
-      MachEnd(proc1, offset: 10, mach: 7, elapMin: 5);
+      MachStart(proc1path1, offset: 5, mach: 7);
+      MachEnd(proc1path1, offset: 10, mach: 7, elapMin: 5);
 
-      UnloadStart(proc1, offset: 12, load: 3);
-      LoadStart(proc1snd, offset: 12, load: 3);
-      UnloadEnd(proc1, offset: 15, load: 3, elapMin: 3);
-      ExpectAddToQueue(proc1, offset: 15, queue: "thequeue", startPos: 0);
-      LoadEnd(proc1snd, offset: 15, cycleOffset: 16, load: 3, elapMin: 3);
+      LoadStart(proc1path2, offset: 10, load: 9);
+      LoadEnd(proc1path2, offset: 11, cycleOffset: 11, load: 9, elapMin: 1);
+      MovePallet(t, offset: 11, pal: 6, load: 9, elapMin: 0);
+
+      UnloadStart(proc1path1, offset: 12, load: 3);
+      LoadStart(proc1path1snd, offset: 12, load: 3);
+      UnloadEnd(proc1path1, offset: 15, load: 3, elapMin: 3);
+      ExpectAddToQueue(proc1path1, offset: 15, queue: "thequeue", startPos: 0);
+      LoadEnd(proc1path1snd, offset: 15, cycleOffset: 16, load: 3, elapMin: 3);
       MovePallet(t, offset: 16, pal: 4, load: 3, elapMin: 16 - 3);
 
-      MachStart(proc1snd, offset: 20, mach: 2);
-      MachEnd(proc1snd, offset: 25, mach: 2, elapMin: 5);
+      MachStart(proc1path2, offset: 18, mach: 1);
+      MachEnd(proc1path2, offset: 19, mach: 1, elapMin: 1);
 
-      UnloadStart(proc1snd, offset: 30, load: 1);
-      LoadStart(proc1thrd, offset: 30, load: 1);
-      UnloadEnd(proc1snd, offset: 33, load: 1, elapMin: 3);
-      ExpectAddToQueue(proc1snd, offset: 33, queue: "thequeue", startPos: 3);
-      LoadEnd(proc1thrd, offset: 33, cycleOffset: 34, load: 1, elapMin: 3);
+      MachStart(proc1path1snd, offset: 20, mach: 2);
+      MachEnd(proc1path1snd, offset: 25, mach: 2, elapMin: 5);
+
+      UnloadStart(proc1path2, offset: 26, load: 3);
+      UnloadEnd(proc1path2, offset: 27, load: 3, elapMin: 1);
+      ExpectAddToQueue(proc1path2, offset: 27, queue: "thequeue", startPos: 3);
+
+      UnloadStart(proc1path1snd, offset: 30, load: 1);
+      LoadStart(proc1path1thrd, offset: 30, load: 1);
+      UnloadEnd(proc1path1snd, offset: 33, load: 1, elapMin: 3);
+      ExpectAddToQueue(proc1path1snd, offset: 33, queue: "thequeue", startPos: 6);
+      LoadEnd(proc1path1thrd, offset: 33, cycleOffset: 34, load: 1, elapMin: 3);
       MovePallet(t, offset: 34, pal: 4, load: 1, elapMin: 34 - 16);
 
-      //queue now has 6 elements
+      //queue now has 9 elements
       jobLog.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(
-        Enumerable.Range(1, 6).Select(i =>
+        Enumerable.Range(1, 9).Select((i, idx) =>
           new JobLogDB.QueuedMaterial()
           {
             MaterialID = i,
             Queue = "thequeue",
-            Position = i - 1,
+            Position = idx,
             Unique = "uuuu",
-            PartName = "pppp",
+            PartNameOrCasting = "pppp",
             NumProcesses = 2
           }
         )
@@ -1222,20 +1246,56 @@ namespace MachineWatchTest
 
       //first load should pull in mat ids 1, 2, 3
 
-      LoadStart(proc2, offset: 40, load: 2);
-      LoadEnd(proc2, offset: 44, cycleOffset: 45, load: 2, elapMin: 4);
+      LoadStart(proc2path1, offset: 40, load: 2);
+      LoadEnd(proc2path1, offset: 44, cycleOffset: 45, load: 2, elapMin: 4);
       MovePallet(t, offset: 45, pal: 5, load: 2, elapMin: 0);
-      ExpectRemoveFromQueue(proc2, offset: 45, queue: "thequeue");
+      ExpectRemoveFromQueue(proc2path1, offset: 45, queue: "thequeue", startingPos: 0);
 
-      MachStart(proc2, offset: 50, mach: 100);
-      MachEnd(proc2, offset: 55, mach: 100, elapMin: 5);
+      jobLog.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(
+        (new[] { 4, 5, 6, 7, 8, 9 }).Select((i, idx) =>
+            new JobLogDB.QueuedMaterial()
+            {
+              MaterialID = i,
+              Queue = "thequeue",
+              Position = idx,
+              Unique = "uuuu",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 2
+            }
+        )
+      );
 
-      UnloadStart(proc2, offset: 60, load: 1);
-      LoadStart(proc2snd, offset: 60, load: 1);
-      UnloadEnd(proc2, offset: 65, load: 1, elapMin: 5);
-      LoadEnd(proc2snd, offset: 65, cycleOffset: 66, load: 1, elapMin: 5);
+      MachStart(proc2path1, offset: 50, mach: 100);
+      MachEnd(proc2path1, offset: 55, mach: 100, elapMin: 5);
+
+      // second load should pull mat ids 7, 8, 9 because of path matching
+
+      UnloadStart(proc2path1, offset: 60, load: 1);
+      LoadStart(proc2path1snd, offset: 60, load: 1);
+      UnloadEnd(proc2path1, offset: 65, load: 1, elapMin: 5);
+      LoadEnd(proc2path1snd, offset: 65, cycleOffset: 66, load: 1, elapMin: 5);
       MovePallet(t, offset: 66, pal: 5, load: 1, elapMin: 66 - 45);
-      ExpectRemoveFromQueue(proc2snd, offset: 66, queue: "thequeue");
+      ExpectRemoveFromQueue(proc2path1snd, offset: 66, queue: "thequeue", startingPos: 3);
+
+      jobLog.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(
+        (new[] { 4, 5, 6 }).Select((i, idx) =>
+            new JobLogDB.QueuedMaterial()
+            {
+              MaterialID = i,
+              Queue = "thequeue",
+              Position = idx,
+              Unique = "uuuu",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 2
+            }
+        )
+      );
+
+      // finally, load of path2 pulls remaining 4, 5, 6
+      LoadStart(proc2path2, offset: 70, load: 2);
+      LoadEnd(proc2path2, offset: 73, cycleOffset: 74, load: 2, elapMin: 3);
+      MovePallet(t, offset: 74, pal: 7, load: 2, elapMin: 0);
+      ExpectRemoveFromQueue(proc2path2, offset: 74, queue: "thequeue", startingPos: 0);
 
       jobLog.GetMaterialInQueue("thequeue").Should().BeEmpty();
 
