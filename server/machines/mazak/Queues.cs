@@ -235,7 +235,7 @@ namespace MazakMachineInterface
         var schProc = sch.Procs[proc];
         if (string.IsNullOrEmpty(schProc.InputQueue)) continue;
 
-        var matInQueue = QueuedMaterialForLoading(jobPlan, schProc.InputQueue, proc, schProc.Path, _log);
+        var matInQueue = QueuedMaterialForLoading(jobPlan, _log.GetMaterialInQueue(schProc.InputQueue), proc, schProc.Path, _log);
         var numMatInQueue = matInQueue.Count;
 
         if (proc == 1)
@@ -375,10 +375,10 @@ namespace MazakMachineInterface
       }
     }
 
-    public static List<JobLogDB.QueuedMaterial> QueuedMaterialForLoading(JobPlan job, string inputQueue, int proc, int path, JobLogDB log)
+    public static List<JobLogDB.QueuedMaterial> QueuedMaterialForLoading(JobPlan job, IEnumerable<JobLogDB.QueuedMaterial> materialToSearch, int proc, int path, JobLogDB log)
     {
       var mats = new List<JobLogDB.QueuedMaterial>();
-      foreach (var m in log.GetMaterialInQueue(inputQueue))
+      foreach (var m in materialToSearch)
       {
         if (m.Unique != job.UniqueStr) continue;
         if (FindNextProcess(log, m.MaterialID) != proc) continue;

@@ -590,29 +590,15 @@ namespace MazakMachineInterface
 
     private static void AddLoads(JobLogDB log, IEnumerable<LoadAction> currentLoads, string pallet, PalletLocation palLoc, TimeSpan? elapsedLoadTime, CurrentStatus curStatus)
     {
-      var queuedMats = new Dictionary<string, List<BlackMaple.MachineFramework.JobLogDB.QueuedMaterial>>();
+      var queuedMats = new Dictionary<(string uniq, int proc, int path), List<BlackMaple.MachineFramework.JobLogDB.QueuedMaterial>>();
       //process remaining loads/unloads (already processed ones have been removed from currentLoads)
       foreach (var operation in currentLoads)
       {
         if (!operation.LoadEvent || operation.LoadStation != palLoc.Num) continue;
         for (int i = 0; i < operation.Qty; i++)
         {
-          List<BlackMaple.MachineFramework.JobLogDB.QueuedMaterial> queuedMat = null;
-          if (curStatus.Jobs.ContainsKey(operation.Unique))
-          {
-            var queue = curStatus.Jobs[operation.Unique].GetInputQueue(process: operation.Process, path: operation.Path);
-            if (!string.IsNullOrEmpty(queue))
-            {
-              //only lookup each queue once
-              if (queuedMats.ContainsKey(queue))
-                queuedMat = queuedMats[queue];
-              else
-              {
-                queuedMat = log.GetMaterialInQueue(queue).ToList();
-                queuedMats.Add(queue, queuedMat);
-              }
-            }
-          }
+
+          // first, calculate material id, serial, workorder, and location
           long matId = -1;
           string serial = null;
           string workId = null;
@@ -620,28 +606,43 @@ namespace MazakMachineInterface
           {
             Type = InProcessMaterialLocation.LocType.Free
           };
-          if (queuedMat != null)
+
+          // load queued material
+          List<BlackMaple.MachineFramework.JobLogDB.QueuedMaterial> queuedMat = null;
+          if (curStatus.Jobs.ContainsKey(operation.Unique))
           {
-            var mat = queuedMat
-              .Where(m => m.Unique == operation.Unique)
-              .Select(m => (JobLogDB.QueuedMaterial?)m)
-              .DefaultIfEmpty(null)
-              .First();
-            if (mat.HasValue)
+            var job = curStatus.Jobs[operation.Unique];
+            var queue = job.GetInputQueue(process: operation.Process, path: operation.Path);
+            if (!string.IsNullOrEmpty(queue))
             {
-              matId = mat.Value.MaterialID;
-              loc = new InProcessMaterialLocation()
+              var key = (uniq: operation.Unique, proc: operation.Process, path: operation.Path);
+              if (queuedMats.ContainsKey(key))
+                queuedMat = queuedMats[key];
+              else
               {
-                Type = InProcessMaterialLocation.LocType.InQueue,
-                CurrentQueue = mat.Value.Queue,
-                QueuePosition = mat.Value.Position,
-              };
-              queuedMat.RemoveAll(m => m.MaterialID == mat.Value.MaterialID);
-              var matDetails = log.GetMaterialDetails(matId);
-              serial = matDetails?.Serial;
-              workId = matDetails?.Workorder;
+                queuedMat = MazakQueues.QueuedMaterialForLoading(job, log.GetMaterialInQueue(queue), operation.Process, operation.Path, log);
+                queuedMats.Add(key, queuedMat);
+              }
             }
           }
+
+          // extract matid and details from queued material if available
+          if (queuedMat != null && queuedMat.Count > 0)
+          {
+            var mat = queuedMat[0];
+            queuedMat.RemoveAt(0);
+            matId = mat.MaterialID;
+            loc = new InProcessMaterialLocation()
+            {
+              Type = InProcessMaterialLocation.LocType.InQueue,
+              CurrentQueue = mat.Queue,
+              QueuePosition = mat.Position,
+            };
+            var matDetails = log.GetMaterialDetails(matId);
+            serial = matDetails?.Serial;
+            workId = matDetails?.Workorder;
+          }
+
           var inProcMat = new InProcessMaterial()
           {
             MaterialID = matId,
