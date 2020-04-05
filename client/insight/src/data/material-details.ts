@@ -405,31 +405,49 @@ export function addExistingMaterialToQueue(d: AddExistingMaterialToQueueData): P
 }
 
 export interface AddNewMaterialToQueueData {
-  readonly jobUnique?: string;
-  readonly partName: string;
-  readonly lastCompletedProcess?: number;
+  readonly jobUnique: string;
+  readonly lastCompletedProcess: number;
+  readonly pathGroup: number;
   readonly queue: string;
   readonly queuePosition: number;
   readonly serial?: string;
 }
 
 export function addNewMaterialToQueue(d: AddNewMaterialToQueueData) {
-  if (d.jobUnique && d.lastCompletedProcess) {
+  return {
+    type: ActionType.AddNewMaterialToQueue,
+    pledge: JobsBackend.addUnprocessedMaterialToQueue(
+      d.jobUnique,
+      d.lastCompletedProcess,
+      d.pathGroup,
+      d.queue,
+      d.queuePosition,
+      d.serial || ""
+    )
+  };
+}
+
+export interface AddNewCastingToQueueData {
+  readonly casting?: string;
+  readonly partName?: string;
+  readonly queue: string;
+  readonly queuePosition: number;
+  readonly serial?: string;
+}
+
+export function addNewCastingToQueue(d: AddNewCastingToQueueData) {
+  if (d.casting) {
     return {
       type: ActionType.AddNewMaterialToQueue,
-      pledge: JobsBackend.addUnprocessedMaterialToQueue(
-        d.jobUnique,
-        d.lastCompletedProcess || -1,
-        d.queue,
-        d.queuePosition,
-        d.serial || ""
-      )
+      pledge: JobsBackend.addUnallocatedCastingToQueue(d.casting, d.queue, d.queuePosition, d.serial || "")
+    };
+  } else if (d.partName) {
+    return {
+      type: ActionType.AddNewMaterialToQueue,
+      pledge: JobsBackend.addUnallocatedCastingToQueueByPart(d.partName, d.queue, d.queuePosition, d.serial || "")
     };
   } else {
-    return {
-      type: ActionType.AddNewMaterialToQueue,
-      pledge: JobsBackend.addUnallocatedCastingToQueue(d.partName, d.queue, d.queuePosition, d.serial || "")
-    };
+    return [];
   }
 }
 

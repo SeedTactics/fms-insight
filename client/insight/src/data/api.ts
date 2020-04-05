@@ -497,11 +497,56 @@ export class JobsClient {
         return Promise.resolve<void>(<any>null);
     }
 
-    addUnallocatedCastingToQueue(partName: string | null, queue: string | null, pos: number, serial: string): Promise<void> {
+    addUnallocatedCastingToQueueByPart(partName: string | null, queue: string | null, pos: number, serial: string): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/jobs/part/{partName}/casting?";
         if (partName === undefined || partName === null)
             throw new Error("The parameter 'partName' must be defined.");
         url_ = url_.replace("{partName}", encodeURIComponent("" + partName)); 
+        if (queue === undefined)
+            throw new Error("The parameter 'queue' must be defined.");
+        else
+            url_ += "queue=" + encodeURIComponent("" + queue) + "&"; 
+        if (pos === undefined || pos === null)
+            throw new Error("The parameter 'pos' must be defined and cannot be null.");
+        else
+            url_ += "pos=" + encodeURIComponent("" + pos) + "&"; 
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(serial);
+
+        let options_ = <RequestInit>{
+            body: content_,
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json", 
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processAddUnallocatedCastingToQueueByPart(_response);
+        });
+    }
+
+    protected processAddUnallocatedCastingToQueueByPart(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(<any>null);
+    }
+
+    addUnallocatedCastingToQueue(castingName: string | null, queue: string | null, pos: number, serial: string): Promise<void> {
+        let url_ = this.baseUrl + "/api/v1/jobs/casting/{castingName}?";
+        if (castingName === undefined || castingName === null)
+            throw new Error("The parameter 'castingName' must be defined.");
+        url_ = url_.replace("{castingName}", encodeURIComponent("" + castingName)); 
         if (queue === undefined)
             throw new Error("The parameter 'queue' must be defined.");
         else
@@ -542,7 +587,7 @@ export class JobsClient {
         return Promise.resolve<void>(<any>null);
     }
 
-    addUnprocessedMaterialToQueue(jobUnique: string | null, lastCompletedProcess: number, queue: string | null, pos: number, serial: string): Promise<void> {
+    addUnprocessedMaterialToQueue(jobUnique: string | null, lastCompletedProcess: number, pathGroup: number, queue: string | null, pos: number, serial: string): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/jobs/job/{jobUnique}/unprocessed-material?";
         if (jobUnique === undefined || jobUnique === null)
             throw new Error("The parameter 'jobUnique' must be defined.");
@@ -551,6 +596,10 @@ export class JobsClient {
             throw new Error("The parameter 'lastCompletedProcess' must be defined and cannot be null.");
         else
             url_ += "lastCompletedProcess=" + encodeURIComponent("" + lastCompletedProcess) + "&"; 
+        if (pathGroup === undefined || pathGroup === null)
+            throw new Error("The parameter 'pathGroup' must be defined and cannot be null.");
+        else
+            url_ += "pathGroup=" + encodeURIComponent("" + pathGroup) + "&"; 
         if (queue === undefined)
             throw new Error("The parameter 'queue' must be defined.");
         else
@@ -1582,7 +1631,6 @@ export class JobPlan implements IJobPlan {
     bookings?: string[] | undefined;
     manuallyCreated!: boolean;
     createMarkingData!: boolean;
-    inspections?: JobInspectionData[] | undefined;
     holdEntireJob?: JobHoldPattern | undefined;
     cyclesOnFirstProcess!: number[];
     procsAndPaths!: ProcessInfo[];
@@ -1618,11 +1666,6 @@ export class JobPlan implements IJobPlan {
             }
             this.manuallyCreated = data["ManuallyCreated"];
             this.createMarkingData = data["CreateMarkingData"];
-            if (data["Inspections"] && data["Inspections"].constructor === Array) {
-                this.inspections = [] as any;
-                for (let item of data["Inspections"])
-                    this.inspections!.push(JobInspectionData.fromJS(item));
-            }
             this.holdEntireJob = data["HoldEntireJob"] ? JobHoldPattern.fromJS(data["HoldEntireJob"]) : <any>undefined;
             if (data["CyclesOnFirstProcess"] && data["CyclesOnFirstProcess"].constructor === Array) {
                 this.cyclesOnFirstProcess = [] as any;
@@ -1662,11 +1705,6 @@ export class JobPlan implements IJobPlan {
         }
         data["ManuallyCreated"] = this.manuallyCreated;
         data["CreateMarkingData"] = this.createMarkingData;
-        if (this.inspections && this.inspections.constructor === Array) {
-            data["Inspections"] = [];
-            for (let item of this.inspections)
-                data["Inspections"].push(item.toJSON());
-        }
         data["HoldEntireJob"] = this.holdEntireJob ? this.holdEntireJob.toJSON() : <any>undefined;
         if (this.cyclesOnFirstProcess && this.cyclesOnFirstProcess.constructor === Array) {
             data["CyclesOnFirstProcess"] = [];
@@ -1695,66 +1733,9 @@ export interface IJobPlan {
     bookings?: string[] | undefined;
     manuallyCreated: boolean;
     createMarkingData: boolean;
-    inspections?: JobInspectionData[] | undefined;
     holdEntireJob?: JobHoldPattern | undefined;
     cyclesOnFirstProcess: number[];
     procsAndPaths: ProcessInfo[];
-}
-
-export class JobInspectionData implements IJobInspectionData {
-    inspectionType!: string;
-    counter!: string;
-    maxVal!: number;
-    randomFreq!: number;
-    timeInterval!: string;
-    inspectSingleProcess!: number;
-
-    constructor(data?: IJobInspectionData) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            this.inspectionType = data["InspectionType"];
-            this.counter = data["Counter"];
-            this.maxVal = data["MaxVal"];
-            this.randomFreq = data["RandomFreq"];
-            this.timeInterval = data["TimeInterval"];
-            this.inspectSingleProcess = data["InspectSingleProcess"];
-        }
-    }
-
-    static fromJS(data: any): JobInspectionData {
-        data = typeof data === 'object' ? data : {};
-        let result = new JobInspectionData();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["InspectionType"] = this.inspectionType;
-        data["Counter"] = this.counter;
-        data["MaxVal"] = this.maxVal;
-        data["RandomFreq"] = this.randomFreq;
-        data["TimeInterval"] = this.timeInterval;
-        data["InspectSingleProcess"] = this.inspectSingleProcess;
-        return data; 
-    }
-}
-
-export interface IJobInspectionData {
-    inspectionType: string;
-    counter: string;
-    maxVal: number;
-    randomFreq: number;
-    timeInterval: string;
-    inspectSingleProcess: number;
 }
 
 export class JobHoldPattern implements IJobHoldPattern {
@@ -1885,6 +1866,8 @@ export class ProcPathInfo implements IProcPathInfo {
     partsPerPallet!: number;
     inputQueue?: string | undefined;
     outputQueue?: string | undefined;
+    inspections?: PathInspection[] | undefined;
+    casting?: string | undefined;
 
     constructor(data?: IProcPathInfo) {
         if (data) {
@@ -1940,6 +1923,12 @@ export class ProcPathInfo implements IProcPathInfo {
             this.partsPerPallet = data["PartsPerPallet"];
             this.inputQueue = data["InputQueue"];
             this.outputQueue = data["OutputQueue"];
+            if (data["Inspections"] && data["Inspections"].constructor === Array) {
+                this.inspections = [] as any;
+                for (let item of data["Inspections"])
+                    this.inspections!.push(PathInspection.fromJS(item));
+            }
+            this.casting = data["Casting"];
         }
     }
 
@@ -1989,6 +1978,12 @@ export class ProcPathInfo implements IProcPathInfo {
         data["PartsPerPallet"] = this.partsPerPallet;
         data["InputQueue"] = this.inputQueue;
         data["OutputQueue"] = this.outputQueue;
+        if (this.inspections && this.inspections.constructor === Array) {
+            data["Inspections"] = [];
+            for (let item of this.inspections)
+                data["Inspections"].push(item.toJSON());
+        }
+        data["Casting"] = this.casting;
         return data; 
     }
 }
@@ -2011,6 +2006,8 @@ export interface IProcPathInfo {
     partsPerPallet: number;
     inputQueue?: string | undefined;
     outputQueue?: string | undefined;
+    inspections?: PathInspection[] | undefined;
+    casting?: string | undefined;
 }
 
 export class JobMachiningStop implements IJobMachiningStop {
@@ -2130,6 +2127,62 @@ export class SimulatedProduction implements ISimulatedProduction {
 export interface ISimulatedProduction {
     timeUTC: Date;
     quantity: number;
+}
+
+export class PathInspection implements IPathInspection {
+    inspectionType!: string;
+    counter!: string;
+    maxVal!: number;
+    randomFreq!: number;
+    timeInterval!: string;
+    expectedInspectionTime?: string | undefined;
+
+    constructor(data?: IPathInspection) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.inspectionType = data["InspectionType"];
+            this.counter = data["Counter"];
+            this.maxVal = data["MaxVal"];
+            this.randomFreq = data["RandomFreq"];
+            this.timeInterval = data["TimeInterval"];
+            this.expectedInspectionTime = data["ExpectedInspectionTime"];
+        }
+    }
+
+    static fromJS(data: any): PathInspection {
+        data = typeof data === 'object' ? data : {};
+        let result = new PathInspection();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["InspectionType"] = this.inspectionType;
+        data["Counter"] = this.counter;
+        data["MaxVal"] = this.maxVal;
+        data["RandomFreq"] = this.randomFreq;
+        data["TimeInterval"] = this.timeInterval;
+        data["ExpectedInspectionTime"] = this.expectedInspectionTime;
+        return data; 
+    }
+}
+
+export interface IPathInspection {
+    inspectionType: string;
+    counter: string;
+    maxVal: number;
+    randomFreq: number;
+    timeInterval: string;
+    expectedInspectionTime?: string | undefined;
 }
 
 export class SimulatedStationUtilization implements ISimulatedStationUtilization {
