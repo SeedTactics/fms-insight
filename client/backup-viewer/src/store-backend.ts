@@ -49,9 +49,9 @@ export const ServerBackend = {
       version: window.bmsVersion,
       requireScanAtWash: false,
       requireWorkorderBeforeAllowWashComplete: false,
-      additionalLogServers: []
+      additionalLogServers: [],
     });
-  }
+  },
 };
 
 export const JobsBackend = {
@@ -65,7 +65,7 @@ export const JobsBackend = {
       material: [],
       alarms: [],
       queues: {},
-      timeOfCurrentStatusUTC: new Date()
+      timeOfCurrentStatusUTC: new Date(),
     });
   },
   mostRecentUnfilledWorkordersForPart(
@@ -88,6 +88,7 @@ export const JobsBackend = {
   addUnprocessedMaterialToQueue(
     jobUnique: string,
     lastCompletedProcess: number,
+    path: number,
     queue: string,
     pos: number,
     serial: string
@@ -96,6 +97,15 @@ export const JobsBackend = {
     return Promise.resolve();
   },
   addUnallocatedCastingToQueue(
+    casting: string,
+    queue: string,
+    pos: number,
+    serial: string
+  ): Promise<void> {
+    // do nothing
+    return Promise.resolve();
+  },
+  addUnallocatedCastingToQueueByPart(
     partName: string,
     queue: string,
     pos: number,
@@ -103,7 +113,7 @@ export const JobsBackend = {
   ): Promise<void> {
     // do nothing
     return Promise.resolve();
-  }
+  },
 };
 
 export const LogBackend = {
@@ -113,7 +123,7 @@ export const LogBackend = {
   ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
     const entries: ReadonlyArray<object> = await ToBackground.send("log-get", {
       startUTC,
-      endUTC
+      endUTC,
     });
     return entries.map(api.LogEntry.fromJS);
   },
@@ -129,7 +139,7 @@ export const LogBackend = {
     const entries: ReadonlyArray<object> = await ToBackground.send(
       "log-for-material",
       {
-        materialID
+        materialID,
       }
     );
     return entries.map(api.LogEntry.fromJS);
@@ -140,7 +150,7 @@ export const LogBackend = {
     const entries: ReadonlyArray<object> = await ToBackground.send(
       "log-for-serial",
       {
-        serial
+        serial,
       }
     );
     return entries.map(api.LogEntry.fromJS);
@@ -203,5 +213,5 @@ export const LogBackend = {
     operatorName: string | null
   ): Promise<Readonly<api.ILogEntry>> {
     return Promise.reject("Not implemented");
-  }
+  },
 };
