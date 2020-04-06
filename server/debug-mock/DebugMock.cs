@@ -191,10 +191,10 @@ namespace DebugMachineWatchApiServer
       Serilog.Log.Information("AddUnallocatedCastingToQueue: {part} {queue} {position} {serial}", part, queue, position, serial);
     }
 
-    public void AddUnprocessedMaterialToQueue(string jobUnique, int lastCompletedProcess, string queue, int position, string serial)
+    public void AddUnprocessedMaterialToQueue(string jobUnique, int lastCompletedProcess, int pathGroup, string queue, int position, string serial)
     {
-      Serilog.Log.Information("AddUnprocessedMaterialToQueue: {unique} {lastCompProcess} {queue} {position} {serial}",
-        jobUnique, lastCompletedProcess, queue, position, serial);
+      Serilog.Log.Information("AddUnprocessedMaterialToQueue: {unique} {lastCompProcess} {pathGroup} {queue} {position} {serial}",
+        jobUnique, lastCompletedProcess, pathGroup, queue, position, serial);
     }
     public void SetMaterialInQueue(long materialId, string queue, int position)
     {

@@ -215,7 +215,7 @@ namespace MachineWatchTest
           Queue = "queue",
           Position = 0,
           Unique = "uuu5",
-          PartName = "part5",
+          PartNameOrCasting = "part5",
           NumProcesses = 1,
         }
       });

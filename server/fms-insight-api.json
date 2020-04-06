@@ -425,7 +425,7 @@
         "tags": [
           "jobs"
         ],
-        "operationId": "jobs_AddUnallocatedCastingToQueue",
+        "operationId": "jobs_AddUnallocatedCastingToQueueByPart",
         "consumes": [
           "application/json-patch+json",
           "application/json",
@@ -436,6 +436,58 @@
           {
             "type": "string",
             "name": "partName",
+            "in": "path",
+            "required": true,
+            "x-nullable": true
+          },
+          {
+            "type": "string",
+            "name": "queue",
+            "in": "query",
+            "required": true,
+            "x-nullable": true
+          },
+          {
+            "type": "integer",
+            "name": "pos",
+            "in": "query",
+            "required": true,
+            "format": "int32",
+            "x-nullable": false
+          },
+          {
+            "name": "serial",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-nullable": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/casting/{castingName}": {
+      "post": {
+        "tags": [
+          "jobs"
+        ],
+        "operationId": "jobs_AddUnallocatedCastingToQueue",
+        "consumes": [
+          "application/json-patch+json",
+          "application/json",
+          "text/json",
+          "application/*+json"
+        ],
+        "parameters": [
+          {
+            "type": "string",
+            "name": "castingName",
             "in": "path",
             "required": true,
             "x-nullable": true
@@ -495,6 +547,14 @@
           {
             "type": "integer",
             "name": "lastCompletedProcess",
+            "in": "query",
+            "required": true,
+            "format": "int32",
+            "x-nullable": false
+          },
+          {
+            "type": "integer",
+            "name": "pathGroup",
             "in": "query",
             "required": true,
             "format": "int32",
@@ -1460,12 +1520,6 @@
         "CreateMarkingData": {
           "type": "boolean"
         },
-        "Inspections": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/JobInspectionData"
-          }
-        },
         "HoldEntireJob": {
           "$ref": "#/definitions/JobHoldPattern"
         },
@@ -1481,42 +1535,6 @@
           "items": {
             "$ref": "#/definitions/ProcessInfo"
           }
-        }
-      }
-    },
-    "JobInspectionData": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "InspectionType",
-        "Counter",
-        "MaxVal",
-        "RandomFreq",
-        "TimeInterval",
-        "InspectSingleProcess"
-      ],
-      "properties": {
-        "InspectionType": {
-          "type": "string"
-        },
-        "Counter": {
-          "type": "string"
-        },
-        "MaxVal": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "RandomFreq": {
-          "type": "number",
-          "format": "double"
-        },
-        "TimeInterval": {
-          "type": "string",
-          "format": "time-span"
-        },
-        "InspectSingleProcess": {
-          "type": "integer",
-          "format": "int32"
         }
       }
     },
@@ -1658,6 +1676,15 @@
         },
         "OutputQueue": {
           "type": "string"
+        },
+        "Inspections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PathInspection"
+          }
+        },
+        "Casting": {
+          "type": "string"
         }
       }
     },
@@ -1715,6 +1742,41 @@
         "Quantity": {
           "type": "integer",
           "format": "int32"
+        }
+      }
+    },
+    "PathInspection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "InspectionType",
+        "Counter",
+        "MaxVal",
+        "RandomFreq",
+        "TimeInterval"
+      ],
+      "properties": {
+        "InspectionType": {
+          "type": "string"
+        },
+        "Counter": {
+          "type": "string"
+        },
+        "MaxVal": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "RandomFreq": {
+          "type": "number",
+          "format": "double"
+        },
+        "TimeInterval": {
+          "type": "string",
+          "format": "time-span"
+        },
+        "ExpectedInspectionTime": {
+          "type": "string",
+          "format": "time-span"
         }
       }
     },

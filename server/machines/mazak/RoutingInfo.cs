@@ -270,18 +270,17 @@ namespace MazakMachineInterface
     #endregion
 
     #region Queues
-    public void AddUnallocatedCastingToQueue(string part, string queue, int position, string serial)
+    public void AddUnallocatedCastingToQueue(string casting, string queue, int position, string serial)
     {
       if (!fmsSettings.Queues.ContainsKey(queue))
       {
         throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
       }
-      // num proc will be set later once it is allocated inside the MazakQueues thread
-      var matId = log.AllocateMaterialIDForCasting(part, 1);
+      var matId = log.AllocateMaterialIDForCasting(casting);
 
-      Log.Debug("Adding unprocessed casting for part {part} to queue {queue} in position {pos} with serial {serial}. " +
+      Log.Debug("Adding unprocessed casting for casting {casting} to queue {queue} in position {pos} with serial {serial}. " +
                 "Assigned matId {matId}",
-        part, queue, position, serial, matId
+        casting, queue, position, serial, matId
       );
 
       if (!string.IsNullOrEmpty(serial))
@@ -302,19 +301,30 @@ namespace MazakMachineInterface
       RaiseNewCurrentStatus(GetCurrentStatus());
     }
 
-    public void AddUnprocessedMaterialToQueue(string jobUnique, int process, string queue, int position, string serial)
+    public void AddUnprocessedMaterialToQueue(string jobUnique, int process, int pathGroup, string queue, int position, string serial)
     {
       if (!fmsSettings.Queues.ContainsKey(queue))
       {
         throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
       }
-
-      Log.Debug("Adding unprocessed material for job {job} proc {proc} to queue {queue} in position {pos} with serial {serial}",
-        jobUnique, process, queue, position, serial
+      Log.Debug("Adding unprocessed material for job {job} proc {proc} group {pathGroup} to queue {queue} in position {pos} with serial {serial}",
+        jobUnique, process, pathGroup, queue, position, serial
       );
 
       var job = jobDB.LoadJob(jobUnique);
       if (job == null) throw new BlackMaple.MachineFramework.BadRequestException("Unable to find job " + jobUnique);
+
+      int? path = null;
+      for (var p = 1; p <= job.GetNumPaths(Math.Max(1, process)); p++)
+      {
+        if (job.GetPathGroup(Math.Max(1, process), p) == pathGroup)
+        {
+          path = p;
+          break;
+        }
+      }
+      if (!path.HasValue) throw new BlackMaple.MachineFramework.BadRequestException("Unable to find path group " + pathGroup.ToString() + " for job " + jobUnique + " and process " + process.ToString());
+
       var matId = log.AllocateMaterialID(jobUnique, job.PartName, job.NumProcesses);
       if (!string.IsNullOrEmpty(serial))
       {
@@ -330,6 +340,7 @@ namespace MazakMachineInterface
       // the add to queue log entry will use the process, so later when we lookup the latest completed process
       // for the material in the queue, it will be correctly computed.
       log.RecordAddMaterialToQueue(matId, process, queue, position);
+      log.RecordPathForProcess(matId, Math.Max(1, process), path.Value);
       logReader.RecheckQueues();
       RaiseNewCurrentStatus(GetCurrentStatus());
     }

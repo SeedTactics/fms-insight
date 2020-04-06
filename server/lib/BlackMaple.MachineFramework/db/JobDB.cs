@@ -86,7 +86,7 @@ namespace BlackMaple.MachineFramework
       _connection.Close();
     }
 
-    private const int Version = 18;
+    private const int Version = 19;
 
     public void CreateTables()
     {
@@ -116,7 +116,7 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "CREATE TABLE planqty(UniqueStr TEXT, Path INTEGER, PlanQty INTEGER NOT NULL, PRIMARY KEY(UniqueStr, Path))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE pathdata(UniqueStr TEXT, Process INTEGER, Path INTEGER, StartingUTC INTEGER, PartsPerPallet INTEGER, PathGroup INTEGER, SimAverageFlowTime INTEGER, InputQueue TEXT, OutputQueue TEXT, LoadTime INTEGER, UnloadTime INTEGER, Fixture TEXT, Face INTEGER, PRIMARY KEY(UniqueStr,Process,Path))";
+        cmd.CommandText = "CREATE TABLE pathdata(UniqueStr TEXT, Process INTEGER, Path INTEGER, StartingUTC INTEGER, PartsPerPallet INTEGER, PathGroup INTEGER, SimAverageFlowTime INTEGER, InputQueue TEXT, OutputQueue TEXT, LoadTime INTEGER, UnloadTime INTEGER, Fixture TEXT, Face INTEGER, Casting TEXT, PRIMARY KEY(UniqueStr,Process,Path))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE TABLE pallets(UniqueStr TEXT, Process INTEGER, Path INTEGER, Pallet TEXT, PRIMARY KEY(UniqueStr,Process,Path,Pallet))";
@@ -250,6 +250,7 @@ namespace BlackMaple.MachineFramework
           if (curVersion < 16) Ver15ToVer16(trans);
           if (curVersion < 17) Ver16ToVer17(trans);
           if (curVersion < 18) Ver17ToVer18(trans);
+          if (curVersion < 19) Ver18ToVer19(trans);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -588,6 +589,16 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
       }
     }
+
+    private void Ver18ToVer19(IDbTransaction transaction)
+    {
+      using (IDbCommand cmd = _connection.CreateCommand())
+      {
+        cmd.Transaction = transaction;
+        cmd.CommandText = "ALTER TABLE pathdata ADD Casting TEXT";
+        cmd.ExecuteNonQuery();
+      }
+    }
     #endregion
 
     #region "Loading Jobs"
@@ -668,7 +679,7 @@ namespace BlackMaple.MachineFramework
         }
 
         //path data
-        cmd.CommandText = "SELECT Process, Path, StartingUTC, PartsPerPallet, PathGroup, SimAverageFlowTime, InputQueue, OutputQueue, LoadTime, UnloadTime, Fixture, Face FROM pathdata WHERE UniqueStr = $uniq";
+        cmd.CommandText = "SELECT Process, Path, StartingUTC, PartsPerPallet, PathGroup, SimAverageFlowTime, InputQueue, OutputQueue, LoadTime, UnloadTime, Fixture, Face, Casting FROM pathdata WHERE UniqueStr = $uniq";
         using (var reader = cmd.ExecuteReader())
         {
           while (reader.Read())
@@ -707,6 +718,11 @@ namespace BlackMaple.MachineFramework
               {
                 job.SetFixtureFace(proc, path, reader.GetString(10), reader.GetInt32(11));
               }
+            }
+
+            if (!reader.IsDBNull(12) && proc == 1)
+            {
+              job.SetCasting(path, reader.GetString(12));
             }
           }
         }
@@ -1584,8 +1600,8 @@ namespace BlackMaple.MachineFramework
           }
         }
 
-        cmd.CommandText = "INSERT INTO pathdata(UniqueStr, Process, Path, StartingUTC, PartsPerPallet, PathGroup,SimAverageFlowTime,InputQueue,OutputQueue,LoadTime,UnloadTime,Fixture,Face) " +
-      "VALUES ($uniq,$proc,$path,$start,$ppp,$group,$flow,$iq,$oq,$lt,$ul,$fix,$face)";
+        cmd.CommandText = "INSERT INTO pathdata(UniqueStr, Process, Path, StartingUTC, PartsPerPallet, PathGroup,SimAverageFlowTime,InputQueue,OutputQueue,LoadTime,UnloadTime,Fixture,Face,Casting) " +
+      "VALUES ($uniq,$proc,$path,$start,$ppp,$group,$flow,$iq,$oq,$lt,$ul,$fix,$face,$casting)";
         cmd.Parameters.Clear();
         cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
         cmd.Parameters.Add("proc", SqliteType.Integer);
@@ -1600,6 +1616,7 @@ namespace BlackMaple.MachineFramework
         cmd.Parameters.Add("ul", SqliteType.Integer);
         cmd.Parameters.Add("fix", SqliteType.Text);
         cmd.Parameters.Add("face", SqliteType.Integer);
+        cmd.Parameters.Add("casting", SqliteType.Text);
         for (int i = 1; i <= job.NumProcesses; i++)
         {
           for (int j = 1; j <= job.GetNumPaths(i); j++)
@@ -1625,6 +1642,15 @@ namespace BlackMaple.MachineFramework
             var (fix, face) = job.PlannedFixture(i, j);
             cmd.Parameters[11].Value = string.IsNullOrEmpty(fix) ? DBNull.Value : (object)fix;
             cmd.Parameters[12].Value = face;
+            if (i == 1)
+            {
+              var casting = job.GetCasting(j);
+              cmd.Parameters[13].Value = string.IsNullOrEmpty(casting) ? DBNull.Value : (object)casting;
+            }
+            else
+            {
+              cmd.Parameters[13].Value = DBNull.Value;
+            }
             cmd.ExecuteNonQuery();
           }
         }

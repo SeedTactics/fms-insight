@@ -127,7 +127,7 @@ namespace Makino
       //do nothing
     }
 
-    public void AddUnprocessedMaterialToQueue(string jobUnique, int process, string queue, int position, string serial)
+    public void AddUnprocessedMaterialToQueue(string jobUnique, int process, int pathGroup, string queue, int position, string serial)
     {
       //do nothing
     }

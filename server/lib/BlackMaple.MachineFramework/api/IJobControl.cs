@@ -68,12 +68,12 @@ namespace BlackMaple.MachineWatchInterface
     /// Add a new casting for a given part.  The casting has not yet been assigned to a specific job,
     /// and will be assigned to the job with remaining demand and earliest priority.
     /// The serial is optional and is passed only if the material has already been marked with a serial.
-    void AddUnallocatedCastingToQueue(string part, string queue, int position, string serial);
+    void AddUnallocatedCastingToQueue(string casting, string queue, int position, string serial);
 
     /// Add a new unprocessed piece of material for the given job into the given queue.  The serial is optional
     /// and is passed only if the material has already been marked with a serial.
     /// Use -1 or 0 for lastCompletedProcess if the material is a casting.
-    void AddUnprocessedMaterialToQueue(string jobUnique, int lastCompletedProcess, string queue, int position, string serial);
+    void AddUnprocessedMaterialToQueue(string jobUnique, int lastCompletedProcess, int pathGroup, string queue, int position, string serial);
 
     /// Add material into a queue or just into free material if the queue name is the empty string.
     /// The material will be inserted into the given position, bumping any later material to a

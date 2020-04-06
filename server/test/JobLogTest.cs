@@ -111,12 +111,12 @@ namespace MachineWatchTest
         Paths = new Dictionary<int, int>()
       });
 
-      long m4 = _jobLog.AllocateMaterialIDForCasting("P4", 44);
+      long m4 = _jobLog.AllocateMaterialIDForCasting("P4");
       _jobLog.GetMaterialDetails(m4).Should().BeEquivalentTo(new MaterialDetails()
       {
         MaterialID = m4,
         PartName = "P4",
-        NumProcesses = 44,
+        NumProcesses = 1,
         Paths = new Dictionary<int, int>()
       });
 
@@ -900,7 +900,7 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartName = "part111", NumProcesses = 19}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19}
           });
 
       //adding with LogMaterial with position -1 and existing queue
@@ -910,8 +910,8 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartName = "part2", NumProcesses = 22}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22}
           });
 
 
@@ -922,16 +922,16 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartName = "part3", NumProcesses = 36},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 2, Unique = "uniq2", PartName = "part2", NumProcesses = 22}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 2, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22}
           });
       _jobLog.GetMaterialInAllQueues()
           .Should().BeEquivalentTo(new[] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartName = "part3", NumProcesses = 36},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 2, Unique = "uniq2", PartName = "part2", NumProcesses = 22},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 100, Queue = "BBBB", Position = 0, Unique = "uniq100", PartName = "part100", NumProcesses = 100}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 2, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 100, Queue = "BBBB", Position = 0, Unique = "uniq100", PartNameOrCasting = "part100", NumProcesses = 100}
           });
 
       //removing from queue with LogMaterial
@@ -941,8 +941,8 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartName = "part2", NumProcesses = 22}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22}
           });
 
 
@@ -953,9 +953,9 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartName = "part2", NumProcesses = 22},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 2, Unique = "uniq3", PartName = "part3", NumProcesses = 36}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 2, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36}
           });
 
       //move item backwards in queue
@@ -969,9 +969,9 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartName = "part2", NumProcesses = 22},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 1, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 2, Unique = "uniq3", PartName = "part3", NumProcesses = 36},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 1, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 2, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36},
           });
 
       //move item forwards in queue
@@ -985,9 +985,9 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartName = "part2", NumProcesses = 22},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartName = "part3", NumProcesses = 36},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 2, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 2, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19},
           });
 
       //add large position
@@ -999,10 +999,10 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartName = "part2", NumProcesses = 22},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartName = "part3", NumProcesses = 36},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 2, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 4, Queue = "AAAA", Position = 3, Unique = "uniq4", PartName = "part4", NumProcesses = 44},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 2, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 4, Queue = "AAAA", Position = 3, Unique = "uniq4", PartNameOrCasting = "part4", NumProcesses = 44},
           });
 
       //removing from queue with matid
@@ -1012,9 +1012,9 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 0, Unique = "uniq3", PartName = "part3", NumProcesses = 36},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 1, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 4, Queue = "AAAA", Position = 2, Unique = "uniq4", PartName = "part4", NumProcesses = 44},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 0, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 1, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 4, Queue = "AAAA", Position = 2, Unique = "uniq4", PartNameOrCasting = "part4", NumProcesses = 44},
           });
 
 
@@ -1045,8 +1045,8 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartName = "part2", NumProcesses = 22}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22}
           });
 
 
@@ -1064,7 +1064,7 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartName = "part2", NumProcesses = 22}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22}
           });
 
       //unloading should add to queue
@@ -1084,9 +1084,9 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartName = "part2", NumProcesses = 22},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 1, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 2, Unique = "uniq3", PartName = "part3", NumProcesses = 36}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 1, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 2, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36}
           });
 
 
@@ -1098,20 +1098,50 @@ namespace MachineWatchTest
     public void AllocateCastingsFromQueues()
     {
       var mat1 = new LogMaterial(
-          _jobLog.AllocateMaterialIDForCasting("part1", 5), "", 2, "part1", 5, "", "", "");
+          _jobLog.AllocateMaterialIDForCasting("casting1"), "", 2, "casting1", 1, "", "", "");
       var mat2 = new LogMaterial(
-          _jobLog.AllocateMaterialIDForCasting("part1", 5), "", 1, "part1", 5, "", "", "");
+          _jobLog.AllocateMaterialIDForCasting("casting1"), "", 1, "casting1", 1, "", "", "");
       var mat3 = new LogMaterial(
-          _jobLog.AllocateMaterialIDForCasting("part3", 3), "", 3, "part3", 3, "", "", "");
+          _jobLog.AllocateMaterialIDForCasting("casting3"), "", 3, "casting3", 1, "", "", "");
 
       _jobLog.RecordAddMaterialToQueue(JobLogDB.EventLogMaterial.FromLogMat(mat1), "queue1", 0);
       _jobLog.RecordAddMaterialToQueue(JobLogDB.EventLogMaterial.FromLogMat(mat2), "queue1", 1);
       _jobLog.RecordAddMaterialToQueue(JobLogDB.EventLogMaterial.FromLogMat(mat3), "queue1", 2);
 
-      _jobLog.AllocateCastingsInQueue("queue1", "part5", "uniqAAA", numProcesses: 15, maxCount: 2)
+      _jobLog.GetMaterialDetails(mat1.MaterialID).Should().BeEquivalentTo(new MaterialDetails()
+      {
+        MaterialID = mat1.MaterialID,
+        JobUnique = null,
+        PartName = "casting1",
+        NumProcesses = 1,
+        Paths = new Dictionary<int, int>()
+      });
+
+      _jobLog.GetMaterialDetails(mat2.MaterialID).Should().BeEquivalentTo(new MaterialDetails()
+      {
+        MaterialID = mat2.MaterialID,
+        JobUnique = null,
+        PartName = "casting1",
+        NumProcesses = 1,
+        Paths = new Dictionary<int, int>()
+      });
+
+      _jobLog.GetMaterialDetails(mat3.MaterialID).Should().BeEquivalentTo(new MaterialDetails()
+      {
+        MaterialID = mat3.MaterialID,
+        JobUnique = null,
+        PartName = "casting3",
+        NumProcesses = 1,
+        Paths = new Dictionary<int, int>()
+      });
+
+      _jobLog.AllocateCastingsInQueue(queue: "queue1", casting: "unused", unique: "uniqAAA", part: "part1", proc1Path: 1000, numProcesses: 15, count: 2)
           .Should().BeEquivalentTo(new long[] { });
 
-      _jobLog.AllocateCastingsInQueue("queue1", "part1", "uniqAAA", numProcesses: 6312, maxCount: 2)
+      _jobLog.AllocateCastingsInQueue(queue: "queue1", casting: "casting1", unique: "uniqAAA", part: "part1", proc1Path: 1234, numProcesses: 6312, count: 50)
+          .Should().BeEquivalentTo(new long[] { });
+
+      _jobLog.AllocateCastingsInQueue(queue: "queue1", casting: "casting1", unique: "uniqAAA", part: "part1", proc1Path: 1234, numProcesses: 6312, count: 2)
           .Should().BeEquivalentTo(new[] { mat1.MaterialID, mat2.MaterialID });
 
       _jobLog.GetMaterialDetails(mat1.MaterialID).Should().BeEquivalentTo(new MaterialDetails()
@@ -1120,7 +1150,7 @@ namespace MachineWatchTest
         JobUnique = "uniqAAA",
         PartName = "part1",
         NumProcesses = 6312,
-        Paths = new Dictionary<int, int>()
+        Paths = new Dictionary<int, int>() { { 1, 1234 } }
       });
 
       _jobLog.GetMaterialDetails(mat2.MaterialID).Should().BeEquivalentTo(new MaterialDetails()
@@ -1129,16 +1159,16 @@ namespace MachineWatchTest
         JobUnique = "uniqAAA",
         PartName = "part1",
         NumProcesses = 6312,
-        Paths = new Dictionary<int, int>()
+        Paths = new Dictionary<int, int>() { { 1, 1234 } }
       });
 
-      _jobLog.MarkCastingsAsUnallocated(new[] { mat1.MaterialID });
+      _jobLog.MarkCastingsAsUnallocated(new[] { mat1.MaterialID }, casting: "newcasting");
 
       _jobLog.GetMaterialDetails(mat1.MaterialID).Should().BeEquivalentTo(new MaterialDetails()
       {
         MaterialID = mat1.MaterialID,
         JobUnique = null,
-        PartName = "part1",
+        PartName = "newcasting",
         NumProcesses = 6312,
         Paths = new Dictionary<int, int>()
       });

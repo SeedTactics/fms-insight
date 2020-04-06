@@ -181,6 +181,9 @@ namespace MazakMachineInterface
         }
       }
 
+      // queue settings
+      bool waitForAllCastings = cfg.GetValue<bool>("Wait For All Castings", false);
+
       Log.Debug(
         "Configured UseStartingOffsetForDueDate = {useStarting}",
         UseStartingOffsetForDueDate);
@@ -214,7 +217,7 @@ namespace MazakMachineInterface
       else
         _readDB = openReadDb;
 
-      queues = new MazakQueues(jobLog, jobDB, _writeDB);
+      queues = new MazakQueues(jobLog, jobDB, _writeDB, waitForAllCastings);
       var sendToExternal = new SendMaterialToExternalQueue();
 
       hold = new HoldPattern(_writeDB, _readDB, jobDB, true);

@@ -47,7 +47,7 @@
       "preLaunchTask": "debug-mock:build"
     },
     {
-      "name": "Launch Chrome",
+      "name": "FMS Insight",
       "type": "chrome",
       "request": "launch",
       "url": "http://localhost:1234",

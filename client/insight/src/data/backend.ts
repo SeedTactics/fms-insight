@@ -45,12 +45,14 @@ export interface JobAPI {
   addUnprocessedMaterialToQueue(
     jobUnique: string,
     lastCompletedProcess: number,
+    pathGroup: number,
     queue: string,
     pos: number,
     serial: string
   ): Promise<void>;
 
-  addUnallocatedCastingToQueue(partName: string, queue: string, pos: number, serial: string): Promise<void>;
+  addUnallocatedCastingToQueue(casting: string, queue: string, pos: number, serial: string): Promise<void>;
+  addUnallocatedCastingToQueueByPart(partName: string, queue: string, pos: number, serial: string): Promise<void>;
 }
 
 export interface FmsAPI {
@@ -177,6 +179,7 @@ function initMockBackend(data: Promise<MockData>) {
     addUnprocessedMaterialToQueue(
       _jobUnique: string,
       _lastCompletedProcess: number,
+      _pathGroup: number,
       _queue: string,
       _pos: number,
       _serial: string
@@ -184,7 +187,16 @@ function initMockBackend(data: Promise<MockData>) {
       // do nothing
       return Promise.resolve();
     },
-    addUnallocatedCastingToQueue(_partName: string, _queue: string, _pos: number, _serial: string): Promise<void> {
+    addUnallocatedCastingToQueue(_casting: string, _queue: string, _pos: number, _serial: string): Promise<void> {
+      // do nothing
+      return Promise.resolve();
+    },
+    addUnallocatedCastingToQueueByPart(
+      _partName: string,
+      _queue: string,
+      _pos: number,
+      _serial: string
+    ): Promise<void> {
       // do nothing
       return Promise.resolve();
     }

@@ -899,6 +899,17 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+    public string GetCasting(int proc1path)
+    {
+      if (proc1path >= 1 && proc1path <= GetNumPaths(1))
+      {
+        return _procPath[0][proc1path - 1].Casting;
+      }
+      else
+      {
+        throw new IndexOutOfRangeException("Invalid path number");
+      }
+    }
     public string GetOutputQueue(int process, int path)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -919,6 +930,17 @@ namespace BlackMaple.MachineWatchInterface
       else
       {
         throw new IndexOutOfRangeException("Invalid process or path number");
+      }
+    }
+    public void SetCasting(int proc1path, string casting)
+    {
+      if (proc1path >= 1 && proc1path <= GetNumPaths(1))
+      {
+        _procPath[0].Paths[proc1path - 1].Casting = casting;
+      }
+      else
+      {
+        throw new IndexOutOfRangeException("Invalid path number");
       }
     }
     public void SetOutputQueue(int process, int path, string queue)
@@ -1238,6 +1260,9 @@ namespace BlackMaple.MachineWatchInterface
       [DataMember(IsRequired = false, EmitDefaultValue = false), OptionalField]
       public List<PathInspection> Inspections;
 
+      [DataMember(IsRequired = false, EmitDefaultValue = false), OptionalField]
+      public string Casting;
+
       public ProcPathInfo(ProcPathInfo other)
       {
         if (other.Pallets == null)
@@ -1260,6 +1285,7 @@ namespace BlackMaple.MachineWatchInterface
           InputQueue = null;
           OutputQueue = null;
           Inspections = null;
+          Casting = null;
         }
         else
         {
@@ -1285,6 +1311,7 @@ namespace BlackMaple.MachineWatchInterface
           InputQueue = other.InputQueue;
           OutputQueue = other.OutputQueue;
           Inspections = other.Inspections?.ToList();
+          Casting = other.Casting;
         }
       }
     }

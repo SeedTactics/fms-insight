@@ -396,8 +396,7 @@ namespace MazakMachineInterface
           Log.Debug("Searching queue {queue} for {unique}-{proc} to load",
             job.GetInputQueue(proc, path), unique, proc);
 
-          // TODO: filter paths
-          var qs = _log.GetMaterialInQueue(job.GetInputQueue(proc, path)).Where(q => q.Unique == unique).ToList();
+          var qs = MazakQueues.QueuedMaterialForLoading(job, _log.GetMaterialInQueue(job.GetInputQueue(proc, path)), proc, path, _log);
 
           for (int i = 1; i <= fixQty; i++)
           {
