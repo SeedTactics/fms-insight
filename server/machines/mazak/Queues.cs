@@ -278,13 +278,18 @@ namespace MazakMachineInterface
       var schsToAssign =
         allSchs
         .Where(s => !s.LowerPriorityScheduleMatchingCastingSkipped && !string.IsNullOrEmpty(s.Procs[1].InputQueue))
-        .OrderBy(s => s.Job.GetSimulatedStartingTimeUTC(1, s.Procs[1].Path));
+        .OrderBy(s => s.SchRow.Priority)
+        .ThenBy(s => s.Job.GetSimulatedStartingTimeUTC(1, s.Procs[1].Path));
+
+      var skippedCastings = new HashSet<string>();
 
       foreach (var sch in schsToAssign)
       {
         var schProc1 = sch.Procs[1];
         var started = CountCompletedOrMachiningStarted(sch);
         var curCastings = (schProc1.TargetMaterialCount ?? schProc1.SchProcRow.ProcessMaterialQuantity);
+
+        if (skippedCastings.Contains(schProc1.Casting)) continue;
 
         if (started + curCastings < sch.SchRow.PlanQuantity && curCastings < schProc1.SchProcRow.FixQuantity)
         {
@@ -314,6 +319,14 @@ namespace MazakMachineInterface
               Log.Error("Did not allocate {toAdd} parts from queue! {sch}, {queue}", toAdd, sch, unassignedCastings);
             }
             schProc1.TargetMaterialCount = allocated.Count;
+          }
+
+          if (toAdd > 0 && _waitForAllCastings && unassignedCastings < toAdd)
+          {
+            // if we tried to add but didn't have enough, dont let schedules with higher priority
+            // snatch up these castings.  If the user wants to run it, they can edit priority
+            // in mazak.
+            skippedCastings.Add(schProc1.Casting);
           }
         }
       }
