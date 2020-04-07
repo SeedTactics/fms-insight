@@ -36,21 +36,23 @@ using System.Collections.Generic;
 
 namespace BlackMaple.MachineWatchInterface
 {
-    public delegate void NewJobsDelegate(NewJobs j);
+  public delegate void NewJobsDelegate(NewJobs j);
 
-    public interface IJobDatabase
-    {
-        ///Load all jobs, station, and tool utilization which intersect the given date range.
-        HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC);
+  public interface IJobDatabase
+  {
+    ///Load all jobs, station, and tool utilization which intersect the given date range.
+    HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC);
 
-        ///Loads all jobs which have a unique strictly larger than the given unique
-        HistoricData LoadJobsAfterScheduleId(string scheduleId);
+    ///Loads all jobs which have a unique strictly larger than the given unique
+    HistoricData LoadJobsAfterScheduleId(string scheduleId);
 
-        ///Loads all jobs for the most recent schedule
-        PlannedSchedule LoadMostRecentSchedule();
+    ///Loads all jobs for the most recent schedule
+    PlannedSchedule LoadMostRecentSchedule();
 
-        List<PartWorkorder> MostRecentUnfilledWorkordersForPart(string part);
+    List<PartWorkorder> MostRecentUnfilledWorkordersForPart(string part);
 
-        event NewJobsDelegate OnNewJobs;
-    }
+    void SetJobComment(string jobUnique, string comment);
+
+    event NewJobsDelegate OnNewJobs;
+  }
 }

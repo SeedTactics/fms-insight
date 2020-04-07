@@ -144,6 +144,13 @@ namespace BlackMaple.MachineFramework.Controllers
       _control.AddUnprocessedMaterialToQueue(jobUnique, lastCompletedProcess, pathGroup, queue, pos, serial);
     }
 
+    [HttpPut("job/{jobUnique}/comment")]
+    [ProducesResponseType(typeof(void), 200)]
+    public void SetJobComment(string jobUnique, [FromBody] string comment)
+    {
+      _db.SetJobComment(jobUnique, comment);
+    }
+
     [HttpPut("material/{materialId}/queue")]
     [ProducesResponseType(typeof(void), 200)]
     public void SetMaterialInQueue(long materialId, [FromBody] QueuePosition queue)

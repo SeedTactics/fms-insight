@@ -592,6 +592,43 @@
         }
       }
     },
+    "/api/v1/jobs/job/{jobUnique}/comment": {
+      "put": {
+        "tags": [
+          "jobs"
+        ],
+        "operationId": "jobs_SetJobComment",
+        "consumes": [
+          "application/json-patch+json",
+          "application/json",
+          "text/json",
+          "application/*+json"
+        ],
+        "parameters": [
+          {
+            "type": "string",
+            "name": "jobUnique",
+            "in": "path",
+            "required": true,
+            "x-nullable": true
+          },
+          {
+            "name": "comment",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-nullable": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/v1/jobs/material/{materialId}/queue": {
       "put": {
         "tags": [
