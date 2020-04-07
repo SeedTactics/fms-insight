@@ -2018,7 +2018,7 @@ namespace BlackMaple.MachineFramework
     #endregion
 
     #region "Modification of Jobs"
-    public void UpdateJob(string unique, int newPriority, string comment)
+    public void SetJobComment(string unique, string comment)
     {
       lock (_lock)
       {
@@ -2031,9 +2031,8 @@ namespace BlackMaple.MachineFramework
           {
             cmd.Transaction = trans;
 
-            cmd.CommandText = "UPDATE jobs SET Comment = $comment, Priority = $pri WHERE UniqueStr = $uniq";
+            cmd.CommandText = "UPDATE jobs SET Comment = $comment WHERE UniqueStr = $uniq";
             cmd.Parameters.Add("comment", SqliteType.Text).Value = comment;
-            cmd.Parameters.Add("pri", SqliteType.Integer).Value = newPriority;
             cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
             cmd.ExecuteNonQuery();
             trans.Commit();

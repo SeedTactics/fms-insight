@@ -549,15 +549,13 @@ namespace MachineWatchTest
 
       CheckJobs(job1, job2, null, job2.ScheduleId, theExtraParts, unfilledWorks);
 
-      _jobDB.UpdateJob("Unique1", 32, "newcomm");
+      _jobDB.SetJobComment("Unique1", "newcomm");
       job1.Comment = "newcomm";
-      job1.Priority = 32;
 
       CheckJobs(job1, job2, null, job2.ScheduleId, theExtraParts, unfilledWorks);
 
-      _jobDB.UpdateJob("Unique1", 64, "hello");
+      _jobDB.SetJobComment("Unique1", "hello");
       job1.Comment = "hello";
-      job1.Priority = 64;
 
       CheckJobs(job1, job2, null, job2.ScheduleId, theExtraParts, unfilledWorks);
 
