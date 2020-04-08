@@ -140,7 +140,7 @@ namespace BlackMaple.MachineFramework.Controllers
       if (string.IsNullOrEmpty(queue))
         throw new BadRequestException("Queue must be non-empty");
       if (lastCompletedProcess < 0) lastCompletedProcess = 0;
-      if (pathGroup < 1) pathGroup = 1;
+      if (pathGroup < 0) pathGroup = 0;
       _control.AddUnprocessedMaterialToQueue(jobUnique, lastCompletedProcess, pathGroup, queue, pos, serial);
     }
 
