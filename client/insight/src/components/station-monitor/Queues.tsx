@@ -271,18 +271,6 @@ function SelectCastingOrJob(props: SelectJobProps) {
                 />
               </ListItem>
             ))}
-            {j.rawMatPartDetails !== undefined ? (
-              <ListItem
-                button
-                className={classes.nested}
-                selected={props.selected_casting?.partName === j.job.partName}
-                onClick={() => props.onSelectCasting({ partName: j.job.partName })}
-              >
-                <ListItemText primary="Raw Material" secondary={j.rawMatPartDetails} />
-              </ListItem>
-            ) : (
-              undefined
-            )}
             {j.machinedProcs.map((p, idx) => (
               <ListItem
                 button
@@ -295,7 +283,10 @@ function SelectCastingOrJob(props: SelectJobProps) {
                 }
                 onClick={() => props.onSelectJob({ job: j.job, last_proc: p.lastProc, path_group: p.pathGroup })}
               >
-                <ListItemText primary={"Last machined process " + p.lastProc} secondary={p.details} />
+                <ListItemText
+                  primary={p.lastProc === 0 ? "Raw Material" : "Last machined process " + p.lastProc}
+                  secondary={p.details}
+                />
               </ListItem>
             ))}
           </Collapse>

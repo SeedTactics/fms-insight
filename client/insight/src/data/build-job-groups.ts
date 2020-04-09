@@ -38,7 +38,6 @@ import { Vector } from "prelude-ts";
 export interface JobAndGroups {
   readonly job: Readonly<api.IInProcessJob>;
   readonly castings: ReadonlyArray<{ readonly casting: string; readonly details?: string }>;
-  readonly rawMatPartDetails?: string;
   readonly machinedProcs: ReadonlyArray<{
     readonly lastProc: number;
     readonly pathGroup: number;
@@ -54,52 +53,45 @@ function describePath(path: Readonly<api.IProcPathInfo>): string {
 
 interface PathOneDetails {
   readonly planned: number;
-  readonly completed: number;
   readonly path: string;
 }
 
 function pathOneDetails(job: Readonly<api.IInProcessJob>, pathIdx: number): PathOneDetails {
   return {
     planned: job.cyclesOnFirstProcess[pathIdx] || 0,
-    completed: job.completed?.[0]?.[pathIdx] || 0,
     path: describePath(job.procsAndPaths[0].paths[pathIdx])
   };
 }
 
 function joinPathOneDetails(details: ReadonlyArray<PathOneDetails>): string {
   const planned = LazySeq.ofIterable(details).sumOn(d => d.planned);
-  const completed = LazySeq.ofIterable(details).sumOn(d => d.completed);
   const path = LazySeq.ofIterable(details).foldLeft("", (x, details) => x + " | " + details.path);
-  return `Machined ${completed}/${planned} ${path}`;
+  return `Plan Qty ${planned} ${path}`;
 }
 
 interface PathDetails {
-  readonly completed: number;
   readonly path: string;
 }
 
 function pathDetails(job: Readonly<api.IInProcessJob>, procIdx: number, pathIdx: number): PathDetails {
   return {
-    completed: job.completed?.[procIdx]?.[pathIdx] || 0,
     path: describePath(job.procsAndPaths[procIdx].paths[pathIdx])
   };
 }
 
-function joinDetails(job: Readonly<api.IInProcessJob>, pathGroup: number, details: ReadonlyArray<PathDetails>): string {
-  let planned = 0;
-  for (let pathIdx = 0; pathIdx < job.procsAndPaths[0].paths.length; pathIdx++) {
-    if (job.procsAndPaths[0].paths[pathIdx].pathGroup === pathGroup) {
-      planned += job.cyclesOnFirstProcess[pathIdx] || 0;
-    }
-  }
-  const completed = LazySeq.ofIterable(details).sumOn(d => d.completed);
-  const path = LazySeq.ofIterable(details).foldLeft("", (x, details) => x + " | " + details.path);
-  return `Machined ${completed}/${planned} ${path}`;
+function joinDetails(details: ReadonlyArray<PathDetails>): string {
+  return LazySeq.ofIterable(details).foldLeft("", (x, details) => (x === "" ? details.path : x + " | " + details.path));
 }
 
 export function extractJobGroups(job: Readonly<api.IInProcessJob>): JobAndGroups {
   const castings = new Map<string, PathOneDetails[]>();
-  const rawMat: PathOneDetails[] = [];
+  const rawMatGroups = new Map<number, PathOneDetails[]>();
+  const machinedProcs: {
+    readonly lastProc: number;
+    readonly pathGroup: number;
+    readonly details?: string;
+  }[] = [];
+
   for (let pathIdx = 0; pathIdx < job.procsAndPaths[0].paths.length; pathIdx++) {
     const path = job.procsAndPaths[0].paths[pathIdx];
     if (path.casting) {
@@ -110,36 +102,40 @@ export function extractJobGroups(job: Readonly<api.IInProcessJob>): JobAndGroups
         castings.set(path.casting, [pathOneDetails(job, pathIdx)]);
       }
     } else {
-      rawMat.push(pathOneDetails(job, pathIdx));
+      const group = rawMatGroups.get(path.pathGroup);
+      if (group) {
+        group.push(pathOneDetails(job, pathIdx));
+      } else {
+        rawMatGroups.set(path.pathGroup, [pathOneDetails(job, pathIdx)]);
+      }
     }
   }
 
-  const machinedProcs: {
-    readonly lastProc: number;
-    readonly pathGroup: number;
-    readonly details?: string;
-  }[] = [];
+  for (const [group, paths] of rawMatGroups.entries()) {
+    machinedProcs.push({ lastProc: 0, pathGroup: group, details: joinPathOneDetails(paths) });
+  }
+
   for (let procIdx = 0; procIdx < job.procsAndPaths.length - 1; procIdx++) {
     const groups = new Map<number, PathDetails[]>();
     for (let pathIdx = 0; pathIdx < job.procsAndPaths[procIdx].paths.length; pathIdx++) {
       const pathGroup = job.procsAndPaths[procIdx].paths[pathIdx].pathGroup;
       const group = groups.get(pathGroup);
       if (group) {
-        group.push(pathDetails(job, 0, pathIdx));
+        group.push(pathDetails(job, procIdx, pathIdx));
       } else {
-        groups.set(pathGroup, [pathDetails(job, 0, pathIdx)]);
+        groups.set(pathGroup, [pathDetails(job, procIdx, pathIdx)]);
       }
     }
 
     for (const [group, paths] of groups.entries()) {
-      machinedProcs.push({ lastProc: procIdx + 1, pathGroup: group, details: joinDetails(job, group, paths) });
+      machinedProcs.push({ lastProc: procIdx + 1, pathGroup: group, details: joinDetails(paths) });
     }
   }
 
   return {
     job,
     castings:
-      castings.size === 1 && rawMat.length === 0
+      castings.size === 1
         ? [
             {
               casting: LazySeq.ofIterable(castings.entries())
@@ -151,8 +147,6 @@ export function extractJobGroups(job: Readonly<api.IInProcessJob>): JobAndGroups
             .map(([casting, details]) => ({ casting: casting, details: joinPathOneDetails(details) }))
             .sortOn(c => c.casting)
             .toArray(),
-
-    rawMatPartDetails: rawMat.length === 0 ? undefined : castings.size === 0 ? "" : joinPathOneDetails(rawMat),
     machinedProcs
   };
 }
