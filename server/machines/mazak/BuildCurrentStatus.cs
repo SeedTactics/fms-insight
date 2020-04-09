@@ -523,6 +523,9 @@ namespace MazakMachineInterface
             jobFromDb.GetInputQueue(proc, path));
           jobFromMazak.SetOutputQueue(proc, path,
             jobFromDb.GetOutputQueue(proc, path));
+          jobFromMazak.SetPathGroup(proc, path,
+            jobFromDb.GetPathGroup(proc, path)
+          );
 
           var mazakStops = jobFromMazak.GetMachiningStop(proc, path).ToList();
           var dbStops = jobFromDb.GetMachiningStop(proc, path).ToList();
