@@ -189,12 +189,57 @@ namespace DebugMachineWatchApiServer
     public void AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IReadOnlyList<string> serials)
     {
       Serilog.Log.Information("AddUnallocatedCastingToQueue: {casting} x{qty} {queue} {position} {@serials}", casting, qty, queue, position, serials);
+      for (int i = 0; i < qty; i++)
+      {
+        CurrentStatus.Material.Add(new InProcessMaterial()
+        {
+          MaterialID = -500,
+          JobUnique = null,
+          PartName = casting,
+          Process = 0,
+          Path = 1,
+          Serial = i < serials.Count ? serials[i] : null,
+          Location = new InProcessMaterialLocation()
+          {
+            Type = InProcessMaterialLocation.LocType.InQueue,
+            CurrentQueue = queue,
+            QueuePosition = 10 + i
+          },
+          Action = new InProcessMaterialAction()
+          {
+            Type = InProcessMaterialAction.ActionType.Waiting
+          }
+        });
+      }
+      OnNewCurrentStatus?.Invoke(CurrentStatus);
     }
 
     public void AddUnprocessedMaterialToQueue(string jobUnique, int lastCompletedProcess, int pathGroup, string queue, int position, string serial)
     {
       Serilog.Log.Information("AddUnprocessedMaterialToQueue: {unique} {lastCompProcess} {pathGroup} {queue} {position} {serial}",
         jobUnique, lastCompletedProcess, pathGroup, queue, position, serial);
+
+      var part = CurrentStatus.Jobs.TryGetValue(jobUnique, out var job) ? job.PartName : "";
+      CurrentStatus.Material.Add(new InProcessMaterial()
+      {
+        MaterialID = -500,
+        JobUnique = jobUnique,
+        PartName = part,
+        Process = lastCompletedProcess,
+        Path = pathGroup,
+        Serial = serial,
+        Location = new InProcessMaterialLocation()
+        {
+          Type = InProcessMaterialLocation.LocType.InQueue,
+          CurrentQueue = queue,
+          QueuePosition = position
+        },
+        Action = new InProcessMaterialAction()
+        {
+          Type = InProcessMaterialAction.ActionType.Waiting
+        }
+      });
+      OnNewCurrentStatus?.Invoke(CurrentStatus);
     }
     public void SetMaterialInQueue(long materialId, string queue, int position)
     {
