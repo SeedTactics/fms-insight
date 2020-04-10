@@ -39,7 +39,9 @@ import List from "@material-ui/core/List";
 import ListItem from "@material-ui/core/ListItem";
 import ListItemText from "@material-ui/core/ListItemText";
 import ListItemIcon from "@material-ui/core/ListItemIcon";
-import ListSubheader from "@material-ui/core/ListSubheader";
+import FormControl from "@material-ui/core/FormControl";
+import InputLabel from "@material-ui/core/InputLabel";
+import Select from "@material-ui/core/Select";
 import MenuItem from "@material-ui/core/MenuItem";
 import Dialog from "@material-ui/core/Dialog";
 import DialogActions from "@material-ui/core/DialogActions";
@@ -599,8 +601,9 @@ interface AddCastingProps {
   readonly closeDialog: () => void;
 }
 
-function AddCastingDialog(props: AddCastingProps) {
-  const [selectedCasting, setSelectedCasting] = React.useState<string | null>();
+const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingProps) {
+  const [selectedCasting, setSelectedCasting] = React.useState<string | null>(null);
+  const [qty, setQty] = React.useState<number>(1);
   const castings: ReadonlyArray<[string, number]> = React.useMemo(
     () =>
       LazySeq.ofObject(props.jobs)
@@ -626,23 +629,78 @@ function AddCastingDialog(props: AddCastingProps) {
     [props.jobs, props.castingNames]
   );
 
+  function close() {
+    props.closeDialog();
+    setSelectedCasting(null);
+    setQty(1);
+  }
+
+  function add() {
+    if (props.queue !== null && selectedCasting !== null && !isNaN(qty)) {
+      props.addNewCasting({ casting: selectedCasting, quantity: qty, queue: props.queue, queuePosition: -1 });
+    }
+    close();
+  }
+
   return (
-    <List>
-      <ListSubheader>Unassigned Casting</ListSubheader>
-      {castings.map(([casting, jobCnt], idx) => (
-        <ListItem button key={idx} selected={selectedCasting === casting} onClick={() => setSelectedCasting(casting)}>
-          <ListItemIcon>
-            <PartIdenticon part={casting} />
-          </ListItemIcon>
-          <ListItemText
-            primary={casting}
-            secondary={jobCnt === 0 ? "Not used by any current jobs" : `Used by ${jobCnt} current jobs`}
+    <Dialog open={props.queue !== null} onClose={close}>
+      <DialogTitle>Add Casting</DialogTitle>
+      <DialogContent>
+        <FormControl>
+          <InputLabel id="select-casting-label">Casting</InputLabel>
+          <Select
+            style={{ minWidth: "15em" }}
+            labelId="select-casting-label"
+            value={selectedCasting || ""}
+            onChange={(e) => setSelectedCasting(e.target.value as string)}
+            renderValue={
+              selectedCasting === null
+                ? undefined
+                : () => (
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <div style={{ marginRight: "0.5em" }}>
+                        <PartIdenticon part={selectedCasting} />
+                      </div>
+                      <div>{selectedCasting}</div>
+                    </div>
+                  )
+            }
+          >
+            {castings.map(([casting, jobCnt], idx) => (
+              <MenuItem key={idx} value={casting}>
+                <ListItemIcon>
+                  <PartIdenticon part={casting} />
+                </ListItemIcon>
+                <ListItemText
+                  primary={casting}
+                  secondary={jobCnt === 0 ? "Not used by any current jobs" : `Used by ${jobCnt} current jobs`}
+                />
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <div style={{ marginTop: "3em", marginBottom: "2em" }}>
+          <TextField
+            fullWidth
+            type="number"
+            label="Quantity"
+            inputProps={{ min: "1" }}
+            value={isNaN(qty) ? "" : qty}
+            onChange={(e) => setQty(parseInt(e.target.value))}
           />
-        </ListItem>
-      ))}
-    </List>
+        </div>
+      </DialogContent>
+      <DialogActions>
+        <Button color="primary" disabled={selectedCasting === null || isNaN(qty)} onClick={add}>
+          Add to {props.queue}
+        </Button>
+        <Button color="primary" onClick={close}>
+          Cancel
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
-}
+});
 
 export const ConnectedAddCastingDialog = connect(
   (s) => ({

@@ -45,7 +45,12 @@ import * as currentSt from "../../data/current-status";
 import { Store, connect, AppActionBeforeMiddleware } from "../../store/store";
 import * as matDetails from "../../data/material-details";
 import { MaterialSummary } from "../../data/events.matsummary";
-import { ConnectedMaterialDialog, ConnectedChooseSerialOrDirectJobDialog } from "./QueuesAddMaterial";
+import {
+  ConnectedMaterialDialog,
+  ConnectedChooseSerialOrDirectJobDialog,
+  ConnectedAddCastingDialog,
+} from "./QueuesAddMaterial";
+import { HashSet } from "prelude-ts";
 
 const queueStyles = createStyles({
   mainScrollable: {
@@ -56,6 +61,7 @@ const queueStyles = createStyles({
 
 interface QueueProps {
   readonly data: LoadStationAndQueueData;
+  readonly rawMaterialQueues: HashSet<string>;
   openMat: (m: Readonly<MaterialSummary>) => void;
   openAddToQueue: (queueName: string) => void;
   moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
@@ -65,6 +71,8 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
   React.useEffect(() => {
     document.title = "Material Queues - FMS Insight";
   }, []);
+  const [addCastingQueue, setAddCastingQueue] = React.useState<string | null>(null);
+  const closeAddCastingDialog = React.useCallback(() => setAddCastingQueue(null), []);
   const queues = props.data.queues
     .toVector()
     .sortOn(([q, _]) => q)
@@ -99,7 +107,13 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
           label={region.label}
           borderBottom
           flexStart
-          onAddMaterial={region.free ? undefined : () => props.openAddToQueue(region.label)}
+          onAddMaterial={
+            region.free
+              ? undefined
+              : props.rawMaterialQueues.contains(region.label)
+              ? () => setAddCastingQueue(region.label)
+              : () => props.openAddToQueue(region.label)
+          }
           distance={5}
           shouldCancelStart={() => false}
           onSortEnd={(se: SortEnd) =>
@@ -117,6 +131,7 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
       ))}
       <ConnectedMaterialDialog />
       <ConnectedChooseSerialOrDirectJobDialog />
+      <ConnectedAddCastingDialog queue={addCastingQueue} closeDialog={closeAddCastingDialog} />
     </main>
   );
 });
@@ -132,6 +147,7 @@ const buildQueueData = createSelector(
 export default connect(
   (st: Store) => ({
     data: buildQueueData(st),
+    rawMaterialQueues: st.Events.last30.sim_use.rawMaterialQueues,
   }),
   {
     openAddToQueue: (queueName: string) =>

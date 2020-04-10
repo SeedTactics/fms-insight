@@ -438,7 +438,13 @@ export interface AddNewCastingToQueueData {
 export function addNewCastingToQueue(d: AddNewCastingToQueueData) {
   return {
     type: ActionType.AddNewMaterialToQueue,
-    pledge: JobsBackend.addUnallocatedCastingToQueue(d.casting, d.queue, d.queuePosition, [...d.serials], d.quantity),
+    pledge: JobsBackend.addUnallocatedCastingToQueue(
+      d.casting,
+      d.queue,
+      d.queuePosition,
+      [...(d.serials || [])],
+      d.quantity
+    ),
   };
 }
 
