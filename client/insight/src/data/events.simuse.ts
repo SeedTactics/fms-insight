@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as api from "./api";
 import { duration } from "moment";
-import { Vector } from "prelude-ts";
+import { Vector, HashSet } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 import { part_and_proc } from "./events.cycles";
 
@@ -54,11 +54,15 @@ export interface SimPartCompleted {
 export interface SimUseState {
   readonly station_use: Vector<SimStationUse>;
   readonly production: Vector<SimPartCompleted>;
+  readonly rawMaterialQueues: HashSet<string>;
+  readonly castingNames: HashSet<string>;
 }
 
 export const initial: SimUseState = {
   station_use: Vector.empty(),
   production: Vector.empty(),
+  rawMaterialQueues: HashSet.empty(),
+  castingNames: HashSet.empty(),
 };
 
 export enum ExpireOldDataType {
@@ -81,6 +85,8 @@ export function process_sim_use(
 ): SimUseState {
   let stations = st.station_use;
   let production = st.production;
+  let rawMatQueues = st.rawMaterialQueues;
+  let castingNames = st.castingNames;
 
   switch (expire.type) {
     case ExpireOldDataType.ExpireEarlierThan: {
@@ -143,9 +149,21 @@ export function process_sim_use(
     }
   });
 
+  for (const [, j] of LazySeq.ofObject(newHistory.jobs)) {
+    for (const path of j.procsAndPaths[0].paths) {
+      if (path.casting && path.casting !== "" && !castingNames.contains(path.casting)) {
+        castingNames = castingNames.add(path.casting);
+      }
+      if (path.inputQueue && path.inputQueue !== "" && !rawMatQueues.contains(path.inputQueue)) {
+        rawMatQueues = rawMatQueues.add(path.inputQueue);
+      }
+    }
+  }
+
   return {
-    ...st,
     station_use: stations.appendAll(newStationUse),
     production: production.appendAll(newProd),
+    rawMaterialQueues: rawMatQueues,
+    castingNames: castingNames,
   };
 }
