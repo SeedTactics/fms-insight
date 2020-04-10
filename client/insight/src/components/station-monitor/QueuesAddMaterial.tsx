@@ -644,10 +644,10 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
 
   return (
     <Dialog open={props.queue !== null} onClose={close}>
-      <DialogTitle>Add Casting</DialogTitle>
+      <DialogTitle>Add Raw Material</DialogTitle>
       <DialogContent>
         <FormControl>
-          <InputLabel id="select-casting-label">Casting</InputLabel>
+          <InputLabel id="select-casting-label">Raw Material</InputLabel>
           <Select
             style={{ minWidth: "15em" }}
             labelId="select-casting-label"

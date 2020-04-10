@@ -60,6 +60,7 @@ export type Payload<T> = ACPayload<InitToStore<typeof initStore>, T>;
 export type DispatchAction<T> = (payload: Payload<T>) => void;
 export const connect: InitToStore<typeof initStore>["connect"] = reactRedux.connect;
 export const mkAC = mkACF<AppActionBeforeMiddleware>();
+export const useSelector: reactRedux.TypedUseSelectorHook<Store> = reactRedux.useSelector;
 
 export function initStore({ useRouter }: { useRouter: boolean }) {
   const router = useRouter

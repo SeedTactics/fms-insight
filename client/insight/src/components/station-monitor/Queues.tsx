@@ -35,6 +35,15 @@ import * as React from "react";
 import { WithStyles, createStyles, withStyles } from "@material-ui/core/styles";
 import { createSelector } from "reselect";
 import { SortEnd } from "react-sortable-hoc";
+import { HashSet } from "prelude-ts";
+import Table from "@material-ui/core/Table";
+import TableHead from "@material-ui/core/TableHead";
+import TableCell from "@material-ui/core/TableCell";
+import TableRow from "@material-ui/core/TableRow";
+import TableBody from "@material-ui/core/TableBody";
+import TableFooter from "@material-ui/core/TableFooter";
+import Button from "@material-ui/core/Button";
+import Tooltip from "@material-ui/core/Tooltip";
 
 import { LoadStationAndQueueData, selectLoadStationAndQueueProps } from "../../data/load-station";
 import { SortableInProcMaterial, SortableWhiteboardRegion } from "./Material";
@@ -42,7 +51,7 @@ import * as api from "../../data/api";
 import * as routes from "../../data/routes";
 import * as guiState from "../../data/gui-state";
 import * as currentSt from "../../data/current-status";
-import { Store, connect, AppActionBeforeMiddleware } from "../../store/store";
+import { Store, connect, AppActionBeforeMiddleware, useSelector } from "../../store/store";
 import * as matDetails from "../../data/material-details";
 import { MaterialSummary } from "../../data/events.matsummary";
 import {
@@ -50,7 +59,112 @@ import {
   ConnectedChooseSerialOrDirectJobDialog,
   ConnectedAddCastingDialog,
 } from "./QueuesAddMaterial";
-import { HashSet } from "prelude-ts";
+import { LazySeq } from "../../data/lazyseq";
+
+interface RawMaterialJobTableProps {
+  readonly queue: string;
+  readonly addCastings: () => void;
+}
+
+interface RawMatJobPath {
+  readonly job: Readonly<api.IInProcessJob>;
+  readonly proc1Path: number;
+  readonly path: Readonly<api.IProcPathInfo>;
+  readonly plannedQty: number;
+  readonly startedQty: number;
+  readonly assignedRaw: number;
+}
+
+function RawMaterialJobTable(props: RawMaterialJobTableProps) {
+  const currentJobs = useSelector((s) => s.Current.current_status.jobs);
+  const mats = useSelector((s) => s.Current.current_status.material);
+
+  const jobs: ReadonlyArray<RawMatJobPath> = React.useMemo(
+    () =>
+      LazySeq.ofObject(currentJobs)
+        .flatMap(([, j]) =>
+          j.procsAndPaths[0].paths
+            .filter((p) => p.casting && p.casting !== "" && p.inputQueue == props.queue)
+            .map((path, idx) => ({
+              job: j,
+              path: path,
+              proc1Path: idx,
+              plannedQty: j.cyclesOnFirstProcess[idx],
+              startedQty:
+                (j.completed?.[0]?.[idx] || 0) +
+                LazySeq.ofIterable(mats)
+                  .filter(
+                    (m) =>
+                      (m.location.type !== api.LocType.InQueue ||
+                        (m.location.type === api.LocType.InQueue && m.location.currentQueue !== props.queue)) &&
+                      m.jobUnique === j.unique &&
+                      m.process === 1 &&
+                      m.path === idx + 1
+                  )
+                  .length(),
+              assignedRaw: LazySeq.ofIterable(mats)
+                .filter(
+                  (m) =>
+                    m.location.type === api.LocType.InQueue &&
+                    m.location.currentQueue === props.queue &&
+                    m.jobUnique === j.unique &&
+                    m.process === 1 &&
+                    m.path === idx + 1
+                )
+                .length(),
+            }))
+        )
+        .toArray(),
+    [currentJobs, mats]
+  );
+
+  return (
+    <Table style={{ margin: "1em 5em 0 5em" }}>
+      <TableHead>
+        <TableCell>Job</TableCell>
+        <TableCell>Starting Time</TableCell>
+        <TableCell>Material</TableCell>
+        <TableCell>Note</TableCell>
+        <TableCell align="right">Planned Quantity</TableCell>
+        <TableCell align="right">Started Quantity</TableCell>
+        <TableCell align="right">Assigned Raw Material</TableCell>
+        <TableCell align="right">Required</TableCell>
+        <TableCell align="right">Available Unassigned</TableCell>
+      </TableHead>
+      <TableBody>
+        {jobs.map((j, idx) => (
+          <TableRow key={idx}>
+            <TableCell>{j.job.unique}</TableCell>
+            <TableCell>{j.path.simulatedStartingUTC.toLocaleString()}</TableCell>
+            <TableCell>{j.path.casting}</TableCell>
+            <TableCell>{j.job.comment}</TableCell>
+            <TableCell align="right">{j.plannedQty}</TableCell>
+            <TableCell align="right">{j.startedQty}</TableCell>
+            <TableCell align="right">{j.assignedRaw}</TableCell>
+            <TableCell align="right">
+              <Tooltip
+                title={
+                  j.startedQty > 0 || j.assignedRaw > 0 ? `${j.plannedQty} - ${j.startedQty} - ${j.assignedRaw}` : ""
+                }
+              >
+                <span>{j.plannedQty - j.startedQty - j.assignedRaw}</span>
+              </Tooltip>
+            </TableCell>
+            <TableCell align="right">100</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+      <TableFooter>
+        <TableCell colSpan={8} />
+        <TableCell align="right">
+          <Button color="primary" variant="outlined" onClick={props.addCastings}>
+            Add Raw Material
+          </Button>
+        </TableCell>
+      </TableFooter>
+    </Table>
+  );
+}
 
 const queueStyles = createStyles({
   mainScrollable: {
@@ -101,33 +215,30 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
   return (
     <main data-testid="stationmonitor-queues" className={props.classes.mainScrollable}>
       {cells.zipWithIndex().map(([region, idx]) => (
-        <SortableWhiteboardRegion
-          key={idx}
-          axis="xy"
-          label={region.label}
-          borderBottom
-          flexStart
-          onAddMaterial={
-            region.free
-              ? undefined
-              : props.rawMaterialQueues.contains(region.label)
-              ? () => setAddCastingQueue(region.label)
-              : () => props.openAddToQueue(region.label)
-          }
-          distance={5}
-          shouldCancelStart={() => false}
-          onSortEnd={(se: SortEnd) =>
-            props.moveMaterialInQueue({
-              materialId: region.material[se.oldIndex].materialID,
-              queue: region.label,
-              queuePosition: se.newIndex,
-            })
-          }
-        >
-          {region.material.map((m, matIdx) => (
-            <SortableInProcMaterial key={matIdx} index={matIdx} mat={m} onOpen={props.openMat} />
-          ))}
-        </SortableWhiteboardRegion>
+        <div style={{ borderBottom: "1px solid rgba(0,0,0,0.12)" }} key={idx}>
+          <SortableWhiteboardRegion
+            axis="xy"
+            label={region.label}
+            flexStart
+            onAddMaterial={region.free ? undefined : () => props.openAddToQueue(region.label)}
+            distance={5}
+            shouldCancelStart={() => false}
+            onSortEnd={(se: SortEnd) =>
+              props.moveMaterialInQueue({
+                materialId: region.material[se.oldIndex].materialID,
+                queue: region.label,
+                queuePosition: se.newIndex,
+              })
+            }
+          >
+            {region.material.map((m, matIdx) => (
+              <SortableInProcMaterial key={matIdx} index={matIdx} mat={m} onOpen={props.openMat} />
+            ))}
+            {props.rawMaterialQueues.contains(region.label) ? (
+              <RawMaterialJobTable queue={region.label} addCastings={() => setAddCastingQueue(region.label)} />
+            ) : undefined}
+          </SortableWhiteboardRegion>
+        </div>
       ))}
       <ConnectedMaterialDialog />
       <ConnectedChooseSerialOrDirectJobDialog />

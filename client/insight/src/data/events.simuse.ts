@@ -154,7 +154,13 @@ export function process_sim_use(
       if (path.casting && path.casting !== "" && !castingNames.contains(path.casting)) {
         castingNames = castingNames.add(path.casting);
       }
-      if (path.inputQueue && path.inputQueue !== "" && !rawMatQueues.contains(path.inputQueue)) {
+      if (
+        path.inputQueue &&
+        path.inputQueue !== "" &&
+        path.casting &&
+        path.casting !== "" &&
+        !rawMatQueues.contains(path.inputQueue)
+      ) {
         rawMatQueues = rawMatQueues.add(path.inputQueue);
       }
     }
