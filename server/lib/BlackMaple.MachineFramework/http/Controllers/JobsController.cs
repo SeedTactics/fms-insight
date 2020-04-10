@@ -117,18 +117,18 @@ namespace BlackMaple.MachineFramework.Controllers
       if (string.IsNullOrEmpty(queue))
         throw new BadRequestException("Queue must be non-empty");
       // TODO: lookup casting for part?  This assumes part has no separate casting
-      _control.AddUnallocatedCastingToQueue(partName, queue, pos, serial);
+      _control.AddUnallocatedCastingToQueue(partName, 1, queue, pos, string.IsNullOrEmpty(serial) ? new string[] { } : new[] { serial });
     }
 
     [HttpPost("casting/{castingName}")]
     [ProducesResponseType(typeof(void), 200)]
-    public void AddUnallocatedCastingToQueue(string castingName, [FromQuery] string queue, [FromQuery] int pos, [FromBody] string serial)
+    public void AddUnallocatedCastingToQueue(string castingName, [FromQuery] string queue, [FromQuery] int pos, [FromBody] List<string> serials, [FromQuery] int qty = 1)
     {
       if (string.IsNullOrEmpty(castingName))
         throw new BadRequestException("Casting name must be non-empty");
       if (string.IsNullOrEmpty(queue))
         throw new BadRequestException("Queue must be non-empty");
-      _control.AddUnallocatedCastingToQueue(castingName, queue, pos, serial);
+      _control.AddUnallocatedCastingToQueue(castingName, qty, queue, pos, serials);
     }
 
     [HttpPost("job/{jobUnique}/unprocessed-material")]

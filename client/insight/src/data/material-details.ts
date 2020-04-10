@@ -428,27 +428,18 @@ export function addNewMaterialToQueue(d: AddNewMaterialToQueueData) {
 }
 
 export interface AddNewCastingToQueueData {
-  readonly casting?: string;
-  readonly partName?: string;
+  readonly casting: string;
+  readonly quantity: number;
   readonly queue: string;
   readonly queuePosition: number;
-  readonly serial?: string;
+  readonly serials?: ReadonlyArray<string>;
 }
 
 export function addNewCastingToQueue(d: AddNewCastingToQueueData) {
-  if (d.casting) {
-    return {
-      type: ActionType.AddNewMaterialToQueue,
-      pledge: JobsBackend.addUnallocatedCastingToQueue(d.casting, d.queue, d.queuePosition, d.serial || ""),
-    };
-  } else if (d.partName) {
-    return {
-      type: ActionType.AddNewMaterialToQueue,
-      pledge: JobsBackend.addUnallocatedCastingToQueueByPart(d.partName, d.queue, d.queuePosition, d.serial || ""),
-    };
-  } else {
-    return [];
-  }
+  return {
+    type: ActionType.AddNewMaterialToQueue,
+    pledge: JobsBackend.addUnallocatedCastingToQueue(d.casting, d.queue, d.queuePosition, [...d.serials], d.quantity),
+  };
 }
 
 export interface State {

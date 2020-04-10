@@ -122,7 +122,7 @@ namespace Makino
     #endregion
 
     #region Queues
-    public void AddUnallocatedCastingToQueue(string part, string queue, int position, string serial)
+    public void AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IReadOnlyList<string> serial)
     {
       //do nothing
     }

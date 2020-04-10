@@ -270,33 +270,38 @@ namespace MazakMachineInterface
     #endregion
 
     #region Queues
-    public void AddUnallocatedCastingToQueue(string casting, string queue, int position, string serial)
+    public void AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IReadOnlyList<string> serial)
     {
       if (!fmsSettings.Queues.ContainsKey(queue))
       {
         throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
       }
-      var matId = log.AllocateMaterialIDForCasting(casting);
 
-      Log.Debug("Adding unprocessed casting for casting {casting} to queue {queue} in position {pos} with serial {serial}. " +
-                "Assigned matId {matId}",
-        casting, queue, position, serial, matId
-      );
-
-      if (!string.IsNullOrEmpty(serial))
+      for (int i = 0; i < qty; i++)
       {
-        log.RecordSerialForMaterialID(
-          new BlackMaple.MachineFramework.JobLogDB.EventLogMaterial()
-          {
-            MaterialID = matId,
-            Process = 0,
-            Face = ""
-          },
-          serial);
+        var matId = log.AllocateMaterialIDForCasting(casting);
+
+        Log.Debug("Adding unprocessed casting for casting {casting} to queue {queue} in position {pos} with serial {serial}. " +
+                  "Assigned matId {matId}",
+          casting, queue, position, serial, matId
+        );
+
+        if (i < serial.Count)
+        {
+          log.RecordSerialForMaterialID(
+            new BlackMaple.MachineFramework.JobLogDB.EventLogMaterial()
+            {
+              MaterialID = matId,
+              Process = 0,
+              Face = ""
+            },
+            serial[i]);
+        }
+        // the add to queue log entry will use the process, so later when we lookup the latest completed process
+        // for the material in the queue, it will be correctly computed.
+        log.RecordAddMaterialToQueue(matId, 0, queue, position + i);
       }
-      // the add to queue log entry will use the process, so later when we lookup the latest completed process
-      // for the material in the queue, it will be correctly computed.
-      log.RecordAddMaterialToQueue(matId, 0, queue, position);
+
       logReader.RecheckQueues();
       RaiseNewCurrentStatus(GetCurrentStatus());
     }

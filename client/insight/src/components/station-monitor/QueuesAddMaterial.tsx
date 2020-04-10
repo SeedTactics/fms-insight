@@ -294,11 +294,6 @@ interface AddNewJobProcessState {
   readonly path_group: number;
 }
 
-interface AddNewCastingState {
-  readonly casting?: string;
-  readonly partName?: string;
-}
-
 interface AddNewMaterialState {
   readonly selected_job?: AddNewJobProcessState;
   readonly selected_queue?: string;
@@ -600,7 +595,7 @@ interface AddCastingProps {
   readonly queue: string | null;
   readonly jobs: { [key: string]: Readonly<api.IInProcessJob> };
   readonly castingNames: HashSet<string>;
-  readonly addNewCasting: (c: AddNewCastingState | undefined) => void;
+  readonly addNewCasting: (c: matDetails.AddNewCastingToQueueData) => void;
   readonly closeDialog: () => void;
 }
 
@@ -657,10 +652,6 @@ export const ConnectedAddCastingDialog = connect(
     castingNames: s.Events.last30.sim_use.castingNames,
   }),
   {
-    addNewCasting: (d: matDetails.AddNewCastingToQueueData) => [
-      matDetails.addNewCastingToQueue(d),
-      { type: matDetails.ActionType.CloseMaterialDialog },
-      { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined },
-    ],
+    addNewCasting: matDetails.addNewCastingToQueue,
   }
 )(AddCastingDialog);

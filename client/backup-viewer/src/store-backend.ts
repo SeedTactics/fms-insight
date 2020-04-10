@@ -100,7 +100,8 @@ export const JobsBackend = {
     casting: string,
     queue: string,
     pos: number,
-    serial: string
+    serials: string[],
+    qty: number | undefined
   ): Promise<void> {
     // do nothing
     return Promise.resolve();

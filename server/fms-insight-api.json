@@ -508,12 +508,23 @@
             "x-nullable": false
           },
           {
-            "name": "serial",
+            "name": "serials",
             "in": "body",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             },
+            "x-nullable": false
+          },
+          {
+            "type": "integer",
+            "name": "qty",
+            "in": "query",
+            "format": "int32",
+            "default": 1,
             "x-nullable": false
           }
         ],

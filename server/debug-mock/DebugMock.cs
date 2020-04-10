@@ -186,9 +186,9 @@ namespace DebugMachineWatchApiServer
       JobDB.AddJobs(jobs, expectedPreviousScheduleId);
     }
 
-    public void AddUnallocatedCastingToQueue(string part, string queue, int position, string serial)
+    public void AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IReadOnlyList<string> serials)
     {
-      Serilog.Log.Information("AddUnallocatedCastingToQueue: {part} {queue} {position} {serial}", part, queue, position, serial);
+      Serilog.Log.Information("AddUnallocatedCastingToQueue: {casting} x{qty} {queue} {position} {@serials}", casting, qty, queue, position, serials);
     }
 
     public void AddUnprocessedMaterialToQueue(string jobUnique, int lastCompletedProcess, int pathGroup, string queue, int position, string serial)

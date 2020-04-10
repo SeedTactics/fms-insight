@@ -51,7 +51,13 @@ export interface JobAPI {
     serial: string
   ): Promise<void>;
 
-  addUnallocatedCastingToQueue(casting: string, queue: string, pos: number, serial: string): Promise<void>;
+  addUnallocatedCastingToQueue(
+    castingName: string,
+    queue: string,
+    pos: number,
+    serials: string[],
+    qty: number
+  ): Promise<void>;
   addUnallocatedCastingToQueueByPart(partName: string, queue: string, pos: number, serial: string): Promise<void>;
 }
 
@@ -187,7 +193,13 @@ function initMockBackend(data: Promise<MockData>) {
       // do nothing
       return Promise.resolve();
     },
-    addUnallocatedCastingToQueue(_casting: string, _queue: string, _pos: number, _serial: string): Promise<void> {
+    addUnallocatedCastingToQueue(
+      _casting: string,
+      _queue: string,
+      _pos: number,
+      _serials: string[],
+      _qty: number
+    ): Promise<void> {
       // do nothing
       return Promise.resolve();
     },
