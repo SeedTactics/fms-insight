@@ -299,7 +299,7 @@ namespace MazakMachineInterface
         }
         // the add to queue log entry will use the process, so later when we lookup the latest completed process
         // for the material in the queue, it will be correctly computed.
-        log.RecordAddMaterialToQueue(matId, 0, queue, position + i);
+        log.RecordAddMaterialToQueue(matId, 0, queue, position >= 0 ? position + i : -1);
       }
 
       logReader.RecheckQueues();
