@@ -55,6 +55,6 @@ const InitialPage = React.memo(function BackupViewer(props: {
   );
 });
 
-export default connect(s => ({
-  loading_error: s.Events.loading_error
+export default connect((s) => ({
+  loading_error: s.Events.loading_error,
 }))(InitialPage);

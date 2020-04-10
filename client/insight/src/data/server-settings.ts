@@ -40,7 +40,7 @@ import { openWebsocket } from "../store/websocket";
 export enum ActionType {
   Load = "ServerSettings_Load",
   Login = "ServerSettings_Login",
-  Logout = "ServerSettings_Logout"
+  Logout = "ServerSettings_Logout",
 }
 
 export interface LoadReturn {
@@ -88,7 +88,7 @@ async function loadInfo(): Promise<LoadReturn> {
       redirect_uri: window.location.protocol + "//" + window.location.host + "/",
       post_logout_redirect_uri: window.location.protocol + "//" + window.location.host + "/",
       automaticSilentRenew: true,
-      scope: "openid profile"
+      scope: "openid profile",
     });
     user = await userManager.getUser();
     if (!user) {
@@ -114,7 +114,7 @@ async function loadInfo(): Promise<LoadReturn> {
 export function loadServerSettings(): ActionBeforeMiddleware<Action> {
   return {
     type: ActionType.Load,
-    pledge: loadInfo()
+    pledge: loadInfo(),
   };
 }
 
@@ -130,7 +130,7 @@ export function reducer(s: State, a: Action): State {
         case PledgeStatus.Completed:
           return {
             fmsInfo: a.pledge.result.fmsInfo,
-            user: a.pledge.result.user
+            user: a.pledge.result.user,
           };
         case PledgeStatus.Error:
           return { ...s, loadError: a.pledge.error };

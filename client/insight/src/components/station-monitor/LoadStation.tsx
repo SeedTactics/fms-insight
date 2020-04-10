@@ -51,7 +51,7 @@ import {
   WhiteboardRegion,
   SortableWhiteboardRegion,
   MaterialDialogProps,
-  InstructionButton
+  InstructionButton,
 } from "./Material";
 import * as api from "../../data/api";
 import * as routes from "../../data/routes";
@@ -102,11 +102,11 @@ function stationPalMaterialStatus(mat: Readonly<api.IInProcessMaterial>, dateOfC
 
 const stationStatusStyles = createStyles({
   defList: {
-    color: "rgba(0,0,0,0.6)"
+    color: "rgba(0,0,0,0.6)",
   },
   defItem: {
-    marginTop: "1em"
-  }
+    marginTop: "1em",
+  },
 });
 
 interface StationStatusProps extends WithStyles<typeof stationStatusStyles> {
@@ -134,9 +134,7 @@ const StationStatus = withStyles(stationStatusStyles)((props: StationStatusProps
                   <dd key={idx}>{stationPalMaterialStatus(mat, props.dateOfCurrentStatus)}</dd>
                 ))}
               </>
-            ) : (
-              undefined
-            )}
+            ) : undefined}
             {pals.queue ? (
               <>
                 <dt className={props.classes.defList}>
@@ -146,9 +144,7 @@ const StationStatus = withStyles(stationStatusStyles)((props: StationStatusProps
                   <dd key={idx}>{stationPalMaterialStatus(mat, props.dateOfCurrentStatus)}</dd>
                 ))}
               </>
-            ) : (
-              undefined
-            )}
+            ) : undefined}
           </React.Fragment>
         ))}
     </dl>
@@ -159,41 +155,41 @@ const palletStyles = createStyles({
   palletContainerFill: {
     width: "100%",
     position: "relative" as "relative",
-    flexGrow: 1
+    flexGrow: 1,
   },
   palletContainerScroll: {
     width: "100%",
     position: "relative" as "relative",
-    minHeight: "12em"
+    minHeight: "12em",
   },
   statStatusFill: {
     width: "100%",
     flexGrow: 1,
     display: "flex",
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
   },
   statStatusScroll: {
     width: "100%",
-    minHeight: "12em"
+    minHeight: "12em",
   },
   labelContainer: {
     position: "absolute" as "absolute",
     top: "4px",
-    left: "4px"
+    left: "4px",
   },
   label: {
     color: "rgba(0,0,0,0.5)",
-    fontSize: "small"
+    fontSize: "small",
   },
   labelPalletNum: {
     color: "rgba(0,0,0,0.5)",
-    fontSize: "xx-large"
+    fontSize: "xx-large",
   },
   faceContainer: {
     marginLeft: "4em",
-    marginRight: "4em"
-  }
+    marginRight: "4em",
+  },
 });
 
 const PalletColumn = withStyles(palletStyles)((props: LoadStationDisplayProps & WithStyles<typeof palletStyles>) => {
@@ -209,7 +205,7 @@ const PalletColumn = withStyles(palletStyles)((props: LoadStationDisplayProps & 
 
   const maxFace = props.data.face
     .keySet()
-    .maxOn(x => x)
+    .maxOn((x) => x)
     .getOrElse(1);
 
   let palDetails: JSX.Element;
@@ -273,9 +269,7 @@ const PalletColumn = withStyles(palletStyles)((props: LoadStationDisplayProps & 
             <div className={props.classes.label}>Pallet</div>
             {props.data.pallet ? (
               <div className={props.classes.labelPalletNum}>{props.data.pallet.pallet}</div>
-            ) : (
-              undefined
-            )}
+            ) : undefined}
           </div>
           {palDetails}
         </div>
@@ -333,9 +327,7 @@ function LoadMatDialog(props: LoadMatDialogProps) {
               type={instructionType(props.display_material)}
               operator={props.operator || null}
             />
-          ) : (
-            undefined
-          )}
+          ) : undefined}
           <Button color="primary" onClick={props.openSetSerial}>
             {props.display_material && props.display_material.serial ? "Change Serial" : "Assign Serial"}
           </Button>
@@ -346,10 +338,10 @@ function LoadMatDialog(props: LoadMatDialogProps) {
                 props.printLabel(
                   displayMat.materialID,
                   LazySeq.ofIterable(displayMat.events)
-                    .flatMap(e => e.material)
-                    .filter(e => e.id === displayMat.materialID)
-                    .maxOn(e => e.proc)
-                    .map(e => e.proc)
+                    .flatMap((e) => e.material)
+                    .filter((e) => e.id === displayMat.materialID)
+                    .maxOn((e) => e.proc)
+                    .map((e) => e.proc)
                     .getOrElse(1),
                   props.loadNum
                 )
@@ -357,9 +349,7 @@ function LoadMatDialog(props: LoadMatDialogProps) {
             >
               Print Label
             </Button>
-          ) : (
-            undefined
-          )}
+          ) : undefined}
           <Button color="primary" onClick={props.openForceInspection}>
             Signal Inspection
           </Button>
@@ -373,12 +363,12 @@ function LoadMatDialog(props: LoadMatDialogProps) {
 }
 
 const ConnectedMaterialDialog = connect(
-  st => ({
+  (st) => ({
     display_material: st.MaterialDetails.material,
     usingLabelPrinter: st.ServerSettings.fmsInfo ? st.ServerSettings.fmsInfo.usingLabelPrinterForSerials : false,
     operator: st.ServerSettings.user
       ? st.ServerSettings.user.profile.name || st.ServerSettings.user.profile.sub
-      : st.Operators.current
+      : st.Operators.current,
   }),
   {
     onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
@@ -386,19 +376,19 @@ const ConnectedMaterialDialog = connect(
       [
         {
           type: guiState.ActionType.SetWorkorderDialogOpen,
-          open: true
+          open: true,
         },
-        matDetails.loadWorkorders(mat)
+        matDetails.loadWorkorders(mat),
       ] as AppActionBeforeMiddleware,
     openSetSerial: () => ({
       type: guiState.ActionType.SetSerialDialogOpen,
-      open: true
+      open: true,
     }),
     openForceInspection: () => ({
       type: guiState.ActionType.SetInspTypeDialogOpen,
-      open: true
+      open: true,
     }),
-    printLabel: matDetails.printLabel
+    printLabel: matDetails.printLabel,
   }
 )(LoadMatDialog);
 
@@ -407,25 +397,25 @@ const loadStyles = createStyles({
     height: "calc(100vh - 64px - 2.5em)",
     display: "flex",
     padding: "8px",
-    width: "100%"
+    width: "100%",
   },
   mainScrollable: {
     display: "flex",
     padding: "8px",
-    width: "100%"
+    width: "100%",
   },
   palCol: {
     flexGrow: 1,
     display: "flex",
-    flexDirection: "column" as "column"
+    flexDirection: "column" as "column",
   },
   queueCol: {
     width: "16em",
     padding: "8px",
     display: "flex",
     flexDirection: "column" as "column",
-    borderLeft: "1px solid rgba(0, 0, 0, 0.12)"
-  }
+    borderLeft: "1px solid rgba(0, 0, 0, 0.12)",
+  },
 });
 
 interface LoadStationProps {
@@ -448,7 +438,7 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
     .map(([q, mats]) => ({
       label: q,
       material: mats,
-      isFree: false
+      isFree: false,
     }));
 
   let cells = queues;
@@ -456,7 +446,7 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
     cells = queues.prepend({
       label: "In Process Material",
       material: props.data.free,
-      isFree: true
+      isFree: true,
     });
   }
 
@@ -473,9 +463,7 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
           <div className={props.classes.palCol}>
             <PalletColumn {...palProps} />
           </div>
-          {col1.length() === 0 ? (
-            undefined
-          ) : (
+          {col1.length() === 0 ? undefined : (
             <div className={props.classes.queueCol}>
               {col1.zipWithIndex().map(([mat, idx]) => (
                 <MoveMaterialArrowNode
@@ -484,7 +472,7 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
                     ? { type: MoveMaterialNodeKindType.FreeMaterialZone }
                     : {
                         type: MoveMaterialNodeKindType.QueueZone,
-                        queue: mat.label
+                        queue: mat.label,
                       })}
                 >
                   <SortableWhiteboardRegion
@@ -496,7 +484,7 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
                       props.moveMaterialInQueue({
                         materialId: mat.material[se.oldIndex].materialID,
                         queue: mat.label,
-                        queuePosition: se.newIndex
+                        queuePosition: se.newIndex,
                       })
                     }
                   >
@@ -521,9 +509,7 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
               ))}
             </div>
           )}
-          {col2.length() === 0 ? (
-            undefined
-          ) : (
+          {col2.length() === 0 ? undefined : (
             <div className={props.classes.queueCol}>
               {col2.zipWithIndex().map(([mat, idx]) => (
                 <MoveMaterialArrowNode
@@ -532,7 +518,7 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
                     ? { type: MoveMaterialNodeKindType.FreeMaterialZone }
                     : {
                         type: MoveMaterialNodeKindType.QueueZone,
-                        queue: mat.label
+                        queue: mat.label,
                       })}
                 >
                   <SortableWhiteboardRegion
@@ -544,7 +530,7 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
                       props.moveMaterialInQueue({
                         materialId: mat.material[se.oldIndex].materialID,
                         queue: mat.label,
-                        queuePosition: se.newIndex
+                        queuePosition: se.newIndex,
                       })
                     }
                   >
@@ -610,7 +596,7 @@ function LoadStationCheckWidth(props: LoadStationProps) {
 export default connect(
   (st: Store) => ({
     data: buildLoadData(st),
-    dateOfCurrentStatus: st.Current.current_status.timeOfCurrentStatusUTC
+    dateOfCurrentStatus: st.Current.current_status.timeOfCurrentStatusUTC,
   }),
   {
     openMat: matDetails.openMaterialDialog,
@@ -619,9 +605,9 @@ export default connect(
         type: currentSt.ActionType.ReorderQueuedMaterial,
         queue: d.queue,
         materialId: d.materialId,
-        newIdx: d.queuePosition
+        newIdx: d.queuePosition,
       },
-      matDetails.addExistingMaterialToQueue(d)
-    ]
+      matDetails.addExistingMaterialToQueue(d),
+    ],
   }
 )(LoadStationCheckWidth);

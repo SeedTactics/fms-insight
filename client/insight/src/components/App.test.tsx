@@ -43,16 +43,16 @@ import { loadMockData } from "../mock-data/load";
 import * as serverSettings from "../data/server-settings";
 
 jest.mock("./analysis/CostPerPiece", () => ({
-  default: mockComponent("CostPerPiece")
+  default: mockComponent("CostPerPiece"),
 }));
 jest.mock("./operations/Dashboard", () => ({
-  default: mockComponent("Dashboard")
+  default: mockComponent("Dashboard"),
 }));
 jest.mock("./analysis/Efficiency", () => ({
-  default: mockComponent("Efficiency")
+  default: mockComponent("Efficiency"),
 }));
 jest.mock("./analysis/DataExport", () => ({
-  default: mockComponent("DataExport")
+  default: mockComponent("DataExport"),
 }));
 
 import App from "./App";
@@ -61,11 +61,11 @@ import { registerMockBackend } from "../data/backend";
 import * as events from "../data/events";
 
 it("renders the app shell", async () => {
-  window.matchMedia = query =>
+  window.matchMedia = (query) =>
     ({
       matches: query === "(min-width:600px)", // true for Hidden smDown screens
       addListener: () => undefined,
-      removeListener: () => undefined
+      removeListener: () => undefined,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
@@ -82,14 +82,14 @@ it("renders the app shell", async () => {
           name: "test",
           version: "1.2.2",
           requireScanAtWash: false,
-          requireWorkorderBeforeAllowWashComplete: false
+          requireWorkorderBeforeAllowWashComplete: false,
         },
         latestVersion: {
           version: "1.2.3",
-          date: new Date(Date.UTC(2018, 7, 6, 13, 32, 0))
-        }
-      }
-    }
+          date: new Date(Date.UTC(2018, 7, 6, 13, 32, 0)),
+        },
+      },
+    },
   });
 
   const result = render(

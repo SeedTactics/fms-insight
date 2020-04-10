@@ -50,7 +50,7 @@ export enum ActionType {
   SetPartMaterialCost = "CostPerPiece_SetPartCost",
   SetAutomationCost = "CostPerPiece_SetAutomationCost",
   SetNumOperators = "CostPerPiece_SetNumOpers",
-  SetOperatorCostPerHour = "CostPerPiece_SetOperatorCost"
+  SetOperatorCostPerHour = "CostPerPiece_SetOperatorCost",
 }
 
 export type Action =
@@ -64,11 +64,11 @@ export interface State {
   readonly input: CostInput;
 }
 
-export const initial: State = (function() {
+export const initial: State = (function () {
   const json = localStorage.getItem("cost-per-piece");
   if (json) {
     return {
-      input: JSON.parse(json)
+      input: JSON.parse(json),
     };
   } else {
     return {
@@ -77,8 +77,8 @@ export const initial: State = (function() {
         partMaterialCost: {},
         numOperators: 0,
         automationCostPerYear: 0,
-        operatorCostPerHour: 0
-      }
+        operatorCostPerHour: 0,
+      },
     };
   }
 })();
@@ -99,9 +99,9 @@ export function reducer(s: State, a: Action): State {
           ...s.input,
           machineCostPerYear: {
             ...s.input.machineCostPerYear,
-            [a.group]: a.cost
-          }
-        }
+            [a.group]: a.cost,
+          },
+        },
       };
       break;
     case ActionType.SetPartMaterialCost:
@@ -114,9 +114,9 @@ export function reducer(s: State, a: Action): State {
           ...s.input,
           partMaterialCost: {
             ...s.input.partMaterialCost,
-            [a.part]: a.cost
-          }
-        }
+            [a.part]: a.cost,
+          },
+        },
       };
       break;
     case ActionType.SetAutomationCost:
@@ -127,8 +127,8 @@ export function reducer(s: State, a: Action): State {
         ...s,
         input: {
           ...s.input,
-          automationCostPerYear: a.cost
-        }
+          automationCostPerYear: a.cost,
+        },
       };
       break;
     case ActionType.SetNumOperators:
@@ -139,8 +139,8 @@ export function reducer(s: State, a: Action): State {
         ...s,
         input: {
           ...s.input,
-          numOperators: a.numOpers
-        }
+          numOperators: a.numOpers,
+        },
       };
       break;
     case ActionType.SetOperatorCostPerHour:
@@ -151,8 +151,8 @@ export function reducer(s: State, a: Action): State {
         ...s,
         input: {
           ...s.input,
-          operatorCostPerHour: a.cost
-        }
+          operatorCostPerHour: a.cost,
+        },
       };
       break;
   }
@@ -186,7 +186,7 @@ function machine_cost(
 ): number {
   return cycles
     .toMap(
-      c => [c.stationGroup, c.activeMinutes],
+      (c) => [c.stationGroup, c.activeMinutes],
       (a1, a2) => a1 + a2
     )
     .foldLeft(0, (x: number, [statGroup, minutes]: [string, number]) => {
@@ -203,7 +203,7 @@ function labor_cost(
 ): number {
   const pctUse = cycles
     .toMap(
-      c => [c.stationGroup, c.activeMinutes],
+      (c) => [c.stationGroup, c.activeMinutes],
       (a1, a2) => a1 + a2
     )
     .foldLeft(0, (x: number, [statGroup, minutes]: [string, number]) => {
@@ -221,7 +221,7 @@ function auto_cost(
   if (!autoCostPerYear) {
     return 0;
   }
-  const pctUse = cycles.sumOn(v => (v.completed ? 1 : 0)) / totalPalletCycles;
+  const pctUse = cycles.sumOn((v) => (v.completed ? 1 : 0)) / totalPalletCycles;
   return (pctUse * autoCostPerYear) / 12;
 }
 
@@ -234,36 +234,36 @@ export function compute_monthly_cost(
   const totalLaborCost = days * 24 * i.operatorCostPerHour * i.numOperators;
 
   const totalStatUseMinutes: HashMap<string, number> = LazySeq.ofIterable(cycles).toMap(
-    c => [c.stationGroup, c.activeMinutes],
+    (c) => [c.stationGroup, c.activeMinutes],
     (a1, a2) => a1 + a2
   );
 
-  const totalPalletCycles = LazySeq.ofIterable(cycles).sumOn(v => (v.completed ? 1 : 0));
+  const totalPalletCycles = LazySeq.ofIterable(cycles).sumOn((v) => (v.completed ? 1 : 0));
 
   return Array.from(
     LazySeq.ofIterable(cycles)
-      .groupBy(c => c.part)
+      .groupBy((c) => c.part)
       .map((partName, forPart) => [
         partName as string & HasEquals,
         {
           part: partName,
           parts_completed: LazySeq.ofIterable(forPart)
-            .filter(c => c.completed)
-            .sumOn(c => c.material.length),
+            .filter((c) => c.completed)
+            .sumOn((c) => c.material.length),
           machine_cost: machine_cost(
-            LazySeq.ofIterable(forPart).filter(c => !c.isLabor),
+            LazySeq.ofIterable(forPart).filter((c) => !c.isLabor),
             totalStatUseMinutes,
             i.machineCostPerYear,
             days
           ),
           labor_cost: labor_cost(
-            LazySeq.ofIterable(forPart).filter(c => c.isLabor),
+            LazySeq.ofIterable(forPart).filter((c) => c.isLabor),
             totalStatUseMinutes,
             totalLaborCost
           ),
           automation_cost: auto_cost(LazySeq.ofIterable(forPart), totalPalletCycles, i.automationCostPerYear),
-          material_cost: i.partMaterialCost[partName] || 0
-        }
+          material_cost: i.partMaterialCost[partName] || 0,
+        },
       ])
       .valueIterable()
   );

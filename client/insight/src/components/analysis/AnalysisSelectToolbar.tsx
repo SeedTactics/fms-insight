@@ -46,7 +46,7 @@ const toolbarStyle = {
   paddingRight: "24px",
   minHeight: "2.5em",
   alignItems: "center" as "center",
-  justifyContent: "space-evenly" as "space-evenly"
+  justifyContent: "space-evenly" as "space-evenly",
 };
 
 interface AnalysisSelectToolbarProps {
@@ -82,7 +82,7 @@ class AnalysisSelectToolbar extends React.PureComponent<AnalysisSelectToolbarPro
           />
           <MonthSelect
             curMonth={this.props.period_month}
-            onSelectMonth={m => {
+            onSelectMonth={(m) => {
               if (this.props.period === events.AnalysisPeriod.SpecificMonth) {
                 // if month type is selected, reload data
                 this.props.analyzeMonth(m);
@@ -101,23 +101,23 @@ class AnalysisSelectToolbar extends React.PureComponent<AnalysisSelectToolbarPro
 export default connect(
   (s: Store) => ({
     period: s.Events.analysis_period,
-    period_month: s.Events.analysis_period_month
+    period_month: s.Events.analysis_period_month,
   }),
   {
     analyzeLast30Days: () => [
       events.analyzeLast30Days(),
       { type: gui.ActionType.SetStationCycleDateZoom, zoom: undefined },
-      { type: gui.ActionType.SetPalletCycleDateZoom, zoom: undefined }
+      { type: gui.ActionType.SetPalletCycleDateZoom, zoom: undefined },
     ],
     analyzeMonth: (m: Date) => [
       ...events.analyzeSpecificMonth(m),
       { type: gui.ActionType.SetStationCycleDateZoom, zoom: undefined },
-      { type: gui.ActionType.SetPalletCycleDateZoom, zoom: undefined }
+      { type: gui.ActionType.SetPalletCycleDateZoom, zoom: undefined },
     ],
     setMonth: (m: Date) => [
       events.setAnalysisMonth(m),
       { type: gui.ActionType.SetStationCycleDateZoom, zoom: undefined },
-      { type: gui.ActionType.SetPalletCycleDateZoom, zoom: undefined }
-    ]
+      { type: gui.ActionType.SetPalletCycleDateZoom, zoom: undefined },
+    ],
   }
 )(AnalysisSelectToolbar);

@@ -95,9 +95,7 @@ it("renders the cost/piece page", async () => {
   machCost.value = "50000";
   Simulate.change(machCost);
 
-  const aaaRow = within(result.getByTestId("part-cost-table"))
-    .getByText("aaa")
-    .closest("tr") as HTMLTableRowElement;
+  const aaaRow = within(result.getByTestId("part-cost-table")).getByText("aaa").closest("tr") as HTMLTableRowElement;
   const aaaMatCost = aaaRow.cells[1].querySelector("input") as HTMLInputElement;
   aaaMatCost.value = "40";
   Simulate.change(aaaMatCost);

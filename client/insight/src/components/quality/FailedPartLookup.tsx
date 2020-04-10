@@ -64,8 +64,8 @@ function SerialLookup(props: SerialLookupProps) {
         <TextField
           label={serial === "" ? "Serial" : "Serial (press enter)"}
           value={serial}
-          onChange={e => setSerial(e.target.value)}
-          onKeyPress={e => {
+          onChange={(e) => setSerial(e.target.value)}
+          onKeyPress={(e) => {
             if (e.key === "Enter" && serial !== "") {
               e.preventDefault();
               props.onSelect(serial);
@@ -151,7 +151,7 @@ function PartLookupStepper(props: PartLookupStepperProps) {
         <StepLabel>Enter or scan a serial</StepLabel>
         <StepContent>
           <SerialLookup
-            onSelect={s => {
+            onSelect={(s) => {
               props.openMaterialBySerial(s);
               setStep(1);
             }}
@@ -198,9 +198,7 @@ function PartLookupStepper(props: PartLookupStepperProps) {
                 </Button>
               </div>
             </div>
-          ) : (
-            undefined
-          )}
+          ) : undefined}
         </StepContent>
       </Step>
       <Step>
@@ -214,9 +212,7 @@ function PartLookupStepper(props: PartLookupStepperProps) {
               curStart={props.curStart}
               curEnd={props.curEnd}
             />
-          ) : (
-            undefined
-          )}
+          ) : undefined}
           <Button
             variant="contained"
             style={{ marginTop: "2em" }}
@@ -234,18 +230,18 @@ function PartLookupStepper(props: PartLookupStepperProps) {
 }
 
 const ConnectedStepper = connect(
-  st => ({
+  (st) => ({
     mat: st.MaterialDetails.material,
     pathDetails: st.PathLookup.entries,
     pathLoading: st.PathLookup.loading,
     curStart: st.PathLookup.curStart,
-    curEnd: st.PathLookup.curEnd
+    curEnd: st.PathLookup.curEnd,
   }),
   {
     openMaterialBySerial: (s: string) => matDetails.openMaterialBySerial(s, true),
     searchPartRange: pathLookup.searchForPaths,
     extendPartRange: pathLookup.extendRange,
-    reset: () => [{ type: matDetails.ActionType.CloseMaterialDialog }, { type: pathLookup.ActionType.Clear }]
+    reset: () => [{ type: matDetails.ActionType.CloseMaterialDialog }, { type: pathLookup.ActionType.Clear }],
   }
 )(PartLookupStepper);
 

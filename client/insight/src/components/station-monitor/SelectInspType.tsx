@@ -67,14 +67,14 @@ class ManualInspTypeEntry extends React.PureComponent<ManualInspTypeEntryProps, 
       <TextField
         label={this.state.inspType === "" ? "Inspection Type" : "Inspection Type (press enter)"}
         value={this.state.inspType}
-        onChange={e => this.setState({ inspType: e.target.value })}
-        onKeyPress={e => {
+        onChange={(e) => this.setState({ inspType: e.target.value })}
+        onKeyPress={(e) => {
           if (e.key === "Enter" && this.state.inspType && this.state.inspType !== "") {
             e.preventDefault();
             this.props.forceInspection({
               mat: this.props.mat,
               inspType: this.state.inspType,
-              inspect: true
+              inspect: true,
             });
           }
         }}
@@ -102,7 +102,7 @@ function SelectInspTypeDialog(props: SelectInspTypeProps) {
     } else {
       const inspList = (
         <List>
-          {props.inspTypes.toArray({ sortOn: x => x }).map(iType => (
+          {props.inspTypes.toArray({ sortOn: (x) => x }).map((iType) => (
             <ListItem key={iType} button onClick={() => props.forceInspection({ mat, inspType: iType, inspect: true })}>
               <ListItemIcon>
                 <SearchIcon />
@@ -141,14 +141,14 @@ function SelectInspTypeDialog(props: SelectInspTypeProps) {
 export default connect(
   (st: Store) => ({
     inspTypes: st.Events.last30.mat_summary.inspTypes,
-    mats: st.Gui.insptype_dialog_open ? st.MaterialDetails.material : null
+    mats: st.Gui.insptype_dialog_open ? st.MaterialDetails.material : null,
   }),
   {
     onClose: mkAC(guiState.ActionType.SetInspTypeDialogOpen),
     forceInspection: (data: matDetails.ForceInspectionData) =>
       [
         matDetails.forceInspection(data),
-        { type: guiState.ActionType.SetInspTypeDialogOpen, open: false }
-      ] as AppActionBeforeMiddleware
+        { type: guiState.ActionType.SetInspTypeDialogOpen, open: false },
+      ] as AppActionBeforeMiddleware,
   }
 )(SelectInspTypeDialog);

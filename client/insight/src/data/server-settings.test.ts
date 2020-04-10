@@ -52,10 +52,10 @@ it("loads data", () => {
           requireScanAtWash: false,
           requireWorkorderBeforeAllowWashComplete: true,
           additionalLogServers: ["aaa"],
-          usingLabelPrinterForSerials: false
-        }
-      }
-    }
+          usingLabelPrinterForSerials: false,
+        },
+      },
+    },
   });
 
   expect(s).toEqual({
@@ -65,8 +65,8 @@ it("loads data", () => {
       requireScanAtWash: false,
       requireWorkorderBeforeAllowWashComplete: true,
       additionalLogServers: ["aaa"],
-      usingLabelPrinterForSerials: false
-    }
+      usingLabelPrinterForSerials: false,
+    },
   });
 });
 
@@ -75,8 +75,8 @@ it("responds to error", () => {
     type: ss.ActionType.Load,
     pledge: {
       status: PledgeStatus.Error,
-      error: new Error("hello")
-    }
+      error: new Error("hello"),
+    },
   });
 
   expect(s.loadError).toEqual(new Error("hello"));

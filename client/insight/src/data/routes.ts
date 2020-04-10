@@ -58,7 +58,7 @@ export enum RouteLocation {
 
   Analysis_Efficiency = "ROUTE_Analysis_Efficiency",
   Analysis_CostPerPiece = "ROUTE_Analysis_CostPerPiece",
-  Analysis_DataExport = "ROUTE_Analysis_DataExport"
+  Analysis_DataExport = "ROUTE_Analysis_DataExport",
 }
 
 export const routeMap = {
@@ -86,7 +86,7 @@ export const routeMap = {
 
   [RouteLocation.Analysis_Efficiency]: "/analysis/efficiency",
   [RouteLocation.Analysis_CostPerPiece]: "/analysis/cost",
-  [RouteLocation.Analysis_DataExport]: "/analysis/data-export"
+  [RouteLocation.Analysis_DataExport]: "/analysis/data-export",
 };
 
 export type Action =
@@ -154,7 +154,7 @@ export const initial: State = {
   load_queues: [],
   load_free_material: false,
   standalone_queues: [],
-  standalone_free_material: false
+  standalone_free_material: false,
 };
 
 export function displayLoadStation(num: number, queues: ReadonlyArray<string>, freeMaterial: boolean): Action {
@@ -164,22 +164,22 @@ export function displayLoadStation(num: number, queues: ReadonlyArray<string>, f
     meta: {
       query: {
         queue: queues.length === 0 ? undefined : queues,
-        free: freeMaterial ? null : undefined
-      }
-    }
+        free: freeMaterial ? null : undefined,
+      },
+    },
   };
 }
 
 export function displayInspectionType(type: string | undefined): Action {
   return {
     type: RouteLocation.Station_InspectionMonitor,
-    meta: { query: { type } }
+    meta: { query: { type } },
   };
 }
 
 export function displayWash(): Action {
   return {
-    type: RouteLocation.Station_WashMonitor
+    type: RouteLocation.Station_WashMonitor,
   };
 }
 
@@ -189,9 +189,9 @@ export function displayQueues(queues: ReadonlyArray<string>, freeMaterial: boole
     meta: {
       query: {
         queue: queues.length === 0 ? undefined : queues,
-        free: freeMaterial ? null : undefined
-      }
-    }
+        free: freeMaterial ? null : undefined,
+      },
+    },
   };
 }
 
@@ -230,7 +230,7 @@ export function reducer(s: State, a: Action): State {
         current: RouteLocation.Station_LoadMonitor,
         selected_load_id: typeof a.payload.num === "string" ? parseInt(a.payload.num, 10) : a.payload.num,
         load_queues: loadqueues.slice(0, 3),
-        load_free_material: query.free === null ? true : false
+        load_free_material: query.free === null ? true : false,
       };
     }
     case RouteLocation.Station_InspectionMonitor: {
@@ -238,13 +238,13 @@ export function reducer(s: State, a: Action): State {
       return {
         ...s,
         current: RouteLocation.Station_InspectionMonitor,
-        selected_insp_type: iquery.type
+        selected_insp_type: iquery.type,
       };
     }
     case RouteLocation.Station_WashMonitor:
       return {
         ...s,
-        current: RouteLocation.Station_WashMonitor
+        current: RouteLocation.Station_WashMonitor,
       };
     case RouteLocation.Station_Queues: {
       const standalonequery = (a.meta || {}).query || {};
@@ -260,7 +260,7 @@ export function reducer(s: State, a: Action): State {
         ...s,
         current: RouteLocation.Station_Queues,
         standalone_queues: queues,
-        standalone_free_material: standalonequery.free === null ? true : false
+        standalone_free_material: standalonequery.free === null ? true : false,
       };
     }
 
@@ -280,7 +280,7 @@ export function reducer(s: State, a: Action): State {
     case RouteLocation.Analysis_DataExport:
       return {
         ...s,
-        current: a.type
+        current: a.type,
       };
 
     case RouteLocation.ChooseMode:

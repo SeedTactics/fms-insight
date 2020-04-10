@@ -37,7 +37,7 @@ import { LazySeq } from "./lazyseq";
 export enum InspectionLogResultType {
   Triggered,
   Forced,
-  Completed
+  Completed,
 }
 
 export type InspectionLogResult =
@@ -83,12 +83,12 @@ export interface InspectionState {
 }
 
 export const initial: InspectionState = {
-  by_part: HashMap.empty()
+  by_part: HashMap.empty(),
 };
 
 export enum ExpireOldDataType {
   ExpireEarlierThan,
-  NoExpire
+  NoExpire,
 }
 
 export type ExpireOldData =
@@ -106,13 +106,13 @@ export function process_events(
   switch (expire.type) {
     case ExpireOldDataType.ExpireEarlierThan: {
       let eventsFiltered = false;
-      parts = parts.mapValues(entries => {
+      parts = parts.mapValues((entries) => {
         // check if expire is needed
         if (entries.length === 0 || entries[0].time >= expire.d) {
           return entries;
         } else {
           eventsFiltered = true;
-          return entries.filter(e => e.time >= expire.d);
+          return entries.filter((e) => e.time >= expire.d);
         }
       });
       if (!eventsFiltered && newEvts.length === 0) {
@@ -131,13 +131,13 @@ export function process_events(
 
   const newPartCycles = LazySeq.ofIterable(newEvts)
     .filter(
-      c =>
+      (c) =>
         c.type === api.LogType.Inspection ||
         c.type === api.LogType.InspectionForce ||
         c.type === api.LogType.InspectionResult
     )
-    .flatMap(c =>
-      c.material.map(m => {
+    .flatMap((c) =>
+      c.material.map((m) => {
         if (c.type === api.LogType.Inspection) {
           const pathsJson: ReadonlyArray<object> = JSON.parse((c.details || {}).ActualPath || "[]");
           const paths: Array<Readonly<api.IMaterialProcessActualPath>> = [];
@@ -162,11 +162,11 @@ export function process_events(
               result: {
                 type: InspectionLogResultType.Triggered,
                 actualPath: paths,
-                toInspect
+                toInspect,
               },
               part: m.part,
-              inspType: inspType
-            } as InspectionLogEntry
+              inspType: inspType,
+            } as InspectionLogEntry,
           };
         } else if (c.type === api.LogType.InspectionForce) {
           let forceInspect: boolean;
@@ -184,11 +184,11 @@ export function process_events(
               workorder: m.workorder,
               result: {
                 type: InspectionLogResultType.Forced,
-                toInspect: forceInspect
+                toInspect: forceInspect,
               },
               part: m.part,
-              inspType: c.program
-            } as InspectionLogEntry
+              inspType: c.program,
+            } as InspectionLogEntry,
           };
         } else {
           // api.LogType.InspectionResult
@@ -207,15 +207,15 @@ export function process_events(
               workorder: m.workorder,
               result: { type: InspectionLogResultType.Completed, success },
               part: m.part,
-              inspType: c.program
-            } as InspectionLogEntry
+              inspType: c.program,
+            } as InspectionLogEntry,
           };
         }
       })
     )
-    .filter(e => filterPart === undefined || e.entry.part === filterPart)
-    .groupBy(e => e.key)
-    .mapValues(es => es.map(e => e.entry).toArray());
+    .filter((e) => filterPart === undefined || e.entry.part === filterPart)
+    .groupBy((e) => e.key)
+    .mapValues((es) => es.map((e) => e.entry).toArray());
 
   parts = parts.mergeWith(newPartCycles, (oldEntries, newEntries) =>
     oldEntries.concat(newEntries).sort((e1, e2) => e1.time.getTime() - e2.time.getTime())
@@ -223,6 +223,6 @@ export function process_events(
 
   return {
     ...st,
-    by_part: parts
+    by_part: parts,
   };
 }

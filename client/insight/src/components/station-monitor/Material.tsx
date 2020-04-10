@@ -126,27 +126,27 @@ const matStyles = createStyles({
   paper: {
     minWidth: "10em",
     padding: "8px",
-    margin: "8px"
+    margin: "8px",
   },
   container: {
     display: "flex" as "flex",
-    textAlign: "left" as "left"
+    textAlign: "left" as "left",
   },
   mainContent: {
     marginLeft: "8px",
-    flexGrow: 1
+    flexGrow: 1,
   },
   rightContent: {
     marginLeft: "4px",
     display: "flex",
     "flex-direction": "column",
     "justify-content": "space-between",
-    "align-items": "flex-end"
+    "align-items": "flex-end",
   },
   avatar: {
     width: "30px",
-    height: "30px"
-  }
+    height: "30px",
+  },
 });
 
 export interface MaterialSummaryProps {
@@ -198,16 +198,14 @@ const MatSummaryWithStyles = withStyles(matStyles)((props: MaterialSummaryProps 
       {...props.draggableProvided?.draggableProps}
       style={{
         display: "flex",
-        ...props.draggableProvided?.draggableProps.style
+        ...props.draggableProvided?.draggableProps.style,
       }}
     >
       {dragHandleProps ? (
         <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }} {...dragHandleProps}>
           <DragIndicator fontSize="large" color={props.isDragging ? "primary" : "action"} />
         </div>
-      ) : (
-        undefined
-      )}
+      ) : undefined}
       <ButtonBase focusRipple onClick={() => props.onOpen(props.mat)}>
         <div className={props.classes.container}>
           <PartIdenticon part={props.mat.partName} />
@@ -216,16 +214,12 @@ const MatSummaryWithStyles = withStyles(matStyles)((props: MaterialSummaryProps 
             <div>
               <small>Serial: {props.mat.serial ? props.mat.serial : "none"}</small>
             </div>
-            {props.mat.workorderId === undefined || props.mat.workorderId === "" ? (
-              undefined
-            ) : (
+            {props.mat.workorderId === undefined || props.mat.workorderId === "" ? undefined : (
               <div>
                 <small>Workorder: {props.mat.workorderId}</small>
               </div>
             )}
-            {props.action === undefined ? (
-              undefined
-            ) : (
+            {props.action === undefined ? undefined : (
               <div>
                 <small>{props.action}</small>
               </div>
@@ -239,12 +233,8 @@ const MatSummaryWithStyles = withStyles(matStyles)((props: MaterialSummaryProps 
                   {props.mat.serial.substr(props.mat.serial.length - 1, 1)}
                 </Avatar>
               </div>
-            ) : (
-              undefined
-            )}
-            {props.hideInspectionIcon || props.mat.signaledInspections.length === 0 ? (
-              undefined
-            ) : (
+            ) : undefined}
+            {props.hideInspectionIcon || props.mat.signaledInspections.length === 0 ? undefined : (
               <div>
                 <Tooltip title={inspections}>
                   <WarningIcon />
@@ -377,17 +367,17 @@ export class MaterialDetailContent extends React.PureComponent<MaterialDetailPro
 export function InstructionButton({
   material,
   type,
-  operator
+  operator,
 }: {
   readonly material: matDetails.MaterialDetail;
   readonly type: string;
   readonly operator: string | null;
 }) {
   const maxProc = LazySeq.ofIterable(material.events)
-    .flatMap(e => e.material)
-    .filter(e => e.id === material.materialID)
-    .maxOn(e => e.proc)
-    .map(e => e.proc);
+    .flatMap((e) => e.material)
+    .filter((e) => e.id === material.materialID)
+    .maxOn((e) => e.proc)
+    .map((e) => e.proc);
   const instrQuery =
     "?type=" +
     encodeURIComponent(type) +
@@ -427,7 +417,7 @@ function NotesDialogBody(props: NotesDialogBodyProps) {
           autoFocus
           variant="outlined"
           value={curNote}
-          onChange={e => setCurNote(e.target.value)}
+          onChange={(e) => setCurNote(e.target.value)}
         />
       </DialogContent>
       <DialogActions>
@@ -457,13 +447,13 @@ function NotesDialogBody(props: NotesDialogBodyProps) {
 }
 
 const ConnectedNotesDialogBody = connect(
-  st => ({
+  (st) => ({
     operator: st.ServerSettings.user
       ? st.ServerSettings.user.profile.name || st.ServerSettings.user.profile.sub
-      : st.Operators.current
+      : st.Operators.current,
   }),
   {
-    addNote: matDetails.addNote
+    addNote: matDetails.addNote,
   }
 )(NotesDialogBody);
 
@@ -499,9 +489,7 @@ export function MaterialDialog(props: MaterialDialogProps) {
             <Button onClick={() => setNotesOpen(true)} color="primary">
               Add Note
             </Button>
-          ) : (
-            undefined
-          )}
+          ) : undefined}
           {props.buttons}
           <Button onClick={props.onClose} color="secondary">
             Close
@@ -522,54 +510,52 @@ export function MaterialDialog(props: MaterialDialogProps) {
         <Dialog open={notesOpen} onClose={() => setNotesOpen(false)} maxWidth="md">
           {notesBody}
         </Dialog>
-      ) : (
-        undefined
-      )}
+      ) : undefined}
     </>
   );
 }
 
 export const BasicMaterialDialog = connect(
-  st => ({
-    display_material: st.MaterialDetails.material
+  (st) => ({
+    display_material: st.MaterialDetails.material,
   }),
   {
-    onClose: mkAC(matDetails.ActionType.CloseMaterialDialog)
+    onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
   }
 )(MaterialDialog);
 
 const whiteboardRegionStyle = createStyles({
   container: {
     width: "100%",
-    minHeight: "70px"
+    minHeight: "70px",
   },
   labelContainer: {
-    display: "flex"
+    display: "flex",
   },
   label: {
     color: "rgba(0,0,0,0.5)",
     fontSize: "small",
-    flexGrow: 1
+    flexGrow: 1,
   },
   addButton: {
     color: "rgba(0,0,0,0.5)",
     height: "0.7em",
-    width: "0.7em"
+    width: "0.7em",
   },
   contentContainer: {
     width: "100%",
     display: "flex",
-    flexWrap: "wrap" as "wrap"
+    flexWrap: "wrap" as "wrap",
   },
   borderLeft: {
-    borderLeft: "1px solid rgba(0,0,0,0.12)"
+    borderLeft: "1px solid rgba(0,0,0,0.12)",
   },
   borderBottom: {
-    borderBottom: "1px solid rgba(0,0,0,0.12)"
+    borderBottom: "1px solid rgba(0,0,0,0.12)",
   },
   borderRight: {
-    borderRight: "1px solid rgba(0,0,0,0.12)"
-  }
+    borderRight: "1px solid rgba(0,0,0,0.12)",
+  },
 });
 
 export interface WhiteboardRegionProps {
@@ -609,13 +595,9 @@ const WhiteboardRegionWithStyle = withStyles(whiteboardRegionStyle)(
               <IconButton onClick={props.onAddMaterial} className={props.classes.addButton}>
                 <AddIcon className={props.classes.addButton} />
               </IconButton>
-            ) : (
-              undefined
-            )}
+            ) : undefined}
           </div>
-        ) : (
-          undefined
-        )}
+        ) : undefined}
         <div className={props.classes.contentContainer} style={{ justifyContent }}>
           {props.children}
         </div>

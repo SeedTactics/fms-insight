@@ -43,12 +43,12 @@ export interface State {
 }
 
 export const initial: State = {
-  websocket_reconnecting: false
+  websocket_reconnecting: false,
 };
 
 export enum ActionType {
   WebsocketOpen = "Websocket_Open",
-  WebsocketClose = "Websocket_Close"
+  WebsocketClose = "Websocket_Close",
 }
 
 export type Action = { type: ActionType.WebsocketOpen } | { type: ActionType.WebsocketClose };
@@ -119,7 +119,7 @@ export function openWebsocket(user: User | null) {
     }
     storeDispatch({ type: ActionType.WebsocketClose });
   };
-  websocket.onmessage = evt => {
+  websocket.onmessage = (evt) => {
     if (!storeDispatch) {
       return;
     }

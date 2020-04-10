@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 export enum PlannedOrActual {
   Planned = "Planned",
   Actual = "Actual",
-  PlannedMinusActual = "PlannedOrActual"
+  PlannedMinusActual = "PlannedOrActual",
 }
 
 export enum ActionType {
@@ -51,7 +51,7 @@ export enum ActionType {
   SetAddMatToQueueName = "Gui_SetAddMatToQueueName",
   SetScanQrCodeDialog = "Gui_ScanQrCodeDialog",
   SetManualSerialEntryDialog = "Gui_ManualSerialEntryDialog",
-  SetBackupFileOpenened = "Gui_SetBackupFileOpened"
+  SetBackupFileOpenened = "Gui_SetBackupFileOpened",
 }
 
 export type Action =
@@ -98,7 +98,7 @@ export const initial: State = {
   scan_qr_dialog_open: false,
   manual_serial_entry_dialog_open: false,
   queue_dialog_mode_open: false,
-  backup_file_opened: false
+  backup_file_opened: false,
 };
 
 export function reducer(s: State, a: Action): State {
@@ -111,7 +111,7 @@ export function reducer(s: State, a: Action): State {
         ...s,
         station_cycle_selected_part: a.part,
         station_cycle_selected_station: a.station,
-        station_cycle_selected_pallet: a.pallet
+        station_cycle_selected_pallet: a.pallet,
       };
     case ActionType.SetStationCycleDateZoom:
       return { ...s, station_cycle_date_zoom: a.zoom };

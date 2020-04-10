@@ -48,18 +48,18 @@ const filterLogSelector = createSelector(
   (byPart: HashMap<PartAndInspType, ReadonlyArray<InspectionLogEntry>>, today: Date) => {
     const start = addDays(today, -6);
     const end = addDays(today, 1);
-    return byPart.mapValues(log => log.filter(e => e.time >= start && e.time <= end));
+    return byPart.mapValues((log) => log.filter((e) => e.time >= start && e.time <= end));
   }
 );
 
 const ConnectedInspection = connect(
-  st => ({
+  (st) => ({
     inspectionlogs: filterLogSelector(st.Events.last30, startOfToday()),
     default_date_range: [addDays(startOfToday(), -6), addDays(startOfToday(), 1)],
-    defaultToTable: false
+    defaultToTable: false,
   }),
   {
-    openMaterialDetails: openMaterialById
+    openMaterialDetails: openMaterialById,
   }
 )(InspectionSankey);
 

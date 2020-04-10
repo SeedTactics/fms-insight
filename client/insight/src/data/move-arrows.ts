@@ -36,9 +36,9 @@ import { HashMap, fieldsHashCode, Vector, Option } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 
 export class MoveMaterialIdentifier {
-  public static allocateNodeId: () => MoveMaterialIdentifier = (function() {
+  public static allocateNodeId: () => MoveMaterialIdentifier = (function () {
     let cntr = 0;
-    return function() {
+    return function () {
       cntr += 1;
       return new MoveMaterialIdentifier(cntr);
     };
@@ -61,7 +61,7 @@ export enum MoveMaterialNodeKindType {
   FreeMaterialZone,
   CompletedMaterialZone,
   PalletFaceZone,
-  QueueZone
+  QueueZone,
 }
 
 export type MoveMaterialNodeKind =
@@ -108,7 +108,7 @@ function buildMatByKind(data: MoveMaterialArrowData<ClientRect>): MoveMaterialBy
     {
       faces: HashMap.empty<number, ClientRect>(),
       queues: HashMap.empty<string, ClientRect>(),
-      material: Vector.empty<[ClientRect, Readonly<api.IInProcessMaterialAction>]>()
+      material: Vector.empty<[ClientRect, Readonly<api.IInProcessMaterialAction>]>(),
     } as MoveMaterialByKind,
     (acc, [key, kind]) => {
       const nodeM = data.nodes.get(key);
@@ -148,7 +148,7 @@ export function computeArrows(data: MoveMaterialArrowData<ClientRect>): Readonly
 
   return byKind.material
     .transform(LazySeq.ofIterable)
-    .map(value => {
+    .map((value) => {
       const rect = value[0];
       const action = value[1];
       switch (action.type) {
@@ -160,7 +160,7 @@ export function computeArrows(data: MoveMaterialArrowData<ClientRect>): Readonly
             toY: byKind.completedMaterial
               ? byKind.completedMaterial.top + byKind.completedMaterial.height / 2
               : container.bottom - 10,
-            curveDirection: 1
+            curveDirection: 1,
           } as MoveMaterialArrow;
         case api.ActionType.UnloadToInProcess: {
           let dest: Option<ClientRect>;
@@ -174,7 +174,7 @@ export function computeArrows(data: MoveMaterialArrowData<ClientRect>): Readonly
             fromY: rect.top + rect.height / 2,
             toX: dest.isSome() ? dest.get().left - 5 : container.right - 2,
             toY: dest.isSome() ? dest.get().top + dest.get().height / 2 : rect.top + rect.height / 2,
-            curveDirection: 1
+            curveDirection: 1,
           } as MoveMaterialArrow;
         }
         case api.ActionType.Loading:
@@ -187,7 +187,7 @@ export function computeArrows(data: MoveMaterialArrowData<ClientRect>): Readonly
                 fromY: rect.top + rect.height / 2,
                 toX: fromQueue ? face.get().right - 10 : rect.left,
                 toY: face.get().top + 10,
-                curveDirection: 1
+                curveDirection: 1,
               } as MoveMaterialArrow;
             }
           }
@@ -195,14 +195,14 @@ export function computeArrows(data: MoveMaterialArrowData<ClientRect>): Readonly
       }
       return null;
     })
-    .mapOption(arr => {
+    .mapOption((arr) => {
       if (arr) {
         return Option.some({
           fromX: arr.fromX - container.left,
           fromY: arr.fromY - container.top,
           toX: arr.toX - container.left,
           toY: arr.toY - container.top,
-          curveDirection: arr.curveDirection
+          curveDirection: arr.curveDirection,
         });
       } else {
         return Option.none<MoveMaterialArrow>();

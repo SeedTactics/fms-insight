@@ -92,12 +92,12 @@ export const initial: CycleState = {
   station_groups: HashSet.empty(),
   station_names: HashSet.empty(),
   pallet_names: HashSet.empty(),
-  estimatedCycleTimes: HashMap.empty()
+  estimatedCycleTimes: HashMap.empty(),
 };
 
 export enum ExpireOldDataType {
   ExpireEarlierThan,
-  NoExpire
+  NoExpire,
 }
 
 export type ExpireOldData =
@@ -151,7 +151,7 @@ export function stat_name_and_num(stationGroup: string, stationNumber: number): 
 export function format_cycle_inspection(c: PartCycleData): string {
   const ret = [];
   const names = c.signaledInspections.addAll(c.completedInspections.keySet());
-  for (const name of names.toArray({ sortOn: x => x })) {
+  for (const name of names.toArray({ sortOn: (x) => x })) {
     const completed = c.completedInspections.get(name);
     if (completed.isSome()) {
       const success = completed.get();
@@ -224,8 +224,8 @@ function estimateCycleTimes(cycles: Vector<number>): StatisticalCycleTime {
     1.4826 *
     median(
       LazySeq.ofIterable(cycles)
-        .filter(x => x <= medianMinutes)
-        .map(x => medianMinutes - x)
+        .filter((x) => x <= medianMinutes)
+        .map((x) => medianMinutes - x)
     );
   // clamp at 15 seconds
   if (madBelowMinutes < 0.25) {
@@ -236,8 +236,8 @@ function estimateCycleTimes(cycles: Vector<number>): StatisticalCycleTime {
     1.4826 *
     median(
       LazySeq.ofIterable(cycles)
-        .filter(x => x >= medianMinutes)
-        .map(x => x - medianMinutes)
+        .filter((x) => x >= medianMinutes)
+        .map((x) => x - medianMinutes)
     );
   // clamp at 15 seconds
   if (madAboveMinutes < 0.25) {
@@ -248,11 +248,11 @@ function estimateCycleTimes(cycles: Vector<number>): StatisticalCycleTime {
     medianMinutesForSingleMat: medianMinutes,
     MAD_belowMinutes: madBelowMinutes,
     MAD_aboveMinutes: madAboveMinutes,
-    expectedCycleMinutesForSingleMat: 0
+    expectedCycleMinutesForSingleMat: 0,
   };
 
   // filter to only inliers
-  const inliers = cycles.filter(x => !isOutlier(statCycleTime, x)).toArray();
+  const inliers = cycles.filter((x) => !isOutlier(statCycleTime, x)).toArray();
   // compute average of inliers
   const expectedCycleMinutesForSingleMat = inliers.reduce((sum, x) => sum + x, 0) / inliers.length;
 
@@ -260,9 +260,9 @@ function estimateCycleTimes(cycles: Vector<number>): StatisticalCycleTime {
 }
 
 function chunkCyclesWithSimilarEndTime<T>(cycles: Vector<T>, getTime: (c: T) => Date): Vector<ReadonlyArray<T>> {
-  const sorted = cycles.sortOn(c => getTime(c).getTime());
+  const sorted = cycles.sortOn((c) => getTime(c).getTime());
   return Vector.ofIterable(
-    LazySeq.ofIterator(function*() {
+    LazySeq.ofIterator(function* () {
       let chunk: Array<T> = [];
       for (const c of sorted) {
         if (chunk.length === 0) {
@@ -305,63 +305,63 @@ function splitElapsedTimeAmongChunk<T extends { material: ReadonlyArray<unknown>
   if (allEventsHaveActive && totalActiveMins > 0) {
     //split by active.  First multiply by (active/totalActive) ratio to get fraction of elapsed
     //for this cycle, then by material count to get per-material
-    return chunk.map(cycle => ({
+    return chunk.map((cycle) => ({
       cycle,
       elapsedForSingleMaterialMinutes:
-        (getElapsedMins(cycle) * getActiveMins(cycle)) / totalActiveMins / cycle.material.length
+        (getElapsedMins(cycle) * getActiveMins(cycle)) / totalActiveMins / cycle.material.length,
     }));
   }
 
   // split equally among all material
   if (totalMatCount > 0) {
-    return chunk.map(cycle => ({
+    return chunk.map((cycle) => ({
       cycle,
-      elapsedForSingleMaterialMinutes: getElapsedMins(cycle) / totalMatCount
+      elapsedForSingleMaterialMinutes: getElapsedMins(cycle) / totalMatCount,
     }));
   }
 
   // only when no events have material, which should never happen
-  return chunk.map(cycle => ({
+  return chunk.map((cycle) => ({
     cycle,
-    elapsedForSingleMaterialMinutes: getElapsedMins(cycle)
+    elapsedForSingleMaterialMinutes: getElapsedMins(cycle),
   }));
 }
 
 function estimateCycleTimesOfParts(cycles: Iterable<Readonly<api.ILogEntry>>): EstimatedCycleTimes {
   const machines = LazySeq.ofIterable(cycles)
-    .filter(c => c.type === api.LogType.MachineCycle && !c.startofcycle && c.material.length > 0)
-    .groupBy(e => part_and_proc(e.material[0].part, e.material[0].proc))
-    .mapValues(cyclesForPart =>
+    .filter((c) => c.type === api.LogType.MachineCycle && !c.startofcycle && c.material.length > 0)
+    .groupBy((e) => part_and_proc(e.material[0].part, e.material[0].proc))
+    .mapValues((cyclesForPart) =>
       LazySeq.ofIterable(cyclesForPart)
         .groupBy(stat_group)
-        .mapValues(cyclesForPartAndStat =>
+        .mapValues((cyclesForPartAndStat) =>
           estimateCycleTimes(
-            cyclesForPartAndStat.map(cycle => duration(cycle.elapsed).asMinutes() / cycle.material.length)
+            cyclesForPartAndStat.map((cycle) => duration(cycle.elapsed).asMinutes() / cycle.material.length)
           )
         )
     );
 
   const loadEventsByLUL = LazySeq.ofIterable(cycles)
-    .filter(c => c.type === api.LogType.LoadUnloadCycle && !c.startofcycle && c.material.length > 0)
-    .groupBy(c => c.locnum)
-    .mapValues(cs => chunkCyclesWithSimilarEndTime(cs, c => c.endUTC));
+    .filter((c) => c.type === api.LogType.LoadUnloadCycle && !c.startofcycle && c.material.length > 0)
+    .groupBy((c) => c.locnum)
+    .mapValues((cs) => chunkCyclesWithSimilarEndTime(cs, (c) => c.endUTC));
 
   const loads = LazySeq.ofIterable(loadEventsByLUL.valueIterable())
-    .flatMap(cycles => cycles) // ignore LUL, just need chunks
-    .map(cs =>
+    .flatMap((cycles) => cycles) // ignore LUL, just need chunks
+    .map((cs) =>
       splitElapsedTimeAmongChunk(
         cs,
-        c => duration(c.elapsed).asMinutes(),
-        c => (c.active === "" ? -1 : duration(c.active).asMinutes())
+        (c) => duration(c.elapsed).asMinutes(),
+        (c) => (c.active === "" ? -1 : duration(c.active).asMinutes())
       )
     ) // divide elapsed time for each chunk
-    .flatMap(chunk => chunk) // no need for chunks anymore
-    .groupBy(c => part_and_proc(c.cycle.material[0].part, c.cycle.material[0].proc))
-    .mapValues(cyclesForPart =>
+    .flatMap((chunk) => chunk) // no need for chunks anymore
+    .groupBy((c) => part_and_proc(c.cycle.material[0].part, c.cycle.material[0].proc))
+    .mapValues((cyclesForPart) =>
       LazySeq.ofIterable(cyclesForPart)
-        .groupBy(c => stat_group(c.cycle))
-        .mapValues(cyclesForPartAndStat =>
-          estimateCycleTimes(cyclesForPartAndStat.map(c => c.elapsedForSingleMaterialMinutes))
+        .groupBy((c) => stat_group(c.cycle))
+        .mapValues((cyclesForPartAndStat) =>
+          estimateCycleTimes(cyclesForPartAndStat.map((c) => c.elapsedForSingleMaterialMinutes))
         )
     );
 
@@ -372,19 +372,19 @@ export function splitElapsedLoadTimeAmongCycles(
   cycles: Iterable<PartCycleData>
 ): LazySeq<LogEntryWithSplitElapsed<PartCycleData>> {
   const loadEventsByLUL = LazySeq.ofIterable(cycles)
-    .groupBy(c => c.stationNumber)
-    .mapValues(cs => chunkCyclesWithSimilarEndTime(cs, c => c.x));
+    .groupBy((c) => c.stationNumber)
+    .mapValues((cs) => chunkCyclesWithSimilarEndTime(cs, (c) => c.x));
 
   return LazySeq.ofIterable(loadEventsByLUL.valueIterable())
-    .flatMap(cycles => cycles)
-    .map(cs =>
+    .flatMap((cycles) => cycles)
+    .map((cs) =>
       splitElapsedTimeAmongChunk(
         cs,
-        c => c.y,
-        c => c.activeMinutes
+        (c) => c.y,
+        (c) => c.activeMinutes
       )
     )
-    .flatMap(chunk => chunk);
+    .flatMap((chunk) => chunk);
 }
 
 function activeMinutes(cycle: Readonly<api.ILogEntry>, stats: Option<StatisticalCycleTime>) {
@@ -393,7 +393,7 @@ function activeMinutes(cycle: Readonly<api.ILogEntry>, stats: Option<Statistical
     (cycle.type === api.LogType.MachineCycle || cycle.type === api.LogType.LoadUnloadCycle) &&
     (cycle.active === "" || cMins <= 0)
   ) {
-    return stats.map(s => s.expectedCycleMinutesForSingleMat).getOrElse(0) * cycle.material.length;
+    return stats.map((s) => s.expectedCycleMinutesForSingleMat).getOrElse(0) * cycle.material.length;
   } else {
     return cMins;
   }
@@ -408,8 +408,8 @@ function activeTotalMachineMinutesForSingleMat(
   if (mbyStat.isSome()) {
     const byStat = mbyStat.get();
     return LazySeq.ofIterable(machineGroups)
-      .mapOption(m => byStat.get(m))
-      .sumOn(t => t.expectedCycleMinutesForSingleMat);
+      .mapOption((m) => byStat.get(m))
+      .sumOn((t) => t.expectedCycleMinutesForSingleMat);
   } else {
     return 0;
   }
@@ -482,16 +482,16 @@ export function process_events(
     case ExpireOldDataType.ExpireEarlierThan: {
       // check if nothing to expire and no new data
       const partEntries = LazySeq.ofIterable(allPartCycles);
-      const palEntries = LazySeq.ofIterable(pals.valueIterable()).flatMap(cs => cs);
-      const minEntry = (palEntries as LazySeq<CycleData>).appendAll(partEntries).minOn(e => e.x.getTime());
+      const palEntries = LazySeq.ofIterable(pals.valueIterable()).flatMap((cs) => cs);
+      const minEntry = (palEntries as LazySeq<CycleData>).appendAll(partEntries).minOn((e) => e.x.getTime());
 
       if ((minEntry.isNone() || minEntry.get().x >= expire.d) && newEvts.length === 0) {
         return st;
       }
 
       // filter old events
-      allPartCycles = allPartCycles.filter(e => e.x >= expire.d);
-      pals = pals.mapValues(es => es.filter(e => e.x >= expire.d)).filter(es => es.length > 0);
+      allPartCycles = allPartCycles.filter((e) => e.x >= expire.d);
+      pals = pals.mapValues((es) => es.filter((e) => e.x >= expire.d)).filter((es) => es.length > 0);
 
       break;
     }
@@ -538,8 +538,8 @@ export function process_events(
   }
 
   const newCycles: LazySeq<PartCycleData> = LazySeq.ofIterable(newEvts)
-    .filter(c => !c.startofcycle && (c.type === api.LogType.LoadUnloadCycle || c.type === api.LogType.MachineCycle))
-    .map(cycle => {
+    .filter((c) => !c.startofcycle && (c.type === api.LogType.LoadUnloadCycle || c.type === api.LogType.MachineCycle))
+    .map((cycle) => {
       const part = cycle.material.length > 0 ? cycle.material[0].part : "";
       const proc = cycle.material.length > 0 ? cycle.material[0].proc : 1;
       const statGroup = stat_group(cycle);
@@ -548,8 +548,8 @@ export function process_events(
         x: cycle.endUTC,
         y: duration(cycle.elapsed).asMinutes(),
         activeMinutes: activeMinutes(cycle, stats),
-        medianCycleMinutes: stats.map(s => s.medianMinutesForSingleMat).getOrElse(0) * cycle.material.length,
-        MAD_aboveMinutes: stats.map(s => s.MAD_aboveMinutes).getOrElse(0),
+        medianCycleMinutes: stats.map((s) => s.medianMinutesForSingleMat).getOrElse(0) * cycle.material.length,
+        MAD_aboveMinutes: stats.map((s) => s.MAD_aboveMinutes).getOrElse(0),
         activeTotalMachineMinutesForSingleMat: activeTotalMachineMinutesForSingleMat(
           part_and_proc(part, proc),
           machineGroups,
@@ -565,21 +565,21 @@ export function process_events(
         stationNumber: cycle.locnum,
         signaledInspections: HashSet.empty<string>(),
         completedInspections: HashMap.empty<string, boolean>(),
-        operator: cycle.details ? cycle.details.operator || "" : ""
+        operator: cycle.details ? cycle.details.operator || "" : "",
       };
     })
-    .filter(c => c.stationGroup !== "");
+    .filter((c) => c.stationGroup !== "");
 
   const newPalCycles = LazySeq.ofIterable(newEvts)
-    .filter(c => !c.startofcycle && c.type === api.LogType.PalletCycle && c.pal !== "")
-    .groupBy(c => c.pal)
-    .mapValues(cyclesForPal =>
+    .filter((c) => !c.startofcycle && c.type === api.LogType.PalletCycle && c.pal !== "")
+    .groupBy((c) => c.pal)
+    .mapValues((cyclesForPal) =>
       LazySeq.ofIterable(cyclesForPal)
-        .map(c => ({
+        .map((c) => ({
           x: c.endUTC,
           y: duration(c.elapsed).asMinutes(),
           active: duration(c.active).asMinutes(),
-          completed: false
+          completed: false,
         }))
         .toArray()
     );
@@ -587,7 +587,7 @@ export function process_events(
 
   // merge inspections
   const inspResult = newInspectionData(newEvts);
-  allPartCycles = allPartCycles.appendAll(newCycles).map(x => {
+  allPartCycles = allPartCycles.appendAll(newCycles).map((x) => {
     for (const mat of x.material) {
       const signaled = inspResult.signaled[mat.id];
       if (signaled) {
@@ -609,13 +609,13 @@ export function process_events(
     station_groups: statGroups,
     machine_groups: machineGroups,
     station_names: statNames,
-    pallet_names: palNames
+    pallet_names: palNames,
   };
 
   if (initialLoad) {
     return {
       ...newSt,
-      estimatedCycleTimes: estimatedCycleTimes
+      estimatedCycleTimes: estimatedCycleTimes,
     };
   } else {
     return newSt;

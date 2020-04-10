@@ -64,7 +64,7 @@ export const mkAC = mkACF<AppActionBeforeMiddleware>();
 export function initStore({ useRouter }: { useRouter: boolean }) {
   const router = useRouter
     ? connectRoutes(routes.routeMap, {
-        querySerializer: queryString
+        querySerializer: queryString,
       })
     : undefined;
 
@@ -88,12 +88,12 @@ export function initStore({ useRouter }: { useRouter: boolean }) {
       Operators: operators.reducer,
       ServerSettings: serverSettings.reducer,
       CostPerPiece: ccp.reducer,
-      location: router ? router.reducer : (s: LocationState<string>, _: object) => s || {}
+      location: router ? router.reducer : (s: LocationState<string>, _: object) => s || {},
     },
     middleware,
     router
-      ? m => composeEnhancers(router.enhancer, applyMiddleware(m, router.middleware))
-      : m => composeEnhancers(applyMiddleware(m))
+      ? (m) => composeEnhancers(router.enhancer, applyMiddleware(m, router.middleware))
+      : (m) => composeEnhancers(applyMiddleware(m))
   );
 
   initBarcodeListener(store.dispatch.bind(store));

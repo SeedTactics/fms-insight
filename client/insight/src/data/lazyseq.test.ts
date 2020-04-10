@@ -1,7 +1,7 @@
 import { LazySeq } from "./lazyseq";
 import { HashMap, Vector, Option, HashSet } from "prelude-ts";
 
-const oddSeq = LazySeq.ofIterator(function*() {
+const oddSeq = LazySeq.ofIterator(function* () {
   for (let x = 1; x <= 9; x += 2) {
     yield x;
   }
@@ -18,7 +18,7 @@ it("loads a lazyseq from an iterable", () => {
 it("loads a lazyseq from an object", () => {
   seqShouldBe(LazySeq.ofObject({ a: 1, b: 2 }), [
     ["a", 1],
-    ["b", 2]
+    ["b", 2],
   ]);
 });
 
@@ -27,13 +27,13 @@ it("loads a lazyseq range", () => {
 });
 
 it("allMatch", () => {
-  expect(oddSeq.allMatch(x => x % 2 === 1)).toBe(true);
-  expect(oddSeq.allMatch(x => x === 1)).toBe(false);
+  expect(oddSeq.allMatch((x) => x % 2 === 1)).toBe(true);
+  expect(oddSeq.allMatch((x) => x === 1)).toBe(false);
 });
 
 it("anyMatch", () => {
-  expect(oddSeq.anyMatch(x => x % 2 === 0)).toBe(false);
-  expect(oddSeq.anyMatch(x => x === 5)).toBe(true);
+  expect(oddSeq.anyMatch((x) => x % 2 === 0)).toBe(false);
+  expect(oddSeq.anyMatch((x) => x === 5)).toBe(true);
 });
 
 it("appends", () => {
@@ -45,12 +45,12 @@ it("appends all", () => {
 });
 
 it("arrangeBy", () => {
-  const m = oddSeq.arrangeBy(x => x.toString());
+  const m = oddSeq.arrangeBy((x) => x.toString());
   expect(m.isSome()).toBe(true);
   expect(m.getOrThrow().equals(HashMap.of(["1", 1], ["3", 3], ["5", 5], ["7", 7], ["9", 9]))).toBe(true);
   expect(
     LazySeq.ofIterable([1, 2, 1])
-      .arrangeBy(x => x)
+      .arrangeBy((x) => x)
       .isNone()
   ).toBe(true);
 });
@@ -71,7 +71,7 @@ it("drops", () => {
 
 it("dropWhile", () => {
   seqShouldBe(
-    oddSeq.dropWhile(x => x < 6),
+    oddSeq.dropWhile((x) => x < 6),
     [7, 9]
   );
 });
@@ -83,35 +83,31 @@ it("isEmpty", () => {
 
 it("filter", () => {
   seqShouldBe(
-    oddSeq.filter(x => x === 3 || x === 7),
+    oddSeq.filter((x) => x === 3 || x === 7),
     [3, 7]
   );
 });
 
 it("find", () => {
-  expect(oddSeq.find(x => x === 3).getOrThrow()).toBe(3);
-  expect(oddSeq.find(x => x === 2).isNone()).toBe(true);
+  expect(oddSeq.find((x) => x === 3).getOrThrow()).toBe(3);
+  expect(oddSeq.find((x) => x === 2).isNone()).toBe(true);
 });
 
 it("flatMap", () => {
   seqShouldBe(
-    oddSeq.flatMap(x => [x, x + 1]),
+    oddSeq.flatMap((x) => [x, x + 1]),
     [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
   );
 });
 
 it("groupBy", () => {
-  const m: HashMap<string, Vector<number>> = oddSeq.groupBy(x => (x < 6 ? "low" : "high"));
+  const m: HashMap<string, Vector<number>> = oddSeq.groupBy((x) => (x < 6 ? "low" : "high"));
   expect(m.equals(HashMap.of(["low", Vector.of(1, 3, 5)], ["high", Vector.of(7, 9)])));
 });
 
 it("head", () => {
   expect(oddSeq.head().getOrThrow()).toBe(1);
-  expect(
-    LazySeq.ofIterable([])
-      .head()
-      .isNone()
-  ).toBe(true);
+  expect(LazySeq.ofIterable([]).head().isNone()).toBe(true);
 });
 
 it("length", () => {
@@ -120,14 +116,14 @@ it("length", () => {
 
 it("map", () => {
   seqShouldBe(
-    oddSeq.map(x => x.toString()),
+    oddSeq.map((x) => x.toString()),
     ["1", "3", "5", "7", "9"]
   );
 });
 
 it("mapOption", () => {
   seqShouldBe(
-    oddSeq.mapOption(x => (x === 5 ? Option.none<string>() : Option.some(x.toString()))),
+    oddSeq.mapOption((x) => (x === 5 ? Option.none<string>() : Option.some(x.toString()))),
     ["1", "3", "7", "9"]
   );
 });
@@ -144,13 +140,13 @@ it("maxBy", () => {
 it("maxOn", () => {
   expect(
     oddSeq
-      .map(x => ({ prop: x }))
-      .maxOn(x => x.prop)
+      .map((x) => ({ prop: x }))
+      .maxOn((x) => x.prop)
       .getOrThrow()
   ).toEqual({ prop: 9 });
   expect(
     LazySeq.ofIterable([] as { prop: number }[])
-      .maxOn(x => x.prop)
+      .maxOn((x) => x.prop)
       .isNone()
   ).toBe(true);
 });
@@ -167,13 +163,13 @@ it("minBy", () => {
 it("minOn", () => {
   expect(
     oddSeq
-      .map(x => ({ prop: x }))
-      .minOn(x => x.prop)
+      .map((x) => ({ prop: x }))
+      .minOn((x) => x.prop)
       .getOrThrow()
   ).toEqual({ prop: 1 });
   expect(
     LazySeq.ofIterable([] as { prop: number }[])
-      .minOn(x => x.prop)
+      .minOn((x) => x.prop)
       .isNone()
   ).toBe(true);
 });
@@ -197,16 +193,8 @@ it("reduce", () => {
 
 it("single", () => {
   expect(oddSeq.single().isNone()).toBe(true);
-  expect(
-    LazySeq.ofIterable([])
-      .single()
-      .isNone()
-  ).toBe(true);
-  expect(
-    LazySeq.ofIterable([1])
-      .single()
-      .getOrThrow()
-  ).toBe(1);
+  expect(LazySeq.ofIterable([]).single().isNone()).toBe(true);
+  expect(LazySeq.ofIterable([1]).single().getOrThrow()).toBe(1);
 });
 
 it("sortBy", () => {
@@ -218,13 +206,13 @@ it("sortBy", () => {
 
 it("sortOn", () => {
   seqShouldBe(
-    LazySeq.ofIterable([{ a: 5 }, { a: 4 }, { a: 10 }, { a: 7 }]).sortOn(x => x.a),
+    LazySeq.ofIterable([{ a: 5 }, { a: 4 }, { a: 10 }, { a: 7 }]).sortOn((x) => x.a),
     [{ a: 4 }, { a: 5 }, { a: 7 }, { a: 10 }]
   );
 });
 
 it("sumOn", () => {
-  expect(oddSeq.sumOn(x => x + 1)).toBe(2 + 4 + 6 + 8 + 10);
+  expect(oddSeq.sumOn((x) => x + 1)).toBe(2 + 4 + 6 + 8 + 10);
 });
 
 it("tail", () => {
@@ -239,7 +227,7 @@ it("take", () => {
 
 it("takeWhile", () => {
   seqShouldBe(
-    oddSeq.takeWhile(x => x < 6),
+    oddSeq.takeWhile((x) => x < 6),
     [1, 3, 5]
   );
 });
@@ -250,7 +238,7 @@ it("toArray", () => {
 
 it("toMap", () => {
   const m = oddSeq.toMap(
-    x => (x < 6 ? ["low", x] : ["high", x]),
+    (x) => (x < 6 ? ["low", x] : ["high", x]),
     (v1, v2) => v1 + v2
   );
   const expected = HashMap.of(["low", 1 + 3 + 5], ["high", 7 + 9]);
@@ -258,7 +246,7 @@ it("toMap", () => {
 });
 
 it("toSet", () => {
-  expect(oddSeq.toSet(x => x + 1).equals(HashSet.of(2, 4, 6, 8, 10))).toBe(true);
+  expect(oddSeq.toSet((x) => x + 1).equals(HashSet.of(2, 4, 6, 8, 10))).toBe(true);
 });
 
 it("toVector", () => {
@@ -266,20 +254,20 @@ it("toVector", () => {
 });
 
 it("transform", () => {
-  expect(oddSeq.transform(s => s.toArray())).toEqual([1, 3, 5, 7, 9]);
+  expect(oddSeq.transform((s) => s.toArray())).toEqual([1, 3, 5, 7, 9]);
 });
 
 it("zip", () => {
   seqShouldBe(oddSeq.zip([2, 4, 6]), [
     [1, 2],
     [3, 4],
-    [5, 6]
+    [5, 6],
   ]);
   seqShouldBe(oddSeq.zip([2, 4, 6, 8, 10, 12]), [
     [1, 2],
     [3, 4],
     [5, 6],
     [7, 8],
-    [9, 10]
+    [9, 10],
   ]);
 });

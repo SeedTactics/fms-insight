@@ -77,20 +77,20 @@ function SerialScanner(props: QrScanProps) {
 }
 
 export default connect(
-  s => ({
-    dialogOpen: s.Gui.scan_qr_dialog_open
+  (s) => ({
+    dialogOpen: s.Gui.scan_qr_dialog_open,
   }),
   {
     onClose: () => ({
       type: guiState.ActionType.SetScanQrCodeDialog,
-      open: false
+      open: false,
     }),
     onScan: (s: string) => [
       ...openMaterialBySerial(s, true),
       {
         type: guiState.ActionType.SetAddMatToQueueName,
-        queue: undefined
-      }
-    ]
+        queue: undefined,
+      },
+    ],
   }
 )(SerialScanner);

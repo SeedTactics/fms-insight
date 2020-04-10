@@ -62,13 +62,13 @@ class ManualSerialEntry extends React.PureComponent<ManualSerialEntryProps, Manu
         id="enter-serial"
         label={this.state.serial === "" ? "Serial" : "Serial (press enter)"}
         value={this.state.serial}
-        onChange={e => this.setState({ serial: e.target.value })}
-        onKeyPress={e => {
+        onChange={(e) => this.setState({ serial: e.target.value })}
+        onKeyPress={(e) => {
           if (e.key === "Enter" && this.state.serial && this.state.serial !== "") {
             e.preventDefault();
             this.props.assignSerial({
               mat: this.props.mat,
-              serial: this.state.serial
+              serial: this.state.serial,
             });
           }
         }}
@@ -119,14 +119,14 @@ function EnterSerialDialog(props: EnterSerialProps) {
 
 export default connect(
   (st: Store) => ({
-    mats: st.Gui.serial_dialog_open ? st.MaterialDetails.material : null
+    mats: st.Gui.serial_dialog_open ? st.MaterialDetails.material : null,
   }),
   {
     onClose: mkAC(guiState.ActionType.SetSerialDialogOpen),
     assignSerial: (data: matDetails.AssignSerialData) =>
       [
         matDetails.assignSerial(data),
-        { type: guiState.ActionType.SetSerialDialogOpen, open: false }
-      ] as AppActionBeforeMiddleware
+        { type: guiState.ActionType.SetSerialDialogOpen, open: false },
+      ] as AppActionBeforeMiddleware,
   }
 )(EnterSerialDialog);

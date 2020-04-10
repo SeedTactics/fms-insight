@@ -48,7 +48,7 @@ export interface JobAndGroups {
 function describePath(path: Readonly<api.IProcPathInfo>): string {
   return `${
     path.pallets.length > 1 ? "Pallets " + path.pallets.join(",") : "Pallet " + path.pallets[0]
-  }; ${path.stops.map(s => s.stationGroup + "#" + (s.stationNums ?? []).join(",")).join("->")}`;
+  }; ${path.stops.map((s) => s.stationGroup + "#" + (s.stationNums ?? []).join(",")).join("->")}`;
 }
 
 interface PathOneDetails {
@@ -59,12 +59,12 @@ interface PathOneDetails {
 function pathOneDetails(job: Readonly<api.IInProcessJob>, pathIdx: number): PathOneDetails {
   return {
     planned: job.cyclesOnFirstProcess[pathIdx] || 0,
-    path: describePath(job.procsAndPaths[0].paths[pathIdx])
+    path: describePath(job.procsAndPaths[0].paths[pathIdx]),
   };
 }
 
 function joinPathOneDetails(details: ReadonlyArray<PathOneDetails>): string {
-  const planned = LazySeq.ofIterable(details).sumOn(d => d.planned);
+  const planned = LazySeq.ofIterable(details).sumOn((d) => d.planned);
   const path = LazySeq.ofIterable(details).foldLeft("", (x, details) => x + " | " + details.path);
   return `Plan Qty ${planned} ${path}`;
 }
@@ -75,7 +75,7 @@ interface PathDetails {
 
 function pathDetails(job: Readonly<api.IInProcessJob>, procIdx: number, pathIdx: number): PathDetails {
   return {
-    path: describePath(job.procsAndPaths[procIdx].paths[pathIdx])
+    path: describePath(job.procsAndPaths[procIdx].paths[pathIdx]),
   };
 }
 
@@ -138,15 +138,13 @@ export function extractJobGroups(job: Readonly<api.IInProcessJob>): JobAndGroups
       castings.size === 1
         ? [
             {
-              casting: LazySeq.ofIterable(castings.entries())
-                .head()
-                .getOrThrow()[0]
-            }
+              casting: LazySeq.ofIterable(castings.entries()).head().getOrThrow()[0],
+            },
           ]
         : Vector.ofIterable(castings.entries())
             .map(([casting, details]) => ({ casting: casting, details: joinPathOneDetails(details) }))
-            .sortOn(c => c.casting)
+            .sortOn((c) => c.casting)
             .toArray(),
-    machinedProcs
+    machinedProcs,
   };
 }

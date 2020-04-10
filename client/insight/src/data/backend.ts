@@ -114,7 +114,7 @@ export let OtherLogBackends: ReadonlyArray<LogAPI> = [];
 
 export function setOtherLogBackends(servers: ReadonlyArray<string>) {
   otherLogServers = servers;
-  OtherLogBackends = servers.map(s => new api.LogClient(s));
+  OtherLogBackends = servers.map((s) => new api.LogClient(s));
 }
 
 export function setUserToken(u: User) {
@@ -130,7 +130,7 @@ export function setUserToken(u: User) {
   FmsServerBackend = new api.FmsClient(BackendUrl, { fetch });
   JobsBackend = new api.JobsClient(BackendUrl, { fetch });
   LogBackend = new api.LogClient(BackendUrl, { fetch });
-  OtherLogBackends = otherLogServers.map(s => new api.LogClient(s, { fetch }));
+  OtherLogBackends = otherLogServers.map((s) => new api.LogClient(s, { fetch }));
 }
 
 export interface MockData {
@@ -149,23 +149,23 @@ function initMockBackend(data: Promise<MockData>) {
         requireScanAtWash: false,
         requireWorkorderBeforeAllowWashComplete: false,
         additionalLogServers: [],
-        usingLabelPrinterForSerials: false
+        usingLabelPrinterForSerials: false,
       });
     },
     printLabel() {
       return Promise.resolve();
-    }
+    },
   };
 
   JobsBackend = {
     history(_startUTC: Date, _endUTC: Date): Promise<Readonly<api.IHistoricData>> {
-      return data.then(d => d.jobs);
+      return data.then((d) => d.jobs);
     },
     currentStatus(): Promise<Readonly<api.ICurrentStatus>> {
-      return data.then(d => d.curSt);
+      return data.then((d) => d.curSt);
     },
     mostRecentUnfilledWorkordersForPart(part: string): Promise<ReadonlyArray<Readonly<api.IPartWorkorder>>> {
-      return data.then(d => d.workorders.get(part) || []);
+      return data.then((d) => d.workorders.get(part) || []);
     },
 
     removeMaterialFromAllQueues(_materialId: number): Promise<void> {
@@ -199,16 +199,16 @@ function initMockBackend(data: Promise<MockData>) {
     ): Promise<void> {
       // do nothing
       return Promise.resolve();
-    }
+    },
   };
 
-  const serialsToMatId = data.then(d =>
-    d.events.then(evts =>
+  const serialsToMatId = data.then((d) =>
+    d.events.then((evts) =>
       LazySeq.ofIterable(evts)
-        .filter(e => e.type === api.LogType.PartMark)
-        .flatMap(e => e.material.map(m => [e.result, m.id] as [string, number]))
+        .filter((e) => e.type === api.LogType.PartMark)
+        .flatMap((e) => e.material.map((m) => [e.result, m.id] as [string, number]))
         .toMap(
-          x => x,
+          (x) => x,
           (id1, id2) => id2
         )
     )
@@ -216,19 +216,19 @@ function initMockBackend(data: Promise<MockData>) {
 
   LogBackend = {
     get(startUTC: Date, endUTC: Date): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
-      return data.then(d => d.events.then(evts => evts.filter(e => e.endUTC >= startUTC && e.endUTC <= endUTC)));
+      return data.then((d) => d.events.then((evts) => evts.filter((e) => e.endUTC >= startUTC && e.endUTC <= endUTC)));
     },
     recent(_lastSeenCounter: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
       // no recent events, everything is static
       return Promise.resolve([]);
     },
     logForMaterial(materialID: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
-      return data.then(d =>
-        d.events.then(evts => evts.filter(e => LazySeq.ofIterable(e.material).anyMatch(m => m.id === materialID)))
+      return data.then((d) =>
+        d.events.then((evts) => evts.filter((e) => LazySeq.ofIterable(e.material).anyMatch((m) => m.id === materialID)))
       );
     },
     logForSerial(serial: string): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
-      return serialsToMatId.then(s => {
+      return serialsToMatId.then((s) => {
         const mId = s.get(serial);
         if (mId.isSome()) {
           return this.logForMaterial(mId.get());
@@ -256,7 +256,7 @@ function initMockBackend(data: Promise<MockData>) {
         part: partName || "",
         proc: process,
         numproc: 1,
-        face: "1"
+        face: "1",
       });
       const evt = {
         counter: 0,
@@ -272,11 +272,11 @@ function initMockBackend(data: Promise<MockData>) {
         elapsed: "00:00:00",
         active: "00:00:00",
         details: {
-          InspectionType: inspType
-        }
+          InspectionType: inspType,
+        },
       };
-      return data.then(d =>
-        d.events.then(evts => {
+      return data.then((d) =>
+        d.events.then((evts) => {
           evts.push(evt);
           return evt;
         })
@@ -293,7 +293,7 @@ function initMockBackend(data: Promise<MockData>) {
         part: partName || "",
         proc: insp.process,
         numproc: 1,
-        face: "1"
+        face: "1",
       });
       const evt: api.ILogEntry = {
         counter: 0,
@@ -308,10 +308,10 @@ function initMockBackend(data: Promise<MockData>) {
         program: insp.inspectionType,
         elapsed: insp.elapsed,
         active: insp.active,
-        details: insp.extraData
+        details: insp.extraData,
       };
-      return data.then(d =>
-        d.events.then(evts => {
+      return data.then((d) =>
+        d.events.then((evts) => {
           evts.push(evt);
           return evt;
         })
@@ -324,7 +324,7 @@ function initMockBackend(data: Promise<MockData>) {
         part: partName || "",
         proc: wash.process,
         numproc: 1,
-        face: "1"
+        face: "1",
       });
       const evt: api.ILogEntry = {
         counter: 0,
@@ -339,10 +339,10 @@ function initMockBackend(data: Promise<MockData>) {
         program: "",
         elapsed: wash.elapsed,
         active: wash.active,
-        details: wash.extraData
+        details: wash.extraData,
       };
-      return data.then(d =>
-        d.events.then(evts => {
+      return data.then((d) =>
+        d.events.then((evts) => {
           evts.push(evt);
           return evt;
         })
@@ -361,7 +361,7 @@ function initMockBackend(data: Promise<MockData>) {
         part: partName || "",
         proc: process,
         numproc: 1,
-        face: "1"
+        face: "1",
       });
       const evt: api.ILogEntry = {
         counter: 0,
@@ -375,10 +375,10 @@ function initMockBackend(data: Promise<MockData>) {
         result: workorder,
         program: "",
         elapsed: "00:00:00",
-        active: "00:00:00"
+        active: "00:00:00",
       };
-      return data.then(d =>
-        d.events.then(evts => {
+      return data.then((d) =>
+        d.events.then((evts) => {
           evts.push(evt);
           return evt;
         })
@@ -397,7 +397,7 @@ function initMockBackend(data: Promise<MockData>) {
         part: partName || "",
         proc: process,
         numproc: 1,
-        face: "1"
+        face: "1",
       });
       const evt: api.ILogEntry = {
         counter: 0,
@@ -411,10 +411,10 @@ function initMockBackend(data: Promise<MockData>) {
         result: serial,
         program: "",
         elapsed: "00:00:00",
-        active: "00:00:00"
+        active: "00:00:00",
       };
-      return data.then(d =>
-        d.events.then(evts => {
+      return data.then((d) =>
+        d.events.then((evts) => {
           evts.push(evt);
           return evt;
         })
@@ -427,7 +427,7 @@ function initMockBackend(data: Promise<MockData>) {
         part: "",
         proc: process,
         numproc: 1,
-        face: ""
+        face: "",
       });
       const evt: api.ILogEntry = {
         counter: 0,
@@ -444,21 +444,21 @@ function initMockBackend(data: Promise<MockData>) {
         active: "00:00:00",
         details: {
           operator: operatorName || "",
-          note: notes
-        }
+          note: notes,
+        },
       };
-      return data.then(d =>
-        d.events.then(evts => {
+      return data.then((d) =>
+        d.events.then((evts) => {
           evts.push(evt);
           return evt;
         })
       );
-    }
+    },
   };
 }
 
 export function registerMockBackend() {
-  const mockDataPromise = new Promise<MockData>(function(resolve: (d: MockData) => void) {
+  const mockDataPromise = new Promise<MockData>(function (resolve: (d: MockData) => void) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).FMS_INSIGHT_RESOLVE_MOCK_DATA = resolve;
   });

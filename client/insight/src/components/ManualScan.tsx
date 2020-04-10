@@ -59,8 +59,8 @@ class ManualScan extends React.PureComponent<ManualScanProps, ManualScanState> {
             <TextField
               label={this.state.serial === "" ? "Serial" : "Serial (press enter)"}
               value={this.state.serial}
-              onChange={e => this.setState({ serial: e.target.value })}
-              onKeyPress={e => {
+              onChange={(e) => this.setState({ serial: e.target.value })}
+              onKeyPress={(e) => {
                 if (e.key === "Enter" && this.state.serial && this.state.serial !== "") {
                   e.preventDefault();
                   this.props.onScan(this.state.serial);
@@ -87,24 +87,24 @@ class ManualScan extends React.PureComponent<ManualScanProps, ManualScanState> {
 }
 
 export default connect(
-  s => ({
-    dialogOpen: s.Gui.manual_serial_entry_dialog_open
+  (s) => ({
+    dialogOpen: s.Gui.manual_serial_entry_dialog_open,
   }),
   {
     onClose: () => ({
       type: guiState.ActionType.SetManualSerialEntryDialog,
-      open: false
+      open: false,
     }),
     onScan: (s: string) => [
       ...openMaterialBySerial(s, true),
       {
         type: guiState.ActionType.SetAddMatToQueueName,
-        queue: undefined
+        queue: undefined,
       },
       {
         type: guiState.ActionType.SetManualSerialEntryDialog,
-        open: false
-      }
-    ]
+        open: false,
+      },
+    ],
   }
 )(ManualScan);

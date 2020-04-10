@@ -90,13 +90,13 @@ class ManualWorkorderEntry extends React.PureComponent<ManualWorkorderEntryProps
       <TextField
         label={this.state.workorder === "" ? "Workorder" : "Workorder (press enter)"}
         value={this.state.workorder}
-        onChange={e => this.setState({ workorder: e.target.value })}
-        onKeyPress={e => {
+        onChange={(e) => this.setState({ workorder: e.target.value })}
+        onKeyPress={(e) => {
           if (e.key === "Enter" && this.state.workorder && this.state.workorder !== "") {
             e.preventDefault();
             this.props.assignWorkorder({
               mat: this.props.mat,
-              workorder: this.state.workorder
+              workorder: this.state.workorder,
             });
           }
         }}
@@ -123,7 +123,7 @@ function SelectWorkorderDialog(props: SelectWorkorderProps) {
     } else {
       const workList = (
         <List>
-          {mat.workorders.map(w => (
+          {mat.workorders.map((w) => (
             <ListItem
               key={w.plan.workorderId}
               button
@@ -165,14 +165,14 @@ function SelectWorkorderDialog(props: SelectWorkorderProps) {
 
 export default connect(
   (st: Store) => ({
-    mats: st.Gui.workorder_dialog_open ? st.MaterialDetails.material : null
+    mats: st.Gui.workorder_dialog_open ? st.MaterialDetails.material : null,
   }),
   {
     onClose: mkAC(guiState.ActionType.SetWorkorderDialogOpen),
     assignWorkorder: (data: matDetails.AssignWorkorderData) =>
       [
         matDetails.assignWorkorder(data),
-        { type: guiState.ActionType.SetWorkorderDialogOpen, open: false }
-      ] as AppActionBeforeMiddleware
+        { type: guiState.ActionType.SetWorkorderDialogOpen, open: false },
+      ] as AppActionBeforeMiddleware,
   }
 )(SelectWorkorderDialog);

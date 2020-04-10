@@ -9,12 +9,12 @@ export class LazySeq<T> {
     return new LazySeq<T>({
       [Symbol.iterator]() {
         return f();
-      }
+      },
     });
   }
 
   static ofObject<V>(obj: { [k: string]: V }): LazySeq<[string, V]> {
-    return LazySeq.ofIterator(function*() {
+    return LazySeq.ofIterator(function* () {
       for (const k in obj) {
         if (Object.prototype.hasOwnProperty.call(obj, k)) {
           yield [k, obj[k]] as [string, V];
@@ -25,7 +25,7 @@ export class LazySeq<T> {
 
   static ofRange(start: number, end: number, step?: number): LazySeq<number> {
     const s = step || 1;
-    return LazySeq.ofIterator(function*() {
+    return LazySeq.ofIterator(function* () {
       for (let x = start; x < end; x += s) {
         yield x;
       }
@@ -56,7 +56,7 @@ export class LazySeq<T> {
 
   append(x: T): LazySeq<T> {
     const iter = this.iter;
-    return LazySeq.ofIterator(function*() {
+    return LazySeq.ofIterator(function* () {
       yield* iter;
       yield x;
     });
@@ -64,7 +64,7 @@ export class LazySeq<T> {
 
   appendAll(i: Iterable<T>): LazySeq<T> {
     const iter = this.iter;
-    return LazySeq.ofIterator(function*() {
+    return LazySeq.ofIterator(function* () {
       yield* iter;
       yield* i;
     });
@@ -85,7 +85,7 @@ export class LazySeq<T> {
 
   chunk(size: number): LazySeq<Vector<T>> {
     const iter = this.iter;
-    return LazySeq.ofIterator(function*() {
+    return LazySeq.ofIterator(function* () {
       let chunk = Vector.empty<T>();
       for (const x of iter) {
         chunk = chunk.append(x);
@@ -111,7 +111,7 @@ export class LazySeq<T> {
 
   drop(n: number): LazySeq<T> {
     const iter = this.iter;
-    return LazySeq.ofIterator(function*() {
+    return LazySeq.ofIterator(function* () {
       let cnt = 0;
       for (const x of iter) {
         if (cnt >= n) {
@@ -125,7 +125,7 @@ export class LazySeq<T> {
 
   dropWhile(f: (x: T) => boolean): LazySeq<T> {
     const iter = this.iter;
-    return LazySeq.ofIterator(function*() {
+    return LazySeq.ofIterator(function* () {
       let dropping = true;
       for (const x of iter) {
         if (dropping) {
@@ -147,7 +147,7 @@ export class LazySeq<T> {
 
   filter(f: (x: T) => boolean): LazySeq<T> {
     const iter = this.iter;
-    return LazySeq.ofIterator(function*() {
+    return LazySeq.ofIterator(function* () {
       for (const x of iter) {
         if (f(x)) {
           yield x;
@@ -167,7 +167,7 @@ export class LazySeq<T> {
 
   flatMap<S>(f: (x: T) => Iterable<S>): LazySeq<S> {
     const iter = this.iter;
-    return LazySeq.ofIterator(function*() {
+    return LazySeq.ofIterator(function* () {
       for (const x of iter) {
         yield* f(x);
       }
@@ -184,7 +184,7 @@ export class LazySeq<T> {
 
   groupBy<K>(f: (x: T) => K & WithEquality): HashMap<K, Vector<T>> {
     return this.toMap<K & WithEquality, Vector<T>>(
-      x => [f(x), Vector.of(x)] as [K & WithEquality, Vector<T>],
+      (x) => [f(x), Vector.of(x)] as [K & WithEquality, Vector<T>],
       (v1, v2) => v1.appendAll(v2)
     );
   }
@@ -209,7 +209,7 @@ export class LazySeq<T> {
 
   map<S>(f: (x: T, idx: number) => S): LazySeq<S> {
     const iter = this.iter;
-    return LazySeq.ofIterator(function*() {
+    return LazySeq.ofIterator(function* () {
       let idx = 0;
       for (const x of iter) {
         yield f(x, idx);
@@ -220,7 +220,7 @@ export class LazySeq<T> {
 
   mapOption<S>(f: (x: T) => Option<S>): LazySeq<S> {
     const iter = this.iter;
-    return LazySeq.ofIterator(function*() {
+    return LazySeq.ofIterator(function* () {
       for (const x of iter) {
         const y = f(x);
         if (y.isSome()) {
@@ -276,7 +276,7 @@ export class LazySeq<T> {
 
   prepend(x: T): LazySeq<T> {
     const iter = this.iter;
-    return LazySeq.ofIterator(function*() {
+    return LazySeq.ofIterator(function* () {
       yield x;
       yield* iter;
     });
@@ -284,7 +284,7 @@ export class LazySeq<T> {
 
   prependAll(i: Iterable<T>): LazySeq<T> {
     const iter = this.iter;
-    return LazySeq.ofIterator(function*() {
+    return LazySeq.ofIterator(function* () {
       yield* i;
       yield* iter;
     });
@@ -357,7 +357,7 @@ export class LazySeq<T> {
 
   tail(): LazySeq<T> {
     const iter = this.iter;
-    return LazySeq.ofIterator(function*() {
+    return LazySeq.ofIterator(function* () {
       let seenFirst = false;
       for (const x of iter) {
         if (seenFirst) {
@@ -371,7 +371,7 @@ export class LazySeq<T> {
 
   take(n: number): LazySeq<T> {
     const iter = this.iter;
-    return LazySeq.ofIterator(function*() {
+    return LazySeq.ofIterator(function* () {
       let cnt = 0;
       for (const x of iter) {
         if (cnt >= n) {
@@ -385,7 +385,7 @@ export class LazySeq<T> {
 
   takeWhile(f: (x: T) => boolean): LazySeq<T> {
     const iter = this.iter;
-    return LazySeq.ofIterator(function*() {
+    return LazySeq.ofIterator(function* () {
       for (const x of iter) {
         if (f(x)) {
           yield x;
@@ -416,7 +416,7 @@ export class LazySeq<T> {
         for (const x of iter) {
           yield converter(x);
         }
-      }
+      },
     });
   }
 
@@ -430,7 +430,7 @@ export class LazySeq<T> {
 
   zip<S>(other: Iterable<S>): LazySeq<[T, S]> {
     const iter = this.iter;
-    return LazySeq.ofIterator(function*() {
+    return LazySeq.ofIterator(function* () {
       const i1 = iter[Symbol.iterator]();
       const i2 = other[Symbol.iterator]();
       while (true) {

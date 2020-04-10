@@ -41,7 +41,7 @@ import {
   binCyclesByDayAndPart,
   buildCompletedPartsTable,
   buildCompletedPartSeries,
-  buildCompletedPartsHeatmapTable
+  buildCompletedPartsHeatmapTable,
 } from "./results.completed-parts";
 import { loadMockData } from "../mock-data/load";
 import { LazySeq } from "./lazyseq";
@@ -59,8 +59,8 @@ it("bins actual cycles by day", () => {
     now: addDays(now, 1),
     pledge: {
       status: PledgeStatus.Completed,
-      result: evts
-    }
+      result: evts,
+    },
   });
 
   let byDayAndPart = binCyclesByDayAndPart(st.last30.cycles.part_cycles);
@@ -71,7 +71,7 @@ it("bins actual cycles by day", () => {
       y: dayAndPart.part,
       label: "Unused",
       count: val.count,
-      activeMachineMins: val.activeMachineMins
+      activeMachineMins: val.activeMachineMins,
     }))
     .toArray();
 
@@ -82,7 +82,7 @@ it("bins actual cycles by day", () => {
   // convert to chicago time because snapshot includes date and time in UTC when formatting the byDayAndPart snapshot
   const nowChicago = new Date(Date.UTC(2018, 2, 5, 6, 0, 0)); // America/Chicago time
   const minOffset = differenceInMinutes(nowChicago, now);
-  byDayAndPart = byDayAndPart.map((dayAndPart, val) => [dayAndPart.adjustDay(d => addMinutes(d, minOffset)), val]);
+  byDayAndPart = byDayAndPart.map((dayAndPart, val) => [dayAndPart.adjustDay((d) => addMinutes(d, minOffset)), val]);
 
   expect(byDayAndPart).toMatchSnapshot("cycles binned by day and part");
 });
@@ -100,8 +100,8 @@ it("build completed series", async () => {
     now: today,
     pledge: {
       status: PledgeStatus.Completed,
-      result: evts
-    }
+      result: evts,
+    },
   });
 
   const origSeries = buildCompletedPartSeries(
@@ -110,9 +110,9 @@ it("build completed series", async () => {
     st.last30.cycles.part_cycles,
     st.last30.sim_use.production
   );
-  const adjustedSeries = origSeries.map(s => ({
+  const adjustedSeries = origSeries.map((s) => ({
     ...s,
-    days: s.days.map(d => ({ ...d, day: addMinutes(d.day, zoneOffset) }))
+    days: s.days.map((d) => ({ ...d, day: addMinutes(d.day, zoneOffset) })),
   }));
   expect(adjustedSeries).toMatchSnapshot("completed part series");
 

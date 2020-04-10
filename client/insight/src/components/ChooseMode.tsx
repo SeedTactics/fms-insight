@@ -148,33 +148,30 @@ export function ChooseMode(p: ChooseModeProps) {
   );
 }
 
-export default connect(
-  () => ({}),
-  {
-    setLoad: () => ({
-      type: routes.RouteLocation.Station_LoadMonitor,
-      payload: { num: 1 }
-    }),
-    setQueue: () => ({
-      type: routes.RouteLocation.Station_Queues
-    }),
-    setEngieering: () => ({
-      type: routes.RouteLocation.Engineering
-    }),
-    setInspect: () => ({
-      type: routes.RouteLocation.Station_InspectionMonitor
-    }),
-    setWash: () => ({
-      type: routes.RouteLocation.Station_WashMonitor
-    }),
-    setOperations: () => ({
-      type: routes.RouteLocation.Operations_Dashboard
-    }),
-    setQuality: () => ({
-      type: routes.RouteLocation.Quality_Dashboard
-    }),
-    setAnalysis: () => ({
-      type: routes.RouteLocation.Analysis_Efficiency
-    })
-  }
-)(ChooseMode);
+export default connect(() => ({}), {
+  setLoad: () => ({
+    type: routes.RouteLocation.Station_LoadMonitor,
+    payload: { num: 1 },
+  }),
+  setQueue: () => ({
+    type: routes.RouteLocation.Station_Queues,
+  }),
+  setEngieering: () => ({
+    type: routes.RouteLocation.Engineering,
+  }),
+  setInspect: () => ({
+    type: routes.RouteLocation.Station_InspectionMonitor,
+  }),
+  setWash: () => ({
+    type: routes.RouteLocation.Station_WashMonitor,
+  }),
+  setOperations: () => ({
+    type: routes.RouteLocation.Operations_Dashboard,
+  }),
+  setQuality: () => ({
+    type: routes.RouteLocation.Quality_Dashboard,
+  }),
+  setAnalysis: () => ({
+    type: routes.RouteLocation.Analysis_Efficiency,
+  }),
+})(ChooseMode);

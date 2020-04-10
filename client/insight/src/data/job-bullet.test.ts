@@ -40,7 +40,7 @@ it("converts events to points", () => {
     reasonForUserHold: "",
     holdUnholdPattern: [],
     holdUnholdPatternStartUTC: new Date(),
-    holdUnholdPatternRepeats: false
+    holdUnholdPatternRepeats: false,
   };
   const jobs: api.IInProcessJob[] = [
     {
@@ -70,8 +70,8 @@ it("converts events to points", () => {
                   program: "progabc",
                   tools: {},
                   stationGroup: "MC",
-                  expectedCycleTime: "01:15:00"
-                })
+                  expectedCycleTime: "01:15:00",
+                }),
               ],
               expectedLoadTime: "00:05:00",
               expectedUnloadTime: "00:04:00",
@@ -79,7 +79,7 @@ it("converts events to points", () => {
               simulatedAverageFlowTime: "",
               holdMachining: new api.JobHoldPattern(dummyHold),
               holdLoadUnload: new api.JobHoldPattern(dummyHold),
-              partsPerPallet: 1
+              partsPerPallet: 1,
             }),
             new api.ProcPathInfo({
               pathGroup: 1,
@@ -92,8 +92,8 @@ it("converts events to points", () => {
                   program: "progabc",
                   tools: {},
                   stationGroup: "MC",
-                  expectedCycleTime: "01:15:00"
-                })
+                  expectedCycleTime: "01:15:00",
+                }),
               ],
               expectedLoadTime: "00:05:00",
               expectedUnloadTime: "00:04:00",
@@ -101,9 +101,9 @@ it("converts events to points", () => {
               simulatedAverageFlowTime: "",
               holdMachining: new api.JobHoldPattern(dummyHold),
               holdLoadUnload: new api.JobHoldPattern(dummyHold),
-              partsPerPallet: 1
-            })
-          ]
+              partsPerPallet: 1,
+            }),
+          ],
         }),
         new api.ProcessInfo({
           paths: [
@@ -116,8 +116,8 @@ it("converts events to points", () => {
                   program: "progabc",
                   tools: {},
                   stationGroup: "MC",
-                  expectedCycleTime: "00:45:00"
-                })
+                  expectedCycleTime: "00:45:00",
+                }),
               ],
               expectedLoadTime: "00:05:00",
               expectedUnloadTime: "00:04:00",
@@ -127,12 +127,12 @@ it("converts events to points", () => {
               simulatedAverageFlowTime: "",
               holdMachining: new api.JobHoldPattern(dummyHold),
               holdLoadUnload: new api.JobHoldPattern(dummyHold),
-              partsPerPallet: 1
-            })
-          ]
-        })
-      ]
-    }
+              partsPerPallet: 1,
+            }),
+          ],
+        }),
+      ],
+    },
   ];
   const points = jobsToPoints(jobs);
   expect(points).toMatchSnapshot("points for sample jobs");

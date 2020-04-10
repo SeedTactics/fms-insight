@@ -51,7 +51,7 @@ function format_oee_hint(p: OEEBarPoint): ReadonlyArray<{ title: string; value: 
   return [
     { title: "Day", value: p.x },
     { title: "Actual Hours", value: p.y.toFixed(1) },
-    { title: "Planned Hours", value: p.planned.toFixed(1) }
+    { title: "Planned Hours", value: p.planned.toFixed(1) },
   ];
 }
 
@@ -87,9 +87,7 @@ export function OEEChart(props: OEEProps) {
                 onValueMouseOver={(p: OEEBarPoint) => setHoveredSeries({ station: series.station, day: p.x })}
                 onValueMouseOut={() => setHoveredSeries(undefined)}
               />
-              {hoveredSeries === undefined || hoveredSeries.station !== series.station ? (
-                undefined
-              ) : (
+              {hoveredSeries === undefined || hoveredSeries.station !== series.station ? undefined : (
                 <Hint
                   value={series.points.find((p: OEEBarPoint) => p.x === hoveredSeries.day)}
                   format={format_oee_hint}
@@ -102,12 +100,10 @@ export function OEEChart(props: OEEProps) {
                   orientation="horizontal"
                   items={[
                     { title: series.station + " Actual", color: actualOeeColor },
-                    { title: series.station + " Planned", color: plannedOeeColor }
+                    { title: series.station + " Planned", color: plannedOeeColor },
                   ]}
                 />
-              ) : (
-                undefined
-              )}
+              ) : undefined}
             </div>
           </div>
         </Grid>
@@ -122,7 +118,7 @@ enum ColumnId {
   ActualHours,
   ActualOEE,
   PlannedHours,
-  PlannedOEE
+  PlannedOEE,
 }
 
 const columns: ReadonlyArray<Column<ColumnId, OEEBarPoint>> = [
@@ -130,43 +126,43 @@ const columns: ReadonlyArray<Column<ColumnId, OEEBarPoint>> = [
     id: ColumnId.Date,
     numeric: false,
     label: "Date",
-    getDisplay: c => c.x,
-    getForSort: c => c.day.getTime()
+    getDisplay: (c) => c.x,
+    getForSort: (c) => c.day.getTime(),
   },
   {
     id: ColumnId.Station,
     numeric: false,
     label: "Station",
-    getDisplay: c => c.station
+    getDisplay: (c) => c.station,
   },
   {
     id: ColumnId.ActualHours,
     numeric: true,
     label: "Actual Hours",
-    getDisplay: c => c.y.toFixed(1),
-    getForSort: c => c.y
+    getDisplay: (c) => c.y.toFixed(1),
+    getForSort: (c) => c.y,
   },
   {
     id: ColumnId.ActualOEE,
     numeric: true,
     label: "Actual OEE",
-    getDisplay: c => ((c.y * 100) / 24).toFixed(0) + "%",
-    getForSort: c => c.y
+    getDisplay: (c) => ((c.y * 100) / 24).toFixed(0) + "%",
+    getForSort: (c) => c.y,
   },
   {
     id: ColumnId.PlannedHours,
     numeric: true,
     label: "Planned Hours",
-    getDisplay: c => c.planned.toFixed(1),
-    getForSort: c => c.planned
+    getDisplay: (c) => c.planned.toFixed(1),
+    getForSort: (c) => c.planned,
   },
   {
     id: ColumnId.PlannedOEE,
     numeric: true,
     label: "Planned OEE",
-    getDisplay: c => ((c.planned * 100) / 24).toFixed(0) + "%",
-    getForSort: c => c.planned
-  }
+    getDisplay: (c) => ((c.planned * 100) / 24).toFixed(0) + "%",
+    getForSort: (c) => c.planned,
+  },
 ];
 
 function dataForTable(
@@ -186,7 +182,7 @@ function dataForTable(
   const getDataC = getData;
 
   const arr = LazySeq.ofIterable(series)
-    .flatMap(e => e.points)
+    .flatMap((e) => e.points)
     .toArray();
   return arr.sort((a, b) => {
     const aVal = getDataC(a);

@@ -59,7 +59,7 @@ import {
   SortableWhiteboardRegion,
   MaterialDetailTitle,
   MaterialDetailContent,
-  PartIdenticon
+  PartIdenticon,
 } from "./Material";
 import * as api from "../../data/api";
 import * as routes from "../../data/routes";
@@ -103,7 +103,7 @@ function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) 
                 props.addExistingMat({
                   materialId: props.display_material.materialID,
                   queue: quarantineQueue,
-                  queuePosition: 0
+                  queuePosition: 0,
                 })
               }
             >
@@ -163,9 +163,7 @@ class AddSerialFound extends React.PureComponent<AddSerialFoundProps, AddSerialF
                 ))}
               </List>
             </div>
-          ) : (
-            undefined
-          )}
+          ) : undefined}
           <MaterialDetailContent mat={this.props.display_material} />
         </DialogContent>
         <DialogActions>
@@ -176,7 +174,7 @@ class AddSerialFound extends React.PureComponent<AddSerialFoundProps, AddSerialF
               this.props.addMat({
                 materialId: this.props.display_material.materialID,
                 queue: queue || "",
-                queuePosition: -1
+                queuePosition: -1,
               })
             }
           >
@@ -191,20 +189,20 @@ class AddSerialFound extends React.PureComponent<AddSerialFoundProps, AddSerialF
   }
 }
 
-const useSelectJobStyles = makeStyles(theme =>
+const useSelectJobStyles = makeStyles((theme) =>
   createStyles({
     expand: {
       transform: "rotate(-90deg)",
       transition: theme.transitions.create("transform", {
-        duration: theme.transitions.duration.shortest
-      })
+        duration: theme.transitions.duration.shortest,
+      }),
     },
     expandOpen: {
-      transform: "rotate(0deg)"
+      transform: "rotate(0deg)",
     },
     nested: {
-      paddingLeft: theme.spacing(4)
-    }
+      paddingLeft: theme.spacing(4),
+    },
   })
 );
 
@@ -223,7 +221,7 @@ function SelectCastingOrJob(props: SelectJobProps) {
       LazySeq.ofObject(props.jobs)
         .map(([_uniq, j]) => extractJobGroups(j))
         .toVector()
-        .sortOn(j => j.job.priority)
+        .sortOn((j) => j.job.priority)
         .toArray(),
     [props.jobs]
   );
@@ -244,7 +242,7 @@ function SelectCastingOrJob(props: SelectJobProps) {
             <ListItemIcon>
               <ExpandMoreIcon
                 className={clsx(classes.expand, {
-                  [classes.expandOpen]: selectedJob === j.job.unique
+                  [classes.expandOpen]: selectedJob === j.job.unique,
                 })}
               />
             </ListItemIcon>
@@ -296,10 +294,10 @@ function SelectCastingOrJob(props: SelectJobProps) {
   );
 }
 
-const ConnectedSelectJob = connect(s => ({
+const ConnectedSelectJob = connect((s) => ({
   jobs: s.Current.current_status.jobs as {
     [key: string]: Readonly<api.IInProcessJob>;
-  }
+  },
 }))(SelectCastingOrJob);
 
 interface AddNewMaterialProps {
@@ -358,12 +356,12 @@ class AddNewMaterialBody extends React.PureComponent<AddNewMaterialProps, AddNew
         partName: this.state.selected_casting.partName,
         queue: queue,
         queuePosition: -1,
-        serial: this.props.not_found_serial
+        serial: this.props.not_found_serial,
       });
       this.setState({
         selected_job: undefined,
         selected_casting: undefined,
-        selected_queue: undefined
+        selected_queue: undefined,
       });
     } else if (this.state.selected_job !== undefined) {
       this.props.addAssigned({
@@ -372,12 +370,12 @@ class AddNewMaterialBody extends React.PureComponent<AddNewMaterialProps, AddNew
         pathGroup: this.state.selected_job.path_group,
         queue: queue,
         queuePosition: -1,
-        serial: this.props.not_found_serial
+        serial: this.props.not_found_serial,
       });
       this.setState({
         selected_job: undefined,
         selected_casting: undefined,
-        selected_queue: undefined
+        selected_queue: undefined,
       });
     }
   };
@@ -398,9 +396,7 @@ class AddNewMaterialBody extends React.PureComponent<AddNewMaterialProps, AddNew
             <p>
               The serial {this.props.not_found_serial} was not found. Specify the job and process to add to the queue.
             </p>
-          ) : (
-            undefined
-          )}
+          ) : undefined}
           <div style={{ display: "flex" }}>
             {this.props.queue_name === undefined && this.props.queues.length > 1 ? (
               <div style={{ marginRight: "1em" }}>
@@ -417,9 +413,7 @@ class AddNewMaterialBody extends React.PureComponent<AddNewMaterialProps, AddNew
                   ))}
                 </List>
               </div>
-            ) : (
-              undefined
-            )}
+            ) : undefined}
             <ConnectedSelectJob
               selected_job={this.state.selected_job}
               selected_casting={this.state.selected_casting}
@@ -505,7 +499,7 @@ function QueueMatDialog(props: QueueMatDialogProps) {
 const selectMatCurrentlyInQueue = createSelector(
   (st: Store) => st.MaterialDetails.material,
   (st: Store) => st.Current.current_status.material,
-  function(mat: matDetails.MaterialDetail | null, allMats: ReadonlyArray<api.IInProcessMaterial>) {
+  function (mat: matDetails.MaterialDetail | null, allMats: ReadonlyArray<api.IInProcessMaterial>) {
     if (mat === null) {
       return false;
     }
@@ -522,39 +516,39 @@ const selectMatCurrentlyInQueue = createSelector(
 );
 
 const ConnectedMaterialDialog = connect(
-  st => ({
+  (st) => ({
     display_material: st.MaterialDetails.material,
     material_currently_in_queue: selectMatCurrentlyInQueue(st),
     addMatQueue: st.Gui.add_mat_to_queue,
     queueNames: st.Route.standalone_queues,
-    quarantineQueue: st.ServerSettings.fmsInfo?.quarantineQueue || null
+    quarantineQueue: st.ServerSettings.fmsInfo?.quarantineQueue || null,
   }),
   {
     onClose: () => [
       { type: matDetails.ActionType.CloseMaterialDialog },
-      { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined }
+      { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined },
     ],
     removeFromQueue: (mat: matDetails.MaterialDetail) =>
       [
         matDetails.removeFromQueue(mat),
         { type: matDetails.ActionType.CloseMaterialDialog },
-        { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined }
+        { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined },
       ] as AppActionBeforeMiddleware,
     addNewAssigned: (d: matDetails.AddNewMaterialToQueueData) => [
       matDetails.addNewMaterialToQueue(d),
       { type: matDetails.ActionType.CloseMaterialDialog },
-      { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined }
+      { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined },
     ],
     addNewCasting: (d: matDetails.AddNewCastingToQueueData) => [
       matDetails.addNewCastingToQueue(d),
       { type: matDetails.ActionType.CloseMaterialDialog },
-      { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined }
+      { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined },
     ],
     addExistingMat: (d: matDetails.AddExistingMaterialToQueueData) => [
       matDetails.addExistingMaterialToQueue(d),
       { type: matDetails.ActionType.CloseMaterialDialog },
-      { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined }
-    ]
+      { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined },
+    ],
   }
 )(QueueMatDialog);
 
@@ -598,11 +592,11 @@ const ChooseSerialOrDirectJob = React.memo(function ChooseSerialOrJob(props: Cho
               paddingRight: "8px",
               display: "flex",
               flexDirection: "column",
-              alignItems: "center"
+              alignItems: "center",
             }}
           >
             <div style={{ marginBottom: "2em" }}>
-              <TextField label="Serial" value={serial || ""} onChange={e => setSerial(e.target.value)} />
+              <TextField label="Serial" value={serial || ""} onChange={(e) => setSerial(e.target.value)} />
             </div>
             <div>
               <Button variant="contained" color="secondary" onClick={lookup}>
@@ -627,42 +621,42 @@ const ChooseSerialOrDirectJob = React.memo(function ChooseSerialOrJob(props: Cho
 });
 
 const ConnectedChooseSerialOrDirectJobDialog = connect(
-  st => ({
-    dialog_open: st.Gui.queue_dialog_mode_open
+  (st) => ({
+    dialog_open: st.Gui.queue_dialog_mode_open,
   }),
   {
     onClose: () =>
       [
         {
           type: guiState.ActionType.SetAddMatToQueueModeDialogOpen,
-          open: false
+          open: false,
         },
-        { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined }
+        { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined },
       ] as AppActionBeforeMiddleware,
     lookupSerial: (serial: string) =>
       [
         ...matDetails.openMaterialBySerial(serial, false),
         {
           type: guiState.ActionType.SetAddMatToQueueModeDialogOpen,
-          open: false
-        }
+          open: false,
+        },
       ] as AppActionBeforeMiddleware,
     selectJobWithoutSerial: () =>
       [
         {
           type: guiState.ActionType.SetAddMatToQueueModeDialogOpen,
-          open: false
+          open: false,
         },
-        matDetails.openMaterialDialogWithEmptyMat()
-      ] as AppActionBeforeMiddleware
+        matDetails.openMaterialDialogWithEmptyMat(),
+      ] as AppActionBeforeMiddleware,
   }
 )(ChooseSerialOrDirectJob);
 
 const queueStyles = createStyles({
   mainScrollable: {
     padding: "8px",
-    width: "100%"
-  }
+    width: "100%",
+  },
 });
 
 interface QueueProps {
@@ -679,7 +673,7 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
     .map(([q, mats]) => ({
       label: q,
       free: false,
-      material: mats
+      material: mats,
     }));
 
   let cells = queues;
@@ -688,13 +682,13 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
       {
         label: "Raw Material",
         free: true,
-        material: props.data.castings
+        material: props.data.castings,
       },
       {
         label: "In Process Material",
         free: true,
-        material: props.data.free
-      }
+        material: props.data.free,
+      },
     ]);
   }
 
@@ -715,7 +709,7 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
               props.moveMaterialInQueue({
                 materialId: region.material[se.oldIndex].materialID,
                 queue: region.label,
-                queuePosition: se.newIndex
+                queuePosition: se.newIndex,
               })
             }
           >
@@ -741,16 +735,16 @@ const buildQueueData = createSelector(
 
 export default connect(
   (st: Store) => ({
-    data: buildQueueData(st)
+    data: buildQueueData(st),
   }),
   {
     openAddToQueue: (queueName: string) =>
       [
         {
           type: guiState.ActionType.SetAddMatToQueueModeDialogOpen,
-          open: true
+          open: true,
         },
-        { type: guiState.ActionType.SetAddMatToQueueName, queue: queueName }
+        { type: guiState.ActionType.SetAddMatToQueueName, queue: queueName },
       ] as AppActionBeforeMiddleware,
     openMat: matDetails.openMaterialDialog,
     moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => [
@@ -758,9 +752,9 @@ export default connect(
         type: currentSt.ActionType.ReorderQueuedMaterial,
         queue: d.queue,
         materialId: d.materialId,
-        newIdx: d.queuePosition
+        newIdx: d.queuePosition,
       },
-      matDetails.addExistingMaterialToQueue(d)
-    ]
+      matDetails.addExistingMaterialToQueue(d),
+    ],
   }
 )(Queues);

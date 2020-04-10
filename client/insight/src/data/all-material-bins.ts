@@ -41,7 +41,7 @@ export enum MaterialBinType {
   LoadStations = "Bin_LoadStations",
   Pallets = "Bin_Pallets",
   ActiveQueues = "Bin_ActiveQueues",
-  QuarantineQueues = "Bin_Quarantine"
+  QuarantineQueues = "Bin_Quarantine",
 }
 
 export type MaterialBin =
@@ -68,7 +68,7 @@ export type MaterialBin =
     };
 
 export enum MaterialBinActionType {
-  Move = "MaterialBin_Move"
+  Move = "MaterialBin_Move",
 }
 
 export type MaterialBinId = string;
@@ -86,7 +86,7 @@ export interface MaterialBinState {
 }
 
 export const initial: MaterialBinState = {
-  curBinOrder: JSON.parse(localStorage.getItem("material-bins") || "[]")
+  curBinOrder: JSON.parse(localStorage.getItem("material-bins") || "[]"),
 };
 
 export function moveMaterialBin(
@@ -118,7 +118,7 @@ export function selectAllMaterialIntoBins(
   const queues = new Map<string, Array<Readonly<api.IInProcessMaterial>>>();
 
   const palLoc = HashMap.ofObjectDictionary(curSt.pallets).mapValues(
-    st => " (" + st.currentPalletLocation.group + " #" + st.currentPalletLocation.num.toString() + ")"
+    (st) => " (" + st.currentPalletLocation.group + " #" + st.currentPalletLocation.num.toString() + ")"
   );
 
   for (const mat of curSt.material) {
@@ -162,20 +162,20 @@ export function selectAllMaterialIntoBins(
 
   const activeQueues = LazySeq.ofObject(curSt.jobs)
     .flatMap(([_, job]) => job.procsAndPaths)
-    .flatMap(proc => proc.paths)
-    .flatMap(path => {
+    .flatMap((proc) => proc.paths)
+    .flatMap((path) => {
       const q: string[] = [];
       if (path.inputQueue !== undefined) q.push(path.inputQueue);
       if (path.outputQueue !== undefined) q.push(path.outputQueue);
       return q;
     })
-    .toSet(x => x);
+    .toSet((x) => x);
   const quarantineQueues = LazySeq.ofObject(curSt.queues)
     .filter(([qname, _]) => !activeQueues.contains(qname))
     .toSet(([qname, _]) => qname);
 
   const bins = curBinOrder.filter(
-    b => b === LoadStationBinId || b === PalletsBinId || b === ActiveQueuesBinId || quarantineQueues.contains(b)
+    (b) => b === LoadStationBinId || b === PalletsBinId || b === ActiveQueuesBinId || quarantineQueues.contains(b)
   );
   if (bins.indexOf(ActiveQueuesBinId) < 0) {
     bins.unshift(ActiveQueuesBinId);
@@ -186,13 +186,13 @@ export function selectAllMaterialIntoBins(
   if (bins.indexOf(LoadStationBinId) < 0) {
     bins.unshift(LoadStationBinId);
   }
-  for (const queue of quarantineQueues.toArray({ sortOn: x => x })) {
+  for (const queue of quarantineQueues.toArray({ sortOn: (x) => x })) {
     if (bins.indexOf(queue) < 0) {
       bins.push(queue);
     }
   }
 
-  return bins.map(binId => {
+  return bins.map((binId) => {
     if (binId === LoadStationBinId) {
       return { type: MaterialBinType.LoadStations, binId: LoadStationBinId, byLul: HashMap.ofIterable(loadStations) };
     } else if (binId === PalletsBinId) {
@@ -202,7 +202,7 @@ export function selectAllMaterialIntoBins(
         type: MaterialBinType.ActiveQueues,
         binId: ActiveQueuesBinId,
         byQueue: LazySeq.ofIterable(activeQueues)
-          .map(queueName => {
+          .map((queueName) => {
             const mat = queues.get(queueName) ?? [];
             mat.sort((m1, m2) => (m1.location.queuePosition ?? 0) - (m2.location.queuePosition ?? 0));
             return [queueName, mat] as [string, MaterialList];
@@ -210,7 +210,7 @@ export function selectAllMaterialIntoBins(
           .toMap(
             ([queueName, mat]) => [queueName, mat],
             (ms1, ms2) => ms1.concat(ms2)
-          )
+          ),
       };
     } else {
       const queueName = binId;
@@ -220,7 +220,7 @@ export function selectAllMaterialIntoBins(
         type: MaterialBinType.QuarantineQueues as const,
         binId: queueName as MaterialBinId,
         queueName,
-        material: mat
+        material: mat,
       };
     }
   });
@@ -228,7 +228,7 @@ export function selectAllMaterialIntoBins(
 
 export function createOnStateChange(): (s: MaterialBinState) => void {
   let lastBins = initial.curBinOrder;
-  return s => {
+  return (s) => {
     if (s.curBinOrder !== lastBins) {
       lastBins = s.curBinOrder;
       localStorage.setItem("material-bins", JSON.stringify(s.curBinOrder));
