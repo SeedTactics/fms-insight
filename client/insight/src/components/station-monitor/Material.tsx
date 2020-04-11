@@ -147,8 +147,9 @@ const matStyles = createStyles({
     width: "30px",
     height: "30px",
   },
-  avatarHighlight: {
+  avatarCount: {
     backgroundColor: "#757575",
+    width: "37px",
   },
 });
 
@@ -160,6 +161,7 @@ export interface MaterialSummaryProps {
   readonly displayJob?: boolean;
   readonly draggableProvided?: DraggableProvided;
   readonly hideAvatar?: boolean;
+  readonly hideEmptySerial?: boolean;
   readonly isDragging?: boolean;
   onOpen: (m: Readonly<MaterialSummary>) => void;
 }
@@ -224,9 +226,11 @@ const MatSummaryWithStyles = withStyles(matStyles)((props: MaterialSummaryProps 
                 </small>
               </div>
             ) : undefined}
-            <div>
-              <small>Serial: {props.mat.serial ? props.mat.serial : "none"}</small>
-            </div>
+            {!props.hideEmptySerial || props.mat.serial ? (
+              <div>
+                <small>Serial: {props.mat.serial ? props.mat.serial : "none"}</small>
+              </div>
+            ) : undefined}
             {props.mat.workorderId === undefined || props.mat.workorderId === "" ? undefined : (
               <div>
                 <small>Workorder: {props.mat.workorderId}</small>
@@ -275,6 +279,7 @@ export interface InProcMaterialProps {
   readonly displayJob?: boolean;
   readonly draggableProvided?: DraggableProvided;
   readonly hideAvatar?: boolean;
+  readonly hideEmptySerial?: boolean;
   readonly isDragging?: boolean;
   onOpen: (m: Readonly<MaterialSummary>) => void;
 }
@@ -290,6 +295,7 @@ export class InProcMaterial extends React.PureComponent<InProcMaterialProps> {
         hideAvatar={this.props.hideAvatar}
         displayJob={this.props.displayJob}
         isDragging={this.props.isDragging}
+        hideEmptySerial={this.props.hideEmptySerial}
       />
     );
   }
@@ -322,8 +328,10 @@ const MultiMaterialWithStyles = withStyles(matStyles)((props: MultiMaterialProps
           </div>
           <div className={props.classes.rightContent}>
             <div>
-              <Avatar className={props.classes.avatar + " " + props.classes.avatarHighlight}>
-                x{props.material.length}
+              <Avatar className={props.classes.avatar + " " + props.classes.avatarCount}>
+                {props.material.length > 100
+                  ? props.material.length.toString()
+                  : "x" + props.material.length.toString()}
               </Avatar>
             </div>
           </div>

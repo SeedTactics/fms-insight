@@ -306,15 +306,11 @@ export function selectQueueData(
       let matGroups: QueueRawMaterialGroup[] = [];
       for (const [partName, matsForPart] of matByPartThenUniq) {
         for (const [uniq, mats] of matsForPart) {
-          if (mats.length === 1) {
-            material.push(mats[0]);
-          } else {
-            matGroups.push({
-              partOrCasting: partName,
-              assignedJobUnique: uniq,
-              material: mats,
-            });
-          }
+          matGroups.push({
+            partOrCasting: partName,
+            assignedJobUnique: uniq,
+            material: mats,
+          });
         }
       }
       matGroups.sort((x, y) => {
@@ -325,7 +321,6 @@ export function selectQueueData(
           return c1;
         }
       });
-      material.sort((x, y) => (x.location.queuePosition || 0) - (y.location.queuePosition || 0));
 
       queues.push({
         label: queueName,

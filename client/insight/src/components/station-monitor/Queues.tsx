@@ -53,7 +53,13 @@ import TextField from "@material-ui/core/TextField";
 import DialogActions from "@material-ui/core/DialogActions";
 import IconButton from "@material-ui/core/IconButton";
 
-import { SortableInProcMaterial, SortableWhiteboardRegion, PartIdenticon, MultiMaterial } from "./Material";
+import {
+  SortableInProcMaterial,
+  SortableWhiteboardRegion,
+  PartIdenticon,
+  MultiMaterial,
+  InProcMaterial,
+} from "./Material";
 import * as api from "../../data/api";
 import * as routes from "../../data/routes";
 import * as guiState from "../../data/gui-state";
@@ -296,20 +302,31 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
                 key={matIdx}
                 index={matIdx}
                 mat={m}
+                hideEmptySerial
                 onOpen={props.openMat}
                 displayJob={region.rawMaterialQueue}
               />
             ))}
             {region.groupedRawMat && region.groupedRawMat.length > 0
-              ? region.groupedRawMat.map((matGroup, idx) => (
-                  <MultiMaterial
-                    key={idx}
-                    partOrCasting={matGroup.partOrCasting}
-                    assignedJobUnique={matGroup.assignedJobUnique}
-                    material={matGroup.material}
-                    onOpen={() => {}}
-                  />
-                ))
+              ? region.groupedRawMat.map((matGroup, idx) =>
+                  matGroup.material.length === 1 ? (
+                    <InProcMaterial
+                      key={idx}
+                      mat={matGroup.material[0]}
+                      onOpen={props.openMat}
+                      hideEmptySerial
+                      displayJob={region.rawMaterialQueue}
+                    />
+                  ) : (
+                    <MultiMaterial
+                      key={idx}
+                      partOrCasting={matGroup.partOrCasting}
+                      assignedJobUnique={matGroup.assignedJobUnique}
+                      material={matGroup.material}
+                      onOpen={() => {}}
+                    />
+                  )
+                )
               : undefined}
             {region.rawMaterialQueue ? (
               <RawMaterialJobTable
