@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { WithStyles, createStyles, withStyles } from "@material-ui/core/styles";
+import { WithStyles, createStyles, withStyles, makeStyles } from "@material-ui/core/styles";
 import { createSelector } from "reselect";
 import { SortEnd } from "react-sortable-hoc";
 import { HashSet } from "prelude-ts";
@@ -46,7 +46,7 @@ import Button from "@material-ui/core/Button";
 import Tooltip from "@material-ui/core/Tooltip";
 
 import { LoadStationAndQueueData, selectLoadStationAndQueueProps } from "../../data/load-station";
-import { SortableInProcMaterial, SortableWhiteboardRegion } from "./Material";
+import { SortableInProcMaterial, SortableWhiteboardRegion, PartIdenticon } from "./Material";
 import * as api from "../../data/api";
 import * as routes from "../../data/routes";
 import * as guiState from "../../data/gui-state";
@@ -59,84 +59,90 @@ import {
   ConnectedChooseSerialOrDirectJobDialog,
   ConnectedAddCastingDialog,
 } from "./QueuesAddMaterial";
-import { LazySeq } from "../../data/lazyseq";
+import { extractJobRawMaterial } from "../../data/build-job-groups";
+import { Typography } from "@material-ui/core";
 
 interface RawMaterialJobTableProps {
   readonly queue: string;
   readonly addCastings: () => void;
 }
 
-interface RawMatJobPath {
-  readonly job: Readonly<api.IInProcessJob>;
-  readonly proc1Path: number;
-  readonly path: Readonly<api.IProcPathInfo>;
-  readonly plannedQty: number;
-  readonly startedQty: number;
-  readonly assignedRaw: number;
-}
+const useTableStyles = makeStyles((theme) =>
+  createStyles({
+    labelContainer: {
+      display: "flex",
+      alignItems: "center",
+    },
+    identicon: {
+      marginRight: "0.2em",
+    },
+    pathDetails: {
+      maxWidth: "20em",
+    },
+  })
+);
 
 function RawMaterialJobTable(props: RawMaterialJobTableProps) {
   const currentJobs = useSelector((s) => s.Current.current_status.jobs);
   const mats = useSelector((s) => s.Current.current_status.material);
-
-  const jobs: ReadonlyArray<RawMatJobPath> = React.useMemo(
-    () =>
-      LazySeq.ofObject(currentJobs)
-        .flatMap(([, j]) =>
-          j.procsAndPaths[0].paths
-            .filter((p) => p.casting && p.casting !== "" && p.inputQueue == props.queue)
-            .map((path, idx) => ({
-              job: j,
-              path: path,
-              proc1Path: idx,
-              plannedQty: j.cyclesOnFirstProcess[idx],
-              startedQty:
-                (j.completed?.[0]?.[idx] || 0) +
-                LazySeq.ofIterable(mats)
-                  .filter(
-                    (m) =>
-                      (m.location.type !== api.LocType.InQueue ||
-                        (m.location.type === api.LocType.InQueue && m.location.currentQueue !== props.queue)) &&
-                      m.jobUnique === j.unique &&
-                      m.process === 1 &&
-                      m.path === idx + 1
-                  )
-                  .length(),
-              assignedRaw: LazySeq.ofIterable(mats)
-                .filter(
-                  (m) =>
-                    m.location.type === api.LocType.InQueue &&
-                    m.location.currentQueue === props.queue &&
-                    m.jobUnique === j.unique &&
-                    m.process === 1 &&
-                    m.path === idx + 1
-                )
-                .length(),
-            }))
-        )
-        .toArray(),
-    [currentJobs, mats]
-  );
+  const hasCastings = useSelector((s) => !s.Events.last30.sim_use.castingNames.isEmpty());
+  const jobs = React.useMemo(() => extractJobRawMaterial(props.queue, currentJobs, mats), [
+    props.queue,
+    currentJobs,
+    mats,
+  ]);
+  const classes = useTableStyles();
 
   return (
-    <Table style={{ margin: "1em 5em 0 5em" }}>
+    <Table style={{ margin: "1em 5em 0 5em" }} size="small">
       <TableHead>
-        <TableCell>Job</TableCell>
-        <TableCell>Starting Time</TableCell>
-        <TableCell>Material</TableCell>
-        <TableCell>Note</TableCell>
-        <TableCell align="right">Planned Quantity</TableCell>
-        <TableCell align="right">Started Quantity</TableCell>
-        <TableCell align="right">Assigned Raw Material</TableCell>
-        <TableCell align="right">Required</TableCell>
-        <TableCell align="right">Available Unassigned</TableCell>
+        <TableRow>
+          <TableCell>Job</TableCell>
+          <TableCell>Starting Time</TableCell>
+          <TableCell>Material</TableCell>
+          <TableCell>Note</TableCell>
+          <TableCell align="right">Planned Quantity</TableCell>
+          <TableCell align="right">Started Quantity</TableCell>
+          <TableCell align="right">Assigned Raw Material</TableCell>
+          <TableCell align="right">Required</TableCell>
+          <TableCell align="right">Available Unassigned</TableCell>
+        </TableRow>
       </TableHead>
       <TableBody>
         {jobs.map((j, idx) => (
           <TableRow key={idx}>
-            <TableCell>{j.job.unique}</TableCell>
+            <TableCell>
+              <div className={classes.labelContainer}>
+                <div className={classes.identicon}>
+                  <PartIdenticon part={j.job.partName} size={j.pathDetails === null ? 25 : 40} />
+                </div>
+                <div>
+                  <Typography variant="body2" component="span" display="block">
+                    {j.job.unique}
+                  </Typography>
+                  {j.pathDetails !== null ? (
+                    <Typography variant="body2" color="textSecondary" display="block" className={classes.pathDetails}>
+                      {j.pathDetails}
+                    </Typography>
+                  ) : undefined}
+                </div>
+              </div>
+            </TableCell>
             <TableCell>{j.path.simulatedStartingUTC.toLocaleString()}</TableCell>
-            <TableCell>{j.path.casting}</TableCell>
+            <TableCell>
+              {j.rawMatName === j.job.partName ? (
+                j.rawMatName
+              ) : (
+                <div className={classes.labelContainer}>
+                  <div className={classes.identicon}>
+                    <PartIdenticon part={j.rawMatName} size={25} />
+                  </div>
+                  <Typography variant="body2" display="block">
+                    {j.rawMatName}
+                  </Typography>
+                </div>
+              )}
+            </TableCell>
             <TableCell>{j.job.comment}</TableCell>
             <TableCell align="right">{j.plannedQty}</TableCell>
             <TableCell align="right">{j.startedQty}</TableCell>
@@ -150,18 +156,22 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
                 <span>{j.plannedQty - j.startedQty - j.assignedRaw}</span>
               </Tooltip>
             </TableCell>
-            <TableCell align="right">100</TableCell>
+            <TableCell align="right">{j.availableUnassigned}</TableCell>
           </TableRow>
         ))}
       </TableBody>
-      <TableFooter>
-        <TableCell colSpan={8} />
-        <TableCell align="right">
-          <Button color="primary" variant="outlined" onClick={props.addCastings}>
-            Add Raw Material
-          </Button>
-        </TableCell>
-      </TableFooter>
+      {hasCastings ? (
+        <TableFooter>
+          <TableRow>
+            <TableCell colSpan={8} />
+            <TableCell align="right">
+              <Button color="primary" variant="outlined" onClick={props.addCastings}>
+                Add Raw Material
+              </Button>
+            </TableCell>
+          </TableRow>
+        </TableFooter>
+      ) : undefined}
     </Table>
   );
 }

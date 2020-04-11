@@ -144,3 +144,73 @@ export function extractJobGroups(job: Readonly<api.IInProcessJob>): JobAndGroups
     machinedProcs,
   };
 }
+
+export interface JobRawMaterialData {
+  readonly job: Readonly<api.IInProcessJob>;
+  readonly proc1Path: number;
+  readonly path: Readonly<api.IProcPathInfo>;
+  readonly pathDetails: null | string;
+  readonly rawMatName: string;
+  readonly plannedQty: number;
+  readonly startedQty: number;
+  readonly assignedRaw: number;
+  readonly availableUnassigned: number;
+}
+
+export function extractJobRawMaterial(
+  queue: string,
+  jobs: {
+    [key: string]: Readonly<api.IInProcessJob>;
+  },
+  mats: Iterable<Readonly<api.IInProcessMaterial>>
+): ReadonlyArray<JobRawMaterialData> {
+  return LazySeq.ofObject(jobs)
+    .flatMap(([, j]) =>
+      j.procsAndPaths[0].paths
+        .filter((p) => p.inputQueue == queue)
+        .map((path, idx) => {
+          const rawMatName = path.casting && path.casting !== "" ? path.casting : j.partName;
+          return {
+            job: j,
+            proc1Path: idx,
+            path: path,
+            rawMatName: rawMatName,
+            pathDetails: j.procsAndPaths[0].paths.length === 1 ? null : describePath(path),
+            plannedQty: j.cyclesOnFirstProcess[idx],
+            startedQty:
+              (j.completed?.[0]?.[idx] || 0) +
+              LazySeq.ofIterable(mats)
+                .filter(
+                  (m) =>
+                    (m.location.type !== api.LocType.InQueue ||
+                      (m.location.type === api.LocType.InQueue && m.location.currentQueue !== queue)) &&
+                    m.jobUnique === j.unique &&
+                    m.process === 1 &&
+                    m.path === idx + 1
+                )
+                .length(),
+            assignedRaw: LazySeq.ofIterable(mats)
+              .filter(
+                (m) =>
+                  m.location.type === api.LocType.InQueue &&
+                  m.location.currentQueue === queue &&
+                  m.jobUnique === j.unique &&
+                  m.process === 0 &&
+                  m.path === idx + 1
+              )
+              .length(),
+            availableUnassigned: LazySeq.ofIterable(mats)
+              .filter(
+                (m) =>
+                  m.location.type === api.LocType.InQueue &&
+                  m.location.currentQueue === queue &&
+                  (!m.jobUnique || m.jobUnique === "") &&
+                  m.process === 0 &&
+                  m.partName === rawMatName
+              )
+              .length(),
+          };
+        })
+    )
+    .toArray();
+}
