@@ -116,8 +116,7 @@ namespace BlackMaple.MachineFramework.Controllers
         throw new BadRequestException("Part name must be non-empty");
       if (string.IsNullOrEmpty(queue))
         throw new BadRequestException("Queue must be non-empty");
-      // TODO: lookup casting for part?  This assumes part has no separate casting
-      _control.AddUnallocatedCastingToQueue(partName, 1, queue, pos, string.IsNullOrEmpty(serial) ? new string[] { } : new[] { serial });
+      _control.AddUnallocatedPartToQueue(partName, queue, pos, serial);
     }
 
     [HttpPost("casting/{castingName}")]
@@ -148,7 +147,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [ProducesResponseType(typeof(void), 200)]
     public void SetJobComment(string jobUnique, [FromBody] string comment)
     {
-      _db.SetJobComment(jobUnique, comment);
+      _control.SetJobComment(jobUnique, comment);
     }
 
     [HttpPut("material/{materialId}/queue")]
@@ -164,7 +163,15 @@ namespace BlackMaple.MachineFramework.Controllers
     [ProducesResponseType(typeof(void), 200)]
     public void RemoveMaterialFromAllQueues(long materialId)
     {
-      _control.RemoveMaterialFromAllQueues(materialId);
+      _control.RemoveMaterialFromAllQueues(new[] { materialId });
+    }
+
+    [HttpDelete("material")]
+    [ProducesResponseType(typeof(void), 200)]
+    public void BulkRemoveMaterialFromQueues([FromQuery] List<long> id)
+    {
+      if (id == null || id.Count == 0) return;
+      _control.RemoveMaterialFromAllQueues(id);
     }
 
     [HttpDelete("planned-cycles")]

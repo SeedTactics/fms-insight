@@ -220,6 +220,12 @@ namespace MazakMachineInterface
         Log.Error(ex, "Error recopying job schedules to mazak");
       }
     }
+
+    void IJobControl.SetJobComment(string jobUnique, string comment)
+    {
+      jobDB.SetJobComment(jobUnique, comment);
+      RaiseNewCurrentStatus(GetCurrentStatus());
+    }
     #endregion
 
     #region "Decrement Plan Quantity"
@@ -270,6 +276,27 @@ namespace MazakMachineInterface
     #endregion
 
     #region Queues
+    public void AddUnallocatedPartToQueue(string partName, string queue, int position, string serial)
+    {
+      string casting = partName;
+
+      // try and see if there is a job for this part with an actual casting
+      var sch = jobDB.LoadUnarchivedJobs();
+      var job = sch.Jobs.FirstOrDefault(j => j.PartName == partName);
+      if (job != null)
+      {
+        for (int path = 1; path <= job.GetNumPaths(1); path++)
+        {
+          if (!string.IsNullOrEmpty(job.GetCasting(path)))
+          {
+            casting = job.GetCasting(path);
+            break;
+          }
+        }
+      }
+
+      AddUnallocatedCastingToQueue(casting, 1, queue, position, string.IsNullOrEmpty(serial) ? new string[] { } : new string[] { serial });
+    }
     public void AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IReadOnlyList<string> serial)
     {
       if (!fmsSettings.Queues.ContainsKey(queue))
@@ -371,10 +398,11 @@ namespace MazakMachineInterface
       RaiseNewCurrentStatus(GetCurrentStatus());
     }
 
-    public void RemoveMaterialFromAllQueues(long materialId)
+    public void RemoveMaterialFromAllQueues(IReadOnlyList<long> materialIds)
     {
-      Log.Debug("Removing {matId} from all queues", materialId);
-      log.RecordRemoveMaterialFromAllQueues(materialId);
+      Log.Debug("Removing {@matId} from all queues", materialIds);
+      foreach (var materialId in materialIds)
+        log.RecordRemoveMaterialFromAllQueues(materialId);
       logReader.RecheckQueues();
       RaiseNewCurrentStatus(GetCurrentStatus());
     }

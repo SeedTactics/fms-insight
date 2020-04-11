@@ -99,6 +99,12 @@ namespace Makino
       OrderXML.WriteOrderXML(System.IO.Path.Combine(_xmlPath, "sail.xml"), newJobs, _onlyOrders);
     }
 
+    void IJobControl.SetJobComment(string jobUnique, string comment)
+    {
+      _jobDB.SetJobComment(jobUnique, comment);
+      RaiseNewCurrentStatus(GetCurrentStatus());
+    }
+
     #region Decrement
     List<JobAndDecrementQuantity> IJobControl.DecrementJobQuantites(long loadDecrementsStrictlyAfterDecrementId)
     {
@@ -122,6 +128,10 @@ namespace Makino
     #endregion
 
     #region Queues
+    public void AddUnallocatedPartToQueue(string partName, string queue, int position, string serial)
+    {
+      //do nothing
+    }
     public void AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IReadOnlyList<string> serial)
     {
       //do nothing
@@ -137,7 +147,7 @@ namespace Makino
       //do nothing
     }
 
-    public void RemoveMaterialFromAllQueues(long materialId)
+    public void RemoveMaterialFromAllQueues(IReadOnlyList<long> materialId)
     {
       //do nothing
     }

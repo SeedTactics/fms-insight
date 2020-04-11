@@ -51,8 +51,6 @@ namespace BlackMaple.MachineWatchInterface
 
     List<PartWorkorder> MostRecentUnfilledWorkordersForPart(string part);
 
-    void SetJobComment(string jobUnique, string comment);
-
     event NewJobsDelegate OnNewJobs;
   }
 }
