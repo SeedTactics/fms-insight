@@ -699,6 +699,33 @@
         }
       }
     },
+    "/api/v1/jobs/material": {
+      "delete": {
+        "tags": [
+          "jobs"
+        ],
+        "operationId": "jobs_BulkRemoveMaterialFromQueues",
+        "parameters": [
+          {
+            "type": "array",
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "collectionFormat": "multi",
+            "x-nullable": true,
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/v1/jobs/planned-cycles": {
       "delete": {
         "tags": [
@@ -915,6 +942,45 @@
             "required": true,
             "format": "int64",
             "x-nullable": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/LogEntry"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/log/events/for-material": {
+      "get": {
+        "tags": [
+          "log"
+        ],
+        "operationId": "log_LogForMaterials",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "type": "array",
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "collectionFormat": "multi",
+            "x-nullable": true,
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            }
           }
         ],
         "responses": {
