@@ -59,6 +59,7 @@ export enum ActionType {
   SetCurrentStatus = "CurStatus_SetCurrentStatus",
   ReceiveNewLogEntry = "Events_NewLogEntry",
   ReorderQueuedMaterial = "CurStatus_ReorderQueuedMaterial",
+  SetJobComment = "CurStatus_SetJobComment",
 }
 
 export type Action =
@@ -76,7 +77,8 @@ export type Action =
       materialId: number;
       queue: string;
       newIdx: number;
-    };
+    }
+  | { type: ActionType.SetJobComment; uniq: string; comment: string; pledge: Pledge<void> };
 
 type ABF = ActionBeforeMiddleware<Action>;
 
@@ -98,6 +100,15 @@ export function receiveNewLogEntry(entry: Readonly<api.ILogEntry>): ABF {
   return {
     type: ActionType.ReceiveNewLogEntry,
     entry,
+  };
+}
+
+export function setJobComment(uniq: string, comment: string): ABF {
+  return {
+    type: ActionType.SetJobComment,
+    uniq,
+    comment,
+    pledge: JobsBackend.setJobComment(uniq, comment),
   };
 }
 
@@ -255,6 +266,23 @@ export function reducer(s: State, a: Action): State {
           material: reorder_queued_mat(a.queue, a.materialId, a.newIdx, s.current_status.material),
         },
       };
+
+    case ActionType.SetJobComment:
+      switch (a.pledge.status) {
+        case PledgeStatus.Starting:
+          let newSt = s.current_status;
+          const oldJob = s.current_status.jobs[a.uniq];
+          if (oldJob) {
+            var newJob = new api.InProcessJob(oldJob);
+            newJob.comment = a.comment;
+            newSt = { ...newSt, jobs: { ...newSt.jobs, [a.uniq]: newJob } };
+          }
+          return { ...s, loading: true, loading_error: undefined, current_status: newSt };
+        case PledgeStatus.Error:
+          return { ...s, loading: false, loading_error: a.pledge.error };
+        case PledgeStatus.Completed:
+          return { ...s, loading: false };
+      }
 
     default:
       return s;

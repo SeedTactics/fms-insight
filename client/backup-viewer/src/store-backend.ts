@@ -73,6 +73,10 @@ export const JobsBackend = {
   ): Promise<ReadonlyArray<Readonly<api.IPartWorkorder>>> {
     return Promise.resolve([]);
   },
+  setJobComment(_uniq: string, _comment: string): Promise<void> {
+    // do nothing
+    return Promise.resolve();
+  },
 
   removeMaterialFromAllQueues(materialId: number): Promise<void> {
     // do nothing

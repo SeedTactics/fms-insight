@@ -39,6 +39,7 @@ export interface JobAPI {
   history(startUTC: Date, endUTC: Date): Promise<Readonly<api.IHistoricData>>;
   currentStatus(): Promise<Readonly<api.ICurrentStatus>>;
   mostRecentUnfilledWorkordersForPart(part: string): Promise<ReadonlyArray<Readonly<api.IPartWorkorder>>>;
+  setJobComment(unique: string, comment: string): Promise<void>;
 
   removeMaterialFromAllQueues(materialId: number): Promise<void>;
   setMaterialInQueue(materialId: number, queue: api.QueuePosition): Promise<void>;
@@ -173,7 +174,10 @@ function initMockBackend(data: Promise<MockData>) {
     mostRecentUnfilledWorkordersForPart(part: string): Promise<ReadonlyArray<Readonly<api.IPartWorkorder>>> {
       return data.then((d) => d.workorders.get(part) || []);
     },
-
+    setJobComment(_uniq: string, _comment: string): Promise<void> {
+      // do nothing
+      return Promise.resolve();
+    },
     removeMaterialFromAllQueues(_materialId: number): Promise<void> {
       // do nothing
       return Promise.resolve();

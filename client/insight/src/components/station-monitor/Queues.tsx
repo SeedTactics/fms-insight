@@ -44,6 +44,14 @@ import TableBody from "@material-ui/core/TableBody";
 import TableFooter from "@material-ui/core/TableFooter";
 import Button from "@material-ui/core/Button";
 import Tooltip from "@material-ui/core/Tooltip";
+import Typography from "@material-ui/core/Typography";
+import EditIcon from "@material-ui/icons/Edit";
+import Dialog from "@material-ui/core/Dialog";
+import DialogTitle from "@material-ui/core/DialogTitle";
+import DialogContent from "@material-ui/core/DialogContent";
+import TextField from "@material-ui/core/TextField";
+import DialogActions from "@material-ui/core/DialogActions";
+import IconButton from "@material-ui/core/IconButton";
 
 import { LoadStationAndQueueData, selectLoadStationAndQueueProps } from "../../data/load-station";
 import { SortableInProcMaterial, SortableWhiteboardRegion, PartIdenticon } from "./Material";
@@ -60,11 +68,11 @@ import {
   ConnectedAddCastingDialog,
 } from "./QueuesAddMaterial";
 import { extractJobRawMaterial } from "../../data/build-job-groups";
-import { Typography } from "@material-ui/core";
 
 interface RawMaterialJobTableProps {
   readonly queue: string;
   readonly addCastings: () => void;
+  readonly editNote: (job: Readonly<api.IInProcessJob>) => void;
 }
 
 const useTableStyles = makeStyles((theme) =>
@@ -143,7 +151,15 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
                 </div>
               )}
             </TableCell>
-            <TableCell>{j.job.comment}</TableCell>
+            <TableCell>
+              {j.job.comment}
+
+              <Tooltip title="Edit">
+                <IconButton size="small" onClick={() => props.editNote(j.job)}>
+                  <EditIcon />
+                </IconButton>
+              </Tooltip>
+            </TableCell>
             <TableCell align="right">{j.plannedQty}</TableCell>
             <TableCell align="right">{j.startedQty}</TableCell>
             <TableCell align="right">{j.assignedRaw}</TableCell>
@@ -176,6 +192,64 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
   );
 }
 
+interface EditNoteDialogProps {
+  readonly job: Readonly<api.IInProcessJob> | null;
+  readonly closeDialog: () => void;
+  readonly saveNote: (uniq: string, comment: string) => void;
+}
+
+const EditNoteDialog = React.memo(function EditNoteDialog(props: EditNoteDialogProps) {
+  const [note, setNote] = React.useState<string | null>(null);
+
+  function close() {
+    props.closeDialog();
+    setNote(null);
+  }
+
+  function save() {
+    if (note === null || props.job === null || note === props.job.comment) return;
+    props.saveNote(props.job.unique, note);
+    close();
+  }
+
+  return (
+    <Dialog open={props.job !== null} onClose={close}>
+      {props.job !== null ? (
+        <>
+          <DialogTitle>Edit Note For {props.job.unique}</DialogTitle>
+          <DialogContent>
+            <TextField
+              variant="outlined"
+              fullWidth
+              autoFocus
+              value={note === null ? props.job.comment || "" : note}
+              onChange={(e) => setNote(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.keyCode === 13 && note !== null) {
+                  save();
+                  e.preventDefault();
+                }
+              }}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button color="primary" disabled={note === null} onClick={save}>
+              Save Note
+            </Button>
+            <Button color="primary" onClick={close}>
+              Cancel
+            </Button>
+          </DialogActions>
+        </>
+      ) : undefined}
+    </Dialog>
+  );
+});
+
+const ConnectedEditNoteDialog = connect((s) => ({}), {
+  saveNote: currentSt.setJobComment,
+})(EditNoteDialog);
+
 const queueStyles = createStyles({
   mainScrollable: {
     padding: "8px",
@@ -197,6 +271,9 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
   }, []);
   const [addCastingQueue, setAddCastingQueue] = React.useState<string | null>(null);
   const closeAddCastingDialog = React.useCallback(() => setAddCastingQueue(null), []);
+  const [changeNoteForJob, setChangeNoteForJob] = React.useState<Readonly<api.IInProcessJob> | null>(null);
+  const closeChangeNoteDialog = React.useCallback(() => setChangeNoteForJob(null), []);
+
   const queues = props.data.queues
     .toVector()
     .sortOn(([q, _]) => q)
@@ -245,7 +322,11 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
               <SortableInProcMaterial key={matIdx} index={matIdx} mat={m} onOpen={props.openMat} />
             ))}
             {props.rawMaterialQueues.contains(region.label) ? (
-              <RawMaterialJobTable queue={region.label} addCastings={() => setAddCastingQueue(region.label)} />
+              <RawMaterialJobTable
+                queue={region.label}
+                addCastings={() => setAddCastingQueue(region.label)}
+                editNote={setChangeNoteForJob}
+              />
             ) : undefined}
           </SortableWhiteboardRegion>
         </div>
@@ -253,6 +334,7 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
       <ConnectedMaterialDialog />
       <ConnectedChooseSerialOrDirectJobDialog />
       <ConnectedAddCastingDialog queue={addCastingQueue} closeDialog={closeAddCastingDialog} />
+      <ConnectedEditNoteDialog job={changeNoteForJob} closeDialog={closeChangeNoteDialog} />
     </main>
   );
 });
