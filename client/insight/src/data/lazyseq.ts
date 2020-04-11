@@ -333,17 +333,17 @@ export class LazySeq<T> {
           if (a === b) {
             continue;
           }
-          return a < b ? Ordering.GT : Ordering.LT;
+          return a < b ? 1 : -1;
         } else {
           const a = (<ToOrderable<T>>getKey)(x);
           const b = (<ToOrderable<T>>getKey)(y);
           if (a === b) {
             continue;
           }
-          return a > b ? Ordering.GT : Ordering.LT;
+          return a < b ? -1 : 1;
         }
       }
-      return Ordering.EQ;
+      return 0;
     });
   }
 

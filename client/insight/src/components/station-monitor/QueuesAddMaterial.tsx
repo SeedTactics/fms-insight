@@ -60,7 +60,7 @@ import { Store, connect, AppActionBeforeMiddleware } from "../../store/store";
 import * as matDetails from "../../data/material-details";
 import { LazySeq } from "../../data/lazyseq";
 import { Tooltip } from "@material-ui/core";
-import { JobAndGroups, extractJobGroups } from "../../data/build-job-groups";
+import { JobAndGroups, extractJobGroups } from "../../data/queue-material";
 import { HashSet } from "prelude-ts";
 
 interface ExistingMatInQueueDialogBodyProps {

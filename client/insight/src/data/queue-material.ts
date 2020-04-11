@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as api from "./api";
 import { LazySeq } from "./lazyseq";
-import { HashSet } from "prelude-ts";
+import { HashSet, HashMap } from "prelude-ts";
 
 export interface JobAndGroups {
   readonly job: Readonly<api.IInProcessJob>;
@@ -213,4 +213,138 @@ export function extractJobRawMaterial(
         })
     )
     .toArray();
+}
+
+export type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
+
+export interface QueueRawMaterialGroup {
+  readonly partOrCasting: string;
+  readonly assignedJobUnique: string | null;
+  readonly material: MaterialList;
+}
+
+export interface QueueData {
+  readonly label: string;
+  readonly free: boolean;
+  readonly rawMaterialQueue: boolean;
+  readonly material: MaterialList;
+  readonly groupedRawMat?: ReadonlyArray<QueueRawMaterialGroup>;
+}
+
+export interface AllQueueData {
+  readonly freeLoadingMaterial: MaterialList;
+  readonly free?: MaterialList;
+  readonly queues: HashMap<string, MaterialList>;
+}
+
+export function selectQueueData(
+  displayFree: boolean,
+  queuesToCheck: ReadonlyArray<string>,
+  curSt: Readonly<api.ICurrentStatus>,
+  initialRawMatQueues: HashSet<string>
+): ReadonlyArray<QueueData> {
+  let queues: QueueData[] = [];
+
+  let rawMatQueues = initialRawMatQueues;
+  for (const [, j] of LazySeq.ofObject(curSt.jobs)) {
+    for (const path of j.procsAndPaths[0].paths) {
+      if (path.inputQueue && path.inputQueue !== "" && !rawMatQueues.contains(path.inputQueue)) {
+        rawMatQueues = rawMatQueues.add(path.inputQueue);
+      }
+    }
+  }
+
+  // first free and queued material
+  if (displayFree) {
+    queues.push({
+      label: "Loading Material",
+      free: true,
+      rawMaterialQueue: false,
+      material: curSt.material.filter((m) => m.action.processAfterLoad === 1 && m.location.type === api.LocType.Free),
+    });
+    queues.push({
+      label: "In Process Material",
+      free: true,
+      rawMaterialQueue: false,
+      material: curSt.material.filter(
+        (m) => m.action.processAfterLoad && m.action.processAfterLoad > 1 && m.location.type === api.LocType.Free
+      ),
+    });
+  }
+
+  const queueNames = [...queuesToCheck];
+  queueNames.sort((a, b) => a.localeCompare(b));
+  for (const queueName of queueNames) {
+    const isRawMat = rawMatQueues.contains(queueName);
+
+    if (isRawMat) {
+      let material: Readonly<api.IInProcessMaterial>[] = [];
+      let matByPartThenUniq = new Map<string, Map<string | null, Readonly<api.IInProcessMaterial>[]>>();
+
+      for (const m of curSt.material) {
+        if (m.location.type === api.LocType.InQueue && m.location.currentQueue === queueName) {
+          if (m.serial && m.serial !== "") {
+            material.push(m);
+          } else {
+            let matsForPart = matByPartThenUniq.get(m.partName);
+            if (!matsForPart) {
+              matsForPart = new Map<string | null, Readonly<api.IInProcessMaterial>[]>();
+              matByPartThenUniq.set(m.partName, matsForPart);
+            }
+
+            const uniq = m.jobUnique || null;
+            let matsForJob = matsForPart.get(uniq);
+            if (matsForJob) {
+              matsForJob.push(m);
+            } else {
+              matsForPart.set(uniq, [m]);
+            }
+          }
+        }
+      }
+
+      let matGroups: QueueRawMaterialGroup[] = [];
+      for (const [partName, matsForPart] of matByPartThenUniq) {
+        for (const [uniq, mats] of matsForPart) {
+          if (mats.length === 1) {
+            material.push(mats[0]);
+          } else {
+            matGroups.push({
+              partOrCasting: partName,
+              assignedJobUnique: uniq,
+              material: mats,
+            });
+          }
+        }
+      }
+      matGroups.sort((x, y) => {
+        const c1 = x.partOrCasting.localeCompare(y.partOrCasting);
+        if (c1 === 0) {
+          return (x.assignedJobUnique || "").localeCompare(y.assignedJobUnique || "");
+        } else {
+          return c1;
+        }
+      });
+      material.sort((x, y) => (x.location.queuePosition || 0) - (y.location.queuePosition || 0));
+
+      queues.push({
+        label: queueName,
+        free: false,
+        rawMaterialQueue: true,
+        material: material,
+        groupedRawMat: matGroups,
+      });
+    } else {
+      queues.push({
+        label: queueName,
+        free: false,
+        rawMaterialQueue: false,
+        material: curSt.material.filter(
+          (m) => m.location.type === api.LocType.InQueue && m.location.currentQueue === queueName
+        ),
+      });
+    }
+  }
+
+  return queues;
 }

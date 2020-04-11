@@ -252,7 +252,7 @@ const PalletColumn = withStyles(palletStyles)((props: LoadStationDisplayProps & 
   return (
     <>
       <WhiteboardRegion label="Raw Material" spaceAround>
-        {props.data.castings.map((m, idx) => (
+        {props.data.freeLoadingMaterial.map((m, idx) => (
           <MoveMaterialArrowNode key={idx} type={MoveMaterialNodeKindType.Material} action={m.action}>
             <InProcMaterial mat={m} onOpen={props.openMat} />
           </MoveMaterialArrowNode>

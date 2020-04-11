@@ -147,6 +147,9 @@ const matStyles = createStyles({
     width: "30px",
     height: "30px",
   },
+  avatarHighlight: {
+    backgroundColor: "#757575",
+  },
 });
 
 export interface MaterialSummaryProps {
@@ -154,6 +157,7 @@ export interface MaterialSummaryProps {
   readonly action?: string;
   readonly focusInspectionType?: string;
   readonly hideInspectionIcon?: boolean;
+  readonly displayJob?: boolean;
   readonly draggableProvided?: DraggableProvided;
   readonly hideAvatar?: boolean;
   readonly isDragging?: boolean;
@@ -211,6 +215,15 @@ const MatSummaryWithStyles = withStyles(matStyles)((props: MaterialSummaryProps 
           <PartIdenticon part={props.mat.partName} />
           <div className={props.classes.mainContent}>
             <Typography variant="h6">{props.mat.partName}</Typography>
+            {props.displayJob ? (
+              <div>
+                <small>
+                  {props.mat.jobUnique && props.mat.jobUnique !== ""
+                    ? "Assigned to " + props.mat.jobUnique
+                    : "Unassigned material"}
+                </small>
+              </div>
+            ) : undefined}
             <div>
               <small>Serial: {props.mat.serial ? props.mat.serial : "none"}</small>
             </div>
@@ -259,6 +272,7 @@ export class MatSummary extends React.PureComponent<MaterialSummaryProps> {
 export interface InProcMaterialProps {
   readonly mat: Readonly<api.IInProcessMaterial>; // TODO: deep readonly
   readonly displaySinglePallet?: string;
+  readonly displayJob?: boolean;
   readonly draggableProvided?: DraggableProvided;
   readonly hideAvatar?: boolean;
   readonly isDragging?: boolean;
@@ -274,6 +288,7 @@ export class InProcMaterial extends React.PureComponent<InProcMaterialProps> {
         onOpen={this.props.onOpen}
         draggableProvided={this.props.draggableProvided}
         hideAvatar={this.props.hideAvatar}
+        displayJob={this.props.displayJob}
         isDragging={this.props.isDragging}
       />
     );
@@ -281,6 +296,50 @@ export class InProcMaterial extends React.PureComponent<InProcMaterialProps> {
 }
 
 export const SortableInProcMaterial = SortableElement(InProcMaterial);
+
+export interface MultiMaterialProps {
+  readonly partOrCasting: string;
+  readonly assignedJobUnique: string | null;
+  readonly material: ReadonlyArray<api.IInProcessMaterial>;
+  onOpen: () => void;
+}
+
+const MultiMaterialWithStyles = withStyles(matStyles)((props: MultiMaterialProps & WithStyles<typeof matStyles>) => {
+  return (
+    <Paper elevation={4} className={props.classes.paper} style={{ display: "flex" }}>
+      <ButtonBase focusRipple onClick={() => props.onOpen()}>
+        <div className={props.classes.container}>
+          <PartIdenticon part={props.partOrCasting} />
+          <div className={props.classes.mainContent}>
+            <Typography variant="h6">{props.partOrCasting}</Typography>
+            <div>
+              <small>
+                {props.assignedJobUnique && props.assignedJobUnique !== ""
+                  ? "Assigned to " + props.assignedJobUnique
+                  : "Unassigned material"}
+              </small>
+            </div>
+          </div>
+          <div className={props.classes.rightContent}>
+            <div>
+              <Avatar className={props.classes.avatar + " " + props.classes.avatarHighlight}>
+                x{props.material.length}
+              </Avatar>
+            </div>
+          </div>
+        </div>
+      </ButtonBase>
+    </Paper>
+  );
+});
+
+// decorate doesn't work well with classes yet.
+// https://github.com/Microsoft/TypeScript/issues/4881
+export class MultiMaterial extends React.PureComponent<MultiMaterialProps> {
+  render() {
+    return <MultiMaterialWithStyles {...this.props} />;
+  }
+}
 
 export class MaterialDetailTitle extends React.PureComponent<{
   partName: string;

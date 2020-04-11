@@ -93,7 +93,7 @@ export interface LoadStationAndQueueData {
   readonly pallet?: Readonly<api.IPalletStatus>;
   readonly face: HashMap<number, MaterialList>;
   readonly stationStatus?: HashMap<string, { pal?: PalletData; queued?: PalletData }>;
-  readonly castings: MaterialList;
+  readonly freeLoadingMaterial: MaterialList;
   readonly free?: MaterialList;
   readonly queues: HashMap<string, MaterialList>;
 }
@@ -119,7 +119,7 @@ export function selectLoadStationAndQueueProps(
 
   let byFace: HashMap<number, api.IInProcessMaterial[]> = HashMap.empty();
   let palName: string | undefined;
-  let castings: ReadonlyArray<Readonly<api.IInProcessMaterial>> = [];
+  let freeLoading: ReadonlyArray<Readonly<api.IInProcessMaterial>> = [];
   let stationStatus: HashMap<string, { pal?: PalletData; queued?: PalletData }> | undefined;
 
   // first free and queued material
@@ -157,7 +157,7 @@ export function selectLoadStationAndQueueProps(
       .groupBy((m) => m.location.face || 0)
       .mapValues((ms) => ms.toArray());
 
-    castings = curSt.material.filter(
+    freeLoading = curSt.material.filter(
       (m) =>
         m.action.type === api.ActionType.Loading &&
         m.action.loadOntoPallet === palName &&
@@ -176,7 +176,7 @@ export function selectLoadStationAndQueueProps(
         }
       })
     );
-    [...castings, ...(free || [])].forEach((m) => {
+    [...freeLoading, ...(free || [])].forEach((m) => {
       if (m.action.type === api.ActionType.Loading && m.action.loadOntoPallet === palName) {
         const face = m.action.loadOntoFace;
         if (face !== undefined && !byFace.containsKey(face)) {
@@ -187,7 +187,9 @@ export function selectLoadStationAndQueueProps(
   } else {
     stationStatus = buildPallets(curSt);
     if (displayFree) {
-      castings = curSt.material.filter((m) => m.action.processAfterLoad === 1 && m.location.type === api.LocType.Free);
+      freeLoading = curSt.material.filter(
+        (m) => m.action.processAfterLoad === 1 && m.location.type === api.LocType.Free
+      );
     }
   }
 
@@ -196,7 +198,7 @@ export function selectLoadStationAndQueueProps(
     pallet: pal,
     face: byFace,
     stationStatus: stationStatus,
-    castings: castings,
+    freeLoadingMaterial: freeLoading,
     free: free,
     queues: queueNames.mergeWith(queueMat, (m1, m2) => [...m1, ...m2]),
   };

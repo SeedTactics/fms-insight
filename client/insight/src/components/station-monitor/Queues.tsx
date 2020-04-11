@@ -53,8 +53,7 @@ import TextField from "@material-ui/core/TextField";
 import DialogActions from "@material-ui/core/DialogActions";
 import IconButton from "@material-ui/core/IconButton";
 
-import { LoadStationAndQueueData, selectLoadStationAndQueueProps } from "../../data/load-station";
-import { SortableInProcMaterial, SortableWhiteboardRegion, PartIdenticon } from "./Material";
+import { SortableInProcMaterial, SortableWhiteboardRegion, PartIdenticon, MultiMaterial } from "./Material";
 import * as api from "../../data/api";
 import * as routes from "../../data/routes";
 import * as guiState from "../../data/gui-state";
@@ -67,7 +66,7 @@ import {
   ConnectedChooseSerialOrDirectJobDialog,
   ConnectedAddCastingDialog,
 } from "./QueuesAddMaterial";
-import { extractJobRawMaterial } from "../../data/build-job-groups";
+import { QueueData, selectQueueData, extractJobRawMaterial } from "../../data/queue-material";
 
 interface RawMaterialJobTableProps {
   readonly queue: string;
@@ -258,8 +257,7 @@ const queueStyles = createStyles({
 });
 
 interface QueueProps {
-  readonly data: LoadStationAndQueueData;
-  readonly rawMaterialQueues: HashSet<string>;
+  readonly data: ReadonlyArray<QueueData>;
   openMat: (m: Readonly<MaterialSummary>) => void;
   openAddToQueue: (queueName: string) => void;
   moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
@@ -274,35 +272,10 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
   const [changeNoteForJob, setChangeNoteForJob] = React.useState<Readonly<api.IInProcessJob> | null>(null);
   const closeChangeNoteDialog = React.useCallback(() => setChangeNoteForJob(null), []);
 
-  const queues = props.data.queues
-    .toVector()
-    .sortOn(([q, _]) => q)
-    .map(([q, mats]) => ({
-      label: q,
-      free: false,
-      material: mats,
-    }));
-
-  let cells = queues;
-  if (props.data.free) {
-    cells = queues.prependAll([
-      {
-        label: "Raw Material",
-        free: true,
-        material: props.data.castings,
-      },
-      {
-        label: "In Process Material",
-        free: true,
-        material: props.data.free,
-      },
-    ]);
-  }
-
   return (
     <main data-testid="stationmonitor-queues" className={props.classes.mainScrollable}>
-      {cells.zipWithIndex().map(([region, idx]) => (
-        <div style={{ borderBottom: "1px solid rgba(0,0,0,0.12)" }} key={idx}>
+      {props.data.map((region, idx) => (
+        <div style={idx < props.data.length - 1 ? { borderBottom: "1px solid rgba(0,0,0,0.12)" } : undefined} key={idx}>
           <SortableWhiteboardRegion
             axis="xy"
             label={region.label}
@@ -319,9 +292,26 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
             }
           >
             {region.material.map((m, matIdx) => (
-              <SortableInProcMaterial key={matIdx} index={matIdx} mat={m} onOpen={props.openMat} />
+              <SortableInProcMaterial
+                key={matIdx}
+                index={matIdx}
+                mat={m}
+                onOpen={props.openMat}
+                displayJob={region.rawMaterialQueue}
+              />
             ))}
-            {props.rawMaterialQueues.contains(region.label) ? (
+            {region.groupedRawMat && region.groupedRawMat.length > 0
+              ? region.groupedRawMat.map((matGroup, idx) => (
+                  <MultiMaterial
+                    key={idx}
+                    partOrCasting={matGroup.partOrCasting}
+                    assignedJobUnique={matGroup.assignedJobUnique}
+                    material={matGroup.material}
+                    onOpen={() => {}}
+                  />
+                ))
+              : undefined}
+            {region.rawMaterialQueue ? (
               <RawMaterialJobTable
                 queue={region.label}
                 addCastings={() => setAddCastingQueue(region.label)}
@@ -341,16 +331,20 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
 
 const buildQueueData = createSelector(
   (st: Store) => st.Current.current_status,
+  (st: Store) => st.Events.last30.sim_use.rawMaterialQueues,
   (st: Store) => st.Route,
-  (curStatus: Readonly<api.ICurrentStatus>, route: routes.State): LoadStationAndQueueData => {
-    return selectLoadStationAndQueueProps(-1, route.standalone_queues, route.standalone_free_material, curStatus);
+  (
+    curStatus: Readonly<api.ICurrentStatus>,
+    rawMatQueues: HashSet<string>,
+    route: routes.State
+  ): ReadonlyArray<QueueData> => {
+    return selectQueueData(route.standalone_free_material, route.standalone_queues, curStatus, rawMatQueues);
   }
 );
 
 export default connect(
   (st: Store) => ({
     data: buildQueueData(st),
-    rawMaterialQueues: st.Events.last30.sim_use.rawMaterialQueues,
   }),
   {
     openAddToQueue: (queueName: string) =>
