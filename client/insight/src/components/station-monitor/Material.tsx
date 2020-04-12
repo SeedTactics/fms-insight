@@ -306,7 +306,7 @@ export const SortableInProcMaterial = SortableElement(InProcMaterial);
 export interface MultiMaterialProps {
   readonly partOrCasting: string;
   readonly assignedJobUnique: string | null;
-  readonly material: ReadonlyArray<api.IInProcessMaterial>;
+  readonly material: ReadonlyArray<Readonly<api.IInProcessMaterial>>;
   onOpen: () => void;
 }
 

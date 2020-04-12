@@ -42,6 +42,7 @@ export interface JobAPI {
   setJobComment(unique: string, comment: string): Promise<void>;
 
   removeMaterialFromAllQueues(materialId: number): Promise<void>;
+  bulkRemoveMaterialFromQueues(materialIds: ReadonlyArray<number> | null): Promise<void>;
   setMaterialInQueue(materialId: number, queue: api.QueuePosition): Promise<void>;
   addUnprocessedMaterialToQueue(
     jobUnique: string,
@@ -71,6 +72,7 @@ export interface LogAPI {
   get(startUTC: Date, endUTC: Date): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   recent(lastSeenCounter: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   logForMaterial(materialID: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
+  logForMaterials(materialIDs: ReadonlyArray<number> | null): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   logForSerial(serial: string): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   getWorkorders(ids: string[]): Promise<ReadonlyArray<Readonly<api.IWorkorderSummary>>>;
 
@@ -182,6 +184,10 @@ function initMockBackend(data: Promise<MockData>) {
       // do nothing
       return Promise.resolve();
     },
+    bulkRemoveMaterialFromQueues(_materialIds: ReadonlyArray<number> | null): Promise<void> {
+      // do nothing
+      return Promise.resolve();
+    },
     setMaterialInQueue(_materialId: number, _queue: api.QueuePosition): Promise<void> {
       // do nothing
       return Promise.resolve();
@@ -241,6 +247,12 @@ function initMockBackend(data: Promise<MockData>) {
     logForMaterial(materialID: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
       return data.then((d) =>
         d.events.then((evts) => evts.filter((e) => LazySeq.ofIterable(e.material).anyMatch((m) => m.id === materialID)))
+      );
+    },
+    logForMaterials(materialIDs: ReadonlyArray<number>): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
+      const matIds = new Set(materialIDs);
+      return data.then((d) =>
+        d.events.then((evts) => evts.filter((e) => LazySeq.ofIterable(e.material).anyMatch((m) => matIds.has(m.id))))
       );
     },
     logForSerial(serial: string): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {

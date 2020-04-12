@@ -59,6 +59,7 @@ import {
   PartIdenticon,
   MultiMaterial,
   InProcMaterial,
+  MaterialDetailTitle,
 } from "./Material";
 import * as api from "../../data/api";
 import * as routes from "../../data/routes";
@@ -72,7 +73,9 @@ import {
   ConnectedChooseSerialOrDirectJobDialog,
   ConnectedAddCastingDialog,
 } from "./QueuesAddMaterial";
-import { QueueData, selectQueueData, extractJobRawMaterial } from "../../data/queue-material";
+import { QueueData, selectQueueData, extractJobRawMaterial, loadRawMaterialEvents } from "../../data/queue-material";
+import CircularProgress from "@material-ui/core/CircularProgress";
+import { LogEntries } from "../LogEntry";
 
 interface RawMaterialJobTableProps {
   readonly queue: string;
@@ -255,6 +258,65 @@ const ConnectedEditNoteDialog = connect((s) => ({}), {
   saveNote: currentSt.setJobComment,
 })(EditNoteDialog);
 
+interface MultiMaterialDialogProps {
+  readonly material: ReadonlyArray<Readonly<api.IInProcessMaterial>> | null;
+  readonly closeDialog: () => void;
+}
+
+const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: MultiMaterialDialogProps) {
+  const [loading, setLoading] = React.useState(false);
+  const [events, setEvents] = React.useState<ReadonlyArray<Readonly<api.ILogEntry>>>([]);
+
+  React.useEffect(() => {
+    if (props.material === null) return;
+    let isSubscribed = true;
+    setLoading(true);
+    loadRawMaterialEvents(props.material)
+      .then((events) => {
+        if (isSubscribed) {
+          setEvents(events);
+        }
+      })
+      .finally(() => setLoading(false));
+    return () => {
+      isSubscribed = false;
+    };
+  }, [props.material]);
+
+  function close() {
+    props.closeDialog();
+    setLoading(false);
+    setEvents([]);
+  }
+
+  const mat1 = props.material?.[0];
+  return (
+    <Dialog open={props.material !== null} onClose={close} maxWidth="md">
+      <DialogTitle disableTypography>
+        {mat1 && props.material && props.material.length > 0 ? (
+          <MaterialDetailTitle
+            partName={mat1.partName}
+            subtitle={
+              props.material.length.toString() +
+              (mat1.jobUnique && mat1.jobUnique !== "" ? " assigned to " + mat1.jobUnique : " unassigned")
+            }
+          />
+        ) : (
+          "Material"
+        )}
+      </DialogTitle>
+      <DialogContent>
+        {loading ? <CircularProgress color="secondary" /> : <LogEntries entries={events} copyToClipboard />}
+      </DialogContent>
+      <DialogActions>
+        <Button color="primary" onClick={close}>
+          Close
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+});
+
 const queueStyles = createStyles({
   mainScrollable: {
     padding: "8px",
@@ -277,6 +339,10 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
   const closeAddCastingDialog = React.useCallback(() => setAddCastingQueue(null), []);
   const [changeNoteForJob, setChangeNoteForJob] = React.useState<Readonly<api.IInProcessJob> | null>(null);
   const closeChangeNoteDialog = React.useCallback(() => setChangeNoteForJob(null), []);
+  const [multiMaterialDialog, setMultiMaterialDialog] = React.useState<ReadonlyArray<
+    Readonly<api.IInProcessMaterial>
+  > | null>(null);
+  const closeMultiMatDialog = React.useCallback(() => setMultiMaterialDialog(null), []);
 
   return (
     <main data-testid="stationmonitor-queues" className={props.classes.mainScrollable}>
@@ -323,7 +389,7 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
                       partOrCasting={matGroup.partOrCasting}
                       assignedJobUnique={matGroup.assignedJobUnique}
                       material={matGroup.material}
-                      onOpen={() => {}}
+                      onOpen={() => setMultiMaterialDialog(matGroup.material)}
                     />
                   )
                 )
@@ -342,6 +408,7 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
       <ConnectedChooseSerialOrDirectJobDialog />
       <ConnectedAddCastingDialog queue={addCastingQueue} closeDialog={closeAddCastingDialog} />
       <ConnectedEditNoteDialog job={changeNoteForJob} closeDialog={closeChangeNoteDialog} />
+      <MultiMaterialDialog material={multiMaterialDialog} closeDialog={closeMultiMatDialog} />
     </main>
   );
 });

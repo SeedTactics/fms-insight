@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as api from "./api";
 import { LazySeq } from "./lazyseq";
 import { HashSet, HashMap } from "prelude-ts";
+import { LogBackend } from "./backend";
 
 export interface JobAndGroups {
   readonly job: Readonly<api.IInProcessJob>;
@@ -342,4 +343,14 @@ export function selectQueueData(
   }
 
   return queues;
+}
+
+export async function loadRawMaterialEvents(
+  material: ReadonlyArray<Readonly<api.IInProcessMaterial>>
+): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
+  const events: Array<ReadonlyArray<Readonly<api.ILogEntry>>> = [];
+  for (const chunk of LazySeq.ofIterable(material).chunk(15)) {
+    events.push(await LogBackend.logForMaterials(chunk.map((m) => m.materialID)));
+  }
+  return ([] as Array<Readonly<api.ILogEntry>>).concat(...events);
 }
