@@ -73,6 +73,15 @@ interface ExistingMatInQueueDialogBodyProps {
 
 function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) {
   const quarantineQueue = props.quarantineQueue;
+  const allowRemove = React.useMemo(() => {
+    let currentlyLoading = false;
+    for (const e of props.display_material.events) {
+      if (e.type === api.LogType.LoadUnloadCycle) {
+        currentlyLoading = e.startofcycle;
+      }
+    }
+    return !currentlyLoading;
+  }, [props.display_material.events]);
   return (
     <>
       <DialogTitle disableTypography>
@@ -82,26 +91,28 @@ function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) 
         <MaterialDetailContent mat={props.display_material} />
       </DialogContent>
       <DialogActions>
-        {quarantineQueue === null ? (
-          <Button color="primary" onClick={() => props.removeFromQueue(props.display_material)}>
-            Remove From System
-          </Button>
-        ) : (
-          <Tooltip title={"Move to " + quarantineQueue}>
-            <Button
-              color="primary"
-              onClick={() =>
-                props.addExistingMat({
-                  materialId: props.display_material.materialID,
-                  queue: quarantineQueue,
-                  queuePosition: 0,
-                })
-              }
-            >
-              Quarantine Material
+        {allowRemove ? (
+          quarantineQueue === null ? (
+            <Button color="primary" onClick={() => props.removeFromQueue(props.display_material)}>
+              Remove From System
             </Button>
-          </Tooltip>
-        )}
+          ) : (
+            <Tooltip title={"Move to " + quarantineQueue}>
+              <Button
+                color="primary"
+                onClick={() =>
+                  props.addExistingMat({
+                    materialId: props.display_material.materialID,
+                    queue: quarantineQueue,
+                    queuePosition: 0,
+                  })
+                }
+              >
+                Quarantine Material
+              </Button>
+            </Tooltip>
+          )
+        ) : undefined}
         <Button onClick={props.onClose} color="primary">
           Close
         </Button>

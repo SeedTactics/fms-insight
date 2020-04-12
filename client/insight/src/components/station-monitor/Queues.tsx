@@ -52,6 +52,7 @@ import DialogContent from "@material-ui/core/DialogContent";
 import TextField from "@material-ui/core/TextField";
 import DialogActions from "@material-ui/core/DialogActions";
 import IconButton from "@material-ui/core/IconButton";
+import CircularProgress from "@material-ui/core/CircularProgress";
 
 import {
   SortableInProcMaterial,
@@ -74,8 +75,9 @@ import {
   ConnectedAddCastingDialog,
 } from "./QueuesAddMaterial";
 import { QueueData, selectQueueData, extractJobRawMaterial, loadRawMaterialEvents } from "../../data/queue-material";
-import CircularProgress from "@material-ui/core/CircularProgress";
 import { LogEntries } from "../LogEntry";
+import { JobsBackend } from "../../data/backend";
+import { LazySeq } from "../../data/lazyseq";
 
 interface RawMaterialJobTableProps {
   readonly queue: string;
@@ -266,6 +268,8 @@ interface MultiMaterialDialogProps {
 const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: MultiMaterialDialogProps) {
   const [loading, setLoading] = React.useState(false);
   const [events, setEvents] = React.useState<ReadonlyArray<Readonly<api.ILogEntry>>>([]);
+  const [showRemove, setShowRemove] = React.useState(false);
+  const [removeCnt, setRemoveCnt] = React.useState<number>(NaN);
 
   React.useEffect(() => {
     if (props.material === null) return;
@@ -285,8 +289,26 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
 
   function close() {
     props.closeDialog();
+    setShowRemove(false);
+    setRemoveCnt(NaN);
     setLoading(false);
     setEvents([]);
+  }
+
+  function remove() {
+    if (showRemove) {
+      if (!isNaN(removeCnt)) {
+        setLoading(true);
+        JobsBackend.bulkRemoveMaterialFromQueues(
+          LazySeq.ofIterable(props.material || [])
+            .take(removeCnt)
+            .map((m) => m.materialID)
+            .toArray()
+        ).finally(close);
+      }
+    } else {
+      setShowRemove(true);
+    }
   }
 
   const mat1 = props.material?.[0];
@@ -307,8 +329,28 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
       </DialogTitle>
       <DialogContent>
         {loading ? <CircularProgress color="secondary" /> : <LogEntries entries={events} copyToClipboard />}
+        {showRemove && props.material ? (
+          <div style={{ marginTop: "1em" }}>
+            <TextField
+              type="number"
+              variant="outlined"
+              fullWidth
+              label="Quantity to Remove"
+              inputProps={{ min: "1", max: props.material.length.toString() }}
+              value={isNaN(removeCnt) ? "" : removeCnt}
+              onChange={(e) => setRemoveCnt(parseInt(e.target.value))}
+            />
+          </div>
+        ) : undefined}
       </DialogContent>
       <DialogActions>
+        <Button color="primary" onClick={remove} disabled={loading || (showRemove && isNaN(removeCnt))}>
+          {loading && showRemove
+            ? "Removing..."
+            : showRemove && !isNaN(removeCnt)
+            ? `Remove ${removeCnt} material`
+            : "Remove Material"}
+        </Button>
         <Button color="primary" onClick={close}>
           Close
         </Button>

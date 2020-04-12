@@ -185,7 +185,10 @@ export function extractJobRawMaterial(
                 .filter(
                   (m) =>
                     (m.location.type !== api.LocType.InQueue ||
-                      (m.location.type === api.LocType.InQueue && m.location.currentQueue !== queue)) &&
+                      (m.location.type === api.LocType.InQueue && m.location.currentQueue !== queue) ||
+                      (m.location.type === api.LocType.InQueue &&
+                        m.location.currentQueue === queue &&
+                        m.action.type === api.ActionType.Loading)) &&
                     m.jobUnique === j.unique &&
                     m.process === 1 &&
                     m.path === idx + 1
@@ -285,7 +288,7 @@ export function selectQueueData(
 
       for (const m of curSt.material) {
         if (m.location.type === api.LocType.InQueue && m.location.currentQueue === queueName) {
-          if (m.serial && m.serial !== "") {
+          if ((m.serial && m.serial !== "") || m.action.type !== api.ActionType.Waiting) {
             material.push(m);
           } else {
             let matsForPart = matByPartThenUniq.get(m.partName);
