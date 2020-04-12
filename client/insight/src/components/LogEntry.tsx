@@ -146,6 +146,16 @@ function displayMat(mats: ReadonlyArray<api.ILogMaterial>) {
   return mat;
 }
 
+function displayQueueMat(mats: ReadonlyArray<api.ILogMaterial>) {
+  if (mats.length > 1) {
+    return `${mats[0].part} x${mats.length}`;
+  } else if (mats.length === 1) {
+    return mats[0].part;
+  } else {
+    return "";
+  }
+}
+
 function display(props: LogEntryProps): JSX.Element {
   const entry = props.entry;
   switch (entry.type) {
@@ -239,14 +249,14 @@ function display(props: LogEntryProps): JSX.Element {
     case api.LogType.AddToQueue:
       return (
         <span>
-          {displayMat(entry.material)} added to queue <span className={props.classes.queue}>{entry.loc}</span>
+          {displayQueueMat(entry.material)} added to queue <span className={props.classes.queue}>{entry.loc}</span>
         </span>
       );
 
     case api.LogType.RemoveFromQueue:
       return (
         <span>
-          {displayMat(entry.material)} removed from queue <span className={props.classes.queue}>{entry.loc}</span>
+          {displayQueueMat(entry.material)} removed from queue <span className={props.classes.queue}>{entry.loc}</span>
         </span>
       );
 

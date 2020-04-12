@@ -35,6 +35,7 @@ import * as api from "./api";
 import { LazySeq } from "./lazyseq";
 import { HashSet, HashMap } from "prelude-ts";
 import { LogBackend } from "./backend";
+import { differenceInSeconds } from "date-fns";
 
 export interface JobAndGroups {
   readonly job: Readonly<api.IInProcessJob>;
@@ -348,9 +349,34 @@ export function selectQueueData(
 export async function loadRawMaterialEvents(
   material: ReadonlyArray<Readonly<api.IInProcessMaterial>>
 ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
-  const events: Array<ReadonlyArray<Readonly<api.ILogEntry>>> = [];
+  const events: Array<Readonly<api.ILogEntry>> = [];
   for (const chunk of LazySeq.ofIterable(material).chunk(15)) {
-    events.push(await LogBackend.logForMaterials(chunk.map((m) => m.materialID)));
+    events.push(...(await LogBackend.logForMaterials(chunk.map((m) => m.materialID))));
   }
-  return ([] as Array<Readonly<api.ILogEntry>>).concat(...events);
+  events.sort((a, b) => a.endUTC.getTime() - b.endUTC.getTime());
+
+  const groupedEvents: Array<Readonly<api.ILogEntry>> = [];
+  for (let i = 0; i < events.length; i++) {
+    const evt = events[i];
+    if (evt.type === api.LogType.AddToQueue || evt.type === api.LogType.RemoveFromQueue) {
+      const material: Array<api.LogMaterial> = [...evt.material];
+      while (
+        i + 1 < events.length &&
+        events[i + 1].type === evt.type &&
+        differenceInSeconds(events[i + 1].endUTC, evt.endUTC) < 10
+      ) {
+        material.push(...events[i + 1].material);
+        i += 1;
+      }
+      if (material.length === evt.material.length) {
+        groupedEvents.push(evt);
+      } else {
+        groupedEvents.push({ ...evt, material: material });
+      }
+    } else {
+      groupedEvents.push(events[i]);
+    }
+  }
+
+  return groupedEvents;
 }
