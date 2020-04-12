@@ -373,7 +373,7 @@ async function loadWorkordersForPart(part: string): Promise<Vector<WorkorderPlan
   const works = await JobsBackend.mostRecentUnfilledWorkordersForPart(part);
   const summaries: api.IWorkorderSummary[] = [];
   for (const ws of LazySeq.ofIterable(works).chunk(16)) {
-    summaries.push(...(await LogBackend.getWorkorders(ws.map((w) => w.workorderId).toArray())));
+    summaries.push(...(await LogBackend.getWorkorders(ws.map((w) => w.workorderId))));
   }
   return computeWorkorders(part, works, summaries);
 }

@@ -56,7 +56,7 @@ it("arrangeBy", () => {
 });
 
 it("chunk", () => {
-  seqShouldBe(oddSeq.chunk(2), [Vector.of(1, 3), Vector.of(5, 7), Vector.of(9)]);
+  seqShouldBe(oddSeq.chunk(2), [[1, 3], [5, 7], [9]]);
 });
 
 it("contains", () => {

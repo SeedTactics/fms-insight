@@ -83,18 +83,18 @@ export class LazySeq<T> {
     return Option.some(m);
   }
 
-  chunk(size: number): LazySeq<Vector<T>> {
+  chunk(size: number): LazySeq<ReadonlyArray<T>> {
     const iter = this.iter;
     return LazySeq.ofIterator(function* () {
-      let chunk = Vector.empty<T>();
+      let chunk: T[] = [];
       for (const x of iter) {
-        chunk = chunk.append(x);
-        if (chunk.length() === size) {
+        chunk.push(x);
+        if (chunk.length === size) {
           yield chunk;
-          chunk = Vector.empty<T>();
+          chunk = [];
         }
       }
-      if (chunk.length() > 0) {
+      if (chunk.length > 0) {
         yield chunk;
       }
     });

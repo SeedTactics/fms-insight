@@ -53,7 +53,6 @@ export interface MonthSelectProps {
 const months: ReadonlyArray<ReadonlyArray<Date>> = LazySeq.ofRange(0, 12, 1)
   .map((m) => new Date(2019, m, 1))
   .chunk(3)
-  .map((chunk) => chunk.toArray())
   .toArray();
 
 export default React.memo(function MonthSelect(props: MonthSelectProps) {
