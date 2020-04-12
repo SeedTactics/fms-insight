@@ -297,7 +297,7 @@ namespace MazakMachineInterface
 
       AddUnallocatedCastingToQueue(casting, 1, queue, position, string.IsNullOrEmpty(serial) ? new string[] { } : new string[] { serial });
     }
-    public void AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IReadOnlyList<string> serial)
+    public void AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serial)
     {
       if (!fmsSettings.Queues.ContainsKey(queue))
       {
@@ -398,7 +398,7 @@ namespace MazakMachineInterface
       RaiseNewCurrentStatus(GetCurrentStatus());
     }
 
-    public void RemoveMaterialFromAllQueues(IReadOnlyList<long> materialIds)
+    public void RemoveMaterialFromAllQueues(IList<long> materialIds)
     {
       Log.Debug("Removing {@matId} from all queues", materialIds);
       foreach (var materialId in materialIds)

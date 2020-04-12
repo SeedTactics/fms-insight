@@ -132,7 +132,7 @@ namespace Makino
     {
       //do nothing
     }
-    public void AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IReadOnlyList<string> serial)
+    public void AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serial)
     {
       //do nothing
     }
@@ -147,7 +147,7 @@ namespace Makino
       //do nothing
     }
 
-    public void RemoveMaterialFromAllQueues(IReadOnlyList<long> materialId)
+    public void RemoveMaterialFromAllQueues(IList<long> materialId)
     {
       //do nothing
     }

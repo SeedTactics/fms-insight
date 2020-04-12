@@ -201,7 +201,7 @@ namespace DebugMachineWatchApiServer
       Serilog.Log.Information("AddUnallocatedPartToQueue: {part} {queue} {position} {serial}", part, queue, position, serial);
     }
 
-    public void AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IReadOnlyList<string> serials)
+    public void AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serials)
     {
       Serilog.Log.Information("AddUnallocatedCastingToQueue: {casting} x{qty} {queue} {position} {@serials}", casting, qty, queue, position, serials);
       for (int i = 0; i < qty; i++)
@@ -294,7 +294,7 @@ namespace DebugMachineWatchApiServer
 
       OnNewStatus(CurrentStatus);
     }
-    public void RemoveMaterialFromAllQueues(IReadOnlyList<long> materialIds)
+    public void RemoveMaterialFromAllQueues(IList<long> materialIds)
     {
       Serilog.Log.Information("RemoveMaterialFromAllQueues {@matId}", materialIds);
 
