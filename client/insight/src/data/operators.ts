@@ -35,7 +35,7 @@ import { HashSet } from "prelude-ts";
 
 export enum ActionType {
   SetOperator = "Operators_SetOperator",
-  RemoveOperator = "Operators_Remove"
+  RemoveOperator = "Operators_Remove",
 }
 
 export type Action =
@@ -49,13 +49,13 @@ export interface State {
 
 export const initial = {
   operators: HashSet.ofIterable<string>(JSON.parse(localStorage.getItem("operators") || "[]")),
-  current: localStorage.getItem("current-operator") || undefined
+  current: localStorage.getItem("current-operator") || undefined,
 };
 
 export function createOnStateChange(): (s: State) => void {
   let lastOpers = initial.operators;
   let lastCurrent = initial.current;
-  return s => {
+  return (s) => {
     if (s.operators !== lastOpers) {
       lastOpers = s.operators;
       localStorage.setItem("operators", JSON.stringify(s.operators.toArray()));
@@ -80,13 +80,13 @@ export function reducer(s: State, a: Action): State {
     case ActionType.SetOperator:
       return {
         operators: s.operators.contains(a.operator) ? s.operators : s.operators.add(a.operator),
-        current: a.operator
+        current: a.operator,
       };
     case ActionType.RemoveOperator:
       if (s.operators.contains(a.operator)) {
         return {
           operators: s.operators.remove(a.operator),
-          current: s.current === a.operator ? undefined : s.current
+          current: s.current === a.operator ? undefined : s.current,
         };
       } else {
         return s;

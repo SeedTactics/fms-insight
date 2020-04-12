@@ -68,20 +68,20 @@ function splitPartCycleToDays(cycle: CycleData, totalVal: number): Array<{ day: 
     return [
       {
         day: startDay,
-        value: totalVal
-      }
+        value: totalVal,
+      },
     ];
   } else {
     const startDayPct = differenceInMinutes(endDay, cycle.x) / totalVal;
     return [
       {
         day: startDay,
-        value: totalVal * startDayPct
+        value: totalVal * startDayPct,
       },
       {
         day: endDay,
-        value: totalVal * (1 - startDayPct)
-      }
+        value: totalVal * (1 - startDayPct),
+      },
     ];
   }
 }
@@ -91,15 +91,15 @@ export function binCyclesByDayAndStat(
   extractValue: (c: PartCycleData) => number
 ): HashMap<DayAndStation, number> {
   return LazySeq.ofIterable(cycles)
-    .flatMap(point =>
-      splitPartCycleToDays(point, extractValue(point)).map(x => ({
+    .flatMap((point) =>
+      splitPartCycleToDays(point, extractValue(point)).map((x) => ({
         ...x,
         station: stat_name_and_num(point.stationGroup, point.stationNumber),
-        isLabor: point.isLabor
+        isLabor: point.isLabor,
       }))
     )
     .toMap(
-      p => [new DayAndStation(p.day, p.station), p.value] as [DayAndStation, number],
+      (p) => [new DayAndStation(p.day, p.station), p.value] as [DayAndStation, number],
       (v1, v2) => v1 + v2
     );
 }
@@ -123,8 +123,8 @@ function splitElapsedToDays(simUse: SimStationUse, extractValue: (c: SimStationU
       {
         day: startDay,
         station: simUse.station,
-        value: extractValue(simUse)
-      }
+        value: extractValue(simUse),
+      },
     ];
   } else {
     const totalVal = extractValue(simUse);
@@ -134,13 +134,13 @@ function splitElapsedToDays(simUse: SimStationUse, extractValue: (c: SimStationU
       {
         day: startDay,
         station: simUse.station,
-        value: totalVal * (1 - endDayPercentage)
+        value: totalVal * (1 - endDayPercentage),
       },
       {
         day: endDay,
         station: simUse.station,
-        value: totalVal * endDayPercentage
-      }
+        value: totalVal * endDayPercentage,
+      },
     ];
   }
 }
@@ -150,9 +150,9 @@ export function binSimStationUseByDayAndStat(
   extractValue: (c: SimStationUse) => number
 ): HashMap<DayAndStation, number> {
   return LazySeq.ofIterable(simUses)
-    .flatMap(s => splitElapsedToDays(s, extractValue))
+    .flatMap((s) => splitElapsedToDays(s, extractValue))
     .toMap(
-      s => [new DayAndStation(s.day, s.station), s.value] as [DayAndStation, number],
+      (s) => [new DayAndStation(s.day, s.station), s.value] as [DayAndStation, number],
       (v1, v2) => v1 + v2
     );
 }
@@ -181,19 +181,19 @@ export function buildOeeSeries(
   cycles: Iterable<PartCycleData>,
   statUse: Iterable<SimStationUse>
 ): ReadonlyArray<OEEBarSeries> {
-  const filteredCycles = LazySeq.ofIterable(cycles).filter(e => isLabor === e.isLabor && e.x >= start && e.x <= end);
-  const actualBins = binCyclesByDayAndStat(filteredCycles, c => c.activeMinutes);
+  const filteredCycles = LazySeq.ofIterable(cycles).filter((e) => isLabor === e.isLabor && e.x >= start && e.x <= end);
+  const actualBins = binCyclesByDayAndStat(filteredCycles, (c) => c.activeMinutes);
   const filteredStatUse = LazySeq.ofIterable(statUse).filter(
-    e => isLabor === e.station.startsWith("L/U") && e.end >= start && e.start <= end
+    (e) => isLabor === e.station.startsWith("L/U") && e.end >= start && e.start <= end
   );
-  const plannedBins = binSimStationUseByDayAndStat(filteredStatUse, c => c.utilizationTime - c.plannedDownTime);
+  const plannedBins = binSimStationUseByDayAndStat(filteredStatUse, (c) => c.utilizationTime - c.plannedDownTime);
 
   const series: Array<OEEBarSeries> = [];
   const statNames = actualBins
     .keySet()
     .addAll(plannedBins.keySet())
-    .map(e => e.station)
-    .toArray({ sortOn: x => x });
+    .map((e) => e.station)
+    .toArray({ sortOn: (x) => x });
 
   for (const stat of statNames) {
     const points: Array<OEEBarPoint> = [];
@@ -206,12 +206,12 @@ export function buildOeeSeries(
         y: actual.getOrElse(0) / 60,
         planned: planned.getOrElse(0) / 60,
         station: stat,
-        day: d
+        day: d,
       });
     }
     series.push({
       station: stat,
-      points: points
+      points: points,
     });
   }
   return series;
@@ -242,15 +242,15 @@ class HeatmapClipboardCell {
 
 export function buildOeeHeatmapTable(yTitle: string, points: ReadonlyArray<HeatmapClipboardPoint>): string {
   const cells = LazySeq.ofIterable(points).toMap(
-    p => [new HeatmapClipboardCell(p.x.getTime(), p.y), p],
+    (p) => [new HeatmapClipboardCell(p.x.getTime(), p.y), p],
     (_, c) => c // cells should be unique, but just in case take the second
   );
   const days = LazySeq.ofIterable(points)
-    .toSet(p => p.x.getTime())
-    .toArray({ sortOn: x => x });
+    .toSet((p) => p.x.getTime())
+    .toArray({ sortOn: (x) => x });
   const rows = LazySeq.ofIterable(points)
-    .toSet(p => p.y)
-    .toArray({ sortOn: x => x });
+    .toSet((p) => p.y)
+    .toArray({ sortOn: (x) => x });
 
   let table = "<table>\n<thead><tr><th>" + yTitle + "</th>";
   for (const x of days) {

@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as api from "./api";
 import { duration } from "moment";
-import { Vector } from "prelude-ts";
+import { Vector, HashSet } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 import { part_and_proc } from "./events.cycles";
 
@@ -54,16 +54,20 @@ export interface SimPartCompleted {
 export interface SimUseState {
   readonly station_use: Vector<SimStationUse>;
   readonly production: Vector<SimPartCompleted>;
+  readonly rawMaterialQueues: HashSet<string>;
+  readonly castingNames: HashSet<string>;
 }
 
 export const initial: SimUseState = {
   station_use: Vector.empty(),
-  production: Vector.empty()
+  production: Vector.empty(),
+  rawMaterialQueues: HashSet.empty(),
+  castingNames: HashSet.empty(),
 };
 
 export enum ExpireOldDataType {
   ExpireEarlierThan,
-  NoExpire
+  NoExpire,
 }
 
 export type ExpireOldData =
@@ -81,12 +85,14 @@ export function process_sim_use(
 ): SimUseState {
   let stations = st.station_use;
   let production = st.production;
+  let rawMatQueues = st.rawMaterialQueues;
+  let castingNames = st.castingNames;
 
   switch (expire.type) {
     case ExpireOldDataType.ExpireEarlierThan: {
       // check if nothing to expire and no new data
-      const minStat = stations.minOn(e => e.end.getTime());
-      const minProd = production.minOn(e => e.completeTime.getTime());
+      const minStat = stations.minOn((e) => e.end.getTime());
+      const minProd = production.minOn((e) => e.completeTime.getTime());
 
       if (
         (minStat.isNone() || minStat.get().start >= expire.d) &&
@@ -98,8 +104,8 @@ export function process_sim_use(
       }
 
       // filter old events
-      stations = stations.filter(e => e.start >= expire.d);
-      production = production.filter(x => x.completeTime >= expire.d);
+      stations = stations.filter((e) => e.start >= expire.d);
+      production = production.filter((x) => x.completeTime >= expire.d);
 
       break;
     }
@@ -111,15 +117,15 @@ export function process_sim_use(
       break;
   }
 
-  const newStationUse = LazySeq.ofIterable(newHistory.stationUse).map(simUse => ({
+  const newStationUse = LazySeq.ofIterable(newHistory.stationUse).map((simUse) => ({
     station: stat_name(simUse),
     start: simUse.startUTC,
     end: simUse.endUTC,
     utilizationTime: duration(simUse.utilizationTime).asMinutes(),
-    plannedDownTime: duration(simUse.plannedDownTime).asMinutes()
+    plannedDownTime: duration(simUse.plannedDownTime).asMinutes(),
   }));
 
-  const newProd = LazySeq.ofObject(newHistory.jobs).flatMap(function*([_, jParam]: [string, api.JobPlan]) {
+  const newProd = LazySeq.ofObject(newHistory.jobs).flatMap(function* ([_, jParam]: [string, api.JobPlan]) {
     const j = jParam;
     for (let proc = 0; proc < j.procsAndPaths.length; proc++) {
       const procInfo = j.procsAndPaths[proc];
@@ -135,7 +141,7 @@ export function process_sim_use(
             part: part_and_proc(j.partName, proc + 1),
             completeTime: prod.timeUTC,
             quantity: prod.quantity - prevQty,
-            expectedMachineMins: machTime
+            expectedMachineMins: machTime,
           };
           prevQty = prod.quantity;
         }
@@ -143,9 +149,21 @@ export function process_sim_use(
     }
   });
 
+  for (const [, j] of LazySeq.ofObject(newHistory.jobs)) {
+    for (const path of j.procsAndPaths[0].paths) {
+      if (path.casting && path.casting !== "" && !castingNames.contains(path.casting)) {
+        castingNames = castingNames.add(path.casting);
+      }
+      if (path.inputQueue && path.inputQueue !== "" && !rawMatQueues.contains(path.inputQueue)) {
+        rawMatQueues = rawMatQueues.add(path.inputQueue);
+      }
+    }
+  }
+
   return {
-    ...st,
     station_use: stations.appendAll(newStationUse),
-    production: production.appendAll(newProd)
+    production: production.appendAll(newProd),
+    rawMaterialQueues: rawMatQueues,
+    castingNames: castingNames,
   };
 }

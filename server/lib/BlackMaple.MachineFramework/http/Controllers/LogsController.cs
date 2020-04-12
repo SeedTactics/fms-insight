@@ -125,6 +125,13 @@ namespace BlackMaple.MachineFramework.Controllers
       return _server.GetLogForMaterial(materialID);
     }
 
+    [HttpGet("events/for-material")]
+    public List<LogEntry> LogForMaterials([FromQuery] List<long> id)
+    {
+      if (id == null || id.Count == 0) return new List<LogEntry>();
+      return _server.GetLogForMaterial(id);
+    }
+
     [HttpGet("events/for-serial/{serial}")]
     [EnableCors("AllowOtherLogServers")]
     public List<LogEntry> LogForSerial(string serial)

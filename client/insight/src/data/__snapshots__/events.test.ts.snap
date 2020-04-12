@@ -562,7 +562,9 @@ Object {
     },
   },
   "sim_use": Object {
+    "castingNames": Array [],
     "production": Array [],
+    "rawMaterialQueues": Array [],
     "station_use": Array [],
   },
 }
@@ -1416,7 +1418,9 @@ Object {
     },
   ],
   "sim_use": Object {
+    "castingNames": Array [],
     "production": Array [],
+    "rawMaterialQueues": Array [],
     "station_use": Array [],
   },
 }
@@ -2288,7 +2292,9 @@ Object {
     },
   ],
   "sim_use": Object {
+    "castingNames": Array [],
     "production": Array [],
+    "rawMaterialQueues": Array [],
     "station_use": Array [],
   },
 }
@@ -3142,7 +3148,9 @@ Object {
     },
   ],
   "sim_use": Object {
+    "castingNames": Array [],
     "production": Array [],
+    "rawMaterialQueues": Array [],
     "station_use": Array [],
   },
 }
@@ -4013,7 +4021,9 @@ Object {
     },
   ],
   "sim_use": Object {
+    "castingNames": Array [],
     "production": Array [],
+    "rawMaterialQueues": Array [],
     "station_use": Array [],
   },
 }

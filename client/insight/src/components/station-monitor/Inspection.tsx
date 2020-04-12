@@ -67,7 +67,7 @@ function InspButtons(props: InspButtonsProps) {
       mat: props.display_material,
       inspType: props.inspection_type,
       success,
-      operator: props.operator
+      operator: props.operator,
     });
   }
 
@@ -79,9 +79,7 @@ function InspButtons(props: InspButtonsProps) {
           type={props.inspection_type}
           operator={props.operator || null}
         />
-      ) : (
-        undefined
-      )}
+      ) : undefined}
       {props.display_material && props.quarantineQueue !== null ? (
         <Tooltip title={"Move to " + props.quarantineQueue}>
           <Button
@@ -91,7 +89,7 @@ function InspButtons(props: InspButtonsProps) {
                 ? props.moveToQueue({
                     materialId: props.display_material.materialID,
                     queue: props.quarantineQueue,
-                    queuePosition: 0
+                    queuePosition: 0,
                   })
                 : undefined
             }
@@ -99,9 +97,7 @@ function InspButtons(props: InspButtonsProps) {
             Quarantine Material
           </Button>
         </Tooltip>
-      ) : (
-        undefined
-      )}
+      ) : undefined}
       <Button color="primary" onClick={() => markInspComplete(true)}>
         Mark {props.inspection_type} Success
       </Button>
@@ -139,11 +135,9 @@ function InspDialog(props: InspDialogProps) {
       allowNote
       onClose={props.onClose}
       extraDialogElements={
-        !displayMat || !multipleInspTypes ? (
-          undefined
-        ) : (
+        !displayMat || !multipleInspTypes ? undefined : (
           <>
-            {multipleInspTypes.map(i => (
+            {multipleInspTypes.map((i) => (
               <DialogActions key={i}>
                 <InspButtons
                   display_material={displayMat}
@@ -159,9 +153,7 @@ function InspDialog(props: InspDialogProps) {
         )
       }
       buttons={
-        !singleInspectionType || !displayMat ? (
-          undefined
-        ) : (
+        !singleInspectionType || !displayMat ? undefined : (
           <InspButtons
             display_material={displayMat}
             operator={props.operator}
@@ -177,22 +169,22 @@ function InspDialog(props: InspDialogProps) {
 }
 
 const ConnectedInspDialog = connect(
-  st => ({
+  (st) => ({
     display_material: st.MaterialDetails.material,
     focusInspectionType: st.Route.selected_insp_type || "",
     operator: st.ServerSettings.user
       ? st.ServerSettings.user.profile.name || st.ServerSettings.user.profile.sub
       : st.Operators.current,
-    quarantineQueue: st.ServerSettings.fmsInfo?.quarantineQueue || null
+    quarantineQueue: st.ServerSettings.fmsInfo?.quarantineQueue || null,
   }),
   {
     onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
     completeInspection: (data: matDetails.CompleteInspectionData) =>
       [
         matDetails.completeInspection(data),
-        { type: matDetails.ActionType.CloseMaterialDialog }
+        { type: matDetails.ActionType.CloseMaterialDialog },
       ] as AppActionBeforeMiddleware,
-    moveToQueue: (d: matDetails.AddExistingMaterialToQueueData) => matDetails.addExistingMaterialToQueue(d)
+    moveToQueue: (d: matDetails.AddExistingMaterialToQueueData) => matDetails.addExistingMaterialToQueue(d),
   }
 )(InspDialog);
 
@@ -266,14 +258,14 @@ const extractRecentInspections = createSelector(
     const uninspected = Array.from(
       inspType === undefined
         ? LazySeq.ofIterable(mats.valueIterable()).filter(
-            m =>
+            (m) =>
               m.last_unload_time !== undefined &&
               m.last_unload_time >= uninspectedCutoff &&
               m.signaledInspections.length > 0 &&
               !checkAllCompleted(m)
           )
         : LazySeq.ofIterable(mats.valueIterable()).filter(
-            m =>
+            (m) =>
               m.last_unload_time !== undefined &&
               m.last_unload_time >= uninspectedCutoff &&
               m.signaledInspections.includes(inspType) &&
@@ -288,14 +280,14 @@ const extractRecentInspections = createSelector(
     const inspected = Array.from(
       inspType === undefined
         ? LazySeq.ofIterable(mats.valueIterable()).filter(
-            m =>
+            (m) =>
               m.completed_inspect_time !== undefined &&
               m.completed_inspect_time >= inspectedCutoff &&
               m.signaledInspections.length > 0 &&
               checkAllCompleted(m)
           )
         : LazySeq.ofIterable(mats.valueIterable()).filter(
-            m =>
+            (m) =>
               m.completed_inspect_time !== undefined &&
               m.completed_inspect_time >= inspectedCutoff &&
               m.signaledInspections.includes(inspType) &&
@@ -311,7 +303,7 @@ const extractRecentInspections = createSelector(
 
     return {
       waiting_to_inspect: uninspected,
-      inspect_completed: inspected
+      inspect_completed: inspected,
     };
   }
 );
@@ -319,9 +311,9 @@ const extractRecentInspections = createSelector(
 export default connect(
   (st: Store) => ({
     recent_inspections: extractRecentInspections(st),
-    focusInspectionType: st.Route.selected_insp_type || ""
+    focusInspectionType: st.Route.selected_insp_type || "",
   }),
   {
-    openMat: matDetails.openMaterialDialog
+    openMat: matDetails.openMaterialDialog,
   }
 )(Inspection);

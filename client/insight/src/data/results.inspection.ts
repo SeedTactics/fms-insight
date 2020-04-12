@@ -70,17 +70,17 @@ export function groupInspectionsByPath(
   sortOn: ToOrderable<TriggeredInspectionEntry> | { desc: ToOrderable<TriggeredInspectionEntry> }
 ): HashMap<string, InspectionsForPath> {
   const failed = LazySeq.ofIterable(entries)
-    .mapOption(e => {
+    .mapOption((e) => {
       if (e.result.type === InspectionLogResultType.Completed && !e.result.success) {
         return Option.some(e.materialID);
       } else {
         return Option.none<number>();
       }
     })
-    .toSet(e => e);
+    .toSet((e) => e);
 
   return LazySeq.ofIterable(entries)
-    .mapOption(e => {
+    .mapOption((e) => {
       if (dateRange && (e.time < dateRange.start || e.time > dateRange.end)) {
         return Option.none<TriggeredInspectionEntry>();
       }
@@ -93,16 +93,16 @@ export function groupInspectionsByPath(
             workorder: e.workorder,
             toInspect: e.result.toInspect,
             path: buildPathString(e.result.actualPath),
-            failed: failed.contains(e.materialID)
+            failed: failed.contains(e.materialID),
           });
         default:
           return Option.none<TriggeredInspectionEntry>();
       }
     })
-    .groupBy(e => e.path)
-    .mapValues(mats => ({
-      material: mats.sortOn(sortOn, e => e.time.getTime()),
-      failedCnt: mats.sumOn(e => (e.failed ? 1 : 0))
+    .groupBy((e) => e.path)
+    .mapValues((mats) => ({
+      material: mats.sortOn(sortOn, (e) => e.time.getTime()),
+      failedCnt: mats.sumOn((e) => (e.failed ? 1 : 0)),
     }));
 }
 
@@ -121,7 +121,7 @@ export function extractFailedInspections(
   end: Date
 ): Vector<FailedInspectionEntry> {
   return LazySeq.ofIterable(entries)
-    .mapOption(e => {
+    .mapOption((e) => {
       if (e.time < start || e.time > end) {
         return Option.none<FailedInspectionEntry>();
       }
@@ -132,7 +132,7 @@ export function extractFailedInspections(
           serial: e.serial,
           workorder: e.workorder,
           inspType: e.inspType,
-          part: e.part
+          part: e.part,
         });
       } else {
         return Option.none<FailedInspectionEntry>();
@@ -175,8 +175,8 @@ export function buildInspectionTable(
   table += "<th>Serial</th><th>Workorder</th><th>Inspected</th><th>Failed</th>";
   table += "</tr></thead>\n<tbody>\n";
 
-  const groups = groupInspectionsByPath(entries, undefined, e => e.time.getTime());
-  const paths = groups.keySet().toArray({ sortOn: x => x });
+  const groups = groupInspectionsByPath(entries, undefined, (e) => e.time.getTime());
+  const paths = groups.keySet().toArray({ sortOn: (x) => x });
 
   for (const path of paths) {
     const data = groups.get(path).getOrThrow();
@@ -211,7 +211,7 @@ export function buildFailedInspTable(entries: Vector<FailedInspectionEntry>): st
   table += "<th>Date</th><th>Part</th><th>Inspection</th><th>Serial</th><th>Workorder</th>";
   table += "</tr></thead>\n<tbody>\n";
 
-  for (const e of entries.sortOn({ desc: x => x.time.getTime() })) {
+  for (const e of entries.sortOn({ desc: (x) => x.time.getTime() })) {
     table += "<tr>";
     table += "<td>" + e.time.toLocaleString() + "</td>";
     table += "<td>" + e.part + "</td>";

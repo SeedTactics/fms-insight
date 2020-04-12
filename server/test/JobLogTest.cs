@@ -164,6 +164,7 @@ namespace MachineWatchTest
 
       List<LogEntry> logs = new List<LogEntry>();
       var logsForMat1 = new List<LogEntry>();
+      var logsForMat2 = new List<LogEntry>();
 
       LogMaterial mat1 = new LogMaterial(
           _jobLog.AllocateMaterialID("grgaegr", "pp2", 23), "grgaegr", 7, "pp2", 23, "", "", "face22");
@@ -206,6 +207,7 @@ namespace MachineWatchTest
                     TimeSpan.FromMinutes(52), TimeSpan.FromMinutes(25))
             });
       logs.Add(loadEndActualCycle.First());
+      logsForMat2.Add(loadEndActualCycle.First());
       _jobLog.ToolPocketSnapshotForCycle(loadEndActualCycle.First().Counter).Should().BeEmpty();
 
       var machineStartPockets = new List<JobLogDB.ToolPocketSnapshot> {
@@ -282,6 +284,7 @@ namespace MachineWatchTest
       };
       machineEndActualCycle.Should().BeEquivalentTo(machineEndExpectedCycle);
       logs.Add(machineEndActualCycle);
+      logsForMat2.Add(machineEndActualCycle);
 
       var unloadStartActualCycle = _jobLog.RecordUnloadStart(
           mats: new[] { mat15, mat19 }.Select(JobLogDB.EventLogMaterial.FromLogMat),
@@ -313,6 +316,7 @@ namespace MachineWatchTest
                     TimeSpan.FromMinutes(152), TimeSpan.FromMinutes(55))
             });
       logs.Add(unloadEndActualCycle.First());
+      logsForMat2.Add(unloadEndActualCycle.First());
 
 
       // ----- check loading of logs -----
@@ -343,6 +347,7 @@ namespace MachineWatchTest
           DateTime.Parse("4/6/2011"), "Pallll", LogType.MachineCycle, "MC", 3));
 
       CheckLog(logsForMat1, _jobLog.GetLogForMaterial(1), start);
+      CheckLog(logsForMat1.Concat(logsForMat2).ToList(), _jobLog.GetLogForMaterial(new[] { 1, mat2.MaterialID }), start);
       _jobLog.GetLogForMaterial(18).Should().BeEmpty();
 
       var markLog = _jobLog.RecordSerialForMaterialID(JobLogDB.EventLogMaterial.FromLogMat(mat1), "ser1");

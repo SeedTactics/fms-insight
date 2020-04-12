@@ -61,8 +61,8 @@ export function buildPallets(
           ...(m.get(stat) || {}),
           pal: {
             pallet: pal,
-            material: matByPallet.get(pal.pallet) || []
-          }
+            material: matByPallet.get(pal.pallet) || [],
+          },
         });
         break;
       }
@@ -73,8 +73,8 @@ export function buildPallets(
           ...(m.get(stat2) || {}),
           queued: {
             pallet: pal,
-            material: matByPallet.get(pal.pallet) || []
-          }
+            material: matByPallet.get(pal.pallet) || [],
+          },
         });
         break;
       }
@@ -93,7 +93,7 @@ export interface LoadStationAndQueueData {
   readonly pallet?: Readonly<api.IPalletStatus>;
   readonly face: HashMap<number, MaterialList>;
   readonly stationStatus?: HashMap<string, { pal?: PalletData; queued?: PalletData }>;
-  readonly castings: MaterialList;
+  readonly freeLoadingMaterial: MaterialList;
   readonly free?: MaterialList;
   readonly queues: HashMap<string, MaterialList>;
 }
@@ -119,22 +119,22 @@ export function selectLoadStationAndQueueProps(
 
   let byFace: HashMap<number, api.IInProcessMaterial[]> = HashMap.empty();
   let palName: string | undefined;
-  let castings: ReadonlyArray<Readonly<api.IInProcessMaterial>> = [];
+  let freeLoading: ReadonlyArray<Readonly<api.IInProcessMaterial>> = [];
   let stationStatus: HashMap<string, { pal?: PalletData; queued?: PalletData }> | undefined;
 
   // first free and queued material
   let free: MaterialList | undefined;
   if (displayFree) {
     free = curSt.material.filter(
-      m => m.action.processAfterLoad && m.action.processAfterLoad > 1 && m.location.type === api.LocType.Free
+      (m) => m.action.processAfterLoad && m.action.processAfterLoad > 1 && m.location.type === api.LocType.Free
     );
   }
 
   const queueNames = HashMap.ofIterable<string, api.IInProcessMaterial[]>(
-    queues.map(q => [q, []] as [string, api.IInProcessMaterial[]])
+    queues.map((q) => [q, []] as [string, api.IInProcessMaterial[]])
   );
   const queueMat = Vector.ofIterable(curSt.material)
-    .filter(m => {
+    .filter((m) => {
       if (m.location.type !== api.LocType.InQueue) {
         return false;
       }
@@ -145,20 +145,20 @@ export function selectLoadStationAndQueueProps(
       }
       return false;
     })
-    .groupBy(m => m.location.currentQueue || "")
-    .mapValues(ms => ms.sortOn(m => m.location.queuePosition || 0).toArray());
+    .groupBy((m) => m.location.currentQueue || "")
+    .mapValues((ms) => ms.sortOn((m) => m.location.queuePosition || 0).toArray());
 
   // load pallet material
   if (pal !== undefined) {
     palName = pal.pallet;
 
     byFace = Vector.ofIterable(curSt.material)
-      .filter(m => m.location.type === api.LocType.OnPallet && m.location.pallet === palName)
-      .groupBy(m => m.location.face || 0)
-      .mapValues(ms => ms.toArray());
+      .filter((m) => m.location.type === api.LocType.OnPallet && m.location.pallet === palName)
+      .groupBy((m) => m.location.face || 0)
+      .mapValues((ms) => ms.toArray());
 
-    castings = curSt.material.filter(
-      m =>
+    freeLoading = curSt.material.filter(
+      (m) =>
         m.action.type === api.ActionType.Loading &&
         m.action.loadOntoPallet === palName &&
         m.action.processAfterLoad === 1 &&
@@ -167,7 +167,7 @@ export function selectLoadStationAndQueueProps(
 
     // make sure all face desinations exist
     queueMat.forEach(([_, mats]) =>
-      mats.forEach(m => {
+      mats.forEach((m) => {
         if (m.action.type === api.ActionType.Loading && m.action.loadOntoPallet === palName) {
           const face = m.action.loadOntoFace;
           if (face !== undefined && !byFace.containsKey(face)) {
@@ -176,7 +176,7 @@ export function selectLoadStationAndQueueProps(
         }
       })
     );
-    [...castings, ...(free || [])].forEach(m => {
+    [...freeLoading, ...(free || [])].forEach((m) => {
       if (m.action.type === api.ActionType.Loading && m.action.loadOntoPallet === palName) {
         const face = m.action.loadOntoFace;
         if (face !== undefined && !byFace.containsKey(face)) {
@@ -187,7 +187,9 @@ export function selectLoadStationAndQueueProps(
   } else {
     stationStatus = buildPallets(curSt);
     if (displayFree) {
-      castings = curSt.material.filter(m => m.action.processAfterLoad === 1 && m.location.type === api.LocType.Free);
+      freeLoading = curSt.material.filter(
+        (m) => m.action.processAfterLoad === 1 && m.location.type === api.LocType.Free
+      );
     }
   }
 
@@ -196,8 +198,8 @@ export function selectLoadStationAndQueueProps(
     pallet: pal,
     face: byFace,
     stationStatus: stationStatus,
-    castings: castings,
+    freeLoadingMaterial: freeLoading,
     free: free,
-    queues: queueNames.mergeWith(queueMat, (m1, m2) => [...m1, ...m2])
+    queues: queueNames.mergeWith(queueMat, (m1, m2) => [...m1, ...m2]),
   };
 }

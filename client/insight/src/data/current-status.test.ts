@@ -40,7 +40,7 @@ import {
   fakeInspSignal,
   fakeInspComplete,
   fakeInspForce,
-  fakeInProcMaterial
+  fakeInProcMaterial,
 } from "./events.fake";
 
 it("creates initial state", () => {
@@ -62,7 +62,7 @@ const statusWithMat: cs.State = {
         path: 1,
         signaledInspections: [],
         location: new api.InProcessMaterialLocation(),
-        action: new api.InProcessMaterialAction()
+        action: new api.InProcessMaterialAction(),
       }),
       new api.InProcessMaterial({
         materialID: 20,
@@ -72,20 +72,20 @@ const statusWithMat: cs.State = {
         path: 3,
         signaledInspections: ["aaa"],
         location: new api.InProcessMaterialLocation(),
-        action: new api.InProcessMaterialAction()
-      })
-    ]
-  }
+        action: new api.InProcessMaterialAction(),
+      }),
+    ],
+  },
 };
 
 it("sets the serial", () => {
   const mat = new api.LogMaterial({ ...fakeMaterial(), id: 10 });
   const st = cs.reducer(statusWithMat, {
     type: cs.ActionType.ReceiveNewLogEntry,
-    entry: fakeSerial(mat, "serial12345")
+    entry: fakeSerial(mat, "serial12345"),
   });
 
-  const actualInProcMat = st.current_status.material.filter(m => m.materialID === mat.id)[0];
+  const actualInProcMat = st.current_status.material.filter((m) => m.materialID === mat.id)[0];
   expect(actualInProcMat.serial).toEqual("serial12345");
 });
 
@@ -93,10 +93,10 @@ it("sets a workorder", () => {
   const mat = new api.LogMaterial({ ...fakeMaterial(), id: 20 });
   const st = cs.reducer(statusWithMat, {
     type: cs.ActionType.ReceiveNewLogEntry,
-    entry: fakeWorkorderAssign(mat, "work7777")
+    entry: fakeWorkorderAssign(mat, "work7777"),
   });
 
-  const actualInProcMat = st.current_status.material.filter(m => m.materialID === mat.id)[0];
+  const actualInProcMat = st.current_status.material.filter((m) => m.materialID === mat.id)[0];
   expect(actualInProcMat.workorderId).toEqual("work7777");
 });
 
@@ -104,10 +104,10 @@ it("sets an inspection", () => {
   const mat = new api.LogMaterial({ ...fakeMaterial(), id: 20 });
   const st = cs.reducer(statusWithMat, {
     type: cs.ActionType.ReceiveNewLogEntry,
-    entry: fakeInspSignal(mat, "insp11")
+    entry: fakeInspSignal(mat, "insp11"),
   });
 
-  const actualInProcMat = st.current_status.material.filter(m => m.materialID === mat.id)[0];
+  const actualInProcMat = st.current_status.material.filter((m) => m.materialID === mat.id)[0];
   expect(actualInProcMat.signaledInspections).toEqual(["aaa", "insp11"]);
 });
 
@@ -115,10 +115,10 @@ it("sets a forced inspection", () => {
   const mat = new api.LogMaterial({ ...fakeMaterial(), id: 20 });
   const st = cs.reducer(statusWithMat, {
     type: cs.ActionType.ReceiveNewLogEntry,
-    entry: fakeInspForce(mat, "insp55")
+    entry: fakeInspForce(mat, "insp55"),
   });
 
-  const actualInProcMat = st.current_status.material.filter(m => m.materialID === mat.id)[0];
+  const actualInProcMat = st.current_status.material.filter((m) => m.materialID === mat.id)[0];
   expect(actualInProcMat.signaledInspections).toEqual(["aaa", "insp55"]);
 });
 
@@ -126,7 +126,7 @@ it("ignores other cycles", () => {
   const mat = new api.LogMaterial({ ...fakeMaterial(), id: 10 });
   const st = cs.reducer(statusWithMat, {
     type: cs.ActionType.ReceiveNewLogEntry,
-    entry: fakeInspComplete(mat)
+    entry: fakeInspComplete(mat),
   });
 
   expect(st).toBe(statusWithMat);
@@ -138,8 +138,8 @@ function adjPos(m: api.InProcessMaterial, newPos: number, newQueue?: string): ap
     location: {
       ...m.location,
       currentQueue: newQueue || m.location.currentQueue,
-      queuePosition: newPos
-    }
+      queuePosition: newPos,
+    },
   } as api.IInProcessMaterial);
 }
 
@@ -152,14 +152,14 @@ it("reorders in-process material backwards", () => {
     fakeInProcMaterial(4, "abc", 4),
     fakeInProcMaterial(5, "other", 0),
     fakeInProcMaterial(6),
-    fakeInProcMaterial(7)
+    fakeInProcMaterial(7),
   ];
   const initialSt = { ...cs.initial, current_status: { ...cs.initial.current_status, material: mats } };
   const st = cs.reducer(initialSt, {
     type: cs.ActionType.ReorderQueuedMaterial,
     queue: "abc",
     materialId: 1,
-    newIdx: 3
+    newIdx: 3,
   });
 
   expect(st.current_status.material).toEqual([
@@ -170,7 +170,7 @@ it("reorders in-process material backwards", () => {
     mats[4],
     mats[5],
     mats[6],
-    mats[7]
+    mats[7],
   ]);
 });
 
@@ -183,14 +183,14 @@ it("reorders in-process material forwards", () => {
     fakeInProcMaterial(4, "abc", 4),
     fakeInProcMaterial(5, "other", 0),
     fakeInProcMaterial(6),
-    fakeInProcMaterial(7)
+    fakeInProcMaterial(7),
   ];
   const initialSt = { ...cs.initial, current_status: { ...cs.initial.current_status, material: mats } };
   const st = cs.reducer(initialSt, {
     type: cs.ActionType.ReorderQueuedMaterial,
     queue: "abc",
     materialId: 3,
-    newIdx: 1
+    newIdx: 1,
   });
 
   expect(st.current_status.material).toEqual([
@@ -201,7 +201,7 @@ it("reorders in-process material forwards", () => {
     mats[4],
     mats[5],
     mats[6],
-    mats[7]
+    mats[7],
   ]);
 });
 
@@ -216,14 +216,14 @@ it("moves between queue", () => {
     fakeInProcMaterial(6, "other", 1),
     fakeInProcMaterial(7, "other", 2),
     fakeInProcMaterial(8),
-    fakeInProcMaterial(9)
+    fakeInProcMaterial(9),
   ];
   const initialSt = { ...cs.initial, current_status: { ...cs.initial.current_status, material: mats } };
   const st = cs.reducer(initialSt, {
     type: cs.ActionType.ReorderQueuedMaterial,
     queue: "abc",
     materialId: 6,
-    newIdx: 1
+    newIdx: 1,
   });
 
   expect(st.current_status.material).toEqual([
@@ -236,6 +236,6 @@ it("moves between queue", () => {
     adjPos(mats[6], 1, "abc"), // change queue
     adjPos(mats[7], 1), // 2 -> 1,
     mats[8],
-    mats[9]
+    mats[9],
   ]);
 });

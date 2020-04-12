@@ -6,7 +6,7 @@ import * as reactRedux from "react-redux";
 export type Dispatch<A> = (a: A) => void;
 export type Middleware<A1, A2> = (dispatch: Dispatch<A2>) => (a: A1) => void;
 export function composeMiddleware<A1, A2, A3>(m1: Middleware<A1, A2>, m2: Middleware<A2, A3>): Middleware<A1, A3> {
-  return d => m1(m2(d));
+  return (d) => m1(m2(d));
 }
 
 // Extract the state and action types from the type of an object of reducer functions.
@@ -80,7 +80,7 @@ export function mkACF<AppActionBeforeMiddleware>(): ActionCreatorFactory<AppActi
   // an object.  ActionPayload<A, T> will be an object exactly when the action type T appears
   // exactly once in the action sum type, which should always be the case.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return ty => (payload: any) => {
+  return (ty) => (payload: any) => {
     if (payload) {
       return { ...payload, type: ty };
     } else {
@@ -126,6 +126,6 @@ export function createStore<Reducers, ActionBeforeMiddleware>(
     Provider: function StoreProvider({ children }: { children: React.ReactNode }) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return React.createElement(reactRedux.Provider, { store: st as any }, children);
-    }
+    },
   };
 }

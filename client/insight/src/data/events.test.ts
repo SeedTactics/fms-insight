@@ -54,8 +54,8 @@ it("responds to loading", () => {
       type: events.ActionType.LoadRecentLogEntries,
       now: new Date(),
       pledge: {
-        status: PledgeStatus.Starting
-      }
+        status: PledgeStatus.Starting,
+      },
     }
   );
   expect(st.loading_log_entries).toBe(true);
@@ -72,8 +72,8 @@ it("responds to loading for jobs", () => {
       type: events.ActionType.LoadRecentJobHistory,
       now: new Date(),
       pledge: {
-        status: PledgeStatus.Starting
-      }
+        status: PledgeStatus.Starting,
+      },
     }
   );
   expect(st.loading_log_entries).toBe(false);
@@ -91,8 +91,8 @@ it("responds to error", () => {
       now: new Date(),
       pledge: {
         status: PledgeStatus.Error,
-        error: new Error("hello")
-      }
+        error: new Error("hello"),
+      },
     }
   );
   expect(st.loading_log_entries).toBe(false);
@@ -110,8 +110,8 @@ it("responds to error for jobs", () => {
       now: new Date(),
       pledge: {
         status: PledgeStatus.Error,
-        error: new Error("hello")
-      }
+        error: new Error("hello"),
+      },
     }
   );
   expect(st.loading_log_entries).toBe(false);
@@ -135,8 +135,8 @@ function procNewEvents(evtsToAction: (now: Date, newEvts: ReadonlyArray<ILogEntr
     now: now,
     pledge: {
       status: PledgeStatus.Completed,
-      result: twentySevenCycle.concat(twoDaysAgoCycle, todayCycle)
-    }
+      result: twentySevenCycle.concat(twoDaysAgoCycle, todayCycle),
+    },
   });
   expect(st.last30).toMatchSnapshot("last30 with 27 days ago, 2 days ago, and today");
 
@@ -156,8 +156,8 @@ function procNewEvents(evtsToAction: (now: Date, newEvts: ReadonlyArray<ILogEntr
     now: sixDays,
     pledge: {
       status: PledgeStatus.Completed,
-      result: []
-    }
+      result: [],
+    },
   });
   expect(newSt.last30).toBe(st.last30);
 }
@@ -168,8 +168,8 @@ it("processes new log events into last30", () => {
     now,
     pledge: {
       status: PledgeStatus.Completed,
-      result: evts
-    }
+      result: evts,
+    },
   }));
 });
 
@@ -177,7 +177,7 @@ it("refreshes new events into last30", () => {
   procNewEvents((now, evts) => ({
     type: events.ActionType.ReceiveNewLogEntries,
     now,
-    events: evts
+    events: evts,
   }));
 });
 
@@ -188,8 +188,8 @@ it("starts loading a specific month for analysis", () => {
       type: events.ActionType.LoadSpecificMonthLogEntries,
       month: new Date(2018, 2, 1),
       pledge: {
-        status: PledgeStatus.Starting
-      }
+        status: PledgeStatus.Starting,
+      },
     }
   );
   expect(st.analysis_period).toBe(events.AnalysisPeriod.SpecificMonth);
@@ -206,8 +206,8 @@ it("starts loading a specific month jobs for analysis", () => {
       type: events.ActionType.LoadSpecificMonthJobHistory,
       month: new Date(2018, 2, 1),
       pledge: {
-        status: PledgeStatus.Starting
-      }
+        status: PledgeStatus.Starting,
+      },
     }
   );
   expect(st.loading_analysis_month_log).toBe(false);
@@ -229,11 +229,11 @@ it("loads 30 days for analysis", () => {
       selected_month: {
         cycles,
         sim_use: simuse.initial,
-        inspection: inspection.initial
-      }
+        inspection: inspection.initial,
+      },
     },
     {
-      type: events.ActionType.SetAnalysisLast30Days
+      type: events.ActionType.SetAnalysisLast30Days,
     }
   );
   expect(st.analysis_period).toBe(events.AnalysisPeriod.Last30Days);
@@ -255,15 +255,15 @@ it("loads a specific month for analysis", () => {
       ...events.initial,
       loading_analysis_month_log: true,
       analysis_period_month: new Date(2018, 1, 1),
-      analysis_period: events.AnalysisPeriod.SpecificMonth
+      analysis_period: events.AnalysisPeriod.SpecificMonth,
     },
     {
       type: events.ActionType.LoadSpecificMonthLogEntries,
       month: new Date(2018, 1, 1),
       pledge: {
         status: PledgeStatus.Completed,
-        result: twentySevenCycle.concat(twoDaysAgoCycle, todayCycle)
-      }
+        result: twentySevenCycle.concat(twoDaysAgoCycle, todayCycle),
+      },
     }
   );
   expect(st.analysis_period).toBe(events.AnalysisPeriod.SpecificMonth);

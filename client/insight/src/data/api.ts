@@ -542,7 +542,7 @@ export class JobsClient {
         return Promise.resolve<void>(<any>null);
     }
 
-    addUnallocatedCastingToQueue(castingName: string | null, queue: string | null, pos: number, serial: string): Promise<void> {
+    addUnallocatedCastingToQueue(castingName: string | null, queue: string | null, pos: number, serials: string[], qty: number | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/jobs/casting/{castingName}?";
         if (castingName === undefined || castingName === null)
             throw new Error("The parameter 'castingName' must be defined.");
@@ -555,9 +555,13 @@ export class JobsClient {
             throw new Error("The parameter 'pos' must be defined and cannot be null.");
         else
             url_ += "pos=" + encodeURIComponent("" + pos) + "&"; 
+        if (qty === null)
+            throw new Error("The parameter 'qty' cannot be null.");
+        else if (qty !== undefined)
+            url_ += "qty=" + encodeURIComponent("" + qty) + "&"; 
         url_ = url_.replace(/[?&]$/, "");
 
-        const content_ = JSON.stringify(serial);
+        const content_ = JSON.stringify(serials);
 
         let options_ = <RequestInit>{
             body: content_,
@@ -733,6 +737,40 @@ export class JobsClient {
     }
 
     protected processRemoveMaterialFromAllQueues(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(<any>null);
+    }
+
+    bulkRemoveMaterialFromQueues(id: number[] | null): Promise<void> {
+        let url_ = this.baseUrl + "/api/v1/jobs/material?";
+        if (id === undefined)
+            throw new Error("The parameter 'id' must be defined.");
+        else
+            id && id.forEach(item => { url_ += "id=" + encodeURIComponent("" + item) + "&"; });
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ = <RequestInit>{
+            method: "DELETE",
+            headers: {
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processBulkRemoveMaterialFromQueues(_response);
+        });
+    }
+
+    protected processBulkRemoveMaterialFromQueues(response: Response): Promise<void> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 200) {
@@ -994,6 +1032,48 @@ export class LogClient {
     }
 
     protected processLogForMaterial(response: Response): Promise<LogEntry[]> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            if (resultData200 && resultData200.constructor === Array) {
+                result200 = [] as any;
+                for (let item of resultData200)
+                    result200!.push(LogEntry.fromJS(item));
+            }
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<LogEntry[]>(<any>null);
+    }
+
+    logForMaterials(id: number[] | null): Promise<LogEntry[]> {
+        let url_ = this.baseUrl + "/api/v1/log/events/for-material?";
+        if (id === undefined)
+            throw new Error("The parameter 'id' must be defined.");
+        else
+            id && id.forEach(item => { url_ += "id=" + encodeURIComponent("" + item) + "&"; });
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ = <RequestInit>{
+            method: "GET",
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processLogForMaterials(_response);
+        });
+    }
+
+    protected processLogForMaterials(response: Response): Promise<LogEntry[]> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 200) {

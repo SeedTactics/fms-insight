@@ -41,7 +41,7 @@ import {
   InProcessMaterial,
   InProcessMaterialLocation,
   InProcessMaterialAction,
-  ActionType
+  ActionType,
 } from "./api";
 import * as faker from "faker";
 import { duration } from "moment";
@@ -58,7 +58,7 @@ export function fakeMaterial(part?: string, proc?: number): LogMaterial {
     numproc: faker.random.number({ max: 4 }),
     face: "face" + faker.random.alphaNumeric(),
     serial: "serial" + faker.random.alphaNumeric(),
-    workorder: "work" + faker.random.alphaNumeric()
+    workorder: "work" + faker.random.alphaNumeric(),
   });
 }
 
@@ -75,14 +75,14 @@ export function fakeInProcMaterial(matId: number, queue?: string, queuePos?: num
         ? new InProcessMaterialLocation({
             type: LocType.InQueue,
             currentQueue: queue,
-            queuePosition: queuePos
+            queuePosition: queuePos,
           })
         : new InProcessMaterialLocation({
-            type: LocType.Free
+            type: LocType.Free,
           }),
     action: new InProcessMaterialAction({
-      type: ActionType.Waiting
-    })
+      type: ActionType.Waiting,
+    }),
   });
 }
 
@@ -95,7 +95,7 @@ function addStartAndEnd(es: ILogEntry[], e: ILogEntry): void {
     startofcycle: true,
     endUTC: startTime,
     result: "",
-    program: ""
+    program: "",
   };
   es.push(start);
   es.push(e);
@@ -113,8 +113,8 @@ export function fakeInspSignal(mat?: LogMaterial, inspType?: string, now?: Date,
       pallet: "6",
       loadStation: 1,
       stops: [new Stop({ stationName: "MC", stationNum: 4 })],
-      unloadStation: 2
-    }).toJSON()
+      unloadStation: 2,
+    }).toJSON(),
   ];
   return {
     counter: counter,
@@ -131,8 +131,8 @@ export function fakeInspSignal(mat?: LogMaterial, inspType?: string, now?: Date,
     active: "00:00:00",
     details: {
       InspectionType: inspType,
-      ActualPath: JSON.stringify(path)
-    }
+      ActualPath: JSON.stringify(path),
+    },
   };
 }
 
@@ -153,7 +153,7 @@ export function fakeInspForce(mat?: LogMaterial, inspType?: string, now?: Date, 
     result: "True",
     program: inspType,
     elapsed: "00:00:00",
-    active: "00:00:00"
+    active: "00:00:00",
   };
 }
 
@@ -181,7 +181,7 @@ export function fakeInspComplete(
     result: success.toString(),
     program: inspType,
     elapsed: "00:00:00",
-    active: "00:00:00"
+    active: "00:00:00",
   };
 }
 
@@ -213,7 +213,7 @@ export function fakeCycle(
     result: "LOAD",
     program: "LOAD",
     elapsed: "00:06:00",
-    active: "00:06:00"
+    active: "00:06:00",
   });
 
   counter += 2;
@@ -232,7 +232,7 @@ export function fakeCycle(
     result: "",
     program: "prog" + faker.random.alphaNumeric(),
     elapsed: elapsed,
-    active: elapsed
+    active: elapsed,
   });
 
   counter += 2;
@@ -250,7 +250,7 @@ export function fakeCycle(
     result: "UNLOAD",
     program: "UNLOAD",
     elapsed: "00:03:00",
-    active: "00:03:00"
+    active: "00:03:00",
   });
 
   if (!noInspections) {
@@ -276,7 +276,7 @@ export function fakeCycle(
     result: "PalletCycle",
     program: "",
     elapsed: "00:44:00",
-    active: "-00:01:00"
+    active: "-00:01:00",
   });
 
   if (!noInspections) {
@@ -303,7 +303,7 @@ export function fakeSerial(mat?: LogMaterial, serial?: string): ILogEntry {
     result: serial,
     program: "",
     elapsed: "00:00:00",
-    active: "00:00:00"
+    active: "00:00:00",
   };
 }
 
@@ -321,7 +321,7 @@ export function fakeWashComplete(mat?: LogMaterial): ILogEntry {
     result: "",
     program: "",
     elapsed: "00:00:00",
-    active: "00:00:00"
+    active: "00:00:00",
   };
 }
 
@@ -340,6 +340,6 @@ export function fakeWorkorderAssign(mat?: LogMaterial, workorder?: string): ILog
     result: workorder,
     program: "",
     elapsed: "00:00:00",
-    active: "00:00:00"
+    active: "00:00:00",
   };
 }

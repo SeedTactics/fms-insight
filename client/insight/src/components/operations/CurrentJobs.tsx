@@ -43,7 +43,7 @@ import {
   CustomSVGSeries,
   VerticalGridLines,
   HorizontalGridLines,
-  Hint
+  Hint,
 } from "react-vis";
 
 import { CompletedDataPoint, jobsToPoints, DataPoints } from "../../data/job-bullet";
@@ -104,8 +104,8 @@ function format_hint(j: CompletedDataPoint) {
     { title: "Planned", value: j.totalCount },
     {
       title: "Remaining Time",
-      value: (j.totalPlan - j.completed).toFixed(1) + " hours"
-    }
+      value: (j.totalPlan - j.completed).toFixed(1) + " hours",
+    },
   ];
 }
 
@@ -159,9 +159,9 @@ class CurrentJobs extends React.PureComponent<CurrentJobsProps, JobState> {
 
 const jobsToPointsSelector = createSelector(
   (s: Store) => s.Current.current_status.jobs,
-  js => jobsToPoints(Object.values(js))
+  (js) => jobsToPoints(Object.values(js))
 );
 
-export default connect(s => {
+export default connect((s) => {
   return jobsToPointsSelector(s);
 })(CurrentJobs);

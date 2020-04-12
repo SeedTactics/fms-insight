@@ -56,18 +56,18 @@ it("bins actual cycles by day", () => {
     now: addDays(now, 1),
     pledge: {
       status: PledgeStatus.Completed,
-      result: evts
-    }
+      result: evts,
+    },
   });
 
-  let byDayAndStat = binCyclesByDayAndStat(st.last30.cycles.part_cycles, c => duration(c.activeMinutes).asMinutes());
+  let byDayAndStat = binCyclesByDayAndStat(st.last30.cycles.part_cycles, (c) => duration(c.activeMinutes).asMinutes());
 
   // update day to be in Chicago timezone
   // This is because the snapshot formats the day as a UTC time in Chicago timezone
   // Note this is after cycles are binned, which is correct since cycles are generated using
   // now in local time and then binned in local time.  Just need to update the date before
   // comparing with the snapshot
-  byDayAndStat = byDayAndStat.map((dayAndStat, val) => [dayAndStat.adjustDay(d => addMinutes(d, minOffset)), val]);
+  byDayAndStat = byDayAndStat.map((dayAndStat, val) => [dayAndStat.adjustDay((d) => addMinutes(d, minOffset)), val]);
 
   expect(byDayAndStat).toMatchSnapshot("cycles binned by day and station");
 });
@@ -86,17 +86,19 @@ it("creates points clipboard table", () => {
     now: addDays(now, 1),
     pledge: {
       status: PledgeStatus.Completed,
-      result: evts
-    }
+      result: evts,
+    },
   });
 
-  const byDayAndStat = binCyclesByDayAndStat(st.last30.cycles.part_cycles, c => duration(c.activeMinutes).asMinutes());
+  const byDayAndStat = binCyclesByDayAndStat(st.last30.cycles.part_cycles, (c) =>
+    duration(c.activeMinutes).asMinutes()
+  );
 
   const points = LazySeq.ofIterable(byDayAndStat)
     .map(([dayAndStat, val]) => ({
       x: dayAndStat.day,
       y: dayAndStat.station,
-      label: val.toString()
+      label: val.toString(),
     }))
     .toArray();
 

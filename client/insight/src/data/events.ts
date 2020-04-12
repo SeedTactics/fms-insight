@@ -44,7 +44,7 @@ import { JobsBackend, LogBackend } from "./backend";
 
 export enum AnalysisPeriod {
   Last30Days = "Last_30_Days",
-  SpecificMonth = "Specific_Month"
+  SpecificMonth = "Specific_Month",
 }
 
 export interface Last30Days {
@@ -69,7 +69,7 @@ export interface AnalysisMonth {
 const emptyAnalysisMonth: AnalysisMonth = {
   cycles: cycles.initial,
   sim_use: simuse.initial,
-  inspection: inspection.initial
+  inspection: inspection.initial,
 };
 
 export interface State {
@@ -101,10 +101,10 @@ export const initial: State = {
     cycles: cycles.initial,
     mat_summary: matsummary.initial,
     sim_use: simuse.initial,
-    inspection: inspection.initial
+    inspection: inspection.initial,
   },
 
-  selected_month: emptyAnalysisMonth
+  selected_month: emptyAnalysisMonth,
 };
 
 export enum ActionType {
@@ -115,7 +115,7 @@ export enum ActionType {
   LoadSpecificMonthLogEntries = "Events_LoadSpecificMonthLogEntries",
   LoadSpecificMonthJobHistory = "Events_LoadSpecificMonthJobHistory",
   ReceiveNewLogEntries = "Events_NewLogEntries",
-  ReceiveNewJobs = "Events_ReceiveNewJobs"
+  ReceiveNewJobs = "Events_ReceiveNewJobs",
 }
 
 export type Action =
@@ -161,13 +161,13 @@ export function loadLast30Days(): ABF {
     {
       type: ActionType.LoadRecentLogEntries,
       now: now,
-      pledge: LogBackend.get(thirtyDaysAgo, now)
+      pledge: LogBackend.get(thirtyDaysAgo, now),
     },
     {
       type: ActionType.LoadRecentJobHistory,
       now: now,
-      pledge: JobsBackend.history(thirtyDaysAgo, now)
-    }
+      pledge: JobsBackend.history(thirtyDaysAgo, now),
+    },
   ];
 }
 
@@ -176,7 +176,7 @@ export function refreshLogEntries(lastCounter: number): ABF {
   return {
     type: ActionType.LoadRecentLogEntries,
     now: now,
-    pledge: LogBackend.recent(lastCounter)
+    pledge: LogBackend.recent(lastCounter),
   };
 }
 
@@ -184,13 +184,13 @@ export function receiveNewEvents(events: ReadonlyArray<Readonly<api.ILogEntry>>)
   return {
     type: ActionType.ReceiveNewLogEntries,
     now: new Date(),
-    events
+    events,
   };
 }
 
 export function receiveNewJobs(newJobs: Readonly<api.INewJobs>): ABF {
   const jobs: { [key: string]: api.JobPlan } = {};
-  newJobs.jobs.forEach(j => {
+  newJobs.jobs.forEach((j) => {
     jobs[j.unique] = j;
   });
   return {
@@ -198,8 +198,8 @@ export function receiveNewJobs(newJobs: Readonly<api.INewJobs>): ABF {
     now: new Date(),
     jobs: {
       jobs: jobs,
-      stationUse: newJobs.stationUse || []
-    }
+      stationUse: newJobs.stationUse || [],
+    },
   };
 }
 
@@ -213,20 +213,20 @@ export function analyzeSpecificMonth(month: Date): ReadonlyArray<PledgeToPromise
     {
       type: ActionType.LoadSpecificMonthLogEntries,
       month: month,
-      pledge: LogBackend.get(month, startOfNextMonth)
+      pledge: LogBackend.get(month, startOfNextMonth),
     },
     {
       type: ActionType.LoadSpecificMonthJobHistory,
       month: month,
-      pledge: JobsBackend.history(month, startOfNextMonth)
-    }
+      pledge: JobsBackend.history(month, startOfNextMonth),
+    },
   ];
 }
 
 export function setAnalysisMonth(month: Date): ABF {
   return {
     type: ActionType.SetAnalysisMonth,
-    month: month
+    month: month,
   };
 }
 
@@ -250,18 +250,14 @@ function processRecentLogEntries(now: Date, evts: ReadonlyArray<Readonly<api.ILo
   const thirtyDaysAgo = addDays(now, -30);
   const initialLoad = s.latest_log_counter === undefined;
   let lastCounter = s.latest_log_counter;
-  const lastNewEvent = LazySeq.ofIterable(evts).maxOn(e => e.counter);
+  const lastNewEvent = LazySeq.ofIterable(evts).maxOn((e) => e.counter);
   let last10Evts = s.most_recent_10_events;
   if (lastNewEvent.isSome()) {
     if (lastCounter === undefined || lastCounter < lastNewEvent.get().counter) {
       lastCounter = lastNewEvent.get().counter;
     }
     const lastNew10 = evts.slice(-10);
-    last10Evts = last10Evts
-      .appendAll(lastNew10)
-      .reverse()
-      .take(10)
-      .reverse();
+    last10Evts = last10Evts.appendAll(lastNew10).reverse().take(10).reverse();
   }
   return safeAssign(s, {
     latest_log_counter: lastCounter,
@@ -278,7 +274,7 @@ function processRecentLogEntries(now: Date, evts: ReadonlyArray<Readonly<api.ILo
       evts,
       undefined,
       s.inspection
-    )
+    ),
   });
 }
 
@@ -290,7 +286,7 @@ function processSpecificMonthLogEntries(evts: ReadonlyArray<Readonly<api.ILogEnt
       true, // initial load is true
       s.cycles
     ),
-    inspection: inspection.process_events({ type: cycles.ExpireOldDataType.NoExpire }, evts, undefined, s.inspection)
+    inspection: inspection.process_events({ type: cycles.ExpireOldDataType.NoExpire }, evts, undefined, s.inspection),
   });
 }
 
@@ -312,13 +308,13 @@ function processRecentJobs(now: Date, jobs: Readonly<api.IHistoricData>, s: Last
       { type: cycles.ExpireOldDataType.ExpireEarlierThan, d: thirtyDaysAgo },
       jobs,
       s.sim_use
-    )
+    ),
   });
 }
 
 function processSpecificMonthJobs(jobs: Readonly<api.IHistoricData>, s: AnalysisMonth): AnalysisMonth {
   return safeAssign(s, {
-    sim_use: simuse.process_sim_use({ type: cycles.ExpireOldDataType.NoExpire }, jobs, s.sim_use)
+    sim_use: simuse.process_sim_use({ type: cycles.ExpireOldDataType.NoExpire }, jobs, s.sim_use),
   });
 }
 
@@ -335,13 +331,13 @@ export function reducer(s: State | undefined, a: Action): State {
           return {
             ...s,
             last30: processRecentLogEntries(a.now, a.pledge.result, s.last30),
-            loading_log_entries: false
+            loading_log_entries: false,
           };
         case PledgeStatus.Error:
           return {
             ...s,
             loading_log_entries: false,
-            loading_error: a.pledge.error
+            loading_error: a.pledge.error,
           };
         default:
           return s;
@@ -350,7 +346,7 @@ export function reducer(s: State | undefined, a: Action): State {
     case ActionType.ReceiveNewLogEntries:
       return {
         ...s,
-        last30: processRecentLogEntries(a.now, a.events, s.last30)
+        last30: processRecentLogEntries(a.now, a.events, s.last30),
       };
 
     case ActionType.LoadRecentJobHistory:
@@ -361,13 +357,13 @@ export function reducer(s: State | undefined, a: Action): State {
           return {
             ...s,
             last30: processRecentJobs(a.now, a.pledge.result, s.last30),
-            loading_job_history: false
+            loading_job_history: false,
           };
         case PledgeStatus.Error:
           return {
             ...s,
             loading_job_history: false,
-            loading_error: a.pledge.error
+            loading_error: a.pledge.error,
           };
         default:
           return s;
@@ -376,14 +372,14 @@ export function reducer(s: State | undefined, a: Action): State {
     case ActionType.ReceiveNewJobs:
       return {
         ...s,
-        last30: processRecentJobs(a.now, a.jobs, s.last30)
+        last30: processRecentJobs(a.now, a.jobs, s.last30),
       };
 
     case ActionType.SetAnalysisLast30Days:
       return {
         ...s,
         analysis_period: AnalysisPeriod.Last30Days,
-        selected_month: emptyAnalysisMonth
+        selected_month: emptyAnalysisMonth,
       };
 
     case ActionType.LoadSpecificMonthLogEntries:
@@ -395,21 +391,21 @@ export function reducer(s: State | undefined, a: Action): State {
             analysis_period_month: a.month,
             loading_error: undefined,
             loading_analysis_month_log: true,
-            selected_month: emptyAnalysisMonth
+            selected_month: emptyAnalysisMonth,
           };
 
         case PledgeStatus.Completed:
           return {
             ...s,
             loading_analysis_month_log: false,
-            selected_month: processSpecificMonthLogEntries(a.pledge.result, s.selected_month)
+            selected_month: processSpecificMonthLogEntries(a.pledge.result, s.selected_month),
           };
 
         case PledgeStatus.Error:
           return {
             ...s,
             loading_analysis_month_log: false,
-            loading_error: a.pledge.error
+            loading_error: a.pledge.error,
           };
 
         default:
@@ -421,21 +417,21 @@ export function reducer(s: State | undefined, a: Action): State {
         case PledgeStatus.Starting:
           return {
             ...s,
-            loading_analysis_month_jobs: true
+            loading_analysis_month_jobs: true,
           };
 
         case PledgeStatus.Completed:
           return {
             ...s,
             loading_analysis_month_jobs: false,
-            selected_month: processSpecificMonthJobs(a.pledge.result, s.selected_month)
+            selected_month: processSpecificMonthJobs(a.pledge.result, s.selected_month),
           };
 
         case PledgeStatus.Error:
           return {
             ...s,
             loading_analysis_month_jobs: false,
-            loading_error: a.pledge.error
+            loading_error: a.pledge.error,
           };
 
         default:

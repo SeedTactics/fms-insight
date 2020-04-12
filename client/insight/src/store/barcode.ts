@@ -73,8 +73,8 @@ export function initBarcodeListener(dispatch: (a: AppActionBeforeMiddleware) => 
       ...openMaterialBySerial(serial, true),
       {
         type: guiState.ActionType.SetAddMatToQueueName,
-        queue: undefined
-      }
+        queue: undefined,
+      },
     ]);
   }
 

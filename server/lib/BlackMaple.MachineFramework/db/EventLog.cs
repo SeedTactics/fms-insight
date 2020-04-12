@@ -649,12 +649,18 @@ namespace BlackMaple.MachineFramework
     #endregion
 
     #region Loading
-    private List<MachineWatchInterface.LogEntry> LoadLog(IDataReader reader)
+    private List<MachineWatchInterface.LogEntry> LoadLog(IDataReader reader, IDbTransaction trans = null)
     {
       using (var matCmd = _connection.CreateCommand())
       using (var detailCmd = _connection.CreateCommand())
       using (var toolCmd = _connection.CreateCommand())
       {
+        if (trans != null)
+        {
+          ((IDbCommand)matCmd).Transaction = trans;
+          ((IDbCommand)detailCmd).Transaction = trans;
+          ((IDbCommand)toolCmd).Transaction = trans;
+        }
         matCmd.CommandText = "SELECT stations_mat.MaterialID, UniqueStr, Process, PartName, NumProcesses, Face, Serial, Workorder " +
           " FROM stations_mat " +
           " LEFT OUTER JOIN matdetails ON stations_mat.MaterialID = matdetails.MaterialID " +
@@ -908,6 +914,33 @@ namespace BlackMaple.MachineFramework
             return LoadLog(reader);
           }
         }
+      }
+    }
+
+    public List<MachineWatchInterface.LogEntry> GetLogForMaterial(IEnumerable<long> materialIDs)
+    {
+      lock (_lock)
+      {
+        var ret = new List<MachineWatchInterface.LogEntry>();
+        using (var cmd = _connection.CreateCommand())
+        using (var trans = _connection.BeginTransaction())
+        {
+          cmd.Transaction = trans;
+          cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
+               " FROM stations WHERE Counter IN (SELECT Counter FROM stations_mat WHERE MaterialID = $mat) ORDER BY Counter ASC";
+          var param = cmd.Parameters.Add("mat", SqliteType.Integer);
+
+          foreach (var matId in materialIDs)
+          {
+            param.Value = matId;
+            using (var reader = cmd.ExecuteReader())
+            {
+              ret.AddRange(LoadLog(reader));
+            }
+          }
+          trans.Commit();
+        }
+        return ret;
       }
     }
 

@@ -65,7 +65,7 @@ export interface MatSummaryState {
 
 export const initial: MatSummaryState = {
   matsById: HashMap.empty(),
-  inspTypes: HashSet.empty()
+  inspTypes: HashSet.empty(),
 };
 
 export function inproc_mat_to_summary(mat: Readonly<api.IInProcessMaterial>): MaterialSummary {
@@ -76,7 +76,7 @@ export function inproc_mat_to_summary(mat: Readonly<api.IInProcessMaterial>): Ma
     completed_procs: LazySeq.ofRange(1, mat.process, 1).toArray(),
     serial: mat.serial,
     workorderId: mat.workorderId,
-    signaledInspections: mat.signaledInspections
+    signaledInspections: mat.signaledInspections,
   };
 }
 
@@ -95,7 +95,7 @@ export function process_events(now: Date, newEvts: ReadonlyArray<api.ILogEntry>,
 
   const inspTypes = new Map<string, boolean>();
 
-  newEvts.forEach(e => {
+  newEvts.forEach((e) => {
     if (e.startofcycle || e.material.length === 0) {
       return;
     }
@@ -112,7 +112,7 @@ export function process_events(now: Date, newEvts: ReadonlyArray<api.ILogEntry>,
           last_event: e.endUTC,
           completed_procs: [],
           signaledInspections: [],
-          completedInspections: {}
+          completedInspections: {},
         };
       }
 
@@ -131,7 +131,7 @@ export function process_events(now: Date, newEvts: ReadonlyArray<api.ILogEntry>,
             if (inspType) {
               mat = {
                 ...mat,
-                signaledInspections: [...mat.signaledInspections, inspType]
+                signaledInspections: [...mat.signaledInspections, inspType],
               };
               inspTypes.set(inspType, true);
             }
@@ -143,7 +143,7 @@ export function process_events(now: Date, newEvts: ReadonlyArray<api.ILogEntry>,
             const inspType = e.program;
             mat = {
               ...mat,
-              signaledInspections: [...mat.signaledInspections, inspType]
+              signaledInspections: [...mat.signaledInspections, inspType],
             };
             inspTypes.set(inspType, true);
           }
@@ -154,9 +154,9 @@ export function process_events(now: Date, newEvts: ReadonlyArray<api.ILogEntry>,
             ...mat,
             completedInspections: {
               ...mat.completedInspections,
-              [e.program]: e.endUTC
+              [e.program]: e.endUTC,
             },
-            completed_inspect_time: e.endUTC
+            completed_inspect_time: e.endUTC,
           };
           inspTypes.set(e.program, true);
           break;
@@ -168,13 +168,13 @@ export function process_events(now: Date, newEvts: ReadonlyArray<api.ILogEntry>,
                 ...mat,
                 completed_procs: [...mat.completed_procs, logMat.proc],
                 last_unload_time: e.endUTC,
-                completed_machining: true
+                completed_machining: true,
               };
             } else {
               mat = {
                 ...mat,
                 completed_procs: [...mat.completed_procs, logMat.proc],
-                last_unload_time: e.endUTC
+                last_unload_time: e.endUTC,
               };
             }
           }
@@ -190,7 +190,7 @@ export function process_events(now: Date, newEvts: ReadonlyArray<api.ILogEntry>,
   });
 
   let inspTypesSet = st.inspTypes;
-  const newInspTypes = Vector.ofIterable(inspTypes.keys()).filter(i => !inspTypesSet.contains(i));
+  const newInspTypes = Vector.ofIterable(inspTypes.keys()).filter((i) => !inspTypesSet.contains(i));
 
   if (!newInspTypes.isEmpty()) {
     inspTypesSet = inspTypesSet.addAll(newInspTypes);

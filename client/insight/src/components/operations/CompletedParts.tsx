@@ -46,7 +46,7 @@ import TableBody from "@material-ui/core/TableBody";
 import {
   CompletedPartSeries,
   buildCompletedPartSeries,
-  copyCompletedPartsToClipboard
+  copyCompletedPartsToClipboard,
 } from "../../data/results.completed-parts";
 import { connect } from "../../store/store";
 import { createSelector } from "reselect";
@@ -60,7 +60,7 @@ interface CompletedPartsTableProps {
 }
 
 function CompletedPartsTable(props: CompletedPartsTableProps) {
-  const days = props.series.length > 0 ? props.series[0].days.map(p => p.day) : [];
+  const days = props.series.length > 0 ? props.series[0].days.map((p) => p.day) : [];
   return (
     <Card raised>
       <CardHeader
@@ -117,8 +117,8 @@ const completedPartsSelector = createSelector(
   }
 );
 
-const ConnectedPartsTable = connect(st => ({
-  series: completedPartsSelector(st.Events.last30, startOfToday())
+const ConnectedPartsTable = connect((st) => ({
+  series: completedPartsSelector(st.Events.last30, startOfToday()),
 }))(CompletedPartsTable);
 
 export function CompletedParts() {

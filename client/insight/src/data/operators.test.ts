@@ -47,48 +47,48 @@ it("creates the initial state", () => {
 it("adds an operator", () => {
   let s = operators.reducer(operators.initial, {
     type: operators.ActionType.SetOperator,
-    operator: "op1"
+    operator: "op1",
   });
 
   expect(s).toEqual({
     operators: HashSet.of("initial1", "op1"),
-    current: "op1"
+    current: "op1",
   });
 
   s = operators.reducer(s, {
     type: operators.ActionType.SetOperator,
-    operator: "op2"
+    operator: "op2",
   });
 
   expect(s).toEqual({
     operators: HashSet.of("initial1", "op1", "op2"),
-    current: "op2"
+    current: "op2",
   });
 });
 
 it("removes an operator", () => {
   let s: operators.State = {
     operators: HashSet.of("op1", "op2", "aaaa"),
-    current: "aaaa"
+    current: "aaaa",
   };
   s = operators.reducer(s, {
     type: operators.ActionType.RemoveOperator,
-    operator: "op1"
+    operator: "op1",
   });
 
   expect(s).toEqual({
     operators: HashSet.of("op2", "aaaa"),
-    current: "aaaa"
+    current: "aaaa",
   });
 
   s = operators.reducer(s, {
     type: operators.ActionType.RemoveOperator,
-    operator: "aaaa"
+    operator: "aaaa",
   });
 
   expect(s).toEqual({
     operators: HashSet.of("op2"),
-    current: undefined
+    current: undefined,
   });
 });
 
@@ -96,7 +96,7 @@ it("sets local storage", () => {
   const onChange = operators.createOnStateChange();
   onChange({
     operators: HashSet.of("op1", "op2"),
-    current: "op2"
+    current: "op2",
   });
   const opers = JSON.parse(localStorage.getItem("operators") || "[]");
   expect(opers).toEqual(["op1", "op2"]);

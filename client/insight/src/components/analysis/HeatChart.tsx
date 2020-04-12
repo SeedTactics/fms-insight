@@ -67,7 +67,7 @@ const formatHint = (yTitle: string, labelTitle: string) => (p: HeatChartPoint) =
   return [
     { title: yTitle, value: p.y },
     { title: "Day", value: p.x.toDateString() },
-    { title: labelTitle, value: p.label }
+    { title: labelTitle, value: p.label },
   ];
 };
 
@@ -103,13 +103,11 @@ class HeatChart extends React.PureComponent<HeatChartProps, HeatChartState> {
             strokeWidth: "2px",
             rectStyle: {
               rx: 10,
-              ry: 10
-            }
+              ry: 10,
+            },
           }}
         />
-        {this.state.selected_point === undefined ? (
-          undefined
-        ) : (
+        {this.state.selected_point === undefined ? undefined : (
           <Hint value={this.state.selected_point} format={formatHint(this.props.y_title, this.props.label_title)} />
         )}
       </FlexibleWidthXYPlot>
@@ -154,7 +152,7 @@ export function SelectableHeatChart(props: SelectableHeatChartProps) {
                 autoWidth
                 displayEmpty
                 value={props.planned_or_actual}
-                onChange={e => setType(e.target.value as gui.PlannedOrActual)}
+                onChange={(e) => setType(e.target.value as gui.PlannedOrActual)}
               >
                 <MenuItem key={gui.PlannedOrActual.Actual} value={gui.PlannedOrActual.Actual}>
                   Actual
@@ -163,9 +161,7 @@ export function SelectableHeatChart(props: SelectableHeatChartProps) {
                   Planned
                 </MenuItem>
               </Select>
-            ) : (
-              undefined
-            )}
+            ) : undefined}
           </div>
         }
       />
@@ -175,7 +171,7 @@ export function SelectableHeatChart(props: SelectableHeatChartProps) {
           y_title={props.y_title}
           label_title={props.label_title}
           row_count={LazySeq.ofIterable(props.points)
-            .toSet(p => p.y)
+            .toSet((p) => p.y)
             .length()}
         />
       </CardContent>

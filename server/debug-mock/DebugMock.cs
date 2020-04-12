@@ -186,15 +186,75 @@ namespace DebugMachineWatchApiServer
       JobDB.AddJobs(jobs, expectedPreviousScheduleId);
     }
 
-    public void AddUnallocatedCastingToQueue(string part, string queue, int position, string serial)
+    public void SetJobComment(string jobUnique, string comment)
     {
-      Serilog.Log.Information("AddUnallocatedCastingToQueue: {part} {queue} {position} {serial}", part, queue, position, serial);
+      JobDB.SetJobComment(jobUnique, comment);
+      if (CurrentStatus.Jobs.TryGetValue(jobUnique, out var job))
+      {
+        job.Comment = comment;
+      }
+      OnNewCurrentStatus?.Invoke(CurrentStatus);
+    }
+
+    public void AddUnallocatedPartToQueue(string part, string queue, int position, string serial)
+    {
+      Serilog.Log.Information("AddUnallocatedPartToQueue: {part} {queue} {position} {serial}", part, queue, position, serial);
+    }
+
+    public void AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serials)
+    {
+      Serilog.Log.Information("AddUnallocatedCastingToQueue: {casting} x{qty} {queue} {position} {@serials}", casting, qty, queue, position, serials);
+      for (int i = 0; i < qty; i++)
+      {
+        CurrentStatus.Material.Add(new InProcessMaterial()
+        {
+          MaterialID = -500,
+          JobUnique = null,
+          PartName = casting,
+          Process = 0,
+          Path = 1,
+          Serial = i < serials.Count ? serials[i] : null,
+          Location = new InProcessMaterialLocation()
+          {
+            Type = InProcessMaterialLocation.LocType.InQueue,
+            CurrentQueue = queue,
+            QueuePosition = 10 + i
+          },
+          Action = new InProcessMaterialAction()
+          {
+            Type = InProcessMaterialAction.ActionType.Waiting
+          }
+        });
+      }
+      OnNewCurrentStatus?.Invoke(CurrentStatus);
     }
 
     public void AddUnprocessedMaterialToQueue(string jobUnique, int lastCompletedProcess, int pathGroup, string queue, int position, string serial)
     {
       Serilog.Log.Information("AddUnprocessedMaterialToQueue: {unique} {lastCompProcess} {pathGroup} {queue} {position} {serial}",
         jobUnique, lastCompletedProcess, pathGroup, queue, position, serial);
+
+      var part = CurrentStatus.Jobs.TryGetValue(jobUnique, out var job) ? job.PartName : "";
+      CurrentStatus.Material.Add(new InProcessMaterial()
+      {
+        MaterialID = -500,
+        JobUnique = jobUnique,
+        PartName = part,
+        Process = lastCompletedProcess,
+        Path = pathGroup,
+        Serial = serial,
+        Location = new InProcessMaterialLocation()
+        {
+          Type = InProcessMaterialLocation.LocType.InQueue,
+          CurrentQueue = queue,
+          QueuePosition = position
+        },
+        Action = new InProcessMaterialAction()
+        {
+          Type = InProcessMaterialAction.ActionType.Waiting
+        }
+      });
+      OnNewCurrentStatus?.Invoke(CurrentStatus);
     }
     public void SetMaterialInQueue(long materialId, string queue, int position)
     {
@@ -234,25 +294,28 @@ namespace DebugMachineWatchApiServer
 
       OnNewStatus(CurrentStatus);
     }
-    public void RemoveMaterialFromAllQueues(long materialId)
+    public void RemoveMaterialFromAllQueues(IList<long> materialIds)
     {
-      Serilog.Log.Information("RemoveMaterialFromAllQueues {matId}", materialId);
+      Serilog.Log.Information("RemoveMaterialFromAllQueues {@matId}", materialIds);
 
-      var toRemove = CurrentStatus.Material.FirstOrDefault(m => m.MaterialID == materialId && m.Location.Type == InProcessMaterialLocation.LocType.InQueue);
-      if (toRemove == null) return;
-
-      // shift downward
-      foreach (var m in CurrentStatus.Material)
+      foreach (var materialId in materialIds)
       {
-        if (m.Location.Type == InProcessMaterialLocation.LocType.InQueue
-            && m.Location.CurrentQueue == toRemove.Location.CurrentQueue
-            && m.Location.QueuePosition < toRemove.Location.QueuePosition)
-        {
-          m.Location.QueuePosition -= 1;
-        }
-      }
+        var toRemove = CurrentStatus.Material.FirstOrDefault(m => m.MaterialID == materialId && m.Location.Type == InProcessMaterialLocation.LocType.InQueue);
+        if (toRemove == null) return;
 
-      CurrentStatus.Material.Remove(toRemove);
+        // shift downward
+        foreach (var m in CurrentStatus.Material)
+        {
+          if (m.Location.Type == InProcessMaterialLocation.LocType.InQueue
+              && m.Location.CurrentQueue == toRemove.Location.CurrentQueue
+              && m.Location.QueuePosition < toRemove.Location.QueuePosition)
+          {
+            m.Location.QueuePosition -= 1;
+          }
+        }
+
+        CurrentStatus.Material.Remove(toRemove);
+      }
 
       OnNewStatus(CurrentStatus);
     }

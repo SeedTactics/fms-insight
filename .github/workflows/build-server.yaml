@@ -58,9 +58,6 @@ jobs:
       - name: Build Makino
         shell: pwsh
         run: dotnet pack -c Release --include-symbols /p:Version="$ENV:SEMVER" server/machines/makino
-      - name: Build Cincron
-        shell: pwsh
-        run: dotnet pack -c Release --include-symbols /p:Version="$ENV:SEMVER" server/machines/cincron
 
       # ----------------------------------------------------------
       # Publish

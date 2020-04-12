@@ -40,7 +40,7 @@ import { duration } from "moment";
 let dbP: Promise<sqlite.Database> = Promise.reject("No opened file yet");
 
 ipcRenderer.on("open-file", (_: IpcRendererEvent, path: string) => {
-  dbP = (async function() {
+  dbP = (async function () {
     let db: sqlite.Database | undefined;
     try {
       db = await sqlite.open(path);
@@ -142,7 +142,7 @@ async function convertRowToLog(db: sqlite.Database, row: any): Promise<any> {
         tools[row.Tool] = {
           toolUseDuringCycle: parseTimespan(row.UseInCycle),
           totalToolUseAtEndOfCycle: parseTimespan(row.UseAtEndOfCycle),
-          configuredToolLife: parseTimespan(row.ToolLife)
+          configuredToolLife: parseTimespan(row.ToolLife),
         };
       }
     }
@@ -150,7 +150,7 @@ async function convertRowToLog(db: sqlite.Database, row: any): Promise<any> {
 
   return {
     counter: row.Counter,
-    material: matRows.map(m => ({
+    material: matRows.map((m) => ({
       id: m.MaterialID,
       uniq: m.UniqueStr,
       part: m.PartName,
@@ -158,7 +158,7 @@ async function convertRowToLog(db: sqlite.Database, row: any): Promise<any> {
       numproc: m.NumProcesses,
       face: m.Face,
       serial: m.Serial,
-      workorder: m.Workorder
+      workorder: m.Workorder,
     })),
     type: convertLogType(row.StationLoc),
     startofcycle: row.Start > 0,
@@ -171,7 +171,7 @@ async function convertRowToLog(db: sqlite.Database, row: any): Promise<any> {
     elapsed: parseTimespan(row.Elapsed),
     active: parseTimespan(row.ActiveTime),
     details: details,
-    tools: tools
+    tools: tools,
   };
 }
 
@@ -187,10 +187,10 @@ b.register(
         " FROM stations WHERE TimeUTC >= $start AND TimeUTC <= $end ORDER BY Counter ASC",
       {
         $start: dateToTicks(new Date(a.startUTC)),
-        $end: dateToTicks(new Date(a.endUTC))
+        $end: dateToTicks(new Date(a.endUTC)),
       }
     );
-    return await Promise.all(rows.map(r => convertRowToLog(db, r)));
+    return await Promise.all(rows.map((r) => convertRowToLog(db, r)));
   }
 );
 
@@ -204,10 +204,32 @@ b.register(
       "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
         " FROM stations WHERE Counter IN (SELECT Counter FROM stations_mat WHERE MaterialID = $mat) ORDER BY Counter ASC",
       {
-        $mat: a.materialID
+        $mat: a.materialID,
       }
     );
-    return await Promise.all(rows.map(r => convertRowToLog(db, r)));
+    return await Promise.all(rows.map((r) => convertRowToLog(db, r)));
+  }
+);
+
+b.register(
+  "log-for-materials",
+  async (a: {
+    materialIDs: Iterable<number>;
+  }): Promise<ReadonlyArray<Readonly<ILogEntry>>> => {
+    const db = await dbP;
+    const rows: any[] = [];
+    for (const matId of a.materialIDs) {
+      rows.push(
+        ...(await db.all(
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
+            " FROM stations WHERE Counter IN (SELECT Counter FROM stations_mat WHERE MaterialID = $mat) ORDER BY Counter ASC",
+          {
+            $mat: matId,
+          }
+        ))
+      );
+    }
+    return await Promise.all(rows.map((r) => convertRowToLog(db, r)));
   }
 );
 
@@ -221,9 +243,9 @@ b.register(
       "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
         " FROM stations WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.Serial = $ser) ORDER BY Counter ASC",
       {
-        $ser: a.serial
+        $ser: a.serial,
       }
     );
-    return await Promise.all(rows.map(r => convertRowToLog(db, r)));
+    return await Promise.all(rows.map((r) => convertRowToLog(db, r)));
   }
 );

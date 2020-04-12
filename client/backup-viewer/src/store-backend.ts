@@ -73,8 +73,18 @@ export const JobsBackend = {
   ): Promise<ReadonlyArray<Readonly<api.IPartWorkorder>>> {
     return Promise.resolve([]);
   },
+  setJobComment(_uniq: string, _comment: string): Promise<void> {
+    // do nothing
+    return Promise.resolve();
+  },
 
   removeMaterialFromAllQueues(materialId: number): Promise<void> {
+    // do nothing
+    return Promise.resolve();
+  },
+  bulkRemoveMaterialFromQueues(
+    _materialIds: ReadonlyArray<number> | null
+  ): Promise<void> {
     // do nothing
     return Promise.resolve();
   },
@@ -100,7 +110,8 @@ export const JobsBackend = {
     casting: string,
     queue: string,
     pos: number,
-    serial: string
+    serials: string[],
+    qty: number | undefined
   ): Promise<void> {
     // do nothing
     return Promise.resolve();
@@ -140,6 +151,17 @@ export const LogBackend = {
       "log-for-material",
       {
         materialID,
+      }
+    );
+    return entries.map(api.LogEntry.fromJS);
+  },
+  async logForMaterials(
+    materialIDs: ReadonlyArray<number>
+  ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
+    const entries: ReadonlyArray<object> = await ToBackground.send(
+      "log-for-materials",
+      {
+        materialIDs,
       }
     );
     return entries.map(api.LogEntry.fromJS);

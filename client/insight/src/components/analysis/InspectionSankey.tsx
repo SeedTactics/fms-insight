@@ -94,7 +94,7 @@ class InspectionSankeyDiagram extends React.PureComponent<InspectionSankeyDiagra
     const y = activeLink.y0 - (activeLink.y0 - activeLink.y1) / 2;
 
     const hintValue = {
-      [`${activeLink.source.name} ➞ ${activeLink.target.name}`]: activeLink.value.toString() + " parts"
+      [`${activeLink.source.name} ➞ ${activeLink.target.name}`]: activeLink.value.toString() + " parts",
     };
 
     return <Hint x={x} y={y} value={hintValue} />;
@@ -104,10 +104,10 @@ class InspectionSankeyDiagram extends React.PureComponent<InspectionSankeyDiagra
     // d3-sankey mutates nodes and links array, so create copy
     return (
       <Sankey
-        nodes={this.props.sankey.nodes.map(d => ({ ...d }))}
+        nodes={this.props.sankey.nodes.map((d) => ({ ...d }))}
         links={this.props.sankey.links.map((l, idx) => ({
           ...l,
-          opacity: this.state.activeLink && this.state.activeLink.index === idx ? 0.6 : 0.3
+          opacity: this.state.activeLink && this.state.activeLink.index === idx ? 0.6 : 0.3,
         }))}
         width={window.innerWidth - 300}
         height={window.innerHeight - 200}
@@ -160,12 +160,12 @@ export class InspectionSankey extends React.Component<InspectionSankeyProps, Ins
     const showTable = this.state.showTable === null ? this.props.defaultToTable : this.state.showTable;
     const parts = this.props.inspectionlogs
       .keySet()
-      .map(x => x.part)
-      .toArray({ sortOn: x => x });
+      .map((x) => x.part)
+      .toArray({ sortOn: (x) => x });
     const inspTypes = this.props.inspectionlogs
       .keySet()
-      .map(e => e.inspType)
-      .toArray({ sortOn: x => x });
+      .map((e) => e.inspType)
+      .toArray({ sortOn: (x) => x });
     return (
       <Card raised>
         <CardHeader
@@ -174,7 +174,7 @@ export class InspectionSankey extends React.Component<InspectionSankeyProps, Ins
               style={{
                 display: "flex",
                 flexWrap: "wrap",
-                alignItems: "center"
+                alignItems: "center",
               }}
             >
               <SearchIcon style={{ color: "#6D4C41" }} />
@@ -197,13 +197,11 @@ export class InspectionSankey extends React.Component<InspectionSankeyProps, Ins
                     <ImportExport />
                   </IconButton>
                 </Tooltip>
-              ) : (
-                undefined
-              )}
+              ) : undefined}
               <Select
                 autoWidth
                 value={showTable ? "table" : "sankey"}
-                onChange={e => this.setState({ showTable: e.target.value === "table" })}
+                onChange={(e) => this.setState({ showTable: e.target.value === "table" })}
               >
                 <MenuItem key="sankey" value="sankey">
                   Sankey
@@ -218,16 +216,14 @@ export class InspectionSankey extends React.Component<InspectionSankeyProps, Ins
                 displayEmpty
                 style={{ marginRight: "1em", marginLeft: "1em" }}
                 value={this.state.selectedInspectType || ""}
-                onChange={e => this.setState({ selectedInspectType: e.target.value as string })}
+                onChange={(e) => this.setState({ selectedInspectType: e.target.value as string })}
               >
-                {this.state.selectedInspectType ? (
-                  undefined
-                ) : (
+                {this.state.selectedInspectType ? undefined : (
                   <MenuItem key={0} value="">
                     <em>Select Inspection Type</em>
                   </MenuItem>
                 )}
-                {inspTypes.map(n => (
+                {inspTypes.map((n) => (
                   <MenuItem key={n} value={n}>
                     {n}
                   </MenuItem>
@@ -239,16 +235,14 @@ export class InspectionSankey extends React.Component<InspectionSankeyProps, Ins
                   autoWidth
                   displayEmpty
                   value={this.state.selectedPart || ""}
-                  onChange={e => this.setState({ selectedPart: e.target.value as string })}
+                  onChange={(e) => this.setState({ selectedPart: e.target.value as string })}
                 >
-                  {this.state.selectedPart ? (
-                    undefined
-                  ) : (
+                  {this.state.selectedPart ? undefined : (
                     <MenuItem key={0} value="">
                       <em>Select Part</em>
                     </MenuItem>
                   )}
-                  {parts.map(n => (
+                  {parts.map((n) => (
                     <MenuItem key={n} value={n}>
                       <div style={{ display: "flex", alignItems: "center" }}>
                         <PartIdenticon part={n} size={30} />
@@ -257,9 +251,7 @@ export class InspectionSankey extends React.Component<InspectionSankeyProps, Ins
                     </MenuItem>
                   ))}
                 </Select>
-              ) : (
-                undefined
-              )}
+              ) : undefined}
             </div>
           }
           subheader={this.props.subtitle}
@@ -278,9 +270,7 @@ export class InspectionSankey extends React.Component<InspectionSankeyProps, Ins
               ) : (
                 <ConvertInspectionDataToSankey data={curData} />
               )
-            ) : (
-              undefined
-            )}
+            ) : undefined}
           </div>
         </CardContent>
       </Card>

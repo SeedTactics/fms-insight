@@ -43,7 +43,7 @@ import {
   DataTableActions,
   DataTableBody,
   DataTableActionZoom,
-  DataTableActionZoomType
+  DataTableActionZoomType,
 } from "./DataTable";
 import { InspectionLogEntry } from "../../data/events.inspection";
 import { Typography } from "@material-ui/core";
@@ -56,7 +56,7 @@ enum ColumnId {
   Serial,
   Workorder,
   Inspected,
-  Failed
+  Failed,
 }
 
 const columns: ReadonlyArray<Column<ColumnId, TriggeredInspectionEntry>> = [
@@ -64,33 +64,33 @@ const columns: ReadonlyArray<Column<ColumnId, TriggeredInspectionEntry>> = [
     id: ColumnId.Date,
     numeric: false,
     label: "Date",
-    getDisplay: c => c.time.toLocaleString(),
-    getForSort: c => c.time.getTime()
+    getDisplay: (c) => c.time.toLocaleString(),
+    getForSort: (c) => c.time.getTime(),
   },
   {
     id: ColumnId.Serial,
     numeric: false,
     label: "Serial",
-    getDisplay: c => c.serial || ""
+    getDisplay: (c) => c.serial || "",
   },
   {
     id: ColumnId.Workorder,
     numeric: false,
     label: "Workorder",
-    getDisplay: c => c.workorder || ""
+    getDisplay: (c) => c.workorder || "",
   },
   {
     id: ColumnId.Inspected,
     numeric: false,
     label: "Inspected",
-    getDisplay: c => (c.toInspect ? "inspected" : "")
+    getDisplay: (c) => (c.toInspect ? "inspected" : ""),
   },
   {
     id: ColumnId.Failed,
     numeric: false,
     label: "Failed",
-    getDisplay: c => (c.failed ? "failed" : "")
-  }
+    getDisplay: (c) => (c.failed ? "failed" : ""),
+  },
 ];
 
 export interface InspectionDataTableProps {
@@ -130,40 +130,40 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
   }
 
   const groups = groupInspectionsByPath(props.points, curZoom, sortOn);
-  const paths = groups.keySet().toArray({ sortOn: x => x });
+  const paths = groups.keySet().toArray({ sortOn: (x) => x });
 
   let zoom: DataTableActionZoom | undefined;
   if (props.zoomType && props.zoomType === DataTableActionZoomType.Last30Days) {
     zoom = {
       type: DataTableActionZoomType.Last30Days,
-      set_days_back: numDaysBack => {
+      set_days_back: (numDaysBack) => {
         if (numDaysBack) {
           const now = new Date();
           setCurZoom({ start: addDays(now, -numDaysBack), end: addHours(now, 1) });
         } else {
           setCurZoom(undefined);
         }
-      }
+      },
     };
   } else if (props.zoomType && props.zoomType === DataTableActionZoomType.ZoomIntoRange) {
     zoom = {
       type: DataTableActionZoomType.ZoomIntoRange,
       default_date_range: props.default_date_range,
       current_date_zoom: curZoom,
-      set_date_zoom_range: setCurZoom
+      set_date_zoom_range: setCurZoom,
     };
   } else if (props.zoomType && props.extendDateRange && props.zoomType === DataTableActionZoomType.ExtendDays) {
     zoom = {
       type: DataTableActionZoomType.ExtendDays,
       curStart: props.default_date_range[0],
       curEnd: props.default_date_range[1],
-      extend: props.extendDateRange
+      extend: props.extendDateRange,
     };
   }
 
   return (
     <div style={{ width: "100%" }}>
-      {paths.map(path => {
+      {paths.map((path) => {
         const points = groups.get(path).getOrThrow();
         const page = Math.min(pages.get(path).getOrElse(0), Math.ceil(points.material.length() / rowsPerPage));
         return (
@@ -200,7 +200,7 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
                   page={page}
                   count={points.material.length()}
                   rowsPerPage={rowsPerPage}
-                  setPage={p => setPages(pages.put(path, p))}
+                  setPage={(p) => setPages(pages.put(path, p))}
                   setRowsPerPage={setRowsPerPage}
                   zoom={zoom}
                 />

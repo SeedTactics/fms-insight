@@ -6,6 +6,7 @@ on:
       - "**"
     tags-ignore:
       - "v*"
+      - "insightapi-*"
 
 jobs:
   server:

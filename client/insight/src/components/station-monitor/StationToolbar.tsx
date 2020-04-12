@@ -48,14 +48,14 @@ const toolbarStyle = {
   paddingRight: "24px",
   paddingBottom: "4px",
   height: "2.5em",
-  alignItems: "flex-end" as "flex-end"
+  alignItems: "flex-end" as "flex-end",
 };
 
 const inHeaderStyle = {
   display: "flex",
   flexGrow: 1,
   alignSelf: "center",
-  alignItems: "flex-end" as "flex-end"
+  alignItems: "flex-end" as "flex-end",
 };
 
 interface StationToolbarProps {
@@ -79,7 +79,7 @@ enum StationMonitorType {
   Inspection = "Inspection",
   Wash = "Wash",
   Queues = "Queues",
-  AllMaterial = "AllMaterial"
+  AllMaterial = "AllMaterial",
 }
 
 function StationToolbar(props: StationToolbarProps) {
@@ -104,7 +104,7 @@ function StationToolbar(props: StationToolbarProps) {
     const free = newQueues.includes(freeMaterialSym);
     props.displayLoadStation(
       props.current_route.selected_load_id,
-      newQueues.filter(q => q !== freeMaterialSym).slice(0, 3),
+      newQueues.filter((q) => q !== freeMaterialSym).slice(0, 3),
       free
     );
   }
@@ -119,7 +119,7 @@ function StationToolbar(props: StationToolbarProps) {
     const newQueues = newQueuesAny as ReadonlyArray<string>;
     const free = newQueues.includes(freeMaterialSym);
     props.displayQueues(
-      newQueues.filter(q => q !== freeMaterialSym),
+      newQueues.filter((q) => q !== freeMaterialSym),
       free
     );
   }
@@ -156,31 +156,27 @@ function StationToolbar(props: StationToolbarProps) {
           placeholder="Load Station Number"
           key="loadnumselect"
           value={props.current_route.selected_load_id}
-          onChange={e => setLoadNumber(e.target.value)}
+          onChange={(e) => setLoadNumber(e.target.value)}
           style={{ width: "3em", marginLeft: "1em" }}
         />
-      ) : (
-        undefined
-      )}
+      ) : undefined}
       {curType === StationMonitorType.Inspection ? (
         <Select
           key="inspselect"
           value={props.current_route.selected_insp_type || allInspSym}
-          onChange={e => setInspType(e.target.value as string)}
+          onChange={(e) => setInspType(e.target.value as string)}
           style={{ marginLeft: "1em" }}
         >
           <MenuItem key={allInspSym} value={allInspSym}>
             <em>All</em>
           </MenuItem>
-          {props.insp_types.toArray({ sortOn: x => x }).map(ty => (
+          {props.insp_types.toArray({ sortOn: (x) => x }).map((ty) => (
             <MenuItem key={ty} value={ty}>
               {ty}
             </MenuItem>
           ))}
         </Select>
-      ) : (
-        undefined
-      )}
+      ) : undefined}
       {curType === StationMonitorType.LoadUnload ? (
         <FormControl style={{ marginLeft: "1em" }}>
           {loadqueues.length === 0 ? (
@@ -190,14 +186,12 @@ function StationToolbar(props: StationToolbarProps) {
                 top: "10px",
                 left: 0,
                 color: "rgba(0,0,0,0.54)",
-                fontSize: "0.9rem"
+                fontSize: "0.9rem",
               }}
             >
               Display queue(s)
             </label>
-          ) : (
-            undefined
-          )}
+          ) : undefined}
           <Select
             multiple
             name="station-monitor-queue-select"
@@ -207,7 +201,7 @@ function StationToolbar(props: StationToolbarProps) {
             value={loadqueues}
             inputProps={{ id: "queueselect" }}
             style={{ minWidth: "10em", marginTop: "0" }}
-            onChange={e => setLoadQueues(e.target.value)}
+            onChange={(e) => setLoadQueues(e.target.value)}
           >
             <MenuItem key={freeMaterialSym} value={freeMaterialSym}>
               Free Material
@@ -219,9 +213,7 @@ function StationToolbar(props: StationToolbarProps) {
             ))}
           </Select>
         </FormControl>
-      ) : (
-        undefined
-      )}
+      ) : undefined}
       {curType === StationMonitorType.Queues ? (
         <FormControl style={{ marginLeft: "1em", minWidth: "10em" }}>
           {standalonequeues.length === 0 ? (
@@ -231,14 +223,12 @@ function StationToolbar(props: StationToolbarProps) {
                 top: "10px",
                 left: 0,
                 color: "rgba(0,0,0,0.54)",
-                fontSize: "0.9rem"
+                fontSize: "0.9rem",
               }}
             >
               Select queue(s)
             </label>
-          ) : (
-            undefined
-          )}
+          ) : undefined}
           <Select
             multiple
             name="station-monitor-queue-select"
@@ -248,7 +238,7 @@ function StationToolbar(props: StationToolbarProps) {
             value={standalonequeues}
             inputProps={{ id: "queueselect" }}
             style={{ marginTop: "0" }}
-            onChange={e => setStandaloneQueues(e.target.value)}
+            onChange={(e) => setStandaloneQueues(e.target.value)}
           >
             <MenuItem key={freeMaterialSym} value={freeMaterialSym}>
               Free Material
@@ -260,9 +250,7 @@ function StationToolbar(props: StationToolbarProps) {
             ))}
           </Select>
         </FormControl>
-      ) : (
-        undefined
-      )}
+      ) : undefined}
     </nav>
   );
 }
@@ -271,13 +259,13 @@ export default connect(
   (st: Store) => ({
     current_route: st.Route,
     queues: st.Current.current_status.queues,
-    insp_types: st.Events.last30.mat_summary.inspTypes
+    insp_types: st.Events.last30.mat_summary.inspTypes,
   }),
   {
     displayLoadStation: routes.displayLoadStation,
     displayInspection: routes.displayInspectionType,
     displayWash: routes.displayWash,
     displayQueues: routes.displayQueues,
-    displayAllMaterial: () => ({ type: routes.RouteLocation.Operations_AllMaterial })
+    displayAllMaterial: () => ({ type: routes.RouteLocation.Operations_AllMaterial }),
   }
 )(StationToolbar);
