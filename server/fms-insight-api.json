@@ -1585,7 +1585,6 @@
         "CopiedToSystem",
         "PartName",
         "Unique",
-        "Priority",
         "ManuallyCreated",
         "CreateMarkingData",
         "CyclesOnFirstProcess",
@@ -1614,10 +1613,6 @@
         },
         "Unique": {
           "type": "string"
-        },
-        "Priority": {
-          "type": "integer",
-          "format": "int32"
         },
         "ScheduleId": {
           "type": "string"
@@ -2070,6 +2065,16 @@
               "type": "array",
               "items": {
                 "$ref": "#/definitions/InProcessJobDecrement"
+              }
+            },
+            "Precedence": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "int64"
+                }
               }
             }
           }
