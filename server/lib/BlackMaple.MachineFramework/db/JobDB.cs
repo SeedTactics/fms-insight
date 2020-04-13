@@ -88,6 +88,10 @@ namespace BlackMaple.MachineFramework
 
     private const int Version = 19;
 
+    // the Priority field was removed from the job but old tables had it marked as NOT NULL.  So rather than try and copy
+    // all the jobs, we just fill it in with 0 for old job databases.
+    private bool _jobTableHasOldPriorityColumn = false;
+
     public void CreateTables()
     {
       using (var cmd = _connection.CreateCommand())
@@ -98,7 +102,7 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "INSERT INTO version VALUES(" + Version.ToString() + ")";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE jobs(UniqueStr TEXT PRIMARY KEY, Part TEXT NOT NULL, NumProcess INTEGER NOT NULL, Priority INTEGER NOT NULL, Comment TEXT, CreateMarker INTEGER NOT NULL, StartUTC INTEGER NOT NULL, EndUTC INTEGER NOT NULL, Archived INTEGER NOT NULL, CopiedToSystem INTEGER NOT NULL, ScheduleId TEXT)";
+        cmd.CommandText = "CREATE TABLE jobs(UniqueStr TEXT PRIMARY KEY, Part TEXT NOT NULL, NumProcess INTEGER NOT NULL, Comment TEXT, CreateMarker INTEGER NOT NULL, StartUTC INTEGER NOT NULL, EndUTC INTEGER NOT NULL, Archived INTEGER NOT NULL, CopiedToSystem INTEGER NOT NULL, ScheduleId TEXT)";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE INDEX jobs_time_idx ON jobs(EndUTC, StartUTC)";
@@ -217,6 +221,11 @@ namespace BlackMaple.MachineFramework
             throw;
           }
         }
+
+        cmd.CommandText = "SELECT COUNT(*) FROM pragma_table_info('jobs') WHERE name='Priority'";
+        var priColCnt = cmd.ExecuteScalar();
+        if (priColCnt != null && priColCnt != DBNull.Value && (long)priColCnt > 0)
+          _jobTableHasOldPriorityColumn = true;
 
         if (curVersion > Version)
         {
@@ -951,21 +960,20 @@ namespace BlackMaple.MachineFramework
 
             var job = new MachineWatchInterface.JobPlan(unique, reader.GetInt32(2), numPaths);
             job.PartName = reader.GetString(1);
-            job.Priority = reader.GetInt32(3);
 
-            if (!reader.IsDBNull(4))
-              job.Comment = reader.GetString(4);
+            if (!reader.IsDBNull(3))
+              job.Comment = reader.GetString(3);
 
-            job.CreateMarkerData = reader.GetBoolean(5);
+            job.CreateMarkerData = reader.GetBoolean(4);
+            if (!reader.IsDBNull(5))
+              job.RouteStartingTimeUTC = new DateTime(reader.GetInt64(5), DateTimeKind.Utc);
             if (!reader.IsDBNull(6))
-              job.RouteStartingTimeUTC = new DateTime(reader.GetInt64(6), DateTimeKind.Utc);
-            if (!reader.IsDBNull(7))
-              job.RouteEndingTimeUTC = new DateTime(reader.GetInt64(7), DateTimeKind.Utc);
-            job.Archived = reader.GetBoolean(8);
+              job.RouteEndingTimeUTC = new DateTime(reader.GetInt64(6), DateTimeKind.Utc);
+            job.Archived = reader.GetBoolean(7);
+            if (!reader.IsDBNull(8))
+              job.JobCopiedToSystem = reader.GetBoolean(8);
             if (!reader.IsDBNull(9))
-              job.JobCopiedToSystem = reader.GetBoolean(9);
-            if (!reader.IsDBNull(10))
-              job.ScheduleId = reader.GetString(10);
+              job.ScheduleId = reader.GetString(9);
 
             ret.Add(job);
 
@@ -1136,14 +1144,14 @@ namespace BlackMaple.MachineFramework
     {
       using (var cmd = _connection.CreateCommand())
       {
-        cmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Priority, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId FROM jobs WHERE Archived = 0";
+        cmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId FROM jobs WHERE Archived = 0";
         return LoadPlannedSchedule(cmd);
       }
     }
 
     public MachineWatchInterface.PlannedSchedule LoadJobsNotCopiedToSystem(DateTime startUTC, DateTime endUTC, bool includeDecremented = true)
     {
-      var cmdTxt = "SELECT UniqueStr, Part, NumProcess, Priority, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId " +
+      var cmdTxt = "SELECT UniqueStr, Part, NumProcess, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId " +
                   " FROM jobs WHERE StartUTC <= $end AND EndUTC >= $start AND CopiedToSystem = 0";
       if (!includeDecremented)
       {
@@ -1163,7 +1171,7 @@ namespace BlackMaple.MachineFramework
       using (var jobCmd = _connection.CreateCommand())
       using (var simCmd = _connection.CreateCommand())
       {
-        jobCmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Priority, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId " +
+        jobCmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId " +
             " FROM jobs WHERE StartUTC <= $end AND EndUTC >= $start";
         jobCmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
         jobCmd.Parameters.Add("end", SqliteType.Integer).Value = endUTC.Ticks;
@@ -1182,7 +1190,7 @@ namespace BlackMaple.MachineFramework
       using (var jobCmd = _connection.CreateCommand())
       using (var simCmd = _connection.CreateCommand())
       {
-        jobCmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Priority, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId " +
+        jobCmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId " +
             " FROM jobs WHERE ScheduleId > $sid";
         jobCmd.Parameters.Add("sid", SqliteType.Text).Value = schId;
 
@@ -1262,7 +1270,7 @@ namespace BlackMaple.MachineFramework
     {
       using (var cmd = _connection.CreateCommand())
       {
-        cmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Priority, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId " +
+        cmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId " +
                   " FROM jobs WHERE ScheduleId = $sid";
 
         lock (_lock)
@@ -1304,7 +1312,7 @@ namespace BlackMaple.MachineFramework
 
           MachineWatchInterface.JobPlan job = null;
 
-          cmd.CommandText = "SELECT Part, NumProcess, Priority, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId FROM jobs WHERE UniqueStr = $uniq";
+          cmd.CommandText = "SELECT Part, NumProcess, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId FROM jobs WHERE UniqueStr = $uniq";
           cmd.Parameters.Add("uniq", SqliteType.Text).Value = UniqueStr;
           cmd2.CommandText = "SELECT Process, NumPaths FROM numpaths WHERE UniqueStr = $uniq";
           cmd2.Parameters.Add("uniq", SqliteType.Text).Value = UniqueStr;
@@ -1337,21 +1345,20 @@ namespace BlackMaple.MachineFramework
 
                 job = new MachineWatchInterface.JobPlan(UniqueStr, reader.GetInt32(1), numPaths);
                 job.PartName = reader.GetString(0);
-                job.Priority = reader.GetInt32(2);
 
-                if (!reader.IsDBNull(3))
-                  job.Comment = reader.GetString(3);
+                if (!reader.IsDBNull(2))
+                  job.Comment = reader.GetString(2);
 
-                job.CreateMarkerData = reader.GetBoolean(4);
+                job.CreateMarkerData = reader.GetBoolean(3);
+                if (!reader.IsDBNull(4))
+                  job.RouteStartingTimeUTC = new DateTime(reader.GetInt64(4), DateTimeKind.Utc);
                 if (!reader.IsDBNull(5))
-                  job.RouteStartingTimeUTC = new DateTime(reader.GetInt64(5), DateTimeKind.Utc);
-                if (!reader.IsDBNull(6))
-                  job.RouteEndingTimeUTC = new DateTime(reader.GetInt64(6), DateTimeKind.Utc);
-                job.Archived = reader.GetBoolean(7);
+                  job.RouteEndingTimeUTC = new DateTime(reader.GetInt64(5), DateTimeKind.Utc);
+                job.Archived = reader.GetBoolean(6);
+                if (!reader.IsDBNull(7))
+                  job.JobCopiedToSystem = reader.GetBoolean(7);
                 if (!reader.IsDBNull(8))
-                  job.JobCopiedToSystem = reader.GetBoolean(8);
-                if (!reader.IsDBNull(9))
-                  job.ScheduleId = reader.GetString(9);
+                  job.ScheduleId = reader.GetString(8);
 
               }
             }
@@ -1494,12 +1501,22 @@ namespace BlackMaple.MachineFramework
       {
         ((IDbCommand)cmd).Transaction = trans;
 
-        cmd.CommandText = "INSERT INTO jobs(UniqueStr, Part, NumProcess, Priority, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId) " +
-      "VALUES($uniq,$part,$proc,$pri,$comment,$marker,$start,$end,$archived,$copied,$sid)";
+        if (_jobTableHasOldPriorityColumn)
+        {
+          cmd.CommandText =
+            "INSERT INTO jobs(UniqueStr, Part, NumProcess, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId,Priority) " +
+              "VALUES($uniq,$part,$proc,$comment,$marker,$start,$end,$archived,$copied,$sid,$pri)";
+          cmd.Parameters.Add("pri", SqliteType.Integer).Value = 0;
+        }
+        else
+        {
+          cmd.CommandText =
+            "INSERT INTO jobs(UniqueStr, Part, NumProcess, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId) " +
+              "VALUES($uniq,$part,$proc,$comment,$marker,$start,$end,$archived,$copied,$sid)";
+        }
         cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
         cmd.Parameters.Add("part", SqliteType.Text).Value = job.PartName;
         cmd.Parameters.Add("proc", SqliteType.Integer).Value = job.NumProcesses;
-        cmd.Parameters.Add("pri", SqliteType.Integer).Value = job.Priority;
         if (string.IsNullOrEmpty(job.Comment))
           cmd.Parameters.Add("comment", SqliteType.Text).Value = DBNull.Value;
         else

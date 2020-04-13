@@ -1743,7 +1743,6 @@ export class JobPlan implements IJobPlan {
     partName!: string;
     comment?: string | undefined;
     unique!: string;
-    priority!: number;
     scheduleId?: string | undefined;
     bookings?: string[] | undefined;
     manuallyCreated!: boolean;
@@ -1774,7 +1773,6 @@ export class JobPlan implements IJobPlan {
             this.partName = data["PartName"];
             this.comment = data["Comment"];
             this.unique = data["Unique"];
-            this.priority = data["Priority"];
             this.scheduleId = data["ScheduleId"];
             if (data["Bookings"] && data["Bookings"].constructor === Array) {
                 this.bookings = [] as any;
@@ -1813,7 +1811,6 @@ export class JobPlan implements IJobPlan {
         data["PartName"] = this.partName;
         data["Comment"] = this.comment;
         data["Unique"] = this.unique;
-        data["Priority"] = this.priority;
         data["ScheduleId"] = this.scheduleId;
         if (this.bookings && this.bookings.constructor === Array) {
             data["Bookings"] = [];
@@ -1845,7 +1842,6 @@ export interface IJobPlan {
     partName: string;
     comment?: string | undefined;
     unique: string;
-    priority: number;
     scheduleId?: string | undefined;
     bookings?: string[] | undefined;
     manuallyCreated: boolean;
@@ -2612,6 +2608,7 @@ export interface ICurrentStatus {
 export class InProcessJob extends JobPlan implements IInProcessJob {
     completed?: number[][] | undefined;
     decrements?: InProcessJobDecrement[] | undefined;
+    precedence?: number[][] | undefined;
 
     constructor(data?: IInProcessJob) {
         super(data);
@@ -2629,6 +2626,11 @@ export class InProcessJob extends JobPlan implements IInProcessJob {
                 this.decrements = [] as any;
                 for (let item of data["Decrements"])
                     this.decrements!.push(InProcessJobDecrement.fromJS(item));
+            }
+            if (data["Precedence"] && data["Precedence"].constructor === Array) {
+                this.precedence = [] as any;
+                for (let item of data["Precedence"])
+                    this.precedence!.push(item);
             }
         }
     }
@@ -2652,6 +2654,11 @@ export class InProcessJob extends JobPlan implements IInProcessJob {
             for (let item of this.decrements)
                 data["Decrements"].push(item.toJSON());
         }
+        if (this.precedence && this.precedence.constructor === Array) {
+            data["Precedence"] = [];
+            for (let item of this.precedence)
+                data["Precedence"].push(item);
+        }
         super.toJSON(data);
         return data; 
     }
@@ -2660,6 +2667,7 @@ export class InProcessJob extends JobPlan implements IInProcessJob {
 export interface IInProcessJob extends IJobPlan {
     completed?: number[][] | undefined;
     decrements?: InProcessJobDecrement[] | undefined;
+    precedence?: number[][] | undefined;
 }
 
 export class InProcessJobDecrement implements IInProcessJobDecrement {

@@ -253,7 +253,7 @@ namespace Makino
       xml.WriteElementString("PartName", partName);
       xml.WriteElementString("Revision", "SAIL");
       xml.WriteElementString("Quantity", j.GetPlannedCyclesOnFirstProcess(1).ToString());
-      xml.WriteElementString("Priority", j.Priority.ToString());
+      xml.WriteElementString("Priority", "10");
       xml.WriteElementString("Status", "0");
 
       xml.WriteEndElement(); // Order

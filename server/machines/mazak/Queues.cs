@@ -278,8 +278,7 @@ namespace MazakMachineInterface
       var schsToAssign =
         allSchs
         .Where(s => !s.LowerPriorityScheduleMatchingCastingSkipped && !string.IsNullOrEmpty(s.Procs[1].InputQueue))
-        .OrderBy(s => s.SchRow.Priority)
-        .ThenBy(s => s.Job.GetSimulatedStartingTimeUTC(1, s.Procs[1].Path));
+        .OrderBy(s => s.SchRow.DueDate).ThenBy(s => s.SchRow.Priority);
 
       var skippedCastings = new HashSet<string>();
 

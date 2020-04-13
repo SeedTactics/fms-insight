@@ -221,8 +221,7 @@ function SelectJob(props: SelectJobProps) {
     () =>
       LazySeq.ofObject(props.jobs)
         .map(([_uniq, j]) => extractJobGroups(j))
-        .toVector()
-        .sortOn((j) => j.job.priority)
+        .sortOn((j) => j.job.partName)
         .toArray(),
     [props.jobs]
   );

@@ -3207,8 +3207,8 @@ namespace BlackMaple.FMSInsight.API
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string Unique { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("Priority", Required = Newtonsoft.Json.Required.Always)]
-        public int Priority { get; set; }
+        [Newtonsoft.Json.JsonProperty("Priority", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore, DefaultValueHandling = Newtonsoft.Json.DefaultValueHandling.Include)]
+        private int Priority { get; set; }
     
         [Newtonsoft.Json.JsonProperty("ScheduleId", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string ScheduleId { get; set; }
@@ -3662,6 +3662,9 @@ namespace BlackMaple.FMSInsight.API
     
         [Newtonsoft.Json.JsonProperty("Decrements", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.ICollection<InProcessJobDecrement> Decrements { get; set; }
+    
+        [Newtonsoft.Json.JsonProperty("Precedence", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public System.Collections.Generic.ICollection<System.Collections.Generic.ICollection<long>> Precedence { get; set; }
     
         public string ToJson() 
         {

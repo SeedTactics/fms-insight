@@ -71,6 +71,25 @@ namespace MachineWatchTest
       JobEqualityChecks.CheckJobEqual(expected, actual, true);
     }
 
+    [Fact]
+    public void CreatesNewJob()
+    {
+      var old = CreateJob();
+      var newJob = new JobPlan(old, "mynewunique");
+      newJob.PathInspections(1, 1).Clear();
+      newJob.PathInspections(1, 2).Clear();
+      newJob.PathInspections(2, 1).Clear();
+      newJob.PathInspections(2, 2).Clear();
+      newJob.PathInspections(2, 3).Clear();
+
+      _jobs.AddJobs(new NewJobs()
+      {
+        Jobs = new List<JobPlan> { newJob }
+      }, null);
+
+      JobEqualityChecks.CheckJobEqual(newJob, _jobs.LoadJob("mynewunique"), true);
+    }
+
     private JobPlan CreateJob()
     {
       var job1 = new JobPlan("Unique1", 2, new int[] { 2, 3 });
@@ -89,7 +108,6 @@ namespace MachineWatchTest
       job1.HoldEntireJob.HoldUnholdPattern.Add(TimeSpan.FromMinutes(10));
       job1.HoldEntireJob.HoldUnholdPattern.Add(TimeSpan.FromMinutes(18));
       job1.HoldEntireJob.HoldUnholdPattern.Add(TimeSpan.FromMinutes(125));
-      job1.Priority = 164;
       job1.Comment = "Hello there";
       job1.CreateMarkerData = true;
       job1.ScheduledBookingIds.Add("booking1");
