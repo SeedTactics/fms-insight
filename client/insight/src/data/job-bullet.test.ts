@@ -50,7 +50,6 @@ it("converts events to points", () => {
       copiedToSystem: true,
       partName: "part1",
       unique: "uniq1",
-      priority: 10,
       manuallyCreated: false,
       createMarkingData: true,
       holdEntireJob: new api.JobHoldPattern(dummyHold),
