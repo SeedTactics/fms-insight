@@ -318,7 +318,7 @@ namespace MazakMachineInterface
           JobUnique = mat.Unique,
           PartName = mat.PartNameOrCasting,
           Process = lastProc,
-          Path = 1,
+          Path = matDetails.Paths != null && matDetails.Paths.TryGetValue(Math.Max(lastProc, 1), out var path) ? path : 1,
           Serial = matDetails?.Serial,
           WorkorderId = matDetails?.Workorder,
           SignaledInspections =
