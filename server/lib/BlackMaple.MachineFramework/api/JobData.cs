@@ -1117,7 +1117,7 @@ namespace BlackMaple.MachineWatchInterface
 
 #pragma warning disable CS0169
     // priority field is no longer used but this is kept for backwards network compatibility
-    [DataMember(Name = "Priority", IsRequired = false, EmitDefaultValue = false), Obsolete]
+    [DataMember(Name = "Priority", IsRequired = false, EmitDefaultValue = true), Obsolete]
     private int _priority;
 #pragma warning restore CS0169
 
