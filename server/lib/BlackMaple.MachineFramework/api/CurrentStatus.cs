@@ -243,7 +243,7 @@ namespace BlackMaple.MachineWatchInterface
       }
     }
 
-    public long GetPrecendence(int process, int path)
+    public long GetPrecedence(int process, int path)
     {
       if (_precedence == null) return -1;
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -256,7 +256,7 @@ namespace BlackMaple.MachineWatchInterface
       }
     }
 
-    public void SetPrecendence(int process, int path, long precedence)
+    public void SetPrecedence(int process, int path, long precedence)
     {
       if (_precedence == null)
       {

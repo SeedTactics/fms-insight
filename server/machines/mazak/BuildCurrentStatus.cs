@@ -415,7 +415,7 @@ namespace MazakMachineInterface
         job.SetPathGroup(partProcRow.ProcessNumber, path, path);
         job.SetHoldMachining(partProcRow.ProcessNumber, path, job.HoldMachining(partProcRow.ProcessNumber, path));
         job.SetHoldLoadUnload(partProcRow.ProcessNumber, path, job.HoldLoadUnload(partProcRow.ProcessNumber, path));
-        job.SetPrecendence(partProcRow.ProcessNumber, path, precedence);
+        job.SetPrecedence(partProcRow.ProcessNumber, path, precedence);
 
         //Routing
         string fixStr = partProcRow.FixLDS;

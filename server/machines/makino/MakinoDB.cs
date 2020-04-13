@@ -681,7 +681,7 @@ namespace Makino
             newJob.SetPlannedCyclesOnFirstProcess(1, reader.GetInt32(4));
 
             if (!reader.IsDBNull(5))
-              newJob.SetPrecendence(1, 1, reader.GetInt16(5));
+              newJob.SetPrecedence(1, 1, reader.GetInt16(5));
 
             DateTime start = DateTime.SpecifyKind(reader.GetDateTime(6), DateTimeKind.Local);
             start = start.ToUniversalTime();
