@@ -440,11 +440,6 @@ namespace BlackMaple.MachineWatchInterface
       get { return _copiedToSystem; }
       set { _copiedToSystem = value; }
     }
-    public int Priority
-    { // larger number means higher priority
-      get { return _priority; }
-      set { _priority = value; }
-    }
     public string PartName
     {
       get { return _partName; }
@@ -990,7 +985,6 @@ namespace BlackMaple.MachineWatchInterface
       _partName = "";
       _scheduleId = "";
       _uniqueStr = unique;
-      _priority = 0;
       _comment = "";
       _manuallyCreated = false;
       _holdJob = new JobHoldPattern();
@@ -1027,7 +1021,6 @@ namespace BlackMaple.MachineWatchInterface
       _partName = job.PartName;
       _scheduleId = job._scheduleId;
       _uniqueStr = newUniqueStr;
-      _priority = job._priority;
       _comment = job._comment;
       _manuallyCreated = job._manuallyCreated;
       _createMarker = job._createMarker;
@@ -1070,7 +1063,6 @@ namespace BlackMaple.MachineWatchInterface
       _partName = job.PartName;
       _scheduleId = job._scheduleId;
       _uniqueStr = job._uniqueStr;
-      _priority = job._priority;
       _comment = job._comment;
       _manuallyCreated = job._manuallyCreated;
       _createMarker = job._createMarker;
@@ -1123,8 +1115,11 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember(Name = "Unique", IsRequired = true)]
     private string _uniqueStr;
 
-    [DataMember(Name = "Priority", IsRequired = true)]
+#pragma warning disable CS0169
+    // priority field is no longer used but this is kept for backwards network compatibility
+    [DataMember(Name = "Priority", IsRequired = false, EmitDefaultValue = false), Obsolete]
     private int _priority;
+#pragma warning restore CS0169
 
     [DataMember(Name = "ScheduleId", IsRequired = false, EmitDefaultValue = false)]
     private string _scheduleId;

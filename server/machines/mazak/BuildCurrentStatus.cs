@@ -72,8 +72,11 @@ namespace MazakMachineInterface
       var jobsBySchID = new Dictionary<long, InProcessJob>();
       var pathBySchID = new Dictionary<long, MazakPart.IProcToPath>();
 
-      foreach (var schRow in mazakData.Schedules)
+      long precedence = 0;
+      foreach (var schRow in mazakData.Schedules.OrderBy(s => s.DueDate).ThenBy(s => s.Priority))
       {
+        precedence += 1;
+
         if (!MazakPart.IsSailPart(schRow.PartName))
           continue;
 
@@ -128,13 +131,12 @@ namespace MazakMachineInterface
         //Job Basics
         job.SetPlannedCyclesOnFirstProcess(procToPath.PathForProc(proc: 1), schRow.PlanQuantity);
         AddCompletedToJob(schRow, job, procToPath);
-        job.Priority = schRow.Priority;
         if (((HoldPattern.HoldMode)schRow.HoldMode) == HoldPattern.HoldMode.FullHold)
           job.HoldEntireJob.UserHold = true;
         else
           job.HoldEntireJob.UserHold = false;
 
-        AddRoutingToJob(mazakData, partRow, job, machineGroupName, procToPath, dbType);
+        AddRoutingToJob(mazakData, partRow, job, machineGroupName, procToPath, dbType, precedence);
       }
 
       var loadedJobs = new HashSet<string>();
@@ -403,7 +405,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private static void AddRoutingToJob(MazakSchedulesPartsPallets mazakData, MazakPartRow partRow, JobPlan job, IMachineGroupName machineGroupName, MazakPart.IProcToPath procToPath, MazakDbType mazakTy)
+    private static void AddRoutingToJob(MazakSchedulesPartsPallets mazakData, MazakPartRow partRow, InProcessJob job, IMachineGroupName machineGroupName, MazakPart.IProcToPath procToPath, MazakDbType mazakTy, long precedence)
     {
       //Add routing and pallets
       foreach (var partProcRow in partRow.Processes)
@@ -413,6 +415,7 @@ namespace MazakMachineInterface
         job.SetPathGroup(partProcRow.ProcessNumber, path, path);
         job.SetHoldMachining(partProcRow.ProcessNumber, path, job.HoldMachining(partProcRow.ProcessNumber, path));
         job.SetHoldLoadUnload(partProcRow.ProcessNumber, path, job.HoldLoadUnload(partProcRow.ProcessNumber, path));
+        job.SetPrecendence(partProcRow.ProcessNumber, path, precedence);
 
         //Routing
         string fixStr = partProcRow.FixLDS;
