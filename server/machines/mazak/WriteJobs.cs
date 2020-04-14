@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -220,9 +220,7 @@ namespace MazakMachineInterface
       }
       Log.Debug("Creating new schedule with UID {uid}", UID);
 
-      var (transSet, savedParts) = BuildMazakSchedules.RemoveCompletedAndDecrementSchedules(
-        mazakData, UseStartingOffsetForDueDate
-      );
+      var (transSet, savedParts) = BuildMazakSchedules.RemoveCompletedSchedules(mazakData);
       if (transSet.Schedules.Any())
         writeDb.Save(transSet, "Update schedules");
 
