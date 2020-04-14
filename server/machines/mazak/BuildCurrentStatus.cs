@@ -501,6 +501,7 @@ namespace MazakMachineInterface
       jobFromMazak.RouteEndingTimeUTC = jobFromDb.RouteEndingTimeUTC;
       jobFromMazak.ScheduleId = jobFromDb.ScheduleId;
       jobFromMazak.HoldEntireJob = jobFromDb.HoldEntireJob;
+      jobFromMazak.Comment = jobFromDb.Comment;
       foreach (var b in jobFromDb.ScheduledBookingIds)
         jobFromMazak.ScheduledBookingIds.Add(b);
       for (int proc = 1; proc <= jobFromMazak.NumProcesses; proc++)
@@ -529,6 +530,10 @@ namespace MazakMachineInterface
           jobFromMazak.SetPathGroup(proc, path,
             jobFromDb.GetPathGroup(proc, path)
           );
+          if (proc == 1)
+          {
+            jobFromMazak.SetCasting(path, jobFromDb.GetCasting(path));
+          }
 
           var mazakStops = jobFromMazak.GetMachiningStop(proc, path).ToList();
           var dbStops = jobFromDb.GetMachiningStop(proc, path).ToList();

@@ -103,12 +103,15 @@ const useTableStyles = makeStyles((theme) =>
 function RawMaterialJobTable(props: RawMaterialJobTableProps) {
   const currentJobs = useSelector((s) => s.Current.current_status.jobs);
   const mats = useSelector((s) => s.Current.current_status.material);
-  const hasCastings = useSelector((s) => !s.Events.last30.sim_use.castingNames.isEmpty());
+  const hasOldCastings = useSelector((s) => !s.Events.last30.sim_use.castingNames.isEmpty());
   const jobs = React.useMemo(() => extractJobRawMaterial(props.queue, currentJobs, mats), [
     props.queue,
     currentJobs,
     mats,
   ]);
+  const hasCastings = React.useMemo(() => {
+    return hasOldCastings || jobs.findIndex((j) => j.rawMatName !== j.job.partName);
+  }, [hasOldCastings, jobs]);
   const classes = useTableStyles();
 
   return (

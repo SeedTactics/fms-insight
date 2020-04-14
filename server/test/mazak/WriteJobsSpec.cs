@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -134,7 +134,7 @@ namespace MachineWatchTest
               }
             }
           },
-          // a non-completed schedule, should be decremented
+          // a non-completed schedule, should be untouched
 					new MazakScheduleRow()
           {
             Id = 2,

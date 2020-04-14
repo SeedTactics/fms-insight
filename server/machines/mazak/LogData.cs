@@ -414,14 +414,14 @@ namespace MazakMachineInterface
 
           DeleteLog(_log.MaxForeignID());
 
-          _queues.CheckQueues(mazakData);
+          var queuesChanged = _queues.CheckQueues(mazakData);
 
           if (sendToExternal.Count > 0)
           {
             _sendToExternal.Post(sendToExternal).Wait(TimeSpan.FromSeconds(30));
           }
 
-          if (logs.Count > 0)
+          if (logs.Count > 0 || queuesChanged)
           {
             NewEntries?.Invoke();
           }
