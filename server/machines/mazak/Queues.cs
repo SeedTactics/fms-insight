@@ -65,27 +65,31 @@ namespace MazakMachineInterface
       CurrentQueueMismatch = false;
     }
 
-    public void CheckQueues(MazakSchedulesAndLoadActions mazakData)
+    public bool CheckQueues(MazakSchedulesAndLoadActions mazakData)
     {
       if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(3), true))
       {
         log.Debug("Unable to obtain mazak db lock, trying again soon.");
-        return;
+        return false;
       }
       try
       {
         var transSet = CalculateScheduleChanges(mazakData);
 
+        bool changed = false;
         if (transSet != null && transSet.Schedules.Count() > 0)
         {
           _transDB.Save(transSet, "Setting material from queues");
+          changed = true;
         }
         CurrentQueueMismatch = false;
+        return changed;
       }
       catch (Exception ex)
       {
         CurrentQueueMismatch = true;
         log.Error(ex, "Error checking for new material");
+        return true;
       }
       finally
       {
