@@ -77,7 +77,7 @@ namespace MazakMachineInterface
 
       var usedScheduleIDs = new HashSet<int>();
       var scheduledParts = new HashSet<string>();
-      var maxPriMatchingDate = 0;
+      var maxPriMatchingDate = 9;
       foreach (var schRow in mazakData.Schedules)
       {
         usedScheduleIDs.Add(schRow.Id);
@@ -229,14 +229,24 @@ namespace MazakMachineInterface
       // first, calculate the fixtures and faces used by the job to check
       var group = jobToCheck.GetPathGroup(process: 1, path: proc1path);
       var usedFixtureFaces = new HashSet<ValueTuple<string, string>>();
+      var usedPallets = new HashSet<string>();
       for (int proc = 1; proc <= jobToCheck.NumProcesses; proc++)
       {
         for (int path = 1; path <= jobToCheck.GetNumPaths(proc); path++)
         {
           if (jobToCheck.GetPathGroup(proc, path) != group) continue;
           var (plannedFix, plannedFace) = jobToCheck.PlannedFixture(proc, path);
-          if (string.IsNullOrEmpty(plannedFix)) continue;
-          usedFixtureFaces.Add((plannedFix, plannedFace.ToString()));
+          if (string.IsNullOrEmpty(plannedFix))
+          {
+            foreach (var p in jobToCheck.PlannedPallets(proc, path))
+            {
+              usedPallets.Add(p);
+            }
+          }
+          else
+          {
+            usedFixtureFaces.Add((plannedFix, plannedFace.ToString()));
+          }
         }
       }
 
@@ -265,6 +275,11 @@ namespace MazakMachineInterface
               if (otherJob.GetPathGroup(otherProc, otherPath) != otherGroup) continue;
               var (otherFix, otherFace) = otherJob.PlannedFixture(otherProc, otherPath);
               if (usedFixtureFaces.Contains((otherFix, otherFace.ToString())))
+              {
+                earlierConflicts += 1;
+                goto checkNextPath;
+              }
+              if (otherJob.PlannedPallets(otherProc, otherPath).Any(usedPallets.Contains))
               {
                 earlierConflicts += 1;
                 goto checkNextPath;

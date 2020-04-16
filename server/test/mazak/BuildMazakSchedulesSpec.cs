@@ -99,8 +99,10 @@ namespace MachineWatchTest
       tokeep.Should().BeEquivalentTo(new[] { "part2:1:1" });
     }
 
-    [Fact]
-    public void AddsSchedules()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AddsSchedules(bool conflictByFixture)
     {
       //basic job
       var job1 = new JobPlan("uniq1", 2, new int[] { 2, 2 });
@@ -114,10 +116,20 @@ namespace MachineWatchTest
       job1.SetSimulatedStartingTimeUTC(1, 2, new DateTime(2018, 1, 2, 3, 4, 5, DateTimeKind.Local).ToUniversalTime());
       job1.SetPlannedCyclesOnFirstProcess(1, 51);
       job1.SetPlannedCyclesOnFirstProcess(2, 41);
-      job1.SetFixtureFace(1, 1, "fixA", 1);
-      job1.SetFixtureFace(1, 2, "fixA", 1);
-      job1.SetFixtureFace(2, 1, "fixA", 2);
-      job1.SetFixtureFace(2, 2, "fixA", 2);
+      if (conflictByFixture)
+      {
+        job1.SetFixtureFace(1, 1, "fixA", 1); // paths conflict with each other
+        job1.SetFixtureFace(1, 2, "fixA", 1);
+        job1.SetFixtureFace(2, 1, "fixA", 2);
+        job1.SetFixtureFace(2, 2, "fixA", 2);
+      }
+      else
+      {
+        job1.AddProcessOnPallet(1, 1, "palA"); // paths conflict with each other
+        job1.AddProcessOnPallet(1, 2, "palA");
+        job1.AddProcessOnPallet(2, 1, "palA");
+        job1.AddProcessOnPallet(2, 2, "palA");
+      }
 
       //one with an input queue
       var job2 = new JobPlan("uniq2", 2, new int[] { 2, 2 });
@@ -133,8 +145,16 @@ namespace MachineWatchTest
       job2.SetPlannedCyclesOnFirstProcess(2, 42);
       job2.SetInputQueue(1, 1, "aaa");
       job2.SetInputQueue(1, 2, "bbb");
-      job2.SetFixtureFace(1, 1, "fixA", 2); // conflicts with both job1 paths
-      job2.SetFixtureFace(2, 2, "fixB", 2); // no conflicts
+      if (conflictByFixture)
+      {
+        job2.SetFixtureFace(1, 1, "fixA", 2); // conflicts with both job1 paths
+        job2.SetFixtureFace(2, 2, "fixB", 2); // no conflicts
+      }
+      else
+      {
+        job2.AddProcessOnPallet(1, 1, "palA"); // conflict with both paths
+        job2.AddProcessOnPallet(2, 2, "palB"); // no conflict
+      }
 
       //two schedule which already exists, one with same route starting, one with different
       var job3 = new JobPlan("uniq3", 2, new int[] { 1, 1 });
@@ -180,7 +200,7 @@ namespace MachineWatchTest
             PartName = "part3:6:1",
             Comment = MazakPart.CreateComment("uniq3", new[] {1, 1}, false),
             DueDate = new DateTime(2020, 04, 14, 0, 0, 0, DateTimeKind.Local),
-            Priority = 5
+            Priority = 17
           },
           new MazakScheduleRow() {
             Id = 0,
@@ -206,7 +226,7 @@ namespace MachineWatchTest
           PartName = "part1:6:1",
           Comment = MazakPart.CreateComment("uniq1", new[] {1, 1}, false),
           PlanQuantity = 51,
-          Priority = 6 + 1, // max existing is 5 so start at 6, plus one earlier conflict
+          Priority = 18 + 1, // max existing is 17 so start at 18, plus one earlier conflict
           DueDate = new DateTime(2020, 4, 14, 0, 0, 0, DateTimeKind.Local),
           Processes = {
             new MazakScheduleProcessRow() {
@@ -227,7 +247,7 @@ namespace MachineWatchTest
           PartName = "part1:6:2",
           Comment = MazakPart.CreateComment("uniq1", new[] {2, 2}, false),
           PlanQuantity = 41,
-          Priority = 6, // max existing is 5 so start at 6
+          Priority = 18, // max existing is 17 so start at 18
           DueDate = new DateTime(2020, 4, 14, 0, 0, 0, DateTimeKind.Local),
           Processes = {
             new MazakScheduleProcessRow() {
@@ -250,7 +270,7 @@ namespace MachineWatchTest
           PartName = "part2:6:1",
           Comment = MazakPart.CreateComment("uniq2", new[] {1, 1}, false),
           PlanQuantity = 12,
-          Priority = 6 + 2, // conflicts with 2 earlier
+          Priority = 18 + 2, // conflicts with 2 earlier
           DueDate = new DateTime(2020, 4, 14, 0, 0, 0, DateTimeKind.Local),
           Processes = {
             new MazakScheduleProcessRow() {
@@ -271,7 +291,7 @@ namespace MachineWatchTest
           PartName = "part2:6:2",
           Comment = MazakPart.CreateComment("uniq2", new[] {2, 2}, false),
           PlanQuantity = 42,
-          Priority = 6,
+          Priority = 18,
           DueDate = new DateTime(2020, 4, 14, 0, 0, 0, DateTimeKind.Local),
           Processes = {
             new MazakScheduleProcessRow() {
