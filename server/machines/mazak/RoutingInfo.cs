@@ -54,6 +54,7 @@ namespace MazakMachineInterface
     private readonly BlackMaple.MachineFramework.FMSSettings fmsSettings;
 
     public bool CheckPalletsUsedOnce;
+    public Action<NewJobs> NewJobTransform = null;
 
     public event NewCurrentStatus OnNewCurrentStatus;
     public void RaiseNewCurrentStatus(CurrentStatus s) => OnNewCurrentStatus?.Invoke(s);
@@ -190,6 +191,7 @@ namespace MazakMachineInterface
       }
       try
       {
+        NewJobTransform?.Invoke(newJ);
         _writeJobs.AddJobs(newJ, expectedPreviousScheduleId);
       }
       finally
