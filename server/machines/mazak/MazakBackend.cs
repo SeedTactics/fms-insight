@@ -87,6 +87,8 @@ namespace MazakMachineInterface
       get { return logDataLoader; }
     }
 
+    public RoutingInfo RoutingInfo => routing;
+
     public MazakBackend(IConfiguration configuration, FMSSettings st)
     {
       var cfg = configuration.GetSection("Mazak");
