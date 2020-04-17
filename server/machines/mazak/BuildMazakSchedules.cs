@@ -169,7 +169,7 @@ namespace MazakMachineInterface
         {
           var start = part.GetSimulatedStartingTimeUTC(1, proc1path);
           newSchRow.DueDate = routeStartDate;
-          newSchRow.Priority = startingPriority + Math.Min(earlierConflicts, 9);
+          newSchRow.Priority = Math.Min(100, startingPriority + earlierConflicts);
         }
         else
         {
