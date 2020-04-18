@@ -170,7 +170,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public void DecrementPlannedButNotStartedQty()
     {
-      // lock prevents decrement from occuring at the same time as the CheckPalletsMatch function
+      // lock prevents decrement from occuring at the same time as the thread
       // is deciding what to put onto a pallet
       lock (_changeLock)
       {

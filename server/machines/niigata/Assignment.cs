@@ -71,6 +71,7 @@ namespace BlackMaple.FMSInsight.Niigata
       // next, check if pallet at load station being unloaded needs something loaded
       foreach (var pal in cellSt.Pallets)
       {
+        if (pal.Status.Master.Skip) continue;
         if (pal.Status.CurStation.Location.Location != PalletLocationEnum.LoadUnload) continue;
         if (!(pal.Status.Tracking.BeforeCurrentStep && pal.Status.CurrentStep is UnloadStep)) continue;
         if (pal.Faces.SelectMany(ms => ms.Material).Any(m => m.Action.Type == InProcessMaterialAction.ActionType.Loading)) continue;
@@ -85,6 +86,7 @@ namespace BlackMaple.FMSInsight.Niigata
       // next, check empty stuff in buffer
       foreach (var pal in cellSt.Pallets)
       {
+        if (pal.Status.Master.Skip) continue;
         if (pal.Status.CurStation.Location.Location != PalletLocationEnum.Buffer) continue;
         if (!pal.Status.Master.NoWork) continue;
         if (pal.Faces.Any())
@@ -126,7 +128,6 @@ namespace BlackMaple.FMSInsight.Niigata
         .Where(j => loadStation == null || j.Job.LoadStations(j.Process, j.Path).Contains(loadStation.Value))
         .Where(j => j.Job.PlannedPallets(j.Process, j.Path).Contains(pallet.ToString()))
         .OrderBy(j => j.Job.RouteStartingTimeUTC)
-        .ThenByDescending(j => j.Job.Priority)
         .ThenBy(j => j.Job.GetSimulatedStartingTimeUTC(j.Process, j.Path))
         .ToList()
         ;
@@ -160,6 +161,8 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private (bool, HashSet<long>) CheckMaterialForPathExists(HashSet<long> currentlyLoading, IReadOnlyDictionary<long, InProcessMaterial> unusedMatsOnPal, JobPath path, IEnumerable<InProcessMaterial> queuedMats)
     {
+      // This logic must be identical to the eventual assignment in CreateCellState.MaterialToLoadOnFace
+
       var (fixture, faceNum) = path.Job.PlannedFixture(path.Process, path.Path);
 
       var inputQueue = path.Job.GetInputQueue(path.Process, path.Path);
@@ -170,15 +173,21 @@ namespace BlackMaple.FMSInsight.Niigata
       }
       else if (path.Process == 1 && !string.IsNullOrEmpty(inputQueue))
       {
-        // load castings
+        var casting = path.Job.GetCasting(path.Path);
+        if (string.IsNullOrEmpty(casting)) casting = path.Job.PartName;
+
+        // load castings.
         var castings =
           queuedMats
           .Where(m => m.Location.CurrentQueue == inputQueue
-                    && m.Process == 0
-                    && ((string.IsNullOrEmpty(m.JobUnique) && m.PartName == path.Job.PartName)
-                       || (!string.IsNullOrEmpty(m.JobUnique) && m.JobUnique == path.Job.UniqueStr)
-                       )
                     && !currentlyLoading.Contains(m.MaterialID)
+                    && ((string.IsNullOrEmpty(m.JobUnique) && m.PartName == casting)
+                       || (!string.IsNullOrEmpty(m.JobUnique)
+                            && m.JobUnique == path.Job.UniqueStr
+                            && m.Process == 0
+                            && path.Job.GetPathGroup(1, m.Path) == path.Job.GetPathGroup(path.Process, path.Path)
+                          )
+                       )
           )
           .OrderBy(m => m.Location.QueuePosition)
           .ToList();
@@ -221,7 +230,7 @@ namespace BlackMaple.FMSInsight.Niigata
             if (mat.Location.CurrentQueue != inputQueue) continue;
             if (mat.JobUnique != path.Job.UniqueStr) continue;
             if (mat.Process + 1 != path.Process) continue;
-            if (mat.Path != -1 && path.Job.GetPathGroup(mat.Process, mat.Path) != path.Job.GetPathGroup(path.Process, path.Path))
+            if (path.Job.GetPathGroup(mat.Process, mat.Path) != path.Job.GetPathGroup(path.Process, path.Path))
               continue;
             if (currentlyLoading.Contains(mat.MaterialID)) continue;
 

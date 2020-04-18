@@ -80,8 +80,7 @@ namespace BlackMaple.FMSInsight.Niigata
       foreach (var k in _settings.Queues) curStatus.QueueSizes[k.Key] = k.Value;
 
       // jobs
-      var jobs = _jobs.LoadUnarchivedJobs();
-      foreach (var j in jobs.Jobs)
+      foreach (var j in status.Schedule.Jobs)
       {
         var curJob = new InProcessJob(j);
         curStatus.Jobs.Add(curJob.UniqueStr, curJob);
@@ -105,6 +104,37 @@ namespace BlackMaple.FMSInsight.Niigata
         foreach (var d in _jobs.LoadDecrementsForJob(j.UniqueStr))
           curJob.Decrements.Add(d);
       }
+
+      // set precedence
+      var proc1paths =
+        curStatus.Jobs.Values.SelectMany(job =>
+          Enumerable.Range(1, job.GetNumPaths(1)).Select(proc1path => (job, proc1path))
+        )
+        .OrderBy(x => x.job.RouteStartingTimeUTC)
+        .ThenBy(x => x.job.GetSimulatedStartingTimeUTC(1, x.proc1path));
+      int precedence = 0;
+      foreach (var (j, proc1path) in proc1paths)
+      {
+        precedence += 1;
+        j.SetPrecedence(1, proc1path, precedence);
+
+        // now set the rest of the processes
+        for (int proc = 2; proc <= j.NumProcesses; proc++)
+        {
+          for (int path = 1; path <= j.GetNumPaths(proc); path++)
+          {
+            if (j.GetPathGroup(proc, path) == j.GetPathGroup(1, proc1path))
+            {
+              // only set if it hasn't already been set
+              if (j.GetPrecedence(proc, path) <= 0)
+              {
+                j.SetPrecedence(proc, path, precedence);
+              }
+            }
+          }
+        }
+      }
+
 
       // pallets
       foreach (var pal in status.Pallets)
@@ -310,39 +340,77 @@ namespace BlackMaple.FMSInsight.Niigata
       _sync.DecrementPlannedButNotStartedQty();
       return _jobs.LoadDecrementQuantitiesAfter(loadDecrementsAfterTimeUTC);
     }
+
+    public void SetJobComment(string jobUnique, string comment)
+    {
+      _jobs.SetJobComment(jobUnique, comment);
+      _sync.JobsOrQueuesChanged();
+    }
     #endregion
 
     #region Queues
-    public void AddUnallocatedCastingToQueue(string part, string queue, int position, string serial)
+    public void AddUnallocatedPartToQueue(string partName, string queue, int position, string serial)
     {
       if (!_settings.Queues.ContainsKey(queue))
       {
         throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
       }
-      // num proc will be set later once it is allocated to a specific job
-      var matId = _log.AllocateMaterialIDForCasting(part, 1);
 
-      Log.Debug("Adding unprocessed casting for part {part} to queue {queue} in position {pos} with serial {serial}. " +
-                "Assigned matId {matId}",
-        part, queue, position, serial, matId
-      );
+      string casting = partName;
 
-      if (!string.IsNullOrEmpty(serial))
+      // try and see if there is a job for this part with an actual casting
+      var sch = _jobs.LoadUnarchivedJobs();
+      var job = sch.Jobs.FirstOrDefault(j => j.PartName == partName);
+      if (job != null)
       {
-        _log.RecordSerialForMaterialID(
-          new BlackMaple.MachineFramework.JobLogDB.EventLogMaterial()
+        for (int path = 1; path <= job.GetNumPaths(1); path++)
+        {
+          if (!string.IsNullOrEmpty(job.GetCasting(path)))
           {
-            MaterialID = matId,
-            Process = 0,
-            Face = ""
-          },
-          serial);
+            casting = job.GetCasting(path);
+            break;
+          }
+        }
       }
-      _log.RecordAddMaterialToQueue(matId, 0, queue, position);
-      _sync.JobsOrQueuesChanged();
+
+      AddUnallocatedCastingToQueue(casting, 1, queue, position, string.IsNullOrEmpty(serial) ? new string[] { } : new string[] { serial });
     }
 
-    public void AddUnprocessedMaterialToQueue(string jobUnique, int process, string queue, int position, string serial)
+    public void AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serial)
+    {
+      if (!_settings.Queues.ContainsKey(queue))
+      {
+        throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
+      }
+
+      // num proc will be set later once it is allocated to a specific job
+      for (int i = 0; i < qty; i++)
+      {
+        var matId = _log.AllocateMaterialIDForCasting(casting);
+
+        Log.Debug("Adding unprocessed casting for casting {casting} to queue {queue} in position {pos} with serial {serial}. " +
+                  "Assigned matId {matId}",
+          casting, queue, position, serial, matId
+        );
+
+        if (i < serial.Count)
+        {
+          _log.RecordSerialForMaterialID(
+            new BlackMaple.MachineFramework.JobLogDB.EventLogMaterial()
+            {
+              MaterialID = matId,
+              Process = 0,
+              Face = ""
+            },
+            serial[i]);
+        }
+        _log.RecordAddMaterialToQueue(matId, 0, queue, position >= 0 ? position + i : -1);
+      }
+      _sync.JobsOrQueuesChanged();
+
+    }
+
+    public void AddUnprocessedMaterialToQueue(string jobUnique, int process, int pathGroup, string queue, int position, string serial)
     {
       if (!_settings.Queues.ContainsKey(queue))
       {
@@ -355,6 +423,18 @@ namespace BlackMaple.FMSInsight.Niigata
 
       var job = _jobs.LoadJob(jobUnique);
       if (job == null) throw new BlackMaple.MachineFramework.BadRequestException("Unable to find job " + jobUnique);
+
+      int? path = null;
+      for (var p = 1; p <= job.GetNumPaths(Math.Max(1, process)); p++)
+      {
+        if (job.GetPathGroup(Math.Max(1, process), p) == pathGroup)
+        {
+          path = p;
+          break;
+        }
+      }
+      if (!path.HasValue) throw new BlackMaple.MachineFramework.BadRequestException("Unable to find path group " + pathGroup.ToString() + " for job " + jobUnique + " and process " + process.ToString());
+
       var matId = _log.AllocateMaterialID(jobUnique, job.PartName, job.NumProcesses);
       if (!string.IsNullOrEmpty(serial))
       {
@@ -368,6 +448,7 @@ namespace BlackMaple.FMSInsight.Niigata
           serial);
       }
       _log.RecordAddMaterialToQueue(matId, process, queue, position);
+      _log.RecordPathForProcess(matId, Math.Max(1, process), path.Value);
       _sync.JobsOrQueuesChanged();
     }
 
@@ -391,10 +472,11 @@ namespace BlackMaple.FMSInsight.Niigata
       _sync.JobsOrQueuesChanged();
     }
 
-    public void RemoveMaterialFromAllQueues(long materialId)
+    public void RemoveMaterialFromAllQueues(IList<long> materialIds)
     {
-      Log.Debug("Removing {matId} from all queues", materialId);
-      _log.RecordRemoveMaterialFromAllQueues(materialId);
+      Log.Debug("Removing {@matId} from all queues", materialIds);
+      foreach (var materialId in materialIds)
+        _log.RecordRemoveMaterialFromAllQueues(materialId);
       _sync.JobsOrQueuesChanged();
     }
     #endregion
