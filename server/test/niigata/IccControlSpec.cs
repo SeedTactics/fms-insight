@@ -74,7 +74,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             fixture: "fix1",
             face: 1
           )
-          .AddInsp(inspTy: "InspTy", cntr: "Thecounter", max: 2)
+          .AddInsp(proc: 1, path: 1, inspTy: "InspTy", cntr: "Thecounter", max: 2)
           },
           new[] { (prog: "prog111", rev: 5L) }
         )
@@ -109,8 +109,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         })
         .ExpectNoChanges()
         .MoveToLoad(pal: 1, lul: 1)
+        .SetExpectedCastingElapsedLoadUnloadTime(pal: 1, mins: 0)
         .ExpectTransition(new[] { FakeIccDsl.ExpectLoadBegin(pal: 1, lul: 1) })
         .AdvanceMinutes(4) // =4
+        .SetExpectedCastingElapsedLoadUnloadTime(pal: 1, mins: 4)
         .ExpectNoChanges()
         .SetAfterLoad(pal: 1)
         .SetExpectedLoadCastings(new[] {
@@ -157,6 +159,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             im.Action.Program = null;
             im.Action.ElapsedMachiningTime = null;
             im.Action.ExpectedRemainingMachiningTime = null;
+            im.LastCompletedMachiningRouteStopIndex = 0;
           }
         )
         .ExpectTransition(new[] {
@@ -188,11 +191,22 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1),
           (uniq: "uniq1", part: "part1", pal: 2, path: 1, face: 1),
         })
+        .UpdateExpectedMaterial(fstMats, im =>
+        {
+          im.Action.ElapsedLoadUnloadTime = TimeSpan.Zero;
+          im.LastCompletedMachiningRouteStopIndex = null;
+        })
+        .SetExpectedCastingElapsedLoadUnloadTime(pal: 1, mins: 0)
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectLoadBegin(pal: 1, lul: 4),
           FakeIccDsl.ExpectRouteIncrement(pal: 1, newCycleCnt: 2)
         })
         .AdvanceMinutes(2) // =30
+        .UpdateExpectedMaterial(fstMats, im =>
+        {
+          im.Action.ElapsedLoadUnloadTime = TimeSpan.FromMinutes(2);
+        })
+        .SetExpectedCastingElapsedLoadUnloadTime(pal: 1, mins: 2)
         .ExpectNoChanges()
         .SetAfterLoad(pal: 1)
         .SetExpectedLoadCastings(new[] {
@@ -226,6 +240,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .UpdateExpectedMaterial(sndMats, im =>
           {
             im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+            im.LastCompletedMachiningRouteStopIndex = 0;
             im.SignaledInspections.Add("InspTy");
           }
         )
@@ -247,6 +262,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .UpdateExpectedMaterial(sndMats, m =>
         {
           m.Action.Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial;
+          m.Action.ElapsedLoadUnloadTime = TimeSpan.Zero;
         })
         // no load of new, since qty is 3 and have produced 2 on pallet 1 and there is still a pending load assigned to pallet 2
         .ExpectTransition(new[] {
@@ -354,10 +370,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           FakeIccDsl.ExpectAddNewProgram(progNum: 1000, name: "prog111", rev: 6)
         })
 
-        .AddUnallocatedCasting(queue: "thequeue", part: "part4", numProc: 1, mat: out var unusedMat)
+        .AddUnallocatedCasting(queue: "thequeue", rawMatName: "part4", mat: out var unusedMat)
         .ExpectNoChanges()
 
-        .AddUnallocatedCasting(queue: "thequeue", part: "part1", numProc: 1, mat: out var queuedMat)
+        .AddUnallocatedCasting(queue: "thequeue", rawMatName: "part1", mat: out var queuedMat)
         .UpdateExpectedMaterial(queuedMat.MaterialID, m =>
         {
           m.JobUnique = "uniq1";
@@ -375,10 +391,18 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           FakeIccDsl.ExpectNewRoute(pal: 1, luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 1000 }, faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) })
         })
         .MoveToLoad(pal: 1, lul: 3)
+        .UpdateExpectedMaterial(queuedMat.MaterialID, m =>
+        {
+          m.Action.ElapsedLoadUnloadTime = TimeSpan.Zero;
+        })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectLoadBegin(pal: 1, lul: 3)
         })
         .AdvanceMinutes(3) // = 3min
+        .UpdateExpectedMaterial(queuedMat.MaterialID, m =>
+        {
+          m.Action.ElapsedLoadUnloadTime = TimeSpan.FromMinutes(3);
+        })
         .ExpectNoChanges()
         .SetAfterLoad(pal: 1)
         .UpdateExpectedMaterial(queuedMat.MaterialID, m =>
@@ -452,9 +476,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) }
           )
         })
+        .SetExpectedCastingElapsedLoadUnloadTime(pal: 1, mins: 0)
         .MoveToLoad(pal: 1, lul: 3)
         .ExpectTransition(new[] { FakeIccDsl.ExpectLoadBegin(pal: 1, lul: 3) })
         .AdvanceMinutes(4) // =4
+        .SetExpectedCastingElapsedLoadUnloadTime(pal: 1, mins: 4)
         .ExpectNoChanges()
         .SetAfterLoad(pal: 1)
         .ClearExpectedLoadCastings()
@@ -489,6 +515,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             im.Action.Program = null;
             im.Action.ElapsedMachiningTime = null;
             im.Action.ExpectedRemainingMachiningTime = null;
+            im.LastCompletedMachiningRouteStopIndex = 0;
           }
         )
         .ExpectTransition(new[] {
@@ -502,6 +529,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetExpectedLoadCastings(new[] {
           (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1),
          })
+         .SetExpectedCastingElapsedLoadUnloadTime(pal: 1, mins: 0)
          .UpdateExpectedMaterial(AAAproc1, im =>
          {
            im.Action.Type = InProcessMaterialAction.ActionType.Loading;
@@ -509,6 +537,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
            im.Action.ProcessAfterLoad = 2;
            im.Action.PathAfterLoad = 1;
            im.Action.LoadOntoFace = 2;
+           im.Action.ElapsedLoadUnloadTime = TimeSpan.Zero;
+           im.LastCompletedMachiningRouteStopIndex = null;
          })
          .ExpectTransition(new[] {
             FakeIccDsl.ExpectNewRoute(
@@ -574,9 +604,15 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .AdvanceMinutes(30) // = 97min
         .EndMachine(mach: 5)
         .SetAfterMC(pal: 1)
+        .UpdateExpectedMaterial(BBBproc1, im =>
+          {
+            im.LastCompletedMachiningRouteStopIndex = 0;
+          }
+        )
         .UpdateExpectedMaterial(AAAproc2, im =>
           {
             im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+            im.LastCompletedMachiningRouteStopIndex = 0;
           }
         )
         .ExpectTransition(new[] {
@@ -588,8 +624,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetExpectedLoadCastings(new[] {
           (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1),
          })
+        .SetExpectedCastingElapsedLoadUnloadTime(pal: 1, mins: 0)
         .IncrJobStartedCnt("uniq1")
-         .UpdateExpectedMaterial(BBBproc1, im =>
+        .UpdateExpectedMaterial(BBBproc1, im =>
          {
            im.Action = new InProcessMaterialAction()
            {
@@ -597,17 +634,21 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
              LoadOntoFace = 2,
              LoadOntoPallet = "1",
              ProcessAfterLoad = 2,
-             PathAfterLoad = 1
+             PathAfterLoad = 1,
+             ElapsedLoadUnloadTime = TimeSpan.Zero
            };
+           im.LastCompletedMachiningRouteStopIndex = null;
          })
-         .UpdateExpectedMaterial(AAAproc2, im =>
+        .UpdateExpectedMaterial(AAAproc2, im =>
          {
            im.Action = new InProcessMaterialAction()
            {
-             Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
+             Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
+             ElapsedLoadUnloadTime = TimeSpan.Zero
            };
+           im.LastCompletedMachiningRouteStopIndex = null;
          })
-         .ExpectTransition(new[] {
+        .ExpectTransition(new[] {
            FakeIccDsl.ExpectRouteIncrement(pal: 1, newCycleCnt: 2),
            FakeIccDsl.ExpectLoadBegin(pal: 1, lul: 4)
          })
@@ -665,9 +706,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .AdvanceMinutes(100) // 212 min
         .EndMachine(mach: 6)
         .SetAfterMC(pal: 1)
+        .UpdateExpectedMaterial(BBBproc2, im =>
+        {
+          im.LastCompletedMachiningRouteStopIndex = 0;
+        })
         .UpdateExpectedMaterial(CCCproc1, im =>
           {
             im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+            im.LastCompletedMachiningRouteStopIndex = 0;
           }
         )
         .ExpectTransition(new[] {
@@ -685,15 +731,19 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             LoadOntoFace = 2,
             LoadOntoPallet = "1",
             ProcessAfterLoad = 2,
-            PathAfterLoad = 1
+            PathAfterLoad = 1,
+            ElapsedLoadUnloadTime = TimeSpan.Zero
           };
+          im.LastCompletedMachiningRouteStopIndex = null;
         })
         .UpdateExpectedMaterial(BBBproc2, im =>
         {
           im.Action = new InProcessMaterialAction()
           {
-            Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
+            Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
+            ElapsedLoadUnloadTime = TimeSpan.Zero
           };
+          im.LastCompletedMachiningRouteStopIndex = null;
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectNewRoute(
@@ -724,54 +774,56 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           _dsl.LoadToFace(pal: 1, lul: 3, face: 2, unique: "uniq1", elapsedMin: 2, activeMins: 10, loadingMats: CCCproc1, loadedMats: out var CCCproc2)
         })
 
-       // a cycle with only proc2
-       .MoveToMachine(pal: 1, mach: 5)
-       .SetBeforeMC(pal: 1)
-       .StartMachine(mach: 5, program: 1001)
-       .UpdateExpectedMaterial(CCCproc2, im =>
-       {
-         im.Action.Type = InProcessMaterialAction.ActionType.Machining;
-         im.Action.Program = "prog222 rev6";
-         im.Action.ElapsedMachiningTime = TimeSpan.Zero;
-         im.Action.ExpectedRemainingMachiningTime = TimeSpan.FromMinutes(15);
-       })
-       .ExpectTransition(new[] {
-         FakeIccDsl.ExpectMachineBegin(pal: 1, machine: 5, program: "prog222", rev: 6, mat: CCCproc2)
-       })
-       .AdvanceMinutes(20) // = 234min
-       .EndMachine(mach: 5)
-       .SetAfterMC(pal: 1)
-       .UpdateExpectedMaterial(CCCproc2, im =>
-       {
-         im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
-       })
-       .ExpectTransition(new[] {
-         FakeIccDsl.ExpectMachineEnd(pal: 1, mach: 5, program: "prog222", rev: 6, elapsedMin: 20, activeMin: 15, mats: CCCproc2)
-       })
-       .MoveToLoad(pal: 1, lul: 3)
-       .SetBeforeUnload(pal: 1)
-       .UpdateExpectedMaterial(CCCproc2, im =>
-       {
-         im.Action = new InProcessMaterialAction()
-         {
-           Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
-         };
-       })
-       // nothing new loaded
-       .ExpectTransition(new[] {
-         FakeIccDsl.ExpectLoadBegin(pal: 1, lul: 3)
-       })
-       .AdvanceMinutes(10) // = 244min
-       .SetNoWork(pal: 1)
-       .RemoveExpectedMaterial(CCCproc2.Select(m => m.MaterialID))
-       .ExpectTransition(new[] {
-         FakeIccDsl.ExpectPalletCycle(pal: 1, mins:244 -  214),
-         FakeIccDsl.UnloadFromFace(pal: 1, lul: 3, elapsedMin: 10, activeMins: 11, mats: CCCproc2)
-       })
-       .MoveToBuffer(pal: 1, buff: 1)
-       .ExpectNoChanges()
+        // a cycle with only proc2
+        .MoveToMachine(pal: 1, mach: 5)
+        .SetBeforeMC(pal: 1)
+        .StartMachine(mach: 5, program: 1001)
+        .UpdateExpectedMaterial(CCCproc2, im =>
+        {
+          im.Action.Type = InProcessMaterialAction.ActionType.Machining;
+          im.Action.Program = "prog222 rev6";
+          im.Action.ElapsedMachiningTime = TimeSpan.Zero;
+          im.Action.ExpectedRemainingMachiningTime = TimeSpan.FromMinutes(15);
+        })
+        .ExpectTransition(new[] {
+          FakeIccDsl.ExpectMachineBegin(pal: 1, machine: 5, program: "prog222", rev: 6, mat: CCCproc2)
+        })
+        .AdvanceMinutes(20) // = 234min
+        .EndMachine(mach: 5)
+        .SetAfterMC(pal: 1)
+        .UpdateExpectedMaterial(CCCproc2, im =>
+        {
+          im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+          im.LastCompletedMachiningRouteStopIndex = 0;
+        })
+        .ExpectTransition(new[] {
+          FakeIccDsl.ExpectMachineEnd(pal: 1, mach: 5, program: "prog222", rev: 6, elapsedMin: 20, activeMin: 15, mats: CCCproc2)
+        })
+        .MoveToLoad(pal: 1, lul: 3)
+        .SetBeforeUnload(pal: 1)
+        .UpdateExpectedMaterial(CCCproc2, im =>
+        {
+          im.Action = new InProcessMaterialAction()
+          {
+            Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
+            ElapsedLoadUnloadTime = TimeSpan.Zero
+          };
+        })
+        // nothing new loaded
+        .ExpectTransition(new[] {
+          FakeIccDsl.ExpectLoadBegin(pal: 1, lul: 3)
+        })
+        .AdvanceMinutes(10) // = 244min
+        .SetNoWork(pal: 1)
+        .RemoveExpectedMaterial(CCCproc2.Select(m => m.MaterialID))
+        .ExpectTransition(new[] {
+          FakeIccDsl.ExpectPalletCycle(pal: 1, mins:244 -  214),
+          FakeIccDsl.UnloadFromFace(pal: 1, lul: 3, elapsedMin: 10, activeMins: 11, mats: CCCproc2)
+        })
+        .MoveToBuffer(pal: 1, buff: 1)
+        .ExpectNoChanges()
 
-       ;
+        ;
 
     }
 

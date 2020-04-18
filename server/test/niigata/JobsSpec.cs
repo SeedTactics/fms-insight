@@ -115,11 +115,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         elapsed: TimeSpan.FromMinutes(10),
         active: TimeSpan.Zero
       );
-      _jobDB.AddJobs(new NewJobs()
-      {
-        Jobs = new List<JobPlan> { j }
-      }, null);
-
       // two pallets with some material
       var pal1 = new PalletAndMaterial()
       {
@@ -295,7 +290,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           Status = status,
           Pallets = new List<PalletAndMaterial> { pal1, pal2 },
-          QueuedMaterial = new List<InProcessMaterial> { queuedMat }
+          QueuedMaterial = new List<InProcessMaterial> { queuedMat },
+          Schedule = new PlannedSchedule()
+          {
+            Jobs = new List<JobPlan> { j }
+          }
         });
 
         _jobs.GetCurrentStatus().Should().BeEquivalentTo(expectedSt, config =>
@@ -417,26 +416,39 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     public void UnallocatedQueues()
     {
       //add a casting
-      _jobs.AddUnallocatedCastingToQueue("p1", "q1", position: 0, serial: "aaa");
+      _jobs.AddUnallocatedCastingToQueue(casting: "c1", qty: 2, queue: "q1", position: 0, serial: new[] { "aaa" });
       _logDB.GetMaterialDetails(1).Should().BeEquivalentTo(new MaterialDetails()
       {
         MaterialID = 1,
-        PartName = "p1",
+        PartName = "c1",
         NumProcesses = 1,
         Serial = "aaa",
+        Paths = new Dictionary<int, int>()
+      });
+      _logDB.GetMaterialDetails(2).Should().BeEquivalentTo(new MaterialDetails()
+      {
+        MaterialID = 2,
+        PartName = "c1",
+        NumProcesses = 1,
+        Serial = null,
         Paths = new Dictionary<int, int>()
       });
 
       _logDB.GetMaterialInQueue("q1").Should().BeEquivalentTo(new[] {
           new JobLogDB.QueuedMaterial()
-          { MaterialID = 1, NumProcesses = 1, PartName = "p1", Position = 0, Queue = "q1", Unique = ""}
+            { MaterialID = 1, NumProcesses = 1, PartNameOrCasting = "c1", Position = 0, Queue = "q1", Unique = ""},
+          new JobLogDB.QueuedMaterial()
+            { MaterialID = 2, NumProcesses = 1, PartNameOrCasting = "c1", Position = 1, Queue = "q1", Unique = ""}
         });
 
       _syncMock.Received().JobsOrQueuesChanged();
       _syncMock.ClearReceivedCalls();
 
-      _jobs.RemoveMaterialFromAllQueues(1);
-      _logDB.GetMaterialInQueue("q1").Should().BeEmpty();
+      _jobs.RemoveMaterialFromAllQueues(new List<long> { 1 });
+      _logDB.GetMaterialInQueue("q1").Should().BeEquivalentTo(new[] {
+          new JobLogDB.QueuedMaterial()
+            { MaterialID = 2, NumProcesses = 1, PartNameOrCasting = "c1", Position = 0, Queue = "q1", Unique = ""}
+        });
 
       _syncMock.Received().JobsOrQueuesChanged();
       _syncMock.ClearReceivedCalls();
@@ -445,12 +457,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     [Fact]
     public void AllocatedQueues()
     {
-      var job = new JobPlan("uuu1", 2);
+      var job = new JobPlan("uuu1", 2, new[] { 2, 2 });
       job.PartName = "p1";
+      job.SetPathGroup(1, 1, 50);
+      job.SetPathGroup(1, 2, 60);
       _jobDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = new List<JobPlan> { job } }, null);
 
       //add an allocated material
-      _jobs.AddUnprocessedMaterialToQueue("uuu1", 1, "q1", 0, "aaa");
+      _jobs.AddUnprocessedMaterialToQueue("uuu1", process: 1, pathGroup: 60, queue: "q1", position: 0, serial: "aaa");
       _logDB.GetMaterialDetails(1).Should().BeEquivalentTo(new MaterialDetails()
       {
         MaterialID = 1,
@@ -458,19 +472,19 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         NumProcesses = 2,
         Serial = "aaa",
         JobUnique = "uuu1",
-        Paths = new Dictionary<int, int>()
+        Paths = new Dictionary<int, int>() { { 1, 2 } }
       });
 
       _logDB.GetMaterialInQueue("q1").Should().BeEquivalentTo(new[] {
           new JobLogDB.QueuedMaterial()
-          { MaterialID = 1, NumProcesses = 2, PartName = "p1", Position = 0, Queue = "q1", Unique = "uuu1"}
+          { MaterialID = 1, NumProcesses = 2, PartNameOrCasting = "p1", Position = 0, Queue = "q1", Unique = "uuu1"}
         });
 
       _syncMock.Received().JobsOrQueuesChanged();
       _syncMock.ClearReceivedCalls();
 
       //remove it
-      _jobs.RemoveMaterialFromAllQueues(1);
+      _jobs.RemoveMaterialFromAllQueues(new List<long> { 1 });
       _logDB.GetMaterialInQueue("q1").Should().BeEmpty();
 
       _syncMock.Received().JobsOrQueuesChanged();
@@ -480,7 +494,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _jobs.SetMaterialInQueue(1, "q1", 0);
       _logDB.GetMaterialInQueue("q1").Should().BeEquivalentTo(new[] {
           new JobLogDB.QueuedMaterial()
-          { MaterialID = 1, NumProcesses = 2, PartName = "p1", Position = 0, Queue = "q1", Unique = "uuu1"}
+          { MaterialID = 1, NumProcesses = 2, PartNameOrCasting = "p1", Position = 0, Queue = "q1", Unique = "uuu1"}
         });
 
       _syncMock.Received().JobsOrQueuesChanged();

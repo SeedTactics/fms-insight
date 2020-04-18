@@ -295,9 +295,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     #endregion
 
     #region Material
-    public FakeIccDsl AddUnallocatedCasting(string queue, string part, int numProc, out LogMaterial mat)
+    public FakeIccDsl AddUnallocatedCasting(string queue, string rawMatName, out LogMaterial mat)
     {
-      var matId = _logDB.AllocateMaterialIDForCasting(part, numProc);
+      var matId = _logDB.AllocateMaterialIDForCasting(rawMatName);
       if (_settings.SerialType == SerialType.AssignOneSerialPerMaterial)
       {
         _logDB.RecordSerialForMaterialID(
@@ -321,7 +321,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         MaterialID = matId,
         JobUnique = "",
-        PartName = part,
+        PartName = rawMatName,
         Process = 0,
         Path = 1,
         Serial = _settings.ConvertMaterialIDToSerial(matId),
@@ -340,8 +340,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         matID: matId,
         uniq: "",
         proc: 0,
-        part: part,
-        numProc: numProc,
+        part: rawMatName,
+        numProc: 1,
         serial: _settings.ConvertMaterialIDToSerial(matId),
         workorder: "",
         face: ""
@@ -371,6 +371,18 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           Type = InProcessMaterialLocation.LocType.Free
         }
       }).ToList();
+      return this;
+    }
+
+    public FakeIccDsl SetExpectedCastingElapsedLoadUnloadTime(int pal, int mins)
+    {
+      foreach (var m in _expectedLoadCastings)
+      {
+        if (m.Action.LoadOntoPallet == pal.ToString())
+        {
+          m.Action.ElapsedLoadUnloadTime = TimeSpan.FromMinutes(mins);
+        }
+      }
       return this;
     }
 
@@ -458,7 +470,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       var j = new JobPlan(unique, 1);
       j.PartName = part;
-      j.Priority = priority;
+      j.RouteStartingTimeUTC = DateTime.UtcNow.AddHours(-priority);
       j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: qty);
       foreach (var i in luls)
       {
@@ -493,7 +505,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       var j = new JobPlan(unique, 1);
       j.PartName = part;
-      j.Priority = priority;
+      j.RouteStartingTimeUTC = DateTime.UtcNow.AddHours(-priority);
       j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: qty);
       foreach (var i in luls)
       {
@@ -540,7 +552,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       var j = new JobPlan(unique, 2);
       j.PartName = part;
-      j.Priority = priority;
+      j.RouteStartingTimeUTC = DateTime.UtcNow.AddHours(-priority);
       j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: qty);
       foreach (var i in luls)
       {
@@ -587,7 +599,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       var j = new JobPlan(unique, 2);
       j.PartName = part;
-      j.Priority = priority;
+      j.RouteStartingTimeUTC = DateTime.UtcNow.AddHours(-priority);
       j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: qty);
       foreach (var i in load1)
       {
@@ -1409,9 +1421,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
   public static class FakeIccDslJobHelpers
   {
-    public static JobPlan AddInsp(this JobPlan job, string inspTy, string cntr, int max, int inspSingleProc = -1)
+    public static JobPlan AddInsp(this JobPlan job, int proc, int path, string inspTy, string cntr, int max)
     {
-      job.AddInspection(new JobInspectionData(inspTy, cntr, max, TimeSpan.Zero, inspSingleProc));
+      job.PathInspections(proc, path).Add(new PathInspection() { InspectionType = inspTy, Counter = cntr, MaxVal = max });
       return job;
     }
   }
