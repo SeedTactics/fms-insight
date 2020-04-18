@@ -46,8 +46,9 @@
               ],
               "Load": [1, 2],
               "Unload": [1, 2],
-              "InputQueue": "TransferStand",
-              "OutputQueue": "Conveyor",
+              "InputQueue": "Conveyor",
+              "OutputQueue": "TransferStand",
+              "Casting": "CastingX",
               "Stops": [
                 {
                   "Stations": { "1": "100", "2": "100" },
@@ -101,6 +102,7 @@
                   "ExpectedCycleTime": "PT9M18S"
                 }
               ],
+              "InputQueue": "TransferStand",
               "SimulatedProduction": [
                 { "TimeUTC": "2018-01-01T02:39:22Z", "Quantity": 1 },
                 { "TimeUTC": "2018-01-01T04:18:12Z", "Quantity": 2 },
@@ -181,6 +183,9 @@
                   "ExpectedCycleTime": "PT4M"
                 }
               ],
+              "InputQueue": "Conveyor",
+              "OutputQueue": "TransferStand",
+              "Casting": "CastingX",
               "SimulatedProduction": [
                 { "TimeUTC": "2018-01-01T10:27:50Z", "Quantity": 1 },
                 { "TimeUTC": "2018-01-01T11:45:00Z", "Quantity": 2 },
@@ -220,6 +225,7 @@
                   "ExpectedCycleTime": "PT20M"
                 }
               ],
+              "InputQueue": "TransferStand",
               "SimulatedProduction": [
                 { "TimeUTC": "2018-01-01T12:45:32Z", "Quantity": 1 },
                 { "TimeUTC": "2018-01-01T14:02:42Z", "Quantity": 2 },
@@ -294,6 +300,9 @@
                   "ExpectedCycleTime": "PT40M"
                 }
               ],
+              "InputQueue": "Conveyor",
+              "OutputQueue": "TransferStand",
+              "Casting": "CastingY",
               "SimulatedProduction": [
                 { "TimeUTC": "2018-01-01T03:51:32Z", "Quantity": 1 },
                 { "TimeUTC": "2018-01-01T04:35:44Z", "Quantity": 2 },
@@ -340,6 +349,7 @@
                   "ExpectedCycleTime": "PT15M30S"
                 }
               ],
+              "InputQueue": "TransferStand",
               "SimulatedProduction": [
                 { "TimeUTC": "2018-01-01T06:23:00Z", "Quantity": 1 },
                 { "TimeUTC": "2018-01-01T08:01:12Z", "Quantity": 2 },

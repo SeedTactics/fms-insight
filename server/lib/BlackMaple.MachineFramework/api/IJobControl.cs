@@ -52,6 +52,8 @@ namespace BlackMaple.MachineWatchInterface
     ///Adds new jobs into the cell controller
     void AddJobs(NewJobs jobs, string expectedPreviousScheduleId);
 
+    void SetJobComment(string jobUnique, string comment);
+
     //Remove all planned parts from all jobs in the system.
     //
     //The function does 2 things:
@@ -65,15 +67,20 @@ namespace BlackMaple.MachineWatchInterface
 
     //In-process queues
 
-    /// Add a new casting for a given part.  The casting has not yet been assigned to a specific job,
+    /// Add new raw material for part.  The part material has not yet been assigned to a specific job,
     /// and will be assigned to the job with remaining demand and earliest priority.
     /// The serial is optional and is passed only if the material has already been marked with a serial.
-    void AddUnallocatedCastingToQueue(string part, string queue, int position, string serial);
+    void AddUnallocatedPartToQueue(string partName, string queue, int position, string serial);
+
+    /// Add new castings.  The casting has not yet been assigned to a specific job,
+    /// and will be assigned to the job with remaining demand and earliest priority.
+    /// The serial is optional and is passed only if the material has already been marked with a serial.
+    void AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serial);
 
     /// Add a new unprocessed piece of material for the given job into the given queue.  The serial is optional
     /// and is passed only if the material has already been marked with a serial.
     /// Use -1 or 0 for lastCompletedProcess if the material is a casting.
-    void AddUnprocessedMaterialToQueue(string jobUnique, int lastCompletedProcess, string queue, int position, string serial);
+    void AddUnprocessedMaterialToQueue(string jobUnique, int lastCompletedProcess, int pathGroup, string queue, int position, string serial);
 
     /// Add material into a queue or just into free material if the queue name is the empty string.
     /// The material will be inserted into the given position, bumping any later material to a
@@ -81,7 +88,7 @@ namespace BlackMaple.MachineWatchInterface
     /// it will be removed and placed in the given position.
     void SetMaterialInQueue(long materialId, string queue, int position);
 
-    void RemoveMaterialFromAllQueues(long materialId);
+    void RemoveMaterialFromAllQueues(IList<long> materialIds);
 
     event NewCurrentStatus OnNewCurrentStatus;
   }

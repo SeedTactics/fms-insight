@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -35,7 +35,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
-using Microsoft.Data.Sqlite;
 using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
 using FluentAssertions;
@@ -112,12 +111,12 @@ namespace MachineWatchTest
         Paths = new Dictionary<int, int>()
       });
 
-      long m4 = _jobLog.AllocateMaterialIDForCasting("P4", 44);
+      long m4 = _jobLog.AllocateMaterialIDForCasting("P4");
       _jobLog.GetMaterialDetails(m4).Should().BeEquivalentTo(new MaterialDetails()
       {
         MaterialID = m4,
         PartName = "P4",
-        NumProcesses = 44,
+        NumProcesses = 1,
         Paths = new Dictionary<int, int>()
       });
 
@@ -165,6 +164,7 @@ namespace MachineWatchTest
 
       List<LogEntry> logs = new List<LogEntry>();
       var logsForMat1 = new List<LogEntry>();
+      var logsForMat2 = new List<LogEntry>();
 
       LogMaterial mat1 = new LogMaterial(
           _jobLog.AllocateMaterialID("grgaegr", "pp2", 23), "grgaegr", 7, "pp2", 23, "", "", "face22");
@@ -207,13 +207,24 @@ namespace MachineWatchTest
                     TimeSpan.FromMinutes(52), TimeSpan.FromMinutes(25))
             });
       logs.Add(loadEndActualCycle.First());
+      logsForMat2.Add(loadEndActualCycle.First());
+      _jobLog.ToolPocketSnapshotForCycle(loadEndActualCycle.First().Counter).Should().BeEmpty();
 
+      var machineStartPockets = new List<JobLogDB.ToolPocketSnapshot> {
+        new JobLogDB.ToolPocketSnapshot() {
+          PocketNumber = 10, Tool = "tool1", CurrentUse = TimeSpan.FromSeconds(10), ToolLife = TimeSpan.FromMinutes(20)
+        },
+        new JobLogDB.ToolPocketSnapshot() {
+          PocketNumber = 20, Tool = "tool2", CurrentUse = TimeSpan.FromSeconds(20), ToolLife = TimeSpan.FromMinutes(40)
+        }
+      };
       var machineStartActualCycle = _jobLog.RecordMachineStart(
           mats: new[] { mat15 }.Select(JobLogDB.EventLogMaterial.FromLogMat),
           pallet: "rrrr",
           statName: "ssssss",
           statNum: 152,
           program: "progggg",
+          pockets: machineStartPockets,
           timeUTC: start.AddHours(5).AddMinutes(10)
       );
       machineStartActualCycle.Should().BeEquivalentTo(
@@ -223,6 +234,7 @@ namespace MachineWatchTest
               "progggg", true, start.AddHours(5).AddMinutes(10), "", false)
       );
       logs.Add(machineStartActualCycle);
+      _jobLog.ToolPocketSnapshotForCycle(machineStartActualCycle.Counter).Should().BeEquivalentTo(machineStartPockets);
 
       var machineEndActualCycle = _jobLog.RecordMachineEnd(
           mats: new[] { mat2 }.Select(JobLogDB.EventLogMaterial.FromLogMat),
@@ -272,6 +284,7 @@ namespace MachineWatchTest
       };
       machineEndActualCycle.Should().BeEquivalentTo(machineEndExpectedCycle);
       logs.Add(machineEndActualCycle);
+      logsForMat2.Add(machineEndActualCycle);
 
       var unloadStartActualCycle = _jobLog.RecordUnloadStart(
           mats: new[] { mat15, mat19 }.Select(JobLogDB.EventLogMaterial.FromLogMat),
@@ -303,6 +316,7 @@ namespace MachineWatchTest
                     TimeSpan.FromMinutes(152), TimeSpan.FromMinutes(55))
             });
       logs.Add(unloadEndActualCycle.First());
+      logsForMat2.Add(unloadEndActualCycle.First());
 
 
       // ----- check loading of logs -----
@@ -333,6 +347,7 @@ namespace MachineWatchTest
           DateTime.Parse("4/6/2011"), "Pallll", LogType.MachineCycle, "MC", 3));
 
       CheckLog(logsForMat1, _jobLog.GetLogForMaterial(1), start);
+      CheckLog(logsForMat1.Concat(logsForMat2).ToList(), _jobLog.GetLogForMaterial(new[] { 1, mat2.MaterialID }), start);
       _jobLog.GetLogForMaterial(18).Should().BeEmpty();
 
       var markLog = _jobLog.RecordSerialForMaterialID(JobLogDB.EventLogMaterial.FromLogMat(mat1), "ser1");
@@ -890,7 +905,7 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartName = "part111", NumProcesses = 19}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19}
           });
 
       //adding with LogMaterial with position -1 and existing queue
@@ -900,8 +915,8 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartName = "part2", NumProcesses = 22}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22}
           });
 
 
@@ -912,16 +927,16 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartName = "part3", NumProcesses = 36},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 2, Unique = "uniq2", PartName = "part2", NumProcesses = 22}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 2, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22}
           });
       _jobLog.GetMaterialInAllQueues()
           .Should().BeEquivalentTo(new[] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartName = "part3", NumProcesses = 36},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 2, Unique = "uniq2", PartName = "part2", NumProcesses = 22},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 100, Queue = "BBBB", Position = 0, Unique = "uniq100", PartName = "part100", NumProcesses = 100}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 2, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 100, Queue = "BBBB", Position = 0, Unique = "uniq100", PartNameOrCasting = "part100", NumProcesses = 100}
           });
 
       //removing from queue with LogMaterial
@@ -931,8 +946,8 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartName = "part2", NumProcesses = 22}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22}
           });
 
 
@@ -943,9 +958,9 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartName = "part2", NumProcesses = 22},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 2, Unique = "uniq3", PartName = "part3", NumProcesses = 36}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 2, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36}
           });
 
       //move item backwards in queue
@@ -959,9 +974,9 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartName = "part2", NumProcesses = 22},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 1, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 2, Unique = "uniq3", PartName = "part3", NumProcesses = 36},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 1, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 2, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36},
           });
 
       //move item forwards in queue
@@ -975,9 +990,9 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartName = "part2", NumProcesses = 22},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartName = "part3", NumProcesses = 36},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 2, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 2, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19},
           });
 
       //add large position
@@ -989,10 +1004,10 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartName = "part2", NumProcesses = 22},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartName = "part3", NumProcesses = 36},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 2, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 4, Queue = "AAAA", Position = 3, Unique = "uniq4", PartName = "part4", NumProcesses = 44},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 2, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 4, Queue = "AAAA", Position = 3, Unique = "uniq4", PartNameOrCasting = "part4", NumProcesses = 44},
           });
 
       //removing from queue with matid
@@ -1002,9 +1017,9 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 0, Unique = "uniq3", PartName = "part3", NumProcesses = 36},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 1, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 4, Queue = "AAAA", Position = 2, Unique = "uniq4", PartName = "part4", NumProcesses = 44},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 0, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 1, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 4, Queue = "AAAA", Position = 2, Unique = "uniq4", PartNameOrCasting = "part4", NumProcesses = 44},
           });
 
 
@@ -1035,8 +1050,8 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartName = "part2", NumProcesses = 22}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22}
           });
 
 
@@ -1054,7 +1069,7 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartName = "part2", NumProcesses = 22}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22}
           });
 
       //unloading should add to queue
@@ -1074,9 +1089,9 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartName = "part2", NumProcesses = 22},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 1, Unique = "uniq1", PartName = "part111", NumProcesses = 19},
-                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 2, Unique = "uniq3", PartName = "part3", NumProcesses = 36}
+                    new JobLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 1, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19},
+                    new JobLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 2, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36}
           });
 
 
@@ -1088,20 +1103,50 @@ namespace MachineWatchTest
     public void AllocateCastingsFromQueues()
     {
       var mat1 = new LogMaterial(
-          _jobLog.AllocateMaterialIDForCasting("part1", 5), "", 2, "part1", 5, "", "", "");
+          _jobLog.AllocateMaterialIDForCasting("casting1"), "", 2, "casting1", 1, "", "", "");
       var mat2 = new LogMaterial(
-          _jobLog.AllocateMaterialIDForCasting("part1", 5), "", 1, "part1", 5, "", "", "");
+          _jobLog.AllocateMaterialIDForCasting("casting1"), "", 1, "casting1", 1, "", "", "");
       var mat3 = new LogMaterial(
-          _jobLog.AllocateMaterialIDForCasting("part3", 3), "", 3, "part3", 3, "", "", "");
+          _jobLog.AllocateMaterialIDForCasting("casting3"), "", 3, "casting3", 1, "", "", "");
 
       _jobLog.RecordAddMaterialToQueue(JobLogDB.EventLogMaterial.FromLogMat(mat1), "queue1", 0);
       _jobLog.RecordAddMaterialToQueue(JobLogDB.EventLogMaterial.FromLogMat(mat2), "queue1", 1);
       _jobLog.RecordAddMaterialToQueue(JobLogDB.EventLogMaterial.FromLogMat(mat3), "queue1", 2);
 
-      _jobLog.AllocateCastingsInQueue("queue1", "part5", "uniqAAA", numProcesses: 15, maxCount: 2)
+      _jobLog.GetMaterialDetails(mat1.MaterialID).Should().BeEquivalentTo(new MaterialDetails()
+      {
+        MaterialID = mat1.MaterialID,
+        JobUnique = null,
+        PartName = "casting1",
+        NumProcesses = 1,
+        Paths = new Dictionary<int, int>()
+      });
+
+      _jobLog.GetMaterialDetails(mat2.MaterialID).Should().BeEquivalentTo(new MaterialDetails()
+      {
+        MaterialID = mat2.MaterialID,
+        JobUnique = null,
+        PartName = "casting1",
+        NumProcesses = 1,
+        Paths = new Dictionary<int, int>()
+      });
+
+      _jobLog.GetMaterialDetails(mat3.MaterialID).Should().BeEquivalentTo(new MaterialDetails()
+      {
+        MaterialID = mat3.MaterialID,
+        JobUnique = null,
+        PartName = "casting3",
+        NumProcesses = 1,
+        Paths = new Dictionary<int, int>()
+      });
+
+      _jobLog.AllocateCastingsInQueue(queue: "queue1", casting: "unused", unique: "uniqAAA", part: "part1", proc1Path: 1000, numProcesses: 15, count: 2)
           .Should().BeEquivalentTo(new long[] { });
 
-      _jobLog.AllocateCastingsInQueue("queue1", "part1", "uniqAAA", numProcesses: 6312, maxCount: 2)
+      _jobLog.AllocateCastingsInQueue(queue: "queue1", casting: "casting1", unique: "uniqAAA", part: "part1", proc1Path: 1234, numProcesses: 6312, count: 50)
+          .Should().BeEquivalentTo(new long[] { });
+
+      _jobLog.AllocateCastingsInQueue(queue: "queue1", casting: "casting1", unique: "uniqAAA", part: "part1", proc1Path: 1234, numProcesses: 6312, count: 2)
           .Should().BeEquivalentTo(new[] { mat1.MaterialID, mat2.MaterialID });
 
       _jobLog.GetMaterialDetails(mat1.MaterialID).Should().BeEquivalentTo(new MaterialDetails()
@@ -1110,7 +1155,7 @@ namespace MachineWatchTest
         JobUnique = "uniqAAA",
         PartName = "part1",
         NumProcesses = 6312,
-        Paths = new Dictionary<int, int>()
+        Paths = new Dictionary<int, int>() { { 1, 1234 } }
       });
 
       _jobLog.GetMaterialDetails(mat2.MaterialID).Should().BeEquivalentTo(new MaterialDetails()
@@ -1119,19 +1164,131 @@ namespace MachineWatchTest
         JobUnique = "uniqAAA",
         PartName = "part1",
         NumProcesses = 6312,
-        Paths = new Dictionary<int, int>()
+        Paths = new Dictionary<int, int>() { { 1, 1234 } }
       });
 
-      _jobLog.MarkCastingsAsUnallocated(new[] { mat1.MaterialID });
+      _jobLog.MarkCastingsAsUnallocated(new[] { mat1.MaterialID }, casting: "newcasting");
 
       _jobLog.GetMaterialDetails(mat1.MaterialID).Should().BeEquivalentTo(new MaterialDetails()
       {
         MaterialID = mat1.MaterialID,
         JobUnique = null,
-        PartName = "part1",
+        PartName = "newcasting",
         NumProcesses = 6312,
         Paths = new Dictionary<int, int>()
       });
+    }
+
+    [Fact]
+    public void ToolSnapshotDiff()
+    {
+      var start = new List<JobLogDB.ToolPocketSnapshot>();
+      var end = new List<JobLogDB.ToolPocketSnapshot>();
+      var expectedUse = new Dictionary<string, TimeSpan>();
+      var expectedTotalUse = new Dictionary<string, TimeSpan>();
+      var expectedLife = new Dictionary<string, TimeSpan>();
+
+      // first a normal use
+      start.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 0, Tool = "tool1", CurrentUse = TimeSpan.FromSeconds(10), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+      end.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 0, Tool = "tool1", CurrentUse = TimeSpan.FromSeconds(50), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+      expectedUse["tool1"] = TimeSpan.FromSeconds(50 - 10);
+      expectedTotalUse["tool1"] = TimeSpan.FromSeconds(50);
+      expectedLife["tool1"] = TimeSpan.FromSeconds(100);
+
+      // now an unused tool
+      start.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 1, Tool = "tool2", CurrentUse = TimeSpan.FromSeconds(10), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+      end.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 1, Tool = "tool2", CurrentUse = TimeSpan.FromSeconds(10), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+
+      // now a tool which is replaced and used
+      start.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 2, Tool = "tool3", CurrentUse = TimeSpan.FromSeconds(70), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+      end.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 2, Tool = "tool3", CurrentUse = TimeSpan.FromSeconds(20), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+      expectedUse["tool3"] = TimeSpan.FromSeconds(100 - 70 + 20);
+      expectedTotalUse["tool3"] = TimeSpan.FromSeconds(20);
+      expectedLife["tool3"] = TimeSpan.FromSeconds(100);
+
+      // now a tool which is replaced with a different tool and not used
+      start.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 3, Tool = "tool4", CurrentUse = TimeSpan.FromSeconds(60), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+      end.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 3, Tool = "tool5", CurrentUse = TimeSpan.FromSeconds(0), ToolLife = TimeSpan.FromSeconds(120) }
+      );
+      expectedUse["tool4"] = TimeSpan.FromSeconds(100 - 60);
+      expectedTotalUse["tool4"] = TimeSpan.Zero;
+      expectedLife["tool4"] = TimeSpan.Zero;
+
+      // now a tool which is replaced with a different tool and that tool is used
+      start.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 4, Tool = "tool6", CurrentUse = TimeSpan.FromSeconds(65), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+      end.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 4, Tool = "tool7", CurrentUse = TimeSpan.FromSeconds(30), ToolLife = TimeSpan.FromSeconds(120) }
+      );
+      expectedUse["tool6"] = TimeSpan.FromSeconds(100 - 65);
+      expectedTotalUse["tool6"] = TimeSpan.Zero;
+      expectedLife["tool6"] = TimeSpan.Zero;
+      expectedUse["tool7"] = TimeSpan.FromSeconds(30);
+      expectedTotalUse["tool7"] = TimeSpan.FromSeconds(30);
+      expectedLife["tool7"] = TimeSpan.FromSeconds(120);
+
+      // now a tool which is removed and nothing added
+      start.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 5, Tool = "tool8", CurrentUse = TimeSpan.FromSeconds(80), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+      expectedUse["tool8"] = TimeSpan.FromSeconds(100 - 80);
+      expectedTotalUse["tool8"] = TimeSpan.Zero;
+      expectedLife["tool8"] = TimeSpan.Zero;
+
+      // now a new tool which is appears
+      end.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 6, Tool = "tool9", CurrentUse = TimeSpan.FromSeconds(15), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+      expectedUse["tool9"] = TimeSpan.FromSeconds(15);
+      expectedTotalUse["tool9"] = TimeSpan.FromSeconds(15);
+      expectedLife["tool9"] = TimeSpan.FromSeconds(100);
+
+      // a new unused tool
+      end.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 7, Tool = "tool10", CurrentUse = TimeSpan.FromSeconds(0), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+
+      // same tools in separate pockets are accumulated
+      start.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 8, Tool = "tool11", CurrentUse = TimeSpan.FromSeconds(50), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+      end.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 8, Tool = "tool11", CurrentUse = TimeSpan.FromSeconds(77), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+      start.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 9, Tool = "tool11", CurrentUse = TimeSpan.FromSeconds(80), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+      end.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 9, Tool = "tool11", CurrentUse = TimeSpan.FromSeconds(13), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+      expectedUse["tool11"] = TimeSpan.FromSeconds((77 - 50) + (100 - 80) + 13);
+      expectedTotalUse["tool11"] = TimeSpan.FromSeconds(77 + 13);
+      expectedLife["tool11"] = TimeSpan.FromSeconds(100 + 100);
+
+      JobLogDB.ToolPocketSnapshot.DiffSnapshots(start, end).Should().BeEquivalentTo(
+        expectedUse.Select(x => new
+        {
+          Tool = x.Key,
+          Use = new ToolUse() { ToolUseDuringCycle = x.Value, TotalToolUseAtEndOfCycle = expectedTotalUse[x.Key], ConfiguredToolLife = expectedLife[x.Key] }
+        })
+        .ToDictionary(x => x.Tool, x => x.Use)
+      );
     }
 
     #region Helpers

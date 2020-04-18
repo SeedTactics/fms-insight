@@ -425,7 +425,7 @@
         "tags": [
           "jobs"
         ],
-        "operationId": "jobs_AddUnallocatedCastingToQueue",
+        "operationId": "jobs_AddUnallocatedCastingToQueueByPart",
         "consumes": [
           "application/json-patch+json",
           "application/json",
@@ -472,6 +472,69 @@
         }
       }
     },
+    "/api/v1/jobs/casting/{castingName}": {
+      "post": {
+        "tags": [
+          "jobs"
+        ],
+        "operationId": "jobs_AddUnallocatedCastingToQueue",
+        "consumes": [
+          "application/json-patch+json",
+          "application/json",
+          "text/json",
+          "application/*+json"
+        ],
+        "parameters": [
+          {
+            "type": "string",
+            "name": "castingName",
+            "in": "path",
+            "required": true,
+            "x-nullable": true
+          },
+          {
+            "type": "string",
+            "name": "queue",
+            "in": "query",
+            "required": true,
+            "x-nullable": true
+          },
+          {
+            "type": "integer",
+            "name": "pos",
+            "in": "query",
+            "required": true,
+            "format": "int32",
+            "x-nullable": false
+          },
+          {
+            "name": "serials",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "x-nullable": false
+          },
+          {
+            "type": "integer",
+            "name": "qty",
+            "in": "query",
+            "format": "int32",
+            "default": 1,
+            "x-nullable": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/v1/jobs/job/{jobUnique}/unprocessed-material": {
       "post": {
         "tags": [
@@ -501,6 +564,14 @@
             "x-nullable": false
           },
           {
+            "type": "integer",
+            "name": "pathGroup",
+            "in": "query",
+            "required": true,
+            "format": "int32",
+            "x-nullable": false
+          },
+          {
             "type": "string",
             "name": "queue",
             "in": "query",
@@ -517,6 +588,43 @@
           },
           {
             "name": "serial",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-nullable": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/job/{jobUnique}/comment": {
+      "put": {
+        "tags": [
+          "jobs"
+        ],
+        "operationId": "jobs_SetJobComment",
+        "consumes": [
+          "application/json-patch+json",
+          "application/json",
+          "text/json",
+          "application/*+json"
+        ],
+        "parameters": [
+          {
+            "type": "string",
+            "name": "jobUnique",
+            "in": "path",
+            "required": true,
+            "x-nullable": true
+          },
+          {
+            "name": "comment",
             "in": "body",
             "required": true,
             "schema": {
@@ -582,6 +690,33 @@
             "required": true,
             "format": "int64",
             "x-nullable": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/material": {
+      "delete": {
+        "tags": [
+          "jobs"
+        ],
+        "operationId": "jobs_BulkRemoveMaterialFromQueues",
+        "parameters": [
+          {
+            "type": "array",
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "collectionFormat": "multi",
+            "x-nullable": true,
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            }
           }
         ],
         "responses": {
@@ -807,6 +942,45 @@
             "required": true,
             "format": "int64",
             "x-nullable": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/LogEntry"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/log/events/for-material": {
+      "get": {
+        "tags": [
+          "log"
+        ],
+        "operationId": "log_LogForMaterials",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "type": "array",
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "collectionFormat": "multi",
+            "x-nullable": true,
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            }
           }
         ],
         "responses": {
@@ -1365,6 +1539,9 @@
         "OpenIDConnectAuthority": {
           "type": "string"
         },
+        "LocalhostOpenIDConnectAuthority": {
+          "type": "string"
+        },
         "OpenIDConnectClientId": {
           "type": "string"
         },
@@ -1408,7 +1585,6 @@
         "CopiedToSystem",
         "PartName",
         "Unique",
-        "Priority",
         "ManuallyCreated",
         "CreateMarkingData",
         "CyclesOnFirstProcess",
@@ -1438,10 +1614,6 @@
         "Unique": {
           "type": "string"
         },
-        "Priority": {
-          "type": "integer",
-          "format": "int32"
-        },
         "ScheduleId": {
           "type": "string"
         },
@@ -1456,12 +1628,6 @@
         },
         "CreateMarkingData": {
           "type": "boolean"
-        },
-        "Inspections": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/JobInspectionData"
-          }
         },
         "HoldEntireJob": {
           "$ref": "#/definitions/JobHoldPattern"
@@ -1478,42 +1644,6 @@
           "items": {
             "$ref": "#/definitions/ProcessInfo"
           }
-        }
-      }
-    },
-    "JobInspectionData": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "InspectionType",
-        "Counter",
-        "MaxVal",
-        "RandomFreq",
-        "TimeInterval",
-        "InspectSingleProcess"
-      ],
-      "properties": {
-        "InspectionType": {
-          "type": "string"
-        },
-        "Counter": {
-          "type": "string"
-        },
-        "MaxVal": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "RandomFreq": {
-          "type": "number",
-          "format": "double"
-        },
-        "TimeInterval": {
-          "type": "string",
-          "format": "time-span"
-        },
-        "InspectSingleProcess": {
-          "type": "integer",
-          "format": "int32"
         }
       }
     },
@@ -1655,6 +1785,15 @@
         },
         "OutputQueue": {
           "type": "string"
+        },
+        "Inspections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PathInspection"
+          }
+        },
+        "Casting": {
+          "type": "string"
         }
       }
     },
@@ -1712,6 +1851,41 @@
         "Quantity": {
           "type": "integer",
           "format": "int32"
+        }
+      }
+    },
+    "PathInspection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "InspectionType",
+        "Counter",
+        "MaxVal",
+        "RandomFreq",
+        "TimeInterval"
+      ],
+      "properties": {
+        "InspectionType": {
+          "type": "string"
+        },
+        "Counter": {
+          "type": "string"
+        },
+        "MaxVal": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "RandomFreq": {
+          "type": "number",
+          "format": "double"
+        },
+        "TimeInterval": {
+          "type": "string",
+          "format": "time-span"
+        },
+        "ExpectedInspectionTime": {
+          "type": "string",
+          "format": "time-span"
         }
       }
     },
@@ -1891,6 +2065,16 @@
               "type": "array",
               "items": {
                 "$ref": "#/definitions/InProcessJobDecrement"
+              }
+            },
+            "Precedence": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "int64"
+                }
               }
             }
           }

@@ -50,15 +50,16 @@ export const initial: State = {
     pallets: {},
     material: [],
     alarms: [],
-    queues: {}
-  }
+    queues: {},
+  },
 };
 
 export enum ActionType {
   LoadCurrentStatus = "CurStatus_LoadCurrentStatus",
   SetCurrentStatus = "CurStatus_SetCurrentStatus",
   ReceiveNewLogEntry = "Events_NewLogEntry",
-  ReorderQueuedMaterial = "CurStatus_ReorderQueuedMaterial"
+  ReorderQueuedMaterial = "CurStatus_ReorderQueuedMaterial",
+  SetJobComment = "CurStatus_SetJobComment",
 }
 
 export type Action =
@@ -76,28 +77,38 @@ export type Action =
       materialId: number;
       queue: string;
       newIdx: number;
-    };
+    }
+  | { type: ActionType.SetJobComment; uniq: string; comment: string; pledge: Pledge<void> };
 
 type ABF = ActionBeforeMiddleware<Action>;
 
 export function loadCurrentStatus(): ABF {
   return {
     type: ActionType.LoadCurrentStatus,
-    pledge: JobsBackend.currentStatus()
+    pledge: JobsBackend.currentStatus(),
   };
 }
 
 export function setCurrentStatus(st: Readonly<api.ICurrentStatus>): ABF {
   return {
     type: ActionType.SetCurrentStatus,
-    st
+    st,
   };
 }
 
 export function receiveNewLogEntry(entry: Readonly<api.ILogEntry>): ABF {
   return {
     type: ActionType.ReceiveNewLogEntry,
-    entry
+    entry,
+  };
+}
+
+export function setJobComment(uniq: string, comment: string): ABF {
+  return {
+    type: ActionType.SetJobComment,
+    uniq,
+    comment,
+    pledge: JobsBackend.setJobComment(uniq, comment),
   };
 }
 
@@ -119,13 +130,13 @@ function process_new_events(entry: Readonly<api.ILogEntry>, s: State): State {
   switch (entry.type) {
     case api.LogType.PartMark:
       for (const m of entry.material) {
-        adjustMat(m.id, inmat => ({ ...inmat, serial: entry.result }));
+        adjustMat(m.id, (inmat) => ({ ...inmat, serial: entry.result }));
       }
       break;
 
     case api.LogType.OrderAssignment:
       for (const m of entry.material) {
-        adjustMat(m.id, inmat => ({ ...inmat, workorderId: entry.result }));
+        adjustMat(m.id, (inmat) => ({ ...inmat, workorderId: entry.result }));
       }
       break;
 
@@ -140,9 +151,9 @@ function process_new_events(entry: Readonly<api.ILogEntry>, s: State): State {
         }
         if (inspType) {
           for (const m of entry.material) {
-            adjustMat(m.id, inmat => ({
+            adjustMat(m.id, (inmat) => ({
               ...inmat,
-              signaledInspections: [...inmat.signaledInspections, inspType]
+              signaledInspections: [...inmat.signaledInspections, inspType],
             }));
           }
         }
@@ -157,8 +168,8 @@ function process_new_events(entry: Readonly<api.ILogEntry>, s: State): State {
       ...s,
       current_status: {
         ...s.current_status,
-        material: Array.from(mats.valueIterable())
-      }
+        material: Array.from(mats.valueIterable()),
+      },
     };
   }
 }
@@ -169,7 +180,7 @@ function reorder_queued_mat(
   newIdx: number,
   oldMats: InProcessMaterial[]
 ): InProcessMaterial[] {
-  const oldMat = oldMats.find(i => i.materialID === matId);
+  const oldMat = oldMats.find((i) => i.materialID === matId);
   if (!oldMat || oldMat.location.type !== api.LocType.InQueue) {
     return oldMats;
   }
@@ -183,7 +194,7 @@ function reorder_queued_mat(
     return oldMats;
   }
 
-  return oldMats.map(m => {
+  return oldMats.map((m) => {
     if (
       m.location.type !== api.LocType.InQueue ||
       m.location.queuePosition === undefined ||
@@ -195,7 +206,7 @@ function reorder_queued_mat(
     if (m.materialID === matId) {
       return new InProcessMaterial({
         ...m,
-        location: { type: api.LocType.InQueue, currentQueue: queue, queuePosition: newIdx }
+        location: { type: api.LocType.InQueue, currentQueue: queue, queuePosition: newIdx },
       } as api.IInProcessMaterial);
     }
 
@@ -212,7 +223,7 @@ function reorder_queued_mat(
     if (idx !== m.location.queuePosition) {
       return new InProcessMaterial({
         ...m,
-        location: { ...m.location, queuePosition: idx }
+        location: { ...m.location, queuePosition: idx },
       } as api.IInProcessMaterial);
     } else {
       return m;
@@ -233,7 +244,7 @@ export function reducer(s: State, a: Action): State {
           return {
             ...s,
             loading: false,
-            current_status: a.pledge.result
+            current_status: a.pledge.result,
           };
         case PledgeStatus.Error:
           return { ...s, loading_error: a.pledge.error };
@@ -252,9 +263,26 @@ export function reducer(s: State, a: Action): State {
         ...s,
         current_status: {
           ...s.current_status,
-          material: reorder_queued_mat(a.queue, a.materialId, a.newIdx, s.current_status.material)
-        }
+          material: reorder_queued_mat(a.queue, a.materialId, a.newIdx, s.current_status.material),
+        },
       };
+
+    case ActionType.SetJobComment:
+      switch (a.pledge.status) {
+        case PledgeStatus.Starting:
+          let newSt = s.current_status;
+          const oldJob = s.current_status.jobs[a.uniq];
+          if (oldJob) {
+            var newJob = new api.InProcessJob(oldJob);
+            newJob.comment = a.comment;
+            newSt = { ...newSt, jobs: { ...newSt.jobs, [a.uniq]: newJob } };
+          }
+          return { ...s, loading: true, loading_error: undefined, current_status: newSt };
+        case PledgeStatus.Error:
+          return { ...s, loading: false, loading_error: a.pledge.error };
+        case PledgeStatus.Completed:
+          return { ...s, loading: false };
+      }
 
     default:
       return s;

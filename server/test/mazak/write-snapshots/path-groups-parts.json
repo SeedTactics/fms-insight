@@ -120,7 +120,7 @@
       "Command": "Add"
     },
     {
-      "PartName": "part2:0:1",
+      "PartName": "part2:0:3",
       "Comment": "part2-schId1234-Path1-1-0",
       "Price": 0.0,
       "TotalProcess": 2,
@@ -134,7 +134,7 @@
       "ProductCount": 0,
       "Processes": [
         {
-          "PartName": "part2:0:1",
+          "PartName": "part2:0:3",
           "ProcessNumber": 1,
           "FixQuantity": 1,
           "ContinueCut": 0,
@@ -155,7 +155,7 @@
           "CreateToolList_RA": 0
         },
         {
-          "PartName": "part2:0:1",
+          "PartName": "part2:0:3",
           "ProcessNumber": 2,
           "FixQuantity": 1,
           "ContinueCut": 0,
@@ -179,7 +179,7 @@
       "Command": "Add"
     },
     {
-      "PartName": "part2:0:2",
+      "PartName": "part2:0:4",
       "Comment": "part2-schId1234-Path2-2-0",
       "Price": 0.0,
       "TotalProcess": 2,
@@ -193,7 +193,7 @@
       "ProductCount": 0,
       "Processes": [
         {
-          "PartName": "part2:0:2",
+          "PartName": "part2:0:4",
           "ProcessNumber": 1,
           "FixQuantity": 1,
           "ContinueCut": 0,
@@ -214,7 +214,7 @@
           "CreateToolList_RA": 0
         },
         {
-          "PartName": "part2:0:2",
+          "PartName": "part2:0:4",
           "ProcessNumber": 2,
           "FixQuantity": 1,
           "ContinueCut": 0,
@@ -238,7 +238,7 @@
       "Command": "Add"
     },
     {
-      "PartName": "part3:0:1",
+      "PartName": "part3:0:5",
       "Comment": "part3-schId1234-Path1-0",
       "Price": 0.0,
       "TotalProcess": 1,
@@ -252,7 +252,7 @@
       "ProductCount": 0,
       "Processes": [
         {
-          "PartName": "part3:0:1",
+          "PartName": "part3:0:5",
           "ProcessNumber": 1,
           "FixQuantity": 1,
           "ContinueCut": 0,
@@ -276,7 +276,7 @@
       "Command": "Add"
     },
     {
-      "PartName": "part3:0:2",
+      "PartName": "part3:0:6",
       "Comment": "part3-schId1234-Path2-0",
       "Price": 0.0,
       "TotalProcess": 1,
@@ -290,7 +290,7 @@
       "ProductCount": 0,
       "Processes": [
         {
-          "PartName": "part3:0:2",
+          "PartName": "part3:0:6",
           "ProcessNumber": 1,
           "FixQuantity": 1,
           "ContinueCut": 0,

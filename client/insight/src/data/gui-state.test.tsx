@@ -46,12 +46,12 @@ it("selects a part and pal for the station cycle", () => {
       ...gui.initial,
       station_cycle_selected_part: "origpart",
       station_cycle_selected_station: "origstation",
-      station_cycle_selected_pallet: "origpallet"
+      station_cycle_selected_pallet: "origpallet",
     },
     {
       type: gui.ActionType.SetSelectedStationCycle,
       part: "abcdef",
-      pallet: "xyz"
+      pallet: "xyz",
     }
   );
   expect(s.station_cycle_selected_part).toEqual("abcdef");
@@ -65,12 +65,12 @@ it("selects a pallet and station for the station cycle", () => {
       ...gui.initial,
       station_cycle_selected_part: "origpart",
       station_cycle_selected_station: "origstation",
-      station_cycle_selected_pallet: "origpallet"
+      station_cycle_selected_pallet: "origpallet",
     },
     {
       type: gui.ActionType.SetSelectedStationCycle,
       pallet: "xyz",
-      station: "www"
+      station: "www",
     }
   );
   expect(s.station_cycle_selected_part).toBeUndefined();
@@ -84,11 +84,11 @@ it("selects a station for the station cycle", () => {
       ...gui.initial,
       station_cycle_selected_part: "origpart",
       station_cycle_selected_station: "origstation",
-      station_cycle_selected_pallet: "origpallet"
+      station_cycle_selected_pallet: "origpallet",
     },
     {
       type: gui.ActionType.SetSelectedStationCycle,
-      station: "www"
+      station: "www",
     }
   );
   expect(s.station_cycle_selected_part).toBeUndefined();
@@ -100,13 +100,13 @@ it("sets the station zoom range", () => {
   const now = new Date();
   let s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetStationCycleDateZoom,
-    zoom: { start: addHours(now, -2), end: now }
+    zoom: { start: addHours(now, -2), end: now },
   });
   expect(s.station_cycle_date_zoom).toEqual({ start: addHours(now, -2), end: now });
 
   s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetStationCycleDateZoom,
-    zoom: undefined
+    zoom: undefined,
   });
   expect(s.station_cycle_date_zoom).toBeUndefined();
 });
@@ -114,7 +114,7 @@ it("sets the station zoom range", () => {
 it("selects a pallet for the pallet cycle chart", () => {
   const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetSelectedPalletCycle,
-    pallet: "pal555"
+    pallet: "pal555",
   });
   expect(s.pallet_cycle_selected).toEqual("pal555");
 });
@@ -123,13 +123,13 @@ it("sets the pallet zoom range", () => {
   const now = new Date();
   let s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetPalletCycleDateZoom,
-    zoom: { start: addHours(now, -2), end: now }
+    zoom: { start: addHours(now, -2), end: now },
   });
   expect(s.pallet_cycle_date_zoom).toEqual({ start: addHours(now, -2), end: now });
 
   s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetPalletCycleDateZoom,
-    zoom: undefined
+    zoom: undefined,
   });
   expect(s.pallet_cycle_date_zoom).toBeUndefined();
 });
@@ -137,7 +137,7 @@ it("sets the pallet zoom range", () => {
 it("sets the station oee heatmap type", () => {
   const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetStationOeeHeatmapType,
-    ty: gui.PlannedOrActual.PlannedMinusActual
+    ty: gui.PlannedOrActual.PlannedMinusActual,
   });
   expect(s.station_oee_heatmap_type).toEqual(gui.PlannedOrActual.PlannedMinusActual);
 });
@@ -145,7 +145,7 @@ it("sets the station oee heatmap type", () => {
 it("sets the completed count heatmap type", () => {
   const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetCompletedCountHeatmapType,
-    ty: gui.PlannedOrActual.Planned
+    ty: gui.PlannedOrActual.Planned,
   });
   expect(s.completed_count_heatmap_type).toEqual(gui.PlannedOrActual.Planned);
 });
@@ -153,7 +153,7 @@ it("sets the completed count heatmap type", () => {
 it("opens the workorder dialog", () => {
   const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetWorkorderDialogOpen,
-    open: true
+    open: true,
   });
   expect(s.workorder_dialog_open).toBe(true);
 });
@@ -161,7 +161,7 @@ it("opens the workorder dialog", () => {
 it("closes the workorder dialog", () => {
   const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetWorkorderDialogOpen,
-    open: false
+    open: false,
   });
   expect(s.workorder_dialog_open).toBe(false);
 });
@@ -169,7 +169,7 @@ it("closes the workorder dialog", () => {
 it("opens the insp type dialog", () => {
   const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetInspTypeDialogOpen,
-    open: true
+    open: true,
   });
   expect(s.insptype_dialog_open).toBe(true);
 });
@@ -177,7 +177,7 @@ it("opens the insp type dialog", () => {
 it("closes the insp type dialog", () => {
   const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetInspTypeDialogOpen,
-    open: false
+    open: false,
   });
   expect(s.insptype_dialog_open).toBe(false);
 });
@@ -185,7 +185,7 @@ it("closes the insp type dialog", () => {
 it("opens the serial dialog", () => {
   const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetSerialDialogOpen,
-    open: true
+    open: true,
   });
   expect(s.serial_dialog_open).toBe(true);
 });
@@ -193,7 +193,7 @@ it("opens the serial dialog", () => {
 it("closes the serial dialog", () => {
   const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetSerialDialogOpen,
-    open: false
+    open: false,
   });
   expect(s.serial_dialog_open).toBe(false);
 });
@@ -201,7 +201,7 @@ it("closes the serial dialog", () => {
 it("opens the qr code scan dialog", () => {
   const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetScanQrCodeDialog,
-    open: true
+    open: true,
   });
   expect(s.scan_qr_dialog_open).toBe(true);
 });
@@ -209,7 +209,7 @@ it("opens the qr code scan dialog", () => {
 it("closes the qr code scan dialog", () => {
   const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetScanQrCodeDialog,
-    open: false
+    open: false,
   });
   expect(s.scan_qr_dialog_open).toBe(false);
 });
@@ -217,7 +217,7 @@ it("closes the qr code scan dialog", () => {
 it("sets the add mat dialog state", () => {
   const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetAddMatToQueueModeDialogOpen,
-    open: true
+    open: true,
   });
   expect(s.queue_dialog_mode_open).toBe(true);
 });
@@ -225,7 +225,7 @@ it("sets the add mat dialog state", () => {
 it("sets the add mat queue name", () => {
   const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetAddMatToQueueName,
-    queue: "aaaa"
+    queue: "aaaa",
   });
   expect(s.add_mat_to_queue).toEqual("aaaa");
 });
@@ -233,7 +233,7 @@ it("sets the add mat queue name", () => {
 it("opens the manual serial entry dialog", () => {
   const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetManualSerialEntryDialog,
-    open: true
+    open: true,
   });
   expect(s.manual_serial_entry_dialog_open).toBe(true);
 });
@@ -241,7 +241,7 @@ it("opens the manual serial entry dialog", () => {
 it("closes the manual serial entry dialog", () => {
   const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetManualSerialEntryDialog,
-    open: false
+    open: false,
   });
   expect(s.manual_serial_entry_dialog_open).toBe(false);
 });

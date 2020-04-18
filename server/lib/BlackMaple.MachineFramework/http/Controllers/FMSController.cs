@@ -50,6 +50,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [DataMember] public bool RequireWorkorderBeforeAllowWashComplete { get; set; }
     [DataMember] public IReadOnlyList<string> AdditionalLogServers { get; set; }
     [DataMember] public string OpenIDConnectAuthority { get; set; }
+    [DataMember] public string LocalhostOpenIDConnectAuthority { get; set; }
     [DataMember] public string OpenIDConnectClientId { get; set; }
     [DataMember] public bool UsingLabelPrinterForSerials { get; set; }
     [DataMember] public string QuarantineQueue { get; set; }
@@ -82,6 +83,7 @@ namespace BlackMaple.MachineFramework.Controllers
         AdditionalLogServers = _cfg.AdditionalLogServers,
         OpenIDConnectAuthority = _serverSt.OpenIDConnectAuthority,
         OpenIDConnectClientId = _serverSt.OpenIDConnectClientId,
+        LocalhostOpenIDConnectAuthority = _serverSt.AuthAuthority,
         UsingLabelPrinterForSerials = _impl.UsingLabelPrinterForSerials,
         QuarantineQueue = _cfg.QuarantineQueue
       };

@@ -1,4 +1,3 @@
-
 /* Copyright (c) 2018, John Lenz
 
 All rights reserved.
@@ -32,8 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from 'react';
-import { format } from 'date-fns';
+import * as React from "react";
+import { format } from "date-fns";
 
 export interface DateTimeDisplayProps {
   date: Date;
@@ -41,7 +40,5 @@ export interface DateTimeDisplayProps {
 }
 
 export default function DateTimeDisplay(props: DateTimeDisplayProps) {
-  return (
-    <span>{format(props.date, props.formatStr)}</span>
-  );
+  return <span>{format(props.date, props.formatStr)}</span>;
 }

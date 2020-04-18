@@ -55,7 +55,7 @@ interface CSVLogExportState {
 
 class CSVLogExport extends React.PureComponent<{}, CSVLogExportState> {
   state: CSVLogExportState = {
-    exportDate: df.format(df.addDays(new Date(), -1), "yyyy-MM-dd")
+    exportDate: df.format(df.addDays(new Date(), -1), "yyyy-MM-dd"),
   };
 
   render() {
@@ -63,7 +63,7 @@ class CSVLogExport extends React.PureComponent<{}, CSVLogExportState> {
     const endDate = df.addDays(startDate, 1);
     const startEndQuery = queryString.stringify({
       startUTC: startDate.toISOString(),
-      endUTC: endDate.toISOString()
+      endUTC: endDate.toISOString(),
     });
     const curlUrl = window.location.protocol + "//" + window.location.host + "/api/v1/log/events/all?" + startEndQuery;
 
@@ -84,7 +84,7 @@ class CSVLogExport extends React.PureComponent<{}, CSVLogExportState> {
                 label="Export Date"
                 type="date"
                 value={this.state.exportDate}
-                onChange={e => this.setState({ exportDate: e.target.value })}
+                onChange={(e) => this.setState({ exportDate: e.target.value })}
               />
             </Grid>
             <Grid item xs={12} sm={6} md={5}>
@@ -113,12 +113,12 @@ interface CSVWorkorderExportState {
 
 class CSVWorkorderExport extends React.PureComponent<{}, CSVWorkorderExportState> {
   state: CSVWorkorderExportState = {
-    exportWorkorder: ""
+    exportWorkorder: "",
   };
 
   render() {
     const startEndQuery = queryString.stringify({
-      ids: this.state.exportWorkorder
+      ids: this.state.exportWorkorder,
     });
     const curlUrl = window.location.protocol + "//" + window.location.host + "/api/v1/log/workorders?" + startEndQuery;
 
@@ -138,7 +138,7 @@ class CSVWorkorderExport extends React.PureComponent<{}, CSVWorkorderExportState
               <TextField
                 label="Workorder"
                 value={this.state.exportWorkorder}
-                onChange={e => this.setState({ exportWorkorder: e.target.value })}
+                onChange={(e) => this.setState({ exportWorkorder: e.target.value })}
               />
             </Grid>
             <Grid item xs={12} sm={6} md={5}>
@@ -189,7 +189,7 @@ function RecentEvents(p: RecentEventsProps) {
 }
 
 const ConnectedRecentEvents = connect((s: Store) => ({
-  events: s.Events.last30.most_recent_10_events
+  events: s.Events.last30.most_recent_10_events,
 }))(RecentEvents);
 
 export default function DataExport() {

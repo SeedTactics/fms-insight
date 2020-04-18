@@ -44,7 +44,7 @@ import { Vector, ToOrderable } from "prelude-ts";
 import {
   extractFailedInspections,
   FailedInspectionEntry,
-  copyFailedInspectionsToClipboard
+  copyFailedInspectionsToClipboard,
 } from "../../data/results.inspection";
 import { LazySeq } from "../../data/lazyseq";
 import { createSelector } from "reselect";
@@ -66,7 +66,7 @@ enum ColumnId {
   Part,
   InspType,
   Serial,
-  Workorder
+  Workorder,
 }
 
 const columns: ReadonlyArray<Column<ColumnId, FailedInspectionEntry>> = [
@@ -74,33 +74,33 @@ const columns: ReadonlyArray<Column<ColumnId, FailedInspectionEntry>> = [
     id: ColumnId.Date,
     numeric: false,
     label: "Date",
-    getDisplay: c => c.time.toLocaleString(),
-    getForSort: c => c.time.getTime()
+    getDisplay: (c) => c.time.toLocaleString(),
+    getForSort: (c) => c.time.getTime(),
   },
   {
     id: ColumnId.Part,
     numeric: false,
     label: "Part",
-    getDisplay: c => c.part
+    getDisplay: (c) => c.part,
   },
   {
     id: ColumnId.InspType,
     numeric: false,
     label: "Inspection",
-    getDisplay: c => c.inspType
+    getDisplay: (c) => c.inspType,
   },
   {
     id: ColumnId.Serial,
     numeric: false,
     label: "Serial",
-    getDisplay: c => c.serial || ""
+    getDisplay: (c) => c.serial || "",
   },
   {
     id: ColumnId.Workorder,
     numeric: false,
     label: "Workorder",
-    getDisplay: c => c.workorder || ""
-  }
+    getDisplay: (c) => c.workorder || "",
+  },
 ];
 
 function RecentFailedTable(props: RecentFailedInspectionsProps) {
@@ -196,11 +196,11 @@ const failedReducer = createSelector(
 );
 
 const ConnectedFailedInspections = connect(
-  st => ({
-    failed: failedReducer(st.Events.last30.inspection, startOfToday())
+  (st) => ({
+    failed: failedReducer(st.Events.last30.inspection, startOfToday()),
   }),
   {
-    openDetails: (matId: number) => [{ type: RouteLocation.Quality_Serials }, openMaterialById(matId)]
+    openDetails: (matId: number) => [{ type: RouteLocation.Quality_Serials }, openMaterialById(matId)],
   }
 )(RecentFailedInspections);
 

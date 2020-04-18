@@ -225,12 +225,9 @@ namespace Makino
       if (job == null)
         return;
 
-      if (m.ProcessNum != job.NumProcesses)
-        return;
-
       foreach (var mat in material)
       {
-        _log.MakeInspectionDecisions(mat.MaterialID, m.ProcessNum, job.GetInspections());
+        _log.MakeInspectionDecisions(mat.MaterialID, m.ProcessNum, job.PathInspections(m.ProcessNum, path: 1));
       }
     }
 

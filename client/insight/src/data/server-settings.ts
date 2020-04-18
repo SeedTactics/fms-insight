@@ -40,7 +40,7 @@ import { openWebsocket } from "../store/websocket";
 export enum ActionType {
   Load = "ServerSettings_Load",
   Login = "ServerSettings_Login",
-  Logout = "ServerSettings_Logout"
+  Logout = "ServerSettings_Logout",
 }
 
 export interface LoadReturn {
@@ -63,6 +63,15 @@ export const initial: State = {};
 
 let userManager: UserManager | undefined;
 
+export function requireLogin(fmsInfo: Readonly<api.IFMSInfo>): boolean {
+  if (!fmsInfo.openIDConnectClientId) return false;
+  if (location.hostname === "localhost") {
+    return !!fmsInfo.localhostOpenIDConnectAuthority;
+  } else {
+    return !!fmsInfo.openIDConnectAuthority;
+  }
+}
+
 async function loadInfo(): Promise<LoadReturn> {
   const fmsInfo = await FmsServerBackend.fMSInformation();
 
@@ -71,14 +80,15 @@ async function loadInfo(): Promise<LoadReturn> {
   }
 
   let user: User | null = null;
-  if (fmsInfo.openIDConnectAuthority && fmsInfo.openIDConnectClientId) {
+  if (requireLogin(fmsInfo)) {
     userManager = new UserManager({
-      authority: fmsInfo.openIDConnectAuthority,
+      authority:
+        location.hostname === "localhost" ? fmsInfo.localhostOpenIDConnectAuthority : fmsInfo.openIDConnectAuthority,
       client_id: fmsInfo.openIDConnectClientId,
       redirect_uri: window.location.protocol + "//" + window.location.host + "/",
       post_logout_redirect_uri: window.location.protocol + "//" + window.location.host + "/",
       automaticSilentRenew: true,
-      scope: "openid profile"
+      scope: "openid profile",
     });
     user = await userManager.getUser();
     if (!user) {
@@ -104,7 +114,7 @@ async function loadInfo(): Promise<LoadReturn> {
 export function loadServerSettings(): ActionBeforeMiddleware<Action> {
   return {
     type: ActionType.Load,
-    pledge: loadInfo()
+    pledge: loadInfo(),
   };
 }
 
@@ -120,7 +130,7 @@ export function reducer(s: State, a: Action): State {
         case PledgeStatus.Completed:
           return {
             fmsInfo: a.pledge.result.fmsInfo,
-            user: a.pledge.result.user
+            user: a.pledge.result.user,
           };
         case PledgeStatus.Error:
           return { ...s, loadError: a.pledge.error };

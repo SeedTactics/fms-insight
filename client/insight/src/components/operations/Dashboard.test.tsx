@@ -40,11 +40,11 @@ import Dashboard from "./Dashboard";
 import { createTestStore } from "../../test-util";
 
 it("renders the dashboard", async () => {
-  window.matchMedia = query =>
+  window.matchMedia = (query) =>
     ({
       matches: query === "(min-width:600px)", // true for Hidden smDown screens
       addListener: () => undefined,
-      removeListener: () => undefined
+      removeListener: () => undefined,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 

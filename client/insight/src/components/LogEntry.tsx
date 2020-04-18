@@ -45,26 +45,27 @@ import ChevronRightIcon from "@material-ui/icons/ChevronRight";
 import ImportExport from "@material-ui/icons/ImportExport";
 import { createStyles, withStyles, WithStyles } from "@material-ui/core/styles";
 import { copyLogEntriesToClipboard } from "../data/results.cycles";
+import { duration } from "moment";
 
 const logStyles = createStyles({
   machine: {
-    color: "#1565C0"
+    color: "#1565C0",
   },
   loadStation: {
-    color: "#795548"
+    color: "#795548",
   },
   pallet: {
-    color: "#00695C"
+    color: "#00695C",
   },
   queue: {
-    color: "#6A1B9A"
+    color: "#6A1B9A",
   },
   inspectionNotSignaled: {
-    color: "#4527A0"
+    color: "#4527A0",
   },
   inspectionSignaled: {
-    color: "red"
-  }
+    color: "red",
+  },
 });
 
 export interface LogEntryProps extends WithStyles<typeof logStyles> {
@@ -132,7 +133,7 @@ function logType(entry: api.ILogEntry): string {
 
 function displayMat(mats: ReadonlyArray<api.ILogMaterial>) {
   let mat = "";
-  mats.forEach(m => {
+  mats.forEach((m) => {
     if (mat.length > 0) {
       mat += ", ";
     }
@@ -143,6 +144,16 @@ function displayMat(mats: ReadonlyArray<api.ILogMaterial>) {
     }
   });
   return mat;
+}
+
+function displayQueueMat(mats: ReadonlyArray<api.ILogMaterial>) {
+  if (mats.length > 1) {
+    return `${mats[0].part} x${mats.length}`;
+  } else if (mats.length === 1) {
+    return mats[0].part;
+  } else {
+    return "";
+  }
 }
 
 function display(props: LogEntryProps): JSX.Element {
@@ -238,14 +249,14 @@ function display(props: LogEntryProps): JSX.Element {
     case api.LogType.AddToQueue:
       return (
         <span>
-          {displayMat(entry.material)} added to queue <span className={props.classes.queue}>{entry.loc}</span>
+          {displayQueueMat(entry.material)} added to queue <span className={props.classes.queue}>{entry.loc}</span>
         </span>
       );
 
     case api.LogType.RemoveFromQueue:
       return (
         <span>
-          {displayMat(entry.material)} removed from queue <span className={props.classes.queue}>{entry.loc}</span>
+          {displayQueueMat(entry.material)} removed from queue <span className={props.classes.queue}>{entry.loc}</span>
         </span>
       );
 
@@ -264,14 +275,40 @@ function detailsForEntry(e: api.ILogEntry): ReadonlyArray<LogDetail> {
   if (e.details && e.details.operator) {
     details.push({
       name: "Operator",
-      value: e.details.operator
+      value: e.details.operator,
     });
   }
   if (e.details && e.details.note) {
     details.push({
       name: "Note",
-      value: e.details.note
+      value: e.details.note,
     });
+  }
+  if (e.tools) {
+    for (const [toolName, use] of LazySeq.ofObject(e.tools)) {
+      if (use.toolUseDuringCycle && use.toolUseDuringCycle !== "") {
+        let msg = duration(use.toolUseDuringCycle).asMinutes().toFixed(1) + " min used during cycle.";
+
+        if (
+          use.totalToolUseAtEndOfCycle &&
+          use.configuredToolLife &&
+          use.totalToolUseAtEndOfCycle !== "" &&
+          use.configuredToolLife !== ""
+        ) {
+          const total = duration(use.totalToolUseAtEndOfCycle);
+          const life = duration(use.configuredToolLife);
+          const pct = total.asSeconds() / life.asSeconds();
+          msg += ` Total use at end of cycle: ${total.asMinutes().toFixed(1)}/${life.asMinutes().toFixed(1)} min (${(
+            pct * 100
+          ).toFixed(0)}%).`;
+        }
+
+        details.push({
+          name: toolName,
+          value: msg,
+        });
+      }
+    }
   }
   return details;
 }
@@ -296,18 +333,16 @@ export const LogEntry = React.memo(
               <IconButton
                 style={{
                   transition: "all ease 200ms",
-                  transform: props.entry.counter === props.detailLogCounter ? "rotate(90deg)" : "none"
+                  transform: props.entry.counter === props.detailLogCounter ? "rotate(90deg)" : "none",
                 }}
-                onClick={event => {
+                onClick={(event) => {
                   props.setDetail(props.entry.counter === props.detailLogCounter ? null : props.entry.counter);
                   event.stopPropagation();
                 }}
               >
                 <ChevronRightIcon />
               </IconButton>
-            ) : (
-              undefined
-            )}
+            ) : undefined}
           </TableCell>
         </TableRow>
         {details.length > 0 && props.entry.counter === props.detailLogCounter ? (
@@ -322,9 +357,7 @@ export const LogEntry = React.memo(
               </ul>
             </TableCell>
           </TableRow>
-        ) : (
-          undefined
-        )}
+        ) : undefined}
       </>
     );
   })
@@ -355,9 +388,7 @@ export const LogEntries = React.memo(function LogEntriesF(props: LogEntriesProps
                   <ImportExport />
                 </IconButton>
               </Tooltip>
-            ) : (
-              undefined
-            )}
+            ) : undefined}
           </TableCell>
         </TableRow>
       </TableHead>

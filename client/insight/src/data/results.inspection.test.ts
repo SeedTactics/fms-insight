@@ -52,7 +52,7 @@ it("groups inspections by path", async () => {
 
   const entries = inspState.by_part.get(new inspection.PartAndInspType("aaa", "CMM")).getOrThrow();
   const range = { start: new Date(Date.UTC(2018, 7, 1)), end: new Date(Date.UTC(2018, 7, 4)) };
-  const groups = groupInspectionsByPath(entries, range, e => e.serial || "");
+  const groups = groupInspectionsByPath(entries, range, (e) => e.serial || "");
   expect(groups).toMatchSnapshot("grouped inspections");
 });
 

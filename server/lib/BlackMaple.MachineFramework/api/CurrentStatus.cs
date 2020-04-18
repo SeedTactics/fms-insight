@@ -243,6 +243,39 @@ namespace BlackMaple.MachineWatchInterface
       }
     }
 
+    public long GetPrecedence(int process, int path)
+    {
+      if (_precedence == null) return -1;
+      if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
+      {
+        return _precedence[process - 1][path - 1];
+      }
+      else
+      {
+        throw new IndexOutOfRangeException("Invalid process or path number");
+      }
+    }
+
+    public void SetPrecedence(int process, int path, long precedence)
+    {
+      if (_precedence == null)
+      {
+        _precedence = new long[base.NumProcesses][];
+        for (int proc = 1; proc <= base.NumProcesses; proc++)
+        {
+          _precedence[proc - 1] = Enumerable.Repeat(-1L, base.GetNumPaths(proc)).ToArray();
+        }
+      }
+      if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
+      {
+        _precedence[process - 1][path - 1] = precedence;
+      }
+      else
+      {
+        throw new IndexOutOfRangeException("Invalid process or path number");
+      }
+    }
+
     public IList<InProcessJobDecrement> Decrements
     {
       get
@@ -257,13 +290,17 @@ namespace BlackMaple.MachineWatchInterface
     {
       _completed = new int[base.NumProcesses][];
       for (int proc = 1; proc <= base.NumProcesses; proc++)
+      {
         _completed[proc - 1] = Enumerable.Repeat(0, base.GetNumPaths(proc)).ToArray();
+      }
     }
     public InProcessJob(JobPlan job) : base(job)
     {
       _completed = new int[base.NumProcesses][];
       for (int proc = 1; proc <= base.NumProcesses; proc++)
+      {
         _completed[proc - 1] = Enumerable.Repeat(0, base.GetNumPaths(proc)).ToArray();
+      }
     }
 
     private InProcessJob() { } //for json deserialization
@@ -271,6 +308,10 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember(Name = "Completed", IsRequired = false)] private int[][] _completed;
 
     [DataMember(Name = "Decrements", IsRequired = false), OptionalField] private List<InProcessJobDecrement> _decrements;
+
+    // a number reflecting the order in which the cell controller will consider the processes and paths for activation.
+    // lower numbers come first, while -1 means no-data.
+    [DataMember(Name = "Precedence", IsRequired = false), OptionalField] private long[][] _precedence;
   }
 
   [SerializableAttribute, DataContract]

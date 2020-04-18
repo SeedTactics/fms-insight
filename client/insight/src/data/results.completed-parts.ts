@@ -66,19 +66,19 @@ export interface PartsCompletedSummary {
 
 export function binCyclesByDayAndPart(cycles: Iterable<PartCycleData>): HashMap<DayAndPart, PartsCompletedSummary> {
   return LazySeq.ofIterable(cycles)
-    .map(point => ({
+    .map((point) => ({
       day: startOfDay(point.x),
       part: part_and_proc(point.part, point.process),
       value: {
         count: point.completed ? point.material.length : 0,
-        activeMachineMins: point.completed ? point.activeTotalMachineMinutesForSingleMat * point.material.length : 0
-      }
+        activeMachineMins: point.completed ? point.activeTotalMachineMinutesForSingleMat * point.material.length : 0,
+      },
     }))
     .toMap(
-      p => [new DayAndPart(p.day, p.part), p.value] as [DayAndPart, PartsCompletedSummary],
+      (p) => [new DayAndPart(p.day, p.part), p.value] as [DayAndPart, PartsCompletedSummary],
       (v1, v2) => ({
         count: v1.count + v2.count,
-        activeMachineMins: v1.activeMachineMins + v2.activeMachineMins
+        activeMachineMins: v1.activeMachineMins + v2.activeMachineMins,
       })
     );
 }
@@ -91,14 +91,14 @@ export function binSimProductionByDayAndPart(
   prod: Iterable<SimPartCompleted>
 ): HashMap<DayAndPart, PartsCompletedSummary> {
   return LazySeq.ofIterable(prod).toMap(
-    p =>
+    (p) =>
       [
         new DayAndPart(startOfDay(p.completeTime), p.part),
-        { count: p.quantity, activeMachineMins: p.expectedMachineMins }
+        { count: p.quantity, activeMachineMins: p.expectedMachineMins },
       ] as [DayAndPart, PartsCompletedSummary],
     (v1, v2) => ({
       count: v1.count + v2.count,
-      activeMachineMins: v1.activeMachineMins + v2.activeMachineMins
+      activeMachineMins: v1.activeMachineMins + v2.activeMachineMins,
     })
   );
 }
@@ -124,17 +124,17 @@ export function buildCompletedPartSeries(
   cycles: Iterable<PartCycleData>,
   sim: Iterable<SimPartCompleted>
 ): ReadonlyArray<CompletedPartSeries> {
-  const filteredCycles = LazySeq.ofIterable(cycles).filter(e => e.x >= start && e.x <= end);
+  const filteredCycles = LazySeq.ofIterable(cycles).filter((e) => e.x >= start && e.x <= end);
   const actualBins = binCyclesByDayAndPart(filteredCycles);
-  const filteredStatUse = LazySeq.ofIterable(sim).filter(e => e.completeTime >= start && e.completeTime <= end);
+  const filteredStatUse = LazySeq.ofIterable(sim).filter((e) => e.completeTime >= start && e.completeTime <= end);
   const plannedBins = binSimProductionByDayAndPart(filteredStatUse);
 
   const series: Array<CompletedPartSeries> = [];
   const partNames = actualBins
     .keySet()
     .addAll(plannedBins.keySet())
-    .map(e => e.part)
-    .toArray({ sortOn: x => x });
+    .map((e) => e.part)
+    .toArray({ sortOn: (x) => x });
 
   for (const part of partNames) {
     const days: Array<CompletedPartEntry> = [];
@@ -143,14 +143,14 @@ export function buildCompletedPartSeries(
       const actual = actualBins.get(dAndPart);
       const planned = plannedBins.get(dAndPart);
       days.push({
-        actual: actual.map(v => v.count).getOrElse(0),
-        planned: planned.map(v => v.count).getOrElse(0),
-        day: d
+        actual: actual.map((v) => v.count).getOrElse(0),
+        planned: planned.map((v) => v.count).getOrElse(0),
+        day: d,
       });
     }
     series.push({
       part: part,
-      days: days
+      days: days,
     });
   }
   return series;
@@ -160,8 +160,73 @@ export function buildCompletedPartSeries(
 // Clipboard
 // --------------------------------------------------------------------------------
 
+interface HeatmapClipboardPoint {
+  readonly x: Date;
+  readonly y: string;
+}
+
+class HeatmapClipboardCell {
+  public constructor(public readonly x: number, public readonly y: string) {}
+  equals(other: HeatmapClipboardCell): boolean {
+    return this.x === other.x && this.y === other.y;
+  }
+  hashCode(): number {
+    return fieldsHashCode(this.x, this.y);
+  }
+  toString(): string {
+    return `{x: ${new Date(this.x).toISOString()}, y: ${this.y}}`;
+  }
+}
+
+export function buildCompletedPartsHeatmapTable(
+  points: ReadonlyArray<HeatmapClipboardPoint & PartsCompletedSummary>
+): string {
+  const cells = LazySeq.ofIterable(points).toMap(
+    (p) => [new HeatmapClipboardCell(p.x.getTime(), p.y), p],
+    (_, c) => c // cells should be unique, but just in case take the second
+  );
+  const days = LazySeq.ofIterable(points)
+    .toSet((p) => p.x.getTime())
+    .toArray({ sortOn: (x) => x });
+  const rows = LazySeq.ofIterable(points)
+    .toMap(
+      (p) => [p.y, p.activeMachineMins / p.count],
+      (first, snd) => (isNaN(first) ? snd : first)
+    )
+    .toVector()
+    .sortOn(([name, _cycleMins]) => name);
+
+  let table = "<table>\n<thead><tr><th>Part</th><th>Expected Cycle Mins</th>";
+  for (const x of days) {
+    table += "<th>" + new Date(x).toDateString() + " Completed</th>";
+    table += "<th>" + new Date(x).toDateString() + " Std. Hours</th>";
+  }
+  table += "</tr></thead>\n<tbody>\n";
+  for (const [partName, cycleMins] of rows) {
+    table += "<tr><th>" + partName + "</th><th>" + cycleMins.toFixed(1) + "</th>";
+    for (const x of days) {
+      const cell = cells.get(new HeatmapClipboardCell(x, partName));
+      if (cell.isSome()) {
+        table += "<td>" + cell.get().count.toFixed(0) + "</td>";
+        table += "<td>" + (cell.get().activeMachineMins / 60).toFixed(1) + "</td>";
+      } else {
+        table += "<td></td>";
+        table += "<td></td>";
+      }
+    }
+    table += "</tr>\n";
+  }
+  table += "</tbody>\n</table>";
+  return table;
+}
+
+export function copyCompletedPartsHeatmapToClipboard(
+  points: ReadonlyArray<HeatmapClipboardPoint & PartsCompletedSummary>
+): void {
+  copy(buildCompletedPartsHeatmapTable(points));
+}
 export function buildCompletedPartsTable(series: ReadonlyArray<CompletedPartSeries>) {
-  const days = series.length > 0 ? series[0].days.map(p => p.day) : [];
+  const days = series.length > 0 ? series[0].days.map((p) => p.day) : [];
 
   let table = "<table>\n<thead><tr>";
   table += "<th>Part</th>";

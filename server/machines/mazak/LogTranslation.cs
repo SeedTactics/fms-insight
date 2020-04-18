@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -44,6 +44,7 @@ namespace MazakMachineInterface
     private BlackMaple.MachineFramework.JobDB _jobDB;
     private BlackMaple.MachineFramework.JobLogDB _log;
     private BlackMaple.MachineFramework.FMSSettings _settings;
+    private IMachineGroupName _machGroupName;
     private Action<LogEntry> _onMazakLog;
     private MazakSchedulesAndLoadActions _mazakSchedules;
     private Dictionary<string, JobPlan> _jobs;
@@ -53,11 +54,13 @@ namespace MazakMachineInterface
     public LogTranslation(BlackMaple.MachineFramework.JobDB jDB,
                           BlackMaple.MachineFramework.JobLogDB logDB,
                           MazakSchedulesAndLoadActions mazakSch,
+                          IMachineGroupName machineGroupName,
                           BlackMaple.MachineFramework.FMSSettings settings,
                           Action<LogEntry> onMazakLogMessage)
     {
       _jobDB = jDB;
       _log = logDB;
+      _machGroupName = machineGroupName;
       _mazakSchedules = mazakSch;
       _settings = settings;
       _onMazakLog = onMazakLogMessage;
@@ -119,19 +122,32 @@ namespace MazakMachineInterface
           _log.RecordMachineStart(
             mats: GetMaterialOnPallet(e, cycle).Select(m => m.Mat),
             pallet: e.Pallet.ToString(),
-            statName: "MC",
+            statName: _machGroupName.MachineGroupName,
             statNum: e.StationNumber,
             program: e.Program,
             timeUTC: e.TimeUTC,
+            pockets: ToolsToSnapshot(e.StationNumber, _mazakSchedules.Tools),
             foreignId: e.ForeignID);
-
-          Log.Debug("Tools at machine cycle start for machine {machine}: {@tools}", e.StationNumber, _mazakSchedules.Tools.ToList());
 
           break;
 
         case LogCode.MachineCycleEnd:
 
-          var elapsed = CalculateElapsed(e, cycle, LogType.MachineCycle, e.StationNumber);
+          var machStart = FindMachineStart(e, cycle, e.StationNumber);
+          TimeSpan elapsed;
+          IEnumerable<JobLogDB.ToolPocketSnapshot> toolsAtStart;
+          if (machStart != null)
+          {
+            elapsed = e.TimeUTC.Subtract(machStart.EndTimeUTC);
+            toolsAtStart = _log.ToolPocketSnapshotForCycle(machStart.Counter);
+          }
+          else
+          {
+            Log.Debug("Calculating elapsed time for {@entry} did not find a previous cycle event", e);
+            elapsed = TimeSpan.Zero;
+            toolsAtStart = Enumerable.Empty<JobLogDB.ToolPocketSnapshot>();
+          }
+          var toolsAtEnd = ToolsToSnapshot(e.StationNumber, _mazakSchedules.Tools);
 
           if (elapsed > TimeSpan.FromSeconds(30))
           {
@@ -139,15 +155,17 @@ namespace MazakMachineInterface
             var s = _log.RecordMachineEnd(
               mats: machineMats.Select(m => m.Mat),
               pallet: e.Pallet.ToString(),
-              statName: "MC",
+              statName: _machGroupName.MachineGroupName,
               statNum: e.StationNumber,
               program: e.Program,
               timeUTC: e.TimeUTC,
               result: "",
               elapsed: elapsed,
               active: CalculateActiveMachining(machineMats),
+              tools: JobLogDB.ToolPocketSnapshot.DiffSnapshots(toolsAtStart, toolsAtEnd),
+              pockets: toolsAtEnd,
               foreignId: e.ForeignID);
-            HandleMachiningCompleted(s);
+            HandleMachiningCompleted(s, machineMats);
           }
           else
           {
@@ -155,8 +173,6 @@ namespace MazakMachineInterface
             Log.Warning("Ignoring machine cycle at {time} on pallet {pallet} because it is less than 30 seconds",
               e.TimeUTC, e.Pallet);
           }
-
-          Log.Debug("Tools at machine cycle end on machine {machine}: {@tools}", e.StationNumber, _mazakSchedules.Tools.ToList());
 
           break;
 
@@ -380,8 +396,7 @@ namespace MazakMachineInterface
           Log.Debug("Searching queue {queue} for {unique}-{proc} to load",
             job.GetInputQueue(proc, path), unique, proc);
 
-          // TODO: filter paths
-          var qs = _log.GetMaterialInQueue(job.GetInputQueue(proc, path)).Where(q => q.Unique == unique).ToList();
+          var qs = MazakQueues.QueuedMaterialForLoading(job, _log.GetMaterialInQueue(job.GetInputQueue(proc, path)), proc, path, _log);
 
           for (int i = 1; i <= fixQty; i++)
           {
@@ -545,6 +560,10 @@ namespace MazakMachineInterface
     #endregion
 
     #region Elapsed
+    private static MWI.LogEntry FindMachineStart(LogEntry e, IList<MWI.LogEntry> oldEvents, int statNum)
+    {
+      return oldEvents.LastOrDefault(old => old.LogType == LogType.MachineCycle && old.StartOfCycle && old.LocationNum == statNum);
+    }
     private static TimeSpan CalculateElapsed(LogEntry e, IList<MWI.LogEntry> oldEvents, LogType ty, int statNum)
     {
       for (int i = oldEvents.Count - 1; i >= 0; i -= 1)
@@ -617,60 +636,49 @@ namespace MazakMachineInterface
     #endregion
 
     #region Inspections
-    private void HandleMachiningCompleted(BlackMaple.MachineWatchInterface.LogEntry cycle)
+    private void HandleMachiningCompleted(BlackMaple.MachineWatchInterface.LogEntry cycle, IEnumerable<LogMaterialAndPath> mats)
     {
-      foreach (LogMaterial mat in cycle.Material)
+      foreach (LogMaterialAndPath mat in mats)
       {
-        if (mat.MaterialID < 0 || mat.JobUniqueStr == null || mat.JobUniqueStr == "")
+        if (mat.Mat.MaterialID < 0 || mat.Unique == null || mat.Unique == "")
         {
-          Log.Debug("HandleMachiningCompleted: Skipping material id " + mat.MaterialID.ToString() +
+          Log.Debug("HandleMachiningCompleted: Skipping material id " + mat.Mat.MaterialID.ToString() +
                     " part " + mat.PartName +
                     " because the job unique string is empty");
           continue;
         }
 
-        var inspections = new List<JobInspectionData>();
-        var job = GetJob(mat.JobUniqueStr);
+        var job = GetJob(mat.Unique);
         if (job == null)
         {
-          Log.Debug("Couldn't find job for material {uniq}", mat.JobUniqueStr);
+          Log.Debug("Couldn't find job for material {uniq}", mat.Unique);
           continue;
         }
 
-        foreach (var i in job.GetInspections())
-        {
-          if (i.InspectSingleProcess <= 0 && mat.Process != mat.NumProcesses)
-          {
-            Log.Debug("Skipping inspection for material " + mat.MaterialID.ToString() +
-                      " inspection type " + i.InspectionType +
-                      " completed at time " + cycle.EndTimeUTC.ToLocalTime().ToString() + " on pallet " + cycle.Pallet.ToString() +
-                      " part " + mat.PartName +
-                      " because the process is not the maximum process");
-
-            continue;
-          }
-          if (i.InspectSingleProcess >= 1 && mat.Process != i.InspectSingleProcess)
-          {
-            Log.Debug("Skipping inspection for material " + mat.MaterialID.ToString() +
-                      " inspection type " + i.InspectionType +
-                      " completed at time " + cycle.EndTimeUTC.ToLocalTime().ToString() + " on pallet " + cycle.Pallet.ToString() +
-                      " part " + mat.PartName +
-                      " process " + mat.Process.ToString() +
-                      " because the inspection is only on process " +
-                      i.InspectSingleProcess.ToString());
-
-            continue;
-          }
-
-          inspections.Add(i);
-        }
-
-        _log.MakeInspectionDecisions(mat.MaterialID, mat.Process, inspections);
-        Log.Debug("Making inspection decision for " + string.Join(",", inspections.Select(x => x.InspectionType)) + " material " + mat.MaterialID.ToString() +
-                  " completed at time " + cycle.EndTimeUTC.ToLocalTime().ToString() + " on pallet " + cycle.Pallet.ToString() +
+        _log.MakeInspectionDecisions(mat.Mat.MaterialID, mat.Mat.Process, job.PathInspections(mat.Mat.Process, mat.Path));
+        Log.Debug("Making inspection decision for " + string.Join(",", job.PathInspections(mat.Mat.Process, mat.Path).Select(x => x.InspectionType)) + " material " + mat.Mat.MaterialID.ToString() +
+                  " proc " + mat.Mat.Process.ToString() + " path " + mat.Path.ToString() + " completed at time " + cycle.EndTimeUTC.ToLocalTime().ToString() + " on pallet " + cycle.Pallet.ToString() +
                   " part " + mat.PartName);
       }
     }
+    #endregion
+
+    #region Tools
+    private static IEnumerable<JobLogDB.ToolPocketSnapshot> ToolsToSnapshot(int machine, IEnumerable<ToolPocketRow> tools)
+    {
+      if (tools == null) return null;
+      return tools
+        .Where(t => t.MachineNumber == machine && (t.IsToolDataValid ?? false) && t.PocketNumber.HasValue && !string.IsNullOrEmpty(t.GroupNo))
+        .Select(t => new JobLogDB.ToolPocketSnapshot()
+        {
+          PocketNumber = t.PocketNumber ?? -1,
+          Tool = t.GroupNo,
+          CurrentUse = TimeSpan.FromSeconds(t.LifeUsed ?? 0),
+          ToolLife = TimeSpan.FromSeconds(t.LifeSpan ?? 0)
+        })
+        .ToList();
+    }
+
     #endregion
   }
 }

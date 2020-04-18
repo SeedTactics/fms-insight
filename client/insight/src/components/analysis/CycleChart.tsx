@@ -41,7 +41,7 @@ import {
   FlexibleWidthXYPlot,
   VerticalGridLines,
   HorizontalGridLines,
-  DiscreteColorLegend
+  DiscreteColorLegend,
 } from "react-vis";
 import Button from "@material-ui/core/Button";
 import { createStyles, withStyles, WithStyles } from "@material-ui/core";
@@ -88,7 +88,7 @@ interface CycleChartState {
 
 function memoize<A, R>(f: (x: A) => R): (x: A) => R {
   const memo = new Map<A, R>();
-  return x => {
+  return (x) => {
     let ret = memo.get(x);
     if (!ret) {
       ret = f(x);
@@ -102,9 +102,9 @@ function memoize<A, R>(f: (x: A) => R): (x: A) => R {
 const cycleChartStyles = createStyles({
   noSeriesPointerEvts: {
     "& .rv-xy-plot__series.rv-xy-plot__series--mark": {
-      pointerEvents: "none"
-    }
-  }
+      pointerEvents: "none",
+    },
+  },
 });
 
 // https://personal.sron.nl/~pault/
@@ -132,8 +132,8 @@ const paulTolQualitativeColors = [
     "cc6677",
     "aa4466",
     "882255",
-    "aa4499"
-  ]
+    "aa4499",
+  ],
 ];
 
 // https://github.com/google/palette.js/blob/master/palette.js
@@ -202,7 +202,7 @@ const mpn65Colors = [
   "a49100",
   "f48800",
   "27d0df",
-  "a04a9b"
+  "a04a9b",
 ];
 
 function seriesColor(idx: number, count: number): string {
@@ -223,7 +223,7 @@ export const CycleChart = withStyles(cycleChartStyles)(
       disabled_series: {},
       current_y_zoom_range: null,
       brushing: false,
-      zoom_dialog_open: false
+      zoom_dialog_open: false,
     } as CycleChartState;
 
     // memoize on the series name, since the function from CycleChartPoint => void is
@@ -232,7 +232,7 @@ export const CycleChart = withStyles(cycleChartStyles)(
     setTooltip = memoize((series: string) => (point: CycleChartPoint) => {
       if (this.state.tooltip === undefined) {
         this.setState({
-          tooltip: { ...point, series: series, extra: this.props.extra_tooltip ? this.props.extra_tooltip(point) : [] }
+          tooltip: { ...point, series: series, extra: this.props.extra_tooltip ? this.props.extra_tooltip(point) : [] },
         });
       } else {
         this.setState({ tooltip: undefined });
@@ -253,8 +253,8 @@ export const CycleChart = withStyles(cycleChartStyles)(
       this.setState({
         disabled_series: {
           ...this.state.disabled_series,
-          [series.title]: newState
-        }
+          [series.title]: newState,
+        },
       });
     };
 
@@ -263,7 +263,7 @@ export const CycleChart = withStyles(cycleChartStyles)(
         { title: "Time", value: format(tip.x, "MMM d, yyyy, h:mm aaaa") },
         { title: this.props.series_label, value: tip.series },
         { title: "Cycle Time", value: tip.y.toFixed(1) + " minutes" },
-        ...tip.extra.map(e => ({
+        ...tip.extra.map((e) => ({
           title: e.title,
           value: e.link ? (
             <a
@@ -274,13 +274,13 @@ export const CycleChart = withStyles(cycleChartStyles)(
             </a>
           ) : (
             e.value
-          )
-        }))
+          ),
+        })),
       ];
     };
 
     render() {
-      const seriesNames = this.props.points.keySet().toArray({ sortOn: x => x });
+      const seriesNames = this.props.points.keySet().toArray({ sortOn: (x) => x });
       const dateRange = this.props.default_date_range;
       const setZoom = this.props.set_date_zoom_range;
 
@@ -320,18 +320,16 @@ export const CycleChart = withStyles(cycleChartStyles)(
                     setZoom({ zoom: { start: area.left, end: area.right } });
                     this.setState({
                       current_y_zoom_range: { y_low: area.bottom, y_high: area.top },
-                      brushing: false
+                      brushing: false,
                     });
                   } else {
                     this.setState({
-                      brushing: false
+                      brushing: false,
                     });
                   }
                 }}
               />
-            ) : (
-              undefined
-            )}
+            ) : undefined}
             {seriesNames.map((series, idx) => (
               <MarkSeries
                 key={series}
@@ -341,9 +339,7 @@ export const CycleChart = withStyles(cycleChartStyles)(
                 {...(this.state.disabled_series[series] ? { opacity: 0.2 } : null)}
               />
             ))}
-            {this.state.tooltip === undefined ? (
-              undefined
-            ) : (
+            {this.state.tooltip === undefined ? undefined : (
               <Hint value={this.state.tooltip} format={this.formatHint} />
             )}
           </FlexibleWidthXYPlot>
@@ -356,13 +352,11 @@ export const CycleChart = withStyles(cycleChartStyles)(
                   items={seriesNames.map((s, idx) => ({
                     title: s,
                     color: seriesColor(idx, seriesNames.length),
-                    disabled: this.state.disabled_series[s]
+                    disabled: this.state.disabled_series[s],
                   }))}
                   onItemClick={this.toggleSeries}
                 />
-              ) : (
-                undefined
-              )}
+              ) : undefined}
             </div>
             {setZoom && (this.props.current_date_zoom || this.state.current_y_zoom_range) ? (
               <Button
@@ -375,14 +369,10 @@ export const CycleChart = withStyles(cycleChartStyles)(
               >
                 Reset Zoom
               </Button>
-            ) : (
-              undefined
-            )}
+            ) : undefined}
             {setZoom && !this.props.current_date_zoom && !this.state.current_y_zoom_range ? (
               <span style={{ position: "absolute", right: 0, top: 0, color: "#6b6b76" }}>Zoom via mouse drag</span>
-            ) : (
-              undefined
-            )}
+            ) : undefined}
           </div>
         </div>
       );

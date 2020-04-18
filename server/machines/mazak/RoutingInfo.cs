@@ -47,18 +47,21 @@ namespace MazakMachineInterface
     private BlackMaple.MachineFramework.JobDB jobDB;
     private BlackMaple.MachineFramework.JobLogDB log;
     private IWriteJobs _writeJobs;
+    private IMachineGroupName _machineGroupName;
     private IDecrementPlanQty _decr;
     private readonly IQueueSyncFault queueFault;
     private System.Timers.Timer _copySchedulesTimer;
     private readonly BlackMaple.MachineFramework.FMSSettings fmsSettings;
 
     public bool CheckPalletsUsedOnce;
+    public Action<NewJobs> NewJobTransform = null;
 
     public event NewCurrentStatus OnNewCurrentStatus;
     public void RaiseNewCurrentStatus(CurrentStatus s) => OnNewCurrentStatus?.Invoke(s);
 
     public RoutingInfo(
       IWriteData d,
+      IMachineGroupName machineGroupName,
       IReadDataAccess readDb,
       IMazakLogReader logR,
       BlackMaple.MachineFramework.JobDB jDB,
@@ -77,6 +80,7 @@ namespace MazakMachineInterface
       log = jLog;
       _writeJobs = wJobs;
       _decr = decrement;
+      _machineGroupName = machineGroupName;
       queueFault = queueSyncFault;
       CheckPalletsUsedOnce = check;
 
@@ -107,7 +111,7 @@ namespace MazakMachineInterface
         OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
       }
 
-      return BuildCurrentStatus.Build(jobDB, log, fmsSettings, queueFault, readDatabase.MazakType, mazakData, DateTime.UtcNow);
+      return BuildCurrentStatus.Build(jobDB, log, fmsSettings, _machineGroupName, queueFault, readDatabase.MazakType, mazakData, DateTime.UtcNow);
     }
 
     #endregion
@@ -187,6 +191,7 @@ namespace MazakMachineInterface
       }
       try
       {
+        NewJobTransform?.Invoke(newJ);
         _writeJobs.AddJobs(newJ, expectedPreviousScheduleId);
       }
       finally
@@ -216,6 +221,12 @@ namespace MazakMachineInterface
       {
         Log.Error(ex, "Error recopying job schedules to mazak");
       }
+    }
+
+    void IJobControl.SetJobComment(string jobUnique, string comment)
+    {
+      jobDB.SetJobComment(jobUnique, comment);
+      RaiseNewCurrentStatus(GetCurrentStatus());
     }
     #endregion
 
@@ -267,51 +278,87 @@ namespace MazakMachineInterface
     #endregion
 
     #region Queues
-    public void AddUnallocatedCastingToQueue(string part, string queue, int position, string serial)
+    public void AddUnallocatedPartToQueue(string partName, string queue, int position, string serial)
+    {
+      string casting = partName;
+
+      // try and see if there is a job for this part with an actual casting
+      var sch = jobDB.LoadUnarchivedJobs();
+      var job = sch.Jobs.FirstOrDefault(j => j.PartName == partName);
+      if (job != null)
+      {
+        for (int path = 1; path <= job.GetNumPaths(1); path++)
+        {
+          if (!string.IsNullOrEmpty(job.GetCasting(path)))
+          {
+            casting = job.GetCasting(path);
+            break;
+          }
+        }
+      }
+
+      AddUnallocatedCastingToQueue(casting, 1, queue, position, string.IsNullOrEmpty(serial) ? new string[] { } : new string[] { serial });
+    }
+    public void AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serial)
     {
       if (!fmsSettings.Queues.ContainsKey(queue))
       {
         throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
       }
-      // num proc will be set later once it is allocated inside the MazakQueues thread
-      var matId = log.AllocateMaterialIDForCasting(part, 1);
 
-      Log.Debug("Adding unprocessed casting for part {part} to queue {queue} in position {pos} with serial {serial}. " +
-                "Assigned matId {matId}",
-        part, queue, position, serial, matId
-      );
-
-      if (!string.IsNullOrEmpty(serial))
+      for (int i = 0; i < qty; i++)
       {
-        log.RecordSerialForMaterialID(
-          new BlackMaple.MachineFramework.JobLogDB.EventLogMaterial()
-          {
-            MaterialID = matId,
-            Process = 0,
-            Face = ""
-          },
-          serial);
+        var matId = log.AllocateMaterialIDForCasting(casting);
+
+        Log.Debug("Adding unprocessed casting for casting {casting} to queue {queue} in position {pos} with serial {serial}. " +
+                  "Assigned matId {matId}",
+          casting, queue, position, serial, matId
+        );
+
+        if (i < serial.Count)
+        {
+          log.RecordSerialForMaterialID(
+            new BlackMaple.MachineFramework.JobLogDB.EventLogMaterial()
+            {
+              MaterialID = matId,
+              Process = 0,
+              Face = ""
+            },
+            serial[i]);
+        }
+        // the add to queue log entry will use the process, so later when we lookup the latest completed process
+        // for the material in the queue, it will be correctly computed.
+        log.RecordAddMaterialToQueue(matId, 0, queue, position >= 0 ? position + i : -1);
       }
-      // the add to queue log entry will use the process, so later when we lookup the latest completed process
-      // for the material in the queue, it will be correctly computed.
-      log.RecordAddMaterialToQueue(matId, 0, queue, position);
+
       logReader.RecheckQueues();
       RaiseNewCurrentStatus(GetCurrentStatus());
     }
 
-    public void AddUnprocessedMaterialToQueue(string jobUnique, int process, string queue, int position, string serial)
+    public void AddUnprocessedMaterialToQueue(string jobUnique, int process, int pathGroup, string queue, int position, string serial)
     {
       if (!fmsSettings.Queues.ContainsKey(queue))
       {
         throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
       }
-
-      Log.Debug("Adding unprocessed material for job {job} proc {proc} to queue {queue} in position {pos} with serial {serial}",
-        jobUnique, process, queue, position, serial
+      Log.Debug("Adding unprocessed material for job {job} proc {proc} group {pathGroup} to queue {queue} in position {pos} with serial {serial}",
+        jobUnique, process, pathGroup, queue, position, serial
       );
 
       var job = jobDB.LoadJob(jobUnique);
       if (job == null) throw new BlackMaple.MachineFramework.BadRequestException("Unable to find job " + jobUnique);
+
+      int? path = null;
+      for (var p = 1; p <= job.GetNumPaths(Math.Max(1, process)); p++)
+      {
+        if (job.GetPathGroup(Math.Max(1, process), p) == pathGroup)
+        {
+          path = p;
+          break;
+        }
+      }
+      if (!path.HasValue) throw new BlackMaple.MachineFramework.BadRequestException("Unable to find path group " + pathGroup.ToString() + " for job " + jobUnique + " and process " + process.ToString());
+
       var matId = log.AllocateMaterialID(jobUnique, job.PartName, job.NumProcesses);
       if (!string.IsNullOrEmpty(serial))
       {
@@ -327,6 +374,7 @@ namespace MazakMachineInterface
       // the add to queue log entry will use the process, so later when we lookup the latest completed process
       // for the material in the queue, it will be correctly computed.
       log.RecordAddMaterialToQueue(matId, process, queue, position);
+      log.RecordPathForProcess(matId, Math.Max(1, process), path.Value);
       logReader.RecheckQueues();
       RaiseNewCurrentStatus(GetCurrentStatus());
     }
@@ -352,10 +400,11 @@ namespace MazakMachineInterface
       RaiseNewCurrentStatus(GetCurrentStatus());
     }
 
-    public void RemoveMaterialFromAllQueues(long materialId)
+    public void RemoveMaterialFromAllQueues(IList<long> materialIds)
     {
-      Log.Debug("Removing {matId} from all queues", materialId);
-      log.RecordRemoveMaterialFromAllQueues(materialId);
+      Log.Debug("Removing {@matId} from all queues", materialIds);
+      foreach (var materialId in materialIds)
+        log.RecordRemoveMaterialFromAllQueues(materialId);
       logReader.RecheckQueues();
       RaiseNewCurrentStatus(GetCurrentStatus());
     }

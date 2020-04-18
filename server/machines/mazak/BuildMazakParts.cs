@@ -46,11 +46,12 @@ namespace MazakMachineInterface
     public readonly int DownloadID;
     public readonly List<MazakProcess> Processes;
 
-    public MazakPart(JobPlan j, int downID)
+    public MazakPart(JobPlan j, int downID, int partIdx)
     {
       Job = j;
       DownloadID = downID;
       Processes = new List<MazakProcess>();
+      PartName = Job.PartName + ":" + DownloadID.ToString() + ":" + partIdx.ToString();
     }
 
     public MazakPartRow ToDatabaseRow()
@@ -65,13 +66,7 @@ namespace MazakMachineInterface
       return newPartRow;
     }
 
-    public string PartName
-    {
-      get
-      {
-        return Job.PartName + ":" + DownloadID.ToString() + ":" + Processes.First().Path.ToString();
-      }
-    }
+    public string PartName { get; }
 
     public string Comment
     {
@@ -738,6 +733,7 @@ namespace MazakMachineInterface
                                                   Func<string, long?, BlackMaple.MachineFramework.JobDB.ProgramRevision> lookupProgram)
     {
       var ret = new List<MazakPart>();
+      int partIdx = 1;
 
       foreach (var job in jobs)
       {
@@ -747,7 +743,8 @@ namespace MazakMachineInterface
           //each path gets a MazakPart
           for (int path = 1; path <= job.GetNumPaths(1); path++)
           {
-            var mazakPart = new MazakPart(job, downloadID);
+            var mazakPart = new MazakPart(job, downloadID, partIdx);
+            partIdx += 1;
 
             string error;
             BuildProcFromJobWithOneProc(job, path, mazakPart, mazakTy, mazakData, lookupProgram, out error);
@@ -807,7 +804,8 @@ namespace MazakMachineInterface
           foreach (var grp in pathGroups)
           {
             //label the part by the path number on process 1.
-            var mazakPart = new MazakPart(job, downloadID);
+            var mazakPart = new MazakPart(job, downloadID, partIdx);
+            partIdx += 1;
             string error;
             BuildProcFromPathGroup(job, mazakPart, out error, mazakTy, mazakData,
                  (proc, path) => grp.Value == job.GetPathGroup(proc, path), lookupProgram);

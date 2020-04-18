@@ -40,7 +40,7 @@ import {
   statistical_times_for_cycle,
   isOutlier,
   EstimatedCycleTimes,
-  splitElapsedLoadTimeAmongCycles
+  splitElapsedLoadTimeAmongCycles,
 } from "./events.cycles";
 import { LazySeq } from "./lazyseq";
 import * as api from "./api";
@@ -69,7 +69,7 @@ export function filterStationCycles(
   return {
     seriesLabel: groupByPal ? "Pallet" : groupByPart ? "Part" : "Station",
     data: LazySeq.ofIterable(allCycles)
-      .filter(e => {
+      .filter((e) => {
         if (zoom && (e.x < zoom.start || e.x > zoom.end)) {
           return false;
         }
@@ -94,7 +94,7 @@ export function filterStationCycles(
 
         return true;
       })
-      .groupBy(e => {
+      .groupBy((e) => {
         if (groupByPal) {
           return e.pallet;
         } else if (groupByPart) {
@@ -103,7 +103,7 @@ export function filterStationCycles(
           return stat_name_and_num(e.stationGroup, e.stationNumber);
         }
       })
-      .mapValues(e => e.toArray())
+      .mapValues((e) => e.toArray()),
   };
 }
 
@@ -116,14 +116,14 @@ export function outlierMachineCycles(
   return {
     seriesLabel: "Part",
     data: LazySeq.ofIterable(allCycles)
-      .filter(e => !e.isLabor && e.x >= start && e.x <= end)
-      .filter(cycle => {
+      .filter((e) => !e.isLabor && e.x >= start && e.x <= end)
+      .filter((cycle) => {
         if (cycle.material.length === 0) return false;
         const stats = statistical_times_for_cycle(cycle.part, cycle.process, cycle.stationGroup, estimated);
         return stats.isSome() && isOutlier(stats.get(), cycle.y / cycle.material.length);
       })
-      .groupBy(e => part_and_proc(e.part, e.process))
-      .mapValues(e => e.toArray())
+      .groupBy((e) => part_and_proc(e.part, e.process))
+      .mapValues((e) => e.toArray()),
   };
 }
 
@@ -133,12 +133,12 @@ export function outlierLoadCycles(
   end: Date,
   estimated: EstimatedCycleTimes
 ): FilteredStationCycles {
-  const loadCycles = LazySeq.ofIterable(allCycles).filter(e => e.isLabor && e.x >= start && e.x <= end);
+  const loadCycles = LazySeq.ofIterable(allCycles).filter((e) => e.isLabor && e.x >= start && e.x <= end);
   const now = new Date();
   return {
     seriesLabel: "Part",
     data: splitElapsedLoadTimeAmongCycles(loadCycles)
-      .filter(e => {
+      .filter((e) => {
         if (e.cycle.material.length === 0) return false;
         // if it is too close to the start (or end) we might have cut off and only seen half of the events
         if (differenceInSeconds(e.cycle.x, start) < 20 || differenceInSeconds(end, e.cycle.x) < 20) return false;
@@ -152,21 +152,21 @@ export function outlierLoadCycles(
         const stats = statistical_times_for_cycle(e.cycle.part, e.cycle.process, e.cycle.stationGroup, estimated);
         return stats.isSome() && isOutlier(stats.get(), e.elapsedForSingleMaterialMinutes);
       })
-      .map(e => e.cycle)
-      .groupBy(c => part_and_proc(c.part, c.process))
-      .mapValues(e => e.toArray())
+      .map((e) => e.cycle)
+      .groupBy((c) => part_and_proc(c.part, c.process))
+      .mapValues((e) => e.toArray()),
   };
 }
 
 export function stationMinutes(partCycles: Vector<PartCycleData>, cutoff: Date): HashMap<string, number> {
   return LazySeq.ofIterable(partCycles)
-    .filter(p => p.x >= cutoff)
-    .map(p => ({
+    .filter((p) => p.x >= cutoff)
+    .map((p) => ({
       station: stat_name_and_num(p.stationGroup, p.stationNumber),
-      active: p.activeMinutes
+      active: p.activeMinutes,
     }))
     .toMap(
-      x => [x.station, x.active] as [string, number],
+      (x) => [x.station, x.active] as [string, number],
       (v1, v2) => v1 + v2
     );
 }
@@ -192,7 +192,7 @@ export function buildCycleTable(
 
   const filteredCycles = LazySeq.ofIterable(cycles.data)
     .flatMap(([_, c]) => c)
-    .filter(p => (!startD || p.x >= startD) && (!endD || p.x < endD))
+    .filter((p) => (!startD || p.x >= startD) && (!endD || p.x < endD))
     .toArray()
     .sort((a, b) => a.x.getTime() - b.x.getTime());
   for (const cycle of filteredCycles) {
@@ -204,15 +204,15 @@ export function buildCycleTable(
     table +=
       "<td>" +
       cycle.material
-        .filter(m => m.serial)
-        .map(m => m.serial)
+        .filter((m) => m.serial)
+        .map((m) => m.serial)
         .join(",") +
       "</td>";
     table +=
       "<td>" +
       cycle.material
-        .filter(m => m.workorder)
-        .map(m => m.workorder)
+        .filter((m) => m.workorder)
+        .map((m) => m.workorder)
         .join(",") +
       "</td>";
     table += "<td>" + format_cycle_inspection(cycle) + "</td>";
@@ -306,18 +306,8 @@ export function buildLogEntriesTable(cycles: Iterable<Readonly<api.ILogEntry>>):
       table += "<td>" + (mat.serial || "") + "</td>";
       table += "<td>" + (mat.workorder || "") + "</td>";
       table += "<td>" + result(cycle) + "</td>";
-      table +=
-        "<td>" +
-        duration(cycle.elapsed)
-          .asMinutes()
-          .toFixed(1) +
-        "</td>";
-      table +=
-        "<td>" +
-        duration(cycle.active)
-          .asMinutes()
-          .toFixed(1) +
-        "</td>";
+      table += "<td>" + duration(cycle.elapsed).asMinutes().toFixed(1) + "</td>";
+      table += "<td>" + duration(cycle.active).asMinutes().toFixed(1) + "</td>";
       table += "</tr>\n";
     }
   }

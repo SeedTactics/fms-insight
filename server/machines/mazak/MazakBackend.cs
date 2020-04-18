@@ -87,6 +87,8 @@ namespace MazakMachineInterface
       get { return logDataLoader; }
     }
 
+    public RoutingInfo RoutingInfo => routing;
+
     public MazakBackend(IConfiguration configuration, FMSSettings st)
     {
       var cfg = configuration.GetSection("Mazak");
@@ -181,6 +183,9 @@ namespace MazakMachineInterface
         }
       }
 
+      // queue settings
+      bool waitForAllCastings = cfg.GetValue<bool>("Wait For All Castings", false);
+
       Log.Debug(
         "Configured UseStartingOffsetForDueDate = {useStarting}",
         UseStartingOffsetForDueDate);
@@ -214,24 +219,25 @@ namespace MazakMachineInterface
       else
         _readDB = openReadDb;
 
-      queues = new MazakQueues(jobLog, jobDB, _writeDB);
+      queues = new MazakQueues(jobLog, jobDB, _writeDB, waitForAllCastings);
       var sendToExternal = new SendMaterialToExternalQueue();
 
+      hold = new HoldPattern(_writeDB, _readDB, jobDB, true);
+      var writeJobs = new WriteJobs(_writeDB, _readDB, hold, jobDB, jobLog, st, CheckPalletsUsedOnce, UseStartingOffsetForDueDate, ProgramDirectory);
+      var decr = new DecrementPlanQty(jobDB, _writeDB, _readDB);
+
       if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakSmooth)
-        logDataLoader = new LogDataWeb(logPath, jobLog, jobDB, sendToExternal, _readDB, queues, st);
+        logDataLoader = new LogDataWeb(logPath, jobLog, jobDB, writeJobs, sendToExternal, _readDB, queues, st);
       else
       {
 #if USE_OLEDB
-				logDataLoader = new LogDataVerE(jobLog, jobDB, sendToExternal, _readDB, queues, st);
+				logDataLoader = new LogDataVerE(jobLog, jobDB, sendToExternal, writeJobs, _readDB, queues, st);
 #else
         throw new Exception("Mazak Web and VerE are not supported on .NET core");
 #endif
       }
 
-      hold = new HoldPattern(_writeDB, _readDB, jobDB, true);
-      var writeJobs = new WriteJobs(_writeDB, _readDB, hold, jobDB, jobLog, st, CheckPalletsUsedOnce, UseStartingOffsetForDueDate, ProgramDirectory);
-      var decr = new DecrementPlanQty(jobDB, _writeDB, _readDB);
-      routing = new RoutingInfo(_writeDB, _readDB, logDataLoader, jobDB, jobLog, writeJobs, queues, decr,
+      routing = new RoutingInfo(_writeDB, writeJobs, _readDB, logDataLoader, jobDB, jobLog, writeJobs, queues, decr,
                                 CheckPalletsUsedOnce, st);
 
       logDataLoader.NewEntries += OnNewLogEntries;

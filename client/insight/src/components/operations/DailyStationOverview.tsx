@@ -59,7 +59,7 @@ import {
   FilteredStationCycles,
   FilterAnyMachineKey,
   FilterAnyLoadKey,
-  copyCyclesToClipboard
+  copyCyclesToClipboard,
 } from "../../data/results.cycles";
 import * as events from "../../data/events";
 import * as matDetails from "../../data/material-details";
@@ -138,24 +138,24 @@ const outlierMachinePointsSelector = createSelector(
 );
 
 const ConnectedOutlierLabor = connect(
-  st => ({
+  (st) => ({
     showLabor: true,
     points: outlierLaborPointsSelector(st, true, startOfToday()),
-    default_date_range: [addDays(startOfToday(), -2), addDays(startOfToday(), 1)]
+    default_date_range: [addDays(startOfToday(), -2), addDays(startOfToday(), 1)],
   }),
   {
-    openMaterial: matDetails.openMaterialById
+    openMaterial: matDetails.openMaterialById,
   }
 )(OutlierCycles);
 
 const ConnectedOutlierMachines = connect(
-  st => ({
+  (st) => ({
     showLabor: false,
     points: outlierMachinePointsSelector(st, false, startOfToday()),
-    default_date_range: [addDays(startOfToday(), -2), addDays(startOfToday(), 1)]
+    default_date_range: [addDays(startOfToday(), -2), addDays(startOfToday(), 1)],
   }),
   {
-    openMaterial: matDetails.openMaterialById
+    openMaterial: matDetails.openMaterialById,
   }
 )(OutlierCycles);
 
@@ -185,7 +185,7 @@ function StationOEEChart(p: OEEProps) {
               name="Station-OEE-chart-or-table-select"
               autoWidth
               value={showChart ? "chart" : "table"}
-              onChange={e => setShowChart(e.target.value === "chart")}
+              onChange={(e) => setShowChart(e.target.value === "chart")}
             >
               <MenuItem key="chart" value="chart">
                 Chart
@@ -219,7 +219,7 @@ const ConnectedLoadOEE = connect((st: Store) => {
     showLabor: true,
     start: addDays(startOfToday(), -6),
     end: addDays(startOfToday(), 1),
-    points: oeePointsSelector(st.Events.last30, true, startOfToday())
+    points: oeePointsSelector(st.Events.last30, true, startOfToday()),
   };
 })(StationOEEChart);
 
@@ -228,7 +228,7 @@ const ConnectedMachineOEE = connect((st: Store) => {
     showLabor: false,
     start: addDays(startOfToday(), -6),
     end: addDays(startOfToday(), 1),
-    points: oeePointsSelector(st.Events.last30, false, startOfToday())
+    points: oeePointsSelector(st.Events.last30, false, startOfToday()),
   };
 })(StationOEEChart);
 
@@ -265,7 +265,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
       ret.push({
         title: mat.serial ? mat.serial : "Material",
         value: "Open Card",
-        link: () => props.openMaterial(mat.id)
+        link: () => props.openMaterial(mat.id),
       });
     }
     return ret;
@@ -293,14 +293,12 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
                   <ImportExport />
                 </IconButton>
               </Tooltip>
-            ) : (
-              undefined
-            )}
+            ) : undefined}
             <Select
               name="Station-Cycles-chart-or-table-select"
               autoWidth
               value={showGraph ? "graph" : "table"}
-              onChange={e => setShowGraph(e.target.value === "graph")}
+              onChange={(e) => setShowGraph(e.target.value === "graph")}
             >
               <MenuItem key="graph" value="graph">
                 Graph
@@ -315,17 +313,17 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
               displayEmpty
               value={props.selectedPart || ""}
               style={{ marginLeft: "1em" }}
-              onChange={e =>
+              onChange={(e) =>
                 props.setSelected({
                   part: e.target.value === "" ? undefined : e.target.value,
-                  pallet: props.selectedPallet
+                  pallet: props.selectedPallet,
                 })
               }
             >
               <MenuItem key={0} value="">
                 <em>Any Part</em>
               </MenuItem>
-              {props.allParts.toArray({ sortOn: x => x }).map(n => (
+              {props.allParts.toArray({ sortOn: (x) => x }).map((n) => (
                 <MenuItem key={n} value={n}>
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <PartIdenticon part={stripAfterDash(n)} size={30} />
@@ -340,17 +338,17 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
               displayEmpty
               value={props.selectedPallet || ""}
               style={{ marginLeft: "1em" }}
-              onChange={e =>
+              onChange={(e) =>
                 props.setSelected({
                   pallet: e.target.value === "" ? undefined : e.target.value,
-                  part: props.selectedPart
+                  part: props.selectedPart,
                 })
               }
             >
               <MenuItem key={0} value="">
                 <em>Any Pallet</em>
               </MenuItem>
-              {props.palletNames.toArray({ sortOn: x => x }).map(n => (
+              {props.palletNames.toArray({ sortOn: (x) => x }).map((n) => (
                 <MenuItem key={n} value={n}>
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <span style={{ marginRight: "1em" }}>{n}</span>
@@ -394,7 +392,7 @@ const stationCyclePointsSelector = createSelector(
     (st: Store, _: boolean, _t: Date) => st.Gui.station_cycle_selected_part,
     (st: Store, _: boolean, _t: Date) => st.Gui.station_cycle_selected_pallet,
     (_s: Store, showLabor: boolean, _t: Date) => showLabor,
-    (_s: Store, _l: boolean, today: Date) => today
+    (_s: Store, _l: boolean, today: Date) => today,
   ],
   (
     cycles: Vector<PartCycleData>,
@@ -414,7 +412,7 @@ const stationCyclePointsSelector = createSelector(
 );
 
 const ConnectedLaborCycleChart = connect(
-  st => ({
+  (st) => ({
     showLabor: true,
     allParts: st.Events.last30.cycles.part_and_proc_names,
     points: stationCyclePointsSelector(st, true, startOfToday()),
@@ -422,17 +420,17 @@ const ConnectedLaborCycleChart = connect(
     selectedPallet: st.Gui.station_cycle_selected_pallet,
     zoomDateRange: st.Gui.station_cycle_date_zoom,
     palletNames: st.Events.last30.cycles.pallet_names,
-    default_date_range: [addDays(startOfToday(), -2), addDays(startOfToday(), 1)]
+    default_date_range: [addDays(startOfToday(), -2), addDays(startOfToday(), 1)],
   }),
   {
     setSelected: mkAC(guiState.ActionType.SetSelectedStationCycle),
     setZoomRange: mkAC(guiState.ActionType.SetStationCycleDateZoom),
-    openMaterial: matDetails.openMaterialById
+    openMaterial: matDetails.openMaterialById,
   }
 )(PartStationCycleChart);
 
 const ConnectedMachineCycleChart = connect(
-  st => ({
+  (st) => ({
     showLabor: false,
     allParts: st.Events.last30.cycles.part_and_proc_names,
     points: stationCyclePointsSelector(st, false, startOfToday()),
@@ -440,12 +438,12 @@ const ConnectedMachineCycleChart = connect(
     selectedPallet: st.Gui.station_cycle_selected_pallet,
     zoomDateRange: st.Gui.station_cycle_date_zoom,
     palletNames: st.Events.last30.cycles.pallet_names,
-    default_date_range: [addDays(startOfToday(), -2), addDays(startOfToday(), 1)]
+    default_date_range: [addDays(startOfToday(), -2), addDays(startOfToday(), 1)],
   }),
   {
     setSelected: mkAC(guiState.ActionType.SetSelectedStationCycle),
     setZoomRange: mkAC(guiState.ActionType.SetStationCycleDateZoom),
-    openMaterial: matDetails.openMaterialById
+    openMaterial: matDetails.openMaterialById,
   }
 )(PartStationCycleChart);
 

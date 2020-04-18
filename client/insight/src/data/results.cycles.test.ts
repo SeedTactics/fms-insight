@@ -42,7 +42,7 @@ import {
   buildCycleTable,
   buildLogEntriesTable,
   outlierLoadCycles,
-  outlierMachineCycles
+  outlierMachineCycles,
 } from "./results.cycles";
 
 it("creates cycles clipboard table", () => {
@@ -58,8 +58,8 @@ it("creates cycles clipboard table", () => {
     now: addDays(now, 1),
     pledge: {
       status: PledgeStatus.Completed,
-      result: evts
-    }
+      result: evts,
+    },
   });
   const data = filterStationCycles(st.last30.cycles.part_cycles, undefined, undefined, undefined);
 
@@ -84,8 +84,8 @@ it("loads outlier cycles", () => {
     now: addDays(now, 1),
     pledge: {
       status: PledgeStatus.Completed,
-      result: evts
-    }
+      result: evts,
+    },
   });
 
   const loadOutliers = outlierLoadCycles(
@@ -118,8 +118,8 @@ it("computes station oee", () => {
     now: addDays(now, 1),
     pledge: {
       status: PledgeStatus.Completed,
-      result: evts
-    }
+      result: evts,
+    },
   });
 
   const statMins = stationMinutes(st.last30.cycles.part_cycles, addDays(now, -7));

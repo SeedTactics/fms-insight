@@ -82,7 +82,7 @@ export function DataTableHead<Id extends string | number, Row>(props: DataTableH
   return (
     <TableHead>
       <TableRow>
-        {props.columns.map(col => (
+        {props.columns.map((col) => (
           <TableCell
             key={col.id}
             align={col.numeric ? "right" : "left"}
@@ -108,7 +108,7 @@ export function DataTableHead<Id extends string | number, Row>(props: DataTableH
 export enum DataTableActionZoomType {
   Last30Days = "Last30",
   ZoomIntoRange = "IntoRange",
-  ExtendDays = "Extend"
+  ExtendDays = "Extend",
 }
 
 export type DataTableActionZoom =
@@ -216,14 +216,16 @@ export function DataTableActions(props: DataTableActionsProps) {
           openDirection="up"
           hideKeyboardShortcutsPanel
           minimumNights={0}
-          onDatesChange={d =>
+          onDatesChange={(d) =>
             zoom.set_date_zoom_range({
               start: d.startDate ? d.startDate.toDate() : zoom.default_date_range[0],
-              end: d.endDate ? addDays(d.endDate.toDate(), 1) : zoom.default_date_range[1]
+              end: d.endDate ? addDays(d.endDate.toDate(), 1) : zoom.default_date_range[1],
             })
           }
           keepOpenOnDateSelect
-          isOutsideRange={day => day.toDate() < zoom.default_date_range[0] || day.toDate >= zoom.default_date_range[1]}
+          isOutsideRange={(day) =>
+            day.toDate() < zoom.default_date_range[0] || day.toDate >= zoom.default_date_range[1]
+          }
           focusedInput={focusedDateEntry}
           onFocusChange={setFocusedDateEntry}
         />
@@ -264,7 +266,7 @@ export function DataTableActions(props: DataTableActionsProps) {
         value={props.rowsPerPage}
         SelectDisplayProps={{ style: { color: "rgba(0, 0, 0, 0.54)" } }}
         input={<InputBase />}
-        onChange={evt => {
+        onChange={(evt) => {
           const rpp = parseInt(evt.target.value as string, 10);
           props.setRowsPerPage(rpp);
           const maxPage = Math.ceil(props.count / rpp) - 1;
@@ -273,7 +275,7 @@ export function DataTableActions(props: DataTableActionsProps) {
           }
         }}
       >
-        {[10, 15, 20, 50].map(rowsPerPageOption => (
+        {[10, 15, 20, 50].map((rowsPerPageOption) => (
           <MenuItem key={rowsPerPageOption} value={rowsPerPageOption}>
             {rowsPerPageOption}
           </MenuItem>
@@ -310,9 +312,7 @@ export function DataTableActions(props: DataTableActionsProps) {
           <div style={{ flexGrow: 1 }} />
           {zoomCtrl}
         </>
-      ) : (
-        undefined
-      )}
+      ) : undefined}
     </Toolbar>
   );
 }
@@ -330,20 +330,18 @@ export class DataTableBody<Id extends string | number, Row> extends React.PureCo
       <TableBody>
         {LazySeq.ofIterable(this.props.pageData).map((row, idx) => (
           <TableRow key={idx}>
-            {this.props.columns.map(col => (
+            {this.props.columns.map((col) => (
               <TableCell key={col.id} align={col.numeric ? "right" : "left"}>
                 {col.getDisplay(row)}
               </TableCell>
             ))}
             {onClickDetails ? (
               <TableCell padding="checkbox">
-                <IconButton onClick={e => onClickDetails(e, row)}>
+                <IconButton onClick={(e) => onClickDetails(e, row)}>
                   <MoreHoriz />
                 </IconButton>
               </TableCell>
-            ) : (
-              undefined
-            )}
+            ) : undefined}
           </TableRow>
         ))}
       </TableBody>

@@ -61,5 +61,5 @@ export default connect((st: Store) => ({
       ? st.MaterialDetails.material.loading_events ||
         st.MaterialDetails.material.loading_workorders ||
         st.MaterialDetails.material.updating_material
-      : false)
+      : false),
 }))(LoadingIcon);

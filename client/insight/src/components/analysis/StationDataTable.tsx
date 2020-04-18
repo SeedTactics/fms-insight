@@ -42,7 +42,7 @@ import {
   DataTableActions,
   DataTableBody,
   DataTableActionZoom,
-  DataTableActionZoomType
+  DataTableActionZoomType,
 } from "./DataTable";
 import { addDays, addHours } from "date-fns";
 import * as api from "../../data/api";
@@ -59,7 +59,7 @@ enum ColumnId {
   ElapsedMin,
   ActiveMin,
   MedianElapsed,
-  MedianDeviation
+  MedianDeviation,
 }
 
 const columns: ReadonlyArray<Column<ColumnId, PartCycleData>> = [
@@ -67,75 +67,75 @@ const columns: ReadonlyArray<Column<ColumnId, PartCycleData>> = [
     id: ColumnId.Date,
     numeric: false,
     label: "Date",
-    getDisplay: c => c.x.toLocaleString(),
-    getForSort: c => c.x.getTime()
+    getDisplay: (c) => c.x.toLocaleString(),
+    getForSort: (c) => c.x.getTime(),
   },
-  { id: ColumnId.Part, numeric: false, label: "Part", getDisplay: c => c.part + "-" + c.process.toString() },
+  { id: ColumnId.Part, numeric: false, label: "Part", getDisplay: (c) => c.part + "-" + c.process.toString() },
   {
     id: ColumnId.Station,
     numeric: false,
     label: "Station",
-    getDisplay: c => c.stationGroup + " " + c.stationNumber.toString()
+    getDisplay: (c) => c.stationGroup + " " + c.stationNumber.toString(),
   },
   {
     id: ColumnId.Pallet,
     numeric: false,
     label: "Pallet",
-    getDisplay: c => c.pallet
+    getDisplay: (c) => c.pallet,
   },
   {
     id: ColumnId.Serial,
     numeric: false,
     label: "Serial",
-    getDisplay: c =>
+    getDisplay: (c) =>
       c.material
-        .filter(m => m.serial)
-        .map(m => m.serial)
-        .join(", ")
+        .filter((m) => m.serial)
+        .map((m) => m.serial)
+        .join(", "),
   },
   {
     id: ColumnId.Workorder,
     numeric: false,
     label: "Workorder",
-    getDisplay: c =>
+    getDisplay: (c) =>
       c.material
-        .filter(m => m.workorder)
-        .map(m => m.workorder)
-        .join(", ")
+        .filter((m) => m.workorder)
+        .map((m) => m.workorder)
+        .join(", "),
   },
   {
     id: ColumnId.Inspection,
     numeric: false,
     label: "Inspection",
     getDisplay: format_cycle_inspection,
-    getForSort: c => {
-      return c.signaledInspections.toArray({ sortOn: x => x }).join(",");
-    }
+    getForSort: (c) => {
+      return c.signaledInspections.toArray({ sortOn: (x) => x }).join(",");
+    },
   },
   {
     id: ColumnId.ElapsedMin,
     numeric: true,
     label: "Elapsed Min",
-    getDisplay: c => c.y.toFixed(1)
+    getDisplay: (c) => c.y.toFixed(1),
   },
   {
     id: ColumnId.ActiveMin,
     numeric: true,
     label: "Target Min",
-    getDisplay: c => c.activeMinutes.toFixed(1)
+    getDisplay: (c) => c.activeMinutes.toFixed(1),
   },
   {
     id: ColumnId.MedianElapsed,
     numeric: true,
     label: "Median Elapsed Min",
-    getDisplay: c => c.medianCycleMinutes.toFixed(1)
+    getDisplay: (c) => c.medianCycleMinutes.toFixed(1),
   },
   {
     id: ColumnId.MedianDeviation,
     numeric: true,
     label: "Median Deviation",
-    getDisplay: c => c.MAD_aboveMinutes.toFixed(1)
-  }
+    getDisplay: (c) => c.MAD_aboveMinutes.toFixed(1),
+  },
 ];
 
 interface StationDataTableProps {
@@ -166,9 +166,9 @@ function extractData(
   }
   const getDataC = getData;
 
-  const data = LazySeq.ofIterable(points.valueIterable()).flatMap(x => x);
+  const data = LazySeq.ofIterable(points.valueIterable()).flatMap((x) => x);
   const arr = currentZoom
-    ? data.filter(p => p.x >= currentZoom.start && p.x <= currentZoom.end).toArray()
+    ? data.filter((p) => p.x >= currentZoom.start && p.x <= currentZoom.end).toArray()
     : data.toArray();
   return arr.sort((a, b) => {
     const aVal = getDataC(a);
@@ -216,28 +216,28 @@ export default React.memo(function StationDataTable(props: StationDataTableProps
   if (setZoomRange && props.last30_days) {
     zoom = {
       type: DataTableActionZoomType.Last30Days,
-      set_days_back: numDaysBack => {
+      set_days_back: (numDaysBack) => {
         if (numDaysBack) {
           const now = new Date();
           setZoomRange({ zoom: { start: addDays(now, -numDaysBack), end: addHours(now, 1) } });
         } else {
           setZoomRange({ zoom: undefined });
         }
-      }
+      },
     };
   } else if (setZoomRange) {
     zoom = {
       type: DataTableActionZoomType.ZoomIntoRange,
       default_date_range: props.default_date_range,
       current_date_zoom: props.current_date_zoom,
-      set_date_zoom_range: z => setZoomRange({ zoom: z })
+      set_date_zoom_range: (z) => setZoomRange({ zoom: z }),
     };
   }
 
   const allData = extractData(props.points, props.current_date_zoom, orderBy, order);
   const totalDataLength = allData.length;
   const pageData: ReadonlyArray<PartCycleData> = allData.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
-  const filteredColumns = columns.filter(c => {
+  const filteredColumns = columns.filter((c) => {
     if (!props.showWorkorderAndInspect && c.id === ColumnId.Workorder) {
       return false;
     }

@@ -111,14 +111,14 @@ function edgesForPath(
 
 export function inspectionDataToSankey(d: ReadonlyArray<InspectionLogEntry>): SankeyDiagram {
   const matIdToInspResult = LazySeq.ofIterable(d)
-    .filter(e => e.result.type === InspectionLogResultType.Completed)
+    .filter((e) => e.result.type === InspectionLogResultType.Completed)
     .toMap(
-      e => [e.materialID, e.result.type === InspectionLogResultType.Completed ? e.result.success : false],
+      (e) => [e.materialID, e.result.type === InspectionLogResultType.Completed ? e.result.success : false],
       (v1, v2) => v2 // take the later value
     );
 
   // create all the edges, likely with duplicate edges between nodes
-  const edges = LazySeq.ofIterable(d).flatMap(c => {
+  const edges = LazySeq.ofIterable(d).flatMap((c) => {
     if (c.result.type === InspectionLogResultType.Triggered) {
       return edgesForPath(
         c.result.actualPath,
@@ -132,41 +132,41 @@ export function inspectionDataToSankey(d: ReadonlyArray<InspectionLogEntry>): Sa
 
   // extract the nodes and assign an index
   const nodes = edges
-    .flatMap(e => [e.from, e.to])
-    .toSet(x => x)
-    .transform(s => LazySeq.ofIterable(s))
+    .flatMap((e) => [e.from, e.to])
+    .toSet((x) => x)
+    .transform((s) => LazySeq.ofIterable(s))
     .map((node, idx) => ({ idx, node }));
 
   // create the sankey nodes to return
   const sankeyNodes = nodes
-    .map(s => ({
+    .map((s) => ({
       unique: s.node.unique,
-      name: s.node.name
+      name: s.node.name,
     }))
     .toArray();
 
   // create a map from NodeR to index
   const nodesToIdx = nodes.toMap(
-    n => [n.node, n.idx],
+    (n) => [n.node, n.idx],
     (i1, _) => i1
   );
 
   // create the sankey links to return by counting Edges between nodes
   const sankeyLinks = edges
     .toMap(
-      e => [e, 1],
+      (e) => [e, 1],
       (c1, c2) => c1 + c2
     )
     .transform(LazySeq.ofIterable)
     .map(([link, value]) => ({
       source: nodesToIdx.get(link.from).getOrThrow(),
       target: nodesToIdx.get(link.to).getOrThrow(),
-      value
+      value,
     }))
     .toArray();
 
   return {
     nodes: sankeyNodes,
-    links: sankeyLinks
+    links: sankeyLinks,
   };
 }

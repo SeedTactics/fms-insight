@@ -78,8 +78,8 @@ export const OperatorSelect = React.memo(function OperatorSelectF(props: Operato
   return (
     <>
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-      <Select value={props.currentOperator} onChange={changeOper} renderValue={((x: any) => x) as any}>
-        {props.operators.toArray({ sortOn: x => x }).map((oper, idx) => (
+      <Select value={props.currentOperator || ""} onChange={changeOper} renderValue={((x: any) => x) as any}>
+        {props.operators.toArray({ sortOn: (x) => x }).map((oper, idx) => (
           <MenuItem key={idx} value={oper}>
             <ListItemText primary={oper} />
             <ListItemSecondaryAction>
@@ -104,11 +104,11 @@ export const OperatorSelect = React.memo(function OperatorSelectF(props: Operato
         <DialogContent>
           <TextField
             value={newOperName}
-            onChange={evt => setNewOperName(evt.target.value)}
+            onChange={(evt) => setNewOperName(evt.target.value)}
             label="New Name"
             variant="outlined"
             autoFocus
-            onKeyUp={evt => {
+            onKeyUp={(evt) => {
               if (evt.keyCode === 13) {
                 props.setOperator({ operator: newOperName });
                 setNewOperName("");
@@ -143,13 +143,13 @@ export const OperatorSelect = React.memo(function OperatorSelectF(props: Operato
 });
 
 export default connect(
-  st => ({
+  (st) => ({
     operators: st.Operators.operators,
     currentOperator: st.Operators.current || null,
-    currentUser: st.ServerSettings.user || null
+    currentUser: st.ServerSettings.user || null,
   }),
   {
     setOperator: mkAC(operators.ActionType.SetOperator),
-    removeOperator: mkAC(operators.ActionType.RemoveOperator)
+    removeOperator: mkAC(operators.ActionType.RemoveOperator),
   }
 )(OperatorSelect);

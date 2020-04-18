@@ -38,7 +38,7 @@ import {
   MaterialBin,
   MaterialBinType,
   moveMaterialBin,
-  MaterialBinId
+  MaterialBinId,
 } from "../../data/all-material-bins";
 import { MaterialSummary } from "../../data/events.matsummary";
 import { connect, Store, AppActionBeforeMiddleware, mkAC } from "../../store/store";
@@ -56,7 +56,7 @@ const DocumentTitle = require("react-document-title"); // https://github.com/gae
 
 enum DragType {
   Material = "DRAG_MATERIAL",
-  Queue = "DRAG_QUEUE"
+  Queue = "DRAG_QUEUE",
 }
 
 function getQueueStyle(isDraggingOver: boolean, draggingFromThisWith: string | undefined): React.CSSProperties {
@@ -66,7 +66,7 @@ function getQueueStyle(isDraggingOver: boolean, draggingFromThisWith: string | u
     flexWrap: "nowrap",
     width: "18em",
     minHeight: "20em",
-    backgroundColor: isDraggingOver ? "#BDBDBD" : draggingFromThisWith ? "#EEEEEE" : undefined
+    backgroundColor: isDraggingOver ? "#BDBDBD" : draggingFromThisWith ? "#EEEEEE" : undefined,
   };
 }
 
@@ -79,7 +79,7 @@ interface MaterialQueueProps {
 
 const MaterialQueue = React.memo(function DraggableMaterialQueueF(props: MaterialQueueProps) {
   return (
-    <Draggable draggableId={props.queue} index={props.idx} type={DragType.Queue}>
+    <Draggable draggableId={props.queue} index={props.idx}>
       {(provided, snapshot) => (
         <Paper
           ref={provided.innerRef}
@@ -102,12 +102,7 @@ const MaterialQueue = React.memo(function DraggableMaterialQueueF(props: Materia
                 style={getQueueStyle(snapshot.isDraggingOver, snapshot.draggingFromThisWith)}
               >
                 {props.material.map((mat, idx) => (
-                  <Draggable
-                    key={mat.materialID}
-                    draggableId={mat.materialID.toString()}
-                    index={idx}
-                    type={DragType.Material}
-                  >
+                  <Draggable key={mat.materialID} draggableId={mat.materialID.toString()} index={idx}>
                     {(provided, snapshot) => (
                       <InProcMaterial
                         mat={mat}
@@ -172,7 +167,7 @@ function compareQueue(q1: string, q2: string) {
 class SystemMaterial<T extends string | number> extends React.PureComponent<SystemMaterialProps<T>> {
   render() {
     return (
-      <Draggable draggableId={this.props.draggableId} index={this.props.idx} type={DragType.Queue}>
+      <Draggable draggableId={this.props.draggableId} index={this.props.idx}>
         {(provided, snapshot) => (
           <Paper
             ref={provided.innerRef}
@@ -227,23 +222,21 @@ function AllMatDialog(props: AllMatDialogProps) {
             <Button color="primary" onClick={() => props.removeFromQueue(displayMat)}>
               Remove From System
             </Button>
-          ) : (
-            undefined
-          )}
+          ) : undefined}
         </>
       }
     />
   );
 }
 
-const ConnectedAllMatDialog = connect(st => ({}), {
+const ConnectedAllMatDialog = connect((st) => ({}), {
   onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
   removeFromQueue: (mat: matDetails.MaterialDetail) =>
     [
       matDetails.removeFromQueue(mat),
       { type: matDetails.ActionType.CloseMaterialDialog },
-      { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined }
-    ] as AppActionBeforeMiddleware
+      { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined },
+    ] as AppActionBeforeMiddleware,
 })(AllMatDialog);
 
 interface AllMaterialProps {
@@ -258,7 +251,7 @@ interface AllMaterialProps {
 function AllMaterial(props: AllMaterialProps) {
   const curBins = props.displaySystemBins
     ? props.allBins
-    : props.allBins.filter(bin => bin.type === MaterialBinType.QuarantineQueues);
+    : props.allBins.filter((bin) => bin.type === MaterialBinType.QuarantineQueues);
 
   const onDragEnd = (result: DropResult): void => {
     if (!result.destination) return;
@@ -271,7 +264,7 @@ function AllMaterial(props: AllMaterialProps) {
       props.moveMaterialInQueue({ materialId, queue, queuePosition });
     } else if (result.type === DragType.Queue) {
       props.moveMaterialBin(
-        curBins.map(b => b.binId),
+        curBins.map((b) => b.binId),
         result.source.index,
         result.destination.index
       );
@@ -281,16 +274,16 @@ function AllMaterial(props: AllMaterialProps) {
   const curDisplayQuarantine =
     props.display_material !== null &&
     curBins.findIndex(
-      bin =>
+      (bin) =>
         bin.type === MaterialBinType.QuarantineQueues &&
-        bin.material.findIndex(mat => mat.materialID === props.display_material?.materialID) >= 0
+        bin.material.findIndex((mat) => mat.materialID === props.display_material?.materialID) >= 0
     ) >= 0;
 
   return (
     <DocumentTitle title="All Material - FMS Insight">
       <DragDropContext onDragEnd={onDragEnd}>
         <Droppable droppableId="Board" type={DragType.Queue} direction="horizontal">
-          {provided => (
+          {(provided) => (
             <div ref={provided.innerRef} style={{ display: "flex", flexWrap: "nowrap" }}>
               {curBins.map((matBin, idx) => {
                 switch (matBin.type) {
@@ -362,9 +355,9 @@ const extractMaterialRegions = createSelector(
 );
 
 export default connect(
-  st => ({
+  (st) => ({
     allBins: extractMaterialRegions(st),
-    display_material: st.MaterialDetails.material
+    display_material: st.MaterialDetails.material,
   }),
   {
     openMat: matDetails.openMaterialDialog,
@@ -373,10 +366,10 @@ export default connect(
         type: currentSt.ActionType.ReorderQueuedMaterial,
         queue: d.queue,
         materialId: d.materialId,
-        newIdx: d.queuePosition
+        newIdx: d.queuePosition,
       },
-      matDetails.addExistingMaterialToQueue(d)
+      matDetails.addExistingMaterialToQueue(d),
     ],
-    moveMaterialBin: moveMaterialBin
+    moveMaterialBin: moveMaterialBin,
   }
 )(AllMaterial);

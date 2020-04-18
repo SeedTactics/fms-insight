@@ -62,14 +62,19 @@ import {
   FilteredStationCycles,
   FilterAnyMachineKey,
   FilterAnyLoadKey,
-  copyCyclesToClipboard
+  copyCyclesToClipboard,
 } from "../../data/results.cycles";
 import { PartIdenticon } from "../station-monitor/Material";
 import { LazySeq } from "../../data/lazyseq";
 import StationDataTable from "./StationDataTable";
 import { AnalysisPeriod } from "../../data/events";
-import { binCyclesByDayAndStat, binSimStationUseByDayAndStat } from "../../data/results.oee";
-import { binCyclesByDayAndPart, binSimProductionByDayAndPart } from "../../data/results.completed-parts";
+import { binCyclesByDayAndStat, binSimStationUseByDayAndStat, copyOeeHeatmapToClipboard } from "../../data/results.oee";
+import {
+  binCyclesByDayAndPart,
+  binSimProductionByDayAndPart,
+  PartsCompletedSummary,
+  copyCompletedPartsHeatmapToClipboard,
+} from "../../data/results.completed-parts";
 import { SimUseState } from "../../data/events.simuse";
 import { DataTableActionZoomType } from "./DataTable";
 
@@ -110,7 +115,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
       ret.push({
         title: mat.serial ? mat.serial : "Material",
         value: "Open Card",
-        link: () => props.openMaterial(mat.id)
+        link: () => props.openMaterial(mat.id),
       });
     }
     return ret;
@@ -135,14 +140,12 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
                   <ImportExport />
                 </IconButton>
               </Tooltip>
-            ) : (
-              undefined
-            )}
+            ) : undefined}
             <Select
               name="Station-Cycles-chart-or-table-select"
               autoWidth
               value={showGraph ? "graph" : "table"}
-              onChange={e => setShowGraph(e.target.value === "graph")}
+              onChange={(e) => setShowGraph(e.target.value === "graph")}
             >
               <MenuItem key="graph" value="graph">
                 Graph
@@ -157,18 +160,18 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
               displayEmpty
               value={props.selectedPart || ""}
               style={{ marginLeft: "1em" }}
-              onChange={e =>
+              onChange={(e) =>
                 props.setSelected({
                   part: e.target.value === "" ? undefined : e.target.value,
                   pallet: props.selectedPallet,
-                  station: props.selectedStation
+                  station: props.selectedStation,
                 })
               }
             >
               <MenuItem key={0} value="">
                 <em>Any Part</em>
               </MenuItem>
-              {props.allParts.toArray({ sortOn: x => x }).map(n => (
+              {props.allParts.toArray({ sortOn: (x) => x }).map((n) => (
                 <MenuItem key={n} value={n}>
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <PartIdenticon part={stripAfterDash(n)} size={30} />
@@ -183,11 +186,11 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
               displayEmpty
               value={props.selectedStation || ""}
               style={{ marginLeft: "1em" }}
-              onChange={e =>
+              onChange={(e) =>
                 props.setSelected({
                   station: e.target.value === "" ? undefined : e.target.value,
                   pallet: props.selectedPallet,
-                  part: props.selectedPart
+                  part: props.selectedPart,
                 })
               }
             >
@@ -200,7 +203,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
               <MenuItem key={2} value={FilterAnyLoadKey}>
                 <em>Any Load Station</em>
               </MenuItem>
-              {props.stationNames.toArray({ sortOn: x => x }).map(n => (
+              {props.stationNames.toArray({ sortOn: (x) => x }).map((n) => (
                 <MenuItem key={n} value={n}>
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <span style={{ marginRight: "1em" }}>{n}</span>
@@ -214,18 +217,18 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
               displayEmpty
               value={props.selectedPallet || ""}
               style={{ marginLeft: "1em" }}
-              onChange={e =>
+              onChange={(e) =>
                 props.setSelected({
                   pallet: e.target.value === "" ? undefined : e.target.value,
                   station: props.selectedStation,
-                  part: props.selectedPart
+                  part: props.selectedPart,
                 })
               }
             >
               <MenuItem key={0} value="">
                 <em>Any Pallet</em>
               </MenuItem>
-              {props.palletNames.toArray({ sortOn: x => x }).map(n => (
+              {props.palletNames.toArray({ sortOn: (x) => x }).map((n) => (
                 <MenuItem key={n} value={n}>
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <span style={{ marginRight: "1em" }}>{n}</span>
@@ -271,7 +274,7 @@ const stationCyclePointsSelector = createSelector(
         : st.Events.selected_month.cycles.part_cycles,
     (st: Store) => st.Gui.station_cycle_selected_part,
     (st: Store) => st.Gui.station_cycle_selected_pallet,
-    (st: Store) => st.Gui.station_cycle_selected_station
+    (st: Store) => st.Gui.station_cycle_selected_station,
   ],
   (
     cycles: Vector<PartCycleData>,
@@ -288,7 +291,7 @@ const stationCyclePointsSelector = createSelector(
 );
 
 const ConnectedPartStationCycleChart = connect(
-  st => ({
+  (st) => ({
     allParts:
       st.Events.analysis_period === AnalysisPeriod.Last30Days
         ? st.Events.last30.cycles.part_and_proc_names
@@ -310,12 +313,12 @@ const ConnectedPartStationCycleChart = connect(
     default_date_range:
       st.Events.analysis_period === AnalysisPeriod.Last30Days
         ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
-        : [st.Events.analysis_period_month, addMonths(st.Events.analysis_period_month, 1)]
+        : [st.Events.analysis_period_month, addMonths(st.Events.analysis_period_month, 1)],
   }),
   {
     setSelected: mkAC(guiState.ActionType.SetSelectedStationCycle),
     setZoomRange: mkAC(guiState.ActionType.SetStationCycleDateZoom),
-    openMaterial: matDetails.openMaterialById
+    openMaterial: matDetails.openMaterialById,
   }
 )(PartStationCycleChart);
 
@@ -353,19 +356,17 @@ function PalletCycleChart(props: PalletCycleChartProps) {
               autoWidth
               displayEmpty
               value={props.selected || ""}
-              onChange={e => props.setSelected(e.target.value as string)}
+              onChange={(e) => props.setSelected(e.target.value as string)}
             >
-              {props.selected ? (
-                undefined
-              ) : (
+              {props.selected ? undefined : (
                 <MenuItem key={0} value="">
                   <em>Select Pallet</em>
                 </MenuItem>
               )}
               {props.points
                 .keySet()
-                .toArray({ sortOn: x => x })
-                .map(n => (
+                .toArray({ sortOn: (x) => x })
+                .map((n) => (
                   <MenuItem key={n} value={n}>
                     <div style={{ display: "flex", alignItems: "center" }}>
                       <span style={{ marginRight: "1em" }}>{n}</span>
@@ -390,7 +391,7 @@ function PalletCycleChart(props: PalletCycleChartProps) {
 }
 
 const ConnectedPalletCycleChart = connect(
-  st => {
+  (st) => {
     if (st.Events.analysis_period === AnalysisPeriod.Last30Days) {
       const now = addDays(startOfToday(), 1);
       const oneMonthAgo = addDays(now, -30);
@@ -398,23 +399,23 @@ const ConnectedPalletCycleChart = connect(
         points: st.Events.last30.cycles.by_pallet,
         selected: st.Gui.pallet_cycle_selected,
         default_date_range: [oneMonthAgo, now],
-        zoomDateRange: st.Gui.pallet_cycle_date_zoom
+        zoomDateRange: st.Gui.pallet_cycle_date_zoom,
       };
     } else {
       return {
         points: st.Events.selected_month.cycles.by_pallet,
         selected: st.Gui.pallet_cycle_selected,
         default_date_range: [st.Events.analysis_period_month, addMonths(st.Events.analysis_period_month, 1)],
-        zoomDateRange: st.Gui.pallet_cycle_date_zoom
+        zoomDateRange: st.Gui.pallet_cycle_date_zoom,
       };
     }
   },
   {
     setSelected: (p: string) => ({
       type: guiState.ActionType.SetSelectedPalletCycle,
-      pallet: p
+      pallet: p,
     }),
-    setZoomRange: mkAC(guiState.ActionType.SetStationCycleDateZoom)
+    setZoomRange: mkAC(guiState.ActionType.SetStationCycleDateZoom),
   }
 )(PalletCycleChart);
 
@@ -438,6 +439,7 @@ function StationOeeHeatmap(props: HeatmapProps) {
       icon={<HourglassIcon style={{ color: "#6D4C41" }} />}
       planned_or_actual={props.planned_or_actual}
       points={props.points}
+      onExport={() => copyOeeHeatmapToClipboard("Station", props.points)}
       setType={props.allowSetType ? props.setType : undefined}
     />
   );
@@ -445,8 +447,8 @@ function StationOeeHeatmap(props: HeatmapProps) {
 
 const stationOeeActualPointsSelector = createSelector(
   (cycles: CycleState) => cycles.part_cycles,
-  cycles => {
-    const pts = binCyclesByDayAndStat(cycles, c => c.activeMinutes);
+  (cycles) => {
+    const pts = binCyclesByDayAndStat(cycles, (c) => c.activeMinutes);
     return LazySeq.ofIterable(pts)
       .map(([dayAndStat, val]) => {
         const pct = val / (24 * 60);
@@ -454,7 +456,7 @@ const stationOeeActualPointsSelector = createSelector(
           x: dayAndStat.day,
           y: dayAndStat.station,
           color: pct,
-          label: (pct * 100).toFixed(1) + "%"
+          label: (pct * 100).toFixed(1) + "%",
         };
       })
       .toArray()
@@ -471,8 +473,8 @@ const stationOeeActualPointsSelector = createSelector(
 
 const stationOeePlannedPointsSelector = createSelector(
   (sim: SimUseState) => sim.station_use,
-  statUse => {
-    const pts = binSimStationUseByDayAndStat(statUse, c => c.utilizationTime - c.plannedDownTime);
+  (statUse) => {
+    const pts = binSimStationUseByDayAndStat(statUse, (c) => c.utilizationTime - c.plannedDownTime);
     return LazySeq.ofIterable(pts)
       .map(([dayAndStat, val]) => {
         const pct = val / (24 * 60);
@@ -480,7 +482,7 @@ const stationOeePlannedPointsSelector = createSelector(
           x: dayAndStat.day,
           y: dayAndStat.station,
           color: pct,
-          label: (pct * 100).toFixed(1) + "%"
+          label: (pct * 100).toFixed(1) + "%",
         };
       })
       .toArray()
@@ -520,14 +522,14 @@ const ConnectedStationOeeHeatmap = connect(
   (st: Store) => {
     return {
       planned_or_actual: st.Gui.station_oee_heatmap_type,
-      points: stationOeePoints(st)
+      points: stationOeePoints(st),
     };
   },
   {
     setType: (p: guiState.PlannedOrActual) => ({
       type: guiState.ActionType.SetStationOeeHeatmapType,
-      ty: p
-    })
+      ty: p,
+    }),
   }
 )(StationOeeHeatmap);
 
@@ -535,7 +537,14 @@ const ConnectedStationOeeHeatmap = connect(
 // Completed Heatmap
 // --------------------------------------------------------------------------------
 
-function CompletedCountHeatmap(props: HeatmapProps) {
+interface CompletedHeatmapProps {
+  readonly planned_or_actual: guiState.PlannedOrActual;
+  readonly setType: (p: guiState.PlannedOrActual) => void;
+  readonly points: ReadonlyArray<HeatChartPoint & PartsCompletedSummary>;
+  readonly allowSetType: boolean;
+}
+
+function CompletedCountHeatmap(props: CompletedHeatmapProps) {
   return (
     <SelectableHeatChart
       card_label="Part Production"
@@ -544,6 +553,7 @@ function CompletedCountHeatmap(props: HeatmapProps) {
       icon={<ExtensionIcon style={{ color: "#6D4C41" }} />}
       planned_or_actual={props.planned_or_actual}
       points={props.points}
+      onExport={() => copyCompletedPartsHeatmapToClipboard(props.points)}
       setType={props.allowSetType ? props.setType : undefined}
     />
   );
@@ -551,7 +561,7 @@ function CompletedCountHeatmap(props: HeatmapProps) {
 
 const completedActualPointsSelector = createSelector(
   (cycles: CycleState) => cycles.part_cycles,
-  cycles => {
+  (cycles) => {
     const pts = binCyclesByDayAndPart(cycles);
     return LazySeq.ofIterable(pts)
       .map(([dayAndPart, val]) => {
@@ -559,7 +569,9 @@ const completedActualPointsSelector = createSelector(
           x: dayAndPart.day,
           y: dayAndPart.part,
           color: val.activeMachineMins,
-          label: val.count.toFixed(0) + " (" + (val.activeMachineMins / 60).toFixed(1) + " hours)"
+          label: val.count.toFixed(0) + " (" + (val.activeMachineMins / 60).toFixed(1) + " hours)",
+          count: val.count,
+          activeMachineMins: val.activeMachineMins,
         };
       })
       .toArray()
@@ -576,7 +588,7 @@ const completedActualPointsSelector = createSelector(
 
 const completedPlannedPointsSelector = createSelector(
   (simUse: SimUseState) => simUse.production,
-  production => {
+  (production) => {
     const pts = binSimProductionByDayAndPart(production);
     return LazySeq.ofIterable(pts)
       .map(([dayAndPart, val]) => {
@@ -584,7 +596,9 @@ const completedPlannedPointsSelector = createSelector(
           x: dayAndPart.day,
           y: dayAndPart.part,
           color: val.activeMachineMins,
-          label: val.count.toFixed(0) + " (" + (val.activeMachineMins / 60).toFixed(1) + " hours)"
+          label: val.count.toFixed(0) + " (" + (val.activeMachineMins / 60).toFixed(1) + " hours)",
+          count: val.count,
+          activeMachineMins: val.activeMachineMins,
         };
       })
       .toArray()
@@ -624,14 +638,14 @@ const ConnectedCompletedCountHeatmap = connect(
   (st: Store) => {
     return {
       planned_or_actual: st.Gui.completed_count_heatmap_type,
-      points: completedPoints(st)
+      points: completedPoints(st),
     };
   },
   {
     setType: (p: guiState.PlannedOrActual) => ({
       type: guiState.ActionType.SetCompletedCountHeatmapType,
-      ty: p
-    })
+      ty: p,
+    }),
   }
 )(CompletedCountHeatmap);
 
@@ -640,7 +654,7 @@ const ConnectedCompletedCountHeatmap = connect(
 // --------------------------------------------------------------------------------
 
 const ConnectedInspection = connect(
-  st => ({
+  (st) => ({
     inspectionlogs:
       st.Events.analysis_period === AnalysisPeriod.Last30Days
         ? st.Events.last30.inspection.by_part
@@ -653,10 +667,10 @@ const ConnectedInspection = connect(
       st.Events.analysis_period === AnalysisPeriod.Last30Days
         ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
         : [st.Events.analysis_period_month, addMonths(st.Events.analysis_period_month, 1)],
-    defaultToTable: false
+    defaultToTable: false,
   }),
   {
-    openMaterialDetails: matDetails.openMaterialById
+    openMaterialDetails: matDetails.openMaterialById,
   }
 )(InspectionSankey);
 

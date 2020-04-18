@@ -49,7 +49,7 @@ function FillViewportDashboard() {
           flexBasis: "50%",
           padding: "8px",
           display: "flex",
-          flexDirection: "column"
+          flexDirection: "column",
         }}
       >
         <Card style={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
@@ -61,7 +61,7 @@ function FillViewportDashboard() {
           flexBasis: "50%",
           padding: "8px",
           display: "flex",
-          flexDirection: "column"
+          flexDirection: "column",
         }}
       >
         <Card style={{ flexGrow: 1 }}>

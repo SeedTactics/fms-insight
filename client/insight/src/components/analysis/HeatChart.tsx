@@ -44,7 +44,6 @@ import ImportExport from "@material-ui/icons/ImportExport";
 
 import * as gui from "../../data/gui-state";
 import { LazySeq } from "../../data/lazyseq";
-import { copyHeatmapToClipboard } from "../../data/results.oee";
 
 export interface HeatChartPoint {
   readonly x: Date;
@@ -68,7 +67,7 @@ const formatHint = (yTitle: string, labelTitle: string) => (p: HeatChartPoint) =
   return [
     { title: yTitle, value: p.y },
     { title: "Day", value: p.x.toDateString() },
-    { title: labelTitle, value: p.label }
+    { title: labelTitle, value: p.label },
   ];
 };
 
@@ -104,13 +103,11 @@ class HeatChart extends React.PureComponent<HeatChartProps, HeatChartState> {
             strokeWidth: "2px",
             rectStyle: {
               rx: 10,
-              ry: 10
-            }
+              ry: 10,
+            },
           }}
         />
-        {this.state.selected_point === undefined ? (
-          undefined
-        ) : (
+        {this.state.selected_point === undefined ? undefined : (
           <Hint value={this.state.selected_point} format={formatHint(this.props.y_title, this.props.label_title)} />
         )}
       </FlexibleWidthXYPlot>
@@ -125,6 +122,7 @@ export interface SelectableHeatChartProps {
   readonly label_title: string;
   readonly planned_or_actual: gui.PlannedOrActual;
   readonly setType?: (p: gui.PlannedOrActual) => void;
+  readonly onExport: () => void;
 
   readonly points: ReadonlyArray<HeatChartPoint>;
 }
@@ -144,10 +142,7 @@ export function SelectableHeatChart(props: SelectableHeatChartProps) {
             <div style={{ marginLeft: "10px", marginRight: "3em" }}>{props.card_label}</div>
             <div style={{ flexGrow: 1 }} />
             <Tooltip title="Copy to Clipboard">
-              <IconButton
-                onClick={() => copyHeatmapToClipboard(props.y_title, props.points)}
-                style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-              >
+              <IconButton onClick={props.onExport} style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}>
                 <ImportExport />
               </IconButton>
             </Tooltip>
@@ -157,7 +152,7 @@ export function SelectableHeatChart(props: SelectableHeatChartProps) {
                 autoWidth
                 displayEmpty
                 value={props.planned_or_actual}
-                onChange={e => setType(e.target.value as gui.PlannedOrActual)}
+                onChange={(e) => setType(e.target.value as gui.PlannedOrActual)}
               >
                 <MenuItem key={gui.PlannedOrActual.Actual} value={gui.PlannedOrActual.Actual}>
                   Actual
@@ -166,9 +161,7 @@ export function SelectableHeatChart(props: SelectableHeatChartProps) {
                   Planned
                 </MenuItem>
               </Select>
-            ) : (
-              undefined
-            )}
+            ) : undefined}
           </div>
         }
       />
@@ -178,7 +171,7 @@ export function SelectableHeatChart(props: SelectableHeatChartProps) {
           y_title={props.y_title}
           label_title={props.label_title}
           row_count={LazySeq.ofIterable(props.points)
-            .toSet(p => p.y)
+            .toSet((p) => p.y)
             .length()}
         />
       </CardContent>

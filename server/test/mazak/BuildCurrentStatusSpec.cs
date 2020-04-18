@@ -51,6 +51,7 @@ namespace MachineWatchTest
     private JobDB _jobDB;
     private JsonSerializerSettings jsonSettings;
     private FMSSettings _settings;
+    private IMachineGroupName _machGroupName;
 
     private IQueueSyncFault queueSyncFault;
 
@@ -82,6 +83,8 @@ namespace MachineWatchTest
       queueSyncFault = Substitute.For<IQueueSyncFault>();
       queueSyncFault.CurrentQueueMismatch.Returns(false);
 
+      _machGroupName = Substitute.For<IMachineGroupName>();
+      _machGroupName.MachineGroupName.Returns("MC");
     }
 
     public void Dispose()
@@ -207,7 +210,7 @@ namespace MachineWatchTest
       CurrentStatus status;
       try
       {
-        status = BuildCurrentStatus.Build(_jobDB, logDb, _settings, queueSyncFault, MazakDbType.MazakSmooth, allData,
+        status = BuildCurrentStatus.Build(_jobDB, logDb, _settings, _machGroupName, queueSyncFault, MazakDbType.MazakSmooth, allData,
           new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc));
       }
       finally

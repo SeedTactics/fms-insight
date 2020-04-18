@@ -68,7 +68,7 @@ async function loadEventsJson(offsetSeconds: number): Promise<Readonly<api.ILogE
       e.endUTC = addSeconds(e.endUTC, offsetSeconds);
       return e;
     })
-    .filter(e => {
+    .filter((e) => {
       if (e.type === api.LogType.InspectionResult) {
         // filter out a couple inspection results so they are uninspected
         // and display as uninspected on the station monitor screen
@@ -84,8 +84,8 @@ async function loadEventsJson(offsetSeconds: number): Promise<Readonly<api.ILogE
     })
     .toVector()
     .sortOn(
-      e => e.endUTC.getTime(),
-      e => e.counter
+      (e) => e.endUTC.getTime(),
+      (e) => e.counter
     )
     .toArray();
 }
@@ -140,14 +140,14 @@ export function loadMockData(offsetSeconds: number): MockData {
   const historic: api.IHistoricData = {
     jobs: historicJobs,
     stationUse: LazySeq.ofIterable(allNewJobs)
-      .flatMap(j => j.stationUse || [])
-      .toArray()
+      .flatMap((j) => j.stationUse || [])
+      .toArray(),
   };
 
   return {
     curSt: status,
     jobs: historic,
     workorders: new Map<string, ReadonlyArray<Readonly<api.IPartWorkorder>>>(),
-    events: loadEventsJson(offsetSeconds)
+    events: loadEventsJson(offsetSeconds),
   };
 }

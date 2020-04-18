@@ -140,6 +140,61 @@ namespace BlackMaple.MachineWatchInterface
   }
 
   [Serializable, DataContract]
+  public class PathInspection
+  {
+    [DataMember(IsRequired = true)]
+    public string InspectionType;
+
+    //There are two possible ways of triggering an inspection: counts and frequencies.
+    // * For counts, the MaxVal will contain a number larger than zero and RandomFreq will contain -1
+    // * For frequencies, the value of MaxVal is -1 and RandomFreq contains
+    //   the frequency as a number between 0 and 1.
+
+    //Every time a material completes, the counter string is expanded (see below).
+    [DataMember(IsRequired = true)]
+    public string Counter;
+
+    //For each completed material, the counter is incremented.  If the counter is equal to MaxVal,
+    //we signal an inspection and reset the counter to 0.
+    [DataMember(IsRequired = true)]
+    public int MaxVal;
+
+    //The random frequency of inspection
+    [DataMember(IsRequired = true)]
+    public double RandomFreq;
+
+    //If the last inspection signaled for this counter was longer than TimeInterval,
+    //signal an inspection.  This can be disabled by using TimeSpan.Zero
+    [DataMember(IsRequired = true)]
+    public TimeSpan TimeInterval;
+
+    // Expected inspection type
+    [OptionalField, DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public TimeSpan? ExpectedInspectionTime;
+
+    //The final counter string is determined by replacing following substrings in the counter
+    public static string PalletFormatFlag(int proc)
+    {
+      return "%pal" + proc.ToString() + "%";
+    }
+    public static string LoadFormatFlag(int proc)
+    {
+      return "%load" + proc.ToString() + "%";
+    }
+    public static string UnloadFormatFlag(int proc)
+    {
+      return "%unload" + proc.ToString() + "%";
+    }
+    public static string StationFormatFlag(int proc, int routeNum)
+    {
+      return "%stat" + proc.ToString() + "," + routeNum.ToString() + "%";
+    }
+  }
+
+
+  // JobInspectionData is the old format before we added ability to control per-path
+  // It is kept for backwards compatability, but new stuff should use PathInspection instead.
+  [Serializable, DataContract]
   public class JobInspectionData
   {
     [DataMember(IsRequired = true)]
@@ -204,22 +259,10 @@ namespace BlackMaple.MachineWatchInterface
     private JobInspectionData() { } //for json deserialization
 
     //The final counter string is determined by replacing following substrings in the counter
-    public static string PalletFormatFlag(int proc)
-    {
-      return "%pal" + proc.ToString() + "%";
-    }
-    public static string LoadFormatFlag(int proc)
-    {
-      return "%load" + proc.ToString() + "%";
-    }
-    public static string UnloadFormatFlag(int proc)
-    {
-      return "%unload" + proc.ToString() + "%";
-    }
-    public static string StationFormatFlag(int proc, int routeNum)
-    {
-      return "%stat" + proc.ToString() + "," + routeNum.ToString() + "%";
-    }
+    public static string PalletFormatFlag(int proc) => PathInspection.PalletFormatFlag(proc);
+    public static string LoadFormatFlag(int proc) => PathInspection.LoadFormatFlag(proc);
+    public static string UnloadFormatFlag(int proc) => PathInspection.UnloadFormatFlag(proc);
+    public static string StationFormatFlag(int proc, int routeNum) => PathInspection.StationFormatFlag(proc, routeNum);
   }
 
   [Serializable, DataContract]
@@ -396,11 +439,6 @@ namespace BlackMaple.MachineWatchInterface
     {
       get { return _copiedToSystem; }
       set { _copiedToSystem = value; }
-    }
-    public int Priority
-    { // larger number means higher priority
-      get { return _priority; }
-      set { _priority = value; }
     }
     public string PartName
     {
@@ -856,6 +894,17 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+    public string GetCasting(int proc1path)
+    {
+      if (proc1path >= 1 && proc1path <= GetNumPaths(1))
+      {
+        return _procPath[0][proc1path - 1].Casting;
+      }
+      else
+      {
+        throw new IndexOutOfRangeException("Invalid path number");
+      }
+    }
     public string GetOutputQueue(int process, int path)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -878,6 +927,17 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+    public void SetCasting(int proc1path, string casting)
+    {
+      if (proc1path >= 1 && proc1path <= GetNumPaths(1))
+      {
+        _procPath[0].Paths[proc1path - 1].Casting = casting;
+      }
+      else
+      {
+        throw new IndexOutOfRangeException("Invalid path number");
+      }
+    }
     public void SetOutputQueue(int process, int path, string queue)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -889,37 +949,28 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+    public ICollection<PathInspection> PathInspections(int process, int path)
+    {
+      if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
+      {
+        if (_procPath[process - 1].Paths[path - 1].Inspections == null)
+        {
+          _procPath[process - 1].Paths[path - 1].Inspections = new List<PathInspection>();
+        }
+        return _procPath[process - 1].Paths[path - 1].Inspections;
+      }
+      else
+      {
+        throw new IndexOutOfRangeException("Invalid process or path number");
+      }
+    }
 
     //Inspection information
-    public IEnumerable<JobInspectionData> GetInspections()
+    public IEnumerable<JobInspectionData> GetOldObsoleteInspections()
     {
+#pragma warning disable CS0612
       return _inspections;
-    }
-    public void AddInspection(JobInspectionData insp)
-    {
-      foreach (var i in _inspections)
-      {
-        if (insp.InspectionType == i.InspectionType)
-          throw new ArgumentException("Duplicate inspection types");
-      }
-      _inspections.Add(insp);
-    }
-    public void ReplaceInspection(JobInspectionData insp)
-    {
-      foreach (var i in _inspections)
-      {
-        if (insp.InspectionType == i.InspectionType)
-        {
-          _inspections.Remove(i);
-          break;
-        }
-      }
-      _inspections.Add(insp);
-    }
-    public void AddInspections(IEnumerable<JobInspectionData> insps)
-    {
-      foreach (var insp in insps)
-        AddInspection(insp);
+#pragma warning restore CS0612
     }
 
     public JobPlan(string unique, int numProcess) : this(unique, numProcess, null)
@@ -934,10 +985,8 @@ namespace BlackMaple.MachineWatchInterface
       _partName = "";
       _scheduleId = "";
       _uniqueStr = unique;
-      _priority = 0;
       _comment = "";
       _manuallyCreated = false;
-      _inspections = new List<JobInspectionData>();
       _holdJob = new JobHoldPattern();
       _scheduledIds = new List<string>();
 
@@ -972,16 +1021,20 @@ namespace BlackMaple.MachineWatchInterface
       _partName = job.PartName;
       _scheduleId = job._scheduleId;
       _uniqueStr = newUniqueStr;
-      _priority = job._priority;
       _comment = job._comment;
       _manuallyCreated = job._manuallyCreated;
       _createMarker = job._createMarker;
       _holdJob = new JobHoldPattern(job._holdJob);
       _scheduledIds = new List<string>(job._scheduledIds);
 
-      _inspections = new List<JobInspectionData>(job._inspections.Count);
-      foreach (var insp in job._inspections)
-        _inspections.Add(new JobInspectionData(insp));
+#pragma warning disable CS0612
+      if (job._inspections != null)
+      {
+        _inspections = new List<JobInspectionData>(job._inspections.Count);
+        foreach (var insp in job._inspections)
+          _inspections.Add(new JobInspectionData(insp));
+      }
+#pragma warning restore CS0612
 
       //copy the path info
       _procPath = new ProcessInfo[job._procPath.Length];
@@ -1010,16 +1063,20 @@ namespace BlackMaple.MachineWatchInterface
       _partName = job.PartName;
       _scheduleId = job._scheduleId;
       _uniqueStr = job._uniqueStr;
-      _priority = job._priority;
       _comment = job._comment;
       _manuallyCreated = job._manuallyCreated;
       _createMarker = job._createMarker;
       _holdJob = new JobHoldPattern(job._holdJob);
       _scheduledIds = new List<string>(job._scheduledIds);
 
-      _inspections = new List<JobInspectionData>(job._inspections.Count);
-      foreach (var insp in job._inspections)
-        _inspections.Add(new JobInspectionData(insp));
+#pragma warning disable CS0612
+      if (job._inspections != null)
+      {
+        _inspections = new List<JobInspectionData>(job._inspections.Count);
+        foreach (var insp in job._inspections)
+          _inspections.Add(new JobInspectionData(insp));
+      }
+#pragma warning restore CS0612
 
       _procPath = new ProcessInfo[job._procPath.Length];
       for (int i = 0; i < _procPath.Length; i++)
@@ -1058,8 +1115,11 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember(Name = "Unique", IsRequired = true)]
     private string _uniqueStr;
 
-    [DataMember(Name = "Priority", IsRequired = true)]
+#pragma warning disable CS0169
+    // priority field is no longer used but this is kept for backwards network compatibility
+    [DataMember(Name = "Priority", IsRequired = false, EmitDefaultValue = true), Obsolete]
     private int _priority;
+#pragma warning restore CS0169
 
     [DataMember(Name = "ScheduleId", IsRequired = false, EmitDefaultValue = false)]
     private string _scheduleId;
@@ -1073,7 +1133,7 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember(Name = "CreateMarkingData", IsRequired = true)]
     private bool _createMarker;
 
-    [DataMember(Name = "Inspections", IsRequired = false, EmitDefaultValue = false)]
+    [DataMember(Name = "Inspections", IsRequired = false, EmitDefaultValue = false), Obsolete]
     private IList<JobInspectionData> _inspections;
 
     [DataMember(Name = "HoldEntireJob", IsRequired = false, EmitDefaultValue = false)]
@@ -1192,6 +1252,12 @@ namespace BlackMaple.MachineWatchInterface
       [DataMember(IsRequired = false, EmitDefaultValue = false), OptionalField]
       public string OutputQueue;
 
+      [DataMember(IsRequired = false, EmitDefaultValue = false), OptionalField]
+      public List<PathInspection> Inspections;
+
+      [DataMember(IsRequired = false, EmitDefaultValue = false), OptionalField]
+      public string Casting;
+
       public ProcPathInfo(ProcPathInfo other)
       {
         if (other.Pallets == null)
@@ -1213,6 +1279,8 @@ namespace BlackMaple.MachineWatchInterface
           PartsPerPallet = 1;
           InputQueue = null;
           OutputQueue = null;
+          Inspections = null;
+          Casting = null;
         }
         else
         {
@@ -1237,6 +1305,8 @@ namespace BlackMaple.MachineWatchInterface
           PartsPerPallet = other.PartsPerPallet;
           InputQueue = other.InputQueue;
           OutputQueue = other.OutputQueue;
+          Inspections = other.Inspections?.ToList();
+          Casting = other.Casting;
         }
       }
     }

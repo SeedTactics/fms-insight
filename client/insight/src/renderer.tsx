@@ -48,8 +48,8 @@ export function render<A, S>(props: AppProps, store: Store<A, S>, elem: HTMLElem
   const theme = createMuiTheme({
     palette: {
       primary: green,
-      secondary: brown
-    }
+      secondary: brown,
+    },
   });
 
   ReactDOM.render(

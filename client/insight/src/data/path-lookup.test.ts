@@ -52,8 +52,8 @@ it("initially searches", () => {
     curStart: new Date(Date.UTC(2018, 7, 6, 15, 33, 0)),
     curEnd: new Date(Date.UTC(2018, 7, 6, 16, 33, 0)),
     pledge: {
-      status: PledgeStatus.Starting
-    }
+      status: PledgeStatus.Starting,
+    },
   });
 
   expect(s.loading).toBe(true);
@@ -73,8 +73,8 @@ it("responds to errors", () => {
       curEnd: new Date(Date.UTC(2018, 7, 6, 15, 33, 0)),
       pledge: {
         status: PledgeStatus.Error,
-        error: new Error("the error")
-      }
+        error: new Error("the error"),
+      },
     }
   );
 
@@ -104,8 +104,8 @@ it("loads the data", async () => {
     curEnd: new Date(Date.UTC(2018, 7, 6, 15, 33, 0)),
     pledge: {
       status: PledgeStatus.Completed,
-      result: evts
-    }
+      result: evts,
+    },
   });
 
   expect(s.entries).toMatchSnapshot("computed events");
@@ -122,8 +122,8 @@ it("loads the from other log", async () => {
     part: "aaa",
     pledge: {
       status: PledgeStatus.Completed,
-      result: evts
-    }
+      result: evts,
+    },
   });
 
   expect(s.entries).toMatchSnapshot("computed events");

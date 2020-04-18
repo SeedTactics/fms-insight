@@ -45,7 +45,7 @@ export enum ActionType {
   CloseMaterialDialog = "MaterialDetails_Close",
   UpdateMaterial = "MaterialDetails_UpdateMaterial",
   LoadWorkorders = "OrderAssign_LoadWorkorders",
-  AddNewMaterialToQueue = "MaterialDetails_AddNewMaterialToQueue"
+  AddNewMaterialToQueue = "MaterialDetails_AddNewMaterialToQueue",
 }
 
 export interface WorkorderPlanAndSummary {
@@ -123,19 +123,19 @@ export function openMaterialDialog(mat: Readonly<MaterialSummary>): ReadonlyArra
       loading_workorders: false,
       saving_workorder: false,
       workorders: Vector.empty(),
-      openedViaBarcodeScanner: false
+      openedViaBarcodeScanner: false,
     } as MaterialDetail,
-    pledge: LogBackend.logForMaterial(mat.materialID)
+    pledge: LogBackend.logForMaterial(mat.materialID),
   } as PledgeToPromise<Action>;
 
   let extra: ReadonlyArray<PledgeToPromise<Action>> = [];
   if (mat.serial && mat.serial !== "") {
     const serial = mat.serial;
     extra = OtherLogBackends.map(
-      b =>
+      (b) =>
         ({
           type: ActionType.LoadLogFromOtherServer,
-          pledge: b.logForSerial(serial)
+          pledge: b.logForSerial(serial),
         } as PledgeToPromise<Action>)
     );
   }
@@ -159,8 +159,8 @@ export function openMaterialDialogWithEmptyMat(): PledgeToPromise<Action> {
       loading_workorders: false,
       saving_workorder: false,
       workorders: Vector.empty(),
-      openedViaBarcodeScanner: false
-    } as MaterialDetail
+      openedViaBarcodeScanner: false,
+    } as MaterialDetail,
   };
 }
 
@@ -181,9 +181,9 @@ export function openMaterialById(matId: number): PledgeToPromise<Action> {
       loading_workorders: false,
       saving_workorder: false,
       workorders: Vector.empty(),
-      openedViaBarcodeScanner: false
+      openedViaBarcodeScanner: false,
     } as MaterialDetail,
-    pledge: LogBackend.logForMaterial(matId)
+    pledge: LogBackend.logForMaterial(matId),
   } as PledgeToPromise<Action>;
   return mainLoad;
 }
@@ -205,17 +205,17 @@ export function openMaterialBySerial(serial: string, openedByBarcode: boolean): 
       loading_workorders: false,
       saving_workorder: false,
       workorders: Vector.empty(),
-      openedViaBarcodeScanner: openedByBarcode
+      openedViaBarcodeScanner: openedByBarcode,
     } as MaterialDetail,
-    pledge: LogBackend.logForSerial(serial)
+    pledge: LogBackend.logForSerial(serial),
   } as PledgeToPromise<Action>;
   let extra: ReadonlyArray<PledgeToPromise<Action>> = [];
   if (serial !== "") {
     extra = OtherLogBackends.map(
-      b =>
+      (b) =>
         ({
           type: ActionType.LoadLogFromOtherServer,
-          pledge: b.logForSerial(serial)
+          pledge: b.logForSerial(serial),
         } as PledgeToPromise<Action>)
     );
   }
@@ -232,7 +232,7 @@ export function forceInspection({ mat, inspType, inspect }: ForceInspectionData)
   return {
     type: ActionType.UpdateMaterial,
     newSignaledInspection: inspType,
-    pledge: LogBackend.setInspectionDecision(mat.materialID, inspType, inspect, 1, mat.jobUnique, mat.partName)
+    pledge: LogBackend.setInspectionDecision(mat.materialID, inspType, inspect, 1, mat.jobUnique, mat.partName),
   };
 }
 
@@ -247,7 +247,7 @@ export function completeInspection({
   mat,
   inspType,
   success,
-  operator
+  operator,
 }: CompleteInspectionData): PledgeToPromise<Action> {
   return {
     type: ActionType.UpdateMaterial,
@@ -261,11 +261,11 @@ export function completeInspection({
         success,
         active: "PT0S",
         elapsed: "PT0S",
-        extraData: operator ? { operator } : undefined
+        extraData: operator ? { operator } : undefined,
       }),
       mat.jobUnique,
       mat.partName
-    )
+    ),
   };
 }
 
@@ -284,25 +284,25 @@ export function completeWash(d: CompleteWashData): PledgeToPromise<Action> {
         washLocationNum: 1,
         active: "PT0S",
         elapsed: "PT0S",
-        extraData: d.operator ? { operator: d.operator } : undefined
+        extraData: d.operator ? { operator: d.operator } : undefined,
       }),
       d.mat.jobUnique,
       d.mat.partName
-    )
+    ),
   };
 }
 
 export function printLabel(matId: number, proc: number, loadStation: number): PledgeToPromise<Action> {
   return {
     type: ActionType.UpdateMaterial,
-    pledge: FmsServerBackend.printLabel(matId, proc, loadStation).then(() => undefined)
+    pledge: FmsServerBackend.printLabel(matId, proc, loadStation).then(() => undefined),
   };
 }
 
 export function removeFromQueue(mat: MaterialDetail): PledgeToPromise<Action> {
   return {
     type: ActionType.UpdateMaterial,
-    pledge: JobsBackend.removeMaterialFromAllQueues(mat.materialID).then(() => undefined)
+    pledge: JobsBackend.removeMaterialFromAllQueues(mat.materialID).then(() => undefined),
   };
 }
 
@@ -315,7 +315,7 @@ export function assignWorkorder({ mat, workorder }: AssignWorkorderData): Pledge
   return {
     type: ActionType.UpdateMaterial,
     newWorkorder: workorder,
-    pledge: LogBackend.setWorkorder(mat.materialID, workorder, 1, mat.jobUnique, mat.partName)
+    pledge: LogBackend.setWorkorder(mat.materialID, workorder, 1, mat.jobUnique, mat.partName),
   };
 }
 
@@ -328,7 +328,7 @@ export function assignSerial({ mat, serial }: AssignSerialData): PledgeToPromise
   return {
     type: ActionType.UpdateMaterial,
     newSerial: serial,
-    pledge: LogBackend.setSerial(mat.materialID, serial, 1, mat.jobUnique, mat.partName)
+    pledge: LogBackend.setSerial(mat.materialID, serial, 1, mat.jobUnique, mat.partName),
   };
 }
 
@@ -340,7 +340,7 @@ export function addNote(
 ): PledgeToPromise<Action> {
   return {
     type: ActionType.UpdateMaterial,
-    pledge: LogBackend.recordOperatorNotes(matId, notes, process, operator)
+    pledge: LogBackend.recordOperatorNotes(matId, notes, process, operator),
   };
 }
 
@@ -364,8 +364,8 @@ export function computeWorkorders(
     }
   }
   return Vector.ofIterable(workMap.values()).sortOn(
-    w => w.plan.dueDate.getTime(),
-    w => -w.plan.priority
+    (w) => w.plan.dueDate.getTime(),
+    (w) => -w.plan.priority
   );
 }
 
@@ -373,7 +373,7 @@ async function loadWorkordersForPart(part: string): Promise<Vector<WorkorderPlan
   const works = await JobsBackend.mostRecentUnfilledWorkordersForPart(part);
   const summaries: api.IWorkorderSummary[] = [];
   for (const ws of LazySeq.ofIterable(works).chunk(16)) {
-    summaries.push(...(await LogBackend.getWorkorders(ws.map(w => w.workorderId).toArray())));
+    summaries.push(...(await LogBackend.getWorkorders(ws.map((w) => w.workorderId))));
   }
   return computeWorkorders(part, works, summaries);
 }
@@ -381,7 +381,7 @@ async function loadWorkordersForPart(part: string): Promise<Vector<WorkorderPlan
 export function loadWorkorders(mat: MaterialDetail): PledgeToPromise<Action> {
   return {
     type: ActionType.LoadWorkorders,
-    pledge: loadWorkordersForPart(mat.partName)
+    pledge: loadWorkordersForPart(mat.partName),
   };
 }
 
@@ -398,39 +398,54 @@ export function addExistingMaterialToQueue(d: AddExistingMaterialToQueueData): P
       d.materialId,
       new api.QueuePosition({
         queue: d.queue,
-        position: d.queuePosition
+        position: d.queuePosition,
       })
-    )
+    ),
   };
 }
 
 export interface AddNewMaterialToQueueData {
-  readonly jobUnique?: string;
-  readonly partName: string;
-  readonly lastCompletedProcess?: number;
+  readonly jobUnique: string;
+  readonly lastCompletedProcess: number;
+  readonly pathGroup: number;
   readonly queue: string;
   readonly queuePosition: number;
   readonly serial?: string;
 }
 
 export function addNewMaterialToQueue(d: AddNewMaterialToQueueData) {
-  if (d.jobUnique && d.lastCompletedProcess) {
-    return {
-      type: ActionType.AddNewMaterialToQueue,
-      pledge: JobsBackend.addUnprocessedMaterialToQueue(
-        d.jobUnique,
-        d.lastCompletedProcess || -1,
-        d.queue,
-        d.queuePosition,
-        d.serial || ""
-      )
-    };
-  } else {
-    return {
-      type: ActionType.AddNewMaterialToQueue,
-      pledge: JobsBackend.addUnallocatedCastingToQueue(d.partName, d.queue, d.queuePosition, d.serial || "")
-    };
-  }
+  return {
+    type: ActionType.AddNewMaterialToQueue,
+    pledge: JobsBackend.addUnprocessedMaterialToQueue(
+      d.jobUnique,
+      d.lastCompletedProcess,
+      d.pathGroup,
+      d.queue,
+      d.queuePosition,
+      d.serial || ""
+    ),
+  };
+}
+
+export interface AddNewCastingToQueueData {
+  readonly casting: string;
+  readonly quantity: number;
+  readonly queue: string;
+  readonly queuePosition: number;
+  readonly serials?: ReadonlyArray<string>;
+}
+
+export function addNewCastingToQueue(d: AddNewCastingToQueueData) {
+  return {
+    type: ActionType.AddNewMaterialToQueue,
+    pledge: JobsBackend.addUnallocatedCastingToQueue(
+      d.casting,
+      d.queue,
+      d.queuePosition,
+      [...(d.serials || [])],
+      d.quantity
+    ),
+  };
 }
 
 export interface State {
@@ -444,15 +459,15 @@ export interface State {
 
 export const initial: State = {
   material: null,
-  add_mat_in_progress: false
+  add_mat_in_progress: false,
 };
 
 function processEvents(evts: ReadonlyArray<Readonly<api.ILogEntry>>, mat: MaterialDetail): MaterialDetail {
   let inspTypes = HashSet.ofIterable(mat.signaledInspections);
   let completedTypes = HashSet.ofIterable(mat.completedInspections);
 
-  evts.forEach(e => {
-    e.material.forEach(m => {
+  evts.forEach((e) => {
+    e.material.forEach((m) => {
       if (mat.materialID < 0) {
         mat = { ...mat, materialID: m.id };
       }
@@ -495,16 +510,16 @@ function processEvents(evts: ReadonlyArray<Readonly<api.ILogEntry>>, mat: Materi
   });
 
   const allEvents = mat.events.appendAll(evts).sortOn(
-    e => e.endUTC.getTime(),
-    e => e.counter
+    (e) => e.endUTC.getTime(),
+    (e) => e.counter
   );
 
   return {
     ...mat,
-    signaledInspections: inspTypes.toArray({ sortOn: x => x }),
-    completedInspections: completedTypes.toArray({ sortOn: x => x }),
+    signaledInspections: inspTypes.toArray({ sortOn: (x) => x }),
+    completedInspections: completedTypes.toArray({ sortOn: (x) => x }),
     loading_events: false,
-    events: allEvents
+    events: allEvents,
   };
 }
 
@@ -521,7 +536,7 @@ export function reducer(s: State, a: Action): State {
         case PledgeStatus.Completed:
           return {
             ...s,
-            material: processEvents(a.pledge.result, s.material || a.initial)
+            material: processEvents(a.pledge.result, s.material || a.initial),
           };
 
         case PledgeStatus.Error:
@@ -530,9 +545,9 @@ export function reducer(s: State, a: Action): State {
             material: {
               ...a.initial,
               loading_events: false,
-              events: Vector.empty()
+              events: Vector.empty(),
             },
-            load_error: a.pledge.error
+            load_error: a.pledge.error,
           };
 
         default:
@@ -547,10 +562,10 @@ export function reducer(s: State, a: Action): State {
             material: {
               ...s.material,
               events: s.material.events.appendAll(a.pledge.result).sortOn(
-                e => e.endUTC.getTime(),
-                e => e.counter
-              )
-            }
+                (e) => e.endUTC.getTime(),
+                (e) => e.counter
+              ),
+            },
           };
         } else {
           return s; // happens if the dialog is closed before the response arrives
@@ -575,9 +590,9 @@ export function reducer(s: State, a: Action): State {
             ...s,
             material: {
               ...s.material,
-              updating_material: true
+              updating_material: true,
             },
-            update_error: undefined
+            update_error: undefined,
           };
         case PledgeStatus.Completed: {
           const oldMatEnd = s.material;
@@ -594,8 +609,8 @@ export function reducer(s: State, a: Action): State {
               workorderId: a.newWorkorder || oldMatEnd.workorderId,
               serial: a.newSerial || oldMatEnd.serial,
               events: a.pledge.result ? oldMatEnd.events.append(a.pledge.result) : oldMatEnd.events,
-              updating_material: false
-            }
+              updating_material: false,
+            },
           };
         }
 
@@ -604,9 +619,9 @@ export function reducer(s: State, a: Action): State {
             ...s,
             material: {
               ...s.material,
-              updating_material: false
+              updating_material: false,
             },
-            update_error: a.pledge.error
+            update_error: a.pledge.error,
           };
 
         default:
@@ -623,9 +638,9 @@ export function reducer(s: State, a: Action): State {
             ...s,
             material: {
               ...s.material,
-              loading_workorders: true
+              loading_workorders: true,
             },
-            load_workorders_error: undefined
+            load_workorders_error: undefined,
           };
 
         case PledgeStatus.Completed:
@@ -634,8 +649,8 @@ export function reducer(s: State, a: Action): State {
             material: {
               ...s.material,
               loading_workorders: false,
-              workorders: a.pledge.result
-            }
+              workorders: a.pledge.result,
+            },
           };
 
         case PledgeStatus.Error:
@@ -644,9 +659,9 @@ export function reducer(s: State, a: Action): State {
             material: {
               ...s.material,
               loading_workorders: false,
-              workorders: Vector.empty()
+              workorders: Vector.empty(),
             },
-            load_workorders_error: a.pledge.error
+            load_workorders_error: a.pledge.error,
           };
 
         default:
@@ -663,7 +678,7 @@ export function reducer(s: State, a: Action): State {
           return {
             ...s,
             add_mat_in_progress: false,
-            add_mat_error: a.pledge.error
+            add_mat_error: a.pledge.error,
           };
         default:
           return s;

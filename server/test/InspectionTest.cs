@@ -95,7 +95,7 @@ namespace MachineWatchTest
     [Fact]
     public void Frequencies()
     {
-      var freqProg = new JobInspectionData("insp1", "counter1", 0.5, TimeSpan.FromHours(100));
+      var freqProg = new PathInspection() { InspectionType = "insp1", Counter = "counter1", RandomFreq = 0.5, TimeInterval = TimeSpan.FromHours(100) };
 
       for (int i = 0; i < 100; i++)
         _insp.MakeInspectionDecisions(i, 1, new[] { freqProg });
@@ -123,8 +123,7 @@ namespace MachineWatchTest
       _insp.SetInspectCounts(new InspectCount[] { cnt });
 
       //set up a program
-      var inspProg = new JobInspectionData("insp1", "counter1", 3, TimeSpan.FromHours(11));
-      var inspProg2 = new JobInspectionData(inspProg);
+      var inspProg = new PathInspection() { InspectionType = "insp1", Counter = "counter1", MaxVal = 3, TimeInterval = TimeSpan.FromHours(11) };
 
       //the lastutc should be 2 minutes too short, so only inspections from the counter should take place
 
@@ -134,7 +133,7 @@ namespace MachineWatchTest
       CheckCount("counter1", 1);
       CheckLastUTC("counter1", cnt.LastUTC);
 
-      _insp.MakeInspectionDecisions(2, 2, new[] { inspProg2 }, now);
+      _insp.MakeInspectionDecisions(2, 2, new[] { inspProg }, now);
       CheckDecision(2, "insp1", "counter1", false, now);
       CheckCount("counter1", 2);
       CheckLastUTC("counter1", cnt.LastUTC);
@@ -163,8 +162,7 @@ namespace MachineWatchTest
       DateTime now = DateTime.UtcNow;
 
       //set up a program
-      var inspProg = new JobInspectionData("insp1", "counter1", 13, TimeSpan.FromHours(11));
-      var inspProg2 = new JobInspectionData(inspProg);
+      var inspProg = new PathInspection() { InspectionType = "insp1", Counter = "counter1", MaxVal = 13, TimeInterval = TimeSpan.FromHours(11) };
 
       //set the count as zero, otherwise it chooses a random
       InspectCount cnt = new InspectCount();
@@ -181,7 +179,7 @@ namespace MachineWatchTest
       CheckDecision(1, "insp1", "counter1", false, now);
       CheckCount("counter1", 1);
 
-      _insp.MakeInspectionDecisions(2, 1, new[] { inspProg2 }, now);
+      _insp.MakeInspectionDecisions(2, 1, new[] { inspProg }, now);
       CheckDecision(2, "insp1", "counter1", true, now, true);
 
       CheckCount("counter1", 2);
@@ -195,8 +193,8 @@ namespace MachineWatchTest
       job.PartName = "part1";
 
       //set up a program
-      var inspProg = new JobInspectionData("insp1", "counter1", 3, TimeSpan.FromHours(11));
-      job.AddInspection(inspProg);
+      var inspProg = new PathInspection() { InspectionType = "insp1", Counter = "counter1", MaxVal = 3, TimeInterval = TimeSpan.FromHours(11) };
+      job.PathInspections(1, 1).Add(inspProg);
 
       //set the count as zero, otherwise it chooses a random
       InspectCount cnt = new InspectCount();
@@ -272,7 +270,7 @@ namespace MachineWatchTest
       AddCycle(mat1Proc2, "P2", LogType.LoadUnloadCycle, 4, true);
       AddCycle(mat2Proc2, "P4", LogType.LoadUnloadCycle, 9, true);
 
-      var inspProg = new JobInspectionData("insp1", counter, 10, TimeSpan.FromDays(2));
+      var inspProg = new PathInspection() { InspectionType = "insp1", Counter = counter, MaxVal = 10, TimeInterval = TimeSpan.FromDays(2) };
 
       var now = DateTime.UtcNow;
       _insp.MakeInspectionDecisions(1, 2, new[] { inspProg }, now);

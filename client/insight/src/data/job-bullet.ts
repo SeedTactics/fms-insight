@@ -59,7 +59,7 @@ function displayJob(job: api.IInProcessJob, proc: number): DataPoint {
     completed: cycleTimeHours * completed,
     completedCount: completed,
     totalPlan: cycleTimeHours * totalPlan,
-    totalCount: totalPlan
+    totalCount: totalPlan,
   };
 }
 
@@ -74,15 +74,15 @@ export interface DataPoints {
 }
 
 function vectorRange(start: number, count: number): Vector<number> {
-  return Vector.unfoldRight(start, x =>
+  return Vector.unfoldRight(start, (x) =>
     x - start < count ? Option.of([x, x + 1] as [number, number]) : Option.none<[number, number]>()
   );
 }
 
 export function jobsToPoints(jobs: ReadonlyArray<Readonly<api.IInProcessJob>>): DataPoints {
   const points = Vector.ofIterable(jobs)
-    .flatMap(j => vectorRange(0, j.procsAndPaths.length).map(proc => displayJob(j, proc)))
-    .sortOn(pt => pt.part)
+    .flatMap((j) => vectorRange(0, j.procsAndPaths.length).map((proc) => displayJob(j, proc)))
+    .sortOn((pt) => pt.part)
     .reverse();
   const completedData = points
     .zipWithIndex()

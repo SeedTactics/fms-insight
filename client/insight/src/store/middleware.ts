@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 export enum PledgeStatus {
   Starting = "Pledge_Starting",
   Completed = "Pledge_Completed",
-  Error = "Pledge_Error"
+  Error = "Pledge_Error",
 }
 
 export type Pledge<T> =
@@ -54,22 +54,22 @@ function hasPledge<R>(obj: any): obj is WithPromise<R> {
 }
 
 function pledgeMiddleware<A>(dispatch: (a: A) => void): (action: PledgeToPromise<A>) => void {
-  return action => {
+  return (action) => {
     if (hasPledge(action)) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const anyAction: any = action;
       dispatch({ ...anyAction, pledge: { status: PledgeStatus.Starting } });
       action.pledge
-        .then(r => {
+        .then((r) => {
           dispatch({
             ...anyAction,
-            pledge: { status: PledgeStatus.Completed, result: r }
+            pledge: { status: PledgeStatus.Completed, result: r },
           });
         })
         .catch((e: Error) => {
           dispatch({
             ...anyAction,
-            pledge: { status: PledgeStatus.Error, error: e }
+            pledge: { status: PledgeStatus.Error, error: e },
           });
         });
     } else {
@@ -80,7 +80,7 @@ function pledgeMiddleware<A>(dispatch: (a: A) => void): (action: PledgeToPromise
 }
 
 function arrayMiddleware<A>(dispatch: (a: A) => void): (action: A | ReadonlyArray<A>) => void {
-  return action => {
+  return (action) => {
     if (action instanceof Array) {
       action.map(dispatch);
     } else {

@@ -55,7 +55,7 @@ interface StationOEEProps {
 function polarToCartesian(centerX: number, centerY: number, radius: number, angleInRadians: number) {
   return {
     x: centerX + radius * Math.cos(angleInRadians),
-    y: centerY + radius * Math.sin(angleInRadians)
+    y: centerY + radius * Math.sin(angleInRadians),
   };
 }
 
@@ -130,7 +130,7 @@ function palletMaterial(
           <span>{name + matStatus}</span>
           {matTime}
         </>
-      )
+      ),
     });
   }
 
@@ -142,7 +142,7 @@ function computeTooltip(p: StationOEEProps): JSX.Element {
 
   entries.push({
     title: "OEE",
-    value: <span>{(p.oee * 100).toFixed(1) + "%"}</span>
+    value: <span>{(p.oee * 100).toFixed(1) + "%"}</span>,
   });
 
   if (p.pallet === undefined) {
@@ -150,7 +150,7 @@ function computeTooltip(p: StationOEEProps): JSX.Element {
   } else {
     entries.push({
       title: "Pallet",
-      value: <span>{p.pallet.pallet.pallet}</span>
+      value: <span>{p.pallet.pallet.pallet}</span>,
     });
 
     entries.push(...palletMaterial(p.dateOfCurrentStatus, p.pallet.material));
@@ -159,7 +159,7 @@ function computeTooltip(p: StationOEEProps): JSX.Element {
   if (p.queuedPallet !== undefined) {
     entries.push({
       title: "Queued Pallet",
-      value: <span>{p.queuedPallet.pallet.pallet}</span>
+      value: <span>{p.queuedPallet.pallet.pallet}</span>,
     });
     entries.push(...palletMaterial(p.dateOfCurrentStatus, p.queuedPallet.material));
   }
@@ -231,9 +231,7 @@ function StationOEEWithStyles(p: StationOEEProps) {
           <text x={200} y={300} textAnchor="middle" style={{ fontSize: 30 }}>
             {queued}
           </text>
-        ) : (
-          undefined
-        )}
+        ) : undefined}
       </svg>
     </Tooltip>
   );
@@ -257,7 +255,7 @@ function StationOEEs(p: Props) {
   const stats = p.pallets
     .keySet()
     .addAll(p.station_active_minutes_past_week.keySet())
-    .toArray({ sortOn: [s => s.startsWith("L/U"), s => s] }); // put machines first
+    .toArray({ sortOn: [(s) => s.startsWith("L/U"), (s) => s] }); // put machines first
   return (
     <Grid data-testid="stationoee-container" container justify="space-around">
       {stats.map((stat, idx) => (
@@ -281,13 +279,10 @@ const oeeSelector = createSelector(
   (byPartThenStat, lastStTime) => stationMinutes(byPartThenStat, addDays(lastStTime, -7))
 );
 
-const palSelector = createSelector(
-  (s: Store) => s.Current.current_status,
-  buildPallets
-);
+const palSelector = createSelector((s: Store) => s.Current.current_status, buildPallets);
 
-export default connect(s => ({
+export default connect((s) => ({
   dateOfCurrentStatus: s.Current.current_status.timeOfCurrentStatusUTC,
   station_active_minutes_past_week: oeeSelector(s),
-  pallets: palSelector(s)
+  pallets: palSelector(s),
 }))(StationOEEs);

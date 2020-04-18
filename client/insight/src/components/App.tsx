@@ -101,7 +101,7 @@ import Queues from "./station-monitor/Queues";
 
 const tabsStyle = {
   alignSelf: "flex-end" as "flex-end",
-  flexGrow: 1
+  flexGrow: 1,
 };
 
 interface HeaderNavProps {
@@ -402,9 +402,7 @@ function Header(p: HeaderProps) {
             <CameraAlt />
           </IconButton>
         </Tooltip>
-      ) : (
-        undefined
-      )}
+      ) : undefined}
       <Tooltip title="Enter Serial">
         <IconButton onClick={p.openManualSerial}>
           <SearchIcon />
@@ -456,9 +454,7 @@ function Header(p: HeaderProps) {
               <IconButton onClick={() => setDrawerOpen(!drawerOpen)}>
                 <MenuIcon />
               </IconButton>
-            ) : (
-              undefined
-            )}
+            ) : undefined}
             <Tooltip title={tooltip}>
               <img src={logo} alt="Logo" style={{ height: "25px", marginRight: "4px" }} />
             </Tooltip>
@@ -478,7 +474,7 @@ function Header(p: HeaderProps) {
           <Drawer variant="temporary" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
             <DemoNav
               full={false}
-              setRoute={r => {
+              setRoute={(r) => {
                 p.setRoute(r);
                 setDrawerOpen(false);
               }}
@@ -486,9 +482,7 @@ function Header(p: HeaderProps) {
               routeState={p.routeState}
             />
           </Drawer>
-        ) : (
-          undefined
-        )}
+        ) : undefined}
       </Hidden>
     </>
   );
@@ -534,29 +528,29 @@ class App extends React.PureComponent<AppConnectedProps> {
         page = <BackupViewer onRequestOpenFile={this.props.backupViewerOnRequestOpenFile} />;
       }
       showAlarms = false;
-    } else if (this.props.fmsInfo && (!this.props.fmsInfo.openIDConnectAuthority || this.props.user)) {
+    } else if (this.props.fmsInfo && (!serverSettings.requireLogin(this.props.fmsInfo) || this.props.user)) {
       switch (this.props.route.current) {
         case routes.RouteLocation.Station_LoadMonitor:
           page = <LoadStation />;
-          navigation = p => <StationToolbar full={p.full} />;
+          navigation = (p) => <StationToolbar full={p.full} />;
           showOperator = true;
           addBasicMaterialDialog = false;
           break;
         case routes.RouteLocation.Station_InspectionMonitor:
           page = <Inspection />;
-          navigation = p => <StationToolbar full={p.full} />;
+          navigation = (p) => <StationToolbar full={p.full} />;
           showOperator = true;
           addBasicMaterialDialog = false;
           break;
         case routes.RouteLocation.Station_WashMonitor:
           page = <Wash />;
-          navigation = p => <StationToolbar full={p.full} />;
+          navigation = (p) => <StationToolbar full={p.full} />;
           showOperator = true;
           addBasicMaterialDialog = false;
           break;
         case routes.RouteLocation.Station_Queues:
           page = <Queues />;
-          navigation = p => <StationToolbar full={p.full} />;
+          navigation = (p) => <StationToolbar full={p.full} />;
           showOperator = true;
           addBasicMaterialDialog = false;
           break;
@@ -642,7 +636,7 @@ class App extends React.PureComponent<AppConnectedProps> {
             showAlarms = false;
           }
       }
-    } else if (this.props.fmsInfo && this.props.fmsInfo.openIDConnectAuthority) {
+    } else if (this.props.fmsInfo && serverSettings.requireLogin(this.props.fmsInfo)) {
       page = (
         <div style={{ textAlign: "center", marginTop: "4em" }}>
           <h3>Please Login</h3>
@@ -715,23 +709,23 @@ export default connect(
     fmsInfo: s.ServerSettings.fmsInfo || null,
     user: s.ServerSettings.user || null,
     backupFileOpened: s.Gui.backup_file_opened,
-    alarms: emptyToNull(s.Current.current_status.alarms)
+    alarms: emptyToNull(s.Current.current_status.alarms),
   }),
   {
     setRoute: ({ ty, curSt }: { ty: routes.RouteLocation; curSt: routes.State }) => [
       routes.displayPage(ty, curSt),
       { type: matDetails.ActionType.CloseMaterialDialog },
-      { type: pathLookup.ActionType.Clear }
+      { type: pathLookup.ActionType.Clear },
     ],
     onLogin: mkAC(serverSettings.ActionType.Login),
     onLogout: mkAC(serverSettings.ActionType.Logout),
     openQrCodeScan: () => ({
       type: guiState.ActionType.SetScanQrCodeDialog,
-      open: true
+      open: true,
     }),
     openManualSerial: () => ({
       type: guiState.ActionType.SetManualSerialEntryDialog,
-      open: true
-    })
+      open: true,
+    }),
   }
 )(App);

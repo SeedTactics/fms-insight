@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -38,13 +38,18 @@ using BlackMaple.MachineWatchInterface;
 
 namespace MazakMachineInterface
 {
+  public interface IMachineGroupName
+  {
+    string MachineGroupName { get; }
+  }
+
   public interface IWriteJobs
   {
     void AddJobs(NewJobs newJ, string expectedPreviousScheduleId);
     void RecopyJobsToMazak(DateTime? nowUtc = null);
   }
 
-  public class WriteJobs : IWriteJobs
+  public class WriteJobs : IWriteJobs, IMachineGroupName
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<WriteJobs>();
 
@@ -60,6 +65,9 @@ namespace MazakMachineInterface
     private string ProgramDirectory;
 
     public const int JobLookbackHours = 2 * 24;
+
+    private string _machineGroupName = null;
+    public string MachineGroupName => _machineGroupName ?? "MC";
 
     public WriteJobs(
       IWriteData d,
@@ -82,6 +90,29 @@ namespace MazakMachineInterface
       UseStartingOffsetForDueDate = useStarting;
       fmsSettings = settings;
       ProgramDirectory = progDir;
+
+      var sch = jobDB.LoadMostRecentSchedule();
+      if (sch.Jobs != null)
+      {
+        foreach (var j in sch.Jobs)
+        {
+          for (int proc = 1; proc <= j.NumProcesses; proc++)
+          {
+            for (int path = 1; path <= j.GetNumPaths(proc); path++)
+            {
+              foreach (var stop in j.GetMachiningStop(proc, path))
+              {
+                if (!string.IsNullOrEmpty(stop.StationGroup))
+                {
+                  _machineGroupName = stop.StationGroup;
+                  goto foundGroup;
+                }
+              }
+            }
+          }
+        }
+      foundGroup:;
+      }
     }
 
     public void AddJobs(NewJobs newJ, string expectedPreviousScheduleId)
@@ -99,7 +130,7 @@ namespace MazakMachineInterface
       }
 
       //check for an old schedule that has not yet been copied
-      var oldJobs = jobDB.LoadJobsNotCopiedToSystem(DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddHours(1));
+      var oldJobs = jobDB.LoadJobsNotCopiedToSystem(DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddHours(1), includeDecremented: false);
       if (oldJobs.Jobs.Count > 0)
       {
         //there are jobs to copy
@@ -131,7 +162,7 @@ namespace MazakMachineInterface
     public void RecopyJobsToMazak(DateTime? nowUtc = null)
     {
       var now = nowUtc ?? DateTime.UtcNow;
-      var jobs = jobDB.LoadJobsNotCopiedToSystem(now.AddHours(-JobLookbackHours), now.AddHours(1));
+      var jobs = jobDB.LoadJobsNotCopiedToSystem(now.AddHours(-JobLookbackHours), now.AddHours(1), includeDecremented: false);
       if (jobs.Jobs.Count == 0) return;
 
       //there are jobs to copy
@@ -189,9 +220,7 @@ namespace MazakMachineInterface
       }
       Log.Debug("Creating new schedule with UID {uid}", UID);
 
-      var (transSet, savedParts) = BuildMazakSchedules.RemoveCompletedAndDecrementSchedules(
-        mazakData, UseStartingOffsetForDueDate
-      );
+      var (transSet, savedParts) = BuildMazakSchedules.RemoveCompletedSchedules(mazakData);
       if (transSet.Schedules.Any())
         writeDb.Save(transSet, "Update schedules");
 
@@ -265,26 +294,29 @@ namespace MazakMachineInterface
       {
         j.Archived = true;
         j.JobCopiedToSystem = false;
-        if (!jobDB.DoesJobExist(j.UniqueStr))
+      }
+      jobDB.AddJobs(newJ, null);
+
+      //update the station group name
+      foreach (var j in newJ.Jobs)
+      {
+        for (int proc = 1; proc <= j.NumProcesses; proc++)
         {
-          for (int proc = 1; proc <= j.NumProcesses; proc++)
+          for (int path = 1; path <= j.GetNumPaths(proc); path++)
           {
-            for (int path = 1; path <= j.GetNumPaths(proc); path++)
+            foreach (var stop in j.GetMachiningStop(proc, path))
             {
-              foreach (var stop in j.GetMachiningStop(proc, path))
+              if (!string.IsNullOrEmpty(stop.StationGroup))
               {
-                //The station group name on the job and the LocationName from the
-                //generated log entries must match.  Rather than store and try and lookup
-                //the station name when creating log entries, since we only support a single
-                //machine group, just set the group name to MC here during storage and
-                //always create log entries with MC.
-                stop.StationGroup = "MC";
+                _machineGroupName = stop.StationGroup;
+                goto foundGroup;
               }
             }
           }
         }
       }
-      jobDB.AddJobs(newJ, null);
+    foundGroup:;
+
     }
   }
 }

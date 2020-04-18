@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -44,9 +44,7 @@ namespace MazakMachineInterface
   {
 
     public static (MazakWriteData, ISet<string>)
-      RemoveCompletedAndDecrementSchedules(
-        MazakSchedules mazakData,
-        bool DecrementPriorityOnDownload)
+      RemoveCompletedSchedules(MazakSchedules mazakData)
     {
       //remove all completed production
       var transSet = new MazakWriteData();
@@ -62,14 +60,6 @@ namespace MazakMachineInterface
         else
         {
           savedParts.Add(schRow.PartName);
-
-          if (DecrementPriorityOnDownload)
-          {
-            newSchRow.Command = MazakWriteCommand.ScheduleSafeEdit;
-            newSchRow.Priority = Math.Max(newSchRow.Priority - 10, 1);
-            newSchRow.Processes.Clear();  // no edit to processes, just priority
-            transSet.Schedules.Add(newSchRow);
-          }
         }
       }
       return (transSet, savedParts);
@@ -81,13 +71,21 @@ namespace MazakMachineInterface
       bool UseStartingOffsetForDueDate)
     {
       var transSet = new MazakWriteData();
+      if (!jobs.Any()) return transSet;
+
+      var routeStartDate = jobs.First().RouteStartingTimeUTC.ToLocalTime().Date;
 
       var usedScheduleIDs = new HashSet<int>();
       var scheduledParts = new HashSet<string>();
+      var maxPriMatchingDate = 9;
       foreach (var schRow in mazakData.Schedules)
       {
         usedScheduleIDs.Add(schRow.Id);
         scheduledParts.Add(schRow.PartName);
+        if (schRow.DueDate == routeStartDate)
+        {
+          maxPriMatchingDate = Math.Max(maxPriMatchingDate, schRow.Priority);
+        }
       }
 
       //now add the new schedule
@@ -125,7 +123,18 @@ namespace MazakMachineInterface
           {
             int schid = FindNextScheduleId(usedScheduleIDs);
             int earlierConflicts = CountEarlierConflicts(part, proc1path, jobs);
-            SchedulePart(transSet, schid, mazakPartName, mazakComment, part.NumProcesses, part, proc1path, earlierConflicts, UseStartingOffsetForDueDate);
+            SchedulePart(
+              transSet: transSet,
+              SchID: schid,
+              mazakPartName: mazakPartName,
+              mazakComment: mazakComment,
+              numProcess: part.NumProcesses,
+              part: part,
+              proc1path: proc1path,
+              earlierConflicts: earlierConflicts,
+              startingPriority: maxPriMatchingDate + 1,
+              routeStartDate: routeStartDate,
+              UseStartingOffsetForDueDate: UseStartingOffsetForDueDate);
           }
         }
       }
@@ -138,7 +147,7 @@ namespace MazakMachineInterface
 
     private static void SchedulePart(
       MazakWriteData transSet, int SchID, string mazakPartName, string mazakComment, int numProcess,
-      JobPlan part, int proc1path, int earlierConflicts, bool UseStartingOffsetForDueDate)
+      JobPlan part, int proc1path, int earlierConflicts, int startingPriority, DateTime routeStartDate, bool UseStartingOffsetForDueDate)
     {
       var newSchRow = new MazakScheduleRow();
       newSchRow.Command = MazakWriteCommand.Add;
@@ -159,13 +168,13 @@ namespace MazakMachineInterface
         if (part.GetSimulatedStartingTimeUTC(1, proc1path) != DateTime.MinValue)
         {
           var start = part.GetSimulatedStartingTimeUTC(1, proc1path);
-          newSchRow.DueDate = start.ToLocalTime().Date;
-          newSchRow.Priority = 91 + Math.Min(earlierConflicts, 9);
+          newSchRow.DueDate = routeStartDate;
+          newSchRow.Priority = Math.Min(100, startingPriority + earlierConflicts);
         }
         else
         {
-          newSchRow.DueDate = DateTime.Today;
-          newSchRow.Priority = 91;
+          newSchRow.DueDate = routeStartDate;
+          newSchRow.Priority = startingPriority;
         }
       }
       else
@@ -220,14 +229,24 @@ namespace MazakMachineInterface
       // first, calculate the fixtures and faces used by the job to check
       var group = jobToCheck.GetPathGroup(process: 1, path: proc1path);
       var usedFixtureFaces = new HashSet<ValueTuple<string, string>>();
+      var usedPallets = new HashSet<string>();
       for (int proc = 1; proc <= jobToCheck.NumProcesses; proc++)
       {
         for (int path = 1; path <= jobToCheck.GetNumPaths(proc); path++)
         {
           if (jobToCheck.GetPathGroup(proc, path) != group) continue;
           var (plannedFix, plannedFace) = jobToCheck.PlannedFixture(proc, path);
-          if (string.IsNullOrEmpty(plannedFix)) continue;
-          usedFixtureFaces.Add((plannedFix, plannedFace.ToString()));
+          if (string.IsNullOrEmpty(plannedFix))
+          {
+            foreach (var p in jobToCheck.PlannedPallets(proc, path))
+            {
+              usedPallets.Add(p);
+            }
+          }
+          else
+          {
+            usedFixtureFaces.Add((plannedFix, plannedFace.ToString()));
+          }
         }
       }
 
@@ -256,6 +275,11 @@ namespace MazakMachineInterface
               if (otherJob.GetPathGroup(otherProc, otherPath) != otherGroup) continue;
               var (otherFix, otherFace) = otherJob.PlannedFixture(otherProc, otherPath);
               if (usedFixtureFaces.Contains((otherFix, otherFace.ToString())))
+              {
+                earlierConflicts += 1;
+                goto checkNextPath;
+              }
+              if (otherJob.PlannedPallets(otherProc, otherPath).Any(usedPallets.Contains))
               {
                 earlierConflicts += 1;
                 goto checkNextPath;

@@ -66,7 +66,7 @@ function WashDialog(props: WashDialogProps) {
 
     props.completeWash({
       mat: props.display_material,
-      operator: props.operator
+      operator: props.operator,
     });
   }
   function openAssignWorkorder() {
@@ -99,9 +99,7 @@ function WashDialog(props: WashDialogProps) {
         <>
           {props.display_material && props.display_material.partName !== "" ? (
             <InstructionButton material={props.display_material} type="wash" operator={props.operator || null} />
-          ) : (
-            undefined
-          )}
+          ) : undefined}
           {props.display_material && quarantineQueue !== null ? (
             <Tooltip title={"Move to " + quarantineQueue}>
               <Button
@@ -111,7 +109,7 @@ function WashDialog(props: WashDialogProps) {
                     ? props.moveToQueue({
                         materialId: props.display_material.materialID,
                         queue: quarantineQueue,
-                        queuePosition: 0
+                        queuePosition: 0,
                       })
                     : undefined
                 }
@@ -119,9 +117,7 @@ function WashDialog(props: WashDialogProps) {
                 Quarantine Material
               </Button>
             </Tooltip>
-          ) : (
-            undefined
-          )}
+          ) : undefined}
           {disallowCompleteReason ? (
             <Tooltip title={disallowCompleteReason} placement="top">
               <div>
@@ -145,27 +141,27 @@ function WashDialog(props: WashDialogProps) {
 }
 
 const ConnectedWashDialog = connect(
-  st => ({
+  (st) => ({
     display_material: st.MaterialDetails.material,
     operator: st.ServerSettings.user
       ? st.ServerSettings.user.profile.name || st.ServerSettings.user.profile.sub
       : st.Operators.current,
-    fmsInfo: st.ServerSettings.fmsInfo
+    fmsInfo: st.ServerSettings.fmsInfo,
   }),
   {
     completeWash: (d: matDetails.CompleteWashData) => [
       matDetails.completeWash(d),
-      { type: matDetails.ActionType.CloseMaterialDialog }
+      { type: matDetails.ActionType.CloseMaterialDialog },
     ],
     openSelectWorkorder: (mat: matDetails.MaterialDetail) => [
       {
         type: guiState.ActionType.SetWorkorderDialogOpen,
-        open: true
+        open: true,
       },
-      matDetails.loadWorkorders(mat)
+      matDetails.loadWorkorders(mat),
     ],
     moveToQueue: (d: matDetails.AddExistingMaterialToQueueData) => matDetails.addExistingMaterialToQueue(d),
-    onClose: mkAC(matDetails.ActionType.CloseMaterialDialog)
+    onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
   }
 )(WashDialog);
 
@@ -175,8 +171,8 @@ interface WashProps {
 }
 
 function Wash(props: WashProps) {
-  const unwashed = LazySeq.ofIterable(props.recent_completed).filter(m => m.wash_completed === undefined);
-  const washed = LazySeq.ofIterable(props.recent_completed).filter(m => m.wash_completed !== undefined);
+  const unwashed = LazySeq.ofIterable(props.recent_completed).filter((m) => m.wash_completed === undefined);
+  const washed = LazySeq.ofIterable(props.recent_completed).filter((m) => m.wash_completed !== undefined);
 
   return (
     <DocumentTitle title="Wash - FMS Insight">
@@ -209,7 +205,7 @@ const extractRecentCompleted = createSelector(
   (mats: HashMap<number, MaterialSummaryAndCompletedData>): ReadonlyArray<MaterialSummaryAndCompletedData> => {
     const cutoff = addHours(new Date(), -36);
     const recent = LazySeq.ofIterable(mats.valueIterable())
-      .filter(e => e.completed_machining === true && e.last_unload_time !== undefined && e.last_unload_time >= cutoff)
+      .filter((e) => e.completed_machining === true && e.last_unload_time !== undefined && e.last_unload_time >= cutoff)
       .toArray();
     // sort decending
     recent.sort((e1, e2) =>
@@ -221,9 +217,9 @@ const extractRecentCompleted = createSelector(
 
 export default connect(
   (st: Store) => ({
-    recent_completed: extractRecentCompleted(st)
+    recent_completed: extractRecentCompleted(st),
   }),
   {
-    openMat: matDetails.openMaterialDialog
+    openMat: matDetails.openMaterialDialog,
   }
 )(Wash);

@@ -110,25 +110,44 @@ namespace BlackMaple.MachineFramework.Controllers
 
     [HttpPost("part/{partName}/casting")]
     [ProducesResponseType(typeof(void), 200)]
-    public void AddUnallocatedCastingToQueue(string partName, [FromQuery] string queue, [FromQuery] int pos, [FromBody] string serial)
+    public void AddUnallocatedCastingToQueueByPart(string partName, [FromQuery] string queue, [FromQuery] int pos, [FromBody] string serial)
     {
       if (string.IsNullOrEmpty(partName))
         throw new BadRequestException("Part name must be non-empty");
       if (string.IsNullOrEmpty(queue))
         throw new BadRequestException("Queue must be non-empty");
-      _control.AddUnallocatedCastingToQueue(partName, queue, pos, serial);
+      _control.AddUnallocatedPartToQueue(partName, queue, pos, serial);
+    }
+
+    [HttpPost("casting/{castingName}")]
+    [ProducesResponseType(typeof(void), 200)]
+    public void AddUnallocatedCastingToQueue(string castingName, [FromQuery] string queue, [FromQuery] int pos, [FromBody] List<string> serials, [FromQuery] int qty = 1)
+    {
+      if (string.IsNullOrEmpty(castingName))
+        throw new BadRequestException("Casting name must be non-empty");
+      if (string.IsNullOrEmpty(queue))
+        throw new BadRequestException("Queue must be non-empty");
+      _control.AddUnallocatedCastingToQueue(castingName, qty, queue, pos, serials);
     }
 
     [HttpPost("job/{jobUnique}/unprocessed-material")]
     [ProducesResponseType(typeof(void), 200)]
-    public void AddUnprocessedMaterialToQueue(string jobUnique, [FromQuery] int lastCompletedProcess, [FromQuery] string queue, [FromQuery] int pos, [FromBody] string serial)
+    public void AddUnprocessedMaterialToQueue(string jobUnique, [FromQuery] int lastCompletedProcess, [FromQuery] int pathGroup, [FromQuery] string queue, [FromQuery] int pos, [FromBody] string serial)
     {
       if (string.IsNullOrEmpty(jobUnique))
         throw new BadRequestException("Job unique must be non-empty");
       if (string.IsNullOrEmpty(queue))
         throw new BadRequestException("Queue must be non-empty");
       if (lastCompletedProcess < 0) lastCompletedProcess = 0;
-      _control.AddUnprocessedMaterialToQueue(jobUnique, lastCompletedProcess, queue, pos, serial);
+      if (pathGroup < 0) pathGroup = 0;
+      _control.AddUnprocessedMaterialToQueue(jobUnique, lastCompletedProcess, pathGroup, queue, pos, serial);
+    }
+
+    [HttpPut("job/{jobUnique}/comment")]
+    [ProducesResponseType(typeof(void), 200)]
+    public void SetJobComment(string jobUnique, [FromBody] string comment)
+    {
+      _control.SetJobComment(jobUnique, comment);
     }
 
     [HttpPut("material/{materialId}/queue")]
@@ -144,7 +163,15 @@ namespace BlackMaple.MachineFramework.Controllers
     [ProducesResponseType(typeof(void), 200)]
     public void RemoveMaterialFromAllQueues(long materialId)
     {
-      _control.RemoveMaterialFromAllQueues(materialId);
+      _control.RemoveMaterialFromAllQueues(new[] { materialId });
+    }
+
+    [HttpDelete("material")]
+    [ProducesResponseType(typeof(void), 200)]
+    public void BulkRemoveMaterialFromQueues([FromQuery] List<long> id)
+    {
+      if (id == null || id.Count == 0) return;
+      _control.RemoveMaterialFromAllQueues(id);
     }
 
     [HttpDelete("planned-cycles")]

@@ -42,7 +42,7 @@ import { addDays } from "date-fns";
 export enum ActionType {
   SearchDateRange = "PathLookup_Search",
   LoadLogFromOtherServer = "PathLookup_LoadFromOtherServer",
-  Clear = "PathLookup_Clear"
+  Clear = "PathLookup_Clear",
 }
 
 export type Action =
@@ -70,15 +70,15 @@ export function searchForPaths(part: string, start: Date, end: Date): ReadonlyAr
     initialLoad: true,
     curStart: start,
     curEnd: end,
-    pledge: LogBackend.get(start, end)
+    pledge: LogBackend.get(start, end),
   } as PledgeToPromise<Action>;
 
   const extra = OtherLogBackends.map(
-    b =>
+    (b) =>
       ({
         type: ActionType.LoadLogFromOtherServer,
         part,
-        pledge: b.get(start, end)
+        pledge: b.get(start, end),
       } as PledgeToPromise<Action>)
   );
   return [mainLoad].concat(extra);
@@ -107,15 +107,15 @@ export function extendRange(
     initialLoad: false,
     curStart: newStart,
     curEnd: newEnd,
-    pledge: LogBackend.get(start, end)
+    pledge: LogBackend.get(start, end),
   } as PledgeToPromise<Action>;
 
   const extra = OtherLogBackends.map(
-    b =>
+    (b) =>
       ({
         type: ActionType.LoadLogFromOtherServer,
         part,
-        pledge: b.get(start, end)
+        pledge: b.get(start, end),
       } as PledgeToPromise<Action>)
   );
   return [mainLoad].concat(extra);
@@ -131,15 +131,15 @@ export interface State {
 
 export const initial: State = {
   entries: undefined,
-  loading: false
+  loading: false,
 };
 
 function processEvents(newEvts: ReadonlyArray<Readonly<api.ILogEntry>>, partToSearch: string, old: State): State {
   return {
     ...old,
     entries: insp.process_events({ type: insp.ExpireOldDataType.NoExpire }, newEvts, partToSearch, {
-      by_part: old.entries || HashMap.empty()
-    }).by_part
+      by_part: old.entries || HashMap.empty(),
+    }).by_part,
   };
 }
 
@@ -155,14 +155,14 @@ export function reducer(s: State, a: Action): State {
             entries: a.initialLoad ? HashMap.empty() : s.entries,
             loading: true,
             curStart: a.curStart || s.curStart,
-            curEnd: a.curEnd || s.curEnd
+            curEnd: a.curEnd || s.curEnd,
           };
         case PledgeStatus.Error:
           return { entries: HashMap.empty(), loading: false, load_error: a.pledge.error };
         case PledgeStatus.Completed:
           return {
             ...processEvents(a.pledge.result, a.part, s),
-            loading: false
+            loading: false,
           };
         default:
           return s;

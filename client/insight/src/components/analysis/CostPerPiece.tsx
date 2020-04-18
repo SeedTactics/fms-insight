@@ -75,7 +75,7 @@ function CostPerPieceInput(props: CostPerPieceInputProps) {
               style={{
                 display: "flex",
                 flexWrap: "wrap",
-                alignItems: "center"
+                alignItems: "center",
               }}
             >
               <MoneyIcon style={{ color: "#6D4C41" }} />
@@ -91,7 +91,7 @@ function CostPerPieceInput(props: CostPerPieceInputProps) {
               label="Number of Operators"
               inputProps={{ min: 0 }}
               value={props.input.numOperators}
-              onChange={e => props.setNumOper({ numOpers: parseFloat(e.target.value) })}
+              onChange={(e) => props.setNumOper({ numOpers: parseFloat(e.target.value) })}
             />
             <TextField
               id="cost-per-oper-hour"
@@ -99,7 +99,7 @@ function CostPerPieceInput(props: CostPerPieceInputProps) {
               label="Cost per operator per hour"
               inputProps={{ min: 0 }}
               value={props.input.operatorCostPerHour}
-              onChange={e => props.setOperCostPerHour({ cost: parseFloat(e.target.value) })}
+              onChange={(e) => props.setOperCostPerHour({ cost: parseFloat(e.target.value) })}
             />
           </div>
           <div style={{ marginTop: "1em", display: "flex", justifyContent: "space-around" }}>
@@ -111,7 +111,7 @@ function CostPerPieceInput(props: CostPerPieceInputProps) {
                 label="Cost for automated handling system per year"
                 inputProps={{ min: 0 }}
                 value={props.input.automationCostPerYear || 0}
-                onChange={e => props.setAutomationCost({ cost: parseFloat(e.target.value) })}
+                onChange={(e) => props.setAutomationCost({ cost: parseFloat(e.target.value) })}
               />
             </div>
           </div>
@@ -124,7 +124,7 @@ function CostPerPieceInput(props: CostPerPieceInputProps) {
               </TableRow>
             </TableHead>
             <TableBody>
-              {props.statGroups.toArray({ sortOn: x => x }).map((s, idx) => (
+              {props.statGroups.toArray({ sortOn: (x) => x }).map((s, idx) => (
                 <TableRow key={idx}>
                   <TableCell>{s}</TableCell>
                   <TableCell>
@@ -133,10 +133,10 @@ function CostPerPieceInput(props: CostPerPieceInputProps) {
                       inputProps={{ min: 0 }}
                       fullWidth
                       value={props.input.machineCostPerYear[s] || 0}
-                      onChange={e =>
+                      onChange={(e) =>
                         props.setMachineCost({
                           group: s,
-                          cost: parseFloat(e.target.value)
+                          cost: parseFloat(e.target.value),
                         })
                       }
                     />
@@ -152,19 +152,19 @@ function CostPerPieceInput(props: CostPerPieceInputProps) {
 }
 
 const ConnectedCostPerPieceInput = connect(
-  s => ({
+  (s) => ({
     statGroups:
       s.Events.analysis_period === AnalysisPeriod.Last30Days
         ? s.Events.last30.cycles.station_groups
         : s.Events.selected_month.cycles.station_groups,
-    input: s.CostPerPiece.input
+    input: s.CostPerPiece.input,
   }),
   {
     setMachineCost: mkAC(ccp.ActionType.SetMachineCostPerYear),
     setAutomationCost: mkAC(ccp.ActionType.SetAutomationCost),
     setPartMatCost: mkAC(ccp.ActionType.SetPartMaterialCost),
     setNumOper: mkAC(ccp.ActionType.SetNumOperators),
-    setOperCostPerHour: mkAC(ccp.ActionType.SetOperatorCostPerHour)
+    setOperCostPerHour: mkAC(ccp.ActionType.SetOperatorCostPerHour),
   }
 )(CostPerPieceInput);
 
@@ -177,7 +177,7 @@ interface CostPerPieceOutputProps {
 
 function CostPerPieceOutput(props: CostPerPieceOutputProps) {
   const format = Intl.NumberFormat(undefined, {
-    maximumFractionDigits: 1
+    maximumFractionDigits: 1,
   });
   return (
     <Card style={{ marginTop: "2em" }}>
@@ -203,8 +203,8 @@ function CostPerPieceOutput(props: CostPerPieceOutputProps) {
           </TableHead>
           <TableBody>
             {Vector.ofIterable(props.costs)
-              .sortOn(c => c.part)
-              .transform(x => LazySeq.ofIterable(x))
+              .sortOn((c) => c.part)
+              .transform((x) => LazySeq.ofIterable(x))
               .map((c, idx) => (
                 <TableRow key={idx}>
                   <TableCell>{c.part}</TableCell>
@@ -213,10 +213,10 @@ function CostPerPieceOutput(props: CostPerPieceOutputProps) {
                       type="number"
                       inputProps={{ min: 0 }}
                       value={props.input.partMaterialCost[c.part] || 0}
-                      onChange={e =>
+                      onChange={(e) =>
                         props.setPartMatCost({
                           part: c.part,
-                          cost: parseFloat(e.target.value)
+                          cost: parseFloat(e.target.value),
                         })
                       }
                     />
@@ -258,12 +258,12 @@ const calcCostPerPiece = createSelector(
 );
 
 const ConnectedCostPerPieceOutput = connect(
-  s => ({
+  (s) => ({
     input: s.CostPerPiece.input,
-    costs: calcCostPerPiece(s)
+    costs: calcCostPerPiece(s),
   }),
   {
-    setPartMatCost: mkAC(ccp.ActionType.SetPartMaterialCost)
+    setPartMatCost: mkAC(ccp.ActionType.SetPartMaterialCost),
   }
 )(CostPerPieceOutput);
 

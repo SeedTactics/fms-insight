@@ -43,7 +43,7 @@ namespace MazakMachineInterface
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<BuildCurrentStatus>();
 
-    public static CurrentStatus Build(JobDB jobDB, JobLogDB log, FMSSettings fmsSettings, IQueueSyncFault queueSyncFault, MazakDbType dbType, MazakAllData mazakData, DateTime utcNow)
+    public static CurrentStatus Build(JobDB jobDB, JobLogDB log, FMSSettings fmsSettings, IMachineGroupName machineGroupName, IQueueSyncFault queueSyncFault, MazakDbType dbType, MazakAllData mazakData, DateTime utcNow)
     {
       //Load process and path numbers
       Dictionary<string, int> uniqueToMaxPath;
@@ -72,8 +72,11 @@ namespace MazakMachineInterface
       var jobsBySchID = new Dictionary<long, InProcessJob>();
       var pathBySchID = new Dictionary<long, MazakPart.IProcToPath>();
 
-      foreach (var schRow in mazakData.Schedules)
+      long precedence = 0;
+      foreach (var schRow in mazakData.Schedules.OrderBy(s => s.DueDate).ThenBy(s => s.Priority))
       {
+        precedence += 1;
+
         if (!MazakPart.IsSailPart(schRow.PartName))
           continue;
 
@@ -128,13 +131,12 @@ namespace MazakMachineInterface
         //Job Basics
         job.SetPlannedCyclesOnFirstProcess(procToPath.PathForProc(proc: 1), schRow.PlanQuantity);
         AddCompletedToJob(schRow, job, procToPath);
-        job.Priority = schRow.Priority;
         if (((HoldPattern.HoldMode)schRow.HoldMode) == HoldPattern.HoldMode.FullHold)
           job.HoldEntireJob.UserHold = true;
         else
           job.HoldEntireJob.UserHold = false;
 
-        AddRoutingToJob(mazakData, partRow, job, procToPath, dbType);
+        AddRoutingToJob(mazakData, partRow, job, machineGroupName, procToPath, dbType, precedence);
       }
 
       var loadedJobs = new HashSet<string>();
@@ -153,7 +155,7 @@ namespace MazakMachineInterface
         {
 
           var palName = palRow.PalletNumber.ToString();
-          var palLoc = FindPalletLocation(mazakData, dbType, palRow.PalletNumber);
+          var palLoc = FindPalletLocation(machineGroupName, mazakData, dbType, palRow.PalletNumber);
 
           //Create the pallet
           PalletStatus status = new PalletStatus()
@@ -314,9 +316,9 @@ namespace MazakMachineInterface
         {
           MaterialID = mat.MaterialID,
           JobUnique = mat.Unique,
-          PartName = mat.PartName,
+          PartName = mat.PartNameOrCasting,
           Process = lastProc,
-          Path = 1,
+          Path = matDetails.Paths != null && matDetails.Paths.TryGetValue(Math.Max(lastProc, 1), out var path) ? path : 1,
           Serial = matDetails?.Serial,
           WorkorderId = matDetails?.Workorder,
           SignaledInspections =
@@ -403,7 +405,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private static void AddRoutingToJob(MazakSchedulesPartsPallets mazakData, MazakPartRow partRow, JobPlan job, MazakPart.IProcToPath procToPath, MazakDbType mazakTy)
+    private static void AddRoutingToJob(MazakSchedulesPartsPallets mazakData, MazakPartRow partRow, InProcessJob job, IMachineGroupName machineGroupName, MazakPart.IProcToPath procToPath, MazakDbType mazakTy, long precedence)
     {
       //Add routing and pallets
       foreach (var partProcRow in partRow.Processes)
@@ -413,6 +415,7 @@ namespace MazakMachineInterface
         job.SetPathGroup(partProcRow.ProcessNumber, path, path);
         job.SetHoldMachining(partProcRow.ProcessNumber, path, job.HoldMachining(partProcRow.ProcessNumber, path));
         job.SetHoldLoadUnload(partProcRow.ProcessNumber, path, job.HoldLoadUnload(partProcRow.ProcessNumber, path));
+        job.SetPrecedence(partProcRow.ProcessNumber, path, precedence);
 
         //Routing
         string fixStr = partProcRow.FixLDS;
@@ -440,7 +443,7 @@ namespace MazakMachineInterface
           {
             if (routeStop == null)
             {
-              routeStop = new JobMachiningStop("MC");
+              routeStop = new JobMachiningStop(machineGroupName.MachineGroupName);
               job.AddMachiningStop(partProcRow.ProcessNumber, path, routeStop);
             }
             routeStop.Stations.Add(int.Parse(c.ToString()));
@@ -497,8 +500,8 @@ namespace MazakMachineInterface
       jobFromMazak.RouteStartingTimeUTC = jobFromDb.RouteStartingTimeUTC;
       jobFromMazak.RouteEndingTimeUTC = jobFromDb.RouteEndingTimeUTC;
       jobFromMazak.ScheduleId = jobFromDb.ScheduleId;
-      jobFromMazak.AddInspections(jobFromDb.GetInspections());
       jobFromMazak.HoldEntireJob = jobFromDb.HoldEntireJob;
+      jobFromMazak.Comment = jobFromDb.Comment;
       foreach (var b in jobFromDb.ScheduledBookingIds)
         jobFromMazak.ScheduledBookingIds.Add(b);
       for (int proc = 1; proc <= jobFromMazak.NumProcesses; proc++)
@@ -508,6 +511,8 @@ namespace MazakMachineInterface
           if (proc > jobFromDb.NumProcesses || path > jobFromDb.GetNumPaths(proc))
             continue;
 
+          foreach (var insp in jobFromDb.PathInspections(proc, path))
+            jobFromMazak.PathInspections(proc, path).Add(insp);
           jobFromMazak.SetSimulatedStartingTimeUTC(proc, path,
             jobFromDb.GetSimulatedStartingTimeUTC(proc, path));
           jobFromMazak.SetSimulatedAverageFlowTime(proc, path,
@@ -522,6 +527,13 @@ namespace MazakMachineInterface
             jobFromDb.GetInputQueue(proc, path));
           jobFromMazak.SetOutputQueue(proc, path,
             jobFromDb.GetOutputQueue(proc, path));
+          jobFromMazak.SetPathGroup(proc, path,
+            jobFromDb.GetPathGroup(proc, path)
+          );
+          if (proc == 1)
+          {
+            jobFromMazak.SetCasting(path, jobFromDb.GetCasting(path));
+          }
 
           var mazakStops = jobFromMazak.GetMachiningStop(proc, path).ToList();
           var dbStops = jobFromDb.GetMachiningStop(proc, path).ToList();
@@ -589,29 +601,15 @@ namespace MazakMachineInterface
 
     private static void AddLoads(JobLogDB log, IEnumerable<LoadAction> currentLoads, string pallet, PalletLocation palLoc, TimeSpan? elapsedLoadTime, CurrentStatus curStatus)
     {
-      var queuedMats = new Dictionary<string, List<BlackMaple.MachineFramework.JobLogDB.QueuedMaterial>>();
+      var queuedMats = new Dictionary<(string uniq, int proc, int path), List<BlackMaple.MachineFramework.JobLogDB.QueuedMaterial>>();
       //process remaining loads/unloads (already processed ones have been removed from currentLoads)
       foreach (var operation in currentLoads)
       {
         if (!operation.LoadEvent || operation.LoadStation != palLoc.Num) continue;
         for (int i = 0; i < operation.Qty; i++)
         {
-          List<BlackMaple.MachineFramework.JobLogDB.QueuedMaterial> queuedMat = null;
-          if (curStatus.Jobs.ContainsKey(operation.Unique))
-          {
-            var queue = curStatus.Jobs[operation.Unique].GetInputQueue(process: operation.Process, path: operation.Path);
-            if (!string.IsNullOrEmpty(queue))
-            {
-              //only lookup each queue once
-              if (queuedMats.ContainsKey(queue))
-                queuedMat = queuedMats[queue];
-              else
-              {
-                queuedMat = log.GetMaterialInQueue(queue).ToList();
-                queuedMats.Add(queue, queuedMat);
-              }
-            }
-          }
+
+          // first, calculate material id, serial, workorder, and location
           long matId = -1;
           string serial = null;
           string workId = null;
@@ -619,28 +617,43 @@ namespace MazakMachineInterface
           {
             Type = InProcessMaterialLocation.LocType.Free
           };
-          if (queuedMat != null)
+
+          // load queued material
+          List<BlackMaple.MachineFramework.JobLogDB.QueuedMaterial> queuedMat = null;
+          if (curStatus.Jobs.ContainsKey(operation.Unique))
           {
-            var mat = queuedMat
-              .Where(m => m.Unique == operation.Unique)
-              .Select(m => (JobLogDB.QueuedMaterial?)m)
-              .DefaultIfEmpty(null)
-              .First();
-            if (mat.HasValue)
+            var job = curStatus.Jobs[operation.Unique];
+            var queue = job.GetInputQueue(process: operation.Process, path: operation.Path);
+            if (!string.IsNullOrEmpty(queue))
             {
-              matId = mat.Value.MaterialID;
-              loc = new InProcessMaterialLocation()
+              var key = (uniq: operation.Unique, proc: operation.Process, path: operation.Path);
+              if (queuedMats.ContainsKey(key))
+                queuedMat = queuedMats[key];
+              else
               {
-                Type = InProcessMaterialLocation.LocType.InQueue,
-                CurrentQueue = mat.Value.Queue,
-                QueuePosition = mat.Value.Position,
-              };
-              queuedMat.RemoveAll(m => m.MaterialID == mat.Value.MaterialID);
-              var matDetails = log.GetMaterialDetails(matId);
-              serial = matDetails?.Serial;
-              workId = matDetails?.Workorder;
+                queuedMat = MazakQueues.QueuedMaterialForLoading(job, log.GetMaterialInQueue(queue), operation.Process, operation.Path, log);
+                queuedMats.Add(key, queuedMat);
+              }
             }
           }
+
+          // extract matid and details from queued material if available
+          if (queuedMat != null && queuedMat.Count > 0)
+          {
+            var mat = queuedMat[0];
+            queuedMat.RemoveAt(0);
+            matId = mat.MaterialID;
+            loc = new InProcessMaterialLocation()
+            {
+              Type = InProcessMaterialLocation.LocType.InQueue,
+              CurrentQueue = mat.Queue,
+              QueuePosition = mat.Position,
+            };
+            var matDetails = log.GetMaterialDetails(matId);
+            serial = matDetails?.Serial;
+            workId = matDetails?.Workorder;
+          }
+
           var inProcMat = new InProcessMaterial()
           {
             MaterialID = matId,
@@ -797,7 +810,7 @@ namespace MazakMachineInterface
       return start;
     }
 
-    private static PalletLocation FindPalletLocation(MazakSchedulesPartsPallets mazakData, MazakDbType dbType, int palletNum)
+    private static PalletLocation FindPalletLocation(IMachineGroupName machName, MazakSchedulesPartsPallets mazakData, MazakDbType dbType, int palletNum)
     {
       foreach (var palLocRow in mazakData.PalletPositions)
       {
@@ -805,11 +818,11 @@ namespace MazakMachineInterface
         {
           if (dbType != MazakDbType.MazakVersionE)
           {
-            return ParseStatNameWeb(palLocRow.PalletPosition);
+            return ParseStatNameWeb(machName, palLocRow.PalletPosition);
           }
           else
           {
-            return ParseStatNameVerE(palLocRow.PalletPosition);
+            return ParseStatNameVerE(machName, palLocRow.PalletPosition);
           }
         }
       }
@@ -817,7 +830,7 @@ namespace MazakMachineInterface
       return new PalletLocation(PalletLocationEnum.Buffer, "Buffer", 0);
     }
 
-    private static PalletLocation ParseStatNameVerE(string pos)
+    private static PalletLocation ParseStatNameVerE(IMachineGroupName machName, string pos)
     {
       PalletLocation ret = new PalletLocation();
       ret.Location = PalletLocationEnum.Buffer;
@@ -844,7 +857,7 @@ namespace MazakMachineInterface
         {
           ret.Location = PalletLocationEnum.MachineQueue;
         }
-        ret.StationGroup = "MC";
+        ret.StationGroup = machName.MachineGroupName;
         ret.Num = Convert.ToInt32(pos[1].ToString());
       }
 
@@ -868,7 +881,7 @@ namespace MazakMachineInterface
 
     }
 
-    private static PalletLocation ParseStatNameWeb(string pos)
+    private static PalletLocation ParseStatNameWeb(IMachineGroupName machName, string pos)
     {
       PalletLocation ret = new PalletLocation();
       ret.Location = PalletLocationEnum.Buffer;
@@ -895,7 +908,7 @@ namespace MazakMachineInterface
         {
           ret.Location = PalletLocationEnum.MachineQueue;
         }
-        ret.StationGroup = "MC";
+        ret.StationGroup = machName.MachineGroupName;
         ret.Num = Convert.ToInt32(pos[2].ToString());
       }
 

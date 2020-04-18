@@ -100,6 +100,7 @@ namespace MazakMachineInterface
     private BlackMaple.MachineFramework.JobLogDB _log;
     private MazakQueues _queues;
     private IReadDataAccess _readDB;
+    private IMachineGroupName _machGroupName;
     private BlackMaple.MachineFramework.ISendMaterialToExternalQueue _sendToExternal;
     private BlackMaple.MachineFramework.FMSSettings FMSSettings { get; set; }
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LogDataVerE>();
@@ -113,6 +114,7 @@ namespace MazakMachineInterface
     public LogDataVerE(BlackMaple.MachineFramework.JobLogDB log,
                        BlackMaple.MachineFramework.JobDB jobDB,
                        BlackMaple.MachineFramework.ISendMaterialToExternalQueue send,
+                       IMachineGroupName machGroupName,
                        IReadDataAccess readDB,
                        MazakQueues queues,
                        BlackMaple.MachineFramework.FMSSettings settings)
@@ -122,6 +124,7 @@ namespace MazakMachineInterface
       _readDB = readDB;
       _queues = queues;
       _sendToExternal = send;
+      _machGroupName = machGroupName;
       FMSSettings = settings;
       _lock = new object();
       _timer = new System.Timers.Timer(TimeSpan.FromMinutes(1).TotalMilliseconds);
@@ -147,7 +150,7 @@ namespace MazakMachineInterface
         {
           var mazakData = _readDB.LoadSchedulesAndLoadActions();
           var logs = LoadLog(_log.MaxForeignID());
-          var trans = new LogTranslation(_jobDB, _log, mazakData, FMSSettings,
+          var trans = new LogTranslation(_jobDB, _log, mazakData, _machGroupName, FMSSettings,
             le => MazakLogEvent?.Invoke(le)
           );
           var sendToExternal = new List<BlackMaple.MachineFramework.MaterialToSendToExternalQueue>();
@@ -323,6 +326,7 @@ namespace MazakMachineInterface
     private BlackMaple.MachineFramework.JobDB _jobDB;
     private BlackMaple.MachineFramework.JobLogDB _log;
     private IReadDataAccess _readDB;
+    private IMachineGroupName _machGroupName;
     private BlackMaple.MachineFramework.FMSSettings _settings;
     private BlackMaple.MachineFramework.ISendMaterialToExternalQueue _sendToExternal;
     private MazakQueues _queues;
@@ -338,6 +342,7 @@ namespace MazakMachineInterface
     public LogDataWeb(string path,
                       BlackMaple.MachineFramework.JobLogDB log,
                       BlackMaple.MachineFramework.JobDB jobDB,
+                      IMachineGroupName machineGroupName,
                       BlackMaple.MachineFramework.ISendMaterialToExternalQueue sendToExternal,
                       IReadDataAccess readDB,
                       MazakQueues queues,
@@ -349,6 +354,7 @@ namespace MazakMachineInterface
       _readDB = readDB;
       _queues = queues;
       _settings = settings;
+      _machGroupName = machineGroupName;
       _sendToExternal = sendToExternal;
       _shutdown = new AutoResetEvent(false);
       _newLogFile = new AutoResetEvent(false);
@@ -390,7 +396,7 @@ namespace MazakMachineInterface
 
           var mazakData = _readDB.LoadSchedulesAndLoadActions();
           var logs = LoadLog(_log.MaxForeignID());
-          var trans = new LogTranslation(_jobDB, _log, mazakData, _settings,
+          var trans = new LogTranslation(_jobDB, _log, mazakData, _machGroupName, _settings,
             le => MazakLogEvent?.Invoke(le)
           );
           var sendToExternal = new List<BlackMaple.MachineFramework.MaterialToSendToExternalQueue>();
@@ -408,14 +414,14 @@ namespace MazakMachineInterface
 
           DeleteLog(_log.MaxForeignID());
 
-          _queues.CheckQueues(mazakData);
+          var queuesChanged = _queues.CheckQueues(mazakData);
 
           if (sendToExternal.Count > 0)
           {
             _sendToExternal.Post(sendToExternal).Wait(TimeSpan.FromSeconds(30));
           }
 
-          if (logs.Count > 0)
+          if (logs.Count > 0 || queuesChanged)
           {
             NewEntries?.Invoke();
           }
