@@ -102,6 +102,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       j.PartName = "p1";
       j.SetPlannedCyclesOnFirstProcess(1, 10);
       j.AddProcessOnPallet(1, 1, "pal1");
+      j.RouteStartingTimeUTC = new DateTime(2020, 04, 19, 13, 18, 0, DateTimeKind.Utc);
+      j.SetSimulatedStartingTimeUTC(1, 1, new DateTime(2020, 04, 19, 20, 0, 0, DateTimeKind.Utc));
       j.ScheduleId = "sch1";
       _logDB.RecordUnloadEnd(
         mats: new[] { new JobLogDB.EventLogMaterial() {
@@ -115,6 +117,27 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         elapsed: TimeSpan.FromMinutes(10),
         active: TimeSpan.Zero
       );
+      _jobDB.AddNewDecrement(new[] {
+        new JobDB.NewDecrementQuantity() {
+          JobUnique = "u1",
+          Part = "p1",
+          Quantity = 30
+        }
+      }, new DateTime(2020, 04, 19, 13, 18, 0, DateTimeKind.Utc));
+
+      // a second job with the same  route starting time and earlier simulated starting time
+      var j2 = new JobPlan("u2", 1);
+      j2.PartName = "p1";
+      j2.RouteStartingTimeUTC = new DateTime(2020, 04, 19, 13, 18, 0, DateTimeKind.Utc);
+      j2.SetSimulatedStartingTimeUTC(1, 1, new DateTime(2020, 04, 19, 17, 0, 0, DateTimeKind.Utc));
+
+      // a third job with earlier route starting time but later simulated starting time
+      var j3 = new JobPlan("u3", 1);
+      j3.PartName = "p1";
+      j3.RouteStartingTimeUTC = new DateTime(2020, 04, 19, 10, 18, 0, DateTimeKind.Utc);
+      j3.SetSimulatedStartingTimeUTC(1, 1, new DateTime(2020, 04, 19, 22, 0, 0, DateTimeKind.Utc));
+
+
       // two pallets with some material
       var pal1 = new PalletAndMaterial()
       {
@@ -259,7 +282,23 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var expectedSt = new CurrentStatus();
       var expectedJob = new InProcessJob(j);
       expectedJob.SetCompleted(1, 1, 1);
+      expectedJob.Decrements.Add(new InProcessJobDecrement()
+      {
+        DecrementId = 0,
+        TimeUTC = new DateTime(2020, 04, 19, 13, 18, 0, DateTimeKind.Utc),
+        Quantity = 30
+      });
+      expectedJob.SetPrecedence(1, 1, 2); // has last precedence
       expectedSt.Jobs.Add("u1", expectedJob);
+
+      var expectedJob2 = new InProcessJob(j2);
+      expectedJob2.SetPrecedence(1, 1, 1); // has middle precedence
+      expectedSt.Jobs.Add("u2", expectedJob2);
+
+      var expectedJob3 = new InProcessJob(j3);
+      expectedJob2.SetPrecedence(1, 1, 0); // has first precedence
+      expectedSt.Jobs.Add("u3", expectedJob3);
+
       expectedSt.Material.Add(pal1.Faces[0].Material[0]);
       expectedSt.Material.Add(pal2.Faces[0].Material[0]);
       expectedSt.Material.Add(queuedMat);
@@ -293,7 +332,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           QueuedMaterial = new List<InProcessMaterial> { queuedMat },
           Schedule = new PlannedSchedule()
           {
-            Jobs = new List<JobPlan> { j }
+            Jobs = new List<JobPlan> { j, j2, j3 }
           }
         });
 
