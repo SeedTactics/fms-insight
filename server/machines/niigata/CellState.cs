@@ -345,9 +345,6 @@ namespace BlackMaple.FMSInsight.Niigata
       else if (face.Process == 1)
       {
         // load castings from queue
-        var casting = face.Job.GetCasting(face.Path);
-        if (string.IsNullOrEmpty(casting)) casting = face.Job.PartName;
-
         var castings =
           _log.GetMaterialInQueue(inputQueue)
           .Where(m => !currentlyLoading.Contains(m.MaterialID))

@@ -466,7 +466,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     }
 
-    public static JobPlan CreateOneProcOnePathJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, string prog, long? progRev, int loadMins, int machMins, int unloadMins, string fixture, int face, string queue = null)
+    public static JobPlan CreateOneProcOnePathJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, string prog, long? progRev, int loadMins, int machMins, int unloadMins, string fixture, int face, string queue = null, string casting = null)
     {
       var j = new JobPlan(unique, 1);
       j.PartName = part;
@@ -497,6 +497,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       if (!string.IsNullOrEmpty(queue))
       {
         j.SetInputQueue(1, 1, queue);
+      }
+      if (!string.IsNullOrEmpty(casting))
+      {
+        j.SetCasting(1, casting);
       }
       return j;
     }
@@ -764,14 +768,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public int ActiveMins { get; set; }
     }
 
-    public ExpectedChange LoadToFace(int pal, int face, string unique, int lul, int elapsedMin, int activeMins, IEnumerable<LogMaterial> loadingMats, out IEnumerable<LogMaterial> loadedMats)
+    public ExpectedChange LoadToFace(int pal, int face, string unique, int lul, int elapsedMin, int activeMins, IEnumerable<LogMaterial> loadingMats, out IEnumerable<LogMaterial> loadedMats, string part = null)
     {
       loadedMats = loadingMats.Select(m =>
         new LogMaterial(
           matID: m.MaterialID,
           uniq: unique,
           proc: m.Process + 1,
-          part: m.PartName,
+          part: part == null ? m.PartName : part,
           numProc: m.NumProcesses,
           serial: m.Serial,
           workorder: m.Workorder,

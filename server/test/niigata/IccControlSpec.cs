@@ -341,8 +341,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
          ;
     }
 
-    [Fact]
-    public void CastingsFromQueue()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("mycasting")]
+    public void CastingsFromQueue(string casting)
     {
       _dsl
         .AddJobs(new[] {
@@ -362,21 +364,29 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             machMins: 14,
             fixture: "fix1",
             face: 1,
-            queue: "thequeue"
+            queue: "thequeue",
+            casting: casting
           )},
           new[] { (prog: "prog111", rev: 6L) }
         )
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
           FakeIccDsl.ExpectAddNewProgram(progNum: 1000, name: "prog111", rev: 6)
-        })
+        });
 
+      if (string.IsNullOrEmpty(casting))
+      {
+        casting = "part1";
+      }
+
+      _dsl
         .AddUnallocatedCasting(queue: "thequeue", rawMatName: "part4", mat: out var unusedMat)
         .ExpectNoChanges()
 
-        .AddUnallocatedCasting(queue: "thequeue", rawMatName: "part1", mat: out var queuedMat)
+        .AddUnallocatedCasting(queue: "thequeue", rawMatName: casting, mat: out var queuedMat)
         .UpdateExpectedMaterial(queuedMat.MaterialID, m =>
         {
           m.JobUnique = "uniq1";
+          m.PartName = "part1";
           m.Action = new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Loading,
@@ -418,7 +428,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 0),
-          _dsl.LoadToFace(pal: 1, lul: 3, face: 1, unique: "uniq1", elapsedMin: 3, activeMins: 8, loadingMats: new[] {queuedMat}, loadedMats: out var mat1),
+          _dsl.LoadToFace(pal: 1, lul: 3, face: 1, unique: "uniq1", elapsedMin: 3, activeMins: 8, loadingMats: new[] {queuedMat}, loadedMats: out var mat1, part: "part1"),
           FakeIccDsl.RemoveFromQueue("thequeue", 1, mat1)
         })
         ;
